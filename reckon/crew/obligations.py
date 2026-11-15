@@ -234,6 +234,14 @@ REVIEW_QUEUED_DUTY_KIND = "review-queued"
 REVIEW_AWAITING_PROMOTION_DUTY_KIND = "review-awaiting-promotion"
 REVIEW_QUEUED_BOUND_SECONDS = 30 * 60
 
+# A run whose recorded review dispatch was refused for the head it now carries
+# is not waiting on the reflex: its own record says every sweep will be refused
+# for the boundary it names, so the duty names the answer rather than a window
+# that passes without the run moving. The kind is its own rather than
+# ``review-refused``, which already names a live review whose stored record the
+# store refused — two states, one name, reads as one duty with two remedies.
+REVIEW_DISPATCH_REFUSED_DUTY_KIND = "review-dispatch-refused"
+
 # The status the review reflex records on a run's pointer when the lane refused
 # the attempt as paused; the refusal instant it carries is the bound's origin.
 REVIEW_LANE_PAUSED_STATUS = "lane-paused"
@@ -773,39 +781,20 @@ def _reflex_review_in_flight(pointer: Mapping[str, Any]) -> bool:
     )
 
 
-def _row_delivery_instant(row: Mapping[str, Any], *, now: datetime) -> datetime:
-    """The instant a row's age counts from: the run's last delivery.
-
-    ``_row_age`` measures how long a run has stood in the state the row reports,
-    so that state began that many seconds before ``now``. The instant is the
-    anchor an undated refusal is judged against: a refusal recorded before the
-    run delivered speaks about a revision the run has since left behind.
-    """
-    return now - timedelta(seconds=_row_age(row, now=now))
-
-
-def _refusal_speaks_for_revision(
-    recorded: Mapping[str, Any],
-    *,
-    row: Mapping[str, Any],
-    head: str,
-    now: datetime,
-) -> bool:
+def _refusal_speaks_for_revision(recorded: Mapping[str, Any], *, head: str) -> bool:
     """Whether a recorded review dispatch speaks for the revision now owed one.
 
-    A record that names a head is counted while that head is the run's current
-    one. A record that names none is counted from its instant, which is the
-    only fact it carries that can be ordered against the run's own delivery:
-    the refusal writer records a head only for an attempt it composed against
-    one, so a refusal has to be anchored on when it was made instead.
+    Only a record that names a head the run still carries speaks for it. A
+    record that names none cannot be told apart from one recorded against any
+    other revision, so it covers none: every refusal written before the writer
+    took the run's head carries no head, and reading those as covering would let
+    a two-day-old refusal answer for a head the run reached afterwards. The
+    reader that treats an unnamed side as matching — ``_review_head_covers`` —
+    is deliberately not the rule here, and a record whose head the run has
+    moved past leaves the reflex's own next sweep as the duty's answer.
     """
     stated = str(recorded.get("head") or "").strip()
-    if stated:
-        return bool(head) and recovery.same_revision(stated, head)
-    at = parse_utc(recorded.get("at"))
-    if at is None:
-        return False
-    return at >= _row_delivery_instant(row, now=now)
+    return bool(stated) and bool(head) and recovery.same_revision(stated, head)
 
 
 def _review_dispatch_refusal(
@@ -823,9 +812,17 @@ def _review_dispatch_refusal(
     refusal speaks for the revision the run owes a review of, the duty is not
     the reflex's: the reflex will keep refusing until the finding it named is
     answered, so the duty names the answer rather than a window that will pass
-    without the run moving. The command is built from the same two helpers the
-    refusal itself renders, so the row and the refusal cannot name different
-    commands for one finding.
+    without the run moving. The
+    command is built from the same two helpers the refusal itself renders, so
+    the row and the refusal cannot name different commands for one finding.
+
+    The finding is taken from the store while the review that raised it can be
+    read there, because a figure review's finding is answered on its own record
+    and only that record names the rubric the command needs. The record the
+    refusal left carries the indices it was raised on, so a refusal whose stored
+    review has since moved out of the store still names the command that lifts
+    it: a duty that fell back to the reflex's window there would promise a
+    dispatch the run's own record says will be refused again.
 
     None means no refusal speaks for the current revision, or that every stored
     review of it has had its blocking findings answered — in both cases the
@@ -836,7 +833,7 @@ def _review_dispatch_refusal(
         return None
     if str(recorded.get("status") or "") != "refused":
         return None
-    if not _refusal_speaks_for_revision(recorded, row=row, head=head, now=now):
+    if not _refusal_speaks_for_revision(recorded, head=head):
         return None
     claim = recorded.get("claim")
     if isinstance(
@@ -882,6 +879,19 @@ def _review_dispatch_refusal(
         index, _finding = undisposed[0]
         fold, exempt = recovery_review_dispatch._finding_dispose_commands(
             project, run_id, index, review=record
+        )
+        return {
+            "reason": str(recorded.get("reason") or "")
+            or "the review reflex refused this review's dispatch",
+            "next_command": (
+                f"dispose the blocking finding with `{fold}` or `{exempt}`"
+            ),
+        }
+    for index in recorded.get("findings") or ():
+        if not isinstance(index, int) or isinstance(index, bool):
+            continue
+        fold, exempt = recovery_review_dispatch._finding_dispose_commands(
+            project, run_id, index
         )
         return {
             "reason": str(recorded.get("reason") or "")
@@ -2626,7 +2636,11 @@ def _review_duty_item(
             # The reflex has already tried and been refused, so naming it as
             # the owner would promise a dispatch its own record says it cannot
             # make. The duty carries the refusal's own account and the answer
-            # that lifts it, so the coordinator acts instead of waiting.
+            # that lifts it, so the coordinator acts instead of waiting. It
+            # reads as its own kind, because a coordinator filtering the list
+            # for the refused-review duty must not be handed the one that
+            # names a live review the store refused.
+            item["kind"] = REVIEW_DISPATCH_REFUSED_DUTY_KIND
             item["reason"] = refusal["reason"]
             item["next_command"] = refusal["next_command"]
         elif _reflex_owns_review(project, pointer):
