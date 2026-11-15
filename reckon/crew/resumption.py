@@ -553,8 +553,6 @@ def lane_probe_cache_path(project: str, backend_name: str) -> Path:
     )
 
 
-
-
 def _read_lane_probe_cache(project: str, backend_name: str) -> dict[str, Any]:
     path = lane_probe_cache_path(project, backend_name)
     try:
@@ -2409,8 +2407,6 @@ def _sweep_writer_entry(
         "reviews": _review_outcome_counts(report.get("reviews")),
         "swept_by_pid": os.getpid(),
     }
-
-
 
 
 def _write_sweep_status(
