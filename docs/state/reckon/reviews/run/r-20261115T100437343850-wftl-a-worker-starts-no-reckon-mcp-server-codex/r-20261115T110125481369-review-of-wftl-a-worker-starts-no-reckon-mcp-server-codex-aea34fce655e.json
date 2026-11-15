@@ -1,0 +1,142 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived by reading the source manifest baseline_suite and after_suite log paths, validating their revisions, completed 58-pass summaries and EXIT=0 receipts, then taking after failure ids minus baseline failure ids.",
+  "assertion_analysis": [
+    {
+      "failure_condition": "Returning the base seeder admits Reckon and fails its absence assertion; dropping strict discovery flags fails argv membership; widening worker-mcp.json permissions fails 0600; returning Reckon in the explicit config fails its absence assertion; dropping useful fails preservation assertions, which conflict with the live plan allow list.",
+      "file": "tests/test_workers_start_without_reckon_mcp.py",
+      "lines": "69-76"
+    },
+    {
+      "failure_condition": "Removing Codex disabled override fails literal argv membership; losing seeded unrelated configuration fails config text membership; these inspect composed launch rather than prove the harness executed it.",
+      "file": "tests/test_workers_start_without_reckon_mcp.py",
+      "lines": "78-80"
+    },
+    {
+      "failure_condition": "Allowing omp project discovery fails the false setting assertion; restoring Reckon declaration fails its absence assertion; removing its deny entry fails disabledServers membership; deleting useful fails retention, which conflicts with the live plan; modifying operator files fails the independent pre-launch byte snapshot.",
+      "file": "tests/test_workers_start_without_reckon_mcp.py",
+      "lines": "85-95"
+    },
+    {
+      "failure_condition": "Restoring Reckon in the resumed explicit Claude config or omitting the resumed Codex/omp disable entry fails the corresponding independent literal absence or membership assertion.",
+      "file": "tests/test_workers_start_without_reckon_mcp.py",
+      "lines": "106-113"
+    },
+    {
+      "failure_condition": "Removing the disable flag or generating a fallback command for an existing HTTP/stdio transport (or failing to generate one for an empty home) fails the literal flag or boolean fallback check; the input transport is an independent fixture and does not predetermine what flags the helper returns.",
+      "file": "tests/test_workers_start_without_reckon_mcp.py",
+      "lines": "127-128"
+    },
+    {
+      "failure_condition": "Reinstating unfiltered merging carries fixture Reckon and fails the expected dictionary filtered independently of product code or its explicit absence assertion; these expected transformations are not same-variable tautologies.",
+      "file": "tests/test_harness_home_carries_mcp_servers.py",
+      "lines": "174-176,195-197,225,266-268"
+    },
+    {
+      "failure_condition": "Carrying the fixture operator Reckon declaration fails both the empty dictionary expectation and explicit absence assertion; the second is logically redundant but falsifiable.",
+      "file": "tests/test_worker_mcp_servers.py",
+      "lines": "180-181"
+    },
+    {
+      "failure_condition": "Omitting strict config flags or composing the wrong worker-mcp.json path fails the existing complete argv equality.",
+      "file": "tests/test_anchored_edit_claude_arm.py",
+      "lines": "171-173"
+    },
+    {
+      "failure_condition": "Omitting Codex disable/fallback flags or placing them differently fails the existing literal argv comparisons; no assertion merely compares an echoed input value against itself.",
+      "file": "tests/test_backends.py",
+      "lines": "126-129,156-159,183-186,199-202"
+    }
+  ],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/dispatching/launch.py:720",
+    "reckon/crew/dispatch_sessions.py:1344",
+    "reckon/crew/dispatch_sessions.py:1868",
+    "reckon/crew/resumption.py:689",
+    "reckon/_backends.py:3046",
+    "reckon/_backends.py:3132",
+    "reckon/_backends.py:3140"
+  ],
+  "completed_at": "2026-11-15T11:11:04Z",
+  "dispatched_at": "2026-11-15T11:03:38Z",
+  "findings": [
+    {
+      "file": "reckon/_worker_fence.py",
+      "line": "439",
+      "severity": "blocking",
+      "text": "blocking: The live plan section s71 version 310 requires workers to start only flight-declared MCP servers, plus their required anchored-edit server, but Claude copies every user declaration before removing only Reckon, codex_worker_mcp_flags at :450 never receives the flight allow list, and omp exclusions at :406 remove only Reckon; undeclared imas-dd, lucy2 or imas-codex therefore remain eligible to start and retain the fleet memory cost, while tests/test_workers_start_without_reckon_mcp.py:76 and :94 require that incorrect retention. Apply the flight allow list to all configuration sources and add the live plan's declared/undeclared launch matrix, including clive-anchored retaining only its required server."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "Read 23dc7478f0e9068145d561fe28190acbd89c33de and aea34fce655e411645725289bbbd78da2ee31204 against 361b7cfb44151bf12134b3298c97aa09a5d56953; the first changes launch composition, home seeding and tests, and the second adds the measurement fragment, with undeclared user servers intentionally retained.",
+    "done_when": "Source prompt.txt requires launch checks, all_debug worker delivery and a base-revision failing assertion; negative-control.log records 1 failed with EXIT=1, after-compatibility.log records 161 passed with the same two baseline failures, and smoke-corrected/summary.json records delivery with 412 Reckon-free samples, while the live plan's all-server allow-list matrix is absent.",
+    "goal": "The source prompt.txt goal is to stop every worker backend starting Reckon, which reckon/_backends.py:3130 and reckon/_worker_fence.py:406 implement, but live work-flows-to-the-lane section s71 version 310 additionally requires excluding every undeclared MCP server and that requirement is unmet.",
+    "manifest": "Source manifest.md names both commits and recorded logs accurately; baseline-suite.log and after-suite.log each show 58 passed with EXIT=0, and its runtime limitation explicitly excludes queue admission and supervisor orchestration.",
+    "write_paths": "Source prompt.txt and manifest.md declare reckon, tests and the evidence fragment directory, and all nine changed paths in the base-to-head diff fall within those grants."
+  },
+  "justifications": {
+    "durability": "tests/test_workers_start_without_reckon_mcp.py:69 and :78 fail if carried Reckon or its missing disable flag returns, but :76 and :94 explicitly require an undeclared useful server to survive, so the tests guard only the narrower dispatch requirement.",
+    "evidence": "docs/evidence/fragments/work-flows-to-the-lane/s71.html:4 preserves the actual base failure and the source run's baseline-suite.log, after-suite.log and census-positive-control.log substantiate zero added armed-gate failures and the runtime Reckon census, but no evidence establishes the live all-server criterion.",
+    "fit": "reckon/_backends.py:3046 and :3132 extend existing dialect composition and reckon/_worker_fence.py:406 uses the existing private JSON writer and run-home conventions with mechanism-based names.",
+    "goal_fidelity": "reckon/_worker_fence.py:439 copies all user servers and :469 disables only Reckon, satisfying the original dispatch but leaving the live plan's undeclared-server exclusion incomplete across Claude, Codex and omp.",
+    "reuse": "Capability searches for worker_mcp_servers, MCP declaration composition, disabledServers and enabled transport overrides found seed_harness_home and _seed_worker_mcp_settings in reckon/_worker_fence.py:221 and :381 and validation in reckon/flight.py:882; the additions extend that owner rather than creating a competing configuration mechanism.",
+    "scope_discipline": "The nine paths changed by the two commits are confined to reckon/_backends.py, reckon/_worker_fence.py, five test files and two files under the source prompt.txt evidence grant."
+  },
+  "live_plan_version": 310,
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source prompt.txt goal is to stop every worker backend starting Reckon, which reckon/_backends.py:3130 and reckon/_worker_fence.py:406 implement, but live work-flows-to-the-lane section s71 version 310 additionally requires excluding every undeclared MCP server and that requirement is unmet.\nVERDICT done_when: Source prompt.txt requires launch checks, all_debug worker delivery and a base-revision failing assertion; negative-control.log records 1 failed with EXIT=1, after-compatibility.log records 161 passed with the same two baseline failures, and smoke-corrected/summary.json records delivery with 412 Reckon-free samples, while the live plan's all-server allow-list matrix is absent.\nVERDICT write_paths: Source prompt.txt and manifest.md declare reckon, tests and the evidence fragment directory, and all nine changed paths in the base-to-head diff fall within those grants.\nVERDICT manifest: Source manifest.md names both commits and recorded logs accurately; baseline-suite.log and after-suite.log each show 58 passed with EXIT=0, and its runtime limitation explicitly excludes queue admission and supervisor orchestration.\nVERDICT diff: Read 23dc7478f0e9068145d561fe28190acbd89c33de and aea34fce655e411645725289bbbd78da2ee31204 against 361b7cfb44151bf12134b3298c97aa09a5d56953; the first changes launch composition, home seeding and tests, and the second adds the measurement fragment, with undeclared user servers intentionally retained.\nCALL_SITES: reckon/crew/dispatching/launch.py:720, reckon/crew/dispatch_sessions.py:1344, reckon/crew/dispatch_sessions.py:1868, reckon/crew/resumption.py:689, reckon/_backends.py:3046, reckon/_backends.py:3132, reckon/_backends.py:3140\nSCORE goal_fidelity: 12\nJUSTIFICATION goal_fidelity: reckon/_worker_fence.py:439 copies all user servers and :469 disables only Reckon, satisfying the original dispatch but leaving the live plan's undeclared-server exclusion incomplete across Claude, Codex and omp.\nSCORE evidence: 16\nJUSTIFICATION evidence: docs/evidence/fragments/work-flows-to-the-lane/s71.html:4 preserves the actual base failure and the source run's baseline-suite.log, after-suite.log and census-positive-control.log substantiate zero added armed-gate failures and the runtime Reckon census, but no evidence establishes the live all-server criterion.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The nine paths changed by the two commits are confined to reckon/_backends.py, reckon/_worker_fence.py, five test files and two files under the source prompt.txt evidence grant.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_workers_start_without_reckon_mcp.py:69 and :78 fail if carried Reckon or its missing disable flag returns, but :76 and :94 explicitly require an undeclared useful server to survive, so the tests guard only the narrower dispatch requirement.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/_backends.py:3046 and :3132 extend existing dialect composition and reckon/_worker_fence.py:406 uses the existing private JSON writer and run-home conventions with mechanism-based names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for worker_mcp_servers, MCP declaration composition, disabledServers and enabled transport overrides found seed_harness_home and _seed_worker_mcp_settings in reckon/_worker_fence.py:221 and :381 and validation in reckon/flight.py:882; the additions extend that owner rather than creating a competing configuration mechanism.\nFINDING reckon/_worker_fence.py:439 blocking: The live plan section s71 version 310 requires workers to start only flight-declared MCP servers, plus their required anchored-edit server, but Claude copies every user declaration before removing only Reckon, codex_worker_mcp_flags at :450 never receives the flight allow list, and omp exclusions at :406 remove only Reckon; undeclared imas-dd, lucy2 or imas-codex therefore remain eligible to start and retain the fleet memory cost, while tests/test_workers_start_without_reckon_mcp.py:76 and :94 require that incorrect retention. Apply the flight allow list to all configuration sources and add the live plan's declared/undeclared launch matrix, including clive-anchored retaining only its required server.\n",
+  "reuse_search": {
+    "production_additions": {
+      "_seed_worker_mcp_exclusions": "Extends seed_harness_home in the existing _worker_fence owner and uses _write_private_json.",
+      "claude_worker_mcp_config": "Extends the existing project allow-list seeding owner to explicit Claude process discovery; no prior strict-config composer found.",
+      "codex_worker_mcp_flags": "Extends the same dialect/home owner for transport-aware disabled overrides; no prior transport-aware exclusion composer found."
+    },
+    "test_additions": "worker_home and _launch isolate the new multi-dialect matrix; nearby operator-home helpers in test_worker_mcp_servers.py and test_harness_home_carries_mcp_servers.py are specific to their own Claude/flight fixtures; isolated_operator_home extends test_backends.py isolation."
+  },
+  "review_run_id": "r-20261115T110125481369-review-of-wftl-a-worker-starts-no-reckon-mcp-server-codex-aea34fce655e",
+  "reviewed_base_sha": "361b7cfb44151bf12134b3298c97aa09a5d56953",
+  "reviewed_commits": [
+    "23dc7478f0e9068145d561fe28190acbd89c33de",
+    "aea34fce655e411645725289bbbd78da2ee31204"
+  ],
+  "reviewed_head_sha": "aea34fce655e411645725289bbbd78da2ee31204",
+  "reviewed_run_id": "r-20261115T100437343850-wftl-a-worker-starts-no-reckon-mcp-server-codex",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 12,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T100437343850-wftl-a-worker-starts-no-reckon-mcp-server-codex/after-suite.log",
+      "revision": "aea34fce655e411645725289bbbd78da2ee31204",
+      "summary": "58 passed in 37.28s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T100437343850-wftl-a-worker-starts-no-reckon-mcp-server-codex/baseline-suite.log",
+      "revision": "361b7cfb44151bf12134b3298c97aa09a5d56953",
+      "summary": "58 passed in 43.21s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T11:57:19.649336+00:00",
+  "total": 103
+}
