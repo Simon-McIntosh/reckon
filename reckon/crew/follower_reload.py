@@ -183,8 +183,15 @@ class _FollowerReloader:
         # rather than on every cadence.
         self.timeout_deferral = False
 
-    def _clear_probe_retry(self) -> None:
-        """Forget a timeout's backoff: the code moved, or a probe answered."""
+    def _clear_probe_retry(self, *, answered: bool = False) -> None:
+        """Forget a timeout's backoff, and a deferral only when a probe answered.
+
+        The backoff is earned by one checkout, so a checkout whose stamp moved
+        starts its gap afresh. The deferral line is owed for a contiguous run
+        of timeouts, and a peer landing during that run is not news about this
+        follower's image, so a stamp move resets the gap without re-arming the
+        line. Only a probe that answered ends the run.
+        """
         from reckon.crew_follow_commands import (
             FOLLOWER_RELOAD_PROBE_RETRY_INITIAL_SECONDS,
         )
@@ -193,7 +200,8 @@ class _FollowerReloader:
         self.probe_retry_gap = FOLLOWER_RELOAD_PROBE_RETRY_INITIAL_SECONDS
         self.probe_retry_jitter = 0.0
         self.probe_retry_stamp = None
-        self.timeout_deferral = False
+        if answered:
+            self.timeout_deferral = False
 
     def _replacement_imports(self) -> tuple[bool, str]:
         """Prove the replacement image loads before re-executing into it.
@@ -423,9 +431,9 @@ class _FollowerReloader:
                 # out a gap that doubles on each further timeout, so a sustained
                 # spike is re-probed a handful of times rather than every cadence.
                 if self.probe_retry_stamp != current_stamp:
-                    # A checkout whose gap has not started yet: owe its deferral
-                    # line afresh rather than inheriting the last one's.
-                    self.timeout_deferral = False
+                    # A checkout whose gap has not started yet: start its gap
+                    # here. The deferral line stays owed, because a peer's
+                    # landing does not end this follower's run of timeouts.
                     self.probe_retry_stamp = current_stamp
                 self.probe_retry_at = moment + self.probe_retry_gap
                 self.probe_retry_jitter = _probe_retry_jitter(self.probe_retry_gap)
@@ -444,7 +452,7 @@ class _FollowerReloader:
                         line = _dim_history_line(line)
                     _echo_follow_line(line, stream=self.stream)
                 return
-            self._clear_probe_retry()
+            self._clear_probe_retry(answered=True)
             self._record_reload_deferral(f"new image does not import ({reason})")
             self.deferred_stamp = current_stamp
             line = (
@@ -457,9 +465,9 @@ class _FollowerReloader:
             _echo_follow_line(line, stream=self.stream)
             return
 
-        # The probe answered: whatever gap a timeout last earned, and the
-        # deferral line it owed, belong to that run of timeouts, which is over.
-        self._clear_probe_retry()
+        # The probe answered, so the run of timeouts it owed a deferral line for
+        # is over: forget the gap it earned and the line with it.
+        self._clear_probe_retry(answered=True)
         # The launched-worker registry does not survive an image replacement,
         # though the process (and therefore the parent-child relationships)
         # does. Hand the outstanding pids over beside the checkpoint so the
