@@ -1840,10 +1840,17 @@ def _claim_paths_share(shared: frozenset[str], path: str, claim: str) -> bool:
     """
     if not isinstance(shared, _SharedWritePaths):
         return False
-    path = _repository_relative_scope(path, shared.repo)
-    claim = _repository_relative_scope(claim, shared.repo)
-    if path is None or claim is None:
-        return False
+    relative_path = _repository_relative_scope(path, shared.repo)
+    relative_claim = _repository_relative_scope(claim, shared.repo)
+    if relative_path is None or relative_claim is None:
+        # Delivery roots contain every run's records; only their owned files
+        # and subdirectories can fence a peer. Keep this directional: a broad
+        # request still meets a holder's exact file or owned directory claim.
+        claimed = (shared.repo / Path(claim).expanduser()).resolve()
+        requested = (shared.repo / Path(path).expanduser()).resolve()
+        roots = (crew_home().resolve(), *delivery_roots())
+        return claimed in roots and requested.is_relative_to(claimed)
+    path, claim = relative_path, relative_claim
     narrower, broader = (claim, path) if _scope_contains(path, claim) else (path, claim)
     if not _scope_contains(broader, narrower):
         return False
