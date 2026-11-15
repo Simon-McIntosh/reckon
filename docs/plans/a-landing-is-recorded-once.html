@@ -23,7 +23,7 @@
   <title>A Landing Is Recorded Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="19">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -122,7 +122,10 @@
     <div class="r-comment-body"><p>The closure overview now quotes the landed run's own comment (a close comment, else the run comment of the section's latest implementing run), quotes the whole done-when paragraph rather than cutting at the first full stop, and totals the plan's committed review findings by disposition with each figure cited to its review run; the figure address comes from figure_row and a run's figure is held to the plan's figure directory. Gate: tests/test_a_closing_plan_gets_one_sourced_overview.py, 18 cases.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261115T211557596589-review-of-alro-s3e-4dc3b65739dd" data-who="reckon-build" data-when="2026-11-15T21:20:53.251Z">
-    <div class="r-comment-body"><p>the review of run r-20261115T203248877953-alro-s3e at 4dc3b65739 is stored as a parsed record scoring goal_fidelity 17, evidence 18, scope_discipline 19, durability 14, fit 19, reuse 19 (total 106) over base 5449f049..head 4dc3b65739, with added_failure_count 0 from the reviewed run&#x27;s own exit-0 suite arms, four named call sites, and two non-blocking findings (reckon/ledger.py:3990 plan filter outside the new owner; reckon/ledger.py:1172 index version bump unguarded by test)</p></div>
+    <div class="r-comment-body"><p>the review of run r-20261115T203248877953-alro-s3e at 4dc3b65739 is stored as a parsed record scoring goal_fidelity 17, evidence 18, scope_discipline 19, durability 14, fit 19, reuse 19 (total 106) over base 5449f049..head 4dc3b65739, with added_failure_count 0 from the reviewed run's own exit-0 suite arms, four named call sites, and two non-blocking findings (reckon/ledger.py:3990 plan filter outside the new owner; reckon/ledger.py:1172 index version bump unguarded by test)</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261115T203248877953-alro-s3e" data-who="reckon-build" data-when="2026-11-15T20:37:16.349Z">
+    <div class="r-comment-body"><p>ledger._row_plan now reads a row&#x27;s plan from its own field, then the impl move it reported, then its node definition, and the index version moves to 7 so every stored row is re-extracted; a new temporary-store test file shows a promoted brief-carried run, a stored record naming the plan only on its definition, and a record washed out by rotation all returned by the plan-selected read, and the live read returns 15 and 14 rows for the two named plans at head against 0 and 0 at base over an 11,007-row store</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261115T103814404295-review-of-alro-s4-37cb0d686e10" data-who="reckon-build" data-when="2026-11-15T11:15:46.059Z">
     <div class="r-comment-body"><p>§4 review of r-20261115T085732662020-alro-s4 at 37cb0d686e — parsed record scoring goal_fidelity 19, evidence 15, scope_discipline 16, durability 19, fit 17, reuse 18 over base dffc9bccd5151443dbbb2d09f29ba30315298a30, 0 added failures, and 4 non-blocking findings (the recorded live-store blast radius understates sections 27 vs 49, the collision-free evidence fragment sits outside the declared write paths, `ledger.runs` is reloaded once per unfurnished section, and a state without project/slug silently skips the run-record branch).</p></div>
