@@ -1156,9 +1156,18 @@ REVIEW_DUTY_KINDS = frozenset({REVIEW_MISSING_DUTY_KIND, REVIEW_QUEUED_DUTY_KIND
 
 # The pointer fields that record a review dispatch, one per rubric: a figure
 # review is recorded beside the text review rather than in its place. Spelled
-# here rather than imported from the dispatch module for the reason above --
+# here rather than imported from the mirrored derivation module for the reason above --
 # this file is loaded by path, so it may reach no derivation.
 REVIEW_DISPATCH_FIELDS = ("review_dispatch", "figure_review_dispatch")
+
+#: The statuses a dispatch entry carries once a review run stands for its head:
+#: ``dispatched`` for one the reflex launched, and ``queued`` for one it put in
+#: the lane's queue — the request the admission pass owns until a lane sells it
+#: a seat. Either status names a review that exists, so a held ``review-missing``
+#: row naming the same head is contradicted and must not be served; every other
+#: status (a refused, skipped or withdrawn attempt, a lane that composed no run)
+#: leaves the review owed and keeps the duty.
+REVIEW_DISPATCH_STARTED_STATUSES = frozenset({"dispatched", "queued"})
 
 # The duties a run's own current pointer answers beyond the phases above, and
 # the state that settles each. A station tick computes these rows from the
@@ -1250,20 +1259,25 @@ def _same_revision(left: Any, right: Any) -> bool:
 def _review_dispatch_for_head(document: Mapping[str, Any], head: Any) -> bool:
     """Whether the run's pointer records a standing review dispatch for ``head``.
 
-    A dispatch entry is written for every attempt, so only the status
-    ``dispatched`` stands for a review that was started: a refusal, a skip or a
-    withdrawal leaves the review still owed, and those are the entries a duty
-    must keep naming. The entry must also name the head the duty names: an
-    entry recording no head cannot be shown to cover this duty's head, and
-    neither can one whose head the duty does not carry, so both keep the duty.
-    Reading a headless entry as covering every head would settle a duty on a
-    dispatch that may have read a different revision entire.
+    A dispatch entry is written for every attempt, so only a status that names
+    a review the fleet holds stands for one: ``dispatched`` for a launch, and
+    ``queued`` for a review run the lane accepted and has not launched yet —
+    the reflex queues one when no producer can launch it, and the admission
+    beside it, so the review exists and the duty naming a dispatch is
+    contradicted either way. A refusal, a skip or a withdrawal leaves the
+    review still owed, and those are the entries a duty must keep naming; so
+    does a lane that composed no review run at all. The entry must also name
+    the head the duty names: an entry recording no head cannot be shown to
+    cover this duty's head, and neither can one whose head the duty does not
+    carry, so both keep the duty. Reading a headless entry as covering every
+    head would settle a duty on a dispatch that may have read a different
+    revision entire.
     """
     for field in REVIEW_DISPATCH_FIELDS:
         entry = document.get(field)
         if not isinstance(entry, Mapping):
             continue
-        if str(entry.get("status") or "") != "dispatched":
+        if str(entry.get("status") or "") not in REVIEW_DISPATCH_STARTED_STATUSES:
             continue
         if not str(entry.get("run_id") or ""):
             continue

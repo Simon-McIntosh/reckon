@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-crew-does-its-own-bookkeeping">
+  <meta name="plan-evidence-for" content="reckon:the-crew-does-its-own-bookkeeping">
+  <meta name="plan-verifies" content="reckon:the-crew-does-its-own-bookkeeping#s15">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="passed">
+  <title>A queued review settles its held missing-review row | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="wave4-omp-local-the-crew-does-its-own-bo-s15-landing" data-node="wave4-omp-local-the-crew-does-its-own-bo-s15" data-reckon="landed" data-when="2026-11-15">
+  <h2>A held review duty clears when the review exists, not only when it launched</h2>
+  <p><strong>Reproduction at the base revision.</strong> The stall was not the derivation: the obligations view already listed a dispatched review as <code>review-in-flight</code>, a queued review as <code>review-queued</code>, and a review admitted under a new id as no duty at all, each with a report or wait command and never a dispatch command. The stale listing lived in the held answer a station tick publishes and the stop hook reads, whose read-time settlement accepted only a recorded attempt with the status <code>dispatched</code>. Measured against the base revision, reading one published <code>review-missing</code> row through <code>without_departed_run_duties</code> with the reviewed run's pointer recording each status in turn: <code>dispatched</code> kept <code>[]</code>, <code>queued</code> kept <code>['review-missing']</code>, <code>lane-paused</code> kept <code>['review-missing']</code>, <code>refused</code> kept <code>['review-missing']</code>, <code>withdrawn</code> kept <code>['review-missing']</code>. A review run the reflex had handed to the lane therefore left the hook naming a dispatch for a review that already existed, which is the reported defect.</p>
+  <p><strong>Change.</strong> <code>REVIEW_DISPATCH_STARTED_STATUSES</code> in <code>reckon/crew/obligation_snapshot.py</code> names both statuses that carry a review the fleet holds — <code>dispatched</code> and <code>queued</code> — and the settlement reads it. A refused, skipped or withdrawn attempt, and a lane that composed no review run at all, still keep the row, because the review is still owed there.</p>
+  <p><strong>Gate.</strong> <code>tests/test_a_review_missing_duty_clears_when_its_review_is_dispatched_or_queued.py</code> reads both surfaces for each window: the derivation, then the held answer published before the fleet moved and settled at read time. Every case first shows the row exists — <code>review-missing</code> with a <code>reckon crew dispatch</code> command — then moves the fleet and reads again: a dispatched review (<code>review-in-flight</code>, the row settled elsewhere and the held row dropped), a queued review (no <code>review-missing</code>, nothing naming a dispatch, the held row dropped), and a queued review whose live pointer was replaced by an admitted one under a new id while the recorded entry still names the queued id (no duty at all, the two ids asserted, the held row dropped).</p>
+  <p><strong>Arms.</strong> Both arms are git checkouts under the run's scratch directory, with the four follower variables unset, run in place on the fleet node with <code>pytest -n 8</code>, and each log names the revision, the tree, the literal command, the module as imported and the resolved cwd. Base <code>36 passed</code>, <code>EXIT=0</code>; head <code>39 passed</code>, <code>EXIT=0</code> — the head arm carrying the three new cases and no added failure. Logs: <code>arms/base.log</code>, <code>arms/head.log</code>.</p>
+  <p><strong>Negative control.</strong> Removing the check — <code>REVIEW_DISPATCH_STARTED_STATUSES</code> narrowed back to <code>frozenset({"dispatched"})</code> — turns the gate red: <code>2 failed, 1 passed</code>, <code>EXIT=1</code>, on both queued cases, each failure printing the row it found: <code>{'kind': 'review-missing', 'next_command': 'reckon crew dispatch …'}</code>. The dispatched case still passes, which is the control's own statement: only the queued statuses were unloaded. Log: <code>arms/negative_control.log</code>.</p>
+  <p><strong>Lint.</strong> <code>ruff check</code> and <code>ruff format --check</code> on the changed module and the new test add no findings.</p>
+</article>
+</body>
+</html>
