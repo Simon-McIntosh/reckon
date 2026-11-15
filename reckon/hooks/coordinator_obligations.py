@@ -909,7 +909,11 @@ def format_checklist(
     summary = payload.get("summary") or {}
     project = str(payload.get("project") or "")
     session = str(payload.get("session") or "")
-    count = summary.get("count", len(items))
+    # The header counts the rows this render is about to print. The payload's
+    # own summary figure is a derivation's count for a list a recheck may have
+    # cut down since, and a figure that disagrees with the rows beneath it
+    # tells a coordinator that work is missing from a list that is complete.
+    count = len(items)
     header = (
         f"reckon obligations for session {session} (project {project}): "
         f"{note + '; ' if note else ''}"
@@ -935,8 +939,21 @@ def format_checklist(
         lines.append(model_notice_line(pending))
     resets = limit_reset_events(session) if limit_resets is None else list(limit_resets)
     lines.extend(limit_reset_line(event) for event in resets)
-    unreconciled = f"unreconciled runs: {summary.get('unreconciled_runs', 0)}"
-    lines.append(unreconciled + "; work the list to empty before ending the turn.")
+    # The trailer is the instruction to work the list, so it is printed only
+    # when the list holds a duty a coordinator can act on, and its figure is
+    # the number of obligations the render lists. A session read "unreconciled
+    # runs: 3; work the list to empty before ending the turn" beside an empty
+    # list because the figure counted runs the closure calls unreconciled --
+    # two in-flight workers and one request awaiting an upstream section --
+    # none of which is a duty: a run in flight is work already moving, and a
+    # request waiting upstream starts by itself when its last ref lands. The
+    # same trailer over a waiting-only list asks for work nobody at this
+    # session can do.
+    if actionable:
+        lines.append(
+            f"unreconciled runs: {count}; work the list to empty "
+            "before ending the turn."
+        )
     lines.append(AUTHORITY_LINE)
     return "\n".join(lines)
 
@@ -1057,6 +1074,32 @@ def producer_seat_holder(project: str) -> tuple[int | None, str]:
         pid if not isinstance(pid, bool) and isinstance(pid, int) and pid > 0 else None
     )
     return named_pid, str(host) if isinstance(host, str) else ""
+
+
+def session_holds_live_work(project: str, session: str) -> bool:
+    """Whether a live pointer records work this session is answerable for.
+
+    Read from the pointers themselves rather than from a derivation: a
+    session's live work is exactly the runs whose pointers record it, and this
+    is asked only on the path where no snapshot answers the turn. A pointer
+    whose owner cannot be read is not evidence that the session is idle, so an
+    unreadable or malformed document counts as work and the reading is kept.
+    """
+    directory = snapshot_module().crew_home() / "live"
+    if not directory.is_dir():
+        return False
+    for path in directory.glob("*.json"):
+        try:
+            document = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return True
+        if not isinstance(document, Mapping):
+            return True
+        if str(document.get("project") or "") != project:
+            continue
+        if str(document.get("session") or "") == session:
+            return True
+    return False
 
 
 def not_fresh_line(
@@ -1467,6 +1510,15 @@ def _prompt(payload: dict[str, Any]) -> int:
             note=f"producer reloading, last snapshot {_format_age(age)} old",
         )
         return 0
+    if state == module.NO_PRODUCER and not session_holds_live_work(project, session):
+        # An absent producer publishes nothing for a session that holds no
+        # live work, so the line would ask a coordinator that dispatched
+        # nothing to arm a seat nothing is owed to -- the reading a session
+        # with no runs read on every prompt for days. The record is cleared so
+        # work that arrives later is spoken for the first time rather than
+        # read as a repeat of a reading already given.
+        _clear_digest(digest_path(project, session))
+        return 0
     _inject_reading(
         payload,
         project=project,
@@ -1750,6 +1802,13 @@ def _stop(payload: dict[str, Any]) -> int:
             resolved = derive_within_budget(project, session, stop_derivation_budget())
         if resolved is None:
             if not payload.get("stop_hook_active"):
+                if state == module.NO_PRODUCER and not session_holds_live_work(
+                    project, session
+                ):
+                    # The same reading the prompt path stays quiet over: a
+                    # session holding no live work is owed nothing by a seat
+                    # that publishes nothing about it.
+                    return 0
                 reload_started_at, deferral = module.watch_reload_state(project)
                 if deferral is not None:
                     line = deferred_reload_line(
