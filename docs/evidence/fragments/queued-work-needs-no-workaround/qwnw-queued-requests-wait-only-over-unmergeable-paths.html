@@ -64,6 +64,16 @@
       stopped holder a claim on generated state, which is the class the claim still fences.</li>
   </ul>
 
+  <h3 id="qwnw-queued-requests-wait-only-over-unmergeable-paths-repair">The record itself</h3>
+  <p id="qwnw-queued-requests-wait-only-over-unmergeable-paths-repair-body">A review found this run's manifest carried unsubstituted placeholders, so no gate command and no arm
+  could be read from it. The record is completed, and both arms are measured with the fence's own
+  command, <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code>:
+  base 281c0359 reads <code>58 passed</code> with <code>EXIT=0</code>, and the head reads
+  <code>58 passed</code> with <code>EXIT=0</code>. The base tree is a <code>git archive</code> of the
+  revision with a local commit, because the suite reads <code>git ls-tree HEAD</code> and an archive
+  alone carries no history.</p>
+
   <h3 id="qwnw-queued-requests-wait-only-over-unmergeable-paths-arms">Suite arms</h3>
   <p id="qwnw-queued-requests-wait-only-over-unmergeable-paths-arms-body">Both arms ran as a job on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset. Base 281c0359 over the
   two touched test files: <code>6 failed, 12 passed</code>, <code>EXIT=1</code>. Head 072aa36b over
