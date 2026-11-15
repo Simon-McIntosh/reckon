@@ -455,10 +455,25 @@ def check_promotion_landing(soup: BeautifulSoup) -> None:
 
 
 def check_a_review_comment_is_not_the_landing(soup: BeautifulSoup) -> None:
-    """A review's comment on the section is never quoted as the landing."""
-    text = _paragraph_texts(soup)["s2"]
-    assert S2_LANDED in text, text
+    """A trailing review comment is never quoted as the section's landing.
+
+    The section read here holds two comments and no close comment: the landing
+    comment of the run that landed it, and a review of that run written after
+    it. Reading the last comment therefore reads the review, which is the
+    mistake this case exists to catch. The close-comment section proves the
+    other half: a close comment wins even with a review written after it.
+    """
+    paragraph = soup.find("p", attrs={"data-section": "s1"})
+    text = paragraph.get_text(" ")
+    assert PROMOTION_LANDED in text, text
     assert REVIEW_NOTE not in text, text
+    sources = {
+        span["data-source"] for span in paragraph.find_all(class_=evidence.SOURCE_CLASS)
+    }
+    assert f"c-run-{REVIEW_B}" not in sources, sources
+    close_paragraph = _paragraph_texts(soup)["s2"]
+    assert S2_LANDED in close_paragraph, close_paragraph
+    assert REVIEW_NOTE not in close_paragraph, close_paragraph
 
 
 def check_the_whole_done_when_is_quoted(soup: BeautifulSoup) -> None:
@@ -577,6 +592,20 @@ def test_the_done_when_is_quoted_whole(checkout: Path) -> None:
     _synthesize(checkout)
 
     check_the_whole_done_when_is_quoted(_soup(checkout))
+
+
+def test_a_body_with_no_paragraph_yields_no_done_when() -> None:
+    """A body with no block boundary is not quoted: its whole text would be."""
+    source = (
+        '<!doctype html><html lang="en"><body><main class="plan-doc">'
+        '<h2 id="s1">§1 — s1 delivery</h2>'
+        "<div>s1 sets out to do its own work. Done when s1 holds a record.</div>"
+        "</main></body></html>"
+    )
+
+    bodies = evidence._section_texts(source)
+
+    assert evidence._done_when(bodies["s1"]) == "", bodies["s1"]
 
 
 def test_the_review_findings_are_totalled_by_disposition(checkout: Path) -> None:

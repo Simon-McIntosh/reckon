@@ -265,12 +265,21 @@ def _section_texts(source: str) -> dict[str, str]:
             continue
         begin, end = heading.span
         soup = BeautifulSoup(source[begin:end], "html.parser")
-        paragraphs = [
-            " ".join(paragraph.get_text(" ").split())
-            for paragraph in soup.find_all("p") or ()
+        # The block elements a body is authored in are the paragraph boundaries
+        # a quote needs. Flattening a section that carries none of them would
+        # hand a done-when reader the whole body on one line, so such a body is
+        # reported as unparagraphable and no declaration is quoted from it.
+        block_tags = ("p", "li", "td")
+        blocks = [
+            block
+            for block in soup.find_all(list(block_tags))
+            if block.find_parent(list(block_tags)) is None
         ]
-        body = "\n".join(text for text in paragraphs if text)
-        bodies[_section_key(section_id)] = body or " ".join(soup.get_text(" ").split())
+        bodies[_section_key(section_id)] = "\n".join(
+            " ".join(block.get_text(" ").split())
+            for block in blocks
+            if block.get_text(" ").strip()
+        )
     return bodies
 
 
