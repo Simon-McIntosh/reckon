@@ -1,0 +1,77 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "18d133b40e54057955fee45c889cde9371c8e068",
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:4967 _reap_worker_on_its_terminal_manifest -> _terminal_attempt_phase",
+    "reckon/crew/dispatch_launch.py:4976 _reap_worker_on_its_terminal_manifest -> _reopen_a_live_attempt_phase",
+    "reckon/crew/dispatch_launch.py:5245 _reap_the_launched_worker -> _terminal_attempt_phase",
+    "reckon/crew/dispatch_launch.py:5261 _reap_the_launched_worker -> _reap_worker_on_its_terminal_manifest",
+    "reckon/crew/dispatch_launch.py:5410 _run_supervisor -> _reap_worker_on_its_terminal_manifest",
+    "reckon/crew/dispatching/_imports.py:527 re-export of _reap_worker_on_its_terminal_manifest"
+  ],
+  "completed_at": "2026-11-15T21:35:50.782Z",
+  "dispatched_at": "2026-11-15T21:35:12Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "4792",
+      "severity": "non-blocking",
+      "text": "non-blocking: _attempt_ending_receipt re-reads the two exit receipts by hand with _read_reservation instead of calling reckon/crew/recovery_liveness.py:1534 _run_exit_record, which dispatch_launch.py:2170 already uses for the same attempt receipt; it duplicates that owner, drops its run-id check, and two readers of one receipt can diverge."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "4789",
+      "severity": "non-blocking",
+      "text": "non-blocking: _DELIVERED_RUN_PHASES restates a subset of reckon/crew/node.py:35 _TERMINAL_RUN_PHASES, which dispatch_launch.py:47 already imports, so a terminal phase added to the owner will not join the copy, and the copy is the set whose member the guard trusts without a receipt."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182457561866-resumed-repair-not-killed-s15/logs/negative-control.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the header names revision 18d133b4 although the arm ran on the worktree's uncommitted new bytes, so the arm cannot be told from the base-bytes run by its header."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-tells-the-truth-under-load/resumed-repair-not-killed-s15.html",
+      "line": "78",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment names efff4c70fb for the after arm while logs/after-suite.log:1 records f57ec4874b; the code bytes are identical, but the document names a revision its own log does not."
+    }
+  ],
+  "head_log_revision": "f57ec4874b64547998a11d6ef123d5ed0985475d",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the path from _run_supervisor:5410 and :5423 through _reap_the_launched_worker:5261 and _reap_worker_on_its_terminal_manifest:4967 into both changed helpers.",
+    "diff": "read commit by commit against 18d133b4: efff4c70fb adds the receipt gate, the reopen and the 456-line test; f57ec4874b adds only the 86-line fragment.",
+    "done_when": "logs/new-test-at-base.log reads 3 failed, 1 passed EXIT=1 at the base and logs/after-suite.log reads 62 passed EXIT=0 at f57ec4874b, so the first two clauses are measured; the third names every test importing dispatch_launch or resumption and about eight files were run at either arm.",
+    "goal": "the goal is to keep a resumed repair from being killed as a terminal run; reckon/crew/dispatch_launch.py:4825-4842 requires the attempt's own exit receipt before a stored complete word counts as its completion.",
+    "manifest": "read; status complete, commits efff4c70fb and f57ec4874b, baseline_suite and after_suite both completed with zero failures, two neighbour failures under outside_scope.",
+    "write_paths": "the fence was dispatch_launch.py, resumption.py, the new test and the fragment; git diff 18d133b4..f57ec4874b touches three of them and nothing else."
+  },
+  "justifications": {
+    "durability": "logs/negative-control.log EXIT=1 reddens three cases, and tests/test_a_resumed_repair_is_not_killed_as_terminal.py:448 fails for a guard that trusts the word.",
+    "evidence": "logs/new-test-at-base.log reads 3 failed, 1 passed EXIT=1 and logs/after-suite.log reads 62 passed EXIT=0 at f57ec4874b, but the third clause names roughly 55 importing files and about eight were measured.",
+    "fit": "reckon/crew/dispatch_launch.py:4839 matches the module's helper idiom, though :4789 restates reckon/crew/node.py:35 _TERMINAL_RUN_PHASES.",
+    "goal_fidelity": "reckon/crew/dispatch_launch.py:4836 gates a delivered word on _attempt_ending_receipt and :4882 restores working on a live attempt, so both halves of the goal land.",
+    "reuse": "reckon/crew/dispatch_launch.py:4792 re-reads the receipts instead of calling reckon/crew/recovery_liveness.py:1534 _run_exit_record, used at dispatch_launch.py:2170.",
+    "scope_discipline": "git diff --stat 18d133b4..f57ec4874b lists only reckon/crew/dispatch_launch.py, tests/test_a_resumed_repair_is_not_killed_as_terminal.py and the evidence fragment."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261115T213148029737-review-of-resumed-repair-not-killed-s15-f57ec4874b64",
+  "reviewed_base_sha": "18d133b40e54057955fee45c889cde9371c8e068",
+  "reviewed_head_sha": "f57ec4874b64547998a11d6ef123d5ed0985475d",
+  "reviewed_run_id": "r-20261115T182457561866-resumed-repair-not-killed-s15",
+  "reviewer_run_id": "r-20261115T213148029737-review-of-resumed-repair-not-killed-s15-f57ec4874b64",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T22:03:24.170521+00:00",
+  "total": 90
+}
