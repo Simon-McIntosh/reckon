@@ -1,0 +1,78 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T01:50:53.311Z",
+  "dispatched_at": "2026-11-15T01:26:13Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-landing-is-recorded-once.html:43",
+      "id": "done_when-1",
+      "reason": "a node handed this measure either fails it or tunes the overview's size to hit a number its own evidence says it exceeded, when the point of the measurement was content retention.",
+      "text": "\u00a73's done-when asserts \"Against the three plans the research document measured, the overview for `a-review-is-sized-to-its-risk` is smaller than its existing landed record\", but the cited table at docs/research/per-node-evidence-costs-and-closure-overview.html:230 records that plan's landed record at 26 KB / 3,083 words and the prototype overview at 54 KB / 3,672 words, and the doc's own note says an overview is not always shorter because that plan's table had 114 rows \u2014 so the cited evidence contradicts the direction the measure asserts",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-is-recorded-once.html:43",
+      "id": "done_when-2",
+      "reason": "the plan removes the fragment on the argument that the run record carries what happened and how it was checked, and this is the one case that would show that argument holding.",
+      "text": "\u00a73's done-when tests that a marker string placed only in a fragment does not reach the overview but never that the facts the cited research measured as lost survive from the run record and gate log \u2014 suite durations, pass counts and content hashes \u2014 so the measure passes while the documented loss persists",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-is-recorded-once.html:38",
+      "id": "done_when-3",
+      "reason": "a check built to the stated cases accepts a figure committed at the wrong plan's path, which is the failure the rule names.",
+      "text": "\u00a72's refusals cover a figure outside `docs/figures/` but not a figure inside `docs/figures/` under another plan's directory, which is the misfiling the \"under the plan's figure directory\" rule exists to catch",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-is-recorded-once.html:47",
+      "id": "reasoning-1",
+      "reason": "the guard as written would have to be narrowed (or \u00a71 given a landing comment at adoption), otherwise the first plan to trip it is the one that introduces it.",
+      "text": "\u00a74 refuses a close while a `done` section holds no landing comment and no run record, and this plan declares \u00a71 `done` at docs/plans/a-landing-is-recorded-once.html:30 with no comment section in the document at all, so the plan's own endpoint makes it unclosable under its own rule",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-is-recorded-once.html:33",
+      "id": "wiring-1",
+      "reason": "if the lead chooses `optional` or `keep` for the fragment, a \u00a76 node dispatched from these declarations builds against a rule the plan has not settled, and its gate would demand the opposite of the decision.",
+      "text": "\u00a71 states nothing is built until the lead adopts the plan and settles both decisions, while the section declarations at docs/plans/a-landing-is-recorded-once.html:22 mark s2\u2013s6 `implementable` (the dispatch signal, reckon/_schema.py:114) and \u00a76's done-when at docs/plans/a-landing-is-recorded-once.html:58 hardcodes one answer to decision one (\"no fragment\" and a search returning none), so the queue can dispatch \u00a76 before the decision it depends on is taken",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "f8193c027599d72995d49c52c7165a3713fd6049",
+  "plan_fingerprint": "a6ebd8720c48a8f42ff9c3058551004dcbd358a43bcc3002ac12d192a13fc1b9",
+  "plan_slug": "a-landing-is-recorded-once",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261115T012215506073-plan-review-of-a-landing-is-recorded-once",
+  "reviewed_blob_sha": "704e7715cb6e3c45ae0e92f07524e912bbae8bfc",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `/reckon/research/per-node-evidence-costs-and-closure-overview.html`, `docs/plans/landed-record-at-closure.html`, `docs/plans/a-review-is-sized-to-its-risk.html` and its landed record at `docs/evidence/archive/a-review-is-sized-to-its-risk-landed.html`, `docs/evidence/fragments/`, `docs/figures/` and `reckon audit-doc` (reckon/project_maintenance_commands.py:1624) all resolve.",
+    "done_when": "a finding \u2014 \u00a73's size comparison asserts the overview is smaller than the landed record the cited table shows it doubling, and its done-when never measures the facts the research measured as lost.",
+    "evidence_paths": "pass \u2014 each measure records into the run's manifest, its gate log, or a temporary repository the test builds, and \u00a76 names its search output in the gate log; no measure writes to a session scratchpad or a node-local path.",
+    "naming": "pass \u2014 the plan introduces no code symbols, filenames or comments; the names it does carry (`reckon evidence synthesize`, the `figures:` manifest key, `docs/figures/<plan>/`) are the interface a user or worker calls, and carry no plan label, stage name, ticket number or version tag.",
+    "reasoning": "a finding \u2014 \u00a74's guard, once implemented, refuses closure of this plan's own \u00a71, which is declared `done` and carries neither a landing comment nor a run record.",
+    "single_goal": "pass \u2014 \u00a72 (figures on a manifest), \u00a73 (closure overview), \u00a74 (close refusal), \u00a75 (sprint page) and \u00a76 (fragment removal) each name one deliverable, and \u00a76's dependency on \u00a73 and \u00a74 is a sequencing wait rather than a second goal.",
+    "wiring": "a finding \u2014 the plan states nothing is built until the lead adopts it and settles both decisions, yet every implementing section is declared `implementable`, which is the dispatch signal, and nothing holds a section until the decisions are settled."
+  },
+  "section_digests": {
+    "_document": "7a8f1117820bc57873c4dcffaa7634193c4a7eea872bdf892b49536f0a0c4fc1",
+    "s1": "26ef2cca47ae5488d32bafa1e7eaa67a08728543b97c666f27c4baf6f4a5db0f",
+    "s2": "9a8b9d31755049e9d5f6e2e44d0aad4f0b62ea92d7538b4f7e4300a9a2d01011",
+    "s3": "643ae79ba85df372af7babc6f412bcb85682fcffd974e604e8ed638d44e405d5",
+    "s4": "6d64ade5ad12275a2bcc7188c3c131949512a8a85815f230f3274e366a5a07e4",
+    "s5": "70388ed2fe3a64b08e6ce5b7d84d907144450ecd34194e69c68fb2bdcf1d356b",
+    "s6": "f8fb954c020c166daed68fdc3c14ea7ff1c6c9892ce8951d6b3005f2cb506e2c"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T01:57:00.150728+00:00",
+  "total": null
+}
