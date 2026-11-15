@@ -1,0 +1,79 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T12:45:25.267Z",
+  "dispatched_at": "2026-11-15T12:45:03Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/history-persists-as-detail-washes-out.html:376",
+      "id": "wiring-1",
+      "reason": "a node fenced to ledger.py cannot deliver the holds writer or the members read the done-when requires, so the gate would be attempted against an unreachable edit.",
+      "text": "s23 must add a holds writer \"beside\" `run_store.append_member` (reckon/run_store.py:871) and read `members`/`holds` from `_AUX_SCHEMA` (reckon/run_store.py:105,109), but its write paths list only `reckon/ledger.py`, `reckon/crew/routing.py` and `reckon/crew/promotion_records.py`, so the fenced worker cannot edit the module that holds the writer and the tables",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/history-persists-as-detail-washes-out.html:390",
+      "id": "wiring-2",
+      "reason": "read literally the migration deletes the project config and the review corpus along with the ledger, so the path must be narrowed to `docs/state/*/crew.json` and `docs/state/*/runs` before the node runs.",
+      "text": "`docs/state/**` as a write path removed from index and working tree covers every tracked file under that directory, and the tree currently carries, beside crew.json and runs/, `docs/state/reckon/index.json`, `project.json`, `flight.yaml`, `review.html`, `timeline.html`, `suite-runs/` and 6,670 tracked files under `reviews/`, none of which the done-when names",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/history-persists-as-detail-washes-out.html:376",
+      "id": "reasoning-1",
+      "reason": "restating the done-when as the endpoint (a registration and a reap land with no committed path and read back equal after removal) removes a mechanism a worker must now reconcile with the code before it can start.",
+      "text": "s23's done-when states the endpoint as a routing instruction (\"register_member writes through append_member, the reap through a holds writer beside it\") and names the functions the worker is to change, which the endpoint rule excludes, and it would have the reviewer test the plan's guess against the code rather than the plan stating the records and the failing control",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/history-persists-as-detail-washes-out.html:395",
+      "id": "reasoning-2",
+      "reason": "the reason the export exists and the path the done-when measures it at are in contradiction, so the node cannot tell whose answer it is meant to reconstruct or where the artifact must land to be readable.",
+      "text": "s27 justifies the export as serving \"a reader with no shared home\" while placing it under the crew config home, which the 2026-11-14 decision records as shared GPFS that every fleet and login node already reads, so the reader named cannot reach the location given",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "2bf8e6947d761394f75022925c4aa498a7db2b99",
+  "plan_fingerprint": "55e165af431e8d88a52d9775807b5ad690a4a6a735fce35a3796dd507436cca8",
+  "plan_slug": "history-persists-as-detail-washes-out",
+  "plan_version": 27,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261115T104802544395-plan-review-of-history-persists-as-detail-washes-out",
+  "reviewed_blob_sha": "5c179ef9a27d690c352e4cdd9f5def9900e163d2",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the units' citations resolve: `reckon/run_store.py`, `_AUX_SCHEMA` (reckon/run_store.py:105,109), `append_member` (reckon/run_store.py:871), `reckon/velocity.py`'s revision reads (reckon/velocity.py:731,754), docs/figures/plan-review-cycles/measure_review_cycles.py:333, scripts/import_runs_into_store.py, and s27's \"release sweep\" to the release-path sweeps (reckon/crew/promotion_release.py:210, reckon/crew/gc.py:2068), as the earlier review already resolved; `reckon/crew/export_ledger.py` is declared new, not cited as existing.",
+    "done_when": "pass \u2014 each of the four units states a comparison that can fail: s23 requires a real registration and reap before the read-after-removal equality, s24 fixes a nonzero run count equal to the ledger's and an empty store failing, s26's `git ls-files` must return nothing, s27's empty export must fail.",
+    "evidence_paths": "pass \u2014 the units name no session scratchpad; s20's investigation artifact sits at the tracked fragment path and the units' gates are tests in the tree.",
+    "naming": "pass \u2014 the units name modules and existing symbols; no plan labels, section numbers or ticket numbers are carried into a symbol by s23, s24, s26 or s27.",
+    "reasoning": "a finding \u2014 s23's done-when and s27's Why each assert something the cited system does not support: s23 states the endpoint as an implementation route through named functions, and s27 justifies the export by a reader that could not reach the location it gives the export.",
+    "single_goal": "pass \u2014 s23 delivers members and holds durability, s24 the revision-scoped readers, s26 the untracking migration, s27 the export; each closes on one verdict.",
+    "wiring": "a finding \u2014 s23's declared write paths omit `reckon/run_store.py`, the module that already holds `append_member` (reckon/run_store.py:871) and the only place the members/holds tables are read, and s26's declared write path `docs/state/**` is far wider than the ledger it means to remove."
+  },
+  "section_digests": {
+    "_document": "2671f8e90118d224f806204c56efeabae92ce556e35c4ed2585334b3a601e101",
+    "s1": "16a4b0ff613308f968af13a86453cdda7611fbb4a0b662f0998319199f08c1f2",
+    "s2": "81ea5591beea9f0bfe0621b90127946f5c732b8471e2c5373404a592fa5daefe",
+    "s20": "4d847b4d77411c6c9ad44de2162b2c5cd97bc0d186bbe3e70cbd2bb17294ddbc",
+    "s21": "b2ec3716b6dd37a6a203c9b9d7c0be1209c9fa8d48d83ddcdf537eb47428cd4c",
+    "s22": "44eee72b2eb1fba73278d19280640ae85ab4fef9d1625113ca2a3cba0ae32c22",
+    "s23": "d9f73541e7a5cd4f56d07f2c35b07b293cf23e7da105e214097be54a7d0c73f7",
+    "s24": "dd15fe8f31e895ad1ede5960250de4a0896036d924c7e17559c3de36812362eb",
+    "s25": "6e50b703cae5c188d1fb24250a943eb5f654fc5c26334335a3a7288120690168",
+    "s26": "246eec118e3e62601be5ae27a2e9d5aa5b872708763fd2d0f1be7a5d57fc7e71",
+    "s27": "115f72b89b23eca4817fcbff3c0c49227fff0315761c0d1a743ae352ce3a2437",
+    "s3": "3422a7a0a23c318e54716e2fbbaf99599e0142f7bbc74d9eb45f924541cd8ccf",
+    "s4": "6beff7af8378d0a3be80a490fb73cc8c5e6a8ee94449c98de40a252d2f57fcd5",
+    "s5": "0cd70cc30708f232bf564bff0e7825d783d5f5ab455747bfac40ebe742ea0ed3",
+    "s6": "5181e894e8b3823f366d0b459a48ecc8e236e645ca5b1f02071dfc0fdae47681",
+    "s7": "6173f16d89316af11f74c75b5bec44f90742582abf47efd7e72af7af3bb31b50"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T12:56:23.317899+00:00",
+  "total": null
+}
