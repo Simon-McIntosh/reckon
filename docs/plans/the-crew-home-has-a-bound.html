@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="Storage bounds for the crew home and caches; no live plan waits on them and they wait on none. The pick-input index belongs to one-typesafe-model-picker&#x27;s code and is fixed here because its growth is independent of the picker&#x27;s open sections.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="131">
-<meta name="plan-modified" content="2026-11-14">
+<meta name="plan-version" content="132">
+<meta name="plan-modified" content="2026-11-15">
 <meta name="plan-section-depends-on" content="{&quot;s13&quot;:[&quot;the-crew-home-has-a-bound#s11&quot;],&quot;s5&quot;:[&quot;the-crew-home-has-a-bound#s14&quot;]}">
 </head>
 <body>
@@ -448,6 +448,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261017T141450191818-cache-guard-whole-suite-at-merge-2" data-who="reckon-build" data-when="2026-10-17T15:06:46.086Z">
     <div class="r-comment-body"><p>two-arm whole-suite measurement under the cache-root guard - base a5d6f187de73b70a4b803e52f2ef8a1d29cc130f 36F/14166P, candidate 04be2a6dc06aecaf72f2b88777e4d37389037171 32F/14170P, zero added failing ids, guard names no test resolving the real cache; no repository path changed by this node</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20261114T213611373537-review-of-garbage-collection-reclaims-only-its-own-project-5414c5de3637" data-who="reckon-build" data-when="2026-11-14T23:56:31.261Z">
+    <div class="r-comment-body"><p>review of r-20261114T174142934963-garbage-collection-reclaims-only-its-own-project at 5414c5de36 scored 14/11/19/18/18/5 across goal_fidelity, evidence, scope_discipline, durability, fit, reuse; two blocking findings — the ledger-index sweep is still unscoped on the retention-sweep path (reckon/crew/gc.py:2209), and three pre-existing tests that import the changed modules fail at head (gates/sibling-head.log 4 failed against 1 at base).</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
