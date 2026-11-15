@@ -546,6 +546,135 @@ class QueueFull(CrewError):  # noqa: N818 - named as the refusal states it, besi
         )
 
 
+# The phases in which a request has been submitted but has not launched. A
+# request in one of these still holds the priority points it was given; a
+# launched, dropped or discarded request has returned them.
+PRIORITY_HOLDING_PHASES: tuple[str, ...] = ("queued", "awaiting-upstream", "held")
+
+
+class PriorityBudgetExceeded(CrewError):  # noqa: N818 - named as the refusal states it, beside QueueFull
+    """A session's unlaunched priority points would pass its declared budget.
+
+    The bound is the flight setting ``queue.priority_budget``. The refusal
+    carries the session, the points already in use, the budget, the requests
+    holding those points and the priority being asked for, so a coordinator
+    reads which of its requests to lower rather than only that it is refused.
+    Nothing is written: the check runs under the queue's own lock before the
+    record is stored.
+    """
+
+    def __init__(
+        self,
+        *,
+        session: str = "",
+        in_use: int,
+        budget: int,
+        holders: Sequence[Mapping[str, Any]],
+        requested: int,
+    ) -> None:
+        self.session = session
+        self.in_use = in_use
+        self.budget = budget
+        self.requested = requested
+        self.holders = [
+            {
+                "run_id": str(holder.get("run_id") or ""),
+                "priority": _stored_priority(holder),
+            }
+            for holder in holders
+        ]
+        named = ", ".join(
+            f"{holder['run_id'] or 'unidentified'} at {holder['priority']}"
+            for holder in self.holders
+        )
+        super().__init__(
+            f"session {session or 'unidentified'} has {in_use} of {budget} "
+            f"priority points in use on its unlaunched requests "
+            f"({named or 'none'}); a priority of {requested} would exceed the "
+            "budget declared by queue.priority_budget"
+        )
+
+
+def _stored_priority(pointer: Mapping[str, Any]) -> int:
+    """The priority a request carries, from its own field or its older alias.
+
+    ``priority`` is the value a submission stores; ``priority_override`` is the
+    name the one-request reprioritise verb wrote before a request could be given
+    priority at submission. Both count against the budget and both rank the
+    queue, so a request written under either name spends and ranks alike.
+    """
+    for key in ("priority", "priority_override"):
+        value = pointer.get(key)
+        if isinstance(value, int) and not isinstance(value, bool):
+            return int(value)
+    return 0
+
+
+def session_priority_in_use(
+    session: str,
+    *,
+    live: Sequence[Mapping[str, Any]] | None = None,
+    exclude_run_id: str = "",
+) -> tuple[int, list[dict[str, Any]]]:
+    """The priority points a session holds on its unlaunched requests.
+
+    Returns the total and the requests holding those points.
+
+    The figures are read from the live pointers rather than a running tally, so
+    a request removed by any route — launch, drop, discard — returns its points
+    with no second bookkeeping step to get wrong. A request the caller is about
+    to rewrite is excluded by run id so its own points are not counted twice.
+    """
+    pointers = list_live() if live is None else live
+    holders: list[dict[str, Any]] = []
+    total = 0
+    for pointer in pointers:
+        if str(pointer.get("session") or "") != str(session or ""):
+            continue
+        if str(pointer.get("phase") or "") not in PRIORITY_HOLDING_PHASES:
+            continue
+        if exclude_run_id and str(pointer.get("run_id") or "") == exclude_run_id:
+            continue
+        points = _stored_priority(pointer)
+        if points <= 0:
+            continue
+        holder = dict(pointer)
+        holder.setdefault("priority", points)
+        holders.append(holder)
+        total += points
+    return total, holders
+
+
+def require_priority_budget(
+    session: str,
+    priority: int,
+    budget: int | None,
+    *,
+    live: Sequence[Mapping[str, Any]] | None = None,
+    exclude_run_id: str = "",
+) -> None:
+    """Refuse a priority that would take a session past its declared budget.
+
+    An undeclared budget (``None``) bounds nothing. The check is a single pass
+    over the session's unlaunched requests, so the refusal names exactly the
+    figures the request would be charged against.
+    """
+    asked = max(int(priority or 0), 0)
+    if budget is None or asked <= 0:
+        return
+    in_use, holders = session_priority_in_use(
+        session, live=live, exclude_run_id=exclude_run_id
+    )
+    if in_use + asked > budget:
+        raise PriorityBudgetExceeded(
+            session=session,
+            in_use=in_use,
+            budget=budget,
+            holders=holders,
+            requested=asked,
+        )
+
+
 # A queued request whose launch the admission pass is attempting is recorded
 # here while its pointer is briefly absent, so a dispatch arriving in that gap
 # reads the record and answers with the run being admitted rather than queueing
@@ -854,6 +983,7 @@ def queue_dispatch(
     *,
     max_requests: int | None = None,
     cap: int | None = None,
+    priority_budget: int | None = None,
 ) -> tuple[dict[str, Any], int | None]:
     """Store a held local request once per project, plan, section and node.
 
@@ -931,6 +1061,17 @@ def queue_dispatch(
                     record["queued_at"] = current["queued_at"]
                     record["created_at"] = current["created_at"]
                     record = _merged_requeue(current, record)
+                    # A re-queue that raises the request's priority spends the
+                    # session's budget for the difference, judged against the
+                    # other requests it holds; a re-queue that keeps or lowers
+                    # it is charged nothing.
+                    require_priority_budget(
+                        str(record.get("session") or ""),
+                        _stored_priority(record),
+                        priority_budget,
+                        live=live,
+                        exclude_run_id=existing_run_id,
+                    )
                     requeued = True
                     _write_json(pointer_path(existing_run_id), record)
                 # A pointer that vanished between the scan and this lock was
@@ -942,6 +1083,18 @@ def queue_dispatch(
                 WAITING_UPSTREAM_PHASES,
             )
             from reckon.crew.recovery_review_delivery import _is_review_run
+
+            # A new request spends its session's priority budget; a re-queue
+            # keeps the points the request already held, so it is charged
+            # nothing and checked against nothing. The check runs under the
+            # queue's own lock, beside the depth check, so two concurrent
+            # submissions cannot both pass the same budget.
+            require_priority_budget(
+                str(record.get("session") or ""),
+                _stored_priority(record),
+                priority_budget,
+                live=live,
+            )
 
             if not _is_review_run(record):
                 bound = (

@@ -34,6 +34,22 @@ _recorded_backlog = _unbound_dispatch_call
 _FACADE_BINDINGS = ("_recorded_backlog",)
 
 
+def _priority_of(dispatch_options: Mapping[str, Any] | None) -> int:
+    """The priority a dispatch carries onto the request it stores.
+
+    The value rides ``dispatch_options``, which a dispatch fills from its own
+    arguments, so a request given priority at submission stores it beside the
+    node rather than only in the answer the caller reads. A value that is not a
+    non-negative integer is read as no priority rather than refused here: the
+    command line already bounds the option, and a stored record from another
+    caller carrying a stray value must still be queueable.
+    """
+    value = (dispatch_options or {}).get("priority")
+    if isinstance(value, int) and not isinstance(value, bool) and value > 0:
+        return int(value)
+    return 0
+
+
 def _queued_request_record(
     *,
     run_id: str,
@@ -65,6 +81,7 @@ def _queued_request_record(
         "section": node.section,
         "repo": str(repo_root),
         "session": session,
+        "priority": _priority_of(dispatch_options),
         "node": node.as_dict(),
         "due": (dispatch_options or {}).get("due"),
         "urgency": (dispatch_options or {}).get("urgency"),
@@ -100,6 +117,7 @@ def _queue_validated_waits(
     wait_projects: Mapping[str, str],
     max_requests: int | None = None,
     cap: int | None = None,
+    priority_budget: int | None = None,
     live: list[Mapping[str, Any]] | None = None,
     cache: dict[str, Any] | None = None,
 ) -> tuple[dict[str, Any], int | None, str]:
@@ -108,7 +126,9 @@ def _queue_validated_waits(
 
     record["waits"] = list(refs)
     record["wait_projects"] = dict(wait_projects)
-    queued, position = queue_dispatch(record, max_requests=max_requests, cap=cap)
+    queued, position = queue_dispatch(
+        record, max_requests=max_requests, cap=cap, priority_budget=priority_budget
+    )
     phase = str(queued.get("phase") or queue_admission.QUEUED_PHASE)
     if refs and phase == queue_admission.QUEUED_PHASE:
         phase = queue_admission._resolve_and_move(
@@ -133,6 +153,7 @@ def queue_requests(
     run_ids: Mapping[str, str] | None = None,
     cap: int | None = None,
     allow_unreviewed_plan: bool = False,
+    priority: int = 0,
 ) -> dict[str, Any]:
     """Validate a request batch, then use dispatch's queue writer for each.
 
@@ -245,6 +266,7 @@ def queue_requests(
                 "session": session,
                 "no_watch": True,
                 "allow_unreviewed_plan": allow_unreviewed_plan,
+                "priority": priority,
             },
             queued_at=_utc_now(),
             backlog=backlog,
@@ -255,6 +277,7 @@ def queue_requests(
             wait_projects=projects_by_run[run_id],
             max_requests=flight.queue_max_requests(config),
             cap=cap,
+            priority_budget=flight.queue_priority_budget(config),
             live=live,
             cache=cache,
         )
@@ -360,6 +383,7 @@ def _answer_existing_node_run(
     backend: Mapping[str, Any],
     lane_allowance: Mapping[str, Any],
     max_requests: int | None = None,
+    priority_budget: int | None = None,
 ) -> LaneHeld:
     """The hold that names the run a node already has, writing no second pointer.
 
@@ -375,7 +399,9 @@ def _answer_existing_node_run(
             if key in existing:
                 record[key] = existing[key]
                 record.setdefault("dispatch_options", {})[key] = existing[key]
-        queued, position = queue_dispatch(record, max_requests=max_requests)
+        queued, position = queue_dispatch(
+            record, max_requests=max_requests, priority_budget=priority_budget
+        )
         held = LaneHeld(dict(lane_allowance))
         held.queued = {
             "run_id": str(queued["run_id"]),

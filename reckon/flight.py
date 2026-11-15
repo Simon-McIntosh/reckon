@@ -186,6 +186,12 @@ QUEUE_MAX_REQUESTS_KEY = "max_requests"
 DEFAULT_QUEUE_MAX_REQUESTS = 500
 QUEUE_REPICK_AFTER_SECONDS_KEY = "repick_after_seconds"
 DEFAULT_QUEUE_REPICK_AFTER_SECONDS = 60
+# The points one session may place on its unlaunched requests at once. A
+# session spends the budget it is given, so the bound is declared here with the
+# rest of the queue namespace rather than fixed in code. A layer that sets no
+# budget leaves priority uncounted, which is the behaviour every install had
+# before the budget existed; only a declared whole number of points bounds it.
+QUEUE_PRIORITY_BUDGET_KEY = "priority_budget"
 
 # The unit each budget suffix is worth in seconds. A budget is written as an
 # integer followed by one of these letters, and the reader converts it once so
@@ -1278,6 +1284,22 @@ def queue_repick_after_seconds(config: Mapping[str, Any] | None) -> int:
     )
     if not isinstance(value, int) or isinstance(value, bool) or value < 0:
         return DEFAULT_QUEUE_REPICK_AFTER_SECONDS
+    return int(value)
+
+
+def queue_priority_budget(config: Mapping[str, Any] | None) -> int | None:
+    """How many priority points one session may place on its unlaunched work.
+
+    Read from the resolved config's ``queue`` namespace. A config that declares
+    no such key, or a value that is not a non-negative integer, returns
+    ``None``: an undeclared budget bounds nothing, which keeps every install
+    that never set one behaving exactly as before. Zero is a declared budget
+    and is returned as such — it says no request may carry priority at all.
+    """
+    queue = (config or {}).get(QUEUE_KEY)
+    value = queue.get(QUEUE_PRIORITY_BUDGET_KEY) if isinstance(queue, Mapping) else None
+    if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+        return None
     return int(value)
 
 

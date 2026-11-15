@@ -237,11 +237,39 @@ def _roadmap_priority_keys(
     return keys
 
 
+def _priority(pointer: Mapping[str, Any]) -> int:
+    """The points a request carries, zero when it carries none.
+
+    ``priority`` is the field a submission and ``crew queue reprioritise`` both
+    write. ``priority_override`` is read beside it because a request stored
+    before the priority field existed carries only the override, and the two
+    name one figure: the points this request spends from its session's budget.
+    A zero or unreadable value is no priority, so an unraised request sorts by
+    the signals below it rather than ahead of them.
+    """
+    for key in ("priority", "priority_override"):
+        value = pointer.get(key)
+        if isinstance(value, int) and not isinstance(value, bool) and value > 0:
+            return int(value)
+    return 0
+
+
 def _override(pointer: Mapping[str, Any]) -> int | None:
-    value = pointer.get("priority_override")
-    return (
-        int(value) if isinstance(value, int) and not isinstance(value, bool) else None
-    )
+    points = _priority(pointer)
+    return points or None
+
+
+def priority_reason(pointer: Mapping[str, Any]) -> str:
+    """The reason string a placed request reports for its points.
+
+    A request reprioritised after it was stored carries the override field, and
+    the reason says so; a request submitted with points carries only the
+    submission's own field and reports those points plainly.
+    """
+    points = _priority(pointer)
+    if "priority_override" in pointer:
+        return f"priority override {points}"
+    return f"priority {points}"
 
 
 def _next_to_launch(
@@ -249,7 +277,7 @@ def _next_to_launch(
     keys: Mapping[int, tuple[Any, ...]],
     moment: datetime,
 ) -> tuple[datetime, int, Mapping[str, Any]]:
-    """Take a delivered review first, then aged or explicitly ranked work.
+    """Take a delivered review, then aged work, then the highest priority.
 
     A review of a delivered run is what lets that run land, so it launches ahead
     of the session's queued implementation however long that has waited. The
@@ -271,9 +299,9 @@ def _next_to_launch(
     ]
     if aged:
         return aged[0]
-    overridden = [row for row in rows if _override(row[2]) is not None]
-    if overridden:
-        return min(overridden, key=lambda row: (-_override(row[2]), row[0], row[1]))
+    raised = [row for row in rows if _priority(row[2]) > 0]
+    if raised:
+        return min(raised, key=lambda row: (-_priority(row[2]), row[0], row[1]))
     ranked = [row for row in rows if id(row[2]) in keys]
     if ranked:
         return min(ranked, key=lambda row: (keys[id(row[2])], row[0], row[1]))
@@ -316,30 +344,32 @@ def admission_order_details(
         and str(pointer.get("phase") or "") != "queued"
     )
 
-    def _rank(group: tuple[str, str]) -> tuple[bool, int, datetime, int]:
+    def _rank(group: tuple[str, str]) -> tuple[Any, ...]:
         oldest = waiting[group][0]
-        launch = _next_to_launch(waiting[group], keys, moment)
+        row = _next_to_launch(waiting[group], keys, moment)
+        pointer = row[2]
+        aged = (moment - row[0]).total_seconds() >= STARVATION_AGE_SECONDS
         return (
-            moment.timestamp() - oldest[0].timestamp() <= STARVATION_AGE_SECONDS,
-            occupancy[(str(launch[2].get("backend") or ""), group[1])],
-            oldest[0],
-            oldest[1],
+            not _is_review_run(pointer),
+            0 if aged else 1,
+            0 if aged else -_priority(pointer),
+            row[0] if aged else oldest[0],
+            occupancy[(str(pointer.get("backend") or ""), group[1])],
+            row[1],
         )
 
     def _project_rank(group: tuple[str, str]) -> tuple[Any, ...]:
         row = _next_to_launch(waiting[group], keys, moment)
         pointer = row[2]
-        age = (moment - waiting[group][0][0]).total_seconds()
-        override = _override(pointer)
+        age = (moment - row[0]).total_seconds()
         key = keys.get(id(pointer))
         return (
             not _is_review_run(pointer),
             age < STARVATION_AGE_SECONDS,
-            override is None,
-            -(override or 0),
+            -_priority(pointer),
+            occupancy[(str(pointer.get("backend") or ""), group[1])],
             key is None,
             key or (),
-            occupancy[(str(pointer.get("backend") or ""), group[1])],
             row[0],
             row[1],
         )
@@ -357,8 +387,8 @@ def admission_order_details(
             reason = "delivered review"
         elif (moment - row[0]).total_seconds() >= STARVATION_AGE_SECONDS:
             reason = "ageing"
-        elif (override := _override(pointer)) is not None:
-            reason = f"priority override {override}"
+        elif _priority(pointer) > 0:
+            reason = priority_reason(pointer)
         elif (key := keys.get(id(pointer))) is not None:
             rivals = [
                 keys[id(other[2])]

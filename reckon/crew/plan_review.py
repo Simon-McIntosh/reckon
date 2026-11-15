@@ -5896,6 +5896,7 @@ def dispatch_code_review(
     config: Mapping[str, Any] | None = None,
     dry_run: bool = False,
     launcher: Any = None,
+    priority: int = 0,
 ) -> dict[str, Any]:
     """Dispatch one read-only review node for a code subject, or preview it.
 
@@ -5954,7 +5955,10 @@ def dispatch_code_review(
         # from these options: the waiver passed above is not carried onto the
         # queued request, so the option must be recorded here or the relaunch
         # refuses the review for the run it exists to reconcile.
-        dispatch_options={"allow_unreconciled_runs": True},
+        dispatch_options={
+            "allow_unreconciled_runs": True,
+            **({"priority": int(priority)} if priority > 0 else {}),
+        },
     )
     return {**result, "brief_text": fields["brief_text"]}
 
@@ -6650,6 +6654,7 @@ def dispatch_portfolio_review(
     config: Mapping[str, Any] | None = None,
     dry_run: bool = False,
     launcher: Any = None,
+    priority: int = 0,
 ) -> dict[str, Any]:
     """Dispatch one read-only portfolio review node, or preview it."""
     import importlib
@@ -6697,7 +6702,10 @@ def dispatch_portfolio_review(
         unreconciled_override=True,
         route="deterministic",
         local=bool(subject.get("local")),
-        dispatch_options={"allow_unreconciled_runs": True},
+        dispatch_options={
+            "allow_unreconciled_runs": True,
+            **({"priority": int(priority)} if priority > 0 else {}),
+        },
     )
     return {**result, "brief_text": fields["brief_text"]}
 

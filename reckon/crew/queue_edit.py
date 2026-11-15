@@ -571,16 +571,39 @@ def reprioritise(
     on every later pass. The roadmap key the request otherwise ranks by is left
     untouched beside it, so a reader can tell an overridden request from one
     sorted by its section.
-    """
-    from reckon.crew import runs as runs_module
 
+    The new points are charged against the session's declared priority budget
+    exactly as a submission is, so a change cannot buy a place the session could
+    not have asked for at dispatch. This request's own points are excluded from
+    the total, because they are the field being changed rather than a rival.
+    """
+    from reckon import flight as flight_module
+    from reckon.crew import runs as runs_module
+    from reckon.crew.queue_admission import _resolve_lane_config
+
+    points = int(priority)
+    if points < 0:
+        raise CrewError(
+            f"a request's priority is a whole number of points, not {points}"
+        )
     record = _read_request(run_id, project)
     _refuse_unless_waiting(record, "reprioritise")
 
     with runs_module._pointer_lock(run_id):
         current = runs_module.read_pointer(run_id)
         _refuse_unless_waiting(current, "reprioritise")
-        current["priority_override"] = int(priority)
+        # The change spends the same budget a submission does, judged against
+        # the session's other waiting requests; this request's own points are
+        # excluded so a raise is charged for the difference.
+        runs_module.require_priority_budget(
+            str(current.get("session") or ""),
+            points,
+            flight_module.queue_priority_budget(_resolve_lane_config(current)),
+            exclude_run_id=run_id,
+        )
+        current["priority"] = points
+        current["priority_override"] = points
+        current["priority_set_at"] = _now()
         current["priority_override_set_at"] = _now()
         current["priority_override_reason"] = reason
         runs_module._write_json(runs_module.pointer_path(run_id), current)
@@ -588,7 +611,8 @@ def reprioritise(
     return {
         "run_id": run_id,
         "phase": _phase_of(current),
-        "priority_override": int(priority),
+        "priority": points,
+        "priority_override": points,
         "reason": reason,
     }
 

@@ -55,6 +55,7 @@ BATCH_ENTRY_FIELDS = frozenset(
         "session",
         "backend",
         "allow_unreviewed_plan",
+        "priority",
     }
 )
 
@@ -582,6 +583,15 @@ def _entry_node(
         raise BatchEntryRefusedError(
             f"entry {index + 1} allow_unreviewed_plan must be true or false"
         )
+    # A priority is a whole number of points, so a batch file that spells it
+    # "3" is refused rather than read as no priority at all: the string would
+    # otherwise store a request nobody prioritised while the entry says it did.
+    priority = entry.get("priority", 0)
+    if isinstance(priority, bool) or not isinstance(priority, int) or priority < 0:
+        raise BatchEntryRefusedError(
+            f"entry {index + 1} priority must be a whole number of points, "
+            f"zero or more, not {entry.get('priority')!r}"
+        )
     project = str(entry.get("project") or "").strip()
     plan = str(entry.get("plan") or "").strip()
     section = str(entry.get("section") or "").strip()
@@ -869,6 +879,14 @@ def queue_batch(
         )
 
 
+def _entry_priority(entry: Mapping[str, Any]) -> int:
+    """The priority points a batch entry asks for, or zero when it names none."""
+    value = entry.get("priority")
+    if isinstance(value, int) and not isinstance(value, bool) and value > 0:
+        return int(value)
+    return 0
+
+
 def _queue_batch(
     entries: Sequence[Mapping[str, Any]],
     *,
@@ -977,6 +995,7 @@ def _queue_batch(
                 launch_kind=launch_kind,
                 run_ids={node.id: run_id},
                 allow_unreviewed_plan=bool(entry.get("allow_unreviewed_plan")),
+                priority=_entry_priority(entry),
             )
             for stored_id in stored:
                 pointer = read_pointer(stored_id)
