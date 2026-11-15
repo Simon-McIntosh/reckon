@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s59">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="passed">
+  <title>A promoted review is never promoted again</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+
+<article class="r-note" id="a-promoted-review-is-never-promoted-again-landing" data-node="a-promoted-review-is-never-promoted-again" data-reckon="landed" data-when="2026-11-15">
+  <h2>A recorded promotion is retired by the sweep, never requested again</h2>
+
+  <p id="a-promoted-review-is-never-promoted-again-what"><strong>What landed.</strong> Promotion now records its own success on the live pointer it could not retire. <code>reckon/crew/promotion.py</code>'s <code>_remove_promoted_pointer_or_defer</code> reads the record as a review, and when the recorded worker is still alive it writes <code>promoted: true</code> onto the pointer and returns without removing it. It does the same when the pointer has moved under the promotion and its <code>pending_landing</code> attempt no longer matches, which is the shape the incident actually had: a review worker writes its own pointer, so a live worker's next phase lands between the promotion's read and its removal. The acceptance sweep then retires that marked pointer on the first pass whose recorded process is gone, and files nothing. Non-review runs keep the existing <code>pending_landing_repair</code> behaviour untouched.</p>
+
+  <p id="a-promoted-review-is-never-promoted-again-why"><strong>What it prevents.</strong> A review run's deliverable is the record it writes, so its manifest reads <code>complete</code> before its worker exits. <code>crew complete --no-commit</code> could then promote it — writing the ledger row and committing the review — while the worker was still running, and return <code>ok</code> with <code>pointer_removed: false</code>. Nothing on disk said the run was promoted, so the sweep read an unpromoted review with a stored record and filed a <code>review-self</code> promotion request for a run the ledger already held. That request failed on every pass, wrote a <code>station-sweep-run-failure</code> line each time, and raised a <code>sweep-failed</code> obligation that only a hand discard of the pointer lifted.</p>
+
+  <p id="a-promoted-review-is-never-promoted-again-mark"><strong>Why a mark rather than a refusal.</strong> Refusing promotion of a live review worker would block the coordinator's own <code>crew complete</code>, which is a legitimate operation: the review is finished in every sense that matters, and the worker has nothing left but its exit. The mark is the smallest record that says so, and it is set by the only code that knows a promotion happened. The sweep's retirement reads that mark, not the phase, so an attempt in flight — a resume, a redispatch — keeps its pointer: the pointer is removed only when no recorded process is alive.</p>
+
+  <p id="a-promoted-review-is-never-promoted-again-gate"><strong>Gate.</strong> <code>tests/test_a_promoted_review_is_never_promoted_again.py</code> builds a temporary repository and crew home. A live child process holds the review run's worker pid and rewrites its own pointer at the moment promotion commits its stores, so the move is a live process's, as in the incident. The case completes the run with <code>--no-commit</code>, asserts the ledger row and <code>promoted: true</code> on the surviving pointer, then kills the child and runs <code>dispatch_awaiting_reviews</code> three times, asserting the pointer is gone, no promotion request was filed, and the run appears in neither the report's <code>failed</code> nor its <code>review_self_refused</code> list. A second case delivers an unmarked review with no worker and asserts it still promotes itself, so the mark gates retirement only.</p>
+
+  <p id="a-promoted-review-is-never-promoted-again-counts"><strong>The two arms.</strong> Both ran on the <code>all_debug</code> partition, each log opening with its revision, its cwd and the literal command and ending in its own <code>EXIT=</code>. The base arm (<code>5617397173</code>) reports <strong>1 failed, 56 passed</strong> — the one failure is this node's case, at <code>assert pointer.get("promoted") is True</code> reading <code>None</code>, which is the declared negative control: at the base revision the pointer survives the promotion unmarked and the sweep then files for a run the ledger already holds. The after arm (<code>96c8881f19</code>) reports <strong>57 passed, EXIT=0</strong>. No other test fails in either arm, and the two files that import the changed modules — <code>tests/test_staged_write_inventory.py</code> and <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code> — pass in both.</p>
+</article>
+
+</body>
+</html>
