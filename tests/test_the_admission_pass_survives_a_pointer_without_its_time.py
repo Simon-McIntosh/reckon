@@ -62,6 +62,9 @@ def admit_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     config_home = tmp_path / "config"
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
+    flight = config_home / "flight.yaml"
+    flight.write_text(json.dumps(CONFIG), encoding="utf-8")
+    monkeypatch.setenv("RECKON_FLIGHT_CONFIG", str(flight))
 
     repository = tmp_path / "checkout"
     scripts = repository / "skills" / "reckon-build" / "scripts"
