@@ -1,0 +1,81 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T20:41:42.370Z",
+  "dispatched_at": "2026-11-15T20:41:07Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/history-persists-as-detail-washes-out/r-20261115T203421785963-plan-review-of-history-persists-as-detail-washes-out/plan.html:474",
+      "id": "wiring-1",
+      "reason": "the chain deadlocks with no landing able to clear \u00a722, which is the wiring gap earlier reviews found for \u00a729 before a followup named it.",
+      "text": "\u00a722 was returned to `implementable` but no queued build names it: `plan-section-depends-on` makes \u00a726 wait on \u00a721, \u00a722, \u00a723, \u00a724, \u00a725, \u00a728 and \u00a729, and the sole open followup `f-hpdw-012` queues \u00a724, \u00a728, \u00a729 then \u00a726 and \u00a727, so \u00a726 is gated on a section no dispatch will ever build",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/history-persists-as-detail-washes-out/r-20261115T203421785963-plan-review-of-history-persists-as-detail-washes-out/plan.html:371",
+      "id": "done_when-1",
+      "reason": "an arm with no stated baseline cannot fail, and a worker handed it must invent a threshold or drop the clause the revert demands, which is the regression this node exists to prevent.",
+      "text": "\"the station's resident memory and tick time over an hour stay within those reckon-f2 measured on the reverted main\" names no figure, no tolerance and no record: `grep -rn \"reverted main\" docs/` returns only this line, and `reckon-f2` appears across the plan set only as a host whose profiles other plans cite, so the arm passes whatever the code does and the one-hour live-station observation is not obtainable in the node that builds \u00a722",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/history-persists-as-detail-washes-out/r-20261115T203421785963-plan-review-of-history-persists-as-detail-washes-out/plan.html:371",
+      "id": "anchors_resolve-1",
+      "reason": "both commits resolve and the cited tree is already post-revert, so no node is sent to a wrong state; the provenance is imprecise, not misleading about the mechanism.",
+      "text": "the clause says the first landing \"was reverted at 648ca4e8f6\", but that commit is \"fix(review): commit an answer on a committed review record\" while the revert is `195e7a80ac` (\"revert: take the ledger back off the run store\"), an ancestor of it",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/history-persists-as-detail-washes-out/r-20261115T203421785963-plan-review-of-history-persists-as-detail-washes-out/plan.html:371",
+      "id": "single_goal-1",
+      "reason": "one gate cannot close both, so the node's verdict would either certify the suite while the memory bound stays unmeasured or wait on an observation it cannot run.",
+      "text": "the added boundedness clause turns one node into two: a reader-equality deliverable a suite closes, and a station memory/CPU bound measurable only by an hour-long observation on the live station against a baseline someone else recorded",
+      "type": "single_goal",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "edae3114ec7067fe950b04025803ec506d61059b",
+  "plan_fingerprint": "0169c5474fc497e86244029e2e5a081f9ac24d3383c907c60fa58d6468f54899",
+  "plan_slug": "history-persists-as-detail-washes-out",
+  "plan_version": 57,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261115T203421785963-plan-review-of-history-persists-as-detail-washes-out",
+  "reviewed_blob_sha": "6d2b8e973bb680cd4489b018c0bf1c0407b84169",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the cited revert commit `648ca4e8f6` (plan.html:371) is a review-record commit; the reversion is `195e7a80ac`, an ancestor of the cited commit, so the pointer lands on the right tree but names the wrong commit for the event.",
+    "done_when": "a finding \u2014 \u00a722's boundedness arm (plan.html:371) states no figure and no tolerance for \"the station's resident memory and tick time\", and the observation it names is an hour on the live station, which the node that builds it cannot run.",
+    "evidence_paths": "pass \u2014 \u00a722 cites no scratch path, and the gate logs of its reader arm sit on the run's durable evidence directory; the missing record behind the station observation is the done_when finding, not a path defect here.",
+    "naming": "pass \u2014 the new clause names no plan label, stage name or ticket number; the commit hashes it cites stay in plan prose.",
+    "reasoning": "pass \u2014 the revert body of `195e7a80ac` supports the root cause s22 now states (\"every ledger load decode the whole 797 MB run store\", and the follow-up \"stats about 11,000 run files on every load: the station reached 8.6 GB and a full core\"), and the endpoint drawn from it \u2014 neither decode the whole store nor stat the whole runs directory \u2014 addresses both measured failures.",
+    "single_goal": "a finding \u2014 \u00a722 now carries two deliverables: the reader-equality measure a suite can close, and a station-wide memory/CPU soak needing its own recorded baseline and a live station (plan.html:371).",
+    "wiring": "a finding \u2014 \u00a722 is declared `implementable` again (plan.html:369) and \u00a726 is declared to wait on it (plan.html:29), yet the only open followup queues \u00a724, \u00a728, \u00a729, \u00a726 and \u00a727 and never \u00a722 (plan.html:474)."
+  },
+  "section_digests": {
+    "_document": "a9425fe129a2d92f9fe25cb997f59e18d1049a474c00766598a8a7f6ee4371c8",
+    "s1": "16a4b0ff613308f968af13a86453cdda7611fbb4a0b662f0998319199f08c1f2",
+    "s2": "81ea5591beea9f0bfe0621b90127946f5c732b8471e2c5373404a592fa5daefe",
+    "s20": "469126d7a8d70994107c002b967dbf9da3c5237e4a3d05823281a9885c92731d",
+    "s21": "b2ec3716b6dd37a6a203c9b9d7c0be1209c9fa8d48d83ddcdf537eb47428cd4c",
+    "s22": "301f712c4abe2ef88d00ea96b2c764eebff651243fdebe70cd9999a35db7a478",
+    "s23": "5f979f2ac2c694c8465c9b3b76743b70a3df967a1496488ebe45e96a41451c59",
+    "s24": "ff4464a256205179d7e9af583afcd456372bf9b4a393a90fe8b93955826be5f8",
+    "s25": "6e50b703cae5c188d1fb24250a943eb5f654fc5c26334335a3a7288120690168",
+    "s26": "37c27b0d54e7bf1a99e322e08776a72ffa748c2b88388aaa51f267a1db5c358a",
+    "s27": "9d55fe84f9ee617248a7eec57379797bd44bc1cb050fc378d20ac1b3da8152b2",
+    "s28": "1b395017f55a124f94b5b856f557b80c1246dd6aa0b94d4c21a412922010b47f",
+    "s29": "08680da58b87d39a60d022d76781f1c03ec98c2eec17478fcee45582b9ef204e",
+    "s3": "3422a7a0a23c318e54716e2fbbaf99599e0142f7bbc74d9eb45f924541cd8ccf",
+    "s4": "6beff7af8378d0a3be80a490fb73cc8c5e6a8ee94449c98de40a252d2f57fcd5",
+    "s5": "0cd70cc30708f232bf564bff0e7825d783d5f5ab455747bfac40ebe742ea0ed3",
+    "s6": "5181e894e8b3823f366d0b459a48ecc8e236e645ca5b1f02071dfc0fdae47681",
+    "s7": "6173f16d89316af11f74c75b5bec44f90742582abf47efd7e72af7af3bb31b50"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T20:55:26.041274+00:00",
+  "total": null
+}
