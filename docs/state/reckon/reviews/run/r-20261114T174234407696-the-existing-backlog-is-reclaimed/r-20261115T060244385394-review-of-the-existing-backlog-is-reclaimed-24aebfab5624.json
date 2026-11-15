@@ -1,0 +1,92 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_basis": "the reviewed run's after_suite arm at logs/backlog-reclaim/after-arm.log ran 7 tests at 24aebfab with EXIT=0 and no failures, and its baseline_suite arm at logs/backlog-reclaim/base-arm.log exits 4 at 7c4b0189 because the test file does not exist there, so it collected nothing and failed nothing; both arms carry empty failure lists and the zero delta is read from those two logs rather than assumed",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/reports.py:2667",
+    "reckon/evidence.py:697"
+  ],
+  "completed_at": "2026-11-15T06:21:09.495Z",
+  "dispatched_at": "2026-11-15T06:04:15Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the record test is ratified at completion with --accept-path; it is the replayable gate the review asked for",
+      "recorded_at": "2026-11-15T06:24:24.838303+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the test pins the headline reclaim figures the plan's measure names; the remaining record figures are one-time measurements of a pass that cannot be replayed",
+      "recorded_at": "2026-11-15T06:24:27.978276+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "the uniqueness half is a two-line local check in an evidence test; moving it into doccheck is not this measurement's to change",
+      "recorded_at": "2026-11-15T06:24:31.593611+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_the_reclaim_record_matches_its_measure.py",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the test lands outside the node's declared write paths, which admitted only the evidence fragment and its figure topic; the manifest declares it under outside_scope and the durability repair needs it, so the work is sound but the fence did not authorise it and a later scope audit meets an undeclared path."
+    },
+    {
+      "file": "tests/test_the_reclaim_record_matches_its_measure.py",
+      "line": "119",
+      "severity": "non-blocking",
+      "text": "non-blocking: four of the five statements the commit corrects carry no assertion, since the cache paragraph's three memos and 5,002 bytes, the reports reconciliation's 255, 2,159 and 115 KiB, and the keep-guard's 23-clean 40-risky 4-absent breakdown are unread by the test, so a later edit could restore the drift this node exists to fix without reddening anything."
+    },
+    {
+      "file": "tests/test_the_reclaim_record_matches_its_measure.py",
+      "line": "91",
+      "severity": "non-blocking",
+      "text": "non-blocking: the element-id case asserts both prefix and uniqueness, and the uniqueness half duplicates the capability reckon/doccheck.py:2128 owns and the crew path already runs from reckon/crew/reports.py:2667, so the case should extend that owner or drop to the prefix claim it uniquely makes."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read both gained commits against base f2411f4dcbaffb5593221a3909b765f2a1497256, where a94c28d883904602285d3adb7ce495dcaf0944cd alters six paragraphs and one table row of the fragment and adds the 135-line test, and 24aebfab562433cf5863d2b3c820bf5c76f12d1c rewrites one keep-guard sentence into the 23-clean, 40-risky and 4-absent breakdown, and the two commits touch nothing else.",
+    "done_when": "the done_when asks for the before and after counts, the report-only listing ahead of the first removal, a shown keep-guard and every command on all_debug; the gained commits do not re-run that pass; the gate they record is the new test at logs/backlog-reclaim/after-arm.log (7 passed, EXIT=0) with a baseline arm at 7c4b0189 that exits 4 because neither file exists there, and I re-ran that test at 24aebfab562433cf5863d2b3c820bf5c76f12d1c and saw 7 passed.",
+    "goal": "the source node's goal is to reclaim the reckon run-store backlog with a project-scoped gc pass and record the counts before and after, and the gained commits serve it by making that record checkable and correcting five statements against the reports on disk, with the memo correction at docs/evidence/fragments/the-crew-home-has-a-bound/the-existing-backlog-is-reclaimed.html:39 matching logs/backlog-reclaim/gc-apply.clean.json, which records three removed memos totalling 5,002 bytes under ~/.config/reckon/cache/metadata-index.",
+    "manifest": "read the source manifest; it records status complete, the four commits, both suite arms and a negative-control log at logs/backlog-reclaim/negative-control.log, its after arm names logs/backlog-reclaim/after-arm.log whose last line is EXIT=0, and its baseline_suite block carries completed false and no failure_count key.",
+    "write_paths": "the source node's declared write paths are docs/evidence/fragments/the-crew-home-has-a-bound/the-existing-backlog-is-reclaimed.html and its figure topic, and the diff writes that fragment plus tests/test_the_reclaim_record_matches_its_measure.py:1, which is outside the fence and is disclosed in the manifest's outside_scope entry."
+  },
+  "justifications": {
+    "durability": "tests/test_the_reclaim_record_matches_its_measure.py:103 fails if a table delta disagrees with its two readings, but nothing at tests/test_the_reclaim_record_matches_its_measure.py:119-135 asserts the cache paragraph, the reports reconciliation figures or the 23/40/4 breakdown, so four of the five corrected statements would revert unnoticed.",
+    "evidence": "logs/backlog-reclaim/after-arm.log records 7 passed with EXIT=0 at 24aebfab, logs/backlog-reclaim/base-arm.log exits 4 with no tests collected, and logs/backlog-reclaim/negative-control.log shows the delta case failing on a mutated figure.",
+    "fit": "tests/test_the_reclaim_record_matches_its_measure.py follows the repository's test-named-after-the-behaviour idiom and its _plain and _row helpers mirror tests that parse fragment HTML, though VERIFIED_SECTION at line 79 carries a plan section label as a symbol name.",
+    "goal_fidelity": "docs/evidence/fragments/the-crew-home-has-a-bound/the-existing-backlog-is-reclaimed.html:39 now attributes the three removed memos to the store they left, which I confirmed in logs/backlog-reclaim/gc-apply.clean.json.",
+    "reuse": "the duplicate-element-id half of tests/test_the_reclaim_record_matches_its_measure.py:91 re-implements the check reckon/doccheck.py:2128 already owns and runs from reckon/crew/reports.py:2667, while its prefix half and the table-arithmetic cases have no owner in the repository.",
+    "scope_discipline": "tests/test_the_reclaim_record_matches_its_measure.py:1 is a new path outside the node's declared write paths, disclosed in the manifest's outside_scope field but not inside the fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to reclaim the reckon run-store backlog with a project-scoped gc pass and record the counts before and after, and the gained commits serve it by making that record checkable and correcting five statements against the reports on disk, with the memo correction at docs/evidence/fragments/the-crew-home-has-a-bound/the-existing-backlog-is-reclaimed.html:39 matching logs/backlog-reclaim/gc-apply.clean.json, which records three removed memos totalling 5,002 bytes under ~/.config/reckon/cache/metadata-index.\nVERDICT done_when: the done_when asks for the before and after counts, the report-only listing ahead of the first removal, a shown keep-guard and every command on all_debug; the gained commits do not re-run that pass; the gate they record is the new test at logs/backlog-reclaim/after-arm.log (7 passed, EXIT=0) with a baseline arm at 7c4b0189 that exits 4 because neither file exists there, and I re-ran that test at 24aebfab562433cf5863d2b3c820bf5c76f12d1c and saw 7 passed.\nVERDICT write_paths: the source node's declared write paths are docs/evidence/fragments/the-crew-home-has-a-bound/the-existing-backlog-is-reclaimed.html and its figure topic, and the diff writes that fragment plus tests/test_the_reclaim_record_matches_its_measure.py:1, which is outside the fence and is disclosed in the manifest's outside_scope entry.\nVERDICT manifest: read the source manifest; it records status complete, the four commits, both suite arms and a negative-control log at logs/backlog-reclaim/negative-control.log, its after arm names logs/backlog-reclaim/after-arm.log whose last line is EXIT=0, and its baseline_suite block carries completed false and no failure_count key.\nVERDICT diff: read both gained commits against base f2411f4dcbaffb5593221a3909b765f2a1497256, where a94c28d883904602285d3adb7ce495dcaf0944cd alters six paragraphs and one table row of the fragment and adds the 135-line test, and 24aebfab562433cf5863d2b3c820bf5c76f12d1c rewrites one keep-guard sentence into the 23-clean, 40-risky and 4-absent breakdown, and the two commits touch nothing else.\nCALL_SITES: reckon/crew/reports.py:2667, reckon/evidence.py:697\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/the-crew-home-has-a-bound/the-existing-backlog-is-reclaimed.html:39 now attributes the three removed memos to the store they left, which I confirmed in logs/backlog-reclaim/gc-apply.clean.json.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/backlog-reclaim/after-arm.log records 7 passed with EXIT=0 at 24aebfab, logs/backlog-reclaim/base-arm.log exits 4 with no tests collected, and logs/backlog-reclaim/negative-control.log shows the delta case failing on a mutated figure.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: tests/test_the_reclaim_record_matches_its_measure.py:1 is a new path outside the node's declared write paths, disclosed in the manifest's outside_scope field but not inside the fence.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_the_reclaim_record_matches_its_measure.py:103 fails if a table delta disagrees with its two readings, but nothing at tests/test_the_reclaim_record_matches_its_measure.py:119-135 asserts the cache paragraph, the reports reconciliation figures or the 23/40/4 breakdown, so four of the five corrected statements would revert unnoticed.\nSCORE fit: 16\nJUSTIFICATION fit: tests/test_the_reclaim_record_matches_its_measure.py follows the repository's test-named-after-the-behaviour idiom and its _plain and _row helpers mirror tests that parse fragment HTML, though VERIFIED_SECTION at line 79 carries a plan section label as a symbol name.\nSCORE reuse: 15\nJUSTIFICATION reuse: the duplicate-element-id half of tests/test_the_reclaim_record_matches_its_measure.py:91 re-implements the check reckon/doccheck.py:2128 already owns and runs from reckon/crew/reports.py:2667, while its prefix half and the table-arithmetic cases have no owner in the repository.\nFINDING tests/test_the_reclaim_record_matches_its_measure.py:1 non-blocking: the test lands outside the node's declared write paths, which admitted only the evidence fragment and its figure topic; the manifest declares it under outside_scope and the durability repair needs it, so the work is sound but the fence did not authorise it and a later scope audit meets an undeclared path.\nFINDING tests/test_the_reclaim_record_matches_its_measure.py:119 non-blocking: four of the five statements the commit corrects carry no assertion, since the cache paragraph's three memos and 5,002 bytes, the reports reconciliation's 255, 2,159 and 115 KiB, and the keep-guard's 23-clean 40-risky 4-absent breakdown are unread by the test, so a later edit could restore the drift this node exists to fix without reddening anything.\nFINDING tests/test_the_reclaim_record_matches_its_measure.py:91 non-blocking: the element-id case asserts both prefix and uniqueness, and the uniqueness half duplicates the capability reckon/doccheck.py:2128 owns and the crew path already runs from reckon/crew/reports.py:2667, so the case should extend that owner or drop to the prefix claim it uniquely makes.\n",
+  "review_run_id": "r-20261115T060244385394-review-of-the-existing-backlog-is-reclaimed-24aebfab5624",
+  "reviewed_base_sha": "f2411f4dcbaffb5593221a3909b765f2a1497256",
+  "reviewed_head_sha": "24aebfab562433cf5863d2b3c820bf5c76f12d1c",
+  "reviewed_run_id": "r-20261114T174234407696-the-existing-backlog-is-reclaimed",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T060244385394-review-of-the-existing-backlog-is-reclaimed-24aebfab5624"
+  },
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 16,
+    "reuse": 15,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T06:23:58.258757+00:00",
+  "total": 89
+}

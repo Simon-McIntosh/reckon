@@ -52,7 +52,15 @@ def _admitting_pass_identity() -> dict[str, Any]:
     that loses its pointer can learn which pass launched it, on which process,
     from which checkout.
     """
-    return {"pid": os.getpid(), "at": _utc_now(), "code": _admit_code_stamp()}
+    import socket
+
+    return {
+        "pid": os.getpid(),
+        "pid_start_time": runs._process_start_time(os.getpid()),
+        "host": socket.gethostname(),
+        "at": _utc_now(),
+        "code": _admit_code_stamp(),
+    }
 
 
 def _admit_code_stamp() -> str:

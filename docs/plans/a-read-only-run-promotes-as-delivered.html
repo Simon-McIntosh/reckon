@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-read-only-run-promotes-as-delivered">
+  <meta name="plan-title" content="A Read-Only Run Promotes As Delivered">
+  <meta name="plan-summary" content="An investigation or review run that carries a brief is reviewed, checked and promoted without hand repair, and one plan&#x27;s run records read in seconds.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="mid">
+  <meta name="plan-effort-hours" content="5.25">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="standard">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-informs" content="a-landing-is-recorded-once">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <title>A Read-Only Run Promotes As Delivered | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="14">
+<meta name="plan-modified" content="2026-11-15">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: four hand repairs in one review session</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>On 2026-11-14 and 15 one coordinator session ran two investigations and four reviews, each read-only and each carrying a brief instead of a plan section. Every one needed a hand repair before it could promote, and one read used to check them took about a minute per plan. The four defects, as observed:</p>
+    <table>
+      <thead><tr><th>Observed</th><th>Where</th><th>Section</th></tr></thead>
+      <tbody>
+        <tr><td>Four read-only runs wrote <code>commits: none (read-only …)</code> in their manifests. Promotion refused each because the text "does not resolve to a commit"; each manifest was rewritten by hand to name the base revision.</td><td>promotion evidence check</td><td>§2</td></tr>
+        <tr><td><code>crew check --review</code> refused both claims-rubric review records for missing scores. A claims review records a verdict per claim and carries no scores.</td><td>review record check</td><td>§3</td></tr>
+        <tr><td>Neither delivered investigation had a review dispatched by the review reflex. Both were dispatched by hand, hours later.</td><td>review duty</td><td>§4</td></tr>
+        <tr><td>Reading one plan's run records through the ledger took about 57 s, and a loop over two plans was killed.</td><td>ledger read</td><td>§5</td></tr>
+      </tbody>
+    </table>
+    <p>Each section below first confirms its defect still reproduces at the base revision. A node whose defect no longer reproduces reports the evidence and changes nothing.</p>
+
+    <h2 id="s2">§2 — A read-only run that commits nothing says so and promotes</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p><strong>Deliverable.</strong> A run whose recorded role is investigate or review has no commit to name. Its manifest may state <code>commits: none</code>, with or without a reason in parentheses after it, and the run promotes with the no-commit form of <code>crew complete</code>, its run record carrying the base revision and no commit as it does for any commitless run. Four such runs were refused on 2026-11-14 and 15 with the manifest line <code>commits: none (read-only sandbox; nothing committed)</code>: two investigations and two plan reviews. The node names the condition that refused them and removes it. The prompt composed for those roles states this form of the line. A run of any role that states <code>none</code> while its worktree head is ahead of its base is still refused, naming the commits.</p>
+    <p><strong>Done when</strong> a new test file shows, using the repository's shared test isolation: an investigate run carrying a brief and no plan, and a plan-review run, each with the manifest line above, pass the manifest check and promote with the no-commit form, and each run record names the base revision and no commit; the same with bare <code>none</code>; a run stating <code>none</code> with a commit beyond its base is refused, naming that commit; and the composed prompt for each role states the line. Negative control: the manifest names which case fails at the base revision and quotes its refusal. If every case passes at the base revision, the node reports the commit that changed the behaviour since 2026-11-14 and changes no product source. The test files that import the manifest check or the promotion evidence check add no failure against the base revision, and <code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths.</p>
+
+    <h2 id="s3">§3 — A claims review record passes the review check</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>crew check --review</code> judges a review record by the rubric the record names. A record under the claims rubric is complete when every claim it was asked to check carries a verdict; it is not asked for the six text scores. A record under a scored rubric that omits its scores is still refused.</p>
+    <p><strong>Done when</strong> a new test file shows: a claims-rubric record with a verdict for every claim and no scores passes <code>crew check --review</code>; a claims-rubric record missing one claim's verdict is refused, naming the claim; a scored-rubric record without scores is refused as it is at the base revision; and the two claims-rubric records stored for this session's census and prototype reviews, copied into the test as fixtures, pass. Negative control: at the base revision the first case fails with a missing-scores refusal. The test files that import the review record check add no failure against the base revision, and <code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths.</p>
+
+    <h2 id="s4">§4 — A delivered run that carries a brief gets its review</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p><strong>Deliverable.</strong> A delivered investigation run whose authority is a brief, with no plan and no section, owes a review like any other delivered run. The review duty pass composes and dispatches that review without the coordinator, and the obligations view names the duty until the review is stored.</p>
+    <p><strong>Done when</strong> a new test file shows, with isolated crew state: a delivered investigate run carrying a brief and no plan produces one review dispatch from the duty pass, whose brief names the run's brief; a second pass dispatches nothing more; the obligations view lists the duty before the dispatch and not after the review is stored; and a delivered run that carries a plan section is handled as at the base revision. Negative control: at the base revision the first case dispatches nothing, and the node's manifest quotes that result. If the first case already passes at the base revision, the node instead reports which condition kept this session's two runs from being reviewed, with the pointer fields that show it, and changes no product source. The test files that import the review duty pass add no failure against the base revision, and <code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths.</p>
+
+    <h2 id="s5">§5 — One plan's run records read in seconds</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> Reading the run records of one plan through the ledger's own read, in a fresh process against the committed store of this repository, answers in under five seconds, and its cost does not grow with the number of runs that belong to other plans.</p>
+    <p><strong>Done when</strong> one gate log, written to the node's run directory on shared storage by one job on the <code>rigel</code> partition, shows five fresh-process reads of one plan's run records against the committed store at the base revision and at the head, each timed, with the head's slowest read under five seconds and the base's times beside it; and a new test file shows that a one-plan read over a synthetic store of 2,000 runs across 50 plans decodes no run document of another plan and returns the same rows as the unfiltered read filtered afterwards. Negative control: at the base revision the decode-count case fails. If the base revision already reads under five seconds on <code>rigel</code>, the node reports the five timings and changes no product source. The test files that import the ledger read add no failure against the base revision, and <code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths.</p>
+
+    
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-rorp-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-15" data-recommends-skill="/reckon-build a-read-only-run-promotes-as-delivered" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build the four repairs</h4>
+    <div class="r-fu-body"><p>§2 to §5 are independent of each other and wait on nothing.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-read-only-run-promotes-as-delivered</pre>
+    </article>
+</section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261115T104520769772-review-of-rorp-s2-d753104cff34" data-who="reckon-build" data-when="2026-11-15T11:26:06.652Z">
+    <div class="r-comment-body"><p>Independent review of r-20261115T085736602818-rorp-s2 at d753104cff scores goal_fidelity 10, evidence 9, scope_discipline 18, durability 13, fit 18, reuse 19 (total 87) with one blocking and three non-blocking findings; the record is stored under the reviewed run's review-records directory at both declared paths and `crew check --review` reports ok on each.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261115T121422108188-review-of-rorp-s2-c2318894ef65" data-who="reckon-build" data-when="2026-11-15T12:35:43.217Z">
+    <div class="r-comment-body"><p>Independent review of r-20261115T085736602818-rorp-s2 covering only the commits it gained since its review at d753104cff — one commit, c2318894ef, over docs/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s2.html and tests/test_a_commitless_manifest_promotes.py; six dimensions scored (goal_fidelity 18, evidence 17, scope_discipline 19, durability 18, fit 18, reuse 20; total 110), one non-blocking finding on the fragment's "all four passing" sentence, added_failure_count 0 derived from the reviewed run's own suite arms (55 passed EXIT=0 at e0626c295a and 63 passed EXIT=0 at c2318894ef, neither with a FAILED line); the repaired base-sha assertion at tests/test_a_commitless_manifest_promotes.py:252 is a genuine guard and the prior blocking I001 was independently rebutted; the record is stored under the reviewed run's review-records directory at both declared paths and `crew check --review` reports ok on each.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261115T085736602818-rorp-s2" data-who="reckon-build" data-when="2026-11-15T12:06:56Z">
+    <div class="r-comment-body"><p>The commitless-promotion guard now runs on both the stated-reason and unreasoned paths, so a read-only investigate or plan-review manifest promotes on a stated `commits: none` while a stated none over a commit past the base is still refused naming it, and the composed prompt states the declaration form for those roles. Correcting the earlier landing line: the four commitless promote shapes already passed at the base revision e0626c295a, so the live defect this node removed is the stated-reason early return in _require_gate_evidence, which skipped the worktree-at-its-base guard and let a run that had committed promote with its work named nowhere. Measure: node test file 8 passed at head against 3 failed, 5 passed at base; the refusal over a commit past the base is the case that fails at base.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-11-15T12:50:00Z">
+    <div class="r-comment-body"><p>§2 landed (run <code>r-20261115T085736602818-rorp-s2</code>, commits <code>e7e46bfc5f</code>, <code>d753104cff</code>, <code>c2318894ef</code>). The four refusals of 14 and 15 November were already repaired by commit <code>6657268850</code>, which is in this node's base. This node closed the remaining gap: the commitless guard now also runs when a reason is stated, so a stated <code>none</code> over a commit past the base is refused, naming it, and the composed prompt for those roles states the line. Eight cases pass at head against three failed and five passed at the base. <a href="/reckon/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s2.html">fragment</a></p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261115T110336917642-review-of-rorp-s3-8d44c377ff4b" data-who="reckon-build" data-when="2026-11-15T11:34:22.244Z">
+    <div class="r-comment-body"><p>Independent review of r-20261115T085738178021-rorp-s3 at head 8d44c377ff4b93f510ff9fa98d4a29a588a1ccee (base bb45282b57f827630da06fea40073de11631f69f): six dimensions scored (goal_fidelity 16, evidence 12, scope_discipline 18, durability 14, fit 18, reuse 5; total 83), four findings (one blocking, three non-blocking), added_failure_count 0 derived from the reviewed run's own baseline_suite and after_suite arms (55 passed EXIT=0 and 68 passed EXIT=0, both zero failure ids); the blocking finding is that a claims record written under the newly admitted claim_verdicts spelling passes crew check --review but is refused as incomplete by the promotion rule at reckon/crew/recovery_review_subject.py:1681.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261115T122123924757-review-of-rorp-s3-10c952bdd1d2" data-who="reckon-build" data-when="2026-11-15T12:45:05.828Z">
+    <div class="r-comment-body"><p>Reviewed r-20261115T085738178021-rorp-s3 over 8d44c377ff..10c952bdd1 (two commits, three files): the split the previous review found is closed by delegating to the single owner, but that delegation newly refuses a stored complete claims record and the evidence fragment still asserts the deleted two-spelling exemption. One blocking and three non-blocking findings; records stored at the two declared paths.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261115T130322571564-review-of-rorp-s3-e064f4e3fc29" data-who="reckon-build" data-when="2026-11-15T13:29:00.774Z">
+    <div class="r-comment-body"><p>An independent review of run r-20261115T085738178021-rorp-s3 over the two commits it gained since its prior review (10c952bdd1..e064f4e3fc) is stored parsed with all six dimensions scored and zero added failures; the fold that admission added is verified against the real stored nova record (crew check --review exits 0) and three non-blocking findings are recorded.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261115T085738178021-rorp-s3" data-who="reckon-build" data-when="2026-11-15T13:01:43Z">
+    <div class="r-comment-body"><p>A claims record is now judged by one folded field and one rule: with_canonical_claims folds the hand-written claim_verdicts spelling onto the parser's claims key on the store's read path and in the delivery check, so the check, the classifier and the promotion gate read the same field and the stored nova record — three verdicts plus a summary that agrees — passes both. 75 tests pass at the repair head, the four importer files included.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261115T085739228283-rorp-s4" data-who="reckon-build" data-when="2026-11-15T11:38:40Z">
+    <div class="r-comment-body"><p>the duty pass already composes a review for a delivered brief-carried run, measured by the probe log at probe-rorp-s4.log (classification scoring, review id minted, launch reached and refused only at fixture backend preflight).</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-11-15T12:20:00Z">
+    <div class="r-comment-body"><p>§4 closed with no product change (run <code>r-20261115T085739228283-rorp-s4</code>, commits <code>5c642615c0</code>, <code>ff0472faa7</code>): the defect does not reproduce. A probe over isolated crew state shows a delivered investigate run that carries a brief and no plan classifies as awaiting review, and the duty pass composes and attempts its review dispatch. Why two such runs went unreviewed on 2026-11-14 cannot be established, because their pointers and run directories were removed by retention; the coordinator had acknowledged one of those runs' obligations at the time, which is a known way the reflex is silenced. <a href="/reckon/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s4.html">fragment</a></p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261115T120153259988-review-of-rorp-s5-0a2d1f8e672b" data-who="reckon-build" data-when="2026-11-15T12:23:12.333Z">
+    <div class="r-comment-body"><p>independent review of r-20261115T085741072175-rorp-s5 at head 0a2d1f8e672b (base 19b28c494ed1) scored 96/120 across the six dimensions with one blocking and three non-blocking findings; the blocking finding is the reviewed manifest's after_suite arm recording the pre-repair commit d74954f7 with exit_status 1, which derives added_failure_count 3. Records at r-20261115T085741072175-rorp-s5/review-records/.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261115T120405859381-review-of-rorp-s5-0a2d1f8e672b-figure" data-who="reckon-build" data-when="2026-11-15T12:22:51.214Z">
+    <div class="r-comment-body"><p>figure review of docs/figures/a-read-only-run-promotes-as-delivered/rorp-s5/read-cost-per-plan.svg (rendered as image-0.png, 1400x450): all six rubric items answered, contrast is the one item with a defect, and the two findings it records are both non-blocking, so nothing in this review holds the run</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261115T131402513287-review-of-rorp-s5-f1faed9c964e" data-who="reckon-build" data-when="2026-11-15T13:35:10.784Z">
+    <div class="r-comment-body"><p>reviewed r-20261115T085741072175-rorp-s5 over 0a2d1f8e672b..f1faed9c964e (one commit, the evidence fragment only): six dimensions scored 110/120 (goal_fidelity 19, evidence 19, scope_discipline 20, durability 14, fit 18, reuse 20), one non-blocking finding, added_failure_count 0 derived from the reviewed run's own suite arms; the prior blocking finding is answered by the manifest's after_suite now recorded at 0a2d1f8e with exit 0.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261115T132935525332-review-of-rorp-s5-f1faed9c964e-figure" data-who="reckon-build" data-when="2026-11-15T13:42:11.955Z">
+    <div class="r-comment-body"><p>Figure review of rorp-s5: two non-blocking findings (faint base label, overlapping points)</p></div>
+</div>
+</section>
+</main>
+</body>
+</html>

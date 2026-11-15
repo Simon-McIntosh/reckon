@@ -1,0 +1,159 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T10:50:03.768Z",
+  "dispatched_at": "2026-11-15T10:24:46Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/history-persists-as-detail-washes-out.html:381",
+      "id": "done_when-1",
+      "reason": "the node's whole measure can pass on the unfixed code, so the plan would send a node that closes green without the refusal it exists to add, the same defect s25 already guards against by requiring the refusal with both files removed.",
+      "text": "s24's done-when compares \"Velocity's figures at a revision\" with \"the store's answer over the same runs\" while `docs/state/*/runs` are still tracked (their removal is s26, a declared successor), so both arms draw on the same committed files and the condition its Why names \u2014 the files absent at a revision, where velocity \"would report zero rather than refuse\" \u2014 is never constructed; a worker can satisfy the equality and leave the silent-zero behaviour intact.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/history-persists-as-detail-washes-out.html:376",
+      "id": "done_when-2",
+      "reason": "the plan names the wrong writer for half its deliverable, so the node either builds a second holds writer on the roster reap or misses `record_hold_checks` and reports the holds arm unmet, which is the same round lost as the \"no tables\" premise the earlier review already cost this section.",
+      "text": "s23 states that \"the reap\" writes holds and its done-when routes \"the reap through a holds writer beside it\", but `reap_idle_session_members` (reckon/crew/routing.py:3460) rewrites the roster and writes no hold, while the holds are written by `record_hold_checks` (reckon/ledger.py:4171), invoked from the budget path (reckon/budget.py:1939); a worker following the sentence looks for a holds write in the reap and finds none.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/history-persists-as-detail-washes-out.html:360",
+      "id": "anchors_resolve-1",
+      "reason": "s24 and s26 both define their write scope as \"the `scripts/` readers the map names\", so the map is load-bearing for two of the four units under review and a worker that opens the cited path gets nothing.",
+      "text": "\u00a720's done-when names `docs/evidence/fragments/history-persists-as-detail-washes-out/ledger-leaves-git-map.html`, but the committed blob is `docs/evidence/fragments/history-persists-as-detail-washes-out/ledger-leaves-git-map-s20-writable.html`; the cited path resolves to nothing.",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/history-persists-as-detail-washes-out.html:381",
+      "id": "reasoning-1",
+      "reason": "if no store row carries the landing revision, s24's post-untrack endpoint cannot be measured from the store at all and s27's \"velocity's figures from that rebuilt store equal the live store's\" inherits the same gap, so the missing field would surface only at implementation time and cost a redispatch.",
+      "text": "s24's equality presupposes that the store can answer \"over the same runs\" at a revision, but velocity places a run at the commit that added its own record file (reckon/velocity.py:1212) and reads that file at the revision (`ls-tree ... docs/state/<project>/runs`, :731); the plan does not state that a store row carries the revision a run landed at, which is the fact the arm needs once the files are gone.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "2bf8e6947d761394f75022925c4aa498a7db2b99",
+  "plan_fingerprint": "55e165af431e8d88a52d9775807b5ad690a4a6a735fce35a3796dd507436cca8",
+  "plan_slug": "history-persists-as-detail-washes-out",
+  "plan_version": 27,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "2bf8e6947d761394f75022925c4aa498a7db2b99",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "s24's measure now builds a revision whose runs directory is absent and requires velocity to answer from the store or refuse, never zero",
+      "reason": "",
+      "when": "2026-11-15T10:51:51.861693+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "2bf8e6947d761394f75022925c4aa498a7db2b99",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "s23 names record_hold_checks in reckon/ledger.py, called from reckon/budget.py, as the holds writer, and the reap as the members writer only",
+      "reason": "",
+      "when": "2026-11-15T10:52:01.299993+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "2bf8e6947d761394f75022925c4aa498a7db2b99",
+      "commit_basis": "edit",
+      "finding": "anchors_resolve-1",
+      "note": "\u00a720's done-when names the committed fragment ledger-leaves-git-map-s20-writable.html",
+      "reason": "",
+      "when": "2026-11-15T10:52:08.243848+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "2bf8e6947d761394f75022925c4aa498a7db2b99",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "s24's deliverable now includes the revision a run landed at on its store row, backfilled from the commit that added its record file, since velocity places a run by that commit",
+      "reason": "",
+      "when": "2026-11-15T10:52:14.059060+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "2bf8e6947d761394f75022925c4aa498a7db2b99",
+      "commit_basis": "edit",
+      "note": "\u00a720's done-when names the committed fragment ledger-leaves-git-map-s20-writable.html",
+      "reason": "",
+      "when": "2026-11-15T10:52:08.243848+00:00"
+    },
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "2bf8e6947d761394f75022925c4aa498a7db2b99",
+      "commit_basis": "edit",
+      "note": "s24's measure now builds a revision whose runs directory is absent and requires velocity to answer from the store or refuse, never zero",
+      "reason": "",
+      "when": "2026-11-15T10:51:51.861693+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "2bf8e6947d761394f75022925c4aa498a7db2b99",
+      "commit_basis": "edit",
+      "note": "s23 names record_hold_checks in reckon/ledger.py, called from reckon/budget.py, as the holds writer, and the reap as the members writer only",
+      "reason": "",
+      "when": "2026-11-15T10:52:01.299993+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "2bf8e6947d761394f75022925c4aa498a7db2b99",
+      "commit_basis": "edit",
+      "note": "s24's deliverable now includes the revision a run landed at on its store row, backfilled from the commit that added its record file, since velocity places a run by that commit",
+      "reason": "",
+      "when": "2026-11-15T10:52:14.059060+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/history-persists-as-detail-washes-out/r-20261115T102324963771-plan-review-of-history-persists-as-detail-washes-out.json",
+  "review_run_id": "r-20261115T102324963771-plan-review-of-history-persists-as-detail-washes-out",
+  "reviewed_blob_sha": "5c179ef9a27d690c352e4cdd9f5def9900e163d2",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a720's done-when names `docs/evidence/fragments/history-persists-as-detail-washes-out/ledger-leaves-git-map.html`; the committed fragment is `ledger-leaves-git-map-s20-writable.html`, so the section that s24 and s26 lean on for their write scopes cannot be opened at the path it is cited by.",
+    "done_when": "two findings \u2014 s24 never runs its Why's condition (the per-run files absent at a revision), and s23 attributes the holds write to \"the reap\", which is a members writer.",
+    "evidence_paths": "pass \u2014 every unit's evidence is a test assertion in the repository plus an equality over the store, and \u00a720's map (the artifact s24 and s26's write scopes lean on) is committed under `docs/evidence/fragments/`; nothing in these units writes to a session scratchpad.",
+    "naming": "pass \u2014 these units carry no plan labels, stage names or ticket numbers; the symbols and modules they cite (`_AUX_SCHEMA`, `append_member`, `register_member`, `measure_review_cycles.py`) are the code's own names, and the citations aid a reader without encoding a plan item.",
+    "reasoning": "two findings \u2014 s24's endpoint is a refusal-or-store read under untracked files but its done-where measures an equality between two arms that both still read the tracked files; and s23 roots the holds gap in a \"reap\" that writes members, not holds, so the stated gap names the wrong writer while the real one (`record_hold_checks`) goes unnamed.",
+    "single_goal": "pass \u2014 s23 (\"members and holds become store tables\") and s27 (\"the export leaves git\") each name one deliverable with two arms of the same measure, not two goals.",
+    "wiring": "pass \u2014 the declared waits are sound and complete for these units: `plan-section-depends-on` puts s26 on s21\u2013s25 and s27 on s26, which matches what each node consumes: s26 removes the git copies of files s21\u2013s25 have already moved readers off, and s27's export is what s24's displaced rebuild arm consumes."
+  },
+  "section_digests": {
+    "_document": "2671f8e90118d224f806204c56efeabae92ce556e35c4ed2585334b3a601e101",
+    "s1": "16a4b0ff613308f968af13a86453cdda7611fbb4a0b662f0998319199f08c1f2",
+    "s2": "81ea5591beea9f0bfe0621b90127946f5c732b8471e2c5373404a592fa5daefe",
+    "s20": "4d847b4d77411c6c9ad44de2162b2c5cd97bc0d186bbe3e70cbd2bb17294ddbc",
+    "s21": "b2ec3716b6dd37a6a203c9b9d7c0be1209c9fa8d48d83ddcdf537eb47428cd4c",
+    "s22": "44eee72b2eb1fba73278d19280640ae85ab4fef9d1625113ca2a3cba0ae32c22",
+    "s23": "d9f73541e7a5cd4f56d07f2c35b07b293cf23e7da105e214097be54a7d0c73f7",
+    "s24": "dd15fe8f31e895ad1ede5960250de4a0896036d924c7e17559c3de36812362eb",
+    "s25": "6e50b703cae5c188d1fb24250a943eb5f654fc5c26334335a3a7288120690168",
+    "s26": "246eec118e3e62601be5ae27a2e9d5aa5b872708763fd2d0f1be7a5d57fc7e71",
+    "s27": "115f72b89b23eca4817fcbff3c0c49227fff0315761c0d1a743ae352ce3a2437",
+    "s3": "3422a7a0a23c318e54716e2fbbaf99599e0142f7bbc74d9eb45f924541cd8ccf",
+    "s4": "6beff7af8378d0a3be80a490fb73cc8c5e6a8ee94449c98de40a252d2f57fcd5",
+    "s5": "0cd70cc30708f232bf564bff0e7825d783d5f5ab455747bfac40ebe742ea0ed3",
+    "s6": "5181e894e8b3823f366d0b459a48ecc8e236e645ca5b1f02071dfc0fdae47681",
+    "s7": "6173f16d89316af11f74c75b5bec44f90742582abf47efd7e72af7af3bb31b50"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T10:48:52.221680+00:00",
+  "total": null
+}

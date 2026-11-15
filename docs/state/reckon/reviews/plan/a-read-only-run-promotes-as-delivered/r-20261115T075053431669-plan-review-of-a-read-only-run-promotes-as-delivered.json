@@ -1,0 +1,162 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "874a3927-ba34-4bb1-be65-22fd95326122",
+      "digests": {
+        "s2": "51b3c2880f7106258a68374c46698807ce2849921f8138e8ab3b80c1ef2d21b9"
+      },
+      "reason": "The edits answer this round's content and design findings as recorded on each answer",
+      "units": [
+        "s2"
+      ],
+      "when": "2026-11-15T08:54:28.600459+00:00"
+    }
+  ],
+  "completed_at": "2026-11-15T08:20:14.388Z",
+  "dispatched_at": "2026-11-15T07:52:22Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-only-run-promotes-as-delivered.html:21",
+      "id": "wiring-1",
+      "reason": "",
+      "text": "\u2014 `plan-after a-read-costs-what-changed` is read by `reckon/doccheck.py:_declares_section_wire` as a wait belonging to one of this plan's sections, but the referenced plan is still `plan-status: active` and already owns the ledger-decode measurements \u00a75 restates (its \u00a717 \"Budget readings decode the ledger once per change\", \u00a77 \"Five seconds on the real store\"). As authored, a roadmap read hosts \u00a75 and its neighbours behind an active, unowned plan for the second time \u2014 the same defect the ledger is being scoped against. WOULD_CHANGE_THE_PLAN: yes \u2014 the author either drops the wire, matching the followup's \"wait on nothing\", or turns it into a `plan-section-depends-on` edge naming which section waits and on what; the two declarations cannot both hold.",
+      "type": "wiring",
+      "would_change": null
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-only-run-promotes-as-delivered.html:46",
+      "id": "done_when-1",
+      "reason": "",
+      "text": "\u2014 \u00a72's negative control states that \"at the base revision the first case fails with the unresolved-commit refusal\". That red arm is unreachable: `promotion_evidence.py:490-506` (`_declares_absent_commits`, `_COMMITLESS_ROLES`) already treats `none (\u2026)` and bare `none` as an absence declaration, `:785-800` applies that reader on the recorded role, and `:1127-1160` already refuses a run whose commits are on record or whose worktree head is ahead of its base. So a node obeying this done-when either reports that the case passes at base and changes nothing (\u00a71's clause, making the section a no-op) or writes a test whose red arm cannot go red. WOULD_CHANGE_THE_PLAN: yes \u2014 the done-when must name the condition that actually refuses the cited runs, or the section must state that its test asserts a repaired state rather than a base failure.",
+      "type": "done_when",
+      "would_change": null
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-only-run-promotes-as-delivered.html:45",
+      "id": "reasoning-1",
+      "reason": "",
+      "text": "\u2014 \u00a71's own \u00a72 row records promotion refusing `commits: none (read-only \u2026)` as \"does not resolve to a commit\". At the base that refusal is reachable only when the run's recorded role is outside `{review, investigate}`: the `commits:` line is otherwise read as an absence declaration and the citation check is skipped. The mechanism therefore exists and is keyed on the recorded role, while the deliverable's own key is \"a run in a read-only sandbox\" \u2014 a key the code does not consult. A node implementing the stated wording adds a parallel sandbox exemption beside the role gate, and the next run with an unrecorded role is refused exactly as before. WOULD_CHANGE_THE_PLAN: yes \u2014 stating that the refusal turns on the run's recorded role sends the repair at the one condition the observation actually demonstrates.",
+      "type": "reasoning",
+      "would_change": null
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-only-run-promotes-as-delivered.html:60",
+      "id": "evidence_paths-1",
+      "reason": "",
+      "text": "\u2014 \u00a75's entire evidence is five timed fresh-process reads in \"a gate log from one job on the `rigel` partition\", compared against a base-revision arm, and the section names no path for either the log or the two arms. A job whose log lands in a node-local directory leaves the section's only measurement unreadable the moment the allocation ends, and the base arm is the half a later reader checks the delta against. WOULD_CHANGE_THE_PLAN: no \u2014 the run directory is durable and the dispatch names the log path there at no cost to the design; I note it because the section is one of four and its measure is the only one whose evidence is a timing that cannot be re-derived from the code.",
+      "type": "evidence_paths",
+      "would_change": null
+    }
+  ],
+  "plan_commit": "",
+  "plan_fingerprint": "fdfac084eb6d2618885ba639415272eca2f9ab840c7b220f4ff29cde22c39526",
+  "plan_slug": "a-read-only-run-promotes-as-delivered",
+  "plan_version": 0,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "874a3927-ba34-4bb1-be65-22fd95326122",
+      "commit": "cb00d30e70593c7ffa02103815ad1551c39a4a3f",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "The plan-after wire is removed; the plan instead informs a-landing-is-recorded-once, whose overview reads one plan's run records, and its sections wait on nothing.",
+      "reason": "",
+      "when": "2026-11-15T08:52:41.193474+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "874a3927-ba34-4bb1-be65-22fd95326122",
+      "commit": "cb00d30e70593c7ffa02103815ad1551c39a4a3f",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a72's cases now replay the four as-delivered manifests kept beside the repaired ones, and the base-revision arm is conditional: if they promote at the base, the node reports the revision that changed it and changes nothing.",
+      "reason": "",
+      "when": "2026-11-15T08:52:44.299935+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "874a3927-ba34-4bb1-be65-22fd95326122",
+      "commit": "cb00d30e70593c7ffa02103815ad1551c39a4a3f",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a72's deliverable is now keyed on the run's recorded role, not its sandbox, and asks the node to name the condition that refused the four runs.",
+      "reason": "",
+      "when": "2026-11-15T08:52:47.450277+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "874a3927-ba34-4bb1-be65-22fd95326122",
+      "commit": "cb00d30e70593c7ffa02103815ad1551c39a4a3f",
+      "commit_basis": "edit",
+      "finding": "evidence_paths-1",
+      "note": "\u00a75 names the log's place: the node's run directory on shared storage, with both arms in one log.",
+      "reason": "",
+      "when": "2026-11-15T08:52:50.797709+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "874a3927-ba34-4bb1-be65-22fd95326122",
+      "commit": "cb00d30e70593c7ffa02103815ad1551c39a4a3f",
+      "commit_basis": "edit",
+      "note": "\u00a72's cases now replay the four as-delivered manifests kept beside the repaired ones, and the base-revision arm is conditional: if they promote at the base, the node reports the revision that changed it and changes nothing.",
+      "reason": "",
+      "when": "2026-11-15T08:52:44.299935+00:00"
+    },
+    "evidence_paths-1": {
+      "action": "acted",
+      "by": "874a3927-ba34-4bb1-be65-22fd95326122",
+      "commit": "cb00d30e70593c7ffa02103815ad1551c39a4a3f",
+      "commit_basis": "edit",
+      "note": "\u00a75 names the log's place: the node's run directory on shared storage, with both arms in one log.",
+      "reason": "",
+      "when": "2026-11-15T08:52:50.797709+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "874a3927-ba34-4bb1-be65-22fd95326122",
+      "commit": "cb00d30e70593c7ffa02103815ad1551c39a4a3f",
+      "commit_basis": "edit",
+      "note": "\u00a72's deliverable is now keyed on the run's recorded role, not its sandbox, and asks the node to name the condition that refused the four runs.",
+      "reason": "",
+      "when": "2026-11-15T08:52:47.450277+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "874a3927-ba34-4bb1-be65-22fd95326122",
+      "commit": "cb00d30e70593c7ffa02103815ad1551c39a4a3f",
+      "commit_basis": "edit",
+      "note": "The plan-after wire is removed; the plan instead informs a-landing-is-recorded-once, whose overview reads one plan's run records, and its sections wait on nothing.",
+      "reason": "",
+      "when": "2026-11-15T08:52:41.193474+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-read-only-run-promotes-as-delivered.v0.at-25a345d2-r-20261115T075053431669-plan-review-of-a.json",
+  "review_run_id": "r-20261115T075053431669-plan-review-of-a-read-only-run-promotes-as-delivered",
+  "reviewed_blob_sha": "25a345d230b5037f33f4ca21413baab30a41c23b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `docs/plans/a-read-costs-what-changed.html` resolves, `rigel` is an up partition, `crew check --review` and the no-commit form of `crew complete` are real surfaces, and the refusal \u00a72 quotes resolves in `reckon/crew/promotion_evidence.py`. The two claims-rubric records \u00a73 asks to copy as fixtures live under the crew home, which this node is refused permission to walk, so they were not opened; \u00a73 is judged on what \u00a73 declares.",
+    "done_when": "a finding \u2014 \u00a72's negative control (line 46) names a red arm the base revision already satisfies, so the section's gate cannot go red as written.",
+    "evidence_paths": "a finding \u2014 \u00a75 names a partition but no durable path for its five timed reads or the log that carries them.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag is carried into code, and the only identifiers present are the plan's own section and followup ids, which are plan data. No changelog prose: each section states the mechanism it delivers.",
+    "reasoning": "a finding \u2014 \u00a72's stated root cause is contradicted by the base code, which already reads `commits: none (\u2026)` as a declaration and refuses a committing run on the same rule, so a node would build a second exemption beside the one that exists.",
+    "single_goal": "pass \u2014 \u00a72, \u00a73, \u00a74 and \u00a75 each name one deliverable; \u00a71's \"defect no longer reproduces\" clause is a fallback on that same deliverable, not a second one.",
+    "wiring": "a finding \u2014 the plan declares `plan-after a-read-costs-what-changed` at line 21, a section-level wait the roadmap follows, while that plan is still active and the sole followup says \u00a72\u2013\u00a75 \"wait on nothing\"."
+  },
+  "section_digests": {
+    "_document": "7f32fc29349a8078f16cb1229291700efec13952724771c28085a1a632256f7a",
+    "s1": "1ac5c3ff651b7f880ad97052b1c7a97f1b684ac58d2345c03e86b901db0aeb6f",
+    "s2": "697ea07c3926fd0b11a269f86dcc0461d5f37eed50d5b3abf3161acafd845e1c",
+    "s3": "93496d13e4c5fdec1c59a0771cf4815bb91a6b1bc1ea0ad624e497da4d5e0c95",
+    "s4": "22b861e472701f960ec0b8c2d2aefabbf203ecab18a2a2b55684f0ae2426a8d0",
+    "s5": "979aff410a33ce026335ae5a752e62889a1afe8f8a6e5dc025efcc8648f60c77"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T08:13:51.601465+00:00",
+  "total": null
+}

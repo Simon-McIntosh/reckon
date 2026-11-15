@@ -1,0 +1,97 @@
+{
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "fails_if": "the second caller keeps the ledger-row refusal; base-race.log shows it does, 5 failed at exit 1.",
+      "location": "tests/test_a_raced_promotion_still_lands.py:255"
+    },
+    {
+      "fails_if": "the reviewed head is not merged; git ancestry is read from the origin, not from a value the test passed in.",
+      "location": "tests/test_a_raced_promotion_still_lands.py:371"
+    },
+    {
+      "fails_if": "the pointer survives the call; control-argument.log reddens this line under the forced-false mutant.",
+      "location": "tests/test_a_raced_promotion_still_lands.py:373"
+    },
+    {
+      "fails_if": "a pending record outlives the landing.",
+      "location": "tests/test_a_raced_promotion_still_lands.py:374"
+    },
+    {
+      "fails_if": "the second call refuses after the pointer is reclaimed; negative-control.log shows 1 failed at this line under the source revert.",
+      "location": "tests/test_a_raced_promotion_still_lands.py:400"
+    },
+    {
+      "fails_if": "nothing on the success path: the guarded assertion at 367 is skipped when second.exception is None, which is the passing case.",
+      "location": "tests/test_a_raced_promotion_still_lands.py:366"
+    }
+  ],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/promotion.py:_remove_promoted_pointer_or_defer",
+    "reckon/crew/promotion.py:_retire_review_pointer",
+    "reckon/crew/promotion.py:_retire_a_raced_pointer",
+    "reckon/crew/pending_landing.py:_release_marked_pointer",
+    "reckon/crew/pending_landing.py:retire_stuck_review_pointers"
+  ],
+  "completed_at": "2026-11-15T08:46:28.909Z",
+  "dispatched_at": "2026-11-15T07:56:53Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/raced-promotion-lands-s11.html",
+      "line": "45",
+      "severity": "non-blocking",
+      "text": "gate-base-importers.aborted.log, kept as 'an earlier attempt of the same arm, aborted by its harness timeout without a summary', ends with a complete summary line '55 failed, 803 passed, 8 errors in 1590.27s' and EXIT=1, and diffing it against gate-head-importers.log shows it is the head arm's run, differing only in pytest temp-dir names, so the file carries a head-revision reading under a header naming revision 63b51b8 and tree base-tree-imp; no measure depends on it, but a reader cannot tell the companion from the head arm."
+    },
+    {
+      "file": "tests/test_a_raced_promotion_still_lands.py",
+      "line": "367",
+      "severity": "non-blocking",
+      "text": "the append-race case's exit-code assertion runs only inside `if second.exception and not isinstance(second.exception, SystemExit)`, so it is skipped when the second call succeeds and also when a refusal arrives as SystemExit, unlike the other four cases which assert `second.exit_code == 0` unconditionally."
+    },
+    {
+      "file": "tests/test_a_raced_promotion_still_lands.py",
+      "line": "222",
+      "severity": "non-blocking",
+      "text": "_the_row_appears_after_the_read chooses which row_for_run calls to hide by the literal caller names `_complete_locked` and `_landing_preconditions` read from sys._getframe; if either function is renamed the case silently stops reaching the append-race branch and still passes."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit; 443e786f88 is the source consolidation and 8cf6206f20 the evidence rewrite.",
+    "done_when": "gate-head.log records 60 passed EXIT=0 at 443e786f88, base-race.log records the head's test file in a base tree as 5 failed EXIT=1, and gate-base.log records 55 passed EXIT=0.",
+    "goal": "the gained commits put the four divergent pointer-retirement guards behind one owner; reckon/crew/pending_landing.py:207-229 adds retire_pointer_if and all four reach it.",
+    "manifest": "read; it reports 60 passed at the head, 55 passed at base, three control arms each reddening one named case.",
+    "write_paths": "git diff d6476cf68cf1..8cf6206f201d touches exactly the four declared paths."
+  },
+  "justifications": {
+    "evidence": "the four gate logs each open with their revision and literal command and end in EXIT=; I recomputed the importer comparison from them and the claim holds.",
+    "goal_fidelity": "reckon/crew/pending_landing.py:207-229 is now the single compare-under-lock-and-retire and reckon/crew/promotion.py:256, 307 and 339 all call it, which is the consolidation the finding asked for."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the gained commits answer this plan's reuse finding (the run's manifest records acting_on_findings dimension-reuse 443e786f88) by putting the four divergent pointer-retirement guards behind one owner; reckon/crew/pending_landing.py:207-229 adds retire_pointer_if and all four reach it.\nVERDICT done_when: the section's done_when names tests/test_a_raced_promotion_still_lands.py; gate-head.log records 60 passed EXIT=0 at 443e786f88, base-race.log records the head's test file in a base tree as 5 failed EXIT=1, and gate-base.log records 55 passed EXIT=0 over the two importer files.\nVERDICT write_paths: the manifest declares reckon/crew/promotion.py, reckon/crew/pending_landing.py, tests/test_a_raced_promotion_still_lands.py and the evidence fragment; git diff d6476cf68cf1..8cf6206f201d touches exactly those four paths.\nVERDICT manifest: read; it reports 60 passed at the head, 55 passed at the base revision, 5 failed for the head's test file carried into a base tree, and three control arms each reddening one named case.\nVERDICT diff: read commit by commit against d6476cf68cf1; 443e786f88 is the source consolidation (three files, +282/-112) and 8cf6206f20 is the evidence paragraph rewrite, and no other file changed.\nCALL_SITES: reckon/crew/promotion.py:_remove_promoted_pointer_or_defer, reckon/crew/promotion.py:_retire_review_pointer, reckon/crew/promotion.py:_retire_a_raced_pointer, reckon/crew/pending_landing.py:_release_marked_pointer, reckon/crew/pending_landing.py:retire_stuck_review_pointers\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/pending_landing.py:207-229 is now the single compare-under-lock-and-retire and reckon/crew/promotion.py:256, 307 and 339 all call it, which is the consolidation the finding asked for.\nSCORE evidence: 17\nJUSTIFICATION evidence: the four gate logs each open with their revision and literal command and end in EXIT=; I recomputed the importer comparison from them; the importer claim holds.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff d6476cf68cf1..8cf6206f201d names four paths and every one is inside the declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_raced_promotion_still_lands.py:367 guards the append-race case's exit code behind `if second.exception and not isinstance(second.exception, SystemExit)`, so it asserts nothing on the success path.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/pending_landing.py:207 puts a generic pointer primitive in the landing module rather than beside runs._pointer_lock and runs.read_pointer which own the pointer, and pointer_attempt at pending_landing.py:202 remains a second name for marked_identity.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/pending_landing.py:207 is the one owner; the surviving unconditional unlinking at reckon/crew/dispatch_claims.py:1176 and reckon/crew/gc.py:1116 remove a run's own path rather than compare-and-retire, so they are a different capability.\nFINDING docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/raced-promotion-lands-s11.html:45 non-blocking: gate-base-importers.aborted.log, kept as 'an earlier attempt of the same arm, aborted by its harness timeout without a summary', ends with a complete summary line '55 failed, 803 passed, 8 errors in 1590.27s' and EXIT=1, and diffing it against gate-head-importers.log shows it is the head arm's run, differing only in pytest temp-dir names, so the file carries a head-revision reading under a header naming revision 63b51b8 and tree base-tree-imp; no measure depends on it, but a reader cannot tell the companion from the head arm.\nFINDING tests/test_a_raced_promotion_still_lands.py:367 non-blocking: the append-race case's exit-code assertion runs only inside `if second.exception and not isinstance(second.exception, SystemExit)`, so it is skipped when the second call succeeds and also when a refusal arrives as SystemExit, unlike the other four cases which assert `second.exit_code == 0` unconditionally.\nFINDING tests/test_a_raced_promotion_still_lands.py:222 non-blocking: _the_row_appears_after_the_read chooses which row_for_run calls to hide by the literal caller names `_complete_locked` and `_landing_preconditions` read from sys._getframe; if either function is renamed the case silently stops reaching the append race branch and still passes.\n",
+  "review_method": "Read-only review of the two commits gained since the record at d6476cf68cf1, read at their shas with git show because this worktree's HEAD predates them. The run's own gate and control logs were re-parsed, the importer comparison recomputed by test id, and ruff check and ruff format --check run over the three staged Python files at the reviewed head; no suite was re-run and no mutation was applied.",
+  "review_run_id": "r-20261115T075300656577-review-of-raced-promotion-lands-s11-8cf6206f201d",
+  "reviewed_base_sha": "d6476cf68cf1d84e140c92ccfc5560ea97ac0ace",
+  "reviewed_commits": [
+    "443e786f88c8a24f5e5f35f87595b582c15009ae",
+    "8cf6206f201d4ad3c0d10acdb2819407ca5aa82e"
+  ],
+  "reviewed_head_sha": "8cf6206f201d4ad3c0d10acdb2819407ca5aa82e",
+  "reviewed_run_id": "r-20261114T174337281611-raced-promotion-lands-s11",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T08:48:52.596164+00:00",
+  "total": 106
+}

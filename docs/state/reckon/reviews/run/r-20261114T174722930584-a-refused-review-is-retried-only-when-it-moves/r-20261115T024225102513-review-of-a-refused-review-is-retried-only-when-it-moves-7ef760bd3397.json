@@ -1,0 +1,32 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T03:34:23.187Z",
+  "dispatched_at": "2026-11-15T02:45:59Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_acceptance.py",
+      "line": 797,
+      "severity": "non-blocking",
+      "text": "_directory_signature closely parallels reckon/crew/obligations.py:2826 _held_directory_signature (a directory listing paired with per-entry file identities) without extending it; the two differ in entry filter (all entries vs *.json) and absence sentinel, so it is a near-variant rather than a fork, and the coordinator may fold the two onto one owner if a shared shape is wanted."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the gained commits repair a review whose remembered no-record verdict outlived the record it was about and a receipt refusal reported twice; reckon/crew/recovery_review_acceptance.py:811 keys the identity on every path the delivery search reads.\nVERDICT done_when: the done_when names tests/test_a_refused_review_is_retried_only_when_it_moves.py and the manifest records its literal gate command; logs/head-node-test.log records 1 search over three sweeps, 2 after the directory moved and 1 station line with 3 passed.\nVERDICT write_paths: the reviewed run's manifest declares three write paths, and every hunk of 4d3ae94dd6 and 7ef760bd33 lies within reckon/crew/recovery_review_acceptance.py, tests/test_a_refused_review_is_retried_only_when_it_moves.py and the node's evidence fragment.\nVERDICT manifest: read; it records status complete, the literal gate command, the two suite arms (55 passed and 58 passed, EXIT=0, zero added failures) and the repair negative control with its two failing ids.\nVERDICT diff: read commit by commit against eec6e60d56; 4d3ae94dd6 widens the identity to the candidate record paths and adds the receipt claim, and 7ef760bd33 adds the evidence paragraphs, all inside the three declared paths.\nCALL_SITES: reckon/crew/station.py:SweepBeat, reckon/crew/resumption.py:2808, reckon/crew/promotion_requests.py:306, reckon/crew/recovery_review_acceptance.py:1342\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_acceptance.py:811 keys the memo on the pointer, the run directory and every candidate record path, so a filed record is a new identity and is promoted.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/head-node-test.log records the 1/2/1 counts at 4d3ae94dd6 and logs/repair-negative-control.log records both new cases failing at eec6e60d56 with EXIT=1.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff of eec6e60d56..7ef760bd33 touches only the three paths the reviewed manifest declares.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_refused_review_is_retried_only_when_it_moves.py lines 313 and 347 both redden at eec6e60d56 and compare against independently derived sweep results, not a value the test passed in.\nSCORE fit: 19\nJUSTIFICATION fit: the helpers at reckon/crew/recovery_review_acceptance.py:781-830 follow the module's lazy-import and file_memo idiom and carry no plan or ticket label.\nSCORE reuse: 16\nJUSTIFICATION reuse: reckon/crew/recovery_review_acceptance.py:811 reuses recovery_review_delivery._review_store_record_paths and file_memo.file_signature, while :797's _directory_signature is a near-variant of the private obligations.py:2826 rather than a fork of a shared owner.\nFINDING reckon/crew/recovery_review_acceptance.py:797 non-blocking: _directory_signature closely parallels obligations.py:2826 _held_directory_signature without extending it, differing in entry filter and absence sentinel.",
+  "review_run_id": "r-20261115T024225102513-review-of-a-refused-review-is-retried-only-when-it-moves-7ef760bd3397",
+  "reviewed_base_sha": "eec6e60d5637c9b8d996ed6272449898945aee3b",
+  "reviewed_head_sha": "7ef760bd3397d9382171bfb8d2ade39958e82568",
+  "reviewed_run_id": "r-20261114T174722930584-a-refused-review-is-retried-only-when-it-moves",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T03:35:01.736491+00:00",
+  "total": 110
+}

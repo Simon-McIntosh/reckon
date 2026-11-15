@@ -1,0 +1,100 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_failure_ids": [
+    "tests/test_overlapping_queued_requests_launch_in_turn.py::test_a_new_dispatch_over_a_queued_claim_queues_then_launches",
+    "tests/test_overlapping_queued_requests_launch_in_turn.py::test_a_new_dispatch_over_a_queued_claim_at_the_session_cap_is_refused",
+    "tests/test_overlapping_queued_requests_launch_in_turn.py::test_a_dispatch_over_a_working_or_starting_claim_is_refused[working]",
+    "tests/test_overlapping_queued_requests_launch_in_turn.py::test_a_dispatch_over_a_working_or_starting_claim_is_refused[starting]",
+    "tests/test_a_held_request_holds_nothing_behind_it.py::test_a_request_held_on_a_peers_claim_holds_nothing_behind_it"
+  ],
+  "after_log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T094551177324-qwnw-queued-requests-wait-only-over-unmergeable-paths/logs/after-arm-selection.log",
+  "assertion_review": [
+    {
+      "condition_for_failure": "Drop the `not runs._claim_paths_share(...)` conjunct at reckon/crew/admission/holds.py:282 and both wide-path requests overlap, so held reads ['r-later'], launched has length one and the launcher records one call; logs/negative-control-s23.log shows exactly that failure against base source.",
+      "lines": "tests/test_a_queued_hold_reads_only_unmergeable_paths.py:76-79"
+    },
+    {
+      "condition_for_failure": "Widen the sharing rule so a plan document shares, and the second request launches instead of being held, so held stops reading ['r-later'] and len(launched) becomes two.",
+      "lines": "tests/test_a_queued_hold_reads_only_unmergeable_paths.py:121-126"
+    },
+    {
+      "condition_for_failure": "Compare the two declared paths for equality rather than the narrower region where they meet, and docs versus docs/plans/plan-a.html stops overlapping, so held becomes empty and runs.read_pointer('r-later')['phase'] leaves queued.",
+      "lines": "tests/test_a_queued_hold_reads_only_unmergeable_paths.py:160-161"
+    }
+  ],
+  "baseline_failure_ids": [
+    "tests/test_overlapping_queued_requests_launch_in_turn.py::test_the_later_request_launches_once_the_earlier_is_promoted",
+    "tests/test_overlapping_queued_requests_launch_in_turn.py::test_a_new_dispatch_over_a_queued_claim_queues_then_launches",
+    "tests/test_overlapping_queued_requests_launch_in_turn.py::test_a_new_dispatch_over_a_queued_claim_at_the_session_cap_is_refused",
+    "tests/test_overlapping_queued_requests_launch_in_turn.py::test_a_dispatch_over_a_working_or_starting_claim_is_refused[working]",
+    "tests/test_overlapping_queued_requests_launch_in_turn.py::test_a_dispatch_over_a_working_or_starting_claim_is_refused[starting]",
+    "tests/test_a_held_request_holds_nothing_behind_it.py::test_a_request_held_on_a_peers_claim_holds_nothing_behind_it"
+  ],
+  "baseline_log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T094551177324-qwnw-queued-requests-wait-only-over-unmergeable-paths/logs/base-arm-clean.log",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/admission/selection.py:admit_once",
+    "reckon/crew/queue_admission.py:_earlier_overlapping_request",
+    "reckon/crew/dispatching/requests.py:_session_older_admissible_request"
+  ],
+  "completed_at": "2026-11-15T13:59:45.992Z",
+  "derivation": "added_failure_ids is the set difference (after arm FAILED ids) minus (baseline arm FAILED ids) read from the two gate logs; the baseline arm logged '6 failed, 12 passed' and the after arm '5 failed, 16 passed', so the difference is empty and the one baseline failure the head fixes is tests/test_overlapping_queued_requests_launch_in_turn.py::test_the_later_request_launches_once_the_earlier_is_promoted.",
+  "dispatched_at": "2026-11-15T13:59:24Z",
+  "findings": [
+    {
+      "severity": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T094551177324-qwnw-queued-requests-wait-only-over-unmergeable-paths/manifest.md",
+      "text": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T094551177324-qwnw-queued-requests-wait-only-over-unmergeable-paths/manifest.md:8 non-blocking: the manifest ends at changed_paths with no tests, test_logs, baseline_suite, after_suite, negative_control_log or landing line, so the node's own report names neither its gate command nor its arm results, and promotion must fall back to the gate logs' own headers."
+    },
+    {
+      "severity": "reckon/crew/admission/holds.py",
+      "text": "reckon/crew/admission/holds.py:229 non-blocking: `_exclusive_shared_paths` re-states the (project, repo) to policy lookup with its own cache that selection.py:401 and verdicts.py:212 already perform in the same admission pass, and selection.py:484 supplies `shared` instead, so the helper serves only the dispatch caller."
+    },
+    {
+      "severity": "reckon/crew/admission/holds.py",
+      "text": "reckon/crew/admission/holds.py:269 non-blocking: the docstring says `shared` is the policy for `second`, while `_earlier_overlapping_request` supplies the judged request's policy at holds.py:334 and the unresolved fallback at holds.py:277 reads `second`'s; the two agree only because a pair is always compared inside one repository."
+    },
+    {
+      "severity": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T094551177324-qwnw-queued-requests-wait-only-over-unmergeable-paths/logs/after-arm-selection.log",
+      "text": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T094551177324-qwnw-queued-requests-wait-only-over-unmergeable-paths/logs/after-arm-selection.log:2 non-blocking: the after arm's header names the worker's worktree as its tree, the base arm's names a /tmp scratch tree, and the run directory holds no all_debug job log, so the done-when clause that the tests run on all_debug was not met."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/admission/selection.py:admit_once, reckon/crew/queue_admission.py:_earlier_overlapping_request, reckon/crew/dispatching/requests.py:_session_older_admissible_request",
+    "diff": "Read all three commits against the base: 57502481055c733cc590fb2f9c522b98dd4f1623 narrows the pre-check, b4bcb3dbc549e87d82509a61b4b7242292c0df10 adds the focused test module and re-targets five existing overlap cases from a source file to a plan document, and 320cca3bfb49e362c7b1505e737b919f06a15f97 adds only the two evidence documents.",
+    "done_when": "Read source prompt.txt:161-167; tests/test_a_queued_hold_reads_only_unmergeable_paths.py:56-79 shows two requests declaring reckon and tests both launched on one pass with two slots, :106-126 shows two declaring one plan document still held in rank order, logs/negative-control-s23.log records the base revision failing test_two_requests_over_wide_source_directories_are_both_admitted and is copied to docs/evidence/fragments/queued-work-needs-no-workaround/s23.html, and the all_debug clause of the measure was not met.",
+    "goal": "Read source prompt.txt:38 and the live section at docs/plans/queued-work-needs-no-workaround.html:307-309; reckon/crew/admission/holds.py:282-286 makes the queued overlap hold only where the two paths meet inside the class runs._claim_paths_share calls exclusive, which is the narrowing the goal asks for.",
+    "manifest": "Read the source manifest.md in full, eight lines totalling 1143 bytes; it states status complete with the three commits and the changed paths and stops there, carrying no tests, test_logs, baseline_suite, after_suite, negative_control_log or landing line.",
+    "write_paths": "Read source prompt.txt:84-89; git diff --stat 281c035950bf811367c61d92909c7089eaa05bba..320cca3bfb49e362c7b1505e737b919f06a15f97 lists seven files, each inside the granted reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround subtrees plus the node's own fragment path."
+  },
+  "justifications": {
+    "durability": "reinstating the base predicate by dropping `and not runs._claim_paths_share(...)` at reckon/crew/admission/holds.py:282 reddens tests/test_a_queued_hold_reads_only_unmergeable_paths.py:76, the exact failure logs/negative-control-s23.log records, while the :121 and :136 guards are reasoned and not demonstrated by any recorded run.",
+    "evidence": "tests/test_a_queued_hold_reads_only_unmergeable_paths.py:76-77 and :121-126 assert both required cases and logs/negative-control-s23.log records the base arm red, yet the delivered manifest.md names no gate command, no arm result and no log path, and no all_debug job log exists in the run directory.",
+    "fit": "reckon/crew/admission/holds.py:229-245 reuses the module's own `_pass_claims` cache idiom, but the docstring at holds.py:269 names a policy subject the call sites do not supply.",
+    "goal_fidelity": "reckon/crew/admission/holds.py:282-286 holds one queued request behind an earlier one only where the two declared paths meet in a region runs._claim_paths_share reads as exclusive, and the plan-document case at tests/test_a_queued_hold_reads_only_unmergeable_paths.py:121 still holds.",
+    "reuse": "the change extends reckon/crew/runs.py:1833 `_claim_paths_share` and :1873 `_shared_write_paths` rather than restating them, and the only added definition, holds.py:229 `_exclusive_shared_paths`, re-states the (project, repo) to policy lookup that selection.py:401 and verdicts.py:212 already perform in the same pass.",
+    "scope_discipline": "every path in the seven-file diff 281c035950bf..320cca3bfb49 is inside the grants at source prompt.txt:84-89, and the two evidence documents are the always-permitted landing fragment and the s23.html the done-when names."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read source prompt.txt:38 and the live section at docs/plans/queued-work-needs-no-workaround.html:307-309; reckon/crew/admission/holds.py:282-286 makes the queued overlap hold only where the two paths meet inside the class runs._claim_paths_share calls exclusive, which is the narrowing the goal asks for.\nVERDICT done_when: Read source prompt.txt:161-167; tests/test_a_queued_hold_reads_only_unmergeable_paths.py:56-79 shows two requests declaring reckon and tests both launched on one pass with two slots, :106-126 shows two declaring one plan document still held in rank order, logs/negative-control-s23.log records the base revision failing test_two_requests_over_wide_source_directories_are_both_admitted and is copied to docs/evidence/fragments/queued-work-needs-no-workaround/s23.html, and the all_debug clause of the measure was not met.\nVERDICT write_paths: Read source prompt.txt:84-89; git diff --stat 281c035950bf811367c61d92909c7089eaa05bba..320cca3bfb49e362c7b1505e737b919f06a15f97 lists seven files, each inside the granted reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround subtrees plus the node's own fragment path.\nVERDICT manifest: Read the source manifest.md in full, eight lines totalling 1143 bytes; it states status complete with the three commits and the changed paths and stops there, carrying no tests, test_logs, baseline_suite, after_suite, negative_control_log or landing line.\nVERDICT diff: Read all three commits against the base: 57502481055c733cc590fb2f9c522b98dd4f1623 narrows the pre-check, b4bcb3dbc549e87d82509a61b4b7242292c0df10 adds the focused test module and re-targets five existing overlap cases from a source file to a plan document, and 320cca3bfb49e362c7b1505e737b919f06a15f97 adds only the two evidence documents.\nCALL_SITES: reckon/crew/admission/selection.py:admit_once, reckon/crew/queue_admission.py:_earlier_overlapping_request, reckon/crew/dispatching/requests.py:_session_older_admissible_request\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/admission/holds.py:282-286 holds one queued request behind an earlier one only where the two declared paths meet in a region runs._claim_paths_share reads as exclusive, and the plan-document case at tests/test_a_queued_hold_reads_only_unmergeable_paths.py:121 still holds.\nSCORE evidence: 13\nJUSTIFICATION evidence: tests/test_a_queued_hold_reads_only_unmergeable_paths.py:76-77 and :121-126 assert both required cases and logs/negative-control-s23.log records the base arm red, yet the delivered manifest.md names no gate command, no arm result and no log path, and no all_debug job log exists in the run directory.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the seven-file diff 281c035950bf..320cca3bfb49 is inside the grants at source prompt.txt:84-89, and the two evidence documents are the always-permitted landing fragment and the s23.html the done-when names.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the base predicate by dropping `and not runs._claim_paths_share(...)` at reckon/crew/admission/holds.py:282 reddens tests/test_a_queued_hold_reads_only_unmergeable_paths.py:76, the exact failure logs/negative-control-s23.log records, while the :121 and :136 guards are reasoned and not demonstrated by any recorded run.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/admission/holds.py:229-245 reuses the module's own `_pass_claims` cache idiom, but the docstring at holds.py:269 names a policy subject the call sites do not supply.\nSCORE reuse: 18\nJUSTIFICATION reuse: the change extends reckon/crew/runs.py:1833 `_claim_paths_share` and :1873 `_shared_write_paths` rather than restating them, and the only added definition, holds.py:229 `_exclusive_shared_paths`, re-states the (project, repo) to policy lookup that selection.py:401 and verdicts.py:212 already perform in the same pass.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T094551177324-qwnw-queued-requests-wait-only-over-unmergeable-paths/manifest.md:8 non-blocking: the manifest ends at changed_paths with no tests, test_logs, baseline_suite, after_suite, negative_control_log or landing line, so the node's own report names neither its gate command nor its arm results, and promotion must fall back to the gate logs' own headers.\nFINDING reckon/crew/admission/holds.py:229 non-blocking: `_exclusive_shared_paths` re-states the (project, repo) to policy lookup with its own cache that selection.py:401 and verdicts.py:212 already perform in the same admission pass, and selection.py:484 supplies `shared` instead, so the helper serves only the dispatch caller.\nFINDING reckon/crew/admission/holds.py:269 non-blocking: the docstring says `shared` is the policy for `second`, while `_earlier_overlapping_request` supplies the judged request's policy at holds.py:334 and the unresolved fallback at holds.py:277 reads `second`'s; the two agree only because a pair is always compared inside one repository.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T094551177324-qwnw-queued-requests-wait-only-over-unmergeable-paths/logs/after-arm-selection.log:2 non-blocking: the after arm's header names the worker's worktree as its tree, the base arm's names a /tmp scratch tree, and the run directory holds no all_debug job log, so the done-when clause that the tests run on all_debug was not met.\n",
+  "review_limits": "Read-only review: no suite was re-run and the node's tree was not modified. The after arm read is b4bcb3dbc549e87d82509a61b4b7242292c0df10, one commit before the reviewed head 320cca3bfb49, whose own diff is the two evidence documents alone; no after-arm log exists at 320cca3 itself. The source manifest is truncated at changed_paths, so its added-failure figure had to be derived from the run's own gate logs rather than read from baseline_suite and after_suite.",
+  "review_run_id": "r-20261115T132212320962-review-of-qwnw-queued-requests-wait-only-over-unmergeable-paths-320cca3bfb49",
+  "reviewed_base_sha": "281c035950bf811367c61d92909c7089eaa05bba",
+  "reviewed_head_sha": "320cca3bfb49e362c7b1505e737b919f06a15f97",
+  "reviewed_run_id": "r-20261115T094551177324-qwnw-queued-requests-wait-only-over-unmergeable-paths",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T14:23:44.395042+00:00",
+  "total": 106
+}

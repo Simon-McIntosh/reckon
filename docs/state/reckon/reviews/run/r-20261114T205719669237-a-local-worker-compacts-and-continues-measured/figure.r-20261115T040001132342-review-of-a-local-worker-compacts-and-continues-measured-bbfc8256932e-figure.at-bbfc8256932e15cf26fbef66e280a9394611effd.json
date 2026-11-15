@@ -1,0 +1,81 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "caption_note": "The fragment's figcaption states what closed and open marks mean and that the dotted line is the declared usable window of 230 144 tokens, so it explains the figure rather than repeating its title; no caption finding is recorded.",
+  "completed_at": "2026-11-15T04:31:28.329Z",
+  "dispatched_at": "2026-11-15T04:05:26Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-local-worker-compacts-and-continues-measured",
+      "recorded_at": "2026-11-15T06:20:02.943059+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "a-local-worker-compacts-and-continues-measured",
+      "recorded_at": "2026-11-15T06:20:05.998885+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "a-local-worker-compacts-and-continues-measured",
+      "recorded_at": "2026-11-15T06:20:09.656419+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured/compaction-drops.svg",
+      "id": "f7551bf7391",
+      "line": null,
+      "severity": "blocking",
+      "summary": "The rendered figure carries no text at all, so neither axis states what it measures and no value can be read off it. Measured on the attached PNG: zero non-white pixels above y=85, below y=600 and left of x=141 out of 1,007,280, while the four y-axis tick marks at y=156/264/372/480 and the five x-axis tick marks at x=149/437/724/1012/1300 are drawn. The y axis is therefore an unlabelled token scale with no unit and no numbers, the x axis an unlabelled record-index scale with no numbers, and there is no title and no legend. A reader sees six blue drops below a dotted line and nothing that converts the picture into context sizes, window fractions, boundary identity or even which mark is the before value. That is the defect this item reserves blocking for: unreadable text and data the figure does not let a reader read. Whether the labels were never drawn or were drawn and failed to rasterize cannot be settled from the PNG alone, and that distinction matters here: the fragment embeds the SVG rather than this PNG, so if the source carries correct 16 pt labels the page a reader opens is sound and the loss is in the render path. It is recorded as blocking against the delivered image, which is what this review is instructed to judge."
+    },
+    {
+      "disposition": "folded",
+      "disposition_note": "folded into the node that owns docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured/",
+      "file": "docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured/compaction-drops.svg",
+      "id": "f7551bf7391",
+      "line": null,
+      "severity": "non-blocking",
+      "summary": "The last two boundaries' marks overlap. Their stems sit at x=1269.5 and x=1259.5, 10.0 px apart, while a marker is about 9-10 px across, so the filled heads meet at y=139 and y=151 and the open feet meet at y=542 and y=549. At the 1399 px review size the pair is still separable under magnification, but rendered into a roughly 900 px reckon column the two collapse into one mark, and with no x-axis labels there is nothing else on the figure that tells a reader six compactions occurred rather than five. Widening the plot range is the natural repair and is the same change the next finding asks for."
+    },
+    {
+      "file": "docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured/compaction-drops.svg",
+      "id": "f7551bf7391",
+      "line": null,
+      "severity": "non-blocking",
+      "summary": "Three quarters of the canvas is empty. The x axis runs the full stream position to about 8000 records (ticks at x=149, 437, 724, 1012 and 1300) while all six compactions fall between records 6060 and 7788, so the data occupy x=1020 to x=1270 and 871 px of plot width to their left carry no mark. The same holds vertically: the plotted marks span y=139 to y=549 inside a 0-230144 token scale, leaving the lower fifth of the axis under the smallest post-compaction value of about 21000 tokens. The figure still shows the shape it must show, so this does not hold the node, but an x range bounded to the compactions themselves would let the six drops separate instead of crowding into the right fifth."
+    }
+  ],
+  "item_verdicts": {
+    "contrast": "pass as far as this item can be assessed \u2014 the render contains no text pixels at all, so no text can be found failing its background. The marks that are drawn do clear the floor: the data blue rgb(47,111,191) measures 5.06:1 against white and the dotted window reference rgb(146,146,146) measures 3.11:1. The absence of all text is the defect recorded under legibility, not a contrast defect, and the pale 2 px ticks at rgb(173,173,173) are ticks rather than text.",
+    "data_ink": "pass \u2014 9,132 non-white pixels of 1,007,280, and essentially all of that ink is the data itself: six blue rgb(47,111,191) stems with a filled head and an open foot, plus one grey rgb(146,146,146) dotted reference at y=90-91. No bar fill, band, shaded region or area is drawn, so nothing but the data and its reference line carries ink. The plot area is however only 22 percent used, recorded as a separate non-blocking finding rather than counted against this item.",
+    "decoration": "pass \u2014 the background is pure white rgb(255,255,255) for 997,915 of 1,007,280 pixels (99.07 percent); the image holds 44 distinct colours, all of them anti-aliasing blends of white, the one data blue and two greys, so no gradient, texture or embedded raster is present; and no row or column carries more than 50 percent mid-grey coverage, so there are no gridlines and no background fill; a top and right spine are absent.",
+    "label_collision": "pass on this item as written \u2014 0 pixels of ink sit on the outermost 85 rows, the 120 rows below the axes and the 141 columns left of the axes, so no label is clipped at the canvas edge and no label overlaps another label or the data. No label is present to collide, which is the legibility defect rather than a collision. A separate mark-level defect is recorded as a non-blocking finding: the last two stems' markers sit 10.0 px apart and overlap.",
+    "legibility": "defect \u2014 the render carries no text at all. Measured on the PNG: 0 non-white pixels above y=85, 0 below y=600, 0 left of x=141 and 12 right of x=1310, out of 1,007,280 pixels, so the canvas has no title, no y-axis tick labels, no y-axis title, no x-axis tick labels, no x-axis title and no legend. The y axis draws four 2 px tick marks at y=156, 264, 372 and 480 (50 000-token steps on the 0-at-y=589 scale) and the x axis five 2 px ticks at x=149, 437, 724, 1012 and 1300, but neither carries a number or a unit. A reader therefore cannot read a context size, cannot identify which compaction a stem is, and cannot know that a filled mark is the size before the boundary and an open mark the size after it except by reading the caption. The six stems at x=1021, 1080, 1183.5, 1232.5, 1259.5 and 1269.5 sit in the right 22 percent of a plot 1151 px wide with no label tying any of them to a boundary.",
+    "table_form": "pass \u2014 the image is a dumbbell plot of six before/after pairs against a declared threshold, and the reading it exists to support (every drop lands about 25 000 tokens short of the window, and every drop has the same depth) is a shape rather than scalar values; the fragment already carries the same numbers in a boundary table, and this image does not duplicate a table's job."
+  },
+  "item_verdicts_note": "verdicts measured on the attached PNG only",
+  "notes": "Read-only figure review of the single PNG named in this review. Only that PNG was opened, together with crops and pixel measurements taken from it; no SVG and no other image was read, and no file was edited, created, moved, deleted, redrawn, relabelled or reformatted. No suite ran, so added_failure_count is 0 with an empty id list. The reviewed head bbfc8256932e15cf26fbef66e280a9394611effd is not an ancestor of this worktree's HEAD, which is expected for an unmerged run head; the figure's repository path and the fragment's caption were read at that commit with git show.",
+  "project": "reckon",
+  "review_run_id": "r-20261115T040001132342-review-of-a-local-worker-compacts-and-continues-measured-bbfc8256932e-figure",
+  "reviewed_base_sha": "c1268f5d6ca969807f57b5f1b75fd29cbb4fab2d",
+  "reviewed_commits": [
+    "bbfc8256932e15cf26fbef66e280a9394611effd"
+  ],
+  "reviewed_figures": [
+    {
+      "drawing_script": null,
+      "drawing_script_note": "the reviewed commit adds only the SVG and the fragment, so no script in the run's diff draws this figure; findings anchor to the figure's repository path with a null line",
+      "image": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T040001132342-review-of-a-local-worker-compacts-and-continues-measured-bbfc8256932e-figure/image-0.png",
+      "pixels": "1399x720",
+      "rendered_from": "docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured/compaction-drops.svg"
+    }
+  ],
+  "reviewed_head_sha": "bbfc8256932e15cf26fbef66e280a9394611effd",
+  "reviewed_run_id": "r-20261114T205719669237-a-local-worker-compacts-and-continues-measured",
+  "rubric": "figure",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T05:20:00Z",
+  "total": null
+}

@@ -271,8 +271,8 @@ Remedies, the carrier rules and the `--brief` contract are in
 
 ```text
 reckon crew attach --run <id> --task <task-id>
-reckon crew budget --lift --group <group> (--multiple <m> | --drain-by <time> | --uncapped) [--global | --session <id>] [--from <time>] [--until reset|<iso>|<duration>] [--clock seven_day|five_hour] --reason <why> [--pretty]
-reckon crew budget --lift --clear --group <group> [--session <id>] [--id <lift>]
+reckon crew budget --lift --group <group> (--multiple <m> | --drain-by <time> | --uncapped) [--global | --session <id> | --for-project <name>] [--from <time>] [--until reset|<iso>|<duration>] [--clock seven_day|five_hour] --reason <why> [--pretty]
+reckon crew budget --lift --clear --group <group> [--session <id> | --for-project <name>] [--id <lift>]
 reckon crew budget --list [--group <group>] [--pretty]
 reckon crew check --manifest --run <id>    reckon crew check --review (--run <id> | --record <path>)
 reckon crew census [--apply]    # Lists reckon processes whose recorded owner is dead; with --apply, stops exactly those, printing each.
@@ -549,8 +549,13 @@ or departed), and `seat moved` (the producer moved to another node).
 
 **The counters**:
 
-- `w`: live workers: runs dispatched, starting or running, review runs
-  included. Your session is doing work while this is above zero.
+- `w`: live implementation work: runs dispatched, starting or running, apart
+  from review runs, and including a delivered run whose review sent it back to
+  a repair round that is running now. Your session is doing work while this is
+  above zero.
+- `r`: live review work: review runs dispatched, starting or running. Read it
+  beside `w`, so a session whose only live run is a review reads as reviewing
+  rather than as idle.
 - `n`: needs you: runs stopped on your move. Read `crew view obligations` for
   the command each one needs.
 - `d`: delivered and not yet landed. A delivered run must not sit: promote and
@@ -743,10 +748,17 @@ target time instead and spreads the remaining budget evenly from the utilisation
 recorded at grant to 100% at the target, clamped to the window's reset;
 `--uncapped` removes the pace hold for the scope. All three release the three
 reserves for the group, so it may spend its whole window, and all three end by
-themselves. Scope is `--global` (the default) or `--session <id>`: a global lift
-applies to every coordinator, a session lift only to dispatches whose
-`--session` matches, and where both apply the session lift governs its own
-session. A lift may start later with `--from <time>`, inert until then. The
+themselves. Scope is `--global` (the default), `--for-project <name>` (repeatable), or
+`--session <id>`. A project lift covers every dispatch of that project,
+including future sessions; a session lift covers only that session. The most
+specific scope governs: session over project over global, regardless of grant
+order. Naming several projects writes one independent `project:<name>` record
+per project with the same reason. For example, a request to lift 10,000 credits
+for one project becomes `reckon crew budget --lift --group <group>
+--for-project <name> --credits 10000 --reason "<why>"`. The credit cap measures
+account balance drawn since grant across all sessions, and each lift row reaches
+only its project's panes. A lift may start later with `--from <time>`, inert
+until then. The
 grant is refused inside a fenced worker, whose environment names its run, so a
 worker cannot lift its own budget; the `--reason` is recorded verbatim; and a
 multiple must exceed the configured one and not exceed `budget.lift.max_multiple`.
@@ -758,7 +770,8 @@ run by a process: the clock's reset is observed (the reading's `resets_at` moves
 or utilisation falls below the figure recorded at grant); the stated end time is
 reached; the hard ceiling `granted_at + budget.lift.max_hours` is passed; or it is
 cleared. `reckon crew budget --lift --clear --group <group>` revokes the group's
-governing lift, `--session <id>` names a session's lift to clear, and `--id
+governing lift, `--for-project <name>` clears that project's lift without
+affecting other projects, `--session <id>` names a session's lift to clear, and `--id
 <lift>` revokes one exact record, refusing an id whose lift belongs to another
 group. `reckon crew budget --list [--group <group>]` lists active and recent
 lifts as JSON, newest first; ended lifts are kept as history.

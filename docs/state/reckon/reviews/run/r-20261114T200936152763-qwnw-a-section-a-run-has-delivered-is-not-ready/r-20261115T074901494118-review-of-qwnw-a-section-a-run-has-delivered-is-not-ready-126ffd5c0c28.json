@@ -1,0 +1,87 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/roadmap.py:_build_roadmap",
+    "reckon/crew/plan_review.py:section_readiness_rows",
+    "reckon/crew/admission/readiness.py",
+    "reckon/crew/dispatch_batch.py:_queue_batch"
+  ],
+  "completed_at": "2026-11-15T08:29:28.231Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "qwnw-a-section-a-run-has-delivered-is-not-ready",
+      "recorded_at": "2026-11-15T08:41:25.237107+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-15T07:50:36Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "qwnw-a-section-a-run-has-delivered-is-not-ready",
+      "recorded_at": "2026-11-15T08:41:28.680472+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/section_holds.py",
+      "line": 185,
+      "severity": "blocking",
+      "text": "the promoted-history feed keeps only rows whose gate equals _PROMOTED_GATE \"passed\" (:56), but every row ledger.picker_runs returns is a completed promotion and the declared gate vocabulary is passed/failed/not-run (reckon/ledger.py:92); the reckon ledger carries 212 implement/test rows with gate \"not-run\" and 146 with \"failed\", so a section whose node such a row delivered still reads ready and can be dispatched again, which is the duplicate this section exists to prevent, and the unlanded-run finding at reckon/roadmap.py:1948 sees the same narrowed set"
+    },
+    {
+      "file": "reckon/crew/section_holds.py",
+      "line": 170,
+      "severity": "non-blocking",
+      "text": "a node that appears in a released-phase pointer is added to free and is not removed when the same node is later matched by a promoted row, while held_section_blockers skips any section with any free node (:223); a delivered node that was re-requested by a run that then failed, which is what the pre-fix duplicate dispatch produced, therefore leaves its section listed ready despite the promoted row holding it"
+    },
+    {
+      "file": "reckon/crew/section_holds.py",
+      "line": 254,
+      "severity": "non-blocking",
+      "text": "section_nodes has no caller anywhere in reckon/ or tests/, and the evidence record cites it as a delivered site, so it is dead public surface rather than part of the hold"
+    },
+    {
+      "file": "reckon/crew/section_holds.py",
+      "line": 79,
+      "severity": "non-blocking",
+      "text": "_promoted_rows hand-rolls a module-level memo keyed on a (mtime_ns, size) pair and hands callers the cached list itself, duplicating reckon/file_memo.py, which the repository declares as its one stat-identity memo, and the ledger's own indexed read at reckon/ledger.py:2222, while dropping file_memo's returned-copy protection"
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "pass \u2014 read commit by commit from 34e8cf65b5 to 126ffd5c0c; five files, all inside the declared scope, carrying the code, the wiring, the tests and the evidence record.",
+    "done_when": "pass \u2014 the three done-when clauses are asserted by tests/test_a_section_a_run_has_delivered_is_not_ready.py and both suite arms plus the negative control are recorded with their logs.",
+    "goal": "pass \u2014 the goal is that a section a run has delivered is not ready; reckon/crew/section_holds.py:206 answers readiness from both run records and reckon/roadmap.py:3781 folds it into named_holds, though only for promoted rows whose gate is passed.",
+    "manifest": "pass \u2014 read; it states the node module 5 passed EXIT=0 at 9fbee6c469, both suite arms 55 passed, and the negative control 4 failed, 1 passed EXIT=1 at 34e8cf65b5.",
+    "write_paths": "pass \u2014 every diff path is inside the coordinator-widened scope recorded in the source manifest (reckon/, tests/, skills/, docs/evidence/fragments/queued-work-needs-no-workaround/)."
+  },
+  "justifications": {
+    "durability": "tests/test_a_section_a_run_has_delivered_is_not_ready.py:212 fails if the live-pointer hold regresses, but no added assertion seeds a promoted row with gate \"not-run\", so the filter at reckon/crew/section_holds.py:185 is unguarded.",
+    "evidence": "tests/test_a_section_a_run_has_delivered_is_not_ready.py:194 asserts the promoted section leaves ready_sections and :239 asserts the batch answer is held, with the logs recording 5 passed and EXIT=0 at revision 9fbee6c469.",
+    "fit": "reckon/crew/section_holds.py follows the surrounding lazy-import style of reckon/roadmap.py:3746, but the RUN_HOLD kind (:28) is declared away from its siblings GATE_BLOCKER and RUN_BLOCKED in reckon/live_run_classification.py:27.",
+    "goal_fidelity": "reckon/crew/section_holds.py:185 holds only promoted rows whose gate is \"passed\", so the hold the goal states for a promoted run is absent for every other promoted row.",
+    "reuse": "the hold itself extends no existing owner, because none answers a per-section promoted history, but the memo at reckon/crew/section_holds.py:79 duplicates reckon/file_memo.py and the ledger's indexed read at reckon/ledger.py:2222.",
+    "scope_discipline": "every path in the diff (reckon/crew/section_holds.py, reckon/roadmap.py, reckon/crew/dispatch_batch.py, tests/test_a_section_a_run_has_delivered_is_not_ready.py, docs/evidence/fragments/queued-work-needs-no-workaround/) is inside the scope the coordinator widened for the retry and recorded in the source manifest."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: pass \u2014 the goal is that a section a run has delivered is not ready; section_holds.held_section_blockers answers it from both run records and roadmap.py:3781 folds it into named_holds, though only for promoted rows whose gate is passed.\nVERDICT done_when: pass \u2014 the three done-when clauses are asserted by tests/test_a_section_a_run_has_delivered_is_not_ready.py and both arms plus the negative control are recorded with their logs.\nVERDICT write_paths: pass \u2014 every diff path is inside the coordinator-widened scope recorded in the source manifest (reckon/, tests/, skills/, docs/evidence/fragments/queued-work-needs-no-workaround/).\nVERDICT manifest: pass \u2014 read; it states the node module 5 passed EXIT=0 at 9fbee6c469, both suite arms 55 passed, and the negative control 4 failed, 1 passed EXIT=1 at 34e8cf65b5.\nVERDICT diff: pass \u2014 read commit by commit from 34e8cf65b5 to 126ffd5c0c; five files, all inside the declared scope, carrying the code, the wiring, the tests and the evidence record.\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: reckon/crew/section_holds.py:185 holds only promoted rows whose gate is \"passed\", so the hold the goal states for a promoted run is absent for every other promoted row.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_section_a_run_has_delivered_is_not_ready.py:194 asserts the promoted section leaves ready_sections and :239 asserts the batch answer is held, with the logs recording 5 passed and EXIT=0.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in the diff is inside the widened scope the coordinator recorded in the source manifest.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_section_a_run_has_delivered_is_not_ready.py:212 fails if the live-pointer hold regresses, but no assertion seeds a promoted row with gate \"not-run\", so the filter at reckon/crew/section_holds.py:185 is unguarded.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/section_holds.py follows the surrounding lazy-import style of reckon/roadmap.py:3746, but the RUN_HOLD kind (:28) is declared away from its siblings in reckon/live_run_classification.py:27.\nSCORE reuse: 5\nJUSTIFICATION reuse: the hold extends no existing owner because none answers a per-section promoted history, but the memo at reckon/crew/section_holds.py:79 duplicates reckon/file_memo.py.\nFINDING reckon/crew/section_holds.py:185 blocking: the promoted-history feed keeps only rows whose gate equals _PROMOTED_GATE \"passed\" (:56), but every row ledger.picker_runs returns is a completed promotion and the gate vocabulary is passed/failed/not-run (reckon/ledger.py:92).\nFINDING reckon/crew/section_holds.py:170 non-blocking: a node that appears in a released-phase pointer stays in free even when a promoted row holds the same node, and held_section_blockers skips any section with a free node (:223).\nFINDING reckon/crew/section_holds.py:254 non-blocking: section_nodes has no caller anywhere in reckon/ or tests/, and the evidence record cites it as a delivered site.\nFINDING reckon/crew/section_holds.py:79 non-blocking: _promoted_rows hand-rolls a stat-keyed module memo that duplicates reckon/file_memo.py and the ledger's indexed read at reckon/ledger.py:2222.\nReviewed base: 34e8cf65b53bd57225fc6acbf74230a493a3527e\nReviewed head: 126ffd5c0c28b28651f22eb215a12f621ed29a22\n",
+  "review_run_id": "r-20261115T074901494118-review-of-qwnw-a-section-a-run-has-delivered-is-not-ready-126ffd5c0c28",
+  "reviewed_base_sha": "34e8cf65b53bd57225fc6acbf74230a493a3527e",
+  "reviewed_head_sha": "126ffd5c0c28b28651f22eb215a12f621ed29a22",
+  "reviewed_run_id": "r-20261114T200936152763-qwnw-a-section-a-run-has-delivered-is-not-ready",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 13,
+    "reuse": 5,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T08:33:27.771093+00:00",
+  "total": 84
+}

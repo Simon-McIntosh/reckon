@@ -7,6 +7,7 @@ import json
 import re
 import time
 from contextvars import ContextVar
+from fnmatch import fnmatchcase
 from pathlib import Path
 from typing import Any, Callable, Iterator, Mapping, Sequence
 
@@ -345,7 +346,29 @@ def _worktree_head_identity(tree: Path | None) -> str:
     return "|".join(parts)
 
 
-def _own_review_record_exists(record: Mapping[str, Any]) -> bool:
+def _own_staging_records(names: Sequence[str], run_id: str) -> tuple[bool, list[str]]:
+    """Whether one of ``names`` is this run's own record, and its revision copies.
+
+    The names come from the store index's per-run map, so the pass costs the
+    run's record count and never the store's. ``{run_id}.json`` is the run's one
+    record and ``{run_id}.at-<sha>.json`` its revision-keyed copies.
+    """
+    exact = f"{run_id}.json"
+    revision_pattern = f"{run_id}.at-*.json"
+    present = False
+    revisions: list[str] = []
+    for name in names:
+        if name == exact:
+            present = True
+        elif fnmatchcase(name, revision_pattern):
+            present = True
+            revisions.append(name)
+    return present, revisions
+
+
+def _own_review_record_exists(
+    record: Mapping[str, Any], *, names: list[str] | None = None
+) -> bool:
     """Whether the store holds a record at one of this run's own paths.
 
     The distinction decides what a memo may serve: a run with its own file is
@@ -353,12 +376,20 @@ def _own_review_record_exists(record: Mapping[str, Any]) -> bool:
     listing of the whole store for a record filed under another run's id. Only
     the first of those is keyed on the run's own paths, so only the first may be
     served from a memo without a store-wide identity behind it.
+
+    A staging store answers from its index's per-run map, so the check costs the
+    run's own records and not the store's size. A directory that keeps no index
+    is listed, and that listing is the one the paragraph above describes.
     """
     project = str(record.get("project") or "")
     run_id = str(record.get("run_id") or "")
     if not project or not run_id:
         return False
     directory = review_module.review_store_root() / project
+    if names is None:
+        names = review_run_record_names(directory, run_id)
+    if names is not None:
+        return _own_staging_records(names, run_id)[0]
     if _record_exists(directory / f"{run_id}.json"):
         return True
     try:
@@ -419,16 +450,36 @@ def _review_input_identities(record: Mapping[str, Any]) -> dict[str, str]:
                 identities[str(path)] = _file_identity(path)
                 committed_record_exists = True
     directory = review_module.review_store_root() / project
-    snapshot = _tick_store(directory)
-    # A tick knows every candidate's identity. Another run's atomic write
-    # therefore cannot invalidate this run merely by moving the shared directory.
-    identities[str(directory)] = (
-        "tick-snapshot" if snapshot is not None else _directory_identity(directory)
-    )
+    # A staging store's index answers this run's own record names without a
+    # listing, so one pointer costs its own records and never the store's size.
+    # A directory that keeps no index is read through its listing, as before.
+    run_names = review_run_record_names(directory, run_id)
+    if run_names is not None:
+        snapshot = None
+        own_record_present, revision_names = _own_staging_records(run_names, run_id)
+        staging_candidates = [directory / name for name in revision_names]
+        # The index already names this run's candidates, so the shared
+        # directory's identity stands in as a snapshot: another run's write
+        # moves the document, and this run's own candidates carry its change.
+        identities[str(directory)] = "tick-snapshot"
+    else:
+        snapshot = _tick_store(directory)
+        own_record_present = _own_review_record_exists(record)
+        staging_candidates = []
+        with contextlib.suppress(OSError):
+            staging_candidates.extend(
+                sorted(_store_paths(directory, f"{run_id}.at-*.json"))
+            )
+        # A tick knows every candidate's identity. Another run's atomic write
+        # therefore cannot invalidate this run merely by moving the shared
+        # directory.
+        identities[str(directory)] = (
+            "tick-snapshot" if snapshot is not None else _directory_identity(directory)
+        )
     # A run whose record is committed is answered from the committed tree before
     # any staging file is consulted, so its own record exists and no store-wide
     # staging search runs — the same settling the staging check makes alone.
-    own_record_exists = committed_record_exists or _own_review_record_exists(record)
+    own_record_exists = committed_record_exists or own_record_present
     # Whether the run has a record at one of its own paths is part of the key
     # rather than a note beside it: a run with none is answered by listing the
     # whole store, so the appearance of its own file is what moves that answer
@@ -437,9 +488,7 @@ def _review_input_identities(record: Mapping[str, Any]) -> dict[str, str]:
     identities[f"own-review-record:{run_id}"] = (
         "present" if own_record_exists else "absent"
     )
-    candidates = [directory / f"{run_id}.json"]
-    with contextlib.suppress(OSError):
-        candidates.extend(sorted(_store_paths(directory, f"{run_id}.at-*.json")))
+    candidates = [directory / f"{run_id}.json", *staging_candidates]
     if snapshot is not None or not own_record_exists:
         candidates.extend(_misfiled_review_candidates(record))
     for path in candidates:
@@ -884,5 +933,6 @@ from .review_records import (  # noqa: E402
     _record_identity,
     _store_paths,
     _tick_store,
+    review_run_record_names,
     review_store_tick,
 )

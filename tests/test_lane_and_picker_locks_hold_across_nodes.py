@@ -11,12 +11,8 @@ refresh fetches.
 from __future__ import annotations
 
 import json
-import subprocess
-import sys
 import threading
 import time
-from collections.abc import Iterator
-from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -24,47 +20,7 @@ import pytest
 
 from reckon.crew import model_catalogue
 from reckon.crew.picker import outcomes
-
-READY = "ready"
-
-
-@contextmanager
-def _record_lock_holder(lock_path: Path) -> Iterator[subprocess.Popen[str]]:
-    """Hold ``lock_path`` in a second process with a POSIX record lock only.
-
-    ``flock`` is deliberately not taken: the holder stands in for a process on
-    another node, which is the case ``flock`` cannot see.
-    """
-    lock_path.parent.mkdir(parents=True, exist_ok=True)
-    script = (
-        "import fcntl,sys\n"
-        "handle=open(sys.argv[1],'a+b')\n"
-        "fcntl.lockf(handle.fileno(), fcntl.LOCK_EX)\n"
-        "sys.stdout.write('ready\\n')\n"
-        "sys.stdout.flush()\n"
-        "sys.stdin.readline()\n"
-    )
-    process = subprocess.Popen(
-        [sys.executable, "-c", script, str(lock_path)],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        text=True,
-    )
-    try:
-        assert process.stdout is not None
-        assert process.stdin is not None
-        assert process.stdout.readline().strip() == READY, (
-            "holder failed to take the lock"
-        )
-        yield process
-    finally:
-        if process.poll() is None:
-            try:
-                process.stdin.write("\n")
-                process.stdin.flush()
-            except (BrokenPipeError, ValueError):
-                pass
-        process.wait(timeout=60)
+from tests.cross_node_lock_holder import record_lock_held_elsewhere
 
 
 def _log_lines(path: Path) -> list[str]:
@@ -97,7 +53,7 @@ def test_a_hold_waits_for_a_record_lock_holder_on_another_node(
             )
         )
 
-    with _record_lock_holder(lock_path) as holder:
+    with record_lock_held_elsewhere(lock_path) as holder:
         assert holder.poll() is None, "the holder exited early"
         worker = threading.Thread(target=record, daemon=True)
         worker.start()
@@ -145,7 +101,7 @@ def test_a_refresh_reads_the_snapshot_while_a_record_lock_is_held(
 
     lock_path = model_catalogue._root() / "refresh.lock"
 
-    with _record_lock_holder(lock_path):
+    with record_lock_held_elsewhere(lock_path):
         during = model_catalogue.check_model_catalogue(
             "sample", config=config, fetch=fetch, force=True
         )

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s58">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="passed">
+  <title>An unchanged mount registry is resolved once</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+
+<article class="r-note" id="an-unchanged-mount-registry-is-resolved-once-landing" data-node="an-unchanged-mount-registry-is-resolved-once" data-reckon="landed" data-when="2026-11-15">
+  <h2>The registry is parsed and its paths resolved once per stat identity</h2>
+
+  <p id="an-unchanged-mount-registry-is-resolved-once-what"><strong>What landed.</strong> <code>reckon.flight.mounted_project_docs</code> now reads the registry through <code>file_memo.memoized("mounts_registry", mounts_file, read)</code>, so the JSON parse and the <code>Path.resolve</code> on every mount entry happen once for as long as the file's stat identity holds. An unchanged <code>mounts.json</code> costs one <code>os.stat</code> per ask; a rewritten one moves that identity and is parsed again on the next call. The fallbacks are unchanged: an absent registry returns no mounts, and invalid data still fails closed naming the offending entry. Every caller of the function inherits the reuse, which matters because each project's docs root and its flight layer path are reached through it.</p>
+
+  <p id="an-unchanged-mount-registry-is-resolved-once-cost"><strong>What it cost.</strong> The station tick resolves one project per reviewed plan, and <code>flight.resolve</code> reached the registry through <code>project_config_path</code> → <code>_project_docs_root</code> → <code>mounted_project_docs</code> on every call. The live profile that motivated the section put 17.7 per cent of the station tick's main thread under <code>flight.resolve</code>, of which 12.8 per cent is that chain — a parse of the whole registry and a <code>realpath</code>, <code>isdir</code> and <code>exists</code> per mount on GPFS, for a registry that does not change between asks.</p>
+
+  <p id="an-unchanged-mount-registry-is-resolved-once-gate"><strong>Gate.</strong> <code>tests/test_an_unchanged_mount_registry_is_resolved_once.py</code> writes a three-project registry into a temporary configuration home and calls <code>flight.resolve</code> 50 times for each project. Recording stand-ins count reads of the registry file itself and <code>Path.resolve</code> calls whose path is one of the registry's own entries, so a stand-in that never fired reads zero rather than passing as reuse. Every resolution is also compared with the same project resolved directly by the docs root the registry names, so a memo that served a stale path would fail on the value and not only on the count.</p>
+
+  <p id="an-unchanged-mount-registry-is-resolved-once-rewrite"><strong>A rewritten registry is read again.</strong> The second case rewrites the file to drop one project and asserts the next call parses it afresh — two reads, five resolves — then resolves the dropped project through the same state-root fallback it had at base, and compares that result with the same layer resolved directly by the fallback path.</p>
+
+  <p id="an-unchanged-mount-registry-is-resolved-once-counts"><strong>The two counts.</strong> At the head revision 150 resolutions read the registry <strong>1</strong> time and resolve <strong>3</strong> entries. At the base revision (<code>7997d712f6</code>) the same case reads it <strong>150</strong> times, which is the declared negative control: one read per call, three resolves per read.</p>
+
+  <p id="an-unchanged-mount-registry-is-resolved-once-arms"><strong>Matched arms.</strong> Two arms ran as <code>all_debug</code> partition jobs, each in a scratch extraction of its own revision, and each log opens with its revision and literal command and ends in its own <code>EXIT=</code>. The base arm (<code>7997d712f6</code>) runs the two suite files the brief names: <strong>55 passed</strong>, <code>EXIT=0</code>. The after arm (<code>da4afea0ff</code>) runs those two plus this node's case: <strong>57 passed</strong>, <code>EXIT=0</code>. The extra two passes are this node's case; no arm reports a <code>FAILED</code> id. The scratch tree carries its own one-commit repository over the extracted files, because <code>test_staged_write_inventory</code> reads the tree through <code>git ls-tree HEAD</code> and an extraction has no metadata to answer with.</p>
+</article>
+
+</body>
+</html>

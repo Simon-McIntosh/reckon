@@ -1,0 +1,85 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T130437366857-wftl-admission-never-holds-on-an-unowned-crew-home-claim-codex/after-suite.log",
+  "after_log_revision": "ff699b1d32fca3d826f00caf2fe2fb8baa365c30",
+  "assertion_review": [
+    {
+      "condition_for_failure": "Fixture crew home is accidentally under the temporary repository; this is isolation evidence, not repair coverage.",
+      "lines": "tests/test_unowned_crew_home_claim_admission.py:48"
+    },
+    {
+      "condition_for_failure": "Reinstate the base external-path refusal: verdict becomes held-on-claim, launched IDs empty, launch callback uncalled and pointer remains queued; the home case is recorded failing at line 64.",
+      "lines": "tests/test_unowned_crew_home_claim_admission.py:64-67"
+    },
+    {
+      "condition_for_failure": "Ignore all claims under crew home or repository exclusivity: verdict changes to launched and named holder disappears.",
+      "lines": "tests/test_unowned_crew_home_claim_admission.py:86-87"
+    },
+    {
+      "condition_for_failure": "Report no collision path, another collision path, or incorrect normalization; this checks diagnostic identity from fixture input and is not relied on as independent admission-policy coverage.",
+      "lines": "tests/test_unowned_crew_home_claim_admission.py:93"
+    },
+    {
+      "condition_for_failure": "Launch an owned-path request despite its holder: held IDs disappear, launch callback executes or stored pointer leaves queued.",
+      "lines": "tests/test_unowned_crew_home_claim_admission.py:94-96"
+    },
+    {
+      "condition_for_failure": "Make common-root sharing symmetric by exempting the request root rather than the holding root; an owned-file holder is bypassed, failing the same held assertions.",
+      "lines": "tests/test_unowned_crew_home_claim_admission.py:99-102"
+    }
+  ],
+  "baseline_log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T130437366857-wftl-admission-never-holds-on-an-unowned-crew-home-claim-codex/baseline-repaired.log",
+  "baseline_log_revision": "3c2544f6c5e73a247529f7af93936d575b6aa494",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/admission/holds.py:_claim_collision",
+    "reckon/crew/dispatch_claims.py:_raise_repository_scope_conflict",
+    "reckon/crew/queue_edit.py:_live_claim_conflict"
+  ],
+  "completed_at": "2026-11-15T13:39:42Z",
+  "dispatched_at": "2026-11-15T13:34:51Z",
+  "failure_parser_positive_control": [
+    "tests/test_unowned_crew_home_claim_admission.py::test_an_unowned_delivery_root_does_not_hold_admission[home]"
+  ],
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read all four commits from 3c2544f6c5e73a247529f7af93936d575b6aa494 to 0de70a21f37fe030ab97825f2951dbfd779ac3d8; the diff adds one focused test module and two evidence fragments and extends the existing claim-sharing owner.",
+    "done_when": "Read source prompt.txt:161-162; focused-final.log records all eight admission controls passing on all_debug, negative-home.log reproduces the base refusal, and the evidence fragment records both historic paths with counts and liveness limits.",
+    "goal": "Read source prompt.txt:38 and live section s69; reckon/crew/runs.py:1843-1854 exempts common external crew and delivery roots while preserving owned leaves.",
+    "manifest": "Read the source manifest.md and its four gate logs; the 58-pass baseline and head inventories agree with their completed receipts, and the final commit changes only evidence.",
+    "write_paths": "Read source prompt.txt:84-89; the four changed paths are under the granted reckon, tests and docs/evidence/fragments/work-flows-to-the-lane subtrees."
+  },
+  "justifications": {
+    "durability": "Restoring the external-path return-False branch makes tests/test_unowned_crew_home_claim_admission.py:64 fail with held-on-claim as negative-home.log demonstrates, while lines 86-96 and 99-102 fail if sharing is widened to owned leaves or made symmetric.",
+    "evidence": "tests/test_unowned_crew_home_claim_admission.py:44-102 matches the four required admission outcomes, focused-final.log records 15 passed, negative-home.log records the intended base failure, and docs/evidence/fragments/work-flows-to-the-lane/wftl-admission-never-holds-on-an-unowned-crew-home-claim-codex.html:3-7 accounts for all six historic holds without claiming proven worker liveness.",
+    "fit": "reckon/crew/runs.py:1843-1854 extends the existing _claim_paths_share idiom using Path normalization and delivery_roots, and tests/test_unowned_crew_home_claim_admission.py uses capability names and the existing isolated admission fixture.",
+    "goal_fidelity": "reckon/crew/runs.py:1843-1854 shares only an exact common holding root and descendant request, so an owned file or directory remains binding even against a broad request.",
+    "reuse": "Capability searches for claim sharing, delivery roots and admission helpers found owners in reckon/crew/runs.py:99,1833 and tests/test_each_admission_pass_records_its_verdict.py:55,145; the production change extends those owners and the test helpers wrap their fixture, queue builder and admission entry point rather than duplicate runtime policy.",
+    "scope_discipline": "The four paths in the base-to-head diff are confined to reckon/crew/runs.py, tests/test_unowned_crew_home_claim_admission.py and the two granted evidence fragments, with no shared plan-state edits."
+  },
+  "negative_control_log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T130437366857-wftl-admission-never-holds-on-an-unowned-crew-home-claim-codex/negative-home.log",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read source prompt.txt:38 and live section s69; reckon/crew/runs.py:1843-1854 exempts common external crew and delivery roots while preserving owned leaves.\nVERDICT done_when: Read source prompt.txt:161-162; focused-final.log records all eight admission controls passing on all_debug, negative-home.log reproduces the base refusal, and the evidence fragment records both historic paths with counts and liveness limits.\nVERDICT write_paths: Read source prompt.txt:84-89; the four changed paths are under the granted reckon, tests and docs/evidence/fragments/work-flows-to-the-lane subtrees.\nVERDICT manifest: Read the source manifest.md and its four gate logs; the 58-pass baseline and head inventories agree with their completed receipts, and the final commit changes only evidence.\nVERDICT diff: Read all four commits from 3c2544f6c5e73a247529f7af93936d575b6aa494 to 0de70a21f37fe030ab97825f2951dbfd779ac3d8; the diff adds one focused test module and two evidence fragments and extends the existing claim-sharing owner.\nCALL_SITES: reckon/crew/admission/holds.py:_claim_collision, reckon/crew/dispatch_claims.py:_raise_repository_scope_conflict, reckon/crew/queue_edit.py:_live_claim_conflict\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:1843-1854 shares only an exact common holding root and descendant request, so an owned file or directory remains binding even against a broad request.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_unowned_crew_home_claim_admission.py:44-102 matches the four required admission outcomes, focused-final.log records 15 passed, negative-home.log records the intended base failure, and docs/evidence/fragments/work-flows-to-the-lane/wftl-admission-never-holds-on-an-unowned-crew-home-claim-codex.html:3-7 accounts for all six historic holds without claiming proven worker liveness.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The four paths in the base-to-head diff are confined to reckon/crew/runs.py, tests/test_unowned_crew_home_claim_admission.py and the two granted evidence fragments, with no shared plan-state edits.\nSCORE durability: 20\nJUSTIFICATION durability: Restoring the external-path return-False branch makes tests/test_unowned_crew_home_claim_admission.py:64 fail with held-on-claim as negative-home.log demonstrates, while lines 86-96 and 99-102 fail if sharing is widened to owned leaves or made symmetric.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/runs.py:1843-1854 extends the existing _claim_paths_share idiom using Path normalization and delivery_roots, and tests/test_unowned_crew_home_claim_admission.py uses capability names and the existing isolated admission fixture.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for claim sharing, delivery roots and admission helpers found owners in reckon/crew/runs.py:99,1833 and tests/test_each_admission_pass_records_its_verdict.py:55,145; the production change extends those owners and the test helpers wrap their fixture, queue builder and admission entry point rather than duplicate runtime policy.\n",
+  "review_limits": "Read-only review; no suite rerun or source mutation. Historical stranded exact-file claims remain outside this implementation and are already disclosed in the source manifest.",
+  "review_run_id": "r-20261115T133355660563-review-of-wftl-admission-never-holds-on-an-unowned-crew-home-claim-codex-0de70a21f37f",
+  "reviewed_base_sha": "3c2544f6c5e73a247529f7af93936d575b6aa494",
+  "reviewed_head_sha": "0de70a21f37fe030ab97825f2951dbfd779ac3d8",
+  "reviewed_run_id": "r-20261115T130437366857-wftl-admission-never-holds-on-an-unowned-crew-home-claim-codex",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T13:58:54.384330+00:00",
+  "total": 120
+}

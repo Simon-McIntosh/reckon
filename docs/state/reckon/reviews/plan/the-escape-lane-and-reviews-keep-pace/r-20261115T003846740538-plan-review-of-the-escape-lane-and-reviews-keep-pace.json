@@ -1,0 +1,215 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T01:17:49.370Z",
+  "dispatched_at": "2026-11-15T00:44:29Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-escape-lane-and-reviews-keep-pace.html:88",
+      "id": "done_when-1",
+      "reason": "a node dispatched at `implementable` would reimplement landed work, and nothing in the plan tells it the deliverable is already there.",
+      "text": "\u00a710 declares `data-status=\"implementable\"` and describes work that is already in the tree at HEAD: `2e844047a3` \"fix(admission): a stranded launch of a queued request goes back to the queue\" is an ancestor of HEAD and adds `_requeue_stranded_request` (`reckon/crew/admission/launching.py:611`, called from `_release_stranded_launches` at :573), `RELEASED_LAUNCH_FENCE_SECONDS` (`reckon/crew/dispatch_refusals.py:289`) and `tests/test_a_stranded_queued_request_goes_back_to_the_queue.py`",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-escape-lane-and-reviews-keep-pace.html:88",
+      "id": "done_when-2",
+      "reason": "as written the node cannot show its guard fires for those two cases, and the plan's gate would accept a suite whose unchanged-behaviour arms are green on the base revision.",
+      "text": "the done-when opens \"New tests, each failing at the base revision\" and then lists two cases that assert unchanged base behaviour (\"a station-composed review stranded the same way is released as before\", \"a discarded run is released as before\"), which pass on the unfixed code and therefore measure nothing \u2014 and the landed suite in fact drops the discard case and adds a fence case instead",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-escape-lane-and-reviews-keep-pace.html:82",
+      "id": "done_when-3",
+      "reason": "the largest half of the deliverable is unmeasured, and the section's own close cannot be reached by the node dispatched to it.",
+      "text": "\u00a79's third deliverable, the supported verb that records a run whose reviewed head is already an ancestor of the primary branch (writes the ledger row naming the merge, releases pointer, worktree and claims, records the section landed, retires the pending-landing record) has no test and no measure anywhere in the done-when, and the section closes on \"nova \u00a71 then lands through the guard with its H200 arms\", an action in another repository by another session that this node cannot perform",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-escape-lane-and-reviews-keep-pace.html:81",
+      "id": "single_goal-1",
+      "reason": "one verdict cannot close four mechanisms, and a reviewer of the merged-head verb's pointer/claim/pending-landing cleanup is reviewing work the declared-command tests prove nothing about.",
+      "text": "\u00a79 bundles a declared suite command and partition, a reordered waiver read, a fast-refusal return path, and a merged-head recording verb into one section whose write paths span `reckon/crew/promotion_records.py`, the landing measurement module and the dispatch fields",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-escape-lane-and-reviews-keep-pace.html:82",
+      "id": "evidence_paths-1",
+      "reason": "the all_debug arms and the record of nova \u00a71 landing would land in a session scratchpad or not at all, and a later reader has nothing to open.",
+      "text": "\u00a79 names no landing-record fragment and no gate-log location, unlike \u00a75, \u00a76, \u00a77, \u00a78 and \u00a710 which each name `docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/<name>.html` and the run directory",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-escape-lane-and-reviews-keep-pace.html:86",
+      "id": "anchors_resolve-1",
+      "reason": "the same paragraph states the mechanism in prose (\"restores the request only on an `Exception`, so a re-exec skips it\") and `reckon/crew/dispatching/claims.py:19-38` confirms it, so no reader is sent wrong by the dangling id.",
+      "text": "`D180` in \u00a710 is cited as the decision that a re-exec skips the request restore, and no `D180` exists in `docs/` or anywhere in the repository, so the reference resolves only back to itself",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-escape-lane-and-reviews-keep-pace.html:87",
+      "id": "reasoning-1",
+      "reason": "a node dispatched against this endpoint would try to let the next attempt through immediately, removing the fence that is already doing the job the endpoint asks for.",
+      "text": "\u00a710's endpoint says the refusal record \"names the abandoned attempt rather than the run, so the slow original attempt is still refused at its reservation while the re-queued request's next attempt is not\", but the landed mechanism keys the fence on the run id for an hour (`RELEASED_LAUNCH_FENCE_SECONDS = 3600.0`), so the re-queued request's next attempt is refused for up to an hour rather than not at all",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "1684fc4865032648ec56ec5b2480998af87605ec",
+  "plan_fingerprint": "1744698d3ba1c6867ce900ea804214f1765b11416e55edcacdb03b94be6c82b4",
+  "plan_slug": "the-escape-lane-and-reviews-keep-pace",
+  "plan_version": 14,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "noted",
+      "by": "plan-review-reflex",
+      "finding": "anchors_resolve-1",
+      "reason": "the same paragraph states the mechanism in prose (\"restores the request only on an `Exception`, so a re-exec skips it\") and `reckon/crew/dispatching/claims.py:19-38` confirms it, so no reader is sent wrong by the dangling id.",
+      "when": "2026-11-15T01:35:54.331814+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "1688dedbb66a7c6dae4c9bdda42aad6aea7d3216",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a710 landed at 2e844047a3 and its declaration is now set to done",
+      "reason": "",
+      "when": "2026-11-15T10:02:10.620895+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "done_when-2",
+      "reason": "\u00a710 has landed; the two unchanged-behaviour cases are regression guards beside the two that fail at base, and the landed suite exchanged the discard case for the fence case",
+      "when": "2026-11-15T10:03:58.723564+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "done_when-3",
+      "reason": "\u00a79 is already running as one node; its write paths carry tests/test_a_hand_merged_run_is_recorded.py, which measures the merged-head verb, and nova \u00a71 landing is read as an observation after the node, not as its deliverable",
+      "when": "2026-11-15T10:04:08.971706+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "single_goal-1",
+      "reason": "\u00a79 is in flight as one node; splitting it now would strand the running worker, and its review will judge the verb and the declared command separately",
+      "when": "2026-11-15T10:06:06.048325+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "evidence_paths-1",
+      "reason": "\u00a79's dispatch names docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/gate-names-its-arms.html in its write paths and its gate logs in its run directory",
+      "when": "2026-11-15T10:06:19.068869+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "1688dedbb66a7c6dae4c9bdda42aad6aea7d3216",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a710's endpoint now states the landed mechanism, a run-keyed fence that delays the re-queued request by up to an hour, and a new section keys the fence on the attempt so the re-queued request is not delayed",
+      "reason": "",
+      "when": "2026-11-15T10:06:25.697204+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "1688dedbb66a7c6dae4c9bdda42aad6aea7d3216",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "correction to the earlier note: the requeue half landed at 2e844047a3 and \u00a710 is rewritten to record it, while \u00a710 stays implementable for the remaining half, the attempt-keyed fence and the reflex recomposing a released review",
+      "reason": "",
+      "when": "2026-11-15T10:07:10.067967+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "noted",
+      "by": "plan-review-reflex",
+      "reason": "the same paragraph states the mechanism in prose (\"restores the request only on an `Exception`, so a re-exec skips it\") and `reckon/crew/dispatching/claims.py:19-38` confirms it, so no reader is sent wrong by the dangling id.",
+      "when": "2026-11-15T01:35:54.331814+00:00"
+    },
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "1688dedbb66a7c6dae4c9bdda42aad6aea7d3216",
+      "commit_basis": "edit",
+      "note": "correction to the earlier note: the requeue half landed at 2e844047a3 and \u00a710 is rewritten to record it, while \u00a710 stays implementable for the remaining half, the attempt-keyed fence and the reflex recomposing a released review",
+      "reason": "",
+      "when": "2026-11-15T10:07:10.067967+00:00"
+    },
+    "done_when-2": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a710 has landed; the two unchanged-behaviour cases are regression guards beside the two that fail at base, and the landed suite exchanged the discard case for the fence case",
+      "when": "2026-11-15T10:03:58.723564+00:00"
+    },
+    "done_when-3": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a79 is already running as one node; its write paths carry tests/test_a_hand_merged_run_is_recorded.py, which measures the merged-head verb, and nova \u00a71 landing is read as an observation after the node, not as its deliverable",
+      "when": "2026-11-15T10:04:08.971706+00:00"
+    },
+    "evidence_paths-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a79's dispatch names docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/gate-names-its-arms.html in its write paths and its gate logs in its run directory",
+      "when": "2026-11-15T10:06:19.068869+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "1688dedbb66a7c6dae4c9bdda42aad6aea7d3216",
+      "commit_basis": "edit",
+      "note": "\u00a710's endpoint now states the landed mechanism, a run-keyed fence that delays the re-queued request by up to an hour, and a new section keys the fence on the attempt so the re-queued request is not delayed",
+      "reason": "",
+      "when": "2026-11-15T10:06:25.697204+00:00"
+    },
+    "single_goal-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a79 is in flight as one node; splitting it now would strand the running worker, and its review will judge the verb and the declared command separately",
+      "when": "2026-11-15T10:06:06.048325+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-escape-lane-and-reviews-keep-pace/r-20261115T003846740538-plan-review-of-the-escape-lane-and-reviews-keep-pace.json",
+  "review_run_id": "r-20261115T003846740538-plan-review-of-the-escape-lane-and-reviews-keep-pace",
+  "reviewed_blob_sha": "c325d0a8811bd01eddb4a57c21bdd93af12acbd0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 `D180` in \u00a710 resolves nowhere in the repository; every other cited file, module and test path in these two units resolves.",
+    "done_when": "a finding \u2014 \u00a710's done-when says all four cases fail at the base revision, but two of them (\"a station-composed review stranded the same way is released as before\", \"a discarded run is released as before\") assert unchanged base behaviour and so pass at base; and \u00a710 as a whole is already built in the tree at HEAD while it still declares `implementable`.",
+    "evidence_paths": "a finding \u2014 \u00a79 names no evidence fragment and no gate-log path, while every sibling section in this plan names one under `docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/`.",
+    "naming": "pass \u2014 neither unit names a code symbol, filename or comment after a plan label, stage or version, and the file paths a worker needs are given as write scope rather than as symbol names.",
+    "reasoning": "a finding \u2014 \u00a710's stated root cause matches the code exactly, but its endpoint's claim that \"the re-queued request's next attempt is not [refused]\" is contradicted by the mechanism the section was built with, which fences the run id for an hour.",
+    "single_goal": "a finding \u2014 \u00a79 delivers three mechanisms: a declared suite command and partition, a waiver read before the missing-fields refusal, and a separate verb that records a run whose reviewed head is already merged.",
+    "wiring": "pass \u2014 \u00a79's single declared dependency (`queued-work-needs-no-workaround#s13`, \"Landing judges added failures, and reads a finished review at the head\") resolves and is the right upstream; \u00a710 depends on nothing unlanded, since the handover, `_stamp_failure` and the refusal store it needs are all present in the tree."
+  },
+  "section_digests": {
+    "_document": "a5d10760fe7dca59281ba1d00d8092a548375419a88ecdcc74513b0d9d1eaf58",
+    "s1": "2f30b04db27eda225a7d9a82c4b2b9cf5e512723d009737b2a923bb7c84a60ce",
+    "s10": "a91474dc777c61ee90a71e5c9c7af273ec2463a7577a6561f9fe7d0477a364c9",
+    "s2": "1c1291a10bbf3182487496ef153e5873681ea3827c7bacc16efddf88c7cca128",
+    "s3": "2a0e0fabbd2ee502c5a7928a8fa608b66f83d3ad3fe304a31a05b66f0cb3d688",
+    "s4": "4a85c23ac81214a3af1b59e1888c579b2e2525eb2a2346a965b291cee79651b7",
+    "s5": "fb1f3e1546621cc855884449828d1a21bbdbe0f82829e3272a4980de76583329",
+    "s6": "cc57c977bc74be9abc823c22b2bdb1536d9437ee9b4055386c7bcc135cf44073",
+    "s7": "ed204545a51bd6d6fca68193a080594cbf03befec2fbab427a94d4fa64bb5b4d",
+    "s8": "f91bbc8415af7128a49266e48bcf0855214aed2b1c090350cf262046fdca9025",
+    "s9": "f45ac50a3cec315ac6b6faa699dabc9b61b96ee903819df9eb7dd788e1cd1497"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T01:34:42.348549+00:00",
+  "total": null
+}

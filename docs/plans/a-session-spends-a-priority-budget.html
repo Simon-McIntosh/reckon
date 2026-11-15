@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="Each session holds a priority budget it spends across its queued work, moves at any time, and reads back beside the whole queue from the CLI, MCP or Python.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
-  <meta name="plan-effort-hours" content="12.0">
+  <meta name="plan-effort-hours" content="8.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-reasoning" content="deep">
@@ -25,8 +25,8 @@
   <title>A session spends a priority budget | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1">
-<meta name="plan-modified" content="2026-11-14">
+<meta name="plan-version" content="5">
+<meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
   <main class="plan-doc">
@@ -113,10 +113,21 @@
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-sspb-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-14" data-recommends-skill="/reckon-build a-session-spends-a-priority-budget" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Review, then build §2 and §5 together, then §3 and §4</h4>
-    <div class="r-fu-body"><p>§2 and §5 are independent. §3 and §4 wait on §2's budget. Route the build to codex at the lead's direction of 2026-11-14.</p></div>
+    <div class="r-fu-body"><p>§2 is independent; §3 and §4 wait on §2's budget. §5 is descoped by the lead's decision of 2026-11-14 (workers are not run as SLURM jobs). Route the build to codex at the lead's direction of 2026-11-14.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-session-spends-a-priority-budget</pre>
     </article>
 </section>
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261115T071351735512-review-of-sspb-each-session-holds-a-priority-budget-and-spends-e82343123a7c" data-who="reckon-build" data-when="2026-11-15T07:27:44.750Z">
+    <div class="r-comment-body"><p>independent review of r-20261114T201954663461-sspb-each-session-holds-a-priority-budget-and-spends at head e82343123a against base 95e530385e: 6/6 checklist items answered, all six dimensions scored, 2 blocking and 3 non-blocking findings; the budget and the lane ordering are implemented and the focused gate reproduces, but the per-session bound is charged per project and one of the two priority readers under-counts a reprioritised request, so the node should not land until those two are repaired.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261115T082153530911-review-of-sspb-each-session-holds-a-priority-budget-and-spends-5b88b2d99aca" data-who="reckon-build" data-when="2026-11-15T09:26:28.918Z">
+    <div class="r-comment-body"><p>review of r-20261114T201954663461-sspb-each-session-holds-a-priority-budget-and-spends at head 5b88b2d99aca over base e82343123a: six dimensions scored (goal_fidelity 17, evidence 14, scope_discipline 19, durability 15, fit 17, reuse 15; total 97), four non-blocking findings and zero added failures; both prior blocking defects confirmed repaired in reckon/crew/runs.py, so the round does not block on this review.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261114T201954663461-sspb-each-session-holds-a-priority-budget-and-spends" data-who="reckon-build" data-when="2026-11-15T08:15:45Z">
+    <div class="r-comment-body"><p>the budget and the lane now read a request&#x27;s points from one definition, and the budget counts a session&#x27;s points in every project.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>

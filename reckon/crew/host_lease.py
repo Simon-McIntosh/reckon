@@ -43,6 +43,26 @@ def _process_start(pid: int) -> str:
     return fields[19] if len(fields) > 19 else ""
 
 
+def process_runs_here(
+    *, pid: object, pid_start: str, pid_namespace: str, namespace: str = ""
+) -> bool:
+    """Whether a recorded process is still running in this reader's table.
+
+    A pid names a process only inside the table that issued it, and only until
+    the kernel reuses the number, so it is matched together with the namespace
+    it was issued in and the start time recorded beside it. A record carrying
+    neither names nothing this reader can match, and is not evidence that the
+    process has gone.
+    """
+    if isinstance(pid, bool) or not isinstance(pid, int):
+        return False
+    if not pid_namespace or pid_namespace != (namespace or _pid_namespace()):
+        return False
+    if not pid_start:
+        return False
+    return _process_start(pid) == pid_start
+
+
 @dataclass(frozen=True)
 class LeaseHolder:
     host: str
@@ -111,12 +131,11 @@ class HostLease:
         has lapsed. A record without a start time cannot be matched against a
         reused pid, so it is judged by staleness as before.
         """
-        return (
-            holder.host == self.owner.host
-            and bool(holder.pid_namespace)
-            and holder.pid_namespace == self.owner.pid_namespace
-            and bool(holder.pid_start)
-            and _process_start(holder.pid) == holder.pid_start
+        return holder.host == self.owner.host and process_runs_here(
+            pid=holder.pid,
+            pid_start=holder.pid_start,
+            pid_namespace=holder.pid_namespace,
+            namespace=self.owner.pid_namespace,
         )
 
     def claim(self) -> bool:

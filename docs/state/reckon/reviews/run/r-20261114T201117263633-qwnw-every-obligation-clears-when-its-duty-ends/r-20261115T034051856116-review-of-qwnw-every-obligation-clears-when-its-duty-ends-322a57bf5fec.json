@@ -1,0 +1,91 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: baseline_suite.log at 7b45ca90 records 55 passed EXIT=0 and after_suite.log at 322a57bf records 55 passed EXIT=0, so the set difference is empty",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/station_obligations.py:259 (_with_sweep_failures publishes the filtered list)",
+    "reckon/crew/station_obligations.py:565 (publish prunes the durable per-session record)",
+    "reckon/mcp_views.py:4618 (the obligations view calls without_departed_run_duties)",
+    "reckon/hooks/coordinator_obligations.py:1638 (the stop hook calls without_departed_run_duties)",
+    "reckon/crew/runs.py:2346 (record_run_acknowledgement falls back to _obligation_record_project)"
+  ],
+  "completed_at": "2026-11-15T04:26:50.166Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-every-obligation-clears-when-its-duty-ends-322a57bf5fec",
+      "recorded_at": "2026-11-15T05:34:25.450851+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-15T03:44:17Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-every-obligation-clears-when-its-duty-ends.html",
+      "line": "65",
+      "severity": "non-blocking",
+      "text": "the negative-control paragraph reports '4 of the 6 tests fail there' and names two that pass, while negative_control.log records 5 failed, 3 passed of 8 collected ids (the third pass is the held-tree arm with no owner); the count and the composition are both transcribed wrong"
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-every-obligation-clears-when-its-duty-ends.html",
+      "line": "68",
+      "severity": "non-blocking",
+      "text": "the suite-arm paragraph cites after_suite.log at c0b40266, while the log on disk carries revision=322a57bf5fecaa77c77ab6ac32936b8aff34c8b7 in its header, so the citation points a reader at a revision the log no longer records"
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-every-obligation-clears-when-its-duty-ends.html",
+      "line": "72",
+      "severity": "non-blocking",
+      "text": "the post-change census paragraph cites census_after.log for 132 documents, 149 stored rows, 90 served and the instant 22:43:28Z, while that log records 132 documents, 150 stored rows, 91 served and 22:59:03Z, and the per-kind table below differs in six rows (queued-awaiting-session 10 vs 4, review-in-flight 2 vs 1, review-missing 2 vs 1, run-admissible-unlaunched 2 vs 7, run-queued 5 vs 7, run-waiting 23 vs 24, plus a run-stalled row the log carries and the table omits); the headline 25 agrees, the rest is transcribed from a run the cited log does not contain"
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-every-obligation-clears-when-its-duty-ends.html",
+      "line": "119",
+      "severity": "non-blocking",
+      "text": "'25 stored rows read that way at the delivered head' is measured at c0b40266, which predates the held-tree settlement in f34655ee, and no census was re-read at 322a57bf; probe_held.log at the head measures a different population (102 derived duties, 3 owned), so the record's headline figure is not a reading of the revision it names as delivered"
+    },
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": "167",
+      "severity": "non-blocking",
+      "text": "cleanup_intent_path recomputes crew_home()/'cleanup'/<run>.json which reckon/crew/terminal_cleanup.py:19 cleanup_path already owns; a duplicate path helper on the prompt hook's read path is defensible only because importing the owner pulls reckon.crew.runs and the ledger the module banner forbids, and no comment records that constraint"
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "2302",
+      "severity": "non-blocking",
+      "text": "_obligation_record_project unwraps the stored row's payload/document itself, which station_obligations.py:261 stored_document already owns, and walks crew_home()/obligations with its own glob rather than through obligation_snapshot.snapshot_dir"
+    },
+    {
+      "file": "tests/test_a_duty_clears_when_its_run_ends.py",
+      "line": "266",
+      "severity": "non-blocking",
+      "text": "assert recorded[\"project\"] == PROJECT compares the constant the same test wrote into the duty document against the value read back, so it is not independent of the input; the test as a whole still reddens at the base revision because the deferral raises CrewError there, but this assertion alone is satisfied by any resolution of the fixture's single project"
+    }
+  ],
+  "findings_note": "",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that every obligation clears when its duty ends; station_obligations.py:117 drops a stored sweep failure once its run holds no live pointer or a ledger record, obligation_snapshot.py:1393 withholds sweep-failed and a held tree whose release the cleanup queue owns, and runs.py:2280 resolves a deferral's project from the stored duty document, so the sweep-failed and acknowledgement routes are delivered and the section's held-tree case is settled only for the 3 of 102 duties that have an owner in probe_held.log\nVERDICT done_when: the done_when names four measures; the two test measures are present and green with a genuine base-revision control at 5 failed / 3 passed exit 1, the four-kind test measure covers sweep-failed and the held-tree middle state only, and the census measure records 25 where the done_when states zero, measured before rather than at the delivered head\nVERDICT write_paths: resume-1-advice.txt widens the original evidence-only fence to reckon/ and tests/; every path in the diff is one of the evidence fragment, reckon/crew/obligation_snapshot.py, reckon/crew/runs.py, reckon/crew/station_obligations.py or tests/test_a_duty_clears_when_its_run_ends.py, all inside that set\nVERDICT manifest: read; it records status complete, seven commits, baseline and after arms at 55 passed EXIT=0, a negative control at 5 failed / 3 passed exit 1, the replay for finding f52e73f133b at f34655ee, and its evidence_inputs name the held-tree owner split that its census leaves standing\nVERDICT diff: read commit by commit over 2ff2922c..322a57bf against 7b45ca90; two evidence commits, one source+tests commit (23441432), one repair commit (f34655ee), one control-test commit (e6a021c9), one evidence rewrite and the final evidence commit, touching five files and 582 inserted lines\nCALL_SITES: reckon/crew/station_obligations.py:259 (_with_sweep_failures publishes the filtered list), reckon/crew/station_obligations.py:565 (publish prunes the durable record), reckon/mcp_views.py:4618 (the obligations view), reckon/hooks/coordinator_obligations.py:1638 (the stop hook), reckon/crew/runs.py:2346 (the deferral fallback)\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: reckon/crew/obligation_snapshot.py:1393 settles a held tree only when cleanup_intent_path(run_id).is_file(), and probe_held.log at 322a57bf reads 99 of 102 such duties unowned, so most rows of the kind the section names still serve\nSCORE evidence: 11\nJUSTIFICATION evidence: census_after.log's EXIT_METRIC records rows_no_live_pointer=25 against a done_when that asks for zero, and the evidence fragment at line 72 cites that log for figures it does not contain\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in `git diff --stat 7b45ca90 322a57bf` is the evidence fragment or a file under reckon/crew/ and tests/, inside the widened write paths recorded in resume-1-advice.txt\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_duty_clears_when_its_run_ends.py:152 and :242 assert the settlement on a pointer and an intent the test writes and removes itself, and negative_control.log shows 5 of the 8 ids reddening at the base revision while negative_control_revert.log shows the held-tree arm alone reddening without f34655ee\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/station_obligations.py:117 keeps the module's filter-before-emit shape, with no plan, section, gate or ticket identifier in any added name, docstring or commit subject\nSCORE reuse: 7\nJUSTIFICATION reuse: reckon/crew/obligation_snapshot.py:167 re-implements the cleanup intent path and reckon/crew/runs.py:2302 re-implements the stored-document unwrapping station_obligations.py:261 owns, neither extending the owner\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-every-obligation-clears-when-its-duty-ends.html:65 non-blocking: the negative-control paragraph reports '4 of the 6 tests fail' and names two passes, while negative_control.log records 5 failed, 3 passed of 8 ids\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-every-obligation-clears-when-its-duty-ends.html:68 non-blocking: the paragraph cites after_suite.log at c0b40266 while the log on disk records revision=322a57bf\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-every-obligation-clears-when-its-duty-ends.html:72 non-blocking: the census figures and the per-kind table are transcribed from a different run than census_after.log, which records 150 rows, 91 served and 22:59:03Z\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-every-obligation-clears-when-its-duty-ends.html:119 non-blocking: the 25-row figure is labelled as the delivered head's reading but was measured at c0b40266, before the held-tree settlement, and no census was re-read at 322a57bf\nFINDING reckon/crew/obligation_snapshot.py:167 non-blocking: cleanup_intent_path duplicates terminal_cleanup.py:19 cleanup_path without extending it, and records no reason for not reusing the owner\nFINDING reckon/crew/runs.py:2302 non-blocking: _obligation_record_project re-implements the payload/document unwrapping station_obligations.py:261 stored_document owns\nFINDING tests/test_a_duty_clears_when_its_run_ends.py:266 non-blocking: the project assertion compares the constant the test wrote into the duty document against the value read back, so it is not independent of the input\n",
+  "review_node": "review-of-qwnw-every-obligation-clears-when-its-run-ends-322a57bf5fec",
+  "review_run_id": "r-20261115T034051856116-review-of-qwnw-every-obligation-clears-when-its-duty-ends-322a57bf5fec",
+  "reviewed_base_sha": "7b45ca9058dfefe604a27839821e639c5f03ce02",
+  "reviewed_head_sha": "322a57bf5fecaa77c77ab6ac32936b8aff34c8b7",
+  "reviewed_run_id": "r-20261114T201117263633-qwnw-every-obligation-clears-when-its-duty-ends",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T034051856116-review-of-qwnw-every-obligation-clears-when-its-duty-ends-322a57bf5fec"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 11,
+    "fit": 18,
+    "goal_fidelity": 13,
+    "reuse": 7,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T04:27:31.322772+00:00",
+  "total": 85
+}

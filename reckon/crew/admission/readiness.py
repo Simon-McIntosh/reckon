@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextvars
+import threading
 
 from . import holds as _holds
 from . import release as _release
@@ -83,7 +84,30 @@ def _plan_tree_fingerprint(docs_dir: str | Path | None) -> tuple[int, int, str]:
     return (newest, count, head)
 
 
+class ReadinessCache(dict):
+    """Share one derivation across concurrent launches in the same pass."""
+
+    def __init__(self):
+        super().__init__()
+        self.lock = threading.RLock()
+
+
 def _readiness_rows(
+    project,
+    docs_dir,
+    cache,
+    plan="",
+    refs=(),
+    *,
+    inventory_only=False,
+):
+    with getattr(cache, "lock", contextlib.nullcontext()):
+        return _readiness_rows_unlocked(
+            project, docs_dir, cache, plan, refs, inventory_only=inventory_only
+        )
+
+
+def _readiness_rows_unlocked(
     project: str,
     docs_dir: str | Path | None,
     cache: dict[str, Any],

@@ -1,0 +1,92 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/evidence.py:compose_landed_record",
+    "reckon/evidence.py:_fragment_body_bytes",
+    "reckon/resources.py:_is_evidence_fragment",
+    "reckon/serve.py"
+  ],
+  "completed_at": "2026-11-15T01:38:25.850Z",
+  "dispatched_at": "2026-11-15T00:41:08Z",
+  "findings": [
+    {
+      "blocks": false,
+      "detail": "The reader row is labelled `_held_worktree_rows.replace`. `git grep _held_worktree_rows a346fba4aa -- reckon/crew/obligations.py` returns nothing, and the row's own first cited line, obligations.py:2723, sits inside `_ledger_read_root` (def at :2709). The line citation itself is right - it reads `ledger.ledger_path(project, None)` and :2990 reads `ledger.ledger_path(project, root)` - so the map's substantive fact holds, but a reader acting on the function column cannot locate the caller from it.",
+      "disposition_suggestion": "folded: repair the function cell to `_ledger_read_root / _held_worktree_rows` at the same lines.",
+      "file": "docs/evidence/fragments/history-persists-as-detail-washes-out/ledger-leaves-git-map-s20-writable.html",
+      "line": 140,
+      "severity": "non-blocking",
+      "summary": "the obligations row's function label names no symbol in its module"
+    },
+    {
+      "blocks": false,
+      "detail": "The row is labelled `mutate (_wait_refusal_classes). The module is reckon/crew/recovery_watch.py, where neither name is a top-level def (`mutate` is a nested function repeated at :271, :288 and :320, and `_wait_refusal_classes` is defined at reckon/crew/recovery_classification.py:184). The cited lines :866, :880, and :2623 do read `ledger_module.run_path(...).is_file()`, so the row's read/write and via facts are correct and only the label is wrong.",
+      "disposition_suggestion": "folded reference to the enclosing defs at the cited lines.",
+      "file": "docs/evidence/fragments/history-persists-as-detail-washes-out/ledger-leaves-git-map-s20-writable.html",
+      "line": 144,
+      "severity": "non-blocking",
+      "summary": "the recovery_watch row's function label names a def that lives in a different module"
+    },
+    {
+      "blocks": false,
+      "detail": "reckon/crew/dispatch_plan.py:1435 calls ledger.ledger_path(project, root) in the refusal message for `--repairs`. It is a production reference to the committed ledger path that no row names and the exclusion paragraph at :163-168 does not quote, while four other exclusions (mcp.py:2826, native_agent_guard.py:80, recovery_review_acceptance.py:758/:970, fleet_migrate.py:407) are. The read behind the message goes through open_run_index.row_for_run, so nothing breaks at cutover; only the path printed in the refusal would name a file git no longer tracks. The census's own population table calls reckon/ 'every live reader and writer', which is what makes an unlisted, unexcluded reference a defect rather than an unspecified exclusion.",
+      "disposition_suggestion": "folded: add the row or quote the exclusion.",
+      "file": "docs/evidence/fragments/history-persists-as-detail-washes-out/ledger-leaves-git-map-s20-writable.html",
+      "line": 163,
+      "severity": "non-blocking",
+      "summary": "one production ledger_path reference is neither mapped nor excluded"
+    },
+    {
+      "blocks": false,
+      "detail": "Line 50 says 'Three commit paths stage ledger files today'; line 107 says 'four commit paths will each be staging a path git no longer tracks'; line 247 says 'The four commit paths above start failing'. The writer table names exactly three distinct helpers - ledger.py:3118 `_commit_state_write`, ledger.py:3641 `_commit_run_split`, and promotion_scope.py:2508 `_commit_landing_writes` - and every 'yes' row routes through one of them. A coercing reader sizing section 6's work from this fragment gets two different populations.",
+      "disposition_suggestion": "folded: state one number and make lines 107 and 247 agree with it.",
+      "file": "docs/evidence/fragments/history-persists-as-detail-washes-out/ledger-leaves-git-map-s20-writable.html",
+      "line": 50,
+      "severity": "non-blocking",
+      "summary": "the count of commit paths disagrees with itself three vs four"
+    },
+    {
+      "blocks": "false",
+      "detail": "The artifacts line records '17 writer rows, 30 reader rows'. The committed fragment's writer table holds 16 `<tr>` rows and its reader table 33. The manifest is what a coordinator reads without opening the fragment, so the population it advertises is wrong in both directions.",
+      "disposition_suggestion": "folded: correct the artifacts line to 16 and 33.",
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T181510678514-ledger-leaves-git-map-s20-writable/manifest.md",
+      "line": 45,
+      "severity": "non-blocking",
+      "summary": "the manifest's row tallies disagree with the fragment's own tables"
+    }
+  ],
+  "justifications": {
+    "durability": "the node ships no test file, so nothing in the suite fails if the census regresses; its guards are the gate's structural, id-prefix and grep-discrimination checks at gate-ledger-leaves-git-map.sh:57-95, which are genuinely falsified - the log shows the structure guard firing on a deleted </tr> and the id guard reporting one on a rewritten prefix - but that gate lives in the run directory and no repository test re-runs it.",
+    "evidence": "the gate at logs/gate-ledger-leaves-git-map.sh:11-40 recomputes every population figure from the base blob and its log records EXIT=0, but it prints the numbers rather than asserting them against the fragment's own table values, so the match rests on an eyeball comparison; I closed that gap independently and every figure and citation matched.",
+    "fit": "the fragment follows the evidence-fragment convention with node-prefixed ids at ledger-leaves-git-map-s20-writable.html:1, :23 and :55, is a bare section the composer accepts, and introduces no plan or ticket labels; the function-column inconsistency at :140 is a fit defect rather than a naming one.",
+    "goal_fidelity": "docs/evidence/fragments/history-persists-as-detail-washes-out/ledger-leaves-git-map-s20-writable.html:55-161 delivers the module/read-write/commit table the section asks for, but three of its locator cells are wrong or incomplete (:140, :144, and the unlisted reckon/crew/dispatch_plan.py:1435), which costs a reader a grep each time.",
+    "reuse": "the census reuses git grep and git ls-tree rather than a bespoke parser and the split reuses the plan's own seven-section vocabulary; a search of reckon/ for an existing ledger-reader inventory found none, so nothing is duplicated.",
+    "scope_discipline": "the commit changes one file, docs/evidence/fragments/history-persists-as-detail-washes-out/ledger-leaves-git-map-s20-writable.html, which is the first of the two declared write paths, and adds nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261115T001237703764-review-of-ledger-leaves-git-map-s20-writable-1ebacb850e39",
+  "reviewed_base_sha": "a346fba4aa0e53481a816fc06d92e48db899d60a",
+  "reviewed_head_sha": "1ebacb850e3934d1996b9856f569f74b3d5b442c",
+  "reviewed_run_id": "r-20261114T181510678514-ledger-leaves-git-map-s20-writable",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T02:19:09.993636+00:00",
+  "total": 102,
+  "verdicts": [
+    "VERDICT goal: the goal is to map every ledger reader and writer that must leave git and propose the untracking's split; the fragment at docs/evidence/fragments/history-persists-as-detail-washes-out/ledger-leaves-git-map-s20-writable.html:48-161 carries 16 writer rows and 33 reader rows at file:line, plus five migration steps (:208-237) and seven proposed sections each with a done-when (:252-310), which is the plan section's deliverable.",
+    "VERDICT done_when: the done-when asks for a git grep census at the base revision over every tracked path with tests in a separate group, a positive control naming reckon/ledger.py's writer, and each caller cited from the base blob; the worker's gate (logs/gate-ledger-leaves-git-map.sh sections 1-3) measures exactly those and its log records EXIT=0, and I reproduced every quoted population figure and about fifty citations independently against a346fba4aa.",
+    "VERDICT write_paths: the declared paths are the fragment html and a figure directory; the diff touches only the fragment, and no figure was written - permitted, since the done-when names no figure and the fragment explains at :326-328 why its two relationships are tables.",
+    "VERDICT manifest: read; it records commits 1ebacb850e, the gate command, the gate log and a positive-control log, states the gate exit 0, and flags in evidence_inputs that the done-when's fragment name omits the node suffix its own write grant carries; its artifacts line misstates the table populations (see FINDING at manifest.md:45).",
+    "VERDICT diff: read the single commit 1ebacb850e against base a346fba4aa; it adds 329 lines to one file, changes no product code, and its subject and body state what landed and why.",
+    "VERDICT call_sites: three production call sites reach a fragment under docs/evidence/fragments/ - the composer at reckon/evidence.py:compose_landed_record (which resolves a fragment as <node>.html at :744 and appends its body via _fragment_body_bytes at :640), the classifier reckon/resources.py:_is_evidence_fragment at :244, and the serving path in reckon/serve.py; the bare-<section> form the fragment uses is the explicitly supported 'bare fragment anchor' case at evidence.py:656."
+  ]
+}

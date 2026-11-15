@@ -1277,22 +1277,31 @@ def _stream_events_upto(stream_path: Path, *, offset: int, boundary: int) -> lis
 def _recorded_fleet_times(
     stream_path: Path, *, boundary: int
 ) -> dict[str, tuple[str, str]]:
-    """The state each run is in, and the time it entered that state.
+    """The state each run last transitioned to, and when that transition was.
 
     A row that re-announces a run should carry the clock the run's own record
     gave it rather than the moment the pane happened to attach, so the time is
     read from the stream the producer wrote. A run's recorded time is the first
-    event in the unbroken trailing run of events whose ``to_state`` equals that
-    state, read as the earliest stamp that the run carries for the state: a
-    re-emitted baseline names a state the run already sits in and is stamped
-    when it is emitted, so it extends the run without moving the time, while a
-    genuine change of state opens a new run and stamps it at the change. The
-    read stops at the boundary the replay was given so the answer describes the
-    same span the rows do.
+    event in the unbroken trailing run of transitions whose ``to_state`` equals
+    that state, read as the earliest stamp the run carries for the state: a run
+    that re-enters the same word leaves the time where it was, while a genuine
+    change of state opens a new run and stamps it at the change. Baselines are
+    inventory rather than transitions — the producer re-announcing a state,
+    stamped when it wrote the announcement — so they are skipped: the
+    attach-time baseline a producer emits for a run it has never seen would
+    otherwise be read as the moment that run moved, which is the defect this
+    clock exists to remove. The read stops at the boundary the replay was given
+    so the answer describes the same span the rows do.
     """
     latest: dict[str, tuple[str, str]] = {}
     for event in _stream_events_upto(stream_path, offset=0, boundary=boundary):
         if event.get("legacy"):
+            continue
+        if str(event.get("event") or "") == "baseline":
+            # A baseline is inventory: the producer re-announcing the state a
+            # run already sits in, stamped when the announcement was written.
+            # It is not a transition, and its stamp is the producer's, not the
+            # moment the run moved, so it cannot date a replayed row.
             continue
         run_id = str(event.get("run_id") or "")
         to_state = event.get("to_state")
@@ -1362,12 +1371,12 @@ def _fleet_replay(
     that span is re-announced instead — one row carrying the state the live
     fleet gives it, stamped with the time its own record entered that state.
 
-    The recorded time is taken only where the stream's last word for the run
-    agrees with the live classification. Where they disagree the live fleet is
-    the authority, because it is the current pointer while the stream is
-    history, so the row keeps the live state and the fleet's own clock rather
-    than a state the live classification contradicts: a row never announces a
-    state the fleet denies.
+    The word the row announces is the live classification's, because the live
+    fleet is the current pointer while the stream is history: a row never
+    announces a state the fleet denies. The clock is the stream's, because the
+    pointer records no time for its phase change and the log's last transition
+    for the run is the only stamp either source holds. A run the log never
+    recorded is drawn with no clock rather than with the attach time.
 
     The rows are ordered by their own stamp, so a re-arm reads as a timeline and
     an old transition leads a run that has sat at its state since.
@@ -1395,11 +1404,13 @@ def _fleet_replay(
         run_id = str(row.get("run_id") or "")
         if run_id and run_id in announced:
             continue
+        # The pointer carries no time for its phase change, so the only stamp a
+        # replayed row can carry is the log's. A run the log never recorded is
+        # drawn with no clock rather than with the attach time the baseline row
+        # was built under: an unknown dressed up as the current minute is the
+        # reading error the [replay] prefix exists to prevent.
         latest = recorded.get(run_id)
-        if latest is not None:
-            stamp, state = latest
-            if stamp and state == str(row.get("to_state") or ""):
-                row["observed_at"] = stamp
+        row["observed_at"] = latest[0] if latest and latest[0] else ""
         if reannounce:
             row["reannounced"] = True
         rows.append(row)
@@ -1512,6 +1523,7 @@ def _follow_gap_rows(
     session: str | None,
     observed: Iterable[str],
     run_ids: tuple[str, ...],
+    transition_times: Mapping[str, tuple[str, str]] | None = None,
 ) -> list[dict[str, Any]]:
     """The rows a re-attach replays: one per owned run whose state moved.
 
@@ -1522,8 +1534,18 @@ def _follow_gap_rows(
     was attached, so it is replayed from ``dispatched``, the state every launch
     passes through. Each row keeps the remembered state as its left half, so it
     reads as the ordinary transition the run made while the pane was away, and
-    takes its right half and its clock from the live classification rather than
-    from any stored phase.
+    takes its right half from the live classification rather than from any
+    stored phase.
+
+    The clock is the one thing the live classification cannot give: a pointer
+    records no time for its phase change, so the row would otherwise carry the
+    moment the follower attached and printed it. ``transition_times`` is the
+    event log's own answer, one stamp per run, and a row with no entry is drawn
+    with no clock rather than with the attach time — an unknown hour is a
+    different reading from the current one. A stamp is used whether or not the
+    log's last word matches the word the live row draws, because the time is a
+    fact about the transition the log recorded, not about the vocabulary the
+    pane spells it in.
     """
     states = {
         str(run_id): str(state)
@@ -1546,6 +1568,8 @@ def _follow_gap_rows(
         ):
             continue
         event["from_state"] = recorded or "dispatched"
+        held = (transition_times or {}).get(run_id)
+        event["observed_at"] = held[0] if held else ""
         rows.append(event)
     return rows
 
@@ -1635,6 +1659,7 @@ def _follow_watch_lines(
     the follower a reader must act on.
     """
     from reckon.crew import follow_checkpoint, runs, station_subscriber
+    from reckon.crew.watch_unit import ProducerSnapshotNotices
     from reckon.flight import FlightConfigError
 
     selected_runs = tuple(run_ids)
@@ -1654,6 +1679,9 @@ def _follow_watch_lines(
         lift_groups=resume_state.get("lift_groups"),
     )
 
+    producer_notices = ProducerSnapshotNotices(project, session, clock=clock)
+    pending_notices: list[dict[str, Any]] = []
+    backlog = [True]
     started_at = clock()
     if lifetime_deadline is None and lifetime is not None:
         # A caller that hands only a duration is granted it from this arming's
@@ -1975,7 +2003,7 @@ def _follow_watch_lines(
         stream_path: Path | None = None,
         offset: int = 0,
         identity: Mapping[str, Any] | None = None,
-    ) -> None:
+    ) -> list[dict[str, Any]]:
         """Run the caller's per-wait work — reclaiming a registration, say."""
         if on_poll is not None:
             on_poll(
@@ -2000,6 +2028,7 @@ def _follow_watch_lines(
         _check_consumer()
         _check_settle()
         _renew_producer_lease()
+        return producer_notices.poll()
 
     # The follower prints no standing summary line, and no closing row that
     # names runs either. Under the session host every printed line is a
@@ -2257,23 +2286,21 @@ def _follow_watch_lines(
     def _subscriber_pass() -> bool:
         """One pass's own work, handed to the subscriber's poll loop.
 
-        The loop owns the read, the paint and the wait; this owns the checks
-        that end an arming. The recovery sweep is deliberately absent: it runs
-        once for every session on the node, in the station, so a pane that
-        swept beside the station would pay the same fleet reads once per pane.
+        The loop owns the read, the paint and the wait; this owns lifecycle
+        checks and notices that interrupt a wait. The recovery sweep runs once
+        for every session on the node, in the station, so the pane never pays
+        for a fleet-wide recovery read.
         """
-        _tick()
-        return not (lifetime_elapsed or consumer_gone or settled)
+        pending_notices.extend(_tick())
+        return not (lifetime_elapsed or consumer_gone or settled or pending_notices)
 
     while not _stopped() and not lifetime_elapsed and not consumer_gone and not settled:
         if subscriber is not None:
             # A subscriber is a query and a painter: it reads the station's
             # rows after its stored cursor, paints them with the row path, and
-            # writes its place back. Nothing on this pass opens a file under
-            # the crew home except the two leases the producer and the
-            # delivery registration still need until they are retired. The
-            # poll loop is the subscriber's own, driven here for this arming,
-            # so a pane and a test read rows by one path rather than two.
+            # writes its place back. The timed pass checks publication health
+            # and renews the producer and delivery leases. The poll loop is the
+            # subscriber's own, so a pane and a test read rows by one path.
             if first_attach:
                 first_attach = False
                 resume_state = {}
@@ -2304,7 +2331,6 @@ def _follow_watch_lines(
             # a backlog, not transitions written since. The pass callback runs
             # after that first poll and its flush, so the mark is dropped as
             # soon as the backlog has been handed over.
-            backlog = [True]
 
             def _first_pass_then_mark(pending=backlog) -> bool:
                 pending[0] = False
@@ -2320,7 +2346,11 @@ def _follow_watch_lines(
                     yield dict(event, replay=True)
                 else:
                     yield event
-            break
+            if not pending_notices:
+                break
+            yield from pending_notices
+            pending_notices.clear()
+            continue
         if not runs.producer_live(project):
             identity = runs.watch_producer_identity(project)
             reason = _logged_producer_stop(project)
@@ -2379,7 +2409,7 @@ def _follow_watch_lines(
             # because the sweep is the long call and the rows are what the
             # reader is waiting for.
             _sweep_on_cadence()
-            _tick()
+            yield from _tick()
             sleeper(poll_interval)
             continue
         producer_reload_failure_reported = False
@@ -2545,6 +2575,9 @@ def _follow_watch_lines(
                     session=session,
                     observed=observed_sessions,
                     run_ids=selected_runs,
+                    transition_times=_recorded_fleet_times(
+                        stream_path, boundary=boundary
+                    ),
                 )
                 if record
                 else []
@@ -2641,7 +2674,7 @@ def _follow_watch_lines(
                 break
             if _stopped():
                 return
-            _tick()
+            yield from _tick()
             if _producer_reload_pending():
                 # A deferred mismatch is re-read on the wait pass rather than
                 # only on attach: the producer's reload window can close while
@@ -2676,7 +2709,7 @@ def _follow_watch_lines(
                     event = runs.parse_stream_line(line)
                     for printed in path.feed(event, now=clock()):
                         yield printed
-                    _tick(
+                    yield from _tick(
                         stream_path=stream_path,
                         offset=stream.tell(),
                         identity=stream_file_identity,
@@ -2694,7 +2727,7 @@ def _follow_watch_lines(
                     return
                 if not runs.producer_live(project):
                     break
-                _tick(
+                yield from _tick(
                     stream_path=stream_path,
                     offset=stream.tell(),
                     identity=stream_file_identity,
@@ -3748,17 +3781,13 @@ def crew_follow(
             if event.get("event") in (
                 FOLLOWER_STALE_PRODUCER_EVENT,
                 FOLLOWER_PRODUCER_RELOADING_EVENT,
+                "producer-lost",
+                "producer-restored",
             ):
-                # The seat's producer runs older code than this follower — with
-                # the cycle remedy once it is confirmed stale, or a line saying
-                # it is still catching up inside its reload window. Like the
-                # format marker it is about the pane rather than the fleet, so
-                # it is never rendered as a run's row: JSON mode emits the
-                # object with the stamps (and the remedy when there is one), and
-                # text mode prints the one dim line. A reloading note marks its
-                # own pane reach on ``pane_line``: while the window is still
-                # open it stays off the pane, and a foreign seat's overrun
-                # leaves the pane to the host-specific advice.
+                # Producer health notices carry a sentence, not a run's
+                # transition. JSON retains the age, code stamps and remedy;
+                # text prints the sentence. A reload inside its window marks
+                # pane_line false until host-specific advice is owed.
                 pane_line = bool(event.pop("pane_line", True))
                 if json_output:
                     _emit_crew_result(event, pretty, observation=True)

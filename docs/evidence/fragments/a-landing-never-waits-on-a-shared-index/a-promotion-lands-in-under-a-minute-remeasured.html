@@ -1,0 +1,123 @@
+<section id="a-promotion-lands-in-under-a-minute-remeasured"
+         data-node="a-promotion-lands-in-under-a-minute-remeasured">
+  <h2>Re-measured with the released-lock retry in place: twelve of twelve promotions landed, the slowest in 15.31 s</h2>
+
+  <p><strong>What was measured.</strong> A temporary bare origin, a temporary checkout
+  standing in for the shared working tree, a temporary crew home, and three
+  completed runs whose worktrees each hold one committed change. Each checkout
+  carried 2,000 bulk files so three landing commits would contend for the shared
+  checkout's index. <code>crew complete --land</code> was started for all three in
+  separate processes within a few milliseconds of one another, and each
+  promotion's wall clock is whole-process time from launch to exit. The harness
+  is <code>measure_promotions_concurrent.py</code> in the run directory; the same
+  driver ran both arms.</p>
+
+  <p><strong>Head arm — 4 attempts of three promotions, at
+  <code>1b8a0d372a</code>.</strong> That revision carries the landing commit's
+  released-lock retry (<code>bcc56fcc9c</code>): a git call that failed
+  because this checkout's <code>index.lock</code> existed is retried up to the
+  130-attempt, 0.5-second bound even when the lock has already been released.
+  Twelve promotions, twelve landed and pushed, none refused, none rolled back.</p>
+
+  <table id="a-promotion-lands-in-under-a-minute-remeasured-head-timings">
+    <thead>
+      <tr><th>attempt</th><th>files in checkout</th><th>wall clock (s)</th><th>landed / pushed / on origin</th><th>refused</th><th>rolled back</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>2,000</td><td>4.65, 4.40, 4.57</td><td>3 / 3 / 3</td><td>0</td><td>0</td></tr>
+      <tr><td>2</td><td>2,000</td><td>5.68, 5.28, 5.67</td><td>3 / 3 / 3</td><td>0</td><td>0</td></tr>
+      <tr><td>3</td><td>2,000</td><td>15.31, 12.44, 14.27</td><td>3 / 3 / 3</td><td>0</td><td>0</td></tr>
+      <tr><td>4</td><td>2,000</td><td>11.03, 12.56, 11.25</td><td>3 / 3 / 3</td><td>0</td><td>0</td></tr>
+    </tbody>
+  </table>
+
+  <p id="a-promotion-lands-in-under-a-minute-remeasured-verdict"><strong>Verdict on the head arm.</strong> Every promotion
+  landed and its land commit is reachable from the origin's <code>main</code>.
+  The slowest was 15.31 s, well under the sixty-second bound, and no promotion
+  refused or rolled back. The done-when holds at this revision.</p>
+
+  <p><strong>Comparison arm — the code before the released-lock retry, at
+  <code>251cb1cd05</code> (<code>bcc56fcc9c^</code>)</strong>, extracted to a
+  scratch tree and driven with the same harness at the same 2,000-file size:
+  four attempts of three, twelve in all, every one landed and pushed, the
+  slowest 15.49 s, none refused, none rolled back.</p>
+
+  <table id="a-promotion-lands-in-under-a-minute-remeasured-comparison-timings">
+    <thead>
+      <tr><th>attempt</th><th>files in checkout</th><th>wall clock (s)</th><th>landed / pushed / on origin</th><th>refused</th><th>rolled back</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>2,000</td><td>11.73, 11.16, 11.05</td><td>3 / 3 / 3</td><td>0</td><td>0</td></tr>
+      <tr><td>2</td><td>2,000</td><td>10.74, 14.31, 11.30</td><td>3 / 3 / 3</td><td>0</td><td>0</td></tr>
+      <tr><td>3</td><td>2,000</td><td>12.76, 13.37, 10.87</td><td>3 / 3 / 3</td><td>0</td><td>0</td></tr>
+      <tr><td>4</td><td>2,000</td><td>12.10, 15.49, 10.20</td><td>3 / 3 / 3</td><td>0</td><td>0</td></tr>
+    </tbody>
+  </table>
+
+  <p id="a-promotion-lands-in-under-a-minute-remeasured-absence"><strong>The collision did not reproduce on the comparison
+  arm, and the arm is known to lack the fix.</strong> Absence needs the
+  instrument shown to see something known present. A deterministically held
+  lock was used as that check, since a natural collision is a race and cannot be
+  commanded at the exact pre-lock window:</p>
+
+  <ul>
+    <li><strong>The comparison tree genuinely predates the retry.</strong> The
+    landed test <code>tests/test_a_landing_commit_retries_a_released_lock.py</code>
+    passes 5 cases at the head tree. Copied into the <code>bcc56fcc9c^</code>
+    tree, its released-lock case fails with <code>Right contains one more item:
+    2</code> &mdash; the retry did not happen &mdash; while the other four pass.
+    So the comparison arm's helper still returns the failure after one attempt
+    when the lock has been released, exactly the defect the retry repairs.</li>
+    <li><strong>The harness records a refusal when one happens.</strong> With a
+    second process holding the checkout's <code>index.lock</code> for 150 s
+    before a single promotion, the promotion was refused at 148.64 s and rolled
+    back, with the report reading &ldquo;Another writer has held the checkout's
+    index lock for 83.2s, past this landing's 64.5s retry bound (130 attempts
+    0.50s apart)&rdquo;. A refusal is therefore recorded by this driver, not
+    silently counted as a landing. (An exploratory arm holding the lock for 80 s
+    landed at 81.85 s, once the holder removed the lock as the final retry
+    began.)</li>
+  </ul>
+
+  <p>So the comparison arm's twelve landings are twelve attempts in which no
+  peer held the shared index long enough to refuse a landing commit; the run
+  records the collision as not reproduced in twelve attempts rather than as
+  evidence about this node's change.</p>
+
+  <p><strong>Git log of the head arm's shared checkout</strong> (attempt 4; the
+  origin's log is identical, so every land commit is on the remote):</p>
+
+  <pre><code>0dfa4fc land(r-...010001...-measure-run-1): merge the reviewed head onto the primary branch
+43ea270 release(r-...010001...-measure-run-1): record workspace outcome
+72dffa1 promote(r-...010001...-measure-run-1): passed
+8326011 land(r-...010002...-measure-run-2): merge the reviewed head onto the primary branch
+ee3905f release(r-...010002...-measure-run-2): record workspace outcome
+b89a460 land(r-...010000...-measure-run-0): merge the reviewed head onto the primary branch
+e5454a6 release(r-...010000...-measure-run-0): record workspace outcome
+72093d5 promote(r-...010002...-measure-run-2): passed
+a1f2623 promote(r-...010000...-measure-run-0): passed
+e39796b add the reviewed change of run 1
+18ba53e add the reviewed change of run 2
+77e5d53 add the reviewed change of run 0</code></pre>
+
+  <p id="a-promotion-lands-in-under-a-minute-remeasured-separate-defect"><strong>A separate defect, present in every one of the
+  twenty-four promotions.</strong> Every promotion that landed and pushed still
+  exited <code>1</code> &mdash; all of them, in both arms &mdash; with
+  &ldquo;the reviewed head landed and was pushed, but the worktree was withheld:
+  its HEAD is not reachable from the integration revision&rdquo;. The
+  workspace-outcome release step judges the worktree's head against a revision
+  that does not carry it before the land step merges it. It reproduces at the
+  comparison revision as well, so it is not this node's change and no landing
+  can be judged by the command's exit status until it is repaired.</p>
+
+  <p><strong>Evidence paths</strong> (under the run directory
+  <code>r-20261115T062044373262-a-promotion-lands-in-under-a-minute-remeasured</code>):
+  <code>measurement-logs/head/attempt-1..4.log</code>,
+  <code>measurement-logs/base/attempt-1..4.log</code>,
+  <code>measurement-logs/focused/head.log</code>,
+  <code>measurement-logs/focused/base.log</code>,
+  <code>measurement-logs/control/lock-hold-150.log</code>,
+  <code>results.json</code>. Each attempt log names its revision, the module under
+  test as imported, its command and working directory, and ends in
+  <code>EXIT=</code>.</p>
+</section>

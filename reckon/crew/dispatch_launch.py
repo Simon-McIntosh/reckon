@@ -27,6 +27,7 @@ from reckon import (
     _backends,
     _store,
 )
+from reckon.crew import host_heartbeat
 from reckon.crew.dispatch_claims import (
     CLAIM_GRACE_OBSERVATIONS_NAME,
     CLAIM_GRACE_OBSERVATION_LIMIT,
@@ -2411,6 +2412,22 @@ def latest_reservation(
     return found[-1] if found else None
 
 
+def _adoptable_floor(run_directory: Path, from_record: int) -> int:
+    """The lowest attempt a launch may adopt as the reservation its door took.
+
+    The pointer names the attempt the run last started, and one past it is the
+    attempt a launch normally starts. An attempt that never left a receipt has
+    not consumed that number, though: the door's own reservation key, read from
+    the receipts, is that same attempt again, and the door reserved it. Adopting
+    only from one past the pointer then skipped the door's reservation, the
+    launch reserved the same attempt a second time, met its own live file, and
+    refused itself. On 15 November a run whose wait-lift died before its worker
+    started could not be resumed at all for that reason. The floor is therefore
+    never above the receipt-derived key.
+    """
+    return min(from_record, launch_reservation_key(run_directory))
+
+
 def _reservation_taken_by_this_process(
     run_directory: Path, *, at_least: int = 1
 ) -> LaunchReservation | None:
@@ -2535,12 +2552,13 @@ def reservation_in_flight(
     """
     if not isinstance(payload, Mapping):
         return False
+    holder_running = _reservation_holder_running(payload)
     if payload.get("supervisor_pid") is not None:
         supervisor = {
             "pid": payload.get("supervisor_pid"),
             "pid_start_time": payload.get("supervisor_pid_start_time"),
         }
-        if record_process_alive(supervisor, process_alive) is not True:
+        if not holder_running(supervisor):
             return False
         # An idle supervisor holds nothing. A run whose worker has parked on a
         # declared wait has ended its turn, and the supervisor beside it is
@@ -2549,9 +2567,46 @@ def reservation_in_flight(
         # stands. A worker that is still running is not parked, and its
         # reservation still holds.
         return not _run_is_parked_on_a_declared_wait(run_directory)
-    if record_process_alive(payload, process_alive) is not True:
+    if not holder_running(payload):
         return False
     return not _unreached_launch(payload, run_directory, attempt)
+
+
+def _reservation_holder_running(
+    payload: Mapping[str, Any],
+) -> Callable[[Mapping[str, Any]], bool]:
+    """The liveness test that applies to a reservation's named process.
+
+    A process id means something only in the process table of the host that
+    issued it. A reservation taken here is judged by probing its pid here,
+    matched against the start time recorded beside it. A reservation taken on
+    another host names a pid this host cannot read at all — the number may
+    belong to an unrelated local process — so it is judged by that host's own
+    heartbeat instead: a host still publishing is a host whose holder still
+    exists, and a host whose beat has lapsed is a host that has gone.
+
+    A record naming no host is the shape an older launch wrote. It keeps the
+    local reading it was always given, because nothing on disk says the pid
+    belongs elsewhere.
+    """
+    host = payload.get("launcher_host")
+    if isinstance(host, str) and host and host != _reservation_host():
+        home = crew_home()
+
+        def foreign(_record: Mapping[str, Any]) -> bool:
+            return host_heartbeat.host_is_live(home, host)
+
+        return foreign
+
+    def local(record: Mapping[str, Any]) -> bool:
+        return record_process_alive(record, process_alive) is True
+
+    return local
+
+
+def _reservation_host() -> str:
+    """The host a launch here records on its reservation."""
+    return host_heartbeat.heartbeat_host()
 
 
 def _run_is_parked_on_a_declared_wait(run_directory: Path | None) -> bool:
@@ -2692,11 +2747,13 @@ def reserve_launch_attempt(
             "kind": kind,
             "pid": os.getpid(),
             "pid_start_time": _process_start_time(os.getpid()),
+            "launcher_host": _reservation_host(),
             "at": _utc_now(),
             "supervisor_pid": None,
             "supervisor_pid_start_time": None,
         }
         if _create_reservation(path, payload):
+            _publish_reservation_host()
             return LaunchReservation(
                 run_id=run_id, attempt=attempt, path=path, kind=kind
             )
@@ -2793,6 +2850,97 @@ def release_launch_reservation(
             return
     with contextlib.suppress(OSError):
         reservation.path.unlink(missing_ok=True)
+
+
+def release_a_withdrawn_reservation(
+    run_directory: Path, payload: Mapping[str, Any], *, reason: str
+) -> bool:
+    """Release one reservation whose door has declared it will not launch it.
+
+    Only a reservation that never became a launch may be released this way:
+    one naming a supervisor belongs to a worker's launch, and one whose attempt
+    left a worker record or an exit receipt already accounts for itself. The
+    caller decides whether the door has declared itself withdrawn; this checks
+    only that nothing was launched and take it at its word.
+
+    The attempt's own exit receipt is written before the reservation is let go,
+    so a reader that arrives between the two unlinks sees the attempt ended
+    rather than an attempt that never happened.
+    """
+    attempt = payload.get("attempt")
+    if not isinstance(attempt, int):
+        return False
+    if payload.get("supervisor_pid") is not None:
+        return False
+    if _attempt_leaves_a_worker_record(run_directory, attempt):
+        return False
+    if _reserved_attempt_ended(run_directory, attempt):
+        return False
+    _write_attempt_artifact(
+        run_directory,
+        EXIT_RECORD_NAME,
+        {
+            "run_id": str(payload.get("run_id") or run_directory.name),
+            "exit_code": None,
+            "detail": reason,
+            "cause": "the launch was withdrawn before it recorded a supervisor",
+            "recorded_at": _utc_now(),
+        },
+        attempt=attempt,
+    )
+    with contextlib.suppress(OSError):
+        launch_reservation_path(run_directory, attempt).unlink()
+    return True
+
+
+def _publish_reservation_host() -> None:
+    """Refresh this host's beat, so an off-host reader can judge its holders.
+
+    Best effort: a beat that cannot be written must not refuse a launch. The
+    cost of a miss is a reservation whose holder reads as unknown from
+    elsewhere, which is the reading this host's reservations had before the
+    beat existed.
+    """
+    with contextlib.suppress(OSError):
+        host_heartbeat.publish_host_heartbeat(crew_home())
+
+
+def release_unspawned_reservations(run_directory: Path, *, reason: str) -> int:
+    """Drop reservations this process took and never turned into a worker.
+
+    A door that takes a reservation and then declines to launch leaves the hold
+    standing. A launch whose worker ends is freed by the attempt's exit receipt,
+    and a launch that fails before its supervisor is recorded files one; a door
+    that never launched has neither, so the reservation holds until
+    :data:`UNREACHED_LAUNCH_BOUND_SECONDS` passes. A door that knows it is not
+    launching is the one party able to say so at once, and it took these
+    reservations itself.
+
+    Only reservations naming this process with no supervisor recorded are
+    dropped. One naming a supervisor belongs to a launch already under way,
+    which is not this door's to end.
+
+    The answer is how many were dropped.
+    """
+    dropped = 0
+    try:
+        names = [path.name for path in run_directory.iterdir()]
+    except OSError:
+        return dropped
+    for name in sorted(names):
+        if _RESERVATION_PATTERN.match(name) is None:
+            continue
+        path = run_directory / name
+        payload = _read_reservation(path)
+        if not isinstance(payload, Mapping):
+            continue
+        if payload.get("pid") != os.getpid():
+            continue
+        if payload.get("launcher_host") not in (None, _reservation_host()):
+            continue
+        if release_a_withdrawn_reservation(run_directory, payload, reason=reason):
+            dropped += 1
+    return dropped
 
 
 def _record_unreached_launch(
@@ -3400,7 +3548,7 @@ def supervised_launch(
         # supervisor is recorded on it: the hold then follows the worker rather
         # than the door that took it.
         reservation = _reservation_taken_by_this_process(
-            run_directory, at_least=from_record
+            run_directory, at_least=_adoptable_floor(run_directory, from_record)
         )
     if reservation is None:
         # Every launch that spawns a supervisor reserves the attempt it starts,
@@ -3753,6 +3901,8 @@ def _worker_record_payload(
         "attempt": attempt,
         "pid": pid,
         "pid_start_time": _process_start_time(pid),
+        "supervisor_pid": os.getpid(),
+        "supervisor_pid_start_time": _process_start_time(os.getpid()),
         "launched_at": launched_at,
         "claim_registered_at": registered_at,
         "backend": str(spec["plan"].get("backend") or ""),
@@ -3814,6 +3964,10 @@ def _without_this_supervisor(record: Mapping[str, Any]) -> Mapping[str, Any]:
     cleared.pop("pid", None)
     cleared.pop("pid_start_time", None)
     return cleared
+
+
+class _SupersededSupervisorError(CrewError):
+    """A delayed supervisor no longer owns the attempt it was asked to spawn."""
 
 
 def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
@@ -3894,36 +4048,67 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
         if node_directories:
             environment[STEP_NODE_DIRS_ENV] = os.pathsep.join(node_directories)
 
+    writer = _worker_record_writer(spec)
+
     def attempt() -> subprocess.Popen:
-        with (
-            open(str(spec["prompt_path"]), "rb") as stdin,
-            open(str(spec["log_path"]), "wb") as stdout,
-            open(str(spec["stderr_path"]), "wb") as stderr,
-        ):
-            return subprocess.Popen(
-                argv,
-                cwd=plan.get("cwd"),
-                env=_worker_process_environment(
-                    environment,
-                    dialect=str(plan.get("dialect") or ""),
-                ),
-                stdin=stdin,
-                stdout=stdout,
-                stderr=stderr,
-                start_new_session=False,
-                # The worker must start with the default signal dispositions
-                # rather than the supervisor's own handlers, so a stop aimed at
-                # the group ends the worker. This runs in the supervisor's
-                # single-threaded child as it starts.
-                preexec_fn=_worker_default_signals,  # noqa: PLW1509
-            )
+        with _pointer_lock(run_id):
+            current = read_pointer(run_id)
+            current_attempt = int(current.get("attempt") or 1)
+            spawning_attempt = int(spec.get("attempt") or current_attempt)
+            if current.get("phase") == "queued" or (
+                current_attempt >= spawning_attempt
+                and current.get("attempt_started_at")
+                and spec.get("attempt_started_at")
+                and current["attempt_started_at"] != spec["attempt_started_at"]
+            ):
+                raise _SupersededSupervisorError(
+                    f"run {run_id!r} no longer names this supervisor's launch attempt"
+                )
+            prior = _without_this_supervisor(current)
+            holder = live_worker_reading(prior)
+            if _launch_refused_by(prior, holder):
+                raise CrewError(
+                    _live_worker_refusal(
+                        run_id,
+                        holder,
+                        "a launch that started now would run a second worker beside it; "
+                        "observe or stop it before launching again",
+                        prior,
+                    )
+                )
+            with (
+                open(str(spec["prompt_path"]), "rb") as stdin,
+                open(str(spec["log_path"]), "wb") as stdout,
+                open(str(spec["stderr_path"]), "wb") as stderr,
+            ):
+                process = subprocess.Popen(
+                    argv,
+                    cwd=plan.get("cwd"),
+                    env=_worker_process_environment(
+                        environment,
+                        dialect=str(plan.get("dialect") or ""),
+                    ),
+                    stdin=stdin,
+                    stdout=stdout,
+                    stderr=stderr,
+                    start_new_session=False,
+                    # The worker must start with the default signal dispositions
+                    # rather than the supervisor's own handlers, so a stop aimed at
+                    # the group ends the worker. This runs in the supervisor's
+                    # single-threaded child as it starts.
+                    preexec_fn=_worker_default_signals,  # noqa: PLW1509
+                )
+                # Recovery takes the same lock, so it sees either no spawn or its
+                # receipt. A delayed supervisor re-reads the attempt before spawning.
+                if writer is not None:
+                    writer(process)
+                return process
 
     process = _spawn_worker_retrying_a_vanished_bind(
         attempt,
         argv=argv,
         stderr_path=Path(str(spec["stderr_path"])),
         log_path=Path(str(spec["log_path"])),
-        on_spawn=_worker_record_writer(spec),
     )
     # A poll of a child that has already exited collects its status, and the
     # retry's startup check is such a poll. The status is carried on the pid
@@ -4067,6 +4252,7 @@ def _supervisor_exit_record(
     status: int | None,
     run_directory: Path,
     ended_pids: list[int] | None = None,
+    forced_exit: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Compose the one record written for a worker's exit or launch failure.
 
@@ -4103,6 +4289,8 @@ def _supervisor_exit_record(
         record.update({"exit_code": None, "signal": None, "signal_name": None})
     else:
         record.update(_wait_status_record(os.waitstatus_to_exitcode(status)))
+    if forced_exit:
+        record["forced_exit"] = dict(forced_exit)
     return record
 
 
@@ -4172,6 +4360,14 @@ def _record_stop_before_spawn() -> threading.Event:
 
 def _record_is_this_attempt(record: Mapping[str, Any], spec: Mapping[str, Any]) -> bool:
     """Whether a live pointer still names the attempt this supervisor runs as."""
+    if record.get("phase") == "queued":
+        return False
+    if (
+        record.get("attempt_started_at")
+        and spec.get("attempt_started_at")
+        and record["attempt_started_at"] != spec["attempt_started_at"]
+    ):
+        return False
     try:
         return int(record.get("attempt") or 1) == int(spec.get("attempt") or 1)
     except (TypeError, ValueError):
@@ -4303,11 +4499,11 @@ _WORKER_DONE_MANIFEST_STATUSES = frozenset({"complete", "failed"})
 # ends it; a worker whose manifest is complete or failed should exit at once,
 # so the grace covers only the flush between the manifest write and the exit.
 TERMINAL_MANIFEST_GRACE_ENV = "RECKON_WORKER_TERMINAL_GRACE_SECONDS"
-TERMINAL_MANIFEST_GRACE_DEFAULT = 300.0
+TERMINAL_MANIFEST_GRACE_DEFAULT = 30.0
 # How often the supervisor rechecks a manifest while it waits for the worker.
 # Coarse on purpose: the file lives on shared storage, and a manifest the
 # worker has not written again cannot have changed its status, so poll often
-# enough to notice a delivery against a multi-minute grace without reading the
+# enough to notice a delivery inside its exit bound without reading the
 # manifest across the whole life of every worker.
 _WORKER_MANIFEST_POLL_SECONDS = 3.0
 _STEP_START_SETTLE_SECONDS = 30.0
@@ -4333,17 +4529,21 @@ _WORKER_MANIFEST_QUIET_SECONDS = 3.0
 # may defer its signal for at most this long; past it the whole read the
 # supervisor holds is taken as the delivery. An incomplete manifest is never
 # signalled on, at the ceiling or before it.
-_WORKER_MANIFEST_CEILING_SECONDS = 600.0
+_WORKER_MANIFEST_CEILING_SECONDS = 30.0
 
 
 def _terminal_manifest_grace_seconds() -> float:
     """The grace a finished worker is given to exit on its own, in seconds.
 
-    Read from the environment so a test can shorten it, and floored at zero so
-    a nonsensical value degrades to an immediate end rather than to no bound.
+    An override can shorten the grace but cannot extend the terminal run's
+    lifetime past its bound. Signal escalation and reaping have their own time
+    reserved after this grace.
     """
-    return read_duration_override(
-        TERMINAL_MANIFEST_GRACE_ENV, TERMINAL_MANIFEST_GRACE_DEFAULT, 0, True
+    return min(
+        TERMINAL_MANIFEST_GRACE_DEFAULT,
+        read_duration_override(
+            TERMINAL_MANIFEST_GRACE_ENV, TERMINAL_MANIFEST_GRACE_DEFAULT, 0, True
+        ),
     )
 
 
@@ -4580,6 +4780,20 @@ def _record_step_wait(run_directory: Path, client_pid: int) -> None:
     )
 
 
+def _terminal_attempt_phase(run_directory: Path, attempt: Mapping[str, Any]) -> str:
+    """The current attempt's terminal pointer phase, or an empty string."""
+    try:
+        pointer = read_pointer(run_directory.name)
+    except CrewError:
+        return ""
+    phase = str(pointer.get("phase") or "")
+    return (
+        phase
+        if phase in _TERMINAL_RUN_PHASES and _record_is_this_attempt(pointer, attempt)
+        else ""
+    )
+
+
 def _reap_worker_on_its_terminal_manifest(
     pid: int,
     *,
@@ -4590,6 +4804,7 @@ def _reap_worker_on_its_terminal_manifest(
     stop_requested: threading.Event | None = None,
     stop_grace_seconds: float = 0.0,
     ended_pids: list[int] | None = None,
+    terminal_state: dict[str, Any] | None = None,
 ) -> int | None:
     """Collect a worker's exit, ending it once its manifest is delivered or a stop arrives.
 
@@ -4625,6 +4840,12 @@ def _reap_worker_on_its_terminal_manifest(
     the last read, so an unchanged manifest is never reparsed and a manifest
     left by a previous attempt — a resumed run's own complete record — is not
     mistaken for this attempt's delivery.
+
+    A pointer already in a terminal phase is independently authoritative: its
+    exit deadline does not move when the manifest is rewritten. The clock and
+    signal receipt belong to the attempt and are carried through waits on
+    adopted children, so a child never receives a fresh grace after its parent
+    exits.
     """
     seen_mtime_ns: int | None = None
     written_at: float | None = None
@@ -4632,7 +4853,8 @@ def _reap_worker_on_its_terminal_manifest(
     is_done = False
     is_whole = False
     deadline: float | None = None
-    signalled_at: float | None = None
+    terminal_state = {} if terminal_state is None else terminal_state
+    signalled_at: float | None = terminal_state.get("signalled_at")
     stop_deadline: float | None = None
     stop_killed = False
     pending_step_since: float | None = None
@@ -4647,6 +4869,10 @@ def _reap_worker_on_its_terminal_manifest(
         if waited_pid == pid:
             return status
         now = time.monotonic()
+        phase = _terminal_attempt_phase(run_directory, terminal_state)
+        if phase:
+            terminal_state.setdefault("deadline", now + TERMINAL_MANIFEST_GRACE_DEFAULT)
+            terminal_state.setdefault("phase", phase)
         if (
             stop_requested is not None
             and stop_deadline is None
@@ -4734,6 +4960,8 @@ def _reap_worker_on_its_terminal_manifest(
         if settled or ceiling_due:
             age = time.time() - (mtime_ns / 1_000_000_000)
             deadline = now + grace_seconds - age
+            if ceiling_due:
+                deadline = min(deadline, terminal_at + grace_seconds)
         else:
             # Nothing whole, quiet and terminal is on disk: either the delivery
             # was withdrawn (the worker is working again, or has declared a wait
@@ -4742,6 +4970,12 @@ def _reap_worker_on_its_terminal_manifest(
             # on as before rather than ended on a withdrawn or half-written
             # delivery's clock.
             deadline = None
+        if "deadline" in terminal_state:
+            deadline = (
+                min(deadline, terminal_state["deadline"])
+                if deadline is not None
+                else terminal_state["deadline"]
+            )
         if (
             deadline is not None
             and signalled_at is None
@@ -4754,7 +4988,11 @@ def _reap_worker_on_its_terminal_manifest(
             delivered = signal_worker(
                 pid,
                 signal.SIGTERM,
-                reason="worker-lingered-after-terminal-manifest",
+                reason=(
+                    "worker-lingered-after-terminal-phase"
+                    if terminal_state.get("phase")
+                    else "worker-lingered-after-terminal-manifest"
+                ),
                 run_dir=run_directory,
                 run_id=run_directory.name,
                 reach_run=True,
@@ -4769,6 +5007,13 @@ def _reap_worker_on_its_terminal_manifest(
                 )
             if delivered:
                 signalled_at = now
+                terminal_state["signalled_at"] = now
+                terminal_state["forced_exit"] = {
+                    "reason": "terminal-run",
+                    "phase": terminal_state.get("phase")
+                    or _worker_manifest_done_status(manifest_path),
+                    "signalled_at": _utc_now(),
+                }
                 if wait_started_at is None:
                     wait_started_at = now
         elif (
@@ -4877,6 +5122,7 @@ def _reap_the_launched_worker(
     stop_requested: threading.Event | None = None,
     stop_grace_seconds: float = 0.0,
     ended_pids: list[int] | None = None,
+    terminal_state: dict[str, Any] | None = None,
 ) -> tuple[int, int | None]:
     """Collect the exit of the worker a launcher started and left behind.
 
@@ -4889,14 +5135,23 @@ def _reap_the_launched_worker(
     worker rather than a launcher's exit taken while the worker still runs.
     """
     worker_pid, worker_status = pid, status
-    if status is not None and os.WIFSIGNALED(status):
+    signalled = status is not None and os.WIFSIGNALED(status)
+    if signalled and not ended_pids:
         # A launcher hands the attempt to its worker by exiting; it is not
         # killed. A spawned child that ended by signal ended the attempt's own
-        # worker, and any descendants it leaves behind are leftovers of that
-        # worker rather than a worker still running the attempt. The signal is
-        # the fact the exit record carries, so it is written now rather than
-        # after a leftover ends.
-        return worker_pid, worker_status
+        # worker. A terminal attempt still owes cleanup of those descendants;
+        # a working attempt keeps its exit available for recovery immediately.
+        phase = _terminal_attempt_phase(run_directory, terminal_state or {})
+        try:
+            delivered = (
+                manifest_path.stat().st_mtime_ns > baseline_ns
+                and _worker_manifest_done_status(manifest_path)
+                and _worker_manifest_is_whole(manifest_path)
+            )
+        except OSError:
+            delivered = False
+        if not phase and not delivered:
+            return worker_pid, worker_status
     while True:
         children = _child_processes_of(os.getpid())
         if not children:
@@ -4911,10 +5166,13 @@ def _reap_the_launched_worker(
                 stop_requested=stop_requested,
                 stop_grace_seconds=stop_grace_seconds,
                 ended_pids=ended_pids,
+                terminal_state=terminal_state,
             )
-            if child_status is not None:
+            if child_status is not None and not signalled:
                 # The exit that ended the wait is the attempt's exit; a child
-                # reaped elsewhere leaves the one already held standing.
+                # reaped elsewhere leaves the one already held standing. An
+                # externally signalled harness keeps its own exit identity
+                # while its leftover descendants are collected.
                 worker_pid, worker_status = child, child_status
 
 
@@ -4927,7 +5185,15 @@ def _run_supervisor(spec_path: Path) -> int:
     the supervisor survives one so it can write the exit a post-spawn stop
     caused, and it abandons the launch when the stop arrived before the worker
     existed.
+
+    This process outlives the launch that started it, and the launcher does not:
+    a CLI dispatch records its reservation and returns about two seconds later,
+    so a beat only the launcher renewed would lapse while this supervisor and
+    its worker were still working. The beat is published here, from the process
+    that stays for the whole run, so a holder's host reads as live for as long
+    as the run lives rather than for as long as its launcher.
     """
+    _publish_reservation_host()
     try:
         spec = json.loads(spec_path.read_text())
     except (OSError, ValueError):
@@ -4972,6 +5238,11 @@ def _run_supervisor(spec_path: Path) -> int:
             # to init, where its exit would be uncollectable.
             _become_child_subreaper()
             pid = _supervisor_spawn_worker(spec)
+        except _SupersededSupervisorError as exc:
+            # This supervisor owns no current records. A launch-failure receipt
+            # here would overwrite the replacement attempt's canonical exit.
+            print(str(exc), file=sys.stderr, flush=True)
+            return 0
         except (OSError, ValueError, KeyError, CrewError) as exc:
             evidence = _launch_failure_evidence(
                 str(spec.get("run_id") or ""), run_directory
@@ -5033,13 +5304,8 @@ def _run_supervisor(spec_path: Path) -> int:
     # the poll carries none and is supervised exactly as before.
     status = getattr(pid, "collected_wait_status", None)
     ended: list[int] = []
-    if status is not None:
-        # The exit was collected from the worker itself, so it stands as the
-        # attempt's exit on its own: the worker has been reaped, so no child of
-        # this supervisor is a still-running worker whose later exit could be
-        # the one that ended the attempt.
-        worker_pid = pid
-    else:
+    terminal_state: dict[str, Any] = {"attempt": attempt}
+    if status is None:
         status = _reap_worker_on_its_terminal_manifest(
             pid,
             run_directory=run_directory,
@@ -5051,20 +5317,22 @@ def _run_supervisor(spec_path: Path) -> int:
             stop_requested=stop_requested,
             stop_grace_seconds=_stop_grace_seconds(),
             ended_pids=ended,
+            terminal_state=terminal_state,
         )
-        worker_pid, status = _reap_the_launched_worker(
-            pid,
-            status,
-            run_directory=run_directory,
-            manifest_path=_supervisor_manifest_path(run_id),
-            grace_seconds=_terminal_manifest_grace_seconds(),
-            baseline_ns=_supervisor_manifest_baseline_ns(
-                run_id, spec, supervisor_started_at=launched_at
-            ),
-            stop_requested=stop_requested,
-            stop_grace_seconds=_stop_grace_seconds(),
-            ended_pids=ended,
-        )
+    worker_pid, status = _reap_the_launched_worker(
+        pid,
+        status,
+        run_directory=run_directory,
+        manifest_path=_supervisor_manifest_path(run_id),
+        grace_seconds=_terminal_manifest_grace_seconds(),
+        baseline_ns=_supervisor_manifest_baseline_ns(
+            run_id, spec, supervisor_started_at=launched_at
+        ),
+        stop_requested=stop_requested,
+        stop_grace_seconds=_stop_grace_seconds(),
+        ended_pids=ended,
+        terminal_state=terminal_state,
+    )
     exit_record = _supervisor_exit_record(
         run_id=str(spec.get("run_id") or ""),
         attempt=attempt,
@@ -5073,6 +5341,7 @@ def _run_supervisor(spec_path: Path) -> int:
         status=status,
         run_directory=run_directory,
         ended_pids=ended,
+        forced_exit=terminal_state.get("forced_exit"),
     )
     _write_attempt_artifact(
         run_directory,

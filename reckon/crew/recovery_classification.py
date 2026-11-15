@@ -538,6 +538,28 @@ def _the_probe_did_not_answer(observation: Mapping[str, Any] | None) -> bool:
     return observation.get("answered") is False
 
 
+def _wait_declaration_missing_keys(wait: Mapping[str, Any]) -> list[str]:
+    """The required keys a refused wait declaration lacks, in the reader's order.
+
+    Derived from the parsed declaration rather than re-read from the refusal
+    text, so the row names the field a repair must add whatever wording the
+    refusal happens to carry. A declaration that names no probe may still be a
+    declaration that should have used ``wait_file`` instead, so the two shapes
+    are named together: the repair adds one or the other, and naming both tells
+    the reader a file condition is also accepted.
+    """
+    missing: list[str] = []
+    if not str(wait.get("condition") or "").strip():
+        missing.append("wait_condition")
+    if not wait.get("probe") and not wait.get("files"):
+        missing.append("wait_probe or wait_file")
+    if not wait.get("terminal"):
+        missing.append("wait_terminal")
+    if not str(wait.get("resume_brief") or "").strip():
+        missing.append("resume_brief")
+    return missing
+
+
 #: How long a declared wait's probe value must have stood still, over a run
 #: with no live process, before nobody is left to change it. A file wait's
 #: probe answers the same value for as long as the wait is healthy, so the
@@ -1758,7 +1780,14 @@ def classify_pointer(
     pre_spawn_waiting = phase in _PRE_SPAWN_PHASES and not _stranded_launch(
         record, now_seconds=moment
     )
-    if phase in WAITING_UPSTREAM_PHASES:
+    # A parked phase is the launcher's statement that the request is waiting to
+    # start, and it means that only while the pointer records no worker: a pid
+    # or a launch clock on a queued request is a request that has launched, and
+    # its liveness rather than its old label decides the reading. Without this
+    # a phase label could not be left behind, and a launched request whose
+    # label had not yet advanced read as the wait it had already passed.
+    launched = bool(record.get("pid")) or bool(record.get("launched_at"))
+    if phase in WAITING_UPSTREAM_PHASES and not launched:
         classification = phase
         # A request held on a section it waits for is stored, not launched, and
         # no lane slot will release it: what releases it is the upstream section
@@ -1777,7 +1806,7 @@ def classify_pointer(
                 f"waiting for {waiting_on} to land"
             )
             action = f"wait for {waiting_on} to land"
-    elif phase == HELD_PHASE:
+    elif phase == HELD_PHASE and not launched:
         classification = HELD_PHASE
         hold = record.get("queue_hold")
         reason = str(hold.get("reason") or "") if isinstance(hold, Mapping) else ""
@@ -1785,7 +1814,7 @@ def classify_pointer(
         if reason:
             detail += f": {reason}"
         action = f"reckon crew queue release --run {run_id}"
-    elif phase == QUEUED_PHASE:
+    elif phase == QUEUED_PHASE and not launched:
         classification = "queued"
         session_refusal = _queued_failure_remedy(record)
         if session_refusal is not None:
@@ -1811,7 +1840,11 @@ def classify_pointer(
     # report a stored request as a run. Its phase reading stands instead; the
     # stuck verdict still speaks, because it is about the wait rather than
     # about a worker.
-    unlaunched = phase in {QUEUED_PHASE, HELD_PHASE} or pre_spawn_waiting
+    unlaunched = (
+        phase in {QUEUED_PHASE, HELD_PHASE}
+        or phase in WAITING_UPSTREAM_PHASES
+        or pre_spawn_waiting
+    ) and not launched
     if unlaunched and stuck is None:
         pass
     elif stuck is not None:
@@ -2212,11 +2245,21 @@ def classify_pointer(
             )
     elif wait is not None and process_gone:
         classification = "unreadable"
+        absent_keys = _wait_declaration_missing_keys(wait)
+        names_absent = (
+            "lacks " + ", ".join(absent_keys)
+            if absent_keys
+            else "carries a field the reader refused"
+        )
         detail = (
             f"the manifest at {manifest} declares an external wait but is "
-            f"incomplete: {manifest_error}"
+            f"incomplete: it {names_absent} ({manifest_error})"
         )
-        action = f"repair the waiting declaration in {manifest} before resuming"
+        action = (
+            f"repair the waiting declaration in {manifest} — it {names_absent} "
+            f"— then reckon crew resume --run {run_id} --advice "
+            "'<what to tell the worker>'"
+        )
     elif phase == "stopped":
         classification = "stopped"
         detail = "the run was intentionally stopped"

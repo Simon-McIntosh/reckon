@@ -719,7 +719,9 @@ def _chosen_lane(selection: Mapping[str, Any], config: Mapping[str, Any]) -> str
     backend = str(selection.get("backend") or "")
     if not backend:
         return ""
-    return lane_family(config, backend)
+    chosen = _chosen_offered_row(selection)
+    reservation = (chosen or {}).get("reservation") or {}
+    return str(reservation.get("family") or lane_family(config, backend))
 
 
 def _reserved_lane_reason(answer: Any) -> str:
@@ -934,6 +936,24 @@ def lane_family(
         return str(backend.get("launch") or name)
 
 
+def reservation_family(
+    config: Mapping[str, Any], name: str, backend: Mapping[str, Any] | None = None
+) -> str:
+    """The policy family, retaining a local wrapper's harness reservation."""
+    from reckon import _backends
+
+    settings = (
+        backend
+        if backend is not None
+        else (config.get("backends") or {}).get(name, {})
+    )
+    try:
+        dialect = _backends.dialect_for(settings)
+    except _backends.BackendError:
+        return lane_family(config, name, backend)
+    return dialect.name if dialect.name == "claude" else lane_family(config, name, backend)
+
+
 def _lane_backend_names(config: Mapping[str, Any], lane: str) -> set[str]:
     """The configured backends belonging to one lane, read as the state reads it.
 
@@ -946,7 +966,10 @@ def _lane_backend_names(config: Mapping[str, Any], lane: str) -> set[str]:
     for name, backend in (config.get("backends") or {}).items():
         if not isinstance(backend, Mapping):
             continue
-        if lane_family(config, str(name), backend) == lane:
+        if lane in {
+            lane_family(config, str(name), backend),
+            reservation_family(config, str(name), backend),
+        }:
             names.add(str(name))
     return names
 

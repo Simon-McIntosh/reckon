@@ -1853,6 +1853,115 @@ def _undeclared_wait_findings(
     return findings
 
 
+def _landed_branch(root: Path) -> str:
+    """The local branch a landing pushes to, or "" when none can be read.
+
+    A detached checkout names no branch, and the primary branch is the one a
+    landing moves, so ``main`` is read directly, because a reader that has no
+    branch checked out still has that branch in the repository.
+    """
+
+    from reckon.crew import merge
+
+    try:
+        current = merge._current_branch(root)
+    except Exception:  # noqa: BLE001 - a detached checkout names no branch
+        current = ""
+    for branch in (current, "main"):
+        if not branch:
+            continue
+        if (
+            merge._run(
+                root, "rev-parse", "--verify", "--quiet", f"refs/heads/{branch}"
+            ).returncode
+            == 0
+        ):
+            return branch
+    return ""
+
+
+def _unlanded_run_findings(
+    project: str,
+    authored_by_plan: Mapping[str, Mapping[str, Any]],
+    run_holds_by_plan: Mapping[str, Mapping[str, Iterable[Mapping[str, Any]]]],
+    root: Path | None,
+) -> list[dict[str, Any]]:
+    """Report a section declared done whose promoting run's head never landed.
+
+    A done declaration is a claim, and the run is what makes it true: a run
+    promoted on a head the integration branch cannot reach recorded work that
+    shipped nowhere. The question is ancestry, which is the same question a
+    landing answers, so the finding comes from that probe rather than from a
+    second convention. A head the repository cannot resolve is not reported —
+    the question was not answerable, and an unanswerable question is not a
+    defect in the plan.
+    """
+
+    from reckon import ledger
+    from reckon.crew import merge
+
+    findings: list[dict[str, Any]] = []
+    if root is None:
+        return findings
+    for slug in sorted(run_holds_by_plan):
+        held = run_holds_by_plan[slug]
+        declarations = (authored_by_plan.get(slug) or {}).get(
+            "section_declarations"
+        ) or {}
+        suspects = [
+            str(section)
+            for section, classification in declarations.items()
+            if str(classification or "").strip().lower() == "done"
+            and held.get(str(section))
+        ]
+        if not suspects:
+            continue
+        try:
+            records, _version = ledger.read_records(
+                project, root, plan=slug, with_figures=False
+            )
+        except Exception:  # noqa: BLE001 - an unreadable ledger reports nothing
+            records = []
+        by_run = {
+            str(record.get("run_id") or ""): record
+            for record in records
+            if isinstance(record, Mapping)
+        }
+        branch = _landed_branch(Path(root))
+        if not branch:
+            continue
+        for section in suspects:
+            for row in held[section]:
+                if str(row.get("state") or "") != "promoted":
+                    continue
+                run_id = str(row.get("run_id") or "")
+                record = by_run.get(run_id)
+                if record is None:
+                    continue
+                tip = ledger._run_tip(record)
+                if not tip:
+                    continue
+                if merge._is_ancestor(Path(root), tip, branch):
+                    continue
+                findings.append(
+                    _finding(
+                        "run-not-landed",
+                        "warn",
+                        f"{slug}#{section}: declared done, and run {run_id}'s "
+                        f"head {tip[:12]} is not on {branch}",
+                        slug=slug,
+                        extra={
+                            "section": section,
+                            "run_id": run_id,
+                            "node": str(row.get("node") or ""),
+                            "head": tip,
+                            "branch": branch,
+                        },
+                    )
+                )
+    return findings
+
+
 def _overlapping_scope_findings(
     open_by_plan: Mapping[str, Iterable[str]],
     section_runs: Mapping[tuple[str, str], Iterable[Mapping[str, Any]]],
@@ -3223,14 +3332,19 @@ def _held_paths_by_section(
 class _RoadmapScope:
     """The roadmap the builds inside one scope produced, read after its work."""
 
-    __slots__ = ("built", "classify_runs", "resolve_coordinators")
+    __slots__ = ("audit_landings", "built", "classify_runs", "resolve_coordinators")
 
     def __init__(
-        self, *, resolve_coordinators: bool, classify_runs: bool = True
+        self,
+        *,
+        resolve_coordinators: bool,
+        classify_runs: bool = True,
+        audit_landings: bool = True,
     ) -> None:
         self.built: dict[str, Any] | None = None
         self.resolve_coordinators = resolve_coordinators
         self.classify_runs = classify_runs
+        self.audit_landings = audit_landings
 
 
 #: The scope whose builds record their roadmap, when a caller opened one. A
@@ -3244,7 +3358,10 @@ _BUILT_ROADMAP: ContextVar[_RoadmapScope | None] = ContextVar(
 
 @contextmanager
 def roadmap_build_scope(
-    *, resolve_coordinators: bool = True, classify_runs: bool = True
+    *,
+    resolve_coordinators: bool = True,
+    classify_runs: bool = True,
+    audit_landings: bool = True,
 ) -> Iterator[_RoadmapScope]:
     """Record the roadmap the builds inside this scope produce.
 
@@ -3258,10 +3375,19 @@ def roadmap_build_scope(
     run only when it has been blocked for a day, and such a run has recorded
     its block; classifying every unrecorded run cost a full review-store read
     per run on every pass that ranks the queue.
+
+    ``audit_landings`` off skips the check that a done section's promoting run
+    landed. That check reads the plan's ledger records and asks git about the
+    ancestry of every promoted head, and what it produces is a finding, which a
+    ranking key never reads. Measured on 15 November, the station's queue
+    ranking spent most of each tick there, one ``git merge-base`` per promoted
+    run, which left the station's export minutes stale fleet-wide.
     """
 
     scope = _RoadmapScope(
-        resolve_coordinators=resolve_coordinators, classify_runs=classify_runs
+        resolve_coordinators=resolve_coordinators,
+        classify_runs=classify_runs,
+        audit_landings=audit_landings,
     )
     token = _BUILT_ROADMAP.set(scope)
     try:
@@ -3313,7 +3439,13 @@ def section_readiness_rows(
     nor who answers an idle link, so the build runs with critical-link
     coordinator resolution off. Entering the scope here rather than leaving it
     to each caller covers admission and dispatch alike, and keeps a bounded read
-    from reading every run's ledger for an answer its rows never carry.
+    from resolving a coordinator it does not report.
+
+    The build does read the project's promoted history, because a delivered run
+    leaves the live pointer set and the ledger row is then the only record that
+    the section has been built. The read is one indexed projection per ledger
+    state, cached across builds, and it is charged only to the plans the caller
+    named.
     """
 
     with roadmap_build_scope(resolve_coordinators=False):
@@ -3631,7 +3763,7 @@ def _build_roadmap(
     plans = {slug: all_plans[slug] for slug in selected_slugs}
     from reckon import crew
     from reckon._plan_html import section_record_id
-    from reckon.crew import runs
+    from reckon.crew import runs, section_holds
 
     pointers = crew.list_live()
     live_runs, interrupted_runs = partition_live_runs(project, pointers)
@@ -3657,10 +3789,24 @@ def _build_roadmap(
         scope_claims, pointers
     )
     held_paths_by_section = _held_paths_by_section(scope_claims, section_runs)
+    repo_root = resolved_docs.parent if resolved_docs is not None else None
+    # A promoted run leaves the live set, so the section it delivered read as
+    # ready to every later wave. Both records: the live pointers, and the ledger
+    # rows promotion writes. The hold is per node, so a section whose other node
+    # is still waiting in a stored request keeps that node's work ready.
+    try:
+        run_holds_by_section = section_holds.held_section_blockers(
+            project, repo_root, pointers, plans=set(plans)
+        )
+    except Exception:  # noqa: BLE001 - unreadable history holds nothing
+        run_holds_by_section = {}
+    run_holds_by_plan: dict[str, dict[str, list[dict[str, Any]]]] = defaultdict(dict)
+    for (held_plan, held_section), held_rows in run_holds_by_section.items():
+        run_holds_by_plan[str(held_plan)][str(held_section)] = held_rows
     attempts_by_plan = (
         section_attempts_by_plan(
             project,
-            root=resolved_docs.parent if resolved_docs is not None else None,
+            root=repo_root,
             pointers=runs._list_live_records(project=project),
         )
         if include_attempts and not readiness_only
@@ -4456,6 +4602,11 @@ def _build_roadmap(
         for gate in section_gate_blockers:
             for gated in gate.get("gated_sections") or []:
                 named_holds[str(gated)].append({**gate, "kind": GATE_BLOCKER})
+        # The hold a run puts on the section it has taken. It is the one kind of
+        # section hold no plan can declare: the run record is what says the
+        # section has been built, and the row names that run.
+        for held_section, held_rows in run_holds_by_plan.get(slug, {}).items():
+            named_holds[held_section].extend(held_rows)
         section_holds_by_plan[slug] = named_holds
         plan_holds = [
             *plan_dependency_blockers,
@@ -4480,6 +4631,7 @@ def _build_roadmap(
             or decision_section_blockers
             or section_gate_blockers
             or gate_blockers
+            or run_holds_by_plan.get(slug)
         ):
             sections = sorted(declared_section_identities(authored) | set(named_holds))
             row["section_readiness"] = [
@@ -4567,6 +4719,13 @@ def _build_roadmap(
     findings.extend(
         _overlapping_scope_findings(open_sections_by_plan, section_runs, scope_claims)
     )
+    build_scope = _BUILT_ROADMAP.get()
+    if build_scope is None or build_scope.audit_landings:
+        findings.extend(
+            _unlanded_run_findings(
+                project, authored_by_plan, run_holds_by_plan, repo_root
+            )
+        )
 
     open_paths, critical, critical_members = rank_open_paths(
         plans,
@@ -4676,7 +4835,16 @@ def _build_roadmap(
             for ref_plan, section in section_runs
             if ref_plan == plan_slug and section not in plan_ready_sections
         )
-        for section in plan_ready_sections + run_sections:
+        # A section held only by a run that has left the live set has no live
+        # run to bring it onto the page. It is reported anyway, with the run
+        # that holds it, because that is the answer a reader is looking for
+        # when a section they expected to dispatch has gone quiet.
+        held_run_sections = sorted(
+            section
+            for section in run_holds_by_plan.get(plan_slug, {})
+            if section not in plan_ready_sections and section not in run_sections
+        )
+        for section in plan_ready_sections + run_sections + held_run_sections:
             node = f"{plan_slug}#{section}"
             attempts = (
                 attempts_by_plan.get(plan_slug, {})

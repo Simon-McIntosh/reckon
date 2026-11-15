@@ -1116,6 +1116,73 @@ def _promoted_run_ids(project: str) -> set[str]:
         return set()
 
 
+def withdraw_unlaunched_repair_reservations(run_id: str, *, reason: str) -> int:
+    """Drop the reservations this door took for a repair round it is holding.
+
+    A round that has taken an attempt and then declares it is waiting for
+    coordinator advice holds a reservation no worker stands behind. Held
+    rather than released, it refuses every resume that would carry the run on,
+    including the advice it is waiting for, for as long as the door lives and
+    the unreached bound has not passed — the run is stopped by the very thing
+    that was meant to pause a resume for a minute. The door is the one party
+    that knows it has not launched, so it says so here.
+
+    Only this process's own reservations are dropped. Another door's launch
+    may be mid-flight and is not this round's to end.
+    """
+    from reckon.crew import dispatch_launch
+
+    return dispatch_launch.release_unspawned_reservations(
+        runs.run_dir(run_id), reason=reason
+    )
+
+
+def supersede_a_held_repair_round(run_id: str) -> int | None:
+    """Release a repair round that holds an attempt while it waits for advice.
+
+    A coordinator's resume is the advice a held round is waiting for, so the
+    round it would otherwise wait out is superseded: the reservation the round
+    took is released and the round's own record says it was superseded rather
+    than left reading as in flight. The answer is the attempt released, or None
+    when no round is being held.
+
+    Only a recorded advice hold licenses this. Any other held reservation
+    belongs to a launch under way, which a coordinator's advice must not
+    displace.
+    """
+    from reckon.crew import dispatch_launch
+
+    directory = runs.run_dir(run_id)
+    record = _live_pointer_or_absent(run_id) or {}
+    held_round = record.get(REPAIR_DISPATCH_FIELD)
+    if not (
+        isinstance(held_round, Mapping)
+        and held_round.get("status") == "advice-hold"
+    ):
+        return None
+    reservation = dispatch_launch.held_launch_reservation(directory)
+    if not isinstance(reservation, Mapping):
+        return None
+    attempt = reservation.get("attempt")
+    if not dispatch_launch.release_a_withdrawn_reservation(
+        directory,
+        reservation,
+        reason=(
+            "the round was held for coordinator advice, and the coordinator "
+            "resumed the run with advice of its own"
+        ),
+    ):
+        return None
+    _record_repair_dispatch(
+        run_id,
+        status="superseded",
+        reason="a coordinator resume carried the run on before the round launched",
+        round_id=str(held_round.get("round_id") or ""),
+        node_id=str(held_round.get("node_id") or ""),
+    )
+    return attempt if isinstance(attempt, int) else None
+
+
 def _live_pointer_or_absent(run_id: str) -> Mapping[str, Any] | None:
     """The run's live pointer, or ``None`` when it has gone or cannot be read.
 
@@ -1859,6 +1926,13 @@ def dispatch_repair_for_run(
             )
         )
         if pending:
+            withdraw_unlaunched_repair_reservations(
+                run_id,
+                reason=(
+                    "the repair round is held for coordinator advice and has "
+                    "launched no worker"
+                ),
+            )
             recorded_hold = (read_pointer(run_id) or {}).get(REPAIR_DISPATCH_FIELD)
             if not (
                 isinstance(recorded_hold, Mapping)

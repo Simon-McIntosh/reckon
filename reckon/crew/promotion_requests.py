@@ -39,6 +39,10 @@ DEFERRED = "promotion-deferred"
 # and so a coordinator reading it is not told a promotion failed.
 WAITING = "promotion-waiting"
 PENDING = frozenset({REQUESTED, RUNNING})
+# A review parked while its record is written is not drained, but it is still a
+# promotion this queue owes, so a run waiting on that review waits rather than
+# being refused for a review that is about to be stored.
+QUEUED = PENDING | {WAITING}
 ERRORS = frozenset({FAILED, REFUSED})
 # A refusal whose run has since been promoted, landed, discarded or has no live
 # pointer is no longer the coordinator's to answer: the phase records that the
@@ -510,7 +514,7 @@ def _defer_to_a_queued_review(
         return False
     run_id = str(request["run_id"])
     if not any(
-        other.get("phase") in PENDING and _reviewed_run_id(other) == run_id
+        other.get("phase") in QUEUED and _reviewed_run_id(other) == run_id
         for other in (_read(path) for path in _requests_dir().glob("*.json"))
     ):
         return False

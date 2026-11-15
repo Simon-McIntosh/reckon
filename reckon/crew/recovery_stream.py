@@ -158,20 +158,29 @@ def _lane_reference_rates(
     """Every backend and model's recent committed rates, from one ledger read.
 
     The rate a run is judged against is a per-lane median, but reading the
-    ledger is the cost: it decodes every promoted row. Keying that read on the
-    lane as well made each lane and model pay for its own decode of the whole
-    ledger in every five-minute bucket, and the station classifies runs of
-    several lanes in several projects on every tick. One read per project and
-    bucket now answers every lane.
+    ledger is the cost. Keying that read on the lane as well made each lane and
+    model pay for its own decode of the whole ledger in every five-minute
+    bucket, and the station classifies runs of several lanes and several
+    projects on every tick, so one read per project and bucket now answers
+    every lane.
+
+    The read is bounded by the window it judges against rather than by the
+    ledger's length, because a station that pays a whole-history decode once
+    per bucket runs out of memory on a long history. ``activity_since`` filters
+    on the index's own activity scalar, so a warm index fetches only the rows
+    whose newest stamp is no older than the window's start. Every row that
+    completed inside the window has a completion stamp inside it too, and that
+    stamp is one of the stamps the activity scalar takes the maximum over, so
+    the bound admits a superset of the rows this function can use.
     """
     from reckon import ledger as ledger_module
 
-    try:
-        rows = ledger_module.load(project)[0]["runs"]
-    except (ledger_module.LedgerError, OSError, ValueError, KeyError, TypeError):
-        return {}
     end = window_bucket * 300
     start = end - 7 * 86400
+    try:
+        rows = ledger_module.load(project, activity_since=start)[0]["runs"]
+    except (ledger_module.LedgerError, OSError, ValueError, KeyError, TypeError):
+        return {}
     rates: dict[tuple[str, str], list[float]] = {}
     for row in rows:
         if not isinstance(row, Mapping):

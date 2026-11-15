@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: logs/base-suite.log records 55 passed with a bare EXIT=0 line at revision 3dbd3bf6e1, and logs/after-suite.log records 63 passed with a bare EXIT=0 line at revision db5ffba378; no FAILED line appears in either log, so the set difference is empty (0).",
+  "call_site_count": 0,
+  "completed_at": "2026-11-15T11:49:15.508Z",
+  "dispatched_at": "2026-11-15T11:15:49Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/wftl-the-lane-is-fed-while-coordinators-land.html",
+      "file_path": "docs/evidence/fragments/work-flows-to-the-lane/wftl-the-lane-is-fed-while-coordinators-land.html",
+      "line": "161",
+      "severity": "non-blocking",
+      "text": "the record's definition of the headline figure was reworded from 'the total worker-seconds inside the window' to 'inside the ledger', while concurrency() at scripts/lane_window_census.py:146 divides the area clipped to the window by the window's seconds; the sentence's own next clause still says 'divided by the window's seconds', so the record states a definition the script does not implement."
+    },
+    {
+      "file": "tests/test_the_lane_census_counts_what_it_names.py",
+      "file_path": "tests/test_the_lane_census_counts_what_it_names.py",
+      "line": "292",
+      "severity": "non-blocking",
+      "text": "counts['run_store'] is asserted equal to str(db), the same argument the test passed to load_runs at :288, and figure['as_of'] is asserted equal to ended.isoformat() at :249 after being passed in at :245; both sides of each assertion move with the input, so neither can fail on a regression, unlike the set and count assertions beside them."
+    },
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/wftl-the-lane-is-fed-while-coordinators-land.html",
+      "file_path": "docs/evidence/fragments/work-flows-to-the-lane/wftl-the-lane-is-fed-while-coordinators-land.html",
+      "line": "176",
+      "severity": "non-blocking",
+      "text": "the claim that every one of the 148 spans overlapping the window is also a hot row, so the archive contributes no span to either window, is recorded in prose only: the committed census JSON reports runs_in_archive and worker_spans but no archived-span contribution, so this zero cannot be re-derived from the artifacts."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "none: no production module imports or invokes scripts/lane_window_census.py; the instruments it reads (the run store, the admission verdict log, the claims directory) are data, not call sites, and its own test file is not a production call site.",
+    "diff": "read db5ffba3787f against a113100d5b: five paths, +622/-123 in one commit -- the raw SQL ledger read replaced by RunStore.records()/durable_rows() at scripts/lane_window_census.py:83, the hold-path parse rewritten as three repr-aware patterns at scripts/lane_window_census.py:270, eight new tests, and the record's figures and instrument prose brought onto the 09:42Z read with the earlier read committed beside it.",
+    "done_when": "s9's done_when asks for a mean of at least 12 with the other three figures reported as measured, the script committed, the baseline reproduced and a control below 12; the record's gate table at docs/evidence/fragments/work-flows-to-the-lane/wftl-the-lane-is-fed-while-coordinators-land.html:118 reports 23.55 mean, 92.5 min median, 27,854 identity files and a 6.83 control, and logs/after-suite.log ends '63 passed' with EXIT=0 at db5ffba378.",
+    "goal": "the source node's goal is to deliver work-flows-to-the-lane s9, and the commits under review repair the census instrument rather than change what it measures: scripts/lane_window_census.py:65 now reads the ledger through RunStore, and docs/evidence/fragments/work-flows-to-the-lane/wftl-the-lane-is-fed-while-coordinators-land.html:15 still reports the four figures the section names, against the baseline and the control.",
+    "manifest": "read; it states both arms green (55 at base, 63 at head), names logs/base-suite.log and logs/after-suite.log, and flags scripts/ for ratification; both logs' revision headers and EXIT=0 tails check out, though neither prints the module path a scratch-tree gate is asked to record and the trees they name (/tmp/mcintos-tree-*) no longer exist.",
+    "write_paths": "the source dispatch declares reckon, tests, skills and docs/evidence/fragments/work-flows-to-the-lane; four of the diff's five paths are inside that list, and scripts/lane_window_census.py:1 lies outside it although s9's done_when names 'a script under scripts/'."
+  },
+  "justifications": {
+    "durability": "tests/test_the_lane_census_counts_what_it_names.py:252 appends a run, retires it through RunStore.retire and requires census.load_runs to return it, so dropping the archive read reddens it; :137 and :226 guard the apostrophe parse and the null-not-zero rule the same way.",
+    "evidence": "logs/after-suite.log records 63 passed with EXIT=0 at db5ffba378, and the committed census JSON carries a read block naming each instrument and the population behind every figure.",
+    "fit": "scripts/lane_window_census.py:65 follows the argparse and docstring shape of the sibling census modules, but remains at scripts/ root while scripts/census/ holds the rest.",
+    "goal_fidelity": "scripts/lane_window_census.py:65 delivers the instrument s9 requires, and docs/evidence/fragments/work-flows-to-the-lane/wftl-the-lane-is-fed-while-coordinators-land.html:118 states every figure beside its criterion, so the landed change does what the goal asks.",
+    "reuse": "scripts/lane_window_census.py:83 extends RunStore.records() and RunStore.durable_rows() in reckon/run_store.py:781 and :838 instead of opening the database itself; no module owns parsing a hold's detail wording, so the pattern rewrite forks nothing.",
+    "scope_discipline": "scripts/lane_window_census.py:1 lies outside the dispatch's declared write paths, and the added census-at-a113100d5b.json is a second near-duplicate output beside the one s9 names."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to deliver work-flows-to-the-lane s9, and the commits under review repair the census instrument rather than change what it measures: scripts/lane_window_census.py:65 now reads the ledger through RunStore, and docs/evidence/fragments/work-flows-to-the-lane/wftl-the-lane-is-fed-while-coordinators-land.html:15 still reports the four figures the section names, against the baseline and the control.\nVERDICT done_when: s9's done_when asks for a mean of at least 12 with the other three figures reported as measured, the script committed, the baseline reproduced and a control below 12; the record's gate table at docs/evidence/fragments/work-flows-to-the-lane/wftl-the-lane-is-fed-while-coordinators-land.html:118 reports 23.55 mean, 92.5 min median, 27,854 identity files and a 6.83 control, and logs/after-suite.log ends '63 passed' with EXIT=0 at db5ffba378.\nVERDICT write_paths: the source dispatch declares reckon, tests, skills and docs/evidence/fragments/work-flows-to-the-lane; four of the diff's five paths are inside that list, and scripts/lane_window_census.py:1 lies outside it although s9's done_when names 'a script under scripts/'.\nVERDICT manifest: read; it states both arms green (55 at base, 63 at head), names logs/base-suite.log and logs/after-suite.log, and flags scripts/ for ratification; both logs' revision headers and EXIT=0 tails check out, though neither prints the module path a scratch-tree gate is asked to record and the trees they name (/tmp/mcintos-tree-*) no longer exist.\nVERDICT diff: read db5ffba3787f against a113100d5b: five paths, +622/-123 in one commit -- the raw SQL ledger read replaced by RunStore.records()/durable_rows() at scripts/lane_window_census.py:83, the hold-path parse rewritten as three repr-aware patterns at scripts/lane_window_census.py:270, eight new tests, and the record's figures and instrument prose brought onto the 09:42Z read with the earlier read committed beside it.\nCALL_SITES: none\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: scripts/lane_window_census.py:65 delivers the instrument s9 requires, and docs/evidence/fragments/work-flows-to-the-lane/wftl-the-lane-is-fed-while-coordinators-land.html:118 states every figure beside its criterion, so the landed change does what the goal asks.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/after-suite.log records 63 passed with EXIT=0 at db5ffba378, and the committed census JSON carries a read block naming each instrument and the population behind every figure.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: scripts/lane_window_census.py:1 lies outside the dispatch's declared write paths, and the added census-at-a113100d5b.json is a second near-duplicate output beside the one s9 names.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_lane_census_counts_what_it_names.py:252 appends a run, retires it through RunStore.retire and requires census.load_runs to return it, so dropping the archive read reddens it; :137 and :226 guard the apostrophe parse and the null-not-zero rule the same way.\nSCORE fit: 16\nJUSTIFICATION fit: scripts/lane_window_census.py:65 follows the argparse and docstring shape of the sibling census modules, but remains at scripts/ root while scripts/census/ holds the rest.\nSCORE reuse: 18\nJUSTIFICATION reuse: scripts/lane_window_census.py:83 extends RunStore.records() and RunStore.durable_rows() in reckon/run_store.py:781 and :838 instead of opening the database itself; no module owns parsing a hold's detail wording, so the pattern rewrite forks nothing.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/wftl-the-lane-is-fed-while-coordinators-land.html:161 non-blocking: the record's definition of the headline figure was reworded from 'the total worker-seconds inside the window' to 'inside the ledger', while concurrency() at scripts/lane_window_census.py:146 divides the area clipped to the window by the window's seconds; the sentence's own next clause still says 'divided by the window's seconds', so the record states a definition the script does not implement.\nFINDING tests/test_the_lane_census_counts_what_it_names.py:292 non-blocking: counts['run_store'] is asserted equal to str(db), the same argument the test passed to load_runs at :288, and figure['as_of'] is asserted equal to ended.isoformat() at :249 after being passed in at :245; both sides of each assertion move with the input, so neither can fail on a regression, unlike the set and count assertions beside them.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/wftl-the-lane-is-fed-while-coordinators-land.html:176 non-blocking: the claim that every one of the 148 spans overlapping the window is also a hot row, so the archive contributes no span to either window, is recorded in prose only: the committed census JSON reports runs_in_archive and worker_spans but no archived-span contribution, so this zero cannot be re-derived from the artifacts.",
+  "review_node": "review-of-wftl-the-lane-is-fed-while-coordinators-land-db5ffba3787f",
+  "review_run_id": "r-20261115T110940088706-review-of-wftl-the-lane-is-fed-while-coordinators-land-db5ffba3787f",
+  "reviewed_base_sha": "a113100d5b95542e39adcbc2cb878184c4a65f1a",
+  "reviewed_head_sha": "db5ffba3787fc5d57402e19564d0fa702c6790a8",
+  "reviewed_run_id": "r-20261114T222338072670-wftl-the-lane-is-fed-while-coordinators-land",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T110940088706-review-of-wftl-the-lane-is-fed-while-coordinators-land-db5ffba3787f"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T12:01:28.011200+00:00",
+  "total": 100
+}

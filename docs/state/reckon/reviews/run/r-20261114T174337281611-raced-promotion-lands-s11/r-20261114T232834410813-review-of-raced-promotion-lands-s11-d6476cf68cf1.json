@@ -1,0 +1,130 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "fails_if": "the named run's pointer exists in the real crew home; guards fixture isolation, not the landing.",
+      "location": "tests/test_a_raced_promotion_still_lands.py:213"
+    },
+    {
+      "fails_if": "the reviewed head is already on the remote main before the call; a negative precondition read from git.",
+      "location": "tests/test_a_raced_promotion_still_lands.py:248"
+    },
+    {
+      "fails_if": "the second caller keeps the refusal and exits 1; the base arm shows this.",
+      "location": "tests/test_a_raced_promotion_still_lands.py:255"
+    },
+    {
+      "fails_if": "the head is not merged; git ancestry on the origin is independent of the head the test supplied.",
+      "location": "tests/test_a_raced_promotion_still_lands.py:257"
+    },
+    {
+      "fails_if": "the pointer survives a successful call.",
+      "location": "tests/test_a_raced_promotion_still_lands.py:259"
+    },
+    {
+      "fails_if": "a pending record is left behind after the landing clears it.",
+      "location": "tests/test_a_raced_promotion_still_lands.py:260"
+    },
+    {
+      "fails_if": "the promotion retires a pointer a newer attempt wrote; the fixture writes attempt 4 from inside the promotion's own commit step, so dropping the identity check makes read_pointer raise.",
+      "location": "tests/test_a_raced_promotion_still_lands.py:289"
+    },
+    {
+      "fails_if": "the promotion rewrites the newer attempt's pointer.",
+      "location": "tests/test_a_raced_promotion_still_lands.py:296"
+    },
+    {
+      "fails_if": "the record cites a head re-derived from the worktree; the test advances the tree to a second commit first, so a re-derivation writes that commit and only the reviewed-head argument writes run head.",
+      "location": "tests/test_a_raced_promotion_still_lands.py:314"
+    },
+    {
+      "fails_if": "an existing pending record is replaced; the test writes the advanced head itself and the code must leave it.",
+      "location": "tests/test_a_raced_promotion_still_lands.py:331"
+    }
+  ],
+  "assertion_independence": "No assertion is a self-equality pair: ancestry reads git, attempt 4 is written by the fixture, and the cited-head case advances the worktree first so a re-derived value would differ from the one supplied.",
+  "call_sites": [
+    "reckon/crew/promotion.py:_complete_locked:1601-1632",
+    "reckon/crew/promotion.py:_complete_locked:2314",
+    "reckon/crew_run_commands.py:_land_a_promoted_run:3838",
+    "reckon/crew/pending_landing.py:finish_pending_landings:517"
+  ],
+  "completed_at": "2026-11-15T01:12:03.518Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-raced-promotion-lands-s11-d6476cf68cf1",
+      "recorded_at": "2026-11-15T04:40:26.414626+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-15T00:08:26Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "309",
+      "severity": "non-blocking",
+      "text": "_ATTEMPT_IDENTITY_FIELDS is a second attempt-identity vocabulary beside pending_landing._ATTEMPT_FIELDS at reckon/crew/pending_landing.py:168, and _retire_a_raced_pointer at promotion.py:318 re-implements the compare-under-lock-and-retire capability already owned by _remove_promoted_pointer at promotion.py:223, _retire_review_pointer at promotion.py:277 and _release_marked_pointer at pending_landing.py:194; the addition duplicates rather than extends the owner, leaving four divergent retirement guards."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "2314",
+      "severity": "non-blocking",
+      "text": "the append-race call site passes finishing_another_writers_row=already_promoted, but no case in tests/test_a_raced_promotion_still_lands.py drives ledger.append_run raising after the row appears, so reverting this argument alone leaves all three cases green and restores the original refusal for that window."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "334",
+      "severity": "non-blocking",
+      "text": "when the live pointer disappears between the two reads, _retire_a_raced_pointer returns _RACED_POINTER_ABSENT, the branch falls through to _keep_pointer_for_pending_landing, which reports failure on an absent pointer, and the bare raise at promotion.py:404 re-raises a message claiming the pointer was kept and marked although nothing was marked."
+    },
+    {
+      "file": "gate-base-importers.log",
+      "line": "4265",
+      "severity": "non-blocking",
+      "text": "the base importer arm's log carries two complete runs under one four-line header, the first ending in its own EXIT=1 at line 4265 with the head arm's figures and the second ending at line 5849 with 65 failed, 776 passed, 25 errors; the base reading is not reproducible from the file without splitting it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read all five commits against 63b51b8337; 24dad14ccd adds the raced landing branch, 02421ad1ad adds the evidence fragment, 86cca2861b narrows the pointer identity and stops replacing an existing record, 7efdca409d rewrites the station mark from inside the promotion's commit step, and d6476cf68c edits only the evidence fragment.",
+    "done_when": "the done_when names tests/test_a_raced_promotion_still_lands.py with two promotions of one head; gate-base-race.log:1-4 records 3 failed at the base with the exact refusal and pending_landing_repair, gate-head.log records 58 passed, and gate-base.log records 55 passed over the two importer files.",
+    "goal": "plan section 11 asks a promotion that meets another writer's ledger row to finish landing the reviewed head and retire the live pointer; reckon/crew/promotion.py:381-425 shows that branch recording the owed landing and returning instead of raising.",
+    "manifest": "read at head; it records five commits, the base and head arms, the negative control and both importer arms, with the suite fields written as prose rather than JSON receipts.",
+    "write_paths": "the grant was reckon/crew/promotion.py, reckon/crew/pending_landing.py and the new test; the diff touches promotion.py and the new test plus the granted evidence fragment, and pending_landing.py is unchanged."
+  },
+  "justifications": {
+    "durability": "tests/test_a_raced_promotion_still_lands.py:237-260 reddens on the reinstated refusal (gate-base-race.log 3 failed, negative-control.log 2 failed 1 passed), but the append-race call site at reckon/crew/promotion.py:2314 and the absent-pointer fall-through at :334 are unguarded.",
+    "evidence": "the four gate logs open with revision, tree and the literal command and close with a bare EXIT= line, but gate-base-importers.log holds two concatenated runs under one header and the suite receipts at manifest.md:18-19 are prose.",
+    "fit": "reckon/crew/promotion.py:318 follows the local lock/read/unlink idiom and the module already imports private helpers from other modules at reckon/crew/promotion.py:409 and :559, but it adds a second attempt-identity tuple at :309 beside reckon/crew/pending_landing.py:168.",
+    "goal_fidelity": "reckon/crew/promotion.py:405-415 records the owed merge and retires only the attempt's own pointer, so the caller's landing at reckon/crew_run_commands.py:3838 merges the reviewed head.",
+    "reuse": "reckon/crew/promotion.py:318 duplicates the compare-under-lock-and-retire capability owned by _remove_promoted_* at reckon/crew/promotion.py:223 and _release_marked_pointer at reckon/crew/pending_landing.py:194 instead of extending that owner, while _record_a_raced_landing correctly wraps pending_landing.write_pending.",
+    "scope_discipline": "the five commits touch only reckon/crew/promotion.py, tests/test_a_raced_promotion_still_lands.py and the evidence fragment the node was granted."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: plan section 11 asks a promotion that meets another writer's ledger row to finish landing the reviewed head and retire the live pointer; reckon/crew/promotion.py:381-425 shows that branch recording the owed landing and returning instead of raising.\nVERDICT done_when: the done_when names tests/test_a_raced_promotion_still_lands.py with two promotions of one head; gate-base-race.log:1-4 records 3 failed at the base with the exact refusal and pending_landing_repair, gate-head.log records 58 passed, and gate-base.log records 55 passed over the two importer files.\nVERDICT write_paths: the grant was reckon/crew/promotion.py, reckon/crew/pending_landing.py and the new test; the diff touches promotion.py and the new test plus the granted evidence fragment, and pending_landing.py is unchanged.\nVERDICT manifest: read at head; it records five commits, the base and head arms, the negative control and both importer arms, with the suite fields written as prose rather than JSON receipts.\nVERDICT diff: read all five commits against 63b51b8337; 24dad14ccd adds the raced landing branch, 02421ad1ad adds the evidence fragment, 86cca2861b narrows the pointer identity and stops replacing an existing record, 7efdca409d rewrites the station mark from inside the promotion's commit step, and d6476cf68c edits only the evidence fragment.\nCALL_SITES: reckon/crew/promotion.py:_complete_locked:1601-1632, reckon/crew/promotion.py:_complete_locked:2314, reckon/crew_run_commands.py:_land_a_promoted_run:3838, reckon/crew/pending_landing.py:finish_pending_landings:517\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:405-415 records the owed merge and retires only the attempt's own pointer, so the caller's landing at reckon/crew_run_commands.py:3838 merges the reviewed head.\nSCORE evidence: 14\nJUSTIFICATION evidence: the four gate logs open with revision, tree and the literal command and close with a bare EXIT= line, but gate-base-importers.log holds two concatenated runs under one header and the suite receipts at manifest.md:18-19 are prose.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the five commits touch only reckon/crew/promotion.py, tests/test_a_raced_promotion_still_lands.py and the evidence fragment the node was granted.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_raced_promotion_still_lands.py:237-260 reddens on the reinstated refusal (gate-base-race.log 3 failed, negative-control.log 2 failed 1 passed), but the append-race call site at reckon/crew/promotion.py:2314 and the absent-pointer fall-through at :334 are unguarded.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/promotion.py:318 follows the local lock/read/unlink idiom and the module already imports private helpers from other modules at reckon/crew/promotion.py:409 and :559, but it adds a second attempt-identity tuple at :309 beside reckon/crew/pending_landing.py:168.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/promotion.py:318 duplicates the compare-under-lock-and-retire capability owned by _remove_promoted_* at reckon/crew/promotion.py:223 and _release_marked_pointer at reckon/crew/pending_landing.py:194 instead of extending that owner, while _record_a_raced_landing correctly wraps pending_landing.write_pending.\nFINDING reckon/crew/promotion.py:309 non-blocking: _ATTEMPT_IDENTITY_FIELDS is a second attempt-identity vocabulary beside pending_landing._ATTEMPT_FIELDS at reckon/crew/pending_landing.py:168, and _retire_a_raced_pointer at promotion.py:318 re-implements the compare-under-lock-and-retire capability already owned by _remove_promoted_pointer at promotion.py:223, _retire_review_pointer at promotion.py:277 and _release_marked_pointer at pending_landing.py:194; the addition duplicates rather than extends the owner, leaving four divergent retirement guards.\nFINDING reckon/crew/promotion.py:2314 non-blocking: the append-race call site passes finishing_another_writers_row=already_promoted, but no case in tests/test_a_raced_promotion_still_lands.py drives ledger.append_run raising after the row appears, so reverting this argument alone leaves all three cases green and restores the original refusal for that window.\nFINDING reckon/crew/promotion.py:334 non-blocking: when the live pointer disappears between the two reads, _retire_a_raced_pointer returns _RACED_POINTER_ABSENT, the branch falls through to _keep_pointer_for_pending_landing, which reports failure on an absent pointer, and the bare raise at promotion.py:404 re-raises a message claiming the pointer was kept and marked although nothing was marked.\nFINDING gate-base-importers.log:4265 non-blocking: the base importer arm's log carries two complete runs under one four-line header, the first ending in its own EXIT=1 at line 4265 with the head arm's figures and the second ending at line 5849 with 65 failed, 776 passed, 25 errors; the base reading is not reproducible from the file without splitting it.\n",
+  "review_method": "Read-only review of the five commits against 63b51b8337 in the shared object store; this worktree's HEAD predates the reviewed head, so file contents were read at the reviewed sha with git show. The importer arms were re-parsed from the run's own logs; no suite was re-run and no mutation was applied.",
+  "review_run_id": "r-20261114T232834410813-review-of-raced-promotion-lands-s11-d6476cf68cf1",
+  "reviewed_base_sha": "63b51b8337c4d61f3fc0b93d25ffb048273ed293",
+  "reviewed_commits": [
+    "24dad14ccd1711480637be1243fe512890536bc1",
+    "02421ad1ad929fd5a9975ef5c940ed8d98283ff6",
+    "86cca2861b2551e36885966bae82b592effd7507",
+    "7efdca409debfa257f7a0f8ea45dd8afa1a3d319",
+    "d6476cf68cf1d84e140c92ccfc5560ea97ac0ace"
+  ],
+  "reviewed_head_sha": "d6476cf68cf1d84e140c92ccfc5560ea97ac0ace",
+  "reviewed_run_id": "r-20261114T174337281611-raced-promotion-lands-s11",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T07:51:25.650271+00:00",
+  "total": 89
+}

@@ -71,7 +71,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, NamedTuple
 
-from reckon import _store
+from reckon import _store, file_memo
 
 # ── The schema: six dimensions, one maximum ────────────────────────────────
 # A dimension added later is added in exactly one place. The mirror lives in
@@ -306,6 +306,25 @@ def with_normalised_findings(record: Mapping[str, Any]) -> dict[str, Any]:
     return {**record, "findings": normalised_findings(record)}
 
 
+def with_canonical_claims(record: Mapping[str, Any]) -> dict[str, Any]:
+    """Return ``record`` carrying its claim verdicts under the parser's key.
+
+    A record that states them under :data:`CLAIM_VERDICT_FIELDS`'s other spelling
+    is folded to ``claims``, so every reader — the delivery check and the
+    promotion rule alike — asks one question of one field. A record already
+    carrying ``claims`` is returned unchanged, the parser's spelling wins, and a
+    record carrying neither list is left alone so the completeness rule still
+    reports the measurement missing rather than seeing an empty list.
+    """
+    if isinstance(record.get("claims"), list):
+        return dict(record)
+    for field in CLAIM_VERDICT_FIELDS:
+        candidate = record.get(field)
+        if isinstance(candidate, list):
+            return {**record, "claims": list(candidate)}
+    return dict(record)
+
+
 def claimless_findings(review: Mapping[str, Any]) -> list[tuple[int, Any]]:
     """Return each claimless entry with its index in the record's findings.
 
@@ -397,6 +416,40 @@ CLAIM_VERDICTS: tuple[str, ...] = ("reproduced", "differs", "not-runnable")
 # table states that as ``not-runnable`` on the summary as well.
 CLAIM_SUMMARY_VERDICTS: tuple[str, ...] = ("agrees", "differs", "not-runnable")
 CLAIMS_REQUIRED = 3
+# The keys a stored claims record may state its per-claim verdicts under. The
+# parser writes ``claims``; a reviewer composing a record by hand states the same
+# verdicts under ``claim_verdicts``, and one such record is stored. Both spellings
+# name the same measurement, so they are folded to one before any reader judges
+# the record: a reader that saw only one key would refuse a review that answered
+# every claim, and two readers that folded differently would disagree about
+# whether the same review is complete.
+CLAIM_VERDICT_FIELDS: tuple[str, ...] = ("claims", "claim_verdicts")
+# How a delivery refusal words each measure the completeness rule reports
+# missing. The rule itself is not restated here: a second copy of it would
+# answer differently from the one the promotion reader applies, and a record
+# admitted by one and refused by the other is a review whose fate depends on
+# which reader asks.
+CLAIMS_MISSING_MESSAGES: dict[str, str] = {
+    "claims": (
+        "review record carries too few claim verdicts: a claims review records one "
+        "`CLAIM <n>: <verdict>: <what the re-run showed>` line for each claim it "
+        "is asked to check, ranked from 1, and the record owes "
+        f"{CLAIMS_REQUIRED} of them — re-run the claims it skipped and store the "
+        "record again"
+    ),
+    "claim verdicts": (
+        "review record carries a claim verdict outside the vocabulary: each claim "
+        f"line states one of {', '.join(CLAIM_VERDICTS)} — re-run that claim and "
+        "store the record again"
+    ),
+    "claim_summary": (
+        "review record carries no verdict for the report's summary: a claims "
+        "review records one `CLAIM_SUMMARY: <agrees|differs|not-runnable>: <the "
+        "report's summary line and how it compares to its table>` line, so the "
+        "report's head-line figures go unchecked — compare them with the table "
+        "beneath and store the record again"
+    ),
+}
 
 # A figure review judges the rendered artifact as well as its source paths. Its
 # findings are qualitative, so it records rubric verdicts rather than the
@@ -409,6 +462,25 @@ FIGURE_REVIEW_ITEMS: tuple[str, ...] = (
     "contrast",
     "table_form",
     "label_collision",
+)
+
+# ── The rubrics that measure verdicts rather than the six dimensions ────────
+# Every rubric above records one verdict per item it asks about: the plan
+# rubric and the plan-design rubric state whether a finding would change the
+# plan, the health rubric one verdict per read target, the claims rubric one
+# verdict per re-run claim, and the figure rubric one verdict per rendering
+# check. None of them scores the landed-node dimensions, because none of them
+# reads a landed diff. The delivery contract asks a reviewed record for its six
+# text scores; the rubric the record names decides whether that is a
+# measurement it owes, so a rubric listed here is exempt and one added later is
+# exempted by being listed here rather than by a second rule beside the first.
+ITEM_VERDICT_RUBRICS: frozenset[str] = frozenset(
+    {
+        CLAIMS_RUBRIC,
+        FIGURE_REVIEW_RUBRIC,
+        HEALTH_REVIEW_RUBRIC,
+        *PLAN_REVIEW_RUBRICS,
+    }
 )
 
 # ── The revision pair a review read ─────────────────────────────────────────
@@ -460,6 +532,18 @@ _HEALTH_REVIEW_PROMPT_PATH = (
 _FIGURE_REVIEW_PROMPT_PATH = (
     Path(__file__).resolve().parent / "prompts" / "figure_review.md"
 )
+
+
+# Prompt text, held against the identity of the file it was read from. A tick
+# asks for a rubric once per run it classifies, so a steady tick re-read the
+# same unchanged bytes hundreds of times. The identity is the stat identity, so
+# an edit changes it and the next call reads the new text.
+
+
+def _prompt_text(path: Path) -> str:
+    return file_memo.memoized(
+        "review_prompt", path, lambda: path.read_text(encoding="utf-8")
+    )
 
 
 def _sha_from(value: Any) -> str | None:
@@ -800,33 +884,33 @@ class ReviewScoreError(ValueError):
 
 
 def load_review_prompt() -> str:
-    """Read the persisted review prompt from disk at call time."""
-    return _PROMPT_PATH.read_text(encoding="utf-8")
+    """The review prompt, read from disk unless the prompt file is unchanged."""
+    return _prompt_text(_PROMPT_PATH)
 
 
 def load_claims_review_prompt() -> str:
-    """Read the claims rubric prompt from disk at call time."""
-    return _CLAIMS_PROMPT_PATH.read_text(encoding="utf-8")
+    """The claims prompt, read from disk unless the prompt file is unchanged."""
+    return _prompt_text(_CLAIMS_PROMPT_PATH)
 
 
 def load_plan_review_prompt() -> str:
-    """Read the plan-review rubric prompt from disk at call time."""
-    return _PLAN_REVIEW_PROMPT_PATH.read_text(encoding="utf-8")
+    """The plan-review prompt, read from disk unless the file is unchanged."""
+    return _prompt_text(_PLAN_REVIEW_PROMPT_PATH)
 
 
 def load_plan_design_review_prompt() -> str:
-    """Read the plan-design-review rubric prompt from disk at call time."""
-    return _PLAN_DESIGN_REVIEW_PROMPT_PATH.read_text(encoding="utf-8")
+    """The plan-design prompt, read from disk unless the file is unchanged."""
+    return _prompt_text(_PLAN_DESIGN_REVIEW_PROMPT_PATH)
 
 
 def load_health_review_prompt() -> str:
-    """Read the health-review rubric prompt from disk at call time."""
-    return _HEALTH_REVIEW_PROMPT_PATH.read_text(encoding="utf-8")
+    """The health prompt, read from disk unless the file is unchanged."""
+    return _prompt_text(_HEALTH_REVIEW_PROMPT_PATH)
 
 
 def load_figure_review_prompt() -> str:
-    """Read the figure-review rubric prompt from disk at call time."""
-    return _FIGURE_REVIEW_PROMPT_PATH.read_text(encoding="utf-8")
+    """The figure prompt, read from disk unless the file is unchanged."""
+    return _prompt_text(_FIGURE_REVIEW_PROMPT_PATH)
 
 
 # ── The parser ──────────────────────────────────────────────────────────────
@@ -945,6 +1029,34 @@ def store_review_refusals(record: Mapping[str, Any]) -> list[str]:
     return refusals
 
 
+def claims_verdict_refusals(record: Mapping[str, Any]) -> list[str]:
+    """The refusals a claims record earns for a measure it left unanswered.
+
+    A claims review re-runs the claims the report ranks highest and records one
+    verdict for each, plus one for the report's own summary line. Whether a
+    stored record carries that measurement is decided in one place — the
+    promotion reader's ``_claims_missing_measures`` — because a record admitted
+    here and refused at promotion is a review whose fate depends on which reader
+    asks: it passes its delivery check and then cannot land. So this function
+    calls that rule rather than restating it, and every refusal it returns names
+    one of the measures the stored record is missing.
+
+    The rule is imported at call time because the module that owns it reads this
+    one, and a module-level edge would close a cycle. A measure it reports that
+    this table cannot word raises rather than being dropped, so a rule that grows
+    a measure fails loudly here instead of going unreported. The record's verdicts
+    are folded to their canonical key first, by the same
+    :func:`with_canonical_claims` the store's read path applies, so a record
+    written by hand under the other spelling is judged on the answers it gave.
+    """
+    from .recovery_review_subject import _claims_missing_measures
+
+    canonical = with_canonical_claims(record)
+    return [
+        CLAIMS_MISSING_MESSAGES[name] for name in _claims_missing_measures(canonical)
+    ]
+
+
 def review_record_refusals(record: Mapping[str, Any]) -> list[str]:
     """Check the current review delivery contract and the store's refusals."""
     required = (
@@ -957,11 +1069,12 @@ def review_record_refusals(record: Mapping[str, Any]) -> list[str]:
     refusals = [
         f"missing {key}" for key in required if not str(record.get(key) or "").strip()
     ]
-    # A figure-rubric record is not scored on the six text dimensions, so it
-    # needs neither a ``scores`` mapping nor the dimensions inside one. Its
-    # reviewer records a verdict per rubric item instead, so the absence of the
-    # text scores is the rubric, not an omission.
-    if _review_record_rubric(record) != FIGURE_REVIEW_RUBRIC:
+    # A record under a verdict-per-item rubric is not scored on the six text
+    # dimensions, so it needs neither a ``scores`` mapping nor the dimensions
+    # inside one. Its reviewer records a verdict per rubric item instead, so the
+    # absence of the text scores is the rubric, not an omission.
+    rubric = _review_record_rubric(record)
+    if rubric not in ITEM_VERDICT_RUBRICS:
         scores = record.get("scores")
         if not isinstance(scores, Mapping):
             refusals.append("missing scores")
@@ -971,6 +1084,8 @@ def review_record_refusals(record: Mapping[str, Any]) -> list[str]:
                 for key in REVIEW_DIMENSIONS
                 if key not in scores
             )
+    elif rubric == CLAIMS_RUBRIC:
+        refusals.extend(claims_verdict_refusals(record))
     count = record.get("added_failure_count")
     if not isinstance(count, int) or isinstance(count, bool) or count < 0:
         refusals.append("missing or invalid added_failure_count")
@@ -3900,6 +4015,7 @@ def read_review(
     if record is None:
         return None
     record = with_normalised_findings(record)
+    record = with_canonical_claims(record)
     if not _has_integer_total(record):
         record = _derive_landed_total(record)
     return annotate_review_of_run(record, reviewed_run_id)

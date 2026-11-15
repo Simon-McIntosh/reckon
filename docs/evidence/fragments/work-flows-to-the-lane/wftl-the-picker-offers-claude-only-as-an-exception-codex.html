@@ -1,0 +1,14 @@
+<article id="wftl-the-picker-offers-claude-only-as-an-exception-codex-result">
+<h3>The configured local harness owns automatic local offers</h3>
+<p>Automatic offers use the flight's <code>local_backend</code>. Other wrappers of its local service are excluded with a <code>local-backend:</code> reason. Claude CLI candidates, including a configured local wrapper and review requests, must satisfy the flight's reserved-lane policy. A dispatch explicitly naming <code>clive</code> keeps that backend.</p>
+<p>The endpoint comparison asks the harness for its checkpoint identifier. A namespaced selector such as <code>local/local-model</code> therefore matches an endpoint publishing <code>local-model</code>; another checkpoint still fails the serving check. The full selector remains the launch model.</p>
+<table>
+<thead><tr><th>Temporary-flight case</th><th>Unchanged source</th><th>Delivered source</th></tr></thead>
+<tbody>
+<tr><td>Ordinary guided implementation</td><td>clive, clive-anchored, Claude and codex offered; omp-local unavailable</td><td>omp-local and codex offered; the three Claude CLI backends withheld</td></tr>
+<tr><td>Reserved-tier node</td><td>omp-local unavailable</td><td>omp-local and the reserved Claude lane offered</td></tr>
+<tr><td>Explicit clive dispatch</td><td>Kept</td><td>Kept</td></tr>
+</tbody></table>
+<p>On <code>all_debug</code>, the unchanged-source acceptance run recorded <strong>2 failed, 1 passed in 1.10s</strong>. The committed acceptance gate recorded <strong>12 passed in 0.91s</strong>, including refusal reasons, a local-wrapper exception's recorded reason, derived local entries, and checkpoint mismatch controls. The armed census measured <strong>58 passed</strong> at both base and delivered source, with zero added failures. The changed paths retain eight pre-existing lint findings and add none.</p>
+<p>Base: <code>30d72f4efc2d6396ae912f70473b7f78f17d1e61</code>. Source: <code>b14e289ffe8392ec93634f0051d4ad0e7c0fe758</code>. The <a href="/reckon/evidence/fragments/work-flows-to-the-lane/s75.html">unchanged-source reproduction</a> preserves the failed offered set and endpoint refusal. Detailed scheduler logs and receipts are carried by the run manifest.</p>
+</article>

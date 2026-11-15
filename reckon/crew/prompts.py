@@ -195,7 +195,11 @@ PLAN_LANDING_CONTRACT = (
     + "  Use a figure wherever a spatial, plotted or sequential relationship is clearer\n"
     "  shown than described, under your own docs/figures/<plan>/<node-id>/ with the\n"
     "  project-absolute src /<project>/figures/<plan>/<node-id>/...; never an image\n"
-    "  of what is naturally a table.\n"
+    "  of what is naturally a table. Name each figure you keep on a `figures:`\n"
+    "  line in your manifest, giving the path the run commits under the plan's\n"
+    "  figure directory docs/figures/<plan>/; a node with nothing to show names\n"
+    "  none, and the manifest check holds a named figure to a file the run's\n"
+    "  commits carry there.\n"
     "  Do not edit the plan-version or plan-modified meta lines: every worker\n"
     "  touching them makes every merge conflict there."
 )
@@ -379,6 +383,21 @@ def _negative_control_declaration(node: TaskNode) -> str:
     else:
         rule = NEGATIVE_CONTROL_DECLARED_NO_CHECK_RULE
     return NEGATIVE_CONTROL_DECLARATION_HEADER + rule + "  " + declaration + "\n"
+
+
+def _delivers_no_commit(role: str) -> bool:
+    """Whether a role's delivery carries no commit for its manifest to cite.
+
+    The role set is the one every other reader of the ``commits`` field holds
+    to — promotion's, the write-time check's and the scope check's — and it is
+    imported rather than restated so the prompt, the check whose refusal a
+    worker reads and the gate that runs hours later agree about which roles
+    have nothing to commit. Imported at the use because promotion's modules
+    import this one.
+    """
+    from reckon.crew.promotion_evidence import _COMMITLESS_ROLES
+
+    return str(role or "").strip() in _COMMITLESS_ROLES
 
 
 # The one heading the repository's declared domain rules are carried under.
@@ -909,6 +928,19 @@ RUNTIME FILESYSTEM
         )
     )
     negative_control_declaration = _negative_control_declaration(node)
+    # The commits line follows the role, because a role set answers it
+    # everywhere else: promotion, the write-time check and the reviewer all
+    # read the field through one predicate over the role set. A role that
+    # delivers no commit writes the declaration instead of a citation list —
+    # the shape the field's own reader recognises — and a role that commits
+    # keeps the citation list. The prompt states the field the reader expects,
+    # so a role that committed nothing is never left inventing a citation.
+    commits_line = (
+        "  commits: none — a read-only run has no commit to cite; state the "
+        "absence here, with a reason in parentheses after it if you have one\n"
+        if _delivers_no_commit(node.role)
+        else "  commits: <sha list>\n"
+    )
     orientation_scope = json.dumps(list(node.write_paths), separators=(",", ":"))
     # The landing line belongs to whichever carrier the node has: a plan node's
     # record is landed by promotion as a comment on its plan section, and a brief
@@ -1006,7 +1038,7 @@ MANIFEST (write exactly these keys; after reading the plan, observe path and rev
   wait_terminal: <only when an external condition is actually awaited — never at the orientation write: the probe output values that mean the wait is over; they are matched against the probe's last line, with exit:<code> standing in when it prints nothing; for example exit:0>
   resume_brief: <only when an external condition is actually awaited — never at the orientation write: what the resumed self does next>
   checkpoint: <when you are recording progress and not setting status to waiting — any worker recording progress at any point, not only a resumed worker whose wait is met: one line recording where work stands and what comes next, so you leave a checkpoint rather than a wait block>
-  commits: <sha list>
+{commits_line}
   changed_paths: <explicit list>
   retry_failures: <failure ids for repeated runs of the same command, including unattributed failures; record each before applying the stop rule>
 {landing_key}  tests: <the gate command that actually ran — the literal text a shell was handed, never a description of it and never a template command carrying an unsubstituted placeholder>. Promotion fills its gate receipt from this line, so a sentence naming the suite rather than the command cannot be re-run and is refused; the log's own `# command:` header line is the fallback when this line is absent
