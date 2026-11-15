@@ -30,7 +30,7 @@ def _commit(tree: Path, path: str, text: str) -> str:
 
 
 @pytest.fixture
-def merged_run(tmp_path, monkeypatch):
+def merged_run(tmp_path, monkeypatch, request):
     home = tmp_path / "config"
     home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(home))
@@ -44,7 +44,11 @@ def merged_run(tmp_path, monkeypatch):
     tree = tmp_path / "worker"
     git(repository, "worktree", "add", "-q", "--detach", str(tree), "HEAD")
     # Dispatch can start from a promoted predecessor not yet merged into main.
-    base = _commit(tree, "predecessor.txt", "dispatch base")
+    base = (
+        _commit(tree, "predecessor.txt", "dispatch base")
+        if getattr(request, "param", True)
+        else git(tree, "rev-parse", "HEAD")
+    )
     own = [_commit(tree, FILE, value) for value in ("first", "second")]
     primary = [_commit(repository, "primary.txt", str(number)) for number in range(40)]
     git(
@@ -114,9 +118,13 @@ def _offered_commits(row):
     return [words[index + 1] for index, word in enumerate(words) if word == "--commit"]
 
 
+@pytest.mark.parametrize("merged_run", [True, False], indirect=True)
 def test_one_landing_call_records_only_the_runs_line_of_history(merged_run):
     repository, _tree, record, own, primary, _manifest = merged_run
+    offered = obligations(PROJECT, SESSION)["obligations"]
+    row = next(row for row in offered if row["run_id"] == record["run_id"])
     result = crew.complete(record["run_id"], gate="passed", root=repository)
+    assert _offered_commits(row) == own
     assert result["record"]["commits"] == own
     assert result["record"]["promoted_revision"] == own[-1]
     rows = ledger.runs(PROJECT, root=repository)
@@ -146,13 +154,17 @@ def test_manifest_accepts_owned_commits_and_ignores_imported_primary(
     assert ledger.runs(PROJECT, root=repository)[0]["commits"] == own
 
 
-def test_a_manifest_citing_an_unmerged_branch_is_refused(merged_run, tmp_path):
+@pytest.mark.parametrize("with_subject", [False, True])
+def test_a_manifest_citing_an_unmerged_branch_is_refused(
+    merged_run, tmp_path, with_subject
+):
     repository, _tree, record, own, _primary, manifest = merged_run
     other = tmp_path / "unmerged"
     git(repository, "worktree", "add", "-q", "--detach", str(other), record["base_sha"])
     foreign = _commit(other, "foreign.txt", "never merged")
+    citation = foreign[:12] + " test: unmerged content" if with_subject else foreign
     manifest.write_text(
-        manifest.read_text().replace(json.dumps(own), json.dumps([*own, foreign]))
+        manifest.read_text().replace(json.dumps(own), json.dumps([*own, citation]))
     )
     with pytest.raises(crew.CrewError) as refusal:
         crew.complete(record["run_id"], gate="passed", root=repository)

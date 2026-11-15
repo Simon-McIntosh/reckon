@@ -392,13 +392,16 @@ def _require_commits_beyond_base(
     if canonical_base is None:
         return
     from reckon.crew.promotion_scope import _declared_manifest_commits
+    from reckon.crew.queue_landing import _delivered_revision
 
     canonical_head = _commit_canonical_id(tree, "HEAD")
     # A history-derived presentation must not hide a foreign manifest citation.
     # Reachable merge imports are valid citations but not owned commit records.
-    citations = dict.fromkeys([*commits, *_declared_manifest_commits(record)])
+    citations = dict.fromkeys(
+        [*commits, *_declared_manifest_commits(record)] if commits else ()
+    )
     for revision in citations:
-        cited = str(revision).strip()
+        cited = _delivered_revision([str(revision)]) or str(revision).strip()
         if not cited:
             continue
         canonical = _commit_canonical_id(tree, cited)
