@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s65">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="passed">
+  <title>A tick decodes only what changed</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+
+<article class="r-note" id="a-tick-decodes-only-what-changed-landing" data-node="a-tick-decodes-only-what-changed" data-reckon="landed" data-when="2026-11-15">
+  <h2>The tick's fold reads the scalars it needs, not the fleet's fields</h2>
+
+  <p id="a-tick-decodes-only-what-changed-what"><strong>What landed.</strong> <code>StationStore.tick</code> folded each of the fleet's streams and, for every one of them, called <code>_pointer_for_stream</code>, which scanned the store's pointer rows and decoded each row's <code>fields</code> document until it found the one naming that stream. The scan decoded the whole fleet's fields once per stream, on every tick where any stream had grown, which is every tick of a live fleet. The three scalars the fold needs — the stream path, the backend and the dialect to read it in — are now columns on the <code>pointers</code> table, written beside the fields by the pointer's own ingest, which runs only when the pointer moved. <code>ingest_stream</code> takes the pointer's record from the one pass that names the streams, and <code>_pointer_for_stream</code> remains only as the fallback for a caller folding a stream it holds no pointer for. The pointer's stored signature is compared as the text it was written as instead of being decoded back into a list, which removes the last decode a tick over an unchanged fleet paid per pointer. A store written before the columns existed is backfilled once, at connect.</p>
+
+  <p id="a-tick-decodes-only-what-changed-base"><strong>What the census named.</strong> The census harness was first made to take the revision and the log path as arguments, so each arm builds its own tree at its own revision and writes its own log, and each of <code>json.loads</code> and <code>json.load</code> is wrapped to record its caller and input size. On one warm tick at base <code>2780ddad</code> (133 live pointers, <code>decode-census-base.log</code>) the tick decoded <strong>372,393,182 bytes</strong> in 716,226 calls. The callers that decoded the most bytes were <code>_backends.parse_events</code> 124,716,976 bytes over 351,881 calls, <code>station_store._pointer_for_stream</code> <strong>96,496,368 bytes over 1,934 calls</strong>, <code>recovery_wait._stream_holds_assistant_record</code> 64,536,556 over 200,476, <code>recovery_wait._tool_call_in_line</code> 32,890,089 over 103,923 and <code>metering.measure_stream_tokens</code> 18,908,022 over 53,822. <code>_pointer_for_stream</code> grew with the tick, not with the fleet's change: 96.5 MB, 104.0 MB, 132.4 MB and 104.6 MB in the four traced ticks, at 1,934 to 2,693 decodes of a ~50 KB document each, beside a fleet whose streams had already been folded.</p>
+
+  <p id="a-tick-decodes-only-what-changed-head"><strong>At head.</strong> The same harness at head <code>33f28354f7</code> (<code>decode-census-head.log</code>) reports no <code>_pointer_for_stream</code> and no <code>_pointer_streams</code> entry at all: the tick decodes the streams' new bytes (<code>parse_events</code> 131,884,178 bytes), the classifier's own stream scans (<code>recovery_wait</code> 71,621,282 + 21,869,019 bytes) and the named paragraphs below. Tick 1 decoded 294,622,004 bytes, 77.8 MB less than base's warm tick.</p>
+
+  <p id="a-tick-decodes-only-what-changed-peaks"><strong>Peaks.</strong> Base's traced ticks peaked at 175,532,440, 221,546,802, 213,683,083 and 230,499,074 bytes; head's at 185,646,977 for tick 1. Every observed tick in both arms is under 600 MB.</p>
+
+  <p id="a-tick-decodes-only-what-changed-gate"><strong>Gate.</strong> <code>tests/test_a_tick_decodes_only_what_changed.py</code> builds a temporary crew home of four pointers, each naming one recorded stream, settles the store with one tick, and then ticks again. Its ledger wraps <code>json.loads</code> and <code>json.load</code> and keeps the text of every document decoded, so an assertion is against the bytes decoded rather than a call count. Over an unchanged fleet the second tick decodes <strong>nothing</strong> and reads <strong>no stream byte</strong>. A pointer that moves is decoded exactly once, by its own ingest, and the tick after it decodes nothing. One byte appended to one stream is read once at its offset, with no fold from the start and no pointer document decoded. A fourth case writes a store in the previous schema and shows a store on disk still folds a <code>codex</code> run in its own dialect after the backfill. Gate: <strong>4 passed, EXIT=0</strong> (<code>gate-head.log</code>).</p>
+
+  <p id="a-tick-decodes-only-what-changed-negative"><strong>Negative control.</strong> The same test file run against a tree extracted from base <code>2780ddad</code>, with the file copied in, fails where the defect is: <strong>3 failed, EXIT=1</strong> (<code>negative-control-base.log</code>), all three by name — <code>test_a_tick_over_an_unchanged_fleet_decodes_nothing</code> ("the tick decoded documents nothing had changed"), <code>test_a_tick_over_an_unchanged_fleet_reads_no_pointer_document</code> (a moved pointer was not decoded exactly once by its own ingest) and <code>test_one_byte_appended_to_one_stream_is_decoded_once</code> ("the tick decoded the fleet's pointer fields for one appended byte"). The module imported in that run is the base tree's own <code>reckon/crew/station_store.py</code>, named on the log's header.</p>
+
+  <p id="a-tick-decodes-only-what-changed-suite"><strong>Matched arms.</strong> Base arm at <code>2780ddad</code>: <strong>58 passed, EXIT=0</strong> (<code>baseline-suite.log</code>) over <code>tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code>, which is the project's suite command resolved over that tree (this node's test file is not in it). Head arm at <code>eda14c13cf</code>: <strong>62 passed, EXIT=0</strong> (<code>after-suite.log</code>) over those two files with <code>tests/test_a_tick_decodes_only_what_changed.py</code>. No failure in either arm, so the added-failure set is empty. <code>ruff check</code> and <code>ruff format --check</code> pass on both staged paths.</p>
+
+  <p id="a-tick-decodes-only-what-changed-remaining"><strong>What this node did not change.</strong> The tick still decodes every pointer's fields twice more, in <code>Station.tick</code> (<code>reckon/crew/station.py</code>, outside this node's write paths) and in <code>StationStore.classify_tick</code> (5.2 MB per tick each, measured above), and the classifier's own line scans of stream files (<code>recovery_wait</code>, 93.5 MB per tick) still read what they did. None of them is the pass this node was granted, and each is named in the run's manifest under <code>outside_scope</code>.</p>
+</article>
+</body>
+</html>
