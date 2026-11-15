@@ -63,6 +63,7 @@
       <tr><td>resumed through the launcher</td><td>kept; the pointer reads <code>working</code> again</td><td>fails: signalled, then read as launch-failed</td></tr>
       <tr><td>an attempt that delivered its own verdict</td><td>ended inside the grace, its own exit receipt recorded</td><td>passes: that direction already held</td></tr>
       <tr><td>the reading itself, both directions</td><td><code>complete</code> with the attempt's receipt; empty without it; <code>stopped</code> without one</td><td>fails: the live attempt inherits the word</td></tr>
+      <tr><td>a receipt naming another run</td><td>absent, so the attempt is not ended by it</td><td>fails: the word alone ends the attempt</td></tr>
     </tbody>
   </table>
   <p>Both doors stand for the three that exist: a folded finding, a hand resume
@@ -74,13 +75,20 @@
   <code>tests/test_staged_write_inventory.py</code> and
   <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>: the base
   arm at <code>18d133b40e</code> reports <em>58 passed</em> (it cannot collect
-  this node's test file, which the change creates), and the after arm at
-  <code>efff4c70fb</code> reports <em>62 passed</em> and exits zero. Measured on
-  its own, the new file reports <em>3 failed, 1 passed</em> against the base
-  revision's <code>reckon</code> bytes and <em>4 passed</em> at the head. The
+  this node's test file, which the change creates), and the after arm at the run
+  head — the revision <code>logs/after-suite.log</code> names in its own header,
+  since a document cannot carry the revision of the commit that writes it —
+  reports <em>63 passed</em> and exits zero. Measured on its own, the new file
+  reports <em>4 failed, 1 passed</em> against the base revision's
+  <code>reckon</code> bytes and <em>5 passed</em> at the head. The
   declared negative control — answering the receipt check true without reading
   the receipt and leaving the stale word in place — reddens the same two
-  integration cases and the reading case: <em>3 failed, 1 passed</em>, exit 1.</p>
+  integration cases and both reading cases: <em>4 failed, 1 passed</em>, exit 1.</p>
+  <p>Both exit files are read through the one owner of that payload,
+  <code>recovery_liveness._run_exit_record</code>, under its strict reading, so
+  the guard cannot answer on different terms from every other reader of an
+  attempt's end, and the two words a delivery writes are the delivery statuses
+  this module already owns.</p>
 </article>
 </body>
 </html>
