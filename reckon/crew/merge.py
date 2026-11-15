@@ -815,6 +815,9 @@ def _failed_on_this_index_lock(lock: Path, result: subprocess.CompletedProcess) 
     win. A failure naming a different checkout's lock is not this one's to wait
     for. A failure that names no lock at all still waits while this checkout
     holds one, because a git call can be refused by a lock it does not name.
+
+    It is only asked about a failed call: a call that succeeded is never
+    retried, whatever lock a peer holds at the moment of the check.
     """
     detail = _result_text(result)
     if lock.name in detail:
@@ -864,7 +867,11 @@ def _run_waiting_out_a_held_index_lock(
     retries = 0
     moved = False
     result = step(1)
-    while retries + 1 < attempts and _failed_on_this_index_lock(lock, result):
+    while (
+        result.returncode != 0
+        and retries + 1 < attempts
+        and _failed_on_this_index_lock(lock, result)
+    ):
         retries += 1
         if on_retry is not None:
             on_retry(retries, result)

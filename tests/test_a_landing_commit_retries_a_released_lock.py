@@ -13,6 +13,8 @@ repository, with a second process holding the lock so the failure is git's own:
   and the retry is recorded;
 * a lock held for the whole call is retried exactly to the bound and refuses,
   with the attempt count returned;
+* a call that succeeded is run once, even with a lock held at the check, so a
+  second merge or commit can never be attempted over a success;
 * a failure with any other cause, and a failure naming another checkout's lock,
   return after one attempt.
 """
@@ -169,6 +171,51 @@ def test_a_lock_held_for_the_whole_call_is_retried_to_the_bound(
     assert retry_count == 4
     assert result.returncode != 0, "a lock held past the bound refuses"
     assert "index.lock" in result.stderr
+
+
+def test_a_successful_call_is_not_retried_while_a_lock_is_held(
+    tmp_path: Path,
+) -> None:
+    """A call that succeeded must not run twice because a peer's lock is present.
+
+    Re-running a successful step lands a second merge commit or reports a
+    landed commit as uncommittable, so the wait is asked only about a failure.
+    """
+    repo = _repo(tmp_path)
+    lock = _lock(repo)
+    release = tmp_path / "release"
+    attempts: list[int] = []
+    retries: list[int] = []
+    held_at_step: list[bool] = []
+    holder = _hold(lock, release)
+
+    def step(attempt: int) -> subprocess.CompletedProcess[str]:
+        attempts.append(attempt)
+        held_at_step.append(lock.exists())
+        return subprocess.CompletedProcess(
+            args=["git", "merge", "--ff-only"],
+            returncode=0,
+            stdout="Fast-forward\n",
+            stderr="",
+        )
+
+    try:
+        result, retry_count = _run_waiting_out_a_held_index_lock(
+            repo,
+            step,
+            attempts=4,
+            retry_seconds=0.01,
+            on_retry=lambda number, _failed: retries.append(number),
+        )
+    finally:
+        _release(release)
+        holder.wait(timeout=10)
+
+    assert held_at_step == [True], "the instrument held the lock the step ran under"
+    assert attempts == [1], "a successful call is run once, whatever lock exists"
+    assert retries == []
+    assert retry_count == 0
+    assert result.returncode == 0
 
 
 def test_a_failure_with_another_cause_is_returned_after_one_attempt(
