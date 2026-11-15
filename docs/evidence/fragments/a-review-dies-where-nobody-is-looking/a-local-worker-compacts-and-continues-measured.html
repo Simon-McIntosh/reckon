@@ -75,7 +75,9 @@
       </table>
       <p>Every boundary compresses the conversation down to between 21 052 and 30 955 tokens, and every
         boundary fires between 196 889 and 205 512 tokens — at 86–89 % of the declared usable window.
-        Roughly 25 000 tokens of the declared window therefore go unused at each compaction. That is the
+        Between 24 632 and 33 255 tokens of the declared window therefore go unused at each
+        compaction: 24 632 at the fifth boundary, whose pre-token count is the largest, and 33 255 at
+        the fourth, whose pre-token count is the smallest. That is the
         same operating point the pre-existing census of the local lane found (median 197 386 tokens
         across 190 boundaries in 164 streams), so these six boundaries are ordinary for the lane and not
         an artefact of the probe.</p>
@@ -127,8 +129,13 @@
         <figcaption>Context size either side of each of the six compactions in one local worker's
           stream. Closed marks are the size immediately before the boundary, open marks the size
           immediately after; the dotted line is the declared usable window of 230 144 tokens, which no
-          compaction reached within roughly 25 000 tokens.</figcaption>
+          compaction reached within less than 24 632 tokens.</figcaption>
       </figure>
+      <p>The figure is drawn by <code>plot_compaction_drops.py</code> from the run's own stream, not
+        by hand from the table, so it cannot drift from the data. Its labels are written as vector
+        paths rather than as text elements: the picture therefore carries its own axis titles, tick
+        values and annotations wherever it is rendered, including a rasteriser that has none of the
+        fonts the plotting library names.</p>
     </section>
 
     <section id="a-local-worker-compacts-and-continues-measured-scope">
@@ -139,8 +146,15 @@
         describes is not exercised here — no boundary was reached without a following boundary, and the
         stream's last record at the time of writing is an assistant record rather than a terminal error.
         The census above is where that arm's evidence lives: 125 of 164 boundary streams reached a
-        <code>result</code> record, and two announced a compaction and died before recording one, the
-        last record in those streams being a <code>system</code> record of subtype <code>status</code>.</p>
+        <code>result</code> record, and two announced a compaction without recording a boundary. Those
+        two do not share a terminal signature, and the difference is the datum the death arm turns on:
+        <code>r-20261018T192200408612-review-of-tcv-liuqe-known-answer</code> stops with a
+        <code>system</code> record of subtype <code>status</code>, while
+        <code>r-20260926T195126315924-resume-offer-needs-a-dead-process</code> reaches a
+        <code>result</code> record carrying <code>is_error: true</code> and the text
+        <em>Prompt is too long</em> — its census row records <code>last_type: result</code>. A reader
+        building the RCA from the census must therefore read each row's own terminal record rather
+        than generalise one stream's signature to the other.</p>
       <p>Two limits on the reading. The task writes a result after every part, so this run shows that
         results already on disk survive a boundary; it does not show what happens to a manifest that is
         still unwritten when the boundary arrives. And the corpus is synthetic and homogeneous — plain
@@ -162,10 +176,18 @@
           closing marks</li>
         <li><code>measure/corpus/part-01.txt</code> … <code>part-08.txt</code> and
           <code>expected-checksums.json</code> — the corpus and its planted values</li>
-        <li><code>measure/compaction-census.json</code>, <code>measure/compaction-census.log</code>,
-          <code>measure/census.log</code> — the lane-wide census this node also ran, and its positive
-          control</li>
+        <li><code>measure/compaction-census.json</code> and <code>measure/census.log</code> — the
+          lane-wide census this node ran, and the log of that one run: its header carries the revision
+          and the literal command, which walks the whole crew runs root, and it ends with
+          <code>EXIT=0</code></li>
         <li><code>stream.jsonl</code> — this run's own stream, the instrument</li>
+        <li><code>docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured/check_compaction_evidence.py</code>
+          — re-derives every number in this fragment from the run directory and exits non-zero when
+          one disagrees; run it as <code>python3 check_compaction_evidence.py &lt;run-dir&gt;</code></li>
+        <li><code>docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured/plot_compaction_drops.py</code>
+          — draws the figure below from the same stream, writing every label as a path so the
+          delivered SVG carries its text under a renderer without the fonts matplotlib names, and
+          refusing to save if a label is clipped or two labels overlap</li>
       </ul>
     </section>
   </main>
