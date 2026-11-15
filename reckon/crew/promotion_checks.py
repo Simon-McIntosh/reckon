@@ -2305,6 +2305,7 @@ def _require_declared_negative_control(
     manifest: Mapping[str, Any] | None,
     manifest_path: str,
     waiver_reason: str = "",
+    measure: bool = True,
 ) -> dict[str, Any]:
     """Refuse a passing gate on a check whose red log shows nothing break.
 
@@ -2334,6 +2335,9 @@ def _require_declared_negative_control(
     evidence that either fact holds. Wording cannot carry either fact, so a
     declaration pasted into a log whose run exited zero is refused, and neither
     can a log whose run merely repeated the failures the compared arm already had.
+    A landing that finds no log admitting the control runs the declared mutation
+    itself; a dry run measures nothing, so it reports ``would-measure`` and names
+    what the landing would do rather than starting that measurement.
     The declaration stays on the node record and on the verdict row beside the
     log path, so a person compares the two — the instrument for *is this the
     right mutation*, which no comparison of text can be. A declaration of
@@ -2444,6 +2448,17 @@ def _require_declared_negative_control(
     # reading itself: the declared mutation is run over the tree the repair is
     # absent from, and its failures are the control the log would have carried.
     measured_observation: Mapping[str, Any] | None = None
+    if not source and not measure:
+        # A dry run evaluates guards and writes nothing; measuring the mutation
+        # would start the same job a real promotion starts, which a dry run
+        # promises not to do. The control is reported as one the landing would
+        # measure rather than as one that failed.
+        check["verdict"] = "would-measure"
+        check["reason"] = (
+            "the run kept no log that admits the control, so the landing would "
+            "run the declared mutation itself; a dry run measures nothing"
+        )
+        return check
     if not source:
         measured = _measured_control(run_id, record, test_paths)
         if measured is not None and measured.get("unreadable"):
@@ -2695,6 +2710,7 @@ def _landing_preconditions(
     accepted_paths: Mapping[str, str] | None,
     gate_check: Mapping[str, Any] | None,
     require_gate_check: bool,
+    measure: bool = True,
 ) -> dict[str, Any]:
     """Judge every precondition the landing checks, refusing once with all.
 
@@ -2827,6 +2843,7 @@ def _landing_preconditions(
             manifest=manifest,
             manifest_path=manifest_path,
             waiver_reason=waiver_reason,
+            measure=measure,
         )
         if negative_control_waiver is not None and control["verdict"] != "waived":
             raise CrewError(
