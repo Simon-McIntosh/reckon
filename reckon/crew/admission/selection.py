@@ -255,6 +255,12 @@ def admit_once(
         )
         remaining: dict[tuple[str, str], float | None] = {}
         allowance_sources: dict[tuple[str, str], str] = {}
+        # The router's own verdict for each session read this pass, and the
+        # sessions whose exhausted grant has already been waited on. Both are
+        # per pass: a verdict describes the reading it came with, and a session
+        # is waited on once per pass however many requests it is holding.
+        router_verdicts: dict[tuple[str, str], str] = {}
+        room_waits: set[tuple[str, str]] = set()
         verdicts: list[dict[str, Any]] = result["verdicts"]
         for pointer in unplaceable:
             allowance, source = _holds._session_allowance_read(
@@ -344,22 +350,42 @@ def admit_once(
                 session = str(pointer["session"])
                 allowance_key = (str(pointer.get("backend") or ""), session)
                 if allowance_key not in remaining:
-                    read, source = _holds._session_allowance_read(
+                    read, source, verdict = _holds._session_room_read(
                         pointer, config_for=config_for
                     )
                     remaining[allowance_key] = read
                     allowance_sources[allowance_key] = source
+                    router_verdicts[allowance_key] = verdict
                 allowance = remaining[allowance_key]
                 if allowance is not None and allowance <= 0:
-                    if filling and launches.has_pending(allowance_key):
+                    if filling:
+                        # A grant that is exhausted here may be the whole of what
+                        # holds this session, and it may clear before this pass
+                        # ends. Every candidate held on it is deferred to the
+                        # second sweep, where one bounded wait per session reads
+                        # the router again; holding them here would end the pass
+                        # on a reading of one instant.
                         deferred.append((index, pointer))
                         continue
-                    if not filling:
-                        launches.wait_for_allowance(allowance_key)
-                        allowance = remaining[allowance_key]
-                        if tick() >= deadline:
-                            budget_spent = True
-                            break
+                    launches.wait_for_allowance(allowance_key)
+                    allowance = remaining[allowance_key]
+                    if allowance is not None and allowance <= 0:
+                        room = _wait_for_lane_room(
+                            pointer,
+                            config_for=config_for,
+                            tick=tick,
+                            deadline=deadline,
+                            waited=room_waits,
+                            key=allowance_key,
+                            router_verdict=router_verdicts.get(allowance_key, ""),
+                        )
+                        if room is not None:
+                            allowance, room_source = room
+                            remaining[allowance_key] = allowance
+                            allowance_sources[allowance_key] = room_source
+                    if tick() >= deadline:
+                        budget_spent = True
+                        break
                 allowance_source = allowance_sources[allowance_key]
                 landed_subject = _holds._landed_review_subject(pointer, live=live)
                 if landed_subject:
@@ -641,6 +667,82 @@ def admit_once(
                 order, verdicts, moment=moment, ordered=not bool(run_id)
             )
         return result
+
+
+# How long one pass waits for a lane that granted no worker slot to publish room
+# again, and the cadence it re-reads on. A pass used to end on the reading it
+# took, so a full reading held every queued request until the next pass -- 45 to
+# 185 seconds on the fleet -- while the lane's own grants cleared in seconds. The
+# wait is bounded because a full reading that persists is a lane that really is
+# saturated, and the pass must still return to do the rest of its work.
+LANE_ROOM_WAIT_SECONDS = 30.0
+LANE_ROOM_POLL_SECONDS = 1.0
+
+
+def _wait_for_lane_room(
+    pointer: Mapping[str, Any],
+    *,
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
+    tick: Callable[[], float],
+    deadline: float,
+    waited: set[tuple[str, str]],
+    key: tuple[str, str],
+    router_verdict: str,
+) -> tuple[float | None, str] | None:
+    """Wait, bounded, for a lane that granted no slot to publish room again.
+
+    Returns the allowance the later reading published together with its source,
+    or ``None`` when the lane is still full when the wait ends, the session was
+    already waited on this pass, or the lane is paused. Three things keep this
+    one wait per session per pass rather than a poll loop that ends with the
+    pass:
+
+    * a session already waited on this pass is not waited on again, so a queue
+      of twelve requests costs one wait, not twelve;
+    * the wait never outlasts the pass's own launch deadline, so a lane cannot
+      hold a pass open past the budget the pass was given;
+    * a paused lane is not waited on at all. A full reading is an instant that
+      clears as the requests the router already holds complete, while a pause
+      is the lane stating it takes no work, and a later reading of the same
+      pause is not worth a wait. A re-read that comes back paused ends the wait
+      for the same reason.
+
+    The read is a fresh one. The figure this pass cached is the reading being
+    waited out, so reusing it would answer the fresh question with the stale
+    instant, and no wait would ever end for a lane that reopened.
+
+    The wait pauses on the service's own pause seam, so a caller driving this
+    pass with a stub pause keeps it fast without changing what the pass
+    decides.
+    """
+    if router_verdict == "paused" or key in waited:
+        return None
+    seconds = min(LANE_ROOM_WAIT_SECONDS, deadline - tick())
+    if seconds <= 0:
+        return None
+    waited.add(key)
+    # The config is resolved once here rather than per read: a lane document
+    # sitting on a shared filesystem is re-read every poll, while the mounts and
+    # lane declarations behind the config do not move inside one wait.
+    config = (
+        config_for(pointer)
+        if config_for is not None
+        else _launching._resolve_lane_config(pointer)
+    )
+
+    def frozen(_pointer: Mapping[str, Any]) -> Mapping[str, Any]:
+        return config
+
+    for _poll in range(max(1, int(seconds // LANE_ROOM_POLL_SECONDS))):
+        _service._pause(LANE_ROOM_POLL_SECONDS)
+        allowance, source, verdict = _holds._session_room_read(
+            pointer, config_for=frozen
+        )
+        if verdict == "paused":
+            return None
+        if allowance is None or allowance > 0:
+            return allowance, source
+    return None
 
 
 def _launch_budget_from_flight() -> float:

@@ -42,7 +42,7 @@ from .shared import (
 def _session_allowance_read(
     pointer: Mapping[str, Any],
     *,
-    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
 ) -> tuple[float | None, str]:
     """The extra-worker allowance the lane grants the queued run's session.
 
@@ -51,6 +51,30 @@ def _session_allowance_read(
     document is declared, so the lane publishes nothing to hold on and every
     queued run may be attempted. A published allowance of zero or less holds
     that session.
+
+    The router's own verdict is asked for by :func:`_session_room_read` and
+    dropped here, because every caller of this spelling wants only the figure
+    and its source.
+    """
+    allowance, source, _verdict = _session_room_read(pointer, config_for=config_for)
+    return allowance, source
+
+
+def _session_room_read(
+    pointer: Mapping[str, Any],
+    *,
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
+) -> tuple[float | None, str, str]:
+    """The session's allowance, the source it came from, and the router's verdict.
+
+    The verdict rides beside the figure because the two answer different
+    questions about the same reading. An allowance of zero says the router has
+    no room at this instant, and a full reading is exactly that: an instant,
+    which clears as the workers holding the router's requests finish. A verdict
+    of ``paused`` says the lane has been stopped on purpose, so the configured
+    figures are not a reading of load at all. A caller deciding whether another
+    reading is worth waiting for reads the verdict; a caller deciding whether
+    it may launch reads the allowance.
     """
     config = (
         config_for(pointer)
@@ -59,21 +83,22 @@ def _session_allowance_read(
     )
     backend = (config.get("backends") or {}).get(str(pointer.get("backend") or ""))
     if not backend:
-        return None, "no backend declares the request's lane"
+        return None, "no backend declares the request's lane", ""
     decision = _dispatch_lane_allowance(
         backend,
         session=str(pointer["session"]),
         weights_configured=_ordering._fair_use_weights_configured(config),
     )
     if decision is None:
-        return None, "the lane publishes no allowance"
+        return None, "the lane publishes no allowance", ""
     source = str(decision.get("source") or "unknown")
+    verdict = str(decision.get("verdict") or "")
     if decision.get("held"):
-        return 0, source
+        return 0, source, verdict
     allowance = decision.get("allowance")
     if isinstance(allowance, bool) or not isinstance(allowance, (int, float)):
-        return None, source
-    return float(allowance), source
+        return None, source, verdict
+    return float(allowance), source, verdict
 
 
 def _lane_gate_hold(
