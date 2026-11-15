@@ -238,25 +238,27 @@ def _roadmap_priority_keys(
 
 
 def _priority(pointer: Mapping[str, Any]) -> int:
-    """The points a request carries, zero when it carries none.
+    """The points a request carries, zero when it carries none."""
+    return _override(pointer) or 0
+
+
+def _override(pointer: Mapping[str, Any]) -> int | None:
+    """The points a request carries, or None when it carries none.
 
     ``priority`` is the field a submission and ``crew queue reprioritise`` both
     write. ``priority_override`` is read beside it because a request stored
     before the priority field existed carries only the override, and the two
     name one figure: the points this request spends from its session's budget.
-    A zero or unreadable value is no priority, so an unraised request sorts by
-    the signals below it rather than ahead of them.
+
+    This is the only reader of those fields, so every surface that ranks or
+    hoists a request follows one definition of what a priority is, and a test
+    that patches this name moves all of them together.
     """
     for key in ("priority", "priority_override"):
         value = pointer.get(key)
         if isinstance(value, int) and not isinstance(value, bool) and value > 0:
             return int(value)
-    return 0
-
-
-def _override(pointer: Mapping[str, Any]) -> int | None:
-    points = _priority(pointer)
-    return points or None
+    return None
 
 
 def priority_reason(pointer: Mapping[str, Any]) -> str:
@@ -352,10 +354,11 @@ def admission_order_details(
         return (
             not _is_review_run(pointer),
             0 if aged else 1,
-            0 if aged else -_priority(pointer),
-            row[0] if aged else oldest[0],
+            oldest[0] if aged else moment,
+            -_priority(pointer),
             occupancy[(str(pointer.get("backend") or ""), group[1])],
-            row[1],
+            oldest[0],
+            oldest[1],
         )
 
     def _project_rank(group: tuple[str, str]) -> tuple[Any, ...]:
@@ -366,10 +369,11 @@ def admission_order_details(
         return (
             not _is_review_run(pointer),
             age < STARVATION_AGE_SECONDS,
+            row[0] if age >= STARVATION_AGE_SECONDS else moment,
             -_priority(pointer),
-            occupancy[(str(pointer.get("backend") or ""), group[1])],
             key is None,
             key or (),
+            occupancy[(str(pointer.get("backend") or ""), group[1])],
             row[0],
             row[1],
         )
