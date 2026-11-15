@@ -1,0 +1,89 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures": [],
+  "added_failures_note": "Derived from the reviewed run's own arms: baseline-suite-git.log (revision 32e147040e) reads '58 passed', EXIT=0, no failing id; after-suite-final.log (revision 6ae6265d6b) reads '58 passed', EXIT=0, none. The head adds no failing test, so the count is a measured 0. The node's own four-file arms agree: baseline.log 24 failed / 13 passed at 32e147040e, negative.log the same 24 at fdd817d3, head-final.log 41 passed at the reviewed head.",
+  "call_site_count": 3,
+  "call_sites_verified": [
+    "reckon/crew/dispatch_batch.py:1011",
+    "reckon/crew/admission/release.py:555",
+    "reckon/crew/dispatch.py:601"
+  ],
+  "completed_at": "2026-11-15T20:41:48.594Z",
+  "dispatched_at": "2026-11-15T20:41:15Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatching/requests.py",
+      "id": "fb150211183",
+      "line": "178",
+      "severity": "non-blocking",
+      "text": "non-blocking: the durable default re-derives run_dir(run_id)/\"manifest.md\" a third time, beside reckon/crew/dispatch_batch.py:963 and reckon/crew/dispatch_plan.py:818, and hardcodes the name that reckon/crew/runs.py:2409 exposes as DEFAULT_MANIFEST_NAME, so a rename or a relocation of the delivered manifest leaves this copy stale while the other two move."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T195132080788-qwnw-queue-tests-red-on-main-are-repaired-codex/head-final.py",
+      "id": "fa46862f016",
+      "line": "6",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gate script builds pytest's environment with dict(os.environ, ...) and never drops SLURM_JOB_ID, so the recorded 41-passed arm ran under the sbatch job 1318503 environment although prompt.txt:166 requires that variable unset, and production reads it at reckon/crew/dispatch_launch.py:3439."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T195132080788-qwnw-queue-tests-red-on-main-are-repaired-codex/after-suite-final.log",
+      "revision": "6ae6265d6b528726a2b0905439fc8897437ed5fc"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T195132080788-qwnw-queue-tests-red-on-main-are-repaired-codex/baseline-suite-git.log",
+      "revision": "32e147040e78caf8d9321eec920c5e413436aac6"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read c3933bacfb, 6ae6265d6b and e60cd46892 against 32e147040e commit by commit; c3933bacfb adds the three-line default at reckon/crew/dispatching/requests.py:177-179 and the three test repairs, 6ae6265d6b adds only the threading ordering at tests/test_an_admission_pass_reads_the_roadmap_once.py:160-172, and e60cd46892 adds only the two evidence pages.",
+    "done_when": "prompt.txt:166 wants the four files green in one all_debug job with SLURM_JOB_ID unset, 24 base failures at fdd817d3, a product-or-test verdict per cause, both runs logged to queue-tests-red-on-main.html and no new ruff finding; baseline.log records 24 failed 13 passed at 32e147040e, negative.log the same 24 at fdd817d3, head-final.log 41 passed at e60cd46892 (which changes no python or test file relative to code head 6ae6265d6b), manifest evidence_inputs names product-or-test per cause, and lint.log records all checks passed with 4 files already formatted \u2014 yet head-final.py:6 hands os.environ straight to pytest, so SLURM_JOB_ID was inherited from sbatch job 1318503 rather than unset.",
+    "goal": "The goal at prompt.txt:38 is to repair 24 queued-queue and readiness tests red on main; at e60cd46892 reckon/crew/dispatching/requests.py:177-179 assigns each request the durable manifest path its run directory holds before the node contract is judged, three of the four named test files carry the repaired contracts and the fourth passes unchanged, and head-final.log records all four green as 41 passed.",
+    "manifest": "Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T195132080788-qwnw-queue-tests-red-on-main-are-repaired-codex/manifest.md; it reads status complete over commits c3933bacfb, 6ae6265d6b and e60cd46892, carries the four-file gate command with its 41-passed figure, the armed base and after arms at 58 passed each with exit 0, and manifest-check-final.log answers ok=true with an empty findings list.",
+    "write_paths": "prompt.txt:84-88 declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, the node fragment there and its figures directory; every path in the diff \u2014 reckon/crew/dispatching/requests.py, three tests/ files and the two fragment pages \u2014 lies inside that declaration."
+  },
+  "justifications": {
+    "durability": "restoring the omitted default at reckon/crew/dispatching/requests.py:177 reddens tests/test_queue_dag_waits.py:174, which builds its expectation from runs.run_dir rather than from anything the test handed in, and making the default unconditional reddens :185 on the relative path.",
+    "evidence": "baseline.log and head-final.log carry the two arms with their exit lines, but head-final.py:6 forwards os.environ through, so the arm was not taken under the unset SLURM_JOB_ID the done_when states at prompt.txt:166.",
+    "fit": "the addition follows the surrounding loop and comment idiom of reckon/crew/dispatching/requests.py:176-186 but spells the file name as the literal \"manifest.md\" where reckon/crew/runs.py:2409 owns DEFAULT_MANIFEST_NAME.",
+    "goal_fidelity": "reckon/crew/dispatching/requests.py:177-179 gives every queued request the manifest path before validation, and head-final.log records the four named files at 41 passed against 24 failed in baseline.log.",
+    "reuse": "the run-directory default it adds at reckon/crew/dispatching/requests.py:178 is the same derivation already standing at reckon/crew/dispatch_batch.py:963 and reckon/crew/dispatch_plan.py:818, so the capability now has three spellings and no owner helper.",
+    "scope_discipline": "the diff touches only reckon/crew/dispatching/requests.py, three tests files and the two fragment pages named by prompt.txt:84-88, and the second page is the log the done_when itself names."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal at prompt.txt:38 is to repair 24 queued-queue and readiness tests red on main; at e60cd46892 reckon/crew/dispatching/requests.py:177-179 assigns each request the durable manifest path its run directory holds before the node contract is judged, three of the four named test files carry the repaired contracts and the fourth passes unchanged, and head-final.log records all four green as 41 passed.\nVERDICT done_when: prompt.txt:166 wants the four files green in one all_debug job with SLURM_JOB_ID unset, 24 base failures at fdd817d3, a product-or-test verdict per cause, both runs logged to queue-tests-red-on-main.html and no new ruff finding; baseline.log records 24 failed 13 passed at 32e147040e, negative.log the same 24 at fdd817d3, head-final.log 41 passed at e60cd46892 (which changes no python or test file relative to code head 6ae6265d6b), manifest evidence_inputs names product-or-test per cause, and lint.log records all checks passed with 4 files already formatted \u2014 yet head-final.py:6 hands os.environ straight to pytest, so SLURM_JOB_ID was inherited from sbatch job 1318503 rather than unset.\nVERDICT write_paths: prompt.txt:84-88 declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, the node fragment there and its figures directory; every path in the diff \u2014 reckon/crew/dispatching/requests.py, three tests/ files and the two fragment pages \u2014 lies inside that declaration.\nVERDICT manifest: Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T195132080788-qwnw-queue-tests-red-on-main-are-repaired-codex/manifest.md; it reads status complete over commits c3933bacfb, 6ae6265d6b and e60cd46892, carries the four-file gate command with its 41-passed figure, the armed base and after arms at 58 passed each with exit 0, and manifest-check-final.log answers ok=true with an empty findings list.\nVERDICT diff: Read c3933bacfb, 6ae6265d6b and e60cd46892 against 32e147040e commit by commit; c3933bacfb adds the three-line default at reckon/crew/dispatching/requests.py:177-179 and the three test repairs, 6ae6265d6b adds only the threading ordering at tests/test_an_admission_pass_reads_the_roadmap_once.py:160-172, and e60cd46892 adds only the two evidence pages.\nCALL_SITES: reckon/crew/dispatch_batch.py:1011, reckon/crew/admission/release.py:555, reckon/crew/dispatch.py:601\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatching/requests.py:177-179 gives every queued request the manifest path before validation, and head-final.log records the four named files at 41 passed against 24 failed in baseline.log.\nSCORE evidence: 13\nJUSTIFICATION evidence: baseline.log and head-final.log carry the two arms with their exit lines, but head-final.py:6 forwards os.environ through, so the arm was not taken under the unset SLURM_JOB_ID the done_when states at prompt.txt:166.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/dispatching/requests.py, three tests files and the two fragment pages named by prompt.txt:84-88, and the second page is the log the done_when itself names.\nSCORE durability: 17\nJUSTIFICATION durability: restoring the omitted default at reckon/crew/dispatching/requests.py:177 reddens tests/test_queue_dag_waits.py:174, which builds its expectation from runs.run_dir rather than from anything the test handed in, and making the default unconditional reddens :185 on the relative path.\nSCORE fit: 17\nJUSTIFICATION fit: the addition follows the surrounding loop and comment idiom of reckon/crew/dispatching/requests.py:176-186 but spells the file name as the literal \"manifest.md\" where reckon/crew/runs.py:2409 owns DEFAULT_MANIFEST_NAME.\nSCORE reuse: 9\nJUSTIFICATION reuse: the run-directory default it adds at reckon/crew/dispatching/requests.py:178 is the same derivation already standing at reckon/crew/dispatch_batch.py:963 and reckon/crew/dispatch_plan.py:818, so the capability now has three spellings and no owner helper.\nFINDING reckon/crew/dispatching/requests.py:178 non-blocking: the durable default re-derives run_dir(run_id)/\"manifest.md\" a third time, beside reckon/crew/dispatch_batch.py:963 and reckon/crew/dispatch_plan.py:818, and hardcodes the name that reckon/crew/runs.py:2409 exposes as DEFAULT_MANIFEST_NAME, so a rename or a relocation of the delivered manifest leaves this copy stale while the other two move.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T195132080788-qwnw-queue-tests-red-on-main-are-repaired-codex/head-final.py:6 non-blocking: the gate script builds pytest's environment with dict(os.environ, ...) and never drops SLURM_JOB_ID, so the recorded 41-passed arm ran under the sbatch job 1318503 environment although prompt.txt:166 requires that variable unset, and production reads it at reckon/crew/dispatch_launch.py:3439.\n",
+  "review_run_id": "r-20261115T203125338832-review-of-qwnw-queue-tests-red-on-main-are-repaired-codex-e60cd468926f",
+  "reviewed_base_sha": "32e147040e78caf8d9321eec920c5e413436aac6",
+  "reviewed_head_sha": "e60cd468926f474d796ff96d8b1b4637aecc5e94",
+  "reviewed_run_id": "r-20261115T195132080788-qwnw-queue-tests-red-on-main-are-repaired-codex",
+  "rubric": "review",
+  "scores": {
+    "durability": 17,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 9,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "subject": "run",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T21:15:00+00:00",
+  "total": 94
+}
