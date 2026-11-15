@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="320">
+<meta name="plan-version" content="321">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -1307,6 +1307,12 @@ staged paths.</p>
 <div class="r-comment" data-section="s56" data-id="c-run-r-20261115T083242123087-a-steady-tick-writes-no-known-answer" data-who="reckon-build" data-when="2026-11-15T09:21:53.600Z">
     <div class="r-comment-body"><p>An answer the git answer store already holds is no longer written again: `_remember_commit_answer` and `_remember_count_answer` return early when the store carries that value, so a steady tick takes the store's lock and rewrites its file for a new or different answer only; on a temporary crew home and a 20-commit repository the second pass over the 20 citations makes 0 writes against the base revision's 20, leaves the store's `st_ino` and `st_mtime_ns` unchanged, and a 21st commit is written once and reads its full sha back out of the store.</p></div>
 </div>
+<div class="r-comment" data-section="s58" data-id="c-run-r-20261115T095914167910-review-of-an-unchanged-mount-registry-is-resolved-once-f8301adde2cb" data-who="reckon-build" data-when="2026-11-15T10:52:35.788Z">
+    <div class="r-comment-body"><p>review of r-20261115T083216633571-an-unchanged-mount-registry-is-resolved-once at head f8301adde2cb scores goal_fidelity 19, evidence 15, scope_discipline 20, durability 18, fit 19, reuse 20 (total 111), added_failure_count 0 from the two arm logs, with one blocking finding on the run's own manifest after_suite line and two non-blocking findings</p></div>
+</div>
+<div class="r-comment" data-section="s58" data-id="c-run-r-20261115T083216633571-an-unchanged-mount-registry-is-resolved-once" data-who="reckon-build" data-when="2026-11-15T09:57:01.454Z">
+    <div class="r-comment-body"><p>section 58 — mounted_project_docs parses mounts.json and resolves every mount entry&#x27;s path once per registry stat identity through the file memo; 150 resolves over three projects read the registry once and resolve three entries, against 150 reads at the base revision</p></div>
+</div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261024T125322878212-the-station-ingests-only-new-bytes" data-who="reckon-build" data-when="2026-10-24T13:09:00.668Z">
     <div class="r-comment-body"><p>stream ingest reads only bytes past its stored offset with a 64-byte tail anchor and a stored last-read size, refolding on a changed inode, a size below the consumed offset, a size below the last-read size, or a moved anchor; five recorded streams replayed as 93 appends fold equal to a full fold with 0 per-tick byte-bound violations, descriptors equal across 50 event writes, gate 24 passed exit 0 against base 15 passed exit 0</p></div>
 </div>
@@ -1375,9 +1381,6 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T042852990093-obligations-read-the-station" data-who="reckon-build" data-when="2026-10-27T13:28:42Z">
     <div class="r-comment-body"><p>The station computes each live session's obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
-</div>
-<div class="r-comment" data-section="s58" data-id="c-run-r-20261115T095914167910-review-of-an-unchanged-mount-registry-is-resolved-once-f8301adde2cb" data-who="reckon-build" data-when="2026-11-15T10:52:35.788Z">
-    <div class="r-comment-body"><p>review of r-20261115T083216633571-an-unchanged-mount-registry-is-resolved-once at head f8301adde2cb scores goal_fidelity 19, evidence 15, scope_discipline 20, durability 18, fit 19, reuse 20 (total 111), added_failure_count 0 from the two arm logs, with one blocking finding on the run's own manifest after_suite line and two non-blocking findings</p></div>
 </div>
 </section>
 </main>
