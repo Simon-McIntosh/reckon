@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T11:34:22.244Z",
+  "dispatched_at": "2026-11-15T11:10:40Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-rorp-s3-8d44c377ff4b",
+      "recorded_at": "2026-11-15T12:18:31.927128+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "1067",
+      "severity": "blocking",
+      "text": "a claims record stored under the newly admitted `claim_verdicts` spelling (CLAIM_VERDICT_FIELDS, reckon/crew/review.py:405) passes `crew check --review` but is refused as incomplete by the promotion completeness rule at reckon/crew/recovery_review_subject.py:1681, whose _claims_missing_measures reads only the `claims` key. Reproduced at head with a hand-built record: review_record_refusals -> [] and _review_is_complete -> False, missing ['claims']. The change's own docstring names hand-written claim_verdicts records as its motivation, so the one shape it was added for still needs the hand repair section 3 exists to remove. The reverse direction splits too: two claims both at rank 1 and no rank 2 reads complete to the promotion rule while the check refuses it naming claim 2."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": "1056",
+      "severity": "non-blocking",
+      "text": "the node's gate does not measure the done-when clause about the test files that import the review record check: baseline_suite names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports review_record_refusals, so the four files that do (tests/test_the_figure_prompt_names_the_finding_shape.py, tests/test_a_figure_review_promotes_without_text_scores.py, tests/test_a_review_answers_the_domain_checks.py, tests/test_a_figure_review_is_complete_by_its_own_rubric.py) were never run by the node. This review ran those four at head: 45 passed, EXIT=0, logged under review run r-20261115T110336917642-review-of-rorp-s3-8d44c377ff4b as importer-tests.log."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": "985",
+      "severity": "non-blocking",
+      "text": "claims_verdict_refusals duplicates a capability the repository already owns: reckon/crew/recovery_review_subject.py:1681 _claims_missing_measures is the declared single owner of claims completeness (its docstring says so at :1593), and the new function restates a stricter variant rather than extending it, which is how the divergence above arises. A delegation is blocked by the import direction (recovery_review_subject imports review, so review cannot import it), so the owner should move rather than be copied."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T085738178021-rorp-s3/manifest.md",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "the two-population corpus probe that supports 'no stored claims record (23) is newly refused' is cited only as /tmp/rorp-s3-corpus-probe.py and two /tmp JSON outputs, which a later reader cannot open; the claim rests on artifacts that no longer exist rather than on a run record or a stored log."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261115T110336917642-review-of-rorp-s3-8d44c377ff4b",
+  "reviewed_base_sha": "bb45282b57f827630da06fea40073de11631f69f",
+  "reviewed_head_sha": "8d44c377ff4b93f510ff9fa98d4a29a588a1ccee",
+  "reviewed_run_id": "r-20261115T085738178021-rorp-s3",
+  "scores": {
+    "durability": 14,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 5,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T11:47:45.904111+00:00",
+  "total": 83
+}
