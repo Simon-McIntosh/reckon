@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s56">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="passed">
+  <title>A steady tick writes no answer the store already holds</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+
+<article class="r-note" id="a-steady-tick-writes-no-known-answer-landing" data-node="a-steady-tick-writes-no-known-answer" data-reckon="landed" data-when="2026-11-15">
+  <h2>A stored git answer is left alone</h2>
+
+  <p id="a-steady-tick-writes-no-known-answer-what"><strong>What landed.</strong> <code>_remember_commit_answer</code> and <code>_remember_count_answer</code> in <code>reckon/crew/recovery_watch.py</code> now return early when the crew home's git answer store already carries the value they were asked to record. Both writers previously took the store's exclusive lock and rewrote the whole file through a rename to store an answer the file already held: <code>_resolve_commit</code> is called uncached while a tick composes each run's review subject, so every tick asked git again for every citation and rewrote the store with the same answers, once per citation. Each rewrite also gave the file a new stat identity, which is why a reader's held copy of the store stopped matching a moment after it was taken.</p>
+
+  <p id="a-steady-tick-writes-no-known-answer-why-safe"><strong>Why the skip is safe.</strong> The store holds only answers that are functions of immutable object ids — a full revision resolves to the same commit forever, and the commit count between two object ids never changes — so an answer already present is the answer the caller is about to write. A <em>different</em> answer still writes, which is the only case that changes the file.</p>
+
+  <p id="a-steady-tick-writes-no-known-answer-gate"><strong>Gate.</strong> <code>tests/test_a_steady_tick_writes_no_known_answer.py</code> builds a temporary crew home and a temporary repository of 20 commits, then resolves each commit's ten-character citation through <code>_resolve_commit</code> twice. A recording stand-in wraps <code>_update_git_answer_store</code> and counts the writes. The first pass writes <strong>20</strong>; the second writes <strong>0</strong>, every returned sha equals the same commit's first-pass answer, and the store's <code>st_ino</code> and <code>st_mtime_ns</code> are identical across the second pass. A twenty-first commit resolved afterwards is written <strong>once</strong>, and <code>_stored_commit_answer</code> reads its full sha back out of the two.</p>
+
+  <p id="a-steady-tick-writes-no-known-answer-control"><strong>Negative control.</strong> The same case run against the base revision (<code>5617397173</code>), with the node's test file copied into a scratch extraction, reproduces the defect: the second pass makes <strong>20</strong> store writes and the case fails on <code>assert 20 == 0</code>. That is the declared control — the fixture is driving the path the change shortens, not a path the change removed.</p>
+
+  <p id="a-steady-tick-writes-no-known-answer-arms"><strong>Matched arms.</strong> Two arms ran on the <code>all_debug</code> partition, each in a scratch extraction of its own revision; each log opens with its revision, tree and literal command, prints the resolved <code>measurement module</code> and working directory, and ends in its own <code>EXIT=</code>. The base arm (<code>5617397173</code>) runs <code>53 passed, 2 errors</code>; the after arm (<code>f5e5e8e52d</code>) runs those two files plus this node's case for <code>55 passed, 2 errors</code>. The extra two passes are this node's cases. The two errors are the same pair in both arms and carry no <code>FAILED</code> id: <code>test_staged_write_inventory</code>'s module fixture reads its trees with <code>git ls-tree HEAD</code>, which a scratch extraction has no metadata for. The change adds no failure.</p>
+</article>
+
+</body>
+</html>
