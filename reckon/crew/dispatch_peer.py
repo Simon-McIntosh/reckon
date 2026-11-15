@@ -57,6 +57,37 @@ def _scoped_python_files(paths: Iterable[str], repo: Path) -> tuple[Path, ...]:
     return tuple(sorted(files))
 
 
+#: A scope holding more Python files than this is not read file by file. It is
+#: a whole package or test tree, and every other scope in the repository
+#: imports from it or is imported by it.
+_WIDE_SCOPE_FILES = 200
+
+
+def _scope_is_wide(paths: Iterable[str], repo: Path) -> bool:
+    """Whether a scope holds more Python files than adjacency reads one by one.
+
+    The walk stops at the first file past the bound, so a scope naming a whole
+    tree costs the directories that hold its first files, not the tree.
+    """
+    seen = 0
+    for raw in paths:
+        candidate = Path(str(raw)).expanduser()
+        candidate = (
+            candidate if candidate.is_absolute() else repo / candidate
+        ).resolve()
+        try:
+            candidate.relative_to(repo)
+        except ValueError:
+            continue
+        if not candidate.is_dir():
+            continue
+        for _path in candidate.rglob("*.py"):
+            seen += 1
+            if seen > _WIDE_SCOPE_FILES:
+                return True
+    return False
+
+
 def _scopes_overlap(
     left_paths: Iterable[str], right_paths: Iterable[str], repo: Path
 ) -> bool:
@@ -188,16 +219,24 @@ def _nodes_are_adjacent(
     right_paths: Iterable[str],
     repo: Path,
     files: dict[tuple[str, ...], tuple[Path, ...]] | None = None,
+    wide_scopes: dict[tuple[str, ...], bool] | None = None,
 ) -> bool:
     """Return whether Python imports or calls connect two disjoint scopes.
 
     ``files`` holds the file list of each scope already listed in this pass, so
-    a launch compared with every live peer lists its own scope once.
+    a launch compared with every live peer lists its own scope once, and
+    ``wide_scopes`` holds which scopes were found too wide to list at all.
     """
     left_key, right_key = tuple(left_paths), tuple(right_paths)
     if _scopes_overlap(left_key, right_key, repo):
         return True
     known = files if files is not None else {}
+    wide = wide_scopes if wide_scopes is not None else {}
+    for key in (left_key, right_key):
+        if key not in wide:
+            wide[key] = _scope_is_wide(key, repo)
+    if wide[left_key] or wide[right_key]:
+        return True
     for key in (left_key, right_key):
         if key not in known:
             known[key] = _scoped_python_files(key, repo)
@@ -235,6 +274,7 @@ def _adjacent_live_peers(
     excluded = set(exclude_run_ids)
     adjacent: list[dict[str, Any]] = []
     listed: dict[tuple[str, ...], tuple[Path, ...]] = {}
+    wide: dict[tuple[str, ...], bool] = {}
     for pointer in list_live(project=project):
         if str(pointer.get("run_id") or "") in excluded:
             continue
@@ -253,7 +293,11 @@ def _adjacent_live_peers(
             peer_id in explicitly_named
             or peer_named_new
             or _nodes_are_adjacent(
-                node.write_paths, peer_node.get("write_paths") or (), repo, listed
+                node.write_paths,
+                peer_node.get("write_paths") or (),
+                repo,
+                listed,
+                wide,
             )
         ):
             continue
