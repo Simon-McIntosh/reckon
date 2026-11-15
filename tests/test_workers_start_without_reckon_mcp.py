@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -52,7 +53,7 @@ def _launch(tmp_path, operator, command, **kwargs):
         worktree=str(checkout),
         manifest_path=str(run / "manifest.md"),
         fence_home=operator,
-        fence_config={"worker_mcp_servers": ["reckon"]},
+        fence_config={"worker_mcp_servers": ["useful"]},
         **kwargs,
     )
 
@@ -75,7 +76,15 @@ def test_worker_launch_excludes_reckon(tmp_path, worker_home, command, fence):
         assert "reckon" not in explicit["mcpServers"]
         assert "useful" in explicit["mcpServers"]
     elif command == "codex":
-        assert "mcp_servers.reckon.enabled=false" in plan.argv
+        assert any(
+            tomllib.loads(plan.argv[i + 1])
+            .get("mcp_servers", {})
+            .get("reckon", {})
+            .get("enabled")
+            is False
+            for i, value in enumerate(plan.argv[:-1])
+            if value == "-c"
+        )
         home = Path(plan.environment["CODEX_HOME"]) if fence else worker_home / ".codex"
         assert "mcp_servers.useful" in (home / "config.toml").read_text()
     else:
@@ -105,7 +114,15 @@ def test_resumed_worker_still_excludes_reckon(tmp_path, worker_home, command):
         )
         assert "reckon" not in explicit["mcpServers"]
     elif command == "codex":
-        assert "mcp_servers.reckon.enabled=false" in plan.argv
+        assert any(
+            tomllib.loads(plan.argv[i + 1])
+            .get("mcp_servers", {})
+            .get("reckon", {})
+            .get("enabled")
+            is False
+            for i, value in enumerate(plan.argv[:-1])
+            if value == "-c"
+        )
     else:
         config = json.loads(
             (Path(plan.environment["PI_CODING_AGENT_DIR"]) / "mcp.json").read_text()
@@ -124,5 +141,5 @@ def test_codex_override_keeps_a_valid_transport(tmp_path, transport):
     if transport:
         (home / "config.toml").write_text("[mcp_servers.reckon]\n" + transport + "\n")
     flags = codex_worker_mcp_flags(home, tmp_path / "checkout")
-    assert "mcp_servers.reckon.enabled=false" in flags
-    assert ('mcp_servers.reckon.command="reckon"' in flags) is (not transport)
+    servers = tomllib.loads(flags[1])["mcp_servers"]
+    assert servers == ({"reckon": {"enabled": False}} if transport else {})

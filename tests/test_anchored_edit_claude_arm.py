@@ -24,10 +24,8 @@ BASE_SETTINGS = (
     '{\n  "enableAllProjectMcpServers": false,\n'
     '  "enabledMcpjsonServers": [],\n  "hooks": {\n    "Stop": []\n  }\n}\n'
 )
-BASE_MCP = (
-    '{\n  "mcpServers": {\n    "operator": {\n'
-    '      "command": "operator-server"\n    }\n  }\n}\n'
-)
+BASE_MCP = '{\n  "mcpServers": {}\n}\n'
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -199,7 +197,7 @@ def test_fresh_fenced_launch_registers_scoped_tools_and_records_treatment(
         "reckon.anchored_edit",
         *(word for root in expected_roots for word in ("--root", str(root))),
     ]
-    assert config["mcpServers"]["operator"] == {"command": "operator-server"}
+    assert "operator" not in config["mcpServers"]
     settings = json.loads((run / "harness" / "settings.json").read_text())
     assert settings["permissions"]["allow"] == [
         "mcp__reckon-anchored-edit__read_anchored",

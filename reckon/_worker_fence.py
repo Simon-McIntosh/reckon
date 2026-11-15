@@ -88,7 +88,7 @@ PID_NAMESPACE_ARGS = ("--unshare-pid", "--proc", "/proc")
 # start. Read from the resolved flight configuration at seed time: a project
 # naming no servers seeds the setting that disables every project ``.mcp.json``
 # server, rather than inheriting each server the checkout happens to register.
-# The coordination server is excluded from workers independently of this list.
+# The same allowlist governs user-scope and project-scope servers.
 WORKER_MCP_SERVERS = "worker_mcp_servers"
 
 # The two harness settings the seed writes into a run home's ``settings.json``.
@@ -286,6 +286,9 @@ def seed_harness_home(
     # was first seeded — the same home, so the record survives the resume, and a
     # run's own state is never overwritten.
     settings_preexisting = (home / "settings.json").exists()
+    allowed_servers = set(worker_mcp_servers or ())
+    if anchored_edit:
+        allowed_servers.add("reckon-anchored-edit")
     source_home = Path(operator_home) / declared[2]
     for entry in declaration or ():
         relative = entry.get("path")
@@ -302,8 +305,10 @@ def seed_harness_home(
         source = Path(operator_home) / relative
         if not source.exists():
             continue
-        _merge_harness_entry(source, home / relative, entry.get("keys"))
-    _seed_worker_mcp_exclusions(home, dialect_name)
+        _merge_harness_entry(
+            source, home / relative, entry.get("keys"), allowed_servers
+        )
+    _seed_worker_mcp_exclusions(home, dialect_name, allowed_servers)
     if dialect_name == "claude":
         _seed_worker_inbox_hook(home)
     if resume_session:
@@ -389,22 +394,22 @@ def _seed_worker_mcp_settings(home: Path, worker_mcp_servers: Iterable[str]) -> 
 
     The write is called only for a settings.json this seed created, so the
     hooks the operator carries are updated in place and nothing is lost; a run's
-    own settings.json is never touched. The coordination server is excluded
-    independently of the project's allow list.
+    own settings.json is never touched. The same allowlist filters user-scope
+    MCP declarations when the run home is seeded.
     """
     path = home / "settings.json"
     settings = dict(_load_json_mapping(path) or {})
     settings[PROJECT_MCP_SERVERS_ENABLED_KEY] = False
-    settings[ENABLED_PROJECT_MCP_SERVERS_KEY] = [
-        name for name in worker_mcp_servers if name != "reckon"
-    ]
+    settings[ENABLED_PROJECT_MCP_SERVERS_KEY] = list(worker_mcp_servers)
     mode = _permission_bits(path)
     path.write_text(json.dumps(settings, indent=2, sort_keys=True) + "\n")
     path.chmod(0o644 if mode is None else mode | 0o200)
 
 
-def _seed_worker_mcp_exclusions(home: Path, dialect_name: str) -> None:
-    """Exclude the coordination server in run-owned JSON configuration."""
+def _seed_worker_mcp_exclusions(
+    home: Path, dialect_name: str, allowed_servers: Iterable[str] = ()
+) -> None:
+    """Keep only flight-declared servers in run-owned JSON configuration."""
     if dialect_name not in ("claude", "omp"):
         return
     path = home / (".claude.json" if dialect_name == "claude" else "agent/mcp.json")
@@ -414,61 +419,94 @@ def _seed_worker_mcp_exclusions(home: Path, dialect_name: str) -> None:
             return
         config = {}
     servers = config.get("mcpServers")
-    changed = isinstance(servers, dict) and "reckon" in servers
+    allowed = set(allowed_servers)
+    removed = set(servers or {}) - allowed
+    changed = bool(removed)
     if isinstance(servers, dict):
-        servers.pop("reckon", None)
+        config["mcpServers"] = {
+            name: server for name, server in servers.items() if name in allowed
+        }
     if dialect_name == "omp":
         disabled = config.get("disabledServers", [])
-        changed = changed or "reckon" not in disabled
-        config["disabledServers"] = list(dict.fromkeys([*disabled, "reckon"]))
+        changed = changed or not path.exists()
+        config["disabledServers"] = sorted(set(disabled) | removed)
     if changed:
         mode = _permission_bits(path)
         _write_private_json(path, config, 0o600 if mode is None else min(0o600, mode))
 
 
 def claude_worker_mcp_config(
-    home: Path, worktree: Path, project_servers: Iterable[str] | None
+    home: Path,
+    worktree: Path,
+    project_servers: Iterable[str] | None,
+    *,
+    anchored_edit: bool = False,
 ) -> str:
-    """Compose explicit worker servers so discovery cannot reintroduce reckon.
+    """Compose only flight-declared servers and the backend's anchored editor.
 
     Strict MCP configuration confines discovery to this process's declarations.
-    Other user servers and project servers allowed by flight remain available,
-    including the separate anchored edit server registered in the run home.
+    Both user and project declarations are filtered by the same allowlist.
     """
     user = _load_json_mapping(home / ".claude.json") or {}
-    servers = dict(user.get("mcpServers") or {})
+    allowed = set(project_servers or ())
+    servers = {
+        name: server
+        for name, server in (user.get("mcpServers") or {}).items()
+        if name in allowed
+    }
     project = _load_json_mapping(worktree / ".mcp.json") or {}
     servers.update(
         (name, config)
         for name, config in (project.get("mcpServers") or {}).items()
-        if project_servers is None or name in project_servers
+        if name in allowed
     )
-    servers.pop("reckon", None)
+    if anchored_edit and "reckon-anchored-edit" in (user.get("mcpServers") or {}):
+        servers["reckon-anchored-edit"] = user["mcpServers"]["reckon-anchored-edit"]
     return json.dumps({"mcpServers": servers})
 
 
-def codex_worker_mcp_flags(home: Path, worktree: Path) -> list[str]:
-    """Disable reckon without inventing an incomplete MCP transport.
+def codex_worker_mcp_flags(
+    home: Path, worktree: Path, allowed_servers: Iterable[str] = ()
+) -> list[str]:
+    """Disable every undeclared inherited server while preserving transports.
 
-    Codex validates disabled entries too. An absent entry needs a complete
-    disabled transport; an existing HTTP or stdio entry keeps its transport.
-    Project configuration layers and the selected profile can declare it.
+    Codex merges CLI tables into user and project configuration, so an empty
+    table alone cannot clear inherited entries. Override each undeclared
+    server's enabled field without inventing a transport for an absent name.
     """
     paths = [home / "config.toml"]
     paths.extend(root / ".codex/config.toml" for root in (worktree, *worktree.parents))
-    configured = False
+    configured: set[str] = set()
+    profiles: dict[str, set[str]] = {}
     for path in paths:
         if not path.is_file():
             continue
         data = tomllib.loads(path.read_text())
-        profile = (data.get("profiles") or {}).get(data.get("profile"), {})
-        for layer in (data, profile):
-            server = (layer.get("mcp_servers") or {}).get("reckon")
-            if isinstance(server, dict) and ("command" in server or "url" in server):
-                configured = True
-    flags = ["-c", "mcp_servers.reckon.enabled=false"]
-    if not configured:
-        flags += ["-c", 'mcp_servers.reckon.command="reckon"']
+        configured.update(data.get("mcp_servers") or {})
+        for name, profile in (data.get("profiles") or {}).items():
+            profiles.setdefault(name, set()).update(profile.get("mcp_servers") or {})
+    allowed = set(allowed_servers)
+
+    def disabled_table(names: Iterable[str]) -> str:
+        return (
+            "{"
+            + ",".join(
+                json.dumps(name) + "={enabled=false}"
+                for name in sorted(set(names) - allowed)
+            )
+            + "}"
+        )
+
+    flags = ["-c", "mcp_servers=" + disabled_table(configured)]
+    # A profile override stays inside that profile: creating a root entry for
+    # a profile-only name would invent an incomplete transport at bootstrap.
+    profile_overrides = ",".join(
+        json.dumps(name) + "={mcp_servers=" + disabled_table(servers) + "}"
+        for name, servers in sorted(profiles.items())
+        if servers - allowed
+    )
+    if profile_overrides:
+        flags += ["-c", "profiles={" + profile_overrides + "}"]
     return flags
 
 
@@ -503,7 +541,10 @@ def _seed_anchored_edit(home: Path, roots: Iterable[str | Path]) -> None:
 
 
 def _merge_harness_entry(
-    source: Path, destination: Path, keys: Iterable[str] | None
+    source: Path,
+    destination: Path,
+    keys: Iterable[str] | None,
+    allowed_mcp_servers: Iterable[str] = (),
 ) -> None:
     """Merge one declared home-root file into the run home's own copy.
 
@@ -540,7 +581,12 @@ def _merge_harness_entry(
     if destination.name == ".claude.json" and isinstance(
         existing.get("mcpServers"), dict
     ):
-        existing["mcpServers"].pop("reckon", None)
+        allowed = set(allowed_mcp_servers)
+        existing["mcpServers"] = {
+            name: server
+            for name, server in existing["mcpServers"].items()
+            if name in allowed
+        }
     destination.parent.mkdir(parents=True, exist_ok=True)
     _write_private_json(
         destination,

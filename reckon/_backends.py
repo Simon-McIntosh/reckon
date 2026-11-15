@@ -1409,10 +1409,7 @@ class _CodexDialect(Dialect):
     ) -> list[str]:
         argv = [command, "exec", "--json", "-C", working_directory]
         # A process override also covers resumes and explicitly unfenced runs.
-        argv += list(
-            backend.get("worker_mcp_flags")
-            or ["-c", "mcp_servers.reckon.enabled=false"]
-        )
+        argv += list(backend.get("worker_mcp_flags", ["-c", "mcp_servers={}"]))
         if (
             run_directory
             and Path(run_directory).is_absolute()
@@ -1569,6 +1566,8 @@ class _CodexDialect(Dialect):
             f"{server}.args=[{', '.join(json.dumps(word) for word in words)}]",
             "-c",
             f'{server}.default_tools_approval_mode="approve"',
+            "-c",
+            f"{server}.enabled=true",
         ]
 
     def _sandbox_flags(self, tier: str | None) -> list[str]:
@@ -3011,11 +3010,13 @@ def launch_plan(
         if run_directory is None or not run_directory.is_dir()
         else harness_home(dialect.name, run_directory)
     )
-    # A run adopts its own harness home only when fenced. An unfenced run keeps
+    # Claude and Codex adopt their own harness home when fenced. Omp keeps its
+    # own home in either mode so MCP discovery cannot escape its agent store.
+    # Other unfenced runs keep
     # the operator's home, where the user hooks, user memory and every session
     # recorded before the run existed already live; a per-run home that carries
     # none of them silently drops the hooks and orphans those sessions.
-    adopts_harness_home = fence
+    adopts_harness_home = fence or dialect.name == "omp"
     anchored_edit = False
     anchored_edit_reason = "disabled"
     if backend.get("anchored_edit") is True:
@@ -3051,9 +3052,7 @@ def launch_plan(
             adjacent_declaration=harness_home_adjacent_files(dialect.name),
             resume_session=resume_session,
             anchored_edit=(
-                backend.get("anchored_edit") is True
-                and dialect.name == "claude"
-                and not resume_session
+                backend.get("anchored_edit") is True and dialect.name == "claude"
             ),
             # The fence grants the worktree separately from delivery roots.
             anchored_edit_roots=fence_writable_roots(
@@ -3134,6 +3133,14 @@ def launch_plan(
             if harness is not None and adopts_harness_home
             else operator / ".codex",
             Path(worktree_path).resolve(),
+            [
+                *_declared_worker_mcp_servers(fence_config),
+                *(
+                    [ANCHORED_EDIT_SERVER]
+                    if backend.get("anchored_edit") is True
+                    else []
+                ),
+            ],
         )
     if dialect.name == "claude":
         operator = Path(fence_home) if fence_home is not None else Path.home()
@@ -3143,6 +3150,7 @@ def launch_plan(
             _declared_worker_mcp_servers(fence_config)
             if fence_config is not None
             else None,
+            anchored_edit=backend.get("anchored_edit") is True,
         )
         # Server declarations can carry credentials: keep them off process argv.
         if run_directory is not None and run_directory.is_dir():

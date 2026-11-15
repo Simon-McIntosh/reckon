@@ -98,6 +98,7 @@ def _launch(home: Path, run: Path, backend: dict, *, fence: bool = True):
         manifest_path=str(run / "manifest.md"),
         fence=fence,
         fence_home=home,
+        fence_config={"worker_mcp_servers": ["imas-dd"]},
     )
 
 
@@ -197,7 +198,7 @@ def test_a_clive_launch_through_the_production_path_seeds_it(tmp_path: Path):
     }
 
 
-def test_an_existing_run_home_file_keeps_its_keys_and_gains_the_servers(
+def test_an_existing_run_home_file_keeps_state_and_gains_declared_servers(
     tmp_path: Path,
 ):
     """A run's own .claude.json is authoritative for its keys; yours merge in."""
@@ -217,11 +218,11 @@ def test_an_existing_run_home_file_keeps_its_keys_and_gains_the_servers(
     _launch(home, run, CLAUDE_BACKEND)
 
     seeded = json.loads((harness / ".claude.json").read_text())
-    # The run's own keys survive, and the operator's servers are merged in.
+    # Run state survives, while the server map follows the flight allowlist.
     assert seeded["projects"] == {
         "/home/operator/Code/reckon": {"history": ["run's own"]}
     }
-    assert seeded["mcpServers"]["run-local"] == {"command": "run-mcp"}
+    assert "run-local" not in seeded["mcpServers"]
     assert "reckon" not in seeded["mcpServers"]
     assert seeded["mcpServers"]["imas-dd"] == OPERATOR_SERVERS["imas-dd"]
 
