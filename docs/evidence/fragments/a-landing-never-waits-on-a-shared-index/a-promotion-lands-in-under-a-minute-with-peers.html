@@ -37,26 +37,61 @@ the ledger row for run ... is already written; do not re-promote.</code></pre>
 
   <p>The run was not rolled back: its ledger row was written and its pointer was
   kept, so the run is left delivered with its reviewed head off the primary
-  branch until a later promotion retries it. The landing commit's retry bound
-  (twelve attempts half a second apart, about six seconds) is shorter than the
-  time three concurrent landing commits take on a 2,000-file checkout.</p>
+  branch until a later promotion retries it. <strong>No retry bound was
+  exhausted.</strong> At this revision the landing commit's bound is 130
+  attempts half a second apart, about 65 s
+  (<code>_INDEX_LOCK_RETRY_ATTEMPTS</code> and <code>_INDEX_LOCK_RETRY_INTERVAL_SECONDS</code>
+  in <code>reckon/crew/promotion_scope.py:2080-2081</code>), and the refused
+  promotion ran 4.87 s in all, with no retry recorded in its output. The retry
+  never ran, because <code>_run_waiting_out_a_held_index_lock</code>
+  (<code>reckon/crew/merge.py:796</code>) retries only while
+  <code>_index_lock_held(repo)</code> still holds after the failed call
+  (<code>merge.py:837</code>). A peer's commit holds the lock for
+  milliseconds, so the lock can be released between the failed git call and
+  that check, and the helper returns the failure after one attempt without
+  waiting. Plan §13 records and fixes this.</p>
 
   <p><strong>Negative control.</strong> The same driver against the code before
   the read-only-what-moved checks and before the landing commit's held-lock
-  retry (<code>aa8ab137ba^</code>, extracted to a scratch tree): three attempts
-  of three promotions, nine in all, every one landed and pushed, at 3.73, 3.83,
-  3.89 s (three-file checkout) and 6.49 s (2,000-file checkout). No promotion
-  took minutes and no lock collision reproduced in those nine. The collision was
-  therefore observed once in four head attempts and never in three pre-revision
-  attempts, so the negative-control half of the done-when is recorded as not
+  retry (<code>aa8ab137ba^</code>, extracted to a scratch tree). Five attempts
+  were started there:</p>
+
+  <ul>
+    <li>two attempts (six promotions) exited 2 before reaching any promotion
+    code, because that revision's <code>crew complete</code> has no
+    <code>--wait</code> option; they are scaffolding failures and are not
+    counted as measurements;</li>
+    <li>three attempts (nine promotions) reached the code, and all nine landed
+    and pushed: 3.73, 3.73, 3.73 s and 3.83, 3.89, 3.89 s on a three-file
+    checkout, and 6.49, 6.49, 6.49 s on a 2,000-file checkout.</li>
+  </ul>
+
+  <p>No promotion took minutes and no lock collision reproduced in those nine.
+  The collision was therefore observed once in twelve head promotions across
+  four attempts and never in the nine pre-revision promotions that reached the
+  code, so the negative-control half of the done-when is recorded as not
   reproduced rather than as reproduced.</p>
 
-  <p><strong>Git log of the head arm's shared checkout</strong> (attempt 3, two
-  lines shown of the twelve commits three promotions add):</p>
+  <p id="a-promotion-lands-in-under-a-minute-with-peers-logs"><strong>Raw logs.</strong> Each attempt's
+  summary and its per-promotion output are under
+  <code>measurement-logs/&lt;attempt&gt;/</code> in this run's directory, copied
+  there from the session scratchpad so they outlive it.</p>
 
-  <pre><code>a89fd0a land(r-...010002...-measure-run-2): merge the reviewed head onto the primary branch
-c8119d1 release(r-...010002...-measure-run-2): record workspace outcome
-1bf9096 land(r-...010001...-measure-run-1): merge the reviewed head onto the primary branch</code></pre>
+  <p><strong>Git log of the head arm's shared checkout</strong> (attempt 4, the
+  twelve commits three promotions add; the working tree was clean afterwards):</p>
+
+  <pre><code>23ed022 land(r-20261115T01000200000000-measure-run-2): merge the reviewed head onto the primary branch
+96a2e14 release(r-20261115T01000200000000-measure-run-2): record workspace outcome
+4f2f056 land(r-20261115T01000000000000-measure-run-0): merge the reviewed head onto the primary branch
+4837f04 release(r-20261115T01000000000000-measure-run-0): record workspace outcome
+d7f30ab land(r-20261115T01000100000000-measure-run-1): merge the reviewed head onto the primary branch
+38961b2 promote(r-20261115T01000200000000-measure-run-2): passed
+4b124dc release(r-20261115T01000100000000-measure-run-1): record workspace outcome
+7e9d0af promote(r-20261115T01000000000000-measure-run-0): passed
+a4238f5 promote(r-20261115T01000100000000-measure-run-1): passed
+0d7d0b6 add the reviewed change of run 2
+3dfdd05 add the reviewed change of run 0
+1166175 add the reviewed change of run 1</code></pre>
 
   <p id="a-promotion-lands-in-under-a-minute-with-peers-verdict"><strong>Verdict.</strong> Every landing that completed did so in at most
   16.47 s, well under the sixty-second bound. The done-when's second clause —
