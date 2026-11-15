@@ -202,6 +202,45 @@ def _store_duties(session: str = SESSION, run_id: str = RUN_ID) -> Path:
     return path
 
 
+def _held_row(run_id: str = RUN_ID) -> dict:
+    return {
+        "kind": "worktree-held",
+        "run_id": run_id,
+        "node": "fixture-node",
+        "plan": "fixture-plan",
+        "age_seconds": 600,
+        "next_command": "reckon crew gc --run " + run_id + " --apply",
+    }
+
+
+def _served(rows: list[dict]) -> list[tuple[str, str]]:
+    """The rows an answer still serves once its settled duties are withheld."""
+    settled = obligation_snapshot.without_departed_run_duties(
+        {"obligations": list(rows), "summary": {"count": len(rows), "oldest_age_seconds": 0}}
+    )
+    return [(str(row["kind"]), str(row["run_id"])) for row in settled["obligations"]]
+
+
+@pytest.mark.parametrize("release_owned", [True, False])
+def test_a_held_tree_settles_once_its_release_has_an_owner(
+    release_owned: bool,
+) -> None:
+    """A retained tree is a duty until the cleanup queue owns its release.
+
+    The tree outlives the run, so a missing pointer settles nothing on its own:
+    with no owner the row is the only surface naming the bytes, which is why
+    the same row is kept in one arm and withheld in the other.
+    """
+    intent = obligation_snapshot.cleanup_intent_path(RUN_ID)
+    intent.parent.mkdir(parents=True, exist_ok=True)
+    if release_owned:
+        intent.write_text(json.dumps({"run_id": RUN_ID}), encoding="utf-8")
+
+    assert _served([_held_row()]) == (
+        [] if release_owned else [("worktree-held", RUN_ID)]
+    )
+
+
 def test_a_deferral_reaches_a_run_with_no_pointer_and_no_record(
     repository: Path,
 ) -> None:

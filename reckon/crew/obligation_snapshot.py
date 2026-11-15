@@ -164,6 +164,16 @@ def live_pointer_path(run_id: str) -> Path:
     return crew_home() / "live" / f"{run_id}.json"
 
 
+def cleanup_intent_path(run_id: str) -> Path:
+    """Path of the release the terminal cleanup queue holds for one run.
+
+    Written before a run's pointer is retired and retired only once the release
+    is done, so its presence means the run's workspace has an owner with work
+    already scheduled for it.
+    """
+    return crew_home() / "cleanup" / f"{run_id}.json"
+
+
 def _token(name: str, fallback: str) -> str:
     """The filesystem-safe stem ``runs`` gives a project or session name."""
     return re.sub(r"[^A-Za-z0-9._-]", "-", name).strip("-") or fallback
@@ -1081,13 +1091,14 @@ def _with_unreadable_records(rows: Any, findings: Any) -> list[dict[str, Any]]:
 # recorded the landing — which is what keeps this module free of the ledger
 # read its banner forbids.
 #
-# Every other kind is left alone, whatever its run's pointer state. A
-# ``worktree-held`` row is raised from the project's retained ledger records,
-# and a hold, a refusal or a blocked row names state the run's record still
-# carries after its pointer is gone. A missing pointer says nothing about any
-# of them, and hiding one on a ``stat`` would be a silent omission rather than
-# a settlement. The review duties are the exception, and each is settled on
-# more than the ``stat``: see :data:`REVIEW_DUTY_KINDS`.
+# Every other kind is left alone, whatever its run's pointer state. A hold, a
+# refusal or a blocked row names state the run's record still carries after its
+# pointer is gone. A missing pointer says nothing about any of them, and hiding
+# one on a ``stat`` would be a silent omission rather than a settlement. Two
+# kinds are settled on more than the ``stat``: the review duties (see
+# :data:`REVIEW_DUTY_KINDS`) and ``worktree-held``, whose tree outlives its run
+# and is settled only when the release has an owner (see
+# :data:`HELD_WORKTREE_DUTY_KIND`).
 #
 # ``sweep-failed`` belongs with the pointer kinds because its premise is that
 # the run can be observed: the command its row carries is ``crew observe
@@ -1097,6 +1108,18 @@ def _with_unreadable_records(rows: Any, findings: Any) -> list[dict[str, Any]]:
 LIVE_POINTER_DUTY_KINDS = frozenset(
     {"landing-refused", "review-ready", "promotable-stale", "sweep-failed"}
 )
+
+# The duty kind raised for a retired tree that is still on disk, and the fact
+# that settles it without hiding the tree.
+#
+# A ``worktree-held`` row is the only surface naming a retained tree, so a
+# missing pointer does not settle it: the tree outlives the run, and dropping
+# the row on that ``stat`` alone would strand the bytes with nothing naming
+# them. The row is settled by the release being owned elsewhere. The terminal
+# cleanup queue writes an intent per run before it retires the pointer, and a
+# run whose intent exists has its release already scheduled, so the duty the
+# row names is that queue's work rather than the coordinator's.
+HELD_WORKTREE_DUTY_KIND = "worktree-held"
 
 # The duty kinds that describe a run waiting in the queue, and so are owed only
 # while its pointer still reads ``queued``.
@@ -1342,6 +1365,11 @@ def without_departed_run_duties(payload: Mapping[str, Any]) -> dict[str, Any]:
     because the resume carried it onto a new attempt. A pointer carrying no
     phase states no move, so the row stands.
 
+    A ``worktree-held`` duty is settled on two facts read now: the run's live
+    pointer is gone, and the terminal cleanup queue holds an intent for it. The
+    first alone settles nothing, because the tree outlives the run and the row
+    is the only surface naming it; the second is the release having an owner.
+
     A duty of any other kind is kept, whatever its pointer state: its evidence
     is a ledger record or nothing at all -- a hold, a refusal, a blocked run or
     a tree still held -- so a missing pointer says nothing about it. That
@@ -1362,6 +1390,14 @@ def without_departed_run_duties(payload: Mapping[str, Any]) -> dict[str, Any]:
             continue
         run_id = str(row.get("run_id") or "")
         kind = str(row.get("kind") or "")
+        if (
+            run_id
+            and kind == HELD_WORKTREE_DUTY_KIND
+            and not live_pointer_path(run_id).exists()
+            and cleanup_intent_path(run_id).is_file()
+        ):
+            dropped = True
+            continue
         if (
             run_id
             and kind in LIVE_POINTER_DUTY_KINDS
