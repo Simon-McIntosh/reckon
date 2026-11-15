@@ -21,6 +21,14 @@ from .shared import (
     runs,
 )
 
+#: How many launches one pass sets up at once. Each launch resolves its plan,
+#: claims and ledger inside this process, a few gigabytes while it runs, and the
+#: service shares one memory allowance with every worker it has launched. A wide
+#: pool trades that allowance for setup speed, and past it the kernel reclaims
+#: the allowance by killing workers, so the width is kept to what the setup
+#: memory of a pass can cost without reaching them.
+LAUNCH_POOL_WIDTH = 4
+
 
 class LaunchBatch:
     """Bound setup work and settle every started launch before leaving a pass.
@@ -34,7 +42,7 @@ class LaunchBatch:
     def __init__(self, result, remaining):
         self.result = result
         self.remaining = remaining
-        self.width = 32
+        self.width = LAUNCH_POOL_WIDTH
         self.pool = ThreadPoolExecutor(
             max_workers=self.width, thread_name_prefix="admit-launch"
         )
