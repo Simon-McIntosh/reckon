@@ -1,0 +1,98 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "1d16388a3150f88b31788d00cedaf4055f75f431",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/evidence.py:697 compose_landed_record",
+    "reckon/doccheck.py:2047 _check_fragment_duplicate_ids (changed_fragments path)",
+    "reckon/crew/dispatch_claims.py:2194 _landing_fragment_paths"
+  ],
+  "completed_at": "2026-11-15T03:34:09.684Z",
+  "dispatched_at": "2026-11-15T02:41:53Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-promotion-lands-in-under-a-minute-with-peers",
+      "recorded_at": "2026-11-15T04:14:00.870064+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "a-promotion-lands-in-under-a-minute-with-peers",
+      "recorded_at": "2026-11-15T04:14:03.916759+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "a-promotion-lands-in-under-a-minute-with-peers",
+      "recorded_at": "2026-11-15T04:14:07.010624+00:00"
+    },
+    "3": {
+      "kind": "folded",
+      "node": "a-promotion-lands-in-under-a-minute-with-peers",
+      "recorded_at": "2026-11-15T04:14:10.918217+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-with-peers.html",
+      "line": "41",
+      "severity": "blocking",
+      "text": "the fragment attributes the refused promotion to \"the landing commit's retry bound (twelve attempts half a second apart, about six seconds)\", but at the revision the fragment names, 1d16388a31, reckon/crew/promotion_scope.py:2080-2081 sets _INDEX_LOCK_RETRY_ATTEMPTS = 130 at 0.5 s intervals (about 65 s), and the refused promotion's whole run took 4.87 s, so no retry bound of either length was exhausted; the six-second figure is the staging wait misapplied to the landing commit, and a reader acting on it would lengthen a bound that never ran."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T143927859241-a-promotion-lands-in-under-a-minute-with-peers/manifest.md",
+      "line": "9",
+      "severity": "non-blocking",
+      "text": "the manifest records `commits: PENDING_SHA`, so it names no commit for the coordinator to resolve; the landed head had to be recovered from classification.json rather than from the record itself."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T143927859241-a-promotion-lands-in-under-a-minute-with-peers/manifest.md",
+      "line": "14",
+      "severity": "non-blocking",
+      "text": "every test_logs path and measurement_module points under /tmp/reckon-crew-scratch/r-20261114T143927859241-.../, which no longer exists at review time, so the raw measurement evidence is unreadable and the numbers survive only inside the run's stream.jsonl."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T143927859241-a-promotion-lands-in-under-a-minute-with-peers/manifest.md",
+      "line": "6",
+      "severity": "non-blocking",
+      "text": "the checkpoint and rubric.completeness claim \"3 pre-revision attempts (10 promotions)\", while the run's stream records nine landed promotions across pre-arm-3, pre-arm-4 and pre-arm-5 and six further runs in pre-arm-1 and pre-arm-2 that exited 2 without reaching code, so the manifest's \"10\" and the fragment's \"nine in all\" cannot both be right."
+    }
+  ],
+  "head_log_revision": "897549cbc44565d01c71ae917341f2268ed395bd",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the three production paths that consume a landed fragment: composition into the plan's cumulative record, the duplicate-id and source-label audit of a changed fragment, and the claim that fences the landing fragment path.",
+    "diff": "read the single commit 897549cbc4 against base 1d16388a31 \u2014 a new 77-line evidence fragment with a timings table, the quoted index-lock refusal, a negative-control paragraph, a git-log excerpt and a verdict paragraph, no code touched.",
+    "done_when": "the done_when asks each promotion to land under 60 s wall clock, none to roll back, and the timings and git log recorded in the RCA; the fragment records 4.70-16.47 s per promotion and a git-log excerpt, and records at :62-66 that one of twelve did not land, so the gate asserts the measure.",
+    "goal": "the node's goal is to measure three concurrent promotions of completed review runs landing on the fleet; the landed fragment records four attempts of three `crew complete --land` processes started within five milliseconds against one checkout, with per-promotion wall clock and outcome.",
+    "manifest": "read; status complete, changed_paths naming the fragment, tests naming the measurement driver, but commits reads PENDING_SHA and every test_logs path lies under a /tmp scratch directory that no longer exists.",
+    "write_paths": "the declared fence was docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-with-peers.html; `git show --stat 897549cbc4` adds that one file, 77 insertions, and nothing else."
+  },
+  "justifications": {
+    "durability": "the landed change is an evidence document and adds no assertion, and the one factual claim the code can falsify at :41 is wrong against reckon/crew/promotion_scope.py:2080-2081.",
+    "evidence": "the fragment's table at :21-24 and its refusal quote at :32-36 reconcile with the run's own stream.jsonl lines 3542 (head-bulk 4.70/4.87/4.87, run-2 land_ok null) and 4325 (head-arm and head-bulk-2/3, 12 commits each), but the manifest's own gate logs at manifest.md:14 no longer exist and the causal attribution at :41 is false.",
+    "fit": "the fragment follows the sibling fragments' shape, but it also states at :41 a retry constant that the named revision does not define, which is a content defect that no sibling carries at this line count.",
+    "goal_fidelity": "the fragment at docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-with-peers.html:17-25 records four attempts of three concurrent `crew complete --land` promotions against one checkout, which is the node's stated goal, though its account of the one failure at :41 names a cause the code contradicts.",
+    "reuse": "the commit adds no function, class or module; it follows the fragment format owned by reckon/evidence.py:697 compose_landed_record and claimed by reckon/crew/dispatch_claims.py:2194, so there is no second mechanism to fork.",
+    "scope_discipline": "git show --stat 897549cbc4 lists one file, docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-with-peers.html, 77 insertions, inside the single declared write path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to measure three concurrent promotions of completed review runs landing on the fleet; docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-with-peers.html:17-25 records four attempts of three `crew complete --land` promotions started together against one checkout, with per-promotion wall clock and outcome.\nVERDICT done_when: the done_when asks each promotion to land under 60 s wall clock, none to roll back, and the timings and git log recorded in the RCA; the fragment records 4.70-16.47 s per promotion and a git-log excerpt, and records at :62-66 that one of twelve did not land, so the gate asserts the measure.\nVERDICT write_paths: the declared fence was docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-with-peers.html; `git show --stat 897549cbc4` adds that one file, 77 insertions, and nothing else.\nVERDICT manifest: read; status complete, changed_paths naming the fragment, tests naming the measurement driver, but commits reads PENDING_SHA and every test_logs path lies under a /tmp scratch directory that no longer exists.\nVERDICT diff: read the single commit 897549cbc4 against base 1d16388a31 \u2014 a new 77-line evidence fragment with a timings table, the quoted index-lock refusal, a negative-control paragraph, a git-log excerpt and a verdict paragraph, no code touched.\nCALL_SITES: reckon/evidence.py:697 compose_landed_record, reckon/doccheck.py:2047 _check_fragment_duplicate_ids, reckon/crew/dispatch_claims.py:2194 _landing_fragment_paths\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: the fragment at docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-with-peers.html:17-25 records four attempts of three concurrent promotions, though its account of the one failure at :41 names a cause the code contradicts.\nSCORE evidence: 12\nJUSTIFICATION evidence: the table at :21-24 and the refusal quote at :32-36 reconcile with the run's stream.jsonl lines 3542 and 4325, but the manifest's gate logs at manifest.md:14 no longer exist and the causal attribution at :41 is false.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --stat 897549cbc4 lists only docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-with-peers.html, inside the single declared write path.\nSCORE durability: 5\nJUSTIFICATION durability: the landed change adds no assertion, and the one claim the code can falsify at :41 is wrong against reckon/crew/promotion_scope.py:2080-2081.\nSCORE fit: 17\nJUSTIFICATION fit: the fragment follows the sibling fragments' section/table shape, but it states at :41 a retry constant the named revision does not define.\nSCORE reuse: 20\nJUSTIFICATION reuse: the commit adds no definition and follows the format owned by reckon/evidence.py:697 compose_landed_record, so no capability is forked.\nFINDING docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-promotion-lands-in-under-a-minute-with-peers.html:41 blocking: the fragment attributes the refused promotion to a \"twelve attempts half a second apart, about six seconds\" landing-commit retry bound; at the revision it names, 1d16388a31, reckon/crew/promotion_scope.py:2080-2081 sets _INDEX_LOCK_RETRY_ATTEMPTS = 130 at 0.5 s intervals (about 65 s), and the refused promotion took 4.87 s in full, so no retry bound was exhausted, and a reader acting on it would lengthen a bound that never ran.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T143927859241-a-promotion-lands-in-under-a-minute-with-peers/manifest.md:9 non-blocking: the manifest records `commits: PENDING_SHA`, so the manifest names no commit for the coordinator to resolve; the landed head had to be recovered from classification.json.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T143927859241-a-promotion-lands-in-under-a-minute-with-peers/manifest.md:14 non-blocking: every test_logs path and measurement_module points under /tmp/reckon-crew-scratch/r-20261114T143927859241-.../, which no longer exists at review time, so the numbers survive only in the run's stream.jsonl and a later reader cannot check them from the record.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T143927859241-a-promotion-lands-in-under-a-minute-with-peers/manifest.md:6 non-blocking: the checkpoint and rubric claim \"3 pre-revision attempts (10 promotions)\", while the run's stream records nine landed promotions across pre-arm-3, pre-arm-4 and pre-arm-5 and six further runs in pre-arm-1 and pre-arm-2 that exited 2 without reaching code, so the manifest's \"10\" and the fragment's \"nine\" cannot both be right.",
+  "review_run_id": "r-20261115T023840531008-review-of-a-promotion-lands-in-under-a-minute-with-peers-897549cbc445",
+  "reviewed_base_sha": "1d16388a3150f88b31788d00cedaf4055f75f431",
+  "reviewed_head_sha": "897549cbc44565d01c71ae917341f2268ed395bd",
+  "reviewed_run_id": "r-20261114T143927859241-a-promotion-lands-in-under-a-minute-with-peers",
+  "reviewer_run_id": "r-20261115T023840531008-review-of-a-promotion-lands-in-under-a-minute-with-peers-897549cbc445",
+  "scores": {
+    "durability": 5,
+    "evidence": 12,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T03:36:59.630073+00:00",
+  "total": 89
+}

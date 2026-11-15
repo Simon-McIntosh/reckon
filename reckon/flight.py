@@ -193,6 +193,16 @@ DEFAULT_QUEUE_REPICK_AFTER_SECONDS = 60
 # before the budget existed; only a declared whole number of points bounds it.
 QUEUE_PRIORITY_BUDGET_KEY = "priority_budget"
 
+# How long one admission pass may spend launching before it ends and leaves the
+# rest of the queue to the next pass. A pass that runs long holds every freed
+# seat until it ends, so its budget is what bounds the wait between a seat
+# freeing and the next request reaching it. Declared under the ``admission``
+# namespace, which is reckon-owned in the same sense as ``queue`` above: a
+# layer may set it, and a resolved config that never did falls back here.
+ADMISSION_KEY = "admission"
+ADMISSION_BUDGET_SECONDS_KEY = "pass_budget_seconds"
+DEFAULT_ADMISSION_PASS_BUDGET_SECONDS = 60.0
+
 # The unit each budget suffix is worth in seconds. A budget is written as an
 # integer followed by one of these letters, and the reader converts it once so
 # every caller measures the same run against the same number.
@@ -1301,6 +1311,31 @@ def queue_priority_budget(config: Mapping[str, Any] | None) -> int | None:
     if not isinstance(value, int) or isinstance(value, bool) or value < 0:
         return None
     return int(value)
+
+
+def admission_pass_budget_seconds(config: Mapping[str, Any] | None) -> float:
+    """How long one admission pass may spend launching before it ends.
+
+    Read from the resolved config's ``admission`` namespace, so a host or
+    project layer retunes the bound without a code change. A config declaring
+    no such key — a hand-assembled test config, or a resolved config that never
+    set one — falls back to the shipped default rather than failing, and a
+    value that is not a positive finite number falls back the same way.
+    """
+    admission = (config or {}).get(ADMISSION_KEY)
+    value = (
+        admission.get(
+            ADMISSION_BUDGET_SECONDS_KEY, DEFAULT_ADMISSION_PASS_BUDGET_SECONDS
+        )
+        if isinstance(admission, Mapping)
+        else DEFAULT_ADMISSION_PASS_BUDGET_SECONDS
+    )
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return DEFAULT_ADMISSION_PASS_BUDGET_SECONDS
+    seconds = float(value)
+    if not math.isfinite(seconds) or seconds <= 0:
+        return DEFAULT_ADMISSION_PASS_BUDGET_SECONDS
+    return seconds
 
 
 def _review_owned_key_shape_is_valid(shape: str, value: Any) -> bool:

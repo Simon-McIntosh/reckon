@@ -650,7 +650,15 @@ def _arm_revision_mismatch(
     neither is named here and the arm's other fields still decide the pair.
 
     A citation that does resolve and differs from the head is the case this
-    check exists for: the arm measured a tree the run no longer delivers.
+    check exists for: the arm measured a tree the run no longer delivers. The
+    one exception is a head that moved through commits the suite cannot see. A
+    documentation or evidence commit leaves every module the suite imports and
+    every test file it collects untouched, so the arm still describes the suite
+    the head runs and re-running it would only repeat the same result. The
+    paths are read as a conservative question rather than a proof: a commit
+    touching any Python file or anything under the tests tree is treated as
+    reaching the suite, because deciding otherwise needs an import graph this
+    check does not carry, and an arm wrongly kept is a regression that lands.
     """
     if arm_name != "after_suite" or not head:
         return []
@@ -664,9 +672,51 @@ def _arm_revision_mismatch(
     if tree is None:
         return []
     resolved = _resolve_commit(tree, recorded, cached=True)
-    if not resolved or resolved == _resolve_commit(tree, head, cached=True):
+    head_resolved = _resolve_commit(tree, head, cached=True)
+    if not resolved or resolved == head_resolved:
         return []
-    return [f"{arm_name}.revision_matches_head"]
+    reaching = _suite_reaching_paths(tree, resolved, head_resolved)
+    if reaching is None or reaching:
+        return [f"{arm_name}.revision_matches_head"]
+    return []
+
+
+def _suite_reaching_paths(tree: Path, earlier: str, later: str) -> list[str] | None:
+    """The paths between two revisions a suite's result can depend on.
+
+    ``None`` means the diff could not be read, and the caller then treats the
+    arm as invalidated rather than measuring nothing and calling it clean. The
+    paths named are the ones a suite can be affected by: every Python file,
+    because an import chain need not run through a test file; anything under
+    the tests tree, because helpers, fixtures, data and configuration there
+    change what pytest collects; and the pytest configuration files at the
+    repository root. Documentation, plan HTML and other evidence paths are
+    absent from the answer, which is what lets a later documentation commit
+    leave an arm about the code untouched.
+    """
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(tree), "diff", "--name-only", f"{earlier}..{later}"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return None
+    if completed.returncode:
+        return None
+    reaching: list[str] = []
+    for line in completed.stdout.splitlines():
+        path = line.strip()
+        if not path:
+            continue
+        if (
+            path.endswith(".py")
+            or path.startswith("tests/")
+            or path in {"pytest.ini", "pyproject.toml", "setup.cfg", "tox.ini"}
+        ):
+            reaching.append(path)
+    return reaching
 
 
 def _paths_present_in_tree(
@@ -1154,7 +1204,30 @@ def _evaluate_suite_delta(
                     "so no baseline and after suite pair is required"
                 ),
             }
-        measured_arms = _measure_missing_arms(run_id, record, head, suite_command)
+        if dry_run:
+            # A dry run promises to write nothing and start nothing, and the
+            # landing's own measurement runs the armed command over two trees
+            # and can submit a scheduler job to do it. A run the landing can
+            # measure is reported as one it would measure, every field still
+            # unmeasured; a record naming no worktree, base or readable
+            # repository keeps the refusal below, because that is what a real
+            # landing falls back to when there is nothing to measure over.
+            if _measured_arm_tree(record) is not None and head:
+                return {
+                    "status": "would-measure",
+                    "suite_command": suite_command,
+                    "missing_fields": missing,
+                    "added_failure_ids": [],
+                    "reason": (
+                        "the run recorded no complete baseline and after suite "
+                        "pair, so the landing would run the armed command over "
+                        "the base and head trees itself; a dry run measures "
+                        "nothing and starts nothing"
+                    ),
+                }
+            measured_arms = None
+        else:
+            measured_arms = _measure_missing_arms(run_id, record, head, suite_command)
         if measured_arms and not measured_arms.get("unreadable"):
             _record_measured_arms(run_id, head, measured_arms)
             baseline = measured_arms["baseline_suite"]

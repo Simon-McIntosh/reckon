@@ -1,0 +1,118 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T09:26:49.890Z",
+  "dispatched_at": "2026-11-15T09:07:11Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/history-persists-as-detail-washes-out.html:380",
+      "id": "done_when-1",
+      "reason": "without a control the node can close green on an all-zero answer, which is the defect the section exists to prevent.",
+      "text": "s24 asserts \"Velocity's figures at a revision equal the store's answer over the same runs\" and s27 asserts the rebuilt export \"answers a capability derivation equal to the pre-untrack answer\", but an equality between two arms has no negative control: both arms reading zero, or both reading the same truncated set, satisfies the statement while being exactly the failure s24's own Why names (\"would report zero rather than refuse\")",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/history-persists-as-detail-washes-out.html:374",
+      "id": "reasoning-1",
+      "reason": "a worker sent to create tables that already exist spends its node on a false premise, and the actual gap (no holds writer, append_member unused) goes unnamed.",
+      "text": "s23 states \"members and holds have no tables\", but reckon/run_store.py:105-112 defines both `members` and `holds` in _AUX_SCHEMA, and run_store.append_member exists (reckon/run_store.py:871) with no caller anywhere in the tree, so the node as briefed would find the table already present and either report a false blocker or duplicate it; the real work is switching register_member and the reap off ledger.write into the table plus adding the holds writer",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/history-persists-as-detail-washes-out.html:380",
+      "id": "wiring-1",
+      "reason": "s24 cannot be measured where it sits, so it is currently undispatchable or would be closed on half its done-when.",
+      "text": "s24's done-when requires \"a store rebuilt from the export\", but the export is delivered by s27, and the declared waits put s27 after s26 after s24, so s24's second arm depends on a capability that lands two nodes later; no export module exists in the tree today (reckon/crew/station_obligations.py:export_snapshot is the only exporter, and it is an obligations snapshot, not the ledger)",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/history-persists-as-detail-washes-out.html:364",
+      "id": "reasoning-2",
+      "reason": "the section's measure is unsatisfiable as its stated mechanism, so a node follows it, finds the file persists, and either reports a blocker or weakens its own gate.",
+      "text": "s21's Why says the repair is to invert _index_append, but append_run writes the per-run file (reckon/ledger.py, target.open(\"x\") at the line before `_bump_generation`) and only then calls `_index_append` (reckon/ledger.py:3521), so a store write that raises leaves the run file behind and the done-when's \"leaves no row in either store\" is unreachable by inverting the return alone; it needs a store-first order or a compensating unlink, which the section does not state",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/history-persists-as-detail-washes-out.html:384",
+      "id": "reasoning-3",
+      "reason": "the scope and the urgency claim are wrong, and the pair with s26 must be resolved one way: either the migration deletes the working-tree copies (making s25's premise true) or it does not (and s25's stated reason needs restating to the fresh-clone case).",
+      "text": "s25 states that untracking \"would silently turn both off in every tree\", but both guards key on `(entry / \"crew.json\").is_file() or (entry / \"flight.yaml\").is_file()` against the working tree (reckon/hooks/native_agent_guard.py:92, reckon/hooks/worker_message_guard.py:94), and an untracked file still satisfies that test, so in every existing checkout the guards keep firing; the exposure the fix addresses is a fresh tree that never held the ledger",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/history-persists-as-detail-washes-out.html:390",
+      "id": "reasoning-4",
+      "reason": "index-only removal contradicts the decision the whole section rests on and leaves the untracked files' fate unnamed, which is the difference between one store and two.",
+      "text": "s26 declares its write paths as \"docs/state/** (removal from the index only)\", which leaves docs/state/<project>/crew.json and runs/ present and untracked in every existing checkout, so the run store is not \"the only store\" the 2026-11-14 decision (line 406) makes it, and two records drift with nothing comparing them",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "bb45282b57f827630da06fea40073de11631f69f",
+  "plan_fingerprint": "d28d399f47b53829147c680728f49a6992c7aaaa6387e32a87fe83c12f190710",
+  "plan_slug": "history-persists-as-detail-washes-out",
+  "plan_version": 26,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "bb45282b57f827630da06fea40073de11631f69f",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "s24 and s27 each add a control: the equality is asserted only over a population with a nonzero run count matching the ledger's, and an empty store or export fails it",
+      "reason": "",
+      "when": "2026-11-15T10:21:34.076717+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "bb45282b57f827630da06fea40073de11631f69f",
+      "commit_basis": "edit",
+      "note": "s24 and s27 each add a control: the equality is asserted only over a population with a nonzero run count matching the ledger's, and an empty store or export fails it",
+      "reason": "",
+      "when": "2026-11-15T10:21:34.076717+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/history-persists-as-detail-washes-out/r-20261115T090519751277-plan-review-of-history-persists-as-detail-washes-out.json",
+  "review_run_id": "r-20261115T090519751277-plan-review-of-history-persists-as-detail-washes-out",
+  "reviewed_blob_sha": "c29f44c7d86a7e2dbc5b17d8efc8b33235d0459b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 all eleven cited paths resolve (reckon/ledger.py, reckon/run_store.py, reckon/velocity.py, reckon/cli_entry.py, reckon/crew/open_run_index.py, reckon/crew/routing.py, reckon/crew/promotion_records.py, reckon/crew/dispatching/comparisons.py, reckon/hooks/native_agent_guard.py, reckon/hooks/worker_message_guard.py, docs/figures/plan-review-cycles/measure_review_cycles.py, scripts/import_runs_into_store.py); s27's \"release sweep\" resolves to the release path in reckon/crew/promotion_release.py and the sweeps in reckon/crew/gc.py.",
+    "done_when": "a finding \u2014 s24 and s27 state equality-only measures with no declared negative control, so an arm that reads zero on both sides passes.",
+    "evidence_paths": "pass \u2014 no section places a gate log or artifact on a scratchpad or a node-local temporary path; the only durable artifact named is the \u00a720 map fragment, which exists at docs/evidence/fragments/history-persists-as-detail-washes-out/ledger-leaves-git-map-s20-writable.html.",
+    "naming": "pass \u2014 the new sections carry no plan labels, stage names, ticket numbers or version tags, and no changelog prose; \"\u00a720's map\" is a live section reference, not a tracker entry.",
+    "reasoning": "a finding \u2014 s23's stated root cause (\"members and holds have no tables\") is contradicted by reckon/run_store.py, and s21's stated repair cannot produce the state its own done-when requires.",
+    "single_goal": "pass \u2014 each of s21\u2013s27 names one deliverable (store write made load-bearing; readers on the store; members and holds in the store; revision-scoped reads restated; guards independent of the file; untracking; export outside git).",
+    "wiring": "a finding \u2014 s24's done-when measures against \"the export\", which s27 delivers, and s27 is declared downstream of s26 which is declared downstream of s24, so s24 waits on nothing that produces its own second arm."
+  },
+  "section_digests": {
+    "_document": "2671f8e90118d224f806204c56efeabae92ce556e35c4ed2585334b3a601e101",
+    "s1": "16a4b0ff613308f968af13a86453cdda7611fbb4a0b662f0998319199f08c1f2",
+    "s2": "81ea5591beea9f0bfe0621b90127946f5c732b8471e2c5373404a592fa5daefe",
+    "s20": "4d847b4d77411c6c9ad44de2162b2c5cd97bc0d186bbe3e70cbd2bb17294ddbc",
+    "s21": "4d683cf51aee116256ca7129778da1d0dc9215f5fdb62ad3c20c5fce4b5fe5b1",
+    "s22": "44eee72b2eb1fba73278d19280640ae85ab4fef9d1625113ca2a3cba0ae32c22",
+    "s23": "6dc9b6c3fb3ab330f872db9abacb57275f8381c21c909fd72b1f5397c84f357b",
+    "s24": "08f30d9b79d04c8d44de819db21c340a2eb09710dd8f9100dcedbe2694eddde6",
+    "s25": "331336e9dcc7da7e06104adfb4c7dfa65235b55cde4ffb949f7595bfdbf74312",
+    "s26": "e7d1d6e841abad0c96f02a92604ed16871c4aac23a66345f77f2bfc109bfb77f",
+    "s27": "f4cee8e76eeba9f6e5469b236630ff8cd82480e74019ad0e949be11b0d0decb1",
+    "s3": "3422a7a0a23c318e54716e2fbbaf99599e0142f7bbc74d9eb45f924541cd8ccf",
+    "s4": "6beff7af8378d0a3be80a490fb73cc8c5e6a8ee94449c98de40a252d2f57fcd5",
+    "s5": "0cd70cc30708f232bf564bff0e7825d783d5f5ab455747bfac40ebe742ea0ed3",
+    "s6": "5181e894e8b3823f366d0b459a48ecc8e236e645ca5b1f02071dfc0fdae47681",
+    "s7": "6173f16d89316af11f74c75b5bec44f90742582abf47efd7e72af7af3bb31b50"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T09:39:40.907270+00:00",
+  "total": null
+}

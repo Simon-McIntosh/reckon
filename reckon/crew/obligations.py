@@ -53,6 +53,9 @@ from reckon.crew.node import (
     INTERRUPTED_RUN_PHASE,
     CrewError,
     PlanReviewMissingError,
+    _claim_commit_answer,
+    _git_answer,
+    _integration_ref_revision,
     parse_duration,
 )
 from reckon.crew.open_run_index import operational_read
@@ -2857,6 +2860,67 @@ def _holding_record(
     return candidates[-1]
 
 
+# A reading taken while a peer may hold the tree's index lock asks git to leave
+# the repository alone. ``git status`` refreshes the index and would otherwise
+# write it, so a derivation pass over a hundred trees would contend for it.
+_READ_ONLY_GIT_ENV: Mapping[str, str] = {"GIT_OPTIONAL_LOCKS": "0"}
+
+
+# The branch names a landing is expected to have made a retained tree's commits
+# reachable from, in the order they are read. A repository integrates on one of
+# them, and a name the repository does not carry costs file reads rather than a
+# subprocess.
+_PRIMARY_REF_NAMES = ("main", "develop", "master")
+
+
+def _unmerged_commit_answer(tree: Path) -> bool | None:
+    """Whether ``tree``'s head carries a commit no primary ref reaches.
+
+    ``False`` means a primary ref reaches everything the head carries, so a
+    landing has taken the work. ``True`` means a ref was compared and does not
+    reach the head, and no other ref did. ``None`` means no name could be
+    compared, which is not evidence of an empty tree.
+
+    The reachability reading is the claim fence's own, so this derivation and a
+    claim judge one tree by one rule: it reads the head and the ref from git's
+    files and memoises per object id, so a tree that has not moved costs no
+    subprocess on a later pass. The base that reading excludes is passed as the
+    ref's own commit, which leaves exactly the commits the ref cannot reach. The
+    answer is kept in this process rather than in the crew home's store: one
+    derivation pass asks it for every retained tree, and the store is a single
+    file rewritten per answer.
+    """
+    answered = False
+    for name in _PRIMARY_REF_NAMES:
+        merged = _integration_ref_revision(tree, name)
+        if not merged:
+            continue
+        answer = _claim_commit_answer(tree, name, merged, store=False)
+        if answer is None:
+            continue
+        if not answer.strip():
+            return False
+        answered = True
+    return True if answered else None
+
+
+def _tree_holds_unmerged_work(tree: Path) -> bool:
+    """Whether a retained tree still carries work no landing has taken.
+
+    A tree is a duty while deleting it would lose something: an uncommitted
+    change, or a commit the primary branch does not reach. A tree whose run has
+    landed holds neither, so the row naming it names bytes nothing needs, and
+    the derivation stops raising it. A tree that is gone holds nothing; a tree
+    whose state cannot be read keeps its duty.
+    """
+    if not tree.is_dir():
+        return False
+    status = _git_answer(tree, "status", "--porcelain", env=_READ_ONLY_GIT_ENV)
+    if status is None or status.strip():
+        return True
+    return _unmerged_commit_answer(tree) is not False
+
+
 def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
     """Return the record holding each registered, present and unoccupied tree.
 
@@ -3121,6 +3185,14 @@ class _HeldWorktreeState:
         return affected
 
     def refresh_trees(self, inspected: set[Path], affected: set[Path]) -> None:
+        """Re-file the trees this read inspected, holding only those still owed.
+
+        A tree stops being held when no record names it any more, when its
+        release is already owned, or when it carries no work a landing would
+        have taken: a tree that survived its run but holds nothing unmerged
+        only costs someone a look, while a row claiming otherwise costs a
+        reader their trust in every row beside it.
+        """
         for tree in self.inspected - inspected:
             self.held.pop(tree, None)
             for name in self.records.worktree_keys(tree):
@@ -3135,9 +3207,13 @@ class _HeldWorktreeState:
         for tree in affected & inspected:
             record = _holding_record(tree, self.records)
             release = record.get("release") if record is not None else None
-            if record is None or (
-                isinstance(release, Mapping)
-                and release.get("worktree_released") is True
+            if (
+                record is None
+                or (
+                    isinstance(release, Mapping)
+                    and release.get("worktree_released") is True
+                )
+                or not _tree_holds_unmerged_work(tree)
             ):
                 self.held.pop(tree, None)
             else:

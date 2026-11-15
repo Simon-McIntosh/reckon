@@ -693,8 +693,22 @@ def _git_dir(repo: Path) -> Path:
     return Path(result.stdout.strip() or (repo / ".git"))
 
 
+# A git process killed while holding ``index.lock`` leaves the lock behind, and
+# every later landing then waits on a lock no process will ever release: an
+# empty lock left in the shared checkout once blocked every merge for over
+# sixteen minutes. Such a lock is cleared, but only on evidence: it must be at
+# least this old, its size and mtime must not have moved across the whole retry
+# window, and no process on this host may hold it open. The checkout is written
+# from other hosts as well, whose file descriptors this host cannot read, so age
+# and stillness carry the judgement for a remote writer — a live git index write
+# grows or touches the lock as it goes and does not stay still and empty for ten
+# minutes.
+def _index_lock_path(repo: Path) -> Path:
+    return _git_dir(repo) / "index.lock"
+
+
 def _index_lock_held(repo: Path) -> bool:
-    return (_git_dir(repo) / "index.lock").exists()
+    return _index_lock_path(repo).exists()
 
 
 def _index_lock_signature(lock: Path) -> tuple[int, int] | None:
@@ -716,7 +730,7 @@ def _processes_holding(path: Path) -> list[int] | None:
     """
     try:
         processes = [entry for entry in Path("/proc").iterdir() if entry.name.isdigit()]
-    except OSError:  # pragma: no cover - /proc is present on every host we run on
+    except OSError:  # pragma: no cover - an unreadable /proc answers "unknown"
         return None
     target = os.path.realpath(path)
     holders: list[int] = []
@@ -739,6 +753,12 @@ def _processes_holding(path: Path) -> list[int] | None:
 
 
 def _index_lock_age_seconds(lock: Path) -> float | None:
+    """How long the lock has existed, or ``None`` when the file is not there.
+
+    The landing path and the staging path both ask this question of the same
+    file, and both ask it here: one definition keeps two readers of one fact
+    from drifting apart.
+    """
     try:
         return time.time() - lock.stat().st_mtime
     except OSError:
@@ -746,30 +766,63 @@ def _index_lock_age_seconds(lock: Path) -> float | None:
 
 
 def _stale_index_lock_age_seconds(
-    lock: Path, observed: tuple[int, int] | None, moved: bool
+    lock: Path,
+    observed: tuple[int, int] | None,
+    moved: bool,
+    *,
+    stale_after_seconds: float = STALE_INDEX_LOCK_AGE_SECONDS,
 ) -> float | None:
     """Return the lock's age when it is provably stale, else ``None``.
 
-    Stale means all three hold: it is at least ``STALE_INDEX_LOCK_AGE_SECONDS``
-    old, its size and mtime never changed across the retry window, and no
-    process on this host holds it open. Any one failing leaves the refusal as
-    it was, because the lock could still belong to a live writer.
+    Stale means all three hold: it is at least ``stale_after_seconds`` old, its
+    size and mtime never changed across the retry window, and no process on this
+    host holds it open. Any one failing leaves the refusal as it was, because the
+    lock could still belong to a live writer.
     """
     if moved or observed is None:
         return None
     current = _index_lock_signature(lock)
     if current is None or current != observed:
         return None
-    try:
-        age = time.time() - lock.stat().st_mtime
-    except OSError:
-        return None
-    if age < STALE_INDEX_LOCK_AGE_SECONDS:
+    age = _index_lock_age_seconds(lock)
+    if age is None or age < stale_after_seconds:
         return None
     holders = _processes_holding(lock)
     if holders is None or holders:
         return None
     return age
+
+
+def _result_text(result: subprocess.CompletedProcess) -> str:
+    parts = []
+    for value in (result.stderr, result.stdout):
+        if value is None:
+            continue
+        parts.append(
+            value.decode("utf-8", "replace") if isinstance(value, bytes) else value
+        )
+    return "\n".join(parts)
+
+
+def _failed_on_this_index_lock(lock: Path, result: subprocess.CompletedProcess) -> bool:
+    """Whether a failed call could have been refused by this checkout's lock.
+
+    git names the lock file when it cannot take it — ``Unable to create
+    '<git-dir>/index.lock': File exists`` — so the failure says which lock
+    refused it. The failure is what decides, not the file: a peer's commit
+    releases the lock within milliseconds, and a wait that reads only the file
+    returns the failure after one attempt, losing the race the retry exists to
+    win. A failure naming a different checkout's lock is not this one's to wait
+    for. A failure that names no lock at all still waits while this checkout
+    holds one, because a git call can be refused by a lock it does not name.
+
+    It is only asked about a failed call: a call that succeeded is never
+    retried, whatever lock a peer holds at the moment of the check.
+    """
+    detail = _result_text(result)
+    if lock.name in detail:
+        return str(lock) in detail or os.path.realpath(lock) in detail
+    return lock.exists()
 
 
 def _run_waiting_out_a_held_index_lock(
@@ -780,46 +833,49 @@ def _run_waiting_out_a_held_index_lock(
     retry_seconds: float = DEFAULT_RETRY_SECONDS,
     sleep: Callable[[float], None] = time.sleep,
     on_retry: Callable[[int, subprocess.CompletedProcess[str]], None] | None = None,
+    stale_after_seconds: float = STALE_INDEX_LOCK_AGE_SECONDS,
     on_stale_removed: Callable[[Path, float], None] | None = None,
 ) -> tuple[subprocess.CompletedProcess[str], int]:
     """Run ``step`` until it succeeds, a lock is not what refused it, or it runs out.
 
     ``step`` is called with the number of the attempt, counting from one, and
-    returns the result of one git invocation. A failed result that left ``repo``
-    holding an ``index.lock`` is retried after ``retry_seconds``, up to
+    returns the result of one git invocation. A failed result this checkout's
+    ``index.lock`` could have refused is retried after ``retry_seconds``, up to
     ``attempts`` calls in total, so a lock that is never released ends in the
     caller's refusal rather than a wait that never ends. ``on_retry`` is called
     with the number of retries made so far and the result that failed, before
     each wait, which is where a caller records the retry.
 
-    A lock that outlasts the attempts is judged before the caller refuses it. If
-    it is provably stale — old, unchanged across the whole window, and held by no
-    process on this host — it is removed and ``step`` is tried once more, and
-    ``on_stale_removed`` is called with the lock and its age in seconds so the
-    caller can record the removal. A lock that is merely old, that moved, or that
-    a process holds is left alone and the failing result is returned unchanged.
+    A lock that outlasts the attempts is judged before the caller refuses
+    it. If it is provably stale - at least ``stale_after_seconds`` old,
+    unchanged across the caller's retry window, and held by no process on
+    this host - it is removed and ``step`` is tried once more, and
+    ``on_stale_removed`` is called with the lock and its age in seconds so
+    the caller can record the removal. A lock that is merely young, that
+    moved, or that a process holds is left alone and the failing result is
+    returned unchanged.
 
     Returns the last result with the number of retries made, so a caller that
     reports a lock that outlasted the attempts and a caller that records its
-    retries both read one count from one place. The lock is read from the
-    checkout's own ``index.lock`` rather than from the failing command's text,
-    because that file is what the next attempt waits for.
+    retries both read one count from one place. Whether a failure waits is
+    decided by what the failure names as well as by whether the lock is still
+    on disk, so a lock released between the failed call and this check is
+    still waited out rather than returned after one attempt.
     """
-    retries = 0
-    lock = _git_dir(repo) / "index.lock"
+    lock = _index_lock_path(repo)
     observed = _index_lock_signature(lock)
+    retries = 0
     moved = False
     result = step(1)
-    while result.returncode != 0 and retries + 1 < attempts and _index_lock_held(repo):
+    while (
+        result.returncode != 0
+        and retries + 1 < attempts
+        and _failed_on_this_index_lock(lock, result)
+    ):
         retries += 1
         if on_retry is not None:
             on_retry(retries, result)
         sleep(retry_seconds)
-        after_wait = _index_lock_signature(lock)
-        if observed is None:
-            observed = after_wait
-        elif after_wait is not None and after_wait != observed:
-            moved = True
         result = step(retries + 1)
         after_step = _index_lock_signature(lock)
         if observed is None:
@@ -827,12 +883,12 @@ def _run_waiting_out_a_held_index_lock(
         elif after_step is not None and after_step != observed:
             moved = True
     if result.returncode != 0 and _index_lock_held(repo):
-        age = _stale_index_lock_age_seconds(lock, observed, moved)
+        age = _stale_index_lock_age_seconds(
+            lock, observed, moved, stale_after_seconds=stale_after_seconds
+        )
         if age is not None:
             try:
                 lock.unlink()
-            except FileNotFoundError:
-                age = None
             except OSError:
                 age = None
             if age is not None:
@@ -1049,6 +1105,7 @@ def land_merge(
     remote: str = "origin",
     attempts: int = DEFAULT_ATTEMPTS,
     retry_seconds: float = DEFAULT_RETRY_SECONDS,
+    stale_lock_seconds: float = STALE_INDEX_LOCK_AGE_SECONDS,
     sleep=time.sleep,
     verify: Callable[[Path, str, str, str], None] | None = None,
     release: bool = True,
@@ -1131,6 +1188,7 @@ def land_merge(
                 attempts=remaining,
                 retry_seconds=retry_seconds,
                 sleep=sleep,
+                stale_after_seconds=stale_lock_seconds,
                 on_stale_removed=record_stale_removal,
             )
             remaining -= retries + 1
@@ -1317,6 +1375,7 @@ def land(
     remote: str = "origin",
     attempts: int = DEFAULT_ATTEMPTS,
     retry_seconds: float = DEFAULT_RETRY_SECONDS,
+    stale_lock_seconds: float = STALE_INDEX_LOCK_AGE_SECONDS,
     sleep=time.sleep,
     verify: Callable[[Path, str, str, str], None] | None = None,
 ) -> dict:
@@ -1367,6 +1426,7 @@ def land(
         remote=remote,
         attempts=attempts,
         retry_seconds=retry_seconds,
+        stale_lock_seconds=stale_lock_seconds,
         sleep=sleep,
         verify=_refuse_a_dropped_change,
         # The caller's own release follows this landing and reports the tree it

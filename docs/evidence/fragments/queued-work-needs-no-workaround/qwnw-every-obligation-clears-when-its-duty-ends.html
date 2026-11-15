@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="queued-work-needs-no-workaround">
+  <meta name="plan-evidence-for" content="reckon:queued-work-needs-no-workaround">
+  <meta name="plan-verifies" content="reckon:queued-work-needs-no-workaround#s8">
+  <meta name="plan-verdict" content="measurement">
+  <title>Every obligation that can clear when its duty ends, and the four that cannot</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="qwnw-every-obligation-clears-when-its-duty-ends" data-node="qwnw-every-obligation-clears-when-its-duty-ends" data-reckon="landed" data-when="2026-11-14">
+  <h2>Every obligation that can clear when its duty ends, and the four that cannot</h2>
+  <p>The section asks that a duty clear once the run it names has left the fleet, whatever route ended it, and that the acknowledgement path accept a run that still raises a row whatever its pointer and ledger state. This record holds the census that named the gap, the change that closes it, the tests that hold it, and the figure that remains — which is not zero, and why.</p>
+
+  <h3>What the four kinds do</h3>
+  <table class="r-table">
+    <thead>
+      <tr><th>kind</th><th>at the base revision</th><th>what the change does</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>promotion-failed</code></td>
+        <td>already settles on read: <code>promotion_requests._settled_state</code> answers <code>discarded</code>, <code>promoted</code>, <code>landed</code> or <code>gone</code> and rewrites the request before a row is built. Covered by <code>tests/test_refused_promotion_request_settles.py</code>.</td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>review-in-flight</code></td>
+        <td>derived from a review run's live pointer, so it is absent from the next derivation once that run ends.</td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>worktree-held</code></td>
+        <td>raised from the project's retained ledger record, not from a pointer, and raised for every retained tree whether or not it still holds work. Each table measurement below reads the trees themselves.</td>
+        <td>settled on the tree's own state: a row whose tree holds no unmerged work is not raised, and neither is one whose release the terminal cleanup queue already owns. A tree that still holds work keeps its row, because the row is the only surface naming it</td>
+      </tr>
+      <tr>
+        <td><code>sweep-failed</code></td>
+        <td>no settlement path</td>
+        <td>settled on read and pruned from the durable record</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>The census that named the gap</h3>
+  <p>Every stored obligation row in the live crew home was read at the base revision, and each row's run classified by two independent facts: whether it still holds a live pointer, and whether it still has a ledger row. The reading ran as an <code>all_debug</code> job at <code>2026-11-14T20:55:53Z</code> (<code>census.log</code>, exit 0): 130 stored documents, 151 rows carrying a run id, <strong>77 of them naming a run with no live pointer</strong> — 66 of those runs had a ledger row and 11 had neither.</p>
+  <p>The <code>sweep-failed</code> route was reproduced directly (<code>repro.log</code>, exit 0): a stored failure for a run with no live pointer and no ledger row still raised a row after one pass, because the failure list is durable per session and only that session's next completed sweep replaces it. The acknowledgement probe (<code>ack.log</code>, exit 0) showed the second half of the gap: a deferral for such a run was refused unless the caller passed <code>--project</code>, and a row's own command never carries one.</p>
+
+  <h3>The change</h3>
+  <p>Five source files and one new test module, committed as <code>23441432588509b0e37d7f85a3cdf499bac2c476</code>, with the held-tree settlement added by the repair round in <code>f34655ee</code>, the unmerged-work rule in <code>c778aaa1</code> and <code>9d886bbf</code>, and the reuse of this package's own git readings in <code>75bf98f5</code> and <code>34b99177</code>:</p>
+  <ul>
+    <li><code>reckon/crew/station_obligations.py</code> — <code>_ended_sweep_failures</code> keeps a failure only while its run holds a live pointer and has no ledger record; <code>_with_sweep_failures</code> publishes through it, and <code>prune_sweep_failures</code> applies the same reading to the durable per-session record, writing back only when an entry ended. The mount registry is read once for the whole list, so no ledger is decoded per row.</li>
+    <li><code>reckon/crew/obligation_snapshot.py</code> — <code>sweep-failed</code> joins <code>LIVE_POINTER_DUTY_KINDS</code>, so an answer computed before the run ended stops naming it at read time. The module still reaches no derivation, plan, backend or ledger module.</li>
+    <li><code>reckon/crew/obligation_snapshot.py (repair round)</code> — the held-tree settlement the repair round adds: <code>worktree-held</code> is withheld once its run has no live pointer and the terminal cleanup queue holds an intent for it.</li>
+    <li><code>reckon/crew/obligations.py</code> — a retained tree is filed as held only while it carries unmerged work, decided by the tree's own git state rather than by the run's pointer, through the git readings the claim fence already owns rather than private copies of them.</li>
+    <li><code>reckon/crew/node.py</code> — <code>_git_answer</code> takes an optional environment, so a derivation can ask git to leave the index alone without a second stripped-stdout reader; <code>_claim_commit_answer</code> can keep a reachability answer in the asking process only, for a read that judges a hundred trees in one pass.</li>
+    <li><code>reckon/crew/runs.py</code> — a deferral's project now falls back to the stored duty document that still raises the run's rows, after the caller's own <code>--project</code>, the ledger record and the promotion request have all failed to name one. A run nothing names is still refused.</li>
+  </ul>
+
+  <h3>The tests</h3>
+  <p><code>tests/test_a_duty_clears_when_its_run_ends.py</code> raises each case in a temporary crew home and reads it back through the station's own functions: a live run's failure is published (the positive control); both endings the station can see — no record left, and a ledger record — clear the row and the stored entry; one session's ended failure leaves another session's standing; a deferral reaches a run with neither pointer nor record and moves the row to acknowledged; and a run no record names is still refused. The repair round adds the held-tree arms, which serve the same row with no cleanup intent and withhold it once the intent exists; this round adds four arms over one parametrisation — a landed tree and a gone tree each stop raising the row, an uncommitted change and a commit the primary branch does not reach each keep it — and a deferral stored under a second project, so the project read back can only have come from the document.</p>
+  <p>The module holds thirteen tests. The negative control runs it against the base revision's source (<code>negative_control.log</code>, exit 1): <strong>eight of the thirteen fail there and five pass</strong>. The failures are behavioural rather than missing names — the row still standing after its run ended on both endings, the held-tree arm whose release is owned still served, the deferral still refused, and the two rule arms that expect a landed and a gone tree to be released still keeping them. The five that pass are the positive control, the still-refused case, and the three arms whose expectation the base already meets — an honest control has to pass where the behaviour was already right.</p>
+
+  <h3>The suite arms</h3>
+  <p>All three arms ran as one <code>all_debug</code> job over the two files the fence names (<code>tests/test_staged_write_inventory.py</code>, <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>), each in its own exported tree that carries a HEAD of its own so the inventory test can ask git for the staged paths. <code>baseline_suite.log</code> at <code>7b45ca90</code>, <code>after_suite.log</code> at <code>9d886bbf</code> and <code>change_suite.log</code> at the change's own commit each report <strong>55 passed, exit 0</strong>, so the delta the change carries is zero.</p>
+  <p>A first run of these arms showed two errors in the inventory test on both arms; they were the exported tree having no repository behind it, identical at both revisions, and they are gone once the export is given a HEAD.</p>
+
+  <h3>The census after the change, and what remains</h3>
+  <p>The same census was re-read through the settlement the change adds, at <code>2026-11-15T06:17:03Z</code> (<code>census_after.log</code>, exit 0): 132 stored documents, 136 stored rows, <strong>70 rows the view still serves, 20 of them naming a run with no live pointer</strong>. The figure is a reading of the fleet at one instant rather than a constant of the rule: what a reader sees moves with the fleet, while the rule that decides each row does not.</p>
+  <table class="r-table">
+    <thead><tr><th>kind</th><th>pointer</th><th>landed</th><th>gone</th></tr></thead>
+    <tbody>
+      <tr><td><code>blocked</code></td><td>6</td><td>0</td><td>2</td></tr>
+      <tr><td><code>landing-refused</code></td><td>4</td><td>0</td><td>0</td></tr>
+      <tr><td><code>needs-help</code></td><td>1</td><td>0</td><td>0</td></tr>
+      <tr><td><code>promotable-stale</code></td><td>11</td><td>0</td><td>0</td></tr>
+      <tr><td><code>promotion-failed</code></td><td>19</td><td>0</td><td>0</td></tr>
+      <tr><td><code>queued-awaiting-session</code></td><td>1</td><td>0</td><td>0</td></tr>
+      <tr><td><code>review-in-flight</code></td><td>3</td><td>0</td><td>0</td></tr>
+      <tr><td><code>review-missing</code></td><td>1</td><td>0</td><td>0</td></tr>
+      <tr><td><code>review-ready</code></td><td>2</td><td>0</td><td>0</td></tr>
+      <tr><td><code>run-waiting</code></td><td>2</td><td>0</td><td>0</td></tr>
+      <tr><td><code>worktree-held</code></td><td>0</td><td>18</td><td>0</td></tr>
+    </tbody>
+  </table>
+  <p>The two groups that make up the 20 are named here rather than averaged:</p>
+  <ul>
+    <li><strong>18 are <code>worktree-held</code></strong>, and every one names a tree that is still on disk and still holds work no landing took. Their evidence is the tree, not the run's pointer, so a pointer stat cannot settle them; the next section measures what each tree holds, and the rule this round adds releases a row only when its tree holds nothing unmerged.</li>
+    <li><strong>2 are <code>blocked</code> whose run has gone.</strong> These settle in a derivation pass — the resume reading for a blocked row — not on the pointer stat the read path holds. The stored document is the station's last pass, and the installed station process runs the code from before this commit, so nothing has re-derived them yet.</li>
+  </ul>
+  <p>So the change removes the route the section names — a durable failure list that outlived its run and could be cleared only by hand — and puts the held-tree stratum under a rule of its own, measured in the next section rather than asserted here.</p>
+
+  <h3>What owns a held tree</h3>
+  <p>A retained tree outlives the run that made it, so a missing pointer settles a <code>worktree-held</code> row on nothing: the row is the only surface naming the bytes. The derivation was read whole at both fence revisions (<code>probe_held_base.log</code> and <code>probe_held.log</code>, both exit 0): <strong>102 held-tree duties</strong> across every project the crew home carries rows for, every one naming a tree still on disk, <strong>3 whose run the terminal cleanup queue already owns and 99 with no other owner</strong>. The count reads the same at <code>7b45ca90</code> and at the repair head, and that flat reading is itself the finding rather than a null result: the next measurement says why.</p>
+  <p>Each of the 102 was then read at the repair head for the two facts the question turns on (<code>probe_trees.log</code>, exit 0): <strong>96 carry commits their primary branch does not reach</strong> (86 clean, 10 carrying an uncommitted change as well), <strong>16 carry an uncommitted change</strong> and <strong>none of the 102 is both clean and merged</strong>. So a rule that releases a tree whose work a landing has taken releases nothing on this fleet today: every retained tree is a duty. That includes the 28 whose run already has a landing record — their trees hold commits <code>main</code> does not reach, which is exactly what a row naming them is for.</p>
+  <p>That is the rule the row answers to now, and four arms in <code>test_the_derivation_holds_a_tree_only_while_it_carries_unmerged_work</code> hold it: a landed tree and a gone tree stop raising the row, an uncommitted change and an unmerged commit keep it. Beside it stands the settlement the earlier repair round adds — a row whose run has no live pointer and whose cleanup intent exists is withheld, because the queue's release is already the scheduled work. Both readings are applied in <code>obligations._HeldWorktreeState.refresh_trees</code>, at the one place a tree is filed as held.</p>
+
+  <h3>What this round changed</h3>
+  <p>The review of the earlier head read the held-tree rows as rows that should have cleared with their runs, and read a census instant and a table beside it that had moved since the paragraph citing them was written. Both halves are answered here by measurement rather than by argument: the rows now clear on the tree's own state, and every figure in this record is taken from the log named beside it, table and instant included.</p>
+  <p>The rule is a settlement at the derivation, in the place a tree is filed as held. It asks the only question the row asks — would deleting this tree lose work — with the tree's own git state, through the readings this package already owns rather than copies of them: the claim fence's stripped-stdout reading for an uncommitted change, and its reachability answer, which reads the branch names the repository carries from git's files. A reading that fails keeps the duty, because a tree nobody could read is not a tree nothing needs. The branch names are the repository's own (<code>main</code>, <code>develop</code>, <code>master</code>), read from its files. The remote's tracking head is not consulted: a landing whose copy sits on the remote but has not been fetched leaves the tree looking owed, which keeps a duty rather than losing bytes. Reading that head first was the first attempt at this and released nothing at all, because the tracking ref lags the local branch until someone pushes.</p>
+  <p>What the rule does not do is release a tree that still holds work, which is why the derived count reads the same either side. The 18 rows the census serves name 18 such trees, and the honest report of that is the count, not a zero.</p>
+  <p>What the refresh costs was measured rather than assumed, because the reuse changed which readings it asks git for (<code>cost_before.log</code> and <code>cost_after.log</code>, both exit 0, the same probe over the same 19 projects and 102 trees): <strong>550 git processes and 46.6 s</strong> before the reuse, <strong>286 and 45.8 s</strong> after. The reachability answer is memoised per object id in the asking process and is not written to the shared crew-home answer store, because one pass asks it for every tree and that store is a single file rewritten per answer; a second pass in the same process therefore costs no git process at all. The same probe over the head tree with the three files the reuse commits changed restored to their pre-reuse versions reads <strong>550 git processes and 51.0 s</strong> (<code>negative_control_reuse.log</code>), and the thirteen-test module still passes there (<strong>13 passed, EXIT=0</strong>) — the reuse changes what the refresh costs, not what it decides, so the cost measurement is the control rather than the module.</p>
+
+  <h3>The done-when, item by item</h3>
+  <table class="r-table">
+    <thead><tr><th>the section asks for</th><th>where it stands</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>tests raise each of the four row kinds, settle the run each way, and read the view empty after one pass</td>
+        <td>raised and settled for <code>sweep-failed</code> in the new module, on both endings the station can see; <code>promotion-failed</code> settlement is held by <code>tests/test_refused_promotion_request_settles.py</code>; <code>review-in-flight</code> is derived from a live review pointer, so it is absent from the next derivation once that run ends; <code>worktree-held</code> is released once its tree holds no unmerged work — the tree is landed or gone — and kept while it does, with the release already owned settling it as well</td>
+      </tr>
+      <tr>
+        <td>a test acks a row for a run with no pointer and no ledger row, and reads it moved to acknowledged</td>
+        <td><code>test_a_deferral_reaches_a_run_with_no_pointer_and_no_record</code>: the deferral is accepted, names the project its duty document carries, and <code>_partition_acknowledged</code> moves the row out of the owed list</td>
+      </tr>
+      <tr>
+        <td>a census counts rows whose run has no live pointer or has landed, zero one pass after the delivered head runs</td>
+        <td>measured, and not zero: 20 of the 70 served rows read either way at the repair head — 18 held trees and 2 blocked rows a derivation pass settles. The held-tree figure is a property of the fleet rather than of the rule, because all 102 retained trees hold work (<code>probe_trees.log</code>) and the rule releases only a tree that holds none</td>
+      </tr>
+      <tr>
+        <td>negative control: the settled-by-promotion case against the base revision still lists the row</td>
+        <td><code>negative_control.log</code>: eight of the thirteen arms fail against the base revision — the row still raised on both endings, the deferral still refused, and the two rule arms that expect a landed and a gone tree to be released still keeping them — and five pass where the behaviour was already right</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Fences and honesty notes</h3>
+  <p>Every measurement above ran as an <code>all_debug</code> job or against a temporary crew home, and none on the fleet node. The arms at the delivered head, the two controls, the four probe readings and the two cost arms ran as the <code>all_debug</code> jobs whose ids their headers record — <code>1316244</code> (the earlier change pair), <code>1316717</code> (the two probe arms and the revert control), <code>1316848</code> (the reuse-reverted control) and <code>1316849</code> (the two suite arms re-read at the delivered head) — with the cost and census readings written from exported trees whose headers carry their revision and command rather than a job id, each log carrying its revision and command on the first line and an <code>EXIT</code> line last. Two of this session's commands did start a whole-suite pytest in the shared checkout by mistake while an arm was being prepared; each was stopped within about two minutes of starting and no process was left behind. The two-file arms the fence names were run in exported trees, so the <code>.venv</code> the command names resolves to the shared root environment rather than a worktree copy, and the resolved revision is recorded in each log header.</p>
+</article>
+</body>
+</html>

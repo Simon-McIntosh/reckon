@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_note": "No added assertion compares a value against the same variable the test passed in. The head count is measured by a stand-in that counts its own walks; the liveness readings are taken through recovery_liveness.local_liveness against a live child the test starts, so they fail if the environment scan does not consult the table; the base count is produced by neutralising the region and re-running the pass.",
+  "assertion_review": [
+    {
+      "failure_condition": "If the environment scan did not consult the walk map, the live child's mark would not read alive or a markless pointer would not read dead, and the positive control fails before either count is believed.",
+      "lines": "313-319"
+    },
+    {
+      "failure_condition": "Removing the region from reckon/crew/station_store.py:874 reinstates the per-pointer walk and this reads 40, exactly as negative-control.log records at the base revision.",
+      "lines": "321-324"
+    },
+    {
+      "failure_condition": "If the region changed a verdict, the head arm's classification would differ from the neutralised base arm's and the equality fails; the live-carrier rows at :341-346 keep the comparison non-vacuous.",
+      "lines": "336-339"
+    },
+    {
+      "failure_condition": "If the fixture stopped reaching the environment scan, the base arm would walk fewer than 40 times and the negative control would no longer reproduce the defect.",
+      "lines": "348-349"
+    }
+  ],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/station.py:1053 Station.tick calling self.store.classify_tick"
+  ],
+  "completed_at": "2026-11-15T02:25:00.052Z",
+  "dispatched_at": "2026-11-15T01:35:13Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site: reckon/crew/station.py:1053",
+    "diff": "read commit by commit against b8abf8233c; 287b37eb72 adds the region in reckon/crew/station_store.py and the 351-line test, and 79d3951c37 adds the 34-line evidence fragment, three files all inside scope.",
+    "done_when": "the plan's s55 done-when names tests/test_a_classify_pass_walks_the_process_table_once.py with 40 dead-pid pointers, a live carried mark, a recording stand-in for _walk_marked_processes and a stepped beat clock; the landed test implements each and the after arm records it passing with 54 passed and 2 errors against the base arm's 40 walks.",
+    "goal": "the source node's goal is 'bound classify_tick to one process-table walk per pass'; reckon/crew/station_store.py:874-875 wraps the whole classify pass in process_signal.process_table_walk_once(), so every liveness read inside the pass answers from one table.",
+    "manifest": "read at the source run's manifest.md; status is complete, tests names the head-arm command and test_logs names base-arm.log, after-arm.log and negative-control.log, each of them existing, opening with its revision and literal command and ending in its own EXIT= line.",
+    "write_paths": "four paths are declared (station_store.py, the test file, the fragment and the figures directory); the diff touches the first three, so every changed path is inside the grant and the figures path is unused."
+  },
+  "justifications": {
+    "durability": "reverting the region at reckon/crew/station_store.py:874 makes tests/test_a_classify_pass_walks_the_process_table_once.py:321 read 40 walks, which is what negative-control.log shows at the base revision.",
+    "evidence": "tests/test_a_classify_pass_walks_the_process_table_once.py:321 asserts head_walks == 1 and :348 asserts the base arm walked 40, and negative-control.log records 'assert 40 == 1' at EXIT=1.",
+    "fit": "reckon/crew/station_store.py:874-875 opens the region beside the existing _classification_input_tick() block in the same parenthesised with-statement idiom, and the added docstring states the mechanism rather than the change.",
+    "goal_fidelity": "reckon/crew/station_store.py:874-875 opens the existing region around the whole pass, so one pass lists /proc at most once however many pointers it classifies.",
+    "reuse": "the diff adds no definition; it opens reckon/crew/process_signal.py:309 process_table_walk_once, the mechanism already used at reckon/crew/obligation_snapshot.py:1631 and reckon/crew/station_subscriber.py:356.",
+    "scope_discipline": "the diff from b8abf8233c touches only reckon/crew/station_store.py, tests/test_a_classify_pass_walks_the_process_table_once.py and the node fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is 'bound classify_tick to one process-table walk per pass'; reckon/crew/station_store.py:874-875 wraps the whole classify pass in process_signal.process_table_walk_once(), so every liveness read inside the pass answers from one table.\nVERDICT done_when: the plan's s55 done-when names tests/test_a_classify_pass_walks_the_process_table_once.py with 40 dead-pid pointers, a live carried mark, a recording stand-in for _walk_marked_processes and a stepped beat clock; the landed test implements each and the after arm records it passing with 54 passed and 2 errors against the base arm's 40 walks.\nVERDICT write_paths: four paths are declared (station_store.py, the test file, the fragment and the figures directory); the diff touches the first three, so every changed path is inside the grant and the figures path is unused.\nVERDICT manifest: read at the source run's manifest.md; status is complete, tests names the head-arm command and test_logs names base-arm.log, after-arm.log and negative-control.log, each existing and ending in its own EXIT= line.\nVERDICT diff: read commit by commit against b8abf8233c; 287b37eb72 adds the region in reckon/crew/station_store.py and the 351-line test, and 79d3951c37 adds the 34-line evidence fragment, three files all inside scope.\nCALL_SITES: reckon/crew/station.py:1053 Station.tick calling self.store.classify_tick\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/station_store.py:874-875 opens the existing region around the whole pass, so one pass lists /proc at most once however many pointers it classifies.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_classify_pass_walks_the_process_table_once.py:321 asserts head_walks == 1 and :348 asserts the base arm walked 40, and negative-control.log records 'assert 40 == 1' at EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff from b8abf8233c touches only reckon/crew/station_store.py, tests/test_a_classify_pass_walks_the_process_table_once.py and the node fragment, all inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: reverting the region at reckon/crew/station_store.py:874 makes tests/test_a_classify_pass_walks_the_process_table_once.py:321 read 40 walks, which is what negative-control.log shows at the base revision.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/station_store.py:874-875 opens the region beside the existing _classification_input_tick() block in the same parenthesised with-statement idiom, and the added docstring states the mechanism rather than the change.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition; it opens reckon/crew/process_signal.py:309 process_table_walk_once, the mechanism already used at reckon/crew/obligation_snapshot.py:1631 and reckon/crew/station_subscriber.py:356.",
+  "review_run_id": "r-20261115T013130038919-review-of-a-classify-pass-walks-the-process-table-once-79d3951c37f3",
+  "reviewed_base_sha": "b8abf8233c22d1e49aa5afc4742362cee3f99832",
+  "reviewed_head_sha": "79d3951c37f32ca0a4653a8074b5c0d3fa0d386b",
+  "reviewed_run_id": "r-20261114T211925581758-a-classify-pass-walks-the-process-table-once",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T02:05:00+00:00",
+  "total": 115
+}

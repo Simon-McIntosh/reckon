@@ -1,0 +1,329 @@
+<section id="ledger-leaves-git-map-s20-writable-map">
+  <h2>Every reader and writer the ledger's untracking reaches</h2>
+
+  <p><strong>What this is.</strong> The lead locked
+  <code>committed-export-scope</code> to <em>none</em>: the run ledger leaves git
+  and the crew-home run store becomes its only store. This is the map of who
+  touches <code>docs/state/&lt;project&gt;/crew.json</code> and
+  <code>docs/state/&lt;project&gt;/runs/*.json</code> before anything is
+  untracked. It changes no product code.</p>
+
+  <p><strong>Method and population.</strong> Every citation below is
+  <code>file:line</code> read from the committed blob at base
+  <code>a346fba4aa</code>, found by <code>git grep</code> over all
+  <strong>21,226</strong> tracked paths, <code>docs/</code> and
+  <code>scripts/</code> included, at that revision. Two patterns: the ledger's
+  own path and record helpers
+  (<code>ledger_path(</code>, <code>run_path(</code>,
+  <code>write_run_file(</code>, <code>append_run(</code>,
+  <code>load_aggregate(</code>, <code>ledger.load(</code>), and the literal
+  <code>crew\.json</code>. Raw receipts are in the run directory under
+  <code>logs/</code>.</p>
+
+  <table id="ledger-leaves-git-map-s20-writable-population">
+    <caption>Hits by top-level group. Test files are a separate group, as the
+    measure requires.</caption>
+    <thead><tr><th>group</th><th>files</th><th>helper hits</th><th><code>crew.json</code> hits</th><th>what they are</th></tr></thead>
+    <tbody>
+      <tr><td><code>reckon/</code></td><td>30</td><td>145</td><td>10</td>
+        <td>product source — every live reader and writer</td></tr>
+      <tr><td><code>scripts/</code></td><td>2</td><td>6</td>
+        <td>0</td><td>one-off backfill and import verbs</td></tr>
+      <tr><td><code>docs/</code></td><td>55</td><td>326</td><td>560</td>
+        <td>committed analysis and census scripts; the bulk is prose evidence</td></tr>
+      <tr><td><strong><code>tests/</code></strong></td><td>212</td><td>735</td><td>138</td>
+        <td>the test group, listed separately</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Positive control.</strong> The same two greps, run through the same
+  instrument, find the ledger's own writer and the committed reader the measure
+  names — so the absence of a hit elsewhere is an absence, not a broken
+  pattern:
+  <code>reckon/ledger.py:921</code> <code>def write_run_file(</code>,
+  <code>reckon/ledger.py:3439</code> <code>def append_run(</code>, and
+  <code>docs/figures/plan-review-cycles/measure_review_cycles.py:333</code>
+  <code>ledger = repo / "docs" / "state" / project / "crew.json"</code>.</p>
+
+  <h3 id="ledger-leaves-git-map-s20-writable-writers">The writers, and which of them commit</h3>
+
+  <p>Three commit paths stage ledger files today, and every writer reaches one
+  of them. <strong>A writer that has no commit path leaves the file dirty in the
+  shared checkout</strong>, which is the state that produced the
+  35,000-line rewrites this plan exists to end.</p>
+
+  <table id="ledger-leaves-git-map-s20-writable-writer-table">
+    <caption>Writes are to the committed file or to the crew-home store; commits
+    are by <code>git add -- &lt;paths&gt;</code> then <code>git commit --only</code>,
+    never a whole-tree add.</caption>
+    <thead><tr><th>module</th><th>function</th><th></th><th>writes</th><th>stages / commits</th></tr></thead>
+    <tbody>
+      <tr><td><code>reckon/ledger.py</code></td><td><code>write_run_file</code></td><td>:921</td>
+        <td><code>runs/&lt;id&gt;.json</code>, atomic; then the store and the open-run index</td>
+        <td>no — caller owns the commit</td></tr>
+      <tr><td><code>reckon/ledger.py</code></td><td><code>append_run</code></td><td>:3439</td>
+        <td><code>runs/&lt;id&gt;.json</code> via <code>open("x")</code>, then <code>run_store.append</code> (:3333)</td>
+        <td>no — caller owns the commit</td></tr>
+      <tr><td><code>reckon/ledger.py</code></td><td><code>write</code> → <code>_write_state</code></td><td>:2643 / :2671</td>
+        <td><code>crew.json</code> — members, holds, aggregate rows — and re-encodes matching run files</td>
+        <td><code>commit=True</code> → <code>_commit_state_write</code></td></tr>
+      <tr><td><code>reckon/ledger.py</code></td><td><code>_commit_state_write</code></td><td>:3118</td>
+        <td>—</td><td><strong>yes</strong>: <code>git add --</code> :3176, <code>git commit --only</code> :3202</td></tr>
+      <tr><td><code>reckon/ledger.py</code></td><td><code>register_member</code></td><td>:3238</td>
+        <td>the roster in <code>crew.json</code></td><td>yes, when <code>commit=True</code> (:3306)</td></tr>
+      <tr><td><code>reckon/ledger.py</code></td><td><code>_commit_run_split</code></td><td>:3641</td>
+        <td><code>crew.json</code> plus every <code>runs/*.json</code> it produced</td>
+        <td><strong>yes</strong>: its own <code>git add</code> :3651 and <code>commit --only</code></td></tr>
+      <tr><td><code>reckon/crew/promotion.py</code></td><td><code>_complete_locked</code></td><td>:2075</td>
+        <td>the promoted run's <code>runs/&lt;id&gt;.json</code></td>
+        <td>yes, :2174 → <code>_commit_landing_writes</code></td></tr>
+      <tr><td><code>reckon/crew/promotion_scope.py</code></td><td><code>_commit_landing_writes</code></td><td>:2508</td>
+        <td>—</td><td><strong>yes</strong>: <code>git add :2499</code>, <code>git commit --only :2633</code></td></tr>
+      <tr><td><code>reckon/crew/promotion_gate.py</code></td><td><code>rerun_gate_at_integrated_revision</code></td><td>:1220</td>
+        <td>the run's <code>integrated_gate_check</code>, file at :1222 or aggregate at :1231</td>
+        <td>yes, :1237</td></tr>
+      <tr><td><code>reckon/crew/promotion_release.py</code></td><td><code>_update_run_record</code></td><td>:653</td>
+        <td><code>runs/&lt;id&gt;.json</code> via <code>write_run_file</code></td><td>yes, :833 → landing commit</td></tr>
+      <tr><td><code>reckon/crew/promotion_release.py</code></td><td><code>_write_release_receipt</code></td><td>:705</td>
+        <td>the release outcome on the row, file or aggregate (:751, :754)</td><td>yes, :833</td></tr>
+      <tr><td><code>reckon/crew_run_commands.py</code></td><td><code>supersede_run_review</code></td><td>:1673</td>
+        <td>a review correction on the row — aggregate :1673 or file :1675</td><td>yes, :1682</td></tr>
+      <tr><td><code>reckon/crew_run_commands.py</code></td><td><code>verify_gate</code></td><td>:4066</td>
+        <td>the merged-delivery gate receipt on the row</td><td>yes, :4070</td></tr>
+      <tr><td><code>reckon/crew/promotion_records.py</code></td><td><code>_retire_disposable_identity</code></td><td>:1496</td>
+        <td>the roster in <code>crew.json</code></td><td>yes, <code>commit=True</code> :1502</td></tr>
+      <tr><td><code>reckon/crew/routing.py</code></td><td><code>reap_idle_session_members</code></td><td>:3439</td>
+        <td>the roster in <code>crew.json</code></td><td>yes, <code>commit=True</code> :3445</td></tr>
+      <tr><td><code>reckon/crew/gc.py</code></td><td><code>_retire_run_store</code></td><td>:2000</td>
+        <td>the <strong>store only</strong> — <code>RunStore.retire</code>, 30-day horizon</td><td>n/a — already outside git</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>One write has no commit path and is the shape that strands work.</strong>
+  <code>fleet_migrate.py:407</code> <code>_new_ledger_path</code> is a
+  <em>different</em> ledger — a fleet-migration journal under the crew home,
+  never a project ledger — so it is not in scope. Every project-ledger writer
+  above reaches a commit path; the untracking's hazard is the reverse, that
+  <em>four</em> commit paths will each be staging a path git no longer tracks,
+  and <code>git add</code> on an ignored path fails the landing.</p>
+
+  <h3 id="ledger-leaves-git-map-s20-writable-readers">The readers, and which already use a store</h3>
+
+  <p>Two SQLite stores already exist under the crew home and are rebuilt from
+  the committed files: <code>run_store.db</code>
+  (<code>reckon/run_store.py:182</code>, <code>_config_home()/crew/run_store.db</code>,
+  a durable run row plus five indexed query keys) and the open-run projection
+  (<code>reckon/crew/open_run_index.py:142</code>,
+  <code>&lt;index dir&gt;/open-run-index/&lt;key&gt; /&lt;key&gt;.sqlite</code>).
+  <strong>Twelve rows below already reach one of them</strong>, four of those
+  reading a store and nothing else; the rest open the committed file directly
+  and are the cutover population.</p>
+
+  <table id="ledger-leaves-git-map-s20-writable-reader-table">
+    <caption><em>store</em> = reads a crew-home SQLite; <em>file</em> = opens the
+    committed path — the route that breaks when the file is untracked.</caption>
+    <thead><tr><th>module</th><th>function</th><th></th><th>via</th><th>reads</th></tr></thead>
+    <tbody>
+      <tr><td><code>reckon/ledger.py</code></td><td><code>load</code></td><td>:2222</td><td>file → store</td><td>aggregate ∪ runs, via the pick-input ledger index</td></tr>
+      <tr><td><code>reckon/ledger.py</code></td><td><code>load_aggregate</code></td><td>:1030</td><td>file</td><td>the aggregate's own members, holds and rows</td></tr>
+      <tr><td><code>reckon/ledger.py</code></td><td><code>runs</code> / <code>read_records</code></td><td>:3740 / :3770</td><td>file → store</td><td>selected completed runs in promotion order</td></tr>
+      <tr><td><code>reckon/ledger.py</code></td><td><code>run_ids</code></td><td>:1138</td><td>file → store</td><td>the run-id set, for index membership</td></tr>
+      <tr><td><code>reckon/crew/open_run_index.py</code></td><td><code>_ensure</code> / <code>record_written</code></td><td>:291 / :196</td><td>both</td><td>builds its own SQLite <em>from</em> the committed files</td></tr>
+      <tr><td><code>reckon/crew/picker/lane_context.py</code></td><td><code>refresh_run_time_profile</code></td><td>:818, :1058, :1060</td><td>file</td><td>the roster and the run corpus</td></tr>
+      <tr><td><code>reckon/capabilities.py</code></td><td><code>derive_run_figures</code> / <code>routing_surface</code></td><td>:805, :1122, :1512</td><td>file</td><td>the whole run corpus, for capability verdicts</td></tr>
+      <tr><td><code>reckon/budget.py</code></td><td><code>collect</code></td><td>:702</td><td>file</td><td>run rows for budget history</td></tr>
+      <tr><td><code>reckon/budget.py</code></td><td><code>as_dict</code></td><td>:544, :580</td><td><strong>store</strong></td><td><code>run_store.RunStore</code></td></tr>
+      <tr><td><code>reckon/velocity.py</code></td><td><code>_read_ledger</code> / <code>_run_blobs</code></td><td>:754 / :731</td><td><strong>git object store</strong></td><td><code>git ls-tree &lt;head&gt; docs/state/&lt;project&gt;/runs</code> and the <em>blob</em> of <code>crew.json</code> at a revision</td></tr>
+      <tr><td><code>reckon/serve.py</code></td><td><code>_project_roster</code> / <code>_finished_crew_rows</code></td><td>:807 / :948</td><td>file → store</td><td>the SPA's crew feed and roster</td></tr>
+      <tr><td><code>reckon/mcp_views.py</code></td><td><code>probe_reading</code> / <code>render</code></td><td>:1672, :4870, :4886, :4917</td><td>file</td><td>run-file glob and the ledger path in an MCP payload</td></tr>
+      <tr><td><code>reckon/run_store.py</code></td><td><code>import_ledger</code> / <code>compare</code></td><td>:1097 / :1154</td><td>file</td><td>the import and the equality check — by definition the pre-cutover pair</td></tr>
+      <tr><td><code>reckon/crew/obligations.py</code></td><td><code>_held_worktree_rows.replace</code></td><td>:2723, :2724, :2990, :3188</td><td>file → store</td><td>held worktrees and the roster</td></tr>
+      <tr><td><code>reckon/crew/routing.py</code></td><td><code>_ledgered_records</code> / <code>reap_idle_session_members</code></td><td>:971, :3373, :3379</td><td>file → store</td><td>run rows for routing; the reap also writes</td></tr>
+      <tr><td><code>reckon/crew/review.py</code></td><td><code>unresolved_reviewed_revision</code> / <code>_stages</code></td><td>:623, :2430, :3721</td><td>file</td><td>a reviewed run's own record</td></tr>
+      <tr><td><code>reckon/crew/review_records.py</code></td><td><code>_tick_store</code> / <code>rank</code></td><td>:81, :2628, :2631</td><td><strong>store</strong></td><td><code>open_run_index</code> review paths</td></tr>
+      <tr><td><code>reckon/crew/recovery_watch.py</code></td><td><code>mutate</code> (<code>_wait_refusal_classes</code>)</td><td>:866, :880, :1305, :2025, :2623</td><td>file</td><td>whether a run's <code>runs/&lt;id&gt;.json</code> exists</td></tr>
+      <tr><td><code>reckon/crew/recovery_classification.py</code></td><td><code>_wait_refusal_classes</code></td><td>:1102</td><td>file</td><td>a run file's presence</td></tr>
+      <tr><td><code>reckon/crew/admission/readiness.py</code></td><td><code>readiness_pass</code> / <code>identifies</code></td><td>:524, :707</td><td>file</td><td>promoted rows and one run file's JSON</td></tr>
+      <tr><td><code>reckon/crew/admission/wait_refs.py</code></td><td><code>section_wait_refs</code> / <code>section_key</code></td><td>:69, :355</td><td>file</td><td>a run file's existence</td></tr>
+      <tr><td><code>reckon/crew/dispatch_admission.py</code></td><td><code>_resolved_token_budget</code></td><td>:707</td><td>file</td><td>the run corpus for metering</td></tr>
+      <tr><td><code>reckon/crew/pending_landing.py</code></td><td><code>pointer_attempt</code></td><td>:226, :255</td><td>file</td><td>whether a run file has appeared</td></tr>
+      <tr><td><code>reckon/crew/promotion_requests.py</code></td><td><code>request_promotion</code></td><td>:397</td><td>file</td><td>a promoted run's landing state</td></tr>
+      <tr><td><code>reckon/crew/queue_landing.py</code></td><td><code>_ledger_row</code></td><td>:41</td><td>file</td><td>the row to land</td></tr>
+      <tr><td><code>reckon/crew/runs.py</code></td><td><code>resolve_run_path</code> / <code>record</code></td><td>:2266, :2651, :2924</td><td>file</td><td>the ledger's promoted rows</td></tr>
+      <tr><td><code>reckon/crew/promotion_scope.py</code></td><td><code>_write_shadow_patch</code></td><td>:2385, :2391, :2414</td><td>file + <strong>store</strong></td><td>the row, then <code>run_store.store_path</code></td></tr>
+      <tr><td><code>reckon/crew/gc.py</code></td><td><code>_sweep_worktree_trash</code> / <code>sweep_exec_identities</code></td><td>:620, :1289, :1977, :2000</td><td>file + <strong>store</strong></td><td>ledger paths for identity, <code>run_store</code> for retirement</td></tr>
+      <tr><td><code>reckon/crew/dispatch_claims.py</code></td><td><code>_recent_run_names</code></td><td>:1878</td><td><strong>store</strong></td><td>a direct <code>sqlite3</code> read of <code>crew_home()/run_store.db</code></td></tr>
+      <tr><td><code>reckon/crew/recovery_review_delivery.py</code></td><td><code>_review_store_record_paths</code></td><td>:301</td><td><strong>store</strong></td><td><code>run_store.runs_for_node</code></td></tr>
+      <tr><td><code>reckon/crew/dispatch_identities</code> — <code>hooks/*</code></td><td><code>crew_managed_projects</code></td><td>native :92, message :94</td><td>file</td><td>a <strong>presence</strong> check the untracking deletes</td></tr>
+      <tr><td><code>reckon/cli_entry.py</code></td><td><code>crew_host_link_state</code></td><td>:376</td><td>file</td><td>the same presence check</td></tr>
+      <tr><td><code>reckon/crew/dispatching/comparisons.py</code></td><td><code>shadow_source</code></td><td>:52</td><td>file</td><td>a directory naming one of its own</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Excluded on inspection, quoted so the exclusion is checkable.</strong>
+  <code>reckon/mcp.py:2826</code> and <code>reckon/hooks/native_agent_guard.py:80</code>
+  are docstrings; <code>reckon/crew/recovery_review_acceptance.py:758</code> and
+  <code>:970</code> write a result <em>key</em> named <code>ledger_path</code>,
+  not a path helper; <code>reckon/crew/fleet_migrate.py:407</code> is the
+  fleet-migration journal described above.</p>
+
+  <h3 id="ledger-leaves-git-map-s20-writable-outside">Outside <code>reckon/</code></h3>
+
+  <p><strong>The revision-scoped readers are the ones an untrack loses silently.
+  </strong> Two committed scripts read the ledger as <em>git objects</em>, not as
+  files: <code>reckon/velocity.py:731</code> lists blobs under
+  <code>docs/state/&lt;project&gt;/runs</code> at a head, and
+  <code>:754</code> reads <code>crew.json</code>'s blob at that head —
+  <code>docs/figures/plan-review-cycles/measure_review_cycles.py:333</code>
+  constructs the same path. Those follow the history argument in §1 and §4:
+  <strong>they keep working only while the ledger travels with a clone.</strong>
+  <code>velocity.py:1289</code> reads the same path from a patch. Neither fails
+  loudly when the path vanishes: <code>_read_ledger</code> maps an absent blob to
+  an empty ledger, so velocity would report zero runs and no error.</p>
+
+  <p>Scripts: <code>scripts/derive_run_figures.py:43, :49, :82</code> and
+  <code>scripts/backfill_run_durations.py:124, :130, :239</code> write run rows
+  through the same helpers.</p>
+
+  <p><strong>The test group: 212 files, 735 helper hits, 138
+  <code>crew.json</code> hits.</strong> The ones that assert the on-disk shape
+  rather than the answer are the blocks to move:
+  <code>test_append_run_writes_one_run_file.py</code> and
+  <code>test_promotion_stages_its_one_run_file.py</code> (the commit),
+  <code>test_member_registration_commits.py</code> and
+  <code>test_state_write_commits_a_set_of_paths.py</code> (the two other commit
+  paths),
+  <code>test_a_promotion_never_creates_a_ledger.py</code>,
+  <code>test_a_fresh_read_takes_the_ledger_from_its_index.py</code>, and
+  <code>test_velocity_reads_a_revision_without_the_ledger.py</code> — the last of
+  which already names the case that is about to become universal.</p>
+
+  <h3 id="ledger-leaves-git-map-s20-writable-migration">The one-time migration</h3>
+
+  <p>Ordered so that <em>no promotion is ever left unable to record a run</em>.
+  The two populations are <strong>one aggregate of 81,079,470 bytes</strong> and
+  <strong>8,795 per-run files</strong> under <code>docs/state/reckon/</code> at
+  the base revision.</p>
+
+  <ol id="ledger-leaves-git-map-s20-writable-steps">
+    <li><strong>Make the store write load-bearing first.</strong> Today
+      <code>_index_append</code> (<code>ledger.py:3319</code>) returns a failure
+      on the payload and never raises, deliberately. That is correct while the
+      file is the authority and fatal the moment it is not. Invert it before
+      anything is untracked.</li>
+    <li><strong>Convert the aggregate into store tables.</strong>
+      <code>run_store.db</code> already holds runs with the five query keys;
+      members and holds do not yet have tables. <code>register_member</code> and
+      the reap write them through <code>ledger.write</code> with a version pair,
+      which a row-per-member table does not need.</li>
+    <li><strong>Import every row once, and prove it.</strong>
+      <code>run_store.import_ledger</code> is that verb and is idempotent on live
+      data. The check is <code>run_store.compare</code>: rows in file absent from
+      store, rows in store absent from file, rows present in both and
+      disagreeing — all three zero, per project.</li>
+    <li><strong>Untrack: <code>git rm --cached</code>, one <code>.gitignore</code>
+      entry each.</strong>
+      <code>git rm --cached</code> takes no glob, so one command per population:
+      <code>git rm --cached 'docs/state/*/crew.json'</code> and
+      <code>git rm --cached 'docs/state/*/runs/*.json'</code>. Two
+      <code>.gitignore</code> entries follow,
+      <code>docs/state/*/crew.json</code> and <code>docs/state/*/runs/</code>.
+      History stays in git: a removed path is still in every earlier commit,
+      which is the property the lead accepted with the export scope. Nothing is
+      rewritten.</li>
+    <li><strong>The export lives outside the repository.</strong> The committed
+      file becomes a periodic narrow export under the crew config home, so a
+      reader with no shared home is served by it rather than by a clone.</li>
+  </ol>
+
+  <p><strong>What untracking silently breaks, and why each needs a section.</strong>
+  The presence checks at <code>native_agent_guard.py:92</code>,
+  <code>worker_message_guard.py:94</code> and <code>cli_entry.py:376</code>
+  decide a repository is crew-managed by <code>crew.json</code> existing. The
+  first two are the guards that stop a native agent writing into a managed
+  tree — <strong>they fail open, so untracking them silently turns both off in
+  every tree.</strong> Velocity's reads fail as zero, not as an error. The four
+  commit paths above start failing on <code>git add</code> of an ignored
+  <code>path</code>. Each is stated as its own section below rather than
+  discovered by a promotion.</p>
+
+  <h3 id="ledger-leaves-git-map-s20-writable-sections">The proposed split</h3>
+
+  <table id="ledger-leaves-git-map-s20-writable-section-table">
+    <caption>Write scopes are disjoint. The order is forced by the invariant, not
+    by preference: each section is safe alone and no earlier one leaves a
+    promotion unable to record a run.</caption>
+    <thead><tr><th>#</th><th>section</th><th>write scope</th><th>done when</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><strong>The store write is load-bearing</strong></td>
+        <td><code>reckon/ledger.py</code> (<code>append_run</code>,
+        <code>_index_append</code>), <code>reckon/run_store.py</code></td>
+        <td>A promotion whose store write raises refuses, names the store and
+        the repair verb, and leaves no row in either store; a healthy promotion
+        writes both and <code>compare</code> returns 0/0/0. Both asserted by
+        injection.</td></tr>
+      <tr><td>2</td><td><strong>Every ledger question is answered by the store</strong></td>
+        <td><code>reckon/ledger.py</code> (<code>load</code>,
+        <code>load_aggregate</code>, <code>runs</code>, <code>read_records</code>),
+        <code>reckon/crew/open_run_index.py</code></td>
+        <td>Every existing reader test passes against a project whose
+        <code>runs/</code> directory is absent and whose store holds the rows;
+        a store deleted and rebuilt returns an equal answer set.</td></tr>
+      <tr><td>3</td><td><strong>Members and holds become store tables</strong></td>
+        <td><code>reckon/ledger.py</code> (<code>register_member</code>,
+        <code>write</code>, <code>members</code>), <code>reckon/crew/routing.py</code>,
+        <code>reckon/crew/promotion_records.py</code></td>
+        <td>A roster registration and a reap land with no committed path; the
+        roster and version read after <code>crew.json</code> is removed equal
+        the ones read before it, asserted as values.</td></tr>
+      <tr><td>4</td><td><strong>Revision-scoped history reads restate against the
+        store and the export</strong></td>
+        <td><code>reckon/velocity.py</code>,
+        <code>docs/figures/plan-review-cycles/measure_review_cycles.py</code>,
+        <code>scripts/</code></td>
+        <td>Velocity's figures at a revision equal the store's answer over the
+        same runs, and a store rebuilt from the export equals it.</td></tr>
+      <tr><td>5</td><td><strong>Presence checks stop keying on a tracked file</strong></td>
+        <td><code>reckon/hooks/native_agent_guard.py</code>,
+        <code>reckon/hooks/worker_message_guard.py</code>,
+        <code>reckon/cli_entry.py</code>,
+        <code>reckon/crew/dispatching/comparisons.py</code></td>
+        <td>A repository with no tracked <code>crew.json</code> and no
+        <code>flight.yaml</code> is still refused by both guards, and a crew
+        project with no tracked ledger is still recognised. Asserted by removing both
+        files and requiring the refusal.</td></tr>
+      <tr><td>6</td><td><strong>The untracking migration</strong></td>
+        <td><code>.gitignore</code>, <code>docs/state/**</code> (removal from the
+        index only), <code>scripts/import_runs_into_store.py</code></td>
+        <td><code>git ls-files docs/state/*/crew.json docs/state/*/runs</code>
+        returns nothing; the row count and the canonical JSON of every row match
+        before and after, for every mounted project; a promotion lands while the
+        paths are untracked.</td></tr>
+      <tr><td>7</td><td><strong>The export leaves git</strong></td>
+        <td>a new <code>reckon/crew/export_ledger.py</code> and its scheduling
+        point where the release sweep already runs</td>
+        <td>The export reconstructs the untracked <code>crew.json</code>
+        byte-equal in content to the one the migration removed, and the
+        uncommitted run store built from it answers a capability derivation
+        equal to the pre-untrack answer.</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Sections 1–3 are prerequisites, not ordering preferences.</strong>
+  Untracking before 1 makes a store failure the silent loss of the only record.
+  Untracking before 2 leaves every file reader with nothing to read. Untracking
+  before 3 leaves the roster and holds — the small mutable halves §2 separates —
+  with no home on the first dispatch that writes one. Section 4 must land before 6
+  because velocity reads at a revision and would report zero rather than refuse;
+  section 5 likewise, because both guards fail open.</p>
+
+  <p><strong>What this map does not decide.</strong>
+  <code>detail-horizon</code> stays open and blocks nothing here — rotation is
+  §5's gate and touches no path this untracking moves. The <em>location</em> of
+  the store is settled by the earlier measurement rather than re-opened: GPFS
+  under hosts reached from both login nodes, integrity ok in every configuration,
+  and the default staying shared so one host's promotion is visible to another's
+  reader. Nothing in this map writes a figure; the done-when names only this
+  fragment, and the two relationships it describes — which writers commit, and
+  which readers still open a file — are tables.</p>
+</section>

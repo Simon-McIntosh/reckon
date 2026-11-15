@@ -1,0 +1,147 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    "The _publish roundtrip assertion fails if persistence changes or drops its timestamp; it establishes fixture integrity rather than proving notice behavior.",
+    "The fixture-row assertion is a positive control: it fails if the real StationSubscriber.wake loop cannot deliver the known row.",
+    "Literal [producer-lost, producer-restored] and [0, 2*SAMPLE] assertions fail if polling or either transition is removed, delivery is delayed, or extra notices escape suppression; the recorded mutation fails the sequence assertion in all three modes.",
+    "Project, session, age and bound assertions fail if notice fields are missing or miscomputed; remedy equality verifies wiring to the established owner, while line membership fails if the project, age or remedy is omitted from the sentence.",
+    "The recovery project/zero-age/sentence checks fail if restoration reports stale data or drops project identity.",
+    "The continuing-loss [0, BOUND] assertion fails if throttling is removed or the repeat deadline is changed.",
+    "Fresh and exact-bound snapshots must leave only the literal fixture row: >= instead of > or unconditional loss emission fails this assertion.",
+    "CLI exit/stdout/stderr checks fail if new event kinds are refused, their sentences are dropped, or output goes to stderr; comparing supplied event text to captured stdout is a real renderer boundary check, not evidence that the producer generated that event.",
+    "The quiet-station reader assertion verifies its fresh heartbeat; the following fixture-row-only assertion fails if publication age is taken from the old payload instead.",
+    "The missing-publication fixture-row-only assertion fails if an absent timestamp invents loss or recovery.",
+    "The stale-export assertion confirms its setup; the literal loss/restoration sequence fails when the fresh session-snapshot fallback is removed.",
+    "The exhaustion empty-list assertion fails on unexpected output; reinstating unconditional subscriber continuation spins and fails the two-second timeout."
+  ],
+  "assertion_independence": "No vacuous assertion found; persistence and renderer input-to-output checks have concrete failure modes, and literal event sequences and independent clock times protect the actual regression.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:_follow_watch_lines._tick",
+    "reckon/crew_follow_commands.py:_follow_watch_lines._subscriber_pass",
+    "reckon/crew_follow_commands.py:crew_follow",
+    "reckon/crew/session_host.py:_spawn"
+  ],
+  "completed_at": "2026-11-15T09:53:33Z",
+  "dispatched_at": "2026-11-15T09:39:34Z",
+  "findings": [],
+  "importer_added_failure_ids": [],
+  "importer_evidence": {
+    "base": {
+      "exit": "EXIT=1",
+      "failure_ids": [
+        "tests/test_a_pane_settles_when_no_work_is_live.py::test_the_host_retires_a_settled_child_and_stays_alive",
+        "tests/test_a_pane_settles_when_no_work_is_live.py::test_a_later_request_starts_one_new_child",
+        "tests/test_a_pane_settles_when_no_work_is_live.py::test_a_new_host_restarts_a_child_that_exits_without_settling",
+        "tests/test_a_watcher_carries_no_session_identity.py::test_the_supervisor_sheds_identity_before_it_starts_the_producer",
+        "tests/test_a_watcher_carries_no_session_identity.py::test_a_review_dispatched_inside_a_producer_records_no_session",
+        "tests/test_crew_record_liveness.py::test_no_module_decides_record_liveness_with_a_bare_pid",
+        "tests/test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion",
+        "tests/test_follow_counts_its_session.py::test_a_scoped_follower_counts_only_its_own_session",
+        "tests/test_follow_counts_its_session.py::test_an_unscoped_follower_over_the_same_fixture_is_unchanged",
+        "tests/test_follow_counts_its_session.py::test_two_digit_counts_reach_the_line_as_separate_tokens",
+        "tests/test_follow_counts_its_session.py::test_the_scoped_figures_differ_from_the_unscoped_figures",
+        "tests/test_follow_sweep_cadence.py::test_pane_output_is_unchanged_by_the_sweep",
+        "tests/test_follow_sweep_is_session_scoped.py::test_a_session_sweep_composes_only_that_sessions_review",
+        "tests/test_follower_bounds_its_lifetime.py::test_a_refusal_names_every_unmet_follower_condition_and_the_one_command",
+        "tests/test_follower_bounds_its_lifetime.py::test_a_launch_that_carries_no_delivery_still_needs_the_producer",
+        "tests/test_follower_hands_off_to_host.py::test_a_follower_hands_off_to_a_waiting_host_and_exits",
+        "tests/test_follower_hands_off_to_host.py::test_the_lifetime_end_row_hands_over_without_a_re_arm_command",
+        "tests/test_follower_hands_off_to_host.py::test_dispatch_asks_a_waiting_host_for_a_foreignly_attached_session",
+        "tests/test_follower_hands_off_to_host.py::test_a_reloaded_follower_adopts_launched_workers_before_it_hands_off",
+        "tests/test_follower_hands_off_to_host.py::test_a_follower_no_census_lists_hands_off",
+        "tests/test_removed_flag_migration.py::test_the_delivery_path_itself_carries_no_state_filter",
+        "tests/test_the_pane_carries_counts_not_names.py::test_a_settle_with_outstanding_runs_prints_no_line_and_still_emits"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T145617274125-wave4-codex-anchored-a-seat-held-elsewhere-is-s23/baseline-imports.log",
+      "summary": "22 failed, 617 passed in 661.91s (0:11:01)"
+    },
+    "head": {
+      "exit": "EXIT=1",
+      "failure_ids": [
+        "tests/test_a_pane_settles_when_no_work_is_live.py::test_the_host_retires_a_settled_child_and_stays_alive",
+        "tests/test_a_pane_settles_when_no_work_is_live.py::test_a_later_request_starts_one_new_child",
+        "tests/test_a_pane_settles_when_no_work_is_live.py::test_a_new_host_restarts_a_child_that_exits_without_settling",
+        "tests/test_a_watcher_carries_no_session_identity.py::test_the_supervisor_sheds_identity_before_it_starts_the_producer",
+        "tests/test_a_watcher_carries_no_session_identity.py::test_a_review_dispatched_inside_a_producer_records_no_session",
+        "tests/test_crew_record_liveness.py::test_no_module_decides_record_liveness_with_a_bare_pid",
+        "tests/test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion",
+        "tests/test_follow_counts_its_session.py::test_a_scoped_follower_counts_only_its_own_session",
+        "tests/test_follow_counts_its_session.py::test_an_unscoped_follower_over_the_same_fixture_is_unchanged",
+        "tests/test_follow_counts_its_session.py::test_two_digit_counts_reach_the_line_as_separate_tokens",
+        "tests/test_follow_counts_its_session.py::test_the_scoped_figures_differ_from_the_unscoped_figures",
+        "tests/test_follow_sweep_is_session_scoped.py::test_a_session_sweep_composes_only_that_sessions_review",
+        "tests/test_follower_bounds_its_lifetime.py::test_a_refusal_names_every_unmet_follower_condition_and_the_one_command",
+        "tests/test_follower_bounds_its_lifetime.py::test_a_launch_that_carries_no_delivery_still_needs_the_producer",
+        "tests/test_follower_hands_off_to_host.py::test_a_follower_hands_off_to_a_waiting_host_and_exits",
+        "tests/test_follower_hands_off_to_host.py::test_the_lifetime_end_row_hands_over_without_a_re_arm_command",
+        "tests/test_follower_hands_off_to_host.py::test_dispatch_asks_a_waiting_host_for_a_foreignly_attached_session",
+        "tests/test_follower_hands_off_to_host.py::test_a_reloaded_follower_adopts_launched_workers_before_it_hands_off",
+        "tests/test_follower_hands_off_to_host.py::test_a_follower_no_census_lists_hands_off",
+        "tests/test_removed_flag_migration.py::test_the_delivery_path_itself_carries_no_state_filter"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T145617274125-wave4-codex-anchored-a-seat-held-elsewhere-is-s23/head-verified-imports.log",
+      "summary": "20 failed, 631 passed in 654.08s (0:10:54)"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read all five commits individually from ceef1121cb9246553771e77b9d820847a7ed4ba1 to 496584694a8718ec37374793bd921adc129e45a2; notification delivery, stale-export recovery, subscriber exhaustion and the evidence fragment all serve the declared goal.",
+    "done_when": "tests/test_a_producer_loss_reaches_the_pane.py:111 asserts the requested loss, suppression and restoration; negative-control.log records the poll-removal mutation failing all three delivery paths, and importer and Ruff receipts record zero added failures or findings.",
+    "goal": "Live plan s23 and dispatch-detail.json require proactive publication-loss and recovery delivery; reckon/crew/watch_unit.py:939 and reckon/crew_follow_commands.py:2028 implement those notices on the follower channel.",
+    "manifest": "The source manifest.md names five existing commits and completed gate receipts, confirmed by baseline-suite.log with 55 passed and head-verified-suite.log with 67 passed, both EXIT=0.",
+    "write_paths": "All four base-to-head changed paths are granted in source prompt.txt, including the evidence fragment as well as the two runtime modules and new test."
+  },
+  "justifications": {
+    "durability": "tests/test_a_producer_loss_reaches_the_pane.py:124 fails if polling or either transition disappears, :154 catches premature repeats, the stale-export case catches suppressed restoration, and the exhaustion case trips its timeout if the follower spins.",
+    "evidence": "tests/test_a_producer_loss_reaches_the_pane.py:111 asserts sequence and timing, while head-verified-suite.log records 67 passed, negative-control.log records three targeted failures, and importer and Ruff logs show zero added failures or findings.",
+    "fit": "reckon/crew/watch_unit.py:939 follows the dataclass and lazy-import style of its owner, and reckon/crew_follow_commands.py:3781 extends existing producer-notice rendering without forbidden source names.",
+    "goal_fidelity": "reckon/crew/watch_unit.py:954 implements bounded loss and single restoration events carrying project, age and remedy, and reckon/crew_follow_commands.py:3781 routes both event kinds to the established notification output.",
+    "reuse": "Searches for publication staleness and bounded producer notices found no existing loss/restoration state machine; reckon/crew/watch_unit.py:966 wraps obligation_snapshot.py:509/:870 and the existing remedy owner, while subscriber and output changes extend their current owners.",
+    "scope_discipline": "The four changed paths match source prompt.txt grants, including docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/wave4-codex-anchored-a-seat-held-elsewhere-is-s23.html, and the exhaustion correction repairs the subscriber loop changed by this node."
+  },
+  "limitations": "Reviewed receipts without rerunning suites or injecting a live pane notification; session_host.py:12 and :864 verify stdout forwarding. Existing importer failures are recorded only as outside-scope baseline evidence.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Live plan s23 and dispatch-detail.json require proactive publication-loss and recovery delivery; reckon/crew/watch_unit.py:939 and reckon/crew_follow_commands.py:2028 implement those notices on the follower channel.\nVERDICT done_when: tests/test_a_producer_loss_reaches_the_pane.py:111 asserts the requested loss, suppression and restoration; negative-control.log records the poll-removal mutation failing all three delivery paths, and importer and Ruff receipts record zero added failures or findings.\nVERDICT write_paths: All four base-to-head changed paths are granted in source prompt.txt, including the evidence fragment as well as the two runtime modules and new test.\nVERDICT manifest: The source manifest.md names five existing commits and completed gate receipts, confirmed by baseline-suite.log with 55 passed and head-verified-suite.log with 67 passed, both EXIT=0.\nVERDICT diff: Read all five commits individually from ceef1121cb9246553771e77b9d820847a7ed4ba1 to 496584694a8718ec37374793bd921adc129e45a2; notification delivery, stale-export recovery, subscriber exhaustion and the evidence fragment all serve the declared goal.\nCALL_SITES: reckon/crew_follow_commands.py:_follow_watch_lines._tick, reckon/crew_follow_commands.py:_follow_watch_lines._subscriber_pass, reckon/crew_follow_commands.py:crew_follow, reckon/crew/session_host.py:_spawn\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/watch_unit.py:954 implements bounded loss and single restoration events carrying project, age and remedy, and reckon/crew_follow_commands.py:3781 routes both event kinds to the established notification output.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_a_producer_loss_reaches_the_pane.py:111 asserts sequence and timing, while head-verified-suite.log records 67 passed, negative-control.log records three targeted failures, and importer and Ruff logs show zero added failures or findings.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The four changed paths match source prompt.txt grants, including docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/wave4-codex-anchored-a-seat-held-elsewhere-is-s23.html, and the exhaustion correction repairs the subscriber loop changed by this node.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_producer_loss_reaches_the_pane.py:124 fails if polling or either transition disappears, :154 catches premature repeats, the stale-export case catches suppressed restoration, and the exhaustion case trips its timeout if the follower spins.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/watch_unit.py:939 follows the dataclass and lazy-import style of its owner, and reckon/crew_follow_commands.py:3781 extends existing producer-notice rendering without forbidden source names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Searches for publication staleness and bounded producer notices found no existing loss/restoration state machine; reckon/crew/watch_unit.py:966 wraps obligation_snapshot.py:509/:870 and the existing remedy owner, while subscriber and output changes extend their current owners.\n",
+  "reuse_search": "Searched publication age, stale snapshots, producer-lost/restored, reported_at and repeat state in reckon/crew and crew_follow_commands.py; opened obligation_snapshot.read_station_answer/snapshot_age_seconds, watch_unit._producer_snapshot_stale, StationSubscriber.wake and the coordinator_obligations fallback. Lease staleness is a different capability. The new notice state machine reuses timestamp/station readers, remedy and output owners. Test-only Clock/isolated/_publish/_stub_subscriber/_drive own scenario fixtures; the subscriber stub delegates the existing wake loop.",
+  "review_run_id": "r-20261115T093621175230-review-of-wave4-codex-anchored-a-seat-held-elsewhere-is-s23-496584694a87",
+  "reviewed_base_sha": "ceef1121cb9246553771e77b9d820847a7ed4ba1",
+  "reviewed_head_sha": "496584694a8718ec37374793bd921adc129e45a2",
+  "reviewed_run_id": "r-20261114T145617274125-wave4-codex-anchored-a-seat-held-elsewhere-is-s23",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T145617274125-wave4-codex-anchored-a-seat-held-elsewhere-is-s23/head-verified-suite.log",
+      "revision": "496584694a8718ec37374793bd921adc129e45a2",
+      "summary": "67 passed in 24.22s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T145617274125-wave4-codex-anchored-a-seat-held-elsewhere-is-s23/baseline-suite.log",
+      "revision": "ceef1121cb9246553771e77b9d820847a7ed4ba1",
+      "summary": "55 passed in 25.99s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T09:55:00.320902+00:00",
+  "total": 120
+}

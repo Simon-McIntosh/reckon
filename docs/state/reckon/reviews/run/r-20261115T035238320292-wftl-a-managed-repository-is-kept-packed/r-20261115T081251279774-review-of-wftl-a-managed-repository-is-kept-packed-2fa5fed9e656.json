@@ -1,0 +1,51 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T08:54:40.965Z",
+  "dispatched_at": "2026-11-15T08:14:52Z",
+  "findings": [
+    {
+      "file": "reckon/crew/repository_maintenance.py",
+      "line": 396,
+      "severity": "non-blocking",
+      "summary": "submit_pass re-implements the batch submission the repository already owns: reckon/crew/fleet_node.py:289 runs sbatch --parsable with the script on stdin, returns the job id and raises on refusal, and reckon/crew/landing_measure.py:755 partition_submission declares itself the one batch submission form every partitioned measure uses, built there and nowhere else. The new helper duplicates that capability behind an added --partition argv seam instead of extending either owner."
+    },
+    {
+      "file": "tests/test_a_scheduled_maintenance_pass_keeps_a_repository_packed.py",
+      "line": 131,
+      "severity": "non-blocking",
+      "summary": "assert stored['threshold'] == threshold compares the record against a second call to the same function (maintenance.automatic_threshold at line 109) rather than the fixture's independently declared THRESHOLD=100, so it stays green whatever that function returns, including the 6700 fallback."
+    },
+    {
+      "file": "reckon/crew/station.py",
+      "line": 1262,
+      "severity": "non-blocking",
+      "summary": "The production wiring that constructs MaintenanceSweep is uncovered: the three schedule tests inject their own sweep and the slow-station driver patches MaintenanceSweep.run to a no-op, so deleting the construction here would leave the suite green while the schedule silently stopped."
+    },
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/wftl-a-managed-repository-is-kept-packed.html",
+      "line": 94,
+      "severity": "non-blocking",
+      "summary": "The node embeds a figure (docs/figures/work-flows-to-the-lane/wftl-a-managed-repository-is-kept-packed/maintenance-counts.svg) that its done-when does not name; the dispatch contract permits no figure beyond the landing fragment unless the done-when names that artifact. A separate figure review record already carries two non-blocking findings on the same file."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a managed repository kept packed on a schedule; reckon/crew/repository_maintenance.py:1 adds the pass, the record, the submission and the station sweep, and tests/test_a_scheduled_maintenance_pass_keeps_a_repository_packed.py exercises the pass over a temporary repository.\nVERDICT done_when: each done-when clause is asserted, namely the loose count under threshold, the unreachable object in a cruft pack, the recorded before/after counts, the crew-view figure and the removed gc.log at tests/test_a_scheduled_maintenance_pass_keeps_a_repository_packed.py:118, and the day-old selection plus the submitted compute partition at tests/test_the_schedule_needs_no_hand_command.py:128 and tests/test_the_schedule_needs_no_hand_command.py:147, with the base arm at 6 failed EXIT=1 against the head arm's 6 passed EXIT=0.\nVERDICT write_paths: the granted paths are reckon, tests, the plan's evidence-fragment directory and this node's figure directory; all nine changed paths lie inside them.\nVERDICT manifest: read; status complete, six commits, both suite arms recorded with revision, command, exit status and failure ids, and live job 1316871 named with its record path.\nVERDICT diff: read commit by commit from 108d56a4741cacc2b1e889e01f38d3a09cc28380 to 2fa5fed9e6563fb7b251e0bd77d1021961082d4d; six commits, nine files, 1156 insertions and 4 deletions, every path inside the grant.\nCALL_SITES: reckon/crew/station.py:1182, reckon/crew/station.py:1262, reckon/crew_run_commands.py:2325, reckon/fleet_index.py:248, reckon/serve.py:994, reckon/mcp_views.py:4467\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/repository_maintenance.py:245 packs reachable and unreachable objects with git repack -a --cruft -d, and reckon/crew/station.py:1182 submits the pass from the station tick.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_a_scheduled_maintenance_pass_keeps_a_repository_packed.py:122 asserts the record against counts read independently from the repository before and after, and the base arm at 108d56a records 6 failed with EXIT=1 in base-arm.log.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every path in the diff is inside the granted write paths, but the figure embedded at docs/evidence/fragments/work-flows-to-the-lane/wftl-a-managed-repository-is-kept-packed.html:94 is not named by the node's done-when.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_the_schedule_needs_no_hand_command.py:147 fails if the submitted partition stops being a compute partition, but tests/test_a_scheduled_maintenance_pass_keeps_a_repository_packed.py:131 compares the record's threshold with a second call to the same function, and no test covers the sweep's construction at reckon/crew/station.py:1262.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/repository_maintenance.py:41 follows the docstring-and-constant idiom of its neighbours in reckon/crew/ and introduces no plan or stage label.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/repository_maintenance.py:396 duplicates the sbatch submission that reckon/crew/fleet_node.py:289 owns and that reckon/crew/landing_measure.py:755 declares the single partitioned form.\nFINDING reckon/crew/repository_maintenance.py:396 non-blocking: submit_pass re-implements the batch submission the repository already owns: reckon/crew/fleet_node.py:289 runs sbatch --parsable with the script on stdin, returns the job id and raises on refusal, and reckon/crew/landing_measure.py:755 partition_submission declares itself the one batch submission form every partitioned measure uses, built there and nowhere else. The new helper duplicates that capability behind an added --partition argv seam instead of extending either owner.\nFINDING tests/test_a_scheduled_maintenance_pass_keeps_a_repository_packed.py:131 non-blocking: assert stored['threshold'] == threshold compares the record against a second call to the same function (maintenance.automatic_threshold at line 109) rather than the fixture's independently declared THRESHOLD=100, so it stays green whatever that function returns, including the 6700 fallback.\nFINDING reckon/crew/station.py:1262 non-blocking: The production wiring that constructs MaintenanceSweep is uncovered: the three schedule tests inject their own sweep and the slow-station driver patches MaintenanceSweep.run to a no-op, so deleting the construction here would leave the suite green while the schedule silently stopped.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/wftl-a-managed-repository-is-kept-packed.html:94 non-blocking: The node embeds a figure (docs/figures/work-flows-to-the-lane/wftl-a-managed-repository-is-kept-packed/maintenance-counts.svg) that its done-when does not name; the dispatch contract permits no figure beyond the landing fragment unless the done-when names that artifact. A separate figure review record already carries two non-blocking findings on the same file.",
+  "review_run_id": "r-20261115T081251279774-review-of-wftl-a-managed-repository-is-kept-packed-2fa5fed9e656",
+  "reviewed_base_sha": "108d56a4741cacc2b1e889e01f38d3a09cc28380",
+  "reviewed_head_sha": "2fa5fed9e6563fb7b251e0bd77d1021961082d4d",
+  "reviewed_run_id": "r-20261115T035238320292-wftl-a-managed-repository-is-kept-packed",
+  "rubric": "code",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T08:55:40.233835+00:00",
+  "total": 92
+}

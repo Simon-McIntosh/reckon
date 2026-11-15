@@ -10,7 +10,6 @@ import re
 import subprocess
 import sys
 import tempfile
-import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextlib import contextmanager
 from datetime import UTC
@@ -444,6 +443,34 @@ def _scope_worktree(record: Mapping[str, Any], tree: Path) -> Path:
     return Path(str(record.get("worktree") or tree))
 
 
+def _changed_artifacts_needing_acceptance(
+    changed_paths: Iterable[str],
+    *,
+    record: Mapping[str, Any],
+    tree: Path,
+) -> tuple[str, ...]:
+    """Return changed paths whose class a merge cannot reconcile.
+
+    A declared write path is a hint rather than a boundary, so a run that
+    delivers a source file beside the one it declared needs no acceptance: its
+    worktree is its own and the merge reconciles the edit. What still needs one
+    is the class git cannot merge — a plan document, generated state, a
+    cumulative evidence record, a figure topic directory, a dependency lock or a
+    binary receipt — because a second writer of one of those replaces the first
+    with nothing left over: no commit to rebase, no conflict to resolve.
+
+    The classes are read through the module that decides them for a claim and a
+    fence, so the three surfaces cannot disagree about which paths still fence.
+    """
+    from reckon.crew.runs import _shared_write_paths
+
+    repository = Path(str(record.get("repo") or tree))
+    shared = _shared_write_paths(str(record.get("project") or ""), repository)
+    return tuple(
+        str(path) for path in changed_paths if shared.exclusive_pattern(str(path))
+    )
+
+
 def _outside_declared_scope(
     changed_paths: Iterable[str],
     declared_paths: Iterable[str],
@@ -557,6 +584,9 @@ def _accepted_scope_exceptions(
     worktree it edits nothing, so its claim protects nothing until it launches.
     Every admission is written on the acceptance, and the peer's claim and
     pointer are left untouched.
+
+    ``outside`` is the set whose acceptance the landing cannot proceed without.
+    A companion source file needs no acceptance at all, so it never reaches here.
     """
     from reckon.crew.dispatch_claims import stopped_with_terminal_manifest
 
@@ -596,12 +626,6 @@ def _accepted_scope_exceptions(
         raise CrewError(
             f"run {run_id!r} changed paths outside its declared "
             f"write scope: {', '.join(unaccepted)}"
-        )
-    unchanged = sorted(normalized.keys() - outside_set)
-    if unchanged:
-        raise CrewError(
-            "accepted paths must name changed paths outside the declared write "
-            f"scope; these do not: {', '.join(unchanged)}"
         )
 
     shared_files = _shared_write_paths(str(record.get("project") or ""), repository)
@@ -1298,13 +1322,30 @@ def _shadow_stream_contamination(
 
 
 def _declared_manifest_commits(record: Mapping[str, Any]) -> list[str]:
-    """Commits a run's durable manifest declares, for landing-record detection."""
+    """Commits a run's durable manifest declares, for landing-record detection.
+
+    A commitless role writes what it did into the ``commits`` line as prose —
+    ``none — this node writes a review record outside the repository`` — and
+    the parsed field keeps that sentence where a citation list would be. Every
+    caller resolves what this reader returns against the run's repository, so
+    the sentence arrived as a citation naming no object: a read-only run was
+    refused as an unresolvable commit, and ``--no-commit`` did not reach that
+    check because it is about scope rather than about the ledger's commit list.
+    The declaration parser is the one authority on whether the field declares
+    an absence, and it is asked here, so one reader decides what the line says
+    for the landing record, the figure twin check and the boundary check alike.
+    A role that commits keeps the entry-by-entry reading, so a citation-shaped
+    value that names nothing is still returned and still refused by value.
+    """
     manifest_path = str(record.get("manifest_path") or "")
     if not manifest_path:
         return []
     try:
-        declared = parse_manifest(Path(manifest_path).read_text(encoding="utf-8"))
+        text = Path(manifest_path).read_text(encoding="utf-8")
+        declared = parse_manifest(text)
     except (OSError, KeyError, ValueError):
+        return []
+    if _commits_field_declares_absence(text, record):
         return []
     return [
         str(sha).strip() for sha in (declared.get("commits") or []) if str(sha).strip()
@@ -2087,19 +2128,6 @@ def _index_lock_retry_bound_seconds(attempts: int, retry_seconds: float) -> floa
     return max(0, attempts - 1) * retry_seconds
 
 
-def _index_lock_age_seconds(checkout: Path) -> float | None:
-    """How long the checkout's ``index.lock`` has existed, or None without one.
-
-    A writer creates the lock as it starts an index write and removes it when
-    it finishes, so the file's age is how long the lock has been held.
-    """
-    try:
-        lock = _git_dir(checkout) / "index.lock"
-        return max(0.0, time.time() - lock.stat().st_mtime)
-    except OSError:
-        return None
-
-
 def _index_lock_outlasted_bound_note(
     checkout: Path, *, attempts: int, retry_seconds: float
 ) -> str:
@@ -2115,7 +2143,7 @@ def _index_lock_outlasted_bound_note(
         return ""
     bound = _index_lock_retry_bound_seconds(attempts, retry_seconds)
     spacing = f"{attempts} attempts {retry_seconds:.2f}s apart"
-    age = _index_lock_age_seconds(checkout)
+    age = _index_lock_age_seconds(_git_dir(checkout) / "index.lock")
     if age is None:
         return (
             f" The checkout's index lock outlasted this landing's {bound:.1f}s "
@@ -3028,6 +3056,7 @@ def _revision_is_ancestor(checkout: Path, revision: str, target: str) -> bool:
 
 from reckon.crew.merge import (
     _git_dir,
+    _index_lock_age_seconds,
     _index_lock_held,
     _run_waiting_out_a_held_index_lock,
     clear_stale_landed_copies,

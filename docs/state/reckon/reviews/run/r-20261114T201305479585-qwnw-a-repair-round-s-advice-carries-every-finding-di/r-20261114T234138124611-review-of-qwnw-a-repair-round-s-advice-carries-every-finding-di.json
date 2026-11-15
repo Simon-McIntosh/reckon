@@ -1,0 +1,92 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery_repair_dispatch.py:_repair_resume_advice",
+    "reckon/crew/recovery_repair_dispatch.py:1548 (compose_repair_for_run call)"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "scope_discipline": {
+      "kind": "exempted",
+      "reason": "the coordinator widened this run's write scope with crew widen after launch, the documented write-fence workaround; the widen is recorded on the pointer, not the dispatch record",
+      "recorded_at": "2026-11-15T02:02:18.783892+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-14T20:46:03Z",
+  "findings": [
+    {
+      "file": "reckon/crew/repair.py",
+      "id": "ff2dc4fd597",
+      "line": "864",
+      "severity": "non-blocking",
+      "text": "non-blocking: the composed node's goal reads `repair {len(findings)} finding(s) ({ids})` where ids is built from `carried`, so a round carrying one blocking and two folded findings describes itself as repairing one finding while naming three, and a reader of the returned node cannot tell which count is meant."
+    },
+    {
+      "file": "reckon/crew/repair.py",
+      "id": "f9a10bd6e72",
+      "line": "340",
+      "severity": "non-blocking",
+      "text": "non-blocking: folded_findings enumerates review_findings(review) and passes that position to finding_disposition, but review_findings skips an entry that states no claim, so a claimless finding shifts every later index and the fold read is taken from the wrong entry; the same idiom pre-exists at repair.py:282 and this addition inherits it rather than introducing it."
+    },
+    {
+      "file": "gate.sh",
+      "id": "f26e0eca3a2",
+      "line": "40-41",
+      "severity": "non-blocking",
+      "text": "non-blocking: the `# module:` line written into each of the four gate logs is produced with the worktree as the working directory, so all four receipts name the worktree's repair.py rather than the scratch tree the arm ran in, and the base and head arms print the same path."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T201305479585-qwnw-a-repair-round-s-advice-carries-every-finding-di/manifest.md",
+      "id": "f1b86424659",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "non-blocking: after_suite cites revision 1b95373eed while after-suite.log's own header line names revision=9fefbd2f17e73a9a8bf9df5799bd4ba1e516e098, so the receipt and the arm disagree about the tree that was measured (they differ only by the later documentation commit)."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T201305479585-qwnw-a-repair-round-s-advice-carries-every-finding-di/manifest.md",
+      "id": "fc0819c5d15",
+      "line": "28",
+      "severity": "non-blocking",
+      "text": "non-blocking: the scope rubric asserts a widened grant covering reckon/ and tests/, and neither the dispatch record (write_paths: []), the FENCE \u2014 SCOPE block, the peer channel, nor the run directory holds any grant or accepted-path entry, so the node's code writes were outside its fence with nothing recording the widening."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against f042a0e9f437fbb35dfcc5d7c89f99222ad1fe9d; 4fe664f8bb adds the evidence fragment, e94fd330a6 adds folded_findings and the brief, done-when and returned-node changes in reckon/crew/repair.py and the folded parameter on compose_repair_brief, 1b95373eed adds the 165-line test module, and 9fefbd2f17 extends the fragment with the measure; three files, 334 insertions, no file outside the node's subject.",
+    "done_when": "the done_when asks for one blocking dimension finding plus two non-blocking findings folded into the node, with all three ids and texts read back and the base revision red; tests/test_repair_advice_carries_every_finding.py:100 does exactly that, the head gate records 58 passed at EXIT=0 and the base arm records 2 failed at EXIT=1 on the same module.",
+    "goal": "the source node's goal is \"a repair round's advice carries every finding disposed into the run\"; reckon/crew/repair.py:320 adds folded_findings and :823 composes the brief, the done-when ids and the returned node over blocking plus folded findings, so the folded finding's id and text reach the advice; the `goal` string the same function emits at repair.py:864 still counts the blocking findings only while listing every carried id.",
+    "manifest": "read; it reports the four gate logs with their commands and results, and its after_suite revision reads 1b95373eed while the arm's own log header names revision=9fefbd2f17e73a9a8bf9df5799bd4ba1e516e098.",
+    "write_paths": "the source node was fenced to docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-repair-round-s-advice-carries-every-finding-di.html and its figures directory (prompt.txt, \"FENCE \u2014 SCOPE\"), but the diff writes reckon/crew/repair.py and adds tests/test_repair_advice_carries_every_finding.py, and no grant, accepted-path or over-fence record exists in the run directory or its peer channel to corroborate the manifest's claim of a widened grant."
+  },
+  "justifications": {
+    "durability": "tests/test_repair_advice_carries_every_finding.py:129-131 fails if the folded findings are dropped from folded_findings, folded into the open list, or granted a write path, and each id is re-derived in the test at tests/test_repair_advice_carries_every_finding.py:52 rather than read back from the module.",
+    "evidence": "head-gate.log records 58 passed with EXIT=0 and negative-control-base.log records 2 failed with EXIT=1 on the drop itself, but gate.sh:40-41 resolves the `# module:` line against the worktree rather than the scratch tree, so the receipt's own module path does not name the code the arm measured.",
+    "fit": "folded_findings at reckon/crew/repair.py:320 follows the local-import and list-comprehension idiom of blocking_finding_dispositions at repair.py:270, but its dict key duplicates the unrelated folded_findings key at recovery_repair_dispatch.py:1417 and the new test file ends without a final newline.",
+    "goal_fidelity": "reckon/crew/repair.py:823 carries the folded findings into the brief, the done-when and the returned node, while the composed goal at repair.py:864 miscounts them.",
+    "reuse": "folded_findings builds on the disposition readers the repository already owns (findings.py:224 finding_disposition and findings.py:257 parse_finding_disposition) and no existing function selects findings by disposition kind and target \u2014 I searched reckon/crew for disposition readers and found _findings_of_kind (repair.py:219), undisposed_finding_indexes (findings.py:274) and blocking_finding_dispositions, and none answers this query.",
+    "scope_discipline": "the diff's code and test paths (reckon/crew/repair.py and tests/test_repair_advice_carries_every_finding.py) sit outside the two declared write paths in prompt.txt and no record in the run corroborates the widened grant manifest.md:28 asserts."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is \"a repair round's advice carries every finding disposed into the run\"; reckon/crew/repair.py:320 adds folded_findings and :823 composes the brief, the done-when ids and the returned node over blocking plus folded findings, so the folded finding's id and text reach the advice; the `goal` string the same function emits at repair.py:864 still counts the blocking findings only while listing every carried id.\nVERDICT done_when: the done_when asks for one blocking dimension finding plus two non-blocking findings folded into the node, with all three ids and texts read back and the base revision red; tests/test_repair_advice_carries_every_finding.py:100 does exactly that, the head gate records 58 passed at EXIT=0 and the base arm records 2 failed at EXIT=1 on the same module.\nVERDICT write_paths: the source node was fenced to docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-repair-round-s-advice-carries-every-finding-di.html and its figures directory (prompt.txt, \"FENCE \u2014 SCOPE\"), but the diff writes reckon/crew/repair.py and adds tests/test_repair_advice_carries_every_finding.py, and no grant, accepted-path or over-fence record exists in the run directory or its peer channel to corroborate the manifest's claim of a widened grant.\nVERDICT manifest: read; it reports the four gate logs with their commands and results, and its after_suite revision reads 1b95373eed while the arm's own log header names revision=9fefbd2f17e73a9a8bf9df5799bd4ba1e516e098.\nVERDICT diff: read commit by commit against f042a0e9f437fbb35dfcc5d7c89f99222ad1fe9d; 4fe664f8bb adds the evidence fragment, e94fd330a6 adds folded_findings and the brief, done-when and returned-node changes in reckon/crew/repair.py and the folded parameter on compose_repair_brief, 1b95373eed adds the 165-line test module, and 9fefbd2f17 extends the fragment with the measure; three files, 334 insertions, no file outside the node's subject.\nCALL_SITES: reckon/crew/recovery_repair_dispatch.py:_repair_resume_advice, reckon/crew/recovery_repair_dispatch.py:1548 (compose_repair_for_run call)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/repair.py:823 carries the folded findings into the brief, the done-when and the returned node, while the composed goal at repair.py:864 miscounts them.\nSCORE evidence: 16\nJUSTIFICATION evidence: head-gate.log records 58 passed with EXIT=0 and negative-control-base.log records 2 failed with EXIT=1 on the drop itself, but gate.sh:40-41 resolves the `# module:` line against the worktree rather than the scratch tree, so the receipt's own module path does not name the code the arm measured.\nSCORE scope_discipline: 8\nJUSTIFICATION scope_discipline: the diff's code and test paths (reckon/crew/repair.py and tests/test_repair_advice_carries_every_finding.py) sit outside the two declared write paths in prompt.txt and no record in the run corroborates the widened grant manifest.md:28 asserts.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_repair_advice_carries_every_finding.py:129-131 fails if the folded findings are dropped from folded_findings, folded into the open list, or granted a write path, and each id is re-derived in the test at tests/test_repair_advice_carries_every_finding.py:52 rather than read back from the module.\nSCORE fit: 16\nJUSTIFICATION fit: folded_findings at reckon/crew/repair.py:320 follows the local-import and list-comprehension idiom of blocking_finding_dispositions at repair.py:270, but its dict key duplicates the unrelated folded_findings key at recovery_repair_dispatch.py:1417 and the new test file ends without a final newline.\nSCORE reuse: 18\nJUSTIFICATION reuse: folded_findings builds on the disposition readers the repository already owns (findings.py:224 finding_disposition and findings.py:257 parse_finding_disposition) and no existing function selects findings by disposition kind and target \u2014 I searched reckon/crew for disposition readers and found _findings_of_kind (repair.py:219), undisposed_finding_indexes (findings.py:274) and blocking_finding_dispositions, and none answers this query.\nFINDING reckon/crew/repair.py:864 non-blocking: the composed node's goal reads `repair {len(findings)} finding(s) ({ids})` where ids is built from `carried`, so a round carrying one blocking and two folded findings describes itself as repairing one finding while naming three, and a reader of the returned node cannot tell which count is meant.\nFINDING reckon/crew/repair.py:340 non-blocking: folded_findings enumerates review_findings(review) and passes that position to finding_disposition, but review_findings skips an entry that states no claim, so a claimless finding shifts every later index and the fold read is taken from the wrong entry; the same idiom pre-exists at repair.py:282 and this addition inherits it rather than introducing it.\nFINDING gate.sh:40-41 non-blocking: the `# module:` line written into each of the four gate logs is produced with the worktree as the working directory, so all four receipts name the worktree's repair.py rather than the scratch tree the arm ran in, and the base and head arms print the same path.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T201305479585-qwnw-a-repair-round-s-advice-carries-every-finding-di/manifest.md:15 non-blocking: after_suite cites revision 1b95373eed while after-suite.log's own header line names revision=9fefbd2f17e73a9a8bf9df5799bd4ba1e516e098, so the receipt and the arm disagree about the tree that was measured (they differ only by the later documentation commit).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T201305479585-qwnw-a-repair-round-s-advice-carries-every-finding-di/manifest.md:28 non-blocking: the scope rubric asserts a widened grant covering reckon/ and tests/, and neither the dispatch record (write_paths: []), the FENCE \u2014 SCOPE block, the peer channel, nor the run directory holds any grant or accepted-path entry, so the node's code writes were outside its fence with nothing recording the widening.",
+  "review_run_id": "r-20261114T234138124611-review-of-qwnw-a-repair-round-s-advice-carries-every-finding-di",
+  "reviewed_base_sha": "f042a0e9f437fbb35dfcc5d7c89f99222ad1fe9d",
+  "reviewed_head_sha": "9fefbd2f17e73a9a8bf9df5799bd4ba1e516e098",
+  "reviewed_run_id": "r-20261114T201305479585-qwnw-a-repair-round-s-advice-carries-every-finding-di",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 8
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T01:14:52.469485+00:00",
+  "total": 93
+}

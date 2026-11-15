@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-crew-home-has-a-bound">
+  <meta name="plan-evidence-for" content="reckon:the-crew-home-has-a-bound">
+  <meta name="plan-verifies" content="reckon:the-crew-home-has-a-bound#s5">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="passed">
+  <title>The existing backlog is reclaimed | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="the-existing-backlog-is-reclaimed-landing" data-node="the-existing-backlog-is-reclaimed" data-reckon="landed" data-when="2026-11-15">
+  <h2>A project-scoped pass over the crew home, measured before and after</h2>
+
+  <p id="the-existing-backlog-is-reclaimed-what">Two <code>reckon crew gc --project reckon</code> passes ran as <code>all_debug</code> jobs, submitted with <code>env -u SLURM_JOB_ID -u SLURM_JOBID sbatch</code> and never on the fleet node: job 1316601 report-only (exit 0) and job 1316690 with <code>--apply</code> (exit 0). Every gc call names <code>--project reckon</code>, because without it gc walks every local ledger and its project-scoped attribution does not apply.</p>
+
+  <table id="the-existing-backlog-is-reclaimed-stores">
+    <caption>The four stores and the two populations, measured under <code>timeout</code> by the before job at 03:53:29Z and the after job at 04:50:06Z. Figures are the logs' own <code>du -sk</code> and count lines, whose block unit is 1 KiB however the column abbreviates it.</caption>
+    <thead><tr><th>measure</th><th>before</th><th>after</th><th>change</th></tr></thead>
+    <tbody>
+      <tr><td><code>~/.cache/reckon</code></td><td>10,791,915 KB</td><td>10,792,430 KB</td><td>+515 KB</td></tr>
+      <tr><td><code>~/.config/reckon/crew/runs</code></td><td>178,662,021 KiB (170.4 GiB)</td><td>156,914,187 KiB (149.6 GiB)</td><td>−21,747,834 KiB (−20.74 GiB)</td></tr>
+      <tr><td><code>reports</code></td><td>1,004,597 KB</td><td>1,006,616 KB</td><td>+2,019 KB</td></tr>
+      <tr><td><code>locks</code></td><td>4,096 KB</td><td>4,096 KB</td><td>0</td></tr>
+      <tr><td>run directories under the run store</td><td>5,037</td><td>2,627</td><td>−2,410</td></tr>
+      <tr><td>run-store entries, any type</td><td>5,077</td><td>2,667</td><td>−2,410</td></tr>
+      <tr><td>worktrees registered at the reckon checkout</td><td>67</td><td>63</td><td>−4</td></tr>
+    </tbody>
+  </table>
+
+  <p id="the-existing-backlog-is-reclaimed-what-it-removed">The apply pass removed 4,636 stale run locks (zero-byte ownership markers 30 to 60 days old), 3 report trees whose plan is done (260,984 bytes), and 5 worktrees. Outside the four stores the fence names it also removed 3 persisted memos totalling 5,002 bytes, all from a fifth store, <code>~/.config/reckon/cache/metadata-index</code>, and the report records that count as <code>persisted_memos_removed</code>. It removed <strong>no</strong> run directory and no ledger index: the report named <em>nothing</em> reclaimable in either family. The report-only listing, printed in full at the head of the apply log before its first removal line, names 4,633 locks, 3 report trees and 5 reclaimable worktrees beside totals of 4,633, 3 and 70, and names 0 reclaimable run directories beside a total of 216 withheld and 956 kept.</p>
+
+  <p id="the-existing-backlog-is-reclaimed-scope">The project scope held, and it is the reason the run store was not touched. Of the 956 unledgered run directories past retention (29.6 GB), every one is attributed <code>unknown</code>: their live pointer is gone and their manifest carries no <code>project</code> key, so no sweep can name their project, and each is reported <code>keep</code> with that reason and left on disk. The 216 ledgered run directories past retention are withheld for a missing review result (179) or a review still owed (37). No removal line names a run belonging to another project: the apply report's removed run directories number zero, and the overlap check reads <code>removed_run_directories_naming_another_project=0</code> and <code>removed_ledger_indexes_naming_another_project=0</code>.</p>
+
+  <p id="the-existing-backlog-is-reclaimed-rises">Two store figures rise rather than fall, and neither rise is a removal that failed. The pass removed 3 report trees totalling 260,984 bytes (255 KiB) while 18 files totalling 2,211,080 bytes (2,159 KiB) were written into the same store inside the window — two review snapshots of one plan alone account for 1.8 MB — which is 1,904 KiB of net writing against the 2,019 KiB the store measures. The 115 KiB between them is block accounting: <code>du</code> charges a 4 KiB granule per file and per directory across a store of 813 entries, so bytes written and bytes measured do not reconcile exactly, and no mtime separates a rewrite from a fresh write. The measurement behind the 18-file figure, its command and its window are recorded in <code>logs/backlog-reclaim/reports-window.log</code>.</p>
+
+  <p id="the-existing-backlog-is-reclaimed-cache">The cache store's +515 KiB is 0.005% of its 10.3 GiB and is <strong>not</strong> explained by anything the pass removed: the three memos it removed, 5,002 bytes in total, sit under <code>~/.config/reckon/cache/metadata-index</code>, which is a different store from the measured <code>~/.cache/reckon</code>. So that figure carries no information about the pass in either direction, and the removal counts are read from the report's own rows rather than inferred from a store-size difference.</p>
+
+  <p id="the-existing-backlog-is-reclaimed-guard">The keep-guard is shown rather than assumed. Before the pass a script wrote two lists into the run's log directory: <code>before.live</code>, holding all 124 live run pointers with their run id, project and worktree, and <code>before.worktrees</code>, holding all 67 registered worktrees with their dirt and their commit count ahead of <code>main</code>: 23 clean, 40 carrying uncommitted changes or commits not reachable from main, and 4 whose directory was registered but absent. The apply log prints the counts it compared — <code>live_run_pointers_at_start=124</code> and <code>risky_worktrees_at_start=44</code> — and then checks every removal line against those lists, printing <code>CHECK VERDICT: NO OVERLAP</code> with zero removed run ids holding a live pointer at the start and zero unexplained worktree overlaps.</p>
+
+  <p id="the-existing-backlog-is-reclaimed-declared">One removed worktree was on that list and is declared rather than counted as clean: <code>…/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/release-a-landed-heads-worktree</code> carried one untracked file, <code>tests/test_a_landed_head_releases_its_worktree.py</code>, while its head was an ancestor of <code>main</code> with 0 commits beyond it, so gc classified it <code>dirty-integrated</code> release residue and reclaimed it. The file is a superseded draft of a test that exists on <code>main</code>; the draft is preserved outside the tree at <code>logs/backlog-reclaim/preserved/</code> with its sha256 and a diff against the committed copy, recorded before the pass in <code>declared-untracked-residue.txt</code>. The 4 other removed trees were clean with 0 commits ahead of <code>main</code>.</p>
+
+  <p id="the-existing-backlog-is-reclaimed-reconcile">The drop reconciles with what the report named, inside the churn the log lists. Worktrees fell by 4, which is the 5 the report named less the 1 tree created during the pass (<code>…/8e41a6d3-…/review-of-qwnw-an-edit-op-accepts-the-input-forms-its-examples-2e06b36414be</code>, listed as <code>NEW</code>). Within the apply pass's own before and after snapshots the run store went 2,666 to 2,667: one run started, none was removed, matching the report's zero. Lock files numbered 4,636 rather than the 4,633 named, three having aged past the threshold in the interval, which is the pass reaching the same figure plus drift rather than a disagreement.</p>
+
+  <p id="the-existing-backlog-is-reclaimed-external">The 2,410 run directories and 21,747,834 KiB (20.74 GiB) that the run store lost across the window were <strong>not</strong> this pass's. Its own snapshots, taken either side of the <code>--apply</code> call, show no run directory removed, and its report named none reclaimable for <code>reckon</code>. The loss falls between the two jobs and coincides with the run-lifecycle sweep under <a href="/reckon/plans/crew-state-stays-bounded">crew-state-stays-bounded</a>. Two files record how far that sweep has got, and both were rewritten inside the interval: <code>~/.config/reckon/crew/retention-cursor.json</code> at 04:30:16Z, holding <code>{"after": "r-20260907T191107338286-n-sli-the-reasonless-failures-are-triaged"}</code>, and <code>~/.config/reckon/crew/cleanup-cursor.json</code> at 04:41:42Z. The first of those falls 11 minutes before the apply job's pre-apply snapshot and inside the interval in which the 2,410 directories left, and it is the only evidence of a moving sweep in that interval. That is an association, not a proven cause: a cursor advancing during the interval does not prove that sweep removed exactly those directories. The figures are recorded here because the node's fence asks for counts before and after, not as a reclamation this pass can claim.</p>
+
+  <p id="the-existing-backlog-is-reclaimed-external-evidence">The before-measure recorded a remover already at work. Its <code>du -sk</code> of the run store reported <code>rc=1</code>, and its two stderr lines name run directories that ceased to exist part-way through the walk: <code>r-20261115T024952708941-review-of-archive-pulse-schema-179e16f1bee2</code> and <code>r-20261115T034245513789-review-of-a-local-worker-compacts-and-continues-measured-bbfc8256932e-figure</code>, the second written at 03:42Z, eleven minutes before the measure. Nothing this node ran had removed a run directory at that point: its report-only pass was still running and removes nothing by design. So a second process was deleting from the same store while the before-state was taken. That is why the two readings are not two samples of one undisturbed population, and why the drop is attributed to that process rather than to this pass.</p>
+
+</article>
+</body>
+</html>

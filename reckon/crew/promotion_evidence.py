@@ -321,9 +321,23 @@ def _declared_repository_roots(
     deliverable. The node's declared write paths and a fresh manifest's changed
     paths are the two declarations a run makes, and a declaration outside the
     repository contributes no root here.
+
+    The node's definition reaches this reader in two shapes: a live pointer
+    carries it under ``node`` and a promoted ledger row carries the node id
+    there and the definition under ``node_definition``. Both are read, because
+    a release audits a row after the pointer is gone and the row's ``node`` is
+    the id alone. A reader that assumed the pointer's shape raised on every run
+    whose manifest still named changed paths, after the tree had been removed.
     """
+    node = record.get("node")
+    definition = node if isinstance(node, Mapping) else record.get("node_definition")
     declared = [
-        str(path) for path in ((record.get("node") or {}).get("write_paths") or ())
+        str(path)
+        for path in (
+            (definition.get("write_paths") or ())
+            if isinstance(definition, Mapping)
+            else ()
+        )
     ]
     manifest_present, fresh = _manifest_freshness(record)
     if manifest_present and fresh:

@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_basis": "the reviewed manifest records a base arm at bc378cd9a3ce (gate-base-arm.log: 53 passed, 2 errors, EXIT=1) and a head arm at b3ec33f2e4 (gate-head-arm.log: 58 passed, EXIT=0); both base-arm failures are test_staged_write_inventory.py setup errors in a git-archive extraction with no .git, attributed to scaffolding and passing at head, so the delta is 0 added failures and no added failure id is claimed.",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [],
+  "completed_at": "2026-11-15T08:41:35.559Z",
+  "dispatched_at": "2026-11-15T07:56:10Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the backfill is committed: every committed run row in all four repos carries orientation_input_tokens, and none of the uncommitted run files there (0 nova, 4 imas-codex, 65 imas-ambix, 0 imas-standard-names) carries an added figure line; their diffs are unrelated tool churn such as follow_on_paths moves",
+      "recorded_at": "2026-11-15T08:51:12.076670+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T202416024266-wftl-a-run-held-only-for-its-stream-figures-has-them/manifest.md",
+      "line": "24",
+      "severity": "blocking",
+      "text": "blockers reads 'none \u2014 the four ledgers were committed by each project's own promotion commits, so nothing is pending', which is false: git status --porcelain -- docs/state/<project>/ in all four checkouts (nova, imas-codex, imas-ambix, imas-standard-names) shows M docs/state/<project>/crew.json and the per-run files still uncommitted, and the same manifest's checkpoint and outside_scope lines say they remain for the coordinator. The done_when clause 'Each project's ledger commit names only ledger paths' therefore has no commit behind it, and a coordinator reading blockers concludes the data is durable when a reclaim of any working tree would lose the fill."
+    },
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/wftl-a-run-held-only-for-its-stream-figures-has-them.html",
+      "line": "29",
+      "severity": "non-blocking",
+      "text": "the fragment reports one fill run producing 1,298 + 1,081 + 326 + 4 rows with the filled count equal to the census's stream-present count exactly, but the graded gate-fill.log line for imas-standard-names records rows_filled 0 with census_accounted_for:false against census_stream_present 4; the four rows were filled by an earlier pass recorded separately in gate-fill-attempt.log. The total is right, the account of which run produced it is not, and a reader checking only the graded log would read the standard-names arm as a failure."
+    },
+    {
+      "file": "tests/test_a_held_runs_stream_figures_are_recorded.py",
+      "line": "234",
+      "severity": "non-blocking",
+      "text": "the new file ends without a final newline, so ruff check reports W292 on the line this node adds and ruff format --check says '1 file would be reformatted'; the project's binding rule is that a commit adds no findings, so this needs one 'ruff format --no-cache tests/test_a_held_runs_stream_figures_are_recorded.py' before it lands."
+    },
+    {
+      "file": "tests/test_a_held_runs_stream_figures_are_recorded.py",
+      "line": "148",
+      "severity": "non-blocking",
+      "text": "test_a_stream_on_disk_records_the_figures_the_derivation_reads re-asserts what tests/test_ledger.py:2974 already guards \u2014 one row filled, a missing stream recorded None rather than 0, and a second pass a no-op; its genuinely new contribution is the retention interaction at :181 and the independent EXPECTED_FIGURES anchor at :165, so the duplicated half could be folded into the existing test rather than carried as a second copy that can drift from it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none: the two landed files are a test module and a docs evidence fragment, neither of which production code imports; the production readers the test exercises (reckon/capabilities.py:628 derive_run_figures, reckon/crew/routing.py garbage_collect, scripts/derive_run_figures.py:27 backfill_run_figures) are unchanged by this node and were not reviewed as its change.",
+    "diff": "read both commits b3ec33f2e4 and 436018562f against the base bc378cd9a3ce: two new files, +309/-0, a 234-line test and a 75-line evidence fragment; no production code and no existing file changed.",
+    "done_when": "the done_when names tests/test_a_held_runs_stream_figures_are_recorded.py and the census/fill/resample/retention passes; the test reproduces here as 3 passed at head, gate-resample.log reports 20/20 with zero mismatches, and gate-retention.json carries 0 withheld for missing-derived-figure against 508 missing-review-result and 170 review-owed, but the clause 'Each project's ledger commit names only ledger paths' has no commit behind it.",
+    "goal": "the node's goal is that a run held only for its stream figures has them recorded; the four projects' ledger rows now carry tool_steps and orientation_input_tokens on disk (nova's crew.json row for r-20260826T133813903510-sse-combined-adapter-matrix reads tool_steps 17.0, matching gate-resample.log), but every one of those ledger edits is uncommitted.",
+    "manifest": "read; it records 58 passed EXIT=0 for the head arm at b3ec33f2e4 and its tests line names the literal gate command, but blockers: none claims the four ledgers were committed by each project's promotion commits, which all four working trees falsify.",
+    "write_paths": "the node declared reckon, tests, docs/evidence/fragments/work-flows-to-the-lane and skills; the diff touches only tests/test_a_held_runs_stream_figures_are_recorded.py and docs/evidence/fragments/work-flows-to-the-lane/wftl-a-run-held-only-for-its-stream-figures-has-them.html, both inside them, while the ledger writes it made live in four other checkouts outside the fence and are reported under outside_scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_held_runs_stream_figures_are_recorded.py:165 pins the two figures to the literal EXPECTED_FIGURES 1200.0/3.0 independent of the backfill, and gate-negative-control.log shows all three tests red (3 failed, EXIT=1) when the backfill's write is removed, so the assertions have teeth; what it cannot guard is the data fill itself, which lives outside the worktree.",
+    "evidence": "gate-census.log, gate-fill.log, gate-resample.log and gate-retention.json are on disk and the retention figures reconcile with the JSON I counted (678 withheld: 508 + 170, 2,612 offered to prune), but gate-fill.log's standard-names line reads rows_filled 0, census_accounted_for false, and the baseline '2,614' the fragment cites at :66 is inherited from an archive-pass record and appears in no gate log of this run.",
+    "fit": "the module docstring and tmp_path fixtures follow tests/test_ledger.py:2973's idiom for importing scripts/derive_run_figures, but the file adds a W292 finding and fails ruff format --check, contradicting the repository's no-new-findings rule.",
+    "goal_fidelity": "the four projects' ledger rows do carry the two figures on disk, but docs/evidence/fragments/work-flows-to-the-lane/wftl-a-run-held-only-for-its-stream-figures-has-them.html:68 states the ledger edits are uncommitted and the manifest's blockers line at :24 says they landed, so the recorded state is not the durable state the goal claims.",
+    "reuse": "the change adds no production definition and reuses reckon/capabilities.py:628 derive_run_figures and scripts/derive_run_figures.py:27 backfill_run_figures as their owner; a search over reckon/, tests/ and scripts/ found no second implementation of the fill, only the two existing tests (tests/test_ledger.py:2974, tests/test_the_ledger_writer_refuses_a_fold.py:317) that this test partly restates.",
+    "scope_discipline": "the diff is exactly two files and both are inside the declared write paths (tests/, docs/evidence/fragments/work-flows-to-the-lane/); the four ledger writes it also made sit outside the fence in other checkouts and are disclosed under the manifest's outside_scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a run held only for its stream figures has them recorded; the four projects' ledger rows now carry tool_steps and orientation_input_tokens on disk (nova's crew.json row for r-20260826T133813903510-sse-combined-adapter-matrix reads tool_steps 17.0, matching gate-resample.log), but every one of those ledger edits is uncommitted.\nVERDICT done_when: the done_when names tests/test_a_held_runs_stream_figures_are_recorded.py and the census/fill/resample/retention passes; the test reproduces here as 3 passed at head, gate-resample.log reports 20/20 with zero mismatches, and gate-retention.json carries 0 withheld for missing-derived-figure against 508 missing-review-result and 170 review-owed, but the clause 'Each project's ledger commit names only ledger paths' has no commit behind it.\nVERDICT write_paths: the node declared reckon, tests, docs/evidence/fragments/work-flows-to-the-lane and skills; the diff touches only tests/test_a_held_runs_stream_figures_are_recorded.py and docs/evidence/fragments/work-flows-to-the-lane/wftl-a-run-held-only-for-its-stream-figures-has-them.html, both inside them, while the ledger writes it made live in four other checkouts outside the fence and are reported under outside_scope.\nVERDICT manifest: read; it records 58 passed EXIT=0 for the head arm at b3ec33f2e4 and its tests line names the literal gate command, but blockers: none claims the four ledgers were committed by each project's promotion commits, which all four working trees falsify.\nVERDICT diff: read both commits b3ec33f2e4 and 436018562f against the base bc378cd9a3ce: two new files, +309/-0, a 234-line test and a 75-line evidence fragment; no production code and no existing file changed.\nCALL_SITES: none\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: the four projects' ledger rows do carry the two figures on disk, but docs/evidence/fragments/work-flows-to-the-lane/wftl-a-run-held-only-for-its-stream-figures-has-them.html:68 states the ledger edits are uncommitted and the manifest's blockers line at :24 says they landed, so the recorded state is not the durable state the goal claims.\nSCORE evidence: 12\nJUSTIFICATION evidence: gate-census.log, gate-fill.log, gate-resample.log and gate-retention.json are on disk and the retention figures reconcile with the JSON counted here (678 withheld: 508 + 170, 2,612 offered to prune), but gate-fill.log's standard-names line reads rows_filled 0, census_accounted_for false, and the baseline 2,614 the fragment cites at :66 is inherited from an archive-pass record and appears in no gate log of this run.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the diff is exactly two files and both are inside the declared write paths (tests/, docs/evidence/fragments/work-flows-to-the-lane/); the four ledger writes it also made sit outside the fence in other checkouts and are disclosed under the manifest's outside_scope.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_held_runs_stream_figures_are_recorded.py:165 pins the two figures to the literal EXPECTED_FIGURES 1200.0/3.0 independent of the backfill, and gate-negative-control.log shows all three tests red (3 failed, EXIT=1) when the backfill's write is removed, but no test can guard the data fill itself, which lives outside the worktree.\nSCORE fit: 13\nJUSTIFICATION fit: the module docstring and tmp_path fixtures follow tests/test_ledger.py:2973's idiom for importing scripts/derive_run_figures, but tests/test_a_held_runs_stream_figures_are_recorded.py:234 adds a W292 finding and fails ruff format --check, contradicting the repository's no-new-findings rule.\nSCORE reuse: 18\nJUSTIFICATION reuse: the change adds no production definition and reuses reckon/capabilities.py:628 derive_run_figures and scripts/derive_run_figures.py:27 backfill_run_figures as their owner; a search over reckon/, tests/ and scripts/ found no second implementation of the fill, only the two existing tests (tests/test_ledger.py:2974, tests/test_the_ledger_writer_refuses_a_fold.py:317) that this test partly restates.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T202416024266-wftl-a-run-held-only-for-its-stream-figures-has-them/manifest.md:24 blocking: blockers reads 'none - the four ledgers were committed by each project's own promotion commits', which all four working trees falsify (M docs/state/<project>/...), so the done_when's 'each project's ledger commit names only ledger paths' clause has no commit behind it and a coordinator reading blockers concludes the fill is durable when it is not.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/wftl-a-run-held-only-for-its-stream-figures-has-them.html:29 non-blocking: the fragment reports one fill run producing 1,298 + 1,081 + 326 + 4 rows with filled equal to census stream-present exactly, but gate-fill.log records imas-standard-names as rows_filled 0 with census_accounted_for false against census_stream_present 4, and the four rows were filled by a separate earlier pass in gate-fill-attempt.log.\nFINDING tests/test_a_held_runs_stream_figures_are_recorded.py:234 non-blocking: the new file ends without a final newline, adding a W292 finding and failing ruff format --check, against the project's binding rule that a commit adds no findings.\nFINDING tests/test_a_held_runs_stream_figures_are_recorded.py:148 non-blocking: the first test re-asserts what tests/test_ledger.py:2974 already guards (filled, absent-not-zero, idempotent); its new contribution is the retention interaction at :181 and the independent EXPECTED_FIGURES anchor at :165, so the duplicated half could be folded into the existing test.\n",
+  "review_run_id": "r-20261115T075145005929-review-of-wftl-a-run-held-only-for-its-stream-figures-has-them-436018562f2e",
+  "reviewed_base_sha": "bc378cd9a3ce117f6fbbfce91da70e120c1cd8b4",
+  "reviewed_head_sha": "436018562f2e7d1fdd5726c4bd9da4630a01b4de",
+  "reviewed_run_id": "r-20261114T202416024266-wftl-a-run-held-only-for-its-stream-figures-has-them",
+  "reviewer": "deepseek-v4.1-flash",
+  "reviewer_run_id": "r-20261115T075145005929-review-of-wftl-a-run-held-only-for-its-stream-figures-has-them-436018562f2e",
+  "scores": {
+    "durability": 14,
+    "evidence": 12,
+    "fit": 13,
+    "goal_fidelity": 14,
+    "reuse": 18,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T08:55:00Z",
+  "total": 88
+}

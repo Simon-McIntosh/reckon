@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s55">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="passed">
+  <title>A classify pass walks the process table once</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+
+<article class="r-note" id="a-classify-pass-walks-the-process-table-once-landing" data-node="a-classify-pass-walks-the-process-table-once" data-reckon="landed" data-when="2026-11-15">
+  <h2>One listing of the process table per classify pass</h2>
+
+  <p id="a-classify-pass-walks-the-process-table-once-what"><strong>What landed.</strong> <code>StationStore.classify_tick</code> now opens <code>process_signal.process_table_walk_once</code> around its whole pass, beside the review-store region it already opened. Inside that region the first read of the process table walks <code>/proc</code> once and every later read is answered from the same map, so a pass that classifies a fleet costs one listing however long it runs. Nothing else changed: the region's table is the table the first read of the pass would have walked, and the stop path never reads a region because a map up to one beat old must never select a process to signal.</p>
+
+  <p id="a-classify-pass-walks-the-process-table-once-cost"><strong>What a pass cost.</strong> A pointer whose recorded pids have both gone falls through the liveness read to the environment scan, which finds a reparented worker by the run mark its launcher wrote into it — and that scan is answered from a walk of the whole process table. The walk is shared for one second, which bounds a poller's pass and not a sweep's: a classify pass over a loaded node runs for minutes, so nearly every pointer's liveness read fell in a beat of its own and listed the table again. The live profile that motivated the section put 398 of 775 samples under that walk's frame.</p>
+
+  <p id="a-classify-pass-walks-the-process-table-once-gate"><strong>Gate.</strong> <code>tests/test_a_classify_pass_walks_the_process_table_once.py</code> builds a temporary crew home of 40 live pointers whose pointer pid and worker-record pid are both dead, so every one of them reaches the environment scan. The process table is a recording stand-in for <code>process_signal._walk_marked_processes</code>, and a beat clock steps past <code>BEAT_SECONDS</code> between reads, as a pass of minutes does. One further pointer's run mark is carried by a live child the test starts and stops itself, so the same table is observed to answer alive for the marked run and dead for an unmarked one before either count is believed. The case asserts one walk, that every verdict equals the base revision's verdict for the same pointer, and that the live carrier reads alive in both arms.</p>
+
+  <p id="a-classify-pass-walks-the-process-table-once-counts"><strong>The two counts.</strong> At the head revision the pass walks the table <strong>1</strong> time over 40 pointers. At the base revision (<code>b8abf8233c</code>) the same case walks it <strong>40</strong> times, which is the declared negative control: the recording stand-in counts one walk per pointer, so the fixture still reproduces the defect the region removes.</p>
+
+  <p id="a-classify-pass-walks-the-process-table-once-arms"><strong>Matched arms.</strong> Two arms ran on the <code>all_debug</code> partition, each in a scratch extraction of its own revision, and each log opens with its revision and literal command and ends in its own <code>EXIT=</code>. The base arm (<code>b8abf8233c</code>) runs <code>tests/test_staged_write_inventory.py</code> and <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>: <strong>53 passed, 2 errors</strong>. The after arm (<code>287b37eb72</code>) runs those two plus this node's case: <strong>54 passed, 2 errors</strong>. The extra pass is this node's case and the two errors are the same pair in both arms — the <code>staged_write_inventory</code> fixtures read the repository's own HEAD with <code>git ls-tree</code>, which a scratch extraction carries no metadata for — so the change adds no failure. No arm reports a <code>FAILED</code> id.</p>
+</article>
+
+</body>
+</html>

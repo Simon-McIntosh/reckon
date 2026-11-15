@@ -1,0 +1,135 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T02:10:24.228Z",
+  "dispatched_at": "2026-11-15T01:48:32Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/queued-work-needs-no-workaround.html:294",
+      "id": "wiring-1",
+      "reason": "\u00a718 has an undeclared wait, so a node dispatched under the followup's independence claim fails its first test for a reason outside its own scope and the plan declares no depends-on that would hold it.",
+      "text": "the driving followup says \u00a72\u2013\u00a716 and \u00a718 are independent and queues them in one batch, while \u00a718's first case requires a composed review whose dispatch at a placement bound is queued; at the base revision that dispatch is refused outright, as this plan's own \u00a717 Why states and as the-escape-lane-and-reviews-keep-pace \u00a75 declares in its own base-revision test",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/queued-work-needs-no-workaround.html:288",
+      "id": "done_when-1",
+      "reason": "a negative control that cannot be reached shows nothing, so either the setup must use a queueing path the head already has or the wait on the escape-lane section must be declared before a red arm can exist.",
+      "text": "\u00a718's only negative control says the first test fails at the base revision with the brief-unreadable failure, but at the base revision that test's setup cannot be built at all, because the placement-bound dispatch is refused rather than queued, so the stated red arm cannot be produced",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/queued-work-needs-no-workaround.html:280",
+      "id": "done_when-2",
+      "reason": "the control needs a stated load floor, or the load-independent 200-pointer temporary crew home used by the classifier arm, or the node can deliver a green gate that never shows the bound being violated.",
+      "text": "\u00a716's second negative control requires the same timing measure at the base revision to record dispatches over ten seconds, but the section's own Why ties the four-minute dispatch to a load of about 28\u201332 while the measure only records the load beside each wall time, so on a lightly loaded fleet the base arm can answer in under ten seconds and the control silently fails to fail",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "225745d106276ae07f4e25339d89adc7e78d3da6",
+  "plan_fingerprint": "829a6007a0d8ff9b1c5d372ed5246ae4683fb3a02a287b0802317beac85d8b5f",
+  "plan_slug": "queued-work-needs-no-workaround",
+  "plan_version": 14,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "f73582a9b44e654c27dd9d4f0eccc688ac42f35f",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "\u00a718's setup now dispatches on the local lane, where a placement-bound dispatch queues at the base revision; only a codex-routed dispatch refuses there",
+      "reason": "",
+      "when": "2026-11-15T02:17:57.827246+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "f73582a9b44e654c27dd9d4f0eccc688ac42f35f",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a718's first test is buildable at the base revision on the local lane, so its red arm is the brief-unreadable failure the control names",
+      "reason": "",
+      "when": "2026-11-15T02:18:17.763116+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "f73582a9b44e654c27dd9d4f0eccc688ac42f35f",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "\u00a716's base control now records classifier calls per dispatch, which equal the live pointer count at any load, instead of a wall time that can pass on a light node",
+      "reason": "",
+      "when": "2026-11-15T02:18:43.131022+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "f73582a9b44e654c27dd9d4f0eccc688ac42f35f",
+      "commit_basis": "edit",
+      "note": "\u00a718's first test is buildable at the base revision on the local lane, so its red arm is the brief-unreadable failure the control names",
+      "reason": "",
+      "when": "2026-11-15T02:18:17.763116+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "f73582a9b44e654c27dd9d4f0eccc688ac42f35f",
+      "commit_basis": "edit",
+      "note": "\u00a716's base control now records classifier calls per dispatch, which equal the live pointer count at any load, instead of a wall time that can pass on a light node",
+      "reason": "",
+      "when": "2026-11-15T02:18:43.131022+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "f73582a9b44e654c27dd9d4f0eccc688ac42f35f",
+      "commit_basis": "edit",
+      "note": "\u00a718's setup now dispatches on the local lane, where a placement-bound dispatch queues at the base revision; only a codex-routed dispatch refuses there",
+      "reason": "",
+      "when": "2026-11-15T02:17:57.827246+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/queued-work-needs-no-workaround/r-20261115T013927928534-plan-review-of-queued-work-needs-no-workaround.json",
+  "review_run_id": "r-20261115T013927928534-plan-review-of-queued-work-needs-no-workaround",
+  "reviewed_blob_sha": "5f91a326776fc60abed536ea88b6a0106286984d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 both run ids \u00a718 cites (r-20261114T203447268664, r-20261114T203628474513) resolve in the crew store (the admission verdict log admission-verdicts.jsonl and the promotion-request record), and the descope target the-escape-lane-and-reviews-keep-pace \u00a75 exists and itself states that it carries \u00a717.",
+    "done_when": "a finding \u2014 \u00a718's declared negative control cannot be produced at the base revision, and \u00a716's second negative control is conditional on a fleet load the section never fixes.",
+    "evidence_paths": "pass \u2014 \u00a716 and \u00a718 write their gate logs to docs/evidence/fragments/queued-work-needs-no-workaround/{s16,s18}.html, repository paths that survive the run.",
+    "naming": "pass \u2014 \u00a716 and \u00a718 name their mechanisms in prose and carry no stage label, ticket number or version tag into a symbol; the section-numbered evidence fragment filenames are artifact paths, not source names.",
+    "reasoning": "pass \u2014 \u00a716's stated cause (per-pointer classification, 277 of its 402 in-check samples in the review index view, reported fixed separately) matches its cited py-spy evidence, and \u00a718's cause (a brief path pointing into another run's directory) matches the cited failure text; neither section prescribes a code path, formula or function.",
+    "single_goal": "pass \u2014 each changed node names one endpoint: \u00a716 one dispatch-cost behaviour, \u00a718 one brief-lifecycle behaviour whose second case is the diagnostic for the first, both read by a single done-when.",
+    "wiring": "a finding \u2014 the driving followup at the followups element calls \u00a718 independent and queues it in the same batch, but \u00a718's first done-when case is reachable only once a placement-bound dispatch is queued rather than refused, which is \u00a717's behaviour, now descoped into the-escape-lane-and-reviews-keep-pace \u00a75, and \u00a718 declares no wait on it."
+  },
+  "section_digests": {
+    "_document": "38d5f6135d7cd90e9e7b58fafcc38105d3e78b306a6c82afbfe4b74f45c2c2d0",
+    "s1": "965e293bc718e24bc6e0b306c2e31f4694e8d3d1f2aafc97e86aac0ccdc0eb46",
+    "s10": "501d0d72406c2fda4dc47939b9700d2c42eb9011387b4df7abdfcc55d906d345",
+    "s11": "4dc7e37e7c9ff6d074c540a19ff75d7db784999f7b811a999a052a00fcbacb39",
+    "s12": "cf244a99091ee04721474e6caad0adad1fb1c907edc99e9fd73b86fb3251685c",
+    "s13": "8cdf1aaa77a692163d0b36bc751a206e8f6c96460d0e44b85d9feb5a76f99659",
+    "s14": "e033ab0daa427195a357d93c3b5969c3fae24f311a8dafa8b2a6bad8db0b518e",
+    "s15": "c271f7bcaa272ebd4bf87d7b1e7153251ec38aa5863fd8a3d7f12cdf1c66bd06",
+    "s16": "086e3a4f5aea6327808414d4a9092aa0987d8eaf580201f41ebc540fd07baa5d",
+    "s17": "dd6b738e7e017fe3bc312e85841a1a6a4b4d5dc818c618040249040acf51ff19",
+    "s18": "faace66a4bc3cf36bb9a04a296907ff0af3801ba5d51134e196990aa95731bee",
+    "s2": "872b1ec9c49f32d972d450016002b1265e846673cd1aef42c41aaccc50583998",
+    "s3": "2a385591edce8d1cb26d41f176fb084cd634d113eb130d2581ce97000bcb3eea",
+    "s4": "0116c3c4a34b6e607b2564cc4300d3784ba5d7596a0000d0b59c40e1801dcd1a",
+    "s5": "81cc22db14da433d65d2cbfd466e233d778e9b5d50552dc7a013e94a3b25ad15",
+    "s6": "91849d1cd49d8e783c893b01272f0e0f505aed67e379d52d354011a619270a1d",
+    "s7": "0eb7720abb0f46f8d48d47fcf646be85ae58c8a5cc37c98f7ad06ac2f9deb6ff",
+    "s8": "5dcf0f324a6b831b76a043e465731eff46456979ae084bcfc764ff0d40816359",
+    "s9": "b22a82394cfc2b7163b7fbd8be1087fdb6ec66a16524e9d194431d418894d798"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T02:13:37.569332+00:00",
+  "total": null
+}

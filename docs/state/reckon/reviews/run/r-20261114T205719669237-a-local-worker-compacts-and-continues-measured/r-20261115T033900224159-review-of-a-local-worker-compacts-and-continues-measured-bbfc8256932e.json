@@ -1,0 +1,93 @@
+{
+  "absent_items": [],
+  "added_failure_basis": "the reviewed run is unarmed: its manifest records suite_pair unarmed because no test file lies in the node's write scope, and its parsed manifest carries baseline_suite null and after_suite null, so no baseline and after suite gate logs exist from which added failures could be derived",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/evidence.py:compose_landed_record",
+    "reckon/doccheck.py:audit_html",
+    "reckon/crew/dispatch_sessions.py:_session_too_large_to_continue"
+  ],
+  "completed_at": "2026-11-15T04:34:45.213Z",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "folded",
+      "node": "repair-of-a-local-worker-compacts-and-continues-measured-bbfc8256932e",
+      "recorded_at": "2026-11-15T05:29:20.390645+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-15T03:42:35Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-local-worker-compacts-and-continues-measured",
+      "recorded_at": "2026-11-15T06:13:19.775947+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "a-local-worker-compacts-and-continues-measured",
+      "recorded_at": "2026-11-15T06:13:23.044776+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "a-local-worker-compacts-and-continues-measured",
+      "recorded_at": "2026-11-15T06:13:26.243660+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured.html",
+      "line": "143",
+      "severity": "blocking",
+      "text": "blocking: the sentence says the last record in both announced-no-boundary streams is a system record of subtype status, but r-20260926T195126315924-resume-offer-needs-a-dead-process ends with a result record carrying is_error true and result of Prompt is too long, and its census row records last_type result; plan section 9 makes the terminal record type the datum recorded for the negative arm, so a reader building the RCA on this sentence records the wrong signature."
+    },
+    {
+      "file": "docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured.html",
+      "line": "165",
+      "severity": "non-blocking",
+      "text": "non-blocking: the artifact list cites measure/compaction-census.log, which does not exist under the run directory; the census log is measure/census.log, and its own header command runs the whole-root census rather than the positive control the manifest's artifact note calls it."
+    },
+    {
+      "file": "docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured.html",
+      "line": "78",
+      "severity": "non-blocking",
+      "text": "non-blocking: the sentence says roughly 25 000 tokens go unused at each compaction, but the margin is 230144-205512 = 24 632 at the largest boundary and 230144-196889 = 33 255 at the smallest, so it is 25-33 k across the six; the caption at :130 repeats the figure."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against c1268f5d6ca969807f57b5f1b75fd29cbb4fab2d; bbfc825693 is one commit adding 173 lines of fragment HTML and 48 lines of SVG, and no other path in the range.",
+    "done_when": "the done_when asks for the recorded turn and the context size either side of each boundary; I re-derived all six rows from the run's own stream.jsonl (records 6060, 6469, 7187, 7528, 7715, 7788) and every pre_tokens, post_tokens, duration and turn count matches the table at docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured.html:57-75, and the reviewed run ended on an assistant record so its death arm does not apply.",
+    "goal": "the node goal is to measure whether a local worker whose task outgrows the lane's window compacts and continues to a complete manifest; the landed fragment records six automatic boundaries between 196 889 and 205 512 tokens against a declared window of 230 144 tokens and all eight planted checksums intact, so the positive arm is stated at docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured.html:57.",
+    "manifest": "read the source manifest at the run directory; it records the six boundaries with indices and token sizes, the census aggregates, the artifact list and one rubric self-check per dimension, and states suite_pair unarmed with no baseline_suite or after_suite.",
+    "write_paths": "the single commit bbfc825693 adds exactly two paths, the fragment and its figure; the node's write_paths names the fragment, and the run's competence context grants docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured with provenance granted."
+  },
+  "justifications": {
+    "durability": "docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured.html adds no test and no assertion, and an evidence fragment has no executable behaviour to guard, so nothing reddens if one of its facts regresses; the only durable check is a re-read of stream.jsonl as this review performed.",
+    "evidence": "every boundary row re-derived from stream.jsonl and every census aggregate re-derived from measure/compaction-census.json matched the fragment, but docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured.html:143 misstates one of the two announced-no-boundary streams' terminal record type.",
+    "fit": "the fragment's metas and section layout follow docs/evidence/fragments/a-review-dies-where-nobody-is-looking/an-overdue-review-names-why-it-is-held.html:1-24 and its siblings, and its paths and sections name no plan label.",
+    "goal_fidelity": "docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured.html:29-32 states the measured result the node goal names, with the boundary table and the eight surviving checksums behind it.",
+    "reuse": "the diff adds no definition, so nothing is forked, and the one owner of the same capability, reckon/crew/dispatch_sessions.py:_session_too_large_to_continue, reads the same stream fields while the throwaway scanner stayed in the run directory rather than the tree.",
+    "scope_discipline": "bbfc825693 touches only the fragment at docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured.html and its figure, both inside the run's granted write paths, and adds nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to measure whether a local worker whose task outgrows the lane's window compacts and continues to a complete manifest; the landed fragment records six automatic boundaries between 196 889 and 205 512 tokens against a declared window of 230 144 tokens and all eight planted checksums intact, so the positive arm is stated at docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured.html:57.\nVERDICT done_when: the done_when asks for the recorded turn and the context size either side of each boundary; I re-derived all six rows from the run's own stream.jsonl (records 6060, 6469, 7187, 7528, 7715, 7788) and every pre_tokens, post_tokens, duration and turn count matches the table at docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured.html:57-75, and the reviewed run ended on an assistant record so its death arm does not apply.\nVERDICT write_paths: the single commit bbfc825693 adds exactly two paths, the fragment and its figure; the node's write_paths names the fragment, and the run's competence context grants docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured with provenance granted.\nVERDICT manifest: read the source manifest at the run directory; it records the six boundaries with indices and token sizes, the census aggregates, the artifact list and one rubric self-check per dimension, and states suite_pair unarmed with no baseline_suite or after_suite.\nVERDICT diff: read commit by commit against c1268f5d6ca969807f57b5f1b75fd29cbb4fab2d; bbfc825693 is one commit adding 173 lines of fragment HTML and 48 lines of SVG, and no other path in the range.\nCALL_SITES: reckon/evidence.py:compose_landed_record, reckon/doccheck.py:audit_html, reckon/crew/dispatch_sessions.py:_session_too_large_to_continue\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured.html:29-32 states the measured result the node goal names, with the boundary table and the eight surviving checksums behind it.\nSCORE evidence: 16\nJUSTIFICATION evidence: every boundary row re-derived from stream.jsonl and every census aggregate re-derived from measure/compaction-census.json matched the fragment, but docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured.html:143 misstates one of the two announced-no-boundary streams' terminal record type.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: bbfc825693 touches only the fragment at docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured.html and its figure, both inside the run's granted write paths, and adds nothing the goal does not imply.\nSCORE durability: 4\nJUSTIFICATION durability: docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured.html adds no test and no assertion, and an evidence fragment has no executable behaviour to guard, so nothing reddens if one of its facts regresses; the only durable check is a re-read of stream.jsonl as this review performed.\nSCORE fit: 19\nJUSTIFICATION fit: the fragment's metas and section layout follow docs/evidence/fragments/a-review-dies-where-nobody-is-looking/an-overdue-review-names-why-it-is-held.html:1-24 and its siblings, and its paths and sections name no plan label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition, so nothing is forked, and the one owner of the same capability, reckon/crew/dispatch_sessions.py:_session_too_large_to_continue, reads the same stream fields while the throwaway scanner stayed in the run directory rather than the tree.\nFINDING docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured.html:143 blocking: the sentence says the last record in both announced-no-boundary streams is a system record of subtype status, but r-20260926T195126315924-resume-offer-needs-a-dead-process ends with a result record carrying is_error true and result of Prompt is too long, and its census row records last_type result; plan section 9 makes the terminal record type the datum recorded for the negative arm, so a reader building the RCA on this sentence records the wrong signature.\nFINDING docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured.html:165 non-blocking: the artifact list cites measure/compaction-census.log, which does not exist under the run directory; the census log is measure/census.log, and its own header command runs the whole-root census rather than the positive control the manifest's artifact note calls it.\nFINDING docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured.html:78 non-blocking: the sentence says roughly 25 000 tokens go unused at each compaction, but the margin is 230144-205512 = 24 632 at the largest boundary and 230144-196889 = 33 255 at the smallest, so it is 25-33 k across the six; the caption at :130 repeats the figure.\n",
+  "review_run_id": "r-20261115T033900224159-review-of-a-local-worker-compacts-and-continues-measured-bbfc8256932e",
+  "reviewed_base_sha": "c1268f5d6ca969807f57b5f1b75fd29cbb4fab2d",
+  "reviewed_head_sha": "bbfc8256932e15cf26fbef66e280a9394611effd",
+  "reviewed_revision": "c1268f5d6ca969807f57b5f1b75fd29cbb4fab2d..bbfc8256932e15cf26fbef66e280a9394611effd",
+  "reviewed_run_id": "r-20261114T205719669237-a-local-worker-compacts-and-continues-measured",
+  "scores": {
+    "durability": 4,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T05:55:24.934326+00:00",
+  "total": 96
+}

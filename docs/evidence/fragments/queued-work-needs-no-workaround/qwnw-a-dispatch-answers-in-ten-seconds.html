@@ -1,0 +1,146 @@
+<section id="qwnw-a-dispatch-answers-in-ten-seconds-landing">
+  <h2>The overdue-runs fence classifies only the dispatching session's runs</h2>
+
+  <p><strong>What changed.</strong> The check that records a session's overdue
+  unreconciled runs at dispatch read every live pointer on the host and
+  classified each one, whichever session owned it. Classification is the costly
+  part: each read opens the run's manifest, its stream and its stored review.
+  It now takes the dispatching session and skips a pointer another session owns
+  before reading it, so the check's cost is that session's own rows rather than
+  the fleet's queue.</p>
+
+  <p>Two surfaces call it and both pass the session. The dispatch fence
+  (<code>reckon/crew/dispatching/fences.py</code>) hands
+  <code>_recorded_backlog</code> the session it is fencing for, and the drain
+  keeps the project-wide reading by omitting the argument. A pointer with no
+  recorded owner stays in scope either way, because absence cannot prove that a
+  live pointer belongs to a peer. One rule, one implementation
+  (<code>reckon/crew/recovery_watch.py</code>).</p>
+
+  <p><strong>The record is kept.</strong> A dispatch is not refused for its own
+  session's backlog — that was settled before this node, by
+  <code>tests/test_a_dispatch_is_not_refused_on_its_backlog.py</code>, which
+  states that the backlog is "recorded on its runs, never enforced". This node
+  preserves that behaviour exactly and adds the assertion that the recorded
+  run is the session's own: the fence names the run it chose the work over, and
+  no run belonging to another session is named.</p>
+
+  <h3 id="qwnw-a-dispatch-answers-in-ten-seconds-cases">The two cases</h3>
+
+  <p><code>tests/test_a_dispatch_classifies_only_its_own_runs.py</code> builds a
+  temporary crew home holding 200 live pointers owned by a peer session and one
+  overdue promotable run owned by the dispatching session, then counts
+  classifications at the classifier. The dispatch cases enter the real entry
+  points — <code>crew.dispatch</code> for a direct dispatch and the batch entry
+  for a queued one — against a temporary repository and crew home.</p>
+
+  <table id="qwnw-a-dispatch-answers-in-ten-seconds-arms">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's four cases</td>
+        <td><code>4fcdfc2791</code>, working tree</td>
+        <td>4 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the node's four cases, base arm</td>
+        <td><code>23af9bcff3</code>, extraction</td>
+        <td>3 failed, 1 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>focused gate, base</td><td><code>23af9bcff3</code>, extraction</td>
+        <td>16 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>focused gate, head</td><td><code>4fcdfc2791</code>, working tree</td>
+        <td>20 passed, <code>EXIT=0</code>. The sixteen base cases are unchanged
+        and the four new ones pass</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-a-dispatch-answers-in-ten-seconds-control">Negative control</h3>
+
+  <p>Three of the four cases fail against the base revision, each for the
+  reason the node exists for, quoted from the base run:
+  <code>AssertionError: assert ['r-own', 'r-...eer-004', ...] == ['r-own'] — 3
+  failed, 1 passed</code>. The one that passes at base is the project-wide
+  control, which asserts the whole-pointer reading the drain still needs; it
+  fails at head if the scope filter is applied everywhere, so the pair pins
+  both directions.</p>
+
+  <p>Against the real store, the classifier count per dispatch on the base
+  revision equals the project's live pointer count at that moment, and at head
+  it is zero:</p>
+
+  <table id="qwnw-a-dispatch-answers-in-ten-seconds-real-store">
+    <caption>Five dispatches and five dry runs per arm, entered through the
+    real CLI against a read-only real store, counting at
+    <code>recovery_watch.classify_pointer</code>. Both arms stop at the same
+    place — the worker's read-only write fence refuses worktree creation — so
+    the arms compare the read path and nothing after it.</caption>
+    <thead><tr><th>arm</th><th>classified per dispatch</th><th>classified per dry run</th><th>dispatch wall time [s]</th><th>load</th></tr></thead>
+    <tbody>
+      <tr><td>base <code>23af9bcff3</code>, 127 live pointers</td>
+        <td>68, 68, 68, 68, 68</td><td>0, 0, 0, 0, 0</td>
+        <td>31.73, 8.93, 9.00, 8.74, 9.53</td><td>12.43, 10.68, 12.12, 14.47, 13.96</td></tr>
+      <tr><td>head <code>4fcdfc2791</code>, 126 live pointers</td>
+        <td>0, 0, 0, 0, 0</td><td>0, 0, 0, 0, 0</td>
+        <td>18.69, 6.58, 5.43, 5.98, 5.66</td><td>9.13, 9.65, 9.68, 9.30, 9.04</td></tr>
+    </tbody>
+  </table>
+
+  <p>A dry run makes no fence call at all, so its zero is not evidence; the
+  dispatch column is. The base figure is the project's pointer count, not the
+  host's, because the fence has always asked for one project's pointers.</p>
+
+  <p>The fence's own cost, timed directly against one store, first
+  project-wide and then scoped to one session:</p>
+
+  <pre id="qwnw-a-dispatch-answers-in-ten-seconds-scope-cost">project-wide: seconds=5.33 classified=67 rows=24
+session-scoped: seconds=0.04 classified=1 rows=0</pre>
+
+  <p>Inside a real dispatch the fence now costs <strong>0.06 to 0.09 s</strong>,
+  measured by wrapping <code>recovery.overdue_unreconciled_runs</code> and
+  reading its own elapsed time.</p>
+
+  <h3 id="qwnw-a-dispatch-answers-in-ten-seconds-timing">The ten-second measure, and where it stands</h3>
+
+  <p>Five queued real dispatches, each request dropped the moment its time was
+  taken, beside five dry runs, from the main checkout with the head code, load
+  average recorded. None launched and none was left queued.</p>
+
+  <table id="qwnw-a-dispatch-answers-in-ten-seconds-queue">
+    <thead><tr><th>arm</th><th>seconds</th><th>load</th><th>stored / dropped / launched / still queued</th></tr></thead>
+    <tbody>
+      <tr><td>queued dispatch</td>
+        <td>29.36, 13.20, 12.94, 13.52, 14.03</td>
+        <td>8.83, 12.39, 11.85, 11.26, 11.32</td><td>5 / 5 / 0 / 0</td></tr>
+      <tr><td>dry run</td><td>9.66, 5.83, 6.64, 5.67, 5.38</td>
+        <td>10.98, 11.27, 10.93, 10.68, 10.55</td><td>—</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>The done-when's "every one is under ten seconds" is not met, and
+  the cause is not the fleet's queue.</strong> Timed without a profiler, one
+  queued dispatch is 53.64 s, of which project discovery is 50.03 s and the
+  overdue-runs fence 0.09 s; three dispatches in one warm process read 54.43,
+  51.08 and 54.19 s with <code>build_roadmap</code> taking 21.83, 19.18 and
+  25.43 s of each and the fence 0.07 s. A profile of one discovery names the
+  rest: 70.5 s total, <code>discover_plans</code> 65.4 s,
+  <code>_attach_ready_set</code> and <code>build_roadmap</code> 33.0 s, and
+  three <code>git_dates</code> calls 20.0 s — two of which are the ten-second
+  ceilings firing, logged as <code>Git history lookup timed out after 10
+  seconds</code> and <code>Git last-modified lookup timed out after 10
+  seconds</code>.</p>
+
+  <p>Two instrument caveats, both measured, affect these numbers and neither
+  changes the conclusion. First, the timing was taken on the allocation's node
+  (98dci4-clu-2001, load 8 to 27), not on the fleet node the section names.
+  Second, a dispatch run from a worktree pays discovery twice — 66.96 s against
+  the worktree and then 24.29 s against the main checkout — because the batch
+  keys its one-derivation cache on the resolved docs directory and the mount
+  resolves to a different tree; the numbers above are from the main checkout,
+  where it derives once.</p>
+
+  <p>What the node delivers is the part the section's deliverable names first:
+  the check costs the same however many live pointers other sessions hold. It
+  was 5.33 s over 67 rows on the same store and is 0.04 s over one, and the
+  absolute dispatch time is now dominated by plan discovery and roadmap
+  building. That residual is recorded in the run's <code>outside_scope</code>;
+  it is not repairable by narrowing a further reader.</p>
+</section>
