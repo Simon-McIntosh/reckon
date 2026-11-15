@@ -27,6 +27,12 @@ KIND = "section-declaration-owed"
 def checkout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(waits, "CHAIN", {"s2": [f"{PLAN}#s1"], "s3": [f"{PLAN}#s1"]})
     repository = waits.chain_repo.__wrapped__(tmp_path, monkeypatch)
+    plan_path = repository / "docs" / "plans" / f"{PLAN}.html"
+    plan_path.write_text(
+        '<meta name="plan-title" content="Upstream accounting">\n'
+        + plan_path.read_text(),
+        encoding="utf-8",
+    )
     monkeypatch.setattr(
         obligations_module.flight,
         "resolve",
