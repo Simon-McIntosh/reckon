@@ -3133,9 +3133,12 @@ def _promotion_command(
     citation that reproduces the refusal.
     """
     from .promotion import _promotion_commits
+    from .promotion_checks import _fresh_manifest
 
     if not completion_offer(record, repair=True):
         return f"reckon crew observe --run {shlex.quote(run_id)}"
+    if not manifest_commits:
+        manifest_commits = (_fresh_manifest(record) or {}).get("commits") or ()
     commits = _canonical_commits(
         _review_tree(record), _promotion_commits(record, manifest_commits)
     )

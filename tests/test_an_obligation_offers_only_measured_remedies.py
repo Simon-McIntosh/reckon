@@ -116,6 +116,26 @@ def test_only_a_completed_passing_current_head_is_offered(delivered, changes):
     assert ("--gate passed" in command) is (not changes), command
 
 
+def test_normalizing_a_measured_command_keeps_its_landing_options(delivered):
+    pointer, _, _ = delivered
+    _measure(delivered)
+    command = (
+        "reckon crew complete --run r-remedy --gate passed --land "
+        "--no-impl-change 'records a finding'"
+    )
+    rows, _ = obligations._partition_acknowledged([_duty(pointer, command=command)], {})
+    assert rows[0]["next_command"] == command
+
+
+def test_normalizing_a_commitless_delivery_keeps_its_declaration(delivered):
+    pointer, head, _ = delivered
+    pointer["base_sha"] = head
+    runs._write_json(runs.pointer_path(pointer["run_id"]), pointer)
+    command = classification._promotion_command("r-remedy", pointer, [head])
+    rows, _ = obligations._partition_acknowledged([_duty(pointer, command=command)], {})
+    assert rows[0]["next_command"] == command
+
+
 @pytest.mark.parametrize(
     "command",
     [

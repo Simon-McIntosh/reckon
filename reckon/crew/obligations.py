@@ -1732,9 +1732,19 @@ def measured_remedy_items(items: Sequence[Mapping[str, Any]]) -> list[dict[str, 
         elif not recovery_classification.completion_offer(pointer, repair=True):
             continue
         elif not repairing:
-            item["next_command"] = recovery_classification._promotion_command(
+            offered = recovery_classification._promotion_command(
                 run_id, pointer, list(item.get("manifest_commits") or ())
             )
+            if "--gate passed" in offered and tokens[:3] == [
+                "reckon",
+                "crew",
+                "complete",
+            ]:
+                # Keep the caller's landing and disposition options once the
+                # shared composer has established the passing verdict.
+                item["next_command"] = re.sub(r"--gate\s+\S+", "--gate passed", command)
+            else:
+                item["next_command"] = offered
         # An action form from a cached snapshot describes its previous command.
         if "next_action" in item:
             item["next_action"] = item["next_command"]
