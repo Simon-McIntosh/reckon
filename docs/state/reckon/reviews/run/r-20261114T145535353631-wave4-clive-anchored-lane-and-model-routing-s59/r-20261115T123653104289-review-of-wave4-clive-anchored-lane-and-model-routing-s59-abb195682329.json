@@ -1,0 +1,82 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T13:03:39.118Z",
+  "dispatched_at": "2026-11-15T12:45:45Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_plan.py",
+      "line": 1346,
+      "severity": "non-blocking",
+      "text": "_awaiting_pick_hold hand-builds the queued request record that reckon/crew/dispatching/requests.py:37 (_queued_request_record) owns and documents as the one place both the held path and a re-dispatch store that shape; the copy drops the due/urgency keys and the named_route/route_fallback passthrough the owner derives from dispatch_options, so an awaiting-pick request is not the same shape every other queued request has."
+    },
+    {
+      "file": "reckon/crew/dispatch_picker.py",
+      "line": 101,
+      "severity": "non-blocking",
+      "text": "dispatcher_declared_difficulty re-implements the plan-path resolution that reckon/crew/picker/__init__.py:219 (_declared_difficulty) owns -- the same _resolved_plan_path call with the same resources.resolve_resource fallback and the same broad except -- instead of factoring that resolution into the owner and calling it from both sides."
+    },
+    {
+      "file": "reckon/crew/dispatch_picker.py",
+      "line": 126,
+      "severity": "non-blocking",
+      "text": "The dispatcher overrides the hours _estimated_hours reports with the section's declared effort without reading its provenance, so a node carrying its own authoritative estimate (provenance 'node', as _estimated_hours at reckon/crew/routing.py:4240 returns it) reaches the pick with the section figure instead; _declared_difficulty's own docstring at reckon/crew/picker/__init__.py:232 states an estimate the node itself carries is never overridden."
+    },
+    {
+      "file": "reckon/crew/dispatch_picker.py",
+      "line": 779,
+      "severity": "non-blocking",
+      "text": "route_defaulted names the literal step 'pick' for every non-timeout fallback: the only assignment to step is inside the `if error == \"timeout\"` branch, so a raised picker never reports the step that ran out, and the test's `assert defaulted[\"step\"]` (tests/test_a_dispatch_waits_for_the_router.py:274) cannot fail for any value."
+    },
+    {
+      "file": "tests/test_a_dispatch_waits_for_the_router.py",
+      "line": 231,
+      "severity": "non-blocking",
+      "text": "The third done-when case's 'it is not launched on the default lane' is asserted by calling _awaiting_pick_hold directly; the production branch at reckon/crew/dispatch_plan.py:1292-1305 that decides to call it is covered by no test, so deleting that branch leaves all four cases green and the guard is not durable at the wiring."
+    },
+    {
+      "file": "reckon/crew/picker/__init__.py",
+      "line": 63,
+      "severity": "non-blocking",
+      "text": "_dispatch_bound_seconds still reads the module constant while dispatch now honours routing.picker_timeout_seconds (reckon/crew/dispatch_picker.py:56), so a host that sets the flight key gets a within_bound telemetry flag measured against a different bound -- the drift this function's docstring promises cannot happen."
+    },
+    {
+      "file": "reckon/crew/dispatch_picker.py",
+      "line": 778,
+      "severity": "non-blocking",
+      "text": "The route-defaulted marker is stored on the selection and the dispatch payload only; no obligations view lists it, so the plan's deliverable 'a route-defaulted reason that the obligations view lists' is delivered at the marker and not at the listing (the node records this under outside_scope, its fence does not include reckon/crew/obligations.py)."
+    }
+  ],
+  "justifications": {
+    "durability": "Each added assertion names a code change that reddens it except the plan_dispatch hold, which tests/test_a_dispatch_waits_for_the_router.py:231 bypasses by calling _awaiting_pick_hold directly.",
+    "evidence": "The gate at tests/test_a_dispatch_waits_for_the_router.py asserts cases 1-3 and only the marker of case 4, while the manifest records the base and head suite arms at 7 failed / 0 added with logs on disk.",
+    "fit": "The module follows the surrounding style -- lazy imports inside the function and WHY-only comments -- and introduces no name the naming rules forbid.",
+    "goal_fidelity": "The core of \u00a759 lands at reckon/crew/dispatch_picker.py:693 (bound) and dispatch_plan.py:1292 (queue rather than default), but the deliverable's obligations listing is absent and route_defaulted names no real step.",
+    "reuse": "Two added definitions duplicate capabilities the repository already owns -- the queued-record shape at reckon/crew/dispatching/requests.py:37 and the plan-difficulty resolution at reckon/crew/picker/__init__.py:219 -- rather than extending either owner.",
+    "scope_discipline": "Every path in `git diff ed0ca92b abb19568` is one of the node's six declared write paths, and nothing the goal does not imply was edited."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261115T123653104289-review-of-wave4-clive-anchored-lane-and-model-routing-s59-abb195682329",
+  "reviewed_base_sha": "ed0ca92be617684cc6e85473bb6f6b58fb59c048",
+  "reviewed_head_sha": "abb195682329163d98ef41ff92d666e87c4dc666",
+  "reviewed_run_id": "r-20261114T145535353631-wave4-clive-anchored-lane-and-model-routing-s59",
+  "scores": {
+    "durability": 12,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T13:06:25.581753+00:00",
+  "total": 82,
+  "verdicts": {
+    "diff": "Two commits (ad89560e2b, abb1956823) touching six files: the bound and its flight key, the dispatcher-side difficulty resolution, the PickRequest.estimated_hours field, the graceful skip in _declared_difficulty, the awaiting-pick hold and repick branch, the new test, and the evidence fragment.",
+    "done_when": "The done_when names tests/test_a_dispatch_waits_for_the_router.py's four cases; three are asserted as written and the fourth (an obligations listing) is asserted only as the route_defaulted marker, with the listing in obligations.py outside the node's write paths.",
+    "goal": "The node's goal is to make a dispatch wait for the router and to never route a default silently; reckon/crew/dispatch_picker.py:50 raises the bound to 120 s, dispatcher_declared_difficulty hands the pick the section facts, and plan_dispatch.py:1292 queues an unanswered pick instead of defaulting.",
+    "manifest": "The manifest records the four node cases passing at ad89560e2b, a base arm, a suite arm of 7 failed/61 passed at both revisions, a negative control of 3 failed/EXIT=1 and ruff clean, and names the obligations listing under outside_scope.",
+    "write_paths": "The node declared reckon/crew/dispatch_picker.py, reckon/crew/dispatch_plan.py, reckon/crew/picker/types.py, reckon/crew/picker/__init__.py, the new test and its evidence fragment; every path in the diff is inside that set."
+  }
+}
