@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="352">
+<meta name="plan-version" content="353">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -1396,6 +1396,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s64" data-id="c-run-r-20261115T194031904336-review-of-a-tick-hands-its-freed-memory-back-ee6a0bdb7ece" data-who="reckon-build" data-when="2026-11-15T19:48:03.883Z">
     <div class="r-comment-body"><p>Review of c2826574d3..ee6a0bdb7e stored parsed at r-20261115T141917805306-a-tick-hands-its-freed-memory-back.at-ee6a0bdb7ece19eeb945f68b07d69cef740d0982.json: six scores 15/15/20/12/19/20, 0 added failures, 2 non-blocking findings, and the plain record beside it carries the same verdict.</p></div>
+</div>
+<div class="r-comment" data-section="s64" data-id="c-run-r-20261115T141917805306-a-tick-hands-its-freed-memory-back" data-who="reckon-build" data-when="2026-11-15T14:46:36Z">
+    <div class="r-comment-body"><p>Station.tick runs its pass and then calls release_freed_memory(), asking the C library for malloc_trim(0) in a finally so a raising tick releases too and skipping the call where the symbol is absent; six census ticks at head read RSS 440/502/475/480/491/497 MB against base&#x27;s 580/636/705/739/747/752 MB, a sixth-tick ratio of 0.66, so the at-most-half bound is not met</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261026T205710583680-one-station-per-node-runs-the-tick" data-who="reckon-build" data-when="2026-10-26T21:33:14Z">
     <div class="r-comment-body"><p>Station command holds one node lock, seeds new verdicts without an event, and resumes transitions and three stored stream offsets after a kill; 5 focused tests passed, importer failure delta 0 across 57 files, and the lock mutation failed the integration case as declared. Fragment: docs/evidence/fragments/the-monitor-reads-each-fact-once/one-station-per-node-runs-the-tick.html</p></div>
