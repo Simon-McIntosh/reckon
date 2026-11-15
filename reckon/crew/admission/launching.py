@@ -569,7 +569,12 @@ def _release_stranded_launches(
         )
         if reviewed_run:
             holder["reviewed_run_id"] = reviewed_run
-        dispatch_refusals.record_launch_refusal(run_id=run_id, step=step, holder=holder)
+        dispatch_refusals.record_launch_refusal(
+            run_id=run_id,
+            step=step,
+            holder=holder,
+            attempt=_released_attempt(claim),
+        )
         if _requeue_stranded_request(run_id, step=step):
             # A request this pass took from the queue goes back to it, with its
             # brief and steering: nothing else would dispatch it again.
@@ -606,6 +611,28 @@ def _release_stranded_launches(
                 )
             )
     return released
+
+
+def _released_attempt(claim: Mapping[str, Any]) -> dict[str, Any]:
+    """The launch attempt a release abandoned, as the claim it took names it.
+
+    A run id names one request across all its attempts, so a refusal keyed on
+    the run refuses the request's own next attempt too: the request the release
+    put back in the queue launches again under the same id and waits out the
+    whole fence. The claim is the attempt's own identity — its registration
+    instant and the holder that published it — so the release records that, and
+    the fence admits a later attempt of the same run while still refusing the
+    slow original. A claim that names no registration is recorded as no attempt,
+    and its fence then holds against the whole run as it did before.
+    """
+    registered = str(claim.get("claim_registered_at") or "")
+    if not registered:
+        return {}
+    return {
+        "claim_registered_at": registered,
+        "holder_pid": claim.get("holder_pid"),
+        "holder_host": str(claim.get("holder_host") or ""),
+    }
 
 
 def _requeue_stranded_request(run_id: str, *, step: str) -> bool:

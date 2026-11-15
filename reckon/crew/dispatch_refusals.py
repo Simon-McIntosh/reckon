@@ -240,6 +240,7 @@ def record_launch_refusal(
     run_id: str,
     step: str,
     holder: Mapping[str, Any] | None = None,
+    attempt: Mapping[str, Any] | None = None,
     home: str | Path | None = None,
 ) -> Path:
     """Record that a launch span was released, naming the step it reached.
@@ -247,14 +248,20 @@ def record_launch_refusal(
     The step and the holder are what the released launch's own fence reports
     when it resumes: a span that stopped before the spawn and one that stopped
     just after are different failures, and only the step tells them apart.
+
+    ``attempt`` names the launch attempt the release abandoned, so the fence
+    holds against that attempt and no other. A request the release put back in
+    the queue launches again under the same run id, and a fence keyed on the
+    run alone refused the request's own next attempt for the whole hour.
     """
     payload = {
         "version": LAUNCH_REFUSAL_VERSION,
         "run_id": str(run_id),
-        "reason": LAUNCH_REFUSAL_REASON,
+        "reason": str(LAUNCH_REFUSAL_REASON),
         "recorded_at": _utc_now(),
         "step": str(step or ""),
         "holder": dict(holder or {}),
+        "attempt": dict(attempt or {}),
     }
     path = launch_refusal_path(run_id, home=home)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -281,11 +288,20 @@ def launch_refusal(
     return dict(stored)
 
 
+# The claim fields that name one launch attempt of a run. A run id is not an
+# attempt: a request the release put back in the queue launches again under the
+# same id, and it publishes a claim of its own, registering it afresh, before it
+# reaches the reservation the fence guards. So the release names the abandoned
+# attempt by these fields, and the fence admits any claim of the run that names
+# another one.
+ATTEMPT_FIELDS = ("claim_registered_at", "holder_pid", "holder_host")
+
 # How long a release fences the attempt it abandoned. A launch slowed by
 # storage resumes within minutes of its release; a request the release put back
-# in the queue launches again under the same run id, and is refused until the
-# fence has lapsed. An hour keeps a slow original out and delays the re-queued
-# request by at most that much, which is cheaper than losing it.
+# in the queue launches again under the same run id, and is admitted as soon as
+# its own attempt publishes a claim. The bound still applies to a release that
+# names no attempt it can compare, and to a launch that resumes before any later
+# attempt has published one.
 RELEASED_LAUNCH_FENCE_SECONDS = 3600.0
 
 
@@ -298,6 +314,58 @@ def _release_has_lapsed(refusal: Mapping[str, Any]) -> bool:
     return age > RELEASED_LAUNCH_FENCE_SECONDS
 
 
+def _live_launch_claim(
+    run_id: str, *, home: str | Path | None = None
+) -> dict[str, Any]:
+    """The claim the run's live claim file holds, or an empty record.
+
+    The directory is resolved from the crew home this module was handed rather
+    than from the process's own, so a reader pointed at one home never answers
+    about a run of another.
+    """
+    if home is not None:
+        directory = _home(home) / "runs" / str(run_id)
+    else:
+        from reckon.crew import runs
+
+        directory = runs.run_dir(run_id)
+    try:
+        claim = json.loads((directory / "claim.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(claim, Mapping):
+        return {}
+    if str(claim.get("run_id") or "") != str(run_id):
+        return {}
+    return dict(claim)
+
+
+def _names_the_released_attempt(
+    refusal: Mapping[str, Any], run_id: str, *, home: str | Path | None = None
+) -> bool:
+    """Whether the launch reaching its reservation now is the released attempt.
+
+    A release names the attempt whose claim it took: its registration, the
+    holder that published it, and the run's live claim is compared with that
+    name. A different claim of the same run is a later attempt — the request
+    the release put back in the queue, launching again — and is admitted. No
+    claim at all is the released attempt's own run: the requeue takes the claim
+    with it and nothing else publishes one for that attempt, so a launch that
+    resumes before a later attempt does is refused. A record written before the
+    attempt was named cannot be compared and holds for the whole fence.
+    """
+    named = refusal.get("attempt")
+    if not isinstance(named, Mapping) or not named:
+        return True
+    claim = _live_launch_claim(run_id, home=home)
+    if not claim:
+        return True
+    return all(
+        str(claim.get(field) or "") == str(named.get(field) or "")
+        for field in ATTEMPT_FIELDS
+    )
+
+
 def refuse_a_released_launch(
     run_id: str, *, started: bool = False, home: str | Path | None = None
 ) -> None:
@@ -308,11 +376,18 @@ def refuse_a_released_launch(
     that stalls there and resumes after its release does not spawn a worker for
     a run that no longer exists — and, having already spawned, hands the pid to
     the rollback that signals it.
+
+    The refusal is the abandoned attempt's, not the run's: a request the release
+    put back in the queue launches again under the same run id, and its next
+    attempt is admitted on the next pass while the slow original is still
+    refused at its reservation.
     """
     refusal = launch_refusal(run_id, home=home)
     if refusal is None:
         return
     if _release_has_lapsed(refusal):
+        return
+    if not _names_the_released_attempt(refusal, run_id, home=home):
         return
     step = str(refusal.get("step") or "an unrecorded step")
     when = (
