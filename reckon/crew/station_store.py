@@ -102,7 +102,10 @@ CREATE TABLE IF NOT EXISTS pointers (
     project    TEXT,
     session    TEXT,
     phase      TEXT,
-    fields     TEXT NOT NULL
+    fields     TEXT NOT NULL,
+    log_path   TEXT,
+    backend    TEXT,
+    dialect    TEXT
 );
 CREATE TABLE IF NOT EXISTS streams (
     path        TEXT PRIMARY KEY,
@@ -258,6 +261,15 @@ def _read_pointer_record(path: Path) -> dict[str, Any]:
     many times a pointer is actually parsed.
     """
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _pointer_fields(raw: Any) -> Mapping[str, Any]:
+    """A stored pointer's fields as a mapping; an unreadable row has none."""
+    try:
+        record = json.loads(str(raw))
+    except ValueError:
+        return {}
+    return record if isinstance(record, Mapping) else {}
 
 
 def _unreadable_snapshot(
@@ -428,6 +440,7 @@ class StationStore:
         connection.execute("PRAGMA synchronous=NORMAL")
         connection.executescript(_SCHEMA)
         self._ensure_stream_columns(connection)
+        self._ensure_pointer_columns(connection)
         self._ensure_cursor_columns(connection)
         connection.commit()
         self._connection = connection
@@ -447,6 +460,48 @@ class StationStore:
             )
         if "anchor" not in columns:
             connection.execute("ALTER TABLE streams ADD COLUMN anchor BLOB")
+
+    @staticmethod
+    def _ensure_pointer_columns(connection: sqlite3.Connection) -> None:
+        """Add the fold's own columns to a store written before them.
+
+        A tick naming the streams it must fold read each pointer's fields to
+        learn the stream and the dialect to read it in, so a tick over an
+        unchanged fleet decoded the whole fleet's fields again for an answer it
+        already held. The three scalars the fold needs are columns, written
+        beside the fields by the one pass that decodes them -- the pointer's own
+        ingest, which happens only when the pointer moved. Rows written before
+        these columns existed are decoded here, once, so a store already on disk
+        never pays that decode per tick.
+        """
+        columns = {
+            str(row["name"])
+            for row in connection.execute("PRAGMA table_info(pointers)").fetchall()
+        }
+        added = False
+        if "log_path" not in columns:
+            connection.execute("ALTER TABLE pointers ADD COLUMN log_path TEXT")
+            added = True
+        if "backend" not in columns:
+            connection.execute("ALTER TABLE pointers ADD COLUMN backend TEXT")
+            added = True
+        if "dialect" not in columns:
+            connection.execute("ALTER TABLE pointers ADD COLUMN dialect TEXT")
+            added = True
+        if not added:
+            return
+        for row in connection.execute("SELECT path, fields FROM pointers").fetchall():
+            record = _pointer_fields(row["fields"])
+            connection.execute(
+                "UPDATE pointers SET log_path = ?, backend = ?, dialect = ? "
+                "WHERE path = ?",
+                (
+                    str(record.get("log_path") or ""),
+                    record.get("backend"),
+                    record.get("dialect"),
+                    str(row["path"]),
+                ),
+            )
 
     @staticmethod
     def _ensure_cursor_columns(connection: sqlite3.Connection) -> None:
@@ -581,28 +636,47 @@ class StationStore:
             ],
         )
         connection.commit()
-        for stream in self._pointer_streams(root):
-            self.ingest_stream(stream)
+        for stream, record in self._pointer_streams(root).items():
+            self.ingest_stream(stream, record=record)
         self.heartbeat()
 
-    def _pointer_streams(self, home: Path) -> list[Path]:
-        """Every stream named by a pointer already ingested."""
-        streams: list[Path] = []
-        for row in self.pointer_rows():
-            record = json.loads(str(row["fields"]))
-            recorded = str(record.get("log_path") or "").strip()
+    def _pointer_streams(self, home: Path) -> dict[Path, dict[str, Any]]:
+        """Every stream named by a pointer already ingested, with its pointer.
+
+        The stored fields are decoded once here, in the same pass that names the
+        streams, and the record is handed to :meth:`ingest_stream` beside its
+        stream. A fold that scanned the stored pointers again for each stream it
+        read decoded the whole fleet's fields once per stream -- the pass that set
+        a tick's peak -- for a lookup this pass already answers.
+        """
+        streams: dict[Path, dict[str, Any]] = {}
+        rows = self.connect().execute(
+            "SELECT path, run_id, log_path, backend, dialect FROM pointers "
+            "ORDER BY path"
+        )
+        for row in rows:
+            recorded = str(row["log_path"] or "").strip()
             if recorded:
                 candidate = Path(recorded)
-            elif record.get("run_id"):
-                candidate = home / "runs" / str(record["run_id"]) / "stream.jsonl"
+            elif row["run_id"]:
+                candidate = home / "runs" / str(row["run_id"]) / "stream.jsonl"
             else:
                 continue
             if candidate not in streams:
-                streams.append(candidate)
+                streams[candidate] = {
+                    "backend": row["backend"],
+                    "dialect": row["dialect"],
+                }
         return streams
 
     def pointer_is_current(self, path: Path) -> bool:
-        """Whether the stored signature matches the pointer's identity now."""
+        """Whether the stored signature matches the pointer's identity now.
+
+        The signature is compared as the text it was stored as, not decoded
+        back into a list: both sides are ``json.dumps`` of the same integers, so
+        the comparison answers the same question without a decode per pointer
+        per tick -- which is what a tick over an unchanged fleet was paying.
+        """
         try:
             signature = list(file_memo.file_signature(path))
         except OSError:
@@ -612,7 +686,7 @@ class StationStore:
             .execute("SELECT signature FROM pointers WHERE path = ?", (str(path),))
             .fetchone()
         )
-        return row is not None and json.loads(str(row["signature"])) == signature
+        return row is not None and str(row["signature"]) == json.dumps(signature)
 
     def ingest_pointer(self, path: Path) -> bool:
         """Parse and store one pointer, returning whether it was re-parsed."""
@@ -635,12 +709,13 @@ class StationStore:
     ) -> None:
         connection = self.connect()
         connection.execute(
-            "INSERT INTO pointers (path, signature, run_id, project, session, phase, fields) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?) "
+            "INSERT INTO pointers (path, signature, run_id, project, session, phase, "
+            "fields, log_path, backend, dialect) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
             "ON CONFLICT(path) DO UPDATE SET signature = excluded.signature, "
             "run_id = excluded.run_id, project = excluded.project, "
             "session = excluded.session, phase = excluded.phase, "
-            "fields = excluded.fields",
+            "fields = excluded.fields, log_path = excluded.log_path, "
+            "backend = excluded.backend, dialect = excluded.dialect",
             (
                 str(path),
                 json.dumps(signature),
@@ -649,11 +724,16 @@ class StationStore:
                 str(record.get("session") or ""),
                 str(record.get("phase") or ""),
                 json.dumps(record, sort_keys=True),
+                str(record.get("log_path") or ""),
+                record.get("backend"),
+                record.get("dialect"),
             ),
         )
         connection.commit()
 
-    def ingest_stream(self, path: Path) -> None:
+    def ingest_stream(
+        self, path: Path, *, record: Mapping[str, Any] | None = None
+    ) -> None:
         """Fold one stream from its stored offset, storing the new observation.
 
         A stream whose size has not moved since the last read is not read at
@@ -664,6 +744,11 @@ class StationStore:
         or below its stored last-read size, or whose anchor no longer matches
         is folded from its start, so a rewrite is refolded rather than folded
         on top of bytes that no longer exist.
+
+        ``record`` is the pointer whose fields name this stream's backend, as
+        :meth:`tick` already decoded it. A caller holding no record is answered
+        by a scan of the stored pointers, which is what a tick over the whole
+        fleet must never do once per stream.
         """
         self.guard.check()
         try:
@@ -694,7 +779,7 @@ class StationStore:
                     state = json.loads(str(row["fold_state"])) or None
         payload = _read_range(path, consumed) if size > consumed else b""
         lines, advanced = _whole_lines(payload)
-        observation = self._fold_stream(path, lines, state)
+        observation = self._fold_stream(path, lines, state, record=record)
         new_consumed = consumed + advanced
         anchor = (prefix + payload[:advanced])[-ANCHOR_BYTES:]
         connection.execute(
@@ -722,9 +807,15 @@ class StationStore:
         return _read_range(path, start, offset - start)
 
     def _fold_stream(
-        self, path: Path, lines: Iterable[str], state: Mapping[str, Any] | None
+        self,
+        path: Path,
+        lines: Iterable[str],
+        state: Mapping[str, Any] | None,
+        *,
+        record: Mapping[str, Any] | None = None,
     ) -> Any:
-        record = self._pointer_for_stream(path)
+        if record is None:
+            record = self._pointer_for_stream(path)
         dialect = str(record.get("dialect") or "claude").strip() or "claude"
         return _backends.observe_stream(
             backend_name=str(record.get("backend") or dialect),
