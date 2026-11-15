@@ -206,6 +206,124 @@ def test_a_dropped_request_returns_its_points(batch_repo: Path) -> None:
     assert third["queued"] == 1, third
 
 
+def test_the_budget_counts_points_the_session_placed_in_another_project(
+    batch_repo: Path,
+) -> None:
+    other = f"{PROJECT}-other"
+    first = _batch(batch_repo, [_entry("holds-six", priority=6)], budget=10)
+    assert first["queued"] == 1, first
+
+    # The budget belongs to the session, not to the project it is dispatching
+    # into: the same session's points elsewhere are the same points, so a second
+    # six in another project cannot be bought for free by naming that project.
+    second = _batch(
+        batch_repo,
+        [_entry("holds-six-elsewhere", priority=6, project=other)],
+        budget=10,
+    )
+
+    assert second["queued"] == 0, second
+    assert second["refused"] == 1, second
+    assert "6 of 10" in str(second["results"][0]["reason"]), second["results"][0]
+
+
+def test_a_reprioritise_past_the_budget_is_refused(
+    batch_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from reckon.crew import queue_admission, queue_edit
+
+    first = _batch(batch_repo, [_entry("holds-six", priority=6)], budget=10)
+    assert first["queued"] == 1, first
+    plain = _batch(batch_repo, [_entry("plain")], budget=10)
+    assert plain["queued"] == 1, plain
+
+    config = _config(budget=10)
+    monkeypatch.setattr(queue_admission, "_resolve_lane_config", lambda _record: config)
+
+    with pytest.raises(runs.PriorityBudgetExceeded) as raised:
+        queue_edit.reprioritise(
+            str(_pointer_for("plain")["run_id"]), 5, project=PROJECT
+        )
+
+    assert "6 of 10" in str(raised.value), str(raised.value)
+    # The refusal stores nothing: the request keeps the points it had.
+    assert _pointer_for("plain")["priority"] == 0
+
+
+def test_a_reprioritised_request_is_charged_what_the_lane_ranks(
+    batch_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from reckon.crew import queue_admission, queue_edit, queue_order
+
+    stored = _batch(batch_repo, [_entry("holds-seven")], budget=10)
+    assert stored["queued"] == 1, stored
+    monkeypatch.setattr(
+        queue_admission, "_resolve_lane_config", lambda _record: _config(budget=10)
+    )
+    queue_edit.reprioritise(
+        str(_pointer_for("holds-seven")["run_id"]), 7, project=PROJECT
+    )
+
+    # A coordinator re-dispatches the node, naming no points of its own. The
+    # request keeps the seven it was given, and both readers see that one figure:
+    # the lane ranks it at seven, so the session's budget must charge seven.
+    again = _batch(batch_repo, [_entry("holds-seven")], budget=10)
+    assert again["queued"] == 1, again
+    pointer = _pointer_for("holds-seven")
+    assert runs._stored_priority(pointer) == 7, pointer
+    assert queue_order._priority(pointer) == 7, pointer
+    assert runs.session_priority_in_use(SESSION)[0] == 7
+
+    fourth = _batch(batch_repo, [_entry("wants-four", priority=4)], budget=10)
+    assert fourth["refused"] == 1, fourth
+    assert "7 of 10" in str(fourth["results"][0]["reason"]), fourth["results"][0]
+
+
+def test_a_review_spends_its_points_on_the_record_it_stores(batch_repo: Path) -> None:
+    from reckon.crew import recovery_review_dispatch
+
+    options = recovery_review_dispatch._composed_review_options(
+        {"subject": "plan", "priority": 4}, allow_unreconciled_runs=False
+    )
+    entry = _entry("review-request")
+    node = {
+        name: entry[name]
+        for name in (
+            "plan",
+            "section",
+            "goal",
+            "time_budget",
+            "spec_level",
+            "done_when",
+            "write_paths",
+            "negative_control",
+        )
+    } | {"id": "review-request", "role": "review"}
+    record = entry | {
+        "run_id": "review-request",
+        "project": PROJECT,
+        "plan": PLAN,
+        "section": "s1",
+        "repo": str(batch_repo),
+        "session": SESSION,
+        "backend": LANE,
+        "phase": "queued",
+        "queued_at": NOW.isoformat(),
+        "priority": int(options.get("priority") or 0),
+        "node": node,
+    }
+    runs.queue_dispatch(record, priority_budget=10)
+
+    pointer = _pointer_for("review-request")
+    assert pointer["priority"] == 4, pointer
+    # The points a review spends are charged like any other request's, so a
+    # review cannot hold the budget and leave it available to something else.
+    assert runs.session_priority_in_use(SESSION)[0] == 4
+    refused = _batch(batch_repo, [_entry("wants-seven", priority=7)], budget=10)
+    assert refused["refused"] == 1, refused
+    assert "4 of 10" in str(refused["results"][0]["reason"]), refused["results"][0]
+
+
 def test_an_undeclared_budget_bounds_nothing(batch_repo: Path) -> None:
     result = _batch(
         batch_repo,
