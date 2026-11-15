@@ -48,7 +48,7 @@
   </table>
 
   <h3>The census that named the gap</h3>
-  <p>Every stored obligation row in the live crew home was read at the base revision, and each row's run classified by two independent facts: whether it still holds a live pointer, and whether it still has a ledger row. The reading ran as an <code>all_debug</code> job at <code>2026-11-14T20:55:53Z</code> (<code>census.log</code>, exit 0): 130 stored documents, 151 rows carrying a run id, <strong>77 of them naming a run with no live pointer</strong> — 62 of those runs had a ledger row and 15 had neither.</p>
+  <p>Every stored obligation row in the live crew home was read at the base revision, and each row's run classified by two independent facts: whether it still holds a live pointer, and whether it still has a ledger row. The reading ran as an <code>all_debug</code> job at <code>2026-11-14T20:55:53Z</code> (<code>census.log</code>, exit 0): 130 stored documents, 151 rows carrying a run id, <strong>77 of them naming a run with no live pointer</strong> — 66 of those runs had a ledger row and 11 had neither.</p>
   <p>The <code>sweep-failed</code> route was reproduced directly (<code>repro.log</code>, exit 0): a stored failure for a run with no live pointer and no ledger row still raised a row after one pass, because the failure list is durable per session and only that session's next completed sweep replaces it. The acknowledgement probe (<code>ack.log</code>, exit 0) showed the second half of the gap: a deferral for such a run was refused unless the caller passed <code>--project</code>, and a row's own command never carries one.</p>
 
   <h3>The change</h3>
@@ -70,7 +70,7 @@
   <p>A first run of these arms showed two errors in the inventory test on both arms; they were the exported tree having no repository behind it, identical at both revisions, and they are gone once the export is given a HEAD.</p>
 
   <h3>The census after the change, and what remains</h3>
-  <p>The same census was re-read through the settlement the change adds, at <code>2026-11-15T05:10:20Z</code> (<code>census_after.log</code>, exit 0): 132 stored documents, 135 stored rows, <strong>67 rows the view still serves, 20 of them naming a run with no live pointer</strong>. The figure is not a constant of the fleet: an earlier run of the same census read 25 such rows against 91 served, so what a reader sees moves with the fleet while the rule that decides it does not.</p>
+  <p>The same census was re-read through the settlement the change adds, at <code>2026-11-15T05:10:20Z</code> (<code>census_after.log</code>, exit 0): 132 stored documents, 135 stored rows, <strong>67 rows the view still serves, 20 of them naming a run with no live pointer</strong>. The figure is a reading of the fleet at one instant rather than a constant of the rule: what a reader sees moves with the fleet, while the rule that decides each row does not.</p>
   <table class="r-table">
     <thead><tr><th>kind</th><th>pointer</th><th>landed</th><th>gone</th></tr></thead>
     <tbody>
