@@ -826,21 +826,6 @@ def _pointer_role(pointer: Mapping[str, Any]) -> str:
     return role
 
 
-def _repair_attempt_live(pointer: Mapping[str, Any]) -> bool:
-    """Whether a run's pointer records a repair round with a live attempt.
-
-    A review that files a blocking finding resumes the reviewed run's own
-    worker, and the reflex records the round it acted on in the run's pointer.
-    Only an opening status means a worker is answering the round: a round the
-    reflex held, declined, refused or exhausted produced none, so it names
-    nothing in flight however recently the record was written.
-    """
-    dispatch = pointer.get(REPAIR_DISPATCH_FIELD)
-    if not isinstance(dispatch, Mapping):
-        return False
-    return str(dispatch.get("status") or "") in REPAIR_ROUND_OPENING_STATUSES
-
-
 # A state that needs action always may explain itself, and so may a member of
 # the waiting family: the clause on a waiting row names what lifts it and on a
 # blocked row names what a reader can do, so the explained set is the action
@@ -1469,6 +1454,13 @@ def _compute_watch_snapshot(
         stale_after_seconds=stall_seconds,
         **({"pointers": pointers} if pointers is not None else {}),
     )
+    # Which repair records count as open is the reflex's own question, so it is
+    # asked of the owner of that reading rather than answered here. The import
+    # is deferred because this module is reachable from the reflex's own import
+    # chain, and only the call needs the answer.
+    from reckon.crew import obligations
+
+    repair_round = obligations._repair_round_in_flight(pointer)
     verdict = row["fleet_verdict"]
 
     # The absolute instants the silence is measured between, resolved once
@@ -1527,8 +1519,10 @@ def _compute_watch_snapshot(
         "role": _pointer_role(pointer),
         # Whether a repair round for this run has a worker answering it, so the
         # counter can read a run that the review sent back to work as working
-        # while its manifest still carries the verdict it delivered.
-        "repair_in_flight": _repair_attempt_live(pointer),
+        # while its manifest still carries the verdict it delivered. Which
+        # records count as open is the reflex's own question, so it is asked of
+        # the owner of that reading rather than answered a second time here.
+        "repair_in_flight": repair_round is not None,
         # Whether this run is a shadow of a committed primary. Dispatch decides
         # shadowship at launch and writes the lineage onto the pointer; the
         # renderer dims a shadow row end to end from that fact, so the snapshot
@@ -3887,8 +3881,6 @@ from .recovery_review_delivery import (  # noqa: E402
     _stop_delivered_reviews,
 )
 from .recovery_review_dispatch import (  # noqa: E402
-    REPAIR_DISPATCH_FIELD,
-    REPAIR_ROUND_OPENING_STATUSES,
     _resolved_review_config,
     dispatch_review_for_run,
 )

@@ -18,14 +18,19 @@ opinion of one.
 
 from __future__ import annotations
 
+import json
+import os
 import re
+from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 import pytest
 
-from reckon.crew import recovery_watch
+from reckon.crew import recovery, runs
 from reckon.crew import ticker as ticker_module
 from reckon.crew.recovery import _fleet_counts, _watch_transition
+from reckon.crew.recovery_review_dispatch import REPAIR_DISPATCH_FIELD
 
 WIDTH = 180
 
@@ -83,7 +88,7 @@ def test_one_implementation_and_one_review_count_1w_1r() -> None:
 
     This is the reading the counter exists for: the review is live work, and a
     single working figure would report the session as having one worker without
-    saying whether that worker implemented or reviewed.
+    saying whether that review or implemented work was the one running.
     """
     counts, rows = _reading(
         _snapshot("r-impl", "north", "working"),
@@ -178,22 +183,86 @@ def test_the_row_carries_five_right_aligned_cells_in_the_order_w_r_n_d_q() -> No
     assert counts["reviewing"] == 1
 
 
-@pytest.mark.parametrize(
-    ("status", "live"),
-    [("resumed", True), ("dispatched", True), ("refused", False), ("held", False)],
-)
-def test_the_repair_record_says_whether_a_worker_is_answering(
-    status: str, live: bool
-) -> None:
-    """Only an opening repair record means the round has a live attempt.
+PROJECT = "pane-counts"
+FOREIGN_HOST = "a-login-node-that-is-not-this-one"
+MOMENT = 1_800_000_000.0
+STALL_SECONDS = 60
+# A run record the reflex never stamped a repair round on, so a case can say
+# "no field at all" apart from any value the field could hold.
+ABSENT = object()
 
-    A round the reflex held, declined, refused or exhausted produced no worker
-    answering it, so it names nothing in flight however recently it was written.
+
+def _seed(run_id: str, repair: Any) -> dict[str, Any]:
+    """Write one live working run whose record carries ``repair``.
+
+    The run is written to disk as well as returned, so the snapshot is built
+    from the same files a real pointer resolves through.
     """
-    pointer = {"repair_dispatch": {"status": status, "round_id": "r-abc@deadbeef"}}
-    assert recovery_watch._repair_attempt_live(pointer) is live
-    assert (
-        recovery_watch._repair_attempt_live({"repair_dispatch": "not a mapping"})
-        is False
+    started = datetime.fromtimestamp(MOMENT - 30, tz=UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    directory = runs.run_dir(run_id)
+    directory.mkdir(parents=True, exist_ok=True)
+    record: dict[str, Any] = {
+        "run_id": run_id,
+        "project": PROJECT,
+        "node": {"id": f"node-{run_id}", "plan": "plan-a"},
+        "phase": "working",
+        "role": "implement",
+        # A foreign-launching host keeps the stored liveness reading rather than
+        # probing this host's process table, so the fixture needs no live pid.
+        "launcher_host": FOREIGN_HOST,
+        "process_alive": True,
+        "backend": "local",
+        "launch": "cli",
+        "command": "reckon",
+        "manifest_path": str(directory / "manifest.md"),
+        "log_path": str(directory / "stream.jsonl"),
+        "status": "running",
+        "attempt_started_at": started,
+    }
+    if repair is not ABSENT:
+        record[REPAIR_DISPATCH_FIELD] = repair
+    Path(record["manifest_path"]).write_text(
+        f"---\nnode: {run_id}\nstatus: running\n---\n\nbody\n", encoding="utf-8"
     )
-    assert recovery_watch._repair_attempt_live({}) is False
+    stream = Path(record["log_path"])
+    stream.write_text("", encoding="utf-8")
+    os.utime(stream, (MOMENT, MOMENT))
+    pointer = runs.pointer_path(run_id)
+    pointer.parent.mkdir(parents=True, exist_ok=True)
+    pointer.write_text(json.dumps(record))
+    return record
+
+
+@pytest.mark.parametrize(
+    ("label", "repair", "live"),
+    [
+        ("resumed", {"status": "resumed", "round_id": "r-abc@deadbeef"}, True),
+        ("dispatched", {"status": "dispatched", "round_id": "r-abc@deadbeef"}, True),
+        ("refused", {"status": "refused", "round_id": "r-abc@deadbeef"}, False),
+        ("held", {"status": "held", "round_id": "r-abc@deadbeef"}, False),
+        ("opening-without-a-round", {"status": "resumed", "round_id": ""}, False),
+        ("not-a-mapping", "not a mapping", False),
+        ("absent", ABSENT, False),
+    ],
+)
+def test_the_snapshot_reads_a_live_repair_attempt_from_the_run_record(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, label: str, repair: Any, live: bool
+) -> None:
+    """Only an opening repair record with a round identity is a live attempt.
+
+    The reading is taken from a real run record through the snapshot builder,
+    because the counter reads the field that builder writes: a fixture that
+    supplied the field itself would stay green if the builder stopped writing
+    it. Which records count as open is the reflex's own answer, asked of its
+    owner rather than restated here, so a record the owner refuses is refused
+    by the snapshot too.
+    """
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    recovery._SNAPSHOT_CACHE.clear()
+    record = _seed(f"r-record-{label}", repair)
+
+    snapshot = recovery._compute_watch_snapshot(
+        record, moment=MOMENT, stall_seconds=STALL_SECONDS
+    )
+
+    assert snapshot["repair_in_flight"] is live
