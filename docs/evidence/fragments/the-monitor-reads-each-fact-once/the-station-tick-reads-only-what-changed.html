@@ -10,7 +10,10 @@
   <h3 id="the-station-tick-reads-only-what-changed-defects">The three defects, reproduced at base</h3>
   <p>Commit <code>785fbc2eaf</code> holds a run's committed range against the head identity of
   its tree, and holds the parsed answer store against the stat identity of the file it came
-  from. Commit <code>522174404f</code> holds the six rubric prompts the same way. The base
+  from. Commit <code>522174404f</code> holds the six rubric prompts the same way, and
+  <code>05e58f1c3ca5135718ab7857e67e05db32f55e5d</code> moves all three onto the repository's one
+  file memo, <code>reckon/file_memo.py</code>, so each shares one bounded cache and hands a
+  caller a copy rather than the stored value. The base
   revision shows each defect as a count rather than an opinion, in
   <code>negative-control-base.log</code>:</p>
   <ul>
