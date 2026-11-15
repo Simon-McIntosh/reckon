@@ -145,13 +145,43 @@ def test_the_check_refuses_exactly_what_the_promotion_rule_refuses(
     )
 
 
-def test_the_hand_written_spelling_is_refused_by_both_readers(tmp_path: Path) -> None:
-    """Verdicts under a key the store does not read are unanswered to both."""
+def test_the_hand_written_spelling_passes_on_the_answers_it_gave(
+    tmp_path: Path,
+) -> None:
+    """The other spelling a live reviewer wrote, folded by the reader that reads it."""
     record = _claims_record()
     record["claim_verdicts"] = record.pop("claims")
     result = _check(record, tmp_path)
-    assert result.exit_code == 1, result.output
-    assert not _review_is_complete(record)
+    assert result.exit_code == 0, result.output
+    assert _findings(result) == []
+    assert _review_is_complete(review.with_canonical_claims(record))
+
+
+def test_the_stored_hand_written_record_passes_and_the_fold_is_what_admits_it(
+    tmp_path: Path,
+) -> None:
+    """The stored ``claim_verdicts`` review: complete once its key is folded."""
+    record = dict(_HAND_WRITTEN_SPELLING_RECORD)
+    assert "claims" not in record
+    result = _check(record, tmp_path)
+    assert result.exit_code == 0, result.output
+    assert _findings(result) == []
+    assert _review_is_complete(review.with_canonical_claims(record))
+
+
+def test_the_store_hands_the_promotion_reader_a_complete_record(
+    tmp_path: Path,
+) -> None:
+    """Through the store's own read path, the hand-written spelling is complete."""
+    record = dict(_HAND_WRITTEN_SPELLING_RECORD)
+    base = tmp_path / "store"
+    review.store_review(record, base_dir=base)
+    stored = review.read_review(
+        record["project"], record["reviewed_run_id"], base_dir=base
+    )
+    assert stored is not None, "the record was stored but the read returned nothing"
+    assert isinstance(stored.get("claims"), list), sorted(stored)
+    assert _review_is_complete(stored), stored.get("claims")
 
 
 def test_a_claims_record_missing_its_summary_verdict_is_refused(tmp_path: Path) -> None:
@@ -525,4 +555,220 @@ _PROTOTYPE_RECORD: dict = {
     "status": "parsed",
     "times_source": "run-record",
     "timestamp": "2026-11-15T02:49:47.358430+00:00",
+}
+
+# The stored record that states its claim verdicts under the hand-written
+# spelling (``claim_verdicts``) rather than the parser's: three verdicts and a
+# summary that agrees with the table beneath it.
+_HAND_WRITTEN_SPELLING_RECORD = {
+    "added_failure_count": 0,
+    "added_failure_ids": [],
+    "added_failures_note": "The reviewed run is a read-only investigation and ran no gate "
+    "suite; its manifest records no baseline_suite and no "
+    "after_suite, so no added failure can be derived and there is "
+    "no suite delta to record. 0 with an empty id list is the "
+    "recorded value, not a measurement.",
+    "claim_summary": {
+        "note": "Each figure the summary quotes is carried by the report's "
+        "tables beneath it.",
+        "summary_line": "44.6 s of run 1's 66.75 s is cache-cold cost that "
+        "run 2 avoids; 22.16 s remains with warm caches.",
+        "table_figures": "run 1 wall 66.75 s and run 2 wall 22.16 s in the "
+        "headline table; 66.75 - 22.16 = 44.59 s, which "
+        "rounds to the quoted 44.6 s",
+        "verdict": "agrees",
+    },
+    "claim_verdicts": [
+        {
+            "cited_command": "profile_cold_discovery.py (cold, empty "
+            "RECKON_HOME/XDG_CACHE_HOME with the real "
+            "mounts.json copied in), then "
+            "build_phase_table.py reading the resulting "
+            ".prof",
+            "note": "Extraction re-run on the report's own .prof reproduces "
+            "its table to the third decimal; a fresh cold run "
+            "reproduces the family within 1.1%.",
+            "rank": 1,
+            "report_figure": "readiness/roadmap re-parse family 40.3 s (read "
+            "state + readiness parse 32.25 s, roadmap and "
+            "endpoint derivation 8.07 s) of run 1's 66.75 s",
+            "rerun_figure": "fresh cold run 40.76 s (read_state_and_text_file "
+            "33.44 s + build_roadmap 7.31 s) of a 68.32 s "
+            "wall",
+            "verdict": "reproduced",
+        },
+        {
+            "cited_command": "profile_cold_discovery.py cold, then "
+            "build_phase_table.py for the "
+            "_git_first_committed / _git_last_committed rows",
+            "note": "The report itself flags this phase as node-load "
+            "sensitive with a ten-second per-lookup ceiling and an "
+            "8-20 s span; its own two cold runs were 7.99 s and 8.48 "
+            "s. The re-run's 9.11 s is 14% above the quoted 8.0 s, so "
+            "the stated figure did not reproduce at the value the "
+            "report writes.",
+            "rank": 2,
+            "report_figure": "git creation + last-modified dates 8.0 s (4.35 "
+            "s + 3.64 s)",
+            "rerun_figure": "9.11 s (5.70 s + 3.41 s) on a fresh cold run at "
+            "load 29.4, against the report's load 25.9",
+            "verdict": "differs",
+        },
+        {
+            "cited_command": "profile_cold_discovery.py cold, then "
+            "build_phase_table.py for the "
+            "_walk_discovery_signature / figure_rows rows",
+            "note": "The headlined 5.1 s reproduces within 4.3%; the "
+            "secondary figure_rows figure came in 13% lower.",
+            "rank": 3,
+            "report_figure": "docs-tree signature walk 5.10 s (with figure "
+            "rows 4.21 s)",
+            "rerun_figure": "4.88 s (figure rows 3.65 s)",
+            "verdict": "reproduced",
+        },
+    ],
+    "completed_at": "2026-10-20T13:09:30.626Z",
+    "dispatched_at": "2026-10-20T12:57:38Z",
+    "findings": [
+        {
+            "file": ".config/reckon/crew/reports/reckon/investigation/nova-cold-discovery/report.md",
+            "line": 158,
+            "severity": "verified",
+            "text": "Finding 1 (ranked first): the readiness and roadmap re-parse "
+            "family. Re-running the cited profiler cold from the report's "
+            "own directory reproduces its figure — read_state_and_text_file "
+            "33.44 s and build_roadmap 7.31 s, 40.76 s together, against "
+            "the report's 32.25 s and 8.07 s (40.3 s). Re-running "
+            "build_phase_table.py on the report's own .prof files "
+            "reproduces its per-phase table to the third decimal.",
+        },
+        {
+            "file": ".config/reckon/crew/reports/reckon/investigation/nova-cold-discovery/report.md",
+            "line": 176,
+            "severity": "differs",
+            "text": "Finding 2 (ranked second): the git-date pair. The report "
+            "states 8.0 s (4.35 s + 3.64 s); the fresh cold re-run measured "
+            "9.11 s (5.70 s + 3.41 s) at load 29.4 versus the report's "
+            "25.9, and the report's own run 3 was 8.48 s. The stated figure "
+            "did not reproduce at its written value; the phase is node-load "
+            "sensitive as the report itself notes.",
+        },
+        {
+            "file": ".config/reckon/crew/reports/reckon/investigation/nova-cold-discovery/report.md",
+            "line": 190,
+            "severity": "verified",
+            "text": "Finding 3 (ranked third): the docs-tree signature walk. The "
+            "headlined 5.10 s reproduces at 4.88 s on a fresh cold re-run, "
+            "within 4.3%.",
+        },
+    ],
+    "item_verdicts": {
+        "diff": "No diff to read: the run committed nothing past its base "
+        "4c056ffbcdbb, which is its orientation_base_sha and its "
+        "reviewed head alike.",
+        "done_when": "The evidence measure asks that the three top-ranked "
+        "findings each be re-run from the report's directory "
+        "and that its summary line be checked against its "
+        "table; the findings' figures are carried by the "
+        "profile .prof files and reproduced by "
+        "build_phase_table.py, which re-ran clean.",
+        "goal": "The report answers the brief's question — where the cold "
+        "discovery derivation spends its time — by attributing a "
+        "66.75 s profiled cold run across named phases and ranking "
+        "the three changes that would most cut it.",
+        "manifest": "The source manifest records six profiled runs, the "
+        "phase table, the top-25 lists and the report; status "
+        "complete, worktree clean at base revision.",
+        "write_paths": "The reviewed run is read-only and changed no "
+        "repository file; its deliverable is the report and "
+        "its artefacts under the report directory, and its "
+        "manifest commits and changed_paths are empty.",
+    },
+    "project": "reckon",
+    "review_run_id": "r-20261020T125655924881-review-of-nova-cold-discovery-is-attributed-by-phase-4c056ffbcdbb",
+    "review_text": "CLAIM 1: reproduced: a fresh cold re-run of the cited profiler from "
+    "the report's directory gives the readiness/roadmap re-parse family at "
+    "40.76 s (read_state_and_text_file 33.44 s + build_roadmap 7.31 s), "
+    "against the report's 40.3 s (32.25 s + 8.07 s), and re-running "
+    "build_phase_table.py on the report's own .prof reproduces its "
+    "per-phase table to the third decimal.\n"
+    "CLAIM 2: differs: the report states the git-date pair at 8.0 s (4.35 "
+    "s + 3.64 s); the fresh cold re-run measured 9.11 s (5.70 s + 3.41 s) "
+    "at load 29.4 against the report's 25.9, and the report's own run 3 "
+    "was 8.48 s.\n"
+    "CLAIM 3: reproduced: the report states the docs-tree signature walk "
+    "at 5.10 s; the fresh cold re-run measured 4.88 s (figure_rows 4.21 s "
+    "reported against 3.65 s re-run).\n"
+    "CLAIM_SUMMARY: agrees: the summary reads \"44.6 s of run 1's 66.75 s "
+    "is cache-cold cost that run 2 avoids; 22.16 s remains with warm "
+    'caches." — 66.75 s and 22.16 s are the run 1 and run 2 walls in the '
+    "headline table, and 66.75 - 22.16 = 44.59 s rounds to the quoted 44.6 "
+    "s.\n"
+    "VERDICT goal: The report answers the brief's attribution question and "
+    "ranks its three changes; the ranked figures were re-run from the "
+    "report's own directory.\n"
+    "VERDICT done_when: The evidence measure asked for three re-run "
+    "findings and a summary check; three CLAIM lines and one CLAIM_SUMMARY "
+    "line are emitted here.\n"
+    "VERDICT write_paths: Read-only run; no repository file changed.\n"
+    "VERDICT manifest: The source manifest records six profiled runs, the "
+    "phase table, the top-25 lists and the report; status complete.\n"
+    "VERDICT diff: No diff; the run committed nothing past its base "
+    "4c056ffbcdbb.",
+    "reviewed_base_sha": "4c056ffbcdbbff4a63a1f97fc3043c4136b95d4c",
+    "reviewed_evidence": {
+        "fresh_cold_runs": [
+            "$TMPDIR/claim-rerun/run7-cold.json.d",
+            "$TMPDIR/claim-rerun/run8-cold.json.d",
+        ],
+        "report": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/investigation/nova-cold-discovery/report.md",
+        "rerun_dir": "$TMPDIR/claim-rerun",
+        "rerun_phase_table_log": "$TMPDIR/claim-rerun/rerun_phase_table.log",
+    },
+    "reviewed_head_sha": "4c056ffbcdbbff4a63a1f97fc3043c4136b95d4c",
+    "reviewed_run_id": "r-20261020T123510716749-nova-cold-discovery-is-attributed-by-phase",
+    "rubric": "claims",
+    "score_justifications": {
+        "durability": "The evidence is durable on disk — six .prof "
+        "files, six logs each ending EXIT=, the phase "
+        "table JSON, and an inspected figure — but the "
+        "figure and phase table scripts live only in "
+        "the report directory, and the run's own "
+        "profile script was edited after runs 1-3, so "
+        "those json.d files lack the later phase "
+        "wrappers.",
+        "evidence": "The 32.25 s readiness parse and 8.07 s roadmap "
+        "figures reproduce to the third decimal from the "
+        "report's own .prof, and a fresh cold run "
+        "reproduces the family within 1.1%; the git-date "
+        "pair is the one figure that did not reproduce "
+        "at its written value.",
+        "fit": "The profiling harness follows the "
+        "investigation-directory idiom and the report states "
+        "its base revision, worktree and node.",
+        "goal_fidelity": "The report answers the brief's attribution "
+        "question directly and ranks the three "
+        "changes, and the ranked figures reproduce "
+        "under re-run.",
+        "reuse": "The report reuses cProfile and pstats for "
+        "attribution, but builds its own phase-wrapping "
+        "instrument and its own phase-table and figure "
+        "scripts rather than extending an existing "
+        "profiling surface.",
+        "scope_discipline": "Read-only: no repository file changed, "
+        "no commits, worktree clean at base; the "
+        "report and its artefacts stay under the "
+        "run's report directory.",
+    },
+    "scores": {
+        "durability": 16,
+        "evidence": 17,
+        "fit": 17,
+        "goal_fidelity": 18,
+        "reuse": 16,
+        "scope_discipline": 20,
+    },
+    "status": "parsed",
+    "times_source": "run-record",
+    "timestamp": "2026-10-20T13:10:26.688478+00:00",
 }

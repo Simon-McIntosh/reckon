@@ -306,6 +306,25 @@ def with_normalised_findings(record: Mapping[str, Any]) -> dict[str, Any]:
     return {**record, "findings": normalised_findings(record)}
 
 
+def with_canonical_claims(record: Mapping[str, Any]) -> dict[str, Any]:
+    """Return ``record`` carrying its claim verdicts under the parser's key.
+
+    A record that states them under :data:`CLAIM_VERDICT_FIELDS`'s other spelling
+    is folded to ``claims``, so every reader — the delivery check and the
+    promotion rule alike — asks one question of one field. A record already
+    carrying ``claims`` is returned unchanged, the parser's spelling wins, and a
+    record carrying neither list is left alone so the completeness rule still
+    reports the measurement missing rather than seeing an empty list.
+    """
+    if isinstance(record.get("claims"), list):
+        return dict(record)
+    for field in CLAIM_VERDICT_FIELDS:
+        candidate = record.get(field)
+        if isinstance(candidate, list):
+            return {**record, "claims": list(candidate)}
+    return dict(record)
+
+
 def claimless_findings(review: Mapping[str, Any]) -> list[tuple[int, Any]]:
     """Return each claimless entry with its index in the record's findings.
 
@@ -397,6 +416,14 @@ CLAIM_VERDICTS: tuple[str, ...] = ("reproduced", "differs", "not-runnable")
 # table states that as ``not-runnable`` on the summary as well.
 CLAIM_SUMMARY_VERDICTS: tuple[str, ...] = ("agrees", "differs", "not-runnable")
 CLAIMS_REQUIRED = 3
+# The keys a stored claims record may state its per-claim verdicts under. The
+# parser writes ``claims``; a reviewer composing a record by hand states the same
+# verdicts under ``claim_verdicts``, and one such record is stored. Both spellings
+# name the same measurement, so they are folded to one before any reader judges
+# the record: a reader that saw only one key would refuse a review that answered
+# every claim, and two readers that folded differently would disagree about
+# whether the same review is complete.
+CLAIM_VERDICT_FIELDS: tuple[str, ...] = ("claims", "claim_verdicts")
 # How a delivery refusal words each measure the completeness rule reports
 # missing. The rule itself is not restated here: a second copy of it would
 # answer differently from the one the promotion reader applies, and a record
@@ -1017,11 +1044,17 @@ def claims_verdict_refusals(record: Mapping[str, Any]) -> list[str]:
     The rule is imported at call time because the module that owns it reads this
     one, and a module-level edge would close a cycle. A measure it reports that
     this table cannot word raises rather than being dropped, so a rule that grows
-    a measure fails loudly here instead of going unreported.
+    a measure fails loudly here instead of going unreported. The record's verdicts
+    are folded to their canonical key first, by the same
+    :func:`with_canonical_claims` the store's read path applies, so a record
+    written by hand under the other spelling is judged on the answers it gave.
     """
     from .recovery_review_subject import _claims_missing_measures
 
-    return [CLAIMS_MISSING_MESSAGES[name] for name in _claims_missing_measures(record)]
+    canonical = with_canonical_claims(record)
+    return [
+        CLAIMS_MISSING_MESSAGES[name] for name in _claims_missing_measures(canonical)
+    ]
 
 
 def review_record_refusals(record: Mapping[str, Any]) -> list[str]:
@@ -3982,6 +4015,7 @@ def read_review(
     if record is None:
         return None
     record = with_normalised_findings(record)
+    record = with_canonical_claims(record)
     if not _has_integer_total(record):
         record = _derive_landed_total(record)
     return annotate_review_of_run(record, reviewed_run_id)
