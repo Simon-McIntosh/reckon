@@ -5202,7 +5202,8 @@ def _landed_before_the_rule(state: dict[str, Any], section: str) -> bool:
     Read from the migration record alone, so a section's exemption neither
     expires with the calendar nor depends on what its plan's prose says today.
     The record's section spellings are compared through the one candidate set,
-    so a recorded ``§4`` and the declaration key ``s4`` name the same section.
+    so a recorded dotted spelling and the hyphenated declaration key name the same
+    section.
     """
     from reckon._plan_html import section_id_candidates
 
