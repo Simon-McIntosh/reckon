@@ -1,0 +1,79 @@
+{
+  "absent": [
+    "goal_fidelity",
+    "evidence",
+    "scope_discipline",
+    "durability",
+    "fit",
+    "reuse"
+  ],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "claim_summary": {
+    "detail": "the report's summary line reads 'So RSS grew 3.77 GB across the six ticks while retained memory grew 128 MB, and 4.8 % of RSS at the last tick was traced at all'. Its first two figures match the tick series in the same paragraph (4623 minus 856 MB is 3767, and 240 minus 112 MB is 128), but the third does not: 240 MB of 4623 MB is 5.2 %, which the census log's tick 6 record states as tracemalloc_share_of_rss_percent: 5.2, and 48.8 % if the intended quantity was the peak share (2255 of 4623 MB). The report carries no table; the per-tick figures it summarises sit in its own paragraph.",
+    "verdict": "differs"
+  },
+  "claims": [
+    {
+      "detail": "re-ran the report's own arm (station_memory_census.py with the main-f1 flags: one untraced warm fold, frames=1, duties disabled, six traced ticks) from the reviewed run's directory on all_debug job 1317724 at revision 2bf8e6947d. RSS after each tick read 2994, 4168, 4409, 4646, 4768 and 4870 MB against the report's 856, 2563, 2561, 4262, 4498 and 4623 MB, so RSS grew 1876 MB where the report states 3.77 GB (3767 MB); retained memory read 159, 180, 169, 195, 204 and 207 MB against the report's 112, 128, 214, 263, 252 and 240 MB, growing 48 MB where the report states 128 MB. The relation the finding draws reproduces (retained stays a few percent of RSS while RSS climbs), but the figures do not: the re-run's first tick held 3.1 GB rather than 0.86 GB and its growth is half the reported figure, and its first tick took 147 s against the report's 45 s.",
+      "rank": "1",
+      "verdict": "differs"
+    },
+    {
+      "detail": "the same re-run's per-tick tracemalloc peaks were 2126, 3198, 3206, 3208, 2205 and 2222 MB against the report's 207, 1664, 298, 3264, 3254 and 2255 MB. The conclusion the finding draws reproduces (gigabytes are allocated and released inside every tick, so the gap is a working set rather than a growing structure), and the steady-state band is the same, but the first and third ticks differ by an order of magnitude (2126 vs 207 MB, 3206 vs 298 MB), so the quoted series is not reproducible.",
+      "rank": "2",
+      "verdict": "differs"
+    },
+    {
+      "detail": "json/decoder.py:361 raw_decode is again the only site above 100 MB in every tick, holding 150, 165, 155, 172, 166 and 166 MB with 1.30, 1.51, 1.39, 1.60, 1.50 and 1.47 million live objects against the report's 113, 130, 169, 207, 197 and 181 MB with 1.24 to 1.77 million objects; the object band overlaps the report's and, as the report states, no other site reaches 100 MB in any tick in either run.",
+      "rank": "3",
+      "verdict": "reproduced"
+    }
+  ],
+  "completed_at": "2026-11-15T13:40:29.137Z",
+  "dispatched_at": "2026-11-15T13:06:13Z",
+  "findings": [
+    {
+      "file": "landing/docs/evidence/fragments/a-census-names-what-holds-the-stations-memory/station-memory-is-a-json-working-set.html",
+      "line": "3",
+      "severity": "non-blocking",
+      "text": "non-blocking: the summary states that 4.8 % of RSS at the last tick was traced, but the tick's own figure is 5.2 % (240 MB of 4623 MB, which the census log records as tracemalloc_share_of_rss_percent: 5.2 at tick 6). 4.8 is the first three characters of the peak share, 48.8 %, so the decimal point appears to have been lost in transcription; as written the number is supported by nothing in the run."
+    },
+    {
+      "file": "landing/docs/evidence/fragments/a-census-names-what-holds-the-stations-memory/station-memory-is-a-json-working-set.html",
+      "line": "3",
+      "severity": "non-blocking",
+      "text": "non-blocking: the figures carry two unit conventions without saying so. RSS and retained memory are MiB quoted as MB (4623.3 MiB for 4847747072 bytes, 239.6 MiB for 251268179), while the allocation-site sizes are decimal MB (113.08 decimal for 113083007 bytes), and the summary turns the MiB difference into '3.77 GB' by dividing by 1000, which is 3.68 GiB or 3.95 decimal GB. A reader checking the arithmetic against the bytes gets a different answer from every pairing."
+    },
+    {
+      "file": "landing/docs/evidence/fragments/a-census-names-what-holds-the-stations-memory/station-memory-is-a-json-working-set.html",
+      "line": "7",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment says twenty-six sites rose in every tick, and the log's list carries 29: the three the report leaves out are the census harness's own allocation sites (station_memory_census.py:34, :179 and :311), and the re-run grew the same way (38 listed, 3 harness). Excluding them is right, but the sentence says nothing about it, so a reader counting the log finds a different number with no stated reason."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "CLAIM 1: differs: re-ran the report's own arm (station_memory_census.py with the main-f1 flags: one untraced warm fold, frames=1, duties disabled, six traced ticks) from the reviewed run's directory on all_debug job 1317724 at revision 2bf8e6947d. RSS after each tick read 2994, 4168, 4409, 4646, 4768 and 4870 MB against the report's 856, 2563, 2561, 4262, 4498 and 4623 MB, so RSS grew 1876 MB where the report states 3.77 GB (3767 MB); retained memory read 159, 180, 169, 195, 204 and 207 MB against the report's 112, 128, 214, 263, 252 and 240 MB, growing 48 MB where the report states 128 MB. The relation the finding draws reproduces (retained stays a few percent of RSS while RSS climbs), but the figures do not: the re-run's first tick held 3.1 GB rather than 0.86 GB and its growth is half the reported figure, and its first tick took 147 s against the report's 45 s.\nCLAIM 2: differs: the same re-run's per-tick tracemalloc peaks were 2126, 3198, 3206, 3208, 2205 and 2222 MB against the report's 207, 1664, 298, 3264, 3254 and 2255 MB. The conclusion the finding draws reproduces (gigabytes are allocated and released inside every tick, so the gap is a working set rather than a growing structure), and the steady-state band is the same, but the first and third ticks differ by an order of magnitude (2126 vs 207 MB, 3206 vs 298 MB), so the quoted series is not reproducible.\nCLAIM 3: reproduced: json/decoder.py:361 raw_decode is again the only site above 100 MB in every tick, holding 150, 165, 155, 172, 166 and 166 MB with 1.30, 1.51, 1.39, 1.60, 1.50 and 1.47 million live objects against the report's 113, 130, 169, 207, 197 and 181 MB with 1.24 to 1.77 million objects; the object band overlaps the report's and, as the report states, no other site reaches 100 MB in either run.\nCLAIM_SUMMARY: differs: the report's summary line reads 'So RSS grew 3.77 GB across the six ticks while retained memory grew 128 MB, and 4.8 % of RSS at the last tick was traced at all'. Its first two figures match the tick series in the same paragraph (4623 minus 856 MB is 3767, and 240 minus 112 MB is 128), but the third does not: 240 MB of 4623 MB is 5.2 %, which the census log's tick 6 record states as tracemalloc_share_of_rss_percent: 5.2, and 48.8 % if the intended quantity was the peak share (2255 of 4623 MB). The report carries no table; the per-tick figures it summarises sit in the same paragraph.\n",
+  "review_run_id": "r-20261115T125958718943-review-of-a-census-names-what-holds-the-stations-memory-2bf8e6947d76",
+  "reviewed_base_sha": "2bf8e6947d761394f75022925c4aa498a7db2b99",
+  "reviewed_head_sha": "2bf8e6947d761394f75022925c4aa498a7db2b99",
+  "reviewed_run_id": "r-20261115T101152745611-a-census-names-what-holds-the-stations-memory",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T125958718943-review-of-a-census-names-what-holds-the-stations-memory-2bf8e6947d76"
+  },
+  "reviewer_run_id": "r-20261115T125958718943-review-of-a-census-names-what-holds-the-stations-memory-2bf8e6947d76",
+  "rubric": "claims",
+  "scores": {
+    "durability": null,
+    "evidence": null,
+    "fit": null,
+    "goal_fidelity": null,
+    "reuse": null,
+    "scope_discipline": null
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T13:47:44.911038+00:00"
+}
