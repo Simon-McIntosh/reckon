@@ -18,23 +18,24 @@
   counter counted every held classification as waiting, so a request the queue
   itself had parked — on a live run's claim, on the session's lane allowance, on
   a failed attempt's retry back-off — was drawn "needs you" with nothing to do,
-  and was counted somewhere the word did not say. One derived fact now answers
-  who lifts a hold, and the word, the counter bucket and the recovery verb all
-  read it.</p>
+  and the two surfaces disagreed about every held row. One derived fact now
+  answers whose move the hold is, and the word and the counter bucket both read
+  it.</p>
   <p><code>reckon/crew/recovery_watch.py</code> gains
   <code>hold_owner</code>, which reads the hold's own record:
   <code>queue_hold.automatic</code> marks a hold the admission pass releases when
   its condition clears, a hold written by <code>crew hold</code> carries no such
   mark and only a coordinator releases it, and the one automatic hold whose
   lifting condition is a coordinator act is the owed plan review
-  (<code>plan-review-owed</code>), whose release is composing and storing that
-  review. <code>_watch_verdict</code> draws the row from that answer: a
-  queue-parked request's state is <code>waiting</code>, so it sits in the
-  waiting pane and its classification and verb agree with the word; a
-  coordinator's hold stays <code>held</code>, drawn "needs you", and its row
-  carries the act that lifts it — <code>reckon crew queue release --run
-  &lt;id&gt;</code>, or the <code>reckon crew review</code> invocation for an
-  owed plan review, never the release that would launch work over unreviewed
+  (<code>plan-review-owed</code>), which lifts when a review of that plan is
+  composed and stored. <code>_watch_verdict</code> draws the row from that
+  answer: every hold the lane or the clock lifts — a parked request, a run the
+  lane's window parks, a run stopped on a spent quota or a retry back-off —
+  takes the waiting word, which is the pane it belongs in and the cell it is
+  counted in. A coordinator's hold stays <code>held</code>, drawn "needs you",
+  and its row carries the act that lifts it: <code>reckon crew queue release
+  --run &lt;id&gt;</code>, or the <code>reckon crew review</code> invocation for
+  an owed plan review — never the release that would launch work over unreviewed
   plan text.</p>
   <p><code>reckon/crew/ticker.py</code> drops the classification test from
   <code>_bucket_of</code>, so a row is counted in the bucket whose word it is
@@ -44,19 +45,23 @@
   reason: the partition is taken from the state word alone.</p>
   <h3 id="held-drawn-by-its-owner-s3-measure">Measure</h3>
   <p>New test <code>tests/test_a_held_request_is_drawn_by_its_owner.py</code>
-  passes at head (<code>11 passed</code>) and every case is red at the base
-  revision <code>98b7fdd4</code> (<code>11 failed</code>), each on an assertion
-  about the word or the figure rather than on an import. It covers each hold the
-  code defines: the six queue-recorded hold verdicts drawn waiting and counted
-  waiting, <code>crew hold</code> and <code>plan-review-owed</code> drawn "needs
-  you" with the act named, a launched run parked on a lane window drawn waiting,
-  and a launched run stopped on a refusal drawn "needs you" and counted there —
-  the case the old counter put in the waiting cell. Every case asserts the row
-  word, the counter bucket and the pane vocabulary agree.</p>
+  passes at head (<code>11 passed</code>) and is red at the base revision
+  <code>98b7fdd4</code> (<code>10 failed, 1 passed</code>), each failure an
+  assertion about the word or the figure rather than an import. It covers every
+  hold the code defines: the six queue-recorded hold verdicts drawn waiting and
+  counted waiting, <code>crew hold</code> and <code>plan-review-owed</code>
+  drawn "needs you" with the act named, a run the lane parks or stops drawn
+  waiting, and the owner table over every one of those records. Each case
+  asserts the row word, the counter bucket and the pane vocabulary agree.</p>
   <p>Declared mutation <em>mapping every held state to needs-you again fails the
   held-on-claim case</em>: with <code>hold_owner</code> returning the
-  coordinator's reading for every hold, <code>7 failed, 4 passed</code>
-  (<code>EXIT=1</code>), the six parked cases and the owner table among them.</p>
+  coordinator's reading for every hold, <code>9 failed, 2 passed</code>
+  (<code>EXIT=1</code>), the parked cases and the owner table among them.</p>
+  <p><code>tests/test_recovery_state_typing.py</code> — which pinned the old
+  disagreement, a queued run drawn "needs you" and counted in the waiting cell —
+  passes at head and at base; the classifier still calls that row
+  <code>held</code> and still carries its reset and its verb, and only the word
+  and the bucket moved.</p>
 </section>
 </body>
 </html>
