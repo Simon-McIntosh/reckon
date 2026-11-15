@@ -1141,6 +1141,9 @@ def _watch_verdict(
             "recovery_classification": state,
             "recovery": str(row.get("recovery") or "inspect"),
             "lifting_condition": None,
+            # Every verdict answers the command question, so a caller reads one
+            # key rather than testing membership first.
+            "next_action": row.get("next_action"),
         }
     stored_phase = str(pointer.get("phase") or "")
     # The stored phase is the launcher's label; the row carries the phase the
@@ -1161,6 +1164,7 @@ def _watch_verdict(
             "recovery_classification": state,
             "recovery": "",
             "lifting_condition": None,
+            "next_action": row.get("next_action"),
         }
 
     # The working bucket is keyed on a process that is genuinely still alive,
@@ -1744,7 +1748,7 @@ def _compute_watch_snapshot(
         "recovery": verdict["recovery"],
         "lifting_condition": verdict.get("lifting_condition"),
         "resets_at": row.get("resets_at"),
-        "next_action": verdict["next_action"],
+        "next_action": verdict.get("next_action"),
         # The full, untruncated reason. The bounded clause a reader can act on
         # is derived from it at render time, so nothing here is shaped for the
         # grid before it is stored.
