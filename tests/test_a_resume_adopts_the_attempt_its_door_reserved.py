@@ -52,9 +52,7 @@ def test_a_launch_adopts_the_never_started_attempt_its_door_reserved(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     directory = _run_directory(tmp_path, monkeypatch)
-    reservation = dispatch_launch.reserve_launch_attempt(
-        directory, RUN, kind="resume"
-    )
+    reservation = dispatch_launch.reserve_launch_attempt(directory, RUN, kind="resume")
     assert reservation.attempt == 3
 
     adopted = dispatch_launch._reservation_taken_by_this_process(
