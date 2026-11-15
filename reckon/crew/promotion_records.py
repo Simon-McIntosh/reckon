@@ -283,6 +283,7 @@ def _review_record_evidence(record: Mapping[str, Any]) -> dict[str, Any] | None:
         return None
     findings = body.get("findings")
     return {
+        "run_id": str(record.get("run_id") or "").strip(),
         "path": str(path),
         "status": status,
         "findings": len(findings) if isinstance(findings, list) else 0,
@@ -290,22 +291,44 @@ def _review_record_evidence(record: Mapping[str, Any]) -> dict[str, Any] | None:
     }
 
 
-def _review_record_check(evidence: Mapping[str, Any]) -> dict[str, Any]:
+def _review_record_check(
+    evidence: Mapping[str, Any], *, capture_log: bool = True
+) -> dict[str, Any]:
     """The gate check a stored review record stands as.
 
     A review run changes no code, so there is no suite for the integration
     re-run to execute at the integrated head. What a reader can re-execute is
-    that the record this promotion rests on is still on disk holding its
-    content — that is the review run's whole check. The record is also the log:
-    it carries the status and the record's findings, which is the evidence the
-    verdict was read from.
+    that the record this promotion rests on is present and non-empty — that is
+    the review run's whole check. The record is not the log: it is JSON, and no
+    JSON record carries the terminal ``EXIT=<n>`` line every reader of a cited
+    log reads the command's status from, so citing the record as its own
+    capture states no status at all and the check refuses the derivation that
+    produced it. The check's outcome is captured into the run's own log
+    instead, which the record is named on, and that log is what the check
+    cites.
+
+    ``capture_log`` is false when the promotion already holds a log — the
+    caller's flag, or one the manifest names — because that is the evidence the
+    run re-executed and a log written beside it would be a file nothing points
+    at. The check still reports its own exit status in that case, so a citation
+    that disagrees with the record still refuses.
     """
+    from reckon.crew.promotion_evidence import _derived_review_gate_log
+
     record_path = str(evidence["path"])
-    return {
-        "command": f"test -s {shlex.quote(record_path)}",
-        "exit_status": 0,
-        "log_path": record_path,
-    }
+    command = f"test -s {shlex.quote(record_path)}"
+    check: dict[str, Any] = {"command": command}
+    check.update(
+        _derived_review_gate_log(
+            str(evidence.get("run_id") or ""),
+            Path(record_path),
+            command=command,
+            status=str(evidence.get("status") or ""),
+            findings=int(evidence.get("findings") or 0),
+            capture=capture_log,
+        )
+    )
+    return check
 
 
 def _default_gate_log_from_manifest(
@@ -434,7 +457,15 @@ def _default_gate_evidence_from_manifest(
     if _review_role_run(record):
         review_evidence = _review_record_evidence(record)
     if review_evidence is not None:
-        for key, value in _review_record_check(review_evidence).items():
+        # The check's log is captured only where the promotion will cite it: a
+        # caller's own flag, or a log the manifest already names, is the
+        # evidence that run re-executed, and writing a second log beside it
+        # would leave a file nothing points at.
+        check = _review_record_check(
+            review_evidence,
+            capture_log=not str(resolved_gate.get("log_path") or "").strip(),
+        )
+        for key, value in check.items():
             if key == "exit_status":
                 if resolved_gate.get(key) is None:
                     resolved_gate[key] = value
