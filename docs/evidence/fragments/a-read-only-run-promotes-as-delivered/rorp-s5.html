@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="evidence-project" content="reckon">
+<meta name="plan" content="a-read-only-run-promotes-as-delivered">
+<meta name="plan-node" content="rorp-s5">
+<title>rorp-s5 — landed</title>
+</head>
+<body>
+<main class="plan-doc">
+<h2 id="rorp-s5-what">What landed</h2>
+<p>A read of one plan's run records decoded every run document in the store and
+threw away the rows that belonged to other plans. Against the committed store
+that is 3,124 runs across 133 plans, so the answer to a question about one plan
+cost the whole ledger: 7.3 to 14.8 seconds per read in a fresh process, and more
+as the store grows.</p>
+<p><code>_index_payload</code> in <code>reckon/ledger.py</code> is the single
+owner of decoding and filtering, and it already pushed the activity bound into
+its own SQL query. The plan filter now goes there too: <code>records</code> and
+<code>aggregate_rows</code> carry a <code>plan</code> column with an index on
+each, a row's plan is stored as the empty string rather than null so one
+equality answers the question, and the added predicate narrows both the
+aggregate and the per-run document queries. <code>_RUN_INDEX_VERSION</code>
+moves to 6, so a store's index rebuilds once with the new column. The selection
+reaches the query through <code>load</code>, <code>_indexed_data</code>,
+<code>_index_payload</code> and <code>_payload_slot</code>, whose region cache
+is now keyed by plan as well: two plans' reads in one process no longer share a
+decoded region.</p>
+<p>The cold path, which reads the run files without an index, applies
+<code>_row_plan</code> at the same moment it applies the activity bound, so both
+paths select, and neither decodes a document it then discards. The rows
+returned are the ones an unfiltered read returns filtered afterwards, in the
+same order — the filter moved the cost and not the answer.</p>
+<p>The figures path (<code>read_records(with_figures=True)</code>) still reads
+the whole store: <code>reckon/crew/summary.py</code> counts
+<code>width_at_start</code> over every plan's runs, so that read genuinely needs
+them all. The affected read is <code>ledger.runs(project, root,
+plan=...)</code>, which is the one an orchestrator makes to ask about one plan's
+history.</p>
+
+<h2 id="rorp-s5-measure">Measure</h2>
+<p><img src="/reckon/figures/a-read-only-run-promotes-as-delivered/rorp-s5/read-cost-per-plan.svg" alt="wall time of five fresh-process reads of one plan's run records, at the base revision and at this change, against a dotted five-second bound" /></p>
+<p>Five fresh-process reads of plan <code>crew-observability-truth</code>'s 365
+rows, each arm against the same committed store, in one job on the
+<code>rigel</code> partition: at the base revision 8.722, 14.820, 7.576, 7.754 and
+7.726 s; at this change 1.420, 0.712, 0.606, 0.594 and 0.587 s. Slowest read
+1.420 s against the five-second bound, and every read returned the same 365
+rows. The untimed read that builds each revision's index took 7.130 s at base
+and 30.683 s at the change — that one-time rebuild is the new column being
+written, and it is paid once per store rather than once per read.</p>
+<p>Gate: <code>tests/test_a_one_plan_ledger_read.py</code>, 3 passed,
+EXIT=0, at <code>8b98c517dcc5a1eb07df228571ffbd7b6a4c2af1</code> with a clean
+worktree — over a store of 2,000 runs across 50
+plans, a one-plan read decodes none of the other 49 plans' documents, the
+unfiltered read decodes all fifty as the positive control, and the filtered rows
+equal the unfiltered rows filtered afterwards.</p>
+<p>Negative control: the same test file placed in an extracted tree at the base
+revision. The decode-count case fails there — <em>a one-plan read decoded other
+plans' run documents: 49 plans, first ['plan-00', 'plan-01', 'plan-02',
+'plan-03', 'plan-04']</em> — while the row-equality case still passes, which is
+the point of the change: the base revision asked the right question and paid the
+whole store for it.</p>
+<p>Suite arms over the ledger-read files and the two fence files, base and change
+in one job: the base revision fails 9 of them and the change fails the same 8 of
+those 9 \u2014 five in <code>tests/test_ledger.py</code>, three in
+<code>tests/test_a_derivation_builds_the_ledger_index_once.py</code>, all
+pre-existing \u2014 so the change adds none of them. The ninth,
+<code>tests/test_a_batch_decodes_the_ledger_index_once.py::test_the_base_revision_writes_the_same_per_entry_results</code>,
+fails at base and passes here. That head arm also ran the three cases this change
+adds, and they failed on a writer's slip in the test file: it unpacked a
+<code>(records, version)</code> pair from <code>ledger.runs</code>, which returns
+a plain list, so each case raised before reaching its assertion. The unpacking
+is repaired and no assertion changed; the three pass at the commit above.</p>
+</main>
+</body>
+</html>
