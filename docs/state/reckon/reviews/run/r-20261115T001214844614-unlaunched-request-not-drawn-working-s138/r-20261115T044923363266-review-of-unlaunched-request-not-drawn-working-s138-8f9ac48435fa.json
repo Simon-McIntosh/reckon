@@ -1,0 +1,49 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T05:13:51.932Z",
+  "dispatched_at": "2026-11-15T04:53:42Z",
+  "findings": [
+    {
+      "id": "manifest-command-names-a-tree-no-cited-log-ran-in",
+      "line": 23,
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T001214844614-unlaunched-request-not-drawn-working-s138/manifest.md",
+      "severity": "non-blocking",
+      "text": "The manifest's tests line, both suite arm command fields and measurement_module/measurement_cwd name /tmp trees 3D72iF and qaWxo0, but every cited log's own command= header names a different tree (base 8pBxwe, after OoMpAs, base-newtest 7S8hNJ, negative HPp3Z9) under different SLURM job ids. The logs are self-consistent and their revisions, measured module and 55/60/4-failed-1-passed/5-failed summaries reconcile with the manifest's artifacts, so the measurement stands, but the manifest's command is not the literal command that produced the log it cites."
+    },
+    {
+      "id": "dropped-request-case-guards-a-path-the-change-does-not-touch",
+      "line": 234,
+      "path": "tests/test_a_request_that_has_not_launched_is_not_drawn_working.py",
+      "severity": "non-blocking",
+      "text": "test_a_dropped_and_archived_request_is_drawn_dropped unlinks the pointer and folds before->{} so the word comes from the departure branch of fleet_transitions, which this change does not modify, and the run's own base-revision arm records it as the one case that passes at c23b97f4 (4 failed, 1 passed). It adds no guard to the arrival defect its commit and evidence fragment cite it for, though it does pin correct departure classification."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "pass",
+    "diff": "pass",
+    "done_when": "pass",
+    "goal": "pass",
+    "manifest": "pass",
+    "write_paths": "pass"
+  },
+  "notes": "Read the goal, done_when and write paths from the run's dispatch prompt and dispatch-detail; the manifest from the run directory; both commits of c23b97f4..8f9ac484 commit by commit; the four gate logs under logs/ with their header and EXIT lines; and the negative-control patch. Read outside the diff only for the reuse and fit judgements: reckon/crew/recovery_liveness.py, the queue_admission phase constants, reckon/crew/ticker.py PANE_STATES/_display_state, and the call sites of classify_pointer and fleet_transitions. No suite was re-run and no file in the reviewed tree was modified.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to deliver section s138 so a request that has not launched is not drawn or counted as working; reckon/crew/recovery_classification.py:1767-1825 and reckon/crew/recovery_watch.py:2270-2282 carry exactly those two repairs, to the pointer classification and to the follower's arrival word.\nVERDICT done_when: the done_when names tests/test_a_request_that_has_not_launched_is_not_drawn_working.py feeding queued, held and awaiting-upstream pointers plus one launched run and asserting none of the three is classified or counted working; that file at lines 143-179, 204-217 and 243-255 holds those cases, and logs/base-revision-new-test.log records 4 failed, 1 passed with EXIT=1, so the gate fails against the unfixed tree rather than merely passing at head.\nVERDICT write_paths: the six declared write paths are recovery_classification.py, recovery_watch.py, ticker.py, the new test, the evidence fragment and the fragment's figure directory; c23b97f4..8f9ac484 changes only the first two plus the test at 384f3ba6 and the fragment at 8f9ac484, and ticker.py needed no change because reckon/crew/ticker.py:431-453 already maps queued, awaiting-upstream and held outside the working pane set.\nVERDICT manifest: read the run's manifest.md; it records status complete, the two commits, the base and after arm commands with their log paths, the negative-control log, and the artifacts 55 passed at c23b97f4 and 60 passed at 384f3ba6, which match the summary lines of the logs it cites.\nVERDICT diff: read both commits individually; 384f3ba65c8a is confined to a launched predicate and three phase guards plus the unlaunched guard in classify_pointer, the arrival_state substitution in fleet_transitions, and the 255-line test, and 8f9ac48435fa appends only the 27-line evidence fragment, so no product source changed after the recorded gate.\nCALL_SITES: reckon/crew/runs.py:3862, reckon/crew/station.py:1099, reckon/crew/recovery_watch.py:3692, reckon/crew/obligations.py:1408, reckon/crew/directory.py:342, reckon/crew/ticker.py:1108\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:1767-1825 makes the parked-phase readings conditional on the pointer recording no worker and adds the waiting-upstream phases to the unlaunched guard, while reckon/crew/recovery_watch.py:2270-2282 draws an arrival in the state its snapshot supports, which is the whole of the reported defect.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/base-arm.log records 55 passed with EXIT=0 at c23b97f4 and logs/after-arm.log records 60 passed with EXIT=0 at 384f3ba6, alongside logs/base-revision-new-test.log at 4 failed with EXIT=1 and logs/negative-control.log at 5 failed EXIT=1, but the manifest's tests line and suite command fields at manifest.md:23 name /tmp trees 3D72iF and qaWxo0 while every cited log's command= header names a different tree, so the recorded command is not the one that produced the log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the three product paths changed in 384f3ba6 and the one fragment added in 8f9ac484 all sit inside the six declared write paths, and nothing outside them is touched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_request_that_has_not_launched_is_not_drawn_working.py:149-179 reddens if the arrival branch goes back to stamping dispatched and :145-146 with :250-255 redden if classify_pointer reads a parked pointer as running, both confirmed by the base-revision arm and by the mutation at logs/negative-control.log, though the dropped-request case at :234 exercises the untouched departure branch.\nSCORE fit: 18\nJUSTIFICATION fit: the added comment at reckon/crew/recovery_classification.py:1760-1766 states the mechanism rather than a ticket, the predicate reads record.get(...) fields the way the surrounding code does, and the naming check over the added lines found no plan, ticket, version or attribution string.\nSCORE reuse: 18\nJUSTIFICATION reuse: no owner exists for 'this pointer records a worker' (reckon/crew/recovery_liveness.py:318 and :716 read worker records and claims, not pointer pid or launched_at), and the arrival word reuses FLEET_WORKING_STATES at reckon/crew/recovery_watch.py:1855 rather than restating the working set, so nothing the repository owns is forked.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T001214844614-unlaunched-request-not-drawn-working-s138/manifest.md:23 non-blocking: the tests line and both suite command fields name /tmp trees 3D72iF and qaWxo0 while every cited log's command= header names a different tree under a different job id, so the manifest's recorded command cannot be reconciled with the log it cites even though the revisions and pass counts do.\nFINDING tests/test_a_request_that_has_not_launched_is_not_drawn_working.py:234 non-blocking: the dropped-and-archived case folds a departure, a branch this change does not touch, and the run's own base-revision arm records it as the one case that passes at c23b97f4, so it visits the 18:02Z archived-batch claim without guarding it.",
+  "review_run_id": "r-20261115T044923363266-review-of-unlaunched-request-not-drawn-working-s138-8f9ac48435fa",
+  "reviewed_base_sha": "c23b97f405291b5d13231bc39d9bc28f39291441",
+  "reviewed_head_sha": "8f9ac48435fa71cc61702483630c8295be4c4964",
+  "reviewed_run_id": "r-20261115T001214844614-unlaunched-request-not-drawn-working-s138",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T05:53:28.282333+00:00",
+  "total": 107
+}
