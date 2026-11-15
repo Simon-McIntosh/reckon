@@ -28,7 +28,7 @@ def checkout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(
         obligations_module.flight,
         "resolve",
-        lambda _project: SimpleNamespace(config=waits.CONFIG),
+        lambda *args, **kwargs: SimpleNamespace(config=waits.CONFIG),
     )
     # Other duty kinds are independent of the declaration being measured.
     monkeypatch.setattr(obligations_module, "_classified_rows", lambda _project: [])
@@ -36,7 +36,10 @@ def checkout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(obligations_module, "_sub_floor_items", lambda *a, **kw: [])
     monkeypatch.setattr(obligations_module, "_index_lag_notice", lambda *a, **kw: None)
     queue_admission.queue_requests(
-        [waits._node("n2", "s2"), waits._node("n3", "s3")],
+        [
+            waits._node(name, section, manifest_path=str(tmp_path / f"{name}.md"))
+            for name, section in (("n2", "s2"), ("n3", "s3"))
+        ],
         project=PROJECT,
         session="waiting-session",
         repo_root=repository,
