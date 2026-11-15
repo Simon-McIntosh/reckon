@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import importlib
 from pathlib import Path
 from types import SimpleNamespace
@@ -9,7 +10,8 @@ from types import SimpleNamespace
 import pytest
 
 from reckon import _store, ledger
-from reckon.crew import queue_admission, runs
+from reckon.crew import obligation_snapshot, queue_admission, runs
+from reckon.mcp_edit_plan import _edit_plan_tool
 from tests import test_a_queued_request_waits_on_its_dependencies as waits
 from tests.helpers.git import git
 
@@ -158,3 +160,43 @@ def test_a_section_without_a_merged_run_owes_no_declaration(checkout, recorded):
 
 def test_the_waiter_fields_can_be_requested_when_no_duty_is_owed(checkout):
     assert not _duties(fields=["kind", "waiting_requests", "held_count"])
+
+
+def _apply_action(form: str) -> None:
+    call = ast.parse(form, mode="eval").body
+    assert isinstance(call, ast.Call)
+    arguments = {item.arg: ast.literal_eval(item.value) for item in call.keywords}
+    result = _edit_plan_tool(**arguments)
+    assert result["ok"], result
+
+
+def test_the_offered_actions_record_done_and_partial_delivery(checkout):
+    _record_run(checkout)
+    duty = _duties()[0]
+    _apply_action(duty["partial_action_form"])
+    assert not _duties()
+    _record_run(checkout, run_id="run-remainder")
+    _apply_action(_duties()[0]["next_action_form"])
+    assert not _duties()
+    state, _version = _store.read_plan(PROJECT, PLAN, checkout)
+    assert state["section_declarations"]["s1"] == "done"
+
+
+def test_the_published_snapshot_keeps_the_duty_after_pointer_removal(
+    checkout, monkeypatch
+):
+    _record_run(checkout)
+    instant = obligations_module._utc_now()
+    monkeypatch.setattr(obligations_module, "_utc_now", lambda: instant)
+    monkeypatch.setattr(
+        obligations_module, "_held_worktrees_by_session", lambda *a, **kw: {}
+    )
+    monkeypatch.setattr(
+        obligations_module, "_sub_floor_items_by_session", lambda *a, **kw: {}
+    )
+    state = obligation_snapshot.fleet_state(PROJECT, now=instant)
+    published = obligation_snapshot.payload_for(state, SESSION)
+    assert [row for row in published["obligations"] if row["kind"] == KIND] == _duties()
+    assert not runs.pointer_path(RUN).exists()
+    kept = obligation_snapshot.without_departed_run_duties(published)
+    assert [row for row in kept["obligations"] if row["kind"] == KIND] == _duties()

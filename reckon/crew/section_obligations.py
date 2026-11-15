@@ -24,13 +24,13 @@ DECLARATION_DUTY_KIND = "section-declaration-owed"
 PARTIAL_DELIVERY_COMMENT_PREFIX = "c-partial-"
 
 
-def merged_section_items(
+def merged_section_items_by_session(
     project: str,
-    session: str,
     pointers: Sequence[Mapping[str, Any]],
     *,
     now: datetime,
-) -> list[dict[str, Any]]:
+    session: str | None = None,
+) -> dict[str, list[dict[str, Any]]]:
     """One duty per merged, unaccounted section owned by this session.
 
     A declaration remains the release authority. Reachability supplies evidence
@@ -39,16 +39,16 @@ def merged_section_items(
     """
     checkout = project_mount_repository(project)
     if checkout is None:
-        return []
+        return {}
     history, _version = ledger.load(project, checkout)
     candidates = {
         str(record.get("run_id") or ""): record
         for record in [*pointers, *history["runs"]]
-        if str(record.get("session") or "") == session
+        if record.get("session") and (session is None or record["session"] == session)
     }
     plans: dict[str, tuple[dict, int]] = {}
     reachable: dict[str, bool] = {}
-    groups: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    groups: dict[tuple[str, str, str], list[dict[str, Any]]] = defaultdict(list)
     for run_id, record in candidates.items():
         node = record.get("node")
         node = node if isinstance(node, Mapping) else {}
@@ -84,7 +84,14 @@ def merged_section_items(
         if revision not in reachable:
             reachable[revision] = _revision_is_ancestor(checkout, revision, "HEAD")
         if reachable[revision]:
-            groups[plan, section].append({**record, "run_id": run_id, "head": revision})
+            groups[str(record["session"]), plan, section].append(
+                {
+                    **record,
+                    "run_id": run_id,
+                    "head": revision,
+                    "node": str(node.get("id") or record.get("node") or ""),
+                }
+            )
 
     waiters: dict[tuple[str, str], set[str]] = defaultdict(set)
     for pointer in pointers:
@@ -96,8 +103,8 @@ def merged_section_items(
                 key = (parsed.slug, section_record_id(parsed.stage))
                 waiters[key].add(str(pointer.get("run_id") or ""))
 
-    items = []
-    for (plan, section), merged in sorted(groups.items()):
+    items: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for (owner, plan, section), merged in sorted(groups.items()):
         record = merged[-1]
         run_id = record["run_id"]
         waiting = sorted(waiters[plan, section] - {""})
@@ -121,7 +128,7 @@ def merged_section_items(
                 "section": section,
                 "item": {
                     "id": PARTIAL_DELIVERY_COMMENT_PREFIX + row["run_id"],
-                    "who": session,
+                    "who": owner,
                     "when": now.isoformat(),
                     "body": f"Run {row['run_id']} delivered only part of this section; remaining work stays implementable.",
                 },
@@ -130,7 +137,7 @@ def merged_section_items(
         ]
         command_prefix = f"edit_plan(project={project!r}, slug={plan!r}, expected_version={version}, "
         completed = parse_utc(record.get("completed_at"))
-        items.append(
+        items[owner].append(
             {
                 "kind": DECLARATION_DUTY_KIND,
                 "run_id": run_id,
@@ -156,3 +163,16 @@ def merged_section_items(
             }
         )
     return items
+
+
+def merged_section_items(
+    project: str,
+    session: str,
+    pointers: Sequence[Mapping[str, Any]],
+    *,
+    now: datetime,
+) -> list[dict[str, Any]]:
+    """One session's slice of the shared section-accounting derivation."""
+    return merged_section_items_by_session(
+        project, pointers, now=now, session=session
+    ).get(session, [])
