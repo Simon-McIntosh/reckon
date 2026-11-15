@@ -120,6 +120,17 @@ def test_an_observation_update_preserves_a_deliberate_deferral(duty):
     assert _read(duty)["obligations"] == []
 
 
+def test_a_live_attempt_releases_an_acknowledgement_of_its_promoted_remainder(duty):
+    record = _ack()
+    runs._write_json(
+        runs.acknowledgement_path(RUN),
+        {"run_id": RUN, "project": PROJECT, **record},
+    )
+    runs._mutate_pointer(RUN, lambda pointer: {**pointer, "attempt": 2})
+    assert _read(duty)["obligations"]
+    assert not runs.acknowledgement_path(RUN).exists()
+
+
 def test_a_probe_can_end_the_deferral_before_the_deadline(duty, tmp_path):
     marker = tmp_path / "review-state"
     marker.write_text("pending")

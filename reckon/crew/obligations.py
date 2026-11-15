@@ -1673,7 +1673,10 @@ def _acknowledgements_in_force(
             runs.release_run_acknowledgement(run_id, record)
     for record in runs.recorded_promoted_acknowledgements(project):
         run_id = str(record.get("run_id") or "")
-        if not run_id or run_id in live_ids:
+        if not run_id:
+            continue
+        if run_id in live_ids:
+            runs.release_run_acknowledgement(run_id, record, promoted=True)
             continue
         until = parse_utc(record.get("until"))
         if (
