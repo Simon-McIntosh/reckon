@@ -31,11 +31,10 @@ EXIT=0
 # "cd: /tmp/.../base-control: No such file or directory" and it went on to run the tree under
 # test, so both arms measured the same source. Those two jobs were cancelled by id and their
 # logs discarded; every figure below comes from an arm that extracted its own revision.
-# The arm logs beside this record are excerpts: each holds the arm's header lines, its
-# failure ids and its summary line. Their progress output was lost when the logs were
-# trimmed with an in-place write that truncated each file before it was read, and the full
-# base arm's ids were not saved separately; every figure quoted here was read from the
-# complete logs before that happened, and any arm is reproducible from the command it states.
+# The arm logs are not committed: this repository ignores *.log, and no evidence log is
+# tracked. Every figure quoted here was read from the complete logs before they were lost to
+# an in-place write that truncated each file before it was read, so the figures below are the
+# record and any arm is reproducible from the command it states.
 #
 # arm: full, base (suite-base.log)
 # command: PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -q -n 8 -p no:cacheprovider
