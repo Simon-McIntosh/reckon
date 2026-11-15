@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-landing-is-recorded-once">
   <meta name="plan-title" content="A Landing Is Recorded Once">
   <meta name="plan-summary" content="A node leaves a landing line, a run record and a figure where one applies; one sourced overview is written when a plan or sprint closes.">
-  <meta name="plan-status" content="draft">
+  <meta name="plan-status" content="active">
   <meta name="plan-roi" content="mid">
   <meta name="plan-effort-hours" content="9.25">
   <meta name="plan-capability-version" content="1.0">
@@ -19,10 +19,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,evidence">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;a-landing-is-recorded-once#s2&quot;], &quot;s5&quot;: [&quot;a-landing-is-recorded-once#s3&quot;], &quot;s6&quot;: [&quot;a-landing-is-recorded-once#s3&quot;, &quot;a-landing-is-recorded-once#s4&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;deferred&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <title>A Landing Is Recorded Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
   <main class="plan-doc">
@@ -52,42 +54,42 @@
     <p><strong>Deliverable.</strong> Closing a sprint writes one page with a row per member plan (status, sections landed, runs, worker hours and the plan's headline result) and the figures those plans' overviews carry. Every link on the page resolves.</p>
     <p><strong>Done when</strong> a new test file shows, over a temporary project with a three-plan sprint: the page has three rows whose counts equal those in each plan's overview; a plan with no overview is listed with its status and no broken link; every <code>href</code> and <code>src</code> on the page resolves to a file in the repository; and the page passes <code>reckon audit-doc</code>. Negative control: a row linking a plan with no overview fails the third case. The test files that import the sprint close add no failure against the base revision.</p>
 
-    <h2 id="s6">§6 — A landing writes no fragment</h2>
-<section data-reckon="section" data-id="s6" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="deferred" data-links=""></section>
-    <p><strong>Deferred</strong> until the per-node-fragment decision is settled. The endpoint below is written for the answer that no node writes a fragment; another answer changes it before this section is built.</p>
-    <p><strong>Deliverable.</strong> An implementation node is no longer asked for a per-node evidence fragment, and a landing no longer splices one into the plan's landed record. A node leaves its landing line, its run record, its gate log and any figure §2 asks for. The worker contract, the build skill and its references, and the edit, create and sprint skills state this, and none of them asks for a per-node fragment or a per-landing splice. Fragments and landed records already on disk stay readable and are not rewritten; what becomes of them is the second decision below.</p>
-    <p><strong>Done when</strong> a new test file shows: the composed implementation prompt names no fragment path; a manifest with a landing line and no fragment passes the manifest check; a promotion of such a run succeeds and records the landing; and an existing fragment still renders through the served page. A search of the skill files for the fragment requirement and the per-landing splice returns none, and its output is in the gate log. Negative control: with the fragment clause restored to the prompt, the first case fails. The test files that import the prompt composer or the manifest check add no failure against the base revision, and ruff adds no finding on the staged paths.</p>
+    <h2 id="s6">§6 — A per-node fragment is optional</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>Both decisions are settled: a per-node fragment is optional, and the fragments and landed records already on disk are left in place, frozen.</p>
+    <p><strong>Deliverable.</strong> An implementation node is no longer required to write a per-node evidence fragment, and a landing no longer splices one into the plan's landed record. A node leaves its landing line, its run record, its gate log and any figure §2 asks for. A node may still write one fragment at its own fragment path when it has a negative result or a mechanism that does not fit a landing line; the worker contract says when that applies, and a routine landing writes none. Where a landed node wrote a fragment, the closure overview of §3 links it from that node's row and reads nothing from it. The worker contract, the build skill and its references, and the edit, create and sprint skills state this, and none of them requires a per-node fragment or asks for a per-landing splice. Fragments and landed records already on disk stay readable where they are; nothing rewrites, moves or removes them.</p>
+    <p><strong>Done when</strong> a new test file shows: the composed implementation prompt presents the fragment as optional and names the two cases it is for; a manifest with a landing line and no fragment passes the manifest check; a manifest with a landing line and a fragment at the node's own fragment path also passes; a promotion of a run without a fragment succeeds, records the landing and leaves the plan's landed record byte-identical; a closure overview for a plan where one node wrote a fragment links that fragment from that node's row; and an existing fragment still renders through the served page. A search of the skill files for a required fragment and for the per-landing splice returns none, and its output is in the gate log. Negative control: with the mandatory fragment clause restored to the prompt, the first case fails. The test files that import the prompt composer or the manifest check add no failure against the base revision, and <code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="per-node-fragment" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">Should any node still write a per-node fragment?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="none">No node writes one</button>
-          <button class="r-opt" data-value="optional">Optional, for a negative result or a mechanism that does not fit a landing line</button>
-          <button class="r-opt" data-value="keep">Keep the requirement as it is</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-      <div class="r-dec" data-key="existing-fragments" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">What becomes of the 1,923 fragments and 213 landed records already on disk?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="leave">Leave them in place, frozen</button>
-          <button class="r-opt" data-value="archive">Move fragments of closed plans to the archive</button>
-          <button class="r-opt" data-value="replace">Replace each closed plan's record with a closure overview, then remove its fragments</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="existing-fragments" data-choice="leave" data-by="Simon McIntosh" data-when="2026-11-15T07:46:02+00:00">
+    <p class="r-dec-q">What becomes of the 1,923 fragments and 213 landed records already on disk?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="leave">Leave them in place, frozen</button>
+      <button class="r-opt" data-value="archive">Move fragments of closed plans to the archive</button>
+      <button class="r-opt" data-value="replace">Replace each closed plan&#x27;s record with a closure overview, then remove its fragments</button>
+      </p>
+    <p class="r-dec-rat">Lead decision 2026-11-15: freeze the existing fragments and landed records in place.</p>
+    </div>
+<div class="r-dec" data-key="per-node-fragment" data-choice="optional" data-by="Simon McIntosh" data-when="2026-11-15T07:46:02+00:00">
+    <p class="r-dec-q">Should any node still write a per-node fragment?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="none">No node writes one</button>
+      <button class="r-opt chosen" data-value="optional">Optional, for a negative result or a mechanism that does not fit a landing line</button>
+      <button class="r-opt" data-value="keep">Keep the requirement as it is</button>
+      </p>
+    <p class="r-dec-rat">Lead decision 2026-11-15: a fragment is optional, for a negative result or a mechanism that does not fit a landing line.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-alro-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-15" data-recommends-skill="/reckon-build a-landing-is-recorded-once" data-resolved-at="" data-resolved-by="">
-        <h4 class="r-fu-title">Build once the lead adopts the plan and settles both decisions</h4>
-        <div class="r-fu-body"><p>§2, §3 and §4 are independent. §3 waits on §2 for the figures a run names, §4 is independent, and §5 waits on §3. §6 is deferred until the per-node-fragment decision is settled, and then waits on §3 and §4, so the fragment requirement is removed only after the overview and the closure guard exist.</p></div>
-        <pre class="r-fu-prompt">/reckon-build a-landing-is-recorded-once</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-alro-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-15" data-recommends-skill="/reckon-build a-landing-is-recorded-once" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build once the lead adopts the plan and settles both decisions</h4>
+    <div class="r-fu-body"><p>§2, §3 and §4 are independent. §3 waits on §2 for the figures a run names, §4 is independent, and §5 waits on §3. §6 is deferred until the per-node-fragment decision is settled, and then waits on §3 and §4, so the fragment requirement is removed only after the overview and the closure guard exist.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-landing-is-recorded-once</pre>
+    </article>
+</section>
   </main>
 </body>
 </html>
