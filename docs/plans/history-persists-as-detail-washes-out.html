@@ -23,7 +23,7 @@
   <title>History Persists As Detail Washes Out | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="34">
+<meta name="plan-version" content="35">
 <meta name="plan-modified" content="2026-11-15">
 <meta name="plan-section-declarations" content="{&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;implementable&quot;,&quot;s22&quot;:&quot;implementable&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s24&quot;:&quot;implementable&quot;,&quot;s25&quot;:&quot;implementable&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s27&quot;:&quot;implementable&quot;}">
 <meta name="plan-section-depends-on" content="{&quot;s26&quot;:[&quot;history-persists-as-detail-washes-out#s21&quot;,&quot;history-persists-as-detail-washes-out#s22&quot;,&quot;history-persists-as-detail-washes-out#s23&quot;,&quot;history-persists-as-detail-washes-out#s24&quot;,&quot;history-persists-as-detail-washes-out#s25&quot;],&quot;s27&quot;:[&quot;history-persists-as-detail-washes-out#s26&quot;]}">
@@ -495,6 +495,9 @@
 </div>
 <div class="r-comment" data-section="s21" data-id="c-run-r-20261115T123626511831-review-of-store-write-is-load-bearing-s21-0cf2981aa1e0" data-who="reckon-build" data-when="2026-11-15T12:48:50.283Z">
     <div class="r-comment-body"><p>Independent review of r-20261115T102529193137-store-write-is-load-bearing-s21 at 0cf2981aa1e0 (base 58784d730312): all six dimensions scored 19/17/20/19/19/20, added_failure_count 0 from the run's own arms, one non-blocking finding on the fragment's arm prose.</p></div>
+</div>
+<div class="r-comment" data-section="s21" data-id="c-run-r-20261115T102529193137-store-write-is-load-bearing-s21" data-who="reckon-build" data-when="2026-11-15T12:24:55Z">
+    <div class="r-comment-body"><p>The run store write is load-bearing: `_index_append` raises a LedgerError naming the store path and `python scripts/import_runs_into_store.py --project &lt;project&gt;` instead of returning a failure payload, and `append_run` writes the store row before the rebuildable projections so a refusing store unlinks the per-run file and leaves no row in either store. The promotion test `tests/test_crew_promotion.py::test_a_failing_store_write_refuses_the_promotion_and_leaves_no_row` is inverted to that contract (exit 1, refusal names store and repair verb, run file gone, compare 0/0/0); the same file&#x27;s two store-write tests also gained the terminal `EXIT=0` line in the cited gate log, which the evidence check requires and which had kept both red at base. Arms on all_debug: base 106 passed 2 failed exit 1, head 110 passed exit 0.</p></div>
 </div>
 <div class="r-comment" data-section="s22" data-id="c-run-r-20261115T121702773424-review-of-ledger-reads-the-store-s22-4bc9d8bf1d74" data-who="reckon-build" data-when="2026-11-15T12:41:40.411Z">
     <div class="r-comment-body"><p>none (review node; the review record is the deliverable, and the coordinator lands it)</p></div>
