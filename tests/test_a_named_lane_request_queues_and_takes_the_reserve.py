@@ -437,7 +437,7 @@ def test_a_queued_review_edited_to_codex_keeps_its_reviewed_run(
     dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Moving a waiting review changes the lane, not the run it reviews."""
-    _reserve_the_roster(dispatch_repo, monkeypatch, occupants=LIMIT - RESERVE)
+    _reserve_the_roster(dispatch_repo, monkeypatch, occupants=LIMIT)
     config = _config()
     _pointer(
         "r-delivered",
@@ -456,6 +456,14 @@ def test_a_queued_review_edited_to_codex_keeps_its_reviewed_run(
         phase="queued",
         node_id="review-of-r-delivered",
     )
+    _pointer(
+        "r-local-waiting",
+        dispatch_repo,
+        backend=LOCAL,
+        local=True,
+        phase="queued",
+        node_id="local-waiting",
+    )
 
     from reckon.crew import queue_edit, recovery_review_delivery
 
@@ -466,6 +474,14 @@ def test_a_queued_review_edited_to_codex_keeps_its_reviewed_run(
     assert moved["backend"] == NAMED, moved
 
     recorded: list = []
+    # A full roster holds it: the moved review waits rather than being lost.
+    at_the_cap = _admit(config, _launcher([]))
+    assert at_the_cap["launched"] == [], at_the_cap
+    assert at_the_cap["failed"] == [], at_the_cap
+    assert runs.read_pointer("r-review")["phase"] == "queued"
+
+    # One seat frees, and the named request takes it from the local queue.
+    runs.pointer_path(f"r-occupant-{LIMIT - 1}").unlink()
     admitted = _admit(config, _launcher(recorded))
 
     assert admitted["launched"] == ["r-review"], admitted
