@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": [
+    "derived from the reviewed run's own arms on disk: after_suite (logs/after-arm.log at 8d32dce587) records 60 passed, no FAILED line, EXIT=0; baseline_suite (logs/base-arm.log at 251cb1cd) records 55 passed, no FAILED line, EXIT=0; the difference is empty. Cross-checked over the importer population the manifest names: logs/importer-base.log and logs/importer-after.log each carry the same 18 pre-existing FAILED/ERROR ids, a sorted diff of the two id sets is empty, and the pass count moves 115 to 120."
+  ],
+  "call_sites": [
+    "reckon/crew/merge.py:528",
+    "reckon/crew/merge.py:1185",
+    "reckon/crew/promotion_scope.py:1985",
+    "reckon/crew/promotion_scope.py:2568",
+    "reckon/crew/promotion_scope.py:2762",
+    "reckon/crew/promotion_scope.py:2940",
+    "reckon/ledger.py:3177",
+    "reckon/ledger.py:3211"
+  ],
+  "completed_at": "2026-11-15T06:10:49.772Z",
+  "dispatched_at": "2026-11-15T05:54:55Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-landing-commit-retries-a-released-lock.html",
+      "line": "29",
+      "severity": "non-blocking",
+      "summary": "the measure paragraph attributes the 60-passed gate to head c9d5bfef74 while the log it cites records revision 8d32dce587",
+      "text": "non-blocking: line 29 reads 'At the head c9d5bfef74 the gate reports 60 passed, exit 0 (logs/after-arm.log)', but logs/after-arm.log's own header names revision 8d32dce587738969f0ffa81e3c15853463213f53, so the fragment and the log it cites disagree about the revision the gate ran at. 8d32dce587 is docs-only so the numbers are identical and the repair is one word; it matters because a reader checking the citation finds a different revision from the one the prose names."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against efeb0d0d: c9d5bfef74 restores result.returncode != 0 as the first conjunct at merge.py:871, adds the 47-line case test_a_successful_call_is_not_retried_while_a_lock_is_held, and updates two helper docstrings; 8d32dce587 adds 10 lines of fragment prose only.",
+    "done_when": "the done_when names tests/test_a_landing_commit_retries_a_released_lock.py passing every plan case, the base revision failing the released-lock case, and no added importer failure; logs/after-arm.log records 60 passed EXIT=0 at revision 8d32dce587, logs/negative-control.log records 1 failed 3 passed EXIT=1 on test_a_lock_released_after_the_failed_call_still_waits, logs/negative-control-repair.log records 1 failed 4 passed EXIT=1 on test_a_successful_call_is_not_retried_while_a_lock_is_held, and the two importer arms carry the same 18 failure ids with the pass count moving 115 to 120.",
+    "goal": "the node goal is to retry a git call refused by this checkout's index lock even when the lock is gone by the time the wait helper looks, up to the same bound; reckon/crew/merge.py:871-874 keeps that predicate and adds result.returncode != 0 ahead of it, so the goal holds and a successful call is no longer re-run.",
+    "manifest": "read at status complete; it claims four commits ending 8d32dce587, a 60-passed head arm against a 55-passed base arm, a repair control failing only the successful-call case, a clean worktree, and 18 pre-existing importer failures at both arms; each of those claims is present in the logs I reopened, and the reviewed worktree is clean at 8d32dce587.",
+    "write_paths": "the declared paths are reckon/crew/merge.py, tests/test_a_landing_commit_retries_a_released_lock.py, a fragment under docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/ and a figures directory; the commits gained since efeb0d0d touch only the first three and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_landing_commit_retries_a_released_lock.py:220 asserts attempts == [1], and logs/negative-control-repair.log shows that assertion failing when the failed-only guard is absent at efeb0d0d, so reinstating the regression reddens the case.",
+    "evidence": "logs/after-arm.log carries revision 8d32dce587, the literal command, 60 passed and a bare EXIT=0, and logs/negative-control-repair.log reddens exactly test_a_successful_call_is_not_retried_while_a_lock_is_held at efeb0d0d.",
+    "fit": "reckon/crew/merge.py:807-825 names and documents the predicate for exactly what it is asked about, matching the surrounding helper idiom at merge.py:710 and carrying no plan or ticket label.",
+    "goal_fidelity": "reckon/crew/merge.py:871-874 asks _failed_on_this_index_lock only behind result.returncode != 0, so the released-lock retry the goal names survives while a success is never re-run.",
+    "reuse": "the commit extends _run_waiting_out_a_held_index_lock at merge.py:828 and reuses _index_lock_path and the caller's own attempt bound rather than adding a second retry loop or a second lock predicate.",
+    "scope_discipline": "the gained commits touch only reckon/crew/merge.py:871-874, tests/test_a_landing_commit_retries_a_released_lock.py and the declared evidence fragment; the only unrelated line is the whitespace-only reindent of land_merge's call at merge.py:1191, inside the declared file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to retry a git call refused by this checkout's index lock even when the lock is gone by the time the wait helper looks, up to the same bound; reckon/crew/merge.py:871-874 keeps that predicate and adds result.returncode != 0 ahead of it, so the goal holds and a successful call is no longer re-run.\nVERDICT done_when: the done_when names tests/test_a_landing_commit_retries_a_released_lock.py passing every plan case, the base revision failing the released-lock case, and no added importer failure; logs/after-arm.log records 60 passed EXIT=0 at revision 8d32dce587, logs/negative-control.log records 1 failed 3 passed EXIT=1 on test_a_lock_released_after_the_failed_call_still_waits, logs/negative-control-repair.log records 1 failed 4 passed EXIT=1 on test_a_successful_call_is_not_retried_while_a_lock_is_held, and the two importer arms carry the same 18 failure ids with the pass count moving 115 to 120.\nVERDICT write_paths: the declared paths are reckon/crew/merge.py, tests/test_a_landing_commit_retries_a_released_lock.py, a fragment under docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/ and a figures directory; the commits gained since efeb0d0d touch only the first three and nothing outside them.\nVERDICT manifest: read at status complete; it claims four commits ending 8d32dce587, a 60-passed head arm against a 55-passed base arm, a repair control failing only the successful-call case, a clean worktree, and 18 pre-existing importer failures at both arms; each of those claims is present in the logs I reopened, and the reviewed worktree is clean at 8d32dce587.\nVERDICT diff: read commit by commit against efeb0d0d: c9d5bfef74 restores result.returncode != 0 as the first conjunct at merge.py:871, adds the 47-line case test_a_successful_call_is_not_retried_while_a_lock_is_held, and updates two helper docstrings; 8d32dce587 adds 10 lines of fragment prose only.\nCALL_SITES: reckon/crew/merge.py:528, reckon/crew/merge.py:1185, reckon/crew/promotion_scope.py:1985, reckon/crew/promotion_scope.py:2568, reckon/crew/promotion_scope.py:2762, reckon/crew/promotion_scope.py:2940, reckon/ledger.py:3177, reckon/ledger.py:3211\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/merge.py:871-874 asks _failed_on_this_index_lock only behind result.returncode != 0, so the released-lock retry the goal names survives while a success is never re-run.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/after-arm.log carries revision 8d32dce587, the literal command, 60 passed and a bare EXIT=0, and logs/negative-control-repair.log reddens exactly test_a_successful_call_is_not_retried_while_a_lock_is_held at efeb0d0d.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the gained commits touch only reckon/crew/merge.py:871-874, tests/test_a_landing_commit_retries_a_released_lock.py and the declared evidence fragment; the only unrelated line is the whitespace-only reindent of land_merge's call at merge.py:1191, inside the declared file.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_landing_commit_retries_a_released_lock.py:220 asserts attempts == [1], and logs/negative-control-repair.log shows that assertion failing when the failed-only guard is absent at efeb0d0d, so reinstating the regression reddens the case.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/merge.py:807-825 names and documents the predicate for exactly what it is asked about, matching the surrounding helper idiom at merge.py:710 and carrying no plan or ticket label.\nSCORE reuse: 19\nJUSTIFICATION reuse: the commit extends _run_waiting_out_a_held_index_lock at merge.py:828 and reuses _index_lock_path and the caller's own attempt bound rather than adding a second retry loop or a second lock predicate.\nFINDING docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-landing-commit-retries-a-released-lock.html:29 non-blocking: line 29 reads 'At the head c9d5bfef74 the gate reports 60 passed, exit 0 (logs/after-arm.log)', but logs/after-arm.log's own header names revision 8d32dce587738969f0ffa81e3c15853463213f53, so the fragment and the log it cites disagree about the revision the gate ran at. 8d32dce587 is docs-only so the numbers are identical and the repair is one word; it matters because a reader checking the citation finds a different revision from the one the prose names.\n",
+  "review_node": "review-of-a-landing-commit-retries-a-released-lock-8d32dce58773",
+  "review_run_id": "r-20261115T055315545788-review-of-a-landing-commit-retries-a-released-lock-8d32dce58773",
+  "reviewed_base_sha": "efeb0d0d4339cb0ed0700c01957f488ae99aef12",
+  "reviewed_head_sha": "8d32dce587738969f0ffa81e3c15853463213f53",
+  "reviewed_run_id": "r-20261115T031844233655-a-landing-commit-retries-a-released-lock",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T06:17:02.537642+00:00",
+  "total": 112
+}
