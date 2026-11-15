@@ -25,7 +25,7 @@
   <title>A Landing Never Waits On A Shared Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="58">
+<meta name="plan-version" content="59">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -244,7 +244,10 @@
     <div class="r-comment-body"><p>A landing's staging, commit and rollback now wait out a shared index lock another writer holds for up to a minute (130 attempts 0.5 s apart, a 64.5 s span, up from 12 attempts and a 5.5 s span) and refuse only on a lock that outlasts it, naming the lock's age and the bound; gate 53 passed at head 50493b22a8, base arm 51 passed, and the negative control is 2 failed at cb25b41dfd with the 20 s hold rolling the promotion back.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261115T023840531008-review-of-a-promotion-lands-in-under-a-minute-with-peers-897549cbc445" data-who="reckon-build" data-when="2026-11-15T03:34:09.684Z">
-    <div class="r-comment-body"><p>Reviewed r-20261114T143927859241-a-promotion-lands-in-under-a-minute-with-peers at base 1d16388a31..897549cbc4 (one commit, 77 inserted lines, one file): scores goal_fidelity 16, evidence 12, scope_discipline 19, durability 5, fit 17, reuse 20; the timings and the eleven-of-twelve landing result are accurate and reconcile with the run&#x27;s stream, but one blocking finding stands — the fragment at :41 attributes the refused promotion to a six-second landing-commit retry bound that the named revision does not define (reckon/crew/promotion_scope.py:2080-2081 sets 130 attempts at 0.5 s, and the refused promotion ran 4.87 s in full).</p></div>
+    <div class="r-comment-body"><p>Reviewed r-20261114T143927859241-a-promotion-lands-in-under-a-minute-with-peers at base 1d16388a31..897549cbc4 (one commit, 77 inserted lines, one file): scores goal_fidelity 16, evidence 12, scope_discipline 19, durability 5, fit 17, reuse 20; the timings and the eleven-of-twelve landing result are accurate and reconcile with the run's stream, but one blocking finding stands — the fragment at :41 attributes the refused promotion to a six-second landing-commit retry bound that the named revision does not define (reckon/crew/promotion_scope.py:2080-2081 sets 130 attempts at 0.5 s, and the refused promotion ran 4.87 s in full).</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261115T045402525342-review-of-a-landing-commit-retries-a-released-lock-efeb0d0d4339" data-who="reckon-build" data-when="2026-11-15T05:21:02.986Z">
+    <div class="r-comment-body"><p>reviewed r-20261115T031844233655-a-landing-commit-retries-a-released-lock from base 251cb1cd058784974614ba8cc292d665b7ca7dc1 to head efeb0d0d4339cb0ed0700c01957f488ae99aef12: scores goal_fidelity 18, evidence 18, scope_discipline 16, durability 14, fit 15, reuse 18; added_failure_count 0 over an added_failure_ids of []; one blocking finding at reckon/crew/merge.py:867, where the retry loop dropped its result.returncode != 0 guard and so retries a successful step whenever the checkout&#x27;s index.lock exists at the check.</p></div>
 </div>
 </section>
 </main>
