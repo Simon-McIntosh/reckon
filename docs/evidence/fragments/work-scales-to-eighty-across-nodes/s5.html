@@ -9,7 +9,7 @@
   <meta name="plan-evidence-for" content="reckon:work-scales-to-eighty-across-nodes">
   <meta name="plan-verifies" content="reckon:work-scales-to-eighty-across-nodes#s5">
   <meta name="plan-recorded-at" content="2026-11-15">
-  <meta name="plan-verdict" content="passed">
+  <meta name="plan-verdict" content="qualified">
   <title>The station tick at 230 live runs, both arms</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -33,7 +33,11 @@
 
   <p id="s5-readings"><strong>Every reading.</strong> Base, seconds: 2.966, 8.997, 1.453, 1.456, 1.471, 1.451, 1.493, 1.467, 1.501, 1.489, 1.519, 1.494, 1.613, 6.081, 1.543, 1.528, 1.566, 1.54, 1.571, 1.546. Head, seconds: 2.81, 5.476, 1.542, 1.475, 1.513, 1.482, 1.512, 1.476, 1.519, 1.521, 1.549, 1.516, 1.547, 3.789, 2.033, 1.547, 2.165, 1.546, 1.585, 1.561. Resident memory after each tick: base 87 to 94 MB, head 77 to 89 MB.</p>
 
-  <p id="s5-negative-control"><strong>Negative control.</strong> The section's control is the same measure at the base revision recording ticks over 30 seconds. It <strong>does not reproduce</strong> at this population: the base arm's worst tick is 8.997 s and its median is 1.523 s. The base revision of this worktree already carries the earlier stream work, so the 2 to 6 minute ticks recorded on the fleet node are not reproducible from 230 live runs alone — they also depended on the node's memory pressure, which a synthetic population does not carry. What the base revision does show is the mechanism this node repaired: a tick over 230 live runs with nothing new read 874 run streams before the repair and reads none after it.</p>
+  <p id="s5-verdict"><strong>Why this record is qualified and not passed.</strong> The section's done-when names this record's control: the same measure at the base revision, recording ticks over 30 seconds. It does not reproduce, so the record does not claim the verdict a passing record must carry. The record's own table is the evidence for that verdict: both arms report 0 of 20 readings over bound, and the base arm's worst tick is 8.997 s. What the section does have is the repair's mechanism, shown to fire, and its bound met at two populations on two nodes.</p>
+
+  <p id="s5-control-shape"><strong>Why the time control cannot be produced from this measure.</strong> Two facts, both measured here rather than reasoned from the code. First, the measure appends 32 KiB to <em>every</em> run's stream before every tick, so every stream moves on every tick and the memo this node repaired has nothing to skip; the arm where the memo's effect shows — a quiet fleet — is the one the counter measured, 874 opens before and 0 after, and not the timed arms, whose medians are 1.523 s and 1.546 s. Second, on the same population the base's cold first tick costs 2.966 s against a steady 1.453 s, so the cold tick is the dearer of the two. A population whose steady base tick reached 30 s would put the shared cold tick — run by both revisions, since both decode the backlog once — at roughly twice that, over the same bound the section sets for every tick. So no population of this measure can show the base over 30 seconds while the head stays under it: the control the section names and the bound the section sets cannot both hold for one measure of this shape.</p>
+
+  <p id="s5-negative-control"><strong>What stands in the control's place.</strong> The red log this node declares is the repair's own mutation: with the memo removed from <code>reckon/crew/recovery_wait.py</code>, the quiet-tick case fails on the 230 streams it reads (2 failed, EXIT=1), and passes with the memo restored. That is a control over the mechanism the node repaired, not over the section's time bound, and it is recorded as such.</p>
 
   <p id="s5-logs"><strong>The logs.</strong> Under <code>logs/</code> in the run whose id names this node: <code>tick-base-all_debug.log</code> and <code>tick-head-all_debug.log</code> (the two arms above, each with its JSON), <code>tick-base-1mb.log</code> and <code>tick-head-1mb.log</code> (the same measure on the run's own node: base max 18.319 s, head max 13.643 s, both arms 0 readings over bound), and <code>negative-control.log</code>, the repair removed and the quiet-tick case failing.</p>
 </article>

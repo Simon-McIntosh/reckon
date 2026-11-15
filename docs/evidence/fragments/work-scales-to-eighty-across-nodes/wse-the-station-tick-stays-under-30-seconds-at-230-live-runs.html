@@ -9,7 +9,7 @@
   <meta name="plan-evidence-for" content="reckon:work-scales-to-eighty-across-nodes">
   <meta name="plan-verifies" content="reckon:work-scales-to-eighty-across-nodes#s5">
   <meta name="plan-recorded-at" content="2026-11-15">
-  <meta name="plan-verdict" content="passed">
+  <meta name="plan-verdict" content="qualified">
   <title>The station tick stays under 30 seconds at 230 live runs</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -30,7 +30,7 @@
       <tr><td>head, memo, on the run's own node</td><td>13.643 s</td><td>3.575 s</td><td>89 MB</td><td>0 of 20</td></tr>
     </tbody>
   </table>
-  <p id="wse-tick-negative-control"><strong>Negative control.</strong> The section's own control — the same measure at the base revision recording ticks over 30 seconds — <strong>does not reproduce</strong>, and that is reported rather than engineered away. The base revision records no tick over 30 seconds on either node: its worst tick is 18.3 seconds on the run's node and 9.0 seconds on all_debug, with a median of 3.2 and 1.5 seconds. What the base revision does show is the mechanism the repair removes, quoted above as 874 stream opens on a tick with nothing new. The red log this node declares is the repair's own mutation: with the memo removed from <code>reckon/crew/recovery_wait.py</code>, the quiet-tick case fails on the streams it reads, and it passes with the memo restored.</p>
+  <p id="wse-tick-negative-control"><strong>Negative control, and this record's verdict.</strong> The section's own control — the same measure at the base revision recording ticks over 30 seconds — <strong>does not reproduce</strong>, so this record carries <code>plan-verdict="qualified"</code> rather than a passing verdict the control would have to support. The base revision records no tick over 30 seconds on either node: its worst tick is 18.3 seconds on the run's node and 9.0 seconds on all_debug, with a median of 3.2 and 1.5 seconds. What the base revision does show is the mechanism the repair removes, quoted above as 874 stream opens on a tick with nothing new. The red log this node declares is the repair's own mutation: with the memo removed from <code>reckon/crew/recovery_wait.py</code>, the quiet-tick case fails on the streams it reads, and it passes with the memo restored.</p>
   <p id="wse-tick-cost"><strong>What these numbers do not say.</strong> Both populations still spike — every thirteenth tick in each arm — and the spike halves with the repair (14.4 s to 8.3 s on the run's node, 6.1 s to 3.8 s on all_debug). Neither arm crosses the section's bound, so the spike is named here rather than fixed. The measure's seconds are the host's wall clock against a synthetic population with no process load and no memory pressure; they bound the tick's own work, which is what the repair changed.</p>
 </article>
 </body>
