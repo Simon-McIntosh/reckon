@@ -1,0 +1,37 @@
+<section id="bounded-store-read-s22">
+  <h2>Ledger reads select stored rows before decoding</h2>
+  <p>The run store answers ledger history, including retired records and their
+  remaining detail. Plan selection and field projection happen in SQL; the
+  record join streams its results. Fleet width uses a narrow timestamp
+  projection, and operational lookups hydrate only selected identities.
+  Explicit document reads remain the source for import and comparison.</p>
+  <p>The reproduction at <code>a4085603a2cabb227db10167e8a0305ab84599e5</code>
+  recorded <strong>800 per-run stats for 200 fixture files</strong>, and readers
+  lost their three stored rows when the documents were removed. At
+  <code>0d8ea23ad9d3210335f1deda47601cef222f38d2</code>, the stat assertion requires
+  <strong>zero</strong>, readers still answer without <code>runs/</code>, and
+  deleting and rebuilding the store returns the same nonempty answer set.</p>
+  <table>
+    <thead><tr><th>Measurement</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Baseline gate</td><td>58 passed in 35.44 s; exit 0</td></tr>
+      <tr><td>Head gate</td><td>85 passed in 45.58 s; exit 0; zero added failures</td></tr>
+      <tr><td>Live three-plan read, derived figures included</td><td>14, 134 and 74 rows; 7.5636 s total; 156.082 MB peak resident memory</td></tr>
+      <tr><td>Decode-every-row mutation</td><td>3 failed, 1 passed; exit 1</td></tr>
+    </tbody>
+  </table>
+  <p>The negative control removes plan, field and identity selection from the
+  store reader. Both plan-scoped decode checks and the header-only decode check
+  fail; each passes at head. The stat and decode instruments also see a known
+  positive input before asserting absence.</p>
+  <p>The live measurement ran on an independent <code>all_debug</code> job
+  against the existing crew-home store and aggregate-header index. It did not
+  mutate either. The legacy aggregate header fallback remains until the mutable
+  collections move to their store tables. Station memory and tick time after
+  integration belong to the landing gate.</p>
+  <p>Receipts are in the dispatch run directory: <code>baseline.log</code>,
+  <code>reproduction.log</code>, <code>after.log</code>, <code>live-read.log</code>
+  and <code>negative-control.log</code>. The source and tests are committed in
+  <code>5bd3f77bd4875721f1a202dd652ca48a2fed34fa</code> and
+  <code>0d8ea23ad9d3210335f1deda47601cef222f38d2</code>.</p>
+</section>
