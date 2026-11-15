@@ -1,0 +1,68 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T14:44:41.561Z",
+  "dispatched_at": "2026-11-15T14:43:46Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/history-persists-as-detail-washes-out.html:380",
+      "id": "reasoning-1",
+      "reason": "a worker following this restates a revision-scoped read the script does not have and leaves the silent skip in place, so the section's write path is exercised yet the figure stays wrong with nothing failing.",
+      "text": "s24's Why says \"the review-cycle figure script reads `crew.json` the same way\" (at a revision), restating the s20 map's claim that `measure_review_cycles.py:333` reads it \"as git objects\"; the code reads the working-tree path and skips silently \u2014 `ledger = repo / \"docs\" / \"state\" / project / \"crew.json\"`, `if not ledger.is_file(): continue`, then `ledger.read_text()` (`docs/figures/plan-review-cycles/measure_review_cycles.py:333-336`) \u2014 so there is no revision dimension to restate and the failure is not zero, it is every dispatch time quietly omitted from the cadence figures",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/history-persists-as-detail-washes-out.html:402",
+      "id": "done_when-1",
+      "reason": "as written the node either makes `hanney` and every crew project without `crew.json` or `flight.yaml` unrecognised (both guards fail open in a crew-managed tree, the failure \u00a725 existed to prevent) or cannot satisfy its own first clause, and the endpoint must name the crew-specific repository-local marker it recognises when `index.json` is demoted before it is dispatched.",
+      "text": "s28 requires that a repository \"holding only the static-site `index.json` that `reckon build` writes\" is not recognised, while also requiring that \"a repository holding a repository-local crew marker that \u00a725 recognises, other than the static-site `index.json`, is still recognised\" and that \"\u00a725's test still passes\": the landed marker tuple is exactly `(\"index.json\", \"flight.yaml\", \"crew.json\")` (`reckon/hooks/native_agent_guard.py:57`, `reckon/hooks/worker_message_guard.py:54`, `reckon/cli_entry.py:377`), so removing `index.json` from the predicate leaves only `flight.yaml` (flight configuration, not crew) and `crew.json`; and both the shape and the content of the file are shared, because `reckon build` writes `docs/state/<project>/index.json` as `{updated, project, doc, data}` (`reckon/project_maintenance_commands.py:645-682`) while a crew project's own `docs/state/reckon/index.json` carries the same envelope, so no content test separates them; measured here, `tessera`, `norma`, `helix` and `vv` hold `index.json`, `project.json`, `timeline.html` and no crew history (the false positives s28 names), while `hanney` \u2014 12 rows in the crew run store, `docs/state/hanney/reviews/*` and `runs/*.json` tracked \u2014 holds exactly the same three files with no `crew.json` and no `flight.yaml`, so it is recognised today only through `index.json`, and \u00a725's landed `tests/test_guards_hold_without_a_tracked_ledger.py::_project_repo` asserts recognition for an `index.json`-only repository whose content is `{}`, a file s28's write paths do not include",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "3d5b8124dae7ccdb6532b79e650d1f158294fa75",
+  "plan_fingerprint": "3bf60b049460a60396ca1e8fe7e4625fb0ce7b0d5a0d0433290c0df56a1d9949",
+  "plan_slug": "history-persists-as-detail-washes-out",
+  "plan_version": 41,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261115T143406444657-plan-review-of-history-persists-as-detail-washes-out",
+  "reviewed_blob_sha": "a230c8946243d9c89949218258e0064f053de9e7",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/velocity.py` and `docs/figures/plan-review-cycles/measure_review_cycles.py` (present, and its line 333 is the ledger read s24 cites), `reckon/project_maintenance_commands.py`, `reckon/hooks/native_agent_guard.py`, `reckon/hooks/worker_message_guard.py`, `reckon/cli_entry.py`, `scripts/derive_run_figures.py` and `scripts/backfill_run_durations.py` all exist; commit `0d421c7f75` resolves (`land(r-20261115T102556398704-guards-without-tracked-ledger-s25)`); the s20 map fragment `docs/evidence/fragments/history-persists-as-detail-washes-out/ledger-leaves-git-map-s20-writable.html` exists and does name the `scripts/` readers s24 defers to.",
+    "done_when": "a finding \u2014 s28's exclusion clause and its positive control are jointly unsatisfiable with any repository-local marker the landed predicates hold, because the marker the clause removes is the only one a real crew project carries.",
+    "evidence_paths": "pass \u2014 neither section routes evidence to a session scratchpad or a node-local temporary path; both name their write paths and leave gate logs to the run's own record under the crew home.",
+    "naming": "pass \u2014 nothing in s24 or s28 carries a plan label, stage name, ticket number or version tag into a symbol, and neither reads as changelog prose.",
+    "reasoning": "a finding \u2014 s24's Why attributes to the review-cycle figure script a revision-scoped git-object read; the script reads the working tree and silently skips when the file is gone, so the stated root cause does not match the code it cites.",
+    "single_goal": "pass \u2014 s24 delivers one endpoint (revision-scoped history reads answer from the store) and s28 one (a docs-only repository is not read as crew-managed); each names a single deliverable and a single verdict closes it.",
+    "wiring": "pass \u2014 s24 is a declared upstream of \u00a726 and \u00a727 waits on \u00a726, s28 is a declared upstream of \u00a726, and every depends-on target in `plan-section-depends-on` (s21\u2013s25, s28, s26) resolves to a section that exists in this document."
+  },
+  "section_digests": {
+    "_document": "6a43111590c490cb96fbdbd1efbc232ec22261c8c21397d2d76e96d30f35b73d",
+    "s1": "16a4b0ff613308f968af13a86453cdda7611fbb4a0b662f0998319199f08c1f2",
+    "s2": "81ea5591beea9f0bfe0621b90127946f5c732b8471e2c5373404a592fa5daefe",
+    "s20": "469126d7a8d70994107c002b967dbf9da3c5237e4a3d05823281a9885c92731d",
+    "s21": "b2ec3716b6dd37a6a203c9b9d7c0be1209c9fa8d48d83ddcdf537eb47428cd4c",
+    "s22": "44eee72b2eb1fba73278d19280640ae85ab4fef9d1625113ca2a3cba0ae32c22",
+    "s23": "5f979f2ac2c694c8465c9b3b76743b70a3df967a1496488ebe45e96a41451c59",
+    "s24": "1cc46739d040a19bd188ce027af7f22a7222c51868ab0db3292a1b6a06c8d407",
+    "s25": "6e50b703cae5c188d1fb24250a943eb5f654fc5c26334335a3a7288120690168",
+    "s26": "37c27b0d54e7bf1a99e322e08776a72ffa748c2b88388aaa51f267a1db5c358a",
+    "s27": "9d55fe84f9ee617248a7eec57379797bd44bc1cb050fc378d20ac1b3da8152b2",
+    "s28": "202882eb7a5237b45a95d3ec46a908b3ff74a2d5a67105680ca1e790497d631f",
+    "s3": "3422a7a0a23c318e54716e2fbbaf99599e0142f7bbc74d9eb45f924541cd8ccf",
+    "s4": "6beff7af8378d0a3be80a490fb73cc8c5e6a8ee94449c98de40a252d2f57fcd5",
+    "s5": "0cd70cc30708f232bf564bff0e7825d783d5f5ab455747bfac40ebe742ea0ed3",
+    "s6": "5181e894e8b3823f366d0b459a48ecc8e236e645ca5b1f02071dfc0fdae47681",
+    "s7": "6173f16d89316af11f74c75b5bec44f90742582abf47efd7e72af7af3bb31b50"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T15:03:47.427507+00:00",
+  "total": null,
+  "traced_units": [
+    "s24",
+    "s28"
+  ]
+}
