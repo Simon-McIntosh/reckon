@@ -1472,6 +1472,33 @@ def create_node_tmp_runtime_paths() -> list[Path]:
     return [resolved_destination(path) for path in paths]
 
 
+def worker_scratch_write_roots(
+    writable_roots: Iterable[str | Path],
+) -> set[Path]:
+    """The handed writable roots that are some run's own scratch directory.
+
+    Every run's scratch directory is a direct child of one node-local root
+    (:func:`reckon.crew.dispatch_launch.worker_scratch_root`), and dispatch
+    hands the fence the run's own directory so the seal can re-bind it
+    writable. That directory belongs to the node that runs the worker: creating
+    it while composing the argv would place one on the host that composed the
+    launch, which for a placed step is the fleet node and not the node the
+    worker runs on. The caller therefore creates every handed root except these
+    and leaves them to the launch that knows where the worker lands.
+
+    The scratch root itself is not one of them: it is the directory sealed
+    read-only and it holds every other run's copy.
+    """
+    from reckon.crew.dispatch_launch import worker_scratch_root
+
+    root = resolved_destination(worker_scratch_root())
+    return {
+        target
+        for target in (resolved_destination(Path(raw)) for raw in writable_roots)
+        if target != root and target.is_relative_to(root)
+    }
+
+
 def worker_tmp_mount_source(
     writable_roots: Iterable[str | Path], *, node_tmp: str | Path | None
 ) -> Path | None:
@@ -1887,6 +1914,13 @@ def fence_argv(
             roots.append(target.parent)
 
     granted: set[str] = set()
+    # The run's own scratch directory is a handed root that this host may
+    # deliberately not have created: it belongs to the node that runs the
+    # worker, so the composition grants it while it is absent here and the
+    # launch that knows where the worker lands makes it before the fence runs.
+    # Every other absent root composes no grant; see
+    # :func:`worker_scratch_write_roots`.
+    by_construction = worker_scratch_write_roots(roots)
     # The handed roots minus the sealed delivery stores, resolved the way this
     # loop resolves them, so the rule that decides which roots the fence binds
     # writable is the same one the dialect is handed and an argv's ``--add-dir``
@@ -1910,8 +1944,10 @@ def fence_argv(
         # source is absent refuses the launch outright, so it composes no
         # grant. The caller creates the roots it means to hand before it
         # composes the fence, and a root it has not created yet is granted on
-        # the composition after it does.
-        if not target.exists():
+        # the composition after it does. The run's own scratch directory is the
+        # exception: it is made on the node that runs the worker, so it is
+        # granted here while absent and created there before the fence runs.
+        if not target.exists() and target not in by_construction:
             continue
         granted.add(key)
         fenced += ["--bind", key, key]

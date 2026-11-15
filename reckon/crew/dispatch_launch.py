@@ -1054,6 +1054,21 @@ def remove_worker_scratch(
     return result
 
 
+def placed_step_argv(argv: Any) -> bool:
+    """Whether a launch argv runs as a step inside a held allocation.
+
+    A step's worker runs on the node the allocation is held on, which need not
+    be the host that composed the argv: a dispatch composes on the fleet node
+    and ``srun --jobid=...`` runs the worker beside the fleet job. So the
+    decision that used to be made by re-reading the argv at the launch site is
+    named once here, and the scratch directory's own rule is read from it.
+    """
+    words = [str(word) for word in (argv or ())]
+    if not words or Path(words[0]).name != "srun":
+        return False
+    return any(word.startswith("--jobid=") for word in words[1:])
+
+
 def _worker_runtime_environment(
     environment: Mapping[str, str] | None,
     *,
@@ -1062,8 +1077,17 @@ def _worker_runtime_environment(
     attempt_started_at: str,
     coordinator_session: str,
     claude_headers: bool,
+    placed_step: bool = False,
 ) -> dict[str, str]:
-    """Add one attempt's identity to the environment inherited by its worker."""
+    """Add one attempt's identity to the environment inherited by its worker.
+
+    The worker's scratch directory is created where the worker runs, never on
+    the host that composed the launch: a placed worker's ``TMPDIR`` is made by
+    the step's own node before the fence is exec'd (see
+    :func:`step_node_directories`), so a dispatch on the fleet node writes no
+    run scratch on the fleet node's own disk. A worker that runs as a child of
+    the launcher is on this host already, so its directory is made here.
+    """
     runtime = dict(environment or {})
     runtime.update(
         {
@@ -1073,7 +1097,11 @@ def _worker_runtime_environment(
         }
     )
     if run_id:
-        runtime["TMPDIR"] = str(ensure_worker_scratch(run_id))
+        runtime["TMPDIR"] = (
+            str(worker_scratch_dir(run_id))
+            if placed_step
+            else str(ensure_worker_scratch(run_id))
+        )
     if claude_headers:
         inherited = str(
             runtime.get("ANTHROPIC_CUSTOM_HEADERS")
@@ -1107,6 +1135,7 @@ def _worker_runtime_plan(
             attempt_started_at=attempt_started_at,
             coordinator_session=coordinator_session,
             claude_headers=plan.dialect == "claude",
+            placed_step=placed_step_argv(plan.argv),
         ),
     )
 
@@ -1304,7 +1333,9 @@ _STEP_TASK_WRAPPER = (
 )
 
 
-def step_node_directories(argv: Iterable[str]) -> list[str]:
+def step_node_directories(
+    argv: Iterable[str], *, expected: Iterable[str | Path] = ()
+) -> list[str]:
     """The node-local directory bind sources a placed step must find on its node.
 
     Read from the fence's own bind triples, up to its ``--`` separator: every
@@ -1312,10 +1343,19 @@ def step_node_directories(argv: Iterable[str]) -> list[str]:
     the composing host. A file or socket source is left out, so the step never
     turns one into a directory, and a source that is a node-local root itself
     exists on every node and is left out too.
+
+    ``expected`` names sources the launch knows are directories by
+    construction but that this host has deliberately not created — the run's
+    own scratch directory, which belongs to the node that runs the worker
+    rather than to the host that composed the launch. They are kept whether or
+    not they exist here, because the step's wrapper makes each one's parent
+    chain on the node before the fence is exec'd; without that, a placed worker
+    would be the only launch whose scratch directory nobody creates.
     """
     from reckon import _worker_fence
 
     roots = (Path(_worker_fence.NODE_TMP_ROOT), NODE_LOCAL_SHM_ROOT)
+    by_construction = {str(Path(raw)) for raw in expected if raw}
     words = [str(word) for word in argv]
     try:
         start = next(
@@ -1332,7 +1372,7 @@ def step_node_directories(argv: Iterable[str]) -> list[str]:
             source = Path(words[index + 1])
             if (
                 any(source != root and source.is_relative_to(root) for root in roots)
-                and source.is_dir()
+                and (source.is_dir() or str(source) in by_construction)
                 and str(source) not in found
             ):
                 found.append(str(source))
@@ -4028,6 +4068,8 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
                 prior,
             )
         )
+    argv = [str(word) for word in plan["argv"]]
+    step_placed = placed_step_argv(argv)
     environment = _worker_runtime_environment(
         plan.get("environment") or {},
         run_id=str(spec["run_id"]),
@@ -4035,16 +4077,19 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
         attempt_started_at=_utc_now(),
         coordinator_session=str(record.get("session") or ""),
         claude_headers=str(plan.get("dialect") or "") == "claude",
-    )
-    argv = [str(word) for word in plan["argv"]]
-    step_placed = Path(argv[0]).name == "srun" and any(
-        word.startswith("--jobid=") for word in argv[1:]
+        placed_step=step_placed,
     )
     if step_placed:
         step_record = Path(str(spec["run_directory"])) / "step-task.txt"
         step_record.unlink(missing_ok=True)
         environment["RECKON_STEP_RECORD"] = str(step_record)
-        node_directories = step_node_directories(argv)
+        # The run's own scratch directory is one of the fence's node-local bind
+        # sources and this host has deliberately not created it — it belongs to
+        # the node that runs the worker — so it is named here as a source the
+        # step's wrapper must make before the fence is exec'd.
+        node_directories = step_node_directories(
+            argv, expected=(environment["TMPDIR"],)
+        )
         if node_directories:
             environment[STEP_NODE_DIRS_ENV] = os.pathsep.join(node_directories)
 
