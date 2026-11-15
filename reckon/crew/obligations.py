@@ -629,6 +629,13 @@ _VIEW_LIVE_POINTERS: ContextVar[Mapping[str, tuple[dict[str, Any], ...]] | None]
     ContextVar("reckon_obligations_view_live_pointers", default=None)
 )
 
+#: The in-flight review answer computed for one published pointer snapshot. The
+#: snapshot object identifies the pass: a view or a tick publishes a fresh tuple,
+#: so an answer stored beside the previous one is never read for a later pass.
+_VIEW_REVIEWS_IN_FLIGHT: ContextVar[Mapping[str, Any] | None] = ContextVar(
+    "reckon_obligations_view_reviews_in_flight", default=None
+)
+
 
 def _live_pointers(project: str) -> list[dict[str, Any]]:
     """The live pointers this view derives from, read once for the whole view.
@@ -1233,6 +1240,71 @@ def _in_flight_review(
         return recovery._review_in_flight(pointer)
 
 
+def _sweep_reviews_in_flight(
+    pointers: Sequence[Mapping[str, Any]],
+) -> dict[str, str | None]:
+    """The review standing for each pointer's head, from one walk of the set.
+
+    The candidates a search considers are the pointers that have launched: a
+    review the lane accepted and has not started is not working on a revision,
+    and counting it as one would hide the very duty the run still owes, so the
+    queued pointers are excluded exactly as :func:`_current_review_in_flight`
+    excludes them. The answer is keyed by every pointer in the set, including
+    the queued ones, because a queued run still asks whether a launched review
+    stands for its head.
+    """
+    launched = [
+        candidate
+        for candidate in pointers
+        if str(candidate.get("phase") or "") != queue_admission.QUEUED_PHASE
+    ]
+    return {
+        str(pointer.get("run_id") or ""): _in_flight_review(pointer, launched)
+        for pointer in pointers
+        if str(pointer.get("run_id") or "")
+    }
+
+
+def _reviews_in_flight(project: str) -> Mapping[str, str | None]:
+    """Every pointer's standing review, answered once for the whole pass.
+
+    A pass asks the same question of every pointer it holds: which live
+    reviewer stands for the run's head. The rule that answers it sweeps the
+    live pointers, so a derivation over P pointers used to pay P sweeps of P
+    pointers. The published snapshot is the pass's identity, so the first
+    question reads one sweep and every later duty in that memo. A reader outside
+    a pass has no snapshot to key on and sweeps for itself, so the answer never
+    outlives the pointers it described.
+    """
+    held = _VIEW_LIVE_POINTERS.get()
+    snapshot = held.get(project) if held is not None else None
+    memo = _VIEW_REVIEWS_IN_FLIGHT.get()
+    if snapshot is None:
+        if memo is not None:
+            _VIEW_REVIEWS_IN_FLIGHT.set(None)
+        return _sweep_reviews_in_flight(_live_pointers(project))
+    if memo is not None and memo["snapshot"] is snapshot:
+        return memo["by_run"]
+    by_run = _sweep_reviews_in_flight(_live_pointers(project))
+    _VIEW_REVIEWS_IN_FLIGHT.set({"snapshot": snapshot, "by_run": by_run})
+    return by_run
+
+
+def _standing_review(pointer: Mapping[str, Any]) -> str:
+    """The live review standing for this pointer's head, read from the pass.
+
+    Every pointer the pass published already has an answer; a pointer handed in
+    from outside the pass's own set is answered by its own sweep, so this reader
+    is correct whichever way it is entered.
+    """
+    project = str(pointer.get("project") or "")
+    run_id = str(pointer.get("run_id") or "")
+    standing = _reviews_in_flight(project)
+    if run_id and run_id in standing:
+        return str(standing[run_id] or "")
+    return _in_flight_review(pointer, _live_pointers(project))
+
+
 def _current_review_in_flight(pointer: Mapping[str, Any]) -> bool:
     """Whether a live review is working on this run's current revision.
 
@@ -1264,12 +1336,7 @@ def _current_review_in_flight(pointer: Mapping[str, Any]) -> bool:
         return False
     if _reflex_review_in_flight(pointer):
         return True
-    launched = [
-        candidate
-        for candidate in _live_pointers(str(pointer.get("project") or ""))
-        if str(candidate.get("phase") or "") != queue_admission.QUEUED_PHASE
-    ]
-    review_run_id = _in_flight_review(pointer, launched)
+    review_run_id = _standing_review(pointer)
     if not review_run_id:
         return False
     try:
@@ -1298,9 +1365,7 @@ def _current_review_in_flight(pointer: Mapping[str, Any]) -> bool:
 def _refused_delivered_review(pointer: Mapping[str, Any]) -> dict[str, str] | None:
     """Read a live review's refused delivery before asking for another review."""
     reviewed_run_id = str(pointer.get("run_id") or "")
-    review_run_id = _in_flight_review(
-        pointer, _live_pointers(str(pointer.get("project") or ""))
-    )
+    review_run_id = _standing_review(pointer)
     if not review_run_id:
         return None
     try:
