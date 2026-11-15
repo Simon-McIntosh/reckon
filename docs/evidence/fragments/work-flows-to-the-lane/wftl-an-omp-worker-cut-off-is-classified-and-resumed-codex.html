@@ -1,5 +1,5 @@
 <article id="wftl-an-omp-worker-cut-off-is-classified-and-resumed-codex-evidence">
-<h3>Unfinished omp exits: partial implementation and measured print-mode bound</h3>
+<h3>Unfinished omp exits: automatic recovery and measured print-mode bound</h3>
 <p>The original launch on <code>all_debug</code> exited with code 0 after
 75.779924 seconds. Its brief requested one 1200-second shell command, a
 1500-second tool timeout and <code>async: false</code>. The manifest still read
@@ -19,20 +19,33 @@ Explicit waits and terminal manifests retain their existing handling.</p>
 <tbody>
 <tr><td>Base census at <code>28e27b492a2b7166b15d713cf4ea2051da61fecc</code></td><td>58 passed in 49.88 s</td></tr>
 <tr><td>New controls against unchanged base source</td><td>2 failed, 2 passed in 22.10 s: no cut-off classification or automatic resume</td></tr>
-<tr><td>Partial implementation</td><td>3 passed, 2 failed in 23.03 s; cut-off classification names <code>bash: sleep 1200</code> and the sweep launches attempt 2</td></tr>
+<tr><td>Initial implementation probe</td><td>3 passed, 2 failed in 23.03 s; fixture defects prevented delivery</td></tr>
+<tr><td>Repaired focused controls on all_debug</td><td>All 5 omp controls pass. Whole focused run: 41 passed, 2 failed in 37.54 s</td></tr>
+<tr><td>Existing focused controls at base on all_debug</td><td>36 passed, the same 2 failed in 19.13 s; zero added failures</td></tr>
+<tr><td>Requested armed head on all_debug</td><td>58 passed in 36.08 s at <code>0dace38d57b4271d75f741880f1509ba6c2afd36</code></td></tr>
 <tr><td>Original all_debug worker</td><td>Exit 0 at 75.779924 s; command cancelled and manifest unfinished</td></tr>
 <tr><td>Repaired all_debug worker</td><td>Batch job 1317772 completed: exit 0 after 1218.865844 s; the 1200-second shell returned its marker and the manifest reached complete</td></tr>
 </tbody>
 </table>
-<p>Delivery is held by the repeated-failure stop rule. The resumed test
-executable is hidden by the fence's private temporary directory; the live
-control changes its process receipt but retains an exit record naming the dead
-worker. These fixtures need correction before a passing head gate can be
-claimed. No merged-head verification or plan state change is claimed.</p>
+<p>The authorized fixture repair creates the stand-in executable under the
+run directory explicitly passed to the fenced launch. The live control
+regenerates its exit receipt through the supervisor's composer from the worker
+record it describes. Every existing assertion remains, including the required
+<code>running</code> classification; a worker-identity assertion also checks the
+receipt. The repaired integration proves classification names
+<code>bash: sleep 1200</code>, the sweep launches attempt 2 without a coordinator,
+and that attempt exits 0 with a complete manifest. The complete-at-exit control,
+live-worker control, configured attempt bound and print-wake setting all pass.</p>
+<p>The paired broader focused runs retain the same two baseline failures; no
+failure is added. The separately requested armed head gate is green. These are
+node-local measurements, and merged-head verification remains the coordinator's
+separate gate.</p>
 <p>Durable logs and receipts live under
 <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T132239549895-wftl-an-omp-worker-cut-off-is-classified-and-resumed-codex/</code>:
 <code>base-suite.log</code>, <code>reproduction.log</code>,
 <code>focused-head.log</code>, <code>focused-corrected.log</code>,
 <code>runtime-measure/receipt.json</code> and
-<code>runtime-measure-fixed/receipt.json</code>.</p>
+<code>runtime-measure-fixed/receipt.json</code>,
+<code>resumed-focused.log</code>, <code>resumed-focused-base.log</code>, and
+<code>resumed-armed-head.log</code>.</p>
 </article>
