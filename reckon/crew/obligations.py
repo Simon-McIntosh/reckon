@@ -217,6 +217,10 @@ DUTY_ROW_FIELDS = (
     # The paths a checkout's index stages as deleted while HEAD and the working
     # tree both still carry them.
     "paths",
+    # The step a defaulted route's pick gave up in, named in the pick's own
+    # vocabulary for a step inside the call and in the dispatcher's for one of
+    # its own stages.
+    "route_step",
 )
 
 # A review whose attempt the lane's admission gate refused with ``lane-paused``
@@ -330,6 +334,13 @@ PRODUCER_GONE_DUTY_KIND = "run-producer-gone"
 # the request.
 WAIT_UNRESOLVABLE_DUTY_KIND = "wait-unresolvable"
 
+# A run the dispatcher placed on a default lane because its pick failed rather
+# than answered. The route is not the router's reading of the run, so the row
+# names the step the pick gave up in and the lane the run therefore takes. It is
+# a notice rather than a debt: the run is working, and whether to move it is the
+# coordinator's judgement, so it never holds a stop open.
+ROUTE_DEFAULTED_DUTY_KIND = "route-defaulted"
+
 # A main checkout whose index stages a path as deleted while HEAD and the
 # working tree both still carry it. An ordinary ``git commit`` in that checkout
 # records the deletion, and the working tree shows nothing wrong. It is a
@@ -366,6 +377,7 @@ NON_BLOCKING_DUTY_KINDS = frozenset(
         INDEX_LAG_DUTY_KIND,
         SCOPE_HELD_DUTY_KIND,
         REPAIR_ROUND_DUTY_KIND,
+        ROUTE_DEFAULTED_DUTY_KIND,
     }
 )
 
@@ -1730,6 +1742,46 @@ def _live_item(
             item["reason"] = f"{verdict}: {reason}" if reason else verdict
             item["next_command"] = f"wait: {item['reason']}"
     return item
+
+
+def _route_defaulted_items(
+    classified: Sequence[Mapping[str, Any]],
+    pointers: Mapping[str, Mapping[str, Any]],
+    *,
+    session: str,
+    now: datetime,
+) -> list[dict[str, Any]]:
+    """The live runs a failed pick placed on a default lane.
+
+    A pick that failed rather than answered leaves dispatch with the configured
+    default as its only placement, and the selection records the step it gave up
+    in. That marker reaches no reader otherwise: the run is working, so no
+    recovery reading owes it a duty, and a coordinator sees a run on a lane the
+    router never chose with nothing saying why. The row carries the step and the
+    failure's own text, and is listed for as long as the pointer stands.
+    """
+    items: list[dict[str, Any]] = []
+    for row in classified:
+        run_id = str(row.get("run_id") or "")
+        if not run_id:
+            continue
+        owner = str(row.get("session") or "")
+        if owner and owner != session:
+            continue
+        pointer = pointers.get(run_id)
+        if pointer is None:
+            continue
+        selection = runs.dispatch_field(pointer, "picker_selection")
+        if not isinstance(selection, Mapping):
+            continue
+        defaulted = selection.get("route_defaulted")
+        if not isinstance(defaulted, Mapping):
+            continue
+        item = _live_item(row, kind=ROUTE_DEFAULTED_DUTY_KIND, now=now)
+        item["route_step"] = str(defaulted.get("step") or "")
+        item["reason"] = str(defaulted.get("detail") or "")
+        items.append(item)
+    return items
 
 
 def admission_verdicts() -> dict[str, dict[str, Any]]:
@@ -4194,6 +4246,15 @@ def _obligations_view(
     # slice of it equal for the same files; anything else parked is listed
     # under the classification its reader gave it.
     listed = {str(item.get("run_id") or "") for item in items}
+    # A run the dispatcher placed on a default lane carries the marker its
+    # selection recorded, so the reason it was placed there is listed beside the
+    # work rather than left on a payload only a dispatch's own output shows. The
+    # row is a notice: the run is working, and nothing about it is waiting.
+    defaulted_routes = _route_defaulted_items(
+        classified, pointers, session=session, now=now
+    )
+    items.extend(defaulted_routes)
+    listed.update(str(item.get("run_id") or "") for item in defaulted_routes)
     for row in classified:
         run_id = str(row.get("run_id") or "")
         if not run_id or run_id in listed:
