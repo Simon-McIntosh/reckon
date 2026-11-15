@@ -194,20 +194,22 @@ def test_a_released_composed_review_is_composed_again(
     assert not runs.pointer_path(review_run_id).exists()
     assert not runs.run_dir(review_run_id).exists()
 
-    recorded = runs.read_pointer(REVIEWED_RUN)[
+    # Read now, because a successful composition writes this record again.
+    released = runs.read_pointer(REVIEWED_RUN)[
         recovery_review_dispatch.REVIEW_DISPATCH_FIELD
     ]
-    assert recorded["status"] == "released-stranded-launch", recorded
-    assert review_run_id in recorded["reason"]
 
-    # The run still stands at the head the release was for.
+    # The run still stands at the head the release was for, and the next reflex
+    # pass composes its review again.
     refreshed = runs.read_pointer(REVIEWED_RUN)
     assert refreshed["run_id"] == REVIEWED_RUN
     again = recovery_review_dispatch.dispatch_review_for_run(
         refreshed, config=_config(tmp_path, worker_slots=1), launcher=_launcher([])
     )
 
-    assert again.get("dispatched") is True, again
+    assert again.get("dispatched") is True, again.get("reason") or again
+    assert released["status"] == "released-stranded-launch", released
+    assert review_run_id in released["reason"]
     composed = str(again.get("review_run_id") or "")
     assert composed and composed != review_run_id
     assert runs.pointer_path(composed).is_file()
