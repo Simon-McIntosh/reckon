@@ -480,7 +480,9 @@ def test_a_receipt_for_another_run_does_not_end_this_attempt(
         "a receipt for another run must not end this attempt"
     )
 
-    receipt_path.write_text(json.dumps({"attempt": 2, "run_id": RUN_ID}), encoding="utf-8")
+    receipt_path.write_text(
+        json.dumps({"attempt": 2, "run_id": RUN_ID}), encoding="utf-8"
+    )
     assert (
         dispatch_launch_module._terminal_attempt_phase(directory, attempt) == "complete"
     ), "the same receipt naming this run does end it"

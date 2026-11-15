@@ -4781,7 +4781,9 @@ def _record_step_wait(run_directory: Path, client_pid: int) -> None:
     )
 
 
-def _attempt_ending_receipt(record: Mapping[str, Any], attempt: Mapping[str, Any]) -> bool:
+def _attempt_ending_receipt(
+    record: Mapping[str, Any], attempt: Mapping[str, Any]
+) -> bool:
     """Whether this attempt holds the exit receipt its own ending wrote.
 
     The supervisor that ends an attempt writes ``attempt-<n>-exit.json`` for it,
