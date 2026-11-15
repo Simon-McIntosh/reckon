@@ -949,7 +949,7 @@ def _stream_age(seconds: Any) -> str:
     return _elapsed(float(whole))
 
 
-def _bucket_of(state: Any, classification: Any) -> str | None:
+def _bucket_of(state: Any, *older: Any) -> str | None:
     """Which counter bucket a run's state belongs to, or None off the fleet.
 
     Membership is read from the fleet partition rather than restated, so the
@@ -962,8 +962,12 @@ def _bucket_of(state: Any, classification: Any) -> str | None:
     beside it: the two say different things about a held run — the word says
     whose move lifts the hold, the classification names the hold — so reading
     the classification here is how a request the queue parked, drawn waiting,
-    came to be counted somewhere else.
+    came to be counted somewhere else. Any further argument is accepted and
+    ignored, for callers written when this read took the classification beside
+    the word; the fleet partition's counter asks for the bucket from the word
+    alone, and so does this.
     """
+    del older
     from reckon.crew.recovery import (
         FLEET_BLOCKED_STATES,
         FLEET_UNPROMOTED_STATES,

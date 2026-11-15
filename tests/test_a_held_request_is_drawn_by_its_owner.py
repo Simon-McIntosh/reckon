@@ -30,6 +30,7 @@ from reckon.crew.recovery_watch import (
     _fleet_counts,
     _watch_snapshot,
     _watch_verdict,
+    classify_pointer,
 )
 from reckon.crew.ticker import PANE_STATES, _bucket_of, _display_state
 
@@ -156,7 +157,11 @@ def test_a_request_the_queue_parks_is_drawn_waiting(
     # vocabulary that decides which pane the word sits in all agree.
     assert row["state"] == "waiting", row
     assert _pane_word(_display_state(row["state"])) == "waiting", row
-    assert _bucket_of(row["state"], row["recovery_classification"]) == "waiting", row
+    assert _bucket_of(row["state"]) == "waiting", row
+    # Nothing a coordinator does lifts this hold, so the row hands no command:
+    # the release the classifier names for a held pointer would launch over the
+    # admission pass's own release path.
+    assert not row["next_action"], row
 
     counts = _counts(snapshots)
     assert counts.get("waiting") == 1, counts
@@ -173,7 +178,14 @@ def test_a_coordinator_hold_is_drawn_needs_you_and_names_the_release(
 
     assert row["state"] == "held", row
     assert _pane_word(_display_state(row["state"])) == "needs you", row
-    assert _bucket_of(row["state"], row["recovery_classification"]) == "needs you", row
+    assert _bucket_of(row["state"]) == "needs you", row
+    # The command is the classifier's own for this pointer, not a second
+    # composition of it in the pane: one surface names it, so the two cannot
+    # drift apart.
+    assert (
+        row["next_action"]
+        == classify_pointer(runs.read_pointer("r-hold"))["next_action"]
+    ), row
     assert "reckon crew queue release --run r-hold" in row["next_action"], row
     assert "crew queue release" in row["detail"], row
     assert _counts(_snapshots()).get("blocked") == 1
@@ -200,7 +212,7 @@ def test_an_owed_plan_review_is_drawn_needs_you_and_names_the_composition(
 
     assert row["state"] == "held", row
     assert _pane_word(_display_state(row["state"])) == "needs you", row
-    assert _bucket_of(row["state"], row["recovery_classification"]) == "needs you", row
+    assert _bucket_of(row["state"]) == "needs you", row
     # The act that lifts the hold is a composition, not a release: releasing it
     # would launch work over unreviewed plan text.
     assert "reckon crew review" in row["next_action"], row
@@ -252,9 +264,13 @@ def test_a_launched_run_held_by_the_lane_is_drawn_waiting(
     # hold, and the word — which the bucket follows — says whose move it is.
     assert verdict["recovery_classification"] == "held", verdict
     assert _pane_word(_display_state(verdict["state"])) == "waiting", verdict
-    assert _bucket_of(verdict["state"], verdict["recovery_classification"]) == (
-        "waiting"
-    ), verdict
+    assert _bucket_of(verdict["state"]) == "waiting", verdict
+    # The live counter agrees, read from the snapshot the pane is drawn from,
+    # and the row hands no command for a hold the lane releases itself.
+    counts = _fleet_counts({"r-live": verdict})
+    assert counts.get("waiting") == 1, counts
+    assert counts.get("blocked", 0) == 0, counts
+    assert not verdict["next_action"], verdict
     assert verdict["detail"], verdict
 
 

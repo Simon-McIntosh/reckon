@@ -43,7 +43,13 @@ from reckon.crew.runs import (
     watch_lock_path,
     watch_stream_path,
 )
-from reckon.crew.ticker import NEEDS_ACTION, Ticker, _agent_label
+from reckon.crew.ticker import (
+    _WAIT_CELL,
+    NEEDS_ACTION,
+    Ticker,
+    _agent_label,
+    _bucket_of,
+)
 from reckon.crew.watch_unit import (
     release_seat_when_misplaced,
     seat_names_a_live_foreign_producer,
@@ -1066,19 +1072,23 @@ def hold_owner(record: Mapping[str, Any]) -> str:
     return HOLD_LIFTED_BY_QUEUE
 
 
-def _coordinator_hold_next_action(record: Mapping[str, Any]) -> str:
+def _coordinator_hold_next_action(
+    record: Mapping[str, Any], row: Mapping[str, Any]
+) -> str:
     """The command that lifts a coordinator's own hold on this request.
 
     A park for an owed plan review is lifted by composing that review, never by
     releasing the request: a release launches work over plan text no stored
     review covers, which is the gate the hold exists to apply. Every other
     coordinator hold is lifted by ``crew queue release``, which restores the
-    phase the request was parked from.
+    phase the request was parked from. That command is not composed again here:
+    it is the classifier's own ``next_action`` for a held pointer, read off the
+    row, so the pane and the classifier name one command and neither can drift
+    from the other.
     """
     from reckon.crew.plan_review import review_invocation
     from reckon.crew.queue_admission import PLAN_REVIEW_HELD_REASON
 
-    run_id = str(record.get("run_id") or "")
     hold = record.get("queue_hold")
     written = hold if isinstance(hold, Mapping) else {}
     if str(written.get("reason") or "") == PLAN_REVIEW_HELD_REASON:
@@ -1089,7 +1099,7 @@ def _coordinator_hold_next_action(record: Mapping[str, Any]) -> str:
             str(node_fields.get("plan") or ""),
             session=str(record.get("session") or ""),
         )
-    return f"reckon crew queue release --run {run_id}"
+    return str(row.get("next_action") or "")
 
 
 def _coordinator_hold_clause(record: Mapping[str, Any], next_action: str) -> str:
@@ -1100,12 +1110,13 @@ def _coordinator_hold_clause(record: Mapping[str, Any], next_action: str) -> str
     written = hold if isinstance(hold, Mapping) else {}
     recorded = str(written.get("detail") or written.get("reason") or "").strip()
     prefix = f"{recorded}; " if recorded else ""
+    command = f": `{next_action}`" if next_action else ""
     if str(written.get("reason") or "") == PLAN_REVIEW_HELD_REASON:
         return (
             f"{prefix}a plan review of this request's plan must be composed and "
-            f"stored before it launches: `{next_action}`"
+            f"stored before it launches{command}"
         )
-    return f"{prefix}a coordinator's hold: lift it with `{next_action}`"
+    return f"{prefix}a coordinator's hold: lift it with the queue's release{command}"
 
 
 def _watch_verdict(
@@ -1232,18 +1243,24 @@ def _watch_verdict(
     # the same fact rather than a second reading of the classification. A
     # request the queue parked sits in the waiting pane; only a coordinator's
     # hold is drawn "needs you", and its row carries the act that lifts it.
-    held_next_action = None
     held_clause = ""
+    # The command a row hands a reader is the classifier's own, carried through
+    # untouched for every row a coordinator acts on. Only the two held readings
+    # below change it, because only they answer whose move lifts the hold.
+    next_action = row.get("next_action")
     if str(row.get("recovery_classification") or "") == "held":
         if hold_owner(pointer) == HOLD_LIFTED_BY_COORDINATOR:
-            held_next_action = _coordinator_hold_next_action(pointer)
-            held_clause = _coordinator_hold_clause(pointer, held_next_action)
+            next_action = _coordinator_hold_next_action(pointer, row)
+            held_clause = _coordinator_hold_clause(pointer, next_action)
             state = "held"
         else:
             # The queue or the clock lifts it, so nothing in the row is the
             # coordinator's to do: a request parked for a lane slot, and a run
             # stopped on a spent window, both sit in the waiting pane and are
-            # counted there.
+            # counted there. The row hands no command either — the release the
+            # classifier names for a held pointer would launch over the
+            # admission pass's own release path, and the wait ends without it.
+            next_action = None
             state = WAITING_STATUS
 
     # A dead worker is a row on the snapshot that observes the death, never one
@@ -1399,7 +1416,7 @@ def _watch_verdict(
         recovery_classification = "paused"
         recovery_verb = RECOVERY_VERBS["paused"]
         lifting_condition = detail
-    if held_next_action is not None:
+    if held_clause:
         # A coordinator's hold names the act that lifts it, on the row a reader
         # acts from rather than in a separate command surface.
         detail = held_clause
@@ -1411,10 +1428,10 @@ def _watch_verdict(
         "recovery_classification": recovery_classification,
         "recovery": recovery_verb,
         "lifting_condition": lifting_condition,
-        # Set only where a coordinator's hold is the row's own subject, so a
-        # caller reads the act the hold names instead of the release a held
-        # pointer is released by.
-        "next_action": held_next_action,
+        # The command this row hands a reader, decided once here: the
+        # classifier's own for every row, the coordinator's act for a hold of
+        # its own, and none for a hold the queue or the clock lifts.
+        "next_action": next_action,
         # The stream-silence inputs, carried so a producer that reuses a
         # snapshot can re-derive the same reading from the stream's stat alone.
         # ``stall_base_state`` is None for a verdict the silence reading never
@@ -1727,7 +1744,7 @@ def _compute_watch_snapshot(
         "recovery": verdict["recovery"],
         "lifting_condition": verdict.get("lifting_condition"),
         "resets_at": row.get("resets_at"),
-        "next_action": verdict.get("next_action") or row.get("next_action"),
+        "next_action": verdict["next_action"],
         # The full, untruncated reason. The bounded clause a reader can act on
         # is derived from it at render time, so nothing here is shaped for the
         # grid before it is stored.
@@ -2109,11 +2126,16 @@ def _fleet_counts(
         and bool(snapshot.get("repair_in_flight"))
         for snapshot in rows
     )
+    buckets = [_bucket_of(state) for state in states]
     counts = {
         "working": sum(state in FLEET_WORKING_STATES for state in states)
         - reviewing
         + repairing,
-        "blocked": sum(state in FLEET_BLOCKED_STATES for state in states),
+        # The two cells a reader acts from are the bucket the row is drawn in,
+        # read from the renderer's own partition rather than restated here: the
+        # word and the figure cannot disagree if there is one statement of
+        # which bucket a state belongs to.
+        "blocked": sum(bucket == "needs you" for bucket in buckets),
         "unpromoted": sum(state in FLEET_UNPROMOTED_STATES for state in states)
         - repairing,
     }
@@ -2126,8 +2148,8 @@ def _fleet_counts(
     # waiting and counted here.
     waiting = sum(
         1
-        for state in states
-        if state in FLEET_WAITING_STATES or state in FLEET_PARKED_STATES
+        for state, bucket in zip(states, buckets, strict=True)
+        if bucket == _WAIT_CELL or state in FLEET_PARKED_STATES
     )
     if waiting:
         counts["waiting"] = waiting
