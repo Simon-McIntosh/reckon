@@ -241,7 +241,9 @@ def test_the_reflex_records_the_head_and_findings_its_refusal_spoke_for(
     report = dispatch_module.dispatch_review_for_run(runs.read_pointer(RUN_ID))
 
     assert report.get("refused") is True, report
-    recorded = runs.read_pointer(RUN_ID)[obligations_module.recovery.REVIEW_DISPATCH_FIELD]
+    recorded = runs.read_pointer(RUN_ID)[
+        obligations_module.recovery.REVIEW_DISPATCH_FIELD
+    ]
     assert recorded["status"] == "refused", recorded
     assert recorded["head"] == head, recorded
     assert recorded["findings"] == [0], recorded
