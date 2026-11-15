@@ -106,9 +106,7 @@ RESERVATION_ROSTER_BASIS = (
 )
 
 
-def named_lane_request_waiting(
-    config: Mapping[str, Any], project: str | None = None
-) -> bool:
+def named_lane_request_waiting(config: Mapping[str, Any]) -> bool:
     """Whether a request on a lane other than the local one waits for a seat.
 
     The reserve is held only while it is needed. A queued request on a named
@@ -120,7 +118,9 @@ def named_lane_request_waiting(
     The population is the host-wide queue rather than one project's, the same
     population the roster itself counts: one reservation seats every project's
     workers, so a request waiting for a named lane anywhere on the host is a
-    reason to keep the seats free.
+    reason to keep the seats free. Each project resolves its own local backend,
+    so a pointer's own ``local`` flag says which lane it waits for; the backend
+    name is compared only on a pointer that records no flag.
     """
     from reckon.crew import runs
 
@@ -128,9 +128,17 @@ def named_lane_request_waiting(
     if not local:
         return False
     return any(
-        str(pointer.get("backend") or "") != local
-        for pointer in runs.list_live(phase="queued", project=project)
+        _waits_for_a_named_lane(pointer, local)
+        for pointer in runs.list_live(phase="queued")
     )
+
+
+def _waits_for_a_named_lane(pointer: Mapping[str, Any], local: str) -> bool:
+    """Whether one queued pointer waits for a lane other than the local one."""
+    flag = pointer.get("local")
+    if isinstance(flag, bool):
+        return not flag
+    return str(pointer.get("backend") or "") != local
 
 
 # How the reservation's own job is asked about. The reservation is not a
