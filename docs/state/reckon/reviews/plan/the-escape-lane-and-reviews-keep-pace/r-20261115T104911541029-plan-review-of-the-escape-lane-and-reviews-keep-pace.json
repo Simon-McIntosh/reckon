@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T12:37:14.387Z",
+  "dispatched_at": "2026-11-15T12:36:54Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-escape-lane-and-reviews-keep-pace.html:86",
+      "id": "reasoning-1",
+      "reason": "the section states as safe the exact mechanism the new section exists to repair, so \u00a710 can be closed as done with the loss still standing.",
+      "text": "s10's Why still justifies releasing a stranded launch of a composed review on the premise that it is \"a review the reflex composes and will compose again\", while s11 at line 93 records that a composed review released this way is not composed again and that this is the loss it repairs; a \u00a710 worker reads the release path as already correct for composed reviews",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-escape-lane-and-reviews-keep-pace.html:93",
+      "id": "reasoning-2",
+      "reason": "the stated cause points a worker at the release path (keep the directory) rather than at the reviewed run reading as owing its review, which is the endpoint s11's Deliverable names.",
+      "text": "s11's Why asserts that removing the pointer and the run directory leaves \"the reflex nothing to see in flight\", but the code it cites does the opposite: when nothing standing is readable the reflex falls through and composes again (`_readable_standing_review` returns None, `_dispatch_text_review_for_run` then reaches its compose path), and it refuses only because the reviewed run still names the released review as in flight and returns \"a review is already in flight as a live run\" \u2014 the section's own second hypothesis",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-escape-lane-and-reviews-keep-pace.html:92",
+      "id": "wiring-1",
+      "reason": "the overlap is a merge risk on one file, not a semantic wait; the two changes are independently testable and the sections order is recoverable by the coordinator without editing plan text.",
+      "text": "s11 names reckon/crew/admission/launching.py in its write paths, the same module s10 (implementable, undispatched) changes at the release it depends on, and declares no ordering between them",
+      "type": "wiring",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "fc3c377a6c37e06e964057bb7e1bb59dcbff53eb",
+  "plan_fingerprint": "4452534050a23346aafb0bb530cb2ce2d31d8635ad3a4971ae5f7fa682423cec",
+  "plan_slug": "the-escape-lane-and-reviews-keep-pace",
+  "plan_version": 30,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261115T104911541029-plan-review-of-the-escape-lane-and-reviews-keep-pace",
+  "reviewed_blob_sha": "0e94af1f5dac8bda8fcded8cf9aca873927efc12",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 tests/test_a_review_is_not_refused_for_its_run.py, reckon/crew/recovery_review_dispatch.py, reckon/crew/admission/launching.py, 2424ab7511 and 2e844047a3 all resolve; the two lost review ids resolve nowhere, which s11 states as the case it records.",
+    "done_when": "pass \u2014 both changed sections name a case that fails at base revision 2424ab7511 and name a control beside it.",
+    "evidence_paths": "pass \u2014 each section names its fragment under docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/; the unlogged all_debug arm is the convention already noted on this plan and is not re-raised.",
+    "naming": "pass \u2014 neither changed section carries a plan label, ticket number or version tag into the records it names.",
+    "reasoning": "findings \u2014 s10's release premise contradicts s11's endpoint (line 86), and s11's \"nothing to see in flight\" cause is contradicted by the compose path it cites (line 93).",
+    "single_goal": "pass \u2014 s10 is now the attempt-keyed fence alone and s11 one deliverable, the recompose after release; the reflex write paths sit only in s11.",
+    "wiring": "a finding \u2014 s11 declares no depends-on and no relationship to the two adjacent sections it shares a write path with."
+  },
+  "section_digests": {
+    "_document": "00fa32d037979b420b3d7de2260d1ae5de4c69458671f7a2fd0bea866bd2a48b",
+    "s1": "2f30b04db27eda225a7d9a82c4b2b9cf5e512723d009737b2a923bb7c84a60ce",
+    "s10": "2560337eb2e697b5441592ae644800999c1a71c7d3a61980469770314eb9025e",
+    "s11": "f66aea7c5c0282f5e1bce54e48691490c200d7316b5670ad8dcb4140d9c73925",
+    "s2": "1c1291a10bbf3182487496ef153e5873681ea3827c7bacc16efddf88c7cca128",
+    "s3": "2a0e0fabbd2ee502c5a7928a8fa608b66f83d3ad3fe304a31a05b66f0cb3d688",
+    "s4": "4a85c23ac81214a3af1b59e1888c579b2e2525eb2a2346a965b291cee79651b7",
+    "s5": "fb1f3e1546621cc855884449828d1a21bbdbe0f82829e3272a4980de76583329",
+    "s6": "cc57c977bc74be9abc823c22b2bdb1536d9437ee9b4055386c7bcc135cf44073",
+    "s7": "ed204545a51bd6d6fca68193a080594cbf03befec2fbab427a94d4fa64bb5b4d",
+    "s8": "f91bbc8415af7128a49266e48bcf0855214aed2b1c090350cf262046fdca9025",
+    "s9": "f45ac50a3cec315ac6b6faa699dabc9b61b96ee903819df9eb7dd788e1cd1497"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T12:54:29.629263+00:00",
+  "total": null
+}
