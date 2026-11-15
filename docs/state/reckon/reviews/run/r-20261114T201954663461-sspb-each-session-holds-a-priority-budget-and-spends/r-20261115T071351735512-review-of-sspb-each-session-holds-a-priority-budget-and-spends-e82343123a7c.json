@@ -1,0 +1,92 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_basis": "the reviewed manifest records paired population arms over the same 365-file list at base 95e530385e (323 failed, 2576 passed) and at head 522df5161d (322 failed, 2577 passed) with a recorded delta of 0 added failures and one id that passes at the head and fails at base, and its stream carries 11 records reading 'added failures: 0'; the arm logs themselves were truncated in place and are not committed (docs/evidence/fragments/a-session-spends-a-priority-budget/s2.html:34-36), so the count is taken from the run's own recorded delta and no added failure id is claimed.",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatching/preparation.py:682 requires the budget on a dispatch",
+    "reckon/crew/dispatching/preparation.py:921 requires the budget on an early held dispatch",
+    "reckon/crew/dispatching/preparation.py:1006 requires the budget on a held-request answer",
+    "reckon/crew/dispatching/preparation.py:1077 requires the budget on a lane-held dispatch",
+    "reckon/crew/dispatching/preparation.py:1150 requires the budget on a paused-lane dispatch",
+    "reckon/crew/dispatching/requests.py:280 requires the budget when a validated wait is queued",
+    "reckon/crew/queue_edit.py:598 charges a reprioritise against the same budget",
+    "reckon/crew/dispatch_batch.py:998 passes a batch entry's priority onto queue_requests",
+    "reckon/crew/admission/ordering.py:190 and :268 hoist preceded requests over the lane order",
+    "reckon/crew/admission/selection.py:246 selects the launch order the pass launches by",
+    "reckon/crew/dispatching/launch.py:444 keeps the points on the launched run",
+    "reckon/crew_dispatch_commands.py:1315 the --priority option on crew dispatch"
+  ],
+  "completed_at": "2026-11-15T07:27:44.750Z",
+  "dispatched_at": "2026-11-15T07:15:02Z",
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "606",
+      "severity": "blocking",
+      "text": "_stored_priority returns the first priority field it finds including a zero, while queue_order._priority at reckon/crew/queue_order.py:257 skips zero and reads the older alias, so the two readers disagree on the same pointer: a repeat dispatch of a request reprioritised to 7 merges the new record's priority 0 over the held pointer at reckon/crew/runs.py:966 and leaves priority_override 7, after which the queue ranks the request at 7 points while the budget charges it 0, and the session can hold points past its declared budget while the lane still honours them. Confirmed by reading the two functions and calling them on that pointer: stored(budget)=0 ranked(queue)=7."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "1019",
+      "severity": "blocking",
+      "text": "queue_dispatch reads live as _list_live_records(project=project) and passes that snapshot to require_priority_budget at :1092 and :1068, so session_priority_in_use at :613 only ever sees the session's points in the project being dispatched; the plan states the budget per session ('the points a session has placed on its unlaunched requests never exceed its budget'), and a session that queues 6 points in one project and 5 in another holds 11 against a budget of 10 with neither submission refused, which is the invariant the node exists to enforce undone by naming a second --project."
+    },
+    {
+      "file": "reckon/crew/queue_order.py",
+      "line": "253",
+      "severity": "non-blocking",
+      "text": "the docstring states 'This is the only reader of those fields, so every surface that ranks or hoists a request follows one definition of what a priority is', which the same change falsifies: reckon/crew/runs.py:606 reads the same two fields with different semantics, and the false claim is what let that divergence through review unnoticed."
+    },
+    {
+      "file": "docs/evidence/fragments/a-session-spends-a-priority-budget/s2.html",
+      "line": "34",
+      "severity": "non-blocking",
+      "text": "the record states that the arm logs are not committed and were lost to an in-place write that truncated each file before it was read, so the suite-arm figures the promotion rests on \u2014 921 failed at base, 323 against 322 on the 365-file population, 0 added failures \u2014 cannot be re-derived by a reader; only the focused gate is reproducible, and re-running it here gives 10 passed in 2.86s."
+    },
+    {
+      "file": "tests/test_a_priority_is_budgeted_and_orders_the_queue.py",
+      "line": "144",
+      "severity": "non-blocking",
+      "text": "the review-priority path is asserted only through _composed_review_options, which passes {'priority': 4} in and asserts 4 comes back \u2014 an assertion that reddens only if the copy is deleted and cannot catch a review that never has its points charged \u2014 and no test exercises the budget refusal on the crew queue reprioritise path the deliverable names, so reckon/crew/queue_edit.py:598 could lose its charge with the suite still green."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/dispatching/preparation.py:682, :921, :1006, :1077 and :1150 require the budget on each production dispatch path; reckon/crew/dispatching/requests.py:280 on a queued validated wait; reckon/crew/queue_edit.py:598 for reprioritise; reckon/crew/dispatch_batch.py:998 for a batch entry; reckon/crew/admission/ordering.py:190 and :268 and reckon/crew/admission/selection.py:246 for the ordering; reckon/crew/dispatching/launch.py:444 for the points kept on a launched run; reckon/crew_dispatch_commands.py:1315 for the --priority option.",
+    "diff": "read the five commits 895cf057ab, f8aa2b2d13, 522df5161d, c10a2fcb68, e82343123a against base 95e530385e: 18 files, +836/-36, the budget in reckon/flight.py and reckon/crew/runs.py, the ownership of a request's points through reckon/crew/queue_order.py, the cross-session rank in reckon/crew/admission/ordering.py, the submission surfaces, and one new 315-line test file.",
+    "done_when": "the done_when's four cases are each asserted in tests/test_a_priority_is_budgeted_and_orders_the_queue.py \u2014 :110 and :125 store a priority from dispatch and a batch entry, :163 refuses 5 against 6 of 10 naming the holder and accepts it once the first launch moves phase, :251 orders the priority-3 session ahead of the idle one, :276 orders the aged request ahead of the fresh priority-3 \u2014 and the negative control is recorded as a script reading base queue_order.admission_order_details rather than as the test run at base.",
+    "goal": "the goal is that each session holds a priority budget and spends it at submission or later; reckon/flight.py:1290 reads queue.priority_budget, reckon/crew/dispatching/requests.py:84 stores the points at submission, reckon/crew/queue_edit.py:604 changes them later, and reckon/crew/runs.py:613 derives the points in use from the live pointers, but the bound is charged per project rather than per session.",
+    "manifest": "read the delivered manifest; it states 10 passed EXIT=0 for tests/test_a_priority_is_budgeted_and_orders_the_queue.py, records 0 added failures from paired population arms, and states at its evidence line that the arm logs are not committed, so no structured baseline_suite or after_suite with failure ids is carried.",
+    "write_paths": "the manifest declares reckon, tests, docs/evidence/fragments/a-session-spends-a-priority-budget and skills; the diff touches 17 paths inside those and docs/_shared/flight.schema.json outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_priority_is_budgeted_and_orders_the_queue.py:163 reddens if require_priority_budget is removed and :251 reddens if -_priority(pointer) leaves _rank, but the reprioritise budget path at reckon/crew/queue_edit.py:598 and the divergence of runs._stored_priority from queue_order._priority are both unasserted, which is why the first is a blocking finding.",
+    "evidence": "the focused gate the done_when names reproduces here: 10 passed in 2.86s at head e82343123a, and the negative control is provable from the diff because the base _rank at reckon/crew/queue_order.py had no priority term; the paired suite arms cannot be re-read because the record itself states at docs/evidence/fragments/a-session-spends-a-priority-budget/s2.html:34 that the logs were truncated and never committed.",
+    "fit": "the change extends the queue accessor family at reckon/flight.py:1287 and the noqa refusal-class idiom at reckon/crew/runs.py:552, but reckon/crew/queue_order.py:253 states the accessor is 'the only reader of those fields' while reckon/crew/runs.py:606 reads the same two fields in the same change.",
+    "goal_fidelity": "reckon/crew/runs.py:648 require_priority_budget charges a submission and reckon/crew/queue_edit.py:598 charges a reprioritise, but the scan it charges against is project-scoped by the caller at reckon/crew/runs.py:1019, so the per-session bound the goal states holds only within one project.",
+    "reuse": "reckon/crew/runs.py:598 _stored_priority re-implements reckon/crew/queue_order.py:245 _override, the owner of what points a request carries, instead of calling it, and the divergence between the two copies is what produces finding 1.",
+    "scope_discipline": "every diff path is inside the declared write paths except docs/_shared/flight.schema.json, which the manifest declares at its scope_note as regenerated from reckon/schema/flight.yaml so the yaml change lands with the JSON schema that reads it."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that each session holds a priority budget and spends it at submission or later; reckon/flight.py:1290 reads queue.priority_budget, reckon/crew/dispatching/requests.py:84 stores the points at submission, reckon/crew/queue_edit.py:604 changes them later, but the bound is charged per project rather than per session.\nVERDICT done_when: the four done-when cases are asserted in tests/test_a_priority_is_budgeted_and_orders_the_queue.py:110, :125, :163, :251 and :276, the negative control is a script over base queue_order.admission_order_details rather than the test run at base, and the arms ran on rigel where the plan named all_debug.\nVERDICT write_paths: the manifest declares reckon, tests, docs/evidence/fragments/a-session-spends-a-priority-budget and skills; 17 diff paths are inside them and docs/_shared/flight.schema.json is outside, declared at the manifest's scope_note as schema-generated.\nVERDICT manifest: read; it records 10 passed EXIT=0 for the focused gate and 0 added failures from paired population arms, and states that the arm logs are not committed, so no structured suite pair with failure ids is carried.\nVERDICT diff: read commit by commit (895cf057ab, f8aa2b2d13, 522df5161d, c10a2fcb68, e82343123a) against base 95e530385e, 18 files +836/-36, the budget and its readers, the submission surfaces, the lane rank, and the new test file.\nCALL_SITES: reckon/crew/dispatching/preparation.py:682, reckon/crew/dispatching/preparation.py:921, reckon/crew/dispatching/preparation.py:1006, reckon/crew/dispatching/preparation.py:1077, reckon/crew/dispatching/preparation.py:1150, reckon/crew/dispatching/requests.py:280, reckon/crew/queue_edit.py:598, reckon/crew/dispatch_batch.py:998, reckon/crew/admission/ordering.py:190, reckon/crew/admission/ordering.py:268, reckon/crew/admission/selection.py:246, reckon/crew/dispatching/launch.py:444, reckon/crew_dispatch_commands.py:1315\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:648 charges a submission and reckon/crew/queue_edit.py:598 charges a reprioritise, but the scan is project-scoped at reckon/crew/runs.py:1019, so the per-session bound the goal states holds only within one project.\nSCORE evidence: 11\nJUSTIFICATION evidence: the focused gate reproduces (10 passed in 2.86s at e82343123a) and the base _rank provably lacked a priority term, but the paired suite arms cannot be re-read because docs/evidence/fragments/a-session-spends-a-priority-budget/s2.html:34 records that those logs were truncated and never committed.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every diff path is inside the declared write paths but docs/_shared/flight.schema.json, declared at the manifest's scope_note as regenerated from reckon/schema/flight.yaml.\nSCORE durability: 11\nJUSTIFICATION durability: tests/test_a_priority_is_budgeted_and_orders_the_queue.py:163 reddens if require_priority_budget is removed, while reckon/crew/runs.py:606 and reckon/crew/queue_edit.py:598 carry no assertion; the first is reported as a blocking finding.\nSCORE fit: 13\nJUSTIFICATION fit: the change follows reckon/flight.py:1287's accessor family and the noqa refusal-class idiom, but reckon/crew/queue_order.py:253 claims its accessor is the only reader of the priority fields while reckon/crew/runs.py:606 reads them beside it.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/runs.py:598 _stored_priority duplicates reckon/crew/queue_order.py:245 _override, the owner of a request's points, rather than calling it, and the copies disagree on a pointer carrying priority 0 with a positive override.\nFINDING reckon/crew/runs.py:606 blocking: _stored_priority returns a zero priority while queue_order._priority reads the positive override, so a repeat dispatch of a reprioritised request stops charging its points to the budget while the queue keeps ranking it.\nFINDING reckon/crew/runs.py:1019 blocking: the budget scan is project-scoped, so a session's points in another project are never summed and the per-session budget can be exceeded by naming a second --project.\nFINDING reckon/crew/queue_order.py:253 non-blocking: the docstring claims to be the only reader of the priority fields, which reckon/crew/runs.py:606 falsifies in the same change.\nFINDING docs/evidence/fragments/a-session-spends-a-priority-budget/s2.html:34 non-blocking: the arm logs were truncated and never committed, so the suite-arm figures the promotion rests on cannot be re-derived by a reader.\nFINDING tests/test_a_priority_is_budgeted_and_orders_the_queue.py:144 non-blocking: the review-priority path is asserted only as a field copy, and no test exercises the budget refusal on crew queue reprioritise.\n",
+  "review_run_id": "r-20261115T071351735512-review-of-sspb-each-session-holds-a-priority-budget-and-spends-e82343123a7c",
+  "reviewed_base_sha": "95e530385ef505438d4a89a7f978a941e6a68663",
+  "reviewed_head_sha": "e82343123a7cb22cb99bc3a02d6901ece32a53e8",
+  "reviewed_run_id": "r-20261114T201954663461-sspb-each-session-holds-a-priority-budget-and-spends",
+  "reviewer": "deepseek-v4.1-flash",
+  "reviewer_run_id": "r-20261115T071351735512-review-of-sspb-each-session-holds-a-priority-budget-and-spends-e82343123a7c",
+  "scores": {
+    "durability": 11,
+    "evidence": 11,
+    "fit": 13,
+    "goal_fidelity": 13,
+    "reuse": 5,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T08:40:00Z",
+  "total": 69
+}
