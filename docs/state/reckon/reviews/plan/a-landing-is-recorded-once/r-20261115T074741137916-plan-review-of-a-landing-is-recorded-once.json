@@ -1,0 +1,92 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T08:03:05.267Z",
+  "dispatched_at": "2026-11-15T07:49:04Z",
+  "findings": [
+    {
+      "anchor": "reckon/project_maintenance_commands.py:1468",
+      "id": "reuse_search-1",
+      "reason": "the plan must name the existing closure record and renderer as what \u00a73 extends, or its endpoint forks the record the close op already requires.",
+      "text": "\u00a73 asks for `reckon evidence synthesize` to write a plan's closure overview, but that command already exists with exactly that name and job: it calls `synthesize_landed_record` (`reckon/evidence.py:810`), which reads the plan's section comments and its committed ledger runs and renders them through `_render_document` (`reckon/evidence.py:434`) into `docs/evidence/archive/<slug>-landed.html` (`_evidence_record_path`, `reckon/evidence.py:102`); the section is a redesign of an existing renderer, not a new command, and as written a worker would add a parallel command or a parallel document beside one the close op requires",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/evidence.py:434",
+      "id": "duplicate_owner-1",
+      "reason": "a second closure document beside the required one duplicates the owner and leaves the required file's fragment-reading renderer untouched; `_render_document and the fragment readers are one module and one behaviour change.",
+      "text": "\u00a73 says the overview \"reads no fragment\", but the component it would replace already reads fragments (`compose_landed_record` at `reckon/evidence.py:687`, `_fragment_body_bytes` at `reckon/evidence.py:640:759`) and a resynthesis keeps appended anchors from them (tests/test_a_resynthesis_keeps_appended_anchors.py); \u00a73 also names no output path, so it does not say whether it replaces `docs/evidence/archive/<slug>-landed.html` \u2014 the file `_require_terminal_evidence` (`reckon/_store.py:5176`) refuses a close without \u2014 or writes a second document beside it",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_store.py:5101",
+      "id": "duplicate_owner-2",
+      "reason": "the guard must be added to that list, and the plan must reconcile its rule with the evidence-record guard that already refuses a close, or two guards will disagree about what a close owes.",
+      "text": "\u00a74 proposes a close guard for a done section with no landing comment and no run record, but the close op already routes every terminal guard through one list in `validate_landing_patch` (`reckon/_store.py:5101`, called from `_apply_close` at `reckon/_store.py:4768`), which already runs `_require_every_section_ticked` (`reckon/_store.py:5010`), `_require_terminal_evidence` (`reckon/_store.py:5176`, which refuses closure without a typed evidence record) and the continuation guard; a new close check written anywhere else forks the guard list that both writers (op and merge-patch) share",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/reports.py:2678",
+      "id": "thin_wrapper-1",
+      "reason": "the plan must state the check as an extension of the existing manifest auditor and path resolver, and settle the directory to the per-node convention, or the check refuses the very figures its own contract asks for.",
+      "text": "\u00a72's figure check adds a new validator, but the manifest check owner already exists (`audit_manifest`, `reckon/crew/reports.py:2678`, read by `crew check --manifest`), the figure rule is already stated in the composed prompt (`reckon/crew/prompts.py:196-197`, `:233-234`, which already tell a worker to write under `docs/figures/<plan>/<node-id>/`), and the figure directory is already resolved by the dispatch claim owner (`_landing_fragment_paths`, `reckon/crew/dispatch_claims.py:1331`, and the plan-wide topic at `:1283`); \u00a72 states the directory as `docs/figures/<plan>/`, which disagrees with the per-node directory both the prompt and the claim resolver enforce, so a figure written where the contract says lands outside where the check looks",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/project_state.py:2442",
+      "id": "duplicate_owner-3",
+      "reason": "the page must be written from the sprint close owner and consume each plan's overview record rather than recompute its counts, or the sprint page and the plan overview can disagree about the same plan.",
+      "text": "\u00a75 makes closing a sprint write one page, but sprint close already has an owner (`_close_sprint_with_carry_forward`, `reckon/project_state.py:2442`), and the page's per-plan counts (sections landed, runs, hours, headline result) and figure list would come from the \u00a73 overview; re-deriving them from `ledger.runs` and a fresh `docs/figures/` walk duplicates, respectively, `reckon/evidence.py` and the figure inventory owner (`reckon/figures.py`, plus the `with_figures` ledger read at `reckon/ledger.py:3772`)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/evidence.py:810",
+      "id": "deep_module-1",
+      "reason": "one section should own the landing accessor (sections \u00d7 comments \u00d7 runs \u00d7 figures) and \u00a72/\u00a74/\u00a75 consume it, which changes what those sections' done-whens assert.",
+      "text": "the plan's five sections each read the same relation (\"a landed section has a landing comment, a run record and any figure\") from raw sources on their own paths: \u00a72 checks figures against commits, \u00a73 renders sections from `plan.comments` and `ledger.runs`, \u00a74 checks the same pair at close, \u00a75 rolls the same counts up per plan; no section names a single accessor that answers \"what did this section land\", so the relation must be implemented four times and the four cannot be held in agreement",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "a-landing-is-recorded-once.html#s4",
+      "id": "interface_budget-1",
+      "reason": "each section that widens a counted family must state in its own text what it retires or merges, or why nothing can be; here \u00a74 and \u00a72 add refusals and a field without either, and \u00a73's apparent addition is really a duplicate of existing surface.",
+      "text": "public_definitions 2737, cli_options 488, mcp_views 15, refusal_families 25; \u00a74 adds a new close refusal (\"close refused: section(s) \u2026 have no landing\") without naming any refusal it retires or merges, and \u00a72 adds a manifest key plus new manifest-check findings likewise unaccounted; \u00a73 presents `reckon evidence synthesize` as new surface when it is already present in the 488-option CLI, and names nothing it retires",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "6c160b2e64b5ebac64da06ef18d038f181f3c861",
+  "plan_fingerprint": "8e891df4c4386892f87bbc5a8db1faaacc7da0e111efa5f1fd7a4d1e2967f440",
+  "plan_slug": "a-landing-is-recorded-once",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261115T074741137916-plan-review-of-a-landing-is-recorded-once",
+  "reviewed_blob_sha": "836c32832825e70bdc68cc804b74c00b7d8cdcb5",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 one relation (\"what a section's landing consists of\") is read by four separate endpoints (manifest check, closure overview, close guard, sprint page), each re-deriving it from comments + ledger runs instead of one accessor.",
+    "duplicate_owner": "a finding \u2014 \u00a73 duplicates the owner of the closure document (`reckon/evidence.py`), \u00a74 duplicates the close guard list (`reckon/_store.py`), \u00a75 duplicates the sprint close (`reckon/project_state.py`).",
+    "interface_budget": "a finding \u2014 public_definitions 2737, cli_options 488, mcp_views 15, refusal_families 25; \u00a72 adds a manifest key and \u00a74 adds a close refusal family without naming in its own text what it retires or merges, or why nothing can be, and \u00a73 names as new a CLI command that already exists in the 488-option surface.",
+    "reuse_search": "a finding \u2014 the plan's closure-overview endpoint already exists as `reckon evidence synthesize`, and the figures section re-derives machinery that `reckon/crew/prompts.py`, `reckon/crew/dispatch_claims.py` and `reckon/crew/reports.py` already own.",
+    "thin_wrapper": "a finding \u2014 \u00a72 adds a manifest check and \u00a75 adds a page writer on top of mechanisms whose owners already exist; the plan states neither as an extension nor states any reason it cannot be."
+  },
+  "section_digests": {
+    "_document": "9faafc6c2943e96089fc434395c2b3879a36546a1af9fee1131863ace5249639",
+    "s1": "643944e30f98fe3b7d1b4817bffd76b5fc4294adfad633bdb56e383d94505f84",
+    "s2": "2d2d44bf749b7916a80e500c8eb68efba5d3e518c2a88d597fdfcf45a78bd746",
+    "s3": "cb9307f1c325e756c27eabb07961d46e42f04f4ea0c48ac0f249c699110cf8b3",
+    "s4": "53fbc9358daa84854d9ee99d8eba8beaf95787d214575b2fed22849911b46558",
+    "s5": "70388ed2fe3a64b08e6ce5b7d84d907144450ecd34194e69c68fb2bdcf1d356b",
+    "s6": "9f3d3c6eac72c67f02c4b6fd937ec4bc670d3f648f72ec0311bdf8e650894768"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T08:12:33.627633+00:00",
+  "total": null
+}
