@@ -397,12 +397,32 @@ CLAIM_VERDICTS: tuple[str, ...] = ("reproduced", "differs", "not-runnable")
 # table states that as ``not-runnable`` on the summary as well.
 CLAIM_SUMMARY_VERDICTS: tuple[str, ...] = ("agrees", "differs", "not-runnable")
 CLAIMS_REQUIRED = 3
-# The fields a stored claims record may state its per-claim verdicts under. The
-# parser writes ``claims``; a reviewer writing its record by hand states the same
-# verdicts under ``claim_verdicts``. Both are read, so a complete record is never
-# refused for stating its answers in the other spelling — such a refusal would
-# report a review that answered every claim as one that answered none.
-CLAIM_VERDICT_FIELDS: tuple[str, ...] = ("claims", "claim_verdicts")
+# How a delivery refusal words each measure the completeness rule reports
+# missing. The rule itself is not restated here: a second copy of it would
+# answer differently from the one the promotion reader applies, and a record
+# admitted by one and refused by the other is a review whose fate depends on
+# which reader asks.
+CLAIMS_MISSING_MESSAGES: dict[str, str] = {
+    "claims": (
+        "review record carries too few claim verdicts: a claims review records one "
+        "`CLAIM <n>: <verdict>: <what the re-run showed>` line for each claim it "
+        "is asked to check, ranked from 1, and the record owes "
+        f"{CLAIMS_REQUIRED} of them — re-run the claims it skipped and store the "
+        "record again"
+    ),
+    "claim verdicts": (
+        "review record carries a claim verdict outside the vocabulary: each claim "
+        f"line states one of {', '.join(CLAIM_VERDICTS)} — re-run that claim and "
+        "store the record again"
+    ),
+    "claim_summary": (
+        "review record carries no verdict for the report's summary: a claims "
+        "review records one `CLAIM_SUMMARY: <agrees|differs|not-runnable>: <the "
+        "report's summary line and how it compares to its table>` line, so the "
+        "report's head-line figures go unchecked — compare them with the table "
+        "beneath and store the record again"
+    ),
+}
 
 # A figure review judges the rendered artifact as well as its source paths. Its
 # findings are qualitative, so it records rubric verdicts rather than the
@@ -983,57 +1003,25 @@ def store_review_refusals(record: Mapping[str, Any]) -> list[str]:
 
 
 def claims_verdict_refusals(record: Mapping[str, Any]) -> list[str]:
-    """The refusals a claims record earns for a claim it left unanswered.
+    """The refusals a claims record earns for a measure it left unanswered.
 
     A claims review re-runs the claims the report ranks highest and records one
-    verdict for each, so the claims the record was asked to check are the ranks
-    ``1`` to :data:`CLAIMS_REQUIRED` and the summary line beneath them. A record
-    carrying two of three verdicts has not finished the review it was composed
-    for, and a reader comparing it with a complete one sees the same rubric and
-    the same status — so the omission is named by the rank it is owed at, which is
-    the claim the reviewer must re-run rather than a count that fell short.
+    verdict for each, plus one for the report's own summary line. Whether a
+    stored record carries that measurement is decided in one place — the
+    promotion reader's ``_claims_missing_measures`` — because a record admitted
+    here and refused at promotion is a review whose fate depends on which reader
+    asks: it passes its delivery check and then cannot land. So this function
+    calls that rule rather than restating it, and every refusal it returns names
+    one of the measures the stored record is missing.
 
-    A claim answers a rank only when it carries that rank and one of
-    :data:`CLAIM_VERDICTS`; a verdict outside the vocabulary is no answer, the same
-    rule the parser applies. The verdicts are read from either spelling a record
-    may state them under (:data:`CLAIM_VERDICT_FIELDS`), so a reviewer writing by
-    hand is judged on the answers it gave rather than on the key it chose. The
-    summary is refused on its own vocabulary, and a record whose ``claim_summary``
-    names no recognised verdict leaves the report's own summary unchecked. An
-    answer given for a claims rank nobody asked about does not stand in for a
-    missing one.
+    The rule is imported at call time because the module that owns it reads this
+    one, and a module-level edge would close a cycle. A measure it reports that
+    this table cannot word raises rather than being dropped, so a rule that grows
+    a measure fails loudly here instead of going unreported.
     """
-    answered = {
-        str(claim.get("rank") or "").strip()
-        for field in CLAIM_VERDICT_FIELDS
-        for claim in (record.get(field) if isinstance(record.get(field), list) else ())
-        if isinstance(claim, Mapping)
-        and str(claim.get("verdict") or "").strip().lower() in CLAIM_VERDICTS
-    }
-    refusals = [
-        (
-            f"review record carries no verdict for claim {rank}: a claims review "
-            f"records a `CLAIM {rank}: <verdict>: <what the re-run showed>` line for "
-            f"each claim it re-ran, ranked from 1, so a record owes verdicts for "
-            f"claims 1..{CLAIMS_REQUIRED} — re-run that claim and store the record "
-            "again"
-        )
-        for rank in (str(number) for number in range(1, CLAIMS_REQUIRED + 1))
-        if rank not in answered
-    ]
-    summary = record.get("claim_summary")
-    if not (
-        isinstance(summary, Mapping)
-        and str(summary.get("verdict") or "").strip().lower() in CLAIM_SUMMARY_VERDICTS
-    ):
-        refusals.append(
-            "review record carries no verdict for the report's summary: a claims "
-            "review records one `CLAIM_SUMMARY: <agrees|differs|not-runnable>: "
-            "<the report's summary line and how it compares to its table>` line, "
-            "so the report's head-line figures go unchecked — compare them with "
-            "the table beneath and store the record again"
-        )
-    return refusals
+    from .recovery_review_subject import _claims_missing_measures
+
+    return [CLAIMS_MISSING_MESSAGES[name] for name in _claims_missing_measures(record)]
 
 
 def review_record_refusals(record: Mapping[str, Any]) -> list[str]:

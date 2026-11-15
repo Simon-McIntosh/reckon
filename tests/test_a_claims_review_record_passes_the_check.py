@@ -100,30 +100,58 @@ def test_every_claims_record_stored_for_this_session_passes(tmp_path: Path) -> N
         assert _findings(result) == []
 
 
-def test_a_claims_record_missing_a_claim_is_refused_naming_the_claim(
-    tmp_path: Path,
-) -> None:
-    """A skipped re-run is named by the rank it is owed at, not by a count."""
+def test_a_claims_record_missing_a_claim_is_refused(tmp_path: Path) -> None:
+    """A skipped re-run is refused, and the promotion rule refuses it too."""
     record = _claims_record()
     record["claims"] = [claim for claim in record["claims"] if claim["rank"] != "2"]
     result = _check(record, tmp_path)
     assert result.exit_code == 1, result.output
-    findings = _findings(result)
-    assert any("no verdict for claim 2" in finding for finding in findings), findings
-    assert not any("no verdict for claim 1" in finding for finding in findings)
+    assert any("too few claim verdicts" in f for f in _findings(result)), _findings(
+        result
+    )
+    assert not any("report's summary" in f for f in _findings(result))
+    assert not _review_is_complete(record)
 
 
-def test_a_record_stating_its_verdicts_by_hand_passes_on_the_answers_it_gave(
-    tmp_path: Path,
+def _review_is_complete(record: dict) -> bool:
+    """The promotion reader's verdict on a stored record, imported at call time."""
+    from reckon.crew.recovery_review_subject import (
+        _review_is_complete as owner,
+    )
+
+    return owner(record)
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {},
+        {"claims": []},
+        {"claims": [{"rank": "1", "verdict": "reproduced"}]},
+        {"claim_summary": {"detail": "read but not compared"}},
+        {"claim_summary": {"verdict": "unknown"}},
+    ],
+    ids=["complete", "no-claims", "one-claim", "summary-unchecked", "summary-bad"],
+)
+def test_the_check_refuses_exactly_what_the_promotion_rule_refuses(
+    change: dict, tmp_path: Path
 ) -> None:
-    """The other spelling a live reviewer wrote: ``claim_verdicts``, ranks as ints."""
+    """One rule decides both: a record cannot pass the check and fail promotion."""
+    record = _claims_record(**change)
+    result = _check(record, tmp_path)
+    assert (result.exit_code == 1) is (not _review_is_complete(record)), (
+        result.output,
+        _review_is_complete(record),
+    )
+
+
+def test_the_hand_written_spelling_is_refused_by_both_readers(tmp_path: Path) -> None:
+    """Verdicts under a key the store does not read are unanswered to both."""
     record = _claims_record()
     record["claim_verdicts"] = record.pop("claims")
-    for claim in record["claim_verdicts"]:
-        claim["rank"] = int(claim["rank"])
     result = _check(record, tmp_path)
-    assert result.exit_code == 0, result.output
-    assert _findings(result) == []
+    assert result.exit_code == 1, result.output
+    assert not _review_is_complete(record)
 
 
 def test_a_claims_record_missing_its_summary_verdict_is_refused(tmp_path: Path) -> None:
