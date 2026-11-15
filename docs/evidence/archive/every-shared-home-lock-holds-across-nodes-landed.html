@@ -54,6 +54,11 @@
     <p>Two review findings are also closed here: the record-lock holder the cross-node lock tests each carried is now one shared <code>tests/cross_node_lock_holder.py</code>, and <code>reckon/crew/resumption.py</code> is restored to formatted shape (<code>ruff format --check</code> exits 0, whitespace only).</p>
   </section>
 
+  <section id="s6-pending-table-empty-and-two-node-landed" data-evidence-origin="append">
+    <h2>§6 — the pending table is empty and one migrated lock holds across two nodes</h2>
+    <p>§6 landed on main as merge f4fdbe4408 of reviewed head 6aeb523e53 (run r-20261114T143516235536-pending-table-empty-and-two-node-measure; commits cb22c0b601, c959799bc8, 3f78bafccf, 6aeb523e53).</p><ul><li>The guard's pending table is <code>frozenset()</code> on main and the guard passes; it fails when a judged function gains a second flock (count 2 against the recorded 1) and when a migrated site takes no cross-node lock.</li><li>The process lock registry holds 0 entries after 2000 distinct paths, against 2000 of 2000 at base; two threads contending on one held path still exclude, with the first thread proven to hold before the second contends.</li><li>Two-node measure: a holder on 98dci4-clu-2001 held the run pointer lock while rigel job 1317095 on 98dci4-clu-2004 ran a contender test file. Its cross-node take reported held and passed; its bare flock take was granted and failed (<code>test_a_flock_only_take_also_reports_the_lock_held</code>, EXIT=1), so flock alone excludes nothing across nodes and the migrated lock does.</li><li>Two reviews: r-20261115T024642936328 raised two non-blocking test findings (a loose count assertion, a scheduler-order dependence), repaired in 6aeb523e53; r-20261115T040853113370 asked for the mutation controls to be rerun after the repair, and both reran red at 6aeb523e53.</li><li>Gate: the five-file focused arm passed 64 of 64 at the head, against 59 of 59 at base fd241e76aa, with 0 added failures.</li></ul>
+  </section>
+
 </main>
 </body>
 </html>
