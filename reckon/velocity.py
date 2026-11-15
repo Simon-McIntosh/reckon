@@ -612,8 +612,7 @@ def velocity_cache_root():
 
 
 def _velocity_cache_path(repo, cache_root=None):
-    """One cache file per repository path.
-    """
+    """One cache file per repository path."""
     root = Path(cache_root) if cache_root is not None else velocity_cache_root()
     digest = hashlib.sha256(str(Path(repo).resolve()).encode()).hexdigest()
     return root / (digest + ".json")
@@ -786,6 +785,82 @@ def _read_run_rows(repo, head, project, cache):
     return rows, len(blobs)
 
 
+def _read_store_records(repo, head, project, run_store_db):
+    """Answer a project's runs from the run store once its committed files are gone.
+
+    The tree at ``head`` is the reader's first source: while it carries the
+    project's ledger or any of its per-run documents, those documents answer and
+    this returns nothing. Once they leave the tree — the cutover the plan makes
+    — the same history is only in the store, so a reader that stopped at the
+    tree would report a project with no runs rather than one whose history
+    moved.
+
+    Each stored row names the commit its own record file entered the tree at, so
+    the record is read from that revision in one batched object read rather than
+    from the row alone: the row carries the durable half, and the file still
+    carries the promotion record a rotation may have washed out. A row whose
+    file the store cannot place, or one written after the file left git, answers
+    from the row itself.
+
+    A tree with no ledger, a store with no row of the project's, and a history
+    that never carried the path are three different states. The first two
+    together mean the history moved and the store lost it, which is refused with
+    the store's own path named rather than answered as zero runs; a project
+    whose ledger never entered the tree genuinely has none, and answers empty.
+
+    Returns the records keyed by run id and the source each came from.
+    """
+    from reckon import run_store
+
+    ledger_path = "docs/state/" + project + "/crew.json"
+    runs_path = "docs/state/" + project + "/runs"
+    if _blob_sha(repo, head, ledger_path) is not None:
+        return {}, {}
+    if _run_blobs(repo, head, project):
+        return {}, {}
+    store = Path(run_store_db) if run_store_db else None
+    if store is not None:
+        rows = run_store.stored_run_rows(project, path=store)
+        if rows:
+            revisions = run_store.stored_run_revisions(project, path=store) or {}
+            specs = [
+                (revisions[row["run_id"]], f"{runs_path}/{row['run_id']}.json")
+                for row in rows
+                if revisions.get(row["run_id"])
+            ]
+            blobs = read_blobs(repo, specs)
+            records, sources = {}, {}
+            for row in rows:
+                run_id = row["run_id"]
+                revision = revisions.get(run_id)
+                raw = (
+                    blobs.get((revision, f"{runs_path}/{run_id}.json"))
+                    if revision
+                    else None
+                )
+                if raw is not None:
+                    document = json.loads(raw)
+                    records[run_id] = document.get("data", document)
+                    sources[run_id] = "run_store_record_revision"
+                else:
+                    records[run_id] = row
+                    sources[run_id] = "run_store_row"
+            return records, sources
+    tracked = (
+        run_git(repo, "log", "-1", "--format=%H", head, "--", ledger_path, runs_path)
+        .stdout.decode()
+        .strip()
+    )
+    if not tracked:
+        return {}, {}
+    raise RuntimeError(
+        f"velocity cannot answer {project}'s runs at {head}: the tree carries no "
+        f"ledger under docs/state/{project} and the run store "
+        f"({store if store is not None else 'none configured'}) holds none of "
+        "its rows, so no source holds the history this window asks about"
+    )
+
+
 def _capture_commits(repo, base, head):
     """Capture the primary-branch commits in ``base..head`` and their patches.
 
@@ -913,6 +988,14 @@ def capture_project(
     records, ledger_sha256 = _read_ledger(repo, head, project, ledger_cache)
     run_rows, per_run_files = _read_run_rows(repo, head, project, run_cache)
     records.update(run_rows)
+    # A tree whose ledger and run documents have left git answers from the run
+    # store, and the documents win any run id both hold: they are the record,
+    # and a stored row may be a rotated half of it.
+    store_records, store_sources = _read_store_records(
+        repo, head, project, run_store_db
+    )
+    for run_id, row in store_records.items():
+        records.setdefault(run_id, row)
     # Map every newly reachable commit to its first primary-branch appearance.
     seen = set(git(repo, "rev-list", base).decode().splitlines()) if base else set()
     introduction = {}
@@ -941,7 +1024,10 @@ def capture_project(
                     ),
                 }
             )
-    sources = dict.fromkeys(records, "committed_primary_snapshot")
+    sources = {
+        run_id: store_sources.get(run_id, "committed_primary_snapshot")
+        for run_id in records
+    }
     recovered = []
     database = Path(run_store_db) if run_store_db else None
     # Only a promotion with no committed record needs the fallback store, and a
@@ -951,9 +1037,7 @@ def capture_project(
     missing = sorted(
         rid
         for rid in set(promotions) - set(records)
-        if any(
-            stamp(start) <= item["epoch"] <= stamp(end) for item in promotions[rid]
-        )
+        if any(stamp(start) <= item["epoch"] <= stamp(end) for item in promotions[rid])
     )
     if database is not None and database.exists() and missing:
         with sqlite3.connect(f"file:{database}?mode=ro", uri=True) as connection:
@@ -1023,9 +1107,7 @@ def capture_project(
         row["unresolved_or_unreachable_commits"] = unresolved
         compact.append(row)
     product_commits = sum(
-        1
-        for c in history
-        if any(f["class"] in {"source", "tests"} for f in c["files"])
+        1 for c in history if any(f["class"] in {"source", "tests"} for f in c["files"])
     )
     print(
         project,
