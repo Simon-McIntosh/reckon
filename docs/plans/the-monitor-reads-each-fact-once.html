@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="297">
+<meta name="plan-version" content="298">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -1216,6 +1216,9 @@ staged paths.</p>
 <div class="r-comment" data-section="s49" data-id="c-run-r-20261114T211432583899-review-of-review-index-stamp-s49-d89c36e124bf" data-who="reckon-build" data-when="2026-11-14T22:07:37.916Z">
     <div class="r-comment-body"><p>The independent review of r-20261114T170847087917-review-index-stamp-s49 at d89c36e124bf scores goal_fidelity 18, evidence 12, scope_discipline 18, durability 19, fit 17, reuse 5, records zero added failures from the node's own arms, and raises one blocking finding (the change deletes review_records._SETTLED_IDENTITIES, which tests/test_a_review_index_reader_never_waits_or_rewrites.py:30 still clears, so two tests error at setup at the reviewed head where base passes) plus two non-blocking reuse findings on the stamp helpers.</p></div>
 </div>
+<div class="r-comment" data-section="s49" data-id="c-run-r-20261114T232505037359-review-of-review-index-stamp-s49-4d0372b434e2" data-who="reckon-build" data-when="2026-11-15T01:00:38.794Z">
+    <div class="r-comment-body"><p>reviewed r-20261114T170847087917-review-index-stamp-s49 at head 4d0372b434 against base ffcba667; the stamp repair does what its goal states and its guard reddens at base, with a scope deviation in one out-of-fence test file and a receipt that names a scratch tree no cited log ran in.</p></div>
+</div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261023T170707287094-the-station-store-is-node-local" data-who="reckon-build" data-when="2026-10-23T18:59:58Z">
     <div class="r-comment-body"><p>station_store adds the node-local SQLite store at the node-local runtime root: pointer and stream identity is file_memo.file_signature's, day files hold the events and an out-of-window day file is unlinked with its rows, and a root reached only through TMPDIR or on a shared mount is refused; tests/test_the_station_store_is_node_local.py is 15 passed EXIT=0, and both declared mutations turn their case red (1 failed and 8 failed).</p></div>
 </div>
@@ -1242,6 +1245,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s53" data-id="c-run-r-20261114T174544423075-a-tick-walks-the-process-table-once" data-who="reckon-build" data-when="2026-11-14T21:20:29.547Z">
     <div class="r-comment-body"><p>§53 now holds one process-table walk for the whole live-work pass: live_work_populations opens process_signal.process_table_walk_once() around its terminal-duty loop, so a reading over 40 terminal pointers walks /proc once instead of 40 times (gate 1 passed EXIT=0; base negative control 40 walks, 1 failed EXIT=1; matched arms base 55 passed, head 56 passed). Fragment: docs/evidence/fragments/the-monitor-reads-each-fact-once/a-tick-walks-the-process-table-once.html</p></div>
+</div>
+<div class="r-comment" data-section="s54" data-id="c-run-r-20261114T215435518194-review-of-a-refused-review-is-retried-only-when-it-moves-eec6e60d5637" data-who="reckon-build" data-when="2026-11-15T00:51:27.724Z">
+    <div class="r-comment-body"><p>Review of r-20261114T174722930584-a-refused-review-is-retried-only-when-it-moves at base 1e767410b31149ecdabbecc716d8ef157b7a1b70 and head eec6e60d5637c9b8d996ed6272449898945aee3b is stored as a parsed record with 0 added failures and two non-blocking findings.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261024T125322878212-the-station-ingests-only-new-bytes" data-who="reckon-build" data-when="2026-10-24T13:09:00.668Z">
     <div class="r-comment-body"><p>stream ingest reads only bytes past its stored offset with a 64-byte tail anchor and a stored last-read size, refolding on a changed inode, a size below the consumed offset, a size below the last-read size, or a moved anchor; five recorded streams replayed as 93 appends fold equal to a full fold with 0 per-tick byte-bound violations, descriptors equal across 50 event writes, gate 24 passed exit 0 against base 15 passed exit 0</p></div>
@@ -1311,9 +1317,6 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T042852990093-obligations-read-the-station" data-who="reckon-build" data-when="2026-10-27T13:28:42Z">
     <div class="r-comment-body"><p>The station computes each live session's obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
-</div>
-<div class="r-comment" data-section="s54" data-id="c-run-r-20261114T215435518194-review-of-a-refused-review-is-retried-only-when-it-moves-eec6e60d5637" data-who="reckon-build" data-when="2026-11-15T00:51:27.724Z">
-    <div class="r-comment-body"><p>Review of r-20261114T174722930584-a-refused-review-is-retried-only-when-it-moves at base 1e767410b31149ecdabbecc716d8ef157b7a1b70 and head eec6e60d5637c9b8d996ed6272449898945aee3b is stored as a parsed record with 0 added failures and two non-blocking findings.</p></div>
 </div>
 </section>
 </main>
