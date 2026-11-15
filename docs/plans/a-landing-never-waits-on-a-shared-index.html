@@ -25,7 +25,7 @@
   <title>A Landing Never Waits On A Shared Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="67">
+<meta name="plan-version" content="68">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -192,6 +192,9 @@
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261114T201232009152-review-of-raced-promotion-lands-s11-02421ad1ad92" data-who="reckon-build" data-when="2026-11-14T20:22:38Z">
     <div class="r-comment-body"><p>Independent review at 02421ad1ad929fd5a9975ef5c940ed8d98283ff6 stores all six scores 13/10/20/14/17/5, zero added failures in the recorded 55-to-57-test arms, four blocking findings and three non-blocking findings; repair is required before the source node lands.</p></div>
 </div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261114T232834410813-review-of-raced-promotion-lands-s11-d6476cf68cf1" data-who="reckon-build" data-when="2026-11-15T01:12:03.518Z">
+    <div class="r-comment-body"><p>Independent review of r-20261114T174337281611-raced-promotion-lands-s11 read base 63b51b8337c4d61f3fc0b93d25ffb048273ed293 through head d6476cf68cf1d84e140c92ccfc5560ea97ac0ace (five commits): all six checklist items answered, six dimensions scored goal_fidelity 18, evidence 14, scope_discipline 20, durability 15, fit 17, reuse 5 (total 89), added_failure_count 0 with an empty id list derived from the run&#x27;s own importer-arm logs, and four non-blocking findings, no blocking finding, so the node may land.</p></div>
+</div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261115T045402525342-review-of-a-landing-commit-retries-a-released-lock-efeb0d0d4339" data-who="reckon-build" data-when="2026-11-15T05:21:02.986Z">
     <div class="r-comment-body"><p>reviewed r-20261115T031844233655-a-landing-commit-retries-a-released-lock from base 251cb1cd058784974614ba8cc292d665b7ca7dc1 to head efeb0d0d4339cb0ed0700c01957f488ae99aef12: scores goal_fidelity 18, evidence 18, scope_discipline 16, durability 14, fit 15, reuse 18; added_failure_count 0 over an added_failure_ids of []; one blocking finding at reckon/crew/merge.py:867, where the retry loop dropped its result.returncode != 0 guard and so retries a successful step whenever the checkout's index.lock exists at the check.</p></div>
 </div>
@@ -220,7 +223,7 @@
     <div class="r-comment-body"><p>The review of r-20261115T062044373262-a-promotion-lands-in-under-a-minute-remeasured at head c4297848a7 (base 1b8a0d372a) is stored as a parsed record scoring all six dimensions — goal_fidelity 20, evidence 17, scope_discipline 20, durability 10, fit 17, reuse 20 — with one non-blocking finding: the fragment quotes a refusal report whose two figures have no durable source under the run directory.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261115T062044373262-a-promotion-lands-in-under-a-minute-remeasured" data-who="reckon-build" data-when="2026-11-15T06:59:06.501Z">
-    <div class="r-comment-body"><p>The plan&#x27;s section 4 done-when holds at 1b8a0d372a: four attempts of three concurrent promotions = 12 promotions, all landed and pushed in at most 15.31 s with none refused and none rolled back; the same driver at 251cb1cd05 (before the released-lock retry) landed all 12 in at most 15.49 s, with the natural lock collision not reproduced at either revision.</p></div>
+    <div class="r-comment-body"><p>The plan's section 4 done-when holds at 1b8a0d372a: four attempts of three concurrent promotions = 12 promotions, all landed and pushed in at most 15.31 s with none refused and none rolled back; the same driver at 251cb1cd05 (before the released-lock retry) landed all 12 in at most 15.49 s, with the natural lock collision not reproduced at either revision.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261106T134612700154-review-of-retry-a-held-index-lock-in-a-promotions-commit-and-restore-5568106b9358" data-who="reckon-build" data-when="2026-11-06T13:57:16.941Z">
     <div class="r-comment-body"><p>review of r-20261106T124416537003-retry-a-held-index-lock-in-a-promotions-commit-and-restore at 5568106b9358 stored parsed with scores goal_fidelity 16, evidence 12, scope_discipline 18, durability 17, fit 18, reuse 20 (total 101), one blocking finding at tests/test_rollback_asks_head.py:117 and two non-blocking findings.</p></div>
