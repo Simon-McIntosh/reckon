@@ -206,7 +206,11 @@ def _launcher(recorded: list):
 
 
 def _payload(result) -> dict:
-    return json.loads(result.output.splitlines()[0])
+    """The JSON document a dispatch prints, which may follow its progress lines."""
+    for line in result.output.splitlines():
+        if line.startswith("{"):
+            return json.loads(line)
+    raise AssertionError(f"no JSON document in the dispatch output: {result.output!r}")
 
 
 # --- Case 1: the earlier-ranked request launches, the later stays queued -------
@@ -443,13 +447,13 @@ def test_a_new_dispatch_over_a_queued_claim_queues_then_launches(
     dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _configure(dispatch_repo, monkeypatch, session_slots=0)
-    first = _dispatch(dispatch_repo, "node-one", paths=(SHARED,))
+    first = _dispatch(dispatch_repo, "node-one", paths=(EXCLUSIVE,))
     assert first.exit_code == 0, first.output
     assert _payload(first)["queued"] is True
 
     # A second node over the queued request's path queues too: the queued claim
     # fences nothing, so neither request refuses the other.
-    second = _dispatch(dispatch_repo, "node-two", paths=(SHARED,))
+    second = _dispatch(dispatch_repo, "node-two", paths=(EXCLUSIVE,))
     assert second.exit_code == 0, second.output
     assert _payload(second)["queued"] is True
     assert _payload(second).get("error") != "scope-conflict"
@@ -458,7 +462,7 @@ def test_a_new_dispatch_over_a_queued_claim_queues_then_launches(
     # yields that slot to its session's oldest queued request, launching it,
     # and queues itself behind it.
     _configure(dispatch_repo, monkeypatch, session_slots=4)
-    third = _dispatch(dispatch_repo, "node-three", paths=(SHARED,))
+    third = _dispatch(dispatch_repo, "node-three", paths=(EXCLUSIVE,))
     assert third.exit_code == 0, third.output
     third_payload = _payload(third)
     assert third_payload.get("error") != "scope-conflict"
@@ -471,24 +475,26 @@ def test_a_new_dispatch_over_a_queued_claim_queues_then_launches(
     }
 
 
-def test_a_new_dispatch_over_a_queued_claim_at_the_session_cap_is_refused(
+def test_a_new_dispatch_at_the_session_cap_queues_rather_than_refusing(
     dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     # The lane document publishes no fair share, so the session's cap is the
-    # floor of two queued requests.
+    # floor of two queued requests. A full queue is a wait rather than a
+    # refusal: the request keeps its place and launches when a slot opens.
     _configure(dispatch_repo, monkeypatch, session_slots=0)
-    first = _dispatch(dispatch_repo, "node-one", paths=(SHARED,))
-    second = _dispatch(dispatch_repo, "node-two", paths=(SHARED,))
+    first = _dispatch(dispatch_repo, "node-one", paths=(EXCLUSIVE,))
+    second = _dispatch(dispatch_repo, "node-two", paths=(EXCLUSIVE,))
     assert first.exit_code == 0 and second.exit_code == 0
 
-    third = _dispatch(dispatch_repo, "node-three", paths=(SHARED,))
+    third = _dispatch(dispatch_repo, "node-three", paths=(EXCLUSIVE,))
 
-    assert third.exit_code == 75, third.output
-    assert _payload(third)["error"] == "queue-full"
-    assert {pointer["node"]["id"] for pointer in runs.list_live(project=PROJECT)} == {
-        "node-one",
-        "node-two",
-    }
+    assert third.exit_code == 0, third.output
+    third_payload = _payload(third)
+    assert third_payload.get("error") != "queue-full"
+    assert third_payload.get("queued") is True
+    assert third_payload.get("phase") == "queued", third_payload
+    third_id = str(third_payload.get("run_id") or "")
+    assert third_id and runs.read_pointer(third_id)["phase"] == "queued"
 
 
 # --- Case 6: a working or starting claim still refuses a dispatch -------------
@@ -521,9 +527,9 @@ def test_a_dispatch_over_a_working_or_starting_claim_is_refused(
     dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch, phase: str
 ) -> None:
     _configure(dispatch_repo, monkeypatch, session_slots=4)
-    _live(dispatch_repo, "r-holder", phase=phase, write_paths=[SHARED])
+    _live(dispatch_repo, "r-holder", phase=phase, write_paths=[EXCLUSIVE])
 
-    refused = _dispatch(dispatch_repo, "node-three", paths=(SHARED,))
+    refused = _dispatch(dispatch_repo, "node-three", paths=(EXCLUSIVE,))
 
     assert refused.exit_code == 7, refused.output
     assert _payload(refused)["error"] == "scope-conflict"

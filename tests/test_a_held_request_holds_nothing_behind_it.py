@@ -30,6 +30,7 @@ from typing import Any
 import pytest
 
 from reckon.crew import queue_admission, queue_order, runs
+from tests import test_a_claim_hold_reads_the_holder_again as holder_module
 from tests.test_a_claim_hold_reads_the_holder_again import _stopped_holder
 from tests.test_a_queued_run_is_admitted import admit_repo  # noqa: F401 - fixture
 from tests.test_overlapping_queued_requests_launch_in_turn import (  # noqa: F401
@@ -46,7 +47,7 @@ from tests.test_overlapping_queued_requests_launch_in_turn import (  # noqa: F40
 )
 
 GATED = "gated"
-CLAIMED = "claimed.txt"
+HELD = "docs/state/plan-a.json"
 EARLIER = "r-earlier"
 LATER = "r-later"
 
@@ -106,13 +107,16 @@ def _assert_later_launched(result: dict[str, Any], recorded: list) -> None:
 
 
 def test_a_request_held_on_a_peers_claim_holds_nothing_behind_it(
-    admit_repo: Path, tmp_path: Path
+    admit_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     config = _open_config(tmp_path)
     # The holder claims only the earlier request's own path, so the later
-    # request overlaps the earlier one but nothing fences the later one.
+    # request overlaps the earlier one but nothing fences the later one. The
+    # claim is on a path a merge cannot reconcile, which is the class a live
+    # claim still fences: the concurrent-edit rule shares source paths.
+    monkeypatch.setattr(holder_module, "CLAIMED", HELD)
     _stopped_holder(admit_repo, tmp_path)
-    _pair(admit_repo, earlier_paths=[CLAIMED, EXCLUSIVE])
+    _pair(admit_repo, earlier_paths=[HELD, EXCLUSIVE])
     recorded: list = []
 
     result = queue_admission.admit_once(
