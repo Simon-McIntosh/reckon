@@ -94,6 +94,15 @@
       derivation are both blocked exits <code>0</code> after
       <code>STATION_STOP_BOUND_SECONDS</code> and no later, with the unlaunched claim gone
       from the fleet and the claim naming a running worker still in place.</p>
+      <p><strong>The importing population.</strong> The 18 test files that import
+      <code>reckon.crew.station</code> or <code>reckon.crew.dispatch_claims</code> were run
+      twice over one extracted tree, so the only difference between the arms is this
+      change: the base revision's code, then the node's two modules copied in.
+      <strong>14 failed, 104 passed</strong> at base and <strong>14 failed, 104 passed</strong>
+      at head, with the failing id sets identical and nothing added
+      (<code>0</code> added, <code>0</code> absent). The same 14 ids fail in this sandbox on
+      both arms, so they are the environment rather than this change; verifying them on
+      <code>all_debug</code> belongs to the separately dispatched test node.</p>
       <p><strong>Negative control.</strong> Declared mutation: <em>a station that ignores
       SIGTERM in a long derivation fails the exit bound</em>. Applied by removing
       <code>stop_bound.arm()</code> from the SIGTERM handler, the run went red:
