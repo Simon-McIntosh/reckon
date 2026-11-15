@@ -207,20 +207,28 @@ def test_a_clive_launch_seeds_it_through_the_lifecycle_path(tmp_path: Path):
     assert _settings(plan)[_backends.PROJECT_MCP_SERVERS_ENABLED_KEY] is False
 
 
-def test_an_existing_run_settings_file_is_left_untouched(tmp_path: Path):
-    """A run's own settings file is left untouched, not rewritten by the seed."""
+@pytest.mark.parametrize("indent", [None, 4], ids=["compact", "indented"])
+def test_an_existing_run_settings_file_is_left_untouched(tmp_path: Path, indent):
+    """Seeding preserves all settings in a run that carries its inbox hook."""
+    from reckon.hooks import install
+
     home = _operator_home(tmp_path)
     run = tmp_path / "run"
     run.mkdir()
     harness = run / "harness"
     harness.mkdir(parents=True)
-    own = json.dumps({"hooks": {"Stop": []}, "model": "a-run-choice"})
-    (harness / "settings.json").write_text(own)
+    own = install.build_worker_inbox_snippet()
+    own["hooks"]["Stop"] = []
+    own.update(
+        model="a-run-choice",
+        permissions={"allow": ["Read"]},
+        enableAllProjectMcpServers=False,
+        enabledMcpjsonServers=["run-server"],
+    )
+    (harness / "settings.json").write_text(json.dumps(own, indent=indent))
     _launch(home, run, CLAUDE_BACKEND, fence_config={})
 
-    # The run home was seeded once, carrying the MCP record; a launch into it
-    # again leaves the run's own file exactly as it is.
-    assert (harness / "settings.json").read_text() == own
+    assert json.loads((harness / "settings.json").read_text()) == own
 
 
 def test_a_missing_operator_settings_file_still_gains_the_record(tmp_path: Path):

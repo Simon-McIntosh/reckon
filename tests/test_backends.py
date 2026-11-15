@@ -16,6 +16,9 @@ import pytest
 from reckon import _backends
 
 FIXTURES = Path(__file__).parent / "fixtures" / "backends"
+RESEARCH_FIXTURES = (
+    Path(__file__).resolve().parents[1] / "docs" / "research" / "fixtures"
+)
 
 CODEX = {"launch": "cli", "command": "codex", "sandbox": "worktree-full"}
 CLAUDE = {"launch": "cli", "command": "claude", "sandbox": "worktree-full"}
@@ -557,7 +560,11 @@ def test_observation_serialises_with_sorted_keys() -> None:
 
 def test_recorded_fixtures_cover_every_dialect() -> None:
     """Every distinct launch translation has a recorded event stream."""
-    recorded = {path.name.split("-")[0] for path in FIXTURES.glob("*.jsonl")}
+    recorded = {
+        path.name.split("-")[0]
+        for directory in (FIXTURES, RESEARCH_FIXTURES)
+        for path in directory.glob("*.jsonl")
+    }
     translations = {
         _backends.dialect_for({"launch": "cli", "command": command}).name
         for command in _backends.known_dialects()
