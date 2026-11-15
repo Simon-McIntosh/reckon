@@ -57,7 +57,7 @@ B. the station survived the stop: False</code></pre>
   station pid, and a stop of a record naming the station refuses with "has no
   process to stop" while the station process survives.</p>
 
-  <table id="resume-records-its-own-worker-s17-arms">
+<table id="resume-records-its-own-worker-s17-arms">
     <caption>Every arm is a log whose first line names its revision and tree and
     whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
     <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
@@ -66,22 +66,25 @@ B. the station survived the stop: False</code></pre>
         base; both modules under test at <code>af516b3a</code>)</td>
         <td><code>af516b3a</code></td>
         <td>58 passed, <code>EXIT=0</code></td></tr>
-      <tr><td>after suite (the new test and the two guards)</td>
-        <td><code>ef63881b</code>, working tree clean</td>
-        <td>61 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>after suite (the new tests and the two guards)</td>
+        <td><code>94372aa0</code>, working tree clean</td>
+        <td>62 passed, <code>EXIT=0</code></td></tr>
       <tr><td>the new tests at the base revision</td>
         <td><code>af516b3a</code></td>
-        <td>3 failed, <code>EXIT=1</code>: the reservation names the launcher
-        (pid 3033) rather than the supervisor (pid 3034); a reservation naming
-        the station holds the attempt; the pointer read names the station's pid
-        and the stop kills it</td></tr>
+        <td>4 failed, <code>EXIT=1</code>: the reservation names the launcher
+        rather than the supervisor it started; a reservation naming the station
+        held the attempt; the pointer read names the station's pid and the stop
+        kills it; a lease written under another process table names the station
+        here</td></tr>
       <tr><td>the new tests at the run's head</td>
-        <td><code>ef63881b</code></td>
-        <td>3 passed, <code>EXIT=0</code></td></tr>
-      <tr><td>negative control: the launcher's pid recorded again</td>
-        <td><code>ef63881b</code> plus the declared mutation</td>
-        <td>1 failed, 2 passed, <code>EXIT=1</code>: the failing id is
-        <code>test_a_launch_inside_the_station_records_the_supervisor_it_started</code>,
+        <td><code>94372aa0</code></td>
+        <td>4 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control: the station read reverted to a number-only
+        match</td>
+        <td><code>94372aa0</code> with <code>reckon/crew/runs.py</code> at
+        <code>f23de4dd</code></td>
+        <td>1 failed, 3 passed, <code>EXIT=1</code>: the failing id is
+        <code>test_a_lease_from_another_process_table_..._does_not_name_the_station</code>,
         which the head arm passes</td></tr>
     </tbody>
   </table>
