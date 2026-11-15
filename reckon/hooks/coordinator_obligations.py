@@ -930,6 +930,13 @@ def format_checklist(
         # than reprinted: what a reader needs from them is the kind and how
         # long each has stood, not the command none of them can run.
         lines.append(_collapsed_line(waiting))
+    for item in payload.get("acknowledged") or ():
+        condition = item.get("until_condition") or {}
+        ending = f" or {condition['condition']}" if condition else ""
+        lines.append(
+            f"- [acknowledged] {item.get('run_id')}: {item.get('reason')}; "
+            f"until {item.get('until')}{ending}"
+        )
     pending = pending_model_notices()
     if pending:
         lines.append(model_notice_line(pending))
@@ -1273,23 +1280,26 @@ def _inject_list(
     already shown, and the duty that emptied and came back is never spoken
     again.
     """
+    obligations = reapply_acknowledgements(obligations, project=project)
     for item in obligations.get("obligations") or ():
         if isinstance(item, dict):
             item["next_command"] = follow_local_lane(
                 str(item.get("next_command") or ""), project=project
             )
     items = obligations.get("obligations") or ()
+    acknowledged = obligations.get("acknowledged") or ()
     digest_file = digest_path(project, session)
     notices = pending_model_notices()
     resets = limit_reset_events(session)
-    if not items and not reloading and not notices and not resets:
+    if not items and not acknowledged and not reloading and not notices and not resets:
         _clear_digest(digest_file)
         return
     digest = duty_digest(
-        items,
+        [*items, *acknowledged],
         reloading=reloading,
         model_notices=notices,
         limit_resets=[str(event.get("id") or "") for event in resets],
+        reading=json.dumps(acknowledged, sort_keys=True) if acknowledged else "",
     )
     if _read_digest(digest_file) == digest:
         return
@@ -1688,15 +1698,26 @@ def reapply_acknowledgements(
     """
     module = _obligations_module()
     items = list(payload.get("obligations") or ())
+    identities = {(item.get("run_id"), item.get("kind")) for item in items}
+    items.extend(
+        item
+        for item in payload.get("acknowledged") or ()
+        if (item.get("run_id"), item.get("kind")) not in identities
+    )
     in_force = module._acknowledgements_in_force(project, now=datetime.now(tz=UTC))
-    owed, _deferred = module._partition_acknowledged(items, in_force)
+    owed, deferred = module._partition_acknowledged(items, in_force)
     summary = payload.get("summary")
     summary = dict(summary) if isinstance(summary, Mapping) else {}
     summary["count"] = len(owed)
     summary["oldest_age_seconds"] = max(
         (int(item.get("age_seconds") or 0) for item in owed), default=0
     )
-    return {**payload, "obligations": owed, "summary": summary}
+    return {
+        **payload,
+        "obligations": owed,
+        "acknowledged": deferred,
+        "summary": summary,
+    }
 
 
 def _blocking_items(items: Sequence[Any]) -> list[Any]:
@@ -1774,6 +1795,7 @@ def _stop(payload: dict[str, Any]) -> int:
     follow_each_local_lane(resolved, project=project)
     resolved_project = str(resolved.get("project") or project)
     resolved_session = str(resolved.get("session") or session)
+    resolved = reapply_acknowledgements(resolved, project=resolved_project)
     items = resolved.get("obligations") or ()
     digest_file = digest_path(resolved_project, resolved_session)
     stop_digest_file = stop_digest_path(resolved_project, resolved_session)
@@ -1801,7 +1823,6 @@ def _stop(payload: dict[str, Any]) -> int:
     # now. An acknowledgement written since it was published is honoured here
     # rather than at the next republish, so a deferral does not hold the turn
     # open for a duty the coordinator has already excused.
-    resolved = reapply_acknowledgements(resolved, project=resolved_project)
     blocking = _blocking_items(resolved.get("obligations") or ())
     if not blocking:
         # Nothing is held open: either the snapshot listed no actionable duty

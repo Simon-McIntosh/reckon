@@ -168,6 +168,8 @@ DUTY_ROW_FIELDS = (
     # A review duty's reading and the revisions it disagrees about; a refused
     # attempt's reason and record; the tier a run owes no review at all.
     "reason",
+    "until",
+    "until_condition",
     "record",
     "head",
     "reviewed_head",
@@ -1649,26 +1651,54 @@ def _acknowledgements_in_force(
     obligation.
     """
     in_force: dict[str, dict[str, Any]] = {}
+    live_ids: set[str] = set()
     for pointer in _live_pointers(project):
         run_id = str(pointer.get("run_id") or "")
+        live_ids.add(run_id)
         record = runs.run_acknowledgement(pointer)
         if not run_id or not record:
+            stale = pointer.get(runs.ACKNOWLEDGEMENT_FIELD)
+            if run_id and isinstance(stale, Mapping):
+                runs.release_run_acknowledgement(run_id, stale)
             continue
         until = parse_utc(record.get("until"))
-        if until is not None and until > now:
+        if (
+            until is not None
+            and until > now
+            and not _acknowledgement_condition_ended(record)
+        ):
             in_force[run_id] = record
+        else:
+            runs.release_run_acknowledgement(run_id, record)
     for record in runs.recorded_promoted_acknowledgements(project):
         run_id = str(record.get("run_id") or "")
-        if not run_id or run_id in in_force:
+        if not run_id or run_id in live_ids:
             continue
         until = parse_utc(record.get("until"))
-        if until is not None and until > now:
-            in_force[run_id] = {
-                "reason": record.get("reason"),
-                "until": record.get("until"),
-                "recorded_at": record.get("recorded_at"),
-            }
+        if (
+            until is not None
+            and until > now
+            and not _acknowledgement_condition_ended(record)
+        ):
+            in_force[run_id] = record
+        else:
+            runs.release_run_acknowledgement(run_id, record, promoted=True)
     return in_force
+
+
+def _acknowledgement_condition_ended(record: Mapping[str, Any]) -> bool:
+    """A met or unreadable condition no longer excuses a duty."""
+    condition = record.get("until_condition")
+    if condition is None:
+        return False
+    from reckon.crew import recovery_wait
+
+    try:
+        condition = runs._acknowledgement_condition(condition)
+    except CrewError:
+        return True
+    observation = recovery_wait._run_wait_condition_probe(record, condition)
+    return observation.get("state") == "met" or observation.get("answered") is False
 
 
 def _partition_acknowledged(
@@ -1688,6 +1718,11 @@ def _partition_acknowledged(
                 **item,
                 "reason": str(record.get("reason") or ""),
                 "until": str(record.get("until") or ""),
+                **(
+                    {"until_condition": record["until_condition"]}
+                    if record.get("until_condition")
+                    else {}
+                ),
             }
         )
     return owed, deferred
