@@ -8,6 +8,7 @@ import sys
 import threading
 import time
 from datetime import UTC, datetime, timedelta
+from contextvars import copy_context
 from pathlib import (
     Path,
 )
@@ -684,7 +685,10 @@ def dispatch_picker_selection(
         node=node, config=config, project=project, repo=repo, authority=authority
     )
     bound_seconds = picker_dispatch_timeout(config)
-    threading.Thread(target=ask, name="dispatch-picker", daemon=True).start()
+    context = copy_context()
+    threading.Thread(
+        target=lambda: context.run(ask), name="dispatch-picker", daemon=True
+    ).start()
     if not finished.wait(bound_seconds):
         result["error"] = "timeout"
     authority_error = result.get("authority_error")

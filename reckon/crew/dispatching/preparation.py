@@ -144,6 +144,15 @@ def _committed_node_runs(
         "WHERE name NOT IN (SELECT run_id FROM aggregate_rows WHERE run_id IS NOT NULL) "
         "AND json_extract(payload, '$.node') = ?"
     )
+    if ledger.dispatch_snapshot_active():
+        data, _version = ledger.dispatch_read(project, root)
+        return ordered(
+            [
+                row
+                for row in data["runs"]
+                if isinstance(row, dict) and str(row.get("node") or "") == node_id
+            ]
+        )
     try:
         index_uri = ledger._run_index_path(project, root).as_uri() + "?mode=ro"
         with closing(sqlite3.connect(index_uri, uri=True)) as connection:
@@ -284,6 +293,7 @@ def _queue_a_held_request(
     return held
 
 
+@ledger.dispatch_snapshot()
 def dispatch(
     *,
     node: TaskNode,

@@ -296,6 +296,25 @@ def _holds_stdout_for_one_document(callback):
     return run
 
 
+def _dispatch_ledger_snapshot(callback):
+    """Keep one snapshot for a single dispatch; batches own their entry scopes."""
+
+    @functools.wraps(callback)
+    def run(*args, **kwargs):
+        from reckon import ledger
+
+        if kwargs.get("batch_path") or (
+            kwargs.get("plan_slug")
+            and not kwargs.get("section")
+            and not kwargs.get("brief_path")
+        ):
+            return callback(*args, **kwargs)
+        with ledger.dispatch_snapshot():
+            return callback(*args, **kwargs)
+
+    return run
+
+
 def _emit(payload, pretty: bool) -> None:
     """Print one JSON document, sorted so two runs diff only on real change."""
     stream = getattr(sys.stdout, "payload_stream", sys.stdout)
@@ -1590,6 +1609,7 @@ def _queue_dispatch_batch(
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 @_holds_stdout_for_one_document
+@_dispatch_ledger_snapshot
 def crew_dispatch(
     batch_path,
     project,

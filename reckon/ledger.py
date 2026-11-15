@@ -35,6 +35,7 @@ rather than averaging it in silently.
 from __future__ import annotations
 
 import contextlib
+import copy
 import hashlib
 import json
 import logging
@@ -45,6 +46,7 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
@@ -66,6 +68,96 @@ _LOG = logging.getLogger(__name__)
 _DAMAGED_RUN_RECORDS: ContextVar[tuple[str, tuple[Path, ...]]] = ContextVar(
     "ledger_damaged_run_records", default=("", ())
 )
+
+
+class _DispatchSnapshot:
+    def __init__(self) -> None:
+        self.active = True
+        self.lock = threading.RLock()
+        self.reads: dict[Any, Any] = {}
+        self.identities: dict[Path, Any] = {}
+
+
+_DISPATCH_SNAPSHOT: ContextVar[_DispatchSnapshot | None] = ContextVar(
+    "ledger_dispatch_snapshot", default=None
+)
+
+
+def dispatch_snapshot_active() -> bool:
+    """Whether this reader belongs to a dispatch that still owns its snapshot."""
+    snapshot = _DISPATCH_SNAPSHOT.get()
+    return snapshot is not None and snapshot.active
+
+
+@contextlib.contextmanager
+def dispatch_snapshot(*, fresh: bool = False) -> Iterable[None]:
+    """Share ledger reads until this dispatch returns, including nested calls.
+
+    Each batch entry opens a fresh scope. Nested preparation joins its caller's
+    scope, and a picker thread receives the same context explicitly. Closing
+    deactivates the shared state too, so a timed-out picker cannot retain it.
+    """
+    if not fresh and dispatch_snapshot_active():
+        yield
+        return
+    snapshot = _DispatchSnapshot()
+    token = _DISPATCH_SNAPSHOT.set(snapshot)
+    index_token = _INDEX_REGION.set(None)
+    payload_token = _PAYLOAD_REGION.set(None)
+    try:
+        yield
+    finally:
+        snapshot.active = False
+        _PAYLOAD_REGION.reset(payload_token)
+        _INDEX_REGION.reset(index_token)
+        _DISPATCH_SNAPSHOT.reset(token)
+
+
+def dispatch_read(
+    project: str,
+    root: str | Path | None = None,
+    picker_only: bool = False,
+    *,
+    headers_only: bool = False,
+    activity_since: float | None = None,
+    plan: str | None = None,
+) -> tuple[dict[str, Any], int]:
+    """Read live outside dispatch; derive its readers from one full read inside.
+
+    Copies isolate callers from each other. Full rows also let the attempt
+    reader filter in memory rather than opening the index a second time.
+    """
+    snapshot = _DISPATCH_SNAPSHOT.get()
+    if snapshot is None or not snapshot.active:
+        options: dict[str, Any] = {}
+        if headers_only:
+            options["headers_only"] = True
+        if activity_since is not None:
+            options["activity_since"] = activity_since
+        if plan:
+            options["plan"] = plan
+        if picker_only:
+            return load(project, root, True, **options)
+        return load(project, root, **options)
+    key = (project, str(ledger_path(project, root).resolve()))
+    with snapshot.lock:
+        if key not in snapshot.reads:
+            snapshot.reads[key] = (*load(project, root), damaged_run_records(project))
+        held, version, damaged = snapshot.reads[key]
+        _report_damaged_run_records(project, damaged)
+        data = copy.deepcopy(held)
+    if activity_since is not None:
+        data["runs"] = _active_records(data["runs"], activity_since)
+    if plan:
+        data["runs"] = [row for row in data["runs"] if _row_plan(row) == plan]
+    if picker_only:
+        data["runs"] = [picker_record(row) for row in data["runs"]]
+    if headers_only:
+        present = {row.get("run_id") for row in data["runs"]}
+        data["runs"].extend(
+            {"run_id": path.stem} for path in damaged if path.stem not in present
+        )
+    return data, version
 
 
 def damaged_run_records(project: str) -> tuple[Path, ...]:
@@ -1178,6 +1270,16 @@ LEDGER_INDEX_PATH_KEY = "ledger_path"
 
 
 def _file_identity(path: Path) -> tuple[int, int, int, int] | None:
+    snapshot = _DISPATCH_SNAPSHOT.get()
+    if snapshot is None or not snapshot.active:
+        return _live_file_identity(path)
+    with snapshot.lock:
+        if path not in snapshot.identities:
+            snapshot.identities[path] = _live_file_identity(path)
+        return snapshot.identities[path]
+
+
+def _live_file_identity(path: Path) -> tuple[int, int, int, int] | None:
     try:
         info = path.stat()
     except OSError:
@@ -1435,7 +1537,9 @@ def _ledger_content(project: str, root: Path) -> tuple[Any, ...]:
         file_memo.content_digest(aggregate) if stamp is not None else None,
         tuple((path.name, file_memo.content_digest(path)) for path, _ in snapshot),
     )
-    if stamp != _file_identity(aggregate) or snapshot != _run_snapshot(project, root):
+    if stamp != _live_file_identity(aggregate) or snapshot != [
+        (path, _live_file_identity(path)) for path in _run_files(project, root)
+    ]:
         raise OSError("ledger changed while comparing worktrees")
     return content
 
@@ -1613,7 +1717,7 @@ def picker_record(record: Mapping[str, Any]) -> dict[str, Any]:
 
 def picker_runs(project: str, root: str | Path | None = None) -> list[dict[str, Any]]:
     """Read projected history without decoding retained full payloads."""
-    data, _version = load(project, root, True)
+    data, _version = dispatch_read(project, root, True)
     return data["runs"]
 
 
@@ -2161,7 +2265,7 @@ def _indexed_data(
                     try:
                         record = _read_run(source)
                     except DamagedRunRecordError as exc:
-                        if _file_identity(source) != stamp:
+                        if _live_file_identity(source) != stamp:
                             raise OSError(
                                 f"run changed during index read: {source}"
                             ) from exc
@@ -2170,7 +2274,7 @@ def _indexed_data(
                             (source.stem, encoded),
                         )
                         continue
-                    if _file_identity(source) != stamp:
+                    if _live_file_identity(source) != stamp:
                         # Refuse to publish a cache built across a concurrent edit.
                         # The caller's uncached path still supplies the current read.
                         raise OSError(f"run changed during index read: {source}")
@@ -2283,7 +2387,11 @@ def _ledger_holds_content(project: str, root: str | Path | None) -> bool:
     will refresh — the same artefact an absent ledger would leave.
     """
     aggregate = ledger_path(project, root)
-    if aggregate.exists():
+    if (
+        _file_identity(aggregate) is not None
+        if dispatch_snapshot_active()
+        else aggregate.exists()
+    ):
         return True
     return next((aggregate.parent / "runs").glob("*.json"), None) is not None
 
@@ -2292,7 +2400,7 @@ def indexed_headers(
     project: str, root: str | Path | None = None
 ) -> tuple[dict[str, Any], int]:
     """Read roster and history identities without decoding complete run payloads."""
-    return load(project, root, headers_only=True)
+    return dispatch_read(project, root, headers_only=True)
 
 
 def load(
@@ -2970,7 +3078,7 @@ def _write_state(
 
 def members(project: str, root: str | Path | None = None) -> list[dict[str, Any]]:
     """Return the project's team roster."""
-    return load(project, root)[0]["members"]
+    return dispatch_read(project, root)[0]["members"]
 
 
 def member(
@@ -3905,7 +4013,7 @@ def read_records(
     its own selection because a row's width is counted over every plan's runs.
     """
     selected_plan = str(plan or "").strip()
-    data, version = load(
+    data, version = dispatch_read(
         project,
         root,
         headers_only=with_figures and activity_since is None,
@@ -4409,7 +4517,7 @@ def record_hold_checks(
 
 def holds(project: str, root: str | Path | None = None) -> list[dict[str, Any]]:
     """Return every budget hold, in opening order."""
-    return load(project, root)[0]["holds"]
+    return dispatch_read(project, root)[0]["holds"]
 
 
 # ── Measured effort ─────────────────────────────────────────────────────────

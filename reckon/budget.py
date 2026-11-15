@@ -699,7 +699,7 @@ def _ledger_readings(
     """Derive historical readings independently of the moving live pointers."""
     found: list[_Reading] = []
     data, _version = (
-        ledger.load(project, root)
+        ledger.dispatch_read(project, root)
         if records is None
         else ledger.indexed_headers(project, root)
     )

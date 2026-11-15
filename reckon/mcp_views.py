@@ -1747,6 +1747,8 @@ def _cached_attempts(
     newest run file and the live-pointer set — are compared, so a caller whose
     state moved recomputes rather than being served an older value.
     """
+    if ledger.dispatch_snapshot_active():
+        return compute()
     with _ATTEMPT_CACHE_LOCK:
         before = _attempt_inputs(project, root, pointers)
         cached = _ATTEMPT_CACHE.get(key)
