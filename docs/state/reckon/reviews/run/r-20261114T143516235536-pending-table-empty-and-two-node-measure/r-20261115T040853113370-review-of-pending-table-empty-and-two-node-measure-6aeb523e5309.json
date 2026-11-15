@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/runs.py:497 (_pointer_lock)",
+    "reckon/ledger.py:2634",
+    "reckon/_store.py:407",
+    "reckon/project_state.py:322",
+    "reckon/crew/budget_reset.py:95",
+    "reckon/compliance.py:184"
+  ],
+  "completed_at": "2026-11-15T04:38:54.308Z",
+  "dispatched_at": "2026-11-15T04:14:35Z",
+  "findings": [
+    {
+      "file": "tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "line": 292,
+      "severity": "non-blocking",
+      "text": "the commit states each repaired control now fails on its own defect, but no mutation run is recorded after the repair (logs/guard-negative-control-second-flock.log and logs/registry-negative-control-base.log predate the 05:01 commit and exercise the tree guard and the base registry, not these two repaired assertions), so the commit's red-on-defect claim rests on reading rather than on a recorded failing arm."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit 6aeb523e53 against 3f78bafccf: it makes the second-flock control assert exactly 2 (test_every_shared_home_lock_holds_across_nodes.py:292) and starts the contender only after the first thread signals it holds (test_node_exclusive_lock_registry_is_bounded.py:56), repairing both findings of the prior record.",
+    "done_when": "done_when asks for an empty pending table, both hostnames, the contender's flock-only take free, and the log on GPFS cited from the landed record; after-arm-repair.log at 6aeb523e53 shows 64 passed EXIT=0 and logs/two-node-run.log shows holder_host=98dci4-clu-2001, contender_host=98dci4-clu-2005, pointer_take=held, flock_only_take=free, EXIT=0.",
+    "goal": "the source node goal is to empty the guard's pending table and measure the migrated run pointer lock excluding a contender on a second node (dispatch-detail.json); the reviewed commit repairs two tests and leaves tests/test_every_shared_home_lock_holds_across_nodes.py:110 with PENDING = frozenset(), green at 6aeb523e53.",
+    "manifest": "read; records the four commits, both suite arms at 0 failures with log paths, and a probe-style negative control with its note.",
+    "write_paths": "ten declared paths; the reviewed diff touches only the two declared tests/ files."
+  },
+  "justifications": {
+    "durability": "tests/test_every_shared_home_lock_holds_across_nodes.py:292 asserts found == 2 against a literal two-flock AST so it reddens on either an under- or over-count; tests/test_node_exclusive_lock_registry_is_bounded.py:56 gates the second thread on first_holds so the exclusion assertion is no longer scheduler-ordered.",
+    "evidence": "logs/after-arm-repair.log names revision 6aeb523e53, both repaired files, 64 passed and EXIT=0; the manifest test_logs names that path.",
+    "fit": "tests/test_node_exclusive_lock_registry_is_bounded.py:39-53 keeps the file's threading.Event and tmp_path idiom and adds no forbidden name.",
+    "goal_fidelity": "the commit is test-only and leaves the goal intact: PENDING is frozenset() at tests/test_every_shared_home_lock_holds_across_nodes.py:110 and the after arm is green at the head.",
+    "reuse": "the diff adds no definition; it still uses flock_sites at tests/test_every_shared_home_lock_holds_across_nodes.py:291 and node_exclusive_lock.exclusive_lock in the contention test, so no capability is forked.",
+    "scope_discipline": "git diff --stat 3f78bafccf 6aeb523e53 touches two files, both declared write paths, 24 insertions and 16 deletions."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node goal is to empty the guard's pending table and measure the migrated run pointer lock excluding a contender on a second node (dispatch-detail.json), and the reviewed commit only repairs two tests: tests/test_every_shared_home_lock_holds_across_nodes.py:110 keeps PENDING as frozenset() and the guard is green at the reviewed head.\nVERDICT done_when: the done_when asks for four facts (empty pending table, both hostnames in the two-node run, the contender's flock-only take free, and the log on GPFS cited from the landed record); the manifest records after-arm-repair.log at 6aeb523e53 with 64 passed and EXIT=0, and logs/two-node-run.log carries holder_host=98dci4-clu-2001, contender_host=98dci4-clu-2005, pointer_take=held, flock_only_take=free and EXIT=0.\nVERDICT write_paths: the dispatch declares ten paths and the reviewed diff 3f78bafccf..6aeb523e53 touches only tests/test_every_shared_home_lock_holds_across_nodes.py and tests/test_node_exclusive_lock_registry_is_bounded.py, both declared.\nVERDICT manifest: read the reviewed run's manifest.md; it records status complete, commits cb22c0b601, c959799bc8, 3f78bafccf and 6aeb523e53, both suite arms at 0 failures with their log paths, and its counts reconcile with the logs opened.\nVERDICT diff: read the single commit 6aeb523e53 against 3f78bafccf (2 files, 24 insertions, 16 deletions); it turns the second-flock count check into `assert found == 2` (tests/test_every_shared_home_lock_holds_across_nodes.py:292) and sequences the contention test so the first thread signals it holds before the second starts (tests/test_node_exclusive_lock_registry_is_bounded.py:56), repairing both non-blocking findings of record at 3f78bafccf.\nCALL_SITES: reckon/crew/runs.py:497 (_pointer_lock), reckon/ledger.py:2634, reckon/_store.py:407, reckon/project_state.py:322, reckon/crew/budget_reset.py:95, reckon/compliance.py:184\nSCORE goal_fidelity: 19\nSCORE evidence: 18\nSCORE scope_discipline: 20\nSCORE durability: 19\nSCORE fit: 18\nSCORE reuse: 19\nJUSTIFICATION goal_fidelity: the reviewed commit is test-only and leaves the goal intact, with PENDING still frozenset() at tests/test_every_shared_home_lock_holds_across_nodes.py:110 and the guard green at 6aeb523e53 in logs/after-arm-repair.log.\nJUSTIFICATION evidence: logs/after-arm-repair.log names revision 6aeb523e53, both repaired files, 64 passed and a bare EXIT=0, and the test log is recorded in the manifest's test_logs.\nJUSTIFICATION scope_discipline: the diff 3f78bafccf..6aeb523e53 changes two files, both among the ten declared write paths and nothing else.\nJUSTIFICATION durability: tests/test_every_shared_home_lock_holds_across_nodes.py:292 asserts found == 2 against a literal two-flock AST the test itself builds, so it reddens both if per-site call accumulation collapses to 1 and if it over-counts to 3; tests/test_node_exclusive_lock_registry_is_bounded.py:56 now waits for the first thread to signal from inside the lock before starting the second, so the exclusion assertion no longer depends on scheduler order.\nJUSTIFICATION fit: the repaired test keeps the file's pytest/tmp_path and threading.Event idiom (tests/test_node_exclusive_lock_registry_is_bounded.py:39-53) and introduces no name the naming rules forbid.\nJUSTIFICATION reuse: the diff adds no definition and keeps the existing surface, still calling flock_sites at tests/test_every_shared_home_lock_holds_across_nodes.py:291 and node_exclusive_lock.exclusive_lock in the contention test, so no capability is forked.\nFINDING tests/test_every_shared_home_lock_holds_across_nodes.py:292 non-blocking: the commit states each repaired control now fails on its own defect, but no mutation run is recorded after the repair (logs/guard-negative-control-second-flock.log and logs/registry-negative-control-base.log predate the 05:01 commit and exercise the tree guard and the base registry, not these two repaired assertions), so the commit's red-on-defect claim rests on reading rather than on a recorded failing arm.\n",
+  "review_run_id": "r-20261115T040853113370-review-of-pending-table-empty-and-two-node-measure-6aeb523e5309",
+  "reviewed_base_sha": "3f78bafccf36041a94747a651f359d830cd4de01",
+  "reviewed_head_sha": "6aeb523e530943226e9fcee71bca10801942454e",
+  "reviewed_run_id": "r-20261114T143516235536-pending-table-empty-and-two-node-measure",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T08:56:19.384046+00:00",
+  "total": 113
+}
