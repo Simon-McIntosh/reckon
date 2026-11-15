@@ -1,0 +1,69 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T08:20:47.125Z",
+  "dispatched_at": "2026-11-15T07:55:10Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/queued-work-needs-no-workaround/r-20261115T075313508504-plan-review-of-queued-work-needs-no-workaround/plan.html:288",
+      "id": "done_when-1",
+      "reason": "",
+      "text": "\u2014 the negative control cannot fail as stated for the first two cases: a brief whose file is gone makes the queued launch raise `CrewError: the brief '<path>' is not readable`, `_stamp_failure` records that text on the pointer, and the next admission pass holds the request through `_retry_backoff_hold` in `reckon/crew/admission/holds.py` \u2192 `record_hold(pointer, \"held-on-retry-backoff\", ...)`, whose reason reads `last attempt failed: CrewError: the brief '<path>' is not readable: [Errno 2] No such file or directory: '<path>'; not retried before <instant>`, and `obligations._live_item` publishes that reason on the queued row under the `held-on-retry-backoff:` verdict \u2014 so the base revision already names the brief's path and states the file is missing.",
+      "type": "done_when",
+      "would_change": null
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/queued-work-needs-no-workaround/r-20261115T075313508504-plan-review-of-queued-work-needs-no-workaround/plan.html:288",
+      "id": "done_when-2",
+      "reason": "",
+      "text": "\u2014 because base already publishes the path and the missing-file reading, only the deliverable's third clause (naming the reviewed run) is behaviour the node would add, while the deliverable and both control arms are stated over all three; the gate as written goes green at base on the path-and-missing half and red only on wording, so it cannot separate changed behaviour from unchanged behaviour and a node can satisfy the control without the new reading existing.",
+      "type": "done_when",
+      "would_change": null
+    }
+  ],
+  "plan_commit": "7149386c00c95dbb365977298bb269b1eaf87c1d",
+  "plan_fingerprint": "d17137465fc962adb6b7323671cc14e47cdec13ce61ba316a571aa24e7a7b479",
+  "plan_slug": "queued-work-needs-no-workaround",
+  "plan_version": 74,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261115T075313508504-plan-review-of-queued-work-needs-no-workaround",
+  "reviewed_blob_sha": "c733e5db54534e0e3a44aa48fc3b3e43ef4606c5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 nothing to resolve beyond the cited run id, `r-20261114T203628474513-review-of-diiid-edge-current-refusal-c981fafe8cde-figure`, which an earlier review's answer confirmed resolves; the `s18` section anchor resolves in the snapshot.",
+    "done_when": "a finding \u2014 the negative control asserts the base revision reads the request \"admissible-unlaunched or stalled at the launch stage, with no reason naming the missing brief\", but at base a missing brief becomes the queued pointer's recorded failure and the next pass publishes it verbatim as a `held-on-retry-backoff: last attempt failed: CrewError: the brief '<path>' is not readable: [Errno 2] No such file or directory` reason.",
+    "evidence_paths": "pass \u2014 the failing run is logged to `docs/evidence/fragments/queued-work-needs-no-workaround/s18.html`, a durable repository path.",
+    "naming": "pass \u2014 the section names no symbol, file or stage label carrying a plan or ticket identifier.",
+    "reasoning": "pass \u2014 the root cause (a composed review's brief lives inside the reviewed run's directory, which was removed) matches the cited evidence: `_review_brief_path` in `reckon/crew/recovery_review_subject.py` resolves to `runs.run_dir(reviewed_run)/review-brief.md`, and the launch's brief read raises naming that path when it cannot be opened; the section prescribes no code path, formula or function.",
+    "single_goal": "pass \u2014 the section delivers one thing: the obligations reason for a queued request whose brief no longer exists.",
+    "wiring": "pass \u2014 s18 is `implementable` with no depends-on/gates edges, since its subject is a queued request whose brief vanished and it neither consumes nor gates another section."
+  },
+  "section_digests": {
+    "_document": "cff2b661e8eb0c8ef093b8b9788c19888553e8b20ddda793072e5d4958f90223",
+    "s1": "965e293bc718e24bc6e0b306c2e31f4694e8d3d1f2aafc97e86aac0ccdc0eb46",
+    "s10": "501d0d72406c2fda4dc47939b9700d2c42eb9011387b4df7abdfcc55d906d345",
+    "s11": "4dc7e37e7c9ff6d074c540a19ff75d7db784999f7b811a999a052a00fcbacb39",
+    "s12": "cf244a99091ee04721474e6caad0adad1fb1c907edc99e9fd73b86fb3251685c",
+    "s13": "8cdf1aaa77a692163d0b36bc751a206e8f6c96460d0e44b85d9feb5a76f99659",
+    "s14": "e033ab0daa427195a357d93c3b5969c3fae24f311a8dafa8b2a6bad8db0b518e",
+    "s15": "c271f7bcaa272ebd4bf87d7b1e7153251ec38aa5863fd8a3d7f12cdf1c66bd06",
+    "s16": "e958886ca859d584799d4d94514466d7e14ba4c818ac307fcb864c7eb39fa549",
+    "s17": "dd6b738e7e017fe3bc312e85841a1a6a4b4d5dc818c618040249040acf51ff19",
+    "s18": "b6be332ddebd3cb3224aa2d8bbf870c972f7a02ee8ac25f8e32928ac6c3ce1ef",
+    "s19": "eaeead248338c8d630a84c78ae20179b603aa87fc7b0a599cced40377f9d8297",
+    "s2": "872b1ec9c49f32d972d450016002b1265e846673cd1aef42c41aaccc50583998",
+    "s20": "0e0d4849ea6b6f69d5354bef8f8699320f369433778609f009cf726a6657a1ee",
+    "s21": "63868fc89078593dbe4100f6219dc30d128fa8643fd03a5540708b33492840cc",
+    "s3": "2a385591edce8d1cb26d41f176fb084cd634d113eb130d2581ce97000bcb3eea",
+    "s4": "0116c3c4a34b6e607b2564cc4300d3784ba5d7596a0000d0b59c40e1801dcd1a",
+    "s5": "81cc22db14da433d65d2cbfd466e233d778e9b5d50552dc7a013e94a3b25ad15",
+    "s6": "91849d1cd49d8e783c893b01272f0e0f505aed67e379d52d354011a619270a1d",
+    "s7": "0eb7720abb0f46f8d48d47fcf646be85ae58c8a5cc37c98f7ad06ac2f9deb6ff",
+    "s8": "5dcf0f324a6b831b76a043e465731eff46456979ae084bcfc764ff0d40816359",
+    "s9": "b22a82394cfc2b7163b7fbd8be1087fdb6ec66a16524e9d194431d418894d798"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T08:24:52.952234+00:00",
+  "total": null
+}
