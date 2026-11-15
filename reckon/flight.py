@@ -1302,7 +1302,9 @@ def admission_pass_budget_seconds(config: Mapping[str, Any] | None) -> float:
     """
     admission = (config or {}).get(ADMISSION_KEY)
     value = (
-        admission.get(ADMISSION_BUDGET_SECONDS_KEY, DEFAULT_ADMISSION_PASS_BUDGET_SECONDS)
+        admission.get(
+            ADMISSION_BUDGET_SECONDS_KEY, DEFAULT_ADMISSION_PASS_BUDGET_SECONDS
+        )
         if isinstance(admission, Mapping)
         else DEFAULT_ADMISSION_PASS_BUDGET_SECONDS
     )
