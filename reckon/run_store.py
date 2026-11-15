@@ -1,14 +1,9 @@
-"""A rebuildable SQLite index of the committed run records.
+"""Stored run history with indexed identity queries and rotating wide detail.
 
-Run files and remaining aggregate rows, read through ``ledger.load``, are the
-authority. A keyed reader checks membership against those sources and rebuilds
-an absent or out-of-date index before answering. A cache rebuild cannot make
-an authoritative answer depend on a successful cache write.
-
-``DETAIL_FIELDS`` names the wide fields a rotation may remove. Every other
-field is durable by default. Refusal stamps are independent durable records:
-a refused dispatch has no promoted run file, so rebuilding run rows must never
-remove those stamps.
+Ledger readers query the store directly. Explicit import and comparison read
+committed documents, allowing the store to be rebuilt without asking it for its
+own input. ``DETAIL_FIELDS`` names the wide fields rotation may remove; every
+other field is durable. Refusal stamps are independent durable records.
 """
 
 from __future__ import annotations
@@ -20,12 +15,13 @@ import os
 import random
 import sqlite3
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Self
 
 from reckon import _store, run_record
+from reckon._timestamps import parse_utc
 
 # The single detail-field declaration. A field on a run record named here is
 # wide detail a later rotation stage may wash out once its derived value
@@ -212,6 +208,146 @@ def enable_incremental_vacuum(path: str | Path | None = None) -> dict[str, Any]:
             "pages_before": pages_before,
             "pages_after": connection.execute("PRAGMA main.page_count").fetchone()[0],
         }
+    finally:
+        connection.close()
+
+
+def _archive_path(path: Path) -> Path:
+    """The separate SQLite file holding one store's retired history."""
+    return path.with_name(f"{path.stem}.archive{path.suffix}")
+
+
+def _record_rows(
+    connection: sqlite3.Connection,
+    *,
+    schemas: Iterable[str] = ("main",),
+    project: str | None = None,
+    run_ids: Iterable[str] | None = None,
+    plan: str | None = None,
+    fields: tuple[str, ...] | None = None,
+    activity_since: float | None = None,
+) -> Iterator[tuple[Any, ...]]:
+    """Stream selected records through the single durable/detail join.
+
+    Projection and selection happen before SQLite returns any payload to Python.
+    Full history remains streamable without retaining a second list of encoded
+    records beside the decoded answer. Identity batches stay below driver limits.
+    """
+    selected = None if run_ids is None else sorted(set(map(str, run_ids)))
+    batches = (
+        [None]
+        if selected is None
+        else [selected[index : index + 500] for index in range(0, len(selected), 500)]
+    )
+    if activity_since is not None:
+
+        def epoch(value):
+            stamp = parse_utc(value)
+            return stamp.timestamp() if stamp is not None else None
+
+        connection.create_function("record_epoch", 1, epoch, deterministic=True)
+    for schema in schemas:
+        if schema not in ("main", "archive"):
+            raise ValueError(f"unknown store schema {schema!r}")
+        for batch in batches:
+            params: list[Any] = []
+            columns = []
+            for column in ("r.payload", "d.detail"):
+                if fields == ("run_id",):
+                    columns.append("NULL")
+                elif fields is None:
+                    columns.append(column)
+                else:
+                    marks = ",".join("?" for _ in fields)
+                    columns.append(
+                        "(SELECT json_group_object(key, CASE "  # noqa: S608 - fixed columns and parameter markers
+                        "WHEN type IN ('object','array') THEN json(value) "
+                        "WHEN type IN ('true','false') THEN json(type) ELSE value END) "
+                        f"FROM json_each({column}) WHERE key IN ({marks}))"
+                    )
+                    params.extend(fields)
+            query = (
+                f'SELECT r.run_id, {columns[0]}, {columns[1]} FROM "{schema}".runs r '  # noqa: S608 - fixed schema and column names
+                f'LEFT JOIN "{schema}".run_details d ON r.run_id = d.run_id'
+            )
+            clauses = []
+            if project is not None:
+                clauses.append("r.project = ?")
+                params.append(project)
+            if batch is not None:
+                clauses.append(f"r.run_id IN ({','.join('?' for _ in batch)})")
+                params.extend(batch)
+            if plan:
+                clauses.append("json_extract(r.payload, '$.plan') = ?")
+                params.append(plan)
+            if activity_since is not None:
+                stamps = [
+                    f"coalesce(record_epoch(json_extract(r.payload, '$.{key}')), -1e300)"
+                    for key in (
+                        "launched_at",
+                        "created_at",
+                        "dispatched_at",
+                        "completed_at",
+                    )
+                ]
+                clauses.append(f"max({','.join(stamps)}) >= ?")
+                params.append(activity_since)
+            if clauses:
+                query += " WHERE " + " AND ".join(clauses)
+            yield from connection.execute(query, params)
+
+
+def stored_run_rows(
+    project: str,
+    *,
+    run_ids: Iterable[str] | None = None,
+    plan: str | None = None,
+    fields: tuple[str, ...] | None = None,
+    activity_since: float | None = None,
+) -> list[dict[str, Any]] | None:
+    """Read selected stored history without writing or consulting run files.
+
+    None means the store is absent. An existing empty store answers an empty
+    list; an unreadable store raises rather than looking like an empty project.
+    Retired rows retain both halves of their record in the attached archive.
+    """
+    path = store_path()
+    if not path.exists():
+        return None
+    connection = sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)
+    try:
+        schemas = ["main"]
+        archive = _archive_path(path)
+        if archive.exists():
+            connection.execute(
+                "ATTACH DATABASE ? AS archive",
+                (f"{archive.resolve().as_uri()}?mode=ro",),
+            )
+            schemas.append("archive")
+        records = []
+        for run_id, payload, detail in _record_rows(
+            connection,
+            schemas=schemas,
+            project=project,
+            run_ids=run_ids,
+            plan=plan,
+            fields=fields,
+            activity_since=activity_since,
+        ):
+            if fields == ("run_id",):
+                records.append({"run_id": str(run_id)})
+            else:
+                records.append(
+                    run_record.normalize_outside_scope_paths(
+                        {
+                            **json.loads(payload),
+                            **(json.loads(detail) if detail else {}),
+                        }
+                    )
+                )
+        return records
+    except sqlite3.Error as error:
+        raise RuntimeError(f"cannot read the run store at {path}: {error}") from error
     finally:
         connection.close()
 
@@ -496,7 +632,7 @@ class RunStore:
     @property
     def archive_path(self) -> Path:
         """The separate SQLite file holding retired history."""
-        return self._path.with_name(f"{self._path.stem}.archive{self._path.suffix}")
+        return _archive_path(self._path)
 
     def _attach_archive(self, *, create: bool = False) -> bool:
         if not self._archive_attached and (create or self.archive_path.is_file()):
@@ -649,17 +785,10 @@ class RunStore:
     def _indexed_records(
         self, *, include_archive: bool = False
     ) -> dict[str, dict[str, Any]]:
-        rows = self._conn.execute(
-            "SELECT r.run_id, r.payload, d.detail FROM runs r "
-            "LEFT JOIN run_details d ON r.run_id = d.run_id"
-        ).fetchall()
+        schemas = ["main"]
         if include_archive and self._attach_archive():
-            rows.extend(
-                self._conn.execute(
-                    "SELECT r.run_id, r.payload, d.detail FROM archive.runs r "
-                    "LEFT JOIN archive.run_details d ON r.run_id = d.run_id"
-                ).fetchall()
-            )
+            schemas.append("archive")
+        rows = _record_rows(self._conn, schemas=schemas)
         return {
             str(run_id): run_record.normalize_outside_scope_paths(
                 {**json.loads(payload), **(json.loads(detail) if detail else {})}
@@ -688,7 +817,7 @@ class RunStore:
                 )
             } | self._archived_ids(name)
             if indexed != ledger.run_ids(name, root):
-                data, _version = ledger.load(name, root)
+                data, _version = ledger.load(name, root, use_index=False)
                 changed[name] = data["runs"]
         if not changed:
             return None
@@ -1094,7 +1223,7 @@ def import_ledger(
     """
     from reckon import ledger
 
-    data, _version = ledger.load(project, root)
+    data, _version = ledger.load(project, root, use_index=False)
     counts = {"rows_imported": 0, "rows_already_present": 0, "rows_unchanged": 0}
 
     def write(store: RunStore) -> None:
@@ -1151,7 +1280,7 @@ def compare(
     """
     from reckon import ledger
 
-    data, _version = ledger.load(project, root)
+    data, _version = ledger.load(project, root, use_index=False)
     file_durable = {
         str(record.get("run_id")): _durable_record(project, record)
         for record in data["runs"]
