@@ -1,12 +1,12 @@
 """Dispatch the review every delivered run owes, on the admit service's clock.
 
-A delivered run lands only after its review, and a review used to be dispatched
-only by the follower of the session that dispatched the run, while that
-follower was alive. A coordinator that stopped, or whose follower was
-restarting, left its delivered runs unreviewed and therefore unlanded, with
-their commits in a worktree and every request waiting on their section parked
-behind them. The admit service is the one process that is always running, so it
-makes the same sweep itself, for every session's runs.
+A delivered run lands only after its review. A session's follower dispatches
+the reviews of that session's runs only while the follower is alive, so a
+coordinator that has stopped, or whose follower is restarting, leaves its
+delivered runs unreviewed and therefore unlanded: their commits stay in a
+worktree and every request waiting on their section stays parked. The admit
+service is the one process that is always running, so it makes the same sweep
+itself, for every session's runs.
 """
 
 from __future__ import annotations
