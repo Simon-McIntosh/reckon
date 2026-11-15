@@ -86,7 +86,10 @@ def measure_stream_tokens(
     thread_ids: set[str] = set()
     anonymous_message = 0
     try:
-        with Path(stream_path).open(encoding="utf-8") as lines:
+        # A worker writes its stream while this reads it, so a read can end
+        # inside a multibyte character; the replaced tail fails to parse as
+        # JSON and is skipped like any other partial line.
+        with Path(stream_path).open(encoding="utf-8", errors="replace") as lines:
             for line in lines:
                 try:
                     record = json.loads(line)
@@ -507,7 +510,7 @@ def _stream_time_span(path: Path) -> tuple[float | None, float | None]:
     first: datetime | None = None
     last: datetime | None = None
     try:
-        with Path(path).open(encoding="utf-8") as lines:
+        with Path(path).open(encoding="utf-8", errors="replace") as lines:
             for line in lines:
                 try:
                     record = json.loads(line)
