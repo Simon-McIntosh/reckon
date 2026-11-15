@@ -1,0 +1,94 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own gate logs, because its manifest's suite fields are unsubstituted placeholders: logs/baseline-arm-amended.log header names 889f7e78 and ends `90 passed in 36.55s` / `EXIT=0` (0 failing ids), logs/after-arm3.log header names fcd0e59cf3 and ends `94 passed in 36.93s` / `EXIT=0` (0 failing ids), so the arm pair adds no failing id. Corroborated by the population arms at the same revisions: logs/importers-base.log 45 FAILED/ERROR lines (44 unique ids) and logs/importers-head-repair.log 45 lines (44 unique ids) with `comm` over the sorted id sets empty in both directions; logs/population-extra-base.log and logs/population-extra-head.log both `32 failed, 628 passed` with 32 ids, and none of the six repaired modules' ids appear in either extra arm.",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/live_worker_census.py:147 ticker._pane_word({\"to_state\": state})",
+    "reckon/crew/live_worker_census.py:233 ticker._pane_word(event) in PROGRESS_PANE_WORDS",
+    "reckon/crew_follow_commands.py:3126 ticker_module.Ticker(width=..., theme=...)",
+    "reckon/crew/recovery_watch.py:902 NEEDS_ACTION | WAITING_STATES -> EXPLAINED_STATES",
+    "reckon/crew/recovery_watch.py:1927 FLEET_WAITING_STATES = tuple(sorted(WAITING_STATES))",
+    "reckon/crew/recovery_watch.py:1934 FLEET_BLOCKED_STATES = tuple(sorted(NEEDS_ACTION - WAITING_STATES))",
+    "reckon/crew/recovery.py:66 from reckon.crew.ticker import NEEDS_ACTION"
+  ],
+  "completed_at": "2026-11-15T18:02:18.438Z",
+  "dispatched_at": "2026-11-15T18:01:45Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174718151481-help-word-and-waiting-states-s141/manifest.md",
+      "line": "16",
+      "severity": "blocking",
+      "text": "blocking: `baseline_suite` and `after_suite` are the unsubstituted template placeholders `__BASELINE__` / `__AFTER__`, so the two arms the repair round's done_when requires (revision, literal command, exit status, failure ids) are absent from the record even though logs/baseline-arm-amended.log and logs/after-arm3.log exist; a reader of the record cannot derive the added-failure count the review must carry."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174718151481-help-word-and-waiting-states-s141/manifest.md",
+      "line": "9",
+      "severity": "blocking",
+      "text": "blocking: `changed_paths` still reads `__PATHS__` and `test_logs` at manifest.md:13 still reads `__LOGS__`, so the record names neither the files it changed nor the log paths backing its arms; both are keys the round's manifest template requires and the reviewed run's own changed-paths.txt (25 modules plus product and fragment) has the missing content."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174718151481-help-word-and-waiting-states-s141/manifest.md",
+      "line": "12",
+      "severity": "blocking",
+      "text": "blocking: the `tests:` line stops at `tests/test_a_run_that_needs_...` and then says the full command is 'in test_logs and after-command.txt', but test_logs is `__LOGS__`, so the gate command a promotion receipt is filled from is a truncated string no shell can re-run; the exact command is on the header line of logs/after-arm3.log."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/help-word-and-waiting-states-s141.html",
+      "line": "26",
+      "severity": "blocking",
+      "text": "blocking: the bullet reports the 139-module base arm as `39 failed / 6 errors / 1219 passed`, but the arm it cites, logs/importers-base.log, ends `39 failed, 1212 passed, 31 warnings, 6 errors in 540.11s` while only the head arm reaches 1219; the commit's stated purpose is correcting the population record, and it re-introduces a figure its own cited receipt contradicts."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/help-word-and-waiting-states-s141.html",
+      "line": "27",
+      "severity": "non-blocking",
+      "text": "non-blocking: the bullet calls the 51-module arm 'the arm that sees six modules fail before the six are fixed', but neither endpoint of that arm contains any of the six modules' ids (population-extra-base.log and population-extra-head.log both report the same 32 failing ids and neither includes them); the evidence that sees them fail is logs/negative-control-six.log at f7c7b422, not this arm, so the attribution sends a reader to the wrong log."
+    },
+    {
+      "file": "tests/test_a_run_that_needs_its_orchestrator_reads_needs_you.py",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the module was edited in e649ec0551 (docstring lines 4-8) although it is absent from the round's 12 declared write paths; the edit answers a mapped finding while the round scope omits its path, so the deviation is the dispatch's contradiction rather than an unrelated change, and the edit is docstring-only."
+    },
+    {
+      "file": "tests/test_a_foreign_pid_never_reads_dead.py",
+      "line": "319",
+      "severity": "non-blocking",
+      "text": "non-blocking: `assert \"help\" in line` is a bare substring over a rendered row, so a row whose prose says e.g. \"needs help\" or \"helpful\" satisfies it and the guard is weaker than the word-equality assertions landed in the same commit (tests/test_a_live_workers_unreadable_manifest_is_working.py:217); it still reddens on the retired word, so it is a guard, just a loose one."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read both commits against f7c7b422d79ec91f361c7c4666e5f91de445d003: e649ec0551 changes 7 test modules (six literal repinnings plus one docstring correction) and fcd0e59cf3 changes only the landing fragment, adding the population section and rewording four paragraphs; no production file is touched by either commit.",
+    "done_when": "the repair round's done_when requires every finding named, both suite arms recorded in the manifest with their exact command, and a negative control per answering commit; the manifest names all nine findings and logs/negative-control-six.log shows `9 failed, 23 passed` / `EXIT=1` for the six answering modules, but the manifest's `tests:`, `test_logs:`, `baseline_suite:` and `after_suite:` lines are unsubstituted placeholders, so the recorded-arm half of the measure is not met by the record itself.",
+    "goal": "the reviewed commits' goal is to answer the prior review's six module findings and record the corrected population; tests/test_a_discarded_run_is_never_listed_as_blocked.py:186-187, tests/test_a_foreign_pid_never_reads_dead.py:319, tests/test_a_live_workers_unreadable_manifest_is_working.py:217, tests/test_a_rearmed_pipe_follower_shows_its_live_work.py:131, tests/test_a_status_repair_prints_no_halted_row.py:93 and tests/test_a_wait_nothing_can_lift_needs_the_coordinator.py:216/296/372 now state the word `help`, and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/help-word-and-waiting-states-s141.html records the two-instrument population.",
+    "manifest": "read; status complete, commits e649ec0551 and fcd0e59cf3, landing and artifacts lines quotable, negative_control_log logs/negative-control-six.log; four required record lines (changed_paths, tests, test_logs, baseline_suite, after_suite) remain template placeholders `__PATHS__`, `__LOGS__`, `__BASELINE__`, `__AFTER__` and the `tests:` command is truncated with `...`.",
+    "write_paths": "the round's declared write paths are 12 entries (12 in the reviewed manifest's orientation_write_paths); the diff f7c7b422..fcd0e59cf3 touches eight files, seven inside them and tests/test_a_run_that_needs_its_orchestrator_reads_needs_you.py outside them (docstring only)."
+  },
+  "justifications": {
+    "durability": "logs/negative-control-six.log reverts the answering commit's literals and records `9 failed, 23 passed` / `EXIT=1` with one failing id per changed assertion, so reinstating the regression reddens tests/test_a_discarded_run_is_never_listed_as_blocked.py:186, tests/test_a_status_repair_prints_no_halted_row.py:93 and the rest rather than leaving an assertion that moves with its own input.",
+    "evidence": "Every arm names its revision and ends in a bare EXIT line (logs/baseline-arm-amended.log:1 and its last line `EXIT=0`; logs/after-arm3.log:1 and `EXIT=0`), yet the record the repair was required to write carries placeholders at manifest.md:16-17 and docs/evidence/fragments/.../help-word-and-waiting-states-s141.html:26 states the base arm as `1219 passed` where logs/importers-base.log ends `39 failed, 1212 passed, 31 warnings, 6 errors`.",
+    "fit": "The updated literals follow the surrounding modules' existing idiom of hand-written production vocabulary (tests/test_a_rearmed_pipe_follower_shows_its_live_work.py:120-132 documents exactly that choice) and add no new identifier.",
+    "goal_fidelity": "The six modules the prior review found red now assert the landed word (tests/test_a_live_workers_unreadable_manifest_is_working.py:217 `_pane_word(row) == \"help\"`), but the manifest's suite record the round's done_when requires is left as `baseline_suite: __BASELINE__` at manifest.md:16.",
+    "reuse": "Neither commit adds a function, class or module; the only non-test content is the evidence fragment, and a capability search over reckon/crew for an existing population-record or vocabulary-fixture owner found none the fragment could extend.",
+    "scope_discipline": "Seven of the diff's eight files are inside the declared write paths, but tests/test_a_run_that_needs_its_orchestrator_reads_needs_you.py:4-8 was edited in e649ec0551 while that path is absent from the round's write scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed commits answer the prior review's module findings; tests/test_a_discarded_run_is_never_listed_as_blocked.py:186-187 and tests/test_a_live_workers_unreadable_manifest_is_working.py:217 now assert the landed word `help`, and the fragment records the population.\nVERDICT done_when: the round's done_when requires both suite arms recorded with their exact command; logs/baseline-arm-amended.log (90 passed, EXIT=0) and logs/after-arm3.log (94 passed, EXIT=0) exist and logs/negative-control-six.log records 9 failed, EXIT=1, but the manifest's suite, test_logs, changed_paths and tests lines are placeholders or truncated.\nVERDICT write_paths: the round was fenced to 12 paths; `git diff --stat f7c7b422..fcd0e59cf3` lists eight files, seven inside the fence and tests/test_a_run_that_needs_its_orchestrator_reads_needs_you.py outside it.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174718151481-help-word-and-waiting-states-s141/manifest.md; status complete, two commits, negative control named, four required lines left as template placeholders.\nVERDICT diff: read commit by commit against f7c7b422; e649ec0551 repins six modules' literals plus one docstring, fcd0e59cf3 adds the population section to the fragment; no production file is touched.\nCALL_SITES: reckon/crew/live_worker_census.py:147, reckon/crew/live_worker_census.py:233, reckon/crew_follow_commands.py:3126, reckon/crew/recovery_watch.py:902, reckon/crew/recovery_watch.py:1927, reckon/crew/recovery_watch.py:1934, reckon/crew/recovery.py:66\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: the six red modules now assert `help` (tests/test_a_live_workers_unreadable_manifest_is_working.py:217), but the required arm record is left as `baseline_suite: __BASELINE__` at manifest.md:16.\nSCORE evidence: 10\nJUSTIFICATION evidence: logs/baseline-arm-amended.log:1 names 889f7e78 and the log ends `EXIT=0`, yet docs/evidence/fragments/the-monitor-shows-the-work-it-watches/help-word-and-waiting-states-s141.html:26 reports the base arm as `1219 passed` where logs/importers-base.log ends `39 failed, 1212 passed, 31 warnings, 6 errors`.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: seven of eight changed files are inside the declared paths, but tests/test_a_run_that_needs_its_orchestrator_reads_needs_you.py:4-8 was edited while absent from the round's write scope.\nSCORE durability: 18\nJUSTIFICATION durability: logs/negative-control-six.log shows the answering commit reverted costing 9 failing ids across the six modules, so reinstating the regression reddens tests/test_a_discarded_run_is_never_listed_as_blocked.py:186 and its five siblings.\nSCORE fit: 17\nJUSTIFICATION fit: the literals follow the hand-written-vocabulary idiom documented at tests/test_a_rearmed_pipe_follower_shows_its_live_work.py:120-132 and add no new identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: neither commit adds a definition, and a capability search over reckon/crew for an existing population-record or vocabulary-fixture owner found none the fragment duplicates.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174718151481-help-word-and-waiting-states-s141/manifest.md:16 blocking: `baseline_suite` and `after_suite` are left as `__BASELINE__` / `__AFTER__`, so the arm pair the round's done_when requires is absent from the record.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174718151481-help-word-and-waiting-states-s141/manifest.md:9 blocking: `changed_paths` and `test_logs` still read `__PATHS__` and `__LOGS__`.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174718151481-help-word-and-waiting-states-s141/manifest.md:12 blocking: the `tests:` command is truncated with `...` and points at `test_logs`, which is itself a placeholder, so the gate receipt cannot be filled or re-run.\nFINDING docs/evidence/fragments/the-monitor-shows-the-work-it-watches/help-word-and-waiting-states-s141.html:26 blocking: the base arm is reported as `1219 passed` where its cited log logs/importers-base.log ends `39 failed, 1212 passed, 31 warnings, 6 errors`.\nFINDING docs/evidence/fragments/the-monitor-shows-the-work-it-watches/help-word-and-waiting-states-s141.html:27 non-blocking: the 51-module arm is called the arm that sees the six modules fail, but neither endpoint contains those ids; logs/negative-control-six.log is the arm that does.\nFINDING tests/test_a_run_that_needs_its_orchestrator_reads_needs_you.py:1 non-blocking: the file was edited although it is outside the round's declared write paths; the edit is docstring-only.\nFINDING tests/test_a_foreign_pid_never_reads_dead.py:319 non-blocking: `assert \"help\" in line` is a bare substring that any occurrence of the word satisfies, weaker than the equality assertions landed beside it.\n",
+  "review_run_id": "r-20261115T175623627220-review-of-help-word-and-waiting-states-s141-fcd0e59cf3d7",
+  "reviewed_base_sha": "f7c7b422d79ec91f361c7c4666e5f91de445d003",
+  "reviewed_head_sha": "fcd0e59cf3d7b1fafd7c04f486b311ecf1ea46f5",
+  "reviewed_run_id": "r-20261114T174718151481-help-word-and-waiting-states-s141",
+  "scores": {
+    "durability": 18,
+    "evidence": 10,
+    "fit": 17,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T18:18:29.497203+00:00",
+  "total": 94
+}
