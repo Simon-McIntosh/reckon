@@ -4669,7 +4669,9 @@ def _budget_reset_reach() -> dict[str, Any]:
         "reached": reached_sessions,
         "unreached": unreached_sessions,
         "unreached_names": {
-            session: names[session] for session in unreached_sessions if session in names
+            session: names[session]
+            for session in unreached_sessions
+            if session in names
         },
         "detail": detail,
     }
@@ -4690,8 +4692,7 @@ def _live_harness_sessions() -> list[tuple[str, str]]:
     import json
 
     directory = Path(
-        os.environ.get(HARNESS_SESSIONS_DIR_ENV)
-        or Path.home() / ".claude" / "sessions"
+        os.environ.get(HARNESS_SESSIONS_DIR_ENV) or Path.home() / ".claude" / "sessions"
     )
     sessions: list[tuple[str, str]] = []
     try:
