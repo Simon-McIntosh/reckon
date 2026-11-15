@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-after" content="work-flows-to-the-lane">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;descoped&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;descoped&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -264,7 +264,7 @@
 <p><strong>Done when.</strong> Tests with a temporary repository and crew home land each case above, and read a dry run that writes nothing and starts no scheduler job. Negative control: the paired base-and-head failure case against the base revision is refused as red, and the failing run is logged.</p>
 
     <h2 id="s14">§14 — A decision can hold only its sections, and a batch sees its own earlier ops</h2>
-<section data-reckon="section" data-id="s14" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s14" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> Defects D5 and D25. No op scopes a decision to the sections it holds, so every open decision holds the whole plan and coordinators edit the HTML by hand. And <code>close</code> refuses in the same batch as the <code>append_evidence</code> that satisfies it, so one write becomes two.</p>
 <p><strong>Deliverable.</strong> <code>edit_plan</code> sets the sections a decision holds, and a batch's later ops see the effects of its earlier ones.</p>
 <p><strong>Done when.</strong> Tests drive both cases through the MCP edit tool against a temporary project and read the plan HTML. A decision scoped to §2 holds only §2 on the roadmap. A close batched after its evidence succeeds in one write. Negative control: the batched close against the base revision is refused at its op index, and the failing run is logged.</p>
@@ -299,6 +299,9 @@
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261114T233332869212-review-of-qwnw-a-review-is-promoted-only-after-it-delivers-and-10d854ba1f9a" data-who="reckon-build" data-when="2026-11-15T00:39:15.575Z">
     <div class="r-comment-body"><p>Reviewed run r-20261114T201454384711-qwnw-a-review-is-promoted-only-after-it-delivers-and at head 10d854ba1f against base 191db600fe: scored goal_fidelity 18, evidence 18, scope_discipline 20, durability 10, fit 18, reuse 20 (total 104), added failures 0, and filed two non-blocking findings — the fragment names census.json as a script no file holds, and reports a ledger positive control while the census's expected ledger control returned false.</p></div>
 </div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20261114T201655647949-qwnw-a-decision-can-hold-only-its-sections-and-a-batc" data-who="reckon-build" data-when="2026-11-14T23:39:51.968Z">
+    <div class="r-comment-body"><p>§14 delivered — a close batched behind its evidence now lands in one write because the terminal-evidence guard counts the batch's own queued evidence appends; the decision-scope case was already correct and gains its roadmap-release test. Node tests pass 2/2 at the head; at the base revision the batched close is refused at refused_op_index 1.</p></div>
+</div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261114T200845603829-qwnw-dispatch-prints-one-json-document-and-a-fresh-re" data-who="reckon-build" data-when="2026-11-14T21:26:23.637Z">
     <div class="r-comment-body"><p>not attempted; the coordinator merges this commit, and nothing was pushed</p></div>
 </div>
@@ -310,9 +313,6 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261114T201024333274-qwnw-a-finished-upstream-releases-its-waiters" data-who="reckon-build" data-when="2026-11-14T23:20:02.975Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-finished-upstream-releases-its-waiters.html</p></div>
-</div>
-<div class="r-comment" data-section="s14" data-id="c-run-r-20261114T201655647949-qwnw-a-decision-can-hold-only-its-sections-and-a-batc" data-who="reckon-build" data-when="2026-11-14T23:39:51.968Z">
-    <div class="r-comment-body"><p>§14 delivered — a close batched behind its evidence now lands in one write because the terminal-evidence guard counts the batch&#x27;s own queued evidence appends; the decision-scope case was already correct and gains its roadmap-release test. Node tests pass 2/2 at the head; at the base revision the batched close is refused at refused_op_index 1.</p></div>
 </div>
 </section>
 </main>
