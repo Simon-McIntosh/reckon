@@ -24,8 +24,8 @@
   <title>The Monitor Tells The Truth Under Load | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="37">
-<meta name="plan-modified" content="2026-11-15">
+<meta name="plan-version" content="39">
+<meta name="plan-modified" content="2026-11-16">
 </head>
 <body>
   <main class="plan-doc">
@@ -184,15 +184,21 @@
 
     <h2 id="s21">A held request names the failure that holds it</h2>
 <section data-reckon="section" data-id="s21" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
-<p><strong>Why.</strong> power-convertor-12 reported, at 22:25 UTC on 15 November, a queued request (<code>r-20261115T123258219001-vofd-crossing-curves</code>) whose pointer hold read the lane's router granting "0 extra workers … congested, admission headroom -1". That reason was written at 22:22:56. The obligations hook showed "stuck: held-for-allowance for 34574s". The lane document at 22:25:15 read headroom 3 and worker_slots 11. <code>crew admit --run</code> showed the real verdict, <code>held-on-retry-backoff</code>, because the last launch had failed on an unanswered plan-review finding. The lead saw an open lane beside a held run and suspected reckon, because neither surface named the failure or the command that clears it. The lead's ruling the same evening: a full lane is not a signal. The queue and the router absorb it, so no surface reports a full or congested lane as something to act on.</p>
+<p><strong>Why.</strong> power-convertor-12 reported, at 22:25 UTC on 15 November, a queued request (<code>r-20261115T123258219001-vofd-crossing-curves</code>) whose pointer hold read the lane's router granting "0 extra workers … congested, admission headroom -1". That reason was written at 22:22:56. The obligations hook showed "stuck: held-for-allowance for 34574s". The lane document at 22:25:15 read headroom 3 and worker_slots 11. <code>crew admit --run</code> showed the real verdict, <code>held-on-retry-backoff</code>, because the last launch had failed on an unanswered plan-review finding. The run's own attempt record already held the real failure and its remedy (its <code>admission_history</code> entry carries the <code>PlanReviewMissingError</code> and the <code>reckon crew review</code> command that clears it). Neither the hold nor the obligations row surfaced it, so the lead saw an open lane beside a held run and suspected reckon. The lead's ruling the same evening: a full lane is not a signal. The queue and the router absorb it, so no surface reports a full or congested lane as something to act on.</p>
 <p><strong>Done when.</strong> New tests, each failing at the base revision. A queued request whose last launch failed on a plan-review gate, or on any refusal that names its remedy, carries that failure and its remedy command on its hold and on its obligations row. Neither surface shows an earlier router-congestion reason once a later attempt has failed for another cause. A hold's age is measured from the reason it shows, not frozen at an earlier hold. A request held only because the lane is full or congested is drawn as queued in the waiting pane, raises no obligation, and is never drawn "help" or "stuck". No pane row or obligations line reports the lane as full. The tests importing <code>reckon.crew.obligations</code> or <code>reckon.crew.admission</code> add no failure against the base on all_debug. Write paths: <code>reckon/crew/admission/verdicts.py</code>, <code>reckon/crew/admission/launching.py</code>, <code>reckon/crew/obligations.py</code> and a new test.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-mttu-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-a6" data-written-at="2026-11-15 13:30" data-recommends-skill="/reckon-build the-monitor-tells-the-truth-under-load" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-mttu-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-a6" data-written-at="2026-11-15 13:30" data-recommends-skill="/reckon-build the-monitor-tells-the-truth-under-load" data-resolved-at="2026-11-15T23:01:31+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Land §2, then build §3 to §11</h4>
     <div class="r-fu-body"><p>§2 is in hand: its fix is committed and its arms are running. The other sections queue after this plan's review is answered.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-monitor-tells-the-truth-under-load</pre>
+    <p class="r-fu-outcome"><p>§2 landed. §4, §8, §11, §12, §13 and §20 have landed since; the rest of the build is carried by f-mttu-002.</p></p>
+    </article>
+<article class="r-fu" data-id="f-mttu-002" data-status="open" data-written-by="reckon-a6" data-written-at="2026-11-15T23:15:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land §3, §5, §6, §7, §9, §10, §14 to §17, §19 and §21</h4>
+    <div class="r-fu-body"><p>Each of these sections has a run delivered, in review, in repair or queued; §5 waits on the codex budget window. §21 is queued once its review is answered.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-monitor-tells-the-truth-under-load §21</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
