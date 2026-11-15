@@ -2802,14 +2802,17 @@ def _unmerged_commit_answer(tree: Path) -> bool | None:
     claim judge one tree by one rule: it reads the head and the ref from git's
     files and memoises per object id, so a tree that has not moved costs no
     subprocess on a later pass. The base that reading excludes is passed as the
-    ref's own commit, which leaves exactly the commits the ref cannot reach.
+    ref's own commit, which leaves exactly the commits the ref cannot reach. The
+    answer is kept in this process rather than in the crew home's store: one
+    derivation pass asks it for every retained tree, and the store is a single
+    file rewritten per answer.
     """
     answered = False
     for name in _PRIMARY_REF_NAMES:
         merged = _integration_ref_revision(tree, name)
         if not merged:
             continue
-        answer = _claim_commit_answer(tree, name, merged)
+        answer = _claim_commit_answer(tree, name, merged, store=False)
         if answer is None:
             continue
         if not answer.strip():
