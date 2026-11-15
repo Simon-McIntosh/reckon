@@ -40,6 +40,7 @@ def duty(tmp_path, monkeypatch):
         "kind": "blocked",
         "next_command": f"reckon crew resume --run {RUN} --advice continue",
         "age_seconds": 10,
+        "reason": "the worker needs advice",
     }
     return {
         "project": PROJECT,
@@ -90,6 +91,7 @@ def test_a_condition_ends_the_acknowledgement_and_returns_a_snapshotted_duty(
     assert [row["run_id"] for row in released["obligations"]] == [RUN]
     assert released["acknowledged"] == []
     assert released["summary"]["count"] == 1
+    assert released["obligations"] == duty["obligations"]
     marker.unlink()
     assert _read(duty)["obligations"], "an ended deferral cannot become active again"
 
@@ -228,6 +230,7 @@ def test_the_prompt_shows_an_acknowledgement_and_announces_its_release(
     assert "[acknowledged]" in first
     assert "awaiting re-review" in first
     assert "re-review stored" in first
+    held["acknowledged"][0]["age_seconds"] += 1
     assert prompt() == ""
     marker.touch()
     returned = json.loads(prompt())["hookSpecificOutput"]["additionalContext"]

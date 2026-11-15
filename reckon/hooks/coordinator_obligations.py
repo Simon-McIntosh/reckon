@@ -1299,7 +1299,29 @@ def _inject_list(
         reloading=reloading,
         model_notices=notices,
         limit_resets=[str(event.get("id") or "") for event in resets],
-        reading=json.dumps(acknowledged, sort_keys=True) if acknowledged else "",
+        reading=(
+            json.dumps(
+                [
+                    {
+                        key: item.get(key)
+                        for key in (
+                            "run_id",
+                            "kind",
+                            "reason",
+                            "until",
+                            "until_condition",
+                        )
+                    }
+                    for item in sorted(
+                        acknowledged,
+                        key=lambda row: (str(row.get("run_id")), str(row.get("kind"))),
+                    )
+                ],
+                sort_keys=True,
+            )
+            if acknowledged
+            else ""
+        ),
     )
     if _read_digest(digest_file) == digest:
         return

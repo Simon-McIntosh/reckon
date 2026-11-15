@@ -170,6 +170,7 @@ DUTY_ROW_FIELDS = (
     "reason",
     "until",
     "until_condition",
+    "deferred_duty",
     "record",
     "head",
     "reviewed_head",
@@ -1708,7 +1709,9 @@ def _partition_acknowledged(
     """Split duties into those still owed and those deliberately deferred."""
     owed: list[dict[str, Any]] = []
     deferred: list[dict[str, Any]] = []
-    for item in items:
+    for candidate in items:
+        original = candidate.get("deferred_duty")
+        item = original if isinstance(original, dict) else candidate
         record = acknowledgements.get(str(item.get("run_id") or ""))
         if record is None:
             owed.append(item)
@@ -1716,6 +1719,7 @@ def _partition_acknowledged(
         deferred.append(
             {
                 **item,
+                "deferred_duty": item,
                 "reason": str(record.get("reason") or ""),
                 "until": str(record.get("until") or ""),
                 **(
