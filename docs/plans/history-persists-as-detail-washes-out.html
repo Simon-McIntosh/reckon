@@ -23,7 +23,7 @@
   <title>History Persists As Detail Washes Out | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="33">
+<meta name="plan-version" content="34">
 <meta name="plan-modified" content="2026-11-15">
 <meta name="plan-section-declarations" content="{&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;implementable&quot;,&quot;s22&quot;:&quot;implementable&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s24&quot;:&quot;implementable&quot;,&quot;s25&quot;:&quot;implementable&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s27&quot;:&quot;implementable&quot;}">
 <meta name="plan-section-depends-on" content="{&quot;s26&quot;:[&quot;history-persists-as-detail-washes-out#s21&quot;,&quot;history-persists-as-detail-washes-out#s22&quot;,&quot;history-persists-as-detail-washes-out#s23&quot;,&quot;history-persists-as-detail-washes-out#s24&quot;,&quot;history-persists-as-detail-washes-out#s25&quot;],&quot;s27&quot;:[&quot;history-persists-as-detail-washes-out#s26&quot;]}">
@@ -490,6 +490,24 @@
 <div class="r-comment" data-section="s20" data-id="c-run-r-20261114T181510678514-ledger-leaves-git-map-s20-writable" data-who="reckon-build" data-when="2026-11-14T23:52:14.657Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/history-persists-as-detail-washes-out/ledger-leaves-git-map-s20-writable.html carries the map and the proposed split; the coordinator owns the plan edit and the followup.</p></div>
 </div>
+<div class="r-comment" data-section="s21" data-id="c-run-r-20261115T112603411014-review-of-store-write-is-load-bearing-s21-58784d730312" data-who="reckon-build" data-when="2026-11-15T11:46:03.422Z">
+    <div class="r-comment-body"><p>Reviewed r-20261115T102529193137-store-write-is-load-bearing-s21 at 9530fe3d48ea to 58784d7303: scores goal_fidelity 17, evidence 12, scope_discipline 18, durability 15, reuse 20, fit 19 (total 101) with added failures 0 from the gate's own 58-vs-60 arms. One blocking finding: the change turns tests/test_crew_promotion.py:613 red and the node's gate omits that file, so a companion node must invert that test with the change; two non-blocking findings name the append_run-only coverage and the now-false comment at promotion.py:2277.</p></div>
+</div>
+<div class="r-comment" data-section="s21" data-id="c-run-r-20261115T123626511831-review-of-store-write-is-load-bearing-s21-0cf2981aa1e0" data-who="reckon-build" data-when="2026-11-15T12:48:50.283Z">
+    <div class="r-comment-body"><p>Independent review of r-20261115T102529193137-store-write-is-load-bearing-s21 at 0cf2981aa1e0 (base 58784d730312): all six dimensions scored 19/17/20/19/19/20, added_failure_count 0 from the run's own arms, one non-blocking finding on the fragment's arm prose.</p></div>
+</div>
+<div class="r-comment" data-section="s22" data-id="c-run-r-20261115T121702773424-review-of-ledger-reads-the-store-s22-4bc9d8bf1d74" data-who="reckon-build" data-when="2026-11-15T12:41:40.411Z">
+    <div class="r-comment-body"><p>none (review node; the review record is the deliverable, and the coordinator lands it)</p></div>
+</div>
+<div class="r-comment" data-section="s22" data-id="c-run-r-20261115T122301850022-review-of-ledger-reads-the-store-s22-4bc9d8bf1d74-figure" data-who="reckon-build" data-when="2026-11-15T12:38:46.777Z">
+    <div class="r-comment-body"><p>read-only figure review; no plan section is edited and the record lands at the two declared review-record paths beside the reviewed run</p></div>
+</div>
+<div class="r-comment" data-section="s25" data-id="c-run-r-20261115T114400888370-review-of-guards-without-tracked-ledger-s25-a25650c7735d" data-who="reckon-build" data-when="2026-11-15T12:04:12.446Z">
+    <div class="r-comment-body"><p>independent review of a25650c7735db7aeb7fe3cf398f80feb0eda05a1 scoring goal_fidelity 20, evidence 17, scope_discipline 20, durability 18, fit 15, reuse 15 (total 105); added_failure_count 0 derived from the reviewed run's own base-arm.log and after-arm.log (58 passed EXIT=0 against 63 passed EXIT=0); two non-blocking findings, the index.json marker also matching a docs-only repository that reckon build published, and repository_root's docstring keeping the two-file wording; the node's goal, done_when, declared scope and its 'test fails at base' claim are met</p></div>
+</div>
+<div class="r-comment" data-section="s25" data-id="c-run-r-20261115T102556398704-guards-without-tracked-ledger-s25" data-who="reckon-build" data-when="2026-11-15T11:40:55.488Z">
+    <div class="r-comment-body"><p>presence checks now recognise a crew project by the configuration its state directory carries (index.json, flight.yaml or crew.json) rather than by the run ledger, across both pre-tool-use guards, the sync-time install check and the shadow fallback; removing both ledger files still refuses both guards, the new test fails 4 of 5 cases at base and passes 5 of 5 at head, and the gate runs 63 passed at head against 58 passed at base</p></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260909T174707543021-hpdw-the-store-exists-beside-the-file" data-who="crew-admission" data-when="2026-09-09T18:37:11.729Z">
     <div class="r-comment-body"><p>The expand stage of the store change. An embedded SQLite store created on first use with four tables - a narrow durable run row, the wide detail keyed to it, roster members and holds - and the durable columns driven by one declaration that builds both the schema and the insert, asserted by adding a field to the declaration and requiring it in the durable row. A promotion writes the file row first, then the store under a single transaction that reads or rewrites no other row, asserted by snapshotting the other rows' bytes. A store write that raises returns status failed with the error on the payload while the file row still commits, asserted by injecting the exception rather than by reading the guard. Nothing reads the store: every existing reader gives an identical answer with the store present and with it deleted. Every test resolves the store under a temporary home and asserts the real config home is untouched. 94 passed on the two named files; 4 failed / 235 passed at head against 4 failed / 228 passed at base over a 233-test delta set, 0 added failures, the four being pre-existing sandbox failures in routing-evidence with identical ids at both trees.</p></div>
 </div>
@@ -516,21 +534,6 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260923T141652653142-review-of-history-persists-as-detail-washes-out" data-who="reckon-ship" data-when="2026-09-23T15:39:47.829Z">
     <div class="r-comment-body"><p>read-back found 50 sentences with two readings, 43 load-bearing, and node 4 without a measure; the per-run ledger moved to its own plan</p></div>
-</div>
-<div class="r-comment" data-section="s21" data-id="c-run-r-20261115T112603411014-review-of-store-write-is-load-bearing-s21-58784d730312" data-who="reckon-build" data-when="2026-11-15T11:46:03.422Z">
-    <div class="r-comment-body"><p>Reviewed r-20261115T102529193137-store-write-is-load-bearing-s21 at 9530fe3d48ea to 58784d7303: scores goal_fidelity 17, evidence 12, scope_discipline 18, durability 15, reuse 20, fit 19 (total 101) with added failures 0 from the gate's own 58-vs-60 arms. One blocking finding: the change turns tests/test_crew_promotion.py:613 red and the node's gate omits that file, so a companion node must invert that test with the change; two non-blocking findings name the append_run-only coverage and the now-false comment at promotion.py:2277.</p></div>
-</div>
-<div class="r-comment" data-section="s21" data-id="c-run-r-20261115T123626511831-review-of-store-write-is-load-bearing-s21-0cf2981aa1e0" data-who="reckon-build" data-when="2026-11-15T12:48:50.283Z">
-    <div class="r-comment-body"><p>Independent review of r-20261115T102529193137-store-write-is-load-bearing-s21 at 0cf2981aa1e0 (base 58784d730312): all six dimensions scored 19/17/20/19/19/20, added_failure_count 0 from the run's own arms, one non-blocking finding on the fragment's arm prose.</p></div>
-</div>
-<div class="r-comment" data-section="s25" data-id="c-run-r-20261115T114400888370-review-of-guards-without-tracked-ledger-s25-a25650c7735d" data-who="reckon-build" data-when="2026-11-15T12:04:12.446Z">
-    <div class="r-comment-body"><p>independent review of a25650c7735db7aeb7fe3cf398f80feb0eda05a1 scoring goal_fidelity 20, evidence 17, scope_discipline 20, durability 18, fit 15, reuse 15 (total 105); added_failure_count 0 derived from the reviewed run's own base-arm.log and after-arm.log (58 passed EXIT=0 against 63 passed EXIT=0); two non-blocking findings, the index.json marker also matching a docs-only repository that reckon build published, and repository_root's docstring keeping the two-file wording; the node's goal, done_when, declared scope and its 'test fails at base' claim are met</p></div>
-</div>
-<div class="r-comment" data-section="s22" data-id="c-run-r-20261115T121702773424-review-of-ledger-reads-the-store-s22-4bc9d8bf1d74" data-who="reckon-build" data-when="2026-11-15T12:41:40.411Z">
-    <div class="r-comment-body"><p>none (review node; the review record is the deliverable, and the coordinator lands it)</p></div>
-</div>
-<div class="r-comment" data-section="s22" data-id="c-run-r-20261115T122301850022-review-of-ledger-reads-the-store-s22-4bc9d8bf1d74-figure" data-who="reckon-build" data-when="2026-11-15T12:38:46.777Z">
-    <div class="r-comment-body"><p>read-only figure review; no plan section is edited and the record lands at the two declared review-record paths beside the reviewed run</p></div>
 </div>
 </section>
 </main>
