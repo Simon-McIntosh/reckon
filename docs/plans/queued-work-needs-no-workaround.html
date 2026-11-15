@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="115">
+<meta name="plan-version" content="116">
 <meta name="plan-modified" content="2026-11-15">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -432,6 +432,9 @@
 </div>
 <div class="r-comment" data-section="s23" data-id="c-run-r-20261115T202405096967-review-of-qwnw-queued-requests-wait-only-over-unmergeable-paths-b9e3af6acaf8" data-who="reckon-build" data-when="2026-11-15T20:31:04.239Z">
     <div class="r-comment-body"><p>Independent review of run r-20261115T094551177324-qwnw-queued-requests-wait-only-over-unmergeable-paths covering the commits gained since 320cca3bfb (072aa36b5d, 816a91e4d8, b9e3af6aca up to head b9e3af6acaf8): scores goal_fidelity 19, evidence 15, scope_discipline 20, durability 18, fit 16, reuse 17; added failures 0, derived from the run's own arms, 58 passed at base and 58 passed at head with the all_debug arms 6 failed/12 passed at base and 21 passed at head; four non-blocking findings, the newest being that the repair round's placeholders remain in the reviewed manifest and that two findings the previous review folded into the node are unaddressed at the head.</p></div>
+</div>
+<div class="r-comment" data-section="s23" data-id="c-run-r-20261115T094551177324-qwnw-queued-requests-wait-only-over-unmergeable-paths" data-who="reckon-build" data-when="2026-11-15T12:49:17Z">
+    <div class="r-comment-body"><p>The admission pre-check held a queued request behind any earlier one over source paths too; it now reads the claim check&#x27;s own sharing rule and holds only over the class a textual merge cannot reconcile, so two requests declaring `reckon` and `tests` are both admitted on one pass while two over one plan document are still held in rank order. On all_debug the base arm reads 6 failed, 12 passed and the head arm reads 21 passed, and the node&#x27;s test over the base tree reads 1 failed, 2 passed.</p></div>
 </div>
 <div class="r-comment" data-section="s25" data-id="c-run-r-20261115T133159620544-review-of-qwnw-a-commits-field-is-read-in-every-form-codex-0d06d1dbb285" data-who="reckon-build" data-when="2026-11-15T13:39:24Z">
     <div class="r-comment-body"><p>Independent review records all six dimensions at 20/20 with no findings; armed logs show zero added failures between the reviewed base and head.</p></div>
