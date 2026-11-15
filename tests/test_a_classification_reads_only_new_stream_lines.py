@@ -165,7 +165,10 @@ def test_a_second_pass_over_unchanged_streams_decodes_nothing(
 
     second = _classify(fleet)
 
-    assert decodes.calls == [], "a pass over unchanged streams read them again"
+    assert decodes.calls == [], (
+        f"a pass over unchanged streams made {len(decodes.calls)} decodes; a "
+        f"whole-stream scan of this fleet makes at least {RUNS * LINES}"
+    )
     assert second == first, "the reused scan answered a different verdict"
 
 
