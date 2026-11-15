@@ -818,6 +818,7 @@ def _review_run_in_flight(
     record: Mapping[str, Any],
     *,
     pointers: Sequence[Mapping[str, Any]] | None = None,
+    now_seconds: float | None = None,
 ) -> tuple[str, str]:
     """The dispatched review standing for this run's head, and its phase.
 
@@ -836,6 +837,16 @@ def _review_run_in_flight(
     N more times. A caller holding no snapshot passes none and the recogniser
     reads them itself, so the answer is the same either way.
 
+    A pre-spawn phase is also where a launch that never spawned sits, and that
+    pointer stands for nothing: the recogniser still finds the pointer in the
+    pre-spawn spellings, and :func:`_stranded_launch` answers that no worker was
+    ever spawned for the claim. Such a review no longer stands for its subject,
+    so the row carries the review-dispatch remedy instead of pointing at a run
+    that will never file a record. :func:`_review_in_flight` is left unchanged
+    because the release branch in ``dispatch_review_for_run`` needs it to find
+    exactly this pointer and discard it. A review inside the bound, or one whose
+    launch evidence is written, is still reported in flight.
+
     ``("", "")`` is the answer for every case the reader cannot resolve — no
     review, an unreadable pointer, or a phase that is not in flight — so a row
     never loses the dispatch it would otherwise print over a review it cannot
@@ -847,8 +858,12 @@ def _review_run_in_flight(
         return "", ""
     if not review_run_id:
         return "", ""
-    phase = _review_pointer_phase(review_run_id)
+    pointer = _review_pointer(review_run_id)
+    phase = str(pointer.get("phase") or "") if pointer is not None else ""
     if not _review_in_flight_phase(phase):
+        return "", ""
+    moment = _utc_seconds() if now_seconds is None else float(now_seconds)
+    if pointer is not None and _stranded_launch(pointer, now_seconds=moment):
         return "", ""
     return review_run_id, phase
 
@@ -872,22 +887,21 @@ def _review_pointer_delivered(pointer: Mapping[str, Any] | None) -> bool:
     return str(pointer.get("phase") or "") in DELIVERED_REVIEW_PHASES
 
 
-def _review_pointer_phase(review_run_id: str) -> str:
-    """The phase a review run's own pointer records, or "" when unreadable.
+def _review_pointer(review_run_id: str) -> Mapping[str, Any] | None:
+    """A review run's own pointer, or None when no reader can resolve it.
 
     The review's pointer is the only place its own progress is written, so the
-    subject's row reports the review's phase from here rather than inferring
-    one from the dispatch that composed it.
+    subject's row reads the phase from it rather than inferring one from the
+    dispatch that composed the review, and the stranded-launch reading is taken
+    from the same mapping: one read answers both questions about the pointer.
     """
     from reckon.crew.runs import read_pointer
 
     try:
         pointer = read_pointer(review_run_id)
     except (CrewError, OSError):
-        return ""
-    if not isinstance(pointer, Mapping):
-        return ""
-    return str(pointer.get("phase") or "")
+        return None
+    return pointer if isinstance(pointer, Mapping) else None
 
 
 def _review_in_flight_action(run_id: str, review_run_id: str, phase: str) -> str:
@@ -2012,8 +2026,12 @@ def classify_pointer(
             # A review already dispatched stands as this run's review in
             # flight: the lane refuses a second dispatch of it naming the run
             # that holds it, so the row reads that run rather than offering a
-            # command that cannot run.
-            in_flight_review = _review_run_in_flight(record, pointers=pointers)
+            # command that cannot run. A review whose own pointer is a
+            # stranded launch stands for nothing, and the dispatch is offered
+            # again because it releases that pointer.
+            in_flight_review = _review_run_in_flight(
+                record, pointers=pointers, now_seconds=moment
+            )
             if review_error:
                 review_detail = f"the stored review could not be read: {review_error}"
             elif review is None:

@@ -810,7 +810,15 @@ def _commits_field_declares_absence(
     ``none under the repository``) all have to be caught.
     """
     raw = _commitless_raw_field(manifest_text, record, "commits")
-    return raw is not None and _opens_with_an_absence_word(raw)
+    if raw is None:
+        return False
+    if _opens_with_an_absence_word(raw):
+        return True
+    # A block or JSON list has no declaration at the raw field's head. Each
+    # parsed item must declare absence, so a real citation beside one is still
+    # resolved and cannot disappear behind the declaration.
+    entries = parse_manifest(manifest_text).get("commits") or []
+    return bool(entries) and all(_opens_with_an_absence_word(item) for item in entries)
 
 
 def _manifest_text(record: Mapping[str, Any]) -> str:

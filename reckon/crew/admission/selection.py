@@ -6,7 +6,6 @@ from collections import deque
 
 from reckon.crew.open_run_index import operational_read
 
-from . import attempts as _attempts
 from . import holds as _holds
 from . import launching as _launching
 from . import ordering as _ordering
@@ -320,7 +319,12 @@ def admit_once(
         deadline = tick() + budget
         budget_spent = False
 
-        with _attempts.LaunchBatch(result, remaining) as launches:
+        # Imported here: attempts imports launching, service and verdicts at its
+        # top, and that chain loads this module, so a module-level import is a
+        # cycle that leaves every fresh reckon process unable to start.
+        from .attempts import LaunchBatch
+
+        with LaunchBatch(result, remaining) as launches:
             candidates = deque(enumerate(order))
             deferred = []
             filling = True

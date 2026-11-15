@@ -223,11 +223,17 @@ def _built_once(
         from reckon.mcp_discovery import _discover_project, _inventory_row
 
         # Ordering names no docs dir and resolves through the project's mount,
-        # while the wait check names the checkout's own; both answer with the
-        # same tree, so the key is the resolved dir rather than the arguments.
+        # while the wait check names the checkout's own. Those two readers can
+        # name different trees — a dispatch made from a worktree names the
+        # worktree's docs while the mount resolves to the main checkout's — and
+        # keying on the resolved dir made that pair pay two whole-project
+        # scans. The batch derives one project once whichever checkout it runs
+        # from, so the key is the project and the build reads the registered
+        # mount, which is the tree the dispatch actually builds against.
         docs_dir = kwargs.get("docs_dir")
-        resolved = Path(docs_dir) if docs_dir else _docs_dir_for_project(project, None)
-        key = (str(project), str(resolved or ""))
+        mounted = _docs_dir_for_project(project, None)
+        resolved = Path(mounted) if mounted else (Path(docs_dir) if docs_dir else None)
+        key = (str(project), "")
         if key not in built:
             # Discovery derives the project's roadmap to attach its ready set,
             # and the scope hands that derivation back, so the batch takes it
@@ -858,8 +864,14 @@ def queue_batch(
     sections chosen.
     """
     from reckon.crew.queue_admission import plan_read_scopes
+    from reckon.serve import discovery_without_git_dates
 
-    with _parsed_once(), _built_once(), plan_read_scopes():
+    with (
+        _parsed_once(),
+        _built_once(),
+        plan_read_scopes(),
+        discovery_without_git_dates(),
+    ):
         return _queue_batch(
             entries,
             session=session,

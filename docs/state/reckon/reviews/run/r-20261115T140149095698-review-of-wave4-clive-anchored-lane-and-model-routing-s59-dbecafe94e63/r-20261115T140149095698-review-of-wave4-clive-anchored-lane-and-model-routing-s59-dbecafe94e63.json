@@ -1,0 +1,71 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatching/preparation.py:470 (dispatch_picker_selection)",
+    "reckon/crew_dispatch_commands.py:1935 (dispatch_picker_selection)",
+    "reckon/crew/dispatching/preparation.py:509 (plan_dispatch -> _awaiting_pick_hold)",
+    "reckon/crew_dispatch_commands.py:2120 (plan_dispatch)",
+    "reckon/mcp_views.py:4641 (obligations_module.obligations -> _obligations_view)"
+  ],
+  "completed_at": "2026-11-15T14:35:44.344Z",
+  "dispatched_at": "2026-11-15T14:08:09Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T145535353631-wave4-clive-anchored-lane-and-model-routing-s59/logs/after-arm.log",
+      "line": 3,
+      "severity": "non-blocking",
+      "text": "The after arm the manifest cites as completed with exit_status 0 ends at a progress-dot line with no pytest summary and no EXIT= line (the file is 3 lines, 647 bytes), so its declared failure_count 0 is not readable from the cited receipt; a re-run of the node gate (tests/test_a_dispatch_waits_for_the_router.py, 9 passed in 11.66 s) confirms the node's own tests pass, but the suite receipt should be re-captured with its summary and EXIT line."
+    },
+    {
+      "file": "tests/test_a_dispatch_waits_for_the_router.py",
+      "line": 433,
+      "severity": "non-blocking",
+      "text": "assert items[0][\"route_step\"] == \"pick:snapshot\" compares the function's output against the exact string the test placed in the pointer it handed to _route_defaulted_items, so it verifies key selection but would pass for any implementation that echoed that field; the detail substring assertion on line 434 has the same shape against the value the test supplied."
+    },
+    {
+      "file": "tests/test_a_dispatch_waits_for_the_router.py",
+      "line": 407,
+      "severity": "non-blocking",
+      "text": "The obligations listing is exercised only with a hand-built pointer, and the view-level test at line 437 monkeypatches _route_defaulted_items, so no test drives a real dispatch whose route defaulted into the view; a break in the stored-pointer wiring (route_defaulted surviving _reportable_picker_selection and being read back by dispatch_field) would leave every test green."
+    },
+    {
+      "file": "reckon/crew/dispatch_plan.py",
+      "line": 1316,
+      "severity": "non-blocking",
+      "text": "The added dispatch_options parameter of _awaiting_pick_hold is never supplied by its only caller (plan_dispatch.py:1298), so the docstring's claim that due and urgency are carried off the request options is not realised; the owner still sets the keys with None values, but the parameter is dead on the production path."
+    }
+  ],
+  "justifications": {
+    "durability": "Five new tests at tests/test_a_dispatch_waits_for_the_router.py:184-470 are each shown failing by the negative-control log, but the route-defaulted listing is tested only through a hand-built pointer (line 407) and a monkeypatched _route_defaulted_items (line 437).",
+    "evidence": "tests/test_a_dispatch_waits_for_the_router.py asserts the four done-when cases and the negative-control log shows six mutations each reddening its own check, but logs/after-arm.log:3 carries no summary or EXIT line so the suite receipt is unreadable as recorded.",
+    "fit": "The additions follow the surrounding lazy-import and WHY-comment idiom (reckon/crew/dispatch_picker.py:56-75, obligations.py:1629) and introduce no forbidden plan, sprint or ticket names.",
+    "goal_fidelity": "reckon/crew/dispatch_picker.py:56 and 683, dispatch_plan.py:1298 and obligations.py:1632 each deliver one of s59's named behaviours, and every one of the seven prior findings is addressed in dbecafe.",
+    "reuse": "The dispatcher delegates to the existing owners rather than copying them: picker.__init__:73 calls dispatch_picker.picker_dispatch_timeout, dispatch_picker.py:96 delegates to picker._declared_difficulty, and dispatch_plan.py:1348 builds the held request through dispatching.requests._queued_request_record.",
+    "scope_discipline": "git diff abb1956..dbecafe names only the five files in the review scope, and nothing the goal does not imply was edited."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261115T140149095698-review-of-wave4-clive-anchored-lane-and-model-routing-s59-dbecafe94e63",
+  "reviewed_base_sha": "abb195682329163d98ef41ff92d666e87c4dc666",
+  "reviewed_head_sha": "dbecafe94e635348a9bbc02ed5b5922ee814a9e5",
+  "reviewed_run_id": "r-20261115T140149095698-review-of-wave4-clive-anchored-lane-and-model-routing-s59-dbecafe94e63",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T14:38:03.691339+00:00",
+  "total": 107,
+  "verdicts": {
+    "diff": "One commit dbecafe94e refactors a waiting dispatch onto the owners it duplicated: the pick bound reads the flight key, a failed pick names the step it raised in, difficulty resolves through picker._declared_difficulty with node precedence, the held request is built by _queued_request_record, and obligations lists a route-defaulted notice.",
+    "done_when": "The done_when names four cases in tests/test_a_dispatch_waits_for_the_router.py; the diff asserts all four (capability without a plan read, an 8 s answer, awaiting-pick at the bound with the request stored by the queue owner, and the obligations notice), plus node-over-section hours and the flight-key bound; I re-ran that file at dbecafe and it reports 9 passed in 11.66 s.",
+    "goal": "The node goal is to deliver lane-and-model-routing s59's done-when: a dispatch waits for the router and a route the router never gave is named; reckon/crew/dispatch_picker.py:56 reads the flight bound, dispatch_picker.py:683 delegates difficulty to the picker, dispatch_plan.py:1298 queues an unanswered pick, and obligations.py:1632 lists a defaulted route.",
+    "manifest": "Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T145535353631-wave4-clive-anchored-lane-and-model-routing-s59/manifest.md: status complete, three commits, a base arm of 56 passed/2 environmental errors, an after arm claimed 67 passed/0 failed, and six negative controls.",
+    "write_paths": "The diff abb1956..dbecafe touches only reckon/crew/dispatch_picker.py, reckon/crew/dispatch_plan.py, reckon/crew/obligations.py, reckon/crew/picker/__init__.py and tests/test_a_dispatch_waits_for_the_router.py, all inside the node's declared/granted set."
+  }
+}

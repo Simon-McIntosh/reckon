@@ -271,9 +271,14 @@ def _require_commit_for_changed_manifest(
 
 def _resolve_commits(*, cwd: Path, revisions: Iterable[str], run_id: str) -> list[str]:
     """Resolve every recorded revision to its canonical commit object id."""
+    from reckon.crew.queue_landing import _delivered_revision
+
     commits = []
     for revision in revisions:
-        commit = _resolve_commit(cwd, revision)
+        # A citation may carry its subject. Read its leading revision by the
+        # same rule as admission, leaving other revision spellings for git.
+        candidate = _delivered_revision([revision]) or revision
+        commit = _resolve_commit(cwd, candidate)
         if not commit:
             # A commit that resolves somewhere else is not a bad sha, it is a
             # node whose write target was not its run repository — dispatched
