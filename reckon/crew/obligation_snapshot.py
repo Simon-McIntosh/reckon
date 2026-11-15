@@ -1659,7 +1659,9 @@ class FleetState:
     held_worktrees: dict[str, list[dict[str, Any]]]
     unreconciled: dict[str, int]
     findings: list[dict[str, str]]
-    merged_sections: dict[str, list[dict[str, Any]]] = dataclass_field(default_factory=dict)
+    merged_sections: dict[str, list[dict[str, Any]]] = dataclass_field(
+        default_factory=dict
+    )
 
 
 def fleet_state(project: str, *, now: datetime | None = None) -> FleetState:
