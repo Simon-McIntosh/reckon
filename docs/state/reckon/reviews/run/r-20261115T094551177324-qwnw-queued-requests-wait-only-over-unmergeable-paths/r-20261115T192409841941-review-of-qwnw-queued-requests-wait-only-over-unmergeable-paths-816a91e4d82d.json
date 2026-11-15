@@ -1,0 +1,102 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_failure_ids": [],
+  "after_log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T094551177324-qwnw-queued-requests-wait-only-over-unmergeable-paths/logs/all_debug-head-arm.log",
+  "assertion_review": [
+    {
+      "condition_for_failure": "Reinstate a refusal at the session cap (exit 75 queue-full) and third.exit_code == 0 fails; drop the queued write and runs.read_pointer(third_id)['phase'] leaves queued, failing the independent store read.",
+      "lines": "tests/test_overlapping_queued_requests_launch_in_turn.py:495-497"
+    },
+    {
+      "condition_for_failure": "Widen the live-claim check to reconcile source paths too, or narrow it to plan documents alone, and the dispatch over an earlier exclusive-class claim stops exiting 7 with scope-conflict.",
+      "lines": "tests/test_overlapping_queued_requests_launch_in_turn.py:526-533"
+    },
+    {
+      "condition_for_failure": "Make the queued pre-check hold a later request behind a claim-held earlier one regardless of path class and launched comes back empty, failing _assert_later_launched at :104.",
+      "lines": "tests/test_a_held_request_holds_nothing_behind_it.py:111-122"
+    }
+  ],
+  "baseline_failure_ids": [
+    "tests/test_overlapping_queued_requests_launch_in_turn.py::test_the_later_request_launches_once_the_earlier_is_promoted",
+    "tests/test_overlapping_queued_requests_launch_in_turn.py::test_a_new_dispatch_over_a_queued_claim_queues_then_launches",
+    "tests/test_overlapping_queued_requests_launch_in_turn.py::test_a_new_dispatch_over_a_queued_claim_at_the_session_cap_is_refused",
+    "tests/test_overlapping_queued_requests_launch_in_turn.py::test_a_dispatch_over_a_working_or_starting_claim_is_refused[working]",
+    "tests/test_overlapping_queued_requests_launch_in_turn.py::test_a_dispatch_over_a_working_or_starting_claim_is_refused[starting]",
+    "tests/test_a_held_request_holds_nothing_behind_it.py::test_a_request_held_on_a_peers_claim_holds_nothing_behind_it"
+  ],
+  "baseline_log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T094551177324-qwnw-queued-requests-wait-only-over-unmergeable-paths/logs/all_debug-base-arm.log",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/admission/selection.py:admit_once",
+    "reckon/crew_dispatch_commands.py:dispatch (QueueFull handler at :2421)",
+    "reckon/crew/dispatching/requests.py:_session_older_admissible_request"
+  ],
+  "completed_at": "2026-11-15T19:31:25Z",
+  "derivation": "added_failure_ids is (after arm FAILED ids) minus (baseline arm FAILED ids) read from the reviewed run's own gate logs, because its manifest files placeholders instead of both arms: logs/all_debug-base-arm.log lists six FAILED ids and ends `6 failed, 12 passed`/`EXIT=1`, logs/all_debug-head-arm.log lists none and ends `21 passed`/`EXIT=0`, so the difference is empty.",
+  "dispatched_at": "2026-11-15T19:30:07Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T094551177324-qwnw-queued-requests-wait-only-over-unmergeable-paths/manifest.md",
+      "line": 11,
+      "severity": "blocking",
+      "text": "blocking: `tests: PLACEHOLDER_TESTS` and its siblings at :12 test_logs, :15 negative_control_log, :17 baseline_suite, :18 after_suite, :20 artifacts, :21 evidence_inputs and :22 outside_scope are unsubstituted placeholders, and `reckon crew check --manifest --run r-20261115T094551177324-qwnw-queued-requests-wait-only-over-unmergeable-paths` refuses the record for PLACEHOLDER_LOGS and PLACEHOLDER_RED not resolving to readable logs, so promotion reads no gate command and no arm from the node's own report."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-queued-requests-wait-only-over-unmergeable-paths.html",
+      "line": 68,
+      "severity": "non-blocking",
+      "text": "non-blocking: the arms paragraph states both arms ran as a job on all_debug with SLURM_JOB_ID unset, but logs/arms_all_debug.sh only unsets the variable and neither log header nor any file in the run directory records a job id, a partition or a slurm output, so the done-when clause that the tests run on all_debug rests on the assertion rather than on a receipt."
+    },
+    {
+      "file": "tests/test_overlapping_queued_requests_launch_in_turn.py",
+      "line": 478,
+      "severity": "non-blocking",
+      "text": "non-blocking: the renamed case claims the session cap is exercised, but the base-arm payload at logs/all_debug-base-arm.log:142 reports lane_gate held with verdict unknown and no cap computed, and no assertion confirms the cap was reached, so the case measures the lane gate under a cap-shaped name."
+    },
+    {
+      "file": "tests/test_a_held_request_holds_nothing_behind_it.py",
+      "line": 117,
+      "severity": "non-blocking",
+      "text": "non-blocking: patching another test module's CLAIMED constant couples two test modules and silently stops applying if the helper ever bakes the name into a default argument, where the commit's stated intent is a claim on generated state."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified reckon/crew/admission/selection.py:admit_once, the dispatch command's QueueFull handler at reckon/crew_dispatch_commands.py:2421, and reckon/crew/dispatching/requests.py:_session_older_admissible_request as the runtime paths the delta's tests drive.",
+    "diff": "read both commits against 320cca3bfb: 072aa36b5d re-targets the claim and dispatch cases and widens _payload to the JSON document after the progress lines, 816a91e4d8 adds the five-failure list and both arm results to the fragment; no production file changes.",
+    "done_when": "source prompt.txt:160 names the wide-path launch, the plan-document hold, the negative control and all_debug; logs/all_debug-base-arm.log ends `6 failed, 12 passed`/`EXIT=1` with all six ids listed, logs/all_debug-head-arm.log ends `21 passed`/`EXIT=0`, and logs/all_debug-negative-control.log ends `1 failed, 2 passed`/`EXIT=1` on the held-path case.",
+    "goal": "source prompt.txt:38 asks that a queued request be held behind an earlier one only over a path a merge cannot reconcile; the delta's two commits re-target the node's own tests to that endpoint and record the arms, and reckon/crew/admission/holds.py:282-286 still carries the narrowing.",
+    "manifest": "read the reviewed run's manifest.md in full; lines 11-22 carry eight unsubstituted PLACEHOLDER_* tokens covering tests, test_logs, negative_* and elsewhere.",
+    "write_paths": "source prompt.txt:84-89 grants reckon, tests and the section's evidence fragment; git diff --stat 320cca3bfb..816a91e4d8 lists exactly the fragment html and the two test modules, each inside those grants."
+  },
+  "justifications": {
+    "durability": "tests/test_overlapping_queued_requests_launch_in_turn.py:496 reads the third request's phase back from runs.read_pointer rather than from the dispatch output, so reinstating a cap refusal reddens it, but the re-targeted claim cases' behaviour at the base revision is reasoned from the code rather than demonstrated by a recorded arm.",
+    "evidence": "logs/all_debug-head-arm.log ends `21 passed`/`EXIT=0` beside logs/all_debug-base-arm.log's `6 failed, 12 passed`/`EXIT=1`, but the reviewed run's manifest.md:11-18 files PLACEHOLDER tokens for the gate command, its logs, both arms and the negative control, and no artefact names an all_debug job id.",
+    "fit": "tests/test_a_held_request_holds_nothing_behind_it.py:117 patches tests.test_a_claim_hold_reads_the_holder_again.CLAIMED from another test module instead of parametrising the helper, and tests/test_overlapping_queued_requests_launch_in_turn.py:478 names a session cap the recorded payload shows was never computed.",
+    "goal_fidelity": "reckon/crew/admission/holds.py:282-286 leaves the narrowing the goal names in place, and tests/test_overlapping_queued_requests_launch_in_turn.py:526 still holds a live claim over the exclusive class with exit 7 while :450-462 launches the same class from queued claims.",
+    "reuse": "no owned dispatch-payload reader exists - a search of tests/helpers/ and tests/conftest.py found none - so the edited _payload at tests/test_overlapping_queued_requests_launch_in_turn.py:208 extends the local idiom about eight test modules already copy rather than forking an owned mechanism.",
+    "scope_discipline": "both commits touch only the three paths the node declares at source prompt.txt:84-89 - the section fragment and the two test modules - and neither edits production source."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: source prompt.txt:38 asks that a queued request be held behind an earlier one only over a path a merge cannot reconcile; the delta's two commits re-target the node's own tests to that endpoint and record the arms, and reckon/crew/admission/holds.py:282-286 still carries the narrowing.\nVERDICT done_when: source prompt.txt:160 names the wide-path launch, the plan-document hold, the negative control and all_debug; logs/all_debug-base-arm.log ends `6 failed, 12 passed`/`EXIT=1` with all six ids listed, logs/all_debug-head-arm.log ends `21 passed`/`EXIT=0`, and logs/all_debug-negative-control.log ends `1 failed, 2 passed`/`EXIT=1` on the held-path case.\nVERDICT write_paths: source prompt.txt:84-89 grants reckon, tests and the section's evidence fragment; git diff --stat 320cca3bfb..816a91e4d8 lists exactly the fragment html and the two test modules, each inside those grants.\nVERDICT manifest: read the reviewed run's manifest.md in full; lines 11-22 carry eight unsubstituted PLACEHOLDER_* tokens covering tests, test_logs, negative_* and elsewhere.\nVERDICT diff: read both commits against 320cca3bfb: 072aa36b5d re-targets the claim and dispatch cases and widens _payload to the JSON document after the progress lines, 816a91e4d8 adds the five-failure list and both arm results to the fragment; no production file changes.\nCALL_SITES: reckon/crew/admission/selection.py:admit_once, reckon/crew_dispatch_commands.py:dispatch, reckon/crew/dispatching/requests.py:_session_older_admissible_request\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/admission/holds.py:282-286 leaves the narrowing the goal names in place, and tests/test_overlapping_queued_requests_launch_in_turn.py:526 still holds a live claim over the exclusive class with exit 7 while :450-462 launches the same class from queued claims.\nSCORE evidence: 13\nJUSTIFICATION evidence: logs/all_debug-head-arm.log ends `21 passed`/`EXIT=0` beside logs/all_debug-base-arm.log's `6 failed, 12 passed`/`EXIT=1`, but the reviewed run's manifest.md:11-18 files PLACEHOLDER tokens for the gate command, its logs, both arms and the negative control, and no artefact names an all_debug job id.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both commits touch only the three paths the node declares at source prompt.txt:84-89 - the section fragment and the two test modules - and neither edits production source.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_overlapping_queued_requests_launch_in_turn.py:496 reads the third request's phase back from runs.read_pointer rather than from the dispatch output, so reinstating a cap refusal reddens it, but the re-targeted claim cases' behaviour at the base revision is reasoned from the code rather than demonstrated by a recorded arm.\nSCORE fit: 15\nJUSTIFICATION fit: tests/test_a_held_request_holds_nothing_behind_it.py:117 patches tests.test_a_claim_hold_reads_the_holder_again.CLAIMED from another test module instead of parametrising the helper, and tests/test_overlapping_queued_requests_launch_in_turn.py:478 names a session cap the recorded payload shows was never computed.\nSCORE reuse: 18\nJUSTIFICATION reuse: no owned dispatch-payload reader exists - a search of tests/helpers/ and tests/conftest.py found none - so the edited _payload at tests/test_overlapping_queued_requests_launch_in_turn.py:208 extends the local idiom about eight test modules already copy rather than forking an owned mechanism.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T094551177324-qwnw-queued-requests-wait-only-over-unmergeable-paths/manifest.md:11 blocking: `tests: PLACEHOLDER_TESTS` and its siblings at :12 test_logs, :15 negative_control_log, :17 baseline_suite, :18 after_suite, :20 artifacts, :21 evidence_inputs and :22 outside_scope are unsubstituted placeholders, and `reckon crew check --manifest --run r-20261115T094551177324-qwnw-queued-requests-wait-only-over-unmergeable-paths` refuses the record for PLACEHOLDER_LOGS and PLACEHOLDER_RED not resolving to readable logs, so promotion reads no gate command and no arm from the node's own report.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-queued-requests-wait-only-over-unmergeable-paths.html:68 non-blocking: the arms paragraph states both arms ran as a job on all_debug with SLURM_JOB_ID unset, but logs/arms_all_debug.sh only unsets the variable and neither log header nor any file in the run directory records a job id, a partition or a slurm output, so the done-when clause that the tests run on all_debug rests on the assertion rather than on a receipt.\nFINDING tests/test_overlapping_queued_requests_launch_in_turn.py:478 non-blocking: the renamed case claims the session cap is exercised, but the base-arm payload at logs/all_debug-base-arm.log:142 reports lane_gate held with verdict unknown and no cap computed, and no assertion confirms the cap was reached, so the case measures the lane gate under a cap-shaped name.\nFINDING tests/test_a_held_request_holds_nothing_behind_it.py:117 non-blocking: patching another test module's CLAIMED constant couples two test modules and silently stops applying if the helper ever bakes the name into a default argument, where the commit's stated intent is a claim on generated state.",
+  "review_limits": "Read-only review of the delta 320cca3bfb..816a91e4d8 only: the two commits gained since the previous review at 320cca3bfb. No suite was re-run and neither the reviewed tree nor its manifest was modified; the reviewed run's manifest was checked with `crew check --manifest` and read, never repaired, because its repair belongs to the source run. Production source was not re-read beyond the call sites the delta's tests drive.",
+  "review_run_id": "r-20261115T192409841941-review-of-qwnw-queued-requests-wait-only-over-unmergeable-paths-816a91e4d82d",
+  "reviewed_base_sha": "320cca3bfb49e362c7b1505e737b919f06a15f97",
+  "reviewed_head_sha": "816a91e4d82d412b532ec42b57dbcdee88988363",
+  "reviewed_run_id": "r-20261115T094551177324-qwnw-queued-requests-wait-only-over-unmergeable-paths",
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T19:54:44.957299+00:00",
+  "total": 100
+}
