@@ -27,7 +27,8 @@ from typing import Any
 
 import pytest
 
-from reckon.crew import obligation_snapshot, review as review_module, runs
+from reckon.crew import obligation_snapshot, runs
+from reckon.crew import review as review_module
 from tests.helpers.git import git as _git
 
 obligations_module = importlib.import_module("reckon.crew.obligations")
@@ -222,7 +223,9 @@ def test_a_queued_review_leaves_no_missing_review_duty(
     assert [duty["kind"] for duty in before] == ["review-missing"], before
     assert DISPATCH_COMMAND in before[0]["next_command"], before
 
-    _write_review_pointer(QUEUED_REVIEW, head=head, phase="queued", queued_at=OBSERVED_AT)
+    _write_review_pointer(
+        QUEUED_REVIEW, head=head, phase="queued", queued_at=OBSERVED_AT
+    )
     _record_dispatch(status="queued", head=head, review_run_id=QUEUED_REVIEW)
 
     listed = _assert_review_exists(_derived_duties())
