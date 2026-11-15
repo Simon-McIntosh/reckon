@@ -23,10 +23,10 @@
   <title>History Persists As Detail Washes Out | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="52">
+<meta name="plan-version" content="54">
 <meta name="plan-modified" content="2026-11-15">
 <meta name="plan-section-declarations" content="{&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s24&quot;:&quot;implementable&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s27&quot;:&quot;implementable&quot;,&quot;s28&quot;:&quot;implementable&quot;,&quot;s29&quot;:&quot;implementable&quot;}">
-<meta name="plan-section-depends-on" content="{&quot;s26&quot;:[&quot;history-persists-as-detail-washes-out#s21&quot;,&quot;history-persists-as-detail-washes-out#s22&quot;,&quot;history-persists-as-detail-washes-out#s23&quot;,&quot;history-persists-as-detail-washes-out#s24&quot;,&quot;history-persists-as-detail-washes-out#s25&quot;,&quot;history-persists-as-detail-washes-out#s28&quot;],&quot;s27&quot;:[&quot;history-persists-as-detail-washes-out#s26&quot;]}">
+<meta name="plan-section-depends-on" content="{&quot;s26&quot;:[&quot;history-persists-as-detail-washes-out#s21&quot;,&quot;history-persists-as-detail-washes-out#s22&quot;,&quot;history-persists-as-detail-washes-out#s23&quot;,&quot;history-persists-as-detail-washes-out#s24&quot;,&quot;history-persists-as-detail-washes-out#s25&quot;,&quot;history-persists-as-detail-washes-out#s28&quot;,&quot;history-persists-as-detail-washes-out#s29&quot;],&quot;s27&quot;:[&quot;history-persists-as-detail-washes-out#s26&quot;]}">
 </head>
 <body>
   <main class="plan-doc">
@@ -403,8 +403,8 @@
 
     <h2 id="s29">A store the ledger cannot read is a failure, not an empty project</h2>
 <section data-reckon="section" data-id="s29" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
-<p><strong>Why.</strong> §22's third code review (<code>r-20261115T152005968473</code>, at <code>34158070bdc4</code>) found three defects in the new store reader <code>stored_run_rows</code> in <code>reckon/run_store.py</code>. They are carried here so §22 could land without a fourth repair round. Its per-table <code>except sqlite3.Error: continue</code> turns a damaged file, a failed attach or a mismatched schema into an empty population. A store whose <code>runs</code> table predates the <code>payload</code> column therefore reports no runs, while <code>indexed_run_ids</code> still lists their ids. And the reader restates the record join <code>_indexed_records</code> already owns in the same module, so the store holds two copies of its own record read.</p>
-<p><strong>Done when.</strong> New tests, each failing at the base revision. A ledger read over a store whose file is damaged, whose archive cannot be attached, or whose <code>runs</code> table lacks the <code>payload</code> column raises an error naming the store and the cause; none answers an empty population. A store that owes its migration is migrated, or refused naming the migration, before it is read. One function in <code>reckon/run_store.py</code> owns the record join, and the ledger reader and the indexed reader return the same rows over the same store. The tests importing <code>reckon.run_store</code> or <code>reckon.ledger</code> add no failure against the base on all_debug. Write paths: <code>reckon/run_store.py</code>, <code>reckon/ledger.py</code> and a new test.</p>
+<p><strong>Why.</strong> §22's third code review (<code>r-20261115T152005968473</code>, at <code>34158070bdc4</code>) found three defects in the new store reader <code>stored_run_rows</code> in <code>reckon/run_store.py</code>. They are carried here so §22 could land without a fourth repair round. Its query guard (<code>except sqlite3.Error</code>, breaking out of the batch loop) turns a damaged file or a mismatched schema into an empty population, and a failed attach is swallowed separately, so the read continues against the main database and silently loses every retired row. A store whose <code>runs</code> table predates the <code>payload</code> column therefore reports no runs, while <code>indexed_run_ids</code> still lists their ids. And the reader restates the record join <code>_indexed_records</code> already owns in the same module, so the store holds two copies of its own record read.</p>
+<p><strong>Done when.</strong> New tests for the three error arms, each failing at the base revision. A ledger read over a store whose file is damaged, whose archive cannot be attached, or whose <code>runs</code> table lacks the <code>payload</code> column raises an error naming the store and the cause; none answers an empty population. A store that owes its migration is migrated, or refused naming the migration, before it is read. One function in <code>reckon/run_store.py</code> owns the record join; the ledger reader and the indexed reader already return the same rows, and a test holding that equality over a store with retired rows stays green. The tests importing <code>reckon.run_store</code> or <code>reckon.ledger</code> add no failure against the base on all_debug. Write paths: <code>reckon/run_store.py</code>, <code>reckon/ledger.py</code> and a new test.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -465,10 +465,16 @@
     <pre class="r-fu-prompt">/reckon-build history-persists-as-detail-washes-out §21</pre>
     <p class="r-fu-outcome"><p>§21 and §25 landed; §22 and §23 delivered and in review. The remaining build is §24 and §28, then §26 and §27, carried by f-hpdw-011.</p></p>
     </article>
-<article class="r-fu" data-id="f-hpdw-011" data-status="open" data-written-by="reckon-edit" data-written-at="2026-11-15" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-hpdw-011" data-status="resolved" data-written-by="reckon-edit" data-written-at="2026-11-15" data-recommends-skill="" data-resolved-at="2026-11-15T18:26:55+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Build §24 and §28, then §26 and §27</h4>
     <div class="r-fu-body"><p>§24 restates the revision-scoped readers (velocity and the review-cycle figure script) on the store; §28 stops a static-site repository reading as crew-managed. §26 waits on §21 to §25 and §28, §27 on §26.</p></div>
     <pre class="r-fu-prompt">/reckon-build history-persists-as-detail-washes-out §24</pre>
+    <p class="r-fu-outcome"><p>Replaced by f-hpdw-012, which adds §29 to the build.</p></p>
+    </article>
+<article class="r-fu" data-id="f-hpdw-012" data-status="open" data-written-by="reckon-edit" data-written-at="2026-11-15" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §24, §28 and §29, then §26 and §27</h4>
+    <div class="r-fu-body"><p>§24 restates the revision-scoped readers on the store; §28 stops a static-site repository reading as crew-managed; §29 makes an unreadable store an error rather than an empty project. §26 waits on §21 to §25, §28 and §29; §27 on §26.</p></div>
+    <pre class="r-fu-prompt">/reckon-build history-persists-as-detail-washes-out §29</pre>
     </article>
 </section>
 
