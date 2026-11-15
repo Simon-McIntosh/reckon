@@ -132,29 +132,31 @@ def test_a_delivered_run_with_a_live_repair_attempt_counts_as_working() -> None:
     assert idle["unpromoted"] == 1, idle
 
 
-def test_the_row_carries_five_right_aligned_cells_in_the_order_w_r_n_d_q() -> None:
-    """The row renders five counter cells, letters in order, at one fixed width.
+def test_the_row_carries_six_right_aligned_cells_in_the_order_w_r_n_d_q_s() -> None:
+    """The row renders six counter cells, letters in order, at one fixed width.
 
-    Five cells render even on a fleet holding no review, so the block never
-    changes shape as reviews start and stop and the clause after it keeps its
-    column. Each count is right-aligned to the block's fixed digit width, so
-    the letters hold their columns across one- and two-digit fleets.
+    Every cell renders even on a fleet holding no review and no stuck request,
+    so the block never changes shape as that work starts and stops and the
+    clause after it keeps its column. Each count is right-aligned to the
+    block's fixed digit width, so the letters hold their columns across one-
+    and two-digit fleets.
     """
     counts, rows = _reading(
         _snapshot("r-work", "north", "working"),
         _snapshot("r-review", "review-of-r-work-abc123", "working", role="review"),
     )
     line = _render(rows[0])
-    assert re.findall(r"\d+([wrdqn])", line) == ["w", "r", "n", "d", "q"], line
+    assert re.findall(r"\d+([wrdqns])", line) == ["w", "r", "n", "d", "q", "s"], line
 
     plain, plain_rows = _reading(_snapshot("r-work", "north", "working"))
     assert plain.get("reviewing", 0) == 0
-    assert re.findall(r"\d+([wrdqn])", _render(plain_rows[0])) == [
+    assert re.findall(r"\d+([wrdqns])", _render(plain_rows[0])) == [
         "w",
         "r",
         "n",
         "d",
         "q",
+        "s",
     ]
 
     assert ticker_module._MAX_CELLS == (
@@ -163,13 +165,21 @@ def test_the_row_carries_five_right_aligned_cells_in_the_order_w_r_n_d_q() -> No
         "needs you",
         "delivered",
         "waiting",
+        "stuck",
     )
     assert ticker_module._COUNT_FIELD["in review"] == "reviewing"
     assert ticker_module.STAT_LETTER["in review"] == "r"
 
     digits = ticker_module.STAT_DIGITS
     cells = ticker_module.Ticker()._stats(
-        {"working": 3, "reviewing": 2, "blocked": 1, "unpromoted": 7, "waiting": 4}
+        {
+            "working": 3,
+            "reviewing": 2,
+            "blocked": 1,
+            "unpromoted": 7,
+            "waiting": 4,
+            "stuck": 5,
+        }
     )
     texts = [text for text, _ in cells if text != " "]
     assert texts == [
@@ -178,6 +188,7 @@ def test_the_row_carries_five_right_aligned_cells_in_the_order_w_r_n_d_q() -> No
         f"{1:>{digits}}n",
         f"{7:>{digits}}d",
         f"{4:>{digits}}q",
+        f"{5:>{digits}}s",
     ]
     assert len("".join(text for text, _ in cells)) == ticker_module.STATS
     assert counts["reviewing"] == 1
