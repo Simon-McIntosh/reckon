@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="318">
+<meta name="plan-version" content="319">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -1301,6 +1301,12 @@ staged paths.</p>
 <div class="r-comment" data-section="s55" data-id="c-run-r-20261114T211925581758-a-classify-pass-walks-the-process-table-once" data-who="reckon-build" data-when="2026-11-15T01:14:18.675Z">
     <div class="r-comment-body"><p>classify_tick opens process_signal.process_table_walk_once around the whole pass, so the environment scan behind a dead-looking pointer lists /proc once per pass rather than once per pointer: the gate measures 1 walk over 40 live pointers at head against 40 at base, with every verdict equal to the base revision's and the live-carrier pointer alive in both arms.</p></div>
 </div>
+<div class="r-comment" data-section="s56" data-id="c-run-r-20261115T092903639683-review-of-a-steady-tick-writes-no-known-answer-041192e26dc8" data-who="reckon-build" data-when="2026-11-15T10:12:31.316Z">
+    <div class="r-comment-body"><p>Reviewed r-20261115T083242123087-a-steady-tick-writes-no-known-answer at base 5617397173 / head 041192e26d: the commit-answer write skip is real, guarded by a test that reddens at base, and scores 18/16/19/15/18/18 over goal, evidence, scope, durability, fit and reuse; three non-blocking findings - an unreachable count-answer skip added at recovery_watch.py:300-325 with no test, a truncated sentence in the evidence fragment at line 26, and arm logs that name no partition or job id - and no added failure.</p></div>
+</div>
+<div class="r-comment" data-section="s56" data-id="c-run-r-20261115T083242123087-a-steady-tick-writes-no-known-answer" data-who="reckon-build" data-when="2026-11-15T09:21:53.600Z">
+    <div class="r-comment-body"><p>An answer the git answer store already holds is no longer written again: `_remember_commit_answer` and `_remember_count_answer` return early when the store carries that value, so a steady tick takes the store's lock and rewrites its file for a new or different answer only; on a temporary crew home and a 20-commit repository the second pass over the 20 citations makes 0 writes against the base revision's 20, leaves the store's `st_ino` and `st_mtime_ns` unchanged, and a 21st commit is written once and reads its full sha back out of the store.</p></div>
+</div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261024T125322878212-the-station-ingests-only-new-bytes" data-who="reckon-build" data-when="2026-10-24T13:09:00.668Z">
     <div class="r-comment-body"><p>stream ingest reads only bytes past its stored offset with a 64-byte tail anchor and a stored last-read size, refolding on a changed inode, a size below the consumed offset, a size below the last-read size, or a moved anchor; five recorded streams replayed as 93 appends fold equal to a full fold with 0 per-tick byte-bound violations, descriptors equal across 50 event writes, gate 24 passed exit 0 against base 15 passed exit 0</p></div>
 </div>
@@ -1370,11 +1376,8 @@ staged paths.</p>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T042852990093-obligations-read-the-station" data-who="reckon-build" data-when="2026-10-27T13:28:42Z">
     <div class="r-comment-body"><p>The station computes each live session's obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
 </div>
-<div class="r-comment" data-section="s56" data-id="c-run-r-20261115T092903639683-review-of-a-steady-tick-writes-no-known-answer-041192e26dc8" data-who="reckon-build" data-when="2026-11-15T10:12:31.316Z">
-    <div class="r-comment-body"><p>Reviewed r-20261115T083242123087-a-steady-tick-writes-no-known-answer at base 5617397173 / head 041192e26d: the commit-answer write skip is real, guarded by a test that reddens at base, and scores 18/16/19/15/18/18 over goal, evidence, scope, durability, fit and reuse; three non-blocking findings - an unreachable count-answer skip added at recovery_watch.py:300-325 with no test, a truncated sentence in the evidence fragment at line 26, and arm logs that name no partition or job id - and no added failure.</p></div>
-</div>
-<div class="r-comment" data-section="s56" data-id="c-run-r-20261115T083242123087-a-steady-tick-writes-no-known-answer" data-who="reckon-build" data-when="2026-11-15T09:21:53.600Z">
-    <div class="r-comment-body"><p>An answer the git answer store already holds is no longer written again: `_remember_commit_answer` and `_remember_count_answer` return early when the store carries that value, so a steady tick takes the store&#x27;s lock and rewrites its file for a new or different answer only; on a temporary crew home and a 20-commit repository the second pass over the 20 citations makes 0 writes against the base revision&#x27;s 20, leaves the store&#x27;s `st_ino` and `st_mtime_ns` unchanged, and a 21st commit is written once and reads its full sha back out of the store.</p></div>
+<div class="r-comment" data-section="s58" data-id="c-run-r-20261115T095914167910-review-of-an-unchanged-mount-registry-is-resolved-once-f8301adde2cb" data-who="reckon-build" data-when="2026-11-15T10:52:35.788Z">
+    <div class="r-comment-body"><p>review of r-20261115T083216633571-an-unchanged-mount-registry-is-resolved-once at head f8301adde2cb scores goal_fidelity 19, evidence 15, scope_discipline 20, durability 18, fit 19, reuse 20 (total 111), added_failure_count 0 from the two arm logs, with one blocking finding on the run&#x27;s own manifest after_suite line and two non-blocking findings</p></div>
 </div>
 </section>
 </main>
