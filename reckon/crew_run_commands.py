@@ -4544,6 +4544,7 @@ def _budget_lift_payload(
     clear_flag,
     lift_id,
     credits=None,
+    for_projects=(),
 ):
     """Grant or clear a lift on a budget group's pace.
 
@@ -4555,6 +4556,42 @@ def _budget_lift_payload(
     with an optional ``--session`` or ``--id`` revokes a lift in force.
     """
     from reckon.crew import budget_lift as budget_lift_module
+
+    if sum(bool(value) for value in (global_scope, session, for_projects)) > 1:
+        raise click.ClickException(
+            "--global, --session and --for-project are mutually exclusive"
+        )
+    if any(not str(project).strip() for project in for_projects):
+        raise click.ClickException("--for-project requires a nonempty project name")
+    if for_projects and lift_id:
+        raise click.ClickException("--for-project and --id are mutually exclusive")
+    if len(for_projects) > 1:
+        results = [
+            _budget_lift_payload(
+                group=group,
+                multiple=multiple,
+                drain_by=drain_by,
+                uncapped=uncapped,
+                global_scope=False,
+                session=None,
+                starts_at=starts_at,
+                until=until,
+                clock=clock,
+                reason=reason,
+                clear_flag=clear_flag,
+                lift_id=None,
+                credits=credits,
+                for_projects=(project,),
+            )
+            for project in dict.fromkeys(for_projects)
+        ]
+        return {
+            "ok": True,
+            "action": "clear" if clear_flag else "grant",
+            "group": group,
+            "results": results,
+        }
+    project = for_projects[0] if for_projects else None
 
     form_flags = [
         multiple is not None,
@@ -4573,6 +4610,7 @@ def _budget_lift_payload(
                 group=group,
                 lift_id=lift_id,
                 session=session,
+                project=project,
                 path=None,
             )
             if cleared is None:
@@ -4597,11 +4635,6 @@ def _budget_lift_payload(
             raise click.ClickException(
                 "name exactly one lift form: --multiple, --drain-by, --uncapped "
                 "or --credits"
-            )
-        if global_scope and session:
-            raise click.ClickException(
-                "--global and --session are mutually exclusive; a session lift is "
-                "not global"
             )
         if not (isinstance(reason, str) and reason.strip()):
             raise click.ClickException("--reason is required to grant a lift")
@@ -4650,7 +4683,13 @@ def _budget_lift_payload(
             target=target,
             clock=clock,
             ends=ends,
-            scope=("session" if session else budget_lift_module.GLOBAL),
+            scope=(
+                f"{budget_lift_module.PROJECT_PREFIX}{project}"
+                if project is not None
+                else "session"
+                if session
+                else budget_lift_module.GLOBAL
+            ),
             session=session,
             starts_at=starts,
             readings=readings,
@@ -4798,6 +4837,12 @@ def _budget_lifts_payload(group):
         "With --lift, admit the group past a spent window on purchased credits "
         "until this many credits have been drawn since the grant."
     ),
+)
+@click.option(
+    "--for-project",
+    "for_projects",
+    multiple=True,
+    help="With --lift, grant or clear a project scope; repeat for several projects.",
 )
 @click.option(
     "--global",
@@ -4961,6 +5006,7 @@ def crew_budget(
     uncapped,
     credits,
     global_scope,
+    for_projects,
     session,
     starts_at,
     until,
@@ -5005,6 +5051,9 @@ def crew_budget(
         raise click.UsageError(
             "name exactly one action: --lift, --list, --reset or --check"
         )
+
+    if for_projects and not do_lift:
+        raise click.UsageError("--for-project requires --lift")
 
     if do_check:
         if project is None:
@@ -5055,6 +5104,7 @@ def crew_budget(
             clear_flag=clear_flag,
             lift_id=lift_id,
             credits=credits,
+            for_projects=for_projects,
         )
     _emit_crew_result(result, pretty)
 

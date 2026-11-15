@@ -1187,6 +1187,7 @@ def _effective_budget_block(
     *,
     now: datetime,
     session: str | None,
+    project: str | None = None,
 ) -> Mapping[str, Any]:
     """The budget block in force for a declared group, or the config's own.
 
@@ -1202,7 +1203,12 @@ def _effective_budget_block(
     if not group:
         return config.get("budget") or {}
     return budget_group_module.effective_block(
-        config, str(group), readings=None, now=now, session=session or None
+        config,
+        str(group),
+        readings=None,
+        now=now,
+        session=session or None,
+        project=project,
     )
 
 
@@ -1231,6 +1237,7 @@ def _budget_exclusion_reasons(
     utilisation: float | None,
     now: datetime,
     session: str | None,
+    project: str | None = None,
 ) -> tuple[list[str], list[str]]:
     """The lane's budget as an exclusion and as a preference, in that order.
 
@@ -1260,7 +1267,9 @@ def _budget_exclusion_reasons(
     """
     if not fresh:
         return [], []
-    block = _effective_budget_block(config, group, now=now, session=session)
+    block = _effective_budget_block(
+        config, group, now=now, session=session, project=project
+    )
     judged = budget.policy({**config, "budget": block})
     credit_lift = "credit_lift" in judged
     verdict = budget.decide(
@@ -1742,6 +1751,7 @@ def candidates(
             utilisation=utilisation,
             now=now,
             session=request.session,
+            project=request.project,
         )
         reasons.extend(budget_reasons)
         preferences: list[str] = list(budget_preferences)
@@ -1788,6 +1798,7 @@ def candidates(
                 group.get("group") if isinstance(group, Mapping) else None,
                 now=now,
                 session=request.session,
+                project=request.project,
             )
             reserved_utilisation = (
                 utilisation
