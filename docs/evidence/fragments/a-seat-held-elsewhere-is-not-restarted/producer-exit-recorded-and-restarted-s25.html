@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-seat-held-elsewhere-is-not-restarted">
+  <meta name="plan-evidence-for" content="reckon:a-seat-held-elsewhere-is-not-restarted">
+  <meta name="plan-verifies" content="reckon:a-seat-held-elsewhere-is-not-restarted#s25">
+  <title>Producer exit and restart receipts</title>
+</head>
+<body>
+<article id="producer-exit-recorded-and-restarted-s25-landing"
+  data-node="producer-exit-recorded-and-restarted-s25" data-reckon="landed">
+  <h2>A producer leaves its outcome before giving up its seat</h2>
+  <p>Commit <code>70574ff9a4be6e37678391cfa6444da67b4d1cb8</code> records the
+  producer's exit status, reason, last stage, process identity and lease-lapse
+  time in its registration before the seat is released. A replacement records
+  its acquisition time and supervisor pid beside the preceding exit. Both
+  writes compare the owner identity under the registration's shared lock, so
+  a superseded producer cannot overwrite its replacement.</p>
+  <table id="producer-exit-recorded-and-restarted-s25-measures">
+    <thead><tr><th>Check</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Reproduction against the base code</td><td>The first new case
+      fails with “seat released without an exit record”.</td></tr>
+      <tr><td>Focused lifecycle tests</td><td>9 passed in 19.30 seconds,
+      including normal exit, exception, explicit exit, interruption, placement
+      release, actual ticker stage, successor protection and process reentry.</td></tr>
+      <tr><td>Existing supervisor restart</td><td>The real fallback supervisor
+      starts a second stub producer 12.04 seconds after the recorded lapse,
+      inside the 600-second lease. Its pid matches the replacement receipt's
+      parent pid, and the replacement holds the seat.</td></tr>
+      <tr><td>Declared negative control</td><td>Removing the exit-record
+      writer gives 7 failed and 2 passed; all four exit-before-release cases
+      fail. The control changes only the temporary measurement tree.</td></tr>
+    </tbody>
+  </table>
+  <p>The existing supervisor already restarts a lapsed producer serving live
+  work; its restart policy is reused. Catchable exits are recorded by the
+  producer. A SIGKILL or a node loss cannot execute a before-release write.</p>
+  <p>The historical exit cause, restart initiator, delay cause and event-file
+  destination remain unknown because the incident records were not retained.
+  The run's <code>historical-records.log</code> records the retained boundaries
+  and event-reader positive controls. The current event append helper opens
+  its destination on every append, so it does not retain an unlinked stream
+  descriptor.</p>
+  <p>Run <code>r-20261115T204841537282-producer-exit-recorded-and-restarted-s25</code>
+  retains <code>focused-lapse.log</code>, <code>head-negative.log</code> and
+  the baseline and head suite receipts. Its manifest carries the completed
+  suite comparison and the final committed revision.</p>
+</article>
+</body>
+</html>
