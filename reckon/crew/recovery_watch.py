@@ -32,7 +32,6 @@ from reckon.crew.reports import (
 from reckon.crew.routing import _signal_process_group
 from reckon.crew.runs import (
     _mutate_pointer,
-    _process_start_time,
     _project_watch_claim,
     _read_watch_record,
     _utc_now,
@@ -45,8 +44,6 @@ from reckon.crew.runs import (
 )
 from reckon.crew.ticker import NEEDS_ACTION, Ticker, _agent_label
 from reckon.crew.watch_unit import (
-    record_producer_exit,
-    record_producer_start,
     release_seat_when_misplaced,
     seat_names_a_live_foreign_producer,
     watch_state,
@@ -690,27 +687,7 @@ def _watch_registration(
     while True:
         with _project_watch_claim(project, stall_window) as (acquired, watcher):
             if acquired:
-                parent_pid = os.getppid()
-                watcher.update(
-                    {
-                        "parent_pid": parent_pid,
-                        "parent_start_time": _process_start_time(parent_pid),
-                    }
-                )
-                # The record is written through the same seat handle the claim
-                # holds, never by reopening the path: an unlink in the moment
-                # between taking the claim and this write would make the reopen
-                # raise FileNotFoundError and end the producer before it polls.
-                record_producer_start(project, watcher)
-                error = None
-                try:
-                    _write_watch_record(runs._WATCH_SEAT_HANDLES[project], watcher)
-                    yield acquired, watcher
-                except BaseException as exc:
-                    error = exc
-                    raise
-                finally:
-                    record_producer_exit(project, watcher, error)
+                yield acquired, watcher
                 return
         # The seat is held. Wait and re-read it only while a live producer on
         # another host owns it; any other held seat is one the caller already
