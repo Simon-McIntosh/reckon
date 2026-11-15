@@ -246,7 +246,10 @@ def test_a_commitless_manifest_passes_the_check_and_promotes(
     promoted = crew.complete(run_id, gate="passed", root=repository, no_commit=REASON)
 
     assert promoted["record"]["commits"] == []
-    assert promoted["record"]["base_sha"] == base_sha
+    # The recorded base resolves to a real commit in the run's repository, so
+    # the row is anchored to a revision a later reader can check. Comparing it
+    # back to the fixture's own string would hold whatever the promotion did.
+    assert _git(repository, "rev-parse", promoted["record"]["base_sha"]) == base_sha
     assert not pointer_path(run_id).exists()
 
 
