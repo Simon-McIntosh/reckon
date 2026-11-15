@@ -419,7 +419,7 @@ def crew_merge(
             "unplanned_reason": unplanned_reason,
         }
 
-        def verify_promotion(checkout, _base, merged_head, _commit):
+        def verify_promotion(checkout, _base, merged_head, _commit, _objects=None):
             merge.require_promotable_head(
                 project, checkout, merged_head, **promotion_options
             )

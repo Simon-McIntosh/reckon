@@ -100,7 +100,9 @@ def _drop_the_change_if_declared(monkeypatch: pytest.MonkeyPatch) -> None:
     if not os.environ.get("RECKON_LAND_DROP_CHANGE"):
         return
 
-    def _merge_tree_without_the_change(repo: Path, base: str, head: str):
+    def _merge_tree_without_the_change(
+        repo: Path, base: str, head: str, **_kwargs: object
+    ):
         tree = merge._run(repo, "rev-parse", f"{base}^{{tree}}").stdout.strip()
         return tree, []
 
@@ -145,7 +147,9 @@ def test_a_merge_that_drops_the_change_is_refused_and_nothing_is_pushed(
     run = landed_run
     origin_before = _git(run["origin"], "rev-parse", "main")
 
-    def _merge_tree_without_the_change(repo: Path, base: str, head: str):
+    def _merge_tree_without_the_change(
+        repo: Path, base: str, head: str, **_kwargs: object
+    ):
         tree = merge._run(repo, "rev-parse", f"{base}^{{tree}}").stdout.strip()
         return tree, []
 
