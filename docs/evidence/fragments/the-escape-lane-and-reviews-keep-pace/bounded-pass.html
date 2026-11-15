@@ -115,12 +115,22 @@
         <td>the delivered head + mutation</td>
         <td>1 failed, 4 deselected, <code>EXIT=1</code> — the shared-config case
         reddens on the write</td></tr>
+      <tr><td>without the answering commit: its parent's cases, budget
+        ignored</td>
+        <td><code>239f5365ab</code> tests over the delivered sources + mutation</td>
+        <td>3 passed, <code>EXIT=0</code> — the pre-repair cases hand in the
+        default and cannot see the argument being ignored</td></tr>
+      <tr><td>without the answering commit: its parent's cases, shared-config
+        writer</td>
+        <td><code>239f5365ab</code> tests over the delivered sources</td>
+        <td>3 passed, <code>EXIT=0</code> — no pre-repair case reads the fixture
+        config, so the write goes unobserved</td></tr>
     </tbody>
   </table>
 
-  <p>The negative control was taken at the code commit
-  <code>239f5365ab</code>; <code>selection.py</code> is byte-identical at the
-  shipped head, whose commit adds only the two evidence fragments.</p>
+  <p>The deadline control was taken at the code commit
+  <code>239f5365ab</code>; no commit after it touches the sources, so the same
+  mutation applies at the delivered head.</p>
 
   <p>The population's 164 remaining failures are the checkout's own
   dispatch-and-contention population under four workers, and they are identical

@@ -31,7 +31,7 @@
   <code>admission_pass_budget_seconds</code>, which falls back to the default for
   anything that is not a finite positive number.</p>
 
-  <p id="admission-pass-is-bounded-s7-line" data-landing="admit_once now ends a pass when its launch budget is spent — a deadline read once at the loop head, from budget_seconds or flight's admission.pass_budget_seconds defaulting to 60 s — leaving the rest of the queue untouched for the next pass, and each launched verdict row carries launch_seconds, slowest_step and slowest_step_seconds accumulated over handover, dispatch and stamp on a monotonic clock seam; four files change (reckon/flight.py, selection.py, verdicts.py and the new tests/test_an_admission_pass_is_bounded.py), the five new tests fail at the base revision 1d16388a31 and pass 5 of 5 at the delivered head with the armed set at 60 passed EXIT=0, the admission-importing population, 124 files at the base and 125 with the new test file, shows zero added failures against the base, the declared negative control that removes the deadline read at the loop head fails both budget cases at 2 failed, EXIT=1, and two further controls redden the same cases from the other side: a pass that ignores its budget argument, and a resolver that writes the fixture's shared config. The budget the cases hand in is 30 s rather than the flight default of 60 s, so a fall-through to the default launches one more than they expect. The 120 s py-spy idle record of the live service after landing is not obtainable from this node: the change is not landed, and no admit process runs on this allocation's host."></p>
+  <p id="admission-pass-is-bounded-s7-line" data-landing="admit_once now ends a pass when its launch budget is spent — a deadline read once at the loop head, from budget_seconds or flight's admission.pass_budget_seconds defaulting to 60 s — leaving the rest of the queue untouched for the next pass, and each launched verdict row carries launch_seconds, slowest_step and slowest_step_seconds accumulated over handover, dispatch and stamp on a monotonic clock seam; four files change (reckon/flight.py, selection.py, verdicts.py and the new tests/test_an_admission_pass_is_bounded.py), the five new tests fail at the base revision 1d16388a31 and pass 5 of 5 at the delivered head with the armed set at 60 passed EXIT=0, the admission-importing population, 124 files at the base and 125 with the new test file, shows zero added failures against the base, the declared negative control that removes the deadline read at the loop head fails the launch-count and duration cases at 2 failed, EXIT=1, and two further controls redden the same cases from the other side: a pass that ignores its budget argument, and a resolver that writes the fixture's shared config. The budget the cases hand in is 30 s rather than the flight default of 60 s, so a fall-through to the default launches one more than they expect. The 120 s py-spy idle record of the live service after landing is not obtainable from this node: the change is not landed, and no admit process runs on this allocation's host."></p>
 
   <h3 id="admission-pass-is-bounded-s7-measured">Measured</h3>
 
@@ -64,6 +64,14 @@
       <tr><td>control: the cases resolve through a shared-config writer</td>
         <td>the delivered head + mutation</td>
         <td>1 failed, 4 deselected, <code>EXIT=1</code></td></tr>
+      <tr><td>without the answering commit: its parent's cases, budget
+        ignored</td>
+        <td><code>239f5365ab</code> tests over the delivered sources + mutation</td>
+        <td>3 passed, <code>EXIT=0</code> — the pre-repair cases cannot see it</td></tr>
+      <tr><td>without the answering commit: its parent's cases, shared-config
+        writer</td>
+        <td><code>239f5365ab</code> tests over the delivered sources</td>
+        <td>3 passed, <code>EXIT=0</code> — no case reads the fixture config</td></tr>
     </tbody>
   </table>
 
