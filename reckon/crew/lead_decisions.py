@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from reckon import _store
 from reckon._plan_html import read_state_file
 from reckon._store import write_json_atomically
 from reckon.crew.queue_edit import WAITING_PHASES
@@ -46,16 +47,15 @@ def _names(value: Any, field: str) -> list[str]:
 
 
 def _options(value: Any, recommended: str, *, strict: bool) -> list[dict[str, str]]:
-    if not isinstance(value, list):
-        raise TypeError("options must be a list")
-    options = []
-    for option in value:
-        if not isinstance(option, Mapping):
-            raise TypeError("options must carry value and label")
-        entry = {key: str(option.get(key) or "").strip() for key in ("value", "label")}
-        if not all(entry.values()):
-            raise ValueError("options must carry non-empty value and label")
-        options.append(entry)
+    try:
+        values, labels = _store._decision_options_as_choices(value)
+    except _store.OpError as exc:
+        raise ValueError(f"options: {exc}") from exc
+    options = [
+        {"value": item.strip(), "label": labels[item].strip()} for item in values
+    ]
+    if any(not all(option.values()) for option in options):
+        raise ValueError("options must carry non-empty value and label")
     values = [option["value"] for option in options]
     if len(set(values)) != len(values):
         raise ValueError("options must have distinct values")
@@ -65,6 +65,24 @@ def _options(value: Any, recommended: str, *, strict: bool) -> list[dict[str, st
         if not recommended or recommended not in values:
             raise ValueError("recommended must name one of the options")
     return sorted(options, key=lambda option: option["value"] != recommended)
+
+
+def _pending_reference(value: Any) -> dict[str, str]:
+    if not isinstance(value, Mapping):
+        raise TypeError("pending_on must be an object naming a run_id or gate_id")
+    if not value:
+        return {}
+    if len(value) != 1 or not set(value) <= {"run_id", "gate_id"}:
+        raise ValueError("pending_on must name exactly one run_id or gate_id")
+    key, identifier = next(iter(value.items()))
+    if (
+        not isinstance(identifier, str)
+        or not identifier.strip()
+        or Path(identifier).name != identifier
+        or identifier in {".", ".."}
+    ):
+        raise ValueError("pending_on must name a non-empty run_id or gate_id")
+    return {key: identifier}
 
 
 def validate_decision(record: Mapping[str, Any]) -> dict[str, Any]:
@@ -78,27 +96,54 @@ def validate_decision(record: Mapping[str, Any]) -> dict[str, Any]:
             raise ValueError(f"{key} is required")
     if data["project"] not in mounted_project_docs():
         raise ValueError("project must name a mounted project")
-    if record.get("choice"):
-        raise ValueError("choice cannot be set when recording an open decision")
     recommended = str(record.get("recommended") or "").strip()
+    options = _options(record.get("options"), recommended, strict=True)
+    choice = str(record.get("choice") or "").strip()
+    reversible = record.get("reversible", False)
+    if not isinstance(reversible, bool):
+        raise TypeError("reversible must be a boolean")
+    standing_rule = str(record.get("standing_rule") or "").strip()
+    if choice and not reversible:
+        raise ValueError("choice requires a reversible decision under a standing_rule")
+    if reversible and (not choice or not standing_rule):
+        raise ValueError("reversible requires a choice and standing_rule")
+    if choice and choice not in {option["value"] for option in options}:
+        raise ValueError("choice must name one of the options")
+    provenance = str(record.get("recommendation_source") or "").strip()
+    if provenance not in {"", "owner", "reviewer", "unknown"}:
+        raise ValueError("recommendation_source must be owner, reviewer or unknown")
     data.update(
-        options=_options(record.get("options"), recommended, strict=True),
+        options=options,
         recommended=recommended,
+        recommended_by=str(record.get("recommended_by") or data["session"]).strip(),
+        recommendation_source=provenance,
+        risk=str(record.get("risk") or "").strip(),
+        lead_action=str(record.get("lead_action") or "").strip(),
         held_requests=_names(record.get("held_requests", []), "held_requests"),
+        held_runs=_names(record.get("held_runs", []), "held_runs"),
         held_sections=_names(record.get("held_sections", []), "held_sections"),
-        choice="",
+        decision_key=str(record.get("decision_key") or "").strip(),
+        pending_on=_pending_reference(record.get("pending_on", {})),
+        reversible=reversible,
+        standing_rule=standing_rule,
+        choice=choice,
         source="crew",
     )
     return data
 
 
 def record_decision(record: Mapping[str, Any]) -> dict[str, Any]:
-    """Create an open decision; answering is a separate, authorised operation.
+    """Record a ready, pending, or taken-and-reversible question for the lead.
 
     The caller supplies question, context, options (value/label pairs),
     recommended, project, session, plan, section, held_requests and
-    held_sections. Identity, recording time and the empty choice are supplied
-    here, so recording cannot also answer a question or overwrite another one.
+    held_sections. Optional release context is held_runs, risk and lead_action;
+    recommended_by and recommendation_source preserve the author's provenance.
+    pending_on names a run_id or gate_id whose report makes the question ready.
+    A taken choice requires reversible=True and its standing_rule; recording
+    such a choice leaves it open for review rather than answering it as the lead.
+    decision_key links the question to an authored plan decision, whose direct
+    answer then also closes this question. Identity and time are supplied here.
     """
     data = {
         **validate_decision(record),
@@ -141,12 +186,15 @@ def _held_requests(
     return matches
 
 
-def _plan_decisions(project: str, docs: Path) -> list[dict[str, Any]]:
+def _plan_decisions(
+    project: str, docs: Path, states: dict[tuple[str, str], Any]
+) -> list[dict[str, Any]]:
     rows = []
     for resource in iter_resources(docs, project, include_archived=False):
         if resource.type != "plan":
             continue
         state = read_state_file(resource.path)
+        states[(project, resource.slug)] = state
         if state.get("status") in TERMINAL_STATUSES:
             continue
         state = {**state, "slug": resource.slug, "project": project}
@@ -177,6 +225,7 @@ def _plan_decisions(project: str, docs: Path) -> list[dict[str, Any]]:
                         strict=False,
                     ),
                     "recommended": recommended,
+                    "recommended_by": authored.get("recommended_by") or "",
                     "choice": "",
                     # An unanswered plan decision stores no recording time or
                     # owning session. A plan edit date cannot stand in for it.
@@ -214,13 +263,55 @@ def _read_record(path: Path) -> dict[str, Any]:
     return record
 
 
-def read_decisions(project: str | None = None) -> dict[str, Any]:
-    """Return all mounted open decisions, most held requests and sections first.
+def _report_received(row: Mapping[str, Any], gates: list[dict[str, Any]]) -> bool:
+    """A named run or gate needs a receipt, not an absent pointer or process."""
+    from reckon import ledger
+    from reckon.crew.recovery_liveness import _run_exit_record
 
-    Missing authorship fields on plan-only decisions are explicitly null. The
-    holding pointers supply an owning session only when they agree on one.
+    pending = row.get("pending_on") or {}
+    if not pending:
+        return True
+    if "run_id" in pending:
+        run_id = pending["run_id"]
+        receipt = _run_exit_record({"run_id": run_id}, require_run_id=True)
+        if receipt and (
+            receipt.get("exit_code") is not None or receipt.get("signal") is not None
+        ):
+            return True
+        path = ledger.run_path(row["project"], run_id)
+        if not path.is_file():
+            return False
+        completed = ledger._read_run(path)
+        return completed.get("run_id") == run_id and bool(completed.get("completed_at"))
+    return any(
+        gate.get("id") == pending["gate_id"]
+        and gate.get("project") == row["project"]
+        and gate.get("ended_at")
+        and gate.get("exit_status") is not None
+        for gate in gates
+    )
+
+
+def _answered_in_plan(
+    row: Mapping[str, Any], states: Mapping[tuple[str, str], Any]
+) -> bool:
+    key = row.get("decision_key")
+    if not key:
+        return False
+    state = states.get((row["project"], row["plan"])) or {}
+    decision = (state.get("decisions") or {}).get(key) or {}
+    return bool(str(decision.get("choice") or "").strip())
+
+
+def read_decisions(project: str | None = None) -> dict[str, Any]:
+    """Return ready, pending and taken-and-reversible questions, ranked by work.
+
+    Plan ownership and liveness come from the existing coordinator resolver.
+    Missing historical authorship and recording time stay explicitly null.
     A corrupt crew record refuses the read rather than reporting no decision.
     """
+    from reckon.crew import gate_watch, plan_coordinator
+
     mounts = mounted_project_docs()
     if project and project != "*":
         if project not in mounts:
@@ -230,26 +321,78 @@ def read_decisions(project: str | None = None) -> dict[str, Any]:
     for path in sorted((crew_home() / "decisions").glob("*.json")):
         try:
             record = _read_record(path)
-            if record["project"] in mounts and not record.get("choice"):
+            if record["project"] in mounts and (
+                not record.get("choice") or record.get("reversible")
+            ):
                 rows.append({**record, "source": "crew"})
         except (OSError, ValueError, TypeError, KeyError) as exc:
             raise ValueError(f"cannot read decision {path}: {exc}") from exc
+    states: dict[tuple[str, str], Any] = {}
     for owner, docs in sorted(mounts.items()):
-        rows.extend(_plan_decisions(owner, docs))
+        rows.extend(_plan_decisions(owner, docs, states))
+    all_pointers = list_live()
     pointers = [
-        pointer for pointer in list_live() if pointer.get("phase") in WAITING_PHASES
+        pointer for pointer in all_pointers if pointer.get("phase") in WAITING_PHASES
     ]
+    ownership = {
+        owner: plan_coordinator.resolve_plan_coordinators(
+            owner,
+            root=docs.parent,
+            pointers=[
+                pointer for pointer in all_pointers if pointer.get("project") == owner
+            ],
+        )["plans"]
+        for owner, docs in mounts.items()
+        if any(row["project"] == owner for row in rows)
+    }
+    rows = [row for row in rows if not _answered_in_plan(row, states)]
+    gates = (
+        gate_watch.read_document()["gates"]
+        if any("gate_id" in (row.get("pending_on") or {}) for row in rows)
+        else []
+    )
     for row in rows:
+        row.setdefault("held_runs", [])
+        row.setdefault("risk", "")
+        row.setdefault("lead_action", "")
+        row.setdefault("pending_on", {})
+        row.setdefault("reversible", False)
+        row.setdefault("standing_rule", "")
+        row.setdefault("recommended_by", "")
         held = _held_requests(row, pointers)
         row["held_requests"] = sorted({str(pointer["run_id"]) for pointer in held})
         row["held_request_count"] = len(row["held_requests"])
-        row["held_work_count"] = row["held_request_count"] + len(row["held_sections"])
+        row["held_work_count"] = len(
+            set(row["held_requests"]) | set(row["held_runs"])
+        ) + len(row["held_sections"])
+        owner = ownership.get(row["project"], {}).get(row["plan"], {})
+        row["owner_session"] = owner.get("coordinator")
+        row["plan_owner"] = owner.get("plan_owner") or ""
+        row["plan_has_live_session"] = bool(owner.get("live"))
+        if not row.get("recommendation_source"):
+            by = row["recommended_by"]
+            row["recommendation_source"] = (
+                "owner"
+                if by and by in {row["owner_session"], row["plan_owner"]}
+                else "reviewer"
+                if by
+                else "unknown"
+            )
         if row["source"] == "plan":
             sessions = {
                 str(pointer["session"]) for pointer in held if pointer.get("session")
             }
-            row["session"] = next(iter(sessions)) if len(sessions) == 1 else None
+            row["session"] = row["owner_session"] or (
+                next(iter(sessions)) if len(sessions) == 1 else None
+            )
             row["sessions"] = sorted(sessions)
+        row["state"] = (
+            "taken-and-reversible"
+            if row["choice"] and row["reversible"]
+            else "ready"
+            if _report_received(row, gates)
+            else "pending"
+        )
     rows.sort(
         key=lambda row: (
             -row["held_work_count"],
@@ -258,10 +401,16 @@ def read_decisions(project: str | None = None) -> dict[str, Any]:
             row["id"],
         )
     )
+    ready = [row for row in rows if row["state"] == "ready"]
+    pending = [row for row in rows if row["state"] == "pending"]
+    reversible = [row for row in rows if row["state"] == "taken-and-reversible"]
     return {
         "ok": True,
         "view": "decisions",
         "projects": sorted(mounts),
-        "count": len(rows),
-        "decisions": rows,
+        "count": len(ready),
+        "total_count": len(rows),
+        "decisions": ready,
+        "pending": pending,
+        "taken_and_reversible": reversible,
     }

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -111,8 +112,8 @@ def test_every_open_decision_is_one_read_in_held_work_order(decision_home):
         [],
     ]
     for row in rows:
-        assert row["question"] == records[0]["question"]
-        assert row["context"] == records[0]["context"]
+        assert row["question"] == _record()["question"]
+        assert row["context"] == _record()["context"]
         assert row["options"][0] == {"value": "route", "label": "Use the second route"}
         assert row["recommended"] == "route"
         assert row["session"] == "owner-session"
@@ -277,3 +278,240 @@ def test_record_command_refuses_a_non_object_without_writing(decision_home):
     assert result.exit_code == 1
     assert "JSON object" in json.loads(result.output)["detail"]
     assert not list((home / "crew" / "decisions").glob("*.json"))
+
+
+@pytest.mark.parametrize(
+    "question,context",
+    [
+        (
+            "Which transport carries the work?",
+            "One route is full. Another is available.",
+        ),
+        (
+            "Which format should readers accept?",
+            "Readers support two formats. Writers need one.",
+        ),
+    ],
+)
+def test_authored_question_and_context_survive_recording(
+    decision_home, question, context
+):
+    from reckon.crew.lead_decisions import record_decision
+
+    record_decision(_record(question=question, context=context))
+    row = serve_crew_view("decisions")["decisions"][0]
+    assert row["question"] == question
+    assert row["context"] == context
+
+
+def test_option_normalization_uses_the_plan_option_owner(decision_home, monkeypatch):
+    from reckon import _store
+    from reckon.crew.lead_decisions import record_decision
+
+    authored = _record()
+    calls = []
+    normalize = _store._decision_options_as_choices
+
+    def observed(options):
+        calls.append(options)
+        return normalize(options)
+
+    monkeypatch.setattr(_store, "_decision_options_as_choices", observed)
+    saved = record_decision(authored)
+    assert calls == [authored["options"]]
+    assert saved["options"][0]["value"] == "route"
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        ["wait", "route"],
+        {"wait": "wait", "route": "route"},
+        [{"value": "wait"}, {"value": "route"}],
+    ],
+)
+def test_shared_option_spellings_receive_the_same_strict_checks(decision_home, options):
+    from reckon.crew.lead_decisions import record_decision
+
+    saved = record_decision(_record(options=options))
+    assert saved["options"] == [
+        {"value": "route", "label": "route"},
+        {"value": "wait", "label": "wait"},
+    ]
+
+
+def test_pending_run_moves_to_ready_only_after_its_own_report(decision_home):
+    from reckon.crew.lead_decisions import record_decision
+
+    home, _ = decision_home
+    saved = record_decision(_record(pending_on={"run_id": "awaited-run"}))
+    before = serve_crew_view("decisions")
+    assert before["decisions"] == []
+    assert [row["id"] for row in before["pending"]] == [saved["id"]]
+    receipt = home / "crew" / "runs" / "awaited-run" / "exit.json"
+    receipt.parent.mkdir(parents=True)
+    receipt.write_text(json.dumps({"run_id": "different-run", "exit_code": 0}))
+    assert serve_crew_view("decisions")["decisions"] == []
+    receipt.write_text(json.dumps({"run_id": "awaited-run"}))
+    assert serve_crew_view("decisions")["decisions"] == []
+    receipt.write_text(json.dumps({"run_id": "awaited-run", "exit_code": 1}))
+    after = serve_crew_view("decisions")
+    assert after["pending"] == []
+    assert [row["id"] for row in after["decisions"]] == [saved["id"]]
+    assert after["decisions"][0]["pending_on"] == {"run_id": "awaited-run"}
+
+
+def test_pending_gate_requires_a_reported_result(decision_home):
+    from reckon.crew import gate_watch
+    from reckon.crew.lead_decisions import record_decision
+
+    _, mounts = decision_home
+    gate = gate_watch.start(
+        "sample", verb="verify-gate", checkout=mounts["sample"].parent, command="pytest"
+    )
+    saved = record_decision(_record(pending_on={"gate_id": gate["id"]}))
+    assert serve_crew_view("decisions")["pending"][0]["id"] == saved["id"]
+    gate_watch.end(gate["id"], exit_status=0)
+    result = serve_crew_view("decisions")
+    assert result["pending"] == []
+    assert result["decisions"][0]["id"] == saved["id"]
+
+
+def test_taken_and_reversible_is_separate_from_ready_and_answered(decision_home):
+    from reckon.crew.lead_decisions import record_decision
+
+    taken = record_decision(
+        _record(choice="route", reversible=True, standing_rule="Use available capacity")
+    )
+    ready = record_decision(_record())
+    result = serve_crew_view("decisions")
+    assert [row["id"] for row in result["decisions"]] == [ready["id"]]
+    assert result["pending"] == []
+    assert [row["id"] for row in result["taken_and_reversible"]] == [taken["id"]]
+    assert result["taken_and_reversible"][0]["choice"] == "route"
+    assert (
+        result["taken_and_reversible"][0]["standing_rule"] == "Use available capacity"
+    )
+
+
+def test_release_context_and_recommendation_provenance_survive(decision_home):
+    from reckon.crew.lead_decisions import record_decision
+
+    authored = _record(
+        risk="The schema can diverge while this is deferred.",
+        lead_action="Store the service credentials.",
+        recommended_by="reviewing-session",
+        recommendation_source="reviewer",
+        held_runs=["deferred-run"],
+        held_sections=["writer"],
+    )
+    record_decision(authored)
+    row = serve_crew_view("decisions")["decisions"][0]
+    for key in (
+        "risk",
+        "lead_action",
+        "recommended_by",
+        "recommendation_source",
+        "held_runs",
+    ):
+        assert row[key] == authored[key]
+
+
+def test_plan_recommendation_and_live_ownership_use_the_existing_resolver(
+    decision_home, monkeypatch
+):
+    from reckon.crew import plan_coordinator
+
+    _, mounts = decision_home
+    _plan(
+        mounts["sample"],
+        {
+            "format": {
+                "title": "Which format?",
+                "choices": ["compact", "expanded"],
+                "recommended": "compact",
+                "recommended_by": "review-session",
+            }
+        },
+    )
+    calls = []
+
+    def resolve(project, **kwargs):
+        calls.append(project)
+        return {
+            "plans": {
+                "transport": {
+                    "coordinator": "owner-session",
+                    "live": True,
+                    "plan_owner": "Plan owner",
+                    "tier": "coordinator",
+                }
+            }
+        }
+
+    monkeypatch.setattr(plan_coordinator, "resolve_plan_coordinators", resolve)
+    row = serve_crew_view("decisions")["decisions"][0]
+    assert "sample" in calls
+    assert row["recommended_by"] == "review-session"
+    assert row["recommendation_source"] == "reviewer"
+    assert row["owner_session"] == "owner-session"
+    assert row["plan_has_live_session"] is True
+    assert row["session"] == "owner-session"
+
+
+def test_unowned_plan_is_explicit_without_queue_work(decision_home):
+    from reckon.crew.lead_decisions import record_decision
+
+    _, mounts = decision_home
+    _plan(mounts["sample"], {})
+    record_decision(_record(risk="Deferred compatibility work accumulates."))
+    row = serve_crew_view("decisions")["decisions"][0]
+    assert row["plan_has_live_session"] is False
+    assert row["owner_session"] is None
+    assert row["risk"] == "Deferred compatibility work accumulates."
+
+
+def test_live_owner_and_owner_recommendation_need_no_queued_request(
+    decision_home, monkeypatch
+):
+    from reckon.crew import plan_coordinator
+    from reckon.crew.lead_decisions import record_decision
+
+    home, mounts = decision_home
+    _plan(mounts["sample"], {})
+    _pointer(
+        home,
+        "active-run",
+        phase="working",
+        plan="transport",
+        created_at=datetime.now(UTC).isoformat(),
+    )
+    monkeypatch.setattr(
+        plan_coordinator, "_live_sessions", lambda project, pointers: {"owner-session"}
+    )
+    record_decision(_record(recommended_by="owner-session"))
+    row = serve_crew_view("decisions")["decisions"][0]
+    assert row["held_requests"] == []
+    assert row["owner_session"] == "owner-session"
+    assert row["plan_has_live_session"] is True
+    assert row["recommendation_source"] == "owner"
+    monkeypatch.setattr(
+        plan_coordinator, "_live_sessions", lambda project, pointers: set()
+    )
+    ended = serve_crew_view("decisions")["decisions"][0]
+    assert ended["owner_session"] == "owner-session"
+    assert ended["plan_has_live_session"] is False
+
+
+def test_a_direct_plan_answer_hides_its_linked_crew_question(decision_home):
+    from reckon.crew.lead_decisions import record_decision
+
+    _, mounts = decision_home
+    _plan(mounts["sample"], {"format": {"title": "Which format?"}})
+    record_decision(_record(decision_key="format"))
+    assert serve_crew_view("decisions")["count"] == 2
+    _plan(
+        mounts["sample"],
+        {"format": {"title": "Which format?", "choice": "compact", "by": "Plan owner"}},
+    )
+    assert serve_crew_view("decisions")["decisions"] == []
