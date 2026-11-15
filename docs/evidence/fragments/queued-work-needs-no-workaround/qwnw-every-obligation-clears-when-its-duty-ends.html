@@ -52,12 +52,13 @@
   <p>The <code>sweep-failed</code> route was reproduced directly (<code>repro.log</code>, exit 0): a stored failure for a run with no live pointer and no ledger row still raised a row after one pass, because the failure list is durable per session and only that session's next completed sweep replaces it. The acknowledgement probe (<code>ack.log</code>, exit 0) showed the second half of the gap: a deferral for such a run was refused unless the caller passed <code>--project</code>, and a row's own command never carries one.</p>
 
   <h3>The change</h3>
-  <p>Four source files and one new test module, committed as <code>23441432588509b0e37d7f85a3cdf499bac2c476</code>, with the held-tree settlement added by the repair round in <code>f34655ee</code> and the unmerged-work rule this round adds in <code>c778aaa1</code> and <code>9d886bbf</code>:</p>
+  <p>Five source files and one new test module, committed as <code>23441432588509b0e37d7f85a3cdf499bac2c476</code>, with the held-tree settlement added by the repair round in <code>f34655ee</code>, the unmerged-work rule in <code>c778aaa1</code> and <code>9d886bbf</code>, and the reuse of this package's own git readings in <code>75bf98f5</code> and <code>34b99177</code>:</p>
   <ul>
     <li><code>reckon/crew/station_obligations.py</code> — <code>_ended_sweep_failures</code> keeps a failure only while its run holds a live pointer and has no ledger record; <code>_with_sweep_failures</code> publishes through it, and <code>prune_sweep_failures</code> applies the same reading to the durable per-session record, writing back only when an entry ended. The mount registry is read once for the whole list, so no ledger is decoded per row.</li>
     <li><code>reckon/crew/obligation_snapshot.py</code> — <code>sweep-failed</code> joins <code>LIVE_POINTER_DUTY_KINDS</code>, so an answer computed before the run ended stops naming it at read time. The module still reaches no derivation, plan, backend or ledger module.</li>
     <li><code>reckon/crew/obligation_snapshot.py (repair round)</code> — the held-tree settlement the repair round adds: <code>worktree-held</code> is withheld once its run has no live pointer and the terminal cleanup queue holds an intent for it.</li>
-    <li><code>reckon/crew/obligations.py</code> — a retained tree is filed as held only while it carries unmerged work, decided by the tree's own git state rather than by the run's pointer.</li>
+    <li><code>reckon/crew/obligations.py</code> — a retained tree is filed as held only while it carries unmerged work, decided by the tree's own git state rather than by the run's pointer, through the git readings the claim fence already owns rather than private copies of them.</li>
+    <li><code>reckon/crew/node.py</code> — <code>_git_answer</code> takes an optional environment, so a derivation can ask git to leave the index alone without a second stripped-stdout reader; <code>_claim_commit_answer</code> can keep a reachability answer in the asking process only, for a read that judges a hundred trees in one pass.</li>
     <li><code>reckon/crew/runs.py</code> — a deferral's project now falls back to the stored duty document that still raises the run's rows, after the caller's own <code>--project</code>, the ledger record and the promotion request have all failed to name one. A run nothing names is still refused.</li>
   </ul>
 
@@ -70,17 +71,19 @@
   <p>A first run of these arms showed two errors in the inventory test on both arms; they were the exported tree having no repository behind it, identical at both revisions, and they are gone once the export is given a HEAD.</p>
 
   <h3>The census after the change, and what remains</h3>
-  <p>The same census was re-read through the settlement the change adds, at <code>2026-11-15T05:10:20Z</code> (<code>census_after.log</code>, exit 0): 132 stored documents, 135 stored rows, <strong>67 rows the view still serves, 20 of them naming a run with no live pointer</strong>. The figure is a reading of the fleet at one instant rather than a constant of the rule: what a reader sees moves with the fleet, while the rule that decides each row does not.</p>
+  <p>The same census was re-read through the settlement the change adds, at <code>2026-11-15T06:17:03Z</code> (<code>census_after.log</code>, exit 0): 132 stored documents, 136 stored rows, <strong>70 rows the view still serves, 20 of them naming a run with no live pointer</strong>. The figure is a reading of the fleet at one instant rather than a constant of the rule: what a reader sees moves with the fleet, while the rule that decides each row does not.</p>
   <table class="r-table">
     <thead><tr><th>kind</th><th>pointer</th><th>landed</th><th>gone</th></tr></thead>
     <tbody>
-      <tr><td><code>blocked</code></td><td>5</td><td>0</td><td>2</td></tr>
-      <tr><td><code>landing-refused</code></td><td>5</td><td>0</td><td>0</td></tr>
-      <tr><td><code>promotable-stale</code></td><td>9</td><td>0</td><td>0</td></tr>
+      <tr><td><code>blocked</code></td><td>6</td><td>0</td><td>2</td></tr>
+      <tr><td><code>landing-refused</code></td><td>4</td><td>0</td><td>0</td></tr>
+      <tr><td><code>needs-help</code></td><td>1</td><td>0</td><td>0</td></tr>
+      <tr><td><code>promotable-stale</code></td><td>11</td><td>0</td><td>0</td></tr>
       <tr><td><code>promotion-failed</code></td><td>19</td><td>0</td><td>0</td></tr>
-      <tr><td><code>review-in-flight</code></td><td>4</td><td>0</td><td>0</td></tr>
-      <tr><td><code>review-missing</code></td><td>2</td><td>0</td><td>0</td></tr>
-      <tr><td><code>run-queued</code></td><td>1</td><td>0</td><td>0</td></tr>
+      <tr><td><code>queued-awaiting-session</code></td><td>1</td><td>0</td><td>0</td></tr>
+      <tr><td><code>review-in-flight</code></td><td>3</td><td>0</td><td>0</td></tr>
+      <tr><td><code>review-missing</code></td><td>1</td><td>0</td><td>0</td></tr>
+      <tr><td><code>review-ready</code></td><td>2</td><td>0</td><td>0</td></tr>
       <tr><td><code>run-waiting</code></td><td>2</td><td>0</td><td>0</td></tr>
       <tr><td><code>worktree-held</code></td><td>0</td><td>18</td><td>0</td></tr>
     </tbody>
@@ -99,8 +102,9 @@
 
   <h3>What this round changed</h3>
   <p>The review of the earlier head read the held-tree rows as rows that should have cleared with their runs, and read a census instant and a table beside it that had moved since the paragraph citing them was written. Both halves are answered here by measurement rather than by argument: the rows now clear on the tree's own state, and every figure in this record is taken from the log named beside it, table and instant included.</p>
-  <p>The rule is a settlement at the derivation, in the place a tree is filed as held. It asks the only question the row asks — would deleting this tree lose work — with the tree's own git state: <code>git status --porcelain</code> for an uncommitted change, and one <code>git rev-list --count HEAD --not</code> over every primary ref the repository resolves — <code>main</code>, <code>develop</code>, <code>master</code>, and the remote's tracking head — for commits no landing took. A reading that fails keeps the duty, because a tree nobody could read is not a tree nothing needs. Reading the remote head first was the first attempt at this and released nothing at all: the tracking ref lags the local branch until someone pushes, so every merged tree read as unmerged. Both revisions are in the record as a pair of logs for that reason.</p>
+  <p>The rule is a settlement at the derivation, in the place a tree is filed as held. It asks the only question the row asks — would deleting this tree lose work — with the tree's own git state, through the readings this package already owns rather than copies of them: the claim fence's stripped-stdout reading for an uncommitted change, and its reachability answer, which reads the branch names the repository carries from git's files. A reading that fails keeps the duty, because a tree nobody could read is not a tree nothing needs. The branch names are the repository's own (<code>main</code>, <code>develop</code>, <code>master</code>), read from its files. The remote's tracking head is not consulted: a landing whose copy sits on the remote but has not been fetched leaves the tree looking owed, which keeps a duty rather than losing bytes. Reading that head first was the first attempt at this and released nothing at all, because the tracking ref lags the local branch until someone pushes.</p>
   <p>What the rule does not do is release a tree that still holds work, which is why the derived count reads the same either side. The 18 rows the census serves name 18 such trees, and the honest report of that is the count, not a zero.</p>
+  <p>What the refresh costs was measured rather than assumed, because the reuse changed which readings it asks git for (<code>cost_before.log</code> and <code>cost_after.log</code>, both exit 0, the same probe over the same 19 projects and 102 trees): <strong>550 git processes and 46.6 s</strong> before the reuse, <strong>286 and 45.8 s</strong> after. The reachability answer is memoised per object id in the asking process and is not written to the shared crew-home answer store, because one pass asks it for every tree and that store is a single file rewritten per answer; a second pass in the same process therefore costs no git process at all.</p>
 
   <h3>The done-when, item by item</h3>
   <table class="r-table">
@@ -116,7 +120,7 @@
       </tr>
       <tr>
         <td>a census counts rows whose run has no live pointer or has landed, zero one pass after the delivered head runs</td>
-        <td>measured, and not zero: 20 of the 67 served rows read either way at the repair head — 18 held trees and 2 blocked rows a derivation pass settles. The held-tree figure is a property of the fleet rather than of the rule, because all 102 retained trees hold work (<code>probe_trees.log</code>) and the rule releases only a tree that holds none</td>
+        <td>measured, and not zero: 20 of the 70 served rows read either way at the repair head — 18 held trees and 2 blocked rows a derivation pass settles. The held-tree figure is a property of the fleet rather than of the rule, because all 102 retained trees hold work (<code>probe_trees.log</code>) and the rule releases only a tree that holds none</td>
       </tr>
       <tr>
         <td>negative control: the settled-by-promotion case against the base revision still lists the row</td>
@@ -126,7 +130,7 @@
   </table>
 
   <h3>Fences and honesty notes</h3>
-  <p>Every measurement above ran as an <code>all_debug</code> job or against a temporary crew home, and none on the fleet node. The arms at the delivered head, the two controls and the four probe readings ran as three <code>all_debug</code> jobs (<code>1316701</code>, <code>1316726</code>, <code>1316717</code>), each log carrying its revision and command on the first line and an <code>EXIT</code> line last. Two of this session's commands did start a whole-suite pytest in the shared checkout by mistake while an arm was being prepared; each was stopped within about two minutes of starting and no process was left behind. The two-file arms the fence names were run in exported trees, so the <code>.venv</code> the command names resolves to the shared root environment rather than a worktree copy, and the resolved revision is recorded in each log header.</p>
+  <p>Every measurement above ran as an <code>all_debug</code> job or against a temporary crew home, and none on the fleet node. The arms at the delivered head, the two controls, the four probe readings and the two cost arms ran as the <code>all_debug</code> jobs whose ids their headers record — <code>1316244</code> (the earlier change pair), <code>1316717</code> (the two probe arms and the revert control) and <code>1316726</code> (the two suite arms) — with the cost and census readings written from exported trees whose headers carry their revision and command rather than a job id, each log carrying its revision and command on the first line and an <code>EXIT</code> line last. Two of this session's commands did start a whole-suite pytest in the shared checkout by mistake while an arm was being prepared; each was stopped within about two minutes of starting and no process was left behind. The two-file arms the fence names were run in exported trees, so the <code>.venv</code> the command names resolves to the shared root environment rather than a worktree copy, and the resolved revision is recorded in each log header.</p>
 </article>
 </body>
 </html>
