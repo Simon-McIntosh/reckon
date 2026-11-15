@@ -1354,7 +1354,7 @@ def dispatch(
             # A shadow run exists to be compared against its pair, so it is
             # refused when the bound binds rather than stored for later: a
             # queued shadow has no pair to run beside.
-            raise roster
+            raise
         if admission_launch:
             raise LaneHeld(bound_hold) from roster
         held = _queue_a_held_request(
