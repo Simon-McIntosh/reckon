@@ -1,0 +1,54 @@
+<section id="store-write-is-load-bearing-s21">
+  <h2>The store write is load-bearing</h2>
+
+  <p><strong>What changed.</strong> <code>_index_append</code> in
+  <code>reckon/ledger.py</code> no longer returns a failure payload. It raises a
+  <code>LedgerError</code> that names the run store's path and the repair verb,
+  so a store that will not take a run refuses the promotion instead of reporting
+  a landed run that no store holds. <code>append_run</code> now writes the store
+  row <em>before</em> the rebuildable projections, and when that write raises it
+  unlinks the per-run file it had already written, so neither store keeps a row.
+  Docstrings that described the store as a rebuildable cache beside an
+  authoritative committed file are corrected in the same commit.</p>
+
+  <p><strong>The refusal, shown by injection.</strong> The new test injects a
+  raising <code>run_store.append</code> and asserts four things: the raised
+  message carries the store path, <code>scripts/import_runs_into_store.py</code>
+  and <code>--project proj</code>; the per-run file is gone; the store answers
+  no row for that node; and <code>run_store.compare</code> reports 0/0/0. The
+  healthy arm appends for real, then asserts both stores hold the row and the
+  same comparison is 0/0/0 — so 0/0/0 in the refused arm cannot pass by the
+  comparison itself being broken.</p>
+
+  <p><strong>It fails at base.</strong> Against a <code>git archive</code> of
+  <code>9530fe3d48ea</code> with the new test copied in, the injected-raise case
+  fails with <code>Failed: DID NOT RAISE LedgerError</code>: at base the append
+  returned <code>{"status": "failed"}</code> and kept the run file. The healthy
+  case passes on both revisions, so the red arm is the inversion, not the
+  harness.</p>
+
+  <p><strong>The negative control.</strong> Restoring the swallowed form in
+  <code>_index_append</code> — the exact mutation this node declared — turns the
+  injected-raise case red again
+  (<code>FAILED tests/test_a_failed_store_write_leaves_no_row.py::test_a_refused_store_write_leaves_no_row_in_either_store</code>,
+  <code>1 failed, 1 passed</code>), which is
+  the check proving the assertion measures the raise and not the setup.</p>
+
+  <p><strong>Arms.</strong> Baseline, resolved over the base tree:
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_staged_write_inventory.py
+  tests/test_every_shared_home_lock_holds_across_nodes.py</code> — 58 passed,
+  exit 0. After, at this commit's head:
+  <code>pytest … -q tests/test_a_failed_store_write_leaves_no_row.py
+  tests/test_staged_write_inventory.py
+  tests/test_every_shared_home_lock_holds_across_nodes.py</code> — 60 passed,
+  exit 0. Logs are in the run directory.</p>
+
+  <p><strong>What this node did not touch.</strong>
+  <code>tests/test_crew_promotion.py</code> carries
+  <code>test_a_failing_store_write_is_reported_on_the_*success*_payload</code>,
+  which asserts the inverted behaviour that this section retires — a
+  <code>store</code> of <code>{"status": "failed"}</code> on a successful
+  promotion. It is outside this node's declared write paths and it now encodes
+  the defect; it is reported for another node rather than edited here.</p>
+</section>
