@@ -3132,7 +3132,10 @@ def _commit_state_write(
     the merge's lock wait, so a transient hold is waited out rather than
     refusing the state write; a failure with no lock behind it, or a lock that
     outlasts the wait's attempts, raises as before, naming the lock in the
-    second case. Returns the number of retries the wait made, so a caller that
+    second case. A lock the wait proves stale is cleared by it, and that
+    clearing is stated on stderr with the lock and the age it stood for, so a
+    lock that disappeared out from under a shared checkout is never one nobody
+    accounted for. Returns the number of retries the wait made, so a caller that
     records a write which waited has the count.
 
     The commit is skipped while a merge is in progress: a commit made there
@@ -3162,7 +3165,22 @@ def _commit_state_write(
         DEFAULT_ATTEMPTS,
         _index_lock_held,
         _run_waiting_out_a_held_index_lock,
+        stale_index_lock_removal_line,
     )
+
+    def record_stale_removal(lock: Path, age: float) -> None:
+        """Name a lock the wait cleared, and its age, on this write's own log.
+
+        A state write has no run record to append to — the commit it makes is
+        the record — and the index it writes is shared with every session in
+        the checkout. A lock cleared out from under those sessions is therefore
+        stated where the session that ran the write reads it, rather than
+        disappearing without a word.
+        """
+        print(
+            f"index lock: {stale_index_lock_removal_line(lock, age)}",
+            file=sys.stderr,
+        )
 
     relative_args = [str(relative) for relative in relative_paths]
 
@@ -3175,7 +3193,7 @@ def _commit_state_write(
         )
 
     staged, stage_retries = _run_waiting_out_a_held_index_lock(
-        checkout, stage, sleep=sleep
+        checkout, stage, sleep=sleep, on_stale_removed=record_stale_removal
     )
     if staged.returncode != 0:
         if _index_lock_held(checkout):
@@ -3209,7 +3227,7 @@ def _commit_state_write(
         )
 
     committed, commit_retries = _run_waiting_out_a_held_index_lock(
-        checkout, commit, sleep=sleep
+        checkout, commit, sleep=sleep, on_stale_removed=record_stale_removal
     )
     if committed.returncode != 0:
         subprocess.run(

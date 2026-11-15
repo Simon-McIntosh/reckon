@@ -1751,20 +1751,32 @@ def _scratch_disposition(
     return SCRATCH_UNATTRIBUTED
 
 
-def _processes_holding(path: Path) -> list[dict[str, Any]]:
+def _processes_holding(path: Path) -> list[dict[str, Any]] | None:
     """Name the processes holding ``path`` as their cwd or as an open file.
 
-    Read-only and best-effort: ``/proc`` may be absent or a process may exit
-    mid-scan, and a scan that raised would turn a report into a refusal. A
-    holder is only ever reported, never killed — the survey's whole point is to
-    let a human decide what a tree nobody owns is doing.
+    The one holder scan in the package. It answers two questions that used to
+    have two implementations: what a survey should report about a tree nobody
+    owns, and whether an ``index.lock`` still has a live writer. git writes no
+    owner into that lock, so ``/proc/<pid>/fd`` is the only local evidence that
+    no process holds it, and a second scan with slightly different matching
+    was a second answer to one question.
+
+    Read-only and best-effort: a process may exit mid-scan, and a scan that
+    raised would turn a report into a refusal. A holder is only ever reported,
+    never killed — the survey's whole point is to let a human decide what a
+    tree nobody owns is doing.
+
+    ``None`` is the scan's own failure, not an empty answer: a ``/proc`` that
+    cannot be read proves nothing either way, and a caller judging whether a
+    holder exists must not read that as "nobody holds it".
     """
     holders: list[dict[str, Any]] = []
-    proc = Path("/proc")
-    if not proc.is_dir():
-        return holders
+    try:
+        entries = sorted(Path("/proc").iterdir())
+    except OSError:  # pragma: no cover - an unreadable /proc answers "unknown".
+        return None
     target = path.resolve()
-    for entry in proc.iterdir():
+    for entry in entries:
         if not entry.name.isdigit():
             continue
         pid = int(entry.name)
@@ -1839,7 +1851,10 @@ def garbage_collect_scratch(
         }
         if state == SCRATCH_UNATTRIBUTED:
             report["ctime"] = _iso_ctime(child)
-            report["held_by"] = _processes_holding(child)
+            # A survey reports what it saw; an unreadable scan is an empty
+            # holder list here rather than an unknown, because nothing is
+            # decided from it.
+            report["held_by"] = _processes_holding(child) or []
         if state == SCRATCH_TERMINAL and apply:
             shutil.rmtree(child)
             report["removed"] = True
@@ -1863,7 +1878,7 @@ def garbage_collect_scratch(
                     "path": str(child),
                     "bytes": tree_size_bytes(child, limit=_UNATTRIBUTED_SIZE_LIMIT),
                     "ctime": _iso_ctime(child),
-                    "held_by": _processes_holding(child),
+                    "held_by": _processes_holding(child) or [],
                 }
             )
 
