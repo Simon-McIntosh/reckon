@@ -407,7 +407,7 @@ def test_a_queued_reviewer_answers_for_no_head(
     candidates = getattr(obligations_module, "_launched_candidates", None)
     if candidates is not None:
         monkeypatch.setattr(obligations_module, "_launched_candidates", list)
-        assert _standing(queued) == "review-of-run-01"
+        assert _standing(queued) == "review-of-run-00"
         monkeypatch.setattr(obligations_module, "_launched_candidates", candidates)
 
     # The base read path gives the same answer for the same queued pointer.
