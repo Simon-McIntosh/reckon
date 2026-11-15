@@ -11,80 +11,107 @@
   <meta name="plan-evidence-for" content="reckon:queued-work-needs-no-workaround#s21">
   <meta name="evidence-verdict" content="partial">
   <meta name="evidence-date" content="2026-11-15">
-  <title>A dispatch derives its project once | reckon</title>
+  <title>A dispatch reads no git dates, and what still costs nine seconds | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 </head>
 <body>
 <article class="r-note" data-node="qwnw-a-dispatch-answers-in-ten-seconds-whole" data-reckon="landed" data-when="2026-11-15">
-  <h2 id="qwnw-a-dispatch-answers-in-ten-seconds-whole-title">A batch derives its project once, and discovery stops waiting on git history</h2>
+  <h2 id="qwnw-a-dispatch-answers-in-ten-seconds-whole-title">A dispatch reads no git dates — and the ten-second bound is still not met</h2>
 
   <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-change"><strong>What changed.</strong>
   <code>reckon/serve.py</code> gains
-  <code>discovery_without_git_dates()</code>. Under that scope
-  <code>_discover_plans_*</code> no longer calls <code>_git_first_committed</code>
-  or <code>_git_last_committed</code> — two queries bounded at ten seconds each —
-  and stamps documents from the working tree, which the shared stamp rule
-  already falls back to. A discovery built this way lives under its own cache
-  key, so a reader needing commit times never receives the approximation.
-  <code>reckon/crew/dispatching/fences.py</code> enters that scope for every
-  dispatch preview beside <code>plan_read_scopes()</code>;
-  <code>queue_batch</code> enters it too.
+  <code>discovery_without_git_dates()</code>, whose flag is a
+  <code>contextvars.ContextVar</code> rather than a module global, so a
+  suppression one caller entered is invisible to a concurrent reader on another
+  path. Under the scope, discovery answers document stamps from the working
+  tree instead of calling <code>_git_first_committed</code> and
+  <code>_git_last_committed</code>, each of which is bounded at ten seconds,
+  and the answer is cached under its own key so a reader that needs commit
+  times never receives the approximation.
 
-  <code>reckon/crew/dispatch_batch.py</code> keys the batch's one-derivation
-  cache on the project and derives from the project's registered mount. Queue
+  Three callers enter the scope: a dispatch preview
+  (<code>reckon/crew/dispatching/fences.py</code>), a batch
+  (<code>reckon/crew/dispatch_batch.py</code>), and now the re-plan a lane
+  change performs (<code>reckon/crew/dispatch_sessions.py</code>). That third
+  path imports <code>plan_dispatch</code> straight from the plan module, so it
+  reached the unwrapped core and skipped the scope entirely — the gap this
+  round closes.
+
+  <code>reckon/crew/dispatch_batch.py</code> keys its one-derivation cache on
+  the project and derives from the project's registered mount, because queue
   ordering names the mount while a section's wait check names the checkout's
   own, so a dispatch from a worktree keyed those readers apart and derived the
   whole project twice.
   </p>
 
-  <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-control"><strong>Negative control — the new test fails at the base revision.</strong>
-  <code>tests/test_a_batch_derives_the_project_once.py</code> queues three
-  entries for one project from a worktree whose docs tree is not the registered
-  mount, and counts derivations. Base <code>d45930c3b8</code> with the test
-  file placed on it: <strong>1 failed</strong>, <code>assert 2 == 1</code>,
-  naming the worktree and the checkout as the two trees derived. Head
-  <code>325fe07e72</code>: <strong>1 passed</strong>.</p>
+  <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-control"><strong>Negative control — the test file fails on the base revision.</strong>
+  <code>tests/test_a_batch_derives_the_project_once.py</code> now carries two
+  measures: a batch of three entries derives its project once, and a batch
+  makes no git history or last-modified lookup. Both are read through a counter
+  that is proven alive before the zero is believed: the same test runs one
+  discovery outside the scope first and requires that counter to read
+  <code>_git_first_committed</code> and <code>_git_last_committed</code>.
+  Base <code>d45930c3b8</code>: <strong>2 failed</strong> — two derivations
+  (<code>assert 2 == 1</code>), and a dispatch that made exactly those two
+  lookups. Head: <strong>2 passed</strong>.</p>
 
   <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-suite"><strong>Gate, both arms on <code>all_debug</code></strong> over
   <code>tests/test_staged_write_inventory.py</code> and
   <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>:
-  <strong>55 passed</strong> at base, <strong>55 passed</strong> at head — no
-  failure added. The first base attempt used a plain <code>git archive</code>
-  extraction with no <code>.git</code>, and two velocity tests errored on
-  <code>git ls-tree</code>; the arm was rerun in a tree with its own git
-  extraction plus <code>git init</code>, which is the 55-passed figure above.</p>
+  <strong>55 passed</strong> at base <code>d45930c3b8</code>,
+  <strong>55 passed</strong> at head <code>c64eda5382</code> — no failure
+  added.</p>
 
-  <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-timing"><strong>Dry-run timing table</strong> (device: ten dispatch dry runs were
-  asked for; seven were run, four head and three base).</p>
+  <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-timing"><strong>Ten dispatch previews</strong>, five run from the main checkout and
+  five from a worktree of the same repository, both arms executing the head
+  code. The node contract was complete, so every run reaches a real verdict
+  rather than a usage refusal; all ten answered <code>scope-conflict</code>
+  against this node's own live claim, which is the correct answer for a
+  preview of a node that is running.</p>
 
   <table>
-    <thead><tr><th>arm</th><th>rev</th><th>load avg</th><th>wall</th><th>discovery share</th></tr></thead>
+    <thead><tr><th>arm</th><th>load avg</th><th>wall (incl. python start)</th><th>command</th><th>git date lookups</th><th>discovery share</th></tr></thead>
     <tbody>
-      <tr><th scope="row">head, main checkout</th><td>325fe07e72</td><td>35.28</td><td>8.31 s</td><td>0</td></tr>
-      <tr><th scope="row">head, worktree</th><td>325fe07e72</td><td>33.26</td><td>9.25 s</td><td>0</td></tr>
-      <tr><th scope="row">head, main checkout</th><td>325fe07e72</td><td>33.05</td><td>9.86 s</td><td>0</td></tr>
-      <tr><th scope="row">head, worktree</th><td>325fe07e72</td><td>32.17</td><td>13.07 s</td><td>0</td></tr>
-      <tr><th scope="row">base, main checkout</th><td>d45930c3b8</td><td>47.50</td><td>> 90 s (timeout)</td><td>not reached</td></tr>
-      <tr><th scope="row">base, main checkout</th><td>d45930c3b8</td><td>57.99</td><td>> 90 s (timeout)</td><td>not reached</td></tr>
-      <tr><th scope="row">base, main checkout</th><td>d45930c3b8</td><td>130.27</td><td>62.42 s</td><td>0</td></tr>
+      <tr><th scope="row">main 1</th><td>42.33</td><td>17.04 s</td><td>15.15 s</td><td>0</td><td>0</td></tr>
+      <tr><th scope="row">worktree 1</th><td>48.29</td><td>13.56 s</td><td>10.26 s</td><td>0</td><td>0</td></tr>
+      <tr><th scope="row">main 2</th><td>52.44</td><td>12.32 s</td><td>10.43 s</td><td>0</td><td>0</td></tr>
+      <tr><th scope="row">worktree 2</th><td>48.31</td><td>12.86 s</td><td>11.22 s</td><td>0</td><td>0</td></tr>
+      <tr><th scope="row">main 3</th><td>49.33</td><td>14.05 s</td><td>11.81 s</td><td>0</td><td>0</td></tr>
+      <tr><th scope="row">worktree 3</th><td>50.27</td><td>10.88 s</td><td>9.28 s</td><td>0</td><td>0</td></tr>
+      <tr><th scope="row">main 4</th><td>49.67</td><td>11.88 s</td><td>10.32 s</td><td>0</td><td>0</td></tr>
+      <tr><th scope="row">worktree 4</th><td>49.02</td><td>11.66 s</td><td>9.64 s</td><td>0</td><td>0</td></tr>
+      <tr><th scope="row">main 5</th><td>47.02</td><td>12.37 s</td><td>10.69 s</td><td>0</td><td>0</td></tr>
+      <tr><th scope="row">worktree 5</th><td>46.84</td><td>13.02 s</td><td>11.36 s</td><td>0</td><td>0</td></tr>
     </tbody>
   </table>
 
-  <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-limit"><strong>What this table does not show, and why it matters.</strong>
-  The instrumented discovery share is <strong>0 on both arms</strong>: a dry
-  run resolves a preview without deriving the project at all, so the
-  base-versus-head wall times above cannot be attributed to this change. They
-  also move with a load average that rose from 32 to 130 across the
-  measurements. The change is proven at the mechanism, not by this table: the
-  derivation count is 1 at head against 2 at base, and the suppressed path
-  takes no git query.</p>
+  <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-limit"><strong>The bound is not met, and the residual is not discovery.</strong>
+  Every one of the ten runs is over ten seconds. The instrumented git history
+  and last-modified lookups read <strong>zero on all ten</strong>, and the
+  discovery share reads zero with them: a preview resolves a placement without
+  deriving the project, so this table cannot attribute a saving in discovery
+  time. What is left was found by profiling one preview of the same command:</p>
 
-  <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-open"><strong>Still open.</strong> The ten-dry-run table needs a quiet node to
-  mean anything, and the discovery share needs a dispatch path that actually
-  derives the project — queueing does, and a queued request is what the
-  original measure named. A rerun should instrument <code>queue_batch</code>
-  rather than a preview.</p>
+  <table>
+    <thead><tr><th>phase</th><th>seconds</th><th>what it is</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">interpreter and imports</th><td>2.1–2.3</td><td><code>import reckon.cli</code>, measured three times</td></tr>
+      <tr><th scope="row">claim resolution</th><td>3.9–5.7</td><td><code>_repository_scope_claims</code> 3.92 s, <code>_grant_landing_write_paths</code> 1.75 s, <code>_live_conflict_rows</code> 1.10 s — 135 live-scope pointers and 512 <code>resolve_scope_repository</code> reads</td></tr>
+      <tr><th scope="row">picker inputs</th><td>4.23</td><td><code>build_picker_inputs</code>: four timed inputs, the claims among them</td></tr>
+      <tr><th scope="row">everything else</th><td>~1.6</td><td>plan reads, config, the refusal it raises</td></tr>
+    </tbody>
+  </table>
+
+  <p id="qwnw-a-dispatch-answers-in-ten-seconds-whole-open"><strong>What remains, and the next step.</strong> The cost that still holds a
+  dispatch near ten seconds is the claim sweep over the crew home's live
+  pointers — 66,546 <code>lstat</code> calls and 16,433 <code>stat</code> calls
+  in one preview at load 47 — and it is read at least twice on the preview
+  path, once for the picker inputs and again for the live-conflict check. The
+  next node should read it once per preview and scope the read to the
+  project's own claims. Until that lands, the honest statement is: a dispatch
+  makes no git history or last-modified lookup, and it answers in ten to
+  fifteen seconds on a node running at load 42–52.</p>
 </article>
 </body>
 </html>
