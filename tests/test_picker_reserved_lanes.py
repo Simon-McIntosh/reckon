@@ -215,16 +215,12 @@ def _reasons(options, backend):
 
 
 def _reserved_reason(options, backend):
-    """The policy's own words on the candidate, which are a preference.
-
-    A reservation excludes nothing: it is stated beside the offered candidate
-    for the router to weigh.
-    """
+    """The policy's own words, carried on an exclusion or a preference."""
     candidate = next(item for item in options if item.backend == backend)
     return next(
         (
             reason
-            for reason in candidate.preferences
+            for reason in [*candidate.reasons, *candidate.preferences]
             if reason.startswith("reserved-lane:")
         ),
         "",
@@ -241,11 +237,11 @@ def test_the_policy_is_keyed_by_the_lane_the_state_reads(live_facts):
     assert dispatch_picker.lane_family(CONFIG, "codex-astra") != "claude"
 
 
-def test_a_routine_node_sees_the_reserved_lane_marked_reserved(live_facts):
+def test_a_routine_node_is_not_offered_the_reserved_claude_lane(live_facts):
     """A routine node at full headroom is never offered the reserved lane."""
 
     options = _candidates(live_facts, _request(), claude_pct=1.0)
-    assert "claude-opus" in _offered(options)
+    assert "claude-opus" not in _offered(options)
     assert _reserved_reason(options, "claude-opus")
 
 
@@ -277,7 +273,7 @@ def test_no_headroom_withholds_the_lane(live_facts, claude_pct, known):
     options = _candidates(
         live_facts, _request(capability=HARDEST), claude_pct=claude_pct, known=known
     )
-    assert "claude-opus" in _offered(options)
+    assert "claude-opus" not in _offered(options)
     assert _reserved_reason(options, "claude-opus")
 
 
@@ -292,17 +288,17 @@ def test_one_attempt_below_the_count_does_not(live_facts):
     """One attempt below the policy's count leaves the reservation stated."""
 
     options = _candidates(live_facts, _request(attempts=1), claude_pct=42.0)
-    assert "claude-opus" in _offered(options)
+    assert "claude-opus" not in _offered(options)
     assert _reserved_reason(options, "claude-opus")
 
 
-def test_a_review_node_is_not_governed_by_the_policy(live_facts):
-    """The policy governs non-review work; review routing keeps its own rule."""
+def test_a_review_node_obeys_the_claude_reservation(live_facts):
+    """The Claude reservation also protects the lane from ordinary reviews."""
 
     options = _candidates(
         live_facts, _request(capability=ROUTINE, role="review"), claude_pct=42.0
     )
-    assert "claude-opus" in _offered(options)
+    assert "claude-opus" not in _offered(options)
 
 
 def test_the_policy_removed_is_the_negative_control(live_facts):

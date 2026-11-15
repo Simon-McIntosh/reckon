@@ -2635,7 +2635,12 @@ def _probe_serving(backend: Mapping[str, Any]) -> dict[str, Any]:
             "serving": "not-serving",
             "serving_detail": f"endpoints document {str(path)!r} lists no endpoints",
         }
-    configured_model = backend.get("model")
+    from reckon import _backends
+
+    try:
+        configured_model = _backends.dialect_for(backend).serving_model(backend)
+    except _backends.BackendError:
+        configured_model = backend.get("model")
     offered = [
         endpoint.get("model_id") if isinstance(endpoint, Mapping) else None
         for endpoint in endpoints
