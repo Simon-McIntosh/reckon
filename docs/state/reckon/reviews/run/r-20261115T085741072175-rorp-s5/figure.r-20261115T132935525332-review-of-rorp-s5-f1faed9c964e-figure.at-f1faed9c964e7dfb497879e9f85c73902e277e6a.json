@@ -1,0 +1,40 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T13:42:11.955Z",
+  "dispatched_at": "2026-11-15T13:33:26Z",
+  "findings": [
+    {
+      "file": "docs/figures/a-read-only-run-promotes-as-delivered/rorp-s5/read-cost-per-plan.svg",
+      "line": null,
+      "severity": "non-blocking",
+      "summary": "The base annotation 'slowest read 14.82 s' is drawn in the population grey #929292 with a measured 3.11:1 contrast on white, below the 4.5:1 a reader needs for 14 pt text. It is the only text in the figure under that bar (the bound label measures 5.32:1 and the head annotation about 5.4:1) and it labels the 'before' number the figure exists to show, so the least legible text carries the most important value. The figure still reads, which is why this does not hold the node."
+    },
+    {
+      "file": "docs/figures/a-read-only-run-promotes-as-delivered/rorp-s5/read-cost-per-plan.svg",
+      "line": null,
+      "severity": "non-blocking",
+      "summary": "Both arms plot five reads but the vertical jitter that separates near-equal values is smaller than the marker diameter, so coincident reads merge. Measured on the rendered PNG, the head row shows two marks (x 116-136 and 183-193) where five reads of 0.587, 0.594, 0.606, 0.712 and 1.420 s were plotted, and the base row shows three (x 681-705, 773-783 and 1266-1276) where five were plotted, the 7.726 and 7.754 s pair merging into one elongated mark. The comparison and the spread still read correctly and the prose beneath the figure states all ten timings, so this does not hold the node, but a reader cannot recover the sample size from the picture alone."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261115T132935525332-review-of-rorp-s5-f1faed9c964e-figure",
+  "reviewed_base_sha": "19b28c494ed17c302a6b6be1d99ef7a9cd154805",
+  "reviewed_figure": "docs/figures/a-read-only-run-promotes-as-delivered/rorp-s5/read-cost-per-plan.svg",
+  "reviewed_head_sha": "f1faed9c964e7dfb497879e9f85c73902e277e6a",
+  "reviewed_image": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T132935525332-review-of-rorp-s5-f1faed9c964e-figure/image-0.png",
+  "reviewed_run_id": "r-20261115T085741072175-rorp-s5",
+  "rubric": "figure",
+  "rubric_items": {
+    "contrast": "fails on one label - the base annotation 'slowest read 14.82 s' renders in #929292 and measures 3.11:1 against white, under the 4.5:1 its 14 pt text needs. The bound label #6b6b6b measures 5.32:1 and the head annotation #2b6cb0 about 5.4:1, so this is the one text below the bar, and it labels the 'before' number the figure exists to show.",
+    "data_ink": "passes - the ink is the plotted reads, one dotted threshold rule and three short labels on white. The marks are the darkest substantial elements and nothing larger or brighter than the record requires is drawn.",
+    "decoration": "passes - no gradient, no background fill, no shaded region, no marker edge or drop shadow. The single vertical rule is dotted and labelled 'five-second bound', so it carries a threshold rather than styling.",
+    "label_collision": "passes - measured on the rendered PNG, no text leaves the 1400x450 canvas (the widest label, the base annotation, ends at x=1245 px) and no two text artists overlap: 'five-second bound' occupies x 491-667, y 62-72, the base annotation x 1048-1245, y 93-106, and the head annotation x 235-420, y 240-253, which ends 56 px short of the bound rule and 21 px above the head marks. The merging of coincident marks is a data-visibility defect recorded as its own finding, not a text collision.",
+    "legibility": "passes - judged from the rendered 1400x450 PNG: two rows, 'base' above 'head', labelled at the left edge, with the axis reading 'read wall time [s]' and ticks every 2 s. Every head mark lies left of the dotted five-second bound and every base mark lies right of it, and each arm is annotated with its slowest read, so which revision is faster and by how much reads in one glance. The head row draws two marks for five reads and the base row three (recorded as a finding); that costs the recoverable sample size, not the comparison.",
+    "table_form": "passes - five repeated reads per arm set against one threshold is a distribution-against-a-bound question. The dot plot shows the side of the bound each arm falls on and the spread within each arm; a table of ten timings would carry the bound relation less directly."
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T13:50:39.342606+00:00",
+  "total": null
+}
