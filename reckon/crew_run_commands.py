@@ -3766,6 +3766,231 @@ def crew_complete(
     _emit_crew_result(result, pretty)
 
 
+@crew.command(name="declare-gate")
+@click.option("--run", "run_id", required=True, help="Run whose gate is declared.")
+@click.option(
+    "--command",
+    default="",
+    help="The suite command this run's arms ran with, when it differs from the "
+    "project's armed command.",
+)
+@click.option(
+    "--partition",
+    default="",
+    help="The scheduler partition this run's arms ran on, e.g. betelgeuse.",
+)
+@click.option(
+    "--long-partition",
+    default="",
+    help="The partition a bound past an hour takes; defaults to the project's.",
+)
+@click.option(
+    "--reason",
+    callback=_refuse_a_flag_as_a_reason,
+    default="",
+    metavar="REASON",
+    help="Why this run's gate differs from the project's declaration.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_declare_gate(
+    run_id: str,
+    command: str,
+    partition: str,
+    long_partition: str,
+    reason: str,
+    pretty: bool,
+) -> None:
+    """Declare the command and partition a run's gate arms run with.
+
+    A run whose arms are only comparable on a partition the project's own
+    declaration does not name states them here. Promotion compares the run's
+    recorded arms against this declaration and, when they cannot be used,
+    measures with the declared command on the declared partition rather than
+    the project's. The declaration is written on the run's live pointer, so the
+    promotion and the landing that follow it read it, and it is retired with
+    the run when the run lands.
+    """
+    if not str(command).strip() and not str(partition).strip():
+        raise click.UsageError(
+            "--declare-gate requires at least one of --command and --partition"
+        )
+    from reckon.crew import runs as runs_module
+    from reckon.crew.promotion_records import (
+        GATE_DECLARATION_KEY,
+        gate_declaration,
+    )
+
+    try:
+        pointer = runs_module.read_pointer(run_id)
+    except Exception as exc:
+        raise click.ClickException(str(exc)) from exc
+    previous = gate_declaration(pointer)
+    declaration = {
+        "command": str(command).strip() or previous.get("command", ""),
+        "partition": str(partition).strip() or previous.get("partition", ""),
+        "long_partition": (
+            str(long_partition).strip() or previous.get("long_partition", "")
+        ),
+        "reason": str(reason).strip(),
+        "declared_at": _utc_now_text(),
+    }
+    runs_module._mutate_pointer(
+        run_id, lambda record: {**record, GATE_DECLARATION_KEY: declaration}
+    )
+    _emit(
+        {
+            "ok": True,
+            "run_id": run_id,
+            "gate_declaration": declaration,
+            "previous": previous,
+        },
+        pretty,
+    )
+
+
+def _utc_now_text() -> str:
+    from datetime import UTC, datetime
+
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+@crew.command(name="record-merge")
+@click.option("--run", "run_id", required=True, help="Run the merge carried.")
+@click.option(
+    "--merge",
+    "merge_sha",
+    required=True,
+    help="The commit on the primary branch that carries the run's reviewed head.",
+)
+@click.option(
+    "--reason",
+    required=True,
+    callback=_refuse_a_flag_as_a_reason,
+    metavar="REASON",
+    help="Why the merge was merged by hand rather than by a landing.",
+)
+@click.option("--outcome", default="", help="One line on what the run produced.")
+@click.option(
+    "--no-impl-change",
+    callback=_refuse_a_flag_as_a_reason,
+    default="",
+    metavar="REASON",
+    help="State why a passing node moved no plan implementation.",
+)
+@click.option(
+    "--accept-path",
+    "accepted_paths",
+    type=(str, str),
+    default=(),
+    multiple=True,
+    metavar="PATH REASON",
+    help="Ratify one deliberate companion path the run wrote.",
+)
+@click.option(
+    "--checkout-path",
+    default=None,
+    type=click.Path(path_type=Path),
+    help="Repo root whose ledger receives the record.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_record_merge(
+    run_id: str,
+    merge_sha: str,
+    reason: str,
+    outcome: str,
+    no_impl_change: str,
+    accepted_paths,
+    checkout_path: Path | None,
+    pretty: bool,
+) -> None:
+    """Record a run through a merge already on the primary branch.
+
+    A reviewed head the lead landed by hand is on the branch before any
+    promotion can merge it, and the run it belongs to is left live: its
+    pointer, worktree and claims stay held, the section it delivered stays
+    blocked, and a pending landing record can resurrect the pointer. This
+    records the run exactly as a landing would — the ledger row, the release
+    and the waiters the section releases — naming the merge that carried it,
+    and measures no suite delta because the branch already carries the change.
+    """
+    from reckon.crew import merge as merge_module
+    from reckon.crew import pending_landing
+    from reckon.crew import runs as runs_module
+
+    crew_module, _ = _crew_modules()
+    try:
+        pointer = runs_module.read_pointer(run_id)
+    except Exception as exc:
+        raise click.ClickException(str(exc)) from exc
+    repository = str(pointer.get("repo") or "").strip()
+    if not repository:
+        raise click.ClickException(
+            f"run {run_id!r} names no repository to resolve the merge in"
+        )
+    repo = Path(repository).expanduser()
+    # The head a review read is the promoted revision where the run recorded
+    # one; a run promoted only by hand has not recorded it yet, so the tree the run
+    # delivers names its own head, which is the revision the merge must carry.
+    from reckon.crew.promotion_records import _run_head
+
+    cited_head = _reviewed_head_of(pointer)
+    if not cited_head:
+        try:
+            cited_head = _run_head(pointer)
+        except Exception:  # noqa: BLE001 - an unreadable tree has no head either
+            cited_head = ""
+    try:
+        merge_revision = merge_module._rev_parse(repo, str(merge_sha))
+        head = merge_module._rev_parse(repo, cited_head)
+    except merge_module.MergeError as exc:
+        raise click.ClickException(str(exc)) from exc
+    if not head:
+        raise click.ClickException(
+            f"run {run_id!r} records no reviewed head, so no merge can have carried it"
+        )
+    if not merge_revision:
+        raise click.ClickException(f"merge {merge_sha!r} resolves to no commit")
+    if not merge_module._is_ancestor(repo, head, merge_revision):
+        raise click.ClickException(
+            f"merge {merge_revision} does not carry the run's reviewed head "
+            f"{head}; record the merge that merged that head"
+        )
+    if not merge_module._is_ancestor(repo, merge_revision, "HEAD"):
+        raise click.ClickException(
+            f"merge {merge_revision} is not on the local primary branch; push "
+            "or fetch it first"
+        )
+    runs_module._mutate_pointer(
+        run_id,
+        lambda record: {
+            **record,
+            "recorded_merge": merge_revision,
+            "recorded_merge_reason": str(reason).strip(),
+        },
+    )
+    # The pending record a landing would write is retired before the promotion,
+    # so a landing pass cannot resurrect a pointer this recording deletes.
+    pending_landing.clear_pending(run_id)
+    try:
+        result = crew_module.complete(
+            run_id,
+            gate="passed",
+            commits=(merge_revision,),
+            outcome=str(outcome).strip() or f"landed by hand in {merge_revision}",
+            root=checkout_path,
+            no_impl_change=no_impl_change,
+            accepted_paths=dict(accepted_paths),
+            require_gate_check=False,
+        )
+    except Exception as exc:
+        raise click.ClickException(str(exc)) from exc
+    pending_landing.clear_pending(run_id)
+    _emit_crew_result(
+        {"ok": True, "run_id": run_id, "recorded_merge": merge_revision, **result},
+        pretty,
+    )
+
+
 def _refuse_a_landing_without_its_pointer(run_id: str) -> None:
     from reckon.crew import pending_landing, runs
 
