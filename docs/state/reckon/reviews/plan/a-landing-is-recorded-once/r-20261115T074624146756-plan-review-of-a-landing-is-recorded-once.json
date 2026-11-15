@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T08:07:27.894Z",
+  "dispatched_at": "2026-11-15T07:47:32Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-landing-is-recorded-once.html:61",
+      "id": "done_when-1",
+      "reason": "without a case for a run that does write a fragment, the node's gate passes with the duplication this plan exists to remove still in place.",
+      "text": "the deliverable clause \"a landing no longer splices one into the plan's landed record\" has no case that can fail: the only landed-record case is a promotion without a fragment leaving the record byte-identical, and a record with no fragment directory composes to its own bytes already, so that case passes on the unmodified code; the record is composed on read rather than at promotion (reckon/serve.py:2705) and the composer appends the body of every fragment under the plan's fragment directory while returning the record's own bytes byte-identical when that directory is absent (reckon/evidence.py:714-:759), so the case the change newly permits (a node writing the now-optional fragment) is the one case the done-when does not cover",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-is-recorded-once.html:60",
+      "id": "reasoning-1",
+      "reason": "\u00a76's case can only pass if \u00a73's permitted sources and cases are widened to include the fragment link, which is a \u00a73 edit the plan does not currently specify.",
+      "text": "\u00a76 requires \"the closure overview of \u00a73 links it from that node's row\", but \u00a73's deliverable at docs/plans/a-landing-is-recorded-once.html:44 fixes the overview's sources as a commit, a run id, a gate command with its exit status, a gate log path or a figure path, with no fragment path among them, and \u00a73's done-when has no case for a fragment link; \u00a73's \"reads no fragment\" is consistent with linking, but no node is asked to render the link, so a \u00a73 node builds none and \u00a76's case then fails on a dependency's omission",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-is-recorded-once.html:61",
+      "id": "done_when-2",
+      "reason": "the plan must name the literal clauses to remove and require the search to find them at the base revision, or this half of the done-when proves nothing.",
+      "text": "\"a search of the skill files for a required fragment and for the per-landing splice returns none\" is not a measurable case: the requirement is a semantic property rather than a string, it is stated in five places across four files in four different wordings (skills/reckon-build/SKILL.md:337, skills/reckon-build/references/worker-protocol.md:215, skills/reckon-build/references/sprint-orchestration.md:420 and :510, skills/reckon-build/references/coordinator-reference.md:821), and the token also matches prose with nothing to do with it (skills/reckon-build/references/orchestrator-harness/claude-code.md:346-:360, and \"do not fragment context\" at coordinator-reference.md:694), so any pattern the implementer picks returns none even if the requirement survives in wording it did not search for; the case also carries no negative control",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-is-recorded-once.html:35",
+      "id": "reasoning-2",
+      "reason": "\u00a71 is read as context by every node, and a coordinator reading the deferral will hold \u00a76 out of the dispatch set the declaration map admits.",
+      "text": "\u00a71 still reads \"This plan is a draft, built only when the lead adopts it\" and \"\u00a76 is deferred until the first decision is settled\", while this unit's own change sets plan-status to active, locks both decisions on 2026-11-15, and marks s6 implementable with \u00a76 stating both are settled; the followup body repeats the deferral",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "6c160b2e64b5ebac64da06ef18d038f181f3c861",
+  "plan_fingerprint": "8e891df4c4386892f87bbc5a8db1faaacc7da0e111efa5f1fd7a4d1e2967f440",
+  "plan_slug": "a-landing-is-recorded-once",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261115T074624146756-plan-review-of-a-landing-is-recorded-once",
+  "reviewed_blob_sha": "836c32832825e70bdc68cc804b74c00b7d8cdcb5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited research document, the plan it names, and the `reckon audit-doc` command all resolve; no extensionless href is involved.",
+    "done_when": "a finding \u2014 \u00a76's landed-record case passes on the unmodified code, and its skill-search case cannot fail.",
+    "evidence_paths": "pass \u2014 the changed units place no evidence in a scratchpad or a node-local path; the one live-store count goes to the manifest.",
+    "naming": "pass \u2014 the changed units carry no plan labels, stage names, ticket numbers or version tags into code, and state mechanisms rather than changelog prose.",
+    "reasoning": "a finding \u2014 \u00a76's endpoint needs \u00a73's source vocabulary and cases to cover a fragment link, and \u00a71 still describes a draft with \u00a76 deferred while the document is active with both decisions locked and s6 implementable.",
+    "single_goal": "pass \u2014 \u00a76 carries one deliverable, making the per-node fragment optional; the fragment link it names is \u00a73's output, raised under reasoning as an unbuilt dependency rather than a second deliverable.",
+    "wiring": "pass \u2014 the section dependency map now declares s3\u2192s2 alongside s5\u2192s3 and s6\u2192s3,s4, and every entry resolves to a section that exists; the changed units need no dependency the map lacks."
+  },
+  "section_digests": {
+    "_document": "9faafc6c2943e96089fc434395c2b3879a36546a1af9fee1131863ace5249639",
+    "s1": "643944e30f98fe3b7d1b4817bffd76b5fc4294adfad633bdb56e383d94505f84",
+    "s2": "2d2d44bf749b7916a80e500c8eb68efba5d3e518c2a88d597fdfcf45a78bd746",
+    "s3": "cb9307f1c325e756c27eabb07961d46e42f04f4ea0c48ac0f249c699110cf8b3",
+    "s4": "53fbc9358daa84854d9ee99d8eba8beaf95787d214575b2fed22849911b46558",
+    "s5": "70388ed2fe3a64b08e6ce5b7d84d907144450ecd34194e69c68fb2bdcf1d356b",
+    "s6": "9f3d3c6eac72c67f02c4b6fd937ec4bc670d3f648f72ec0311bdf8e650894768"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T08:12:32.085131+00:00",
+  "total": null
+}
