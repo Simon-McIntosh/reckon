@@ -1,0 +1,65 @@
+<section id="ldop-every-decision-waiting-on-the-lead-is-one-read-codex">
+  <h2>Open lead decisions across mounted projects</h2>
+  <p>The shared crew home now stores a decision's question, context, options,
+  recommendation, owning project/session/plan/section, recording time and held
+  work. <code>reckon crew decision record --record FILE</code> creates a record;
+  <code>reckon crew view decisions</code> and <code>crew(view="decisions")</code>
+  read the same ordered document. <code>--project</code> narrows the read.</p>
+  <p>The first head gate passed <strong>70 tests</strong> on
+  <code>all_debug</code>, including three records across two mounted projects
+  holding <strong>4, 1 and 0</strong> named requests, returned in that order.
+  An unanswered decision authored only in plan HTML appears with its plan and
+  section; answered decisions do not appear. Launched or missing requests do
+  not inflate held work. The ranking counts distinct waiting requests plus
+  declared held sections.</p>
+  <p>Plan-only decisions do not store a recording timestamp or owning session.
+  The read reports that timestamp as null, carries the plan's modified date
+  separately, and derives an owning session only when its matching held
+  requests agree. These unknown values are preserved explicitly.</p>
+  <p>The base inventory gate at <code>b46256908fc3eac1a5b4f4dc5f21ec0740feee34</code>
+  passed <strong>58 tests</strong>. The negative control failed at its first
+  aggregate read: <code>crew read views need project</code>, with
+  <code>EXIT=1</code>. The full red receipt is in
+  <a href="/reckon/evidence/fragments/lead-decisions-reach-one-place/s1.html">the negative-control receipt</a>.
+  Durable gate logs and the final committed-head measurement are recorded in
+  the run manifest.</p>
+  <p>Implementation commit: <code>3b61cc99db3ebc2ca3b720098c9adb46576c55c8</code>.
+  Hold enforcement, authorised answering and presenting decisions remain with
+  their dependent nodes; this delivery creates and reads the shared records.</p>
+</section>
+
+<section id="ldop-every-decision-waiting-on-the-lead-is-one-read-codex-repair">
+  <h2>Decision states, release context and provenance</h2>
+  <p>The updated read separates ready <code>decisions</code>, <code>pending</code>
+  questions and <code>taken_and_reversible</code> choices. A pending record names
+  a run or gate in <code>pending_on</code>; only its own recorded result makes it
+  ready. Missing pointers and partial or foreign exit records do not release it.
+  A reversible choice retains its <code>standing_rule</code> and stays apart
+  from ready questions. An authored plan answer also suppresses a crew record
+  linked through <code>decision_key</code>.</p>
+  <p>The read retains <code>held_runs</code>, <code>risk</code>,
+  <code>lead_action</code>, <code>recommended_by</code> and
+  <code>recommendation_source</code>. The existing plan-coordinator resolver
+  supplies <code>owner_session</code>, <code>plan_owner</code> and
+  <code>plan_has_live_session</code>, including plans with no queued request.
+  Recommendation provenance distinguishes the owner from a reviewing session;
+  an ended owner is retained as historical ownership with liveness false.</p>
+  <p>Option spelling now goes through the plan store's
+  <code>_decision_options_as_choices</code>. The crew wrapper adds strict count,
+  uniqueness, label and recommendation checks. Question and context assertions
+  compare against independent authored fixtures.</p>
+  <table>
+    <thead><tr><th>Measurement on all_debug</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Updated contract against reviewed product</td><td>8 failed, 18 passed in 2.58s</td></tr>
+      <tr><td>Repaired contracts and coordinator resolver checks</td><td>41 passed in 5.39s</td></tr>
+      <tr><td>Answering product delta reversed in scratch, final tests retained</td><td>12 failed, 18 passed; EXIT=1</td></tr>
+      <tr><td>Constant question/context mutation, repaired oracle</td><td>1 failed; EXIT=1</td></tr>
+      <tr><td>Same mutation, reviewed oracle</td><td>1 passed; EXIT=0</td></tr>
+    </tbody>
+  </table>
+  <p>Commit <code>8e614eba94c82082d124368c7841e58400d5021b</code>
+  answers all five review findings. Scratch controls preserve their observed
+  imported module path and working directory in the run's receipts. Final
+  inventory arms and per-finding answers are recorded in the manifest.</p>
+</section>
