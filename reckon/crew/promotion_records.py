@@ -1150,13 +1150,6 @@ def _a_held_arm_pair(baseline: Any, after: Any) -> bool:
     return True
 
 
-def _only_command_mismatch(missing: Sequence[str]) -> bool:
-    """Whether the only missing fields are arm commands differing from the arming."""
-    return bool(missing) and all(
-        field.endswith(".command_matches_suite_command") for field in missing
-    )
-
-
 def _record_arm_waiver(
     run_id: str,
     reason: str,
@@ -1372,19 +1365,12 @@ def _evaluate_suite_delta(
                     ),
                 }
             measured_arms = None
-        elif not gate_declaration(record).get("command") and _only_command_mismatch(
-            missing
-        ):
-            # The pair is present and complete; only its commands differ from
-            # the one the run was armed with. That is decidable from the record
-            # alone, and re-running the armed command here would submit a
-            # scheduler job over a question the run has already answered
-            # differently, so the refusal is reported without measuring. A run
-            # that declared the command its arms ran with takes the measurement
-            # path below instead, against the declared command and partition,
-            # which is the supported rescue.
-            measured_arms = None
         else:
+            # A pair whose commands differ from the one the run was armed with
+            # is measured here like a missing pair: the landing runs the armed
+            # command at the base and at the head itself, so a worker that
+            # gated on its own focused tests does not cost its coordinator a
+            # waiver, and the comparison the gate makes is unchanged.
             declaration = gate_declaration(record)
             measured_arms = _measure_missing_arms(
                 run_id,
