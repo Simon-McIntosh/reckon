@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "95e326837030014930f547287b74f5dc5e068601",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:2391 _session_fleet_counts",
+    "reckon/crew/recovery_watch.py:3649 _watch_transition in the producer tick",
+    "reckon/crew/recovery_watch.py:2955 _session_counts",
+    "reckon/crew/admission/holds.py:456 admission row",
+    "reckon/crew/runs.py:3626 _stream_transition",
+    "reckon/crew/station.py:1050 station tick row",
+    "reckon/crew/ticker.py:3716 Ticker._stats reached from reckon/crew/recovery_watch.py:3048 format_watch_transition and reckon/crew_follow_commands.py:3709"
+  ],
+  "completed_at": "2026-11-15T00:31:09.997Z",
+  "dispatched_at": "2026-11-14T23:34:22Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "829",
+      "severity": "non-blocking",
+      "text": "non-blocking: _repair_attempt_live duplicates the capability reckon/crew/obligations.py:1653 already owns as _repair_round_in_flight over the same REPAIR_DISPATCH_FIELD and REPAIR_ROUND_OPENING_STATUSES, and the copy drops the owner's round_id requirement, so the pane counter and the coordinator's repair-round duty can disagree about whether a round is in flight; recovery_watch.py:551 already imports obligations lazily so the owner is reachable."
+    },
+    {
+      "file": "tests/test_the_pane_counts_reviews_under_r.py",
+      "line": "115",
+      "severity": "non-blocking",
+      "text": "non-blocking: the repair case supplies repair_in_flight=True from the fixture rather than driving a pointer through reckon/crew/recovery_watch.py:1531, so if _compute_watch_snapshot stopped writing the field every test in the file stays green while the pane silently counts a repairing run as delivered again, which is the regression the case exists to catch."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174432779393-pane-counts-reviews-under-r-s136/manifest.md",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "non-blocking: baseline_suite and after_suite both carry the literal \"<the 169 modules in arms/population.txt>\" inside their command field and the tests line at :14 names a test file with a parenthetical instead of the command a shell was handed, so the gate receipt promotion fills from these lines can be refused even though the full command is on the logs' own command: header lines."
+    }
+  ],
+  "head_log_revision": "4fb8ca2bd6488ab73e4c177c6ff0d2a0c397f248",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read commit by commit against base 95e3268370 \u2014 ce7c3bbb2e adds the reviewing and repairing partitions plus the repair_in_flight snapshot field and the fifth cell; c423bfae0d reads each state off its own snapshot instead of a parallel zip list; 4fb8ca2bd6 moves 17 test modules from the four-cell to the five-cell literals and widens two 200-column fixtures by four; d10e7170eb adds the 27-line evidence fragment, and no other file is touched.",
+    "done_when": "the done_when names tests/test_the_pane_counts_reviews_under_r.py covering three cases plus a base arm, a negative control and a 169-module population; the manifest records base 7 failed (arms/base.log, 95e3268370) and after 7 passed (arms/after.log, 4fb8ca2bd6), the negative control at 2 failed EXIT=1 (arms/negative.log), and the population at 52 versus 43 failure ids (arms/pop-base.log, arms/pop-head2.log), which I re-derived from the two id files as 0 added and 9 fixed.",
+    "goal": "the goal is to count review runs under their own r cell and a run in repair as working; reckon/crew/recovery_watch.py:1882-1896 splits the working figure by REVIEW_ROLE and adds back a delivered run whose pointer records an opening repair round, and reckon/crew/ticker.py:707-745 draws the fifth cell as in review / r after w.",
+    "manifest": "read; status complete, four commits ce7c3bbb2e/c423bfae0d/4fb8ca2bd6/d10e7170eb, changed_paths naming all 22 files, test_logs naming five arm logs, baseline_suite and after_suite both completed with failure ids, and negative_control_note stating the role split was pinned to zero and cost 2 failures.",
+    "write_paths": "the dispatch fence listed six paths (reckon/crew/recovery_watch.py, reckon/crew/ticker.py, skills/reckon-build/SKILL.md, the new test, the evidence fragment and a figures directory); git diff --stat 95e3268370..d10e7170eb changes those five files plus 17 test modules whose four-cell literals moved to the five-cell form, every one of them named in the manifest's changed_paths and authorised by the plan's done-when sentence about pinned four-cell literals."
+  },
+  "justifications": {
+    "durability": "tests/test_the_pane_counts_reviews_under_r.py:115 asserts counts[\"working\"] == 1 for a delivered run with repair_in_flight=True, which reddens if the repairing term is removed from reckon/crew/recovery_watch.py:1891, but the fixture supplies that flag itself so the producer wiring at recovery_watch.py:1531 is unguarded.",
+    "evidence": "arms/negative.log reads \"F.F....\" with \"2 failed, 5 passed\" and EXIT=1 for the role split pinned to zero, arms/base.log reads seven failures at 95e3268370, and arms/after.log reads \"7 passed\" EXIT=0 at 4fb8ca2bd6, while the manifest's tests line states a test file rather than the command that ran.",
+    "fit": "the added code states mechanisms in the surrounding voice at reckon/crew/recovery_watch.py:829-841 and reckon/crew/ticker.py:718-731 with no plan, sprint or ticket identifier and no attribution, and the conditionally emitted reviewing key follows the existing waiting key's pattern.",
+    "goal_fidelity": "reckon/crew/recovery_watch.py:1882-1896 splits working by role and adds a repairing delivered run back to working, and reckon/crew/ticker.py:707-745 plus skills/reckon-build/SKILL.md:552-559 carry the r cell, its letter and its glossary entry.",
+    "reuse": "reckon/crew/recovery_watch.py:829 _repair_attempt_live re-implements reckon/crew/obligations.py:1653 _repair_round_in_flight, the repository's existing owner of the same predicate over the same two constants, without extending it, with a different answer for a record carrying an opening status and no round_id.",
+    "scope_discipline": "git diff --stat 95e3268370..d10e7170eb touches only the five fenced files plus the 17 test modules the plan's done-when authorises for the four-cell literal change, and every path is listed in the manifest's changed_paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to count review runs under their own r cell and a run in repair as working; reckon/crew/recovery_watch.py:1882-1896 splits the working figure by REVIEW_ROLE and adds back a delivered run whose pointer records an opening repair round, and reckon/crew/ticker.py:707-745 draws the fifth cell as in review / r after w.\nVERDICT done_when: the done_when names tests/test_the_pane_counts_reviews_under_r.py covering three cases plus a base arm, a negative control and a 169-module population; the manifest records base 7 failed (arms/base.log, 95e3268370) and after 7 passed (arms/after.log, 4fb8ca2bd6), the negative control at 2 failed EXIT=1 (arms/negative.log), and the population at 52 versus 43 failure ids (arms/pop-base.log, arms/pop-head2.log), which I re-derived from the two id files as 0 added and 9 fixed.\nVERDICT write_paths: the dispatch fence listed six paths (reckon/crew/recovery_watch.py, reckon/crew/ticker.py, skills/reckon-build/SKILL.md, the new test, the evidence fragment and a figures directory); git diff --stat 95e3268370..d10e7170eb changes those five files plus 17 test modules whose four-cell literals moved to the five-cell form, every one of them named in the manifest's changed_paths and authorised by the plan's done-when sentence about pinned four-cell literals.\nVERDICT manifest: read; status complete, four commits ce7c3bbb2e/c423bfae0d/4fb8ca2bd6/d10e7170eb, changed_paths naming all 22 files, test_logs naming five arm logs, baseline_suite and after_suite both completed with failure ids, and negative_control_note stating the role split was pinned to zero and cost 2 failures.\nVERDICT diff: read commit by commit against base 95e3268370 \u2014 ce7c3bbb2e adds the reviewing and repairing partitions plus the repair_in_flight snapshot field and the fifth cell; c423bfae0d reads each state off its own snapshot instead of a parallel zip list; 4fb8ca2bd6 moves 17 test modules from the four-cell to the five-cell literals and widens two 200-column fixtures by four; d10e7170eb adds the 27-line evidence fragment, and no other file is touched.\nCALL_SITES: reckon/crew/recovery_watch.py:2391 _session_fleet_counts, reckon/crew/recovery_watch.py:3649 _watch_transition in the producer tick, reckon/crew/recovery_watch.py:2955 _session_counts, reckon/crew/admission/holds.py:456 admission row, reckon/crew/runs.py:3626 _stream_transition, reckon/crew/station.py:1050 station tick row, reckon/crew/ticker.py:3716 Ticker._stats reached from reckon/crew/recovery_watch.py:3048 format_watch_transition and reckon/crew_follow_commands.py:3709\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_watch.py:1882-1896 splits working by role and adds a repairing delivered run back to working, and reckon/crew/ticker.py:707-745 plus skills/reckon-build/SKILL.md:552-559 carry the r cell, its letter and its glossary entry.\nSCORE evidence: 16\nJUSTIFICATION evidence: arms/negative.log reads \"F.F....\" with \"2 failed, 5 passed\" and EXIT=1 for the role split pinned to zero, arms/base.log reads seven failures at 95e3268370, and arms/after.log reads \"7 passed\" EXIT=0 at 4fb8ca2bd6, while the manifest's tests line states a test file rather than the command that ran.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: git diff --stat 95e3268370..d10e7170eb touches only the five fenced files plus the 17 test modules the plan's done-when authorises for the four-cell literal change, and every path is listed in the manifest's changed_paths.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_the_pane_counts_reviews_under_r.py:115 asserts counts[\"working\"] == 1 for a delivered run with repair_in_flight=True, which reddens if the repairing term is removed from reckon/crew/recovery_watch.py:1891, but the fixture supplies that flag itself so the producer wiring at recovery_watch.py:1531 is unguarded.\nSCORE fit: 18\nJUSTIFICATION fit: the added code states mechanisms in the surrounding voice at reckon/crew/recovery_watch.py:829-841 and reckon/crew/ticker.py:718-731 with no plan, sprint or ticket identifier and no attribution, and the conditionally emitted reviewing key follows the existing waiting key's pattern.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/recovery_watch.py:829 _repair_attempt_live re-implements reckon/crew/obligations.py:1653 _repair_round_in_flight, the repository's existing owner of the same predicate over the same two constants, without extending it, with a different answer for a record carrying an opening status and no round_id.\nFINDING reckon/crew/recovery_watch.py:829 non-blocking: _repair_attempt_live duplicates the capability reckon/crew/obligations.py:1653 already owns as _repair_round_in_flight over the same REPAIR_DISPATCH_FIELD and REPAIR_ROUND_OPENING_STATUSES, and the copy drops the owner's round_id requirement, so the pane counter and the coordinator's repair-round duty can disagree about whether a round is in flight; recovery_watch.py:551 already imports obligations lazily so the owner is reachable.\nFINDING tests/test_the_pane_counts_reviews_under_r.py:115 non-blocking: the repair case supplies repair_in_flight=True from the fixture rather than driving a pointer through reckon/crew/recovery_watch.py:1531, so if _compute_watch_snapshot stopped writing the field every test in the file stays green while the pane silently counts a repairing run as delivered again, which is the regression the case exists to catch.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174432779393-pane-counts-reviews-under-r-s136/manifest.md:17 non-blocking: baseline_suite and after_suite both carry the literal \"<the 169 modules in arms/population.txt>\" inside their command field and the tests line at :14 names a test file with a parenthetical instead of the command a shell was handed, so the gate receipt promotion fills from these lines can be refused even though the full command is on the logs' own command: header lines.",
+  "review_run_id": "r-20261114T215518084949-review-of-pane-counts-reviews-under-r-s136-d10e7170eb4a",
+  "reviewed_base_sha": "95e326837030014930f547287b74f5dc5e068601",
+  "reviewed_head_sha": "d10e7170eb4a60e2642386f042df1fa4f0db7095",
+  "reviewed_run_id": "r-20261114T174432779393-pane-counts-reviews-under-r-s136",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261114T215518084949-review-of-pane-counts-reviews-under-r-s136-d10e7170eb4a"
+  },
+  "reviewer_run_id": "r-20261114T215518084949-review-of-pane-counts-reviews-under-r-s136-d10e7170eb4a",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T00:43:32.337184+00:00",
+  "total": 90
+}
