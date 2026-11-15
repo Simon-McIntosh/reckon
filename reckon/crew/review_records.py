@@ -634,13 +634,16 @@ def _record_reads_complete(record: Mapping[str, Any]) -> bool:
     :func:`_review_is_complete`, and it is imported at call time because that
     module reads this store and a module-level edge would close a cycle.
 
-    The same read-time total derivation :func:`read_review` applies is applied
-    first, so a record whose six scores were stored without a total is judged
-    complete exactly as the gate will later read it.
+    Two read-time foldings are applied before that predicate judges the record:
+    the total derivation :func:`read_review` applies, so a record whose six
+    scores were stored without a total is judged exactly as the gate will later
+    read it; and :func:`reckon.crew.review.with_canonical_claims`, so a claims
+    record written by hand under the other verdict spelling ranks as complete
+    here rather than being passed over for an incomplete sibling.
     """
     from reckon.crew.recovery_review_subject import _review_is_complete
 
-    candidate = record
+    candidate = _review.with_canonical_claims(record)
     if not _review._has_integer_total(candidate):
         candidate = _review._derive_landed_total(candidate)
     return _review_is_complete(candidate)

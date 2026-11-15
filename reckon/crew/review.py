@@ -428,10 +428,13 @@ CLAIM_VERDICT_FIELDS: tuple[str, ...] = ("claims", "claim_verdicts")
 # missing. The rule itself is not restated here: a second copy of it would
 # answer differently from the one the promotion reader applies, and a record
 # admitted by one and refused by the other is a review whose fate depends on
-# which reader asks.
+# which reader asks. The ``claims`` entry carries a ``{claims}`` placeholder
+# because how many verdicts are owed is not actionable on its own: the refusal
+# names the ranked claims the record left unanswered, so a reviewer re-runs
+# those rather than guessing which of the report's claims it skipped.
 CLAIMS_MISSING_MESSAGES: dict[str, str] = {
     "claims": (
-        "review record carries too few claim verdicts: a claims review records one "
+        "review record carries no verdict for {claims}: a claims review records one "
         "`CLAIM <n>: <verdict>: <what the re-run showed>` line for each claim it "
         "is asked to check, ranked from 1, and the record owes "
         f"{CLAIMS_REQUIRED} of them — re-run the claims it skipped and store the "
@@ -1029,6 +1032,41 @@ def store_review_refusals(record: Mapping[str, Any]) -> list[str]:
     return refusals
 
 
+def missing_claim_ranks(record: Mapping[str, Any]) -> list[str]:
+    """The ranked claims a claims record carries no verdict for, in rank order.
+
+    A claims review answers the report's top ``CLAIMS_REQUIRED`` ranked claims,
+    so a skipped re-run is named by the rank it left out. Both spellings of a
+    claim's identity answer a rank — the ``CLAIM <n>`` line's rank and the id a
+    structured record may carry instead — because a claim that states its id is
+    still a claim the reviewer answered. The record must already carry its
+    verdicts under the canonical key; :func:`with_canonical_claims` folds them
+    first.
+    """
+    claims = record.get("claims")
+    answered: set[str] = set()
+    if isinstance(claims, list):
+        for claim in claims:
+            if not isinstance(claim, Mapping):
+                continue
+            for key in ("rank", "id"):
+                value = claim.get(key)
+                if value is not None and not isinstance(value, bool):
+                    text = str(value).strip().lstrip("#")
+                    if text:
+                        answered.add(text)
+    return [
+        str(rank) for rank in range(1, CLAIMS_REQUIRED + 1) if str(rank) not in answered
+    ]
+
+
+def _claims_owed_phrase(record: Mapping[str, Any]) -> str:
+    """How a refusal names the claims a record left unanswered."""
+    ranks = missing_claim_ranks(record)
+    label = "claim" if len(ranks) == 1 else "claims"
+    return f"{label} {', '.join(ranks)}"
+
+
 def claims_verdict_refusals(record: Mapping[str, Any]) -> list[str]:
     """The refusals a claims record earns for a measure it left unanswered.
 
@@ -1039,7 +1077,9 @@ def claims_verdict_refusals(record: Mapping[str, Any]) -> list[str]:
     here and refused at promotion is a review whose fate depends on which reader
     asks: it passes its delivery check and then cannot land. So this function
     calls that rule rather than restating it, and every refusal it returns names
-    one of the measures the stored record is missing.
+    one of the measures the stored record is missing — and, for the verdicts
+    themselves, the ranks of the claims left unanswered, so the refusal says
+    which re-run is owed.
 
     The rule is imported at call time because the module that owns it reads this
     one, and a module-level edge would close a cycle. A measure it reports that
@@ -1052,9 +1092,13 @@ def claims_verdict_refusals(record: Mapping[str, Any]) -> list[str]:
     from .recovery_review_subject import _claims_missing_measures
 
     canonical = with_canonical_claims(record)
-    return [
-        CLAIMS_MISSING_MESSAGES[name] for name in _claims_missing_measures(canonical)
-    ]
+    refusals: list[str] = []
+    for name in _claims_missing_measures(canonical):
+        message = CLAIMS_MISSING_MESSAGES[name]
+        if name == "claims":
+            message = message.format(claims=_claims_owed_phrase(canonical))
+        refusals.append(message)
+    return refusals
 
 
 def review_record_refusals(record: Mapping[str, Any]) -> list[str]:
