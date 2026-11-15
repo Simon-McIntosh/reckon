@@ -164,6 +164,11 @@ def test_snapshot_notices_use_the_followers_existing_output_channel(
         for kind, line in (
             ("producer-lost", "producer snapshot-fixture lost; re-arm with the remedy"),
             ("producer-restored", "producer snapshot-fixture restored"),
+            (
+                "producer-slow",
+                "producer snapshot-fixture slow: its tick has run 9m0s, "
+                "so no restart is needed",
+            ),
         )
     ]
     monkeypatch.setattr(follow, "_follow_watch_lines", lambda *a, **kw: iter(events))
@@ -176,6 +181,8 @@ def test_snapshot_notices_use_the_followers_existing_output_channel(
     assert result.exit_code == 0, result.output
     for event in events:
         assert event["line"] in result.stdout
+    # A notice names no run, so it is never painted as a run's transition.
+    assert "unknown" not in result.stdout, result.stdout
     assert not result.stderr
 
 

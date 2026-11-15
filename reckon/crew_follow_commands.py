@@ -3783,9 +3783,11 @@ def crew_follow(
                 FOLLOWER_PRODUCER_RELOADING_EVENT,
                 "producer-lost",
                 "producer-restored",
+                "producer-slow",
             ):
                 # Producer health notices carry a sentence, not a run's
-                # transition. JSON retains the age, code stamps and remedy;
+                # transition: painted as one, a notice with no run, node, state
+                # or time drew "unknown new -> help". JSON retains the age, code stamps and remedy;
                 # text prints the sentence. A reload inside its window marks
                 # pane_line false until host-specific advice is owed.
                 pane_line = bool(event.pop("pane_line", True))
