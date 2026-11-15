@@ -1,0 +1,82 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T16:54:30.725Z",
+  "dispatched_at": "2026-11-15T16:54:10Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-tells-the-truth-under-load/r-20261115T165202153897-plan-review-of-the-monitor-tells-the-truth-under-load/plan.html:65",
+      "id": "done_when-1",
+      "reason": "a node handed this done-when writes green-at-base tests for the clauses that already work and re-pins existing behaviour instead of showing the one guard that does not fire, so the section's gate would prove nothing about the review arm that actually reproduces.",
+      "text": "four of \u00a74's five criteria already hold at base: `tests/test_a_launch_stopped_at_its_claim_is_redispatched.py` passes at HEAD b4625690, asserting the `launch-failed` classification with \"stranded launch\" in the detail, the claim release, and that a launch inside the bound stays `starting`; `tests/test_a_run_stuck_before_launch_is_reported.py` passes too. Only the review arm fails (`tests/test_stranded_launch_releases_its_claim.py::test_the_reflex_releases_a_stranded_review_and_composes_again` FAILED \"assert not True\", and `::test_the_reflex_leaves_a_young_review_in_flight` FAILED because the reflex is not reached \u2014 2 failed, 9 passed at base). So \"New tests, each failing at the base revision\" cannot hold for the release, the redispatch and the within-bound clauses the section leads with",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-tells-the-truth-under-load/r-20261115T165202153897-plan-review-of-the-monitor-tells-the-truth-under-load/plan.html:145",
+      "id": "done_when-2",
+      "reason": "only the condition-based end and the state-change release can fail at base, so the section must say which clause the failing test is owed for, or the node spends its two points re-asserting the acknowledgement block the base already has.",
+      "text": "two of \u00a712's four clauses already hold at base: `reckon/crew/obligations.py` builds an `acknowledged` list with each deferred duty's `reason` and `until` and excludes it from `owed` (`_partition_acknowledged` at :1659, emitted at :4297, and the hook reads it at `reckon/hooks/coordinator_obligations.py:1692`), and `_acknowledgements_in_force` stops returning a record whose `until` has passed so the duty returns to the open list \u2014 both are the behaviour \u00a712 asks a new failing test for",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-tells-the-truth-under-load/r-20261115T165202153897-plan-review-of-the-monitor-tells-the-truth-under-load/plan.html:81",
+      "id": "single_goal-1",
+      "reason": "a worker reads an empty criterion slot as an unfinished deliverable and either drops it silently or invents a fourth criterion, and the plan's own statement of what \u00a75 closes on is left ambiguous.",
+      "text": "\u00a75's done-when list ends with an empty `<li>` where the held-on-purpose criterion was removed when \u00a712 took it, while \u00a75's Why still lists \"could not mark an obligation as held on purpose\" among its four defects, so the section declares four defects and shows three criteria plus a blank",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-tells-the-truth-under-load/r-20261115T165202153897-plan-review-of-the-monitor-tells-the-truth-under-load/plan.html:64",
+      "id": "reasoning-1",
+      "reason": "the stated cause points the node at the reap path that already exists and works, when the surviving defect is on the review's release, so a node that implements to the Why builds what is already there.",
+      "text": "\u00a74's Why says such a pointer \"stayed starting forever\" and its remedy is a first read through `reckon/crew/recovery_classification.py`, but at base `recovery_liveness._stranded_launch` (:757) and `queue_admission._release_stranded_launches` already date such a launch from its claim and release it, which the base-passing redispatch test demonstrates; what the base does not do is release the review arm, whose reflex test fails",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "e94cc93c117fd3fae020c9aa5a8fc76618ddaf0b",
+  "plan_fingerprint": "07e14fee0478313118f972f4ce2c2feab8c4ba02a7322e288b8be72d93464a15",
+  "plan_slug": "the-monitor-tells-the-truth-under-load",
+  "plan_version": 6,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261115T165202153897-plan-review-of-the-monitor-tells-the-truth-under-load",
+  "reviewed_blob_sha": "cccfb6ddf6f78af408595a8867f278ce738dd6fe",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 all 15 write-path files cited by the six changed units exist in the repository, `STRANDED_LAUNCH_BOUND_SECONDS` resolves at `reckon/crew/recovery_liveness.py:68` with the value 900 s that matches \u00a74's \"15 minutes or more\", `LAUNCH_CLAIM_STEP = \"claim-published\"` resolves at `reckon/crew/dispatch_claims.py:593`, `crew ack --run/--reason/--until` resolves at `reckon/crew_run_commands.py:1981`, and each of \u00a77's four run ids has a directory under the crew runs root (r-20261114T211231918544, r-20261115T075315275505, r-20261115T081846316772, r-20261114T210059239602).",
+    "done_when": "a finding \u2014 \u00a74's criteria (plan.html:65) and \u00a712's criteria (plan.html:145) each contain clauses that already hold at the base revision, so \"New tests, each failing at the base revision\" cannot be true of them.",
+    "evidence_paths": "pass \u2014 the changed units name their evidence as repository test paths (`tests/test_a_reload_lets_derivations_land.py`, \"a new test\") and write paths under `reckon/`; none of them routes evidence to a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches a symbol, filename or write path in the changed units; the sessions that reported the defects are named only in Why prose as evidence, and \u00a74's \"unlaunched\" is a surface word rather than a tracker reference.",
+    "reasoning": "a finding \u2014 \u00a74's Why (plan.html:64) states that such a launch \"stayed starting forever\" and blames a missing reap, but the base revision already reaps exactly that pointer shape for a station launch, so the stated root cause is wider than the evidence it cites.",
+    "single_goal": "a finding \u2014 \u00a75's done-when (plan.html:81) retains an empty list item where the held-on-purpose criterion was moved to \u00a712, while \u00a75's Why still lists that same defect as one of its four.",
+    "wiring": "pass \u2014 s12 is declared implementable in `plan-section-declarations` (plan.html:23) and split cleanly out of \u00a75, and none of the six changed units names a dependency, `informs` target or gate that fails to resolve; the followup's \u00a73\u2013\u00a711 title shortfall was raised by earlier reviews and its text is unchanged here, so it is not re-raised."
+  },
+  "section_digests": {
+    "_document": "11c929f2d4c02a39a26472a2c211bcb5a572d782e5d7a7ced9eb19e8bba35b5d",
+    "s1": "7df70e005850ec7773b3db8cdf1384c5422e6cbfac994a1cfc3bdeca2fd47ef2",
+    "s10": "b83b287b25ce35ab03c105da8c02eec999809dbdea6073436eae2dc72bb0055d",
+    "s11": "db2972ed7155bc484ac98ce58f8c119ab201e99f5a53c1af54606eb6564a66e4",
+    "s12": "0d00acdae17f9ce83cefc1ce2847110410142b39c7625eccc5ff3ee0624f9fab",
+    "s13": "79271d44153e341633146df7233120d46939c41b1ca66de6bac074c2472ea991",
+    "s14": "c0f58bcc6da33e5ff402ec71bef199b31de1619824a04f6db8d415d9669a38d7",
+    "s15": "3d6257718e450fda1363e42a9394f2cb631579e92f2cf0dbdaca2f25c62d6537",
+    "s16": "9c67ebb9a89d3b566da303e2866877a636f868c501bf32f08ff80e2c7a7f26da",
+    "s17": "229d1aee2b054a2680acdd7883f3d6cd8216513f31305ff21ed874c51b1af3a7",
+    "s18": "4a5429fac53529c64918e90d1bc4d47480e08689bea9601336332ce330c82e49",
+    "s2": "a065d657377c24ca69329c265d4a0a821a0104c7df8d1140dec9c3b9d1c6edf2",
+    "s3": "f3cf9279ee0efc6c6e7b55dede5b9ff68ee3db1e40edd78b825098ecee64d396",
+    "s4": "ff2c4c9ecfe547013a19570642ecbe8bd9445e6d8ec9b183b3ff02230ef7b8d6",
+    "s5": "f14521e661347f2139e77623d7e12a0b11efd6ef47211e67e9582931c96c33e9",
+    "s6": "a8a7d00ef50ab0ca240bc59bb917ff62442d6f3567da095cb913cd5860246056",
+    "s7": "9f299f30b0fda7b1f5bbc9f6d7cf6b936604181068a2c9a8363b64e58ace0fd6",
+    "s8": "30f0e740e2caee5b735cc3bdc83d5eaa23eac7eeaae780899f811d7a1c32956c",
+    "s9": "56c122a4d4057a2e12e9ebbaae0a53fb955938f47dbe9275cdf2dd5566896f78"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T17:03:46.375081+00:00",
+  "total": null
+}
