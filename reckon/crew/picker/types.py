@@ -87,8 +87,8 @@ class Candidate:
     # Whether a flight policy reserves this candidate's lane, and the terms it
     # was judged on: the tier floor, the attempt threshold, the window ceiling,
     # the window's use, any lift in force and its reason, and the policy's own
-    # statement of what the lane is for. A reservation is a preference the
-    # router weighs, so it never appears in ``reasons``.
+    # statement of what the lane is for. A Claude CLI reservation withholds
+    # automatic offers through ``reasons``; other reservations are preferences.
     reserved: bool = False
     reservation: dict[str, Any] | None = None
     # The judgments that do not make a lane unable to run the node: a competence

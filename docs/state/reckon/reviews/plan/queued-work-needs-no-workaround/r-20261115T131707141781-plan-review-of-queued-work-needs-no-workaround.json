@@ -1,0 +1,73 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T13:52:53.749Z",
+  "dispatched_at": "2026-11-15T13:52:36Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/queued-work-needs-no-workaround/r-20261115T131707141781-plan-review-of-queued-work-needs-no-workaround/plan.html:313",
+      "id": "done_when-1",
+      "reason": "the node must know which surface actually refuses, or its third case's control passes green at base and the case demonstrates nothing.",
+      "text": "the third case reads \"A batch entry with no write path is accepted\", and its negative control says \"at the base revision the third test's batch entry is refused for naming no write path\": the refusal lives on the lane-planning candidate surface (a wave manifest of declared `write_paths`), while on `crew dispatch --batch` the base already accepts or derives an entry with none \u2014 reproduced at 3bc474f9: `tests/test_a_batch_queues_the_chosen_sections.py::test_a_batch_of_six_entries_queues_the_chosen_sections` passes with `result[\"refused\"] == 0` and stores `write_paths == []` for a batch entry whose section states no sentence, so the cell's negative control cannot go red on the batch path the case names",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/queued-work-needs-no-workaround/r-20261115T131707141781-plan-review-of-queued-work-needs-no-workaround/plan.html:313",
+      "id": "reasoning-1",
+      "reason": "a node built on this premise will hunt for a batch refusal that the base does not have, and its reproduction step will fail before any code is touched.",
+      "text": "the Why's current-behaviour sentence now reads \"a batch entry that names no write path is refused\", but the batch queueing path builds the node and, when the section supplies no write-paths sentence, queues it with an empty fence rather than refusing it, and the case whose node the batch accepted is unchanged from the base; only the lane-planning candidate validation refuses an empty declared list",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "29272fd5308dc84de2bca2b58853a4d0e4da70c1",
+  "plan_fingerprint": "835ddc9be493d5d9c62ba383606118c501746c3880e714ea20dd9ec6e199dea6",
+  "plan_slug": "queued-work-needs-no-workaround",
+  "plan_version": 93,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261115T131707141781-plan-review-of-queued-work-needs-no-workaround",
+  "reviewed_blob_sha": "1cb7412f835f008f5ff9b0848d1b336701d389ee",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the only citation is the plan's own evidence path.",
+    "done_when": "a finding \u2014 \u00a724's third case (plan.html:313) measures a refusal the base does not make on the surface it names.",
+    "evidence_paths": "pass \u2014 the node has a snapshot-safe target, and the tests run on `all_debug` with a recorded fragment.",
+    "naming": "pass \u2014 no plan label, stage name or ticket number enters a symbol or a comment.",
+    "reasoning": "a finding \u2014 \u00a724's Why now attributes the missing-write-path refusal to \"a batch entry\", and the base batch path accepts such an entry.",
+    "single_goal": "pass \u2014 \u00a724 carries one deliverable, the write-scope contract, and the four cases measure parts of it.",
+    "wiring": "pass \u2014 s24's declared depends-on (`queued-work-needs-no-workaround#s23`, plan.html:29) points at a node that exists and is declared implementable, the driving followup notes \u00a724 waits on \u00a723, and the followup's set (\u00a72\u2013\u00a716, \u00a719\u2013\u00a725) now covers every implementable declaration including s24."
+  },
+  "section_digests": {
+    "_document": "b01d311a8ac26de383d2d5beb538e47bde177de022ce2e8eb15b5e022d8cd6aa",
+    "s1": "965e293bc718e24bc6e0b306c2e31f4694e8d3d1f2aafc97e86aac0ccdc0eb46",
+    "s10": "501d0d72406c2fda4dc47939b9700d2c42eb9011387b4df7abdfcc55d906d345",
+    "s11": "4dc7e37e7c9ff6d074c540a19ff75d7db784999f7b811a999a052a00fcbacb39",
+    "s12": "cf244a99091ee04721474e6caad0adad1fb1c907edc99e9fd73b86fb3251685c",
+    "s13": "8cdf1aaa77a692163d0b36bc751a206e8f6c96460d0e44b85d9feb5a76f99659",
+    "s14": "e033ab0daa427195a357d93c3b5969c3fae24f311a8dafa8b2a6bad8db0b518e",
+    "s15": "c271f7bcaa272ebd4bf87d7b1e7153251ec38aa5863fd8a3d7f12cdf1c66bd06",
+    "s16": "e958886ca859d584799d4d94514466d7e14ba4c818ac307fcb864c7eb39fa549",
+    "s17": "dd6b738e7e017fe3bc312e85841a1a6a4b4d5dc818c618040249040acf51ff19",
+    "s18": "cce913fd1fd3cd0d62df97ae997ebb6708c0f8082d5fb90425f676f105322724",
+    "s19": "eaeead248338c8d630a84c78ae20179b603aa87fc7b0a599cced40377f9d8297",
+    "s2": "872b1ec9c49f32d972d450016002b1265e846673cd1aef42c41aaccc50583998",
+    "s20": "0e0d4849ea6b6f69d5354bef8f8699320f369433778609f009cf726a6657a1ee",
+    "s21": "1ba6fbba19ed595b11f5efb9d35bd3b6620bad888924989e016324a2ad6a714e",
+    "s22": "fce0ba09ddb9ec3bc2b594b7cd00683449d9a170142add8d81af3fdd14b02100",
+    "s23": "43fe6c8d8a3118b055dc76b75bd328396172198ba8c599d5fd70be079950e6f4",
+    "s24": "7f5ed157cb16d7bc7401a4e632ff15c3bf472352fb6014a51125ad8907663976",
+    "s25": "afd11e98028c6beb77d132f656f7e433fab87c40e3e0f5257920383e880c2cd9",
+    "s3": "2a385591edce8d1cb26d41f176fb084cd634d113eb130d2581ce97000bcb3eea",
+    "s4": "0116c3c4a34b6e607b2564cc4300d3784ba5d7596a0000d0b59c40e1801dcd1a",
+    "s5": "81cc22db14da433d65d2cbfd466e233d778e9b5d50552dc7a013e94a3b25ad15",
+    "s6": "91849d1cd49d8e783c893b01272f0e0f505aed67e379d52d354011a619270a1d",
+    "s7": "0eb7720abb0f46f8d48d47fcf646be85ae58c8a5cc37c98f7ad06ac2f9deb6ff",
+    "s8": "5dcf0f324a6b831b76a043e465731eff46456979ae084bcfc764ff0d40816359",
+    "s9": "b22a82394cfc2b7163b7fbd8be1087fdb6ec66a16524e9d194431d418894d798"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T14:06:22.666186+00:00",
+  "total": null
+}

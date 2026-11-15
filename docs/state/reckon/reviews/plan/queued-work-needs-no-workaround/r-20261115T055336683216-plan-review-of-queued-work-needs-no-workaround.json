@@ -1,0 +1,137 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T06:08:02.759Z",
+  "dispatched_at": "2026-11-15T05:55:22Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/queued-work-needs-no-workaround/r-20261115T055336683216-plan-review-of-queued-work-needs-no-workaround/plan.html:302",
+      "id": "wiring-1",
+      "reason": "the batch instruction is the only dispatch wire the plan carries (no depends-on/informs/gates metas, all section data-links empty), so its omission of \u00a719 and \u00a720 silently drops two implementable sections from the wave.",
+      "text": "the open driving followup reads \"\u00a72\u2013\u00a716 and \u00a718 are independent ... queue them all in one batch\", while _document's plan-section-declarations (plan.html:22) declares s19 and s20 implementable; a coordinator following the followup it is given dispatches neither, and both sections sit unbuilt with nothing naming them as deliberately excluded",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/queued-work-needs-no-workaround/r-20261115T055336683216-plan-review-of-queued-work-needs-no-workaround/plan.html:287",
+      "id": "done_when-1",
+      "reason": "a node cannot tell whether to copy the brief and fall back, or re-compose and require the reviewed run's record; the two choices implement opposite behaviours and only one matches the deliverable's first sentence.",
+      "text": "\u00a718's deliverable says a queued request \"launches with the brief it was dispatched with, whatever happens to run directories other than its own and, for a composed run review, the reviewed run's\", but no case removes the reviewed run's directory and the next sentence says a composed review \"may still re-compose its brief at launch from the reviewed run's record\", so the deliverable's strongest claim is measured nowhere and is contradicted by the clause beside it; a composed launch that requires the reviewed run's record fails exactly the case the deliverable says must survive",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/queued-work-needs-no-workaround/r-20261115T055336683216-plan-review-of-queued-work-needs-no-workaround/plan.html:291",
+      "id": "reasoning-1",
+      "reason": "a node implementing \"whatever the line holds\" removes the unresolvable-sha refusal the section says to preserve, while a node preserving it violates the same paragraph; the endpoint has to say which clause wins, and the done-when's unresolvable-sha case does not state whether --no-commit is present, so the run cannot settle it by measuring.",
+      "text": "\u00a719's deliverable states \"--no-commit with a reason is honoured whatever the manifest's commits line holds\" and in the next sentence \"A run whose commits line names a sha that does not resolve is still refused as now\"; an unresolvable sha is a value the commits line can hold, so the first clause licenses exactly the promotion the second refuses",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "4265587e1de5de5df1ed1cc93d2f7b716e04a248",
+  "plan_fingerprint": "01847d94d68b0b3ffec31b874cee44e342e0dd0b216697922e5a249ad7e96ba7",
+  "plan_slug": "queued-work-needs-no-workaround",
+  "plan_version": 41,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "1228988732c4abe0066600e0e0dc2d266e299312",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "f-qwnw-001 now names \u00a72\u2013\u00a716 and \u00a718\u2013\u00a720 for the batch and adds \u00a719 to the priority list",
+      "reason": "",
+      "when": "2026-11-15T06:10:05.750244+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "1228988732c4abe0066600e0e0dc2d266e299312",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a718 now places the reviewed run's directory outside its scope: a composed review may re-compose from it; every other directory, including an earlier dispatch's of the same review, must be removable without stopping the launch, which is what the first case measures",
+      "reason": "",
+      "when": "2026-11-15T06:10:10.985450+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "1228988732c4abe0066600e0e0dc2d266e299312",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a719 now says only an empty or stated-none commits line yields to --no-commit; an unresolvable sha is refused with or without the flag, and the done-when's refusal case runs both ways",
+      "reason": "",
+      "when": "2026-11-15T06:10:15.371567+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "1228988732c4abe0066600e0e0dc2d266e299312",
+      "commit_basis": "edit",
+      "note": "\u00a718 now places the reviewed run's directory outside its scope: a composed review may re-compose from it; every other directory, including an earlier dispatch's of the same review, must be removable without stopping the launch, which is what the first case measures",
+      "reason": "",
+      "when": "2026-11-15T06:10:10.985450+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "1228988732c4abe0066600e0e0dc2d266e299312",
+      "commit_basis": "edit",
+      "note": "\u00a719 now says only an empty or stated-none commits line yields to --no-commit; an unresolvable sha is refused with or without the flag, and the done-when's refusal case runs both ways",
+      "reason": "",
+      "when": "2026-11-15T06:10:15.371567+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "1228988732c4abe0066600e0e0dc2d266e299312",
+      "commit_basis": "edit",
+      "note": "f-qwnw-001 now names \u00a72\u2013\u00a716 and \u00a718\u2013\u00a720 for the batch and adds \u00a719 to the priority list",
+      "reason": "",
+      "when": "2026-11-15T06:10:05.750244+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-queued-work-needs-no-workaround.v41.json",
+  "review_run_id": "r-20261115T055336683216-plan-review-of-queued-work-needs-no-workaround",
+  "reviewed_blob_sha": "870635809106de7a37c61dfccaf147fe71e518d7",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a718's cited run id resolves to the full directory r-20261114T203628474513-review-of-diiid-edge-current-refusal-c981fafe8cde-figure, whose dispatch-detail.json records the roster-cap hold and a brief path under a directory that no longer exists; the descope target the-escape-lane-and-reviews-keep-pace \u00a75 exists and is about a named-lane request queueing.",
+    "done_when": "a finding \u2014 \u00a718's deliverable promises the plan survives the reviewed run's directory going away, but no case removes it and the re-composition clause can make that promise false.",
+    "evidence_paths": "pass \u2014 each of \u00a718/\u00a719/\u00a720 logs its failing run to docs/evidence/fragments/queued-work-needs-no-workaround/s18.html, s19.html and s20.html, under the repository's evidence tree and not a temporary directory.",
+    "naming": "pass \u2014 the new sections name no plan labels, stage names, ticket numbers or version tags in code or symbols, and their prose describes mechanisms rather than changelog history.",
+    "reasoning": "a finding \u2014 \u00a719's endpoint contradicts itself; see the FQ row.",
+    "single_goal": "pass \u2014 \u00a718, \u00a719 and \u00a720 each carry one deliverable and one verdict closes it.",
+    "wiring": "a finding \u2014 the driving followup queues \"\u00a72\u2013\u00a716 and \u00a718\" in one batch while \u00a719 and \u00a720 are declared implementable in the plan's section declarations."
+  },
+  "section_digests": {
+    "_document": "153df1dd0d2849ac3d187087cd2738d3352fec45375b96bade98f763e8579d8d",
+    "s1": "965e293bc718e24bc6e0b306c2e31f4694e8d3d1f2aafc97e86aac0ccdc0eb46",
+    "s10": "501d0d72406c2fda4dc47939b9700d2c42eb9011387b4df7abdfcc55d906d345",
+    "s11": "4dc7e37e7c9ff6d074c540a19ff75d7db784999f7b811a999a052a00fcbacb39",
+    "s12": "cf244a99091ee04721474e6caad0adad1fb1c907edc99e9fd73b86fb3251685c",
+    "s13": "8cdf1aaa77a692163d0b36bc751a206e8f6c96460d0e44b85d9feb5a76f99659",
+    "s14": "e033ab0daa427195a357d93c3b5969c3fae24f311a8dafa8b2a6bad8db0b518e",
+    "s15": "c271f7bcaa272ebd4bf87d7b1e7153251ec38aa5863fd8a3d7f12cdf1c66bd06",
+    "s16": "602d6749db6121f7883dc3d46a2b53c64cc893e6c66690172b81927b2d35c37b",
+    "s17": "dd6b738e7e017fe3bc312e85841a1a6a4b4d5dc818c618040249040acf51ff19",
+    "s18": "770e56e1bd0303a45f64b4f1370aae5ad8b1ee428c9d173cc61a9eba33f1ad29",
+    "s19": "00601356e6b2f150dd57c5cd3bb0a9a497a454bb54099244297c387135296373",
+    "s2": "872b1ec9c49f32d972d450016002b1265e846673cd1aef42c41aaccc50583998",
+    "s20": "0e0d4849ea6b6f69d5354bef8f8699320f369433778609f009cf726a6657a1ee",
+    "s3": "2a385591edce8d1cb26d41f176fb084cd634d113eb130d2581ce97000bcb3eea",
+    "s4": "0116c3c4a34b6e607b2564cc4300d3784ba5d7596a0000d0b59c40e1801dcd1a",
+    "s5": "81cc22db14da433d65d2cbfd466e233d778e9b5d50552dc7a013e94a3b25ad15",
+    "s6": "91849d1cd49d8e783c893b01272f0e0f505aed67e379d52d354011a619270a1d",
+    "s7": "0eb7720abb0f46f8d48d47fcf646be85ae58c8a5cc37c98f7ad06ac2f9deb6ff",
+    "s8": "5dcf0f324a6b831b76a043e465731eff46456979ae084bcfc764ff0d40816359",
+    "s9": "b22a82394cfc2b7163b7fbd8be1087fdb6ec66a16524e9d194431d418894d798"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T06:05:13.455124+00:00",
+  "total": null
+}

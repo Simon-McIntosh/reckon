@@ -158,10 +158,14 @@ import sys
 import time
 from pathlib import Path
 
-from reckon.crew import station, station_obligations
+from reckon.crew import repository_maintenance, station, station_obligations
 
 entered, release = Path(sys.argv[1]), Path(sys.argv[2])
 project, docs = sys.argv[3], Path(sys.argv[4])
+
+# The station's packing schedule submits a scheduler job, and this run measures
+# the beat rather than the schedule, so no job is submitted.
+repository_maintenance.MaintenanceSweep.run = lambda self, *a, **k: []
 
 
 def _blocked(*_args, **_kwargs):

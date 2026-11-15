@@ -344,6 +344,10 @@ def live_work_populations(
     token = obligations._VIEW_LIVE_POINTERS.set(
         {project: tuple(rows) for project, rows in grouped.items()}
     )
+    # The in-flight answer the duties share is keyed on this pass's snapshot,
+    # so it is published with the snapshot and dropped with it rather than left
+    # holding the pass that produced it.
+    reviews_token = obligations._VIEW_REVIEWS_IN_FLIGHT.set(None)
     try:
         # Every terminal run's duty reads the review store, so the pass shares
         # one enumeration of each store directory across all of them, as the
@@ -390,6 +394,7 @@ def live_work_populations(
                 else:
                     unowned = True
     finally:
+        obligations._VIEW_REVIEWS_IN_FLIGHT.reset(reviews_token)
         obligations._VIEW_LIVE_POINTERS.reset(token)
     return project_live, unowned, sorted(sessions)
 

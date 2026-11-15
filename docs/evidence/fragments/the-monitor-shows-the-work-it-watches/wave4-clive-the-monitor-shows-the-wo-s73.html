@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s73">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="passed">
+  <title>A reload deferral is printed once | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="wave4-clive-the-monitor-wo-s73-landing" data-node="wave4-clive-the-monitor-shows-the-wo-s73" data-reckon="landed" data-when="2026-11-15">
+  <p>A follower whose import proof contends with peers' landings runs out of its probe bound and defers its reload, and it said so once for every checkout stamp that moved under the deferral. Both stamp-move sites cleared the <code>timeout_deferral</code> flag: the stamp-move call to <code>_clear_probe_retry</code>, which clears it on the way past, and the timeout branch's own stamp check, which ran immediately after that call had set <code>probe_retry_stamp</code> to <code>None</code>. On a checkout peers land into every few minutes, each landing is a new stamp, so one deferral printed a fresh line per landing.</p>
+  <p><strong>Change.</strong> <code>_clear_probe_retry</code> gained a keyword-only <code>answered</code>: a stamp move still resets the retry backoff, gap and jitter, but the deferral flag is cleared only by a probe that answered, at the two callers that answer (a genuine import failure, and a probe that lets the reload proceed). The timeout branch's stamp check now only records the new stamp. So a deferral prints one line for its whole contiguous span, and a later run is owed its own line. The reloader family lives in <code>reckon/crew/follower_reload.py</code> after its move out of the follower module.</p>
+  <p><strong>Gate.</strong> <code>tests/test_a_reload_deferral_is_printed_once.py</code>: three cases, 3 passed at head. A peer's held proof lock keeps the stood-in probe from answering; the stamp moves three times across probe retries and <strong>exactly one deferral line</strong> is printed; releasing the lock lets the reload proceed with no further deferral line and one exec; a second, later deferral prints its own one line; and a moved checkout still starts its retry gap afresh rather than inheriting the capped one.</p>
+  <p><strong>Base revision.</strong> The same file against a git-archive extract of <code>7ccec2dd4e</code>: <code>1 failed, 2 passed</code>, the first case naming <strong>3 deferral lines reprinted across three stamp moves</strong>. Log <code>logs/base-repro.log</code>.</p>
+  <p><strong>Population.</strong> The 102-file set of tests importing <code>reckon.crew_follow_commands</code> or driving <code>crew follow</code>, head and base, both in place with <code>pytest -n 8</code>: head <code>67 failed, 1000 passed, 2 errors</code>, base <code>79 failed, 988 passed, 15 errors</code>. Five ids appeared on the head list only; each was re-run at head and all pass (<code>35 passed</code>, <code>logs/head-recheck-added.log</code>), so <strong>0 added failures</strong>. One of the five was real and is now fixed inside the node: <code>tests/test_a_reload_probe_timeout_is_not_a_broken_image.py::test_a_moved_stamp_starts_the_gap_afresh</code> asserted that a moved stamp reprints the deferral line; it keeps its subject, now asserting the gap reset directly and the silence.</p>
+  <p><strong>Negative control.</strong> Restoring the reset on a stamp change, the first case finds three lines again: <code>1 failed</code>, <code>EXIT=1</code>. Log <code>logs/negative-control.log</code>.</p>
+  <p><strong>Suite template.</strong> After arm <code>1 failed, 61 passed</code>; baseline arm <code>1 failed, 56 passed, 2 errors</code>. The single failure in both arms is <code>tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window</code>, red at the base revision for nine modules that are not this node's, so it adds no failure and is reported as outside scope. <code>ruff check</code> and <code>ruff format --check</code> add no findings on the three changed files.</p>
+</article>
+</body>

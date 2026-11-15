@@ -788,6 +788,17 @@ _ANNOUNCED_RESETS_KEY = "announced-resets"
 _FOLLOWER_PRUNE_KEY = "followers-pruned-at"
 
 
+def _reload_note(message: str) -> None:
+    """Write one reload decision to the station's log.
+
+    A reload that holds, defers or fires changes which code the whole fleet's
+    monitor runs, and a station that never reloads looks exactly like one that
+    reloaded onto code that did not help. Each decision is therefore written
+    where the station's own failures already go.
+    """
+    print(f"station-reload: {message}", file=sys.stderr, flush=True)
+
+
 class StationReloader:
     """Replace the station with a proved image from the node's runtime root."""
 
@@ -856,6 +867,10 @@ class StationReloader:
         now = time.monotonic()
         if self._held_since is None:
             self._held_since = now
+            _reload_note(
+                "holding a due reload until the derivations in flight land, "
+                f"for at most {RELOAD_HOLD_SECONDS:.0f}s"
+            )
         return idle or now - self._held_since >= RELOAD_HOLD_SECONDS
 
     def _replace(self, current: str) -> None:
@@ -865,11 +880,16 @@ class StationReloader:
         if not image.is_relative_to(self.runtime_root):
             os.close(pin)
             raise RuntimeError(f"station reload image escaped runtime root: {image}")
-        imports, _reason = checkout_trust.reckon_imports(image)
+        imports, reason = checkout_trust.reckon_imports(image)
         if not imports:
             self.deferred_identity = current
             os.close(pin)
+            _reload_note(
+                f"deferred the reload to {current}: its image does not import "
+                f"({reason}); the station keeps running {self.identity}"
+            )
             return
+        _reload_note(f"re-executing from {self.identity} onto {current}")
         environment = follower_reload.image_reexec_environment(
             self.source_root, current, pin
         )
@@ -901,6 +921,7 @@ class Station:
         sweeps: SweepBeat | None = None,
         duties: DutyBeat | None = None,
         reflex_beat_seconds: float = REFLEX_BEAT_SECONDS,
+        maintenance: Any | None = None,
         clock: Callable[[], datetime] | None = None,
     ) -> None:
         self.store = store
@@ -908,6 +929,10 @@ class Station:
         self.projects = projects
         self.stall_seconds = stall_seconds
         self.clock = clock or (lambda: datetime.now(tz=UTC))
+        # The schedule that keeps every managed repository packed. ``None``
+        # leaves it off, which is what a test driving one tick wants: a pass
+        # submits a scheduler job, and only the long-running service does that.
+        self.maintenance = maintenance
         # Each project's duties are derived on a worker of its own, so a long
         # derivation never holds the next tick's phase transitions back.
         self.duties = (
@@ -1170,6 +1195,13 @@ class Station:
         self._enter(stages[4])
         self.store.sweep_retention(now=moment)
         self._prune_released_followers(moment)
+        # The repositories this fleet manages are packed here rather than on a
+        # user timer: this cluster refuses lingering, so a timer stops at logout
+        # while the station runs for as long as the fleet does. The sweep holds
+        # its own hourly beat and submits a job per repository that is due.
+        if self.maintenance is not None:
+            for row in self.maintenance.run(self.projects(), moment=moment):
+                print(f"station-maintenance: {row}", flush=True)
         # The finish stamp is what closes the tick for a reader: until it is
         # later than the start, a stage on record is a tick still running.
         self.store.set_station_value(
@@ -1196,6 +1228,7 @@ def run_station(
     unless a caller asks for it: signalling a process is a destructive act, so
     no station run takes it as a side effect of starting.
     """
+    from reckon.crew import repository_maintenance
     from reckon.crew.dispatch_launch import _adopt_launched_workers_from_reexec
 
     _adopt_launched_workers_from_reexec()
@@ -1243,7 +1276,16 @@ def run_station(
         census_beat: CensusBeat | None = None
         station: Station | None = None
         try:
-            station = Station(store) if station_instance is None else station_instance
+            station = (
+                Station(
+                    store,
+                    maintenance=repository_maintenance.MaintenanceSweep(
+                        clock=lambda: datetime.now(tz=UTC)
+                    ),
+                )
+                if station_instance is None
+                else station_instance
+            )
             reloader = StationReloader(store.root)
             # Both threads start before the first tick, so a station whose
             # opening tick is slow is never read as one that never started, and

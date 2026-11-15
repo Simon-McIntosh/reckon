@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T07:16:31.243Z",
+  "dispatched_at": "2026-11-15T06:58:33Z",
+  "findings": [
+    {
+      "line": 401,
+      "path": "tests/test_a_reservation_holds_only_while_<redacted>_works.py",
+      "severity": "non-blocking",
+      "text": "the freshness assertion passes with the renewal removed, because the child that publishes writes its own pid into the beat and the reader shares that process table, so past the shortened 1.0s stale window host_is_live falls through to _holder_is_running_here at reckon/crew/host_heartbeat.py:194 and answers True for the still-running child; the off-host reader the fix is for is exactly the one that cannot see that pid, so the case never crosses the boundary it claims."
+    },
+    {
+      "line": 431,
+      "path": "tests/test_a_reservation_holds_only_while_<redacted>_works.py",
+      "severity": "non-blocking",
+      "text": "test_the_supervisor_publishes_the_beat_it_keeps_fresh asserts only that a beat exists immediately after _supervisor_command returns, inside the default 90s stale window, so it guards publication but cannot detect a supervisor that publishes once and never renews; the name claims a freshness the assertion does not measure."
+    },
+    {
+      "line": 137,
+      "path": "reckon/crew/host_heartbeat.py",
+      "severity": "non-blocking",
+      "text": "a publish landing after an ended renewal breaks out of its loop at :158 but before its finally at :160 removes the key sees the key still registered, returns without starting a renewer, and then the stale key is dropped, so the suppression this commit repairs is narrowed to a race window rather than removed."
+    },
+    {
+      "line": 46,
+      "path": "reckon/crew/host_lease.py",
+      "severity": "non-blocking",
+      "text": "process_runs_here repeats the recorded-start-time comparison that reckon/crew/process_liveness.py:424 record_process_alive already owns and describes as the one place the pid lookup lives, so the two can still disagree; process_runs_here adds a pid-namespace test that process_liveness omits, which is the divergence in the making."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against e78fbc4df395 - 8f5f0d52c9 publishes the beat in _run_supervisor and drops the ended renewal's registry key and moves the pid/start comparison into host_lease.process_runs_here; 1df9d4389d rewrites the landing fragment and its receipts; f9a15fef9e deletes the superseded baseline-suite.txt and after-suite.txt from the fragment directory, copies of which remain in the run's logs/.",
+    "done_when": "the section's done-when clauses are unchanged and their tests already landed in earlier reviewed commits; this round adds the beat-outlives-the-launcher case at tests/test_a_reservation_holds_only_while_its_holder_works.py:377, the renewer-key case at :410 and the supervisor-publication case at :431, and receipt headers now name revision, tree and literal command, but no test reads the beat from a reader that cannot see the holder's pid, which is the off-host clause the goal states.",
+    "goal": "the node's goal is that a reservation or lock holds only while its holder is working on it; this round's only code commit (8f5f0d52c9) publishes the host beat from reckon/crew/dispatch_launch.py:5070 in _run_supervisor, the process a CLI launcher does not outlive, so an off-host reader's host_heartbeat.host_is_live at reckon/crew/host_heartbeat.py:209 stays true for the run's whole life and reservation_in_flight no longer frees a live holder's reservation.",
+    "manifest": "read; it records the node arm at 13 passed (EXIT=0, logs/node-arm.txt), gate-head and gate-base at 55 passed each (EXIT=0), a negative control of 2 failed at e78fbc4d (negative-control-previous.txt), commits 8f5f0d52c9/1df9d4389d/f9a15fef9e, and literals rather than placeholders in baseline_suite and after_suite.",
+    "write_paths": "the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and skills; the three gained commits touch reckon/crew/host_heartbeat.py, reckon/crew/host_lease.py, reckon/crew/dispatch_launch.py, tests/test_a_reservation_holds_only_while_its_holder_works.py and docs/evidence/fragments/queued-work-needs-no-workaround/, all inside those paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a reservation or lock holds only while its holder is working on it; this round's only code commit (8f5f0d52c9) publishes the host beat from reckon/crew/dispatch_launch.py:5070 in _run_supervisor, the process a CLI launcher does not outlive, so an off-host reader's host_heartbeat.host_is_live at reckon/crew/host_heartbeat.py:209 stays true for the run's whole life and reservation_in_flight no longer frees a live holder's reservation.\nVERDICT done_when: the section's done-when clauses are unchanged and their tests already landed in earlier reviewed commits; this round adds the beat-outlives-the-launcher case at tests/test_a_reservation_holds_only_while_its_holder_works.py:377, the renewer-key case at :410 and the supervisor-publication case at :431, and receipt headers now name revision, tree and literal command, but no test reads the beat from a reader that cannot see the holder's pid, which is the off-host clause the goal states.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and skills; the three gained commits touch reckon/crew/host_heartbeat.py, reckon/crew/host_lease.py, reckon/crew/dispatch_launch.py, tests/test_a_reservation_holds_only_while_its_holder_works.py and docs/evidence/fragments/queued-work-needs-no-workaround/, all inside those paths.\nVERDICT manifest: read; it records the node arm at 13 passed (EXIT=0, logs/node-arm.txt), gate-head and gate-base at 55 passed each (EXIT=0), a negative control of 2 failed at e78fbc4d (negative-control-previous.txt), commits 8f5f0d52c9/1df9d4389d/f9a15fef9e, and literals rather than placeholders in baseline_suite and after_suite.\nVERDICT diff: read commit by commit against e78fbc4df395 - 8f5f0d52c9 publishes the beat in _run_supervisor and drops the ended renewal's registry key and moves the pid/start comparison into host_lease.process_runs_here; 1df9d4389d rewrites the landing fragment and its receipts; f9a15fef9e deletes the superseded baseline-suite.txt and after-suite.txt from the fragment directory, copies of which remain in the run's logs/.\nCALL_SITES: reckon/crew/dispatch_peer.py:_supervisor_command, reckon/crew/dispatch_launch.py:_run_supervisor, reckon/crew/dispatch_launch.py:_publish_reservation_host, reckon/crew/dispatch_launch.py:_reservation_holder_running, reckon/crew/host_lease.py:HostLease._holder_is_running_here, reckon/crew/host_heartbeat.py:host_is_live\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:5070 now publishes the beat from the supervisor, so the goal's clause that a live holder on another host still holds is served for the process that outlives the launch rather than for the launcher that exits.\nSCORE evidence: 14\nJUSTIFICATION evidence: the gate is real and recorded - 13 passed at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-reservation-or-lock-holds-only-while-its-holde/node-arm.txt:3 and 55 passed at gate-head.txt:3 - but the freshness case the fragment cites at qwnw-a-reservation-or-lock-holds-only-while-its-holde.html:9 cannot fail on the mechanism it names (see the FINDING at tests/test_a_reservation_holds_only_while_its_holder_works.py:401).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in 8f5f0d52c9..f9a15fef9e lies under reckon/, tests/ or docs/evidence/fragments/queued-work-needs-no-workaround/, exactly the declared paths, and the diff carries no change the goal does not imply.\nSCORE durability: 12\nJUSTIFICATION durability: tests/test_a_reservation_holds_only_while_its_holder_works.py:425 is an independent guard on renewal because it sets a stale mtime and requires the file to advance, and :431-440 reddens if the supervisor stops publishing, but :401 stays green when renewal is removed because the reader sees the holder's pid.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/host_heartbeat.py:112 and reckon/crew/host_lease.py:46 follow the surrounding small-record idiom and carry mechanism names with no plan, ticket or author reference.\nSCORE reuse: 15\nJUSTIFICATION reuse: reckon/crew/host_lease.py:46 process_runs_here extracts the comparison host_heartbeat and host_lease shared, but reckon/crew/process_liveness.py:424 record_process_alive still owns the same recorded-start-time match, so a third copy remains.\nFINDING tests/test_a_reservation_holds_only_while_its_holder_works.py:401 non-blocking: the freshness assertion passes with the renewal removed, because the child that publishes writes its own pid into the beat and the reader shares that process table, so past the shortened 1.0s stale window host_is_live falls through to _holder_is_running_here at reckon/crew/host_heartbeat.py:194 and answers True for the still-running child; the off-host reader the fix is for is exactly the one that cannot see that pid, so the case never crosses the boundary it claims.\nFINDING tests/test_a_reservation_holds_only_while_its_holder_works.py:431 non-blocking: test_the_supervisor_publishes_the_beat_it_keeps_fresh asserts only that a beat exists immediately after _supervisor_command returns, inside the default 90s stale window, so it guards publication but cannot detect a supervisor that publishes once and never renews; the name claims a freshness the assertion does not measure.\nFINDING reckon/crew/host_heartbeat.py:137 non-blocking: a publish landing after an ended renewal breaks out of its loop at :158 but before its finally at :160 removes the key sees the key still registered, returns without starting a renewer, and then the stale key is dropped, so the suppression this commit repairs is narrowed to a race window rather than removed.\nFINDING reckon/crew/host_lease.py:46 non-blocking: process_runs_here repeats the recorded-start-time comparison that reckon/crew/process_liveness.py:424 record_process_alive already owns and describes as the one place the pid lookup lives, so the two can still disagree; process_runs_here adds a pid-namespace test that process_liveness omits, which is the divergence in the making.",
+  "review_run_id": "r-20261115T065718783067-review-of-qwnw-a-reservation-or-lock-holds-only-while-its-holde-f9a15fef9e0d",
+  "reviewed_base_sha": "e78fbc4df395a985d45e761c57ef94e59144cd74",
+  "reviewed_head_sha": "f9a15fef9e0d54f460cfd589afe009bd11a4ad1d",
+  "reviewed_run_id": "r-20261114T201210409568-qwnw-a-reservation-or-lock-holds-only-while-its-holde",
+  "scores": {
+    "durability": 12,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T07:20:32.608842+00:00",
+  "total": 95
+}

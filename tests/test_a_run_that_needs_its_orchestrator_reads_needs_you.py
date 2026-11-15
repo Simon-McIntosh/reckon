@@ -80,7 +80,7 @@ def test_the_counter_block_labels_the_bucket_n() -> None:
     # The bucket carries the blocked count and its letter. The letter is ``n``,
     # which no other counter uses, so a reader cannot confuse the column with
     # the working or delivered one.
-    assert " 0w  1n  0d  0q" in line, line
+    assert " 0w  0r  1n  0d  0q" in line, line
     assert "1h" not in line, line
     assert ticker_module.STAT_LETTER["needs you"] == "n"
 

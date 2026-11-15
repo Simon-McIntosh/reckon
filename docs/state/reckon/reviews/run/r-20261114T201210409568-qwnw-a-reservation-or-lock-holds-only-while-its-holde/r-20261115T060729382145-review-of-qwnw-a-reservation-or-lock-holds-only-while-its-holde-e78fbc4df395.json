@@ -1,0 +1,76 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T06:31:16.170Z",
+  "dispatched_at": "2026-11-15T06:08:50Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "qwnw-a-reservation-or-lock-holds-only-while-its-holde",
+      "recorded_at": "2026-11-15T06:57:12.311370+00:00"
+    }
+  },
+  "findings": [
+    {
+      "line": 122,
+      "path": "reckon/crew/host_heartbeat.py",
+      "severity": "blocking",
+      "text": "the renewal thread is owned by the process that published the beat, and the publishing process is the launching door, which reckon/crew/dispatch_launch.py:3602-3604 says the supervisor outlives; so after a CLI launch the renewal ends at about two seconds and the beat lapses at 90 s while the supervisor and worker are still working, an off-host reader's host_heartbeat.host_is_live returns False, reservation_in_flight answers False for a live holder's reservation, and a second launch on the same attempt is admitted - the defect this node exists to fix, deferred rather than closed, and unfixed for every launch whose door exits."
+    },
+    {
+      "line": 349,
+      "path": "tests/test_a_reservation_holds_only_while_its_holder_works.py",
+      "severity": "non-blocking",
+      "text": "the freshness assertion cannot distinguish renewal from the process it checks, because the test's beat names the test process itself and _holder_is_running_here at reckon/crew/host_heartbeat.py:174 answers True for it, so the assertion holds with the renewal absent; only the stop_host_heartbeat boolean at :354 detects a missing renewer, and it detects registration rather than the refresh."
+    },
+    {
+      "line": 3,
+      "path": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-reservation-or-lock-holds-only-while-its-holde/negative-control-base.txt",
+      "severity": "non-blocking",
+      "text": "the probe's second line reports True on both arms, because the stand-in foreign holder is started in the reader's own process table, so the base revision's local pid probe answers True for the wrong reason and that line cannot discriminate; the record cites it at qwnw-a-reservation-or-lock-holds-only-while-its-holde.html:11 as evidence for the lapsed-beat branch, and the probe script itself is not committed, so a reader cannot see what it did."
+    },
+    {
+      "line": 1,
+      "path": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-reservation-or-lock-holds-only-while-its-holde/gate-head.txt",
+      "severity": "non-blocking",
+      "text": "the committed gate receipts begin with a pytest progress bar rather than a header naming the revision, the tree and the command, and the reviewed manifest's baseline_suite and after_suite command fields carry <export> and <worktree> placeholders, so neither the receipt nor the manifest field can be re-run by a later reader."
+    },
+    {
+      "line": 141,
+      "path": "reckon/crew/host_heartbeat.py",
+      "severity": "non-blocking",
+      "text": "a renewal that finds its beat file gone breaks out of its loop while leaving its key in _RENEWERS, so _start_renewing at :122 returns early for that (home, host) for the rest of the process's life and a later publish in the same process never renews."
+    },
+    {
+      "line": 174,
+      "path": "reckon/crew/host_heartbeat.py",
+      "severity": "non-blocking",
+      "text": "_holder_is_running_here re-implements the pid-namespace and start-time comparison that reckon/crew/host_lease.py:102 already owns, so the two records can drift apart on what 'still running here' means."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against c225824d91 - fac7269a22 adds the renewal thread and the holder-is-visible branch and removes the unspawned release's inline body plus the test skip guards, db127ee63f adds the census entry, e78fbc4df3 adds the landing paragraphs and seven receipts; three commits, 5 source and test files, all inside scope.",
+    "done_when": "the node done_when's six clauses are unchanged by these commits; the round adds tests for the lapsed-beat branch at tests/test_a_reservation_holds_only_while_its_holder_works.py:187 and :203 and for renewal at :338, and makes the advice-hold and superseded-round assertions unconditional at :306 and :318, but no test drives a launch whose publisher has exited and then reads the reservation from another host, which is the clause the goal states and this repair is aimed at.",
+    "goal": "the node's goal is that a reservation or lock holds only while its holder is working on it; this round's change makes a host beat self-renew, reputedly so an off-host reader keeps a live holder's reservation (reckon/crew/host_heartbeat.py:100 publish_host_heartbeat starts a renewal thread at :122), but the renewal lives only as long as the process that published the beat, and reckon/crew/dispatch_launch.py:3602-3604 states that the supervisor 'outlives that launcher', so the beat still lapses 90 s into a run whose worker is working.",
+    "manifest": "read; it records 11 passed on the node file (re-run here: 11 passed in 3.49s), both suite arms at 55 passed exit 0, and a negative control of exit 3 on base against exit 0 on head, but its baseline_suite and after_suite command fields carry <export> and <worktree> placeholders and the committed receipts carry no revision or command header.",
+    "write_paths": "the dispatch declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and skills; the three gained commits touch reckon/crew/host_heartbeat.py, reckon/crew/dispatch_launch.py, tests/test_a_reservation_holds_only_while_its_holder_works.py, tests/test_staged_write_inventory.py and the fragment and its seven receipts, all inside those paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a reservation or lock holds only while its holder is working on it; this round's change makes a host beat self-renew, reputedly so an off-host reader keeps a live holder's reservation (reckon/crew/host_heartbeat.py:100 publish_host_heartbeat starts a renewal thread at :122), but the renewal lives only as long as the process that published the beat, and reckon/crew/dispatch_launch.py:3602-3604 states that the supervisor 'outlives that launcher', so the beat still lapses 90 s into a run whose worker is working.\nVERDICT done_when: the node done_when's six clauses are unchanged by these commits; the round adds tests for the lapsed-beat branch at tests/test_a_reservation_holds_only_while_its_holder_works.py:187 and :203 and for renewal at :338, and makes the advice-hold and superseded-round assertions unconditional at :306 and :318, but no test drives a launch whose publisher has exited and then reads the reservation from another host, which is the clause the goal states and this repair is aimed at.\nVERDICT write_paths: the dispatch declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and skills; the three gained commits touch reckon/crew/host_heartbeat.py, reckon/crew/dispatch_launch.py, tests/test_a_reservation_holds_only_while_its_holder_works.py, tests/test_staged_write_inventory.py and the fragment and its seven receipts, all inside those paths.\nVERDICT manifest: read; it records 11 passed on the node file (re-run here: 11 passed in 3.49s), both suite arms at 55 passed exit 0, and a negative control of exit 3 on base against exit 0 on head, but its baseline_suite and after_suite command fields carry <export> and <worktree> placeholders and the committed receipts carry no revision or command header.\nVERDICT diff: read commit by commit against c225824d91 - fac7269a22 adds the renewal thread and the holder-is-visible branch and removes the unspawned release's inline body plus the test skip guards, db127ee63f adds the census entry, e78fbc4df3 adds the landing paragraphs and seven receipts; three commits, 5 source and test files, all inside scope.\nCALL_SITES: reckon/crew/dispatch_launch.py:_publish_reservation_host (called at reckon/crew/dispatch_launch.py:2740 from reserve_launch_attempt), reckon/crew/dispatch_launch.py:_reservation_holder_running (calls host_heartbeat.host_is_live at reckon/crew/dispatch_launch.py:2581), reckon/crew/dispatch_launch.py:release_unspawned_reservations no production caller found for reckon/crew/host_heartbeat.py:stop_host_heartbeat\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: reckon/crew/host_heartbeat.py:110-135 renews the beat from the publishing process only, and reckon/crew/dispatch_launch.py:3602-3604 says the supervisor outlives that launcher, so the goal's clause 'a live holder on another host still holds' holds only when the door is a long-lived service.\nSCORE evidence: 13\nJUSTIFICATION evidence: the gate is real and recorded - the node file's 11 passed reproduce here in 3.49s and the receipts show 55 passed at both arms - but the committed receipts (docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-reservation-or-lock-holds-only-while-its-holde/gate-head.txt:1) carry no revision or command header and the second negative-control line reports the same answer on both arms.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in c225824d91..e78fbc4df395 lies under reckon/, tests/ or docs/evidence/fragments/queued-work-needs-no-workaround/, exactly the declared paths, and the diff carries no change the goal does not imply.\nSCORE durability: 12\nJUSTIFICATION durability: tests/test_a_reservation_holds_only_while_its_holder_works.py:306 and :318 now redden on deletion of the withdrawal and supersede capabilities, but :349 is satisfied by _holder_is_running_here alone, so removing os.utime from reckon/crew/host_heartbeat.py:141 leaves the renewal case green, and the only guard on the renewer is the test-only stop boolean at :354.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/host_heartbeat.py follows the host_lease idiom of a small state record judged by its own mtime, names everything by mechanism, and has no plan or ticket reference, with only a stray triple blank line at :158-160.\nSCORE reuse: 10\nJUSTIFICATION reuse: the round answers two prior findings by importing local_host from reckon/crew/host_lease.py:19 and by calling release_a_withdrawn_reservation instead of repeating its body, but reckon/crew/host_heartbeat.py:174 re-implements the pid-namespace and start-time liveness test that reckon/crew/host_lease.py:102 already owns.\nFINDING reckon/crew/host_heartbeat.py:122 blocking: the renewal thread is owned by the process that published the beat, and the publishing process is the launching door, which reckon/crew/dispatch_launch.py:3602-3604 says the supervisor outlives; so after a CLI launch the renewal ends at about two seconds and the beat lapses at 90 s while the supervisor and worker are still working, an off-host reader's host_heartbeat.host_is_live returns False, reservation_in_flight answers False for a live holder's reservation, and a second launch on the same attempt is admitted - the defect this node exists to fix, deferred rather than closed, and unfixed for every launch whose door exits.\nFINDING tests/test_a_reservation_holds_only_while_its_holder_works.py:349 non-blocking: the freshness assertion cannot distinguish renewal from the process it checks, because the test's beat names the test process itself and _holder_is_running_here at reckon/crew/host_heartbeat.py:174 answers True for it, so the assertion holds with the renewal absent; only the stop_host_heartbeat boolean at :354 detects a missing renewer, and it detects registration rather than the refresh.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-reservation-or-lock-holds-only-while-its-holde/negative-control-base.txt:3 non-blocking: the probe's second line reports True on both arms, because the stand-in foreign holder is started in the reader's own process table, so the base revision's local pid probe answers True for the wrong reason and that line cannot discriminate; the record cites it at qwnw-a-reservation-or-lock-holds-only-while-its-holde.html:11 as evidence for the lapsed-beat branch, and the probe script itself is not committed, so a reader cannot see what it did.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-reservation-or-lock-holds-only-while-its-holde/gate-head.txt:1 non-blocking: the committed gate receipts begin with a pytest progress bar rather than a header naming the revision, the tree and the command, and the reviewed manifest's baseline_suite and after_suite command fields carry <export> and <worktree> placeholders, so neither the receipt nor the manifest field can be re-run by a later reader.\nFINDING reckon/crew/host_heartbeat.py:141 non-blocking: a renewal that finds its beat file gone breaks out of its loop while leaving its key in _RENEWERS, so _start_renewing at :122 returns early for that (home, host) for the rest of the process's life and a later publish in the same process never renews.\nFINDING reckon/crew/host_heartbeat.py:174 non-blocking: _holder_is_running_here re-implements the pid-namespace and start-time comparison that reckon/crew/host_lease.py:102 already owns, so the two records can drift apart on what 'still running here' means.",
+  "review_run_id": "r-20261115T060729382145-review-of-qwnw-a-reservation-or-lock-holds-only-while-its-holde-e78fbc4df395",
+  "reviewed_base_sha": "c225824d918dddc8abdc9c8929f35fc978a3258e",
+  "reviewed_head_sha": "e78fbc4df395a985d45e761c57ef94e59144cd74",
+  "reviewed_run_id": "r-20261114T201210409568-qwnw-a-reservation-or-lock-holds-only-while-its-holde",
+  "scores": {
+    "durability": 12,
+    "evidence": 13,
+    "fit": 16,
+    "goal_fidelity": 13,
+    "reuse": 10,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T06:33:31.744888+00:00",
+  "total": 83
+}

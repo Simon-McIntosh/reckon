@@ -1572,6 +1572,9 @@ def isolated_reckon_home(request, tmp_path_factory, monkeypatch):
     home = tmp_path_factory.mktemp("reckon-home")
     monkeypatch.setenv("RECKON_HOME", str(home))
     monkeypatch.setenv("XDG_CONFIG_HOME", str(home / "xdg"))
+    # The harness's live-session records live under the real home; a test reads
+    # an empty directory of its own unless it writes records there itself.
+    monkeypatch.setenv("RECKON_HARNESS_SESSIONS_DIR", str(home / "harness-sessions"))
     # A fleet supervisor started by a test keeps its session temp in the test's
     # home rather than the node's real /dev/shm.
     monkeypatch.setenv("FLEET_SESSION_TMP_ROOT", str(home / "shm"))

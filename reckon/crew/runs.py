@@ -2312,6 +2312,43 @@ def _promoted_record_project(
     return None
 
 
+def _obligation_record_project(run_id: str) -> str:
+    """Name a project whose stored duties still raise a row for this run.
+
+    A run can hold no live pointer, no ledger record and no promotion request
+    and still be raising duties: a row whose evidence is a manifest, a refusal
+    or a retained tree outlives all three. The stored duty documents are then
+    the only place the run's project is written down, and the deferral must
+    name it -- a deferral is read per project, and one naming the wrong project
+    withholds nothing. A document is matched on a row carrying the run's id;
+    one that cannot be parsed is skipped rather than guessed at.
+    """
+    from reckon.crew import obligation_snapshot, station_obligations
+
+    try:
+        paths = sorted(obligation_snapshot.obligations_home().glob("*/*.json"))
+    except OSError:
+        return ""
+    for path in paths:
+        try:
+            stored = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        document = station_obligations.stored_document(stored)
+        if document is None and isinstance(stored, Mapping):
+            document = stored
+        if not isinstance(document, Mapping):
+            continue
+        name = str(document.get("project") or "")
+        if not name:
+            continue
+        for key in ("obligations", "acknowledged"):
+            for row in document.get(key) or ():
+                if isinstance(row, Mapping) and str(row.get("run_id") or "") == run_id:
+                    return name
+    return ""
+
+
 def _record_promoted_acknowledgement(
     run_id: str, deferral: Mapping[str, Any], *, project: str | None
 ) -> dict[str, Any]:
@@ -2331,7 +2368,8 @@ def _record_promoted_acknowledgement(
         # needs no project to be honoured — but the reader is asked per project
         # and a record naming none is never returned, so a project is resolved
         # from the remaining records in order: the caller's own, then the
-        # promotion request the run left behind.
+        # promotion request the run left behind, then the stored duty document
+        # that still raises its rows.
         name = str(project or "").strip()
     if not name:
         from reckon.crew import promotion_requests
@@ -2340,6 +2378,8 @@ def _record_promoted_acknowledgement(
             name = str(promotion_requests.read_promotion(run_id).get("project") or "")
         except (OSError, ValueError, CrewError):
             name = ""
+    if not name:
+        name = _obligation_record_project(run_id)
     if not name:
         looked = (
             ", ".join(sorted(_mounted_project_roots(project))) or "no mounted project"

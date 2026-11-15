@@ -910,6 +910,42 @@ def _mark_refusal_reported(signature: tuple[Any, ...]) -> bool:
         return True
 
 
+def _retire_promoted_pointer(pointer: Mapping[str, Any]) -> str:
+    """Answer what the sweep does with a pointer a promotion recorded.
+
+    A review whose promotion is already on its ledger row has nothing left to
+    promote, so the only work its pointer carries is its own retirement. The
+    promotion marks the pointer when it cannot remove it, either because the
+    worker still runs or because the worker rewrote the pointer under it. The
+    marked pointer is removed here once no process owns it, and no promotion
+    request is filed for a row the ledger already records. A live process keeps
+    its pointer: the mark says the promotion happened, not that the pointer is
+    the sweep's to delete.
+
+    ``retired`` means the pointer is gone, ``waiting`` that a live process still
+    owns it, and ``unmarked`` that the ordinary review path applies.
+    """
+    from reckon.crew.promotion import PROMOTED_POINTER_MARK
+
+    run_id = str(pointer.get("run_id") or "")
+    if not run_id:
+        return "unmarked"
+    with runs._pointer_lock(run_id):
+        try:
+            current = runs.read_pointer(run_id)
+        except (CrewError, OSError, ValueError):
+            return "unmarked"
+        if not current.get(PROMOTED_POINTER_MARK):
+            return "unmarked"
+        if record_process_alive(current) is True:
+            return "waiting"
+        try:
+            runs.pointer_path(run_id).unlink(missing_ok=True)
+        except OSError:
+            return "waiting"
+        return "retired"
+
+
 def _claims_refusal(run_id: str) -> bool:
     """Whether a refused ``review-self`` receipt is this pass's to report.
 
@@ -1316,6 +1352,27 @@ def dispatch_awaiting_reviews(
                 # a sweep acts only on the live run it was asked to handle.
                 run_id = str(pointer.get("run_id") or "")
                 runs.read_pointer(run_id)
+                # A review whose promotion is recorded has nothing left to
+                # promote. Its pointer is the promotion's mark or its worker's
+                # own record, and the only question left is whether the sweep
+                # may take it: it may once no process owns it.
+                retirement = _retire_promoted_pointer(pointer)
+                if retirement == "retired":
+                    continue
+                if retirement == "waiting":
+                    review_self_waiting.append(
+                        {
+                            "run_id": run_id,
+                            "promoted": True,
+                            "waiting": True,
+                            "reason": (
+                                "the review's promotion is recorded and its "
+                                "worker is still running, so its pointer is left "
+                                "for the pass after that worker exits"
+                            ),
+                        }
+                    )
+                    continue
                 # A reviewer that is still running is not owed a request:
                 # requesting now is what moved a working pointer to
                 # promotion-requested and then refused it for a record that had

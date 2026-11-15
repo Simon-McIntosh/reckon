@@ -1,0 +1,127 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs on disk: gate/baseline-suite-base-tree.log records revision e0626c295a, 55 passed and EXIT=0 with no FAILED line, and gate/after-suite.log records revision d753104cff, 63 passed and EXIT=0 with no FAILED line, so the after arm carries no failure id the base arm does not also carry and the set difference is empty.",
+  "assertion_review": [
+    {
+      "assertion": "assert \"status is complete but no commit is recorded\" not in audit[\"findings\"]",
+      "fails_if_or_mutation": "Restoring a write-time check that reports a commitless complete manifest puts that exact string back into audit findings, so the negation reddens; it already holds at the base revision.",
+      "file": "tests/test_a_commitless_manifest_promotes.py",
+      "line": 244
+    },
+    {
+      "assertion": "assert promoted[\"record\"][\"commits\"] == []",
+      "fails_if_or_mutation": "Registering any commit on a no-commit promotion makes the literal empty list comparison redden, and the value is independent of the fixture.",
+      "file": "tests/test_a_commitless_manifest_promotes.py",
+      "line": 248
+    },
+    {
+      "assertion": "assert promoted[\"record\"][\"base_sha\"] == base_sha",
+      "fails_if_or_mutation": "Only a promotion that dropped or rewrote the record's base sha reddens it; the expected side is the fixture's own input, so no change in the promote guard or the cite check can turn it red.",
+      "file": "tests/test_a_commitless_manifest_promotes.py",
+      "line": 249
+    },
+    {
+      "assertion": "with pytest.raises(crew.CrewError, match=head[:12])",
+      "fails_if_or_mutation": "Reinstating the early return that skipped the worktree-at-its-base guard lets the promotion succeed and the case already shows 'DID NOT RAISE CrewError' at the base revision, while the matched sha is computed by git from the worktree rather than supplied to the assertion.",
+      "file": "tests/test_a_commitless_manifest_promotes.py",
+      "line": 277
+    },
+    {
+      "assertion": "assert \"commits: none\" in prompt",
+      "fails_if_or_mutation": "Returning the manifest template to a role-independent 'commits: <sha list>' line removes the phrase and shows exactly that red at base for both roles.",
+      "file": "tests/test_a_commitless_manifest_promotes.py",
+      "line": 301
+    }
+  ],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:988 _require_gate_evidence in the pre-promotion check chain",
+    "reckon/crew/dispatch_claims.py:1448 compose_prompt call that composes a node's brief"
+  ],
+  "completed_at": "2026-11-15T11:26:06.652Z",
+  "dimension_dispositions": {
+    "evidence": {
+      "kind": "folded",
+      "node": "repair-of-rorp-s2-d753104cff34",
+      "recorded_at": "2026-11-15T12:13:20.508298+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-15T10:50:45Z",
+  "finding_dispositions": {
+    "1": {
+      "kind": "folded",
+      "node": "repair-of-rorp-s2-d753104cff34",
+      "recorded_at": "2026-11-15T12:13:17.607356+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_evidence.py",
+      "line": "986",
+      "severity": "non-blocking",
+      "text": "non-blocking: the run's landing line and manifest evidence_inputs say the early return in _require_gate_evidence 'alone refused this run', but that returned None and permitted a stated-reason promotion, so it could not refuse anything; the four real refusals the plan reports ('does not resolve to a commit') are not reproduced by the landed evidence, whose base arm shows the four promote cases already passing at e0626c295a, and plan section 2's requirement to name the condition that refused them is therefore unmet - fold into a follow-up that diagnoses those four runs and lands the removal, since the actual refusing branch may still be live."
+    },
+    {
+      "file": "tests/test_a_commitless_manifest_promotes.py",
+      "line": "22",
+      "severity": "blocking",
+      "text": "blocking: the new test file's import block raises ruff I001 (tests/test_a_commitless_manifest_promotes.py:22:1, 'Import block is un-sorted or un-formatted'), an added finding the base revision does not carry - base ruff on reckon/crew is 2 findings (I001 at promotion_evidence.py:1, S608 at prompts.py:960) and head is 3, the extra being this one; the repair is to sort that import block, and the done_when requires the count to come back to the base's two."
+    },
+    {
+      "file": "tests/test_a_commitless_manifest_promotes.py",
+      "line": "249",
+      "severity": "non-blocking",
+      "text": "non-blocking: `assert promoted[\"record\"][\"base_sha\"] == base_sha` compares the promoted record against the very value the fixture wrote into the live pointer at tests/test_a_commitless_manifest_promotes.py:139, so it holds whatever the guard does and survives the regression it appears to cover; the durability of the promote cases rests on :244 and :250 instead."
+    },
+    {
+      "file": "manifest.md",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "non-blocking: the manifest records no ruff arm although the done_when names 'ruff check and ruff format --check add no finding on the staged paths', so the run's gate receipt is silent on one of its own named measures; `ruff format --check` does pass on the three staged python paths, so only the check half is a live defect, and it is the :22 finding above."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call sites that reach the change: the promotion check chain at reckon/crew/promotion.py:988 and the prompt composition at reckon/crew/dispatch_claims.py:1448; the node's own test file is excluded.",
+    "diff": "read commit by commit against e0626c295a: e7e46bfc5f splits the worktree-at-its-base guard out of the unreasoned tail into _require_worktree_at_its_base and calls it on both paths (reckon/crew/promotion_evidence.py:986, :1162), and adds the role-keyed commits line at reckon/crew/prompts.py:935; d753104cff is formatting only; the evidence fragment's own case table records 'pass' at the base revision for both commitless promote rows",
+    "done_when": "the done_when names tests/test_a_commitless_manifest_promotes.py; the manifest records head arm '8 passed in 74.82s' EXIT=0 in gate/head-arm.log and base arm '3 failed, 5 passed' EXIT=1 in gate/base-arm.log, whose three red ids are the ahead-of-base refusal at tests/test_a_commitless_manifest_promotes.py:277 and the two prompt cases at :301, so the prompt and guard clauses are measured, but the done_when's final clause - 'ruff check and ruff format --check add no finding on the staged paths' - is measured nowhere in the run",
+    "goal": "the node's goal is to promote a commitless investigate or review manifest as delivered; the landed change states the declaration for those roles at reckon/crew/prompts.py:935 and keeps the worktree-at-its-base guard on the stated-reason path at reckon/crew/promotion_evidence.py:986, but the promote behaviour the goal names already passes at the base revision (gate/base-arm.log: '3 failed, 5 passed', the four promote cases being among the five passes), so the change does not produce it and the refusal the plan reports is never reproduced",
+    "manifest": "read; it records status complete, the two commits e7e46bfc5f and d753104cff, head arm 8 passed against base arm 3 failed/5 passed, and one suite pair at 63 passed head against 55 passed base; its evidence_inputs line states 'the refusing branch was the early return in _require_gate_evidence', which is the branch that returned None and permitted the promotion, so the record's diagnosis of the reported refusal cannot be the one that produced it",
+    "write_paths": "the declared write paths are reckon/crew/promotion_evidence.py, reckon/crew/prompts.py, tests/test_a_commitless_manifest_promotes.py and docs/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s2.html; git diff --name-only e0626c295a d753104cff returns exactly those four and nothing else, and the new fragment is a per-node file rather than a cumulative record, so nothing is rewritten in place"
+  },
+  "justifications": {
+    "durability": "tests/test_a_commitless_manifest_promotes.py:277 is a genuine independent guard - it matches the sha git itself computes in the worktree and reddens at base with 'DID NOT RAISE CrewError' - while the four promote cases at :214 already pass at base and so guard a regression rather than prove this fix, and :249 compares against the base sha the fixture itself wrote into the pointer",
+    "evidence": "gate/head-arm.log and gate/base-arm.log are on disk with their `# revision:`, `# command:` and bare `EXIT=` lines and the base arm reproduces three real failures, but the done_when's ruff clause has no arm at all, and the manifest's diagnosis of the refusing branch contradicts the base arm's own result",
+    "fit": "reckon/crew/prompts.py:384 imports _COMMITLESS_ROLES at the use rather than restating the role set, matching the lazy-import convention at reckon/crew/promotion_evidence.py:792, and no name carries a plan or stage label",
+    "goal_fidelity": "reckon/crew/prompts.py:935 and reckon/crew/promotion_evidence.py:986 are real improvements - the prompt clause of the done_when fails at base and the guard now closes a stated-reason path that lost committed work - but the four refusals the goal exists to remove already promote at e0626c295a, so the deliverable's first clause, naming and removing the condition that refused them, is not met",
+    "reuse": "the new reckon/crew/promotion_evidence.py:1166 guard sits beside _require_commits_beyond_base at :360, which already refuses a commitless promotion over work held uncommitted (:418-430) but is silent when the work is committed in the worktree, so the addition extends that capability rather than forking it",
+    "scope_discipline": "every path in git diff --name-only e0626c295a d753104cff is one of the four declared write paths, and no product source outside them changes"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to promote a commitless investigate or review manifest as delivered; the landed change states the declaration for those roles at reckon/crew/prompts.py:935 and keeps the worktree-at-its-base guard on the stated-reason path at reckon/crew/promotion_evidence.py:986, but the promote behaviour the goal names already passes at the base revision (gate/base-arm.log: '3 failed, 5 passed', the four promote cases being among the five passes), so the change does not produce it and the refusal the plan reports is never reproduced.\nVERDICT done_when: the done_when names tests/test_a_commitless_manifest_promotes.py; the manifest records head arm '8 passed in 74.82s' EXIT=0 in gate/head-arm.log and base arm '3 failed, 5 passed' EXIT=1 in gate/base-arm.log, whose three red ids are the ahead-of-base refusal at tests/test_a_commitless_manifest_promotes.py:277 and the two prompt cases at :301, so the prompt and guard clauses are measured, but the done_when's final clause - 'ruff check and ruff format --check add no finding on the staged paths' - is measured nowhere in the run.\nVERDICT write_paths: the declared write paths are reckon/crew/promotion_evidence.py, reckon/crew/prompts.py, tests/test_a_commitless_manifest_promotes.py and docs/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s2.html; git diff --name-only e0626c295a d753104cff returns exactly those four and nothing else, and the new fragment is a per-node file rather than a cumulative record, so nothing is rewritten in place.\nVERDICT manifest: read; it records status complete, the two commits e7e46bfc5f and d753104cff, head arm 8 passed against base arm 3 failed/5 passed, and one suite pair at 63 passed head against 55 passed base; its evidence_inputs line states 'the refusing branch was the early return in _require_gate_evidence', which is the branch that returned None and permitted the promotion, so the record's diagnosis of the reported refusal cannot be the one that produced it.\nVERDICT diff: read commit by commit against e0626c295a: e7e46bfc5f splits the worktree-at-its-base guard out of the unreasoned tail into _require_worktree_at_its_base and calls it on both paths (reckon/crew/promotion_evidence.py:986, :1162), and adds the role-keyed commits line at reckon/crew/prompts.py:935; d753104cff is formatting only; the evidence fragment's own case table records 'pass' at the base revision for both commitless promote rows.\nCALL_SITES: reckon/crew/promotion.py:988, reckon/crew/dispatch_claims.py:1448\nSCORE goal_fidelity: 10\nJUSTIFICATION goal_fidelity: reckon/crew/prompts.py:935 and reckon/crew/promotion_evidence.py:986 are real improvements - the prompt clause of the done_when fails at base and the guard now closes a stated-reason path that lost committed work - but the four refusals the goal exists to remove already promote at e0626c295a, so the deliverable's first clause, naming and removing the condition that refused them, is not met.\nSCORE evidence: 9\nJUSTIFICATION evidence: gate/head-arm.log and gate/base-arm.log are on disk with their `# revision:`, `# command:` and bare `EXIT=` lines and the base arm reproduces three real failures, but the done_when's ruff clause has no arm at all, and the manifest's diagnosis of the refusing branch contradicts the base arm's own result.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in git diff --name-only e0626c295a d753104cff is one of the four declared write paths, and no product source outside them changes.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_a_commitless_manifest_promotes.py:277 is a genuine independent guard - it matches the sha git itself computes in the worktree and reddens at base with 'DID NOT RAISE CrewError' - while the four promote cases at :214 already pass at base and so guard a regression rather than prove this fix, and :249 compares against the base sha the fixture itself wrote into the pointer.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/prompts.py:384 imports _COMMITLESS_ROLES at the use rather than restating the role set, matching the lazy-import convention at reckon/crew/promotion_evidence.py:792, and no name carries a plan or stage label.\nSCORE reuse: 19\nJUSTIFICATION reuse: the new reckon/crew/promotion_evidence.py:1166 guard sits beside _require_commits_beyond_base at :360, which already refuses a commitless promotion over work held uncommitted (:418-430) but is silent when the work is committed in the worktree, so the addition extends that capability rather than forking it.\nFINDING reckon/crew/promotion_evidence.py:986 non-blocking: the run's landing line and manifest evidence_inputs say the early return in _require_gate_evidence 'alone refused this run', but that returned None and permitted a stated-reason promotion, so it could not refuse anything; the four real refusals the plan reports ('does not resolve to a commit') are not reproduced by the landed evidence, whose base arm shows the four promote cases already passing at e0626c295a, and plan section 2's requirement to name the condition that refused them is therefore unmet - fold into a follow-up that diagnoses those four runs and lands the removal, since the actual refusing branch may still be live.\nFINDING tests/test_a_commitless_manifest_promotes.py:22 blocking: the new test file's import block raises ruff I001 (tests/test_a_commitless_manifest_promotes.py:22:1, 'Import block is un-sorted or un-formatted'), an added finding the base revision does not carry - base ruff on reckon/crew is 2 findings (I001 at promotion_evidence.py:1, S608 at prompts.py:960) and head is 3, the extra being this one; the repair is to sort that import block, and the done_when requires the count to come back to the base's two.\nFINDING tests/test_a_commitless_manifest_promotes.py:249 non-blocking: `assert promoted[\"record\"][\"base_sha\"] == base_sha` compares the promoted record against the very value the fixture wrote into the live pointer at tests/test_a_commitless_manifest_promotes.py:139, so it holds whatever the guard does and survives the regression it appears to cover; the durability of the promote cases rests on :244 and :250 instead.\nFINDING manifest.md:25 non-blocking: the manifest records no ruff arm although the done_when names 'ruff check and ruff format --check add no finding on the staged paths', so the run's gate receipt is silent on one of its own named measures; `ruff format --check` does pass on the three staged python paths, so only the check half is a live defect, and it is the :22 finding above.",
+  "review_node": "review-of-rorp-s2-d753104cff34",
+  "review_run_id": "r-20261115T104520769772-review-of-rorp-s2-d753104cff34",
+  "reviewed_base_sha": "e0626c295a92a0229118d29d1a268e7dca040b82",
+  "reviewed_head_sha": "d753104cff34c593cfaca4f25b61165925d88966",
+  "reviewed_run_id": "r-20261115T085736602818-rorp-s2",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T104520769772-review-of-rorp-s2-d753104cff34"
+  },
+  "scores": {
+    "durability": 13,
+    "evidence": 9,
+    "fit": 18,
+    "goal_fidelity": 10,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T11:27:15.497423+00:00",
+  "total": 87
+}

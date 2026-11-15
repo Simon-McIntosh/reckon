@@ -1,0 +1,39 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T12:00:47.428Z",
+  "dispatched_at": "2026-11-15T11:44:19Z",
+  "findings": [
+    {
+      "file": "tests/test_the_schedule_needs_no_hand_command.py",
+      "line": 260,
+      "severity": "non-blocking",
+      "summary": "The assertions at 260 and 262 compare the returned row and the recorded call against \"all_debug\", which is both the literal the test passed in and MAINTENANCE_PARTITION at reckon/crew/repository_maintenance.py:44, so they stay green if submit_pass stopped honouring its partition argument and fell back to the default; a non-default partition would make the assertion independent. Non-blocking because a fully dropped argument would leave calls[0][\"partition\"] None, so the regression the test exists for is still caught."
+    },
+    {
+      "file": "tests/test_the_schedule_needs_no_hand_command.py",
+      "line": 312,
+      "severity": "non-blocking",
+      "summary": "The comment above assert active.ticked == 1 and the commit message both state the tick reached the sweep, but the _Station stand-in's tick at line 83 only increments a counter and never runs the real Station.tick, so the assertion proves run_station ticked once, not that the tick consults the maintenance sweep; that half is covered by the hand-built station at line 182."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the increment is the three commits 150a6b8349, d168088025 and 7297a989c9 over tests/test_the_schedule_needs_no_hand_command.py, reckon/crew/repository_maintenance.py, reckon/crew/fleet_node.py and tests/test_a_scheduled_maintenance_pass_keeps_a_repository_packed.py; repository_maintenance.py:400 now submits through fleet_node.submit and repository_maintenance.py:125 publishes the record through write_atomically.\nVERDICT done_when: the section's done_when measures the partition of the submitted job and the loose-count/cruft/record/gc.log clauses; the increment leaves the gate green at head (gate-after-final.log, 8 passed, EXIT=0) and the base arm red at base (base-arm.log, 6 failed, EXIT=1), and tests/test_the_schedule_needs_no_hand_command.py:170 asserts the submitted argv carries --partition=all_debug.\nVERDICT write_paths: the source node's declared paths were reckon, tests, docs/evidence/fragments/work-flows-to-the-lane and its figure directory; every path in this increment lies inside them.\nVERDICT manifest: read; it records status complete, nine commits, both suite arms with revision, command and exit status, and three negative-control logs; the two repair controls named for this increment each end EXIT=1.\nVERDICT diff: read commit by commit from 2fa5fed9e6563fb7b251e0bd77d1021961082d4d to 7297a989c9f5389e78adaf26b4a82d3c781e8d56; three commits, four files, all four named in the review scope, with fleet_node.submit gaining keyword-only partition and runner seams and maintaining every existing caller's argv unchanged.\nCALL_SITES: reckon/crew/station.py:1262, reckon/crew/repository_maintenance.py:441, reckon/project_setup_commands.py:210, reckon/crew/fleet_node.py:1081\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/repository_maintenance.py:400 hands the built script to fleet_node.submit with the partition on the argv, which is the one submission form every other partitioned launch uses.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-after-final.log runs the two node test files at 7297a989 with 8 passed and EXIT=0, base-arm.log runs them at 108d56a4 with 6 failed and EXIT=1, and both repair arms sit in repair-baseline-arm.log and repair-after-arm-final.log at 0 failures each, so added_failure_count is 0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches exactly reckon/crew/fleet_node.py, reckon/crew/repository_maintenance.py and the two named test files, and nothing outside the declared paths.\nSCORE durability: 17\nJUSTIFICATION durability: repair-negative-control.log shows test_every_staged_write_reaches_the_owner failing without the shared-writer change and repair-negative-control-wiring.log shows tests/test_the_schedule_needs_no_hand_command.py:308 failing without the run_station construction, but tests/test_the_schedule_needs_no_hand_command.py:260 and :262 assert against \"all_debug\", the value the test passed and the module default at repository_maintenance.py:44, so neither can tell a propagated partition from the default.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/fleet_node.py:293 mirrors the runner seam query_jobs already offers at fleet_node.py:325, and repository_maintenance.py:125 uses the shared writer every other publication uses.\nSCORE reuse: 19\nJUSTIFICATION reuse: the schedule's own sbatch invocation named in the prior review is gone from reckon/crew/repository_maintenance.py and the call now extends reckon/crew/fleet_node.py:289, its owner, rather than duplicating it.\nFINDING tests/test_the_schedule_needs_no_hand_command.py:260 non-blocking: the assertions at 260 and 262 compare the returned row and the recorded call against \"all_debug\", which is both the literal the test passed in and the module default at reckon/crew/repository_maintenance.py:44, so they stay green if submit_pass stopped honouring its partition argument and used the default; a non-default partition would make the assertion independent. Non-blocking because calls[0][\"partition\"] is None if the argument is dropped entirely, so the nested-launch regression the test exists for is still caught.\nFINDING tests/test_the_schedule_needs_no_hand_command.py:312 non-blocking: the comment above the assertion and the commit message both say the tick reached the sweep, but _Station.tick at line 83 only increments a counter and never runs the real Station.tick, so active.ticked == 1 proves run_station ticked once and not that the tick consults the sweep; that half is covered by the hand-built station at line 182, so the coverage exists but the claim is wider than the assertion.\n",
+  "review_run_id": "r-20261115T112900279424-review-of-wftl-a-managed-repository-is-kept-packed-7297a989c9f5",
+  "reviewed_base_sha": "2fa5fed9e6563fb7b251e0bd77d1021961082d4d",
+  "reviewed_head_sha": "7297a989c9f5389e78adaf26b4a82d3c781e8d56",
+  "reviewed_run_id": "r-20261115T035238320292-wftl-a-managed-repository-is-kept-packed",
+  "rubric": "code",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T12:31:09.506680+00:00",
+  "total": 112
+}

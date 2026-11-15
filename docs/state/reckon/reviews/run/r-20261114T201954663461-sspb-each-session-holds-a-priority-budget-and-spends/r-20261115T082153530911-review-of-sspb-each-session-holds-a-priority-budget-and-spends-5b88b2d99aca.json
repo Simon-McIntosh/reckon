@@ -1,0 +1,87 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_basis": "the reviewed manifest records the armed pair it ran: tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py reading 55 passed at base revision 95e530385ef505438d4a89a7f978a941e6a68663 and 55 passed at the closing head 5b88b2d99aca, both EXIT=0, corroborated by the arm summaries in docs/evidence/fragments/a-session-spends-a-priority-budget/s2.html:70-74; no id fails at either arm, so no added failure id is claimed.",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/runs.py:1086 a re-queue charges the merged request's points",
+    "reckon/crew/runs.py:1110 a fresh submission spends the session's budget",
+    "reckon/crew/dispatching/preparation.py:665 a lane-held dispatch passes queue_priority_budget",
+    "reckon/crew/dispatching/preparation.py:1061 a held local dispatch passes queue_priority_budget",
+    "reckon/crew/dispatching/preparation.py:1135 a dispatch that yields to an older request passes queue_priority_budget",
+    "reckon/crew/dispatching/requests.py:129 a prevalidated wait is queued with the budget",
+    "reckon/crew/dispatching/requests.py:402 a queued request is stored with the budget",
+    "reckon/crew/queue_edit.py:598 a reprioritise is charged against the same budget",
+    "reckon/crew/queue_order.py:358 the cross-session rank reads the points",
+    "reckon/crew/queue_order.py:373 the within-project rank reads the points",
+    "reckon/crew/dispatching/launch.py:444 a launched run records its priority from the dispatch options",
+    "reckon/crew/recovery_review_dispatch.py:732 a composed review is queued with no budget argument",
+    "reckon/crew/recovery_review_dispatch.py:796 a composed review is queued with no budget argument"
+  ],
+  "completed_at": "2026-11-15T09:26:28.918Z",
+  "dispatched_at": "2026-11-15T08:23:50Z",
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "965",
+      "severity": "non-blocking",
+      "text": "_merged_requeue keeps the points on the pointer but takes the new record's dispatch_options wholesale at reckon/crew/runs.py:965, and reckon/crew/dispatching/launch.py:444 reads a launched run's priority from those options, so a reprioritised request that a coordinator re-dispatches naming no points is ranked and charged at 7 while the run it becomes records priority 0 and its review inherits nothing. The points survive the budget and are lost at launch, which is the figure the requeue's own comment says it preserves."
+    },
+    {
+      "file": "tests/test_a_priority_is_budgeted_and_orders_the_queue.py",
+      "line": "282",
+      "severity": "non-blocking",
+      "text": "the added review-charge test passes priority_budget=10 to queue_dispatch itself, while the two production sites that queue a composed review \u2014 reckon/crew/recovery_review_dispatch.py:732 and :796 \u2014 call queue_dispatch with no budget, so a review whose points ride _queued_request_record is stored uncharged on that path; the test's claim that a review cannot hold the budget and leave it available is true only of a caller that supplies the budget."
+    },
+    {
+      "file": "docs/evidence/fragments/a-session-spends-a-priority-budget/sspb-each-session-holds-a-priority-budget-and-spends.html",
+      "line": "4",
+      "severity": "non-blocking",
+      "text": "the landing record's only measure still reads 'Measure, at revision 522df5161d ... 10 passed, EXIT=0', naming a revision and a test count that predate the repairs the same record's Repair round paragraph claims are landed; a reader comparing it with the manifest's 14 passed at 0e35e05838 finds the plan-facing record describing a tree the node no longer ships."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "608",
+      "severity": "non-blocking",
+      "text": "the repaired accessor is the expression queue_order._priority already defines at reckon/crew/queue_order.py:240-242, so the repository keeps two named spellings of one definition; calling _priority would leave the queue's own name as the single place the points a request carries are turned into a number."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/runs.py:1086 a re-queue charges the merged request's points; reckon/crew/runs.py:1110 a fresh submission spends the session's budget; reckon/crew/dispatching/preparation.py:665 a lane-held dispatch passes queue_priority_budget; reckon/crew/dispatching/preparation.py:1061 a held local dispatch passes queue_priority_budget; reckon/crew/dispatching/preparation.py:1135 a dispatch that yields to an older request passes queue_priority_budget; reckon/crew/dispatching/requests.py:129 a prevalidated wait is queued with the budget; reckon/crew/dispatching/requests.py:402 a queued request is stored with the budget; reckon/crew/queue_edit.py:598 a reprioritise is charged against the same budget; reckon/crew/queue_order.py:358 the cross-session rank reads the points; reckon/crew/queue_order.py:373 the within-project rank reads the points; reckon/crew/dispatching/launch.py:444 a launched run records its priority from the dispatch options; reckon/crew/recovery_review_dispatch.py:732 a composed review is queued with no budget argument; reckon/crew/recovery_review_dispatch.py:796 a composed review is queued with no budget argument",
+    "diff": "read the four commits d319d0d345, 0e35e05838, 0cff38996c and 5b88b2d99a against e82343123a: 4 files, +229/-78 \u2014 reckon/crew/runs.py replacing the copied accessor of a request's points and widening the budget scan to the session's pointers in every project, four tests added at tests/test_a_priority_is_budgeted_and_orders_the_queue.py:209-390, and the two evidence fragments rewritten with reproducible arm commands.",
+    "done_when": "the done_when's four cases are asserted in tests/test_a_priority_is_budgeted_and_orders_the_queue.py at :110, :125, :163, :251 and :276, the round adds :209, :230, :253 and :282, and the negative controls now name failing test ids rather than a script; the gate itself ran on rigel at docs/evidence/fragments/a-session-spends-a-priority-budget/s2.html:2 although the done_when names all_debug.",
+    "goal": "the node's goal is that each session holds a priority budget and spends it at submission or later; reckon/crew/runs.py:1033 now charges the budget against the session's pointers in every project and reckon/crew/runs.py:608 reads a request's points through the queue ordering's own accessor, so both defects the round was dispatched to repair are answered.",
+    "manifest": "read; it records 14 passed in 3.48s EXIT=0 for the focused gate, 0 added failures from two-file arms reading 55 passed at 95e530385e and at 5b88b2d99a, and both negative controls with their failing ids.",
+    "write_paths": "the manifest declares reckon, tests, docs/evidence/fragments/a-session-spends-a-priority-budget and skills; all four paths in the diff are inside them \u2014 reckon/crew/runs.py, tests/test_a_priority_is_budgeted_and_orders_the_queue.py and both fragment files."
+  },
+  "justifications": {
+    "durability": "tests/test_a_priority_is_budgeted_and_orders_the_queue.py:209 reddens on live=session_live reverting to live, :230 on the reprioritise charge being removed and :253 on the accessor diverging again, but :282 builds its own record and so cannot see the requeue dropping the points the launch reads.",
+    "evidence": "docs/evidence/fragments/a-session-spends-a-priority-budget/s2.html:2 records the arms as run on rigel where the done_when names all_debug, and docs/evidence/fragments/a-session-spends-a-priority-budget/sspb-each-session-holds-a-priority-budget-and-spends.html:4 still quotes 10 passed at 522df5161d for a gate the round left at 14.",
+    "fit": "reckon/crew/runs.py:606 imports the queue ordering's accessor inside the function, matching that module's own lazy import of _is_review_run at reckon/crew/queue_order.py:292, and the added comments state the mechanism rather than any plan label.",
+    "goal_fidelity": "reckon/crew/runs.py:1033 reads the session's live pointers across every project so a second project no longer buys a second budget, and reckon/crew/runs.py:608 calls the queue ordering's accessor instead of copying it, which is what the round was dispatched for.",
+    "reuse": "reckon/crew/runs.py:608 re-expands _override(pointer) or 0, which is the body of the owner's own queue_order._priority at reckon/crew/queue_order.py:240-242, so the two names still spell one capability although only one now reads the fields.",
+    "scope_discipline": "every path in the diff \u2014 reckon/crew/runs.py, tests/test_a_priority_is_budgeted_and_orders_the_queue.py and the two files under docs/evidence/fragments/a-session-spends-a-priority-budget \u2014 is inside the four write paths the manifest declares."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that each session holds a priority budget and spends it at submission or later; reckon/crew/runs.py:1033 now charges the budget against the session's pointers in every project and reckon/crew/runs.py:608 reads a request's points through the queue ordering's own accessor, so both defects the round was dispatched to repair are answered.\nVERDICT done_when: the done_when's four cases are asserted in tests/test_a_priority_is_budgeted_and_orders_the_queue.py at :110, :125, :163, :251 and :276, the round adds :209, :230, :253 and :282, and the negative controls now name failing test ids rather than a script; the gate itself ran on rigel at docs/evidence/fragments/a-session-spends-a-priority-budget/s2.html:2 although the done_when names all_debug.\nVERDICT write_paths: the manifest declares reckon, tests, docs/evidence/fragments/a-session-spends-a-priority-budget and skills; all four paths in the diff are inside them \u2014 reckon/crew/runs.py, tests/test_a_priority_is_budgeted_and_orders_the_queue.py and both fragment files.\nVERDICT manifest: read; it records 14 passed in 3.48s EXIT=0 for the focused gate, 0 added failures from two-file arms reading 55 passed at 95e530385e and at 5b88b2d99a, and both negative controls with their failing ids.\nVERDICT diff: read the four commits d319d0d345, 0e35e05838, 0cff38996c and 5b88b2d99a against e82343123a: 4 files, +229/-78 \u2014 reckon/crew/runs.py replacing the copied accessor of a request's points and widening the budget scan to the session's pointers in every project, four tests added at tests/test_a_priority_is_budgeted_and_orders_the_queue.py:209-390, and the two evidence fragments rewritten with reproducible arm commands.\nCALL_SITES: reckon/crew/runs.py:1086 a re-queue charges the merged request's points, reckon/crew/runs.py:1110 a fresh submission spends the session's budget, reckon/crew/dispatching/preparation.py:665 a lane-held dispatch passes queue_priority_budget, reckon/crew/dispatching/preparation.py:1061 a held local dispatch passes queue_priority_budget, reckon/crew/dispatching/preparation.py:1135 a dispatch that yields to an older request passes queue_priority_budget, reckon/crew/dispatching/requests.py:129 a prevalidated wait is queued with the budget, reckon/crew/dispatching/requests.py:402 a queued request is stored with the budget, reckon/crew/queue_edit.py:598 a reprioritise is charged against the same budget, reckon/crew/queue_order.py:358 the cross-session rank reads the points, reckon/crew/queue_order.py:373 the within-project rank reads the points, reckon/crew/dispatching/launch.py:444 a launched run records its priority from the dispatch options, reckon/crew/recovery_review_dispatch.py:732 a composed review is queued with no budget argument, reckon/crew/recovery_review_dispatch.py:796 a composed review is queued with no budget argument\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:1033 reads the session's live pointers across every project so a second project no longer buys a second budget, and reckon/crew/runs.py:608 calls the queue ordering's accessor instead of copying it, which is what the round was dispatched for.\nSCORE evidence: 14\nJUSTIFICATION evidence: docs/evidence/fragments/a-session-spends-a-priority-budget/s2.html:2 records the arms as run on rigel where the done_when names all_debug, and docs/evidence/fragments/a-session-spends-a-priority-budget/sspb-each-session-holds-a-priority-budget-and-spends.html:4 still quotes 10 passed at 522df5161d for a gate the round left at 14.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff \u2014 reckon/crew/runs.py, tests/test_a_priority_is_budgeted_and_orders_the_queue.py and the two files under docs/evidence/fragments/a-session-spends-a-priority-budget \u2014 is inside the four write paths the manifest declares.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_priority_is_budgeted_and_orders_the_queue.py:209 reddens on live=session_live reverting to live, :230 on the reprioritise charge being removed and :253 on the accessor diverging again, but :282 builds its own record and so cannot see the requeue dropping the points the launch reads.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/runs.py:606 imports the queue ordering's accessor inside the function, matching that module's own lazy import of _is_review_run at reckon/crew/queue_order.py:292, and the added comments state the mechanism rather than any plan label.\nSCORE reuse: 15\nJUSTIFICATION reuse: reckon/crew/runs.py:608 re-expands _override(pointer) or 0, which is the body of the owner's own queue_order._priority at reckon/crew/queue_order.py:240-242, so the two names still spell one capability although only one now reads the fields.\nFINDING reckon/crew/runs.py:965 non-blocking: _merged_requeue keeps the points on the pointer but takes the new record's dispatch_options wholesale at reckon/crew/runs.py:965, and reckon/crew/dispatching/launch.py:444 reads a launched run's priority from those options, so a reprioritised request that a coordinator re-dispatches naming no points is ranked and charged at 7 while the run it becomes records priority 0 and its review inherits nothing. The points survive the budget and are lost at launch, which is the figure the requeue's own comment says it preserves.\nFINDING tests/test_a_priority_is_budgeted_and_orders_the_queue.py:282 non-blocking: the added review-charge test passes priority_budget=10 to queue_dispatch itself, while the two production sites that queue a composed review \u2014 reckon/crew/recovery_review_dispatch.py:732 and :796 \u2014 call queue_dispatch with no budget, so a review whose points ride _queued_request_record is stored uncharged on that path; the test's claim that a review cannot hold the budget and leave it available is true only of a caller that supplies the budget.\nFINDING docs/evidence/fragments/a-session-spends-a-priority-budget/sspb-each-session-holds-a-priority-budget-and-spends.html:4 non-blocking: the landing record's only measure still reads 'Measure, at revision 522df5161d ... 10 passed, EXIT=0', naming a revision and a test count that predate the repairs the same record's Repair round paragraph claims are landed; a reader comparing it with the manifest's 14 passed at 0e35e05838 finds the plan-facing record describing a tree the node no longer ships.\nFINDING reckon/crew/runs.py:608 non-blocking: the repaired accessor is the expression queue_order._priority already defines at reckon/crew/queue_order.py:240-242, so the repository keeps two named spellings of one definition; calling _priority would leave the queue's own name as the single place the points a request carries are turned into a number.\n",
+  "review_run_id": "r-20261115T082153530911-review-of-sspb-each-session-holds-a-priority-budget-and-spends-5b88b2d99aca",
+  "reviewed_base_sha": "e82343123a7cb22cb99bc3a02d6901ece32a53e8",
+  "reviewed_head_sha": "5b88b2d99aca1ae7af7fa4241ed70ea61c4829dd",
+  "reviewed_run_id": "r-20261114T201954663461-sspb-each-session-holds-a-priority-budget-and-spends",
+  "reviewer": "deepseek-v4.1-flash",
+  "reviewer_run_id": "r-20261115T082153530911-review-of-sspb-each-session-holds-a-priority-budget-and-spends-5b88b2d99aca",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T08:47:00Z",
+  "total": 97
+}

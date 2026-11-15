@@ -1,0 +1,69 @@
+<section id="store-write-is-load-bearing-s21">
+  <h2>The store write is load-bearing</h2>
+
+  <p><strong>What changed.</strong> <code>_index_append</code> in
+  <code>reckon/ledger.py</code> no longer returns a failure payload. It raises a
+  <code>LedgerError</code> that names the run store's path and the repair verb,
+  so a store that will not take a run refuses the promotion instead of reporting
+  a landed run that no store holds. <code>append_run</code> now writes the store
+  row <em>before</em> the rebuildable projections, and when that write raises it
+  unlinks the per-run file it had already written, so neither store keeps a row.
+  Docstrings that described the store as a rebuildable cache beside an
+  authoritative committed file are corrected in the same commit.</p>
+
+  <p><strong>The refusal, shown by injection.</strong> The new test injects a
+  raising <code>run_store.append</code> and asserts four things: the raised
+  message carries the store path, <code>scripts/import_runs_into_store.py</code>
+  and <code>--project proj</code>; the per-run file is gone; the store answers
+  no row for that node; and <code>run_store.compare</code> reports 0/0/0. The
+  healthy arm appends for real, then asserts both stores hold the row and the
+  same comparison is 0/0/0 — so 0/0/0 in the refused arm cannot pass by the
+  comparison itself being broken.</p>
+
+  <p><strong>It fails at base.</strong> Against a <code>git archive</code> of
+  <code>9530fe3d48ea</code> with the new test copied in, the injected-raise case
+  fails with <code>Failed: DID NOT RAISE LedgerError</code>: at base the append
+  returned <code>{"status": "failed"}</code> and kept the run file. The healthy
+  case passes on both revisions, so the red arm is the inversion, not the
+  harness.</p>
+
+  <p><strong>The negative control.</strong> Restoring the swallowed form in
+  <code>_index_append</code> — the exact mutation this node declared — turns the
+  injected-raise case red again
+  (<code>FAILED tests/test_a_failed_store_write_leaves_no_row.py::test_a_refused_store_write_leaves_no_row_in_either_store</code>,
+  <code>1 failed, 1 passed</code>), which is
+  the check proving the assertion measures the raise and not the setup.</p>
+
+  <p><strong>Arms.</strong> Baseline, resolved over the base tree
+  <code>9530fe3d48ea</code> (<code>tests/test_crew_promotion.py</code> included):
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_staged_write_inventory.py
+  tests/test_every_shared_home_lock_holds_across_nodes.py
+  tests/test_crew_promotion.py</code> — <strong>106 passed, 2 failed</strong>,
+  exit 1; the two failures are the store-write pair named above. After, at the
+  head that carries them
+  (<code>tests/test_a_failed_store_write_leaves_no_row.py</code> added) —
+  <strong>110 passed</strong>, exit 0. Logs are in the run directory.</p>
+
+  <p><strong>The promotion itself, at the same contract.</strong>
+  <code>tests/test_crew_promotion.py</code> drives a full <code>crew complete</code>
+  against an injected raising <code>run_store.append</code>. It now asserts what
+  this section requires: the command exits 1, the refusal names the store path
+  and <code>scripts/import_runs_into_store.py --project proj</code>, the per-run
+  file is gone, and <code>run_store.compare</code> is 0/0/0. Its sibling, the
+  healthy store-write case, keeps its assertions.</p>
+
+  <p><strong>A scaffolding defect found on the way.</strong> Both store-write
+  tests cited a gate log holding only <code>probe check passed</code>. The gate
+  evidence check refuses a log with no terminal <code>EXIT=&lt;n&gt;</code> line,
+  so neither test ever reached the store write it asserts about; both were red
+  at <code>9530fe3d48ea</code>, before this section's change. The logs now carry
+  <code>EXIT=0</code>.</p>
+
+  <p><strong>Still outside this section.</strong>
+  <code>reckon/crew/promotion.py</code> around line 2277 keeps a comment
+  describing "a silently failing shadow", and the matching
+  <code>store_outcome is None</code> branch is now only reached on the
+  already-promoted path. Neither is in this node's write paths; both are
+  reported, not edited.</p>
+</section>

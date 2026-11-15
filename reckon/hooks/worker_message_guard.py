@@ -11,8 +11,8 @@ own crew run pointers.
 
 Behavior, in order:
 
-1. Scope test — a repository with no crew or flight state under
-   ``docs/state/`` is untouched; the send is allowed silently.
+1. Scope test — a repository whose ``docs/state`` carries no project
+   configuration is untouched; the send is allowed silently.
 2. Live-worker resolution — the recipient is matched by exact identity
    against this host's live run pointers (run id, node id, member, session,
    session id), never against a name pattern, so a coordinator session that
@@ -45,6 +45,13 @@ GUARDED_TOOL = "SendMessage"
 # anticipate. Named in every refusal so the escape is one visible, deliberate
 # step rather than a default.
 OVERRIDE_ENV = "RECKON_ALLOW_PEER_MESSAGE"
+
+# Files a project's state directory carries that identify it as crew-managed.
+# The run ledger (``crew.json``) and the flight configuration are honoured for
+# a tree that has not migrated yet, but recognition must not depend on either:
+# the ledger leaves git, so a checkout carries only the project's own
+# configuration.
+PROJECT_STATE_MARKERS = ("index.json", "flight.yaml", "crew.json")
 
 # The shape of the re-route a refusal teaches: the recovery-order command that
 # reaches a crew run whose turn has ended, carrying the message the send would
@@ -79,21 +86,24 @@ def _this_host() -> str:
 def crew_managed_projects(repo_root: Path) -> list[str]:
     """Repository-local project names carrying crew or flight state.
 
-    Reads only ``repo_root/docs/state/<project>/{crew.json,flight.yaml}`` —
-    never the host's mounts file — so detection is correct for a repository
-    nobody has registered on this host yet, and unaffected by what else is
-    mounted here.
+    A project is recognised by the configuration its state directory carries,
+    never by the run ledger: the ledger leaves git, so a checkout of a
+    migrated repository holds no ``crew.json`` for this to key on. The
+    remaining markers are the project's own configuration, which stays.
+
+    Reads only repository-local state — never the host's mounts file — so
+    detection is correct for a repository nobody has registered on this host
+    yet, and unaffected by what else is mounted here.
     """
     state_root = repo_root / "docs" / "state"
     if not state_root.is_dir():
         return []
-    projects = []
-    for entry in sorted(state_root.iterdir()):
-        if not entry.is_dir():
-            continue
-        if (entry / "crew.json").is_file() or (entry / "flight.yaml").is_file():
-            projects.append(entry.name)
-    return projects
+    return sorted(
+        entry.name
+        for entry in state_root.iterdir()
+        if entry.is_dir()
+        and any((entry / marker).is_file() for marker in PROJECT_STATE_MARKERS)
+    )
 
 
 def _identity_values(record: dict[str, Any]) -> list[Any]:

@@ -1,0 +1,148 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T10:37:45.306Z",
+  "dispatched_at": "2026-11-15T10:09:15Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-escape-lane-and-reviews-keep-pace.html:89",
+      "id": "done_when-1",
+      "reason": "the node would deliver a green-at-base test as its evidence, and to get a red one it must be told the distinguishing state that made the two lost reviews lost, which the plan's Endpoint does not supply.",
+      "text": "the done-when requires \"a stranded reflex-composed review released by a pass is composed again by the next reflex pass\" to fail at base revision `2424ab7511`, but that behaviour is already in the tree: `_dispatch_text_review_for_run` releases a stranded standing review and falls through to `_dispatch_composed_review` in the same call (`reckon/crew/recovery_review_dispatch.py:2794-2815`, reaching `_dispatch_composed_review` at :2862), and the strand marker it writes is already asserted by `tests/test_a_review_is_not_refused_for_its_run.py:262-285` \u2014 a test built against a standing pointer therefore passes at base and shows no guard firing",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-escape-lane-and-reviews-keep-pace.html:86",
+      "id": "reasoning-1",
+      "reason": "without that distinction the node hunts for a defect in a path that already handles the visible case, and the wrong mechanism is exactly what the section exists to fix.",
+      "text": "the \"Why.\" justifies releasing such a launch on the premise that a reflex-composed review is one the reflex \"composes and will compose again\", while the Endpoint on line 88 records that it was not composed again, and the code path the plan cites does release and recompose a stranded review it can see, so the only case that still fails is one whose pointer the admission pass removed and the reflex therefore never sees as in-flight \u2014 a distinction the plan neither states nor names",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-escape-lane-and-reviews-keep-pace.html:88",
+      "id": "single_goal-1",
+      "reason": "one node cannot be closed on one verdict when its gate proves only one of the two mechanisms, and the reflex half's cause is not yet known, so it may not stay a 3 h node at all.",
+      "text": "\u00a710 still delivers two things under one done-when: an attempt-keyed refusal record so the re-queued request is not fenced for an hour, and a reflex change so a released review is composed again, whose write paths (`reckon/crew/dispatch_refusals.py` / admission refusals vs. `reckon/crew/recovery_review_dispatch.py`) are disjoint and neither closes the other",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-escape-lane-and-reviews-keep-pace.html:88",
+      "id": "anchors_resolve-1",
+      "reason": "the section's point is those vanished; the run ids are supporting evidence for a mechanism that is already established by the 12 `released-stranded-launch` verdicts, so a reader is not sent down the wrong path by the dangling id.",
+      "text": "of the two occurrences cited for \"twice\", `r-20261115T020055912484` resolves nowhere: no run directory under `~/.config/reckon/crew/runs/`, no state record under `docs/state/reckon/`, and no live pointer \u2014 while `r-20261115T060531066893` resolves only as a run id referenced by other run records (a review whose phase was `starting`), not as a record of its own",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "68149461b17e375ae2a6b80118cb1228e3bac4ee",
+  "plan_fingerprint": "bbbc3797d98a5e95f9d7fbb6ff30620fd00f785d1a2ac6975c0ab52501908167",
+  "plan_slug": "the-escape-lane-and-reviews-keep-pace",
+  "plan_version": 28,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "68149461b17e375ae2a6b80118cb1228e3bac4ee",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "the reflex half moves to its own section, whose case is a composed review whose pointer and run directory the admission pass removed, which the reflex never sees in flight; its test fails at base",
+      "reason": "",
+      "when": "2026-11-15T10:47:39.653564+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "68149461b17e375ae2a6b80118cb1228e3bac4ee",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "the new section states the distinction: the reflex recomposes a stranded review it can see, and loses only one whose pointer the admission release removed",
+      "reason": "",
+      "when": "2026-11-15T10:47:45.643236+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "68149461b17e375ae2a6b80118cb1228e3bac4ee",
+      "commit_basis": "edit",
+      "finding": "single_goal-1",
+      "note": "\u00a710 keeps only the attempt-keyed fence; the released composed review is a new section with its own write paths and done-when",
+      "reason": "",
+      "when": "2026-11-15T10:47:52.408758+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "the two run ids resolve nowhere because the admission release removed their pointers and run directories, which is the defect the section records; the twelve released-stranded-launch verdicts carry the mechanism",
+      "when": "2026-11-15T10:47:58.743950+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "the two run ids resolve nowhere because the admission release removed their pointers and run directories, which is the defect the section records; the twelve released-stranded-launch verdicts carry the mechanism",
+      "when": "2026-11-15T10:47:58.743950+00:00"
+    },
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "68149461b17e375ae2a6b80118cb1228e3bac4ee",
+      "commit_basis": "edit",
+      "note": "the reflex half moves to its own section, whose case is a composed review whose pointer and run directory the admission pass removed, which the reflex never sees in flight; its test fails at base",
+      "reason": "",
+      "when": "2026-11-15T10:47:39.653564+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "68149461b17e375ae2a6b80118cb1228e3bac4ee",
+      "commit_basis": "edit",
+      "note": "the new section states the distinction: the reflex recomposes a stranded review it can see, and loses only one whose pointer the admission release removed",
+      "reason": "",
+      "when": "2026-11-15T10:47:45.643236+00:00"
+    },
+    "single_goal-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "68149461b17e375ae2a6b80118cb1228e3bac4ee",
+      "commit_basis": "edit",
+      "note": "\u00a710 keeps only the attempt-keyed fence; the released composed review is a new section with its own write paths and done-when",
+      "reason": "",
+      "when": "2026-11-15T10:47:52.408758+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-escape-lane-and-reviews-keep-pace/r-20261115T100803716069-plan-review-of-the-escape-lane-and-reviews-keep-pace.json",
+  "review_run_id": "r-20261115T100803716069-plan-review-of-the-escape-lane-and-reviews-keep-pace",
+  "reviewed_blob_sha": "aa46026b166fec674289061f2b9b1e40adb72e29",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the run id `r-20261115T020055912484`, one of the two occurrences the section leans on for \"twice\", resolves to nothing on disk.",
+    "done_when": "a finding \u2014 \u00a710's second named test (\"a stranded reflex-composed review released by a pass is composed again by the next reflex pass\") asserts behaviour the tree already has, so it need not fail at base revision `2424ab7511`.",
+    "evidence_paths": "pass \u2014 the landing record names `docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/stranded-launch-attempt-fence.html` beside the sibling fragments, and the all_debug arm's log location is implied by the run-directory convention the neighbouring sections declare.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers are carried into code or symbols; commit shas and run ids appear as evidence data only.",
+    "reasoning": "a finding \u2014 \u00a710's \"Why.\" says a released review is one \"the reflex composes and will compose again\", while its Endpoint records that the reflex did not, and the code shows the reflex still releases and re-composes a stranded review it can see (`reckon/crew/recovery_review_dispatch.py:2783-2815`), leaving the plan's stated mechanism and its evidence in direct contradiction.",
+    "single_goal": "a finding \u2014 \u00a710 still carries two deliverables whose write paths are disjoint: the attempt-keyed refusal fence (`reckon/crew/dispatch_refusals.py`, with the release written at `reckon/crew/admission/launching.py`) and the reflex re-composing a released review (`reckon/crew/recovery_review_dispatch.py`).",
+    "wiring": "pass \u2014 \u00a710 declares no `depends-on` and no other section declares it; the requeue it builds on landed in-tree at `2e844047a3`, so no relationship is missing or misdirected."
+  },
+  "section_digests": {
+    "_document": "a5d10760fe7dca59281ba1d00d8092a548375419a88ecdcc74513b0d9d1eaf58",
+    "s1": "2f30b04db27eda225a7d9a82c4b2b9cf5e512723d009737b2a923bb7c84a60ce",
+    "s10": "af28a16b1a2ec8a98583154a37e5e4e838981cdb9a342316c0192e0f59b43c34",
+    "s2": "1c1291a10bbf3182487496ef153e5873681ea3827c7bacc16efddf88c7cca128",
+    "s3": "2a0e0fabbd2ee502c5a7928a8fa608b66f83d3ad3fe304a31a05b66f0cb3d688",
+    "s4": "4a85c23ac81214a3af1b59e1888c579b2e2525eb2a2346a965b291cee79651b7",
+    "s5": "fb1f3e1546621cc855884449828d1a21bbdbe0f82829e3272a4980de76583329",
+    "s6": "cc57c977bc74be9abc823c22b2bdb1536d9437ee9b4055386c7bcc135cf44073",
+    "s7": "ed204545a51bd6d6fca68193a080594cbf03befec2fbab427a94d4fa64bb5b4d",
+    "s8": "f91bbc8415af7128a49266e48bcf0855214aed2b1c090350cf262046fdca9025",
+    "s9": "f45ac50a3cec315ac6b6faa699dabc9b61b96ee903819df9eb7dd788e1cd1497"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T10:44:41.724384+00:00",
+  "total": null
+}

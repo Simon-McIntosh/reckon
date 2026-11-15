@@ -1,0 +1,50 @@
+<section id="alro-s2-landing">
+  <h2>A named figure is held to what the run delivers</h2>
+
+  <p><strong>What changed.</strong> The manifest check
+  (<code>reckon/crew/reports.py</code>, <code>audit_manifest</code>, read by
+  <code>crew check --manifest</code>) now reads a <code>figures:</code> line. A
+  named figure is held to three facts, because the name alone establishes none
+  of them: the path lies inside <code>docs/figures/</code>; it lies under the
+  figure directory of the plan the node builds; and the run's own commits carry
+  it. A figure a worker rendered to look at but never committed is refused,
+  naming the path.</p>
+
+  <p>The commit fact is read from the committed head against the base the
+  manifest records at orientation. A stale or unresolvable base leaves that
+  half of the check unarmed rather than reporting every named figure as
+  orientation-unreadable, which is the same ground the PNG-twin check stands
+  on. A node with nothing to show names none, and an absent or empty line is
+  accepted: there is no quota.</p>
+
+  <p><strong>The prompt states the rule.</strong> The plan landing contract in
+  <code>reckon/crew/prompts.py</code> already placed a figure under
+  <code>docs/figures/&lt;plan&gt;/&lt;node-id&gt;/</code>; it now also names the
+  <code>figures:</code> manifest line and the directory the check holds it to,
+  so a worker reads the placement and the record of it together.</p>
+
+  <h3 id="alro-s2-measured">Measured</h3>
+
+  <p>Six cases in a temporary repository: a committed figure under the plan's
+  directory passes; an uncommitted one is refused naming the path; one outside
+  <code>docs/figures/</code> is refused; one committed under another plan's
+  figure directory is refused; a manifest with no <code>figures:</code> line
+  passes; and a composed implementation prompt restates the rule. With the new
+  check removed, the uncommitted-figure case passes (0 findings), which is the
+  negative control.</p>
+
+  <table id="alro-s2-arms">
+    <caption>Each arm is a log whose header names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>node tests, before</td><td><code>bb45282b57</code></td><td>0 failed, 0 added against base</td></tr>
+      <tr><td>node tests, after</td><td><code>54b35a5808</code></td><td>6 passed; 30 passed across the node's test set</td></tr>
+      <tr><td>negative control (check removed)</td><td><code>54b35a5808</code> + mutation</td><td>3 failed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>No figure.</strong> The result is a set of refusal conditions on a
+  path, which is naturally a table rather than a spatial or plotted
+  relationship, so this node keeps none and names none.</p>
+</section>

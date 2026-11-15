@@ -427,6 +427,7 @@ def _config_with_effective_budget(
     readings: Sequence[Mapping[str, Any]] | None,
     now: datetime | None,
     session: str | None,
+    project: str | None = None,
 ) -> Mapping[str, Any] | None:
     """A configuration whose budget block is the one in force for ``group``.
 
@@ -440,7 +441,7 @@ def _config_with_effective_budget(
     from reckon.crew import budget_group as budget_group_module
 
     block = budget_group_module.effective_block(
-        config, str(group), readings=readings, now=now, session=session
+        config, str(group), readings=readings, now=now, session=session, project=project
     )
     return {**(config or {}), "budget": block}
 
@@ -476,7 +477,7 @@ def _budget_verdict(
 
     wallet = group or budget_group_module.declared_group_for(config, backend_name)
     judged_config = _config_with_effective_budget(
-        config, wallet, readings=readings, now=now, session=session
+        config, wallet, readings=readings, now=now, session=session, project=project
     )
     if budget_state is None:
         recorded = budget_module.latest_recorded(project, root=root, config=config)

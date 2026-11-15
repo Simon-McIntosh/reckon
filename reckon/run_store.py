@@ -982,9 +982,9 @@ def append(project: str, record: Mapping[str, Any]) -> None:
     failure of any other kind, is raised.
 
     This is the seam a promotion calls and the seam a test injects a failure
-    into: a raising store write is recorded by the caller, never propagated,
-    so the committed file row a promotion already wrote stays the durable
-    result.
+    into: the store is the durable authority for a promoted run, so the caller
+    turns a raise here into a refusal and takes back the run file it had
+    already written, leaving neither store holding a row.
     """
     _retrying(lambda store: store.append(project, record))
 

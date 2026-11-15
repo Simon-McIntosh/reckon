@@ -1787,6 +1787,24 @@ def _committed_paths_added_since(store: Path, base: str) -> set[str]:
     return {line.strip() for line in probe.stdout.splitlines() if line.strip()}
 
 
+def _revision_is_committed(store: Path, revision: str) -> bool:
+    """Whether ``store`` holds ``revision`` as a commit it can diff against.
+
+    A base the store cannot resolve makes ``git diff`` fail, and a failed diff
+    is indistinguishable from a run that added nothing — so a check that read
+    the empty answer as evidence would report every path as uncommitted against
+    a store that simply cannot answer. Asking first keeps that refusal to a
+    readable store.
+    """
+    probe = subprocess.run(
+        ["git", "-C", str(store), "cat-file", "-e", f"{revision}^{{commit}}"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return probe.returncode == 0
+
+
 def _committed_head_paths(store: Path) -> set[str]:
     probe = subprocess.run(
         ["git", "-C", str(store), "ls-tree", "-r", "--name-only", "HEAD"],
@@ -1857,6 +1875,95 @@ def _png_twin_findings(
     """
     base = str(manifest.get("orientation_base_sha") or "").strip()
     return _png_twin_findings_for_base(base, worktree=worktree, repository=repository)
+
+
+def _figure_relative_path(name: str) -> str | None:
+    """Return a figure name as a repository-relative POSIX path, or ``None``.
+
+    A name is written the way the prompt states it — a path under the plan's
+    figure directory, relative to the repository root. An absolute path or one
+    climbing out with ``..`` names a file no commit under the repository can
+    carry, so it resolves to ``None`` and the caller refuses it on location.
+    """
+    text = str(name).strip().replace("\\", "/")
+    if not text:
+        return None
+    path = PurePosixPath(text)
+    if path.is_absolute() or ".." in path.parts:
+        return None
+    return str(path)
+
+
+def _figure_findings(
+    manifest: dict[str, Any],
+    *,
+    node: TaskNode | None = None,
+    worktree: Path | None = None,
+    repository: Path | None = None,
+) -> list[str]:
+    """Report each figure a manifest names that the run does not carry in place.
+
+    A node whose result is a measurement, a comparison or a rendered surface
+    keeps one figure under the plan's figure directory and names it on a
+    ``figures:`` line; a node with nothing to show names none, so an absent or
+    empty line is accepted rather than read as a shortfall. A named figure is
+    held to three facts, because a name alone establishes none of them: the
+    path lies inside ``docs/figures/``, it lies under the figure directory of
+    the plan this run builds, and the run's own commits carry that path. The
+    third is read from the committed head against the base the manifest records
+    at orientation, so a figure rendered to look at but never staged does not
+    pass as delivered.
+
+    A manifest that records no base the run's store can resolve leaves the
+    third fact unarmed rather than refusing on work no one can inspect — the
+    same ground the PNG-twin check stands on. The plan half needs the node's
+    plan, so a run whose node names none is held only to the location and the
+    commit, never to another plan's directory it cannot be compared against.
+    """
+    figures = _as_list(manifest.get("figures"))
+    if not figures:
+        return []
+    plan = str(getattr(node, "plan", "") or "").strip()
+    findings: list[str] = []
+    candidates: list[str] = []
+    for name in figures:
+        relative = _figure_relative_path(name)
+        parts = () if relative is None else PurePosixPath(relative).parts
+        if relative is None or parts[:2] != ("docs", "figures") or len(parts) < 4:
+            findings.append(
+                f"named figure {name!r} lies outside docs/figures/, where a node "
+                "keeps its figures; write it under the plan's figure directory "
+                "docs/figures/<plan>/"
+            )
+            continue
+        if plan and parts[2] != plan:
+            findings.append(
+                f"named figure {name!r} lies under another plan's figure "
+                f"directory (docs/figures/{parts[2]}/), but this run builds "
+                f"plan {plan!r}; its figures belong under docs/figures/{plan}/"
+            )
+            continue
+        candidates.append(relative)
+    if not candidates:
+        return findings
+    base = str(manifest.get("orientation_base_sha") or "").strip()
+    stores = _citation_stores(worktree=worktree, repository=repository)
+    if not stores:
+        return findings
+    store = _run_diff_store(stores, worktree=worktree, repository=repository)
+    if not base or base.lower() in _NONE_VALUES or "<" in base or "|" in base:
+        return findings
+    if not _revision_is_committed(store, base):
+        return findings
+    carried = _committed_paths_added_since(store, base)
+    findings.extend(
+        f"named figure {relative!r} is not carried by this run's commits: no "
+        f"commit since {base} adds that path, so the manifest names a figure "
+        "the run does not deliver"
+        for relative in candidates
+        if relative not in carried
+    )
+    return findings
 
 
 def _read_source_or_none(path: Path) -> str | None:
@@ -2835,6 +2942,9 @@ def audit_manifest(
     )
     findings.extend(
         _png_twin_findings(manifest, worktree=worktree, repository=repository)
+    )
+    findings.extend(
+        _figure_findings(manifest, node=node, worktree=worktree, repository=repository)
     )
     findings.extend(
         _commit_citation_findings(manifest, worktree=worktree, repository=repository)

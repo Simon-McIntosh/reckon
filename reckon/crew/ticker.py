@@ -704,7 +704,7 @@ HIDDEN_AT_ATTACH = SETTLED_STATES - frozenset(
     {"completed_unpromoted", "failed", "abandoned"}
 )
 
-_CELLS = ("working", "needs you", "delivered")
+_CELLS = ("working", "in review", "needs you", "delivered")
 _WAIT_CELL = "waiting"
 # The stuck count is a figure beside the buckets rather than one of them: a
 # stuck request keeps the cell its phase belongs to, so this cell recounts
@@ -716,6 +716,7 @@ _STUCK_CELL = "stuck"
 # The event still carries the historical count-field keys. The visible buckets
 # use pane words; a waiting count includes queued and externally waiting runs.
 _COUNT_FIELD = {
+    "in review": "reviewing",
     "needs you": "blocked",
     "delivered": "unpromoted",
     "waiting": "waiting",
@@ -724,11 +725,14 @@ _COUNT_FIELD = {
 
 # Each counter is labelled with the lower-case initial of a pane word. The
 # waiting bucket holds queued runs as well as runs waiting on a declared
-# condition, and its label is ``q`` for the queued word. ``n`` is the needs-you
-# bucket's letter, and no other counter uses it, so no two labels share a
-# letter and none needs a case to tell it apart.
+# condition, and its label is ``q`` for the queued word. ``r`` is the review
+# bucket's letter, so a session whose only live run is a review reads as review
+# work rather than as an idle session. ``n`` is the needs-you bucket's letter,
+# and no other counter uses it, so no two labels share a letter and none needs a
+# case to tell it apart.
 STAT_LETTER = {
     "working": "w",
+    "in review": "r",
     "needs you": "n",
     "delivered": "d",
     "waiting": "q",
@@ -744,7 +748,7 @@ STAT_LETTER = {
 # count leaves sit at the left of its own cell rather than at the block's right
 # edge — so the block's width does not follow the counts and the clause after it
 # keeps its column. The separating space is what stops two counts touching:
-# `10w 12h` is two tokens and `10w12h` is not a shape this block prints. A count
+# `10w 12r` is two tokens and `10w12r` is not a shape this block prints. A count
 # above the fixed width carries its extra digits and widens its own cell, and so
 # its row's block, rather than eliding the figure a reader came for.
 # Each label takes one character. The block's width includes the four spaces
@@ -3728,7 +3732,7 @@ class Ticker:
         Each counter is its count right-aligned to :data:`STAT_DIGITS` digits
         followed by its compact label, so each label holds one screen column
         whatever the counts are. One space separates each cell from the
-        next, so two counts never touch: ``10w 12h`` is two tokens. Right
+        next, so two counts never touch: ``10w 12r`` is two tokens. Right
         alignment is what lets both hold at once — a single-digit count pads
         inside its own cell rather than shifting the letter beside it or
         widening the block, so the block measures the same for any counts up to

@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T12:45:05.828Z",
+  "dispatched_at": "2026-11-15T12:26:28Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-rorp-s3-10c952bdd1d2",
+      "recorded_at": "2026-11-15T13:02:16.386443+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "1024",
+      "severity": "blocking",
+      "text": "The check now delegates to _claims_missing_measures, which reads only the `claims` key, so a stored claims record that carries a verdict for every claim it was asked for under the other spelling is refused. Reproduced at head on docs/state/reckon/reviews/run/r-20261020T123510716749-nova-cold-discovery-is-attributed-by-phase/r-20261020T125655924881-review-of-nova-cold-discovery-is-attributed-by-phase-4c056ffbcdbb.json: a claims-rubric record with three verdicts (reproduced, differs, reproduced) under `claim_verdicts` and claim_summary 'agrees' -> claims_verdict_refusals returns ['review record carries too few claim verdicts ...'] and _review_is_complete returns False. Plan \u00a73 states a claims record is complete when every claim it was asked to check carries a verdict, and the node's own done_when asks that such a record pass `crew check --review`; this one does not. The split the previous review found is closed, but in the direction that newly refuses a complete stored review, which the commit this range builds on deleted CLAIM_VERDICT_FIELDS expressly to avoid."
+    },
+    {
+      "file": "docs/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s3.html",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "The fragment's retained paragraphs still state that CLAIM_VERDICT_FIELDS reads either spelling and that a complete record 'is never refused for the key it chose' (:19-22), and that over the stored corpus 'none is newly refused' (:54), while CLAIM_VERDICT_FIELDS is deleted at head and the record named at :59 (r-20261020T125655924881) is now refused by the check. The document therefore asserts the opposite of the code it documents, 35 lines above its own repair section. Either extend the owner to read both spellings \u2014 which restores what :19-22 assert \u2014 or rewrite those two paragraphs to say the spelling is no longer read and that this stored record is now refused."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": "1010",
+      "severity": "non-blocking",
+      "text": "The refusal now names the measure rather than the claim: the done_when asks for a record missing one claim's verdict to be refused 'naming the claim', and the message reads 'carries too few claim verdicts ... re-run the claims it skipped', which does not identify the missing rank. The rank range is no longer validated either, so three verdicts ranked 5, 6, 7 satisfy both readers; the previous check refused them for claim 1 missing. The test was renamed from test_a_claims_record_missing_a_claim_is_refused_naming_the_claim and its 'no verdict for claim 2' assertion deleted, so the suite no longer notices."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T085738178021-rorp-s3/manifest.md",
+      "line": "29",
+      "severity": "non-blocking",
+      "text": "The manifest states the four importer test files 'now run in the gate arm (45 passed, EXIT=0, logged)', and the evidence fragment's table carries the same figure, but the gate command that actually ran names three files (tests/test_a_claims_review_record_passes_the_check.py, tests/test_staged_write_inventory.py, tests/test_every_shared_home_lock_holds_across_nodes.py) rather than the four test files that import the review check, and no log for a 45-passed arm exists under the run directory: the figure is the previous review run's measurement. The earlier review's non-blocking finding on this clause is recorded as answered without being demonstrated."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261115T122123924757-review-of-rorp-s3-10c952bdd1d2",
+  "reviewed_base_sha": "8d44c377ff4b93f510ff9fa98d4a29a588a1ccee",
+  "reviewed_head_sha": "10c952bdd1d2d4b1d2ffca72400d1546de0215b7",
+  "reviewed_run_id": "r-20261115T085738178021-rorp-s3",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 13,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T12:54:57.907147+00:00",
+  "total": 97
+}
