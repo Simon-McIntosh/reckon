@@ -2398,11 +2398,11 @@ def _review_tier_key(
 
     The tier reads the run's changed paths and lines at its head (git objects
     beneath the tree), its declared spec level and section, the manifest it
-    cites when it cites no commit, and the plan's declared risk. So the key
-    carries the resolved head and tree, the cited commits, the manifest's stat
-    identity and the plan's change token. A run whose head, manifest or plan
-    moves gets a new key and its tier is recomputed; every other run's key is
-    the one the previous tick stored.
+    cites when it cites no commit, and the risk declared for its section. So
+    the key carries the resolved head and tree, the cited commits, the manifest's
+    stat identity and the plan-state token. A run whose head, manifest or plan
+    state moves gets a new key and its tier is recomputed; every other run's key
+    is the one the previous tick stored.
     """
     run_id = str(row.get("run_id") or "")
     if not run_id:
