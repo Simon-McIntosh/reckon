@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T07:40:59.430Z",
+  "dispatched_at": "2026-11-15T07:37:05Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/queued-work-needs-no-workaround.html:288",
+      "id": "done_when-1",
+      "reason": "as written the node's gate can go green at the base revision on the half of the deliverable that names the defect, and its negative control would be logged as an unbuildable red arm; the plan must either measure the retry that does persist at base (an attempt after the back-off cap elapses, over a span longer than the cap) or drop the attempt arm and make the terminal obligations reason the endpoint.",
+      "text": "the first case's measurable arm is \"over three admission passes the request makes at most one launch attempt\", but admission already withholds retries from a request that failed for a reason other than a lane hold: `_retry_backoff_hold` in `reckon/crew/admission/holds.py` leaves the pointer untouched until a bounded back-off elapses and names this exact case in its docstring (\"This is what keeps a request that cannot launch \u2014 a missing brief, for one \u2014 from cycling through a release, a failed dispatch and a restore on every pass\"; back-off `30.0`s doubling to a `600.0`s cap in `reckon/crew/admission/shared.py`). So at the base revision three passes inside one back-off window already yield at most one launch attempt, and the head assertion passes unchanged; the declared negative control's red arm (\"records a launch attempt on every pass\") cannot reproduce, because that per-pass retry is the behaviour the base already suppresses. Only the obligations-reason arm discriminates today, so the node's stated measure of its own headline behaviour (\"stops retrying\") rests on an instrument that reads the same on both arms.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "af8a68acb9567f9b9a2792caf176ec59d3309c3d",
+  "plan_fingerprint": "0e6d0b82dbb85716444a701ecb5b0dd78e1a365a76465b5f6649b77e5e83f7d4",
+  "plan_slug": "queued-work-needs-no-workaround",
+  "plan_version": 72,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261115T073550583609-plan-review-of-queued-work-needs-no-workaround",
+  "reviewed_blob_sha": "f6eeaeb1f64d194c7e755b04f435becd0efb6470",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the run id `r-20261114T203628474513-review-of-diiid-edge-current-refusal-c981fafe8cde-figure` resolves as a directory under the crew runs home; the cited evidence-fragment path is an output this section creates, and no extensionless href is involved.",
+    "done_when": "a finding \u2014 the attempt-count arm cannot fail at the base revision, and the declared negative control asserts a per-pass attempt the admission code's own back-off forbids for exactly this missing-brief case.",
+    "evidence_paths": "pass \u2014 the failing run is written to `docs/evidence/fragments/queued-work-needs-no-workaround/s18.html` in the repository, not a scratchpad.",
+    "naming": "pass \u2014 the section names no symbol, file or function, and carries no plan label, stage name or ticket number into anything a worker would name.",
+    "reasoning": "pass \u2014 the Why's trace matches the cited evidence (the review run exists, its brief was composed into the reviewed run's directory, and the obligations view's own vocabulary does contain both `admissible-unlaunched` and \"stalled at the launch stage\"), the endpoint is reachable and its reporting can fail, and the section prescribes no code path or function to call.",
+    "single_goal": "pass \u2014 one deliverable (a permanently unlaunchable request becomes reported rather than retried) with three cases of it, not two goals.",
+    "wiring": "pass \u2014 \u00a718 declares no dependency and the driving followup queues it in the batch; nothing it consumes is unlanded, and the relationships it carries point at no wrong node."
+  },
+  "section_digests": {
+    "_document": "cff2b661e8eb0c8ef093b8b9788c19888553e8b20ddda793072e5d4958f90223",
+    "s1": "965e293bc718e24bc6e0b306c2e31f4694e8d3d1f2aafc97e86aac0ccdc0eb46",
+    "s10": "501d0d72406c2fda4dc47939b9700d2c42eb9011387b4df7abdfcc55d906d345",
+    "s11": "4dc7e37e7c9ff6d074c540a19ff75d7db784999f7b811a999a052a00fcbacb39",
+    "s12": "cf244a99091ee04721474e6caad0adad1fb1c907edc99e9fd73b86fb3251685c",
+    "s13": "8cdf1aaa77a692163d0b36bc751a206e8f6c96460d0e44b85d9feb5a76f99659",
+    "s14": "e033ab0daa427195a357d93c3b5969c3fae24f311a8dafa8b2a6bad8db0b518e",
+    "s15": "c271f7bcaa272ebd4bf87d7b1e7153251ec38aa5863fd8a3d7f12cdf1c66bd06",
+    "s16": "e958886ca859d584799d4d94514466d7e14ba4c818ac307fcb864c7eb39fa549",
+    "s17": "dd6b738e7e017fe3bc312e85841a1a6a4b4d5dc818c618040249040acf51ff19",
+    "s18": "7bdebf7ef57774d6ae13053b9daee18667fc63a9ca90966ee6cd6f8a571473a6",
+    "s19": "eaeead248338c8d630a84c78ae20179b603aa87fc7b0a599cced40377f9d8297",
+    "s2": "872b1ec9c49f32d972d450016002b1265e846673cd1aef42c41aaccc50583998",
+    "s20": "0e0d4849ea6b6f69d5354bef8f8699320f369433778609f009cf726a6657a1ee",
+    "s21": "63868fc89078593dbe4100f6219dc30d128fa8643fd03a5540708b33492840cc",
+    "s3": "2a385591edce8d1cb26d41f176fb084cd634d113eb130d2581ce97000bcb3eea",
+    "s4": "0116c3c4a34b6e607b2564cc4300d3784ba5d7596a0000d0b59c40e1801dcd1a",
+    "s5": "81cc22db14da433d65d2cbfd466e233d778e9b5d50552dc7a013e94a3b25ad15",
+    "s6": "91849d1cd49d8e783c893b01272f0e0f505aed67e379d52d354011a619270a1d",
+    "s7": "0eb7720abb0f46f8d48d47fcf646be85ae58c8a5cc37c98f7ad06ac2f9deb6ff",
+    "s8": "5dcf0f324a6b831b76a043e465731eff46456979ae084bcfc764ff0d40816359",
+    "s9": "b22a82394cfc2b7163b7fbd8be1087fdb6ec66a16524e9d194431d418894d798"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T07:41:41.255269+00:00",
+  "total": null
+}
