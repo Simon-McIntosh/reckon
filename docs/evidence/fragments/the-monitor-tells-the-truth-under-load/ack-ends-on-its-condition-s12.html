@@ -1,0 +1,17 @@
+<section id="ack-ends-on-its-condition-s12-landing">
+  <h3>Acknowledgements end on evidence or a new run state</h3>
+  <p><code>crew ack --until-condition</code> accepts a named JSON condition using existing file or shell-free probe readings. The existing <code>--until</code> deadline still caps the deferral. A live acknowledgement binds to its run’s phase and attempt; a change releases it, and a resumed run cannot inherit a promoted remainder’s acknowledgement. The records remain in the existing acknowledgement stores.</p>
+  <p>The hook reconsiders both open and acknowledged snapshot rows. While a deferral holds, its reason and end condition are shown and it contributes no blocking duty. Once it ends, the original duty and reason return without a new snapshot. A stable acknowledgement does not repeat merely because its age advances.</p>
+  <table>
+    <thead><tr><th>Measure on all_debug</th><th>Base</th><th>Committed implementation</th></tr></thead>
+    <tbody>
+      <tr><td>Assigned gate, resolved over each revision’s test files</td><td>58 passed</td><td>73 passed</td></tr>
+      <tr><td>New regression file applied to the base</td><td>9 failed, 6 passed</td><td>15 passed</td></tr>
+      <tr><td>Existing importer coverage, 136 files</td><td>121 failed, 630 passed</td><td>121 failed, 630 passed; identical failure IDs</td></tr>
+      <tr><td>State-change release removed from mutation copy</td><td>Not applicable</td><td>4 failed, 11 passed</td></tr>
+    </tbody>
+  </table>
+  <p>The direct hook receipt reads <code>HELD_STOP=allowed</code> while acknowledged, then <code>"decision": "block"</code> with one outstanding duty after the condition marker appears. The mutation fails the phase-change, attempt-change, direct pointer-write and promoted-remainder regressions. No failure was added to the importer coverage.</p>
+  <p>Implementation commits: <code>dbd4d7bccfbdb7d77e409d52bb9323b689511c63</code>, <code>e6b807ee19c5193f06347042c44bad5da424709f</code>, and <code>0f0ba272c18f12d3599e23b0f2d763122f4fbfd8</code>. Baseline: <code>90ddb7831b045256bb374702b78d31f37314cffb</code>.</p>
+  <p>Receipts are retained under <code>~/.config/reckon/crew/runs/r-20261115T183258683200-ack-ends-on-its-condition-s12/</code>: <code>baseline-suite.log</code>, <code>after-suite.log</code>, <code>base-regressions.log</code>, <code>baseline-compatibility.log</code>, <code>after-compatibility.log</code>, <code>compatibility-delta.json</code>, <code>negative-control.log</code>, and <code>stop-refusal.log</code>. Earlier measurements affected by scratch exhaustion or an overriding mounts setting are retained separately and excluded from this comparison.</p>
+</section>
