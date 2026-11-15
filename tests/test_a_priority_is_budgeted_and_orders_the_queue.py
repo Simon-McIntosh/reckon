@@ -141,6 +141,22 @@ def test_a_request_naming_no_priority_carries_none(batch_repo: Path) -> None:
     assert _pointer_for("unraised")["priority"] == 0
 
 
+def test_a_composed_review_carries_its_priority_onto_the_queued_record() -> None:
+    from reckon.crew import recovery_review_dispatch
+
+    raised = recovery_review_dispatch._composed_review_options(
+        {"subject": "plan", "priority": 4}, allow_unreconciled_runs=False
+    )
+    quiet = recovery_review_dispatch._composed_review_options(
+        {"subject": "plan"}, allow_unreconciled_runs=False
+    )
+
+    # The options ride the queued record the admission pass replays, so this is
+    # the priority a held review launches with rather than the caller's answer.
+    assert raised["priority"] == 4, raised
+    assert "priority" not in quiet, quiet
+
+
 # --- Points are budgeted per session -----------------------------------------
 
 
