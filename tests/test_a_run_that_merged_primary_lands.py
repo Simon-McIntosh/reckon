@@ -220,23 +220,27 @@ def test_a_run_that_merged_the_shared_branch_cites_only_its_own_work(
     assert set(cited) == {run_commit, merge_commit}, cited
 
 
-def test_a_run_still_cannot_cite_a_commit_from_another_branch(
+def test_a_run_never_credits_a_commit_it_merged_from_another_branch(
     repository: Path, tmp_path: Path
 ) -> None:
-    """Subtracting the shared branch's commits excuses no other branch's.
+    """What must not move: another branch's commit is not the run's work.
 
     The run merged an unrelated branch as well, so its history holds a commit
-    from neither the shared branch nor its own line. That commit is still cited
-    and the guard still refuses it: the shared branch is the line the run was
-    dispatched against, so only its commits are subtracted from what the run
-    presents as its own work.
+    from neither the shared branch nor its own line. That commit is left out of
+    this run's citations, which are its own line and its own merges only.
+
+    This case replaces the older pin that such a run was refused for citing
+    that commit: the guard judges a citation reachable from the run's head as a
+    valid import, so the refusal no longer arises, and what the row credits is
+    decided here instead.
     """
     run_id = "r-20261115T060500000000-node-a"
     other_commit = _another_branch_commit(repository, tmp_path)
     base = _commit_here(repository, "advance.txt", "advance the shared branch")
     worktree = _run_worktree(repository, tmp_path, base)[0]
     _merge(worktree, "main", "merge the shared branch")
-    _merge(worktree, "other-branch", "merge an unrelated branch")
+    merge_commit = _merge(worktree, "other-branch", "merge an unrelated branch")
+    run_commit = git(worktree, "rev-parse", "HEAD^")
     _set_plan(repository, impl=1.0)
     _pointer(
         repository,
@@ -248,9 +252,7 @@ def test_a_run_still_cannot_cite_a_commit_from_another_branch(
 
     cited = _cited_commits(run_id)
 
-    assert other_commit in cited, cited
+    assert other_commit not in cited, cited
+    assert set(cited) == {run_commit, merge_commit}, cited
     report = _dry_run(repository, run_id)
-    refusals = "\n".join(report["refusals"])
-    assert report["would_promote"] is False, refusals
-    assert other_commit[:10] in refusals, refusals
-    assert "not a commit this run made beyond its base" in refusals
+    assert report["would_promote"] is True, report["refusals"]

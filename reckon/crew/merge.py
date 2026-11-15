@@ -269,21 +269,32 @@ def _parents(repo: Path, commit: str) -> list[str]:
 
 
 def commits_between(
-    tree: Path, older: str, newer: str, *, excluding: str = ""
+    tree: Path,
+    older: str,
+    newer: str,
+    *,
+    excluding: str = "",
+    first_parent: bool = False,
 ) -> list[tuple[str, str]] | None:
     """The commits between two revisions, oldest first, as ``(sha, subject)``.
 
+    ``first_parent`` follows the caller's own line, keeping its merge commits
+    and leaving out the commits their other parents introduced: a run's merge of
+    a shared branch is its work and is cited, while what that merge imported was
+    made by others.
+
     ``excluding`` names a revision whose own history is none of the caller's
-    business — a shared branch a run merged into its worktree, rather than a
-    line the caller is asking about — and its reachable commits are left out of
-    the answer. That is what keeps a run's citations to what the run made: the
-    merge it took of the shared branch is its own commit, while the commits
-    that merge brought in were made by others.
+    business — the shared branch a run merged into its own worktree — and its
+    reachable commits are left out of the answer even when they sit on the
+    caller's line, which is what a branch rebased onto the shared one has.
 
     ``None`` when git cannot list the range, so a caller reports an unreadable
     range as unreadable rather than as nothing changed.
     """
-    arguments = ["log", "--reverse", "--format=%H %s", f"{older}..{newer}"]
+    arguments = ["log", "--reverse", "--format=%H %s"]
+    if first_parent:
+        arguments.append("--first-parent")
+    arguments.append(f"{older}..{newer}")
     if excluding:
         arguments += ["--not", excluding]
     try:

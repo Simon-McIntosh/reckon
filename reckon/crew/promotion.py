@@ -637,12 +637,16 @@ def _promotion_commits(
 ) -> list[str]:
     """Read the run's committed range even when a repair cleared its citations.
 
-    The range is ``base..HEAD`` in the run's own tree, less the history the
-    shared branch reaches: imports through a merge belong to primary, while the
-    merge belongs to the run. A run that merged the shared branch into its
-    worktree therefore cites its own commit and that merge and not the commits
-    the merge brought in, and a commit it merged from any other branch stays
-    cited, so the citation guard still refuses that one.
+    The range is the run's own line in ``base..HEAD`` in the run's own tree,
+    less the history the shared branch reaches, so imports through a merge
+    belong to primary while the merge itself stays the run's. A run that merged
+    the shared branch into its worktree therefore cites its own commit and that
+    merge and not the commits the merge brought in, and no commit it imported
+    from another branch is credited to it either.
+
+    The exclusion is not made redundant by the traversal: a run whose branch was
+    rebased onto the shared one has primary's own commits on its first-parent
+    line, and those are still not the run's work.
 
     The range is answered from the previous read until the tree's own head or
     the shared branch moves, and both are resolved as files or by one cached
@@ -661,7 +665,9 @@ def _promotion_commits(
     def read() -> list[str]:
         if tree is None:
             return [str(sha) for sha in manifest_commits]
-        history = commits_between(tree, base, "HEAD", excluding=shared)
+        history = commits_between(
+            tree, base, "HEAD", excluding=shared, first_parent=True
+        )
         return (
             [sha for sha, _subject in history]
             if history
