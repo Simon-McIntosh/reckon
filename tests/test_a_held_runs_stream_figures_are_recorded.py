@@ -211,9 +211,7 @@ def test_a_stream_already_gone_is_recorded_absent_and_reapable(
     ]
 
 
-def test_a_row_with_no_recorded_figure_is_withheld(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_a_row_with_no_recorded_figure_is_withheld(tmp_path: Path, monkeypatch) -> None:
     """Negative control: skipping the write leaves retention withholding."""
 
     home = tmp_path / "config"
