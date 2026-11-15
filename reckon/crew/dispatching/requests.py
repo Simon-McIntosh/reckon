@@ -24,6 +24,7 @@ from ._imports import (
     resolve_dispatch_authority,
     resolve_role_override,
     resolved_time_ceiling,
+    run_dir,
     validate_node,
     watch_arming_suppressed,
     watch_state,
@@ -173,6 +174,9 @@ def queue_requests(
         live=live,
     )
     for node in nodes:
+        node.manifest_path = node.manifest_path or str(
+            run_dir(assigned_ids[node.id]) / "manifest.md"
+        )
         # The whole node contract is judged here, beside the admission domain,
         # so a batch entry that a single dispatch would refuse is refused while
         # it is still a request rather than surfaced later at its launch, where
