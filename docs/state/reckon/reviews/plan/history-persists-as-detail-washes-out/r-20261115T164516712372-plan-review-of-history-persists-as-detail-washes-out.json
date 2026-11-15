@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T16:48:48.302Z",
+  "dispatched_at": "2026-11-15T16:48:26Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/history-persists-as-detail-washes-out.html:381",
+      "id": "wiring-1",
+      "reason": "without the store module and its writer in scope the worker must either breach its write paths or leave rows unable to carry the revision, which leaves \u00a724's equality arm unmeasurable.",
+      "text": "\u00a724 says each store row carries the revision its run landed at and existing rows are backfilled from the commit that added the run's file, but its write paths are `reckon/velocity.py`, the figure script, the `scripts/` readers and the new test; the runs table's columns come from the `QUERY_KEYS` declaration in the store module (`reckon/run_store.py`: `(\"member\", \"node\", \"project\", \"completed_at\", \"backend\")` across `_RUNS_COLUMN_DEFS`) and rows are written by `reckon/ledger.py`, so neither the column nor its backfill can be added from the declared scope",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/history-persists-as-detail-washes-out.html:402",
+      "id": "done_when-1",
+      "reason": "the fixture must name the one marker that survives \u00a726, or the correct fix and the silent-failure fix are indistinguishable at this gate.",
+      "text": "\u00a728's crew fixture holds `<project>/reviews/` and `<project>/runs/` together with the static-site files, so the two fixtures differ by two marks at once and the test passes whether the surviving recognition keys on `reviews/` or on `runs/`; \u00a726 (line 392) removes `docs/state/<project>/runs/` in the very next migration, so a fix keyed on `runs/` satisfies \u00a728 and turns both guards and the CLI entry off once \u00a726 lands, silently, with nothing failing",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "fd2fe9c17f80e5901236fb399cb7ac4831d2bcce",
+  "plan_fingerprint": "00b7c059d5f149e5b52129c46aebdad15948715529bc82c1ec9058460e681be9",
+  "plan_slug": "history-persists-as-detail-washes-out",
+  "plan_version": 46,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261115T164516712372-plan-review-of-history-persists-as-detail-washes-out",
+  "reviewed_blob_sha": "08c9558891f73d3e6d286016c3d39fe0a431eab6",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 verified in the tree: `docs/figures/plan-review-cycles/measure_review_cycles.py:333-336` reads `docs/state/<project>/crew.json` from the working tree and `continue`s when it is absent; `reckon/velocity.py` exists; commit `0d421c7f75` resolves; `reckon/project_maintenance_commands.py:681` writes `index.json` for every non-distributed build; `tests/test_guards_hold_without_a_tracked_ledger.py` exists; and `tessera`/`norma`/`helix`/`vv` track exactly `index.json`, `project.json`, `timeline.html` while `hanney` tracks those plus `reviews/` and `runs/` and neither `crew.json` nor `flight.yaml`.",
+    "done_when": "a finding \u2014 \u00a728's crew fixture carries both the `reviews/` and `runs/` history `hanney` tracks, while \u00a726 removes `runs/`, so the fixture pair does not pin a marker that survives the untracking and the test passes on a fix that silently turns both guards off afterwards.",
+    "evidence_paths": "pass \u2014 neither unit names a scratchpad; both measures build a temporary repository and the node's gate writes under the run's own log directory.",
+    "naming": "pass \u2014 the project names in \u00a728 are cited fixture evidence, not symbols, stage names or ticket numbers carried into code.",
+    "reasoning": "pass on all three checks \u2014 s24's Why matches the cited code (the figure script reads the working-tree ledger and silently drops that project's dispatch times when the file is missing), s28's Why matches the guard source (`PROJECT_STATE_MARKERS = (\"index.json\", \"flight.yaml\", \"crew.json\")` in `reckon/hooks/native_agent_guard.py` and `reckon/hooks/worker_message_guard.py`, `_CREW_STATE_MARKERS` in `reckon/cli_entry.py`, so a static-site-only repository is recognised today and the new test does fail at base), and both endpoints are measurable against a synthetic repository.",
+    "single_goal": "pass \u2014 \u00a724 restates two readers of one store against one equality over one population and \u00a728 delivers one detection rule, so each node closes on a single verdict.",
+    "wiring": "a finding \u2014 \u00a724's deliverable requires every store row to carry the revision a run landed at and existing rows to be backfilled, but its write paths omit the store schema declaration and the row writer that such a column must be declared and populated through, so the node cannot meet its own done-when inside the scope it declares."
+  },
+  "section_digests": {
+    "_document": "6a43111590c490cb96fbdbd1efbc232ec22261c8c21397d2d76e96d30f35b73d",
+    "s1": "16a4b0ff613308f968af13a86453cdda7611fbb4a0b662f0998319199f08c1f2",
+    "s2": "81ea5591beea9f0bfe0621b90127946f5c732b8471e2c5373404a592fa5daefe",
+    "s20": "469126d7a8d70994107c002b967dbf9da3c5237e4a3d05823281a9885c92731d",
+    "s21": "b2ec3716b6dd37a6a203c9b9d7c0be1209c9fa8d48d83ddcdf537eb47428cd4c",
+    "s22": "44eee72b2eb1fba73278d19280640ae85ab4fef9d1625113ca2a3cba0ae32c22",
+    "s23": "5f979f2ac2c694c8465c9b3b76743b70a3df967a1496488ebe45e96a41451c59",
+    "s24": "fe6d65f7674dbe3a7d52dc9a0bcc1b2baf68d75d47ddff9e615c69253e2dcef4",
+    "s25": "6e50b703cae5c188d1fb24250a943eb5f654fc5c26334335a3a7288120690168",
+    "s26": "37c27b0d54e7bf1a99e322e08776a72ffa748c2b88388aaa51f267a1db5c358a",
+    "s27": "9d55fe84f9ee617248a7eec57379797bd44bc1cb050fc378d20ac1b3da8152b2",
+    "s28": "93bb2a9cff538746df7d044a3e2c5676f02d15c8312121daae7e53b79b8b98f6",
+    "s3": "3422a7a0a23c318e54716e2fbbaf99599e0142f7bbc74d9eb45f924541cd8ccf",
+    "s4": "6beff7af8378d0a3be80a490fb73cc8c5e6a8ee94449c98de40a252d2f57fcd5",
+    "s5": "0cd70cc30708f232bf564bff0e7825d783d5f5ab455747bfac40ebe742ea0ed3",
+    "s6": "5181e894e8b3823f366d0b459a48ecc8e236e645ca5b1f02071dfc0fdae47681",
+    "s7": "6173f16d89316af11f74c75b5bec44f90742582abf47efd7e72af7af3bb31b50"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T17:00:35.705036+00:00",
+  "total": null
+}
