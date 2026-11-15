@@ -2526,6 +2526,22 @@ def _store_brief(directory: Path, source: str, *, block: str = "") -> Path:
         raise CrewError(f"the brief {source!r} could not be stored: {exc}") from exc
 
 
+def readable_brief_source(node: TaskNode) -> str:
+    """The brief a dispatch reads: the run's stored copy if it is there, else the source.
+
+    A queued request carries the stored copy an earlier attempt made under its
+    own run id. When that attempt was refused or released, its run directory
+    went with the copy, and every later launch of the request refused on a brief
+    it could no longer read, while the source the request names was still on
+    disk: on 14 November three review requests were refused this way on every
+    pass. The source is read instead, and the launch stores its own copy.
+    """
+    stored = str(node.brief_path or "").strip()
+    if stored and Path(stored).expanduser().is_file():
+        return stored
+    return node.brief
+
+
 def _brief_record(
     node: TaskNode, project: str = "", *, project_path: str | None = None
 ) -> dict[str, Any] | None:
@@ -2541,7 +2557,7 @@ def _brief_record(
         return None
     record: dict[str, Any] = {
         "sha256": node.brief_sha256,
-        "path": node.brief_path or node.brief,
+        "path": readable_brief_source(node),
         "source_path": node.brief,
     }
     carry = _domain_rules_carry(node, project, project_path=project_path)
@@ -2567,7 +2583,7 @@ def _brief_text(
     """
     if not node.brief.strip():
         return ""
-    source = node.brief_path or node.brief
+    source = readable_brief_source(node)
     try:
         text = Path(source).expanduser().read_text(encoding="utf-8")
     except OSError as exc:
