@@ -1061,6 +1061,14 @@ def _manifest_wait(
     )
     if expected_error:
         missing.append(expected_error)
+    # Whether the horizon is the wait's own or the reader's default is the fact
+    # its overdue flag is judged on: a default borrowed from the log-staleness
+    # bound is not a limit the wait declared, so it may not be held against a
+    # probe that is still answering (see ``_wait_judged_against_itself``).
+    declared_horizon = any(field in manifest_data for field in _WAIT_HORIZON_FIELDS)
+    horizon_source = (
+        "declared" if declared_horizon and not expected_error else "default"
+    )
     signature = _wait_declaration_signature(condition, probe, terminal, resume_brief)
     wait_key_defect = ""
     if structured_form:
@@ -1093,12 +1101,152 @@ def _manifest_wait(
         ),
         "age_seconds": age_seconds,
         "expected_horizon_seconds": expected_seconds,
+        "expected_horizon_source": horizon_source,
         "overdue": age_seconds > expected_seconds,
         "signature": signature,
         "valid": not missing,
         "error": "missing or invalid " + ", ".join(missing) if missing else "",
         "wait_key_defect": wait_key_defect,
     }
+
+
+#: The states a scheduler, or a waiter's own condition test, reports while the
+#: awaited work is still going: everything a job says about itself between the
+#: moment it is queued and the moment it ends. They are read so a wait can be
+#: judged against what its probe is still saying rather than against a horizon
+#: nobody declared for it.
+_WAIT_LIVE_PROBE_STATES = frozenset(
+    {
+        "running",
+        "pending",
+        "queued",
+        "waiting",
+        "completing",
+        "configuring",
+        "requeued",
+        "resizing",
+        "signaling",
+        "suspended",
+    }
+)
+
+#: A cancelled job's state, in the spellings a scheduler prints it. Slurm's
+#: ``CANCELLED+`` marks a batch step of the cancelled job.
+_WAIT_CANCELLED_STATES = frozenset({"cancelled", "canceled", "cancelling", "canceling"})
+
+#: An elapsed time of nothing at all: the job held its allocation for no time.
+_WAIT_ZERO_ELAPSED = frozenset({"00:00:00", "0:00:00", "0-00:00:00"})
+
+
+def _wait_probe_answered(observation: Any) -> bool:
+    """Whether a wait's probe produced an answer about the thing watched.
+
+    ``answered`` is the structured fact the observation carries; a probe that
+    could not run or failed reports it false and is the only case that says
+    nothing about the condition.
+    """
+    if not isinstance(observation, Mapping):
+        return False
+    return observation.get("answered") is not False
+
+
+def _wait_probe_live_state(wait: Mapping[str, Any], observation: Any) -> str:
+    """The live state a wait's own probe reported, or "".
+
+    A ``wait_file`` condition declares no probe of its own — this reader derives
+    one from the paths, and their absence is the wait's own state rather than
+    anything the awaited work said about itself — so a file condition reports no
+    live state here.
+    """
+    if wait.get("files") or not _wait_probe_answered(observation):
+        return ""
+    if not isinstance(observation, Mapping):
+        return ""
+    if str(observation.get("state") or "") == "pending":
+        return "pending"
+    observed = str(observation.get("observed") or "")
+    for word in observed.replace(",", " ").split():
+        token = word.strip("\"'()[]{}:;.").casefold()
+        if token in _WAIT_LIVE_PROBE_STATES:
+            return token
+    return ""
+
+
+def _wait_probe_suspect(
+    wait: Mapping[str, Any], observation: Any
+) -> dict[str, Any] | None:
+    """A wait probe naming a job that the scheduler cancelled before it ran.
+
+    A job cancelled in the queue reports ``CANCELLED`` with an elapsed time of
+    zero: nothing of the awaited work ever ran, so the state names the
+    allocation's cancellation rather than the end of the condition the wait is
+    on. A declaration lists ``CANCELLED`` among its terminal states — it is a
+    way a job ends — and the reading then matches it and offers the run a
+    resume, which is how a dispersed worker was woken against a job that never
+    started. The reading is returned here as its own fact so the row can say
+    the probe is suspect instead of reporting a terminal state.
+    """
+    if wait.get("files") or not _wait_probe_answered(observation):
+        return None
+    probe = [str(item) for item in (wait.get("probe") or ())]
+    jobs = _wait_probe_job_ids(probe)
+    if not jobs:
+        return None
+    observed = str(observation.get("observed") or "")
+    words = [word.strip("\"'()[]{}:;,").casefold() for word in observed.split()]
+    cancelled = next(
+        (
+            word
+            for word in words
+            if word.split("+")[0] in _WAIT_CANCELLED_STATES or word.startswith("cancel")
+        ),
+        "",
+    )
+    zero = next((word for word in words if word in _WAIT_ZERO_ELAPSED), "")
+    if not cancelled or not zero:
+        return None
+    return {
+        "state": cancelled,
+        "observed": observed,
+        "jobs": list(jobs),
+        "detail": (
+            f"the wait probe names job {', '.join(jobs)} and reported "
+            f"{observed!r}: {cancelled!r} with no elapsed time, so the job was "
+            "cancelled before it started and its state names the allocation's "
+            "cancellation rather than the end of what this wait is on"
+        ),
+    }
+
+
+def _wait_judged_against_itself(
+    wait: dict[str, Any], observation: Any
+) -> dict[str, Any]:
+    """Judge a wait's overdue flag against its own limit and its own probe.
+
+    A declaration's own horizon is the limit the wait named for itself, so the
+    flag is what it always was: the age against that horizon. A declaration that
+    names no horizon was judged against the reader's default — the log-staleness
+    bound — and that number is not a limit anything declared. Measured
+    2026-11-14: a multi-hour compute wait was read overdue and sent to
+    "investigate" at 900 s while its probe reported the job RUNNING, so the
+    reader had held a scheduler's job to a bound invented for a log file.
+
+    While the probe reports a live state there is nothing to investigate, so a
+    default horizon is not held against it at all: the wait is judged by its own
+    probe. A probe that stops answering, or answers with something that is not a
+    live state, is read against the horizon exactly as before — the exemption is
+    the live answer, not a general reprieve from the clock, so a wait that has
+    gone quiet still ages into the alarm that reports it.
+
+    The probe's own reading is also where a suspect declaration is caught, so
+    the row and the overdue flag are judged on one answer rather than two.
+    """
+    wait["probe_live_state"] = _wait_probe_live_state(wait, observation) or None
+    wait["suspect_probe"] = _wait_probe_suspect(wait, observation)
+    if wait["probe_live_state"] and wait.get("expected_horizon_source") == "default":
+        wait["overdue"] = False
+        wait["overdue_basis"] = "probe"
+    return wait
 
 
 def external_wait(
@@ -1803,6 +1951,7 @@ from .recovery_vocabulary import (  # noqa: E402
 )
 from .recovery_wait import (  # noqa: E402
     _WAIT_ACCEPTED_SHAPES,
+    _WAIT_HORIZON_FIELDS,
     _newest_stream_shows_work,
     _run_directory,
     _unquote_wait_declaration_scalar,
@@ -1816,6 +1965,7 @@ from .recovery_wait import (  # noqa: E402
     _wait_probe_cannot_fail,
     _wait_probe_interpreter_code,
     _wait_probe_is_a_no_op,
+    _wait_probe_job_ids,
     _wait_probe_program_words,
     _wait_probe_shape_refusal,
     _wait_terminal_names_a_live_state,

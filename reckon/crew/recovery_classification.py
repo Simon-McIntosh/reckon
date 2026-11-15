@@ -749,8 +749,25 @@ def _producer_gone_verdict(
     None means any of those is unmet, unproven, or unreadable: a scheduler that
     could not be asked and a stillness the history does not establish both keep
     the run waiting, because neither is evidence that anything has stopped.
+
+    A probe that answered is the fourth fact, and it cancels the rest: a wait
+    whose own probe reported something is waiting on that report, whatever the
+    process table, the stillness and this host's scheduler say beside it.
     """
     if alive is not False or liveness_proven is not True:
+        return None
+    # A declared probe that answered is the wait's own evidence: it reported
+    # something about the thing watched, and nothing read beside it can outvote
+    # that. The facts this verdict rests on are all second-hand — a process
+    # table on this host, the stillness of the same value, and a scheduler
+    # query asked here about work that may have been submitted elsewhere — so
+    # an answer already in hand is what the wait is judged by. Measured
+    # 2026-11-15: two runs parked on scheduler jobs submitted on another
+    # cluster were read producer-gone because this host's scheduler listed
+    # nothing, while their own sacct probes were answering that the job was
+    # still queued. Whatever its argv names, an answering probe keeps the run
+    # waiting; only a probe that reports nothing leaves this verdict its work.
+    if not wait.get("files") and _wait_probe_answered(observation):
         return None
     # A wait that names jobs is only settled by a scheduler that answered and
     # listed none of them; a scheduler that could not be asked leaves their
@@ -1590,6 +1607,22 @@ def classify_pointer(
                 "answered": False,
                 "detail": f"condition probe could not answer: {exc}",
             }
+        # The wait is judged against itself here, before any arm reads it: its
+        # own declared horizon or its own probe's live answer, never a default
+        # horizon borrowed from the log-staleness bound. A probe naming a job
+        # cancelled with no elapsed time is reported as suspect — not terminal —
+        # because that state names the allocation's cancellation rather than the
+        # end of what the wait is on.
+        wait = _wait_judged_against_itself(wait, wait_observation)
+        if wait.get("suspect_probe"):
+            wait_observation = {
+                **wait_observation,
+                "state": "unknown",
+                "detail": (
+                    f"{wait['suspect_probe']['detail']}; no terminal state has "
+                    "been reported for this wait"
+                ),
+            }
     # A live worker may hold no written verdict yet, because the reader caught
     # its manifest between a rewrite's truncate and write. That is not a
     # delivery a reader must repair, but naming it unwritten in that instant
@@ -2247,6 +2280,24 @@ def classify_pointer(
             action = (
                 f"the recovery sweep will resume run {run_id} when the condition "
                 "test reports a terminal state"
+            )
+        if wait.get("suspect_probe"):
+            # The probe names a job the scheduler cancelled before it ran, so
+            # its state names the allocation's cancellation rather than the end
+            # of what the wait is on. Reporting it as terminal would offer the
+            # run a resume against work that never started, so the row carries
+            # the suspect reading itself and offers the declaration's repair.
+            suspect = wait["suspect_probe"]
+            detail = (
+                f"waiting {wait['age_seconds']}s on {wait['condition']}; the "
+                f"probe is suspect — {suspect['detail']} — so no terminal state "
+                "has been reported for this wait"
+            )
+            action = (
+                f"edit the wait declaration in {manifest} to probe the job that "
+                f"actually runs the work, or decide with reckon crew resume "
+                f"--run {run_id} --advice '<what to tell the worker>' whether a "
+                "job that never started ends the wait"
             )
         if wait.get("wait_key_defect"):
             # The declaration lifted this run once already and came back
@@ -3156,7 +3207,9 @@ from .recovery_liveness import (  # noqa: E402
     _run_stream_quiet_seconds,
     _stranded_launch,
     _stranded_launch_age_seconds,
+    _wait_judged_against_itself,
     _wait_observation_defect,
+    _wait_probe_answered,
     _worker_launched_after_manifest,
     _worker_record_liveness,
     _worker_record_pid,
