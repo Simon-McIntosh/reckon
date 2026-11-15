@@ -1322,13 +1322,30 @@ def _shadow_stream_contamination(
 
 
 def _declared_manifest_commits(record: Mapping[str, Any]) -> list[str]:
-    """Commits a run's durable manifest declares, for landing-record detection."""
+    """Commits a run's durable manifest declares, for landing-record detection.
+
+    A commitless role writes what it did into the ``commits`` line as prose —
+    ``none — this node writes a review record outside the repository`` — and
+    the parsed field keeps that sentence where a citation list would be. Every
+    caller resolves what this reader returns against the run's repository, so
+    the sentence arrived as a citation naming no object: a read-only run was
+    refused as an unresolvable commit, and ``--no-commit`` did not reach that
+    check because it is about scope rather than about the ledger's commit list.
+    The declaration parser is the one authority on whether the field declares
+    an absence, and it is asked here, so one reader decides what the line says
+    for the landing record, the figure twin check and the boundary check alike.
+    A role that commits keeps the entry-by-entry reading, so a citation-shaped
+    value that names nothing is still returned and still refused by value.
+    """
     manifest_path = str(record.get("manifest_path") or "")
     if not manifest_path:
         return []
     try:
-        declared = parse_manifest(Path(manifest_path).read_text(encoding="utf-8"))
+        text = Path(manifest_path).read_text(encoding="utf-8")
+        declared = parse_manifest(text)
     except (OSError, KeyError, ValueError):
+        return []
+    if _commits_field_declares_absence(text, record):
         return []
     return [
         str(sha).strip() for sha in (declared.get("commits") or []) if str(sha).strip()
