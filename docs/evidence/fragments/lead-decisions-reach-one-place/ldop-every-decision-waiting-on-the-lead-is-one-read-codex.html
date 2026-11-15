@@ -1,0 +1,29 @@
+<section id="ldop-every-decision-waiting-on-the-lead-is-one-read-codex">
+  <h2>Open lead decisions across mounted projects</h2>
+  <p>The shared crew home now stores a decision's question, context, options,
+  recommendation, owning project/session/plan/section, recording time and held
+  work. <code>reckon crew decision record --record FILE</code> creates a record;
+  <code>reckon crew view decisions</code> and <code>crew(view="decisions")</code>
+  read the same ordered document. <code>--project</code> narrows the read.</p>
+  <p>The first head gate passed <strong>70 tests</strong> on
+  <code>all_debug</code>, including three records across two mounted projects
+  holding <strong>4, 1 and 0</strong> named requests, returned in that order.
+  An unanswered decision authored only in plan HTML appears with its plan and
+  section; answered decisions do not appear. Launched or missing requests do
+  not inflate held work. The ranking counts distinct waiting requests plus
+  declared held sections.</p>
+  <p>Plan-only decisions do not store a recording timestamp or owning session.
+  The read reports that timestamp as null, carries the plan's modified date
+  separately, and derives an owning session only when its matching held
+  requests agree. These unknown values are preserved explicitly.</p>
+  <p>The base inventory gate at <code>b46256908fc3eac1a5b4f4dc5f21ec0740feee34</code>
+  passed <strong>58 tests</strong>. The negative control failed at its first
+  aggregate read: <code>crew read views need project</code>, with
+  <code>EXIT=1</code>. The full red receipt is in
+  <a href="/reckon/evidence/fragments/lead-decisions-reach-one-place/s1.html">the negative-control receipt</a>.
+  Durable gate logs and the final committed-head measurement are recorded in
+  the run manifest.</p>
+  <p>Implementation commit: <code>3b61cc99db3ebc2ca3b720098c9adb46576c55c8</code>.
+  Hold enforcement, authorised answering and presenting decisions remain with
+  their dependent nodes; this delivery creates and reads the shared records.</p>
+</section>
