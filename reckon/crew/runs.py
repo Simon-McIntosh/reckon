@@ -46,6 +46,8 @@ from reckon.node_exclusive_lock import LockHeld, exclusive_lock
 from reckon.crew.host_lease import (
     LEASE_RENEW_SECONDS as LEASE_RENEW_SECONDS,
     HostLease as HostLease,
+    local_host as local_host,
+    process_runs_here as process_runs_here,
 )
 from reckon.crew.node import (
     _TERMINAL_RUN_PHASES as _TERMINAL_RUN_PHASES,
@@ -1074,9 +1076,9 @@ def _pointer_text(path: Path) -> str:
     return text
 
 
-#: The lease this node's station keeps under the node-local runtime root, and
-#: the file inside it naming the process that holds the station.
-STATION_LEASE_NAME = "station.json"
+#: The lease this node's station keeps under the node-local runtime root. Its
+#: record is the repository's own lease record, read through the mechanism that
+#: writes it, so there is one reader of that format rather than two.
 _STATION_PID_LOCK = threading.Lock()
 #: The station pid last read, under the lease file's stat identity. The lease is
 #: renewed every few seconds, so an identity change — not a clock — is what
@@ -1085,33 +1087,40 @@ _STATION_PID: dict[str, tuple[tuple[Any, ...], int | None]] = {}
 
 
 def station_lease_path() -> Path | None:
-    """The lease this host's station writes, or None when the editable node has none."""
+    """The lease file this host's station writes, or None when the node has none."""
+    lease = _station_lease()
+    return None if lease is None else lease.path
+
+
+def _station_lease() -> HostLease | None:
+    """The lease this host's station keeps, named the way the station names it."""
     from reckon.crew.dispatch_watch import session_host_runtime_root
+    from reckon.crew.station import station_lease as station_lease_of_this_root
 
     root = session_host_runtime_root()
     if root is None:
         return None
-    return Path(root) / "leases" / STATION_LEASE_NAME
+    return station_lease_of_this_root(Path(root))
 
 
 def station_pid_on_this_host() -> int | None:
     """The pid this host's station recorded for itself, or None.
 
-    The station is the one writer on a node and it names itself in the lease it
-    keeps, so the lease is the only record that says which process here is the
-    station. It lives under the node-local runtime root, which means the reading
-    answers about this host's station and no other's: a pid means something only
-    in the process table that issued it, and that is the table this read was
-    taken in.
-
-    A lease left behind by a replaced station is still read, because a successor
-    may not have taken it yet, but a pid the kernel has since handed to another
-    process is not: the start tick recorded beside the pid must match the live
-    process, so a recycled number names its new owner rather than a station.
+    The station is the one writer on a station's lease and it names itself
+    there, so its holder is the only record that says which process here is the
+    station. Two questions decide the answer, and both are the lease mechanism's
+    own: whether this host holds the lease at all — a lease another node wrote
+    says nothing about this node's process table — and whether the pid it names
+    is still the process that wrote it, which ``process_runs_here`` settles from
+    the start tick and the process table recorded beside the pid. A lease whose
+    renewal has lapsed is not read as a station, because the lease mechanism
+    itself stops counting a lapsed lease as held; a recycled number is not read
+    as one either, because its start tick has moved.
     """
-    path = station_lease_path()
-    if path is None:
+    lease = _station_lease()
+    if lease is None:
         return None
+    path = lease.path
     try:
         info = path.stat()
     except OSError:
@@ -1122,21 +1131,18 @@ def station_pid_on_this_host() -> int | None:
         kept = _STATION_PID.get(key)
     if kept is not None and kept[0] == identity:
         return kept[1]
+    holder = lease.holder()
     resolved: int | None = None
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        payload = None
-    if isinstance(payload, Mapping) and payload.get("host") == socket.gethostname():
-        candidate = payload.get("pid")
-        start = str(payload.get("pid_start") or "")
-        if (
-            isinstance(candidate, int)
-            and not isinstance(candidate, bool)
-            and candidate > 1
-            and (not start or _process_start_time(candidate) == start)
-        ):
-            resolved = candidate
+    if (
+        holder is not None
+        and holder.host == local_host()
+        and process_runs_here(
+            pid=holder.pid,
+            pid_start=holder.pid_start,
+            pid_namespace=holder.pid_namespace,
+        )
+    ):
+        resolved = holder.pid
     with _STATION_PID_LOCK:
         _STATION_PID[key] = (identity, resolved)
     return resolved
@@ -1150,6 +1156,10 @@ def pid_belongs_to_the_station(pid: object) -> bool:
     record that names it names the door that started something rather than
     anything of the run: signalling that pid ends the node's whole fleet of
     worktrees instead of the run the record belongs to.
+
+    A pid is compared only inside the process table that issued it: the lease
+    records the namespace its holder ran in, and a number read from another
+    table addresses a different process, so no match there is claimed.
     """
     if isinstance(pid, bool) or not isinstance(pid, int):
         return False
