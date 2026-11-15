@@ -24,7 +24,7 @@
   <title>The Monitor Tells The Truth Under Load | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="27">
+<meta name="plan-version" content="28">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -203,6 +203,9 @@
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261115T212713012775-review-of-ack-ends-on-its-condition-s12-6233c695289a" data-who="reckon-build" data-when="2026-11-15T21:35:35Z">
     <div class="r-comment-body"><p>Independent review of base 90ddb7831b045256bb374702b78d31f37314cffb to head 6233c695289a1f4f929cf49af0bcb8bef4e78f62 stores all six scores, five checklist verdicts, five production call sites, zero added failures and one non-blocking concurrent-renewal finding.</p></div>
 </div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261115T183258683200-ack-ends-on-its-condition-s12" data-who="reckon-build" data-when="2026-11-15T19:32:25Z">
+    <div class="r-comment-body"><p>Added --until-condition and immediate phase/attempt release; hook lists deliberate deferrals with their reason and restores ended duties without a snapshot refresh. all_debug gate 58 to 73 passed; importer delta zero added failures across 136 files (same 121 failures); state-release mutation fails 4 tests.</p></div>
+</div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261115T191508573218-review-of-due-reload-fires-in-bound-s13-28193fb91d6e" data-who="reckon-build" data-when="2026-11-15T19:30:26.041Z">
     <div class="r-comment-body"><p>Reviewed r-20261115T182449429955-due-reload-fires-in-bound-s13 at af516b3ac9..28193fb91d: all six dimensions scored in 0..20 (goal_fidelity 18, evidence 13, scope_discipline 18, durability 18, fit 17, reuse 4), added_failure_count 0 with an empty added_failure_ids derived from the run's own arm logs, and four non-blocking findings (the deferred-proof retry duplicated from follower_reload.py; a malformed baseline_suite; two cited suite logs absent; the station-wide 70-passed measure recorded only as a claim).</p></div>
 </div>
@@ -234,7 +237,7 @@
     <div class="r-comment-body"><p>reviewed r-20261115T145802867790-only-real-transitions-s8 at head 64b2c9ad6b2a3c75ec9beff3fb9c4f59ab464a59 off base b46256908fc3eac1a5b4f4dc5f21ec0740feee34 — record parsed, all 6 dimensions scored 0..20 (goal_fidelity 16, evidence 13, scope: 19, 15, 17, 12), added_failure_count 0 with no added ids, 7 non-blocking findings and no blocking one, record at review-records/r-20261115T145802867790-only-real-transitions-s8.at-64b2c9ad6b2a3c75ec9beff3fb9c4f59ab464a59.json</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261115T145802867790-only-real-transitions-s8" data-who="reckon-build" data-when="2026-11-15T16:53:27Z">
-    <div class="r-comment-body"><p>ticker draws a same-word row without an arrow pair and drops a row stamped before one already emitted for its run; each duty row carries the instant its own evidence was observed at (terminal_at, never the reading pass&#x27;s clock) and refresh_age measures the age from it at every read; every row names the runs behind it through one projection, with the summary left at the three figures the published slice composes from the same rows — the after arm at c197a48eec reports 62 passed, EXIT=0, against 58 passed, EXIT=0 at base, the new test file fails 4/4 at base, and the six files carrying the base subset&#x27;s 7 failures report the same 7 ids at head with nothing added</p></div>
+    <div class="r-comment-body"><p>ticker draws a same-word row without an arrow pair and drops a row stamped before one already emitted for its run; each duty row carries the instant its own evidence was observed at (terminal_at, never the reading pass's clock) and refresh_age measures the age from it at every read; every row names the runs behind it through one projection, with the summary left at the three figures the published slice composes from the same rows — the after arm at c197a48eec reports 62 passed, EXIT=0, against 58 passed, EXIT=0 at base, the new test file fails 4/4 at base, and the six files carrying the base subset's 7 failures report the same 7 ids at head with nothing added</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261115T173941433645-review-of-hook-counts-what-is-owed-s9-215392550c93" data-who="reckon-build" data-when="2026-11-15T17:47:32.856Z">
     <div class="r-comment-body"><p>Independent review of r-20261115T145806650328-hook-counts-what-is-owed-s9 at head 215392550c against base fd2fe9c1 is stored as a parsed record scoring goal_fidelity 17, evidence 13, scope_discipline 20, durability 17, fit 16, reuse 4, with three non-blocking findings (the duplicated has-live-work rule at reckon/hooks/coordinator_obligations.py:1079, the trailer label at :954, and the done_when clause the gate never measured), added_failure_count 0.</p></div>
