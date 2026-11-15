@@ -45,6 +45,8 @@ from reckon.crew.runs import (
 )
 from reckon.crew.ticker import NEEDS_ACTION, Ticker, _agent_label
 from reckon.crew.watch_unit import (
+    record_producer_exit,
+    record_producer_start,
     release_seat_when_misplaced,
     seat_names_a_live_foreign_producer,
     watch_state,
@@ -699,8 +701,16 @@ def _watch_registration(
                 # holds, never by reopening the path: an unlink in the moment
                 # between taking the claim and this write would make the reopen
                 # raise FileNotFoundError and end the producer before it polls.
-                _write_watch_record(runs._WATCH_SEAT_HANDLES[project], watcher)
-                yield acquired, watcher
+                record_producer_start(project, watcher)
+                error = None
+                try:
+                    _write_watch_record(runs._WATCH_SEAT_HANDLES[project], watcher)
+                    yield acquired, watcher
+                except BaseException as exc:
+                    error = exc
+                    raise
+                finally:
+                    record_producer_exit(project, watcher, error)
                 return
         # The seat is held. Wait and re-read it only while a live producer on
         # another host owns it; any other held seat is one the caller already
@@ -3517,6 +3527,7 @@ def watch_ticker(
 
     def _wait(interval: float) -> bool:
         """Sleep, bounded by the lease; report whether the seat has ended."""
+        watcher["last_stage"] = "waiting"
         if runs.end_lapsed_watch_seat(project):
             return True
         remaining = _lease_remaining()
@@ -3625,6 +3636,7 @@ def watch_ticker(
         while True:
             try:
                 with runs._producer_tick(), _classification_input_tick():
+                    watcher["last_stage"] = "lease-check"
                     if not runs.renew_watch_host_lease(project):
                         return
                     # An unlinked seat record is rewritten before anything else, so a
@@ -3634,6 +3646,7 @@ def watch_ticker(
                         return
                     if runs.end_lapsed_watch_seat(project):
                         return
+                    watcher["last_stage"] = "polling"
                     # Every stream the tick reads is counted, so the registration
                     # carries what this poll actually parsed. An unchanged fleet
                     # resumes from every cursor and parses nothing, which is the value
@@ -3729,6 +3742,7 @@ def watch_ticker(
                             flush=True,
                         )
                     moment = _utc_seconds()
+                    watcher["last_stage"] = "classifying"
                     if sweep:
                         beat_passes = runs.admission_pass_history()
                         current = {
@@ -3768,6 +3782,7 @@ def watch_ticker(
                         poll_interval_current = poll_interval
                     update_watch_registration(
                         project,
+                        last_stage=watcher["last_stage"],
                         poll_interval_seconds=poll_interval_current,
                         bytes_parsed_last_poll=_backends.take_parsed_stream_bytes(),
                     )
@@ -3780,6 +3795,7 @@ def watch_ticker(
                         continue
 
                     counts = _transition_counts(current)
+                    watcher["last_stage"] = "publishing"
                     if not fleet_seen:
                         fleet_seen = True
                         known = {
@@ -3898,15 +3914,18 @@ def watch_follow(
             return
 
         while True:
+            watcher["last_stage"] = "polling"
             pointers = list_live(project=project)
             if not pointers:
                 if fleet_seen:
                     return
+                watcher["last_stage"] = "waiting"
                 sleeper(poll_interval)
                 continue
             fleet_seen = True
 
             moment = _utc_seconds()
+            watcher["last_stage"] = "classifying"
             classified = [
                 (pointer, classify_pointer(pointer, now_seconds=moment))
                 for pointer in pointers
@@ -3947,6 +3966,7 @@ def watch_follow(
                             }
                             break
                 else:
+                    watcher["last_stage"] = "waiting"
                     sleeper(poll_interval)
 
 
