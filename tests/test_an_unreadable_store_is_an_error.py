@@ -199,6 +199,29 @@ def test_an_absent_store_is_still_an_empty_answer(store: Path, checkout: Path) -
     assert data["runs"] == []
 
 
+def test_a_store_without_a_schema_record_but_current_columns_still_answers(
+    store: Path, checkout: Path
+) -> None:
+    with run_store.RunStore(store) as sqlite_store:
+        sqlite_store.append(PROJECT, _record("r-1", 1))
+    connection = sqlite3.connect(str(store))
+    try:
+        with connection:
+            connection.execute('DELETE FROM "store_meta"')
+    finally:
+        connection.close()
+
+    # A migration that commits its backfill and is interrupted before writing
+    # the record leaves exactly this shape. Every column a read needs is there,
+    # so the refusal must not fire on the absent record alone.
+    assert [
+        record["run_id"] for record in run_store.stored_run_rows(PROJECT) or []
+    ] == ["r-1"]
+    assert run_store.indexed_run_ids(PROJECT) == {"r-1"}
+    data, _version = ledger.load(PROJECT, checkout)
+    assert [row["run_id"] for row in data["runs"]] == ["r-1"]
+
+
 def test_the_ledger_reader_and_the_indexed_reader_return_the_same_rows(
     store: Path,
 ) -> None:

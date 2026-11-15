@@ -179,8 +179,9 @@ def _runs_columns(
 def _recorded_version(connection: sqlite3.Connection) -> str | None:
     """The schema declaration version the store records, or ``None``.
 
-    A store written before the record existed carries no version, which is one
-    of the shapes that owes a migration rather than a reason to fail here.
+    A store written before the record existed carries no version. Only the
+    writer consults this, and absence is one of the states its migration pass
+    repairs — it is never evidence that a read cannot answer.
     """
     try:
         row = connection.execute(
@@ -201,25 +202,27 @@ def _refuse_owed_migration(connection: sqlite3.Connection, path: Path) -> None:
     ``payload`` column reports no record at all while the id columns still list
     every id — and a retired row whose archive silently failed to attach is the
     same loss by another route.
+
+    The table's own shape is what decides, not the schema record: a store whose
+    columns are complete reads correctly whatever ``store_meta`` says, and a
+    store that carries every column but no recorded version is the state a
+    migration leaves when it commits the backfill and is interrupted before it
+    writes the record. Reading such a store is not partial, so it is not
+    refused.
     """
     try:
         columns = _runs_columns(connection)
     except sqlite3.Error as exc:
         raise _unreadable(path, f"{type(exc).__name__}: {exc}") from exc
     missing = sorted(_RUNS_COLUMNS - columns)
-    recorded = _recorded_version(connection)
-    if not missing and recorded == _STORE_SCHEMA_VERSION:
+    if not missing:
         return
-    cause = (
-        f"the runs table has no {', '.join(missing)} column"
-        if missing
-        else f"the store records schema {recorded or 'none'}"
-    )
     raise _unreadable(
         path,
         "it owes the schema migration "
-        f"({cause}, current {_STORE_SCHEMA_VERSION[:12]}); open it through "
-        "RunStore, which migrates it before answering",
+        f"(the runs table has no {', '.join(missing)} column, current "
+        f"{_STORE_SCHEMA_VERSION[:12]}); open it through RunStore, which "
+        "migrates it before answering",
     )
 
 
