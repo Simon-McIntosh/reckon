@@ -399,12 +399,12 @@ def _commits_beyond_base(record: Mapping[str, Any]) -> int:
         cached = _COMMITS_BEYOND_BASE_CACHE.get(key)
         if cached is not None and cached[0] == head:
             return cached[1]
-        stored = _stored_count_answer(worktree, head, base)
+        stored = _stored_count_answer(worktree, head, f"first-parent:{base}")
         if stored is not None:
             _remember_commits(key, head, stored)
             return stored
     count = subprocess.run(
-        ["git", "rev-list", "--count", f"{base}..HEAD"],
+        ["git", "rev-list", "--first-parent", "--count", f"{base}..HEAD"],
         cwd=worktree,
         capture_output=True,
         check=False,
@@ -417,7 +417,7 @@ def _commits_beyond_base(record: Mapping[str, Any]) -> int:
         return 0
     if cacheable:
         _remember_commits(key, head, resolved)
-        _remember_count_answer(worktree, head, base, resolved)
+        _remember_count_answer(worktree, head, f"first-parent:{base}", resolved)
     return resolved
 
 

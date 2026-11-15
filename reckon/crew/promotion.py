@@ -612,7 +612,9 @@ def _promotion_commits(
 ) -> list[str]:
     """Read the run's committed range even when a repair cleared its citations.
 
-    The range is ``base..HEAD`` in the run's own tree, so a tree whose head has
+    The range is the first-parent line in ``base..HEAD`` in the run's own
+    tree: imports through a merge belong to primary, while the merge belongs
+    to the run. A tree whose head has
     not moved answers from the previous read. The head is resolved as files
     rather than by spawning git, so the check itself costs no process; when the
     head cannot be read the answer is not stored, because an unreadable head is
@@ -626,7 +628,7 @@ def _promotion_commits(
     citations = tuple(str(sha) for sha in manifest_commits)
 
     def read() -> list[str]:
-        history = reviewed_commits(tree, base, "HEAD")
+        history = reviewed_commits(tree, base, "HEAD", first_parent=True)
         return (
             [sha for sha, _subject in history]
             if history
@@ -637,7 +639,9 @@ def _promotion_commits(
     head_identity = _worktree_head_identity(tree)
     if head_identity in {"no-tree", "no-git", "no-head"}:
         return read()
-    return file_memo.memoized_key("promotion_commits", (*key, head_identity), read)
+    return file_memo.memoized_key(
+        "promotion_first_parent_commits", (*key, head_identity), read
+    )
 
 
 def _default_gate_evidence_from_manifest(
