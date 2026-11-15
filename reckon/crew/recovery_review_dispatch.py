@@ -3289,9 +3289,8 @@ def _settled_delivery_refusal(
         return None
     from reckon.crew import obligations, resumption
 
-    launching = record.get(resumption.RESUME_LAUNCH_IN_FLIGHT)
     reason = ""
-    if isinstance(launching, Mapping):
+    if resumption.launch_mark_holds(record):
         reason = "the run has a resume launching; its delivery is not settled"
     elif runs.record_process_alive(record) is True:
         reason = (
