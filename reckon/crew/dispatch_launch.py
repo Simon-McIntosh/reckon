@@ -4719,6 +4719,20 @@ def _record_step_wait(run_directory: Path, client_pid: int) -> None:
     )
 
 
+def _terminal_attempt_phase(run_directory: Path, attempt: Mapping[str, Any]) -> str:
+    """The current attempt's terminal pointer phase, or an empty string."""
+    try:
+        pointer = read_pointer(run_directory.name)
+    except CrewError:
+        return ""
+    phase = str(pointer.get("phase") or "")
+    return (
+        phase
+        if phase in _TERMINAL_RUN_PHASES and _record_is_this_attempt(pointer, attempt)
+        else ""
+    )
+
+
 def _reap_worker_on_its_terminal_manifest(
     pid: int,
     *,
@@ -4794,14 +4808,8 @@ def _reap_worker_on_its_terminal_manifest(
         if waited_pid == pid:
             return status
         now = time.monotonic()
-        try:
-            pointer = read_pointer(run_directory.name)
-        except CrewError:
-            pointer = {}
-        phase = str(pointer.get("phase") or "")
-        if phase in _TERMINAL_RUN_PHASES and _record_is_this_attempt(
-            pointer, terminal_state
-        ):
+        phase = _terminal_attempt_phase(run_directory, terminal_state)
+        if phase:
             terminal_state.setdefault("deadline", now + TERMINAL_MANIFEST_GRACE_DEFAULT)
             terminal_state.setdefault("phase", phase)
         if (
@@ -4919,7 +4927,11 @@ def _reap_worker_on_its_terminal_manifest(
             delivered = signal_worker(
                 pid,
                 signal.SIGTERM,
-                reason="worker-lingered-after-terminal-manifest",
+                reason=(
+                    "worker-lingered-after-terminal-phase"
+                    if terminal_state.get("phase")
+                    else "worker-lingered-after-terminal-manifest"
+                ),
                 run_dir=run_directory,
                 run_id=run_directory.name,
                 reach_run=True,
@@ -5062,14 +5074,23 @@ def _reap_the_launched_worker(
     worker rather than a launcher's exit taken while the worker still runs.
     """
     worker_pid, worker_status = pid, status
-    if status is not None and os.WIFSIGNALED(status) and not ended_pids:
+    signalled = status is not None and os.WIFSIGNALED(status)
+    if signalled and not ended_pids:
         # A launcher hands the attempt to its worker by exiting; it is not
         # killed. A spawned child that ended by signal ended the attempt's own
-        # worker, and any descendants it leaves behind are leftovers of that
-        # worker rather than a worker still running the attempt. The signal is
-        # the fact the exit record carries, so it is written now rather than
-        # after a leftover ends.
-        return worker_pid, worker_status
+        # worker. A terminal attempt still owes cleanup of those descendants;
+        # a working attempt keeps its exit available for recovery immediately.
+        phase = _terminal_attempt_phase(run_directory, terminal_state or {})
+        try:
+            delivered = (
+                manifest_path.stat().st_mtime_ns > baseline_ns
+                and _worker_manifest_done_status(manifest_path)
+                and _worker_manifest_is_whole(manifest_path)
+            )
+        except OSError:
+            delivered = False
+        if not phase and not delivered:
+            return worker_pid, worker_status
     while True:
         children = _child_processes_of(os.getpid())
         if not children:
@@ -5086,9 +5107,11 @@ def _reap_the_launched_worker(
                 ended_pids=ended_pids,
                 terminal_state=terminal_state,
             )
-            if child_status is not None:
+            if child_status is not None and not signalled:
                 # The exit that ended the wait is the attempt's exit; a child
-                # reaped elsewhere leaves the one already held standing.
+                # reaped elsewhere leaves the one already held standing. An
+                # externally signalled harness keeps its own exit identity
+                # while its leftover descendants are collected.
                 worker_pid, worker_status = child, child_status
 
 

@@ -171,12 +171,17 @@ def launch(tmp_path, monkeypatch):
         process.wait(timeout=5)
 
 
-@pytest.mark.parametrize("mode", ["lingering", "root-exits-on-term", "rewriting"])
+@pytest.mark.parametrize(
+    "mode", ["lingering", "root-exits-on-term", "rewriting", "crashed"]
+)
 def test_terminal_pointer_ends_every_launched_process(launch, mode):
     run_id, directory, process, owned = launch(mode)
     runs._mutate_pointer(run_id, lambda record: {**record, "phase": "complete"})
     assert runs.read_pointer(run_id)["phase"] == "complete"
     started = time.monotonic()
+    if mode == "crashed":
+        print("fixture harness crash target:", owned[1])
+        os.kill(owned[1], signal.SIGKILL)
     _wait(
         lambda: not any(_running(pid) for pid in owned),
         BOUND_SECONDS,
@@ -184,9 +189,13 @@ def test_terminal_pointer_ends_every_launched_process(launch, mode):
     )
     elapsed = time.monotonic() - started
     process.wait(timeout=5)
+    assert not any(Path(f"/proc/{pid}").exists() for pid in owned)
     receipt = json.loads((directory / dispatch_launch.EXIT_RECORD_NAME).read_text())
     assert receipt["recorded_by"] == "supervisor"
-    assert set(owned[1:]).issubset(receipt["ended_pids"])
+    assert receipt["worker_pid"] == owned[1]
+    assert set(owned[2:] if mode == "crashed" else owned[1:]).issubset(
+        receipt["ended_pids"]
+    )
     assert receipt["forced_exit"]["reason"] == "terminal-run"
     assert receipt["forced_exit"]["phase"] == "complete"
     senders = [
@@ -207,3 +216,13 @@ def test_natural_worker_exit_has_no_forced_exit_record(launch):
     assert "forced_exit" not in receipt
     assert not (directory / "senders.jsonl").exists()
     assert runs.read_pointer(run_id)["phase"] == "complete"
+
+
+def test_terminal_grace_override_cannot_extend_cleanup_bound(monkeypatch):
+    monkeypatch.setenv(dispatch_launch.TERMINAL_MANIFEST_GRACE_ENV, "3600")
+    assert (
+        dispatch_launch._terminal_manifest_grace_seconds()
+        + dispatch_launch._WORKER_GRACE_KILL_SECONDS
+        + 4 * dispatch_launch._WORKER_MANIFEST_POLL_SECONDS
+        < BOUND_SECONDS
+    )
