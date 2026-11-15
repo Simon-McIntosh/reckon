@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_failure_count": 0,
+  "after_failure_ids": [],
+  "baseline_failure_count": 2,
+  "baseline_failure_ids": [
+    "tests/test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner",
+    "tests/test_staged_write_inventory.py::test_claim_move_aside_is_not_a_staged_write"
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/_store.py:_serialized_path_lock at reckon/_store.py:407",
+    "reckon/compliance.py:_write_entries at reckon/compliance.py:184",
+    "reckon/crew/review_records.py:_index_lock at reckon/crew/review_records.py:1970",
+    "reckon/crew/dispatch_peer.py:_update_peer_index at reckon/crew/dispatch_peer.py:221"
+  ],
+  "completed_at": "2026-11-14T21:12:17.560Z",
+  "dispatched_at": "2026-11-14T20:44:52Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read both commits from 6cf4f73a to afad840f31; the gained commit afad840f31 is the merge with origin/main d72c5a608f, whose hand resolution removes exactly the branch's four PENDING rows while main's JUDGED table is identical (21 rows) and main's five \u00a75 removals are kept, leaving 18 -> 14 pending rows.",
+    "done_when": "the gained commit's share of the done_when is the guard's pending table, and tests/test_every_shared_home_lock_holds_across_nodes.py:62-76 at afad840f31 drops exactly this node's four rows; the recorded suite arm passed 57 tests at that head and a re-run of the guard at afad840f31 gave 4 passed.",
+    "goal": "the node goal is to move the persisted-store, compliance, review-index and peer-index locks onto the cross-node lock; at the gained head afad840f31 reckon/_store.py:407, reckon/compliance.py:184, reckon/crew/review_records.py:1970 and reckon/crew/dispatch_peer.py:221 each still take exclusive_lock, so the merge preserved all four migrations intact.",
+    "manifest": "read; its checkpoint and landing name the repaired head afad840f317... with 57 passed on the suite arm and 109 passed with one failure shared at base on the focused arm, and its baseline_suite/after_suite records carry completed true with 2 and 0 failures.",
+    "write_paths": "the branch's contribution over main (git diff d72c5a608f afad840f31) is seven files, every one inside the declared write paths; the other files in the merge commit's diff against its first parent are main's own content carried in by the merge, not written here."
+  },
+  "justifications": {
+    "durability": "tests/test_every_shared_home_lock_holds_across_nodes.py:177 reddens if a dropped row's site still calls flock, and :185 reddens if a kept row's site no longer does, so either direction of a bad resolution fails the guard.",
+    "evidence": "the suite arm recorded at afad840f31 in logs/suite-head-arm.log passed 57 tests with EXIT=0 and names the guard file, and a re-run at afad840f31 gave 4 passed in reviewer-guard-recheck.log.",
+    "fit": "the resolution keeps the PENDING frozenset literal at tests/test_every_shared_home_lock_holds_across_nodes.py:62 in the surrounding style and introduces no new name.",
+    "goal_fidelity": "the four migrated call sites at reckon/_store.py:407, reckon/compliance.py:184, reckon/crew/review_records.py:1970 and reckon/crew/dispatch_peer.py:221 are unchanged by the merge and their rows are gone from tests/test_every_shared_home_lock_holds_across_nodes.py:62.",
+    "reuse": "the gained commit adds no definition and extends the guard's existing pending table, whose owner is tests/test_every_shared_home_lock_holds_across_nodes.py:62 itself.",
+    "scope_discipline": "every one of the seven paths the branch adds over main lies in the declared write paths, and the merge commit's remaining 106 files are main's own commits being merged, not authored content."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to move the persisted-store, compliance, review-index and peer-index locks onto the cross-node lock; at the gained head afad840f31 reckon/_store.py:407, reckon/compliance.py:184, reckon/crew/review_records.py:1970 and reckon/crew/dispatch_peer.py:221 each still take exclusive_lock, so the merge preserved all four migrations intact.\nVERDICT done_when: the gained commit's share of the done_when is the guard's pending table, and tests/test_every_shared_home_lock_holds_across_nodes.py:62-76 at afad840f31 drops exactly this node's four rows; the recorded suite arm passed 57 tests at that head and a re-run of the guard at afad840f31 gave 4 passed.\nVERDICT write_paths: the branch's contribution over main (git diff d72c5a608f afad840f31) is seven files, every one inside the declared write paths; the other files in the merge commit's diff against its first parent are main's own content carried in by the merge, not written here.\nVERDICT manifest: read; its checkpoint and landing name the repaired head afad840f317... with 57 passed on the suite arm and 109 passed with one failure shared at base on the focused arm, and its baseline_suite/after_suite records carry completed true with 2 and 0 failures.\nVERDICT diff: read both commits from 6cf4f73a to afad840f31; the gained commit afad840f31 is the merge with origin/main d72c5a608f, whose hand resolution removes exactly the branch's four PENDING rows while main's JUDGED table is identical (21 rows) and main's five \u00a75 removals are kept, leaving 18 -> 14 pending rows.\nCALL_SITES: reckon/_store.py:_serialized_path_lock at reckon/_store.py:407, reckon/compliance.py:_write_entries at reckon/compliance.py:184, reckon/crew/review_records.py:_index_lock at reckon/crew/review_records.py:1970, reckon/crew/dispatch_peer.py:_update_peer_index at reckon/crew/dispatch_peer.py:221\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the four migrated call sites at reckon/_store.py:407, reckon/compliance.py:184, reckon/crew/review_records.py:1970 and reckon/crew/dispatch_peer.py:221 are unchanged by the merge and their rows are gone from tests/test_every_shared_home_lock_holds_across_nodes.py:62.\nSCORE evidence: 17\nJUSTIFICATION evidence: the suite arm recorded at afad840f31 in logs/suite-head-arm.log passed 57 tests with EXIT=0 and names the guard file, and a re-run at afad840f31 gave 4 passed in reviewer-guard-recheck.log.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every one of the seven paths the branch adds over main lies in the declared write paths, and the merge commit's remaining 106 files are main's own commits being merged, not authored content.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_every_shared_home_lock_holds_across_nodes.py:177 reddens if a dropped row's site still calls flock, and :185 reddens if a kept row's site no longer does, so either direction of a bad resolution fails the guard.\nSCORE fit: 18\nJUSTIFICATION fit: the resolution keeps the PENDING frozenset literal at tests/test_every_shared_home_lock_holds_across_nodes.py:62 in the surrounding style and introduces no new name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained commit adds no definition and extends the guard's existing pending table, whose owner is tests/test_every_shared_home_lock_holds_across_nodes.py:62 itself.",
+  "review_run_id": "r-20261114T203906984724-review-of-store-and-review-index-locks-cross-node-afad840f3119",
+  "reviewed_base_sha": "6cf4f73a7af78df2c32ffe616ce78cc848492c12",
+  "reviewed_head_sha": "afad840f3119759b4023c131576a82aea48ebc1e",
+  "reviewed_run_id": "r-20261114T140031957329-store-and-review-index-locks-cross-node",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T21:15:03.935464+00:00",
+  "total": 107
+}

@@ -1,0 +1,100 @@
+{
+  "added_failure_count": 38,
+  "added_failure_ids": [
+    "tests/test_a_second_launch_keeps_a_live_worktree.py::test_a_dead_workers_tree_is_replaced_by_the_retry",
+    "tests/test_an_edit_owing_no_review_holds_no_queued_run.py::test_a_fresh_reader_rejudges_when_the_review_policy_changes[criteria]",
+    "tests/test_an_edit_owing_no_review_holds_no_queued_run.py::test_a_fresh_reader_rejudges_when_the_review_policy_changes[instructions]",
+    "tests/test_crew_watch_visibility.py::test_read_reconciles_a_stale_record_in_place_and_never_denies_an_arming",
+    "tests/test_crew_watch_visibility.py::test_watcher_visibility_tracks_registration_liveness",
+    "tests/test_dispatch_places_into_the_shared_reservation.py::test_a_test_that_reaches_an_allocation_verb_it_did_not_provide_is_failed",
+    "tests/test_follower_bounds_its_lifetime.py::test_no_child_of_an_armed_follower_carries_the_hand_off_variables",
+    "tests/test_follower_freshness.py::test_failed_reexec_reports_once_and_keeps_the_registration",
+    "tests/test_idle_producer_backs_off.py::test_idle_producer_backs_off_to_the_cap_and_returns_to_base",
+    "tests/test_ledger.py::test_committed_runs_measure_or_explain_every_duration",
+    "tests/test_oversized_route_replay.py::test_the_named_lane_attempt_offers_that_lane_alone",
+    "tests/test_oversized_route_replay.py::test_the_report_names_the_unrecorded_input_and_its_conditional_branch",
+    "tests/test_producer_holds_a_lease.py::test_a_renewed_producer_outlives_three_lease_intervals",
+    "tests/test_schema.py::test_cross_project_conformance[reckon:a-promoted-run-never-reenters-the-queue]",
+    "tests/test_schema.py::test_cross_project_conformance[reckon:acceptance-check-holds-no-lease]",
+    "tests/test_schema.py::test_cross_project_conformance[reckon:an-admission-pass-builds-each-projects-readiness-once]",
+    "tests/test_schema.py::test_cross_project_conformance[reckon:anchored-edit-claude-arm]",
+    "tests/test_schema.py::test_cross_project_conformance[reckon:armed-suite-and-review-scope-from-the-diff]",
+    "tests/test_schema.py::test_cross_project_conformance[reckon:cleanly-reviewed-run-lands-itself]",
+    "tests/test_schema.py::test_cross_project_conformance[reckon:code-reload-never-cuts-off-a-promotion]",
+    "tests/test_schema.py::test_cross_project_conformance[reckon:finished-pending-landing-retires-its-run]",
+    "tests/test_schema.py::test_cross_project_conformance[reckon:hot-path-reads-only-live-runs]",
+    "tests/test_schema.py::test_cross_project_conformance[reckon:lander-never-waits-on-a-measurement]",
+    "tests/test_schema.py::test_cross_project_conformance[reckon:merge-repaired-run-judged-on-own-changes]",
+    "tests/test_schema.py::test_cross_project_conformance[reckon:no-caller-waits-on-a-promotion]",
+    "tests/test_schema.py::test_cross_project_conformance[reckon:only-unmergeable-paths-are-claimed]",
+    "tests/test_schema.py::test_cross_project_conformance[reckon:plain-text-finding-does-not-stop-a-re-review]",
+    "tests/test_schema.py::test_cross_project_conformance[reckon:queue-hold-skips-the-admission-pass]",
+    "tests/test_schema.py::test_cross_project_conformance[reckon:ready-work-is-never-stuck-behind-t-s35]",
+    "tests/test_schema.py::test_cross_project_conformance[reckon:refused-promotion-request-settles]",
+    "tests/test_schema.py::test_cross_project_conformance[reckon:registered-repo-migration-normalization-preflight]",
+    "tests/test_schema.py::test_cross_project_conformance[reckon:retention-retires-a-review-run]",
+    "tests/test_schema.py::test_cross_project_conformance[reckon:run-leaves-nothing-behind]",
+    "tests/test_schema.py::test_cross_project_conformance[reckon:skill-contracts-follow-the-shipped-surface]",
+    "tests/test_schema.py::test_cross_project_conformance[reckon:stopped-run-resumes-with-advice]",
+    "tests/test_schema.py::test_cross_project_conformance[reckon:suite-dispatch-claim-and-placement-tests]",
+    "tests/test_schema.py::test_cross_project_conformance[reckon:terminal-record-settle-reads-no-mtime]",
+    "tests/test_schema.py::test_cross_project_conformance[reckon:the-lander-measures-the-population-before-it-lands]"
+  ],
+  "completed_at": "2026-11-14T22:58:15.482Z",
+  "dispatched_at": "2026-11-14T22:34:40Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "465",
+      "severity": "non-blocking",
+      "text": "_prompt_text re-implements the capability reckon/file_memo.py:memoized already owns (parse a file once while its stat identity is unchanged) instead of extending that owner; it also rebuilds an identity tuple by hand where file_memo.file_signature is documented as the one place those fields are written, and it uses four stat fields where the owner uses five including st_ctime_ns, so an in-place same-size rewrite that restores the mtime is served stale."
+    },
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "184",
+      "severity": "non-blocking",
+      "text": "_git_answer_store_signature duplicates the identity string that recovery_memo._file_identity (reckon/crew/recovery_memo.py:108-119) already builds in the same format, and the bespoke single-cell _GIT_ANSWER_STORE_MEMO replaces file_memo's bounded, locked memo rather than extending it; the four-field identity again drops st_ctime_ns."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "470",
+      "severity": "non-blocking",
+      "text": "_PROMOTION_COMMITS_MEMO is a second implementation of reckon/file_memo.py:memoized_key (bounded LRU plus a lock over a caller-supplied change key); it is also unlocked, and the first caller after a miss is handed the cached list itself rather than a copy, so a caller that appends to the returned list would corrupt what every later tick reads."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "455",
+      "severity": "non-blocking",
+      "text": "this file, reckon/crew/recovery_watch.py, reckon/crew/review.py and tests/test_the_station_reads_only_what_changed.py all lie outside the node's two declared write paths (the evidence fragment and the figure directory); the manifest records the expansion under scope_note and the coordinator must ratify each path with crew complete --accept-path before promotion."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174819483569-the-station-tick-reads-only-what-changed/window-after.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "the done-when's live bound is not met and this node does not claim it \u2014 the uninstrumented window reads 4394.61 MB/min and 108.58% of one core against the plan's 20 MB/min and 5%, one tick lasting 98.003 s at 148 pointers, so the section stays open; the cause is the untouched dominant readers the census names (stream cache 40.3%, review-record listing 26.9%), not this node's three memos, so the node itself is the question."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174819483569-the-station-tick-reads-only-what-changed/manifest.md",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "the manifest's tests: line is not the command the gate actually ran \u2014 it records PYTHONPATH=$PWD uv run --no-sync pytest -p no:cacheprovider -q tests/test_the_station_reads_only_what_changed.py while gate.log's own command: line is UV_PROJECT_ENVIRONMENT=/home/ITER/mcintos/Code/reckon/.venv PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_station_reads_only_what_changed.py \u2014 and promotion fills its gate receipt from this line, so the receipt would name a command that was never run."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261114T213921686989-review-of-the-station-tick-reads-only-what-changed-1ddefc0fea12",
+  "reviewed_base_sha": "ffcba6679c7cb5812709911217e6cf43ebbe9870",
+  "reviewed_head_sha": "1ddefc0fea127f1d579df9e97b156c8252aea8b1",
+  "reviewed_run_id": "r-20261114T174819483569-the-station-tick-reads-only-what-changed",
+  "scores": {
+    "durability": 18,
+    "evidence": 9,
+    "fit": 16,
+    "goal_fidelity": 10,
+    "reuse": 5,
+    "scope_discipline": 10
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T23:04:47.639522+00:00",
+  "total": 68
+}

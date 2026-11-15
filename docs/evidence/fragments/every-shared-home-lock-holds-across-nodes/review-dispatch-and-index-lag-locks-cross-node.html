@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-shared-home-lock-holds-across-nodes">
+  <meta name="plan-title" content="Every shared-home lock holds across nodes">
+  <meta name="plan-evidence-for" content="reckon:every-shared-home-lock-holds-across-nodes">
+  <meta name="plan-verifies" content="reckon:every-shared-home-lock-holds-across-nodes#s4">
+  <meta name="plan-recorded-at" content="2026-11-14">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="locks,flock,record-lock,review-dispatch,index-lag">
+  <title>Review dispatch and index-lag locks hold across nodes — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+<article class="r-note" data-node="review-dispatch-and-index-lag-locks-cross-node" data-reckon="landed" data-when="2026-11-14">
+  <h2 id="review-dispatch-and-index-lag-locks-cross-node-head">Review dispatch and index-lag locks hold across nodes</h2>
+
+  <p id="review-dispatch-and-index-lag-locks-cross-node-what">Two shared-home sites took a bare
+  <code>flock</code> and now take
+  <code>reckon.node_exclusive_lock.exclusive_lock</code>: the per-plan review dispatch lock in
+  <code>reckon/crew/recovery_review_dispatch.py</code>
+  (<code>_dispatch_text_review_for_run</code>, <code>&lt;review report root&gt;/dispatch.lock</code>)
+  and the index-lag seen-set lock in <code>reckon/crew/obligations.py</code>
+  (<code>_record_index_lag</code>, <code>&lt;crew home&gt;/index-lag-seen.json.lock</code>). Both
+  rows left the guard's pending table; the guard passes with them removed (57 passed in the after
+  arm against 55 at the base revision).</p>
+
+  <p id="review-dispatch-and-index-lag-locks-cross-node-answers">Each site keeps the answer its
+  callers already got. The dispatch takes the lock non-blocking through an
+  <code>ExitStack</code>, so a <code>LockHeld</code> from the take maps to the existing moved-on
+  report (<code>"another sweep is composing this plan's review now"</code>) and nothing in the body
+  can be caught as a moved-on result. The index-lag record waits for the lock as before, and an
+  unwritable crew home still returns best effort through the same <code>OSError</code> guard.</p>
+
+  <p id="review-dispatch-and-index-lag-locks-cross-node-measure">A second process holds only
+  the POSIX record lock on the dispatch lock file
+  (<code>fcntl.lockf</code>, no <code>flock</code>), the parent proves the <code>flock</code> half is
+  free by taking and releasing it, and
+  <code>_dispatch_text_review_for_run</code> returns the moved-on result without composing or
+  launching. At the base revision the same test fails: the dispatch takes only <code>flock</code>,
+  sees the record-lock holder as free, and launches
+  (<code>assert True is False</code> on <code>report["dispatched"] is False</code>). That failing run
+  is <code>negative-control-base-dispatch-lock.log</code> in the run directory, ending
+  <code>EXIT=1</code>.</p>
+
+  <p id="review-dispatch-and-index-lag-locks-cross-node-references">Neither lock file is opened
+  anywhere in <code>reckon/</code> outside the helper, so no other descriptor can drop the record
+  lock mid-body. The only other references are the two paths themselves: the test
+  <code>tests/test_a_held_plan_review_lock_does_not_hold_a_sweep.py</code> opens
+  <code>dispatch.lock</code> to hold a same-node <code>flock</code> for its own case, and
+  <code>tests/test_a_landing_leaves_the_index_at_head.py</code> reads
+  <code>INDEX_LAG_SEEN_NAME</code>, which is the seen-set data file rather than the lock file. The
+  index-lag body writes <code>index-lag-seen.json</code> and its <code>.tmp</code> sibling,
+  never the <code>.lock</code> path it holds.</p>
+
+  <p id="review-dispatch-and-index-lag-locks-cross-node-arms">Both suite arms ran on
+  <code>all_debug</code>: the baseline arm at
+  <code>db9288122b</code> reads 55 passed <code>EXIT=0</code> over the guard and
+  <code>tests/test_staged_write_inventory.py</code> (a new test file this node adds is not in that
+  tree, so the two arms' commands differ); the after arm reads 57 passed <code>EXIT=0</code> over
+  the guard, the new test and the inventory. A focused arm over the tests that import both changed
+  modules reads 19 passed <code>EXIT=0</code> at each revision, so the change adds no failure.</p>
+</article>
+</body>
+</html>

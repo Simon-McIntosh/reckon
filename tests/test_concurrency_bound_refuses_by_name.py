@@ -356,16 +356,16 @@ def test_a_dispatch_over_the_declared_roster_is_admitted(
 # ── The cores bound refusing, and naming itself ─────────────────────────────
 
 
-def test_a_dispatch_over_the_cores_bound_is_refused_naming_the_cores(
-    home, repo, tmp_path, monkeypatch
-):
-    """A reservation whose cores are spent refuses, naming that bound.
+def test_spent_admitted_cores_refuse_no_dispatch(home, repo, tmp_path, monkeypatch):
+    """A reservation whose cores are spent still admits the next worker.
 
-    The backend declares no roster ceiling and the slice has room to spare, so
-    the reservation's admitted cores are the only bound that can refuse. Three
-    placed workers asking one core each against three admitted cores is the
-    figure the sentence must carry.
+    A placed worker waits on the serve's router for most of its life, so the
+    admitted cores are reported, never enforced: the request belongs in the
+    router's queue, not held outside it. Three placed workers against three
+    admitted cores leave the dispatch admitted.
     """
+    from reckon.crew.dispatch_admission import _refuse_over_concurrency_ceiling
+
     _synthesise_slice(tmp_path, monkeypatch, current=8 * GIB, maximum=64 * GIB)
     _publish_reservation(cores=3)
     placement = _placement("--cpus-per-task=1")
@@ -373,16 +373,7 @@ def test_a_dispatch_over_the_cores_bound_is_refused_naming_the_cores(
     for token in ("a", "b", "c"):
         _seed_run("alpha", "working", f"occupying-{token}", placement=placement)
 
-    with pytest.raises(crew.CrewError) as excinfo:
-        _dispatch(config, repo, tmp_path)
-
-    message = str(excinfo.value)
-    assert "partition admitted cores" in message
-    assert "3 of 3 cores admitted (1 per worker)" in message
-    # The roster keeps its own sentence for the roster's own bound, and this
-    # refusal is not it.
-    assert "concurrency ceiling" not in message
-    assert "login memory slice" not in message
+    _refuse_over_concurrency_ceiling("alpha", config["backends"]["alpha"])
 
 
 # ── A dispatch inside every bound being admitted ────────────────────────────

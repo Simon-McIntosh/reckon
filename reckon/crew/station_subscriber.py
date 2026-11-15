@@ -284,6 +284,15 @@ def live_work_populations(
     landing or an owed repair with nobody watching. An ownerless pointer keeps
     every session's reading live, because without an owner nothing shows the
     work is not the reader's own.
+
+    The pass reads the process table once, however many terminal pointers it
+    covers. A terminal pointer whose recorded pids have gone reaches the
+    environment scan, and that scan is answered from a walk of ``/proc``. The
+    one-second beat that made a poller's walk cheap bounds a poller, not this
+    pass, so a reading over a fleet large enough to outlast a beat used to walk
+    that table once per pointer. One region holds one table for the whole pass,
+    so the reading is proportional to the fleet rather than to the fleet
+    multiplied by the time the pass takes.
     """
     from reckon.crew.dispatch_launch import LAUNCH_FAILED_PHASE
 
@@ -325,7 +334,7 @@ def live_work_populations(
     # obligations module's own pointer read. Publishing this pass's snapshot to
     # it keeps the whole judgement over one view of the fleet, and costs no
     # directory listing per row.
-    from reckon.crew import obligations
+    from reckon.crew import obligations, process_signal
     from reckon.crew.recovery_memo import _classification_input_tick
     from reckon.resources import resource_scan_scope
 
@@ -343,7 +352,11 @@ def live_work_populations(
         # against every sibling plan file, so it shares one docs-tree scan and
         # identity index the same way. The pass writes nothing, which is the
         # condition the scan scope asks.
-        with _classification_input_tick(), resource_scan_scope():
+        with (
+            process_signal.process_table_walk_once(),
+            _classification_input_tick(),
+            resource_scan_scope(),
+        ):
             for pointer in snapshot:
                 if str(pointer.get("phase") or "") not in node._TERMINAL_RUN_PHASES or (
                     not read_terminal_duties and _record_has_pending_work(pointer)

@@ -171,6 +171,20 @@ def _idle_member_reap_due(project: str, root: object) -> bool:
     return True
 
 
+def _local_lane_reserve(is_local: bool) -> int:
+    """The reservation seats a dispatch must leave free: the local lane's reserve.
+
+    Only the local lane holds seats back. A dispatch naming any other lane is
+    what the reserve is kept for, so it is measured against the bounds as they
+    stand.
+    """
+    if not is_local:
+        return 0
+    from reckon.crew import placement
+
+    return placement.LOCAL_LANE_RESERVE
+
+
 def dispatch(
     *,
     node: TaskNode,
@@ -1013,7 +1027,11 @@ def dispatch(
     if is_local and not shadow_lineage and not admission_launch:
         try:
             _refuse_over_concurrency_ceiling(
-                backend_name, backend, project, exclude_run_ids=(run_id,)
+                backend_name,
+                backend,
+                project,
+                exclude_run_ids=(run_id,),
+                reserve=_local_lane_reserve(is_local),
             )
         except RosterFull as roster:
             reason = (
@@ -1265,7 +1283,11 @@ def dispatch(
         # gets the same reading as a directly chosen one, so a held lane never
         # reroutes onto an exhausted resource.
         _refuse_over_concurrency_ceiling(
-            backend_name, backend, project, exclude_run_ids=(run_id,)
+            backend_name,
+            backend,
+            project,
+            exclude_run_ids=(run_id,),
+            reserve=_local_lane_reserve(is_local),
         )
         explicitly_named_peers = set() if shadow_lineage else set(node.peer_scopes)
         peers = (

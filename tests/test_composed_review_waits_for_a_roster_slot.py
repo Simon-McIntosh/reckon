@@ -264,3 +264,4 @@ def test_a_direct_local_dispatch_on_a_full_roster_is_queued(
     assert queued, held.value
     assert [pointer["run_id"] for pointer in _queued_reviews()] == [queued["run_id"]]
     assert "roster is full" in str(queued.get("reason") or "")
+

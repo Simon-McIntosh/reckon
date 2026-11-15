@@ -1,0 +1,233 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-14T23:52:39.168Z",
+  "dispatched_at": "2026-11-14T23:28:13Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-escape-lane-and-reviews-keep-pace.html:42",
+      "id": "done_when-1",
+      "reason": "two nodes and their gates would be spent rebuilding changes that are already on main, and the plan's declared state would keep lying about them.",
+      "text": "\u00a72 declares status `implementable` while its own deliverable text says \"Built as `e7bfe1da15`\", and \u00a74 does the same at line 51 for `dc1f1b01ac`; both changes are present in the tree (`reckon/crew/placement.py:102` `LOCAL_LANE_RESERVE`, `reckon/crew/dispatch_admission.py:211,318` passing `reserve`, `reckon/crew/recovery_review_acceptance.py:776` with `\"held\"` already in `_PRE_LAUNCH_PHASES`), so a node dispatched on either section rebuilds landed work",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-escape-lane-and-reviews-keep-pace.html:57",
+      "id": "done_when-2",
+      "reason": "a node can deliver those two cases green with no change at all and call the section done, so the gate proves nothing about the change it was dispatched for.",
+      "text": "\u00a75, \u00a76 and \u00a77 (lines 57, 63, 69) declare only \"the tests \u2026 add no failure against the base\", a no-regression arm that passes on unfixed code, where \u00a72 and \u00a73 in the same plan state \"It fails at base\"; and \u00a75's second case and \u00a76's \"review of a delivered run goes first\" are already the base behaviour in `reckon/crew/queue_order.py:255-276` (`_next_to_launch` returns `reviews[0]` first, then the overridden row before the ranked one)",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-escape-lane-and-reviews-keep-pace.html:43",
+      "id": "done_when-3",
+      "reason": "a node handed these done-whens must either stall waiting on another session's lane or record a measurement it never took, and the section cannot be closed on one verdict.",
+      "text": "\u00a72's done-when closes on \"nova's codex review \u2026 is dispatched once and launches\", which needs another session to act and a metered lane to be serving; \u00a76 (line 63) and \u00a77 (line 69) close on \"a measurement over one evening of live passes\" and \"a 120 s `py-spy record` of the live admit service \u2026 and the median launch duration over one evening falls below 15 s\", none of which a single node can produce inside one node's turn, and \u00a77 states an absolute bar with no base figure to measure a delta against",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-escape-lane-and-reviews-keep-pace.html:68",
+      "id": "single_goal-1",
+      "reason": "the second deliverable cannot be scoped, reviewed or closed on the same verdict as the first, and a node that lands the budget cannot be judged done while an unnamed repair is still open.",
+      "text": "\u00a77 delivers two things: a pass bounded by a 60 s flight budget with per-launch duration recorded on the verdict row, and, as a separate deliverable, \"repair the next largest per-launch cost the profile names\", whose target is not known until the profile runs; its write paths are named as \"the step the profile names\" (the same at line 69)",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-escape-lane-and-reviews-keep-pace.html:43",
+      "id": "evidence_paths-1",
+      "reason": "without a named path each node puts its evidence wherever its worktree allows, so the arm that proves the section lands where no later reader can open it.",
+      "text": "none of \u00a72 to \u00a77 names where its all_debug arm, its `py-spy` profile or its evening measurement is written, while \u00a78 does name `docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/queue-depth.html` (line 75) and sibling plans in the same sprint write each gate log under `docs/evidence/fragments/<slug>/s<N>.html` (93 of the repository's 237 plans name such a path)",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-escape-lane-and-reviews-keep-pace.html:42",
+      "id": "reasoning-1",
+      "reason": "a named function or write path is a guess the node must reconcile against the code, and a wrong guess costs a dispatch and a review round that the brief, not the plan, is where this belongs.",
+      "text": "the plan prescribes implementation rather than the endpoint: \u00a72 names `reckon/crew/placement.py`, `dispatch_admission.py`, `_refuse_over_reservation_*` and `_local_lane_reserve` and says the two refusal functions \"take a `reserve`\" (the same shape at \u00a74 line 51), and \u00a75, \u00a76 and \u00a77 each carry an explicit \"Write paths:\" list (lines 57, 63, 69)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-escape-lane-and-reviews-keep-pace.html:36",
+      "id": "reasoning-2",
+      "reason": "the mechanism the section argues is unchanged; only the count line needs correcting, and the reserve and its rationale stand on the six refusals it does enumerate.",
+      "text": "\u00a71 says the review was \"refused seven times \u2026 four times at the placement roster's cap \u2026 and twice at the reservation's cores bound\"; the two classes account for six refusals, so the stated tally does not close over the total the same sentence asserts",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "cdeddd1227232606e0e8ab1276cfd968be04e55f",
+  "plan_fingerprint": "36b2ae76ce61f74f3165aaad4e63b917b8287743879a5c1cce40b1ad65237f49",
+  "plan_slug": "the-escape-lane-and-reviews-keep-pace",
+  "plan_version": 1,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "82ef04b54abb54b943d956783eb121b68e413c85",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a72 and \u00a74 were set done after they landed (0f9b0b5bcb, dc1f1b01ac); the snapshot predates that write",
+      "reason": "",
+      "when": "2026-11-15T00:02:49.823476+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "82ef04b54abb54b943d956783eb121b68e413c85",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "\u00a75, \u00a76 and \u00a77 now list cases that each fail at the base revision; \u00a75's priority-override case and \u00a76's delivered-review-first clause, already base behaviour, are removed",
+      "reason": "",
+      "when": "2026-11-15T00:02:55.220731+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "82ef04b54abb54b943d956783eb121b68e413c85",
+      "commit_basis": "edit",
+      "finding": "done_when-3",
+      "note": "\u00a72 is landed and closed; \u00a76's and \u00a77's live measurements are now recorded evidence in named fragments, and their gates are tests",
+      "reason": "",
+      "when": "2026-11-15T00:03:01.637476+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "82ef04b54abb54b943d956783eb121b68e413c85",
+      "commit_basis": "edit",
+      "finding": "single_goal-1",
+      "note": "\u00a77 now delivers only the bounded pass with per-launch timing; the profile-driven repairs landed beside it and are recorded, not owed",
+      "reason": "",
+      "when": "2026-11-15T00:03:32.284741+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "82ef04b54abb54b943d956783eb121b68e413c85",
+      "commit_basis": "edit",
+      "finding": "evidence_paths-1",
+      "note": "\u00a75, \u00a76 and \u00a77 name their fragments under docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/ and keep gate logs under the run directory",
+      "reason": "",
+      "when": "2026-11-15T00:03:44.341745+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "82ef04b54abb54b943d956783eb121b68e413c85",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a75 to \u00a77 now state endpoints; named functions are gone, and write paths stay only as the dispatch scope a worker needs, described by role rather than by function",
+      "reason": "",
+      "when": "2026-11-15T00:03:51.962399+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "82ef04b54abb54b943d956783eb121b68e413c85",
+      "commit_basis": "edit",
+      "finding": "reasoning-2",
+      "note": "\u00a71 now reads five refusals at the roster cap and two at the cores bound, which closes over the seven",
+      "reason": "",
+      "when": "2026-11-15T00:03:59.765001+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "82ef04b54abb54b943d956783eb121b68e413c85",
+      "commit_basis": "edit",
+      "note": "\u00a72 and \u00a74 were set done after they landed (0f9b0b5bcb, dc1f1b01ac); the snapshot predates that write",
+      "reason": "",
+      "when": "2026-11-15T00:02:49.823476+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "82ef04b54abb54b943d956783eb121b68e413c85",
+      "commit_basis": "edit",
+      "note": "\u00a75, \u00a76 and \u00a77 now list cases that each fail at the base revision; \u00a75's priority-override case and \u00a76's delivered-review-first clause, already base behaviour, are removed",
+      "reason": "",
+      "when": "2026-11-15T00:02:55.220731+00:00"
+    },
+    "done_when-3": {
+      "action": "acted",
+      "by": "",
+      "commit": "82ef04b54abb54b943d956783eb121b68e413c85",
+      "commit_basis": "edit",
+      "note": "\u00a72 is landed and closed; \u00a76's and \u00a77's live measurements are now recorded evidence in named fragments, and their gates are tests",
+      "reason": "",
+      "when": "2026-11-15T00:03:01.637476+00:00"
+    },
+    "evidence_paths-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "82ef04b54abb54b943d956783eb121b68e413c85",
+      "commit_basis": "edit",
+      "note": "\u00a75, \u00a76 and \u00a77 name their fragments under docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/ and keep gate logs under the run directory",
+      "reason": "",
+      "when": "2026-11-15T00:03:44.341745+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "82ef04b54abb54b943d956783eb121b68e413c85",
+      "commit_basis": "edit",
+      "note": "\u00a75 to \u00a77 now state endpoints; named functions are gone, and write paths stay only as the dispatch scope a worker needs, described by role rather than by function",
+      "reason": "",
+      "when": "2026-11-15T00:03:51.962399+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "82ef04b54abb54b943d956783eb121b68e413c85",
+      "commit_basis": "edit",
+      "note": "\u00a71 now reads five refusals at the roster cap and two at the cores bound, which closes over the seven",
+      "reason": "",
+      "when": "2026-11-15T00:03:59.765001+00:00"
+    },
+    "single_goal-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "82ef04b54abb54b943d956783eb121b68e413c85",
+      "commit_basis": "edit",
+      "note": "\u00a77 now delivers only the bounded pass with per-launch timing; the profile-driven repairs landed beside it and are recorded, not owed",
+      "reason": "",
+      "when": "2026-11-15T00:03:32.284741+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-escape-lane-and-reviews-keep-pace/r-20261114T214923160815-plan-review-of-the-escape-lane-and-reviews-keep-pace.json",
+  "review_run_id": "r-20261114T214923160815-plan-review-of-the-escape-lane-and-reviews-keep-pace",
+  "reviewed_blob_sha": "b1a114b71a5b0dce9d2a3a04eb4faa7393152366",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited commit (`e7bfe1da15`, `5c94f6f973`, `dc1f1b01ac`), module, constant and test file resolves in the repository, and `admission-verdicts.jsonl` resolves to `reckon/crew/admission/shared.py:204`; no href with an extension is cited.",
+    "done_when": "a finding \u2014 \u00a75, \u00a76 and \u00a77 name no arm that fails at base in the snapshot, and two of their stated cases are already the base behaviour (\u00a75 line 57 second case, \u00a76 line 62 \"among reviews the review of a delivered run goes first\").",
+    "evidence_paths": "a finding \u2014 no section of the snapshot names a path for its gate arm, profile or measurement, so the evidence for \u00a72 to \u00a77 has no durable home.",
+    "naming": "pass \u2014 section headings, test names and constants describe mechanisms; no plan label, stage name, ticket number or version tag is carried into a symbol, and no section text is changelog prose.",
+    "reasoning": "a finding \u2014 every section prescribes implementation (named modules, functions, constants, and a \"Write paths\" list in \u00a75, \u00a76 and \u00a77), which fixes a code path the reviewer must test against the code rather than an endpoint.",
+    "single_goal": "a finding \u2014 \u00a77 (snapshot line 68) carries a per-pass time budget and, as a second unnamed deliverable, the repair of \"the next largest per-launch cost the profile names\".",
+    "wiring": "pass \u2014 `plan-after`, `plan-informs` and both `plan-section-depends-on` edges (`s5`\u2192`the-escape-lane-and-reviews-keep-pace#s2`, `s6`\u2192`#s7`) name nodes that exist; the priority that \u00a75 reads is served by base code (`reckon/crew/queue_order.py:240` `_override`), so no unlanded edge is missing."
+  },
+  "section_digests": {
+    "_document": "a3d6f4d9c4fa3d589c140abcc2155781dc1198d2dd1ccb967d8e228d3bdbd092",
+    "s1": "460515675b1365ba18831bd6e2d3283eb66aa144bd7a4d9c88634d85188535aa",
+    "s2": "1c1291a10bbf3182487496ef153e5873681ea3827c7bacc16efddf88c7cca128",
+    "s3": "2a0e0fabbd2ee502c5a7928a8fa608b66f83d3ad3fe304a31a05b66f0cb3d688",
+    "s4": "4a85c23ac81214a3af1b59e1888c579b2e2525eb2a2346a965b291cee79651b7",
+    "s5": "f82ced3c0349795da58992f19fdc3d8606bd6c90d2759d495a9ab90d77996ae9",
+    "s6": "1c5ea8e6a993804e60dcc9f12c2598642c1a389c0745d3faf803b410c15be695",
+    "s7": "4dc593db4aeccf5844f132968ca56f1af6f6ab7c79b3213e2bb16b2a982bd7c1",
+    "s8": "6a7621885cab3c2ff3b333803eb00aeed2fa1101ecb72f10d8aaeacffe0cf812"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T00:00:57.206248+00:00",
+  "total": null
+}

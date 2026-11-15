@@ -1447,8 +1447,9 @@ def _complete_locked(
     # uncommitted edit into its commit. The check runs here, before either
     # store is written, so a refusal leaves no ledger row and no plan comment
     # for the next promotion to read as an unrelated edit.
+    plan_text_edits = {}
     if not shadow:
-        _refuse_unrelated_plan_edit(
+        plan_text_edits = _refuse_unrelated_plan_edit(
             project=project,
             plan=str(node.get("plan") or ""),
             root=ledger_root,
@@ -1502,6 +1503,7 @@ def _complete_locked(
                 )
                 landing_check = _report_landing_check(
                     _commit_landing_writes(
+                        plan_text_edits=plan_text_edits,
                         run_id=run_id,
                         verdict=str(gate).strip().lower(),
                         checkout=checkout,
@@ -2172,6 +2174,7 @@ def _complete_locked(
         _stop_at_stage_boundary("the promotion commit")
         landing_check = _report_landing_check(
             _commit_landing_writes(
+                plan_text_edits=plan_text_edits,
                 run_id=run_id,
                 verdict=str(gate).strip().lower(),
                 checkout=checkout,

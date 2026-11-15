@@ -1,0 +1,111 @@
+<article class="landed-report" data-run-id="r-20261114T144026603146-the-reads-are-measured-inside-their-deadline" data-node="the-reads-are-measured-inside-their-deadline">
+<h3 id="rdead-summary">Roadmap, audit and discovery measured cold and warm against their deadlines</h3>
+<p>Both arms read one frozen corpus pinned at the base revision
+<code>d249200c7</code>. Head code <code>b8a9fc24f2</code> and base code
+<code>d249200c7</code> were extracted beside the corpus, and each arm got its own
+empty <code>RECKON_HOME</code> so its persisted index is its own. Roadmap and
+audit ran in one exclusive <code>all_debug</code> job (1315973) on
+<strong>98dci4-clu-3141</strong>. Discovery ran in its own exclusive
+<code>all_debug</code> job (1315977) on <strong>98dci4-clu-3144</strong>, as the
+brief directed. Each job ran one untargeted build invocation per arm, then three
+rounds of base then head for every read in it. Every invocation is a fresh
+process taking one cold sample and then one warm sample. No two reads ran at
+once.</p>
+
+<p>Cold here means a fresh process with the arm's own persisted index already
+built by that arm's build invocation; it is not a first-ever read. The build
+invocations' samples are excluded from the medians for that reason, and the two
+that differ strongly are recorded here instead: head roadmap cold 50.834 s,
+warm 0.016 s, and head discovery cold 49.863 s, warm 0.181 s.</p>
+
+<p>The frozen corpus is <code>docs/</code> extracted from <code>d249200c7</code>
+into a one-commit git repository (git revision
+<code>300648740565609298ec7966fd3d52342088b4cd</code>). A repository root is
+required because a read at the base revision resolves git HEAD. The digest over
+<code>docs/</code> minus <code>.reckon</code> is identical before and after each
+job, <code>d54f2921d61b5dee54fda9ad96098a2b</code> on 98dci4-clu-3141 and
+<code>3ddbff91a8686be0f6917f82421abd2e</code> on 98dci4-clu-3144, so both arms
+measured a corpus that did not move. <code>.reckon</code> is excluded because a
+read at the base revision takes the project's recovery lock there.</p>
+
+<h4 id="rdead-medians-heading">Medians of three cold and three warm samples per read and arm</h4>
+<table id="rdead-medians">
+<thead><tr><th>Read</th><th>Arm</th><th>Phase</th><th>n</th><th>Samples (s)</th><th>Median (s)</th><th>Target (s)</th><th>Verdict</th></tr></thead>
+<tbody>
+<tr><td>roadmap</td><td>head</td><td>cold</td><td>3</td><td>1.964, 7.481, 7.570</td><td>7.481</td><td>30</td><td>met</td></tr>
+<tr><td>roadmap</td><td>head</td><td>warm</td><td>3</td><td>0.014, 0.015, 0.015</td><td>0.015</td><td>2</td><td>met</td></tr>
+<tr><td>audit</td><td>head</td><td>warm</td><td>3</td><td>1.916, 1.999, 2.002</td><td>1.999</td><td>3</td><td>met</td></tr>
+<tr><td>audit</td><td>head</td><td>cold</td><td>3</td><td>51.416, 51.552, 52.011</td><td>51.552</td><td>none</td><td>no target</td></tr>
+<tr><td>roadmap</td><td>base</td><td>cold</td><td>3</td><td>92.398, 92.584, 92.982</td><td>92.584</td><td>30</td><td>MISSED, control</td></tr>
+<tr><td>roadmap</td><td>base</td><td>warm</td><td>3</td><td>1.741, 1.742, 1.751</td><td>1.742</td><td>2</td><td>met</td></tr>
+<tr><td>audit</td><td>base</td><td>cold</td><td>3</td><td>137.634, 137.798, 138.587</td><td>137.798</td><td>none</td><td>no target</td></tr>
+<tr><td>audit</td><td>base</td><td>warm</td><td>3</td><td>4.452, 4.468, 4.469</td><td>4.468</td><td>none</td><td>no target</td></tr>
+<tr><td>discovery</td><td>head</td><td>cold</td><td>3</td><td>6.503, 6.568, 6.632</td><td>6.568</td><td>none</td><td>no target</td></tr>
+<tr><td>discovery</td><td>head</td><td>warm</td><td>3</td><td>0.181, 0.182, 0.182</td><td>0.182</td><td>none</td><td>no target</td></tr>
+<tr><td>discovery</td><td>base</td><td>cold</td><td>3</td><td>73.302, 73.319, 73.418</td><td>73.319</td><td>none</td><td>no target</td></tr>
+<tr><td>discovery</td><td>base</td><td>warm</td><td>3</td><td>0.520, 0.521, 0.522</td><td>0.521</td><td>none</td><td>no target</td></tr>
+</tbody></table>
+
+<h4 id="rdead-control">The control holds: the base revision's cold roadmap exceeds the 30 s deadline</h4>
+<p>At <code>d249200c7</code> the cold roadmap answers in a median 92.584 s against
+the MCP deadline of 30 s, and at <code>b8a9fc24f2</code> in 7.481 s, so the
+comparison the section requires counts. The base arm's warm roadmap is 1.742 s,
+already inside the 2 s target: the deadline the head revision was asked to meet
+is the cold one, and the warm figure is reported without a claim that the base
+arm missed it.</p>
+
+<h4 id="rdead-discovery">Discovery: 6.568 s cold and 0.182 s warm at head, 73.319 s and 0.521 s at base</h4>
+<p>Discovery carries no target in the section. Both arms return the same
+inventory count, 866 items, so neither answered from an empty walk; the head
+payload is 2,978,494 bytes against the base arm's 2,849,793.</p>
+
+<h4 id="rdead-attribution">No targeted median is missed on this corpus, so no attribution is owed here</h4>
+<p>The three medians that carry targets all meet them: warm roadmap 0.015 s
+against 2 s, warm audit 1.999 s against 3 s, cold roadmap 7.481 s against 30 s.
+The only miss in the tables is the base arm's cold roadmap, whose excess is what
+the control is for.</p>
+
+<p>An earlier run of this node, on a corpus pinned at head
+<code>b4700c0d20</code>, measured the head warm audit at 5.772 s and attributed
+its 2.772 s excess from kept profile dumps to
+<code>roadmap._build_roadmap</code> (3.39 s cumulative, 122 percent of the
+excess, introduced by 47d832767e0), within it
+<code>roadmap._plan_authored_state</code> (1.93 s, b93352322a6) and
+<code>roadmap._section_scoped_edges</code> (1.55 s with 2.25 M
+<code>copy.deepcopy</code> calls, 2f870c2bf6f), plus
+<code>resources.resolve_resource</code> (1.26 s). Those dumps are kept under
+<code>measure/profiles/</code>. That corpus carried more plans than the
+base-pinned one, so the same read costs 1.999 s here; the two figures measure
+different corpora and the earlier miss is not evidence that the warm audit
+misses on current documents. If the warm-audit deadline is to be held against a
+head-pinned corpus, that is a re-measurement, not a repair.</p>
+
+<h4 id="rdead-logs">Logs, profiles and the literal commands</h4>
+<p>Logs are under <code>measure/core/logs/</code> and
+<code>measure/discovery/logs/</code> in the run directory, with the job
+transcripts at <code>measure/core/sbatch.log</code> and
+<code>measure/discovery/sbatch.log</code>. Every log is headed by its invocation
+line naming arm, read, round and code revision, then by
+<code># revision=</code>, <code># corpus=</code>, <code># host=</code> and
+<code># command=[...]</code>, and ends in a bare <code>EXIT=0</code>. The
+profile dumps are <code>measure/core/profiles/</code> (28 files) and
+<code>measure/discovery/profiles/</code> (16 files).</p>
+
+<p>The two jobs were submitted from the fleet node with
+<code>env -u SLURM_JOB_ID -u SLURM_JOBID sbatch --partition=all_debug
+--exclusive --cpus-per-task=12 --mem=48G --time=00:50:00 --wrap
+&quot;CORPUS_SHA=d249200c7 ONLY=core bash measure/run_measure.sh ...&quot;</code>
+and the discovery job the same form with <code>ONLY=discovery</code> and
+<code>--time=01:00:00</code>. Each arm's reads import their own code tree:
+every log carries <code>reckon_under_code_tree=True</code> beside the
+<code>reckon.__file__</code> it imported.</p>
+
+<p>No read answered from an error path: every sample carries
+<code>ok=True</code> and a payload size, and no log contains
+<code>roadmap_error</code>, <code>discovery_error</code>, <code>audit_error</code> or an
+exception line.</p>
+
+<p>Suite fence: the node's write scope is this fragment only, so the
+suite command the fence names resolves to no test files for this node and no
+suite arm was run. Stating that is the alternative to inventing a test.</p>
+</article>

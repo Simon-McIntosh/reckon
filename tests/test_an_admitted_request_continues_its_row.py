@@ -189,14 +189,19 @@ def test_session_counts_scope_each_sessions_own_figures_without_a_live_read(
     )
 
     sessions = event["session_counts"]
-    assert sessions["mine"] == {"working": 1, "blocked": 0, "unpromoted": 0}
-    assert sessions["peers"] == {"working": 1, "blocked": 1, "unpromoted": 0}
-    assert sessions[""] == {"working": 0, "blocked": 0, "unpromoted": 0}
+    assert sessions["mine"] == {"working": 1, "blocked": 0, "unpromoted": 0, "stuck": 0}
+    assert sessions["peers"] == {
+        "working": 1,
+        "blocked": 1,
+        "unpromoted": 0,
+        "stuck": 0,
+    }
+    assert sessions[""] == {"working": 0, "blocked": 0, "unpromoted": 0, "stuck": 0}
 
     scoped = recovery.format_watch_transition(
         event, session="mine", ticker=Ticker(width=180, color=False)
     )
-    assert " 1w  0n  0d  0q" in scoped
+    assert " 1w  0n  0d  0q  0s" in scoped
     unscoped = recovery.format_watch_transition(
         event, ticker=Ticker(width=180, color=False)
     )

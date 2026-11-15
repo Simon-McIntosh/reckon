@@ -20,11 +20,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-after" content="queued-work-needs-no-workaround">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;descoped&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-session-spends-a-priority-budget#s2&quot;],&quot;s4&quot;:[&quot;a-session-spends-a-priority-budget#s2&quot;]}">
   <title>A session spends a priority budget | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-11-14">
 </head>
 <body>
   <main class="plan-doc">
@@ -96,7 +98,7 @@
 <p><strong>Done when.</strong> A test queues requests from two sessions with different priorities, waits and holds, and reads the same order and reasons from the function, the CLI and the MCP tool. A test runs one admission pass and reads the request it launched at position 1 of the view taken just before. Negative control: the same tests run against the base revision fail, because the base serves no queue view and no MCP read, and the failing run is logged. The gate runs on <code>all_debug</code>, and its log is written to <code>docs/evidence/fragments/a-session-spends-a-priority-budget/s4.html</code>.</p>
 
     <h2 id="s5">§5 — A worker runs as its own scheduler job, so the partition is the worker queue</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s5" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="descoped" data-descope-reason="lead decision 2026-11-14: workers are not run as SLURM jobs; fleet-node CPU is not a constraint, and launched workers wait in the router queue, whose gate bounds the cards" data-links=""></section>
 <p><strong>Why.</strong> The lead's direction of 2026-11-14: the router should hold a very large queue, kept off the cards by its gate width, and reckon should not cap how many workers wait in it. Today local-lane workers run as <code>--overlap</code> steps inside the fleet allocation. That allocation is one node, shared with every orchestrator session. Its roster cap of 25 is a memory bound. The node had 20 GB free of 125 GB at 17:15Z on 2026-11-14, with 13 steps using 18.9 GB: median 584 MB, p90 2.9 GB, and one at 10.5 GB while running tests. Lifting the cap there would risk an out-of-memory kill of the coordinators along with the workers.</p>
 <p><strong>Deliverable.</strong> A local-lane worker is launched as its own scheduler job on a CPU partition the flight configuration names, not as a step of the fleet allocation. The scheduler's pending queue holds workers past the partition's capacity, and reckon applies no roster cap to such a lane. Reckon still decides submission order, by the admission order of §2, and a pending worker's priority can still be raised. A worker's tool commands, tests included, run on the job's node, never on the fleet node.</p>
 <p><strong>Done when.</strong>
