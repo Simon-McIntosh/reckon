@@ -2070,7 +2070,7 @@ class _OmpDialect(Dialect):
         argv.append(f"--tools={OMP_WORKER_TOOLS}")
         # The positional prompt goes last: this harness reads a value beginning
         # with '-' as another flag, so the brief is the final word on the line.
-        argv.append(prompt)
+        argv.append(_omp_positional_prompt(prompt, run_directory))
         return argv
 
     def _sandbox_flags(self, tier: str | None) -> list[str]:
@@ -2269,6 +2269,37 @@ def _omp_usage(usage: Mapping[str, Any]) -> dict[str, int | float]:
     if written is not None:
         returned["cache_write_input_tokens"] = int(written)
     return returned
+
+
+# The kernel caps one argument at MAX_ARG_STRLEN, 32 pages or 128 KiB on Linux,
+# and refuses the whole exec with E2BIG above it. A brief past this many bytes
+# therefore cannot ride on the command line. Measured on 15 November: a plan
+# review of a 464 KB plan composed a 504 KB brief, and its worker never spawned
+# ("Argument list too long"), so no large plan could be reviewed on this lane.
+OMP_ARGV_PROMPT_BYTES = 100_000
+OMP_LONG_BRIEF_NAME = "brief-for-worker.md"
+
+
+def _omp_positional_prompt(prompt: str, run_directory: str | None) -> str:
+    """The brief this harness is handed on its command line.
+
+    A brief that fits in one argument goes as it is. A longer one is written
+    into the run's own directory and the argument names it, because this
+    harness cannot take its prompt on stdin (it blocks reading the pipe) and
+    the kernel refuses an argument that long. A composition with no run of its
+    own has nowhere to keep the file, so it is handed the brief as it is.
+    """
+    if len(prompt.encode("utf-8")) <= OMP_ARGV_PROMPT_BYTES:
+        return prompt
+    if run_directory is None or not Path(run_directory).is_dir():
+        return prompt
+    path = Path(run_directory) / OMP_LONG_BRIEF_NAME
+    path.write_text(prompt, encoding="utf-8")
+    return (
+        f"Your complete brief is in {path}. Read that whole file before doing "
+        "anything else and follow it exactly: it is the full statement of your "
+        "task, and nothing in this message replaces it."
+    )
 
 
 def _omp_prompt_tokens(usage: Mapping[str, Any]) -> int:
