@@ -23,9 +23,9 @@
   <title>History Persists As Detail Washes Out | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="55">
+<meta name="plan-version" content="57">
 <meta name="plan-modified" content="2026-11-15">
-<meta name="plan-section-declarations" content="{&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s24&quot;:&quot;implementable&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s27&quot;:&quot;implementable&quot;,&quot;s28&quot;:&quot;implementable&quot;,&quot;s29&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;implementable&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s24&quot;:&quot;implementable&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s27&quot;:&quot;implementable&quot;,&quot;s28&quot;:&quot;implementable&quot;,&quot;s29&quot;:&quot;implementable&quot;}">
 <meta name="plan-section-depends-on" content="{&quot;s26&quot;:[&quot;history-persists-as-detail-washes-out#s21&quot;,&quot;history-persists-as-detail-washes-out#s22&quot;,&quot;history-persists-as-detail-washes-out#s23&quot;,&quot;history-persists-as-detail-washes-out#s24&quot;,&quot;history-persists-as-detail-washes-out#s25&quot;,&quot;history-persists-as-detail-washes-out#s28&quot;,&quot;history-persists-as-detail-washes-out#s29&quot;],&quot;s27&quot;:[&quot;history-persists-as-detail-washes-out#s26&quot;]}">
 </head>
 <body>
@@ -366,9 +366,9 @@
 <p><strong>Done when.</strong> A promotion whose store write raises refuses, names the store and the repair verb, and leaves no row in either store, asserted by injection; a healthy promotion writes both and <code>run_store.compare</code> returns 0/0/0. The test fails at base. Write paths: <code>reckon/ledger.py</code>, <code>reckon/run_store.py</code> and the new test.</p>
 
     <h2 id="s22">Every ledger question is answered by the store</h2>
-<section data-reckon="section" data-id="s22" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
+<section data-reckon="section" data-id="s22" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
 <p><strong>Why.</strong> The map lists every reader of the per-run files and the aggregate; untracking before they read the store leaves each with nothing to read.</p>
-<p><strong>Done when.</strong> Every existing reader test passes against a project whose <code>runs/</code> directory is absent and whose store holds the rows, and a store deleted and rebuilt returns an equal answer set. Write paths: <code>reckon/ledger.py</code> (<code>load</code>, <code>load_aggregate</code>, <code>runs</code>, <code>read_records</code>), <code>reckon/crew/open_run_index.py</code> and the new test.</p>
+<p><strong>Done when.</strong> Every existing reader test passes against a project whose <code>runs/</code> directory is absent and whose store holds the rows, and a store deleted and rebuilt returns an equal answer set. The read is bounded, because the first landing (98b7fdd438) was reverted at 648ca4e8f6 after every ledger load decoded the whole store and then stat-ed every run file, which took the station past 8 GB at a full core: on the live reckon project, a plan-scoped <code>read_records</code> decodes only that plan's rows and the store-only runs, no ledger load stats each run file, and the station's resident memory and tick time over an hour stay within those reckon-f2 measured on the reverted main. Write paths: <code>reckon/ledger.py</code> (<code>load</code>, <code>load_aggregate</code>, <code>runs</code>, <code>read_records</code>), <code>reckon/crew/open_run_index.py</code> and the new test.</p>
 
     <h2 id="s23">Members and holds become store tables</h2>
 <section data-reckon="section" data-id="s23" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
@@ -548,6 +548,9 @@
 <div class="r-comment" data-section="s23" data-id="c-run-r-20261115T153536870379-review-of-members-and-holds-in-store-s23-764f1ce8e066" data-who="reckon-build" data-when="2026-11-15T15:43:35Z">
     <div class="r-comment-body"><p>Independent incremental review of 2527b74492c2c5f1fdac51f46f7f04b9336cdd79 to 764f1ce8e066cf291b448af42f0b8e5e508db0e9: parsed, six dimensions 20/20 each, no findings, zero added failures; prior blocking version-domain finding answered.</p></div>
 </div>
+<div class="r-comment" data-section="s24" data-id="c-run-r-20261115T183015279464-review-of-revision-reads-on-the-store-s24-84165b187d1c" data-who="reckon-build" data-when="2026-11-15T18:33:49.419Z">
+    <div class="r-comment-body"><p>reviewed r-20261115T102555144818-revision-reads-on-the-store-s24 at 27958ce9c4fa..84165b187d1c across two commits; 5 of 6 declared write paths touched, all inside scope; blocking finding that reckon/run_store.py:280 stamps `promoted_revision` as the commit a row's record file entered the tree at, which promotion_scope.py:305 defines differently, and that no backfill repairs; reuse 5 because run_store.py:1142 duplicates velocity.py:1294.</p></div>
+</div>
 <div class="r-comment" data-section="s25" data-id="c-run-r-20261115T114400888370-review-of-guards-without-tracked-ledger-s25-a25650c7735d" data-who="reckon-build" data-when="2026-11-15T12:04:12.446Z">
     <div class="r-comment-body"><p>independent review of a25650c7735db7aeb7fe3cf398f80feb0eda05a1 scoring goal_fidelity 20, evidence 17, scope_discipline 20, durability 18, fit 15, reuse 15 (total 105); added_failure_count 0 derived from the reviewed run's own base-arm.log and after-arm.log (58 passed EXIT=0 against 63 passed EXIT=0); two non-blocking findings, the index.json marker also matching a docs-only repository that reckon build published, and repository_root's docstring keeping the two-file wording; the node's goal, done_when, declared scope and its 'test fails at base' claim are met</p></div>
 </div>
@@ -580,9 +583,6 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260923T141652653142-review-of-history-persists-as-detail-washes-out" data-who="reckon-ship" data-when="2026-09-23T15:39:47.829Z">
     <div class="r-comment-body"><p>read-back found 50 sentences with two readings, 43 load-bearing, and node 4 without a measure; the per-run ledger moved to its own plan</p></div>
-</div>
-<div class="r-comment" data-section="s24" data-id="c-run-r-20261115T183015279464-review-of-revision-reads-on-the-store-s24-84165b187d1c" data-who="reckon-build" data-when="2026-11-15T18:33:49.419Z">
-    <div class="r-comment-body"><p>reviewed r-20261115T102555144818-revision-reads-on-the-store-s24 at 27958ce9c4fa..84165b187d1c across two commits; 5 of 6 declared write paths touched, all inside scope; blocking finding that reckon/run_store.py:280 stamps `promoted_revision` as the commit a row&#x27;s record file entered the tree at, which promotion_scope.py:305 defines differently, and that no backfill repairs; reuse 5 because run_store.py:1142 duplicates velocity.py:1294.</p></div>
 </div>
 </section>
 </main>
