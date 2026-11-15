@@ -7,6 +7,13 @@
   "call_sites": [],
   "call_sites_note": "the delta adds one standalone CLI under scripts/ and edits one evidence fragment. Grep of reckon/, tests/ and skills/ for count_uncommitted_ledger_figures returns nothing, so no production code imports or invokes it; CALL_SITES is an explicit measured none, not an omitted line. reckon/crew/routing.py:1766 was read as the owner of the capability the script re-implements.",
   "completed_at": "2026-11-15T13:47:57.383Z",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "folded",
+      "node": "wftl-a-run-held-only-for-its-stream-figures-has-them",
+      "recorded_at": "2026-11-15T14:04:59.317174+00:00"
+    }
+  },
   "dispatched_at": "2026-11-15T13:30:22Z",
   "findings": [
     "scripts/count_uncommitted_ledger_figures.py:16 non-blocking: FIGURE_FIELDS re-declares the pair reckon/crew/routing.py:1766 already owns as STREAM_DERIVED_FIELDS, whose comment says the check reads that declaration so a figure added to the derivation later is protected without editing the reader; filled_rows at line 23 also re-implements a narrower form of that module's _figure_retention, never reading a row's throughput or budget block and counting any non-None value as recorded, so this instrument's pairs can diverge from the rule retention judges a row by. Today no row in the four ledgers carries the figure only in a block, so the printed pairs are right.",
