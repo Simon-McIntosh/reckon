@@ -150,3 +150,38 @@ def test_omp_launch_waits_for_background_results(tmp_path: Path) -> None:
 
     overlay = _backends.omp_overlay_path(str(tmp_path))
     assert yaml.safe_load(overlay.read_text())["async"]["printWake"] is True
+
+
+def test_cut_off_reuses_the_shared_last_tool_reader(tmp_path, monkeypatch) -> None:
+    import json
+
+    from reckon.crew import recovery_cut_off, recovery_wait
+
+    stream = tmp_path / "stream.jsonl"
+    stream.write_text(
+        json.dumps(
+            {
+                "type": "tool_execution_start",
+                "toolName": "bash",
+                "toolCallId": "shell-call",
+                "args": {"command": "sleep 1200"},
+            }
+        )
+        + "\n"
+    )
+    read_paths = []
+    original = recovery_wait._last_tool_call
+
+    def observed(path):
+        read_paths.append(path)
+        return original(path)
+
+    monkeypatch.setattr(recovery_wait, "_last_tool_call", observed)
+    cut_off = recovery_cut_off.omp_cut_off(
+        {"command": "omp", "attempt": 1},
+        manifest_status="in-progress",
+        exit_record={"ended_during": "working"},
+        stream=stream,
+    )
+    assert recovery_cut_off.cut_off_detail(cut_off) == "bash: sleep 1200"
+    assert read_paths == [stream]
