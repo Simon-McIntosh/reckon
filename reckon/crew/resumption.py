@@ -888,6 +888,39 @@ def _pointer_session(record: Mapping[str, Any]) -> str:
     return str(record.get("session_id") or "").strip()
 
 
+def _stream_reading_settings(record: Mapping[str, Any]) -> dict[str, Any] | None:
+    """The settings a run's streams are read with, or None when none can be had.
+
+    The record's own launch command names the dialect first. A run re-queued
+    after a refused launch can carry no command at all, or only the placed
+    argv whose first word is the scheduler shim rather than a harness, yet the
+    streams its earlier attempts wrote still hold the session it was
+    continuing. Its configured lane names the harness, so when the record's own
+    settings name no readable dialect the lane's settings from the project's
+    resolved configuration are used instead, rather than leaving the session
+    unreadable and the run's committed work reachable only by discarding it.
+    """
+    from reckon import _backends, flight
+
+    unreadable = (_backends.BackendError, CrewError, OSError, ValueError)
+    try:
+        settings = _backend_settings(record, None)
+        _backends.dialect_for(settings)
+        return settings
+    except unreadable:
+        pass
+    try:
+        config = flight.resolve(str(record.get("project") or "")).config
+        configured = (config.get("backends") or {}).get(record.get("backend"))
+        if not isinstance(configured, Mapping):
+            return None
+        settings = dict(configured)
+        _backends.dialect_for(settings)
+        return settings
+    except (*unreadable, flight.FlightConfigError):
+        return None
+
+
 def _stream_session(record: Mapping[str, Any]) -> str:
     """The session id the run's newest non-empty stream carries, or empty.
 
@@ -909,9 +942,11 @@ def _stream_session(record: Mapping[str, Any]) -> str:
         if run_id
         else Path(str(record.get("log_path") or ".")).parent
     )
+    backend = _stream_reading_settings(record)
+    if backend is None:
+        return ""
     for log in stream_paths_newest_first(directory, include=(record.get("log_path"),)):
         try:
-            backend = _backend_settings(record, None)
             observation = _backends.observe_log(
                 backend_name=str(record.get("backend") or ""),
                 backend=backend,
@@ -2635,12 +2670,43 @@ def sweep(
         moment = _now(now)
         wait = external_wait(pointer, now_seconds=moment.timestamp())
         refusal = _stream_refusal_block(pointer)
+        cut_off = None
         if wait is None and refusal is None:
+            row = classify_pointer(pointer)
+            if row.get("classification") == "cut-off":
+                cut_off = row
+        if wait is None and refusal is None and cut_off is None:
             continue
         considered += 1
         advice = CONTINUE_ADVICE
         observation: dict[str, Any] = {}
-        if wait is not None:
+        if cut_off is not None:
+            from reckon import flight
+
+            settings = config if config is not None else flight.resolve(project).config
+            limit = int((settings.get("fences") or {}).get("needs_help_after_failures", 2))
+            attempt = int(pointer.get("attempt") or 1)
+            entry = {
+                "run_id": run_id,
+                "backend": pointer.get("backend"),
+                "trigger": "cut-off",
+            }
+            if limit and attempt >= limit:
+                skipped.append({
+                    **entry,
+                    "reason": "cut-off-attempt-limit",
+                    "detail": f"attempt {attempt} reached the flight's failure bound {limit}",
+                })
+                continue
+            end = cut_off.get("exit_record") or {}
+            signature = f"cut-off:{attempt}:{end.get('exited_at') or ''}"
+            advice = (
+                f"{cut_off['detail']}. Continue from the work and manifest already "
+                "on disk; verify the interrupted tool's result before repeating it."
+            )
+            duplicate_reason = "already-resumed-for-this-cut-off"
+            duplicate_detail = "this attempt's cut-off has already been resumed"
+        elif wait is not None:
             entry = {
                 "run_id": run_id,
                 "backend": pointer.get("backend"),

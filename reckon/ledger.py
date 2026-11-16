@@ -91,6 +91,13 @@ LEDGER_SLUG = "crew"
 # evidence could not be produced is a recorded negative, not a silent pass.
 GATE_VERDICTS = ("passed", "failed", "not-run")
 
+#: The suite-delta outcomes the rollup tallies. The first four are what a
+#: promotion measures against its arms; ``not-run`` is what a hand-merged run
+#: records, because the branch already carries its change and there is no pair
+#: of arms left to compare. It counts under its own key so such a row stays
+#: visible in the rollup rather than dropping out of it.
+SUITE_DELTA_OUTCOMES = ("clean", "refused", "waived", "unchanged", "not-run")
+
 # Substitutions attributable only to the backend swap a shadow exists to
 # measure. Any other key in a lineage's "substituted" map means something
 # besides the candidate backend changed, which confounds the comparison.
@@ -936,6 +943,11 @@ def write_run_file(
     ``mode`` is the permission bits the file must carry. A caller amending a
     file it did not create passes ``None``, leaving the bits the file already
     has, which is what a rewrite that only re-encodes an existing row wants.
+
+    The store holds the same row, and it is the copy a stored read answers
+    from, so an amendment reaches it here too: a row rewritten in its file and
+    left stale in the store would be read as the revision it superseded by
+    every reader that does not walk the documents.
     """
     target = run_path(project, str(row["run_id"]), root)
     _store.write_atomically(
@@ -944,12 +956,44 @@ def write_run_file(
         mode=mode,
         fsync=fsync,
     )
+    _sync_amended_run(project, row)
     from reckon.crew import open_run_index
 
     _bump_generation(project)
     open_run_index.record_written(project, row, root)
     _index_record_written_document(project, root, row, target)
     return target
+
+
+def _sync_amended_run(project: str, row: Mapping[str, Any]) -> None:
+    """Bring the store's copy of an amended run row up to date, or refuse.
+
+    A store that does not hold the run is left alone — a project with no store
+    does not acquire one from an amendment — so the ordinary write of a row
+    nothing has promoted costs one existence check and no store write.
+
+    A store that declines the amendment is a refusal rather than an unhealthy
+    index: the store is the durable authority, and a row amended in its file
+    while the store keeps the revision it superseded is exactly the history a
+    stored read would answer with. The file has already been rewritten when
+    this runs, so the refusal names the repair. A caller that must leave
+    neither copy ahead of the other passes the row it read, and a rerun after
+    the repair converges.
+    """
+    from reckon import run_store
+
+    try:
+        run_store.sync(project, dict(row))
+    except Exception as exc:  # every store failure is a refusal
+        raise LedgerError(
+            f"cannot record the amendment to run {str(row.get('run_id'))!r} in "
+            f"the run store at {_run_store_location()}: {type(exc).__name__}: "
+            f"{exc}. The run store is the durable authority for every promoted "
+            "run, so a row amended only in its own file would be read as the "
+            "revision that amendment superseded; repair the store with "
+            f"`python scripts/import_runs_into_store.py --project {project}` "
+            "and amend the run again"
+        ) from exc
 
 
 def _run_files(project: str, root: str | Path | None = None) -> list[Path]:
@@ -1136,18 +1180,16 @@ def _indexed_run_ids(project: str, root: str | Path | None) -> set[str] | None:
 
 
 def run_ids(project: str, root: str | Path | None = None) -> set[str]:
-    """Read index membership without decoding the individual run payloads.
+    """Read store membership without decoding any run payload.
 
-    The read is served from the run index :func:`load` keeps wherever that index
-    is current, so a caller that runs once per delivered run per station tick
-    pays no aggregate parse at all rather than one per call. An index that no
-    longer describes the ledger is refreshed through :func:`load` once, so the
-    rest of that tick is answered from it; a ledger no reader has indexed yet
-    is read from the aggregate and the run documents, which is the same read
-    this made before the index existed. A run file whose own record the index
-    could not decode still counts by its name, because membership and not the
-    row's contents is what this answers.
+    The document index remains available when no store exists, for projects
+    awaiting import. An existing store is authoritative even when empty.
     """
+    from reckon import run_store
+
+    stored = run_store.indexed_run_ids(project)
+    if stored is not None:
+        return stored
     current = _indexed_run_ids(project, root)
     if current is not None:
         return current
@@ -1164,7 +1206,17 @@ def run_ids(project: str, root: str | Path | None = None) -> set[str]:
 
 # The index stores file-derived values only. Every access checks file metadata,
 # including ctime, so edits with a preserved mtime still invalidate the row.
-_RUN_INDEX_VERSION = 5
+# The version moves when what the index extracts from a row moves, because a
+# warm index is never re-read from its sources: a row already indexed keeps the
+# column it was built with. Version 7 extracts a row's plan through the
+# dispatch fallback :func:`row_plan` reads, so every row written before it is
+# re-extracted from the payload it already holds. Version 8 moves the picker
+# projection onto that same answer: :func:`picker_record` now carries the plan
+# ``row_plan`` resolves, so a reader of a projected row sees a brief-carried
+# run under its plan rather than under the empty field the projection used to
+# hold. An index built before it keeps the old projection for every unchanged
+# run file, so the version must move for those rows to be re-extracted.
+_RUN_INDEX_VERSION = 8
 
 # The metadata key an index uses to carry the resolved ledger path it indexes.
 # It is written when the index is built, so a sweep can identify an index whose
@@ -1602,8 +1654,18 @@ _PICKER_FIELDS = (
 
 
 def picker_record(record: Mapping[str, Any]) -> dict[str, Any]:
-    """Project a full record onto the inputs the picker consumes."""
-    return {key: record[key] for key in _PICKER_FIELDS if key in record}
+    """Project a full record onto the inputs the picker consumes.
+
+    The plan is the answer :func:`row_plan` gives rather than the row's own
+    field, because the projection drops the two places a brief-carried dispatch
+    records the same fact — its impl move and its node definition. A reader of
+    a projected row would otherwise see a run dispatched with a brief as naming
+    no plan, which is the copy of a fact this projection exists to avoid
+    keeping.
+    """
+    projection = {key: record[key] for key in _PICKER_FIELDS if key in record}
+    projection["plan"] = row_plan(record)
+    return projection
 
 
 def picker_runs(project: str, root: str | Path | None = None) -> list[dict[str, Any]]:
@@ -1667,6 +1729,38 @@ def run_activity_seconds(record: Mapping[str, Any]) -> float | None:
     return max(stamps) if stamps else None
 
 
+def row_plan(record: Any) -> str:
+    """The plan a row belongs to, in the form its own readers compare against.
+
+    An absent plan is the empty string rather than NULL, so one equality
+    answers the question a plan-filtered read asks and a row without a plan can
+    never be returned for a named plan.
+
+    A run dispatched with a brief records no top-level ``plan`` at all, and a
+    dispatch that carries a brief is not a run without a plan: the run still
+    names the plan and section it was dispatched for. So the row's own field is
+    read first, and two places a dispatch records the same fact answer for a row
+    that has none — the impl move the run reported, then the node definition it
+    ran. The impl move is read before the definition because the definition is
+    wide detail a later rotation may wash out, while the impl move is durable;
+    reading the durable copy first keeps one row's plan the same before and
+    after that rotation. A row naming no plan in any of the three is still the
+    empty string, so it is returned for no plan.
+    """
+    if not isinstance(record, Mapping):
+        return ""
+    own = str(record.get("plan") or "").strip()
+    if own:
+        return own
+    for key in ("impl_move", "node_definition"):
+        block = record.get(key)
+        if isinstance(block, Mapping):
+            plan = str(block.get("plan") or "").strip()
+            if plan:
+                return plan
+    return ""
+
+
 def _active_records(records: Iterable[Any], boundary: float) -> list[dict[str, Any]]:
     return [
         record
@@ -1682,9 +1776,10 @@ def _payload_slot(
     *,
     headers_only: bool,
     activity_since: float | None,
+    plan: str | None = None,
 ) -> tuple[
-    dict[tuple[str, bool, float | None], tuple[dict[str, Any], int]] | None,
-    tuple[str, bool, float | None] | None,
+    dict[tuple[str, bool, float | None, str | None], tuple[dict[str, Any], int]] | None,
+    tuple[str, bool, float | None, str | None] | None,
     tuple[dict[str, Any], int] | None,
 ]:
     """The read pass's slot for this read, and what it already holds.
@@ -1697,7 +1792,7 @@ def _payload_slot(
     if region is None:
         return None, None, None
     database = connection.execute("PRAGMA database_list").fetchone()[2]
-    key = (str(database), bool(headers_only), activity_since)
+    key = (str(database), bool(headers_only), activity_since, plan)
     return region, key, region.get(key)
 
 
@@ -1708,6 +1803,7 @@ def _index_payload(
     headers_only: bool,
     picker_only: bool,
     activity_since: float | None = None,
+    plan: str | None = None,
 ) -> tuple[dict[str, Any], int]:
     """Decode one index's stored payloads into the union :func:`load` returns.
 
@@ -1727,19 +1823,30 @@ def _index_payload(
     ):
         raise ValueError("invalid index header")
     version = int(meta["version"])
-    if headers_only and activity_since is None:
+    if headers_only and activity_since is None and plan is None:
         data["runs"] = [{"run_id": run_id} for run_id in _index_membership(connection)]
         return data, version
     region, key, held = _payload_slot(
-        connection, headers_only=headers_only, activity_since=activity_since
+        connection,
+        headers_only=headers_only,
+        activity_since=activity_since,
+        plan=plan,
     )
     if held is not None:
         return _project_payload(held, picker_only=picker_only)
     column = "payload" if region is not None or not picker_only else "picker"
-    # Select by an indexed scalar before fetching payload overflow pages.
-    parameters = () if activity_since is None else (activity_since,)
-    aggregate_filter = "" if activity_since is None else " WHERE activity >= ?"
-    document_filter = "" if activity_since is None else " AND activity >= ?"
+    # Select by an indexed scalar before fetching payload overflow pages, so a
+    # read for one plan decodes no other plan's payloads.
+    predicates: list[str] = []
+    parameters: list[Any] = []
+    if activity_since is not None:
+        predicates.append("activity >= ?")
+        parameters.append(activity_since)
+    if plan is not None:
+        predicates.append("plan = ?")
+        parameters.append(plan)
+    aggregate_filter = f" WHERE {' AND '.join(predicates)}" if predicates else ""
+    document_filter = "".join(f" AND {clause}" for clause in predicates)
     data["runs"] = [
         normalize_outside_scope_paths(json.loads(row[0]))
         for row in connection.execute(
@@ -1768,7 +1875,7 @@ def _index_payload(
         ).fetchone()
         is not None
     )
-    if has_documents:
+    if has_documents or plan is not None:
         data["runs"].sort(key=promotion_order_key)
     if headers_only:
         data["runs"] = [{"run_id": row["run_id"]} for row in data["runs"]]
@@ -1786,6 +1893,7 @@ def _decode_payload(
     headers_only: bool,
     picker_only: bool,
     activity_since: float | None = None,
+    plan: str | None = None,
 ) -> tuple[dict[str, Any], int]:
     """Decode an index payload once per read pass, however it is projected.
 
@@ -1795,7 +1903,10 @@ def _decode_payload(
     derived from it instead of decoding the index again.
     """
     _, _, held = _payload_slot(
-        connection, headers_only=headers_only, activity_since=activity_since
+        connection,
+        headers_only=headers_only,
+        activity_since=activity_since,
+        plan=plan,
     )
     if held is not None:
         return _project_payload(held, picker_only=picker_only)
@@ -1805,6 +1916,7 @@ def _decode_payload(
         headers_only=headers_only,
         picker_only=picker_only,
         **({"activity_since": activity_since} if activity_since is not None else {}),
+        **({"plan": plan} if plan is not None else {}),
     )
 
 
@@ -1845,6 +1957,7 @@ def _last_good_index_data(
     headers_only: bool,
     picker_only: bool,
     activity_since: float | None = None,
+    plan: str | None = None,
 ) -> tuple[dict[str, Any], int, float] | None:
     """Read the last published index without refreshing it, and its age.
 
@@ -1883,6 +1996,7 @@ def _last_good_index_data(
                     if activity_since is not None
                     else {}
                 ),
+                **({"plan": plan} if plan is not None else {}),
             )
             damaged = _indexed_damaged_paths(connection, project, root)
     except (sqlite3.Error, OSError, ValueError, KeyError, TypeError):
@@ -1901,24 +2015,25 @@ def _last_good_index_data(
 # Outside a region each read keeps the behaviour it has now.
 _INDEX_REGION: ContextVar[
     dict[
-        tuple[str, str, bool, bool, float | None],
+        tuple[str, str, bool, bool, float | None, str | None],
         tuple[dict[str, Any], int, tuple[Path, ...]],
     ]
     | None
 ] = ContextVar("ledger_index_region", default=None)
 
 #: One read pass's decoded payloads, keyed by the index database, the header
-#: projection and the activity bound. The picker projection is not in the key:
-#: it is a subset of a full payload, so one full decode answers both.
+#: projection, the activity bound and the plan selection. The picker projection
+#: is not in the key: it is a subset of a full payload, so one full decode
+#: answers both.
 _PAYLOAD_REGION: ContextVar[
-    dict[tuple[str, bool, float | None], tuple[dict[str, Any], int]] | None
+    dict[tuple[str, bool, float | None, str | None], tuple[dict[str, Any], int]] | None
 ] = ContextVar("ledger_payload_region", default=None)
 
 
 @contextlib.contextmanager
 def index_reuse() -> Iterable[
     dict[
-        tuple[str, str, bool, bool, float | None],
+        tuple[str, str, bool, bool, float | None, str | None],
         tuple[dict[str, Any], int, tuple[Path, ...]],
     ]
 ]:
@@ -1938,7 +2053,8 @@ def index_reuse() -> Iterable[
         yield active
         return
     cache: dict[
-        tuple[str, str, bool, bool, float | None], tuple[dict[str, Any], int]
+        tuple[str, str, bool, bool, float | None, str | None],
+        tuple[dict[str, Any], int],
     ] = {}
     token = _INDEX_REGION.set(cache)
     payload_token = _PAYLOAD_REGION.set({})
@@ -1956,6 +2072,7 @@ def _indexed_data(
     headers_only: bool = False,
     picker_only: bool = False,
     activity_since: float | None = None,
+    plan: str | None = None,
 ) -> tuple[dict[str, Any], int]:
     reuse = _INDEX_REGION.get()
     index_key = (
@@ -1964,6 +2081,7 @@ def _indexed_data(
         headers_only,
         picker_only,
         activity_since,
+        plan,
     )
     if reuse is not None and index_key in reuse:
         data, version, damaged = reuse[index_key]
@@ -2001,14 +2119,22 @@ def _indexed_data(
                 connection.execute(f"PRAGMA user_version={_RUN_INDEX_VERSION}")
             connection.execute(
                 "CREATE TABLE IF NOT EXISTS records "
-                "(name TEXT PRIMARY KEY, stamp TEXT, activity REAL, payload TEXT, picker TEXT)"
+                "(name TEXT PRIMARY KEY, stamp TEXT, activity REAL, payload TEXT, "
+                "picker TEXT, plan TEXT)"
             )
             connection.execute(
                 "CREATE TABLE IF NOT EXISTS aggregate_rows "
-                "(ordinal INTEGER PRIMARY KEY, run_id TEXT, activity REAL, payload TEXT, picker TEXT)"
+                "(ordinal INTEGER PRIMARY KEY, run_id TEXT, activity REAL, "
+                "payload TEXT, picker TEXT, plan TEXT)"
             )
             connection.execute(
                 "CREATE INDEX IF NOT EXISTS aggregate_identity ON aggregate_rows(run_id)"
+            )
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS aggregate_plan ON aggregate_rows(plan)"
+            )
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS record_plan ON records(plan)"
             )
             connection.execute(
                 "CREATE TABLE IF NOT EXISTS metadata "
@@ -2047,7 +2173,9 @@ def _indexed_data(
                 data, version = _load_aggregate(project, root)
                 connection.execute("DELETE FROM aggregate_rows")
                 connection.executemany(
-                    "INSERT INTO aggregate_rows VALUES (?, ?, ?, ?, ?)",
+                    "INSERT INTO aggregate_rows "
+                    "(ordinal, run_id, activity, payload, picker, plan) "
+                    "VALUES (?, ?, ?, ?, ?, ?)",
                     [
                         (
                             i,
@@ -2062,6 +2190,7 @@ def _indexed_data(
                                 picker_record(row) if isinstance(row, Mapping) else row,
                                 separators=(",", ":"),
                             ),
+                            row_plan(row),
                         )
                         for i, row in enumerate(data["runs"])
                     ],
@@ -2094,7 +2223,7 @@ def _indexed_data(
                                 f"run changed during index read: {source}"
                             ) from exc
                         connection.execute(
-                            "INSERT OR REPLACE INTO records VALUES (?, ?, NULL, NULL, NULL)",
+                            "INSERT OR REPLACE INTO records (name, stamp) VALUES (?, ?)",
                             (source.stem, encoded),
                         )
                         continue
@@ -2103,13 +2232,16 @@ def _indexed_data(
                         # The caller's uncached path still supplies the current read.
                         raise OSError(f"run changed during index read: {source}")
                     connection.execute(
-                        "INSERT OR REPLACE INTO records VALUES (?, ?, ?, ?, ?)",
+                        "INSERT OR REPLACE INTO records "
+                        "(name, stamp, activity, payload, picker, plan) "
+                        "VALUES (?, ?, ?, ?, ?, ?)",
                         (
                             source.stem,
                             encoded,
                             run_activity_seconds(record),
                             json.dumps(record, sort_keys=True, separators=(",", ":")),
                             json.dumps(picker_record(record), separators=(",", ":")),
+                            row_plan(record),
                         ),
                     )
             if not reuse_documents:
@@ -2167,6 +2299,7 @@ def _indexed_data(
                     if activity_since is not None
                     else {}
                 ),
+                **({"plan": plan} if plan is not None else {}),
             )
             _report_damaged_run_records(
                 project, _indexed_damaged_paths(connection, project, root)
@@ -2219,6 +2352,50 @@ def indexed_headers(
     return load(project, root, headers_only=True)
 
 
+def _aggregate_headers(project: str, root: str | Path | None) -> tuple[dict, int]:
+    """Read mutable collections without refreshing any run-file index.
+
+    An unchanged aggregate can reuse its already separated header. Only the
+    aggregate identity matters here; run documents cannot change its roster.
+    """
+    path = _run_index_path(project, root)
+    if path.is_file():
+        try:
+            with contextlib.closing(
+                sqlite3.connect(f"{path.as_uri()}?mode=ro", uri=True)
+            ) as connection:
+                meta = dict(connection.execute("SELECT name, payload FROM metadata"))
+            if meta.get("stamp") == json.dumps(
+                _file_identity(ledger_path(project, root))
+            ):
+                data = json.loads(meta["header"])
+                data["runs"] = []
+                return data, int(meta["version"])
+        except (OSError, sqlite3.Error, ValueError, KeyError):
+            pass
+    data, version = load_aggregate(project, root)
+    return {**data, "runs": []}, version
+
+
+def _selected_rows(data: dict[str, Any], run_ids: set[str] | None) -> dict[str, Any]:
+    """Narrow a loaded payload to the named run ids.
+
+    A copy rather than an edit in place: a loaded payload may be the one the
+    index region is holding for other readers, and a selection is one caller's
+    question rather than a new answer about the project.
+    """
+    if run_ids is None:
+        return data
+    return {
+        **data,
+        "runs": [
+            row
+            for row in data["runs"]
+            if isinstance(row, Mapping) and str(row.get("run_id") or "") in run_ids
+        ],
+    }
+
+
 def load(
     project: str,
     root: str | Path | None = None,
@@ -2227,47 +2404,52 @@ def load(
     use_index: bool = True,
     headers_only: bool = False,
     activity_since: float | None = None,
+    plan: str | None = None,
+    run_ids: Iterable[str] | None = None,
 ) -> tuple[dict[str, Any], int]:
-    """Read the union of aggregate and per-run records, refusing disagreements.
+    """Read authoritative stored runs with selection and projection in SQL.
 
-    An interrupted export can leave two copies of a run. They count once only
-    when their canonical serialisations agree; disagreement refuses the entire
-    read so a caller cannot accidentally count an incomplete history.
+    ``plan`` and ``activity_since`` narrow the returned payloads before they
+    are decoded, and ``run_ids`` names the rows outright: the store selects
+    those identities by key and decodes nothing else, so a caller that already
+    knows which runs it will look at pays for those rows rather than for the
+    plan's whole history. ``headers_only`` reads identities, and
+    ``picker_only`` reads the picker fields; neither materialises full run
+    records. No stored read inspects per-run documents or refreshes their
+    disposable indexes.
 
-    A refresh the index refuses — a concurrent edit, a locked or unwritable
-    index — falls back to the last good index rather than the aggregate: this
-    snapshot is complete as of its own refresh, and returning it with the
-    seconds since that refresh keeps a "rows no newer than" figure on the read
-    instead of charging every reader a full scan of a multi-megabyte aggregate
-    whenever a peer happens to be writing. Only when no good index can be read
-    at all does the read open the aggregate.
+    ``plan`` uses :func:`row_plan`, including the durable implementation move
+    and the node definition when a brief-carried row has no top-level plan.
 
-    ``picker_only`` reads each row as the projection :func:`picker_record`
-    retains beside its payload in the index, so a caller that consumes only
-    those fields decodes no full record on a warm read. What comes back from
-    the aggregate on a cold read is projected the same way.
-
-    A ledger with nothing in it is read without an index. A project that has
-    never run a worker has neither an aggregate file nor a directory of per-run
-    documents, and its read is the empty roster :func:`_load_aggregate` already
-    returns. Indexing that emptiness writes a cache file keyed to a path a
-    sweep then classifies as a checkout that is gone, so a read that found
-    nothing publishes a resident artefact nothing removes — one per project
-    name any reader ever asks about. The uncached path costs no more here:
-    there is no aggregate to parse and no document to merge.
-
-    ``activity_since`` bounds the newest usable creation, dispatch, launch or
-    completion stamp inclusively in epoch seconds. A warm index fetches only
-    matching payloads; a cold index still reads every source to build it.
-
-    Per-run documents alone are content, so a project holding them and no
-    aggregate keeps its index; that shape is a ledger whose runs are split out
-    by their own files.
+    With no store, the file-backed index supplies migration compatibility,
+    retaining its last complete snapshot when a refresh is temporarily refused.
+    ``use_index=False`` explicitly reads the committed documents for import
+    and comparison, independently of the store being checked or rebuilt.
+    Roster and holds retain their versioned aggregate read until migrated.
     """
+    selected = None if run_ids is None else {str(run_id) for run_id in run_ids}
+    if use_index:
+        from reckon import run_store
+
+        fields = (
+            ("run_id",) if headers_only else (_PICKER_FIELDS if picker_only else None)
+        )
+        stored = run_store.stored_run_rows(
+            project,
+            plan=plan,
+            run_ids=sorted(selected) if selected is not None else None,
+            fields=fields,
+            activity_since=activity_since,
+        )
+        if stored is not None:
+            data, version = _aggregate_headers(project, root)
+            data["runs"] = sorted(stored, key=promotion_order_key)
+            _report_damaged_run_records(project, ())
+            return data, version
     _report_damaged_run_records(project, ())
     if use_index and _ledger_holds_content(project, root):
         try:
-            return _indexed_data(
+            data, version = _indexed_data(
                 project,
                 root,
                 headers_only=headers_only,
@@ -2277,7 +2459,9 @@ def load(
                     if activity_since is not None
                     else {}
                 ),
+                **({"plan": plan} if plan else {}),
             )
+            return _selected_rows(data, selected), version
         except (OSError, sqlite3.Error):
             # A disposable cache cannot make an otherwise readable ledger fail.
             stale = _last_good_index_data(
@@ -2290,15 +2474,19 @@ def load(
                     if activity_since is not None
                     else {}
                 ),
+                **({"plan": plan} if plan else {}),
             )
             if stale is not None:
                 data, version, age = stale
                 data["index_age_seconds"] = round(age, 3)
-                return data, version
+                return _selected_rows(data, selected), version
     data, version = _load_aggregate(project, root)
     _merge_run_documents(project, root, data, refuse=True)
     if activity_since is not None:
         data["runs"] = _active_records(data["runs"], activity_since)
+    if plan:
+        data["runs"] = [row for row in data["runs"] if row_plan(row) == plan]
+    data = _selected_rows(data, selected)
     if picker_only:
         data["runs"] = [
             picker_record(row) if isinstance(row, Mapping) else row
@@ -3327,20 +3515,29 @@ def _index_append(project: str, record: Mapping[str, Any]) -> dict[str, Any]:
     The store retries a locked database with a bounded backoff inside this one
     call, so a lock held by a concurrent promotion lasts milliseconds and the
     row it costs is written rather than lost. A lock outlasting that bound, and
-    any other failure, is raised naming the store and the repair verb.
+    any other failure, is raised naming the store and the appropriate remedy.
     """
     from reckon import run_store
 
     try:
         run_store.append(project, dict(record))
     except Exception as exc:  # every store failure is a refusal
+        if run_store._locked(exc):
+            remedy = (
+                "the store was locked past the wait bound "
+                f"({run_store.INDEX_RETRY_SECONDS:g} s); promote the run again"
+            )
+        else:
+            remedy = (
+                "repair the store with `python scripts/import_runs_into_store.py "
+                f"--project {project}` and promote the run again"
+            )
         raise LedgerError(
             f"cannot record run {str(record.get('run_id'))!r} in the run store at "
             f"{_run_store_location()}: {type(exc).__name__}: {exc}. The run store "
             "is the durable authority for every promoted run, so this write is "
             "refused rather than leaving a run file whose row no store holds; "
-            "repair the store with `python scripts/import_runs_into_store.py "
-            f"--project {project}` and promote the run again"
+            f"{remedy}"
         ) from exc
     return {"status": "written"}
 
@@ -3796,6 +3993,7 @@ def read_records(
     limit: int | None = None,
     with_figures: bool = True,
     activity_since: float | None = None,
+    run_ids: Iterable[str] | None = None,
 ) -> tuple[list[dict[str, Any]], int]:
     """Read selected completed runs and their ledger version once.
 
@@ -3813,33 +4011,67 @@ def read_records(
 
     Disabling figures preserves stored measurements in promotion order.
     Both paths add catalogue identity fields without rewriting committed rows.
-    ``activity_since`` has :func:`load`'s epoch-seconds meaning. Without figures
-    it is applied before decoding index payloads; figures require all history
-    to compute width before filtering the returned rows.
+    ``activity_since`` has :func:`load`'s epoch-seconds meaning. Stored reads
+    select payloads by activity, plan and run id before decoding. Figures use a
+    narrow timestamp projection across all plans to count width, so the selected
+    rows retain the fleet-wide figure without decoding unrelated full records.
+
+    ``run_ids`` is the row selection for a caller that already holds the ids it
+    will look at, such as the landing audit reading the promoted runs of the
+    sections it suspects: the store answers those identities by key, so the
+    plan's other history is never decoded.
     """
+    selected_plan = str(plan or "").strip()
+    selected_ids = None if run_ids is None else {str(run_id) for run_id in run_ids}
+    from reckon import run_store
+
+    stored = run_store.store_path().exists()
     data, version = load(
         project,
         root,
+        headers_only=with_figures and activity_since is None and not stored,
         **(
             {"activity_since": activity_since}
-            if activity_since is not None and not with_figures
+            if activity_since is not None and (stored or not with_figures)
+            else {}
+        ),
+        **(
+            {"plan": selected_plan}
+            if selected_plan and (stored or not with_figures)
+            else {}
+        ),
+        **(
+            {"run_ids": sorted(selected_ids)}
+            if selected_ids is not None and (stored or not with_figures)
             else {}
         ),
     )
     if with_figures:
         from reckon.crew import summary
 
-        records = summary.run_rows(project, root=root)
+        if stored:
+            records = summary.run_rows(
+                project,
+                root=root,
+                records=data["runs"],
+                timestamp_population=run_store.stored_run_rows(
+                    project,
+                    fields=("dispatched_at", "completed_at"),
+                ),
+            )
+        else:
+            records = summary.run_rows(project, root=root)
     else:
         records = list(data["runs"])
     if activity_since is not None and with_figures:
         records = _active_records(records, activity_since)
-    selected_plan = str(plan or "").strip()
     if selected_plan:
+        records = [record for record in records if row_plan(record) == selected_plan]
+    if selected_ids is not None:
         records = [
             record
             for record in records
-            if str(record.get("plan") or "") == selected_plan
+            if str(record.get("run_id") or "") in selected_ids
         ]
     if since is not None:
         boundary = _parse_timestamp(since, "since")
@@ -3902,7 +4134,7 @@ def review_scores(
     for record in records:
         if not isinstance(record, Mapping):
             continue
-        if plan is not None and str(record.get("plan") or "") != str(plan):
+        if plan is not None and row_plan(record) != str(plan):
             continue
         if node is not None and str(record.get("node") or "") != str(node):
             continue
@@ -3914,7 +4146,7 @@ def review_scores(
         selected.append(
             {
                 "run_id": str(record.get("run_id") or ""),
-                "plan": str(record.get("plan") or ""),
+                "plan": row_plan(record),
                 "node": str(record.get("node") or ""),
                 "status": str(block.get("status") or "unparsed"),
                 "scores": dict(block.get("scores") or {}),
@@ -4385,7 +4617,7 @@ def effort_report(
     excluded_stalled = 0
     excluded_unusable_completion = 0
     for record in runs(project, root):
-        plan = str(record.get("plan") or "")
+        plan = row_plan(record)
         row = by_plan.setdefault(
             plan,
             {
@@ -4509,8 +4741,8 @@ def summary(
         suite_delta = record.get("suite_delta")
         if kind == "live" and isinstance(suite_delta, Mapping):
             status = str(suite_delta.get("status") or "")
-            if status in suite_deltas:
-                suite_deltas[status] += 1
+            if status in SUITE_DELTA_OUTCOMES:
+                suite_deltas[status] = suite_deltas.get(status, 0) + 1
         if kind != "live":
             continue
         if verdict == "passed":
@@ -4556,7 +4788,7 @@ def summary(
         "gates": {kind: dict(sorted(counts.items())) for kind, counts in gates.items()},
         "worker_gate": worker_gate,
         "suite_deltas": suite_deltas,
-        "plans": sorted({str(record.get("plan") or "") for record in records}),
+        "plans": sorted({row_plan(record) for record in records}),
         "effort": effort_report(project, root=root, declared=declared),
     }
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import json
+from reckon.crew.recovery_cut_off import cut_off_detail, omp_cut_off
 import re
 import shlex
 import subprocess
@@ -32,6 +33,12 @@ from reckon.crew.reports import (
 #: shared by the lifecycle classification and the fleet verdict so a row cannot
 #: report the same run as two different outcomes.
 PROMOTED_UNMERGED_STATE = "complete"
+
+
+def _is_measurement_run(record: Mapping[str, Any]) -> bool:
+    """Whether dispatch marked this run to build and gate without landing."""
+    marker = record.get("measure_only")
+    return isinstance(marker, Mapping) or bool(str(marker or "").strip())
 
 
 def _manifest_is_the_predecessor_attempts_report(
@@ -476,7 +483,11 @@ def _filed_review_record(
     record, and a run of any other role files none. The record named is the
     first store entry :func:`_review_is_complete` accepts — a stored review
     holding every measurement its rubric demands, read through the one
-    predicate that owns that question rather than a spelling of its own — keyed
+    predicate that owns that question rather than a spelling of its own, and
+    with its claim verdicts folded to the canonical key first by the same
+    :func:`reckon.crew.review.with_canonical_claims` the store's read path
+    applies, so a claims record a reviewer wrote by hand is read on the answers
+    it gave — keyed
     on the attempt the run's own marker names so a record filed by a superseded
     attempt cannot stand in for the attempt running now. Returns the receipt's
     path and the store record's path, or None when nothing eligible is filed.
@@ -491,6 +502,7 @@ def _filed_review_record(
     # Imported here rather than at module scope: the supervisor's module reaches
     # back into the recovery package, so a top-level import would close the loop.
     from reckon.crew.dispatch_launch import REVIEW_FILED_RECORD_NAME
+    from reckon.crew.review import with_canonical_claims
 
     filed_path = (
         _run_directory(record) / f"attempt-{attempt}-{REVIEW_FILED_RECORD_NAME}"
@@ -513,7 +525,9 @@ def _filed_review_record(
             stored = json.loads(stored_path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             continue
-        if isinstance(stored, Mapping) and _review_is_complete(stored):
+        if isinstance(stored, Mapping) and _review_is_complete(
+            with_canonical_claims(stored)
+        ):
             return filed_path, stored_path
     return None
 
@@ -533,9 +547,7 @@ def _the_probe_did_not_answer(observation: Mapping[str, Any] | None) -> bool:
     it would break silently on that change. A probe result carrying no flag
     is one that answered, because it produced the state it reports.
     """
-    if observation is None:
-        return False
-    return observation.get("answered") is False
+    return observation is not None and not _wait_probe_answered(observation)
 
 
 def _wait_declaration_missing_keys(wait: Mapping[str, Any]) -> list[str]:
@@ -818,6 +830,7 @@ def _review_run_in_flight(
     record: Mapping[str, Any],
     *,
     pointers: Sequence[Mapping[str, Any]] | None = None,
+    now_seconds: float | None = None,
 ) -> tuple[str, str]:
     """The dispatched review standing for this run's head, and its phase.
 
@@ -836,6 +849,16 @@ def _review_run_in_flight(
     N more times. A caller holding no snapshot passes none and the recogniser
     reads them itself, so the answer is the same either way.
 
+    A pre-spawn phase is also where a launch that never spawned sits, and that
+    pointer stands for nothing: the recogniser still finds the pointer in the
+    pre-spawn spellings, and :func:`_stranded_launch` answers that no worker was
+    ever spawned for the claim. Such a review no longer stands for its subject,
+    so the row carries the review-dispatch remedy instead of pointing at a run
+    that will never file a record. :func:`_review_in_flight` is left unchanged
+    because the release branch in ``dispatch_review_for_run`` needs it to find
+    exactly this pointer and discard it. A review inside the bound, or one whose
+    launch evidence is written, is still reported in flight.
+
     ``("", "")`` is the answer for every case the reader cannot resolve — no
     review, an unreadable pointer, or a phase that is not in flight — so a row
     never loses the dispatch it would otherwise print over a review it cannot
@@ -847,8 +870,12 @@ def _review_run_in_flight(
         return "", ""
     if not review_run_id:
         return "", ""
-    phase = _review_pointer_phase(review_run_id)
+    pointer = _review_pointer(review_run_id)
+    phase = str(pointer.get("phase") or "") if pointer is not None else ""
     if not _review_in_flight_phase(phase):
+        return "", ""
+    moment = _utc_seconds() if now_seconds is None else float(now_seconds)
+    if pointer is not None and _stranded_launch(pointer, now_seconds=moment):
         return "", ""
     return review_run_id, phase
 
@@ -872,22 +899,21 @@ def _review_pointer_delivered(pointer: Mapping[str, Any] | None) -> bool:
     return str(pointer.get("phase") or "") in DELIVERED_REVIEW_PHASES
 
 
-def _review_pointer_phase(review_run_id: str) -> str:
-    """The phase a review run's own pointer records, or "" when unreadable.
+def _review_pointer(review_run_id: str) -> Mapping[str, Any] | None:
+    """A review run's own pointer, or None when no reader can resolve it.
 
     The review's pointer is the only place its own progress is written, so the
-    subject's row reports the review's phase from here rather than inferring
-    one from the dispatch that composed it.
+    subject's row reads the phase from it rather than inferring one from the
+    dispatch that composed the review, and the stranded-launch reading is taken
+    from the same mapping: one read answers both questions about the pointer.
     """
     from reckon.crew.runs import read_pointer
 
     try:
         pointer = read_pointer(review_run_id)
     except (CrewError, OSError):
-        return ""
-    if not isinstance(pointer, Mapping):
-        return ""
-    return str(pointer.get("phase") or "")
+        return None
+    return pointer if isinstance(pointer, Mapping) else None
 
 
 def _review_in_flight_action(run_id: str, review_run_id: str, phase: str) -> str:
@@ -1206,6 +1232,126 @@ def _promoted_awaiting_merge(record: Mapping[str, Any], *, moment: float) -> str
     )
 
 
+#: The reading of a turn that ended before the worker acted. A print-mode worker
+#: gets no turn after the one it is in, so a stream whose whole content is one
+#: assistant message with no tool call is a run that stopped rather than one
+#: that failed: nothing was attempted, nothing reported a fault, and the session
+#: survives to continue. The text the message carried is the only account of
+#: why the run stopped there, so the row quotes it.
+ENDED_WITHOUT_ACTING = "ended-without-acting"
+
+#: A message whose own words name a request that failed — a refused connection,
+#: a prompt past the window — is not a premature end: continuing it would send
+#: the same request again, so the row carries the error the message names.
+_FIRST_TURN_ERROR_RE = re.compile(
+    r"^\s*(?:API Error\b|Prompt is too long\b|Error:)", re.IGNORECASE
+)
+
+#: How much of a message a row quotes. The pane draws one line, so a long one is
+#: clipped rather than left to overflow the cell it has to fit.
+_QUOTED_TEXT_LIMIT = 200
+
+
+def _quoted_stream_text(text: str) -> str:
+    """One line of a worker's message, clipped, ready for a row to quote."""
+    collapsed = " ".join(str(text or "").split())
+    if len(collapsed) <= _QUOTED_TEXT_LIMIT:
+        return collapsed
+    return collapsed[: _QUOTED_TEXT_LIMIT - 1].rstrip() + "…"
+
+
+def _assistant_record_text(event: Mapping[str, Any]) -> str | None:
+    """The text one assistant record carries, or None when it called a tool.
+
+    A record holding a tool call answers None: the worker acted, and whatever it
+    said beside the call is not the whole of its turn.
+    """
+    message = event.get("message")
+    content = message.get("content") if isinstance(message, Mapping) else None
+    if not isinstance(content, list):
+        return None
+    texts: list[str] = []
+    for block in content:
+        if not isinstance(block, Mapping):
+            continue
+        if block.get("type") == "tool_use":
+            return None
+        if block.get("type") == "text":
+            value = str(block.get("text") or "").strip()
+            if value:
+                texts.append(value)
+    return "\n".join(texts).strip()
+
+
+def _record_carries_tool_result(event: Mapping[str, Any]) -> bool:
+    """Whether one stream record answers a tool the worker called."""
+    message = event.get("message")
+    content = message.get("content") if isinstance(message, Mapping) else None
+    if not isinstance(content, list):
+        return False
+    return any(
+        isinstance(block, Mapping) and block.get("type") == "tool_result"
+        for block in content
+    )
+
+
+def _first_turn_without_action(record: Mapping[str, Any]) -> tuple[str, str] | None:
+    """What a run's stream says it ended on, when one turn ended before acting.
+
+    ``("premature", text)`` for a stream holding exactly one assistant record,
+    no tool call and no error; ``("error", text)`` when that record, or the
+    result after it, names an error; None for every other stream, including one
+    whose single turn used a tool, which is a run that acted and so a different
+    reading.
+
+    The stream is read forwards and abandoned at the first record that
+    contradicts the shape — a tool call, a tool result, a second assistant
+    record — so a long stream costs only the records before that point. Only a
+    dead run's stream is read, and only after every manifest, wait, phase and
+    budget reading above has had its say.
+    """
+    found = _record_newest_stream(record)
+    if found is None:
+        return None
+    text = ""
+    assistant_records = 0
+    try:
+        with found[0].open("rb") as handle:
+            for raw in handle:
+                line = raw.strip()
+                if not line:
+                    continue
+                try:
+                    event = json.loads(line)
+                except (TypeError, ValueError):
+                    continue
+                if not isinstance(event, Mapping):
+                    continue
+                kind = event.get("type")
+                if kind == "assistant":
+                    assistant_records += 1
+                    if assistant_records > 1:
+                        return None
+                    said = _assistant_record_text(event)
+                    if said is None:
+                        return None
+                    text = said
+                elif kind == "user":
+                    if _record_carries_tool_result(event):
+                        return None
+                elif kind == "result" and event.get("is_error"):
+                    failure = str(event.get("result") or event.get("error") or "")
+                    failure = " ".join(failure.split())
+                    if not failure:
+                        return None
+                    return ("error", failure)
+    except OSError:
+        return None
+    if assistant_records != 1 or not text:
+        return None
+    if _FIRST_TURN_ERROR_RE.match(text):
+        return ("error", text)
+    return ("premature", text)
 def _stuck_verdict_for(record: Mapping[str, Any]) -> dict[str, Any] | None:
     """Ask the drain view's stuck verdict about one pointer.
 
@@ -1576,6 +1722,30 @@ def classify_pointer(
                 "answered": False,
                 "detail": f"condition probe could not answer: {exc}",
             }
+        # The wait is judged against itself here, before any arm reads it: the
+        # horizon it declared, or the limit the scheduler reports for the job
+        # its probe names when that probe asked for it. A declaration that
+        # names no such limit keeps the reader's default, so the exemption is
+        # the scheduler's own number and not a general reprieve from the clock.
+        # A probe naming a job cancelled with no elapsed time is reported as
+        # suspect — not terminal — because that state names the allocation's
+        # cancellation rather than the end of what the wait is on.
+        wait = _wait_judged_against_itself(
+            wait,
+            wait_observation,
+            horizon_declared=any(
+                field in manifest_data for field in _WAIT_HORIZON_FIELDS
+            ),
+        )
+        if wait.get("suspect_probe"):
+            wait_observation = {
+                **wait_observation,
+                "state": "unknown",
+                "detail": (
+                    f"{wait['suspect_probe']['detail']}; no terminal state has "
+                    "been reported for this wait"
+                ),
+            }
     # A live worker may hold no written verdict yet, because the reader caught
     # its manifest between a rewrite's truncate and write. That is not a
     # delivery a reader must repair, but naming it unwritten in that instant
@@ -1758,6 +1928,10 @@ def classify_pointer(
     marker = None
     needs_help_complete_value = None
     session_refusal: dict[str, str] | None = None
+    # Set only by the premature-end arm below, and read by the recovery reading
+    # so a turn that ended before the worker acted carries the premature end
+    # rather than the abandoned word its dead process would otherwise give it.
+    premature_end: tuple[str, str] | None = None
     # The request phase vocabulary is owned by the admission module, which
     # imports the recovery readers at module level; naming it here at import
     # time would close that loop, so it is named where it is read.
@@ -1775,10 +1949,32 @@ def classify_pointer(
     stuck = _stuck_verdict_for(record) if phase else None
 
     # A pre-spawn launch past its bound with its holder gone is not waiting to
-    # start: the liveness arms read it as a failed launch, which the admission
-    # pass then releases or returns to the queue.
-    pre_spawn_waiting = phase in _PRE_SPAWN_PHASES and not _stranded_launch(
-        record, now_seconds=moment
+    # start: the pre-spawn reading needs a launch that has spawned nothing, and
+    # the liveness arms read the rest — a stranded launch as a failed launch the
+    # admission pass then releases or returns to the queue, and a launch whose
+    # worker has come and gone from that worker's own liveness and output.
+    #
+    # The pre-spawn phrase is the launcher's label and a stale one, so it cannot
+    # be trusted alone. A run that reached its worker carries a pid, a worker
+    # record, a stream or a launch log, and any of those outranks the label:
+    # reading them as a request that has not started held a refused, unreadable
+    # or dead run at ``running`` for as long as its pointer lived, and left
+    # ``fleet_verdict`` free to call the same row abandoned, so one row stated
+    # two outcomes and neither surface could be acted on.
+    pre_spawn_waiting = (
+        phase in _PRE_SPAWN_PHASES
+        and not _spawn_evidence(record)
+        and not _stranded_launch(record, now_seconds=moment)
+    )
+    # A pre-spawn phase is a reading of a claim, and a claim is all it is: the
+    # manifest is written by the worker the claim is waiting for, so a pointer
+    # whose manifest already carries a verdict word has delivered and is read
+    # from it. Without that precedence the phase label outranked every arm
+    # below, and a completed run left at its launcher's last phase read as
+    # running — invisible to the reader that dispatches the review a scoring
+    # run owes, which is what the phase reading was never about.
+    pre_spawn_reads_as_claim = (
+        pre_spawn_waiting and manifest_status not in TERMINAL_MANIFEST_STATUSES
     )
     # A parked phase is the launcher's statement that the request is waiting to
     # start, and it means that only while the pointer records no worker: a pid
@@ -1805,6 +2001,13 @@ def classify_pointer(
             detail = str(record.get("reason") or "") or (
                 f"waiting for {waiting_on} to land"
             )
+            # A section owns every run that names it, so a request can wait on
+            # it while one of those runs ends failed. The pass that judged the
+            # wait recorded the runs still on their way, and naming them is
+            # what tells this row apart from one whose section is gone.
+            working = [str(run) for run in record.get("upstream_live") or () if run]
+            if working:
+                detail += f" ({', '.join(working)} live on it)"
             action = f"wait for {waiting_on} to land"
     elif phase == HELD_PHASE and not launched:
         classification = HELD_PHASE
@@ -1823,12 +2026,14 @@ def classify_pointer(
         else:
             detail = str(record.get("reason") or "waiting for a local lane slot")
             action = "wait for a local lane slot"
-    elif pre_spawn_waiting:
+    elif pre_spawn_reads_as_claim:
         # Claimed by its launcher with no worker yet: the phase reading stands,
         # as it does for a queued request, and it is reported as running, the
         # reading such a run carried before the liveness arms were skipped for
         # it. Without a classification here the arms below were skipped too,
-        # and the read raised for every row of the project.
+        # and the read raised for every row of the project. A claim whose
+        # manifest already carries a verdict is not a claim — it delivered, and
+        # the arms below read what it delivered.
         classification = "running"
         detail = (
             f"the launcher has claimed this run ({phase}) and has not started "
@@ -1843,7 +2048,7 @@ def classify_pointer(
     unlaunched = (
         phase in {QUEUED_PHASE, HELD_PHASE}
         or phase in WAITING_UPSTREAM_PHASES
-        or pre_spawn_waiting
+        or pre_spawn_reads_as_claim
     ) and not launched
     if unlaunched and stuck is None:
         pass
@@ -1901,6 +2106,19 @@ def classify_pointer(
             "attempt the pointer still names"
         )
         action = f"reckon crew observe --run {run_id}"
+    elif (
+        cut_off := omp_cut_off(
+            record, manifest_status=manifest_status, exit_record=ended_exit, stream=log
+        )
+    ) is not None:
+        classification = "cut-off"
+        detail = (
+            f"the omp worker {_exit_record_end_phrase(ended_exit)} before its "
+            f"manifest reached an outcome; last tool call: {cut_off_detail(cut_off)}"
+        )
+        action = (
+            f"reckon crew resume --run {run_id} --advice 'continue the unfinished work'"
+        )
     elif interruption is not None:
         classification = INTERRUPTED_RUN_PHASE
         signal_name = interruption.get("signal_name")
@@ -1932,8 +2150,10 @@ def classify_pointer(
             "says so"
         )
         action = (
-            f"reckon crew repair --run {run_id} --status complete "
-            "--reason <the verdict the worker reached>"
+            f"reckon crew repair --run {shlex.quote(run_id)} --status complete "
+            "--reason '<the verdict the worker reached>'"
+            if completion_offer(record, repair=True)
+            else f"reckon crew observe --run {shlex.quote(run_id)}"
         )
     elif manifest_unwritten:
         classification = "running"
@@ -1980,7 +2200,14 @@ def classify_pointer(
         detail = "the process is alive"
         action = f"reckon crew observe --run {run_id}"
     elif manifest_status == "complete":
-        if _pointer_role(record) == REVIEW_ROLE:
+        if _is_measurement_run(record):
+            classification = "promotable"
+            detail = (
+                "the worker manifest reports completion; this is a measurement "
+                "run, so no review is owed and it is ready for promotion"
+            )
+            action = _promotion_command(run_id, record, manifest_commits)
+        elif _pointer_role(record) == REVIEW_ROLE:
             # A review run's deliverable is the review it wrote for another
             # run, so it is not itself awaiting review. The exemption is the
             # role the run carried, not the presence of a stored review: a run
@@ -2012,8 +2239,12 @@ def classify_pointer(
             # A review already dispatched stands as this run's review in
             # flight: the lane refuses a second dispatch of it naming the run
             # that holds it, so the row reads that run rather than offering a
-            # command that cannot run.
-            in_flight_review = _review_run_in_flight(record, pointers=pointers)
+            # command that cannot run. A review whose own pointer is a
+            # stranded launch stands for nothing, and the dispatch is offered
+            # again because it releases that pointer.
+            in_flight_review = _review_run_in_flight(
+                record, pointers=pointers, now_seconds=moment
+            )
             if review_error:
                 review_detail = f"the stored review could not be read: {review_error}"
             elif review is None:
@@ -2229,6 +2460,24 @@ def classify_pointer(
             action = (
                 f"the recovery sweep will resume run {run_id} when the condition "
                 "test reports a terminal state"
+            )
+        if wait.get("suspect_probe"):
+            # The probe names a job the scheduler cancelled before it ran, so
+            # its state names the allocation's cancellation rather than the end
+            # of what the wait is on. Reporting it as terminal would offer the
+            # run a resume against work that never started, so the row carries
+            # the suspect reading itself and offers the declaration's repair.
+            suspect = wait["suspect_probe"]
+            detail = (
+                f"waiting {wait['age_seconds']}s on {wait['condition']}; the "
+                f"probe is suspect — {suspect['detail']} — so no terminal state "
+                "has been reported for this wait"
+            )
+            action = (
+                f"edit the wait declaration in {manifest} to probe the job that "
+                f"actually runs the work, or decide with reckon crew resume "
+                f"--run {run_id} --advice '<what to tell the worker>' whether a "
+                "job that never started ends the wait"
             )
         if wait.get("wait_key_defect"):
             # The declaration lifted this run once already and came back
@@ -2617,6 +2866,43 @@ def classify_pointer(
             f"compose run {run_id} again; the pointer holds a claim no run "
             "backs, and a review it claimed is released by the reflex"
         )
+    elif (
+        alive is False
+        and (first_turn := _first_turn_without_action(record)) is not None
+    ):
+        # A print-mode worker gets no turn after the one it is in, so a stream
+        # whose whole content is one message with no tool call is a run that
+        # stopped rather than one that failed: nothing was attempted, nothing
+        # reported a fault, and the session survives to continue. Naming that
+        # reading is what separates resuming the run from diagnosing a failure
+        # that never happened. A message whose own words name an error is the
+        # opposite case and keeps the error, because continuing it would send
+        # the same request again.
+        #
+        # Reached only after every manifest, wait, phase and budget arm above
+        # has had its say, so a run that delivered or declared something is
+        # never read from its stream's shape alone.
+        kind, ended_text = first_turn
+        quote = _quoted_stream_text(ended_text)
+        if kind == "error":
+            classification = "failed"
+            detail = (
+                "the worker's only turn ended on an error, with no tool call "
+                f"before it: {quote!r}"
+            )
+            action = (
+                f"read launch log {record.get('stderr_path')}; repair the "
+                "launch or redispatch the run"
+            )
+        else:
+            classification = INTERRUPTED_RUN_PHASE
+            premature_end = (kind, ended_text)
+            detail = (
+                "a premature end: the worker's only turn carried one message "
+                "and no tool call, and nothing followed it, so the turn ended "
+                f"before the worker acted; it ended on {quote!r}"
+            )
+            action = f"reckon crew resume --run {run_id} --advice continue"
     elif alive is True:
         classification = "running"
         detail = "the process is alive"
@@ -2741,7 +3027,9 @@ def classify_pointer(
             )
 
     hold = refusal_block or exhaustion_block or retry_block or budget_hold
-    if classification == INTERRUPTED_RUN_PHASE:
+    if premature_end is not None:
+        recovery_classification = ENDED_WITHOUT_ACTING
+    elif classification == INTERRUPTED_RUN_PHASE:
         recovery_classification = INTERRUPTED_RUN_PHASE
     elif manifest_unwritten:
         # A live worker between its orientation write and its first status has
@@ -2780,11 +3068,15 @@ def classify_pointer(
         recovery_classification = "wait-aged"
     else:
         recovery_classification = classification
-    recovery_verb = (
-        PRODUCER_GONE_VERB
-        if recovery_classification == PRODUCER_GONE_STATUS
-        else RECOVERY_VERBS[recovery_classification]
-    )
+    if recovery_classification == PRODUCER_GONE_STATUS:
+        recovery_verb = PRODUCER_GONE_VERB
+    elif recovery_classification == ENDED_WITHOUT_ACTING:
+        # The session survives a turn that ended before it acted, so the verb is
+        # the one that continues it rather than the redispatch a lost session
+        # would need.
+        recovery_verb = "resume"
+    else:
+        recovery_verb = RECOVERY_VERBS[recovery_classification]
     if resume_remedy is not None and recovery_classification in {
         INTERRUPTED_RUN_PHASE,
         "stopped",
@@ -3092,7 +3384,12 @@ def _promotion_command(
     citation that reproduces the refusal.
     """
     from .promotion import _promotion_commits
+    from .promotion_checks import _fresh_manifest
 
+    if not completion_offer(record, repair=True):
+        return f"reckon crew observe --run {shlex.quote(run_id)}"
+    if not manifest_commits:
+        manifest_commits = (_fresh_manifest(record) or {}).get("commits") or ()
     commits = _canonical_commits(
         _review_tree(record), _promotion_commits(record, manifest_commits)
     )
@@ -3103,10 +3400,58 @@ def _promotion_command(
             "--no-commit '<why the run produced no commit>' "
             "--outcome '<what the run produced>'"
         )
-    action = f"reckon crew complete --run {run_id} --gate <verdict>"
+    if not completion_offer(record):
+        return f"reckon crew observe --run {shlex.quote(run_id)}"
+    action = f"reckon crew complete --run {shlex.quote(run_id)} --gate passed"
     for commit in commits:
         action += f" --commit {commit}"
     return action
+
+
+def completion_offer(record: Mapping[str, Any], *, repair: bool = False) -> bool:
+    """Whether this attempt's evidence permits offering a completion.
+
+    A repair changes a manifest verdict rather than asserting a gate result,
+    but neither form may settle an attempt that has not delivered. A terminal
+    report must postdate the recorded worker launch to establish that delivery.
+    Passing gates belong to a revision, so a manifest's completed head arm
+    must name the tree's current head before a promotion can assert passed.
+    """
+    from .promotion import discard_recorded
+    from .promotion_checks import _fresh_manifest
+    from .recovery_liveness import _worker_launch_seconds
+    from .recovery_review_dispatch import _review_head_and_tree
+    from .resumption import _live_attempt_number
+
+    run_id = str(record.get("run_id") or "")
+    if str(record.get("phase") or "") == "discarded" or (
+        run_id and discard_recorded(run_id)
+    ):
+        return False
+    manifest = _fresh_manifest(record) or {}
+    if _live_attempt_number(record) is not None or local_liveness(record)[0] is True:
+        if (
+            str(manifest.get("status") or "") not in TERMINAL_MANIFEST_STATUSES
+            or _worker_launch_seconds(record) is None
+            or _manifest_predates_the_current_attempt(
+                record, Path(str(record.get("manifest_path") or ""))
+            )
+        ):
+            return False
+    if repair:
+        return True
+    head, _tree = _review_head_and_tree(record)
+    after = manifest.get("after_suite")
+    return bool(
+        head
+        and isinstance(after, Mapping)
+        and after.get("completed") is True
+        and type(after.get("exit_status")) is int
+        and after["exit_status"] == 0
+        and same_revision(str(after.get("revision") or ""), head)
+        and str(after.get("command") or "").strip()
+        and (after.get("log_path") or after.get("log_digest"))
+    )
 
 
 from .recovery_liveness import (  # noqa: E402
@@ -3136,8 +3481,10 @@ from .recovery_liveness import (  # noqa: E402
     _run_exit_record,
     _run_stream_mtime,
     _run_stream_quiet_seconds,
+    _spawn_evidence,
     _stranded_launch,
     _stranded_launch_age_seconds,
+    _wait_judged_against_itself,
     _wait_observation_defect,
     _worker_launched_after_manifest,
     _worker_record_liveness,
@@ -3181,6 +3528,8 @@ from .recovery_vocabulary import (  # noqa: E402
     WAITING_STATUS,
 )
 from .recovery_wait import (  # noqa: E402
+    _wait_probe_answered,
+    _WAIT_HORIZON_FIELDS,
     _background_wait_signal,
     _newest_stream_shows_work,
     _run_directory,

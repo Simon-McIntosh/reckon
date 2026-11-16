@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch_watch.py:_request_host_follower",
+    "reckon/crew/dispatch_watch.py:_ask_session_host_for_follower",
+    "reckon/crew/dispatch_watch.py:_session_host_child_pid",
+    "reckon/crew_follow_commands.py:crew_follow",
+    "reckon/crew/session_host.py:_Child"
+  ],
+  "completed_at": "2026-11-16T10:28:18.128Z",
+  "dispatched_at": "2026-11-16T10:27:45Z",
+  "findings": [
+    {
+      "file": "tests/test_follower_hands_off_to_host.py",
+      "line": "474",
+      "severity": "non-blocking",
+      "text": "non-blocking: the census naming the pair is written before the dispatch, so the case observes delivery host from a fact present ahead of the request and would not redden if _ask_session_host's bounded wait at reckon/crew/dispatch_watch.py:825 were replaced by one immediate read."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-follower-hands-off-to-host.html",
+      "line": "28",
+      "severity": "non-blocking",
+      "text": "non-blocking: the heading says the product rules were shown firing on the head tree, but logs/probe-causes.log:2 records revision 0e0f25b0, the base, because the probe ran before the test commit; the substance holds only because no product module changed."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against 0e0f25b0 (2a37ab50d2 test, 1717132f16 docs, 5b242a46cf test, 328079f86a docs, ccbed9c68e docs); 105 insertions and 14 deletions, product tree untouched, every hunk inside the declared paths.",
+    "done_when": "it asks for a head job on all_debug with SLURM_JOB_ID unset, five failures at a named baseline, a verdict per cause, no weakened assertion and an importing-arm; logs/gate-head.log records 8 passed and EXIT=0 (job 1319601) and logs/base-file-run.log records 5 failed, 3 passed and EXIT=1 at 0e0f25b0, though the cache log the done_when names for 8d50b0333f no longer exists so the node measured its own base instead, and the importing-arm is vacuous because no product module changed, which the manifest states.",
+    "goal": "the goal is that tests/test_follower_hands_off_to_host.py passes in full; the diff at tests/test_follower_hands_off_to_host.py brings all eight cases to the rules reckon/crew/dispatch_watch.py and reckon/crew/session_host.py already keep, and the primary-branch merge is promotion's step rather than this node's.",
+    "manifest": "read; status complete, five commits, changed_paths naming the test file and both fragments, gate-head 8 passed, base arm 5 failed of 8, suite pair 58 passed at both revisions, and three causes each recorded test-wrong.",
+    "write_paths": "the declared scope is reckon, tests, the fragment directory and this node's two evidence paths; the three changed paths are tests/test_follower_hands_off_to_host.py and the two fragments under docs/evidence/fragments/queued-work-needs-no-workaround/, all inside it."
+  },
+  "justifications": {
+    "durability": "the request assertions redden if dispatch_watch.py:941 drops the owner_checked key (the base arm shows that mismatch) but tests/test_follower_hands_off_to_host.py:474 writes the census before the dispatch, so the bounded wait in dispatch_watch.py:825 is not what the delivery assertion tests.",
+    "evidence": "logs/gate-head.log ends 8 passed in 47.35s and EXIT=0 while logs/base-file-run.log ends 5 failed, 3 passed and EXIT=1, both recorded in the manifest's test_logs and baseline/after_suite blocks.",
+    "fit": "the new helper at tests/test_follower_hands_off_to_host.py:267 follows the module's existing helper idiom and imports the census writer from tests/test_dispatch_session_host.py:160 rather than respelling the record.",
+    "goal_fidelity": "tests/test_follower_hands_off_to_host.py:336 and its four sibling request assertions now match the line reckon/crew/dispatch_watch.py:941 composes, and the file reads 8 passed at 5b242a46cf.",
+    "reuse": "_request_payload repeats an expectation other test modules spell inline (tests/test_a_host_follows_only_its_own_session.py:213) and no shared owner exists, while _write_host_record is imported from its owner rather than forked.",
+    "scope_discipline": "the only churn beyond the behavioural hunks is the quote change at tests/test_follower_hands_off_to_host.py:186, and no product path in reckon/ changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that tests/test_follower_hands_off_to_host.py passes in full; the diff at tests/test_follower_hands_off_to_host.py brings all eight cases to the rules reckon/crew/dispatch_watch.py and reckon/crew/session_host.py already keep, and the primary-branch merge is promotion's step rather than this node's.\nVERDICT done_when: it asks for a head job on all_debug with SLURM_JOB_ID unset, five failures at a named baseline, a verdict per cause, no weakened assertion and an importing-arm; logs/gate-head.log records 8 passed and EXIT=0 (job 1319601) and logs/base-file-run.log records 5 failed, 3 passed and EXIT=1 at 0e0f25b0, though the cache log the done_when names for 8d50b0333f no longer exists so the node measured its own base instead, and the importing-arm is vacuous because no product module changed, which the manifest states.\nVERDICT write_paths: the declared scope is reckon, tests, the fragment directory and this node's two evidence paths; the three changed paths are tests/test_follower_hands_off_to_host.py and the two fragments under docs/evidence/fragments/queued-work-needs-no-workaround/, all inside it.\nVERDICT manifest: read; status complete, five commits, changed_paths naming the test file and both fragments, gate-head 8 passed, base arm 5 failed of 8, suite pair 58 passed at both revisions, and three causes each recorded test-wrong.\nVERDICT diff: read commit by commit against 0e0f25b0 (2a37ab50d2 test, 1717132f16 docs, 5b242a46cf test, 328079f86a docs, ccbed9c68e docs); 105 insertions and 14 deletions, product tree untouched, every hunk inside the declared paths.\nCALL_SITES: reckon/crew/dispatch_watch.py:_request_host_follower, reckon/crew/dispatch_watch.py:_ask_session_host_for_follower, reckon/crew/dispatch_watch.py:_session_host_child_pid, reckon/crew_follow_commands.py:crew_follow, reckon/crew/session_host.py:_Child\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_follower_hands_off_to_host.py:336 and its four sibling request assertions now match the line reckon/crew/dispatch_watch.py:941 composes, and the file reads 8 passed at 5b242a46cf.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/gate-head.log ends 8 passed in 47.35s and EXIT=0 while logs/base-file-run.log ends 5 failed, 3 passed and EXIT=1, both recorded in the manifest's test_logs and baseline/after_suite blocks.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the only churn beyond the behavioural hunks is the quote change at tests/test_follower_hands_off_to_host.py:186, and no product path in reckon/ changed.\nSCORE durability: 16\nJUSTIFICATION durability: the request assertions redden if dispatch_watch.py:941 drops the owner_checked key (the base arm shows that mismatch) but tests/test_follower_hands_off_to_host.py:474 writes the census before the dispatch, so the bounded wait in dispatch_watch.py:825 is not what the delivery assertion tests.\nSCORE fit: 18\nJUSTIFICATION fit: the new helper at tests/test_follower_hands_off_to_host.py:267 follows the module's existing helper idiom and imports the census writer from tests/test_dispatch_session_host.py:160 rather than respelling the record.\nSCORE reuse: 19\nJUSTIFICATION reuse: _request_payload repeats an expectation other test modules spell inline (tests/test_a_host_follows_only_its_own_session.py:213) and no shared owner exists, while _write_host_record is imported from its owner rather than forked.\nFINDING tests/test_follower_hands_off_to_host.py:474 non-blocking: the census naming the pair is written before the dispatch, so the case observes delivery host from a fact present ahead of the request and would not redden if _ask_session_host's bounded wait at reckon/crew/dispatch_watch.py:825 were replaced by one immediate read.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-follower-hands-off-to-host.html:28 non-blocking: the heading says the product rules were shown firing on the head tree, but logs/probe-causes.log:2 records revision 0e0f25b0, the base, because the probe ran before the test commit; the substance holds only because no product module changed.\n",
+  "review_run_id": "r-20261116T102652261116-review-of-qwnw-red-file-follower-hands-off-to-host-ccbed9c68ec8",
+  "reviewed_base_sha": "0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc",
+  "reviewed_head_sha": "ccbed9c68ec8001c07e1127b8a0f33096db350c2",
+  "reviewed_run_id": "r-20261116T031916920770-qwnw-red-file-follower-hands-off-to-host",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T13:14:19.643140+00:00",
+  "total": 107
+}

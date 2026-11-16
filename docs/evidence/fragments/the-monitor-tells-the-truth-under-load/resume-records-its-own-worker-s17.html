@@ -1,0 +1,101 @@
+<section id="resume-records-its-own-worker-s17-landing">
+  <h2>A run records the supervisor it started, never the process that launched it</h2>
+
+  <p><strong>What changed.</strong> An attempt reservation taken by a launch made
+  inside a long-lived door recorded the door's own process under the
+  reservation's <code>pid</code> — the field every reader probes to decide
+  whether an attempt is still in flight, and the pid <code>crew stop</code> and
+  <code>crew discard</code> act on. A recovery-sweep resume started inside the
+  station therefore left a hold naming the station. The station outlives every
+  run it launches, so the hold never cleared: age frees only a reservation that
+  reached no supervisor, and the reported record named one. Signalling that pid
+  ends the process that holds every session's claims.</p>
+
+  <p><code>reserve_launch_attempt</code> now records the door under
+  <code>launcher_pid</code> and <code>launcher_pid_start_time</code>, and leaves
+  <code>pid</code> for the supervisor the launch starts;
+  <code>record_reservation_supervisor</code> writes that supervisor into
+  <code>pid</code> as well as into <code>supervisor_pid</code>. The three fences
+  that recognise "the reservation this process took" — adoption, withdrawal and
+  the supersede fence — read the door from the new fields, falling back to
+  <code>pid</code> for a reservation written before the split. A pid naming the
+  reading host's station is read as naming no process of the run: as a
+  supervisor it holds nothing, and as a door it is judged by the launch's own
+  age like any other launch that reached no worker.
+<code>runs.read_pointer</code> applies the same rule to the pointer, which is
+  the record <code>crew stop</code>, <code>crew discard</code> and every
+  liveness reading take their pid from, so a pointer naming the station reads as
+  naming none.</p>
+
+  <p>The station pid is read from the lease the station keeps, through the
+  lease mechanism that writes it — <code>station.station_lease</code> for the
+  name of the one writer on a node, <code>HostLease.holder</code> for the record
+  — rather than through a second reader of that format.
+  <code>host_lease.process_runs_here</code> then decides whether the pid the
+  record names is still the process that wrote it, from the start tick and the
+  process table recorded beside the pid, so a number the kernel has since
+  recycled is not mistaken for the station and a pid from another process table
+  is not matched by number alone. Renewal age is not part of that test: the lease
+  mechanism ages a lease out so a successor may claim it, which says nothing
+  about whether its holder has gone, and a busy holder's renewal waits on its
+  interpreter — so the record is read whatever its age and the process it names
+  is the only question.</p>
+
+  <h3 id="resume-records-its-own-worker-s17-repro">Measured</h3>
+
+  <p>The reported shape was reproduced at the base revision
+  <code>af516b3a</code> before any change, with the lease naming the calling
+  process as this node's station:</p>
+
+  <pre><code>A. reservation taken inside the station names: 562
+   it names the station (this process): True
+   a reservation naming the station reads as held: True
+   a relaunch is refused: CrewError
+B. the pointer read names the station's pid: True
+B. terminate returned
+B. the station survived the stop: False</code></pre>
+
+  <p>At the change's head the same script reads: the reservation names
+  <code>None</code> until its supervisor is known, a reservation naming the
+  station is not held and a relaunch is admitted, the pointer read names no
+  station pid, and a stop of a record naming the station refuses with "has no
+  process to stop" while the station process survives.</p>
+
+<table id="resume-records-its-own-worker-s17-arms">
+    <caption>Every arm is a log whose first line names its revision and tree and
+    whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base suite (structural guards; the new test does not exist at the
+        base; both modules under test at <code>af516b3a</code>)</td>
+        <td><code>af516b3a</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>after suite (the new tests and the two guards)</td>
+        <td><code>8d816b47</code>, working tree clean</td>
+        <td>63 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the new tests at the base revision</td>
+        <td><code>af516b3a</code></td>
+        <td>5 failed, <code>EXIT=1</code>: the reservation names the launcher
+        rather than the supervisor it started; a reservation naming the station
+        held the attempt; the pointer read names the station's pid and the stop
+        kills it; a lease written under another process table names the station
+        here; a station whose renewal lapsed was read as naming no station</td></tr>
+      <tr><td>the new tests at the run's head</td>
+        <td><code>8d816b47</code></td>
+        <td>5 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control: the station read reverted to the claim-age rule</td>
+        <td><code>8d816b47</code> with <code>reckon/crew/runs.py</code> at
+        <code>954285ce</code></td>
+        <td>1 failed, 4 passed, <code>EXIT=1</code>: the failing id is
+        <code>test_a_station_whose_renewal_stalled_still_names_the_station</code>,
+        which the head arm passes</td></tr>
+      <tr><td>negative control: the station read reverted to a number-only
+        match</td>
+        <td><code>94372aa0</code> with <code>reckon/crew/runs.py</code> at
+        <code>f23de4dd</code></td>
+        <td>1 failed, 3 passed, <code>EXIT=1</code>: the failing id is
+        <code>test_a_lease_from_another_process_table_..._does_not_name_the_station</code>,
+        which the head arm passes</td></tr>
+    </tbody>
+  </table>
+</section>

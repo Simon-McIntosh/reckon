@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/_store.py:_apply_close",
+    "reckon/_store.py:validate_landing_patch",
+    "reckon/serve.py:3883"
+  ],
+  "completed_at": "2026-11-15T15:43:26.614Z",
+  "dispatched_at": "2026-11-15T15:30:11Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "alro-s5",
+      "recorded_at": "2026-11-15T17:06:46.441125+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "evidence-fragment wording only: the live-pass row predates the two repairs; the reviewer established the 0-refused figure still holds because earliest keying can only lower it and every live stamp is ISO; per-node fragments are optional by lead ruling",
+      "recorded_at": "2026-11-15T17:07:02.271766+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_plan_does_not_close_over_an_unlanded_section.py",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "non-blocking: the module docstring still states \"the mark is read from the section's own last recorded activity\" (lines 12-14), which is the newest-record keying that bd9a5ba2 replaced with the earliest record at reckon/_store.py:5209 (`min(readable)`); a reader of this test module is told the opposite of what the guard now does."
+    },
+    {
+      "file": "docs/evidence/fragments/a-landing-is-recorded-once/alro-s4.html",
+      "line": "43",
+      "severity": "non-blocking",
+      "text": "non-blocking: the live-store row sits in a table whose head row names bd9a5ba2 (:37) but the log it reports, logs/live-store-pass.log, carries `# revision: 022a25a68c0ad4ad0b713eefbbe9b33d85c38697`, so the row does not say its measurement predates the delivered head and both repairs; the figure still holds \u2014 earliest-keying can only lower the refusal count and the parser widening reaches no live stamp, since all 10,923 reckon ledger `completed_at` values are ISO strings and the store writes `when` as ISO through `_utc_ts` (reckon/_store.py:3039) \u2014 but a reader cannot establish that from the row."
+    }
+  ],
+  "node": "review-of-alro-s4-eee20b379f82",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal \"Refuse a close over a done section with no landing\" (prompt.txt:38) against the commits gained since the last review, bd9a5ba2 and eee20b37, and found both prior findings repaired in place: reckon/_store.py:5196 now reads the earliest record and :5209 takes its minimum, and the local `_readable_instant` is gone in favour of reckon/_timestamps.py:parse_utc. VERDICT done_when: read the done_when (prompt.txt:161) against tests/test_a_plan_does_not_close_over_an_unlanded_section.py:255 and :273 and the four repair logs; the head arm at eee20b37 records 64 passed with EXIT=0 in logs/repair-after-arm.log, the base arm at dffc9bcc records 55 passed with EXIT=0 in logs/repair-base-arm.log and no added failure, and the two revert controls (logs/repair-revert-exemption.log, logs/repair-revert-parser.log) each show `1 failed, 8 passed` with `EXIT=1` naming exactly the new test. VERDICT write_paths: read the manifest's declared paths against `git show --stat` on bd9a5ba2 and eee20b37; the two commits touch reckon/_store.py, tests/test_a_plan_does_not_close_over_an_unlanded_section.py and docs/evidence/fragments/a-landing-is-recorded-once/alro-s4.html, all inside the node's declared scope. VERDICT manifest: read; it records status complete, names the seven commits, the literal gate command, measurement_module and measurement_cwd for the after arm, both suites as completed JSON with 0 failures each, and negative_control_log repair-revert-exemption.log, which exists and is red as described. VERDICT diff: read commit by commit against 842b7a8b; bd9a5ba2 changes 74 lines across store and test (earliest-record keying plus parse_utc, one test per finding) and eee20b37 changes 14 added and 9 deleted fragment lines recording the new keying and the two controls; nothing outside those two files. CALL_SITES: reckon/_store.py:_apply_close, reckon/_store.py:validate_landing_patch, reckon/serve.py:3883 SCORE goal_fidelity: 19 JUSTIFICATION goal_fidelity: the gained commits do what the two findings asked at reckon/_store.py:5168-5209, and the refusal direction survives \u2014 test_a_section_marked_done_after_the_rule_is_still_refused (tests/test_a_plan_does_not_close_over_an_unlanded_section.py:214) stays green in the head arm. SCORE evidence: 17 JUSTIFICATION evidence: logs/repair-after-arm.log carries `# head arm revision eee20b37` and `EXIT=0` and logs/repair-revert-exemption.log carries `1 failed, 8 passed` and `EXIT=1`, but docs/evidence/fragments/a-landing-is-recorded-once/alro-s4.html:43 reports a live pass whose log header names revision 022a25a6. SCORE scope_discipline: 19 JUSTIFICATION scope_discipline: `git show --stat` on bd9a5ba2 and eee20b37 lists only reckon/_store.py, tests/test_a_plan_does_not_close_over_an_unlanded_section.py and the fragment, with no unrelated path. SCORE durability: 19 JUSTIFICATION durability: tests/test_a_plan_does_not_close_over_an_unlanded_section.py:255 reddens when the exemption is keyed on the newest record and :273 reddens when the reader is ISO-only, both reproductions recorded with `EXIT=1`, and each asserts the store's own outcome rather than a value the test handed in. SCORE fit: 19 JUSTIFICATION fit: reckon/_store.py:5168-5203 follows the surrounding docstring-and-helper idiom and adds no plan, ticket or version name, though tests/test_a_plan_does_not_close_over_an_unlanded_section.py:12 keeps a sentence describing the replaced rule. SCORE reuse: 20 JUSTIFICATION reuse: the diff deletes `_readable_instant` and imports reckon/_timestamps.py:36 parse_utc, the module whose docstring declares itself the one parser for every stamp shape and which twenty modules already import, so the duplication is removed rather than forked. FINDING tests/test_a_plan_does_not_close_over_an_unlanded_section.py:12 non-blocking: the module docstring still describes the mark as read from the section's \"last recorded activity\", the newest-record keying bd9a5ba2 replaced at reckon/_store.py:5209 with `min(readable)`, so the test module states the opposite of the guard it exercises. FINDING docs/evidence/fragments/a-landing-is-recorded-once/alro-s4.html:43 non-blocking: the live-store row is footed under a table headed by bd9a5ba2 but its log names revision 022a25a6, so the row does not state that its measurement predates both repairs; the 0-refused figure still holds because earliest-keying can only lower it and no live stamp is an epoch, but that reasoning is not in the row.",
+  "review_run_id": "r-20261115T152716084689-review-of-alro-s4-eee20b379f82",
+  "reviewed_base_sha": "842b7a8b0a6bef8846ae966c9e3f1d8aff4f04be",
+  "reviewed_head_sha": "eee20b379f8251ec075e23f6296cebaf80175b37",
+  "reviewed_run_id": "r-20261115T085732662020-alro-s4",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T16:19:45.442964+00:00",
+  "total": 113
+}

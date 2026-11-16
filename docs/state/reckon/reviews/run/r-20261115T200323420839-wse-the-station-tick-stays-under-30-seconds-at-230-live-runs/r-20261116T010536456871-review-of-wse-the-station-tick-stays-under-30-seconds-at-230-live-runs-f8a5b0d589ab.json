@@ -1,0 +1,101 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "0f519315992f429fae018708f84eba960b99fb15",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/evidence.py:1362 compose_landed_record composes this fragment body into the plan record",
+    "reckon/serve.py:2751 compose_landed_record in the evidence-page handler",
+    "reckon/mcp.py:1344 compose_landed_record in the MCP evidence read"
+  ],
+  "completed_at": "2026-11-16T01:17:00.097Z",
+  "dispatched_at": "2026-11-16T01:16:02Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html",
+      "line": "42",
+      "severity": "blocking",
+      "text": "blocking: the paragraph enumerates \"those two plus these three\" - a five-file command - and then closes with \"The three-file command is the gate receipt this record carries\", so the receipt named as the one the record carries resolves to a file count that does not exist at head; the five-file 67-passed run is the one in logs/suite-head-gate.log at f8a5b0d589."
+    },
+    {
+      "file": "docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html",
+      "line": "44",
+      "severity": "non-blocking",
+      "text": "non-blocking: the log list names suite-base.log, suite-head.log and suite-head-repair.log but not logs/suite-head-gate.log, the log holding the 67 passed the receipt cites, so a reader cannot reach the receipt's number from the page."
+    },
+    {
+      "file": "tests/test_the_record_names_a_runnable_gate.py",
+      "line": "37",
+      "severity": "non-blocking",
+      "text": "non-blocking: the case checks that every test the receipt names exists, never that the node's own tests appear in the receipt, so reinstating the omission the previous review found blocking - dropping tests/test_a_quiet_tick_at_fleet_scale_reads_no_stream.py from the paragraph - leaves all three cases green."
+    },
+    {
+      "file": "tests/test_the_record_names_a_runnable_gate.py",
+      "line": "42",
+      "severity": "non-blocking",
+      "text": "non-blocking: test_the_record_still_names_both_arms iterates a one-element tuple holding only the base sha 0f519315992f, so the head arm its name promises is never checked and the loop's generality is dead."
+    },
+    {
+      "file": "tests/test_the_tick_measure_gate_fires.py",
+      "line": "52",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion compares the record's tick_bound_seconds against 0.000001, the value the test itself passed on line 49, rather than an independent source; it reddens only if the flag stops reaching the JSON, not if the bound is applied wrongly, and lines 51 and 53 already carry that direction."
+    },
+    {
+      "file": "tests/measure_station_tick_at_230_runs.py",
+      "line": "212",
+      "severity": "non-blocking",
+      "text": "non-blocking: main() assigns RECKON_HOME, RECKON_MOUNTS_PATH and XDG_RUNTIME_DIR with no restore, then removes the scratch tree; the added case is the first in-process caller, so both of those name a removed directory for every later case, since tests/conftest.py:1573 isolates only RECKON_HOME."
+    },
+    {
+      "file": "manifest.md",
+      "line": "16",
+      "severity": "non-blocking",
+      "text": "non-blocking: after_suite records the two-file 58-passed arm at f8a5b0d589 while the tests: line and s5.html:42 name the five-file gate, so the arm promotion reads under-covers the write scope the node resolves."
+    }
+  ],
+  "head_log_revision": "f8a5b0d589abb5e5ff426bf15c49c2d8f3a58934",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read both commits against 285e73a001 commit by commit; five files, +148/-10: measure() and main() take tick_seconds and memory_bytes (tests/measure_station_tick_at_230_runs.py:141-147, 199-202), tests/test_the_tick_measure_gate_fires.py holds the gate from both sides, tests/test_the_record_names_a_runnable_gate.py holds s5.html's receipt, and tests/test_a_quiet_tick_at_fleet_scale_reads_no_stream.py:33-60 drives 60 runs with stubbed duties and sweeps.",
+    "done_when": "the done_when (prompt.txt:164) is a 20-tick measure over 230 live runs on all_debug with every tick under 30 s and every reading under 2 GB, plus a base-revision control recording ticks over 30 s, both logged to s5.html; neither gained commit re-runs that measure - the recorded arms (max 8.997 s base and 5.476 s head at 8192 arrival bytes, 0 of 20 over bound in logs/tick-base-all_debug.json and logs/tick-head-all_debug.json) predate them - and the gate the commits add is the suite receipt at s5.html:42, 67 passed in logs/suite-head-gate.log at f8a5b0d589.",
+    "goal": "the source node's goal is \"Keep the station tick under 30 seconds and under 2 GB with 230 live runs\" (prompt.txt:40 of the reviewed run); the two gained commits (5c276ef4c5, f8a5b0d589) touch no runtime code - they add two bound options to tests/measure_station_tick_at_230_runs.py:141-147 and 199-202, add tests/test_the_tick_measure_gate_fires.py and tests/test_the_record_names_a_runnable_gate.py, shrink the quiet-tick fixture from 230 runs to 60 at tests/test_a_quiet_tick_at_fleet_scale_reads_no_stream.py:33-34, and rewrite the record's gate paragraph at docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:42.",
+    "manifest": "read at the reviewed run's manifest.md; its tests: line names the five-file gate command and its test_logs name logs/suite-head-gate.log beside it (67 passed, EXIT=0), while its after_suite arm at line 16 still records the two-file 58-passed run in logs/suite-head-repair.log; both logs were opened and their first and last lines read.",
+    "write_paths": "the fence (prompt.txt:84-89) grants reckon, tests, docs/evidence/fragments/work-scales-to-eighty-across-nodes and two named pages under it; git diff --name-status 285e73a001 f8a5b0d589 lists exactly five paths - s5.html, two modified test files, two added test files - and every one lies inside tests or that fragment directory."
+  },
+  "justifications": {
+    "durability": "tests/test_the_tick_measure_gate_fires.py:48-71 reddens if the measure stops exiting 1 on an over-tick or over-memory reading, but tests/test_the_record_names_a_runnable_gate.py:33-37 only reddens for a receipt naming an absent test, so deleting the quiet-tick name this repair existed for leaves all three cases green.",
+    "evidence": "the receipt's 67 passed reconciles with logs/suite-head-gate.log at f8a5b0d589, yet docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:42 calls that five-file resolution \"the three-file command\" and s5.html:44 never names the log carrying the 67.",
+    "fit": "the stubbed duties and sweeps at tests/test_a_quiet_tick_at_fleet_scale_reads_no_stream.py:53-56 mirror tests/test_open_run_index_rebuilt_once_per_pass.py:111, while the one-element loop at tests/test_the_record_names_a_runnable_gate.py:42 has no sibling in the suite.",
+    "goal_fidelity": "tests/test_the_tick_measure_gate_fires.py:48-71 makes the goal's 30 s and 2 GB bounds falsifiable, but tests/test_a_quiet_tick_at_fleet_scale_reads_no_stream.py:33-34 drops the population from 230 runs to 60, so the guard behind the repair is demonstrated at a quarter of the population the goal names.",
+    "reuse": "the search over reckon/ for a named-test-must-exist owner found reckon/crew/promotion_records.py:983 _named_paths_absent_from_tree, which judges a manifest arm's command against its own tree rather than a page's prose, so the added cases cover a surface no owner holds instead of duplicating that one.",
+    "scope_discipline": "every path in git diff --name-status 285e73a001 f8a5b0d589 is inside tests or docs/evidence/fragments/work-scales-to-eighty-across-nodes, both inside the fence at prompt.txt:84-89, and no runtime file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is \"Keep the station tick under 30 seconds and under 2 GB with 230 live runs\" (prompt.txt:40 of the reviewed run); the two gained commits (5c276ef4c5, f8a5b0d589) touch no runtime code - they add two bound options to tests/measure_station_tick_at_230_runs.py:141-147 and 199-202, add tests/test_the_tick_measure_gate_fires.py and tests/test_the_record_names_a_runnable_gate.py, shrink the quiet-tick fixture from 230 runs to 60 at tests/test_a_quiet_tick_at_fleet_scale_reads_no_stream.py:33-34, and rewrite the record's gate paragraph at docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:42.\nVERDICT done_when: the done_when (prompt.txt:164) is a 20-tick measure over 230 live runs on all_debug with every tick under 30 s and every reading under 2 GB, plus a base-revision control recording ticks over 30 s, both logged to s5.html; neither gained commit re-runs that measure - the recorded arms (max 8.997 s base and 5.476 s head at 8192 arrival bytes, 0 of 20 over bound in logs/tick-base-all_debug.json and logs/tick-head-all_debug.json) predate them - and the gate the commits add is the suite receipt at s5.html:42, 67 passed in logs/suite-head-gate.log at f8a5b0d589.\nVERDICT write_paths: the fence (prompt.txt:84-89) grants reckon, tests, docs/evidence/fragments/work-scales-to-eighty-across-nodes and two named pages under it; git diff --name-status 285e73a001 f8a5b0d589 lists exactly five paths - s5.html, two modified test files, two added test files - and every one lies inside tests or that fragment directory.\nVERDICT manifest: read at the reviewed run's manifest.md; its tests: line names the five-file gate command and its test_logs name logs/suite-head-gate.log beside it (67 passed, EXIT=0), while its after_suite arm at line 16 still records the two-file 58-passed run in logs/suite-head-repair.log; both logs were opened and their first and last lines read.\nVERDICT diff: read both commits against 285e73a001 commit by commit; five files, +148/-10: measure() and main() take tick_seconds and memory_bytes (tests/measure_station_tick_at_230_runs.py:141-147, 199-202), tests/test_the_tick_measure_gate_fires.py holds the gate from both sides, tests/test_the_record_names_a_runnable_gate.py holds s5.html's receipt, and tests/test_a_quiet_tick_at_fleet_scale_reads_no_stream.py:33-60 drives 60 runs with stubbed duties and sweeps.\nCALL_SITES: reckon/evidence.py:1362 compose_landed_record composes this fragment body into the plan record, reckon/serve.py:2751 compose_landed_record in the evidence-page handler, reckon/mcp.py:1344 compose_landed_record in the MCP evidence read\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: tests/test_the_tick_measure_gate_fires.py:48-71 makes the goal's 30 s and 2 GB bounds falsifiable, but tests/test_a_quiet_tick_at_fleet_scale_reads_no_stream.py:33-34 drops the population from 230 runs to 60, so the guard behind the repair is demonstrated at a quarter of the population the goal names.\nSCORE evidence: 13\nJUSTIFICATION evidence: the receipt's 67 passed reconciles with logs/suite-head-gate.log at f8a5b0d589, yet docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:42 calls that five-file resolution \"the three-file command\" and s5.html:44 never names the log carrying the 67.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --name-status 285e73a001 f8a5b0d589 is inside tests or docs/evidence/fragments/work-scales-to-eighty-across-nodes, both inside the fence at prompt.txt:84-89, and no runtime file is touched.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_the_tick_measure_gate_fires.py:48-71 reddens if the measure stops exiting 1 on an over-tick or over-memory reading, but tests/test_the_record_names_a_runnable_gate.py:33-37 only reddens for a receipt naming an absent test, so deleting the quiet-tick name this repair existed for leaves all three cases green.\nSCORE fit: 16\nJUSTIFICATION fit: the stubbed duties and sweeps at tests/test_a_quiet_tick_at_fleet_scale_reads_no_stream.py:53-56 mirror tests/test_open_run_index_rebuilt_once_per_pass.py:111, while the one-element loop at tests/test_the_record_names_a_runnable_gate.py:42 has no sibling in the suite.\nSCORE reuse: 16\nJUSTIFICATION reuse: the search over reckon/ for a named-test-must-exist owner found reckon/crew/promotion_records.py:983 _named_paths_absent_from_tree, which judges a manifest arm's command against its own tree rather than a page's prose, so the added cases cover a surface no owner holds instead of duplicating that one.\nFINDING docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:42 blocking: the paragraph enumerates \"those two plus these three\" - a five-file command - and then closes with \"The three-file command is the gate receipt this record carries\", so the receipt named as the one the record carries resolves to a file count that does not exist at head; the five-file 67-passed run is the one in logs/suite-head-gate.log at f8a5b0d589.\nFINDING docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:44 non-blocking: the log list names suite-base.log, suite-head.log and suite-head-repair.log but not logs/suite-head-gate.log, the log holding the 67 passed the receipt cites, so a reader cannot reach the receipt's number from the page.\nFINDING tests/test_the_record_names_a_runnable_gate.py:37 non-blocking: the case checks that every test the receipt names exists, never that the node's own tests appear in the receipt, so reinstating the omission the previous review found blocking - dropping tests/test_a_quiet_tick_at_fleet_scale_reads_no_stream.py from the paragraph - leaves all three cases green.\nFINDING tests/test_the_record_names_a_runnable_gate.py:42 non-blocking: test_the_record_still_names_both_arms iterates a one-element tuple holding only the base sha 0f519315992f, so the head arm its name promises is never checked and the loop's generality is dead.\nFINDING tests/test_the_tick_measure_gate_fires.py:52 non-blocking: the assertion compares the record's tick_bound_seconds against 0.000001, the value the test itself passed on line 49, rather than an independent source; it reddens only if the flag stops reaching the JSON, not if the bound is applied wrongly, and lines 51 and 53 already carry that direction.\nFINDING tests/measure_station_tick_at_230_runs.py:212 non-blocking: main() assigns RECKON_HOME, RECKON_MOUNTS_PATH and XDG_RUNTIME_DIR with no restore, then removes the scratch tree; the added case is the first in-process caller, so both of those name a removed directory for every later case, since tests/conftest.py:1573 isolates only RECKON_HOME.\nFINDING manifest.md:16 non-blocking: after_suite records the two-file 58-passed arm at f8a5b0d589 while the tests: line and s5.html:42 name the five-file gate, so the arm promotion reads under-covers the write scope the node resolves.\n",
+  "review_run_id": "r-20261116T010536456871-review-of-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs-f8a5b0d589ab",
+  "reviewed_base_sha": "285e73a001850cd5fef27cb9fb901f68102e1953",
+  "reviewed_head_sha": "f8a5b0d589abb5e5ff426bf15c49c2d8f3a58934",
+  "reviewed_run_id": "r-20261115T200323420839-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs",
+  "reviewer": {
+    "backend": "omp",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T010536456871-review-of-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs-f8a5b0d589ab"
+  },
+  "reviewer_run_id": "r-20261116T010536456871-review-of-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs-f8a5b0d589ab",
+  "scores": {
+    "durability": 15,
+    "evidence": 13,
+    "fit": 16,
+    "goal_fidelity": 14,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T01:44:54.074389+00:00",
+  "total": 94
+}

@@ -553,6 +553,38 @@ def crew_directory(project, run_id, node_id, pretty):
     _emit_crew_result(result, pretty)
 
 
+@crew.group(name="decision")
+def crew_decision():
+    """Record a question for the lead; read with crew view decisions."""
+
+
+@crew_decision.command(name="record")
+@click.option(
+    "--record",
+    "record_file",
+    required=True,
+    type=click.File("r"),
+    help=(
+        "JSON record: question, context, options (value/label), recommended, "
+        "project, session, plan, section, held_requests, held_sections. "
+        "Use - for stdin."
+    ),
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_decision_record(record_file, pretty):
+    """Persist an open decision with its owner and the work it holds."""
+    import json
+
+    from reckon.crew.lead_decisions import record_decision
+
+    try:
+        record = json.load(record_file)
+        _emit({"ok": True, "decision": record_decision(record)}, pretty)
+    except (OSError, ValueError, TypeError) as exc:
+        _emit({"ok": False, "error": "decision_error", "detail": str(exc)}, pretty)
+        raise click.exceptions.Exit(1) from exc
+
+
 @crew.command(name="view")
 @click.argument("name", required=False, default="summary")
 @click.option("--project", default=None, help="Project whose read view to serve.")
@@ -648,7 +680,9 @@ def crew_view(
     This is the transport for hooks and scripts, and the arrow every retired
     read verb names. It calls the one function the crew tool also calls, so the
     two surfaces cannot disagree about a view. NAME is a view name; `summary`
-    is served when none is given.
+    is served when none is given. `decisions` reads open questions for the lead
+    across every mounted project, ordered by held work, without needing
+    --project; name one to narrow the read.
     """
     _accept_a_matching_project(run_id, project)
     import json as _json
@@ -2002,7 +2036,15 @@ def crew_promotions(window_seconds, pretty):
     help="ISO-8601 instant the deferral expires; the obligation returns after it.",
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_ack(run_id, notice_id, reason, until, pretty, project=None):
+@click.option(
+    "--until-condition",
+    default=None,
+    help='End early on a named JSON condition: {"condition":"review stored","files":["/path"]} '
+    'or {"condition":"review accepted","probe":["program","argument"],"terminal":["accepted"]}.',
+)
+def crew_ack(
+    run_id, notice_id, reason, until, pretty, project=None, until_condition=None
+):
     """Defer one run's obligations until an instant, recording why.
 
     A live run's deferral is written beside its pointer; one for a run already
@@ -2012,6 +2054,8 @@ def crew_ack(run_id, notice_id, reason, until, pretty, project=None):
     if bool(run_id) == bool(notice_id):
         raise click.ClickException("exactly one of --run and --notice is required")
     if notice_id:
+        if until_condition is not None:
+            raise click.ClickException("--notice takes no --until-condition")
         if until:
             raise click.ClickException("--notice takes no --until")
         from reckon.crew.model_catalogue import acknowledge_notice
@@ -2032,7 +2076,11 @@ def crew_ack(run_id, notice_id, reason, until, pretty, project=None):
 
     try:
         updated = runs_module.record_run_acknowledgement(
-            run_id, reason, until, project=resolved_project
+            run_id,
+            reason,
+            until,
+            project=resolved_project,
+            until_condition=until_condition,
         )
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
@@ -3536,6 +3584,10 @@ def crew_complete(
         request_promotion,
     )
 
+    if gate not in _ledger_module().GATE_VERDICTS:
+        raise click.ClickException(
+            f"unknown gate verdict {gate!r}; expected passed, failed or not-run"
+        )
     if land and not dry_run:
         _refuse_a_landing_without_its_pointer(run_id)
     driven = False
@@ -3839,6 +3891,7 @@ def crew_declare_gate(
         GATE_DECLARATION_KEY,
         gate_declaration,
     )
+    from reckon.crew.run_paths import _utc_now
 
     try:
         pointer = runs_module.read_pointer(run_id)
@@ -3852,7 +3905,7 @@ def crew_declare_gate(
             str(long_partition).strip() or previous.get("long_partition", "")
         ),
         "reason": str(reason).strip(),
-        "declared_at": _utc_now_text(),
+        "declared_at": _utc_now(),
     }
     runs_module._mutate_pointer(
         run_id, lambda record: {**record, GATE_DECLARATION_KEY: declaration}
@@ -3866,12 +3919,6 @@ def crew_declare_gate(
         },
         pretty,
     )
-
-
-def _utc_now_text() -> str:
-    from datetime import UTC, datetime
-
-    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 @crew.command(name="record-merge")
@@ -4040,21 +4087,23 @@ def _refuse_a_plain_complete_off_the_branch(
     ``crew merge --run`` unable to find the run it was asked to land.
 
     The remote is read through the module that lands there, so the ancestry
-    decision is the one the merge makes. A review run is exempt: its pointer
-    carries the reviewed node's head by design, checked in the node's worktree
-    and never on the branch, and it is not a landing. A checkout that configures
-    no remote has no remote branch to be off, so the question does not arise and
-    the promotion proceeds.
+    decision is the one the merge makes. A review run is exempt because its
+    pointer carries the reviewed node's head by design, checked in the node's
+    worktree and never on the branch. A measurement run is also exempt because
+    its delivered head is never landed. A checkout that configures no remote
+    has no remote branch to be off, so the question does not arise and the
+    promotion proceeds.
 
     Nothing is written here: the pointer and the ledger are untouched when this
     refuses, which is what makes the refusal recoverable.
     """
     from reckon.crew import merge as merge_module
     from reckon.crew import promotion_release
+    from reckon.crew.recovery_classification import _is_measurement_run
     from reckon.crew.recovery_review_delivery import _is_review_run
     from reckon.crew.refusals import format_refusal
 
-    if _is_review_run(pointer):
+    if _is_review_run(pointer) or _is_measurement_run(pointer):
         return
     head = promotion_release._run_promoted_revision(pointer, list(commits or ()))
     if not head:
@@ -4641,6 +4690,17 @@ def _budget_reset_reach() -> dict[str, Any]:
                 unreached.discard(name)
             elif name not in reached:
                 unreached.add(name)
+    # A live coordinator that never armed a follower holds no registration, so
+    # the fold above cannot see it: it is neither reached nor listed, and the
+    # report reads as near-total reach while that session is told nothing. The
+    # harness keeps one record per live session, so every live session absent
+    # from the reached set is named here as unreached, by the name a peer
+    # message addresses.
+    names: dict[str, str] = {}
+    for session_id, name in _live_harness_sessions():
+        names[session_id] = name
+        if session_id not in reached:
+            unreached.add(session_id)
     reached_sessions = sorted(reached)
     unreached_sessions = sorted(unreached)
     total = len(reached_sessions) + len(unreached_sessions)
@@ -4657,8 +4717,52 @@ def _budget_reset_reach() -> dict[str, Any]:
     return {
         "reached": reached_sessions,
         "unreached": unreached_sessions,
+        "unreached_names": {
+            session: names[session]
+            for session in unreached_sessions
+            if session in names
+        },
         "detail": detail,
     }
+
+
+#: Where the harness keeps one record per live session; a test points it at a
+#: directory of its own so nothing reads this host's real sessions.
+HARNESS_SESSIONS_DIR_ENV = "RECKON_HARNESS_SESSIONS_DIR"
+
+
+def _live_harness_sessions() -> list[tuple[str, str]]:
+    """Every live harness session as (session id, name), from its own records.
+
+    Each record names the session's process, and a record whose process has
+    ended is a session that has gone. Records this host cannot read are
+    skipped rather than guessed at.
+    """
+    import json
+
+    directory = Path(
+        os.environ.get(HARNESS_SESSIONS_DIR_ENV) or Path.home() / ".claude" / "sessions"
+    )
+    sessions: list[tuple[str, str]] = []
+    try:
+        records = sorted(directory.glob("*.json"))
+    except OSError:
+        return sessions
+    for path in records:
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(record, dict):
+            continue
+        session_id = str(record.get("sessionId") or "")
+        pid = record.get("pid")
+        if not session_id or not isinstance(pid, int):
+            continue
+        if not Path(f"/proc/{pid}").exists():
+            continue
+        sessions.append((session_id, str(record.get("name") or session_id)))
+    return sessions
 
 
 def _budget_reset_payload(

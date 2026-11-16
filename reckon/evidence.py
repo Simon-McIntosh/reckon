@@ -5,14 +5,16 @@ from __future__ import annotations
 import html
 import json
 import re
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from bs4 import BeautifulSoup
 from bs4.element import Doctype
 
 from reckon import _plan_html, ledger
+from reckon.figures import figure_row
 from reckon.resources import ResourceCollision, resolve_resource
 
 
@@ -79,6 +81,15 @@ def _section_key(value: object) -> str:
 APPEND_ORIGIN_ATTRIBUTE = "data-evidence-origin"
 APPEND_ORIGIN_VALUE = "append"
 
+#: The origin an overview block writes, so a re-synthesis replaces its own
+#: reading instead of carrying the copy already on disk forward as an append.
+OVERVIEW_ORIGIN_VALUE = "overview"
+
+#: The class every source element carries. A factual sentence in the overview
+#: states which durable record it rests on through one of these, so a reader
+#: can follow a claim to the run, comment, figure or gate it came from.
+SOURCE_CLASS = "source"
+
 #: The section id a plan-level key renders as, and the id the closing section
 #: takes. Both are reserved for the synthesis, so no append may claim them.
 _PLAN_LEVEL_KEY = "_top"
@@ -140,12 +151,14 @@ def _evidence_anchor_sets(
     return rendered, reserved
 
 
-def _record_sections(html_text: str) -> list[tuple[str, str, bool]]:
+def _record_sections(html_text: str) -> list[tuple[str, str, str]]:
     """Return each anchored section a record holds, in document order.
 
-    The triple is the section's element id, its markup, and whether an append
-    wrote it. Only top-level sections of the document are read: a section
-    nested inside another is part of its parent's content and is carried with
+    The triple is the section's element id, its markup, and the origin that
+    wrote it — ``append`` for an appended anchor, ``overview`` for a block this
+    module owns and re-renders, and the empty string for a section written by
+    neither. Only top-level sections of the document are read: a section
+    nested inside another is part of its own parent's content and is carried with
     it rather than on its own.
     """
     if not html_text.strip():
@@ -159,11 +172,8 @@ def _record_sections(html_text: str) -> list[tuple[str, str, bool]]:
         element_id = str(child.get("id") or "").strip()
         if not element_id:
             continue
-        marked = (
-            str(child.get(APPEND_ORIGIN_ATTRIBUTE) or "").strip().lower()
-            == APPEND_ORIGIN_VALUE
-        )
-        found.append((element_id, str(child), marked))
+        origin = str(child.get(APPEND_ORIGIN_ATTRIBUTE) or "").strip().lower()
+        found.append((element_id, str(child), origin))
     return found
 
 
@@ -183,6 +193,326 @@ def _section_labels(source: str) -> tuple[dict[str, str], list[str]]:
 
 def _escape(value: object) -> str:
     return html.escape(str(value if value is not None else ""), quote=True)
+
+
+def _source(kind: str, reference: object, label: object) -> str:
+    """One source element: the durable record a sentence rests on.
+
+    ``kind`` names what sort of record ``reference`` addresses — a run, a
+    comment, the plan, a figure path, a gate — because a bare id reads as an
+    assertion with nothing behind it.
+    """
+
+    return (
+        f'<span class="{SOURCE_CLASS}" '
+        f'data-source="{_escape(reference)}" data-source-kind="{_escape(kind)}">'
+        f"{_escape(label)}</span>"
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class LandedFigure:
+    """One figure a landed run named, addressed for the served page."""
+
+    path: str
+    src: str
+    caption: str
+    run_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class SectionLanding:
+    """What one plan section landed: its landing line, runs, figures.
+
+    This is the one reading of a landing the closure overview renders. It is
+    derived from the plan and the ledger alone, so a caller that needs to know
+    whether a section landed — the close guard, the sprint page — asks this
+    rather than re-deriving it from a second population.
+    """
+
+    section: str
+    label: str
+    declaration: str
+    done_when: str
+    landing_comment_id: str
+    landing: str
+    runs: tuple[Mapping[str, Any], ...]
+    figures: tuple[LandedFigure, ...] = ()
+
+    @property
+    def attempts(self) -> int:
+        """How many implementing attempts this section holds."""
+        return len(self.runs)
+
+    @property
+    def landed(self) -> bool:
+        """Whether the section holds a landing line or a landed run."""
+        return bool(self.landing.strip() or self.runs)
+
+
+def _section_texts(source: str) -> dict[str, str]:
+    """The authored body text of every section, keyed as the renderer keys it.
+
+    Paragraphs are kept on their own lines rather than run together, because a
+    reader that flattens the section cannot tell where one authored paragraph
+    ends: a done-when quoted from flat text stops at the first full stop, so an
+    abbreviation or a dotted path inside it truncates the declaration. The
+    newline is the paragraph boundary the plan's own markup carries.
+    """
+    bodies: dict[str, str] = {}
+    for heading in _plan_html.plan_headings(source):
+        section_id = str(heading.raw_id or "").strip()
+        if not section_id or heading.span is None:
+            continue
+        begin, end = heading.span
+        soup = BeautifulSoup(source[begin:end], "html.parser")
+        # The block elements a body is authored in are the paragraph boundaries
+        # a quote needs. Flattening a section that carries none of them would
+        # hand a done-when reader the whole body on one line, so such a body is
+        # reported as unparagraphable and no declaration is quoted from it.
+        block_tags = ("p", "li", "td")
+        blocks = [
+            block
+            for block in soup.find_all(list(block_tags))
+            if block.find_parent(list(block_tags)) is None
+        ]
+        bodies[_section_key(section_id)] = "\n".join(
+            " ".join(block.get_text(" ").split())
+            for block in blocks
+            if block.get_text(" ").strip()
+        )
+    return bodies
+
+
+def _done_when(body: str) -> str:
+    """The section's stated done-when paragraph, or the empty string for none.
+
+    The whole paragraph is quoted, not the text up to its first full stop: a
+    done-when naming an abbreviation or a dotted path holds full stops that
+    belong to its own wording, and cutting there quotes a declaration in part.
+    """
+    for line in body.split("\n"):
+        if re.search(r"\bDone when\b", line):
+            return line.strip()
+    return ""
+
+
+def _landed_run(runs: Sequence[Mapping[str, Any]]) -> Mapping[str, Any]:
+    """The run a section's landing is recorded from: its latest implementation.
+
+    The population and the ordering are the ones the record's own writes use —
+    an implementing attempt, latest by completion and then run id — so a review
+    of a run, whose record sits on the same section, can never be read as the
+    run that landed it.
+    """
+    attempts = [
+        record
+        for record in runs
+        if str(record.get("role") or "").strip() in EXECUTABLE_SECTION_ROLES
+    ]
+    if not attempts:
+        return {}
+    return max(
+        attempts,
+        key=lambda record: (
+            str(record.get("completed_at") or ""),
+            str(record.get("run_id") or ""),
+        ),
+    )
+
+
+def _run_comment_id(run_id: str) -> str:
+    """The comment id promotion writes for a run's landing comment.
+
+    Promotion derives the id from the run id, so the landing comment of a run
+    is found by deriving the same id here from the run the section landed. The
+    prefix is taken from the writer that owns it, and the run id is normalised
+    by the writer's own rule: a bare ``c-run-`` prefix names every review of a
+    run as well as its landing, so matching the prefix alone would quote a
+    review as the landing.
+    """
+    from reckon.crew.plan_review import RUN_COMMENT_PREFIX
+
+    normalised = re.sub(r"[^A-Za-z0-9._-]+", "-", str(run_id or "").strip())
+    return f"{RUN_COMMENT_PREFIX}{normalised}"
+
+
+def _landing_comment(
+    comments: Sequence[Mapping[str, Any]],
+    runs: Sequence[Mapping[str, Any]] = (),
+) -> Mapping[str, Any]:
+    """The section's landing comment: the one written by the run that landed it.
+
+    A section ticked with a close comment quotes that comment. One landed by a
+    promotion holds a comment under the id promotion derives from the landed
+    run, and a review of that run writes a comment under the same prefix on the
+    same section — so the landing is read from a comment, never from whichever
+    comment happens to come last.
+    """
+    for comment in comments:
+        if str(comment.get("id") or "").startswith(
+            _plan_html.SECTION_CLOSE_COMMENT_PREFIX
+        ):
+            return comment
+    landed = _landed_run(runs)
+    run_id = str(landed.get("run_id") or "").strip()
+    if not run_id:
+        return {}
+    wanted = _run_comment_id(run_id)
+    for comment in comments:
+        if str(comment.get("id") or "") == wanted:
+            return comment
+    return {}
+
+
+def _figure_src(path: str, project: str, root: Path | None) -> str:
+    """The project-absolute ``src`` a ``docs/figures`` path is served at.
+
+    The SPA resolves an image against the project mount, so a relative path
+    renders as a 404 and the record's own figure is invisible. The address
+    itself belongs to the figure inventory's row builder, which is the one
+    place that derives where a figure is served, so it is taken from there
+    rather than rebuilt.
+    """
+    if root is None:
+        return ""
+    relative = path.strip().strip("/")
+    if not relative.startswith("docs/"):
+        return ""
+    try:
+        row = figure_row(root / relative, root / "docs", project)
+    except KeyError:
+        # A file whose suffix no figure reader owns is not a figure the
+        # inventory addresses, so it has no address to cite.
+        return ""
+    return str((row or {}).get("href") or "")
+
+
+def _run_figures(
+    record: Mapping[str, Any],
+    plan_slug: str,
+    project: str,
+    root: Path | None,
+) -> list[LandedFigure]:
+    """The figures one run named on its manifest's ``figures:`` line.
+
+    The manifest is where the node named its figure, so the path is read there
+    rather than guessed from the plan's figure directory. A path outside the
+    plan's own figure directory is not this plan's figure and is skipped, so a
+    record copied from another plan cannot pull a stranger's figure in. A run
+    whose manifest is gone names no figure, so the overview cites only figures
+    it can source.
+    """
+    manifest_value = str(record.get("manifest_path") or "").strip()
+    if not manifest_value or not plan_slug:
+        return []
+    try:
+        text = Path(manifest_value).expanduser().read_text(encoding="utf-8")
+    except (OSError, UnicodeError):
+        return []
+    from reckon.crew.reports import ManifestParseError, parse_manifest
+
+    try:
+        fields = parse_manifest(text, path=manifest_value)
+    except ManifestParseError:
+        return []
+    node = str(record.get("node") or record.get("run_id") or "").strip()
+    directory = f"docs/figures/{plan_slug}/"
+    figures: list[LandedFigure] = []
+    for item in _field_paths(fields.get("figures")):
+        path = str(item).strip()
+        if not path.startswith(directory):
+            continue
+        src = _figure_src(path, project, root)
+        if not src:
+            continue
+        figures.append(
+            LandedFigure(
+                run_id=str(record.get("run_id") or ""),
+                path=path,
+                src=src,
+                caption=f"{node} — {Path(path).name}" if node else Path(path).name,
+            )
+        )
+    return figures
+
+
+def read_section_landings(
+    plan: Mapping[str, Any],
+    source: str,
+    records: Sequence[Mapping[str, Any]],
+    project: str = "",
+    *,
+    root: Path | None = None,
+) -> list[SectionLanding]:
+    """Read what each plan section landed: its landing line, runs and figures.
+
+    Sections are returned in the plan's authored order followed by any key only
+    a comment or a run names, which is the order the record renders. A figure
+    is read from the run's own manifest, so the overview cites the figure a run
+    actually named rather than one inferred from its changed paths.
+    """
+
+    comments_by_section = {
+        _section_key(section): list(items or [])
+        for section, items in (plan.get("comments") or {}).items()
+    }
+    runs_by_section: dict[str, list[Mapping[str, Any]]] = {}
+    for record in records:
+        runs_by_section.setdefault(_section_key(record.get("section")), []).append(
+            record
+        )
+    declarations = {
+        _section_key(section): str(classification or "").strip()
+        for section, classification in (plan.get("section_declarations") or {}).items()
+    }
+    # A plan read from its file carries the declaration map; one built from
+    # its section records alone carries each section's own status. Both name
+    # the same fact, so a caller reading either shape gets the declaration.
+    for record in plan.get("sections") or []:
+        if not isinstance(record, Mapping):
+            continue
+        key = _section_key(record.get("id"))
+        if key not in declarations:
+            declarations[key] = str(record.get("status") or "").strip()
+    labels, authored_order = _section_labels(source)
+    bodies = _section_texts(source)
+    available = set(comments_by_section) | set(runs_by_section) | set(declarations)
+    order = [key for key in authored_order if key in available]
+    order.extend(sorted(available - set(order)))
+
+    landings: list[SectionLanding] = []
+    for key in order:
+        comments = comments_by_section.get(key, [])
+        runs = tuple(runs_by_section.get(key, ()))
+        landing = _landing_comment(comments, runs)
+        body = bodies.get(key)
+        if body is None:
+            body = " ".join(
+                BeautifulSoup(str(landing.get("body") or ""), "html.parser")
+                .get_text(" ")
+                .split()
+            )
+        landings.append(
+            SectionLanding(
+                section=_section_element_id(key),
+                label=labels.get(key)
+                or ("Plan-level outcome" if key == "_top" else key),
+                declaration=declarations.get(key, ""),
+                done_when=_done_when(body) if bodies.get(key) else "",
+                landing_comment_id=str(landing.get("id") or ""),
+                landing=str(landing.get("body") or ""),
+                runs=runs,
+                figures=tuple(
+                    figure
+                    for record in runs
+                    for figure in _run_figures(
+                        record, plan.get("slug") or "", project, root
+                    )
+                ),
+            )
+        )
+    return landings
 
 
 def _format_seconds(value: object) -> str:
@@ -431,6 +761,624 @@ def _overall_verdict(records: Sequence[Mapping[str, Any]]) -> str:
     )
 
 
+def _gate_facts(record: Mapping[str, Any]) -> dict[str, object]:
+    """The four facts a run's gate produced, as its own record holds them."""
+    check = record.get("gate_check")
+    check = check if isinstance(check, Mapping) else {}
+    suite = record.get("suite_delta")
+    suite = suite if isinstance(suite, Mapping) else {}
+    after = suite.get("after_suite")
+    after = after if isinstance(after, Mapping) else {}
+    return {
+        "command": str(
+            check.get("command") or suite.get("suite_command") or ""
+        ).strip(),
+        "exit_status": check.get("exit_status"),
+        "tests_added": record.get("tests_added"),
+        "suite_failures": after.get("failure_count"),
+    }
+
+
+def _recorded(value: object) -> str:
+    """A number a run recorded, or the word for one it did not."""
+    return _escape(value) if value is not None else "unrecorded"
+
+
+def _measure_text(record: Mapping[str, Any]) -> str:
+    """One attempt's measured result, every figure cited to its own run."""
+    facts = _gate_facts(record)
+    run_id = str(record.get("run_id") or "")
+    command = str(facts["command"] or "")
+    exit_status = facts["exit_status"]
+    gate = (
+        f"gate <code>{_escape(command)}</code> exited {_recorded(exit_status)}"
+        if command
+        else "no gate command recorded"
+    )
+    return (
+        f"{gate}, {_recorded(facts['tests_added'])} tests added, "
+        f"{_recorded(facts['suite_failures'])} suite failures "
+        f"{_source('run', run_id, f'run {run_id}')}"
+    )
+
+
+def _section_paragraph(landing: SectionLanding, plan_slug: str) -> str:
+    """One paragraph: what the section set out to do, its landing, its result."""
+    reference = f"{plan_slug}#{landing.section}"
+    setting = (
+        f'<q class="done-when">{_escape(landing.done_when)}</q> '
+        f"{_source('plan', reference, 'plan')}"
+        if landing.done_when
+        else _source("plan", reference, "plan")
+    )
+    if landing.landed:
+        landing_text = " ".join(
+            BeautifulSoup(landing.landing, "html.parser").get_text(" ").split()
+        )
+        earlier = landing.runs[:-1]
+        measured = (
+            _measure_text(landing.runs[-1]) if landing.runs else "no run recorded"
+        )
+        if earlier:
+            measured += (
+                f", after {len(earlier)} earlier attempt"
+                f"{'' if len(earlier) == 1 else 's'} "
+                f"{_source('section', reference, landing.section)}"
+            )
+        # A section landed by a run whose landing comment cannot be found is
+        # stated as such: quoting an empty landing line reads as a claim with
+        # nothing behind it, which is what the source element exists to stop.
+        landed_clause = (
+            f"Landed: <q>{_escape(landing_text)}</q> "
+            f"{_source('comment', landing.landing_comment_id or reference, 'landed')}."
+            if landing_text
+            else "No landing comment is recorded on it "
+            f"{_source('section', reference, landing.section)}."
+        )
+        body = (
+            f"<strong>{_escape(landing.label)}</strong> set out to {setting}. "
+            f"{landed_clause} Measured: {measured}."
+        )
+    else:
+        body = (
+            f"<strong>{_escape(landing.label)}</strong> set out to {setting} and is "
+            f"declared {_escape(landing.declaration or 'undeclared')}; nothing landed "
+            f"{_source('plan', reference, 'declaration')}."
+        )
+    return (
+        f'    <p class="section-summary" data-section="{_escape(landing.section)}">'
+        f"{body}</p>"
+    )
+
+
+def _fragment_href(node: str, plan_slug: str, project: str, root: Path | None) -> str:
+    """The served address of a landed node's own fragment, or ``""`` for none.
+
+    A node's fragment is optional, so the overview links one only where it was
+    written: the file's presence under the plan's fragment directory is the
+    whole test. Nothing of the fragment's text is read — the overview states
+    what its own sources hold and the link lets a reader open the record the
+    node authored. The href is project-absolute, the same shape a fragment link
+    in a plan section's comment takes: ``/<project>/evidence/fragments/...``.
+    """
+    if root is None or not node or not plan_slug:
+        return ""
+    relative = f"docs/evidence/fragments/{plan_slug}/{node}.html"
+    if not (root / relative).is_file():
+        return ""
+    return f"/{project}/evidence/fragments/{plan_slug}/{node}.html"
+
+
+def _node_rows(
+    landings: Sequence[SectionLanding],
+    *,
+    plan_slug: str = "",
+    project: str = "",
+    root: Path | None = None,
+) -> list[str]:
+    """One row per landed node, stating how many attempts that node took."""
+    rows: list[str] = []
+    for landing in landings_that_landed(landings):
+        by_node: dict[str, list[Mapping[str, Any]]] = {}
+        for record in landing.runs:
+            node = str(record.get("node") or record.get("run_id") or "").strip()
+            by_node.setdefault(node, []).append(record)
+        for node, attempts in by_node.items():
+            latest = attempts[-1]
+            commits = ", ".join(
+                _escape(commit)
+                for commit in (latest.get("commits") or [])
+                if str(commit).strip()
+            )
+            run_id = str(latest.get("run_id") or "")
+            fragment = _fragment_href(node, plan_slug, project, root)
+            rows.append(
+                "      <tr>"
+                f"<td>{_escape(node)}</td>"
+                f"<td>{_escape(landing.section)}</td>"
+                f"<td>{len(attempts)} attempt{'' if len(attempts) == 1 else 's'}</td>"
+                f"<td>{_escape(latest.get('gate'))}</td>"
+                f"<td>{commits or '—'}</td>"
+                f"<td>{_format_seconds(latest.get('worker_seconds'))}</td>"
+                f"<td>{_source('run', run_id, run_id)}</td>"
+                f"<td>{_fragment_link(fragment)}</td>"
+                "</tr>"
+            )
+    return rows
+
+
+def _fragment_link(href: str) -> str:
+    """The row cell linking a node's own fragment, or an em dash for none."""
+    if not href:
+        return "—"
+    return f'<a class="node-fragment" href="{_escape(href)}">fragment</a>'
+
+
+def landings_that_landed(
+    landings: Sequence[SectionLanding],
+) -> list[SectionLanding]:
+    """The sections of one reading that landed."""
+    return [landing for landing in landings if landing.landed]
+
+
+def _figure_blocks(landings: Sequence[SectionLanding]) -> list[str]:
+    """One figure per named path, with its caption and its own source."""
+    blocks: list[str] = []
+    seen: set[str] = set()
+    for landing in landings:
+        for figure in landing.figures:
+            if figure.path in seen:
+                continue
+            seen.add(figure.path)
+            blocks.append(
+                '    <figure class="landed-figure">'
+                f'<img src="{_escape(figure.src)}" alt="{_escape(figure.caption)}">'
+                f"<figcaption>{_escape(figure.caption)} "
+                f"{_source('figure', figure.path, figure.path)}</figcaption>"
+                "</figure>"
+            )
+    return blocks
+
+
+@dataclass(frozen=True, slots=True)
+class ReviewTotals:
+    """One stored review's findings, counted by how they were disposed of.
+
+    ``raised`` is what the review recorded; ``folded`` and ``exempted`` are the
+    two dispositions that answer a finding, and everything else — a finding
+    with no disposition at all, and one a landing deferred without judging it —
+    is still open work.
+    """
+
+    review_run_id: str
+    raised: int
+    folded: int
+    exempted: int
+    still_open: int
+
+
+def _review_totals(record: Mapping[str, Any]) -> ReviewTotals:
+    """One stored review's findings, counted by the disposition it carries."""
+    from reckon.crew.findings import finding_disposition, parse_finding_disposition
+
+    findings = [
+        item for item in record.get("findings") or () if isinstance(item, Mapping)
+    ]
+    folded = exempted = still_open = 0
+    for index in range(len(findings)):
+        kind = parse_finding_disposition(finding_disposition(record, index))["kind"]
+        if kind == "folded":
+            folded += 1
+        elif kind == "exempted":
+            exempted += 1
+        else:
+            still_open += 1
+    return ReviewTotals(
+        review_run_id=str(record.get("review_run_id") or "").strip(),
+        raised=len(findings),
+        folded=folded,
+        exempted=exempted,
+        still_open=still_open,
+    )
+
+
+def _committed_review_totals(
+    plan_slug: str, project: str, root: Path | None
+) -> list[ReviewTotals]:
+    """The plan's committed review records, counted in the order they ran.
+
+    The records live in the project's committed tree, so every clone reads the
+    same reviews. A checkout that resolves no review tree, or a plan with no
+    stored review, yields nothing rather than an invented figure.
+    """
+    if root is None or not plan_slug:
+        return []
+    from reckon.crew import review as review_store
+
+    reviews_root = review_store.committed_review_root(project, root=root)
+    if reviews_root is None:
+        return []
+    directory = reviews_root / review_store.COMMITTED_PLAN_DIRNAME / plan_slug
+    if not directory.is_dir():
+        return []
+    totals: list[ReviewTotals] = []
+    for path in sorted(directory.glob("*.json")):
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError):
+            continue
+        if not isinstance(record, Mapping):
+            continue
+        if not str(record.get("review_run_id") or "").strip():
+            # The committed store keys a record by the review run that wrote
+            # it, so a record carrying no id is read from its own file name.
+            record = dict(record, review_run_id=path.stem)
+        totals.append(_review_totals(record))
+    return totals
+
+
+def _review_totals_text(totals: Sequence[ReviewTotals]) -> str:
+    """Review findings and their dispositions, cited to the review that raised them.
+
+    Each per-review figure is attributed to the review run that recorded it,
+    and the totals carry the source of every review that contributed to them,
+    so an aggregate can be followed back to the records behind it.
+    """
+    if not totals:
+        return ""
+    sources = "".join(
+        _source("review", item.review_run_id, item.review_run_id) for item in totals
+    )
+    folded = sum(item.folded for item in totals)
+    exempted = sum(item.exempted for item in totals)
+    still_open = sum(item.still_open for item in totals)
+    raised = sum(item.raised for item in totals)
+    by_review = "; ".join(
+        f"{_escape(item.review_run_id)} raised {item.raised} "
+        f"({item.folded} folded, {item.exempted} exempted, {item.still_open} open)"
+        for item in totals
+    )
+    return (
+        f" Reviews: {raised} finding(s) raised across {len(totals)} stored "
+        f"review(s), {folded} folded, {exempted} exempted and {still_open} open "
+        f"{sources}; by review: {by_review}."
+    )
+
+
+def _totals_paragraph(
+    plan: Mapping[str, Any],
+    landings: Sequence[SectionLanding],
+    records: Sequence[Mapping[str, Any]],
+    project: str,
+    root: Path | None = None,
+) -> str:
+    """Totals for runs, attempts and worker hours, and for the review findings."""
+    landed = landings_that_landed(landings)
+    attempts = sum(landing.attempts for landing in landed)
+    worker_seconds = sum(int(record.get("worker_seconds") or 0) for record in records)
+    declared = plan.get("effort_hours")
+    reviews = _review_totals_text(
+        _committed_review_totals(str(plan.get("slug") or "").strip(), project, root)
+    )
+    return (
+        f'    <p class="overview-totals">{len(records)} run(s) across '
+        f"{len(landed)} landed section(s) and {attempts} attempt(s), "
+        f"{_format_seconds(worker_seconds)} of worker time against "
+        f"{_recorded(declared)} declared hour(s) "
+        f"{_source('ledger', project or str(plan.get('slug') or ''), 'ledger')}."
+        f"{reviews}</p>"
+    )
+
+
+def _overview_block(
+    plan: Mapping[str, Any],
+    landings: Sequence[SectionLanding],
+    records: Sequence[Mapping[str, Any]],
+    project: str,
+    root: Path | None = None,
+) -> str:
+    """The sourced overview: a paragraph per section, one row per landed node."""
+    plan_slug = str(plan.get("slug") or "").strip()
+    paragraphs = [_section_paragraph(landing, plan_slug) for landing in landings]
+    rows = _node_rows(landings, plan_slug=plan_slug, project=project, root=root)
+    figures = _figure_blocks(landings)
+    origin = f'{APPEND_ORIGIN_ATTRIBUTE}="{OVERVIEW_ORIGIN_VALUE}"'
+    header = (
+        "      <thead><tr><th>Node</th><th>Section</th><th>Attempts</th>"
+        "<th>Gate</th><th>Commits</th><th>Worker time</th><th>Source</th>"
+        "<th>Fragment</th>"
+        "</tr></thead>"
+    )
+    table = (
+        [
+            "    <table>",
+            header,
+            "      <tbody>",
+            *rows,
+            "      </tbody>",
+            "    </table>",
+        ]
+        if rows
+        else ["    <p>No node landed.</p>"]
+    )
+    figures_block = figures or ["    <p>No run named a figure.</p>"]
+    return "\n".join(
+        [
+            f'  <section id="overview" {origin}>',
+            "    <h2>Sections</h2>",
+            *paragraphs,
+            "  </section>",
+            f'  <section id="landed-nodes" {origin}>',
+            "    <h2>Landed nodes</h2>",
+            *table,
+            "  </section>",
+            f'  <section id="figures" {origin}>',
+            "    <h2>Figures</h2>",
+            *figures_block,
+            "  </section>",
+            f'  <section id="totals" {origin}>',
+            "    <h2>Totals</h2>",
+            _totals_paragraph(plan, landings, records, project, root),
+            "  </section>",
+        ]
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class SprintPlanRow:
+    """One member plan of a closing sprint, read from its own record.
+
+    The counts are the ones the plan's closure overview states: sections it
+    landed, the runs that landed them and their worker time. ``href`` is the
+    plan document the row links, empty when the sprint names a plan with no
+    document — a row must never link a page that is not there.
+    """
+
+    slug: str
+    title: str
+    status: str
+    href: str
+    sections_landed: int
+    runs: int
+    worker_seconds: int
+    headline: str
+    figures: tuple[LandedFigure, ...] = ()
+
+
+_SPRINT_PAGE_SUFFIX = "-closing"
+
+
+def sprint_page_path(docs_dir: Path, sprint_id: str) -> Path:
+    """The closing page one sprint's close writes, under the evidence archive.
+
+    The page is an evidence record, not a sprint resource: a second file in the
+    sprint root would be discovered as a sprint of its own, and the closing page
+    documents what the sprint's plans landed rather than the sprint's schedule.
+    """
+    stem = re.sub(r"[^A-Za-z0-9._-]+", "-", str(sprint_id or "").strip()).strip("-")
+    if not stem:
+        raise EvidenceSynthesisError(
+            f"sprint id {sprint_id!r} names no page: a closing page needs an id"
+        )
+    return docs_dir / "evidence" / "archive" / f"{stem}{_SPRINT_PAGE_SUFFIX}.html"
+
+
+def _plan_page_href(project: str, resource: Any) -> str:
+    """The served address of a plan document, or the empty string without one.
+
+    The address names the file rather than the SPA's extensionless route, so
+    every link the page writes resolves to a document in the repository.
+    """
+    relative = getattr(resource, "relative_path", None)
+    if relative is None:
+        return ""
+    return f"/{project}/{relative}"
+
+
+def _headline_result(landings: Sequence[SectionLanding], summary: str) -> str:
+    """The plan's headline result: what its latest landing recorded.
+
+    A plan with no landing line falls back to the summary it was authored with,
+    and one with neither says so rather than rendering an empty cell that reads
+    as a result.
+    """
+    for landing in reversed(landings_that_landed(landings)):
+        text = " ".join(
+            BeautifulSoup(landing.landing, "html.parser").get_text(" ").split()
+        )
+        if text:
+            return text
+    return summary.strip() or "no result recorded"
+
+
+def read_sprint_plan_row(docs_dir: Path, project: str, slug: str) -> SprintPlanRow:
+    """Read one member plan through the reading the closure overview built.
+
+    Sections landed, runs and worker time come from
+    :func:`read_section_landings` — the one reading a plan's overview renders —
+    rather than from a second walk of the ledger, so the sprint page and the
+    plan's overview cannot state different counts for the same plan.
+    """
+    resource = resolve_resource(
+        docs_dir, project, slug, artifact_type="plan", include_archived=False
+    )
+    if resource is None:
+        return SprintPlanRow(
+            slug=slug,
+            title=slug,
+            status="no plan document",
+            href="",
+            sections_landed=0,
+            runs=0,
+            worker_seconds=0,
+            headline="the sprint names a plan with no document",
+        )
+    source = resource.path.read_text(encoding="utf-8")
+    plan = _plan_html.parse_plan(resource.path, slug)
+    try:
+        records = ledger.runs(project, root=docs_dir.parent, plan=slug)
+    except ledger.LedgerError as exc:
+        raise EvidenceSynthesisError(
+            f"cannot read the ledger for project {project!r}, plan {slug!r}: {exc}"
+        ) from exc
+    records = sorted(
+        records,
+        key=lambda record: (
+            str(record.get("completed_at") or ""),
+            str(record.get("run_id") or ""),
+        ),
+    )
+    landings = read_section_landings(
+        plan, source, records, project, root=docs_dir.parent
+    )
+    landed = landings_that_landed(landings)
+    return SprintPlanRow(
+        slug=slug,
+        title=str(plan.get("title") or slug),
+        status=str(plan.get("status") or "unrecorded"),
+        href=_plan_page_href(project, resource),
+        sections_landed=len(landed),
+        runs=len(records),
+        worker_seconds=sum(
+            int(record.get("worker_seconds") or 0) for record in records
+        ),
+        headline=_headline_result(landings, str(plan.get("summary") or "")),
+        figures=tuple(figure for landing in landings for figure in landing.figures),
+    )
+
+
+def _sprint_row(row: SprintPlanRow) -> str:
+    """One table row: the plan, its status, what it landed and its result."""
+    name = (
+        f'<a href="{_escape(row.href)}">{_escape(row.title)}</a>'
+        if row.href
+        else _escape(row.title)
+    )
+    return (
+        "      <tr>"
+        f"<td>{name}</td>"
+        f"<td>{_escape(row.status)}</td>"
+        f"<td>{row.sections_landed}</td>"
+        f"<td>{row.runs}</td>"
+        f"<td>{_format_seconds(row.worker_seconds)}</td>"
+        f"<td>{_escape(row.headline)}</td>"
+        "</tr>"
+    )
+
+
+def render_sprint_page(
+    project: str, sprint_id: str, rows: Sequence[SprintPlanRow]
+) -> str:
+    """Render one closing page: a row per member plan, its figures, its totals."""
+    stem = sprint_page_path(Path("."), sprint_id).stem
+    title = f"{sprint_id} — closing sprint"
+    sections_landed = sum(row.sections_landed for row in rows)
+    runs = sum(row.runs for row in rows)
+    worker_seconds = sum(row.worker_seconds for row in rows)
+    figures = _figure_blocks(
+        [
+            SectionLanding(
+                section=row.slug,
+                label=row.title,
+                declaration="",
+                done_when="",
+                landing_comment_id="",
+                landing="",
+                runs=(),
+                figures=row.figures,
+            )
+            for row in rows
+        ]
+    )
+    table = [
+        '    <section id="sprint-plans">',
+        "      <h2>Member plans</h2>",
+        "      <table>",
+        (
+            "        <thead><tr><th>Plan</th><th>Status</th>"
+            "<th>Sections landed</th><th>Runs</th>"
+            "<th>Worker time</th><th>Headline result</th></tr></thead>"
+        ),
+        "        <tbody>",
+        *[_sprint_row(row) for row in rows],
+        "        </tbody>",
+        "      </table>",
+        "    </section>",
+    ]
+    totals = [
+        '    <section id="sprint-totals">',
+        "      <h2>Totals</h2>",
+        (
+            f"      <p>{len(rows)} plan(s), {sections_landed} section(s) landed, "
+            f"{runs} run(s), {_format_seconds(worker_seconds)} of worker time.</p>"
+        ),
+        "    </section>",
+    ]
+    figure_section = [
+        '    <section id="sprint-figures">',
+        "      <h2>Figures</h2>",
+        *(figures or ["      <p>No member plan's overview carries a figure.</p>"]),
+        "    </section>",
+    ]
+    return "\n".join(
+        [
+            "<!doctype html>",
+            '<html lang="en">',
+            "<head>",
+            '  <meta charset="utf-8">',
+            '  <meta name="viewport" content="width=device-width, initial-scale=1">',
+            f'  <meta name="docs-project" content="{_escape(project)}">',
+            '  <meta name="reckon-type" content="evidence">',
+            f'  <meta name="plan-slug" content="{_escape(stem)}">',
+            f'  <meta name="plan-title" content="{_escape(title)}">',
+            f"  <title>{_escape(title)}</title>",
+            "</head>",
+            "<body>",
+            ' <main class="plan-doc">',
+            f"  <h1>{_escape(title)}</h1>",
+            f"  <p>What the {len(rows)} plan(s) of this sprint landed, read from "
+            "their own closure readings and the runs their ledger holds. Every "
+            "link resolves to a document, and every figure is one a landed run "
+            "named.</p>",
+            *table,
+            *figure_section,
+            *totals,
+            " </main>",
+            "</body>",
+            "</html>",
+            "",
+        ]
+    )
+
+
+def write_sprint_page(
+    docs_dir: Path, project: str, sprint_id: str, slugs: Sequence[str]
+) -> Path:
+    """Write the closing page for one sprint from its member plans' readings.
+
+    A sprint close owes one page, so its failure is the close's failure: a
+    sprint recorded as closed with no page would leave the work unreadable.
+    """
+    rows = [read_sprint_plan_row(docs_dir, project, slug) for slug in slugs]
+    destination = sprint_page_path(docs_dir, sprint_id)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    from reckon._store import write_atomically
+
+    rendered = render_sprint_page(project, sprint_id, rows)
+    try:
+        write_atomically(
+            destination,
+            lambda handle: handle.write(rendered),
+            fsync=False,
+            mode=0o600,
+        )
+    except OSError as exc:
+        raise EvidenceSynthesisError(
+            f"cannot write the closing page {destination}: {exc}"
+        ) from exc
+    return destination
+
+
 def _render_document(
     project: str,
     plan: Mapping[str, Any],
@@ -531,6 +1479,23 @@ def _render_document(
             f"Closure synthesis for {plan_title}: {len(records)} committed run(s), "
             f"{comment_count} section-anchored comment(s), and {len(commits)} landed commit(s)."
         )
+    summary_source = _source(
+        "ledger",
+        project or plan_slug,
+        f"{len(records)} run(s)",
+    )
+    overview = (
+        ""
+        if created_by_append
+        else _overview_block(
+            plan,
+            read_section_landings(plan, source, records, project, root=root),
+            records,
+            project,
+            root,
+        )
+        + "\n\n"
+    )
     meta_lines = [
         f'  <meta name="docs-project" content="{_escape(project)}">',
         '  <meta name="reckon-type" content="evidence">',
@@ -566,8 +1531,8 @@ def _render_document(
         "<body>\n"
         ' <main class="plan-doc">\n'
         f"  <h1>{_escape(plan_title)} — landed record</h1>\n"
-        f"  <p>{_escape(summary)}</p>\n"
-        "\n" + "\n\n".join(sections) + "\n </main>\n"
+        f"  <p>{_escape(summary)} {summary_source}</p>\n"
+        "\n" + overview + "\n\n".join(sections) + "\n </main>\n"
         "</body>\n"
         "</html>\n"
     )
@@ -791,7 +1756,13 @@ def _carried_sections(
     """
     carried: list[str] = []
     lost: list[tuple[str, str]] = []
-    for element_id, markup, marked in _record_sections(html_text):
+    for element_id, markup, origin in _record_sections(html_text):
+        if origin == OVERVIEW_ORIGIN_VALUE:
+            # The overview is this module's own block, re-rendered from its
+            # inputs on every synthesis, so keeping the copy already on disk
+            # would write it twice and let a stale copy outlive its inputs.
+            continue
+        marked = origin == APPEND_ORIGIN_VALUE
         key = _element_section_key(element_id)
         if key in rendered:
             lost.append(("dropped" if marked else "replaced", element_id))

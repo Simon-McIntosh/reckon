@@ -184,7 +184,12 @@ def _scoring_pointer(
         "backend": LOCAL_BACKEND,
         "launch": "cli",
         "argv": ["codex"],
-        "phase": "starting",
+        # The run's worker has ended and its manifest reports the node
+        # complete, so the pointer has left the pre-spawn phase: a launch still
+        # labelled pre-spawn with no worker on it is classified as running, and a
+        # record in that shape is a launch that has not started rather than a
+        # delivered run awaiting review.
+        "phase": "working",
         "process_alive": False,
         "session": "session-orchestrating",
         "manifest_path": str(manifest),

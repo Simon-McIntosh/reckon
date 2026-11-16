@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="doc">
+  <meta name="plan-slug" content="work-scales-to-eighty-across-nodes">
+  <title>A node declares the MCP set it needs | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1 id="wse-a-node-declares-the-mcp-set-it-needs-landing">A node declares the MCP set it needs</h1>
+    <p id="wse-a-node-declares-the-mcp-set-it-needs-what">A flight declares MCP sets under <code>mcp_sets</code>, each a list of servers. A node carries <code>mcp_set</code> — given at dispatch with <code>--mcp-set</code>, in a batch entry as <code>mcp_set</code>, or read back off the node on a resume or a lane change — and the launch resolves that name against the flight before anything is seeded. A name the flight does not declare is refused by name, listing the declared sets. A node naming no set gets the flight's flat <code>worker_mcp_servers</code> declaration, or no server at all when the flight names none. The resolved set and its servers ride the composed plan and are recorded on the run as <code>worker_mcp: {set, servers}</code>.</p>
+    <p id="wse-a-node-declares-the-mcp-set-it-needs-backends">The same resolved list reaches all three launch backends through the one allowlist they already read: claude writes it into the run's <code>worker-mcp.json</code> and the seeded <code>enabledMcpjsonServers</code>, codex disables every other configured server on its argv, and omp keeps only the set's servers in the run's agent store and names the rest in <code>disabledServers</code>.</p>
+    <table id="wse-a-node-declares-the-mcp-set-it-needs-table">
+      <thead><tr><th>Node names</th><th>Claude starts</th><th>Codex keeps enabled</th><th>omp declares</th></tr></thead>
+      <tbody>
+        <tr><td><code>first</code> = imas-cx, imas-db</td><td>imas-cx, imas-db</td><td>imas-cx, imas-db</td><td>imas-cx, imas-db (imas-dd denied)</td></tr>
+        <tr><td><code>second</code> = imas-dd</td><td>imas-dd</td><td>imas-dd</td><td>imas-dd (imas-cx, imas-db denied)</td></tr>
+        <tr><td>none</td><td>none</td><td>none</td><td>none (all denied)</td></tr>
+      </tbody>
+    </table>
+    <p id="wse-a-node-declares-the-mcp-set-it-needs-measure">Measure: <code>tests/test_a_node_declares_its_mcp_set.py</code> — <strong>20 passed</strong> at the head, <strong>20 failed</strong> at base revision <code>ece5cf0e</code>, where <code>mcp_sets</code> is not a flight key and no launch parameter selects a set. Applying the mutation that reads the flat project list instead of the node's set turns the set cases red.</p>
+    <p id="wse-a-node-declares-the-mcp-set-it-needs-control">The base-revision run, with its command, imported module path and failing ids, is recorded in <a href="s3.html">s3.html</a>.</p>
+  </main>
+</body>
+</html>

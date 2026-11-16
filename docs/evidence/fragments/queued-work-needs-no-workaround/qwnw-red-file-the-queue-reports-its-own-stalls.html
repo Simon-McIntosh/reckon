@@ -1,0 +1,101 @@
+<section id="qwnw-red-file-the-queue-reports-its-own-stalls-landing">
+  <h2>A test file red on the primary branch passes: the queue reports its own stalls</h2>
+
+  <p><strong>What changed.</strong> After merging the current primary branch the
+  file ran here as 1 failed, 14 passed. The only remaining failure was
+  <code>test_an_eleven_minute_wait_on_a_lane_with_room_records_one_stall</code>,
+  at its last assertion:</p>
+
+  <p><code>E       AssertionError: assert not True</code><br>
+  <code>E        +  where True = exists()</code><br>
+  <code>E        +    where exists = PosixPath('…/config/crew/watch/proj-e73c023a2e8e.events').exists()</code></p>
+
+  <p><strong>Cause, and its verdict: the test was wrong.</strong> The case used
+  “the project’s monitor stream file does not exist after the pass” as a proxy
+  for “the stall was not written to the monitor stream”. That proxy was true
+  when the case was written on 29 October, and it stopped being true on 11
+  November, when a launched request began announcing itself in the stream
+  (<code>feat(crew): tell a session in the admit pass that its request
+  started</code>). The admission pass launches this request — the eleven-minute
+  wait is what the stall verdict reports, not a reason the pass declines to
+  launch — so the stream file exists because of the submission row, and the
+  assertion failed for a reason with nothing to do with stalls. The stall
+  itself is still written to the verdict log only.</p>
+
+  <p>The assertion now reads the stream’s row kinds and requires the stall
+  verdict not to be among them:
+  <code>assert queue_admission.STALL_VERDICT not in _stream_kinds()</code>. No
+  assertion about the stall was deleted or weakened: the stall’s run id, stage,
+  stage duration, age and the pass-wide admissible age are still asserted in
+  full. The check is strictly narrower — it tolerates the launch’s submission
+  row, which the product deliberately writes, and still fails when the stall
+  reaches the stream.</p>
+
+  <h3 id="qwnw-red-file-the-queue-reports-its-own-stalls-measured">Measured</h3>
+
+  <table id="qwnw-red-file-the-queue-reports-its-own-stalls-arms">
+    <tr><th>arm</th><th>revision</th><th>result</th><th>log</th></tr>
+    <tr>
+      <td>base, the named file</td>
+      <td><code>d0d77f07e2</code></td>
+      <td><code>1 failed, 14 passed</code>, <code>EXIT=1</code></td>
+      <td><code>logs/base-node-file.log</code></td>
+    </tr>
+    <tr>
+      <td>head, the named file</td>
+      <td><code>4460ed84e2</code></td>
+      <td><code>15 passed</code>, <code>EXIT=0</code></td>
+      <td><code>logs/head-node-file-all-debug.log</code></td>
+    </tr>
+    <tr>
+      <td>base, suite arm</td>
+      <td><code>d0d77f07e2</code></td>
+      <td><code>58 passed</code>, <code>EXIT=0</code></td>
+      <td><code>logs/base-suite.log</code></td>
+    </tr>
+    <tr>
+      <td>head, suite arm</td>
+      <td><code>f6aa019d75</code></td>
+      <td><code>58 passed</code>, <code>EXIT=0</code></td>
+      <td><code>logs/after-suite.log</code></td>
+    </tr>
+  </table>
+
+  <p>The head run of the named file was made as a job on <code>all_debug</code>
+  (job 1318861, node <code>98dci4-clu-3142</code>) at the run’s own head, with
+  <code>SLURM_JOB_ID</code> unset inside the job, and repeated in the worktree
+  on the allocating node with <code>SLURM_JOB_ID</code> unset as well: both read
+  <code>15 passed</code>. The suite arms are
+  <code>tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py — 58 passed</code>
+  on both revisions, so the delta is zero.</p>
+
+  <h3 id="qwnw-red-file-the-queue-reports-its-own-stalls-control">Negative control</h3>
+
+  <p>The base revision’s run of the named file, in an extraction of
+  <code>d0d77f07e2</code> and with the module imported from that tree, is
+  <code>14 passed, 1 failed</code> — the failure being</p>
+
+  <p><code>FAILED tests/test_the_queue_reports_its_own_stalls.py::test_an_eleven_minute_wait_on_a_lane_with_room_records_one_stall</code><br>
+  <code>1 failed, 14 passed in 157.90s (0:02:37)</code><br>
+  <code>EXIT=1</code></p>
+
+<p>beside the head run’s <code>15 passed in 12.72s</code> and
+  <code>EXIT=0</code>. The whole-suite log at <code>8d50b0333f</code> listed
+  thirteen failing ids in this file; the other twelve had been repaired by the
+  time this node started, and this one cause survived to the base revision.</p>
+
+  <p>The narrowed assertion was falsified deliberately: appending a stall-kind
+  row to the project’s watch stream from <code>_record_stalls</code> made the
+  case fail with
+  <code>AssertionError: assert 'stalled' not in {'stalled', 'submission'}</code>,
+  and the mutation was then reverted. The guard therefore fires on the thing it
+  guards rather than only passing.</p>
+
+  <h3 id="qwnw-red-file-the-queue-reports-its-own-stalls-outside">Outside scope</h3>
+
+  <p>No product module was changed, so no importer arm exists: no test module
+  imports the changed file. Failures in other files named by the
+  <code>8d50b0333f</code> log belong to other nodes and were not triaged here.
+  This gate measures only this node’s own change; verifying the merged result
+  belongs to a separately dispatched test node.</p>
+</section>

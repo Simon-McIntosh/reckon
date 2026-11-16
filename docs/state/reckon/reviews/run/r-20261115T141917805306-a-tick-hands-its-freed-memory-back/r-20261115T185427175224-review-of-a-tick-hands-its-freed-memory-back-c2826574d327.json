@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: logs/suite-base.log at 2780ddad20 reports '58 passed' with EXIT=0 and logs/suite-head.log at 3598481d8d reports '61 passed' with EXIT=0, so neither arm fails and the head arm adds three passing cases.",
+  "completed_at": "2026-11-15T18:59:29.498Z",
+  "dispatched_at": "2026-11-15T18:58:00Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "The census harness does not reproduce the live ratchet: its base arm peaked at 752 MB where the live station plateaued at 5.5 GB, so the halving ratio cannot be judged on this population. The code lands, s64 stays open, and the bound is judged on the live station after the restart.",
+      "recorded_at": "2026-11-15T19:23:37.658637+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "The events assertion on the next line independently guards the discarded-result case the finding names.",
+      "recorded_at": "2026-11-15T19:23:52.413987+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-tick-hands-its-freed-memory-back.html",
+      "line": 34,
+      "severity": "blocking",
+      "summary": "The section's done-when requires head's sixth-tick RSS to be at most half of base's; the landed census reads 497336320/751689728 = 0.66 (census/arm-head.log:2721 against census/arm-base.log:653), so the node's own measure fails and the landed change cannot be promoted as meeting the section on this population."
+    },
+    {
+      "file": "tests/test_a_tick_hands_its_freed_memory_back.py",
+      "line": 88,
+      "severity": "non-blocking",
+      "summary": "The assertion compares tick()'s return to the empty list the test's own stand-in returns, so it holds for a wrapper that discards the pass's result and returns its own empty list; the events assertion on the next line is the independent guard for the same case."
+    }
+  ],
+  "plan_section": "s64",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "project": "reckon",
+  "review_run_id": "r-20261115T185427175224-review-of-a-tick-hands-its-freed-memory-back-c2826574d327",
+  "review_text": "VERDICT goal: the goal says return freed heap to the kernel after each station tick; reckon/crew/station.py:1109-1121 wraps the pass in try/finally and calls release_freed_memory() once after it, and station.py:774-808 resolves the C library's malloc_trim once and calls it with 0; the landed change does what the goal states.\nVERDICT done_when: the plan's s64 clause asks three things; the test clause holds (tests/test_a_tick_hands_its_freed_memory_back.py:48-90, gate-head.log '3 passed'), the census clause ran at both revisions (census/arm-base.log, census/arm-head.log, both EXIT=0, six ticks each) but its first bound fails -- head's sixth-tick rss_bytes 497336320 against base's 751689728, a ratio of 0.66 where the done-when asks at most half -- while the second bound holds at every tick, head's RSS staying 173 to 240 MB above that tick's tracemalloc peak against the 1.5 GB allowance.\nVERDICT write_paths: the fence grants reckon/crew/station.py, tests/test_a_tick_hands_its_freed_memory_back.py, the node's fragment and an unused figures directory; git diff 2780ddad..c2826574 touches exactly the first three, 180 insertions and no deletions.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T141917805306-a-tick-hands-its-freed-memory-back/manifest.md; it reports status complete, commits 3598481d8d and c2826574d3, gate-head.log 3 passed, suite arms 58 passed base and 61 passed head, and states in landing: and evidence_inputs: that the halving bound is not met at 0.66.\nVERDICT diff: read commit by commit against 2780ddad; 3598481d8d adds _malloc_trim and release_freed_memory plus the try/finally wrapper around the pass and three test cases, c2826574d3 adds only the 38-line landing fragment, and nothing in either commit falls outside the declared paths.\nCALL_SITES: reckon/crew/station.py:1364 (Station.serve's station.tick() in the run loop is the only production caller; the store's own .tick() and the admission worker's .tick() are different objects)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/station.py:1108-1121 releases once per tick after the pass, including a raising pass, and station.py:790-808 skips the call where the symbol is absent, which is the whole of what the goal states.\nSCORE evidence: 14\nJUSTIFICATION evidence: the gate the manifest names (gate-head.log) asserts the test clause and the census arms are logged with EXIT=0 with their rss_bytes lines at census/arm-head.log:2596-2721, but census/arm-head.log:2721 records 497336320 against census/arm-base.log:653's 751689728, so the done-when's first bound is measured and not met.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in 2780ddad..c2826574 is one of the three declared write paths and the figures directory is unused, as the brief's no-artifact clause directs.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_tick_hands_its_freed_memory_back.py:64 reddens if the release moves inside the pass (events would read release before tick) and :78 reddens if the call leaves the finally, but :62 and :88 compare tick()'s result to the empty list the test's own stand-in returns, so they cannot catch a wrapper that returns its own empty list instead of the pass's result.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/station.py:774-787 follows the module's existing libc-resolution idiom (lazy ctypes import, getattr for the symbol) and adds no name the repository forbids.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner for releasing freed heap: a search of reckon/ for malloc_trim, madvise, trim and release_memory found none, and the five ctypes.CDLL(None) sites (change_streams.py:48, crew/session_host.py:461, crew/dispatch_launch.py:5078, crew/dispatch_peer.py:402, crew/census.py:277) resolve inotify and prctl symbols without offering a shared resolver, so this addition is the first owner of its capability.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/a-tick-hands-its-freed-memory-back.html:34 blocking: the section's done-when requires head's sixth-tick RSS to be at most half base's; the landed census reads 497336320/751689728 = 0.66, so the node's own measure fails and the landed change cannot be promoted as meeting the section on this population.\nFINDING tests/test_a_tick_hands_its_freed_memory_back.py:88 non-blocking: the assertion compares tick()'s return to the empty list the test's own stand-in returns, so it holds for a wrapper that discards the pass's result and returns its own empty list; the events assertion at :89 is the independent guard for the same case.",
+  "reviewed_base_sha": "2780ddad207d0d96a00114169e6a5f9730752227",
+  "reviewed_head_commits": [
+    "3598481d8d5e2887357c97fd2d2e06fc259c96e8",
+    "c2826574d327eb90a754add690920bae2828704c"
+  ],
+  "reviewed_head_sha": "c2826574d327eb90a754add690920bae2828704c",
+  "reviewed_run_id": "r-20261115T141917805306-a-tick-hands-its-freed-memory-back",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T19:19:03.350738+00:00",
+  "total": 108
+}

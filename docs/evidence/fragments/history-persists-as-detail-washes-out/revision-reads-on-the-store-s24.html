@@ -1,0 +1,112 @@
+<section id="revision-reads-on-the-store-s24-what">
+  <h2>Velocity and the review-cycle figure read their revision-scoped history from the run store</h2>
+
+  <p><strong>What this is.</strong> Two readers answered a question about history
+  out of a checkout's working tree. Velocity read
+  <code>docs/state/&lt;project&gt;/crew.json</code> and each
+  <code>runs/&lt;run_id&gt;.json</code> at the window head; the review-cycle
+  figure (<code>docs/figures/plan-review-cycles/measure_review_cycles.py</code>)
+  read the same aggregate for its build-dispatch times. Once the ledger leaves
+  git — the cutover this plan makes — the first reports a project with no runs
+  and the second drops every dispatch time out of the cadence, and neither
+  fails.</p>
+
+  <p><strong>The defect, quoted at the base revision.</strong> A repository whose
+  four runs enter the tree one commit at a time and then leave it in a fifth,
+  with the same four rows in an isolated run store:</p>
+
+  <pre id="revision-reads-on-the-store-s24-reproduction">held tree runs: 4
+absent tree runs: 1 [["r-20260903T000000000000-node-0", "sqlite_fallback_for_reachable_promotion"]]
+dispatch times with no crew.json: {}</pre>
+
+  <p>The single surviving run is the one whose landing commit carries a
+  <code>promote(r-…)</code> subject, so the pre-existing fallback could still
+  find it; the three that landed under a plain record subject are gone, and a
+  project whose promotions are all worded the other way reports zero. The
+  figure's answer is empty with no error. Log:
+  <code>logs/base-defect-probe.log</code>.</p>
+
+  <p><strong>What the store now carries.</strong> The <code>runs</code> table
+  gains a <code>revision</code> column: the commit the run's own record file
+  entered the tree at. No record can supply that value. A promotion's
+  <code>promoted_revision</code> is the tip of the run's own work, and the
+  promotion commits the run's record file in its own commit, so the two are
+  different commits by design; a column stamped from the record would name a
+  revision whose tree does not hold the file, and the reader would get the row
+  back as its own fallback with nothing failing. So every row starts empty and
+  one pass writes the column: <code>run_store.backfill_revisions</code> reads
+  <code>run_store.record_file_additions</code>, a single path-limited log over
+  <code>docs/state/&lt;project&gt;/runs</code> that generates no patch, so the
+  backfill costs one git call per project rather than one per run. The scan has
+  one owner: velocity's own placement of a run at its record file's adding
+  commit reads it too, narrowed to the window it is asking about. Rows whose
+  file never entered the tree the checkout can see stay unresolved rather than
+  being stamped with a guess, and a row that already names a revision is left
+  alone.</p>
+
+  <p><strong>Velocity.</strong> While the tree at the window head still carries
+  the ledger or any run document, nothing changes: those documents answer.
+  When both are absent, <code>velocity._read_store_records</code> reads the
+  project's rows from the store and reads each record from the revision its row
+  names, in one batched object read — the row carries the durable half, the
+  historical file still carries the promotion record a rotation may wash out.
+  A row the store cannot place answers from the row itself. A tree with no
+  ledger, a store holding none of the project's rows, and a history that never
+  carried the path are three states: the first two together raise with the
+  store's own path named, and only a project whose ledger never entered the tree
+  answers empty.</p>
+
+  <p><strong>The figure.</strong> <code>load_dispatch_times</code> reads the
+  store instead of a checkout, so its <code>repos</code> argument is gone and
+  its one call site passes only the project set. A project the store cannot
+  answer for — absent store, unreadable store, no row of that project — raises
+  naming the store, because an empty mapping there is exactly the silent drop
+  the read replaces.</p>
+
+  <p><strong>The existing store keeps its rows.</strong> A store written under
+  the pre-change schema gains the column on open, keeps every row, and keeps its
+  payload verbatim: the probe builds a <code>runs</code> table without
+  <code>revision</code>, opens the store, and reads back the same record it
+  wrote while the column reads back empty — which is what the backfill is for.
+  An archive written under the older schema gains the column too when the store
+  attaches it, and a retirement through that archive keeps the rows it already
+  held. Log: <code>logs/store-migration-probe.log</code>.</p>
+
+  <table id="revision-reads-on-the-store-s24-arms">
+    <caption>The arms. Each log's first lines name its revision, tree and
+    command; its last line is a bare <code>EXIT=</code>.</caption>
+    <thead><tr><th>arm</th><th>tree and revision</th><th>tests</th><th>result</th><th>log</th></tr></thead>
+    <tbody>
+      <tr><td>baseline suite</td>
+        <td>the node's worktree at <code>27958ce9c4fa</code></td>
+        <td><code>test_staged_write_inventory.py</code>,
+        <code>test_every_shared_home_lock_holds_across_nodes.py</code></td>
+        <td>58 passed, <code>EXIT=0</code></td>
+        <td><code>logs/base-arm.log</code></td></tr>
+      <tr><td>red at base</td>
+        <td><code>27958ce9c4fa</code> extracted and re-committed as
+        <code>78aa3c772800</code></td>
+        <td>the new test</td>
+        <td>6 failed in 29.60s, <code>EXIT=1</code></td>
+        <td><code>logs/red-at-base.log</code></td></tr>
+      <tr><td>negative control</td>
+        <td><code>588705d9c6</code> with the repair's product modules restored
+        from its parent, loaded from a copy of the package</td>
+        <td>the new test file</td>
+        <td>2 failed, 6 passed in 118.20s, <code>EXIT=1</code></td>
+        <td><code>logs/negative-control.log</code></td></tr>
+      <tr><td>after suite</td>
+        <td><code>c2c40ab117bd</code>, the revision the cited log records</td>
+        <td>the new test plus the two suite files</td>
+        <td>66 passed, <code>EXIT=0</code></td>
+        <td><code>logs/after-suite.log</code></td></tr>
+    </tbody>
+  </table>
+
+  <p id="revision-reads-on-the-store-s24-landing">landing: reckon/run_store.py
+  and reckon/velocity.py and the review-cycle figure restated on the run store,
+  with the revision column backfilled from the adding commit; the new test file
+  passes at the head tree (8 passed) and fails at the base revision (6 failed),
+  and the two checks the repair's design rests on go red when its product
+  modules are reverted (2 failed, 6 passed).</p>
+</section>

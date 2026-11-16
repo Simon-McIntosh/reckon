@@ -1,0 +1,123 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "fails_if": "History projection returns a different member snapshot from explicit mutable access; independent reader agreement, not a supplied value compared with itself.",
+      "line": 55
+    },
+    {
+      "fails_if": "History projection loses or changes holds relative to explicit mutable access.",
+      "line": 56
+    },
+    {
+      "fails_if": "History projection uses aggregate version instead of the mutable version after a mutation.",
+      "line": 57
+    },
+    {
+      "fails_if": "Removing plan propagation restores the NameError or admits other-plan rows, or loses either selected file/store identity; expected identities are literal fixtures.",
+      "line": 348
+    },
+    {
+      "fails_if": "History selection changes the independently seeded aggregate version 7.",
+      "line": 352
+    },
+    {
+      "fails_if": "Dropping root or plan forwarding changes the actual observed helper-call arguments; root was passed to load but the assertion observes a separate downstream call, so losing forwarding makes it fail.",
+      "line": 353
+    },
+    {
+      "fails_if": "Fixture unexpectedly creates a database before the read; this is a setup precondition, not regression coverage.",
+      "line": 359
+    },
+    {
+      "fails_if": "Absent-store read loses either nonempty mutable collection or the literal aggregate version 7.",
+      "line": 361
+    },
+    {
+      "fails_if": "Restoring load_auxiliary in ledger.load creates a database during history reading; the before/after existence observations are independent filesystem checks.",
+      "line": 362
+    },
+    {
+      "fails_if": "Restoring load_auxiliary constructs RunStore and triggers the injected refusal, or read_auxiliary changes the stored snapshot; expected is captured through an independent explicit mutable read.",
+      "line": 370
+    },
+    {
+      "fails_if": "History reading returns a version other than the fixture aggregate version 7.",
+      "line": 374
+    }
+  ],
+  "assertion_file": "tests/test_members_and_holds_live_in_the_store.py",
+  "assertion_independence": "No tautological added assertion found: propagation compares independently observed downstream arguments, and mutable snapshot comparisons use separate read paths; fixture preconditions are identified separately.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/ledger.py:read_records:4124",
+    "reckon/ledger.py:runs:4078",
+    "reckon/crew/promotion_gate.py:record_gate_rerun_at_integrated_revision:1186",
+    "reckon/run_store.py:RunStore.auxiliary:465"
+  ],
+  "completed_at": "2026-11-15T23:31:57Z",
+  "dispatched_at": "2026-11-15T23:26:28Z",
+  "evidence_limit": "Baseline has the original two test files (58 passed), while head adds the new regression file (77 passed); zero added failures describes these recorded gates, not a rerun of an identical full-suite population.",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read the first-parent merge 84e08f202228d3b53cccf07fb87117d55540a5e3 and repair 88e0eca44557518c3523a850a405fa430b5a077f since reviewed base 764f1ce8e066cf291b448af42f0b8e5e508db0e9 within the four assigned targets; the authored repair threads selection and extracts shared read-only auxiliary decoding.",
+    "done_when": "The source dispatch done_when requires zero committed writes and equal roster/version/holds after aggregate removal; the source manifest's completed merged-after.log records 77 passing checks including the original mutable-state tests and the added history-reader regressions.",
+    "goal": "Read the source dispatch goal and live plan at docs/plans/history-persists-as-detail-washes-out.html:373-376; reckon/ledger.py:2478-2498 preserves the store-backed mutable projection while repairing history-reader integration.",
+    "manifest": "Read the source manifest.md and its actual baseline.log, merged-after.log, merged-integration.log and merged-negative-control.log; their summaries are 58 passed, 77 passed, 40 passed and 4 failed respectively, with explicit EXIT receipts.",
+    "write_paths": "The source dispatch-detail.json:78-86 declares the ledger, run store, regression test and evidence fragment, and the authored incremental commit changes exactly those four granted paths."
+  },
+  "justifications": {
+    "durability": "tests/test_members_and_holds_live_in_the_store.py:348-374 checks literal selected identities and version, absence of database creation and refusal of writable construction, and the recorded repair reversal fails all four new cases.",
+    "evidence": "merged-reproduction.log records 28 failed and 8 passed with NameError for plan, merged-after.log records 77 passed at the reviewed head, and merged-negative-control.log records four failures after reversing the repair in reckon/ledger.py and reckon/run_store.py.",
+    "fit": "reckon/run_store.py:309-333 follows the module's existing read-only SQLite URI and transaction idioms, while reckon/ledger.py:2471-2498 retains the documented distinction between aggregate and mutable versions with descriptive names.",
+    "goal_fidelity": "reckon/ledger.py:2485-2498 preserves the aggregate version and store-owned mutable state while supplying plan selection to every history fallback.",
+    "reuse": "Capability searches for auxiliary snapshots, payload decoding and read-only store access found the owners reckon/run_store.py:442-465 and stored_run_rows, and the added read_auxiliary reuses the extracted decoder at :294-306 rather than forking the existing RunStore._auxiliary_rows implementation.",
+    "scope_discipline": "Commit 88e0eca44557518c3523a850a405fa430b5a077f changes only reckon/ledger.py, reckon/run_store.py, tests/test_members_and_holds_live_in_the_store.py and the declared evidence fragment; the preceding primary-branch merge was explicitly authorised in the source manifest."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the source dispatch goal and live plan at docs/plans/history-persists-as-detail-washes-out.html:373-376; reckon/ledger.py:2478-2498 preserves the store-backed mutable projection while repairing history-reader integration.\nVERDICT done_when: The source dispatch done_when requires zero committed writes and equal roster/version/holds after aggregate removal; the source manifest's completed merged-after.log records 77 passing checks including the original mutable-state tests and the added history-reader regressions.\nVERDICT write_paths: The source dispatch-detail.json:78-86 declares the ledger, run store, regression test and evidence fragment, and the authored incremental commit changes exactly those four granted paths.\nVERDICT manifest: Read the source manifest.md and its actual baseline.log, merged-after.log, merged-integration.log and merged-negative-control.log; their summaries are 58 passed, 77 passed, 40 passed and 4 failed respectively, with explicit EXIT receipts.\nVERDICT diff: Read the first-parent merge 84e08f202228d3b53cccf07fb87117d55540a5e3 and repair 88e0eca44557518c3523a850a405fa430b5a077f since reviewed base 764f1ce8e066cf291b448af42f0b8e5e508db0e9 within the four assigned targets; the authored repair threads selection and extracts shared read-only auxiliary decoding.\nCALL_SITES: reckon/ledger.py:read_records:4124, reckon/ledger.py:runs:4078, reckon/crew/promotion_gate.py:record_gate_rerun_at_integrated_revision:1186, reckon/run_store.py:RunStore.auxiliary:465\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/ledger.py:2485-2498 preserves the aggregate version and store-owned mutable state while supplying plan selection to every history fallback.\nSCORE evidence: 20\nJUSTIFICATION evidence: merged-reproduction.log records 28 failed and 8 passed with NameError for plan, merged-after.log records 77 passed at the reviewed head, and merged-negative-control.log records four failures after reversing the repair in reckon/ledger.py and reckon/run_store.py.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Commit 88e0eca44557518c3523a850a405fa430b5a077f changes only reckon/ledger.py, reckon/run_store.py, tests/test_members_and_holds_live_in_the_store.py and the declared evidence fragment; the preceding primary-branch merge was explicitly authorised in the source manifest.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_members_and_holds_live_in_the_store.py:348-374 checks literal selected identities and version, absence of database creation and refusal of writable construction, and the recorded repair reversal fails all four new cases.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/run_store.py:309-333 follows the module's existing read-only SQLite URI and transaction idioms, while reckon/ledger.py:2471-2498 retains the documented distinction between aggregate and mutable versions with descriptive names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for auxiliary snapshots, payload decoding and read-only store access found the owners reckon/run_store.py:442-465 and stored_run_rows, and the added read_auxiliary reuses the extracted decoder at :294-306 rather than forking the existing RunStore._auxiliary_rows implementation.\n",
+  "review_run_id": "r-20261115T232016472037-review-of-members-and-holds-in-store-s23-88e0eca44557",
+  "reviewed_base_sha": "764f1ce8e066cf291b448af42f0b8e5e508db0e9",
+  "reviewed_head_sha": "88e0eca44557518c3523a850a405fa430b5a077f",
+  "reviewed_run_id": "r-20261115T102553812624-members-and-holds-in-store-s23",
+  "scope": "Incremental review of the four assigned paths; primary-branch merge read as integration context, authored repair judged separately; no rescoring of unchanged earlier implementation.",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_members_and_holds_live_in_the_store.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T102553812624-members-and-holds-in-store-s23/merged-after.log",
+      "revision": "88e0eca44557518c3523a850a405fa430b5a077f",
+      "summary": "77 passed in 48.05s"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/members-and-holds-in-store-s23 /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/members-and-holds-in-store-s23/.venv/bin/python -m pytest -p no:cacheprovider -q /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/members-and-holds-in-store-s23/tests/test_staged_write_inventory.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/members-and-holds-in-store-s23/tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T102553812624-members-and-holds-in-store-s23/baseline.log",
+      "revision": "a7f049093c62b22bd5f69246c292b6bbd27de6b4",
+      "summary": "58 passed in 36.21s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T00:16:48.004067+00:00",
+  "total": 120
+}

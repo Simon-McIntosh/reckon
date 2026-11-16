@@ -120,20 +120,41 @@ ARCHIVE_REF_PREFIX = "refs/reckon/archive/"
 
 
 def _sweep_trash_directories(
-    trash_roots: Iterable[Path], *, apply: bool, announce: TextIO | None = None
+    trash_roots: Iterable[Path],
+    *,
+    apply: bool,
+    announce: TextIO | None = None,
+    labels: Sequence[str] | None = None,
+    owned: Iterable[Path] = (),
 ) -> list[dict[str, Any]]:
     """Remove every directory a release left behind in a worktree trash root.
 
     Trash is written only after a release has moved a tree off its registered
     path and deregistered it, so removing it cannot strand a registered tree; a
     pass that runs with ``apply`` deletes each directory and names it.
+
+    ``labels`` confines the sweep to the trash one run left behind. A release
+    names its trash ``<label>-<stamp>``, where the label is the releasing
+    run's id when it had one and the tree's own directory name otherwise, so an
+    entry belongs to a run only when its name carries one of those labels.
+    Without ``labels`` every entry is taken, which is what an unscoped pass
+    means. ``owned`` names directories this same pass moved aside, so a copy
+    whose own deletion failed is still reclaimed by the run that made it.
     """
+    prefixes = tuple(f"{label}-" for label in labels) if labels is not None else None
+    exact_owned = {Path(path) for path in owned}
     rows: list[dict[str, Any]] = []
     for trash_root in trash_roots:
         if not trash_root.is_dir():
             continue
         for entry in sorted(trash_root.iterdir()):
             if not entry.is_dir() or entry.is_symlink():
+                continue
+            if (
+                prefixes is not None
+                and entry not in exact_owned
+                and not any(entry.name.startswith(prefix) for prefix in prefixes)
+            ):
                 continue
             row: dict[str, Any] = {"path": str(entry), "removed": False}
             if apply:
@@ -150,14 +171,40 @@ def _sweep_trash_directories(
     return rows
 
 
+def _trash_scope_labels(
+    run_id: str | None, confined_to: Path | None
+) -> tuple[str, ...] | None:
+    """The trash labels a run-scoped sweep may take, or ``None`` when unscoped.
+
+    A release writes its trash as ``<label>-<stamp>`` with the run's id when it
+    had one and the tree's own directory name otherwise, so a run owns the trash
+    carrying its id and the trash carrying the name of the tree its own records
+    point at. Anything else in a trash root belongs to another run and is left.
+    ``None`` is the whole-root sweep an unscoped pass means.
+    """
+    if not run_id:
+        return None
+    labels = [run_id]
+    if confined_to is not None and confined_to.name not in labels:
+        labels.append(confined_to.name)
+    return tuple(labels)
+
+
 def _sweep_worktree_trash(
-    repo: Path, *, apply: bool, announce: TextIO | None = None
+    repo: Path,
+    *,
+    apply: bool,
+    announce: TextIO | None = None,
+    labels: Sequence[str] | None = None,
+    owned: Iterable[Path] = (),
 ) -> list[dict[str, Any]]:
     """Sweep this checkout's trash roots, named through git."""
     return _sweep_trash_directories(
         (root / WORKTREE_TRASH_DIRNAME for root in _releasable_roots(repo)),
         apply=apply,
         announce=announce,
+        labels=labels,
+        owned=owned,
     )
 
 
@@ -914,6 +961,10 @@ def garbage_collect(
     withheld: list[dict[str, Any]] = []
     residue_report: list[dict[str, Any]] = []
     trash_rows: list[dict[str, Any]] = []
+    # Trash this pass moved a tree into itself. Its own copy deletion may have
+    # failed, and the run whose tree it is stays the owner of that leftover even
+    # when the run's id is not the label the copy carries.
+    owned_trash: set[Path] = set()
     failed_path = ""
     try:
         roots = _workspace_roots(repo_root)
@@ -1073,6 +1124,8 @@ def garbage_collect(
                             residue_report.append({"worktree": str(path), **saved})
                     else:
                         release = _release_worktree_whole(repo_root, path)
+                    if release is not None and release.get("trash"):
+                        owned_trash.add(Path(str(release["trash"])))
                     if release is not None and not release.get("released", True):
                         # The helper moved nothing: this tree is not one it may
                         # take. A withheld release is reported as withheld with
@@ -1121,8 +1174,17 @@ def garbage_collect(
         # Trash left by a release whose deletion step did not finish is swept
         # here: the trees it holds were moved off their registered paths and
         # deregistered before the copy was written, so removing it can never
-        # strand a registered tree. Each one removed is printed by name.
-        trash_rows = _sweep_worktree_trash(repo_root, apply=apply)
+        # strand a registered tree. Each one removed is printed by name. A
+        # pass scoped to one run takes only the trash that run left behind —
+        # its run label, the label of its own recorded tree, or a copy this
+        # same pass moved aside — because a destructive command named for one
+        # run must never reach a peer's leftovers.
+        trash_rows = _sweep_worktree_trash(
+            repo_root,
+            apply=apply,
+            labels=_trash_scope_labels(run_id, confined_to),
+            owned=owned_trash,
+        )
 
         ledgered_records = {
             str(record.get("run_id") or ""): record

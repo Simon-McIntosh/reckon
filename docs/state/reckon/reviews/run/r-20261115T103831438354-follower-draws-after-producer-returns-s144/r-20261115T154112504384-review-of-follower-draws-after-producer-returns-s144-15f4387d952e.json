@@ -1,0 +1,93 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": "Read every assertion the new test adds. Independent guards: tests/test_a_follower_keeps_drawing_after_its_producer_returns.py:173 and :201 pin the delivered rows to literals, so reinstating the base gate (reconnect_if_replaced answering False, the mutation recorded in logs/negative-control.log and present at neg-tree/reckon/crew/station_store.py:459-460) reddens :201 with an empty list; :214-221 pin from_state, strictly-increasing unique seq and the first and last row times to values derived from the fixture constants at :45-46, so dropping the row's own time or the counter reddens them; :283 pins the seeded id to 3, so removing _opening_sequence makes the fresh station collide at id 1 and reddens it. Coupled: :211 compares the log against first + later, both produced by the same wake call, and its force rests on the literal pins above; named as a non-blocking finding.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:2339",
+    "reckon/crew/session_host.py:865"
+  ],
+  "completed_at": "2026-11-15T15:48:53.751Z",
+  "dispatched_at": "2026-11-15T15:48:32Z",
+  "failure_delta_evidence": {
+    "after_completed": true,
+    "after_failure_ids": [],
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T103831438354-follower-draws-after-producer-returns-s144/logs/after-fence-arm.log",
+    "baseline_completed": true,
+    "baseline_failure_ids": [],
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T103831438354-follower-draws-after-producer-returns-s144/logs/base-fence-arm.log",
+    "wider_population": {
+      "added_failure_ids": [],
+      "after_failure_count": 23,
+      "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T103831438354-follower-draws-after-producer-returns-s144/logs/after-population-arm.log",
+      "baseline_failure_count": 24,
+      "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T103831438354-follower-draws-after-producer-returns-s144/logs/base-population-arm.log",
+      "gone_failure_ids": [
+        "tests/test_follow_sweep_cadence.py::test_pane_output_is_unchanged_by_the_sweep"
+      ]
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/station_subscriber.py",
+      "line": "759",
+      "severity": "non-blocking",
+      "text": "non-blocking: the same-identity branch of _adopt_replaced_store is exercised by no test -- deleting the `if identity != self._store_identity` guard so every reopen adopts the new store's own place leaves tests/test_a_follower_keeps_drawing_after_its_producer_returns.py:201 green (the replacement case reads ids 1..5 from 0 either way), so a restored copy that keeps its name would redraw rows with nothing reddening."
+    },
+    {
+      "file": "tests/test_a_follower_keeps_drawing_after_its_producer_returns.py",
+      "line": "163",
+      "severity": "non-blocking",
+      "text": "non-blocking: RECKON_SESSION_HOST_LOG_DIR is set but nothing in the path under test resolves it -- the test opens the log handle itself and redirect_stderr binds sys.stderr -- so the \"recorded in the session-host log\" half asserts the record's content but not reckon/crew/session_host.py:865's stderr sink or its log-dir resolution, and a regression in either would not redden this measure."
+    },
+    {
+      "file": "tests/test_a_follower_keeps_drawing_after_its_producer_returns.py",
+      "line": "211",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion compares the log against `first + later`, the very lists the same wake call returned, so its two sides move together; its force comes only from the independent literal pins at :173 and :201, and a change that yielded and recorded one wrong row in step would satisfy this line while :201 reddens."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/follower-draws-after-producer-returns-s144.html",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the evidence fragment (72 lines, commit 15f4387d95) is outside the node's declared write_paths, which name only the five code and test paths; it is the repo's landed-evidence convention and the worker listed it in its own orientation_write_paths, but the fence it was dispatched with does not contain it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew_follow_commands.py:2339 drives subscriber.wake in the follower's own loop, and reckon/crew/session_host.py:865 hands the spawned follower a stderr sink file, which is where the emission records land.",
+    "diff": "Read all five commits against 3bc474f9263c2bc01bc34638128dd5834ede7baf: e354078bef adds database_identity, reconnect_if_replaced, _opening_sequence, _adopt_replaced_store and the emission record plus the new 283-line test; 4e7a3df364 guards isatty; ee9ed9b359 replaces the birth-stamp discriminator with a store name; ddebbfa313 moves the record into a module function so the existing stand-in loop keeps working; 15f4387d95 adds the evidence fragment; nothing outside the four paths.",
+    "done_when": "The gate the worker ran is the literal command in its manifest over tests/test_a_follower_keeps_drawing_after_its_producer_returns.py plus the two inventory suites, and logs/after-fence-arm.log ends 61 passed / EXIT=0 at ddebbfa313011b2201e388b6b63dfcae048e9580; the assertions at tests/test_a_follower_keeps_drawing_after_its_producer_returns.py:201-221 assert the five later transitions, no repeat, strictly increasing unique sequence numbers and the first and last row times; the base half of the measure rests on the declared mutation recorded in logs/negative-control.log rather than a base run of the same test, and the done-when's ruff clause is unrecorded.",
+    "goal": "The plan's \u00a7144 deliverable is two halves -- rows keep flowing after a producer restart, and every emitted row recorded with its sequence number, time, run and transition in the follower's session-host log; the diff lands both at reckon/crew/station_store.py:459 (reconnect_if_replaced, driven from reckon/crew/station_subscriber.py:773) and reckon/crew/station_subscriber.py:923 (_record_emission).",
+    "manifest": "Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T103831438354-follower-draws-after-producer-returns-s144/manifest.md; it names five commits, records baseline_suite logs/base-fence-arm.log (58 passed, exit 0, completed) and after_suite logs/after-fence-arm.log (61 passed, exit 0, completed), gives negative_control_log as a bare path, and states under evidence_inputs the two gates that swallowed the rows (generation_moved, then the poll cursor).",
+    "write_paths": "The node's declared write paths are reckon/crew/station_subscriber.py, reckon/crew/watch_unit.py, reckon/crew_follow_commands.py, reckon/crew/station_store.py and tests/test_a_follower_keeps_drawing_after_its_producer_returns.py; the diff touches four files, three inside that list plus docs/evidence/fragments/the-monitor-shows-the-work-it-watches/follower-draws-after-producer-returns-s144.html, which the node's own orientation_write_paths also lists but its write_paths do not."
+  },
+  "justifications": {
+    "durability": "The replacement case is a real guard -- logs/negative-control.log reddens tests/test_a_follower_keeps_drawing_after_its_producer_returns.py with reconnect_if_replaced mutated to answer False, and the neg-tree carries that mutation at its station_store.py:459 -- but nothing exercises the same-identity branch at reckon/crew/station_subscriber.py:759 or the session host's log resolution that tests/test_a_follower_keeps_drawing_after_its_producer_returns.py:163 names.",
+    "evidence": "The manifest's tests line is the fence command and logs/after-fence-arm.log records it at ddebbfa313011b2201e388b6b63dfcae048e9580 as 61 passed with EXIT=0, but the done_when's base half is evidenced only by the declared mutation in logs/negative-control.log (1 failed, 2 passed) and the done_when's ruff clause carries no log on disk.",
+    "fit": "The probe lives on the store beside the connection it owns (reckon/crew/station_store.py:447) and the place adoption on the subscriber that owns the cursor (reckon/crew/station_subscriber.py:736), matching the module split, while wake's sink parameter and the getattr(self, \"_emitted\", 0) at reckon/crew/station_subscriber.py:886 exist for the SimpleNamespace stand-in already used at tests/test_a_producer_loss_reaches_the_pane.py:62-68.",
+    "goal_fidelity": "Both halves of \u00a7144's deliverable are reachable from the one production loop: reckon/crew/station_subscriber.py:773 reopens a replaced store inside poll and :923 writes each yielded row's record to sys.stderr, which the session host binds to the follower's log at reckon/crew/session_host.py:865; the terminal skip at reckon/crew/station_subscriber.py:938 leaves an interactively-armed follower unrecorded, which is outside the session-host surface the plan names.",
+    "reuse": "Searched for an owner of path-file identity and found only module-local (st_dev, st_ino) tuples -- reckon/crew/session_host.py:140, reckon/crew/recovery_memo.py:134, reckon/crew/host_lease.py:167, reckon/crew/recovery_watch.py:3232 -- so nothing is forked; the store name and opening sequence extend StationStore's own station-key mechanism at reckon/crew/station_store.py:562-590, and the one crew-log writer found (reckon/crew/picker/__init__.py:76) appends to a crew-home file, a different sink from the stderr log the plan names.",
+    "scope_discipline": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/follower-draws-after-producer-returns-s144.html is committed although the node's declared write_paths name only reckon/crew/station_subscriber.py, reckon/crew/watch_unit.py, reckon/crew_follow_commands.py, reckon/crew/station_store.py and the new test."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a7144 of docs/plans/the-monitor-shows-the-work-it-watches.html asks for rows that keep flowing after the producer returns plus a record of each emitted row with its sequence number, time, run and transition, and the diff lands both at reckon/crew/station_store.py:459 driven from reckon/crew/station_subscriber.py:773 and recorded at reckon/crew/station_subscriber.py:923.\nVERDICT done_when: the gate command in the manifest runs tests/test_a_follower_keeps_drawing_after_its_producer_returns.py and logs/after-fence-arm.log ends 61 passed / EXIT=0 at ddebbfa313011b2201e388b6b63dfcae048e9580, with the five-later-transitions, no-repeat and sequence-number assertions at tests/test_a_follower_keeps_drawing_after_its_producer_returns.py:201-221; the base half rests on the declared mutation in logs/negative-control.log (1 failed, 2 passed) and the ruff clause carries no recorded log.\nVERDICT write_paths: the node declared reckon/crew/station_subscriber.py, reckon/crew/watch_unit.py, reckon/crew_follow_commands.py, reckon/crew/station_store.py and the new test; the diff touches four files, three inside that list and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/follower-draws-after-producer-returns-s144.html outside it.\nVERDICT manifest: read; it names five commits, records baseline_suite logs/base-fence-arm.log (58 passed, exit 0, completed) and after_suite logs/after-fence-arm.log (61 passed, exit 0, completed), a bare-path negative_control_log, and the two swallowed gates under evidence_inputs.\nVERDICT diff: read e354078bef, 4e7a3df364, ee9ed9b359, ddebbfa313 and 15f4387d95 against 3bc474f9263c2bc01bc34638128dd5834ede7baf commit by commit; they add the store identity and reconnect probe, the opening sequence, the place adoption, the emission record, one 283-line test and the evidence fragment, and nothing else.\nCALL_SITES: reckon/crew_follow_commands.py:2339, reckon/crew/session_host.py:865\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/station_subscriber.py:773 reopens a replaced store inside poll and :923 writes each yielded row's record to sys.stderr, which reckon/crew/session_host.py:865 binds to the follower's log; the terminal skip at :938 leaves an interactively-armed follower unrecorded.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/after-fence-arm.log records the named test at ddebbfa313011b2201e388b6b63dfcae048e9580 as 61 passed with EXIT=0, but the base half is evidenced only by logs/negative-control.log's mutation and the done-when's ruff clause has no log on disk.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: docs/evidence/fragments/the-monitor-shows-the-work-it-watches/follower-draws-after-producer-returns-s144.html is committed although the declared write_paths name only the four code paths and the new test.\nSCORE durability: 16\nJUSTIFICATION durability: logs/negative-control.log reddens tests/test_a_follower_keeps_drawing_after_its_producer_returns.py with the base gate restored, but no assertion covers the same-identity branch at reckon/crew/station_subscriber.py:759.\nSCORE fit: 18\nJUSTIFICATION fit: the probe sits on the store beside its connection (reckon/crew/station_store.py:447) and the place adoption on the subscriber that owns the cursor (reckon/crew/station_subscriber.py:736), with wake's sink seam and the getattr at :886 serving the stand-in at tests/test_a_producer_loss_reaches_the_pane.py:62-68.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner of path-file identity exists -- reckon/crew/session_host.py:140, reckon/crew/recovery_memo.py:134 and reckon/crew/host_lease.py:167 each compute a local (st_dev, st_ino) -- and the store name and opening sequence extend StationStore's own station-key mechanism at reckon/crew/station_store.py:562-590.\nFINDING reckon/crew/station_subscriber.py:759 non-blocking: the same-identity branch of _adopt_replaced_store is exercised by no test, so deleting the identity guard would redraw a restored copy's rows with nothing reddening.\nFINDING tests/test_a_follower_keeps_drawing_after_its_producer_returns.py:163 non-blocking: RECKON_SESSION_HOST_LOG_DIR is set but never resolved by the path under test, so the session-host half asserts record content only and not reckon/crew/session_host.py:865's stderr sink or log-dir resolution.\nFINDING tests/test_a_follower_keeps_drawing_after_its_producer_returns.py:211 non-blocking: the assertion compares the log against first + later, the same wake call's own output, so it adds no guard beyond the literal pins at :173 and :201.\nFINDING docs/evidence/fragments/the-monitor-shows-the-work-it-watches/follower-draws-after-producer-returns-s144.html:1 non-blocking: the evidence fragment is outside the node's declared write_paths.",
+  "review_run_id": "r-20261115T154112504384-review-of-follower-draws-after-producer-returns-s144-15f4387d952e",
+  "reviewed_base_sha": "3bc474f9263c2bc01bc34638128dd5834ede7baf",
+  "reviewed_head_sha": "15f4387d952eaa244576a686b4347a56e5e62994",
+  "reviewed_run_id": "r-20261115T103831438354-follower-draws-after-producer-returns-s144",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T16:05:04.186210+00:00",
+  "total": 104
+}

@@ -157,8 +157,13 @@ def _invoke(
 
 
 def _payload(result) -> dict:
-    """Read the documented JSON response ahead of Click's stderr echo."""
-    return json.loads(result.output.splitlines()[0])
+    """Read the documented JSON response from stdout.
+
+    A launched dispatch writes its run id to stderr as a notice, so the mixed
+    ``output`` stream carries that line first; the command's JSON document is
+    the first line of stdout on every exit.
+    """
+    return json.loads(result.stdout.splitlines()[0])
 
 
 def _observe_window(

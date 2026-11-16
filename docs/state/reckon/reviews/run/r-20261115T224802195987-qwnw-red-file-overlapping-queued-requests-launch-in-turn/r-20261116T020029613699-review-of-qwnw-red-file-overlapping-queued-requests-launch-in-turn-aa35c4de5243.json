@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-16T02:07:20.970Z",
+  "dispatched_at": "2026-11-16T02:05:34Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-overlapping-queued-requests-launch-in-turn-aa35c4de5243",
+      "recorded_at": "2026-11-16T02:39:59.173605+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224802195987-qwnw-red-file-overlapping-queued-requests-launch-in-turn/manifest.md",
+      "line": "16",
+      "severity": "blocking",
+      "text": "blocking: the manifest records status complete with no baseline_suite and no after_suite JSON and no messages_received line, so reckon crew check --manifest --run r-20261115T224802195987-qwnw-red-file-overlapping-queued-requests-launch-in-turn exits 1 with those three findings, and the same refusal reaches promotion after the worker has ended."
+    },
+    {
+      "file": "tests/test_overlapping_queued_requests_launch_in_turn.py",
+      "line": "506",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion compares payload cap against the literal 2 the test itself passed as queue.max_requests, and 2 is also the per-session floor the old case asserted, so the line cannot distinguish the project bound from the rule it replaced."
+    },
+    {
+      "file": "tests/test_overlapping_queued_requests_launch_in_turn.py",
+      "line": "218",
+      "severity": "non-blocking",
+      "text": "non-blocking: the payload reader now depends on CliRunner Result.stdout, which pyproject.toml:26 does not guarantee at its declared floor of click>=8.0.0 and which no other test in the tree reads, so an environment resolved at that floor turns the repair into an AttributeError."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-overlapping-queued-requests-launch-in-turn.html",
+      "line": "111",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states the five test_queue_depth_project_bound.py failures are the same at the base revision while product-rules.log carries a single head arm and the run records no base arm for those three files, so the figure is uncorroborated by the reference it cites."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against faa84aa492; 15f768a252 retargets three stale assertions and one payload reader in the single test file (+34/-13) and aa35c4de52 adds the 113-line landing fragment, and no product module is touched.",
+    "done_when": "the done_when asks for a head run on all_debug with SLURM_JOB_ID unset, a cause table with a verdict per cause, an arm over the importing files that adds no failure, and a base-revision control, and all four are recorded \u2014 gate-head.log with its unset-job header and EXIT=0, the four-row table at docs/evidence/fragments/queued-work-needs-no-workaround/red-file-overlapping-queued-requests-launch-in-turn.html:9, importers-base.log at 5 failed and 16 passed against importers-head.log at 3 failed and 18 passed, and negative-control.log at 5 failed and 6 passed at d0d77f07.",
+    "goal": "the node goal is that tests/test_overlapping_queued_requests_launch_in_turn.py passes in full on the primary branch, and gate-head.log records 11 passed at 15f768a252 with EXIT=0 for that file in the worker's tree.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224802195987-qwnw-red-file-overlapping-queued-requests-launch-in-turn/manifest.md; it records status complete, both commits, the gate command and its logs, but it carries no baseline_suite or after_suite JSON and no messages_received, so reckon crew check --manifest refuses it with three findings.",
+    "write_paths": "the brief declares reckon, tests and the plan's evidence fragment directory, and both paths the diff touches \u2014 tests/test_overlapping_queued_requests_launch_in_turn.py and docs/evidence/fragments/queued-work-needs-no-workaround/red-file-overlapping-queued-requests-launch-in-turn.html \u2014 lie inside that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_overlapping_queued_requests_launch_in_turn.py:540 reddens if an exclusive path stops fencing a live claim and :218 reddens with a decode error if the create-run echo returns to the mixed capture, while :506 asserts a cap of 2 that equals the retired per-session floor of 2 and so cannot separate the project bound from it.",
+    "evidence": "gate-head.log records 11 passed, EXIT=0 and the module, tree and unset-job header the fence asks for, yet the manifest that carries it omits the armed baseline_suite and after_suite blocks, so crew check --manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224802195987-qwnw-red-file-overlapping-queued-requests-launch-in-turn/manifest.md:16 refuses the record.",
+    "fit": "tests/test_overlapping_queued_requests_launch_in_turn.py:40-43 adds the EXCLUSIVE constant beside SHARED in the module's own idiom and no name in the diff carries a plan, node or ticket identifier.",
+    "goal_fidelity": "tests/test_overlapping_queued_requests_launch_in_turn.py:43 and :218 retarget the stale assertions to the rules reckon/crew/runs.py:1672 and reckon/crew_dispatch_commands.py:2490 now keep, and gate-head.log records 11 passed at 15f768a252 with EXIT=0.",
+    "reuse": "the one added definition, EXCLUSIVE at tests/test_overlapping_queued_requests_launch_in_turn.py:43, names a member of the owner list at reckon/crew/runs.py:1672 as a literal so the assertion is not derived from the owner, and the search over tests/ and reckon/crew found no test-side helper for exclusive classes, only one file reading that owner at tests/test_an_undeclared_project_shares_its_source_files.py:201.",
+    "scope_discipline": "both changed paths lie inside the declared scope, but docs/evidence/fragments/queued-work-needs-no-workaround/red-file-overlapping-queued-requests-launch-in-turn.html:107 adds out-of-scope prose about two sibling files and :111 states a base-equality figure the run holds no base arm for."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_overlapping_queued_requests_launch_in_turn.py passes in full on the primary branch, and gate-head.log records 11 passed at 15f768a252 with EXIT=0 for that file in the worker's tree.\nVERDICT done_when: the done_when asks for a head run on all_debug with SLURM_JOB_ID unset, a cause table with a verdict per cause, an arm over the importing files that adds no failure, and a base-revision control, and all four are recorded \u2014 gate-head.log with its unset-job header and EXIT=0, the four-row table at docs/evidence/fragments/queued-work-needs-no-workaround/red-file-overlapping-queued-requests-launch-in-turn.html:9, importers-base.log at 5 failed and 16 passed against importers-head.log at 3 failed and 18 passed, and negative-control.log at 5 failed and 6 passed at d0d77f07.\nVERDICT write_paths: the brief declares reckon, tests and the plan's evidence fragment directory, and both paths the diff touches \u2014 tests/test_overlapping_queued_requests_launch_in_turn.py and docs/evidence/fragments/queued-work-needs-no-workaround/red-file-overlapping-queued-requests-launch-in-turn.html \u2014 lie inside that scope.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224802195987-qwnw-red-file-overlapping-queued-requests-launch-in-turn/manifest.md; it records status complete, both commits, the gate command and its logs, but it carries no baseline_suite or after_suite JSON and no messages_received, so reckon crew check --manifest refuses it with three findings.\nVERDICT diff: read commit by commit against faa84aa492; 15f768a252 retargets three stale assertions and one payload reader in the single test file (+34/-13) and aa35c4de52 adds the 113-line landing fragment, and no product module is touched.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_overlapping_queued_requests_launch_in_turn.py:43 and :218 retarget the stale assertions to the rules reckon/crew/runs.py:1672 and reckon/crew_dispatch_commands.py:2490 now keep, and gate-head.log records 11 passed at 15f768a252 with EXIT=0.\nSCORE evidence: 13\nJUSTIFICATION evidence: gate-head.log records 11 passed, EXIT=0 and the module, tree and unset-job header the fence asks for, yet the manifest that carries it omits the armed baseline_suite and after_suite blocks, so crew check --manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224802195987-qwnw-red-file-overlapping-queued-requests-launch-in-turn/manifest.md:16 refuses the record.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: both changed paths lie inside the declared scope, but docs/evidence/fragments/queued-work-needs-no-workaround/red-file-overlapping-queued-requests-launch-in-turn.html:107 adds out-of-scope prose about two sibling files and :111 states a base-equality figure the run holds no base arm for.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_overlapping_queued_requests_launch_in_turn.py:540 reddens if an exclusive path stops fencing a live claim and :218 reddens with a decode error if the create-run echo returns to the mixed capture, while :506 asserts a cap of 2 that equals the retired per-session floor of 2 and so cannot separate the project bound from it.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_overlapping_queued_requests_launch_in_turn.py:40-43 adds the EXCLUSIVE constant beside SHARED in the module's own idiom and no name in the diff carries a plan, node or ticket identifier.\nSCORE reuse: 18\nJUSTIFICATION reuse: the one added definition, EXCLUSIVE at tests/test_overlapping_queued_requests_launch_in_turn.py:43, names a member of the owner list at reckon/crew/runs.py:1672 as a literal so the assertion is not derived from the owner, and the search over tests/ and reckon/crew found no test-side helper for exclusive classes, only one file reading that owner at tests/test_an_undeclared_project_shares_its_source_files.py:201.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224802195987-qwnw-red-file-overlapping-queued-requests-launch-in-turn/manifest.md:16 blocking: the manifest records status complete with no baseline_suite and no after_suite JSON and no messages_received line, so reckon crew check --manifest --run r-20261115T224802195987-qwnw-red-file-overlapping-queued-requests-launch-in-turn exits 1 with those three findings, and the same refusal reaches promotion after the worker has ended.\nFINDING tests/test_overlapping_queued_requests_launch_in_turn.py:506 non-blocking: the assertion compares payload cap against the literal 2 the test itself passed as queue.max_requests, and 2 is also the per-session floor the old case asserted, so the line cannot distinguish the project bound from the rule it replaced.\nFINDING tests/test_overlapping_queued_requests_launch_in_turn.py:218 non-blocking: the payload reader now depends on CliRunner Result.stdout, which pyproject.toml:26 does not guarantee at its declared floor of click>=8.0.0 and which no other test in the tree reads, so an environment resolved at that floor turns the repair into an AttributeError.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-overlapping-queued-requests-launch-in-turn.html:111 non-blocking: the fragment states the five test_queue_depth_project_bound.py failures are the same at the base revision while product-rules.log carries a single head arm and the run records no base arm for those three files, so the figure is uncorroborated by the reference it cites.\n",
+  "review_run_id": "r-20261116T020029613699-review-of-qwnw-red-file-overlapping-queued-requests-launch-in-turn-aa35c4de5243",
+  "reviewed_base_sha": "faa84aa492992ecf3f5a550486d9dc308c00ccde",
+  "reviewed_head_sha": "aa35c4de5243fa5d0e044434cc37dbe8337615d6",
+  "reviewed_run_id": "r-20261115T224802195987-qwnw-red-file-overlapping-queued-requests-launch-in-turn",
+  "reviewer": "omp/review",
+  "scores": {
+    "durability": 15,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T02:26:51.779646+00:00",
+  "total": 99
+}

@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/serve.py:2751 compose_landed_record",
+    "reckon/evidence.py:1362 compose_landed_record",
+    "reckon/crew/reports.py:2776 _fragment_plan_of",
+    "reckon/resources.py:243 _is_evidence_fragment"
+  ],
+  "completed_at": "2026-11-16T06:34:02.120Z",
+  "dispatched_at": "2026-11-16T06:33:36Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queue-dag-waits.html",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "non-blocking: the control log collects 22 cases against 25 at head, so the three pre-queue cases c3933bacfb added to tests/test_queue_dag_waits.py never ran against pre-repair code, and the fragment's claim that the same file ran there overstates what the control measured."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queue-dag-waits.html",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "non-blocking: the control tree is recorded as a bare /tmp/reckon-crew-scratch path, outside TMPDIR as the run's worktree rule requires and still present on disk, so the reproduction rests on scratch that does not die with the run."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against base e35fd9f935; the change is one evidence fragment, created with the control and the gate table, then twice re-pointed at the newest job's numbers so the delivered record cites job 1319129 measured after the record existed.",
+    "done_when": "the done_when requires the file to pass in full at head as a job on all_debug with SLURM_JOB_ID unset; logs/gate-head.log:1-7 records that at revision 9fe2583d2a with env -u SLURM_JOB_ID in its command, ending 25 passed in 5.47s and EXIT=0.",
+    "goal": "the node's goal is to make tests/test_queue_dag_waits.py pass in full; docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queue-dag-waits.html:4-6 records that passing state and names repair c3933bacfb, whose diff assigns node.manifest_path before a queued request is judged, as an ancestor of base e35fd9f935.",
+    "manifest": "read; status complete, three commits, gate and four side logs named, baseline_suite and after_suite both 58 passed with zero failure ids, and the negative control at 8d50b0333f with 14 failing ids.",
+    "write_paths": "the fence was reckon, tests and the plan's evidence and figure directories; git show --stat over 3b43ab970a, 9fe2583d2a and 7b58c52cab lists only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queue-dag-waits.html in each."
+  },
+  "justifications": {
+    "durability": "the node added no assertion and its control ran the 22-case file, so the three cases c3933bacfb added to tests/test_queue_dag_waits.py, which redden on a reverted repair, never ran against pre-repair code.",
+    "evidence": "logs/gate-head.log carries revision, tree, command and module.__file__ and ends 25 passed in 5.47s with EXIT=0 at job 1319129, which sacct reports COMPLETED in 00:00:43 matching the two summary lines in that job's logs.",
+    "fit": "the fragment opens with a slug-prefixed section id and an h3 heading like qwnw-a-commit-keyed-list-item-is-read-codex.html:1 does, and its missing trailing newline matches 23 of the directory's 34 fragments.",
+    "goal_fidelity": "qwnw-red-file-queue-dag-waits.html:45 records 25 passed EXIT=0 from job 1319129 at 9fe2583d2a, and the only delta to the delivered head is that file's own text.",
+    "reuse": "no definition was added; the fragment is consumed by the existing owner reckon/evidence.py:1362 compose_landed_record through _fragment_body_bytes, which returned its 5200-byte body when run against this file, and its subtree is registered at reckon/resources.py:243 _is_evidence_fragment.",
+    "scope_discipline": "each of the three commits changes exactly one file, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queue-dag-waits.html, inside the declared fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make tests/test_queue_dag_waits.py pass in full; docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queue-dag-waits.html:4-6 records that passing state and names repair c3933bacfb, whose diff assigns node.manifest_path before a queued request is judged, as an ancestor of base e35fd9f935.\nVERDICT done_when: the done_when requires the file to pass in full at head as a job on all_debug with SLURM_JOB_ID unset; logs/gate-head.log:1-7 records that at revision 9fe2583d2a with env -u SLURM_JOB_ID in its command, ending 25 passed in 5.47s and EXIT=0.\nVERDICT write_paths: the fence was reckon, tests and the plan's evidence and figure directories; git show --stat over 3b43ab970a, 9fe2583d2a and 7b58c52cab lists only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queue-dag-waits.html in each.\nVERDICT manifest: read; status complete, three commits, gate and four side logs named, baseline_suite and after_suite both 58 passed with zero failure ids, and the negative control at 8d50b0333f with 14 failing ids.\nVERDICT diff: read commit by commit against base e35fd9f935; the change is one evidence fragment, created with the control and the gate table, then twice re-pointed at the newest job's numbers so the delivered record cites job 1319129 measured after the record existed.\nCALL_SITES: reckon/serve.py:2751 compose_landed_record, reckon/evidence.py:1362 compose_landed_record, reckon/crew/reports.py:2776 _fragment_plan_of, reckon/resources.py:243 _is_evidence_fragment\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: qwnw-red-file-queue-dag-waits.html:45 records 25 passed EXIT=0 from job 1319129 at 9fe2583d2a, and the only delta to the delivered head is that file's own text.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/gate-head.log carries revision, tree, command and module.__file__ and ends 25 passed in 5.47s with EXIT=0 at job 1319129, which sacct reports COMPLETED in 00:00:43 matching the two summary lines in that job's logs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: each of the three commits changes exactly one file, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queue-dag-waits.html, inside the declared fence.\nSCORE durability: 14\nJUSTIFICATION durability: the node added no assertion and its control ran the 22-case file, so the three cases c3933bacfb added to tests/test_queue_dag_waits.py, which redden on a reverted repair, never ran against pre-repair code.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment opens with a slug-prefixed section id and an h3 heading like qwnw-a-commit-keyed-list-item-is-read-codex.html:1 does, and its missing trailing newline matches 23 of the directory's 34 fragments.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition was added; the fragment is consumed by the existing owner reckon/evidence.py:1362 compose_landed_record through _fragment_body_bytes, which returned its 5200-byte body when run against this file, and its subtree is registered at reckon/resources.py:243 _is_evidence_fragment.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queue-dag-waits.html:5 non-blocking: the control log collects 22 cases against 25 at head, so the three pre-queue cases c3933bacfb added to tests/test_queue_dag_waits.py never ran against pre-repair code, and the fragment's claim that the same file ran there overstates what the control measured.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queue-dag-waits.html:11 non-blocking: the control tree is recorded as a bare /tmp/reckon-crew-scratch path, outside TMPDIR as the run's worktree rule requires and still present on disk, so the reproduction rests on scratch that does not die with the run.\n",
+  "review_run_id": "r-20261116T062110543272-review-of-qwnw-red-file-queue-dag-waits-7b58c52cab02",
+  "reviewed_base_sha": "e35fd9f935225b7005482a75032eb28abeb46c63",
+  "reviewed_head_sha": "7b58c52cab02269b3129ef447e09bd1bbc9af347",
+  "reviewed_run_id": "r-20261116T031335994022-qwnw-red-file-queue-dag-waits",
+  "reviewer_run_id": "r-20261116T062110543272-review-of-qwnw-red-file-queue-dag-waits-7b58c52cab02",
+  "scores": {
+    "durability": 14,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T07:27:42.369070+00:00",
+  "total": 110
+}

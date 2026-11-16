@@ -1,0 +1,88 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_basis": "baseline_suite failure_ids [] with logs/baseline-arm.log \"58 passed in 47.11s\" EXIT=0; after_suite failure_ids empty with logs/after-arm.log \"61 passed in 53.43s\" EXIT=0; the reviewed manifest's after_suite member is not parseable JSON, so the head count is read from its log",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:_spawn_detached_worker",
+    "reckon/crew/dispatch_launch.py:_supervisor_spawn_worker",
+    "reckon/crew/fleet_supervisor.py:run_declared_service"
+  ],
+  "completed_at": "2026-11-15T15:30:31.438Z",
+  "dispatched_at": "2026-11-15T15:30:12Z",
+  "findings": [
+    {
+      "file": "reckon/crew/fleet_supervisor.py",
+      "line": "2252",
+      "severity": "non-blocking",
+      "text": "claim_service() is applied but unguarded \u2014 the host refuses the -900 lowering so the service reads 0 whether or not the call runs, and the negative control at logs/negative-control-claim-removed.log removed only the two claim_worker calls, so the service side of the deliverable is not protected by any test."
+    },
+    {
+      "file": "reckon/crew/oom_priority.py",
+      "line": "115",
+      "severity": "non-blocking",
+      "text": "service_outranks_worker has no caller in the tree and the test restates its predicate inline at tests/test_coordination_services_survive_a_full_job.py:118, so the module's rule that an unreadable reading answers False rather than a pass is never exercised."
+    },
+    {
+      "file": "tests/test_coordination_services_survive_a_full_job.py",
+      "line": "131",
+      "severity": "non-blocking",
+      "text": "the assertion compares the worker's reading against oom_priority.WORKER_OOM_SCORE_ADJUSTMENT, a constant the code under test also reads, so lowering both sides together leaves it green; only the second assertion there, `worker > 0`, is independent of that constant."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T091337537002-wftl-coordination-services-survive-a-full-job/manifest.md",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "the after_suite value is not valid JSON \u2014 `\"failure_count: 0}` is unquoted and unterminated \u2014 so a reader that parses the recorded arm pair cannot read the head arm's failure count and has to fall back to the log."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T091337537002-wftl-coordination-services-survive-a-full-job/logs/negative-control-claim-removed.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "the header names revision 8863ecb4f36 while the tree it names is the node worktree carrying 3d2e5571 plus the mutation, so a reader who takes the revision line as the code measured reads the base revision as having been executed."
+    },
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/wftl-coordination-services-survive-a-full-job.html",
+      "line": "38",
+      "severity": "non-blocking",
+      "text": "the Done when's two-hour, ten-minute-interval resident-memory measure under 1 GiB is recorded as not produced, leaving the delivered gate asserting only the ordering clause; the measure needs a separately dispatched node that opens the window."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 8863ecb4f3690956868bab0b12e2b7961f98b2b9; it is a single commit, 3d2e5571, adding a 134-line module, applying it at three call sites and adding a 155-line three-test file plus two evidence fragments.",
+    "done_when": "the plan's Done when at docs/plans/work-flows-to-the-lane.html:350 asks for a lower-than-any-worker test plus a two-hour ten-minute-interval resident-memory measure under 1 GiB; the manifest's `tests` line runs the test half at head and its after-arm log records \"61 passed in 53.43s\" with EXIT=0, while docs/evidence/fragments/work-flows-to-the-lane/wftl-coordination-services-survive-a-full-job.html:38 records the measure half as not produced.",
+    "goal": "the node's goal is to bound the admit service's, station's and watch producer's memory and have the kernel kill workers before them; the diff implements only the ordering half \u2014 reckon/crew/oom_priority.py:28-45 declares the two adjustments and reckon/crew/dispatch_launch.py:1921, reckon/crew/dispatch_launch.py:4110 and reckon/crew/fleet_supervisor.py:2252 apply them \u2014 and adds no memory bound to any service.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T091337537002-wftl-coordination-services-survive-a-full-job/manifest.md; it records both suite arms with readable log paths, the negative control and its reading, and states the two-hour measure as owed, but its `after_suite` line 19 is not parseable JSON.",
+    "write_paths": "the node was fenced to reckon, tests and docs/evidence/fragments/work-flows-to-the-lane; every one of the six paths in `git diff 8863ecb4..3d2e5571` \u2014 reckon/crew/oom_priority.py, reckon/crew/fleet_supervisor.py, reckon/crew/dispatch_launch.py, tests/test_coordination_services_survive_a_full_job.py, docs/evidence/fragments/work-flows-to-the-lane/s72.html and the landing fragment \u2014 is inside them, with no plan edit and no out-of-scope helper."
+  },
+  "justifications": {
+    "durability": "tests/test_coordination_services_survive_a_full_job.py:118 reddens when the worker claims at reckon/crew/dispatch_launch.py:1921,4110 are removed, as logs/negative-control-claim-removed.log shows with \"service holds 0 while a worker holds 0\", but no assertion fails when the service-side claim at reckon/crew/fleet_supervisor.py:2252 is removed.",
+    "evidence": "the manifest records tests/test_coordination_services_survive_a_full_job.py passing at docs/evidence/fragments/work-flows-to-the-lane/wftl-coordination-services-survive-a-full-job.html:38 alongside an explicit statement that the Done when's two-hour measure was not produced.",
+    "fit": "reckon/crew/oom_priority.py:1-23 follows the module-docstring idiom of the surrounding crew modules and both new files are ruff- and format-clean, but reckon/crew/oom_priority.py:115 adds a public predicate no caller uses.",
+    "goal_fidelity": "reckon/crew/oom_priority.py:31-45 delivers the ordering clause only, and the goal's \"bound the admit service, station and watch producer memory\" clause has no landed code at all.",
+    "reuse": "no owner of a process OOM-adjustment capability exists at the base revision \u2014 the search over reckon/ for oom_score_adj, setpriority, os.nice and /proc writers found only readers (reckon/crew/summary.py:88, reckon/crew/process_liveness.py) and a comment at reckon/crew/fleet_node.py:47 \u2014 so reckon/crew/oom_priority.py is the first owner.",
+    "scope_discipline": "every path in the diff (reckon/crew/oom_priority.py, reckon/crew/dispatch_launch.py, reckon/crew/fleet_supervisor.py, the test file and the two fragments) lies inside the declared write paths, and no plan or index file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to bound the admit service's, station's and watch producer's memory and have the kernel kill workers before them; the diff implements only the ordering half \u2014 reckon/crew/oom_priority.py:28-45 declares the two adjustments and reckon/crew/dispatch_launch.py:1921, reckon/crew/dispatch_launch.py:4110 and reckon/crew/fleet_supervisor.py:2252 apply them \u2014 and adds no memory bound to any service.\nVERDICT done_when: the plan's Done when at docs/plans/work-flows-to-the-lane.html:350 asks for a lower-than-any-worker test plus a two-hour ten-minute-interval resident-memory measure under 1 GiB; the manifest's `tests` line runs the test half at head and its after-arm log records \"61 passed in 53.43s\" with EXIT=0, while docs/evidence/fragments/work-flows-to-the-lane/wftl-coordination-services-survive-a-full-job.html:38 records the measure half as not produced.\nVERDICT write_paths: the node was fenced to reckon, tests and docs/evidence/fragments/work-flows-to-the-lane; every one of the six paths in `git diff 8863ecb4..3d2e5571` \u2014 reckon/crew/oom_priority.py, reckon/crew/fleet_supervisor.py, reckon/crew/dispatch_launch.py, tests/test_coordination_services_survive_a_full_job.py, docs/evidence/fragments/work-flows-to-the-lane/s72.html and the landing fragment \u2014 is inside them, with no plan edit and no out-of-scope helper.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T091337537002-wftl-coordination-services-survive-a-full-job/manifest.md; it records both suite arms with readable log paths, the negative control and its reading, and states the two-hour measure as owed, but its `after_suite` line 19 is not parseable JSON.\nVERDICT diff: read commit by commit against 8863ecb4f3690956868bab0b12e2b7961f98b2b9; it is a single commit, 3d2e5571, adding a 134-line module, applying it at three call sites and adding a 155-line three-test file plus two evidence fragments.\nCALL_SITES: reckon/crew/dispatch_launch.py:_spawn_detached_worker, reckon/crew/dispatch_launch.py:_supervisor_spawn_worker, reckon/crew/fleet_supervisor.py:run_declared_service\nSCORE goal_fidelity: 12\nJUSTIFICATION goal_fidelity: reckon/crew/oom_priority.py:31-45 delivers the ordering clause only, and the goal's \"bound the admit service, station and watch producer memory\" clause has no landed code at all.\nSCORE evidence: 11\nJUSTIFICATION evidence: the manifest records tests/test_coordination_services_survive_a_full_job.py passing at docs/evidence/fragments/work-flows-to-the-lane/wftl-coordination-services-survive-a-full-job.html:38 alongside an explicit statement that the Done when's two-hour measure was not produced.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/oom_priority.py, reckon/crew/dispatch_launch.py, reckon/crew/fleet_supervisor.py, the test file and the two fragments) lies inside the declared write paths, and no plan or index file is touched.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_coordination_services_survive_a_full_job.py:118 reddens when the worker claims at reckon/crew/dispatch_launch.py:1921,4110 are removed, as logs/negative-control-claim-removed.log shows with \"service holds 0 while a worker holds 0\", but no assertion fails when the service-side claim at reckon/crew/fleet_supervisor.py:2252 is removed.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/oom_priority.py:1-23 follows the module-docstring idiom of the surrounding crew modules and both new files are ruff- and format-clean, but reckon/crew/oom_priority.py:115 adds a public predicate no caller uses.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner of a process OOM-adjustment capability exists at the base revision \u2014 the search over reckon/ for oom_score_adj, setpriority, os.nice and /proc writers found only readers (reckon/crew/summary.py:88, reckon/crew/process_liveness.py) and a comment at reckon/crew/fleet_node.py:47 \u2014 so reckon/crew/oom_priority.py is the first owner.\nFINDING reckon/crew/fleet_supervisor.py:2252 non-blocking: claim_service() is applied but unguarded \u2014 the host refuses the -900 lowering so the service reads 0 whether or not the call runs, and the negative control at logs/negative-control-claim-removed.log removed only the two claim_worker calls, so the service side of the deliverable is not protected by any test.\nFINDING reckon/crew/oom_priority.py:115 non-blocking: service_outranks_worker has no caller in the tree and the test restates its predicate inline at tests/test_coordination_services_survive_a_full_job.py:118, so the module's rule that an unreadable reading answers False rather than a pass is never exercised.\nFINDING tests/test_coordination_services_survive_a_full_job.py:131 non-blocking: the assertion compares the worker's reading against oom_priority.WORKER_OOM_SCORE_ADJUSTMENT, a constant the code under test also reads, so lowering both sides together leaves it green; only the second assertion there, `worker > 0`, is independent of that constant.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T091337537002-wftl-coordination-services-survive-a-full-job/manifest.md:19 non-blocking: the after_suite value is not valid JSON \u2014 `\"failure_count: 0}` is unquoted and unterminated \u2014 so a reader that parses the recorded arm pair cannot read the head arm's failure count and has to fall back to the log.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T091337537002-wftl-coordination-services-survive-a-full-job/logs/negative-control-claim-removed.log:1 non-blocking: the header names revision 8863ecb4f36 while the tree it names is the node worktree carrying 3d2e5571 plus the mutation, so a reader who takes the revision line as the code measured reads the base revision as having been executed.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/wftl-coordination-services-survive-a-full-job.html:38 non-blocking: the Done when's two-hour, ten-minute-interval resident-memory measure under 1 GiB is recorded as not produced, leaving the delivered gate asserting only the ordering clause; the measure needs a separately dispatched node that opens the window.",
+  "review_run_id": "r-20261115T151659287643-review-of-wftl-coordination-services-survive-a-full-job-3d2e5571b817",
+  "reviewed_base_sha": "8863ecb4f3690956868bab0b12e2b7961f98b2b9",
+  "reviewed_head_sha": "3d2e5571b8179725811f96c167f12d674ae8352c",
+  "reviewed_run_id": "r-20261115T091337537002-wftl-coordination-services-survive-a-full-job",
+  "scores": {
+    "durability": 13,
+    "evidence": 11,
+    "fit": 16,
+    "goal_fidelity": 12,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T15:48:07.094758+00:00",
+  "total": 90
+}

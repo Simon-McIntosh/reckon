@@ -164,6 +164,11 @@ def test_snapshot_notices_use_the_followers_existing_output_channel(
         for kind, line in (
             ("producer-lost", "producer snapshot-fixture lost; re-arm with the remedy"),
             ("producer-restored", "producer snapshot-fixture restored"),
+            (
+                "producer-slow",
+                "producer snapshot-fixture slow: its tick has run 9m0s, "
+                "so no restart is needed",
+            ),
         )
     ]
     monkeypatch.setattr(follow, "_follow_watch_lines", lambda *a, **kw: iter(events))
@@ -176,6 +181,8 @@ def test_snapshot_notices_use_the_followers_existing_output_channel(
     assert result.exit_code == 0, result.output
     for event in events:
         assert event["line"] in result.stdout
+    # A notice names no run, so it is never painted as a run's transition.
+    assert "unknown" not in result.stdout, result.stdout
     assert not result.stderr
 
 
@@ -254,3 +261,26 @@ def test_an_exhausted_subscriber_ends_the_follower(isolated):
         )
         == []
     )
+
+
+def test_a_slow_tick_notice_stays_off_the_pane(isolated, monkeypatch):
+    """A slow notice marked off the pane prints nothing and draws no run row."""
+    events = [
+        {
+            "event": "producer-slow",
+            "project": PROJECT,
+            "session": SESSION,
+            "run_id": None,
+            "pane_line": False,
+            "line": "producer snapshot-fixture slow: its tick has run 9m0s",
+        }
+    ]
+    monkeypatch.setattr(follow, "_follow_watch_lines", lambda *a, **kw: iter(events))
+    monkeypatch.setattr(follow, "_hand_off_from_follower", lambda *a, **kw: False)
+    result = CliRunner().invoke(
+        follow.crew,
+        ["follow", "--project", PROJECT, "--session", SESSION, "--no-color"],
+    )
+    assert result.exit_code == 0, result.output
+    assert "slow" not in result.stdout, result.stdout
+    assert "unknown" not in result.stdout, result.stdout

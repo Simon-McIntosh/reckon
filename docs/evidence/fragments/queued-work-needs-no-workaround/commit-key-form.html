@@ -1,0 +1,301 @@
+<section id="qwnw-a-commit-keyed-list-item-is-read-codex-negative-control">
+<h2>Keyed commit list: base-revision refusal</h2>
+<p>The added promotion cases ran over unchanged source at <code>05e74e2056c9e88b6c6ee5d6ed6216f196f48d86</code> on all_debug, job 1318128. The keyed and mixed lists were refused as unresolvable revisions; the invalid-id refusals lacked accepted-form guidance. Four existing form cases passed.</p>
+<pre># revision: 05e74e2056c9e88b6c6ee5d6ed6216f196f48d86 (new test cases over unchanged base source)
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-a-commit-keyed-list-item-is-read-codex
+# command: PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-a-commit-keyed-list-item-is-read-codex /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_manifest_commit_forms.py
+....FFFF                                                                 [100%]
+=================================== FAILURES ===================================
+____________ test_each_commit_form_promotes_without_editing[keyed] _____________
+
+repository = PosixPath(&#x27;/tmp/commit-forms-1318128-JPQQ/pytest-of-mcintos/pytest-0/test_each_commit_form_promotes0/repo&#x27;)
+tmp_path = PosixPath(&#x27;/tmp/commit-forms-1318128-JPQQ/pytest-of-mcintos/pytest-0/test_each_commit_form_promotes0&#x27;)
+form = &#x27;keyed&#x27;
+
+    @pytest.mark.parametrize(&quot;form&quot;, [&quot;list&quot;, &quot;json&quot;, &quot;none&quot;, &quot;commas&quot;, &quot;keyed&quot;, &quot;mixed&quot;])
+    def test_each_commit_form_promotes_without_editing(
+        repository: Path, tmp_path: Path, form: str
+    ) -&gt; None:
+        base, first = _repository_with_candidate(repository)
+        (repository / &quot;candidate.txt&quot;).write_text(&quot;seed\ndelivered\nverified\n&quot;)
+        git(repository, &quot;add&quot;, &quot;candidate.txt&quot;)
+        git(repository, &quot;commit&quot;, &quot;-q&quot;, &quot;-m&quot;, &quot;test: verify candidate&quot;)
+        second = git(repository, &quot;rev-parse&quot;, &quot;HEAD&quot;)
+        first_short = git(repository, &quot;rev-parse&quot;, &quot;--short&quot;, first)
+        expected = [first, second]
+        entries = [
+            f&quot;{first_short} test: record candidate, with details&quot;,
+            f&quot;{second} test: verify candidate&quot;,
+        ]
+        values = {
+            &quot;list&quot;: &quot;\n&quot; + &quot;\n&quot;.join(f&quot;  - {entry}&quot; for entry in entries),
+            &quot;json&quot;: json.dumps(entries),
+            &quot;none&quot;: &quot;\n- none — this node writes a review record outside the repository&quot;,
+            &quot;commas&quot;: f&quot;{first_short}, {second}&quot;,
+            &quot;keyed&quot;: f&quot;\n  - commit: {first}\n  - commit: {second}&quot;,
+            &quot;mixed&quot;: f&quot;\n  - {first}\n  - commit: {second}&quot;,
+        }
+        run_id = f&quot;r-manifest-commit-form-{form}&quot;
+        if form == &quot;none&quot;:
+            base = second
+            expected = []
+        manifest = _write_complete_manifest_pointer(
+            repository,
+            tmp_path,
+            run_id,
+            base=base,
+            changed_paths=&quot;none&quot; if form == &quot;none&quot; else &quot;candidate.txt&quot;,
+            commits=values[form],
+        )
+        if form == &quot;none&quot;:
+            record = json.loads(pointer_path(run_id).read_text())
+            record[&quot;role&quot;] = &quot;review&quot;
+            _write_json(pointer_path(run_id), record)
+        delivered = manifest.read_text()
+    
+&gt;       promoted = crew.complete(run_id, gate=&quot;passed&quot;, root=repository)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_manifest_commit_forms.py:63: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+reckon/crew/open_run_index.py:67: in bounded
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+reckon/crew/promotion.py:1007: in complete
+    ) = _require_independently(
+reckon/crew/promotion_checks.py:1574: in _require_independently
+    raise refusals[0]
+reckon/crew/promotion_checks.py:1565: in _require_independently
+    products.append(check())
+                    ^^^^^^^
+reckon/crew/promotion.py:1083: in &lt;lambda&gt;
+    lambda: _require_no_png_twin_of_an_svg(run_id, record),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reckon/crew/promotion_checks.py:677: in _require_no_png_twin_of_an_svg
+    findings = _png_twin_findings_in_run_commits(record)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reckon/crew/promotion_checks.py:644: in _png_twin_findings_in_run_commits
+    resolved = _resolve_commits(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cwd = PosixPath(&#x27;/tmp/commit-forms-1318128-JPQQ/pytest-of-mcintos/pytest-0/test_each_commit_form_promotes0/repo&#x27;)
+revisions = [&#x27;commit: be5c044b386a1ccaa34d78a1edb2da3fa533c98d&#x27;, &#x27;commit: 56021b1ed1b6755b23ff8d56aafe0c4f5352daec&#x27;]
+run_id = &#x27;r-manifest-commit-form-keyed&#x27;
+
+    def _resolve_commits(*, cwd: Path, revisions: Iterable[str], run_id: str) -&gt; list[str]:
+        &quot;&quot;&quot;Resolve every recorded revision to its canonical commit object id.&quot;&quot;&quot;
+        from reckon.crew.queue_landing import _delivered_revision
+    
+        commits = []
+        for revision in revisions:
+            # A citation may carry its subject. Read its leading revision by the
+            # same rule as admission, leaving other revision spellings for git.
+            candidate = _delivered_revision([revision]) or revision
+            commit = _resolve_commit(cwd, candidate)
+            if not commit:
+                # A commit that resolves somewhere else is not a bad sha, it is a
+                # node whose write target was not its run repository — dispatched
+                # without --repo and pointed at a foreign checkout by prose. Naming
+                # the repository it does belong to turns a correct-but-opaque
+                # refusal into the instruction for the next dispatch.
+                elsewhere = _foreign_repository(revision, exclude=cwd)
+                remedy = (
+                    f&quot;it resolves in {elsewhere} instead, so that node belongs to &quot;
+                    f&quot;that repository: redispatch it with `--repo {elsewhere}` &quot;
+                    &quot;rather than granting a foreign checkout in its prose&quot;
+                    if elsewhere is not None
+                    else &quot;check that the worker committed rather than only staging, &quot;
+                    &quot;and that it committed in its own worktree&quot;
+                )
+&gt;               raise CrewError(
+                    f&quot;run {run_id!r} commit {revision!r} does not resolve to a &quot;
+                    f&quot;commit object in the run repository ({cwd}); {remedy}&quot;
+                )
+E               reckon.crew.CrewError: run &#x27;r-manifest-commit-form-keyed&#x27; commit &#x27;commit: be5c044b386a1ccaa34d78a1edb2da3fa533c98d&#x27; does not resolve to a commit object in the run repository (/tmp/commit-forms-1318128-JPQQ/pytest-of-mcintos/pytest-0/test_each_commit_form_promotes0/repo); check that the worker committed rather than only staging, and that it committed in its own worktree
+
+reckon/crew/promotion_scope.py:297: CrewError
+____________ test_each_commit_form_promotes_without_editing[mixed] _____________
+
+repository = PosixPath(&#x27;/tmp/commit-forms-1318128-JPQQ/pytest-of-mcintos/pytest-0/test_each_commit_form_promotes1/repo&#x27;)
+tmp_path = PosixPath(&#x27;/tmp/commit-forms-1318128-JPQQ/pytest-of-mcintos/pytest-0/test_each_commit_form_promotes1&#x27;)
+form = &#x27;mixed&#x27;
+
+    @pytest.mark.parametrize(&quot;form&quot;, [&quot;list&quot;, &quot;json&quot;, &quot;none&quot;, &quot;commas&quot;, &quot;keyed&quot;, &quot;mixed&quot;])
+    def test_each_commit_form_promotes_without_editing(
+        repository: Path, tmp_path: Path, form: str
+    ) -&gt; None:
+        base, first = _repository_with_candidate(repository)
+        (repository / &quot;candidate.txt&quot;).write_text(&quot;seed\ndelivered\nverified\n&quot;)
+        git(repository, &quot;add&quot;, &quot;candidate.txt&quot;)
+        git(repository, &quot;commit&quot;, &quot;-q&quot;, &quot;-m&quot;, &quot;test: verify candidate&quot;)
+        second = git(repository, &quot;rev-parse&quot;, &quot;HEAD&quot;)
+        first_short = git(repository, &quot;rev-parse&quot;, &quot;--short&quot;, first)
+        expected = [first, second]
+        entries = [
+            f&quot;{first_short} test: record candidate, with details&quot;,
+            f&quot;{second} test: verify candidate&quot;,
+        ]
+        values = {
+            &quot;list&quot;: &quot;\n&quot; + &quot;\n&quot;.join(f&quot;  - {entry}&quot; for entry in entries),
+            &quot;json&quot;: json.dumps(entries),
+            &quot;none&quot;: &quot;\n- none — this node writes a review record outside the repository&quot;,
+            &quot;commas&quot;: f&quot;{first_short}, {second}&quot;,
+            &quot;keyed&quot;: f&quot;\n  - commit: {first}\n  - commit: {second}&quot;,
+            &quot;mixed&quot;: f&quot;\n  - {first}\n  - commit: {second}&quot;,
+        }
+        run_id = f&quot;r-manifest-commit-form-{form}&quot;
+        if form == &quot;none&quot;:
+            base = second
+            expected = []
+        manifest = _write_complete_manifest_pointer(
+            repository,
+            tmp_path,
+            run_id,
+            base=base,
+            changed_paths=&quot;none&quot; if form == &quot;none&quot; else &quot;candidate.txt&quot;,
+            commits=values[form],
+        )
+        if form == &quot;none&quot;:
+            record = json.loads(pointer_path(run_id).read_text())
+            record[&quot;role&quot;] = &quot;review&quot;
+            _write_json(pointer_path(run_id), record)
+        delivered = manifest.read_text()
+    
+&gt;       promoted = crew.complete(run_id, gate=&quot;passed&quot;, root=repository)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_manifest_commit_forms.py:63: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+reckon/crew/open_run_index.py:67: in bounded
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+reckon/crew/promotion.py:1007: in complete
+    ) = _require_independently(
+reckon/crew/promotion_checks.py:1574: in _require_independently
+    raise refusals[0]
+reckon/crew/promotion_checks.py:1565: in _require_independently
+    products.append(check())
+                    ^^^^^^^
+reckon/crew/promotion.py:1083: in &lt;lambda&gt;
+    lambda: _require_no_png_twin_of_an_svg(run_id, record),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reckon/crew/promotion_checks.py:677: in _require_no_png_twin_of_an_svg
+    findings = _png_twin_findings_in_run_commits(record)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+reckon/crew/promotion_checks.py:644: in _png_twin_findings_in_run_commits
+    resolved = _resolve_commits(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cwd = PosixPath(&#x27;/tmp/commit-forms-1318128-JPQQ/pytest-of-mcintos/pytest-0/test_each_commit_form_promotes1/repo&#x27;)
+revisions = [&#x27;9cb6372be161b41e26232c0563bcd148a53fbc0c&#x27;, &#x27;commit: f03102b97d50c9edb0da3afbb058687a12ba9722&#x27;]
+run_id = &#x27;r-manifest-commit-form-mixed&#x27;
+
+    def _resolve_commits(*, cwd: Path, revisions: Iterable[str], run_id: str) -&gt; list[str]:
+        &quot;&quot;&quot;Resolve every recorded revision to its canonical commit object id.&quot;&quot;&quot;
+        from reckon.crew.queue_landing import _delivered_revision
+    
+        commits = []
+        for revision in revisions:
+            # A citation may carry its subject. Read its leading revision by the
+            # same rule as admission, leaving other revision spellings for git.
+            candidate = _delivered_revision([revision]) or revision
+            commit = _resolve_commit(cwd, candidate)
+            if not commit:
+                # A commit that resolves somewhere else is not a bad sha, it is a
+                # node whose write target was not its run repository — dispatched
+                # without --repo and pointed at a foreign checkout by prose. Naming
+                # the repository it does belong to turns a correct-but-opaque
+                # refusal into the instruction for the next dispatch.
+                elsewhere = _foreign_repository(revision, exclude=cwd)
+                remedy = (
+                    f&quot;it resolves in {elsewhere} instead, so that node belongs to &quot;
+                    f&quot;that repository: redispatch it with `--repo {elsewhere}` &quot;
+                    &quot;rather than granting a foreign checkout in its prose&quot;
+                    if elsewhere is not None
+                    else &quot;check that the worker committed rather than only staging, &quot;
+                    &quot;and that it committed in its own worktree&quot;
+                )
+&gt;               raise CrewError(
+                    f&quot;run {run_id!r} commit {revision!r} does not resolve to a &quot;
+                    f&quot;commit object in the run repository ({cwd}); {remedy}&quot;
+                )
+E               reckon.crew.CrewError: run &#x27;r-manifest-commit-form-mixed&#x27; commit &#x27;commit: f03102b97d50c9edb0da3afbb058687a12ba9722&#x27; does not resolve to a commit object in the run repository (/tmp/commit-forms-1318128-JPQQ/pytest-of-mcintos/pytest-0/test_each_commit_form_promotes1/repo); check that the worker committed rather than only staging, and that it committed in its own worktree
+
+reckon/crew/promotion_scope.py:297: CrewError
+_____________ test_an_unresolvable_list_commit_refuses_promotion[] _____________
+
+repository = PosixPath(&#x27;/tmp/commit-forms-1318128-JPQQ/pytest-of-mcintos/pytest-0/test_an_unresolvable_list_comm0/repo&#x27;)
+tmp_path = PosixPath(&#x27;/tmp/commit-forms-1318128-JPQQ/pytest-of-mcintos/pytest-0/test_an_unresolvable_list_comm0&#x27;)
+prefix = &#x27;&#x27;
+
+    @pytest.mark.parametrize(&quot;prefix&quot;, [&quot;&quot;, &quot;commit: &quot;])
+    def test_an_unresolvable_list_commit_refuses_promotion(
+        repository: Path, tmp_path: Path, prefix: str
+    ) -&gt; None:
+        base, commit = _repository_with_candidate(repository)
+        missing = &quot;0123456789abcdef0123456789abcdef01234567&quot;
+        assert git(repository, &quot;rev-parse&quot;, &quot;--verify&quot;, f&quot;{commit}^{{commit}}&quot;) == commit
+        assert missing not in git(repository, &quot;rev-list&quot;, &quot;--all&quot;).splitlines()
+        run_id = &quot;r-manifest-unresolvable-list-commit&quot;
+        _write_complete_manifest_pointer(
+            repository,
+            tmp_path,
+            run_id,
+            base=base,
+            changed_paths=&quot;candidate.txt&quot;,
+            commits=f&quot;\n  - {prefix}{missing} test: missing&quot;,
+        )
+    
+        with pytest.raises(crew.CrewError, match=missing) as refusal:
+            crew.complete(run_id, gate=&quot;passed&quot;, root=repository)
+    
+        assert &quot;does not resolve to a commit object&quot; in str(refusal.value)
+&gt;       assert &quot;bare commit ids&quot; in str(refusal.value)
+E       assert &#x27;bare commit ids&#x27; in &quot;run &#x27;r-manifest-unresolvable-list-commit&#x27; commit &#x27;0123456789abcdef0123456789abcdef01234567 test: missing&#x27; does not re..._list_comm0/repo); check that the worker committed rather than only staging, and that it committed in its own worktree&quot;
+E        +  where &quot;run &#x27;r-manifest-unresolvable-list-commit&#x27; commit &#x27;0123456789abcdef0123456789abcdef01234567 test: missing&#x27; does not re..._list_comm0/repo); check that the worker committed rather than only staging, and that it committed in its own worktree&quot; = str(CrewError(&quot;run &#x27;r-manifest-unresolvable-list-commit&#x27; commit &#x27;0123456789abcdef0123456789abcdef01234567 test: missing&#x27; d...list_comm0/repo); check that the worker committed rather than only staging, and that it committed in its own worktree&quot;))
+E        +    where CrewError(&quot;run &#x27;r-manifest-unresolvable-list-commit&#x27; commit &#x27;0123456789abcdef0123456789abcdef01234567 test: missing&#x27; d...list_comm0/repo); check that the worker committed rather than only staging, and that it committed in its own worktree&quot;) = &lt;ExceptionInfo CrewError(&quot;run &#x27;r-manifest-unresolvable-list-commit&#x27; commit &#x27;0123456789abcdef0123456789abcdef01234567 t...0/repo); check that the worker committed rather than only staging, and that it committed in its own worktree&quot;) tblen=9&gt;.value
+
+tests/test_manifest_commit_forms.py:94: AssertionError
+_________ test_an_unresolvable_list_commit_refuses_promotion[commit: ] _________
+
+repository = PosixPath(&#x27;/tmp/commit-forms-1318128-JPQQ/pytest-of-mcintos/pytest-0/test_an_unresolvable_list_comm1/repo&#x27;)
+tmp_path = PosixPath(&#x27;/tmp/commit-forms-1318128-JPQQ/pytest-of-mcintos/pytest-0/test_an_unresolvable_list_comm1&#x27;)
+prefix = &#x27;commit: &#x27;
+
+    @pytest.mark.parametrize(&quot;prefix&quot;, [&quot;&quot;, &quot;commit: &quot;])
+    def test_an_unresolvable_list_commit_refuses_promotion(
+        repository: Path, tmp_path: Path, prefix: str
+    ) -&gt; None:
+        base, commit = _repository_with_candidate(repository)
+        missing = &quot;0123456789abcdef0123456789abcdef01234567&quot;
+        assert git(repository, &quot;rev-parse&quot;, &quot;--verify&quot;, f&quot;{commit}^{{commit}}&quot;) == commit
+        assert missing not in git(repository, &quot;rev-list&quot;, &quot;--all&quot;).splitlines()
+        run_id = &quot;r-manifest-unresolvable-list-commit&quot;
+        _write_complete_manifest_pointer(
+            repository,
+            tmp_path,
+            run_id,
+            base=base,
+            changed_paths=&quot;candidate.txt&quot;,
+            commits=f&quot;\n  - {prefix}{missing} test: missing&quot;,
+        )
+    
+        with pytest.raises(crew.CrewError, match=missing) as refusal:
+            crew.complete(run_id, gate=&quot;passed&quot;, root=repository)
+    
+        assert &quot;does not resolve to a commit object&quot; in str(refusal.value)
+&gt;       assert &quot;bare commit ids&quot; in str(refusal.value)
+E       assert &#x27;bare commit ids&#x27; in &quot;run &#x27;r-manifest-unresolvable-list-commit&#x27; commit &#x27;commit: 0123456789abcdef0123456789abcdef01234567 test: missing&#x27; doe..._list_comm1/repo); check that the worker committed rather than only staging, and that it committed in its own worktree&quot;
+E        +  where &quot;run &#x27;r-manifest-unresolvable-list-commit&#x27; commit &#x27;commit: 0123456789abcdef0123456789abcdef01234567 test: missing&#x27; doe..._list_comm1/repo); check that the worker committed rather than only staging, and that it committed in its own worktree&quot; = str(CrewError(&quot;run &#x27;r-manifest-unresolvable-list-commit&#x27; commit &#x27;commit: 0123456789abcdef0123456789abcdef01234567 test: mi...list_comm1/repo); check that the worker committed rather than only staging, and that it committed in its own worktree&quot;))
+E        +    where CrewError(&quot;run &#x27;r-manifest-unresolvable-list-commit&#x27; commit &#x27;commit: 0123456789abcdef0123456789abcdef01234567 test: mi...list_comm1/repo); check that the worker committed rather than only staging, and that it committed in its own worktree&quot;) = &lt;ExceptionInfo CrewError(&quot;run &#x27;r-manifest-unresolvable-list-commit&#x27; commit &#x27;commit: 0123456789abcdef0123456789abcdef01...1/repo); check that the worker committed rather than only staging, and that it committed in its own worktree&quot;) tblen=9&gt;.value
+
+tests/test_manifest_commit_forms.py:94: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_manifest_commit_forms.py::test_each_commit_form_promotes_without_editing[keyed]
+FAILED tests/test_manifest_commit_forms.py::test_each_commit_form_promotes_without_editing[mixed]
+FAILED tests/test_manifest_commit_forms.py::test_an_unresolvable_list_commit_refuses_promotion[]
+FAILED tests/test_manifest_commit_forms.py::test_an_unresolvable_list_commit_refuses_promotion[commit: ]
+4 failed, 4 passed in 7.17s
+EXIT=1
+</pre>
+</section>

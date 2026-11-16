@@ -1,0 +1,183 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the count is the reviewed run's own baseline_suite/after_suite pair (logs/baseline-arm.log 58 passed, after-arm-head.log 62 passed, both EXIT=0), so it is 0 over the two invariant modules those arms ran; the population arms this review measured separately add 9 failing ids the run's manifest reports as 0, recorded as blocking findings below",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:3126 ticker_module.Ticker(...)",
+    "reckon/crew_follow_commands.py:3822 format_watch_transition",
+    "reckon/crew_follow_commands.py:4069 format_watch_transition(result, ticker=grid)",
+    "reckon/crew/recovery_watch.py:1957 _fleet_counts",
+    "reckon/crew/recovery_watch.py:2594 _watch_transition",
+    "reckon/crew/recovery_watch.py:3176 format_watch_transition",
+    "reckon/crew/live_worker_census.py:147 ticker._pane_word({'to_state': state})",
+    "reckon/crew/live_worker_census.py:233 ticker._pane_word(event) in PROGRESS_PANE_WORDS"
+  ],
+  "completed_at": "2026-11-15T15:49:08.892Z",
+  "dimension_dispositions": {
+    "evidence": {
+      "kind": "folded",
+      "node": "repair-of-help-word-and-waiting-states-s141-f7c7b422d79e",
+      "recorded_at": "2026-11-15T17:39:04.166362+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-15T15:48:48Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-help-word-and-waiting-states-s141-f7c7b422d79e",
+      "recorded_at": "2026-11-15T17:38:59.156313+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "repair-of-help-word-and-waiting-states-s141-f7c7b422d79e",
+      "recorded_at": "2026-11-15T17:38:59.580644+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "repair-of-help-word-and-waiting-states-s141-f7c7b422d79e",
+      "recorded_at": "2026-11-15T17:39:00.269680+00:00"
+    },
+    "3": {
+      "kind": "folded",
+      "node": "repair-of-help-word-and-waiting-states-s141-f7c7b422d79e",
+      "recorded_at": "2026-11-15T17:39:01.046901+00:00"
+    },
+    "4": {
+      "kind": "folded",
+      "node": "repair-of-help-word-and-waiting-states-s141-f7c7b422d79e",
+      "recorded_at": "2026-11-15T17:39:01.548089+00:00"
+    },
+    "5": {
+      "kind": "folded",
+      "node": "repair-of-help-word-and-waiting-states-s141-f7c7b422d79e",
+      "recorded_at": "2026-11-15T17:39:02.130250+00:00"
+    },
+    "6": {
+      "kind": "folded",
+      "node": "repair-of-help-word-and-waiting-states-s141-f7c7b422d79e",
+      "recorded_at": "2026-11-15T17:39:03.075231+00:00"
+    },
+    "7": {
+      "kind": "folded",
+      "node": "repair-of-help-word-and-waiting-states-s141-f7c7b422d79e",
+      "recorded_at": "2026-11-15T17:39:03.619718+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_discarded_run_is_never_listed_as_blocked.py",
+      "line": "186",
+      "severity": "blocking",
+      "text": "blocking: the module imports ticker at :30 and asserts `\"\u2192 needs you\" in halted_line` and `\" 1n \" in halted_line`, both of which the landed rename makes untrue at f7c7b422 (`new -> help ... 0w 0r 1h 0d 0q 0s`); the test passes at 889f7e78 and fails at head, and the done_when requires exactly this literal to change and be named in the manifest."
+    },
+    {
+      "file": "tests/test_a_wait_nothing_can_lift_needs_the_coordinator.py",
+      "line": "216",
+      "severity": "blocking",
+      "text": "blocking: three assertions (`:216`, `:296`, `:372`) compare `ticker._pane_word(...)` to the retired word `needs you`, each `assert 'help' == 'needs you'` at f7c7b422 and green at 889f7e78; the module is absent from the arm population, so the run's `0 added` never saw them."
+    },
+    {
+      "file": "tests/test_a_live_workers_unreadable_manifest_is_working.py",
+      "line": "217",
+      "severity": "blocking",
+      "text": "blocking: `assert _pane_word(row) == \"needs you\"` fails at both parametrisations at f7c7b422 (`assert 'help' == 'needs you'`) and passes at 889f7e78; the pane word the module pins is the one this node renamed."
+    },
+    {
+      "file": "tests/test_a_status_repair_prints_no_halted_row.py",
+      "line": "93",
+      "severity": "blocking",
+      "text": "blocking: `assert ticker._pane_word(printed[0]) == \"needs you\"` is red at f7c7b422 and green at 889f7e78, and it is the assertion the module's own guarantee (a repair draws no row) is read against, so the module now fails for the patch's reason rather than its subject."
+    },
+    {
+      "file": "tests/test_a_foreign_pid_never_reads_dead.py",
+      "line": "319",
+      "severity": "blocking",
+      "text": "blocking: `assert \"needs you\" in line` on a rendered row fails at f7c7b422 because the row now reads `new -> help`, and passes at 889f7e78; the module reaches the pane through recovery and was not in the 139-module list."
+    },
+    {
+      "file": "tests/test_a_rearmed_pipe_follower_shows_its_live_work.py",
+      "line": "131",
+      "severity": "blocking",
+      "text": "blocking: the expected pane-word map at `:131` and `:209` pins `needs you`, so test_the_drawn_row_carries_the_word_the_record_is_written_in is red at f7c7b422 and green at 889f7e78; the module reaches the pane through the follow commands rather than importing ticker by name, which is why the importer list missed it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174718151481-help-word-and-waiting-states-s141/importers.txt",
+      "line": "1",
+      "severity": "blocking",
+      "text": "blocking: the 139-module population the arms ran omits six modules that reach the pane and now fail (the five above plus test_a_rearmed_pipe_follower_shows_its_live_work.py), so the arm that produced `0 added` measured a population that could not contain the regression; the done_when's clause is about test files importing the two modules, and list membership was never shown to cover them."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174718151481-help-word-and-waiting-states-s141/manifest.md",
+      "line": "11",
+      "severity": "blocking",
+      "text": "blocking: the landing line states the head population had `the same failure id set as base 889f7e78 with 0 added`, but logs/importers-head-final2.log at head f7c7b422 ends `40 failed, 1218 passed, 31 warnings, 6 errors` while the base arm ends `39 failed, 1212 passed` and `comm` over the two logs' FAILED/ERROR lines yields one id present only at head: tests/test_producer_takes_new_code.py::test_a_producer_defers_a_reload_onto_unimportable_code_and_keeps_producing (_queue.Empty); an added failure reported as zero must be attributed or repaired before this lands."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174718151481-help-word-and-waiting-states-s141/manifest.md",
+      "line": "18",
+      "severity": "non-blocking",
+      "text": "non-blocking: the artifacts line quotes `importers-head-final2.log 39 failed, 1219 passed` and the base arm as `1219 passed`, while the logs themselves read `40 failed, 1218 passed` and `39 failed, 1212 passed`; the headline metrics do not reconcile with the logs they cite, so a reader comparing arms is told the populations matched when they also differ by two modules (137 vs 139)."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174718151481-help-word-and-waiting-states-s141/manifest.md",
+      "line": "16",
+      "severity": "non-blocking",
+      "text": "non-blocking: baseline_suite declares revision 889f7e78, but logs/baseline-arm.log:1 records `# revision: 3efa649f03be78718ebc3bc9222d7c0500d8f58c`, the commit carrying this node's own product change, so the record's base arm was run at the change rather than before it; the landing fragment repeats the same misattribution."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174718151481-help-word-and-waiting-states-s141/logs/importers-head-final.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the header reads `# revision: ` with nothing after it, so that 39-failed arm names no revision and cannot be tied to a commit; the later arm at f7c7b422 is the one a reader has to trust."
+    },
+    {
+      "file": "tests/test_a_run_that_needs_its_orchestrator_reads_needs_you.py",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the module was edited to assert `help` and `h` but keeps the retired word in its filename and docstring heading, so a reader searching for the current vocabulary finds a file that says the old one; a rename is cheapest while the file is already open."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified the production entries the renamed vocabulary reaches: reckon/crew_follow_commands.py:3126 (Ticker construction), :3822 and :4069 (format_watch_transition), reckon/crew/recovery_watch.py:1957 (_fleet_counts), :2594 (_watch_transition) and :3176 (format_watch_transition), and reckon/crew/live_worker_census.py:147 and :233 (ticker._pane_word); PROGRESS_PANE_WORDS at live_worker_census.py:101 holds no retired word, so the census reading is unchanged.",
+    "diff": "read both commits against 889f7e78 \u2014 3efa649f03 renames the bucket in ticker.py, adds the four states to recovery_watch.WAITING_STATES, rewrites the SKILL.md glossary and adds the gate test; f7c7b422d7 relabels the test literals in 25 modules and adds the landing fragment.",
+    "done_when": "the done_when names a new test checking four cases, a base-revision arm, a negative control removing the superseded mapping, and a population gate over test modules importing ticker.py or recovery_watch.py that adds no failure; the manifest records the first three (logs/base-new-test.log 4 failed EXIT=1; logs/negative-control.log 1 failed EXIT=1), but the population gate ran the 139-module list in importers.txt, which omits at least six modules that reach the pane and now fail.",
+    "goal": "the node's goal is to rename the needs-you bucket `help` and move upstream, held, interrupted and ready runs to `waiting`; reckon/crew/ticker.py:449-490 and reckon/crew/recovery_watch.py:60-75 do exactly that, and the four states now draw `-> waiting` and count under `q` while the remaining stop states draw `-> help` under `h`.",
+    "manifest": "read; status complete, commits 3efa649f03 and f7c7b422d7, changed_paths naming the 26 test modules, tests the three-module gate, test_logs naming the arms, baseline_suite and after_suite both 0 failures; its landing line and artifacts line report the head population as the same failure set as base with 0 added, which the head log it cites contradicts.",
+    "write_paths": "the node was fenced to six paths (ticker.py, recovery_watch.py, skills/reckon-build/SKILL.md, the new test, the landing fragment, a figures directory); git diff --name-status 889f7e78..f7c7b422 lists those six plus 24 other test modules, which the done_when's own gate clause authorises and which the manifest names under changed_paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_run_that_needs_help_reads_help.py:95 asserts `-> help` and `1h` against producer-built figures and :124 asserts `blocked <= set(PANE_STATES['help'])`, so reverting the bucket rename reddens the suite; the change nevertheless lands with 9 assertions in six other modules red at f7c7b422 that were green at 889f7e78.",
+    "evidence": "the gate file tests/test_a_run_that_needs_help_reads_help.py:90-132 asserts three of the done_when's four cases and its negative control is on disk at logs/negative-control.log (1 failed, 3 passed, EXIT=1), but the population arm the done_when names ran a 139-module list that omits six modules reaching the pane, so its `0 added` result is an instrument that could not see the regression this change causes.",
+    "fit": "the edit follows the surrounding tables in reckon/crew/ticker.py:446-490 (frozenset literals with a comment stating the reason) and introduces no plan or ticket identifier, but tests/test_a_run_that_needs_its_orchestrator_reads_needs_you.py keeps the retired word in its filename while its body asserts `help`.",
+    "goal_fidelity": "reckon/crew/ticker.py:449-490 renames the bucket to `help` and moves blocked-upstream, held, interrupted and ready into `PANE_STATES['waiting']`, and reckon/crew/recovery_watch.py:60-75 puts the same four in WAITING_STATES, so FLEET_BLOCKED_STATES and the lane's `h`/`q` figures follow one partition; the rename is not carried through the six test modules that still pin the old word.",
+    "reuse": "no added production definition forks an owner: the four states move between existing sets (PANE_STATES, WAITING_STATES) and SUPERSEDED_PANE_WORDS is extended rather than duplicated; the new test's `_snapshot`/`_render` follow the local-helper pattern 16 other test modules use, and tests/conftest.py offers no shared pane-row helper to extend.",
+    "scope_discipline": "git diff 889f7e78..f7c7b422 touches 30 files against the node's six declared write paths, authorised for the test-literal edits by the done_when's own gate clause, but the same clause is what the six unfixed modules needed and did not get."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to rename the needs-you bucket help and move upstream, held, interrupted and ready runs to waiting; reckon/crew/ticker.py:449-490 names the bucket `help` and moves the four states into PANE_STATES['waiting'], and reckon/crew/recovery_watch.py:60-75 puts the same four in WAITING_STATES so the row's word and the counter's letter share one partition.\nVERDICT done_when: the done_when names tests/test_a_run_that_needs_help_reads_help.py with four cases, a base-revision arm, a negative control and a population gate over modules importing the two files; the manifest records logs/base-new-test.log (4 failed, EXIT=1), logs/negative-control.log (1 failed, 3 passed, EXIT=1) and the gate file asserts three of the four cases and the fleet-blocked sweep at :113-132, but the population gate ran importers.txt, whose 139 modules omit six modules that reach the pane and now fail.\nVERDICT write_paths: the fence was reckon/crew/ticker.py, reckon/crew/recovery_watch.py, skills/reckon-build/SKILL.md, tests/test_a_run_that_needs_help_reads_help.py, the landing fragment and a figures directory; git diff --name-status 889f7e78..f7c7b422 lists 30 files, the six above plus 24 test modules whose literals the done_when's own gate clause authorises and which the manifest names under changed_paths.\nVERDICT manifest: read; status complete, commits 3efa649f03 and f7c7b422d7, tests the three-module gate, test_logs naming five arms, baseline_suite and after_suite both 0 failures; its landing and artifacts lines report the head population as the base's failure set with 0 added, which logs/importers-head-final2.log contradicts (40 failed / 1218 passed).\nVERDICT diff: read both commits against 889f7e78 \u2014 3efa649f03 changes ticker.py's PANE_STATES, STAT_LETTER, DISPLAY_HUE, CARRIED_PANE_WORDS, SUPERSEDED_PANE_WORDS, recovery_watch.WAITING_STATES, the skill glossary and adds the gate test; f7c7b422d7 relabels 25 test modules and adds the landing fragment, and leaves six modules that pin the retired word untouched.\nCALL_SITES: reckon/crew_follow_commands.py:3126, reckon/crew_follow_commands.py:3822, reckon/crew_follow_commands.py:4069, reckon/crew/recovery_watch.py:1957, reckon/crew/recovery_watch.py:2594, reckon/crew/recovery_watch.py:3176, reckon/crew/live_worker_census.py:147, reckon/crew/live_worker_census.py:233\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:449-490 and reckon/crew/recovery_watch.py:60-75 make the rename and the four-state move in one partition, but the vocabulary is left unreplicated into six test modules that still assert the retired word.\nSCORE evidence: 7\nJUSTIFICATION evidence: tests/test_a_run_that_needs_help_reads_help.py:95-132 asserts the pane words and figures through the producer, yet the population arm the done_when names ran an importers.txt list that omits six pane-reaching modules and the manifest reports its 40-failure head log as 39.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: git diff 889f7e78..f7c7b422 touches 30 files against six declared write paths, authorised for the literals by the done_when but still outside the fence, and the same clause's remaining six modules went unfixed.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_a_run_that_needs_help_reads_help.py:124 asserts `blocked <= set(PANE_STATES['help'])` so a revert reddens it, but the change lands with 9 assertions across six modules red at f7c7b422 that were green at 889f7e78.\nSCORE fit: 16\nJUSTIFICATION fit: the tables at reckon/crew/ticker.py:446-490 keep the surrounding frozenset-with-reason idiom and carry no plan or ticket id, but tests/test_a_run_that_needs_its_orchestrator_reads_needs_* keeps the retired word in its name.\nSCORE reuse: 18\nJUSTIFICATION reuse: the diff adds no product definition, moving the four states between the existing PANE_STATES and WAITING_STATES owners and extending SUPERSEDED_PANE_WORDS at reckon/crew/ticker.py:1122; the test helpers follow the local pattern with no shared pane-row owner in tests/conftest.py to extend.\nFINDING tests/test_a_discarded_run_is_never_listed_as_blocked.py:186 blocking: asserts `-> needs you` and ` 1n ` while the pane draws `-> help` and `1h` at head.\nFINDING tests/test_a_wait_nothing_can_lift_needs_the_coordinator.py:216 blocking: three `_pane_word(...) == 'needs you'` assertions are red at head and green at base.\nFINDING tests/test_a_live_workers_unreadable_manifest_is_working.py:217 blocking: `_pane_word(row) == 'needs you'` is red at both parametrisations at head.\nFINDING tests/test_a_status_repair_prints_no_halted_row.py:93 blocking: the module's positive control pins the retired pane word and now fails.\nFINDING tests/test_a_foreign_pid_never_reads_dead.py:319 blocking: `'needs you' in line` no longer holds for a rendered halt row.\nFINDING tests/test_a_rearmed_pipe_follower_shows_its_live_work.py:131 blocking: the expected pane-word map at :131 and :209 pins the retired word.\nFINDING importers.txt:1 blocking: the 139-module population omits six pane-reaching modules, so the 0-added arm could not see the regression.\nFINDING manifest.md:11 blocking: the landing line reports 0 added while the head log it cites adds tests/test_producer_takes_new_code.py::test_a_producer_defers_a_reload_onto_unimportable_code_and_keeps_producing.\nFINDING manifest.md:18 non-blocking: the artifacts metrics quote 39 failed / 1219 passed for logs that read 40 failed / 1218 passed and 39 failed / 1212 passed.\nFINDING manifest.md:16 non-blocking: baseline_suite names 889f7e78 while logs/baseline-arm.log:1 records revision 3efa649f.\nFINDING logs/importers-head-final.log:1 non-blocking: the header names no revision.\nFINDING tests/test_a_run_that_needs_its_orchestrator_reads_needs_you.py:1 non-blocking: the filename and docstring keep the retired word its body no longer asserts.",
+  "review_run_id": "r-20261115T153950228339-review-of-help-word-and-waiting-states-s141-f7c7b422d79e",
+  "reviewed_base_sha": "889f7e7842a0fadde86e3cdd3c1ed4610b227ea8",
+  "reviewed_head_sha": "f7c7b422d79ec91f361c7c4666e5f91de445d003",
+  "reviewed_run_id": "r-20261114T174718151481-help-word-and-waiting-states-s141",
+  "reviewer": {
+    "effort": "review",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T153950228339-review-of-help-word-and-waiting-states-s141-f7c7b422d79e"
+  },
+  "reviewer_run_id": "r-20261115T153950228339-review-of-help-word-and-waiting-states-s141-f7c7b422d79e",
+  "scores": {
+    "durability": 13,
+    "evidence": 7,
+    "fit": 16,
+    "goal_fidelity": 16,
+    "reuse": 18,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T19:05:46.526963+00:00",
+  "total": 82
+}

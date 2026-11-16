@@ -1,12 +1,6 @@
 """An admission pass derives a project's readiness once, not once per launch.
 
-Every queued launch judged its own waits by rebuilding the whole project
-roadmap, and the cache that rebuild filled was created inside the batch call it
-ran in — so a pass launching three requests in one project derived the same
-roadmap three times. Admission throughput, not the lane, then caps how full the
-lane gets: passes that should take under two minutes took up to fifteen.
-
-The pass now holds one readiness cache and hands it to every launch's
+The pass holds one readiness cache and hands it to every launch's
 ``dispatch()``, and through that to ``dispatch_waits``,
 ``_validated_batch_waits`` and ``_readiness_rows``. The entry is keyed by the
 project, its docs directory and a fingerprint of the plan tree, so a plan
@@ -19,6 +13,7 @@ from __future__ import annotations
 import importlib
 import json
 import os
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -162,12 +157,25 @@ def test_a_plan_touched_between_two_launches_forces_a_rebuild(
     plan = pass_repo / "docs" / "plans" / f"{PLAN}.html"
     recorded: list[str] = []
     plain = fixtures._launcher(recorded)
+    edited = threading.Event()
+    original_launch = queue_admission._launch_queued
+
+    def ordered_launch(pointer: Any, **kwargs: Any) -> Any:
+        # Independent requests launch concurrently. Make the edit precede the
+        # later requests' readiness reads, so this measures invalidation rather
+        # than how the scheduler happens to interleave the launch threads.
+        if pointer["run_id"] != "r-s1":
+            assert edited.wait(10), "the first launch never edited the plan"
+        return original_launch(pointer, **kwargs)
+
+    monkeypatch.setattr(queue_admission, "_launch_queued", ordered_launch)
 
     def launch(
         document: Any, *, log_path: Any, stderr_path: Any, prompt_path: Any
     ) -> int:
         if not recorded:
             _advance_mtime(plan)
+            edited.set()
         return plain(
             document,
             log_path=log_path,

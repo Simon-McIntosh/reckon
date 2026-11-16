@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "6fa76c49f48e1d4fe4f104431f85f519ce92aae0",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1470 crew_check (crew check --manifest --run)",
+    "reckon/crew/reports.py:1576 _log_location_findings",
+    "reckon/hooks/worker_inbox.py:344 manifest_message_finding"
+  ],
+  "completed_at": "2026-11-16T07:55:48.466Z",
+  "dispatched_at": "2026-11-16T07:55:09Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-control-log-is-judged-at-write.html",
+      "line": "63",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head revision is cited as 8741924bacb0c53c29da737d5ec8b5f9d92dcf5b, which names no object in the repository (the commit reached by force of that prefix is 8741924baca47f542957e9dd199bb435b0550a14, as the sibling red-file record line 20 states), so the arm the line attributes to that revision cannot be resolved by any reader."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-control-log-is-judged-at-write.html",
+      "line": "69",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head suite figure \"58 passed in 33.99s\" matches no retained log \u2014 logs/after-suite.log at revision 30dd30da96 reads \"58 passed in 32.85s\" and the manifest's artifacts line quotes that figure \u2014 so the record does not reconcile with the log it cites."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032202967783-qwnw-red-file-a-control-log-is-judged-at-write/manifest.md",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "non-blocking: the artifacts line attributes the \"24 passed in 0.72s\" summary to revision 8741924bac, while the only log holding that summary, logs/head-gate.log, heads itself with revision 30dd30da96; the retained head arm and the revision the manifest cites therefore disagree, and no retained log holds the 1.47s arm the fragment reports."
+    }
+  ],
+  "head_log_revision": "30dd30da968ecb440744f5e3c8a25f24e005a084",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified three production paths the changed fixture now drives: the crew check --manifest CLI command at reckon/crew_run_commands.py:1470, reckon/crew/reports.py:1576 _log_location_findings and reckon/hooks/worker_inbox.py:344 manifest_message_finding.",
+    "diff": "read commit by commit against base 6fa76c49f4 \u2014 6b465d7760 adds the messages_received statement and the run-directory gate citation to the fixture, 8741924bac moves the log literal out of a parameter default into a one-line rewrite (S108), and 12955e25a2/30dd30da96 add the two evidence fragments; no assertion in the file is added, deleted or edited.",
+    "done_when": "the done_when asks for the whole file at head as an all_debug job with SLURM_JOB_ID unset, a base arm with its failing ids beside the head run in the fragment it names, and a base-parity arm adding no failure; head-gate.log records revision 30dd30da96 and \"24 passed\" EXIT=0, base-negative-control.log records 6fa76c49f4 and \"5 failed, 19 passed\" EXIT=1 in a scratch clone, the five ids are listed in the red-file record the done_when names, and base-suite.log/after-suite.log both read \"58 passed\" EXIT=0.",
+    "goal": "the node's goal is that tests/test_a_control_log_is_judged_at_write.py pass in full on the primary branch; the landed change touches no product module \u2014 tests/test_a_control_log_is_judged_at_write.py:305-317 now builds the command fixture from the run directory's own gate log \u2014 and logs/head-gate.log reads \"24 passed in 0.72s\" EXIT=0 at revision 30dd30da96, so the file passes at head and the primary-branch clause is reached when this branch is promoted.",
+    "manifest": "read; status complete, four commits (6b465d7760, 8741924bac, 12955e25a2, 30dd30da96), the gate command, 24 passed at head against 5 failed at base, baseline_suite and after_suite at 58 passed EXIT=0 each, and negative_control_log naming the base red log; its artifacts line attributes head-gate.log's \"24 passed in 0.72s\" to 8741924bac where that log's own header names 30dd30da96.",
+    "write_paths": "the node's fence is reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff --stat 6fa76c49f4..30dd30da96 lists exactly tests/test_a_control_log_is_judged_at_write.py and the two fragments under that directory, all inside the fence, and nothing under reckon/ changed."
+  },
+  "justifications": {
+    "durability": "the base arm is the negative control for this very fixture \u2014 logs/base-negative-control.log reads \"5 failed, 19 passed\" EXIT=1 at 6fa76c49f4, the five ids naming the command cases \u2014 so restoring the host test_logs citation or dropping messages_received reddens those cases through the unchanged len(findings) == 1 and findings == [] assertions, while no added assertion compares a value against an input the test itself supplied.",
+    "evidence": "logs/head-gate.log carries revision 30dd30da96, tree and command with \"24 passed in 0.72s\" EXIT=0 and logs/base-negative-control.log carries the five failing ids at 6fa76c49f4, but the head log names no job or partition and two figures in the fragments cite revisions and durations no retained log holds.",
+    "fit": "the new helper at tests/test_a_control_log_is_judged_at_write.py:305 is a leading-underscore module-local manifest builder with a docstring, matching the per-file _manifest builders in tests/test_manifest_check_command.py:31, and the messages field is taken from worker_inbox.MANIFEST_MESSAGES_KEY rather than a second literal.",
+    "goal_fidelity": "tests/test_a_control_log_is_judged_at_write.py:305-317 takes the gate log from the fixture's own run directory and the file reads 24 passed EXIT=0 at head 30dd30da96 in logs/head-gate.log, so the named file passes in full.",
+    "reuse": "the diff adds one helper and imports worker_inbox.MANIFEST_MESSAGES_KEY: the search over tests/ for manifest-body builders and test_logs fixtures found only per-file _manifest helpers (tests/test_manifest_check_command.py:43, tests/test_manifest_log_paths_are_durable.py:38, tests/test_check_manifest_resolves_named_commits.py:87) and no owner of a shared markdown fixture, and the constant's owner is extended rather than duplicated.",
+    "scope_discipline": "git diff --stat 6fa76c49f4..30dd30da96 touches only tests/test_a_control_log_is_judged_at_write.py and the two fragments under docs/evidence/fragments/queued-work-needs-no-workaround, every one inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_a_control_log_is_judged_at_write.py pass in full on the primary branch; the landed change touches no product module \u2014 tests/test_a_control_log_is_judged_at_write.py:305-317 now builds the command fixture from the run directory's own gate log \u2014 and logs/head-gate.log reads \"24 passed in 0.72s\" EXIT=0 at revision 30dd30da96, so the file passes at head and the primary-branch clause is reached when this branch is promoted.\nVERDICT done_when: the done_when asks for the whole file at head as an all_debug job with SLURM_JOB_ID unset, a base arm with its failing ids beside the head run in the fragment it names, and a base-parity arm adding no failure; head-gate.log records revision 30dd30da96 and \"24 passed\" EXIT=0, base-negative-control.log records 6fa76c49f4 and \"5 failed, 19 passed\" EXIT=1 in a scratch clone, the five ids are listed in the red-file record the done_when names, and base-suite.log/after-suite.log both read \"58 passed\" EXIT=0.\nVERDICT write_paths: the node's fence is reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff --stat 6fa76c49f4..30dd30da96 lists exactly tests/test_a_control_log_is_judged_at_write.py and the two fragments under that directory, all inside the fence, and nothing under reckon/ changed.\nVERDICT manifest: read; status complete, four commits (6b465d7760, 8741924bac, 12955e25a2, 30dd30da96), the gate command, 24 passed at head against 5 failed at base, baseline_suite and after_suite at 58 passed EXIT=0 each, and negative_control_log naming the base red log; its artifacts line attributes head-gate.log's \"24 passed in 0.72s\" to 8741924bac where that log's own header names 30dd30da96.\nVERDICT diff: read commit by commit against base 6fa76c49f4 \u2014 6b465d7760 adds the messages_received statement and the run-directory gate citation to the fixture, 8741924bac moves the log literal out of a parameter default into a one-line rewrite (S108), and 12955e25a2/30dd30da96 add the two evidence fragments; no assertion in the file is added, deleted or edited.\nCALL_SITES: reckon/crew_run_commands.py:1470 crew_check (crew check --manifest --run), reckon/crew/reports.py:1576 _log_location_findings, reckon/hooks/worker_inbox.py:344 manifest_message_finding\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_control_log_is_judged_at_write.py:305-317 takes the gate log from the fixture's own run directory and the file reads 24 passed EXIT=0 at head 30dd30da96 in logs/head-gate.log, so the named file passes in full.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/head-gate.log carries revision 30dd30da96, tree and command with \"24 passed in 0.72s\" EXIT=0 and logs/base-negative-control.log carries the five failing ids at 6fa76c49f4, but the head log names no job or partition and two figures in the fragments cite revisions and durations no retained log holds.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 6fa76c49f4..30dd30da96 touches only tests/test_a_control_log_is_judged_at_write.py and the two fragments under docs/evidence/fragments/queued-work-needs-no-workaround, every one inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the base arm is the negative control for this very fixture \u2014 logs/base-negative-control.log reads \"5 failed, 19 passed\" EXIT=1 at 6fa76c49f4, the five ids naming the command cases \u2014 so restoring the host test_logs citation or dropping messages_received reddens those cases through the unchanged len(findings) == 1 and findings == [] assertions, while no added assertion compares a value against an input the test itself supplied.\nSCORE fit: 17\nJUSTIFICATION fit: the new helper at tests/test_a_control_log_is_judged_at_write.py:305 is a leading-underscore module-local manifest builder with a docstring, matching the per-file _manifest builders in tests/test_manifest_check_command.py:31, and the messages field is taken from worker_inbox.MANIFEST_MESSAGES_KEY rather than a second literal.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds one helper and imports worker_inbox.MANIFEST_MESSAGES_KEY: the search over tests/ for manifest-body builders and test_logs fixtures found only per-file _manifest helpers (tests/test_manifest_check_command.py:43, tests/test_manifest_log_paths_are_durable.py:38, tests/test_check_manifest_resolves_named_commits.py:87) and no owner of a shared markdown fixture, and the constant's owner is extended rather than duplicated.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-control-log-is-judged-at-write.html:63 non-blocking: the head revision is cited as 8741924bacb0c53c29da737d5ec8b5f9d92dcf5b, which names no object in the repository (the commit reached by force of that prefix is 8741924baca47f542957e9dd199bb435b0550a14, as the sibling red-file record line 20 states), so the arm the line attributes to that revision cannot be resolved by any reader.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-control-log-is-judged-at-write.html:69 non-blocking: the head suite figure \"58 passed in 33.99s\" matches no retained log \u2014 logs/after-suite.log at revision 30dd30da96 reads \"58 passed in 32.85s\" and the manifest's artifacts line quotes that figure \u2014 so the record does not reconcile with the log it cites.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032202967783-qwnw-red-file-a-control-log-is-judged-at-write/manifest.md:21 non-blocking: the artifacts line attributes the \"24 passed in 0.72s\" summary to revision 8741924bac, while the only log holding that summary, logs/head-gate.log, heads itself with revision 30dd30da96; the retained head arm and the revision the manifest cites therefore disagree, and no retained log holds the 1.47s arm the fragment reports.\n",
+  "review_run_id": "r-20261116T071417742346-review-of-qwnw-red-file-a-control-log-is-judged-at-write-30dd30da968e",
+  "reviewed_base_sha": "6fa76c49f48e1d4fe4f104431f85f519ce92aae0",
+  "reviewed_head_sha": "30dd30da968ecb440744f5e3c8a25f24e005a084",
+  "reviewed_run_id": "r-20261116T032202967783-qwnw-red-file-a-control-log-is-judged-at-write",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T071417742346-review-of-qwnw-red-file-a-control-log-is-judged-at-write-30dd30da968e"
+  },
+  "reviewer_run_id": "r-20261116T071417742346-review-of-qwnw-red-file-a-control-log-is-judged-at-write-30dd30da968e",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T11:58:08.743582+00:00",
+  "total": 107
+}

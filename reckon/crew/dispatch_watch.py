@@ -885,6 +885,8 @@ def _rearm_session_follower(project: str, session: str | None) -> tuple[bool, st
         # A delivered request is not a follower: the answer is this host's live
         # child for the pair, observed within the same bound the matched ask
         # waits out, so a resume never reports a re-arm the pane does not show.
+        if handoff is not None and handoff.get("handed_to") == "owning-session":
+            return True, ""
         if (
             handoff is not None
             and handoff["handed_to_host"]
@@ -927,24 +929,35 @@ def _request_host_follower(project: str, session: str | None) -> bool:
     return _deliver_request(fifo, project, session)
 
 
-def _request_line(project: str, session: str) -> bytes:
-    """The one request line written to a session host's FIFO."""
+def _request_line(project: str, session: str, *, owner_checked: bool = True) -> bytes:
+    """The one request line written to a session host's FIFO.
+
+    ``owner_checked`` says the pair is the reading host's owner's own session.
+    A host keeps a marked pair across its restarts, so the mark is written only
+    for a pair the reading host owns.
+    """
     return (
         json.dumps(
-            {"project": project, "session": session, "owner_checked": True}
+            {"project": project, "session": session, "owner_checked": owner_checked}
         ).encode("utf-8")
         + b"\n"
     )
 
 
-def _deliver_request(fifo: Path, project: str, session: str) -> bool:
+def _deliver_request(
+    fifo: Path, project: str, session: str, *, owner_checked: bool = True
+) -> bool:
     """Write one follow request to ``fifo``, without waiting for a reader.
 
     The deadline is already in the past, which asks ``_write_fleet_request``
     for a single attempt: a FIFO with no reader is a fallback, not a wait.
     """
     try:
-        _write_fleet_request(fifo, _request_line(project, session), time.monotonic())
+        _write_fleet_request(
+            fifo,
+            _request_line(project, session, owner_checked=owner_checked),
+            time.monotonic(),
+        )
     except CrewError:
         return False
     return True
@@ -988,14 +1001,51 @@ def _emit_session_mismatch(line: str) -> None:
         print(line, file=stream, flush=True)
 
 
+def _owning_session_host_fifo(session: str) -> Path | None:
+    """The request FIFO of the live host whose owner runs ``session``, or None.
+
+    The host census names each host by its owner process, and the harness's
+    own session records name the session each process runs, so the pair of
+    readings finds the host a session's runs belong to. A session whose
+    process has no live host has none.
+    """
+    from reckon.crew import session_host
+    from reckon.crew_run_commands import HARNESS_SESSIONS_DIR_ENV
+
+    directory = Path(
+        os.environ.get(HARNESS_SESSIONS_DIR_ENV) or Path.home() / ".claude" / "sessions"
+    )
+    for record in session_host.live_census():
+        owner = record.get("owner")
+        if not isinstance(owner, Mapping):
+            continue
+        pid = owner.get("pid")
+        start = owner.get("start_time")
+        if not isinstance(pid, int) or not start:
+            continue
+        try:
+            entry = json.loads((directory / f"{pid}.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if isinstance(entry, Mapping) and str(entry.get("sessionId") or "") == session:
+            return _session_host_fifo_path((pid, str(start)))
+    return None
+
+
 def _session_mismatch_line(handoff: Mapping[str, Any]) -> str:
     """The one line a mismatched dispatch prints, naming both sessions."""
     requested = handoff["requested_session"]
     calling = handoff["calling_session"] or "no calling session"
+    if handoff["handed_to_host"] and handoff.get("handed_to") == "owning-session":
+        return (
+            f"dispatch session {requested} differs from calling session {calling}; "
+            f"session {requested}'s own host took the run"
+        )
     if handoff["handed_to_host"]:
         return (
             f"dispatch session {requested} differs from calling session {calling}; "
-            "the calling session's waiting host took the run"
+            f"session {requested} has no live host, so the calling session's "
+            "waiting host took the run"
         )
     return (
         f"dispatch session {requested} differs from calling session {calling}; "
@@ -1028,14 +1078,27 @@ def hand_off_mismatched_session(
     requested = str(session or "")
     if not requested or requested == calling:
         return None
-    fifo = _session_host_fifo()
+    # A host follows its own session's runs and nothing else: a pair handed to
+    # the caller's host made every later run of the other session arrive in the
+    # caller's pane, and the ownership mark kept it there across restarts. The
+    # run goes to its own session's host; only a session with no live host is
+    # shown by the caller's, and that pair is never marked the caller's own.
     handed = False
-    if fifo is not None and _session_host_waiting():
-        handed = _deliver_request(fifo, project, requested)
+    handed_to = ""
+    owner_fifo = _owning_session_host_fifo(requested)
+    if owner_fifo is not None:
+        handed = _deliver_request(owner_fifo, project, requested)
+        handed_to = "owning-session" if handed else ""
+    if not handed:
+        fifo = _session_host_fifo()
+        if fifo is not None and _session_host_waiting():
+            handed = _deliver_request(fifo, project, requested, owner_checked=False)
+            handed_to = "calling-session" if handed else ""
     handoff: dict[str, Any] = {
         "requested_session": requested,
         "calling_session": calling,
         "handed_to_host": handed,
+        "handed_to": handed_to,
     }
     _emit_session_mismatch(_session_mismatch_line(handoff))
     _SESSION_HAND_OFF.set(handoff)

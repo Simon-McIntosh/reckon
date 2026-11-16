@@ -1,0 +1,45 @@
+<section id="qwnw-red-file-review-carries-forward-red-file">
+  <h3>The red file: <code>tests/test_review_carries_forward.py</code></h3>
+  <p>The head run is a job on <code>all_debug</code> (<code>slurm 1319157</code>)
+  with <code>SLURM_JOB_ID</code> unset inside the job. The base run is the same
+  command over a tree of <code>44f00a3b15</code> on this allocation's node: the
+  scratch tree the base arm reads lives under <code>$TMPDIR</code>, which is
+  node-local, so it cannot be handed to a job on another node. Both arms run the
+  project's own command over the whole file with no selection.</p>
+  <table id="qwnw-red-file-review-carries-forward-red-file-arms">
+    <thead><tr><th>Arm</th><th>Revision</th><th>Summary line</th><th>Exit</th><th>Log</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>base</td>
+        <td><code>44f00a3b150e311df5f662dcce656fe5fe766107</code></td>
+        <td><code>7 failed, 2 passed in 20.07s</code></td>
+        <td>1</td>
+        <td><code>logs/base-file.log</code></td>
+      </tr>
+      <tr>
+        <td>head</td>
+        <td><code>1d929a51874c8fa4e90d1d9c5e964cf7f80036a9</code></td>
+        <td><code>9 passed in 19.06s</code></td>
+        <td>0</td>
+        <td><code>logs/head-file.log</code></td>
+      </tr>
+    </tbody>
+  </table>
+  <p>The base arm's seven failing ids, which are the seven the whole-suite log at
+  <code>8d50b0333f</code> also lists for this file:</p>
+  <ul id="qwnw-red-file-review-carries-forward-red-file-ids">
+    <li><code>test_a_data_file_relocation_carries_the_review_forward</code></li>
+    <li><code>test_a_runtime_source_commit_earns_a_light_review_of_that_commit</code></li>
+    <li><code>test_a_runtime_source_commit_dispatches_a_light_scoped_review</code></li>
+    <li><code>test_a_source_move_judged_immaterial_carries_the_clean_review</code></li>
+    <li><code>test_a_source_move_judged_material_earns_the_light_review</code></li>
+    <li><code>test_a_judge_that_cannot_answer_leaves_the_light_review</code></li>
+    <li><code>test_a_review_that_raised_findings_is_never_judged</code></li>
+  </ul>
+  <p>One cause accounts for all seven, and it is the test's: the fixture repo had
+  no remote, and the head move is measured against the remote-tracking ref of the
+  integration branch, so history the product will not compare reads as unshown
+  and no review is carried. The two cases that passed never read a head move —
+  the withdraw tests and the already-current-head test. The head arm carries the
+  same assertions unchanged; the fixture alone gained a bare origin and a push.</p>
+</section>

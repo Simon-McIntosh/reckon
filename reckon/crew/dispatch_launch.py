@@ -27,7 +27,7 @@ from reckon import (
     _backends,
     _store,
 )
-from reckon.crew import host_heartbeat
+from reckon.crew import host_heartbeat, oom_priority
 from reckon.crew.dispatch_claims import (
     CLAIM_GRACE_OBSERVATIONS_NAME,
     CLAIM_GRACE_OBSERVATION_LIMIT,
@@ -60,8 +60,13 @@ from reckon.crew.process_liveness import (
     LIVENESS_UNKNOWN,
     LivenessReading,
 )
-from reckon.crew.process_signal import _run_uses_step, signal_pending_step_client
+from reckon.crew.process_signal import (
+    _run_uses_step,
+    argv_uses_step,
+    signal_pending_step_client,
+)
 from reckon.crew.runs import (
+    PointerLockHeldError,
     _mutate_pointer,
     _pointer_lock,
     _process_start_time,
@@ -72,6 +77,7 @@ from reckon.crew.runs import (
     find_handover,
     placement_job_alive,
     pointer_path,
+    pid_belongs_to_the_station,
     process_alive,
     read_pointer,
     record_process_alive,
@@ -1054,6 +1060,63 @@ def remove_worker_scratch(
     return result
 
 
+#: The variable an omp worker reads its agent store from, and the file in that
+#: store naming the providers it sends requests to.
+_OMP_AGENT_STORE_VARIABLE = "PI_CODING_AGENT_DIR"
+_OMP_MODELS_FILE = "models.yml"
+
+
+def _attribute_omp_requests(
+    agent_store: str | None, *, run_id: str, coordinator_session: str
+) -> bool:
+    """Name the run and its coordinator on every request an omp worker sends.
+
+    The lane's router divides its slots between sessions and sizes them from
+    the requests each live run makes, and it can only count a request that
+    says which run and session it belongs to. An omp worker reads its providers
+    from the model file in its own agent store, which accepts request headers
+    per provider, so the two names are written there. The store is the run's
+    own copy; a store that is absent or unreadable is left as it is, because a
+    worker that cannot be attributed must still be able to start.
+
+    Returns whether the file was rewritten.
+    """
+    if not agent_store or not run_id:
+        return False
+    path = Path(agent_store) / _OMP_MODELS_FILE
+    if path.is_symlink():
+        return False
+    try:
+        import yaml
+
+        document = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001 - an unreadable store starts unattributed
+        return False
+    providers = document.get("providers") if isinstance(document, dict) else None
+    if not isinstance(providers, dict):
+        return False
+    attribution = {
+        "X-Reckon-Run-Id": run_id,
+        "X-Reckon-Session": coordinator_session,
+    }
+    changed = False
+    for provider in providers.values():
+        if not isinstance(provider, dict):
+            continue
+        held = provider.get("headers")
+        headers = dict(held) if isinstance(held, dict) else {}
+        headers.update(attribution)
+        provider["headers"] = headers
+        changed = True
+    if not changed:
+        return False
+    try:
+        path.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
+    except OSError:
+        return False
+    return True
+
+
 def _worker_runtime_environment(
     environment: Mapping[str, str] | None,
     *,
@@ -1062,8 +1125,18 @@ def _worker_runtime_environment(
     attempt_started_at: str,
     coordinator_session: str,
     claude_headers: bool,
+    placed_step: bool = False,
+    omp_headers: bool = False,
 ) -> dict[str, str]:
-    """Add one attempt's identity to the environment inherited by its worker."""
+    """Add one attempt's identity to the environment inherited by its worker.
+
+    The worker's scratch directory is created where the worker runs, never on
+    the host that composed the launch: a placed worker's ``TMPDIR`` is made by
+    the step's own node before the fence is exec'd (see
+    :func:`step_node_directories`), so a dispatch on the fleet node writes no
+    run scratch on the fleet node's own disk. A worker that runs as a child of
+    the launcher is on this host already, so its directory is made here.
+    """
     runtime = dict(environment or {})
     runtime.update(
         {
@@ -1073,7 +1146,11 @@ def _worker_runtime_environment(
         }
     )
     if run_id:
-        runtime["TMPDIR"] = str(ensure_worker_scratch(run_id))
+        runtime["TMPDIR"] = (
+            str(worker_scratch_dir(run_id))
+            if placed_step
+            else str(ensure_worker_scratch(run_id))
+        )
     if claude_headers:
         inherited = str(
             runtime.get("ANTHROPIC_CUSTOM_HEADERS")
@@ -1085,6 +1162,12 @@ def _worker_runtime_environment(
         )
         runtime["ANTHROPIC_CUSTOM_HEADERS"] = (
             f"{inherited}\n{attribution}" if inherited else attribution
+        )
+    if omp_headers:
+        _attribute_omp_requests(
+            runtime.get(_OMP_AGENT_STORE_VARIABLE),
+            run_id=run_id,
+            coordinator_session=coordinator_session,
         )
     return runtime
 
@@ -1107,6 +1190,8 @@ def _worker_runtime_plan(
             attempt_started_at=attempt_started_at,
             coordinator_session=coordinator_session,
             claude_headers=plan.dialect == "claude",
+            placed_step=argv_uses_step(plan.argv),
+            omp_headers=plan.dialect == "omp",
         ),
     )
 
@@ -1304,7 +1389,9 @@ _STEP_TASK_WRAPPER = (
 )
 
 
-def step_node_directories(argv: Iterable[str]) -> list[str]:
+def step_node_directories(
+    argv: Iterable[str], *, expected: Iterable[str | Path] = ()
+) -> list[str]:
     """The node-local directory bind sources a placed step must find on its node.
 
     Read from the fence's own bind triples, up to its ``--`` separator: every
@@ -1312,10 +1399,19 @@ def step_node_directories(argv: Iterable[str]) -> list[str]:
     the composing host. A file or socket source is left out, so the step never
     turns one into a directory, and a source that is a node-local root itself
     exists on every node and is left out too.
+
+    ``expected`` names sources the launch knows are directories by
+    construction but that this host has deliberately not created — the run's
+    own scratch directory, which belongs to the node that runs the worker
+    rather than to the host that composed the launch. They are kept whether or
+    not they exist here, because the step's wrapper makes each one's parent
+    chain on the node before the fence is exec'd; without that, a placed worker
+    would be the only launch whose scratch directory nobody creates.
     """
     from reckon import _worker_fence
 
     roots = (Path(_worker_fence.NODE_TMP_ROOT), NODE_LOCAL_SHM_ROOT)
+    by_construction = {str(Path(raw)) for raw in expected if raw}
     words = [str(word) for word in argv]
     try:
         start = next(
@@ -1332,7 +1428,7 @@ def step_node_directories(argv: Iterable[str]) -> list[str]:
             source = Path(words[index + 1])
             if (
                 any(source != root and source.is_relative_to(root) for root in roots)
-                and source.is_dir()
+                and (source.is_dir() or str(source) in by_construction)
                 and str(source) not in found
             ):
                 found.append(str(source))
@@ -1340,6 +1436,40 @@ def step_node_directories(argv: Iterable[str]) -> list[str]:
             continue
         index += 1
     return found
+
+
+def step_launch_environment(
+    environment: Mapping[str, str],
+    argv: Iterable[str],
+    *,
+    run_directory: str | Path,
+) -> dict[str, str]:
+    """The environment a placed step's worker is launched with.
+
+    A step's worker runs on the node the allocation is held on, not on the host
+    that composes the launch, so two facts have to reach the step's own wrapper
+    rather than the composer's disk: the record it writes its scheduler identity
+    to, which a stop addresses the task through, and the node-local directories
+    it creates before the fence is exec'd — among them the run's own scratch
+    directory, which the composing host deliberately does not create and the
+    fence grants anyway (see
+    :func:`reckon._worker_fence.worker_scratch_write_roots`). Composed here, in
+    one function, so the wiring that names the scratch is exercised by the same
+    call a launch makes and cannot be dropped unnoticed.
+
+    A launch that is not a step is returned unchanged: it runs on this host, and
+    that launch is what makes its own scratch directory.
+    """
+    staged = dict(environment or {})
+    if not argv_uses_step(argv):
+        return staged
+    step_record = Path(str(run_directory)) / "step-task.txt"
+    step_record.unlink(missing_ok=True)
+    staged["RECKON_STEP_RECORD"] = str(step_record)
+    node_directories = step_node_directories(argv, expected=(staged.get("TMPDIR", ""),))
+    if node_directories:
+        staged[STEP_NODE_DIRS_ENV] = os.pathsep.join(node_directories)
+    return staged
 
 
 def apply_backend_placement(
@@ -1437,7 +1567,10 @@ def apply_backend_placement(
         # session instead of one per dispatcher.
         prefix = [
             os.path.abspath(found),
-            *placement_module.step_prefix(str(reservation["job_id"]), options),
+            *placement_module.step_prefix(
+                str(reservation["job_id"]),
+                [*placement_module.step_cpu_options(reservation, options), *options],
+            ),
         ]
         if run_id:
             prefix.append(f"--job-name={run_id}")
@@ -1916,6 +2049,9 @@ def _spawn_detached_worker(
         stderr_path=Path(stderr_path),
         log_path=Path(log_path),
     )
+    # A detached worker takes the same place in the job's OOM ordering as a
+    # supervised one: above every service, so the kernel reaches for it first.
+    oom_priority.claim_worker(process.pid)
     launched = _launched_worker_record(plan, log_path, stderr_path)
     # A poll of a child that has already exited collects its status, and the
     # retry's startup check polls the child. A worker that died inside that
@@ -2153,10 +2289,7 @@ def _retired_attempt_ended(record: Mapping[str, Any]) -> bool | None:
     None answers "no attempt receipts": the caller keeps the answer it gives a
     record holding no worker record at all.
     """
-    from reckon.crew.recovery_liveness import (
-        _record_is_known_foreign,
-        _run_exit_record,
-    )
+    from reckon.crew.recovery_liveness import _record_is_known_foreign
     from reckon.crew.recovery_wait import _run_directory
 
     directory = _run_directory(record)
@@ -2166,10 +2299,9 @@ def _retired_attempt_ended(record: Mapping[str, Any]) -> bool | None:
     attempt = numbers[-1]
     # The receipt must name this run: a foreign launch is freed only by the
     # attempt's own account of its end, never by a file standing where one goes.
-    receipt = _run_exit_record(
-        record, f"attempt-{attempt}-exit.json", require_run_id=True
-    )
-    if receipt is not None:
+    # Read through the module's one strict attempt-receipt reader, so this
+    # reader and the launch guard cannot answer the same receipt differently.
+    if _reserved_attempt_ended(directory, attempt):
         return True
     try:
         data = json.loads(
@@ -2206,8 +2338,10 @@ def _launch_refused_by(record: Mapping[str, Any], reading: LivenessReading) -> b
     have ended and the launch proceeds. A retired worker receipt whose pid is
     alive or cannot be read still refuses.
 
-    A run launched on another host is freed by an exit receipt alone, because no
-    probe this host can run answers for a pid it did not issue. The canonical
+    A scheduler observation that proves the foreign compute launcher's node
+    holds no job for this user supplies a gone reading before this guard.
+    Without that proof, a foreign run is freed by an exit receipt alone: no
+    local pid probe answers for a pid issued elsewhere. The canonical
     ``exit.json`` beside a canonical worker record and a retired
     ``attempt-N-exit.json`` are read by the exit-record owner
     ``_run_exit_record``, under its strict reading: the receipt must name this
@@ -2412,6 +2546,22 @@ def latest_reservation(
     return found[-1] if found else None
 
 
+def _adoptable_floor(run_directory: Path, from_record: int) -> int:
+    """The lowest attempt a launch may adopt as the reservation its door took.
+
+    The pointer names the attempt the run last started, and one past it is the
+    attempt a launch normally starts. An attempt that never left a receipt has
+    not consumed that number, though: the door's own reservation key, read from
+    the receipts, is that same attempt again, and the door reserved it. Adopting
+    only from one past the pointer then skipped the door's reservation, the
+    launch reserved the same attempt a second time, met its own live file, and
+    refused itself. On 15 November a run whose wait-lift died before its worker
+    started could not be resumed at all for that reason. The floor is therefore
+    never above the receipt-derived key.
+    """
+    return min(from_record, launch_reservation_key(run_directory))
+
+
 def _reservation_taken_by_this_process(
     run_directory: Path, *, at_least: int = 1
 ) -> LaunchReservation | None:
@@ -2424,11 +2574,10 @@ def _reservation_taken_by_this_process(
     launch's attempt or a later one, is adopted; another process's hold is never
     taken over, and neither is an earlier attempt's.
     """
-    pid = os.getpid()
     for attempt, path, payload in reservations_in(run_directory):
         if payload.get("supervisor_pid") is not None:
             continue
-        if payload.get("pid") != pid:
+        if not _reservation_names_this_process(payload):
             continue
         if attempt < at_least:
             continue
@@ -2447,6 +2596,32 @@ def _read_reservation(path: Path) -> Mapping[str, Any] | None:
     except (OSError, ValueError):
         return None
     return payload if isinstance(payload, Mapping) else None
+
+
+def _reservation_launcher(payload: Mapping[str, Any]) -> dict[str, Any]:
+    """The process that took this reservation, as a liveness record.
+
+    A reservation taken by this version records its door under ``launcher_pid``,
+    because ``pid`` belongs to the process that runs the attempt — the
+    supervisor the launch starts. A reservation written before that split names
+    its door under ``pid``, and there the two are the same process, so the
+    older field is the fallback rather than a second answer.
+    """
+    pid = payload.get("launcher_pid")
+    if pid is None:
+        return {
+            "pid": payload.get("pid"),
+            "pid_start_time": payload.get("pid_start_time"),
+        }
+    return {
+        "pid": pid,
+        "pid_start_time": payload.get("launcher_pid_start_time"),
+    }
+
+
+def _reservation_names_this_process(payload: Mapping[str, Any]) -> bool:
+    """Whether the process reading this reservation is the one that took it."""
+    return _reservation_launcher(payload).get("pid") == os.getpid()
 
 
 def _reservation_age_seconds(path: Path) -> float | None:
@@ -2526,15 +2701,40 @@ def reservation_in_flight(
 
     Before one is recorded, the reserving process itself is the launch, and
     while it lives the launch is in flight, including a launch still waiting for
-    a scheduler slot. A live reserving process is not by itself enough to hold
-    the attempt forever, though: an attempt that recorded no supervisor and
-    left no worker record and is older than
-    :data:`UNREACHED_LAUNCH_BOUND_SECONDS` never reached its worker, and its
-    reservation stops holding the run so a relaunch can be admitted. Age frees
-    only that shape — a reservation naming a supervisor, or one whose attempt
-    left a worker record, is held on its liveness alone.
+    a scheduler slot.
+
+    The attempt's own exit receipt answers for all of it: a reservation whose
+    attempt recorded its end holds nothing, whatever process it names, because
+    the launch that receipt describes is over.
+
+    A live reserving process is not by itself enough to hold the attempt
+    forever, though: an attempt that recorded no supervisor and left no worker
+    record and is older than :data:`UNREACHED_LAUNCH_BOUND_SECONDS` never
+    reached its worker, so age frees that shape too — a reservation naming a
+    supervisor, or one whose attempt left a worker record, is otherwise held on
+    its liveness alone.
+
+    A pid that names this host's station names no process of this run, whichever
+    field carries it: the station launches runs from inside its own long-lived
+    process and outlives every one of them, so its liveness says nothing about
+    whether a worker is coming. A reservation naming the station as its
+    supervisor therefore holds nothing at all, and one whose door is the station
+    is judged by its age like any other launch that reached no supervisor.
     """
     if not isinstance(payload, Mapping):
+        return False
+    # An attempt that recorded its own end holds nothing, whatever process the
+    # reservation names. The hold scan asks this as well, but a launch also
+    # asks about one attempt at a time — the reservation standing where it is
+    # about to write its own, or an attempt a caller names on its own — and
+    # those questions never reach that scan, so an ended attempt still refused
+    # them.
+    reserved = attempt if isinstance(attempt, int) else _attempt_number(payload)
+    if (
+        run_directory is not None
+        and reserved is not None
+        and _reserved_attempt_ended(run_directory, reserved)
+    ):
         return False
     holder_running = _reservation_holder_running(payload)
     if payload.get("supervisor_pid") is not None:
@@ -2542,6 +2742,15 @@ def reservation_in_flight(
             "pid": payload.get("supervisor_pid"),
             "pid_start_time": payload.get("supervisor_pid_start_time"),
         }
+        if pid_belongs_to_the_station(supervisor["pid"]):
+            # The station is not this run's process, whatever the record names.
+            # A reservation written by a launch made inside the station's own
+            # process has been seen naming the station as its supervisor, and
+            # then the supervisor arm below holds the attempt for as long as the
+            # station lives: age never frees a reservation that names a
+            # supervisor, so nothing could declare that attempt ended. A pid
+            # naming this host's station names no worker and holds nothing.
+            return False
         if not holder_running(supervisor):
             return False
         # An idle supervisor holds nothing. A run whose worker has parked on a
@@ -2551,7 +2760,15 @@ def reservation_in_flight(
         # stands. A worker that is still running is not parked, and its
         # reservation still holds.
         return not _run_is_parked_on_a_declared_wait(run_directory)
-    if not holder_running(payload):
+    launcher = _reservation_launcher(payload)
+    if pid_belongs_to_the_station(launcher.get("pid")):
+        # A reservation naming this host's station names the door that was
+        # asked to launch, not anything of the run: the station outlives every
+        # run it starts, so its liveness is no evidence that a worker is coming.
+        # What remains as evidence is the launch's own age, which is the same
+        # reading an attempt that never reached a worker is given.
+        return not _unreached_launch(payload, run_directory, attempt)
+    if not holder_running(launcher):
         return False
     return not _unreached_launch(payload, run_directory, attempt)
 
@@ -2566,8 +2783,9 @@ def _reservation_holder_running(
     matched against the start time recorded beside it. A reservation taken on
     another host names a pid this host cannot read at all — the number may
     belong to an unrelated local process — so it is judged by that host's own
-    heartbeat instead: a host still publishing is a host whose holder still
-    exists, and a host whose beat has lapsed is a host that has gone.
+    scheduler allocation first: a compute host holding no job for this user
+    cannot hold the launch. Otherwise its heartbeat supplies the existing
+    host-level reading, without probing a foreign pid on this machine.
 
     A record naming no host is the shape an older launch wrote. It keeps the
     local reading it was always given, because nothing on disk says the pid
@@ -2578,6 +2796,10 @@ def _reservation_holder_running(
         home = crew_home()
 
         def foreign(_record: Mapping[str, Any]) -> bool:
+            from reckon.crew.recovery_liveness import launcher_host_is_gone
+
+            if launcher_host_is_gone(payload):
+                return False
             return host_heartbeat.host_is_live(home, host)
 
         return foreign
@@ -2616,19 +2838,26 @@ def _reserved_attempt_ended(run_directory: Path, attempt: int) -> bool:
     written to shared storage, and it is the same fact a launch on another host
     is freed by.
 
-    Read through the strict exit-receipt reader: a truncated receipt, or one
-    naming no run, is not this attempt's account of its end and frees nothing.
-    """
-    from reckon.crew.recovery_liveness import _run_exit_record
+    Read from the directory the caller holds, never from one resolved again out
+    of this process's own crew home: the launcher hands a door the run
+    directory it is working in, and a process whose crew home is elsewhere — the
+    station's overlay home, a reader inspecting a peer's run afterwards — would
+    otherwise report every receipt absent and refuse the launch the receipt was
+    written for.
 
-    return (
-        _run_exit_record(
-            {"run_id": run_directory.name},
-            f"attempt-{attempt}-exit.json",
-            require_run_id=True,
+    Read under the strict rule the exit-record owner applies: a truncated
+    receipt, or one naming no run, is not this attempt's account of its end and
+    frees nothing.
+    """
+    try:
+        payload = json.loads(
+            (run_directory / f"attempt-{attempt}-exit.json").read_text(encoding="utf-8")
         )
-        is not None
-    )
+    except (OSError, ValueError):
+        return False
+    if not isinstance(payload, Mapping):
+        return False
+    return str(payload.get("run_id") or "") == run_directory.name
 
 
 def held_launch_reservation(
@@ -2725,12 +2954,24 @@ def reserve_launch_attempt(
     for _ in range(_RESERVATION_ATTEMPTS):
         attempt = launch_reservation_key(run_directory)
         path = launch_reservation_path(run_directory, attempt)
+        launcher_pid = os.getpid()
         payload = {
             "run_id": run_id,
             "attempt": attempt,
             "kind": kind,
-            "pid": os.getpid(),
-            "pid_start_time": _process_start_time(os.getpid()),
+            # The reservation names the process that will run the attempt, never
+            # the one that asked for it. A launch made inside a long-lived door —
+            # the station, an admit service — would otherwise name a process that
+            # outlives every run it launches: the hold would read as in flight
+            # for the door's whole life, and nothing could declare the attempt
+            # ended. ``pid`` is left for the supervisor the launch starts, and
+            # the door that took the reservation is recorded beside it under
+            # names of its own, for the fences that must recognise the process
+            # which took this attempt.
+            "pid": None,
+            "pid_start_time": None,
+            "launcher_pid": launcher_pid,
+            "launcher_pid_start_time": _process_start_time(launcher_pid),
             "launcher_host": _reservation_host(),
             "at": _utc_now(),
             "supervisor_pid": None,
@@ -2770,11 +3011,16 @@ def record_reservation_supervisor(reservation: LaunchReservation, pid: int) -> b
             "run_id": reservation.run_id,
             "attempt": reservation.attempt,
             "kind": reservation.kind,
-            "pid": os.getpid(),
-            "pid_start_time": _process_start_time(os.getpid()),
             "at": _utc_now(),
         }
     record = dict(payload)
+    # ``pid`` names the process of this attempt, and the supervisor is it: a
+    # reader asking whether the attempt is still running asks about the
+    # supervisor's process, and the process that took the reservation is only
+    # the door. Keeping ``pid`` on the door is what made a station-launched
+    # reservation read as in flight for the station's whole life.
+    record["pid"] = pid
+    record["pid_start_time"] = _process_start_time(pid)
     record["supervisor_pid"] = pid
     record["supervisor_pid_start_time"] = _process_start_time(pid)
     try:
@@ -2918,7 +3164,7 @@ def release_unspawned_reservations(run_directory: Path, *, reason: str) -> int:
         payload = _read_reservation(path)
         if not isinstance(payload, Mapping):
             continue
-        if payload.get("pid") != os.getpid():
+        if not _reservation_names_this_process(payload):
             continue
         if payload.get("launcher_host") not in (None, _reservation_host()):
             continue
@@ -2986,11 +3232,12 @@ def _refuse_superseded_launch(
             "reservation is no longer on disk, so another launch has taken the "
             "run; it abandons without starting a supervisor"
         )
-    if payload.get("pid") != os.getpid():
+    if not _reservation_names_this_process(payload):
         raise CrewError(
             f"run {run_id!r} attempt {reservation.attempt}: the reservation now "
-            f"names pid {payload.get('pid')} rather than this launch, so another "
-            "launch has taken the run; it abandons without starting a supervisor"
+            f"names pid {_reservation_launcher(payload).get('pid')} rather than "
+            "this launch, so another launch has taken the run; it abandons "
+            "without starting a supervisor"
         )
     for name in sorted(p.name for p in run_directory.iterdir()):
         match = _RESERVATION_PATTERN.match(name)
@@ -3532,7 +3779,7 @@ def supervised_launch(
         # supervisor is recorded on it: the hold then follows the worker rather
         # than the door that took it.
         reservation = _reservation_taken_by_this_process(
-            run_directory, at_least=from_record
+            run_directory, at_least=_adoptable_floor(run_directory, from_record)
         )
     if reservation is None:
         # Every launch that spawns a supervisor reserves the attempt it starts,
@@ -4012,6 +4259,8 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
                 prior,
             )
         )
+    argv = [str(word) for word in plan["argv"]]
+    step_placed = argv_uses_step(argv)
     environment = _worker_runtime_environment(
         plan.get("environment") or {},
         run_id=str(spec["run_id"]),
@@ -4019,18 +4268,12 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
         attempt_started_at=_utc_now(),
         coordinator_session=str(record.get("session") or ""),
         claude_headers=str(plan.get("dialect") or "") == "claude",
+        placed_step=step_placed,
+        omp_headers=str(plan.get("dialect") or "") == "omp",
     )
-    argv = [str(word) for word in plan["argv"]]
-    step_placed = Path(argv[0]).name == "srun" and any(
-        word.startswith("--jobid=") for word in argv[1:]
+    environment = step_launch_environment(
+        environment, argv, run_directory=spec["run_directory"]
     )
-    if step_placed:
-        step_record = Path(str(spec["run_directory"])) / "step-task.txt"
-        step_record.unlink(missing_ok=True)
-        environment["RECKON_STEP_RECORD"] = str(step_record)
-        node_directories = step_node_directories(argv)
-        if node_directories:
-            environment[STEP_NODE_DIRS_ENV] = os.pathsep.join(node_directories)
 
     writer = _worker_record_writer(spec)
 
@@ -4082,6 +4325,13 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
                     # single-threaded child as it starts.
                     preexec_fn=_worker_default_signals,  # noqa: PLW1509
                 )
+                # The worker is the process the job can afford to lose, so it
+                # takes a strictly higher OOM score than the services that
+                # spawned it. The parent raises the child's adjustment: an
+                # unprivileged process may always raise another's, and the
+                # child keeps it across the exec into its harness, and its own
+                # children inherit it.
+                oom_priority.claim_worker(process.pid)
                 # Recovery takes the same lock, so it sees either no spawn or its
                 # receipt. A delayed supervisor re-reads the attempt before spawning.
                 if writer is not None:
@@ -4764,6 +5014,41 @@ def _record_step_wait(run_directory: Path, client_pid: int) -> None:
     )
 
 
+def _attempt_ending_receipt(
+    record: Mapping[str, Any], attempt: Mapping[str, Any]
+) -> bool:
+    """Whether this attempt holds the exit receipt its own ending wrote.
+
+    The supervisor that ends an attempt writes ``attempt-<n>-exit.json`` for it,
+    and the canonical ``exit.json`` is cleared before every launch, so either
+    file naming this attempt is proof the attempt has ended. A phase word is not:
+    measured on 15 November, eight resumed attempts were signalled as terminal
+    runs while working, because a writer had restored ``complete`` — the word
+    their earlier delivery left — onto the live attempt's pointer. The receipt is
+    immutable and belongs to one attempt; the word belongs to whoever wrote it
+    last. Both files are read through the one owner of that payload,
+    ``_run_exit_record``, under its strict reading, so this guard and every other
+    reader of an attempt's end cannot answer on different terms.
+    """
+    from reckon.crew.recovery_liveness import _run_exit_record
+
+    try:
+        number = max(1, int(attempt.get("attempt") or 1))
+    except (TypeError, ValueError):
+        return False
+    for name in (f"attempt-{number}-{EXIT_RECORD_NAME}", EXIT_RECORD_NAME):
+        receipt = _run_exit_record(record, name, require_run_id=True)
+        if receipt is None:
+            continue
+        try:
+            recorded = int(receipt["attempt"])
+        except (TypeError, ValueError, KeyError):
+            continue
+        if recorded == number:
+            return True
+    return False
+
+
 def _terminal_attempt_phase(run_directory: Path, attempt: Mapping[str, Any]) -> str:
     """The current attempt's terminal pointer phase, or an empty string."""
     try:
@@ -4771,11 +5056,66 @@ def _terminal_attempt_phase(run_directory: Path, attempt: Mapping[str, Any]) -> 
     except CrewError:
         return ""
     phase = str(pointer.get("phase") or "")
-    return (
-        phase
-        if phase in _TERMINAL_RUN_PHASES and _record_is_this_attempt(pointer, attempt)
-        else ""
-    )
+    if phase not in _TERMINAL_RUN_PHASES:
+        return ""
+    if not _record_is_this_attempt(pointer, attempt):
+        return ""
+    # The two words a delivery writes are this module's own delivery statuses,
+    # read here from the owner rather than restated beside the guard.
+    if phase in _WORKER_DONE_MANIFEST_STATUSES and not _attempt_ending_receipt(
+        pointer, attempt
+    ):
+        # The word arrived from somewhere other than this attempt's ending, so
+        # this attempt has not delivered and the phase describes an earlier one.
+        return ""
+    return phase
+
+
+def _reopen_a_live_attempt_phase(
+    run_directory: Path, attempt: Mapping[str, Any]
+) -> None:
+    """Restore a live attempt's phase to ``working`` when a stale word reads as
+    its delivery.
+
+    A run resumed for a repair round carries the delivered ``complete`` its
+    earlier attempt left on the pointer until its own next delivery, and any
+    writer that restores that word makes the live attempt read as finished to
+    every reader — the reaper that ends it, the pane that draws it, the
+    obligations view that offers it remedies. The worker is live in this
+    process's own charge and has made no delivery, so the word is restored to
+    the phase the resume wrote, exactly as a fold reopens a resumed attempt.
+    ``stopped`` and ``interrupted`` are left alone: they are deliberate facts
+    about the run rather than words a delivery leaves behind.
+    """
+    try:
+        mtime_ns = pointer_path(run_directory.name).stat().st_mtime_ns
+    except OSError:
+        return
+    if attempt.get("reopened_pointer_mtime_ns") == mtime_ns:
+        # The pointer has not been written since the last look, so the word it
+        # carried then is the word it carries now: there is nothing to restore
+        # and no reason to take the lock.
+        return
+    try:
+        held = _pointer_lock(run_directory.name, blocking=False)
+        with held:
+            try:
+                record = read_pointer(run_directory.name)
+            except CrewError:
+                return
+            attempt["reopened_pointer_mtime_ns"] = mtime_ns
+            if str(record.get("phase") or "") not in _WORKER_DONE_MANIFEST_STATUSES:
+                return
+            if not _record_is_this_attempt(record, attempt):
+                return
+            if _attempt_ending_receipt(record, attempt):
+                return
+            record["phase"] = "working"
+            _write_existing_pointer(run_directory.name, record)
+    except (PointerLockHeldError, OSError, CrewError, ValueError):
+        # A held lock belongs to a writer that is changing the pointer already,
+        # and the next poll reads what it wrote. Nothing here may wait on it.
+        return
 
 
 def _reap_worker_on_its_terminal_manifest(
@@ -4857,6 +5197,12 @@ def _reap_worker_on_its_terminal_manifest(
         if phase:
             terminal_state.setdefault("deadline", now + TERMINAL_MANIFEST_GRACE_DEFAULT)
             terminal_state.setdefault("phase", phase)
+        else:
+            # A delivered word this attempt did not earn is a fact the resume
+            # has already answered: the worker is in this process's charge and
+            # has made no delivery, so the run reads as working again rather
+            # than as a finished attempt with a live process.
+            _reopen_a_live_attempt_phase(run_directory, terminal_state)
         if (
             stop_requested is not None
             and stop_deadline is None

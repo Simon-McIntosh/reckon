@@ -266,11 +266,42 @@ def aggregate_written(
                 )
 
 
+def _store_signature() -> str | None:
+    from reckon import file_memo, run_store
+
+    path = run_store.store_path()
+    if not path.exists():
+        return None
+    return json.dumps(
+        [
+            file_memo.file_signature(path),
+            *[
+                file_memo.file_signature(extra) if extra.exists() else None
+                for extra in (
+                    run_store._archive_path(path),
+                    Path(str(path) + "-wal"),
+                )
+            ],
+        ]
+    )
+
+
+def _hydrate(project: str, rows: list[dict]) -> list[dict]:
+    """Fetch full records only for identities the operational projection selected."""
+    from reckon import run_store
+
+    stored = run_store.stored_run_rows(project, run_ids=[row["run_id"] for row in rows])
+    return rows if stored is None else stored
+
+
 def _current(connection: sqlite3.Connection, project: str, root) -> bool:
     """Validate the complete projection using only reads."""
     from reckon import file_memo, ledger
 
     metadata = dict(connection.execute("SELECT key, value FROM metadata"))
+    signature = _store_signature()
+    if signature is not None:
+        return metadata.get("ready") == "1" and metadata.get("store") == signature
     aggregate = ledger.ledger_path(project, root).resolve()
     recorded = connection.execute(
         "SELECT stamp FROM sources WHERE name=?", (str(aggregate),)
@@ -330,7 +361,28 @@ def _ensure(project: str, root=None) -> Path:
                 if not _current(connection, project, root):
                     generation = ledger.ledger_generation(project)
                     aggregate = ledger.ledger_path(project, root)
-                    if not aggregate.exists() and not any(
+                    from reckon import run_store
+
+                    signature = _store_signature()
+                    if signature is not None:
+                        rows = run_store.stored_run_rows(
+                            project,
+                            fields=(
+                                "run_id",
+                                "node",
+                                "session_id",
+                                "completed_at",
+                                "worktree_retention",
+                                "release",
+                                "commits",
+                                "base_sha",
+                                "no_commit",
+                                "session",
+                            ),
+                        )
+                        data = {"runs": rows or []}
+                        _version = ledger._aggregate_headers(project, root)[1]
+                    elif not aggregate.exists() and not any(
                         (aggregate.parent / "runs").glob("*.json")
                     ):
                         data, _version = {"runs": []}, 0
@@ -360,10 +412,15 @@ def _ensure(project: str, root=None) -> Path:
                         (str(_version),),
                     )
                     _source_written(connection, ledger.ledger_path(project, root))
-                    for source in (
-                        ledger.ledger_path(project, root).parent / "runs"
-                    ).glob("*.json"):
-                        _source_written(connection, source)
+                    if signature is None:
+                        for source in (
+                            ledger.ledger_path(project, root).parent / "runs"
+                        ).glob("*.json"):
+                            _source_written(connection, source)
+                    connection.execute(
+                        "INSERT OR REPLACE INTO metadata VALUES ('store', ?)",
+                        (signature,),
+                    )
                     connection.execute(
                         "INSERT OR REPLACE INTO metadata VALUES ('generation', ?)",
                         (json.dumps(generation),),
@@ -454,6 +511,11 @@ def read_rows(
                     if row:
                         parsed = json.loads(row[0])
                         found[parsed["run_id"]] = parsed
+    if _store_signature() is not None:
+        return sorted(
+            _hydrate(project, list(found.values())),
+            key=lambda row: str(row.get("completed_at") or ""),
+        )
     # The projection locates rows; the open run's own document remains the
     # authority for in-place edits and a writer interrupted before indexing.
     from reckon import ledger
@@ -518,8 +580,11 @@ def ledger_version(project: str, root=None) -> int:
 @_read_fallback(_history_row)
 def row_for_run(project: str, run_id: str, root=None) -> dict[str, Any] | None:
     """Lookup one promoted identity without decoding unrelated history."""
-    from reckon import ledger
+    from reckon import ledger, run_store
 
+    stored = run_store.stored_run_rows(project, run_ids=[run_id])
+    if stored is not None:
+        return stored[0] if stored else None
     source = ledger.run_path(project, run_id, root)
     if source.exists():
         return ledger._read_run(source)
@@ -558,7 +623,7 @@ def rows_naming_trees(
             if row:
                 parsed = json.loads(row[0])
                 result[parsed["run_id"]] = parsed
-    return list(result.values())
+    return _hydrate(project, list(result.values()))
 
 
 @_read_fallback(_history_session)
@@ -571,7 +636,8 @@ def latest_session_row(project: str, session: str, root=None) -> dict[str, Any] 
             "SELECT payload FROM records WHERE session=? ORDER BY completed DESC, run_id DESC LIMIT 1",
             (session,),
         ).fetchone()
-        return json.loads(row[0]) if row else None
+        rows = _hydrate(project, [json.loads(row[0])]) if row else []
+        return rows[0] if rows else None
 
 
 @_read_fallback(_history_membership)
@@ -579,6 +645,8 @@ def has_row(project: str, run_id: str, root=None) -> bool:
     """Test one promoted identity without enumerating historical membership."""
     from reckon import ledger
 
+    if _store_signature() is not None:
+        return row_for_run(project, run_id, root) is not None
     if ledger.run_path(project, run_id, root).is_file():
         return True
     with contextlib.closing(sqlite3.connect(_ensure(project, root))) as connection:

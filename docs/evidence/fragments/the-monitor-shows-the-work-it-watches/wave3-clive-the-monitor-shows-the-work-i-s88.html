@@ -1,0 +1,73 @@
+<section id="wave3-clive-the-monitor-shows-the-work-i-s88">
+<h3>A worker that ends its first turn without acting is named as a premature end</h3>
+<p>A print-mode worker gets no turn after the one it is in. A run that opened
+its first turn, wrote one message and called no tool therefore stopped without
+attempting anything and without reporting a fault, and its session survived to
+continue it. The fleet read that run as halted, so the pane said a failure had
+happened and a coordinator went looking for one.</p>
+<p>The classifier now reads that stream shape as a premature end. Its row
+carries the premature-end clause with the text the worker ended on quoted
+verbatim, and the remedy <code>reckon crew resume --run &lt;id&gt; --advice
+continue</code>. The same classifier produces the obligations item, so the
+duty a coordinator sees carries the same command. The reading is one recovery
+word of the classification module, which both surfaces consume; no second
+implementation was added.</p>
+<table>
+<thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
+<tbody>
+<tr><td>Head arm, <code>b058eaa9d9</code></td><td>54 passed in 17.48s, <code>EXIT=0</code></td></tr>
+<tr><td>Base arm, <code>3d4c92834c</code></td><td>51 passed in 16.09s, <code>EXIT=0</code></td></tr>
+<tr><td>Added failures against the base arm</td><td>0; the three cases in the new test file are the whole difference</td></tr>
+<tr><td>Declared-mutation control</td><td>2 failed, 52 passed in 14.64s, <code>EXIT=1</code>; the first case reads <code>abandoned</code> rather than the premature end</td></tr>
+<tr><td>Scoped lint and format</td><td><code>ruff check</code> and <code>ruff format --check</code> add no findings on the two staged paths</td></tr>
+<tr><td>Local single-process run</td><td>3 passed in 37.44s</td></tr>
+</tbody>
+</table>
+<p>The three cases are the premature end with its quoted text and resume
+remedy, a one-turn stream whose message is an API error, and a one-turn stream
+whose message called a tool. The mutation removes the distinction, keeps the
+shared classifier and both surfaces, and leaves the first case reading as
+halted.</p>
+<p>The three logs sit under the run directory and each opens with its revision
+and the literal command it ran. The arms are git clones of the two revisions
+under the run's scratch directory, the four follower variables unset, run in
+place on the arm's own tree with <code>pytest -n 8</code>. The declared
+mutation also fails the API-error case, because removing the distinction
+removes it for every one-turn stream; that case is pinned by the same
+classifier arm and is reported here rather than treated as a separate control.</p>
+<p>Worktree creation was refused by the read-only mount holding the shared
+object store, so each arm is a <code>git clone --shared --no-checkout</code> of
+the worktree at that revision. The clones carry their own writable repository,
+which the staged-write inventory test needs to read its trees.</p>
+<h4>Landing merge against primary main</h4>
+<p>The landing conflicted in the classification module, where primary main adds
+the one stuck verdict every surface reads. Both changes are kept: the
+premature-end helpers and their constants stand as delivered, and the stuck
+verdict reader joins them ahead of the classification chain. The premature-end
+arm still runs after every manifest, wait, phase and budget reading, so a
+stuck request keeps its own reading and only a run whose stream ended before
+it acted takes the premature end.</p>
+<table>
+<thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
+<tbody>
+<tr><td>Repaired merge head, <code>768e520a8c</code></td><td>54 passed in 13.98s, <code>EXIT=0</code></td></tr>
+<tr><td>Delivery commits kept</td><td><code>b058eaa9d9</code> and <code>857d4ddafd</code></td></tr>
+</tbody>
+</table>
+<h4>Second landing merge against primary main</h4>
+<p>Primary main advanced the classification module once more while the landing
+was pending, and the same file conflicted again. Git resolved the two sides
+automatically this round: primary main's stuck verdict and this delivery's
+premature-end helpers occupy separate regions of the module, so both stand as
+written. The chain order is unchanged from the first repair, and the gate was
+re-run at the new head rather than carried over from the earlier one.</p>
+<table>
+<thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
+<tbody>
+<tr><td>Second repaired head, <code>d39bc126e8</code></td><td>54 passed in 20.12s, <code>EXIT=0</code></td></tr>
+<tr><td>Base arm, <code>3d4c92834c</code></td><td>51 passed in 13.67s, <code>EXIT=0</code></td></tr>
+<tr><td>Negative control at the third case</td><td>2 failed, 52 passed, <code>EXIT=1</code>; the premature end reads as halted</td></tr>
+<tr><td>Commits cited in the manifest</td><td>delivery <code>b058eaa9d9</code> and <code>857d4ddafd</code>, both merge heads <code>768e520a8c</code> and <code>d39bc126e8</code></td></tr>
+</tbody>
+</table>
+</section>

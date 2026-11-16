@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "3bc474f9263c2bc01bc34638128dd5834ede7baf",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/pending_landing.py:390 _delivered_repair",
+    "reckon/crew/pending_landing.py:798 finish_pending_landings",
+    "reckon/crew/queue_landing.py:1899 land_once",
+    "reckon/crew_run_commands.py:3682 crew_complete"
+  ],
+  "completed_at": "2026-11-15T17:03:20.979Z",
+  "dispatched_at": "2026-11-15T17:02:58Z",
+  "findings": [
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "id": "f5f15dedae6",
+      "line": "542",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fix makes the second reading of the arm's completion agree with reckon/crew/promotion_checks.py:2348 (`_baseline_suite_failure_ids`) but leaves it a second reading, so the next edit to either side silently reopens the split this commit closed; the owner takes the manifest and answers the same question."
+    },
+    {
+      "file": "tests/test_a_merge_repair_gate_judges_added_failures.py",
+      "id": "fd7ccb750c9",
+      "line": "169",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gained guard was never shown red \u2014 negative-control.log's three failures were measured at 7ddf366, before this test existed, and base-arm.log's three failures are the earlier cases, so the claim that the new cases fail on the reverted predicate rests on reading the code rather than on a recorded refusal."
+    }
+  ],
+  "head_log_revision": "8613b20d74761156a9c17314bf84f1995ea53461",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read the single gained commit 8613b20d74 against base 135c9aaea9; it changes one production predicate (reckon/crew/pending_landing.py:542 `arm.get(\"completed\") is False` to `is not True`), adds a `completed=` knob to the test writer, reflows one `inspect.signature` call, and adds tests/test_a_merge_repair_gate_judges_added_failures.py:168-211 (two functions, three cases).",
+    "done_when": "the done_when's gate is tests/test_a_merge_repair_gate_judges_added_failures.py, the file the manifest's tests line names; /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T124004568066-repair-gate-judges-added-s15/after-suite-8613b20d74.log records 66 passed at 8613b20d with EXIT=0, three more cases than head-arm.log's 63 at 7ddf366, which is exactly the three cases the gained commit adds \u2014 so the gate does assert the measure at the revision under review.",
+    "goal": "the reviewed node's goal is that a merge repair's gate is judged by the failures it adds against the primary revision the conflict names, and the gained commit tightens that comparison's base at reckon/crew/pending_landing.py:542 so a half-run arm cannot serve as primary evidence.",
+    "manifest": "read the reviewed run's manifest.md; it records status complete, the gate command, three log paths, base arm 3 failed/60 passed at 3bc474f9, after suite 66 passed at 8613b20d74 with EXIT=0, and a negative_control_log that was measured at the earlier head 7ddf366, not at 8613b20d.",
+    "write_paths": "the declared paths are reckon/crew/pending_landing.py and tests/test_a_merge_repair_gate_judges_added_failures.py, and `git diff --stat 135c9aaea9 8613b20d74` reports exactly those two files (1 line of production, 61 lines of test)."
+  },
+  "justifications": {
+    "durability": "tests/test_a_merge_repair_gate_judges_added_failures.py:169 reddens when reckon/crew/pending_landing.py:542 is put back to `is False` \u2014 both parameters fall through the refusal and `pytest.raises` gets no error.",
+    "evidence": "after-suite-8613b20d74.log records 66 passed / EXIT=0 at 8613b20d74, but negative-control.log was measured at 7ddf366 so no red log shows the gained commit's own cases failing.",
+    "fit": "reckon/crew/pending_landing.py:542 reads the arm exactly as the owner of that reading does at reckon/crew/promotion_checks.py:2348, and the new test names follow the file's `test_a_...` convention.",
+    "goal_fidelity": "reckon/crew/pending_landing.py:542 now requires a literal True for the primary arm's completion, which is the same reading the goal's comparison needs of its base.",
+    "reuse": "reckon/crew/pending_landing.py:542 restates the completion predicate promotion_checks.py:2348 owns rather than asking `_baseline_suite_failure_ids(manifest)` for it, so the two readings are now equal but still two.",
+    "scope_discipline": "`git diff --stat 135c9aaea9 8613b20d74` lists only reckon/crew/pending_landing.py and tests/test_a_merge_repair_gate_judges_added_failures.py, both inside the declared paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is that a merge repair's gate is judged by the failures it adds against the primary revision the conflict names, and the gained commit tightens that comparison's base at reckon/crew/pending_landing.py:542 so a half-run arm cannot serve as primary evidence.\nVERDICT done_when: the done_when's gate is tests/test_a_merge_repair_gate_judges_added_failures.py, the file the manifest's tests line names; /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T124004568066-repair-gate-judges-added-s15/after-suite-8613b20d74.log records 66 passed at 8613b20d with EXIT=0, three more cases than head-arm.log's 63 at 7ddf366, which is exactly the three cases the gained commit adds \u2014 so the gate does assert the measure at the revision under review.\nVERDICT write_paths: the declared paths are reckon/crew/pending_landing.py and tests/test_a_merge_repair_gate_judges_added_failures.py, and `git diff --stat 135c9aaea9 8613b20d74` reports exactly those two files (1 line of production, 61 lines of test).\nVERDICT manifest: read the reviewed run's manifest.md; it records status complete, the gate command, three log paths, base arm 3 failed/60 passed at 3bc474f9, after suite 66 passed at 8613b20d74 with EXIT=0, and a negative_control_log that was measured at the earlier head 7ddf366, not at 8613b20d.\nVERDICT diff: read the single gained commit 8613b20d74 against base 135c9aaea9; it changes one production predicate (reckon/crew/pending_landing.py:542 `arm.get(\"completed\") is False` to `is not True`), adds a `completed=` knob to the test writer, reflows one `inspect.signature` call, and adds tests/test_a_merge_repair_gate_judges_added_failures.py:168-211 (two functions, three cases).\nCALL_SITES: reckon/crew/pending_landing.py:390 _delivered_repair, reckon/crew/pending_landing.py:798 finish_pending_landings, reckon/crew/queue_landing.py:1899 land_once, reckon/crew_run_commands.py:3682 crew_complete\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/pending_landing.py:542 now requires a literal True for the primary arm's completion, which is the same reading the goal's comparison needs of its base.\nSCORE evidence: 16\nJUSTIFICATION evidence: after-suite-8613b20d74.log records 66 passed / EXIT=0 at 8613b20d74, but negative-control.log was measured at 7ddf366 so no red log shows the gained commit's own cases failing.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: `git diff --stat 135c9aaea9 8613b20d74` lists only reckon/crew/pending_landing.py and tests/test_a_merge_repair_gate_judges_added_failures.py, both inside the declared paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_merge_repair_gate_judges_added_failures.py:169 reddens when reckon/crew/pending_landing.py:542 is put back to `is False` \u2014 both parameters fall through the refusal and `pytest.raises` gets no error.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/pending_landing.py:542 reads the arm exactly as the owner of that reading does at reckon/crew/promotion_checks.py:2348, and the new test names follow the file's `test_a_...` convention.\nSCORE reuse: 16\nJUSTIFICATION reuse: reckon/crew/pending_landing.py:542 restates the completion predicate promotion_checks.py:2348 owns rather than asking `_baseline_suite_failure_ids(manifest)` for it, so the two readings are now equal but still two.\nFINDING reckon/crew/pending_landing.py:542 non-blocking: the fix makes the second reading of the arm's completion agree with reckon/crew/promotion_checks.py:2348 (`_baseline_suite_failure_ids`) but leaves it a second reading, so the next edit to either side silently reopens the split this commit closed; the owner takes the manifest and answers the same question.\nFINDING tests/test_a_merge_repair_gate_judges_added_failures.py:169 non-blocking: the gained guard was never shown red \u2014 negative-control.log's three failures were measured at 7ddf366, before this test existed, and base-arm.log's three failures are the earlier cases, so the claim that the new cases fail on the reverted predicate rests on reading the code rather than on a recorded refusal.\nREVIEWED_BASE_SHA: 135c9aaea946d9ad970da0e1b3ed57eeaec16d60\nREVIEWED_HEAD_SHA: 8613b20d74761156a9c17314bf84f1995ea53461",
+  "review_run_id": "r-20261115T165651903623-review-of-repair-gate-judges-added-s15-8613b20d7476",
+  "reviewed_base_sha": "135c9aaea946d9ad970da0e1b3ed57eeaec16d60",
+  "reviewed_head_sha": "8613b20d74761156a9c17314bf84f1995ea53461",
+  "reviewed_run_id": "r-20261115T124004568066-repair-gate-judges-added-s15",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T17:11:45.701827+00:00",
+  "total": 106
+}

@@ -1,0 +1,68 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T20:33:05.032Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "exempted",
+      "reason": "landed; the reuse note (commits_between restates reviewed_commits) is non-blocking and recorded for a consolidation pass",
+      "recorded_at": "2026-11-15T21:36:25.971023+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-15T20:31:31Z",
+  "findings": [
+    {
+      "file": "reckon/crew/merge.py",
+      "line": 271,
+      "severity": "non-blocking",
+      "text": "commits_between still duplicates the range reader the repository owns at reckon/crew/recovery_review_subject.py:504 (reviewed_commits): same git log --reverse --format invocation, same (sha, subject) parse loop, and the repair added first_parent to the copy after the owner had already grown that same flag, so the copy now differs only by its excluding argument. The repair widened the duplicate instead of extending the owner, which is what the earlier review of this run (at eb4735ae3b) named as the remedy; this node's own evidence fragment promotes the duplication as the change."
+    },
+    {
+      "file": "docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/merged-primary-run-lands-s16.html",
+      "line": 31,
+      "severity": "non-blocking",
+      "text": "the record claims 'Both fail at the base revision', but no log files a base-revision run of either case: logs/baseline-suite.log runs only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, no base-red log for tests/test_a_run_that_merged_primary_lands.py exists in the run directory, and the negative control is a head-revision run under mutation. The earlier review raised the same gap for the first case; the claim has widened to both without an artefact behind it."
+    },
+    {
+      "file": "tests/test_a_run_that_merged_primary_lands.py",
+      "line": 258,
+      "severity": "non-blocking",
+      "text": "the section's done_when second clause, 'A run citing a commit from another branch is still refused', is no longer asserted anywhere: the case now asserts report['would_promote'] is True because the primary branch's citation guard (reckon/crew/promotion_evidence.py:419-436) accepts a commit reachable from the run's head. The cause is outside this node's write paths and is reported in the manifest's outside_scope, but the reversal means the node's gate cannot report a regression of the clause the section still states, and the section text needs a coordinator decision before the measure reads as met."
+    },
+    {
+      "file": "manifest.md",
+      "line": 16,
+      "severity": "non-blocking",
+      "text": "the base arm's receipt is misdirected: baseline_suite.log_path names logs/after-suite.log, whose header records revision bb256684ce and a command including tests/test_a_run_that_merged_primary_lands.py, and baseline_suite.command carries that same test file even though it does not exist at the base revision 622ef4617d and the logged command (logs/baseline-suite.log line 5) names only the two other files. A reader resolving the base arm from its own receipt gets the head arm twice; both arms record 0 failures so the derived delta is unaffected, but the receipt cannot be read as the run it claims."
+    }
+  ],
+  "project": "reckon",
+  "review": {
+    "basis": "added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own gate logs: baseline_suite completed true at 622ef4617d, exit 0, 58 passed, failure_ids [] (logs/baseline-suite.log, EXIT=0); after_suite completed true at bb256684ce, exit 0, 60 passed, failure_ids [] (logs/after-suite.log, EXIT=0). No failure id appears in the head arm that the base arm does not carry.",
+    "call_sites": [
+      "reckon/crew/promotion.py:661 _default_gate_evidence_from_manifest",
+      "reckon/crew/recovery_classification.py:3131 _promotion_command"
+    ],
+    "verdict_diff": "read commit by commit over eb4735ae3b..bb256684ce: 164df43d92 merges primary 8bb015c640 and resolves the conflict in _promotion_commits; 6d33245477 reformats the merged test file (3/-5, formatting only); 0cb2e73380 adds first_parent to merge.py:271 commits_between and passes it at promotion.py:665 while renaming the memo key to 'promotion_commits_beyond_primary', and re-pins the second case from a refusal to a not-cited assertion; bb256684ce rewrites the evidence fragment (+14/-10). No line of reckon/crew/promotion_evidence.py is touched.",
+    "verdict_done_when": "the done_when (docs/plans/a-landing-never-waits-on-a-shared-index.html:136) asks for a test failing at base where a run that merged a primary commit passes the dry run with no --commit; tests/test_a_run_that_merged_primary_lands.py:190 asserts it and the manifest's after arm records 60 passed EXIT=0 at bb256684ce (logs/after-suite.log) with a negative control of 2 failed EXIT=1 (logs/negative-control.log). The done_when's second clause, that another branch's commit is still refused, is not what the landed test asserts (it asserts would_promote is True), and no log files the base-red direction for either case.",
+    "verdict_goal": "the source node's goal is the section deliverable at docs/plans/a-landing-never-waits-on-a-shared-index.html:135 (s16): 'The citations promotion.complete_dry_run infers for a run exclude commits reachable from the primary revision, so a run's own merge of the primary branch cites only what the run made'; reckon/crew/promotion.py:665-667 passes excluding=_shared_branch_revision(record) and first_parent=True to commits_between, so the cited range is the run's own line less the shared branch's reachable history, and the first case at tests/test_a_run_that_merged_primary_lands.py:190 asserts exactly that set.",
+    "verdict_manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T124006592934-merged-primary-run-lands-s16/manifest.md: status complete, six commits, both arms with revision, log_path and exit_status 0, negative control 2 failed EXIT=1 (logs/negative-control.log), four pre-existing failures under outside_scope, and the s16 guard clause reported as superseded; its base arm's receipt names the head arm's log and a command the base revision cannot run (finding at manifest.md:16).",
+    "verdict_write_paths": "the manifest declares reckon/crew/promotion.py, reckon/crew/merge.py, tests/test_a_run_that_merged_primary_lands.py, docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/merged-primary-run-lands-s16.html and an unused figures directory; the run's authored commits since the last review (164df43d92 merge, 6d33245477, 0cb2e73380, bb256684ce) touch only those four files, and the 300-file breadth of eb4735ae3b..bb256684ce is the primary branch the merge imported, not the node's work."
+  },
+  "review_run_id": "r-20261115T202811884396-review-of-merged-primary-run-lands-s16-bb256684ce6f",
+  "reviewed_base_sha": "eb4735ae3b446954eddf79f3b2d8502bce7199f6",
+  "reviewed_head_sha": "bb256684ce6f3232bdba6326f257f3faace00188",
+  "reviewed_run_id": "r-20261115T124006592934-merged-primary-run-lands-s16",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 4,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T21:22:45.801933+00:00",
+  "total": 90
+}

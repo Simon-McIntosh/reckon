@@ -1,0 +1,92 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T15:38:24.252Z",
+  "dispatched_at": "2026-11-15T15:38:04Z",
+  "findings": [
+    {
+      "anchor": "reckon/_worker_fence.py:386",
+      "id": "reuse_search-1",
+      "reason": "\u00a73 shrinks from a new declaration family to extending `worker_mcp_servers` with named sets plus a recorded field, and its negative control must be restated against per-set selection rather than declaration itself.",
+      "text": "plan \u00a73 asks for \"a node declares the MCP set it needs\" when a project-level declaration of exactly that already exists and is already enforced on every launch: `worker_mcp_servers` is validated at `reckon/flight.py:895` and seeded into the run home's harness settings by `_seed_worker_mcp_settings` (`reckon/_worker_fence.py:386`, setting `ENABLED_PROJECT_MCP_SERVERS_KEY` with the project's servers as an allowlist and disabling the project's servers as a group) and `_seed_worker_mcp_exclusions` (`reckon/_worker_fence.py:413`, filtering Claude and omp run-owned JSON down to the allowed names). The same list reaches every backend at `reckon/_backends.py:3105`, `:3177`, `:3190` and is what makes `claude_worker_mcp_config` (`reckon/_worker_fence.py:437`) compose only declared servers. What is missing is (a) naming a set *per node* rather than per project, and (b) recording the connected set on the run; both are extensions of the existing declaration, and the plan's negative control \u2014 \"at the base revision a node naming a declaration is refused or connected to servers outside it\" \u2014 is false for the per-project form, since that form is enforced today.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/lane_document.py:481",
+      "id": "reuse_search-2",
+      "reason": "\u00a71 would name as its endpoint \"the router's slots appear among the bounds the dispatch already reads, and a queued request holds no harness\", instead of proposing a second capacity arithmetic beside `concurrency_bounds`.",
+      "text": "the snapshot's \u00a71 counts \"the router's published worker slots\" as a figure to be read, and that reader exists: `read_lane_admission` (`reckon/crew/lane_document.py:481`) resolves `worker_slots`, `new_session_*`, per-session shares and the observation window, degrading each field to `unknown` rather than zero, and four callers already consume it (`reckon/crew/dispatch_plan.py:1523`, `reckon/crew/picker/snapshot.py:662`, `reckon/crew/obligations.py:2126`, `reckon/crew/run_time_profile.py:437`). Admission, however, bounds a dispatch from `concurrency_bounds` (`reckon/crew/summary.py:395`), whose candidates are the roster cap (`RESERVATION_ROSTER_LIMIT = 80`, `reckon/crew/placement.py:92`, memory-derived), cores and the login memory slice \u2014 the router's published slots are not among them. The defect the plan describes is therefore one absent candidate in an existing bound list plus the queue discipline that already exists (`RosterFull` is raised as a queueable hold at `reckon/crew/dispatch_admission.py:240`, and the queue population is `runs.list_live(phase=\"queued\")`, `reckon/crew/runs.py:1196`), not a new slot counter.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/mcp.py:3948",
+      "id": "reuse_search-3",
+      "reason": "\u00a72's endpoint becomes \"the same server, addressed by URL from the same config seeding\", with the memory-versus-clients measure kept and the supervisor process dropped.",
+      "text": "the shared-server endpoint of \u00a72 is one transport change at an existing entrypoint, and the plan's own evidence table already says so (\"the installed MCP library (1.28) also offers a network transport\"), yet the deliverable asks for \"a declared MCP server [that] runs once and serves every worker on that node\", which reads as new supervision machinery. The server is a FastMCP instance whose run call hardcodes stdio (`reckon/mcp.py:3948`), while the per-worker start comes from the harness config seeded at `reckon/_worker_fence.py:517` (`_seed_anchored_edit` writes `\"type\": \"stdio\"`, `import sys; subprocess`-style entries). An existing in-process multi-client pattern to reuse for lifetime and restart discipline is `CurrentCodeServer` (`reckon/served_code.py:1791`: one persistent child per code stamp, replaced on death up to a bound, cold until its readiness probe answers).",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/summary.py:395",
+      "id": "deep_module-1",
+      "reason": "the plan should state one shared live-worker reading as the input to \u00a71, \u00a72, \u00a74, \u00a75 and \u00a76's measures, rather than five independent counts whose disagreement the \u00a76 window would be the first to reveal.",
+      "text": "the design handed to five nodes needs one question answered five times \u2014 how many workers are live, on which node, for which run \u2014 and the code holds three separate answers to extend (`runs.list_live` at `reckon/crew/runs.py:1196`, `roster_occupants` at `reckon/crew/placement.py:1350`, `concurrency_bounds` at `reckon/crew/summary.py:395`), plus the router-picker's own share arithmetic at `reckon/crew/dispatch_plan.py:1548` and the census machinery at `reckon/mcp_census.py`. A per-section reader each for \u00a71 (live vs slots), \u00a72 (servers per node), \u00a74 (memory on the fleet node), \u00a75 (live runs in the crew home) and \u00a76 (worker count across nodes) is five thin wrappers over one join, and the plan's evidence gate would then be the only place the five answers are compared. One reader that returns per-node live workers, their placement and their MCP connection answers all five, and remains one thing to test.",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_worker_fence.py:517",
+      "id": "thin_wrapper-1",
+      "reason": "the deliverable should either be the transport change or carry the one-line reason it cannot be, and the memory measure should then be against the server itself rather than against a supervisor's footprint (the measure's 0.5 GB delta is not bound to which process is counted, so a supervisor's own memory could mask the server's growth).",
+      "text": "\u00a72 introduces a per-node supervisor in front of the existing stdio server rather than saying why the server entrypoint cannot itself serve many clients. The server is already a long-lived process (`reckon/mcp.py:3948`), the config that points a worker at it is already composed in one place (`reckon/_worker_fence.py:437` `claude_worker_mcp_config`, `:517` `_seed_anchored_edit`, `reckon/crew/prompts.py` for the other backends), and a proxy in between would add a hop, a second lifecycle and a second failure surface to every tool call while hiding no behaviour the transport change does not already hide. Nothing in the snapshot's \u00a72 says why the existing machinery is insufficient.",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/placement.py:538",
+      "id": "duplicate_owner-1",
+      "reason": "the brief for \u00a74 must extend `placement.py`'s existing step-versus-job decision and the existing scratch resolver, and the plan's \u00a74 test wording (\"writing no file under the fleet node's local scratch\") should assert against that resolver's contract, not a new one.",
+      "text": "\u00a74 (\"workers run on compute nodes while coordination stays on the fleet node\") duplicates the placement owner. `reckon/crew/placement.py` already owns the reservation, the roster cap, and the decision to run a worker as a step of the allocation (`step_prefix`, `reckon/crew/placement.py:517`) or as a job of its own on a debug partition (`own_job_prefix`, `reckon/crew/placement.py:538`, `DEBUG_PARTITION_SUFFIX` at `:75`, scheduler identity stripped at `:608`), and the launch path already takes that decision at `reckon/crew/dispatch_launch.py:1414` and `:1440`. The same section's \"scratch on that node's local disk\" duplicates `worker_scratch_dir` (`reckon/crew/dispatch_launch.py:880`), whose consumers are already plural: `reckon/crew/dispatch_admission.py:2406`, `reckon/worker_git_shim.py:540`, `reckon/crew/dispatching/launch.py:87`. A second placement path or a second scratch resolver would make the roster (`read_reservation` at `:259`, `placed_in_reservation` at `:286`) stop describing where the fleet's workers actually are, which is the reading \u00a76 depends on. \u00a71's queue shares the defect in weaker form: the queued population is already `runs.list_live(phase=\"queued\")` (`reckon/crew/runs.py:1196`), read by `named_lane_request_waiting` (`reckon/crew/placement.py:109`) and by the admission refusal at `reckon/crew/dispatch_admission.py:240`, and a per-request holder record would be a second queue.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/work-scales-to-eighty-across-nodes/r-20261115T153558378867-plan-review-of-work-scales-to-eighty-across-nodes/plan.html:56",
+      "id": "interface_budget-1",
+      "reason": "\u00a71 and \u00a73 must each name the merge (`worker_mcp_servers` carries sets; the router-slot bound supersedes or subsumes the roster's memory bound, or the roster remains and the new bound joins it) so the added surface is accounted for in the section's own text.",
+      "text": "with public_definitions 2791, cli_options 504, mcp_views 15 and refusal_families 25, \u00a73 adds a new flight declaration family (`mcp_sets`, node-level set names) beside the existing `worker_mcp_servers` (`reckon/flight.py:98`), i.e. two vocabularies for one question, and it names neither what it retires nor why the existing key cannot be extended. The section also implies a new validated shape (`reckon/flight.py:895` is the validator pattern to extend), which is public surface in the counted family without a retirement. \u00a71 adds a candidate to the bound vocabulary (`roster`, `cores`, `memory` at `reckon/crew/summary.py:395`) selected by `BOUND_ORDER`; a fourth/fifth name there is a reader-visible addition whose replacement of the roster cap is not stated.",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "412873d2ab5ba6525363c6c9d3a42b6487379e70",
+  "plan_fingerprint": "a225bddb788150deceef780859e949d0c99a15ed864fc8bb64c2b039aefe60b4",
+  "plan_slug": "work-scales-to-eighty-across-nodes",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261115T153558378867-plan-review-of-work-scales-to-eighty-across-nodes",
+  "reviewed_blob_sha": "0e3ebf95a6333d94a1756c776cfa8dd1c4b4db69",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 five sections each independently need \"how many workers are live, and where\", and the code already holds three different readings of that quantity to be extended rather than a fourth built per section (`reckon/crew/runs.py:1196` `list_live`, `reckon/crew/placement.py:1350` `roster_occupants`, `reckon/crew/summary.py:395` `concurrency_bounds`). The design as briefed would spread one join across \u00a71, \u00a72, \u00a74, \u00a75 and \u00a76.",
+    "duplicate_owner": "a finding \u2014 \u00a74's worker placement on a compute node duplicates the owner `reckon/crew/placement.py`, which already chooses between a step of the allocation and a job of its own (`reckon/crew/placement.py:517` `step_prefix`, `:538` `own_job_prefix`, chosen at `reckon/crew/dispatch_launch.py:1414` and `:1440`), and its node-local scratch resolution duplicates `worker_scratch_dir` at `reckon/crew/dispatch_launch.py:880`. \u00a71's queued-request record would duplicate the queue population `runs.list_live(phase=\"queued\")` at `reckon/crew/runs.py:1196`, already used by `named_lane_request_waiting` at `reckon/crew/placement.py:109`.",
+    "interface_budget": "a finding \u2014 public_definitions 2791, cli_options 504, mcp_views 15, refusal_families 25; \u00a73 adds a declaration family (`mcp_sets`, per-node set names) beside the existing project-level `worker_mcp_servers` for a total of two ways to declare the same thing, and names neither what it retires nor why the existing key cannot carry it (\u00a73, snapshot line 56). \u00a71 adds a bound to the four-name bound vocabulary at `reckon/crew/summary.py:395` without naming which existing bound it replaces.",
+    "reuse_search": "a finding \u2014 the plan's own \u00a73 endpoint (a node declares the MCP set it starts) is already partly implemented as the project-level `worker_mcp_servers` declaration in `reckon/flight.py:98`, validated at `reckon/flight.py:895` and enforced per launch by `_seed_worker_mcp_settings` / `_seed_worker_mcp_exclusions` in `reckon/_worker_fence.py:386`, `:413`; and \u00a71's \"the router's published worker slots\" is already read by `read_lane_admission` in `reckon/crew/lane_document.py:481` and consumed at `reckon/crew/dispatch_plan.py:1523`, `reckon/crew/picker/snapshot.py:662`, `reckon/crew/obligations.py:2126`, `reckon/crew/run_time_profile.py:437`. \u00a72's shared server needs no supervisor: the entrypoint at `reckon/mcp.py:3948` hardcodes `transport=\"stdio\"` on FastMCP, so the network transport the plan cites is a one-line change to the existing entrypoint plus the config seeding at `reckon/_worker_fence.py:517`, not new machinery.",
+    "thin_wrapper": "a finding \u2014 \u00a72 proposes a per-node MCP supervisor process in front of a server that already exists as a single stdio process, with no stated reason the transport cannot be changed in `reckon/mcp.py:3948`."
+  },
+  "section_digests": {
+    "_document": "f80e8d0e62711f6920ae07001a7b272c25d3e38028b40ada9c41ed23b1860ac3",
+    "s1": "76632e86a52dac0579866f8408c0333fa863721b6e548776f3824d2b45faa4af",
+    "s2": "e7ab9125d04ee8ad5982c0e491f21574e03a15bbee9fb839b1ed2a41fd73a2d7",
+    "s3": "f22248790479287f695147e18c4f3e13dd8f0b03f1cda6b3a77b5284feb852b0",
+    "s4": "ae154a71092b8f6272d33272371402d5b554e801d16353fcc09ca8a7e4cf014d",
+    "s5": "33b3b4524304e6061af49372e1982dd0563e5a3234ea869bda7623c10cd2fc7f",
+    "s6": "5c15b0444540684bd597fe9ff8bf4d01ed8ab43c0eed8211721ace1d051d1a20"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T16:20:40.610674+00:00",
+  "total": null
+}
