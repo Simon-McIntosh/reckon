@@ -1,0 +1,207 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    "Real-home isolation assertion fails if these cases create/remove either tracked real-home path.",
+    "Live-pid control fails unless the fixture really presents a live local process, making the foreign-pid collision meaningful.",
+    "Retained-session assertion fails if resume drops or replaces the fixture session.",
+    "Worktree identity assertion fails if resume builds its launch for a different directory; this is a real output comparison, with no mocked identity-returning owner.",
+    "Attempt assertion fails if preparing the resumed attempt does not persist attempt 2.",
+    "Host assertion fails if the persisted observation names a host other than the pointer launch host; the expected host is fixture input, while the actual value is independently read from production-written disk.",
+    "Empty-output assertion fails if the successful vacant scheduler answer is not preserved as the empty string.",
+    "Gone assertion fails if successful vacancy is not classified as gone.",
+    "Timestamp assertion fails if the persisted observation carries no observation time.",
+    "Node-query assertion fails if the production code never invokes the stand-in scontrol.",
+    "User-query assertion fails if no squeue call includes this account uid.",
+    "Explicit pytest.fail fires if either signal entry point is reached for the foreign pid.",
+    "Stop result assertion fails if the foreign attempt exit cannot be recorded.",
+    "Empty ended-pids assertion fails if stop claims local processes were signalled.",
+    "Receipt run identity assertion fails if stop writes a receipt for another run.",
+    "Recorder assertion fails unless the exit is durably attributed to crew-stop.",
+    "Receipt observation assertion fails if the stop receipt omits or contradicts scheduler proof.",
+    "Pointer observation assertion fails if the successful empty answer is not copied onto the durable run pointer.",
+    "No-exit assertion fails if an unresolved host is nevertheless recorded stopped.",
+    "Unknown-liveness assertion fails if an occupied, login or unreadable host is reported known alive or dead.",
+    "False-gone assertion fails if any unresolved host is marked process_gone.",
+    "Occupied-output control fails if the instrument cannot see the known running job or discards its answer.",
+    "Failed/login-output assertion fails if no-query/failure is collapsed to an empty successful answer.",
+    "Scheduler-call-file assertion fails if the code never invokes a scheduler query.",
+    "Each pytest.raises at the end of the file fails if resume_plan, attempt preparation or terminate accepts an occupied/login/failed-query host."
+  ],
+  "assertion_independence": "Fixture-input comparisons at session/worktree/host/receipt identity check real production outputs or persisted files; none compares two aliases of one mocked value and none remains true whatever production does. Reinstating the base modules refuses vacancy before these assertions, as the recorded negative control demonstrates. Individual assertions additionally protect evidence fields, identity and signal exclusion as described.",
+  "assertion_lines": [
+    {
+      "line": 106,
+      "text": "assert [path.exists() for path in real_paths] == before"
+    },
+    {
+      "line": 123,
+      "text": "assert runs.process_alive(record[\"pid\"]) is True"
+    },
+    {
+      "line": 126,
+      "text": "assert plan.resumed_session == \"retained-session\""
+    },
+    {
+      "line": 127,
+      "text": "assert plan.cwd == record[\"worktree\"]"
+    },
+    {
+      "line": 128,
+      "text": "assert json.loads((directory / \"attempt.json\").read_text())[\"attempt\"] == 2"
+    },
+    {
+      "line": 130,
+      "text": "assert observation[\"host\"] == record[\"launcher_host\"]"
+    },
+    {
+      "line": 131,
+      "text": "assert observation[\"jobs_output\"] == \"\""
+    },
+    {
+      "line": 132,
+      "text": "assert observation[\"process_gone\"] is True"
+    },
+    {
+      "line": 133,
+      "text": "assert observation[\"observed_at\"]"
+    },
+    {
+      "line": 135,
+      "text": "assert any(Path(query[0]).name == \"scontrol\" for query in queries)"
+    },
+    {
+      "line": 136,
+      "text": "assert any("
+    },
+    {
+      "line": 142,
+      "text": "pytest.fail(\"a foreign pid must never be signalled on this host\")"
+    },
+    {
+      "line": 147,
+      "text": "assert stopped[\"stop_exit_recorded\"] is True"
+    },
+    {
+      "line": 148,
+      "text": "assert stopped[\"ended_pids\"] == []"
+    },
+    {
+      "line": 150,
+      "text": "assert receipt[\"run_id\"] == RUN_ID"
+    },
+    {
+      "line": 151,
+      "text": "assert receipt[\"recorded_by\"] == \"crew-stop\""
+    },
+    {
+      "line": 152,
+      "text": "assert receipt[\"launcher_host_observation\"][\"process_gone\"] is True"
+    },
+    {
+      "line": 153,
+      "text": "assert runs.read_pointer(RUN_ID)[\"launcher_host_observation\"][\"jobs_output\"] == \"\""
+    },
+    {
+      "line": 166,
+      "text": "with pytest.raises(CrewError):"
+    },
+    {
+      "line": 168,
+      "text": "with pytest.raises(CrewError, match=record[\"launcher_host\"]):"
+    },
+    {
+      "line": 170,
+      "text": "with pytest.raises(CrewError):"
+    },
+    {
+      "line": 172,
+      "text": "assert not (directory / \"exit.json\").exists()"
+    },
+    {
+      "line": 173,
+      "text": "assert liveness.local_liveness(record) == (None, False)"
+    },
+    {
+      "line": 175,
+      "text": "assert observation[\"process_gone\"] is False"
+    },
+    {
+      "line": 177,
+      "text": "assert observation[\"jobs_output\"] == \"123|RUNNING\\n\""
+    },
+    {
+      "line": 179,
+      "text": "assert observation[\"jobs_output\"] is None"
+    },
+    {
+      "line": 180,
+      "text": "assert calls.is_file()"
+    }
+  ],
+  "call_sites": [
+    "reckon/crew/resumption.py:_observed_process_reading",
+    "reckon/crew/dispatch_sessions.py:resume_plan",
+    "reckon/crew/dispatch_sessions.py:terminate",
+    "reckon/crew/dispatch_sessions.py:_record_stopped_attempt_exit",
+    "reckon/crew/dispatch_launch.py:reservation_in_flight",
+    "reckon/crew/dispatch_launch.py:_prepare_attempt_records",
+    "reckon/crew/dispatch_launch.py:_supervisor_spawn_worker"
+  ],
+  "completed_at": "2026-11-16T13:07:11Z",
+  "dispatched_at": "2026-11-16T13:02:02Z",
+  "failure_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_run_whose_host_is_gone_can_resume.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T073032064430-a-run-whose-host-is-gone-can-resume/after-final-1319971.log",
+      "revision": "c95f88facf8bab0fe0cef619e392bfdd2e7b2bd3"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T073032064430-a-run-whose-host-is-gone-can-resume/baseline.log",
+      "revision": "44ed29b94fadb61b30a80f22aeefa23210c9243f"
+    }
+  },
+  "findings": [],
+  "item_verdicts": {
+    "diff": "pass \u2014 read 138b26ee40927f42a79d5e83c3a8af4d3f3a0ab4 (implementation and tests), 9324813e9bfcbc74fc9a2a2c8074c84ef5c9b4ad (mechanism docstrings) and c95f88facf8bab0fe0cef619e392bfdd2e7b2bd3 (evidence fragment); no unrelated change found.",
+    "done_when": "pass \u2014 live plan section s75 and dispatch-detail.json require four scheduler cases; tests/test_a_run_whose_host_is_gone_can_resume.py:126-180 covers vacancy, occupancy, login and query failure, with baseline.log (58 passed), after-final-1319971.log (62 passed), negative-final-1319953.log (4 failed) and matched importer logs recording zero added failure ids.",
+    "goal": "pass \u2014 dispatch-detail.json defines vacant-compute-host recovery; reckon/crew/recovery_liveness.py:1425 supplies durable scheduler proof to resume, launch reservations and stop without probing foreign pids.",
+    "manifest": "pass \u2014 the reviewed run manifest.md names all three commits, complete baseline_suite and after_suite receipts, the base-byte negative control and the existing red importer results; the cited logs agree with its zero added failures.",
+    "write_paths": "pass \u2014 dispatch-detail.json declares three production modules, the focused test and the evidence fragment; git diff 44ed29b94fadb61b30a80f22aeefa23210c9243f..c95f88facf8bab0fe0cef619e392bfdd2e7b2bd3 changes exactly those five paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_run_whose_host_is_gone_can_resume.py:126-180 would fail if vacant hosts stayed refused, if occupied/login/failed queries authorised recovery, if scheduler evidence were absent, or if stop signalled the deliberately colliding local pid; the base-byte mutation fails the vacancy case.",
+    "evidence": "baseline.log ends with 58 passed and EXIT=0, after-final-1319971.log with 62 passed and EXIT=0, negative-final-1319953.log reproduces the foreign-host refusal, and the 145-file importer logs yield zero new FAILED ids.",
+    "fit": "reckon/crew/recovery_liveness.py:1425 extends the existing liveness owner using its three-way semantics, local imports and durable run JSON, and the added source names and mechanism docstrings carry no forbidden tracker or stage labels.",
+    "goal_fidelity": "reckon/crew/recovery_liveness.py:1425-1483 requires recognised compute identity and a successful empty user queue, persists the observation before granting recovery, and dispatch_sessions.py:2143-2180 avoids signalling foreign pids.",
+    "reuse": "Capability searches for scheduler node recognition, job queries, host liveness and reservation liveness found process_liveness.py:_run_scheduler_query (reused) and fleet_node.py:node_state (state parsing only); launcher_host_is_gone extends recovery_liveness rather than duplicating an existing vacant-host proof.",
+    "scope_discipline": "The base-to-head diff changes only dispatch_launch.py, dispatch_sessions.py, recovery_liveness.py, tests/test_a_run_whose_host_is_gone_can_resume.py and the declared evidence fragment, matching dispatch-detail.json."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: pass \u2014 dispatch-detail.json defines vacant-compute-host recovery; reckon/crew/recovery_liveness.py:1425 supplies durable scheduler proof to resume, launch reservations and stop without probing foreign pids.\nVERDICT done_when: pass \u2014 live plan section s75 and dispatch-detail.json require four scheduler cases; tests/test_a_run_whose_host_is_gone_can_resume.py:126-180 covers vacancy, occupancy, login and query failure, with baseline.log (58 passed), after-final-1319971.log (62 passed), negative-final-1319953.log (4 failed) and matched importer logs recording zero added failure ids.\nVERDICT write_paths: pass \u2014 dispatch-detail.json declares three production modules, the focused test and the evidence fragment; git diff 44ed29b94fadb61b30a80f22aeefa23210c9243f..c95f88facf8bab0fe0cef619e392bfdd2e7b2bd3 changes exactly those five paths.\nVERDICT manifest: pass \u2014 the reviewed run manifest.md names all three commits, complete baseline_suite and after_suite receipts, the base-byte negative control and the existing red importer results; the cited logs agree with its zero added failures.\nVERDICT diff: pass \u2014 read 138b26ee40927f42a79d5e83c3a8af4d3f3a0ab4 (implementation and tests), 9324813e9bfcbc74fc9a2a2c8074c84ef5c9b4ad (mechanism docstrings) and c95f88facf8bab0fe0cef619e392bfdd2e7b2bd3 (evidence fragment); no unrelated change found.\nCALL_SITES: reckon/crew/resumption.py:_observed_process_reading, reckon/crew/dispatch_sessions.py:resume_plan, reckon/crew/dispatch_sessions.py:terminate, reckon/crew/dispatch_sessions.py:_record_stopped_attempt_exit, reckon/crew/dispatch_launch.py:reservation_in_flight, reckon/crew/dispatch_launch.py:_prepare_attempt_records, reckon/crew/dispatch_launch.py:_supervisor_spawn_worker\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_liveness.py:1425-1483 requires recognised compute identity and a successful empty user queue, persists the observation before granting recovery, and dispatch_sessions.py:2143-2180 avoids signalling foreign pids.\nSCORE evidence: 20\nJUSTIFICATION evidence: baseline.log ends with 58 passed and EXIT=0, after-final-1319971.log with 62 passed and EXIT=0, negative-final-1319953.log reproduces the foreign-host refusal, and the 145-file importer logs yield zero new FAILED ids.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The base-to-head diff changes only dispatch_launch.py, dispatch_sessions.py, recovery_liveness.py, tests/test_a_run_whose_host_is_gone_can_resume.py and the declared evidence fragment, matching dispatch-detail.json.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_run_whose_host_is_gone_can_resume.py:126-180 would fail if vacant hosts stayed refused, if occupied/login/failed queries authorised recovery, if scheduler evidence were absent, or if stop signalled the deliberately colliding local pid; the base-byte mutation fails the vacancy case.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/recovery_liveness.py:1425 extends the existing liveness owner using its three-way semantics, local imports and durable run JSON, and the added source names and mechanism docstrings carry no forbidden tracker or stage labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for scheduler node recognition, job queries, host liveness and reservation liveness found process_liveness.py:_run_scheduler_query (reused) and fleet_node.py:node_state (state parsing only); launcher_host_is_gone extends recovery_liveness rather than duplicating an existing vacant-host proof.\n",
+  "review_run_id": "r-20261116T125842486582-review-of-a-run-whose-host-is-gone-can-resume-c95f88facf8b",
+  "reviewed_base_sha": "44ed29b94fadb61b30a80f22aeefa23210c9243f",
+  "reviewed_head_sha": "c95f88facf8bab0fe0cef619e392bfdd2e7b2bd3",
+  "reviewed_run_id": "r-20261116T073032064430-a-run-whose-host-is-gone-can-resume",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T13:08:00.378070+00:00",
+  "total": 120
+}

@@ -255,6 +255,14 @@ DUTY_ROW_FIELDS = (
 # duty returns to review-missing so the coordinator sees it again.
 REVIEW_QUEUED_DUTY_KIND = "review-queued"
 
+# A review the run's record names and the fleet lists as working is work already
+# moving: the reviewer holds a live pointer, and the only reading the coordinator
+# can take is its own account. Nothing this session runs shortens the wait, so
+# the duty is listed and does not hold a turn open -- the same reading a queued
+# review gets, and the one a coordinator needs to end a turn with a watch armed
+# rather than sit in a foreground wait on it.
+REVIEW_IN_FLIGHT_DUTY_KIND = "review-in-flight"
+
 # A run whose review has been dispatched, delivered, and not yet landed reads
 # as awaiting promotion: the wait is a promotion, not a dispatch and not a
 # follower. A review holds its pointer after it delivers, so the pointer alone
@@ -395,6 +403,7 @@ _INDEX_LAG_READINGS: dict[str, tuple[tuple[Any, ...], dict[str, Any] | None]] = 
 NON_BLOCKING_DUTY_KINDS = frozenset(
     {
         REVIEW_QUEUED_DUTY_KIND,
+        REVIEW_IN_FLIGHT_DUTY_KIND,
         QUEUED_RUN_DUTY_KIND,
         STALLED_RUN_DUTY_KIND,
         INDEX_LAG_DUTY_KIND,
@@ -914,6 +923,27 @@ def _refusal_speaks_for_revision(recorded: Mapping[str, Any], *, head: str) -> b
     return bool(stated) and bool(head) and recovery.same_revision(stated, head)
 
 
+def _cli_review_rubric(record: Mapping[str, Any]) -> str | None:
+    """Text review records use the CLI's default rubric selector."""
+    rubric = review_module._review_record_rubric(record)
+    return None if rubric == "node" else rubric or None
+
+
+def _finding_disposition_commands(
+    project: str,
+    run_id: str,
+    index: int,
+    *,
+    review: Mapping[str, Any] | None = None,
+) -> tuple[str, str]:
+    """Compose finding remedies with the rubric names the CLI accepts."""
+    if review is not None:
+        review = {**review, "rubric": _cli_review_rubric(review)}
+    return recovery_review_dispatch._finding_dispose_commands(
+        project, run_id, index, review=review
+    )
+
+
 def _review_dispatch_refusal(
     project: str,
     pointer: Mapping[str, Any],
@@ -994,7 +1024,7 @@ def _review_dispatch_refusal(
         if not undisposed:
             continue
         index, _finding = undisposed[0]
-        fold, exempt = recovery_review_dispatch._finding_dispose_commands(
+        fold, exempt = _finding_disposition_commands(
             project, run_id, index, review=record
         )
         return {
@@ -1007,9 +1037,7 @@ def _review_dispatch_refusal(
     for index in recorded.get("findings") or ():
         if not isinstance(index, int) or isinstance(index, bool):
             continue
-        fold, exempt = recovery_review_dispatch._finding_dispose_commands(
-            project, run_id, index
-        )
+        fold, exempt = _finding_disposition_commands(project, run_id, index)
         return {
             "reason": str(recorded.get("reason") or "")
             or "the review reflex refused this review's dispatch",
@@ -1322,7 +1350,7 @@ def _reflex_open_refusal(
             "reason": reason or "the reflex refused this review's dispatch",
             "next_command": dispatch or review_hand_dispatch_command(project, run_id),
         }
-    fold, exempt = recovery_review_dispatch._finding_dispose_commands(
+    fold, exempt = _finding_disposition_commands(
         project,
         run_id,
         indices[0],
@@ -1803,9 +1831,13 @@ def _partition_acknowledged(
     """Split duties into those still owed and those deliberately deferred."""
     owed: list[dict[str, Any]] = []
     deferred: list[dict[str, Any]] = []
-    for candidate in items:
-        original = candidate.get("deferred_duty")
-        item = original if isinstance(original, dict) else candidate
+    candidates = [
+        candidate["deferred_duty"]
+        if isinstance(candidate.get("deferred_duty"), dict)
+        else candidate
+        for candidate in items
+    ]
+    for item in measured_remedy_items(candidates, deferred_runs=acknowledgements):
         record = acknowledgements.get(str(item.get("run_id") or ""))
         if record is None:
             owed.append(item)
@@ -1824,6 +1856,79 @@ def _partition_acknowledged(
             }
         )
     return owed, deferred
+
+
+def measured_remedy_items(
+    items: Sequence[Mapping[str, Any]], *, deferred_runs: Iterable[str] = ()
+) -> list[dict[str, Any]]:
+    """Offer settlement commands only from the attempt's current evidence.
+
+    Both the direct view and the station's snapshot partition here, so the
+    hook renders the same decision without importing the derivation.
+    """
+    checked: list[dict[str, Any]] = []
+    deferred = set(deferred_runs)
+    for original in items:
+        item = dict(original)
+        command = str(item.get("next_command") or "")
+        try:
+            tokens = shlex.split(command)
+        except ValueError:
+            tokens = []
+        completing = "complete" in tokens and "crew" in tokens
+        repairing = "repair" in tokens and "--status" in tokens and "complete" in tokens
+        settlement_kind = item.get("kind") in {
+            "promotion-failed",
+            "review-ready",
+            "promotable-stale",
+            HELD_BY_FINISHED_RUN_DUTY_KIND,
+        }
+        if not (completing or repairing or settlement_kind):
+            checked.append(item)
+            continue
+        run_id = str(item.get("run_id") or "")
+        if "--run" in tokens and tokens.index("--run") + 1 < len(tokens):
+            run_id = tokens[tokens.index("--run") + 1]
+        try:
+            pointer = runs.read_pointer(run_id)
+        except CrewError:
+            pointer = {}
+        if not pointer:
+            if item.get("kind") == "promotion-failed" and run_id not in deferred:
+                continue
+            item["next_command"] = f"reckon crew observe --run {shlex.quote(run_id)}"
+        elif not recovery_classification.completion_offer(pointer, repair=True):
+            if settlement_kind:
+                continue
+            item["next_command"] = f"reckon crew observe --run {shlex.quote(run_id)}"
+        elif not repairing:
+            offered = recovery_classification._promotion_command(
+                run_id, pointer, list(item.get("manifest_commits") or ())
+            )
+            if "--gate passed" in offered and tokens[:3] == [
+                "reckon",
+                "crew",
+                "complete",
+            ]:
+                # Keep the caller's landing and disposition options once the
+                # shared composer has established the passing verdict.
+                if any(
+                    argument == "--gate" or argument.startswith("--gate=")
+                    for argument in tokens
+                ):
+                    item["next_command"] = re.sub(
+                        r"--gate(?:\s+|=)\S+", "--gate passed", command
+                    )
+                else:
+                    item["next_command"] = command + " --gate passed"
+            else:
+                item["next_command"] = offered
+        # An action form from a cached snapshot describes its previous command.
+        if "next_action" in item:
+            item["next_action"] = item["next_command"]
+        item.pop("next_action_form", None)
+        checked.append(item)
+    return checked
 
 
 def _scope_held_item(
@@ -2746,6 +2851,10 @@ def _review_duty_item(
     """
     age = _row_age(row, now=now)
     classification = str(row.get("classification") or "")
+    if pointer is not None and not recovery_classification.completion_offer(
+        pointer, repair=True
+    ):
+        return None
 
     def _classification_kind() -> str:
         return (
@@ -2776,7 +2885,7 @@ def _review_duty_item(
         and row.get("review_run_id")
         and row.get("review_run_phase") == "working"
     ):
-        item = _live_item(row, kind="review-in-flight", now=now)
+        item = _live_item(row, kind=REVIEW_IN_FLIGHT_DUTY_KIND, now=now)
         item["reason"] = str(row.get("detail") or "")
         return item
 
@@ -3857,7 +3966,7 @@ def _sub_floor_items_by_session(
                 run_id,
                 f"--dimension {shlex.quote(str(finding['dimension']))}",
                 review_run_id=str(record.get("review_run_id") or "") or None,
-                rubric=review_module._review_record_rubric(record) or None,
+                rubric=_cli_review_rubric(record),
             )
             by_session.setdefault(session, []).append(
                 {
