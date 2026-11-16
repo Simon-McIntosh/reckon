@@ -1,0 +1,112 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_promotion_beat_carries_fleet_state.py::test_an_unavailable_fleet_reading_does_not_block_promotion",
+    "tests/test_promotion_beat_carries_fleet_state.py::test_promotion_carries_a_bounded_fleet_reading_without_changing_the_ledger"
+  ],
+  "added_failures": [
+    "tests/test_promotion_beat_carries_fleet_state.py::test_an_unavailable_fleet_reading_does_not_block_promotion",
+    "tests/test_promotion_beat_carries_fleet_state.py::test_promotion_carries_a_bounded_fleet_reading_without_changing_the_ledger"
+  ],
+  "added_failures_note": "Derived with reckon.crew.review.added_failures_from_gate_logs over the two gate logs the reviewed manifest itself cites for its affected arm: logs/base-arm-affected.log (revision f0cbdd0b4e, scratch tree base-f0cbdd0b4, 46 failed / 1003 passed / 1 skipped, EXIT=1) and logs/head-affected-arm-job.log (revision d882fadb63, 24 failed / 1026 passed) with no EXIT= line in the head log (see the separate finding) but a complete pytest summary. Both ids fail at head and are absent from the base log, so the count is a measured 2, not an unmeasured zero. The reviewed run's manifest carries no baseline_suite or after_suite JSON fields, so the named-file gate pair was checked too: logs/baseline-crew-recovery.log records 19 failed / 67 passed EXIT=1 at f0cbdd0b4e and logs/gate-all-debug-merged.log records 86 passed EXIT=0 at d882fadb63 (all_debug job 1319079), a delta of 19 removed and 0 added. The two added ids above come from the arm population the done_when names, and the manifest reports neither.",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:1814",
+    "reckon/crew/admission/launching.py:558",
+    "reckon/crew/recovery_watch.py:750",
+    "reckon/crew/recovery_watch.py:1633",
+    "reckon/crew/obligations.py:1635",
+    "reckon/serve.py:902",
+    "reckon/crew/directory.py:342",
+    "reckon/crew/forgotten_runs.py:94"
+  ],
+  "completed_at": "2026-11-16T06:34:17.586Z",
+  "dispatched_at": "2026-11-16T06:33:48Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224606567948-qwnw-red-file-crew-recovery/logs/head-affected-arm-job.log",
+      "id": "affected-arm-adds-two-failures",
+      "line": "2496",
+      "severity": "blocking",
+      "text": "The affected arm the reviewed done_when names does not show what the manifest implies: logs/base-arm-affected.log at f0cbdd0b4e reports 46 failed and 1003 passed, while this merged-head arm at d882fadb63 reports 24 failed and 1026 passed, and reckon.crew.review.added_failures_from_gate_logs over the two logs returns 2 ids present only at head - tests/test_promotion_beat_carries_fleet_state.py::test_promotion_carries_a_bounded_fleet_reading_without_changing_the_ledger (line 2057) and tests/test_promotion_beat_carries_fleet_state.py::test_an_unavailable_fleet_reading_does_not_block_promotion (line 2257). The manifest's landing line (manifest.md:11) states only the named-file gate and its test_logs line (manifest.md:13) cites both arm logs without the count or an attribution, so the done_when clause 'adds no failure against the base' is contradicted by the run's own cited evidence and never reported. The diff of both failures is a ledger-row shape (missing budget/execution_fit/gate_check keys, extra lineage/local/node keys) from the origin/main merge, not from the two files this node changed, but that attribution is the reviewer's inference: the node recorded none, and its pre-merge affected arm at f2c7aada3e (head-arm-affected-final.log) never ran to a summary line, so no pre-merge arm exists to separate the node's change from the merge."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224606567948-qwnw-red-file-crew-recovery/logs/head-affected-arm-job.log",
+      "id": "affected-arm-no-exit-line",
+      "line": "2496",
+      "severity": "non-blocking",
+      "text": "The head affected arm's log ends at pytest's '24 failed, 1026 passed' summary with no EXIT= line, because logs/head-affected-arm.sh:5 runs 'set -eu' and the failing pytest aborts the script before its EXIT echo at line 15; the receipt therefore carries no readable status for the arm it is cited as, even though the runner's own summary names 24 failures."
+    },
+    {
+      "file": "reckon/crew/recovery_liveness.py",
+      "id": "budget-clause-unguarded",
+      "line": "744",
+      "severity": "non-blocking",
+      "text": "The new 'isinstance(record.get(\"budget\"), Mapping)' clause is a behaviour change to _stranded_launch as well as a new arm of _spawn_evidence: a pre-spawn pointer carrying a folded budget but no pid, worker record, stream or launch log was a stranded launch before this commit and is not one now. No test writes a pointer budget (grep for '\"budget\":' over tests/test_crew_recovery.py and the recovery tests finds only node time_budget fixtures), so reverting just this clause leaves the 86 named-file tests green; _stranded_launch's docstring at line 759 still lists only 'a worker record, a stream, or a launch log' as the evidence, understating the predicate it now calls."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": null,
+      "failure_count": 24,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224606567948-qwnw-red-file-crew-recovery/logs/head-affected-arm-job.log",
+      "revision": "d882fadb6321b9f41fcdec5c68eb068d72d23096"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 46,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224606567948-qwnw-red-file-crew-recovery/logs/base-arm-affected.log",
+      "revision": "f0cbdd0b4ebed84ee482f69efe93b1f4278cd5f1"
+    },
+    "named_file_gate": {
+      "baseline_exit_status": 1,
+      "baseline_failure_count": 19,
+      "baseline_log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224606567948-qwnw-red-file-crew-recovery/logs/baseline-crew-recovery.log",
+      "baseline_revision": "f0cbdd0b4ebed84ee482f69efe93b1f4278cd5f1",
+      "head_exit_status": 0,
+      "head_failure_count": 0,
+      "head_log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224606567948-qwnw-red-file-crew-recovery/logs/gate-all-debug-merged.log",
+      "head_partition": "all_debug",
+      "head_revision": "d882fadb6321b9f41fcdec5c68eb068d72d23096",
+      "head_slurm_job": "1319079"
+    }
+  },
+  "item_verdicts": {
+    "diff": "Read e75c89f5c8, f2c7aada3e and d882fadb63 against base f0cbdd0b4e: the product commit extracts _spawn_evidence at reckon/crew/recovery_liveness.py:725 from _stranded_launch's four inline evidence checks plus a new folded-budget clause and requires it at reckon/crew/recovery_classification.py:1814 before granting the pre-spawn reading, the evidence commit adds the 74-line fragment with the base failure log, and the merge commit d882fadb63 brings origin/main only.",
+    "done_when": "Read the done_when against the run's own logs: the named file gate passes in full on all_debug job 1319079 (sacct: COMPLETED, partition all_debug) with SLURM_JOB_ID unset (logs/gate-all-debug-merged.log:1-7), the base negative control is logs/baseline-crew-recovery.log (19 failed, 67 passed, EXIT=1), and no assertion was deleted or weakened because e75c89f5c8 and f2c7aada3e touch no test file; the third clause is not met as recorded, because base-arm-affected.log versus head-affected-arm-job.log yields the 2 head-only ids named under added_failure_ids and the manifest reports neither.",
+    "goal": "Read the goal 'Make tests/test_crew_recovery.py pass in full on the primary branch' in dispatch-detail.json and plan section s29, and checked the landed head: logs/gate-all-debug-merged.log:1 names d882fadb63 and lines 6-7 record 86 passed EXIT=0 with the scheduler identity unset, implemented by _spawn_evidence at reckon/crew/recovery_liveness.py:725 and called by _stranded_launch at :774 and classify_pointer at reckon/crew/recovery_classification.py:1814, with no test file edited.",
+    "manifest": "Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224606567948-qwnw-red-file-crew-recovery/manifest.md: status complete, commits e75c89f5c8, f2c7aada3e and d882fadb63, the named-file gate command and its all_debug job 1319079 landing line, test_logs citing base-arm-affected.log and head-affected-arm-job.log, and a negative control naming logs/baseline-crew-recovery.log; it records no added-failure count or attribution for the affected arm, and its test_logs line also carries two shell fragments ('/home/ITER/mcintos/.config/reckon 2>/dev/null' and '/home/ITER/mcintos/.config/reckon/crew/runs 2>/dev/null') that are not log paths.",
+    "write_paths": "Read the node's declared write paths in dispatch-detail.json (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround) and the two authored commits: e75c89f5c8 touches only reckon/crew/recovery_classification.py and reckon/crew/recovery_liveness.py, f2c7aada3e only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-recovery.html, all inside the fence; the remaining files in f0cbdd0b4e..d882fadb63 arrive through the origin/main merge commit d882fadb63, which the done_when's 'First merge the current origin/main' instructs."
+  },
+  "justifications": {
+    "durability": "Restoring the earlier 'phase in _PRE_SPAWN_PHASES and not _stranded_launch(...)' reading at reckon/crew/recovery_classification.py:1813 re-reddens the 19 pre-existing ids logged in logs/baseline-crew-recovery.log, for example tests/test_crew_recovery.py::test_a_missing_manifest_still_abandons_with_its_existing_detail, but the run added no assertion of its own and the new budget clause at reckon/crew/recovery_liveness.py:744 has no test that reddens if it is reverted.",
+    "evidence": "logs/gate-all-debug-merged.log:1-7 records the named-file gate at d882fadb63 with 86 passed EXIT=0 and sacct confirms all_debug job 1319079, but the done_when's arm clause is contradicted by logs/head-affected-arm-job.log:2057 and :2257, whose 2 head-only ids appear in manifest.md:13 without a count or attribution.",
+    "fit": "_spawn_evidence at reckon/crew/recovery_liveness.py:725 follows the module's private-helper and docstring idiom beside _stranded_launch, but that function's own docstring at :759 still enumerates only worker record, stream and launch log and so no longer describes the pid and budget arms the predicate supplies.",
+    "goal_fidelity": "At reckon/crew/recovery_classification.py:1814 a launch whose records show a worker now takes the liveness arms, and logs/gate-all-debug.log and logs/gate-all-debug-merged.log each record tests/test_crew_recovery.py at 86 passed EXIT=0, pre-merge and at the landed head.",
+    "reuse": "The capability already had one owner, _stranded_launch's four inline checks at reckon/crew/recovery_liveness.py:760-772; the change extracts them into _spawn_evidence at :725 and both the stranded test at :774 and classify_pointer at reckon/crew/recovery_classification.py:1814 call it, so no second implementation of spawn evidence exists.",
+    "scope_discipline": "e75c89f5c8 and f2c7aada3e write only reckon/crew/recovery_classification.py, reckon/crew/recovery_liveness.py and the declared fragment, and every other path in the base..head diff arrives through the instructed origin/main merge d882fadb63."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the goal 'Make tests/test_crew_recovery.py pass in full on the primary branch' in dispatch-detail.json and plan section s29, and checked the landed head: logs/gate-all-debug-merged.log:1 names d882fadb63 and lines 6-7 record 86 passed EXIT=0 with the scheduler identity unset, implemented by _spawn_evidence at reckon/crew/recovery_liveness.py:725 and called by _stranded_launch at :774 and classify_pointer at reckon/crew/recovery_classification.py:1814, with no test file edited.\nVERDICT done_when: Read the done_when against the run's own logs: the named file gate passes in full on all_debug job 1319079 (sacct confirms COMPLETED on partition all_debug) with SLURM_JOB_ID unset (logs/gate-all-debug-merged.log:1-7), the base negative control is logs/baseline-crew-recovery.log (19 failed, 67 passed, EXIT=1), and no assertion was deleted or weakened because e75c89f5c8 and f2c7aada3e touch no test file; the third clause is not met as recorded, because base-arm-affected.log versus head-affected-arm-job.log yields the 2 head-only ids named under added_failure_ids and the manifest reports neither.\nVERDICT write_paths: Read the node's declared write paths in dispatch-detail.json (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround) and the two authored commits: e75c89f5c8 touches only reckon/crew/recovery_classification.py and reckon/crew/recovery_liveness.py, f2c7aada3e only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-recovery.html, all inside the fence; the remaining files in f0cbdd0b4e..d882fadb63 arrive through the origin/main merge commit d882fadb63, which the done_when's 'First merge the current origin/main' instructs.\nVERDICT manifest: Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224606567948-qwnw-red-file-crew-recovery/manifest.md: status complete, commits e75c89f5c8, f2c7aada3e and d882fadb63, the named-file gate command and its all_debug job 1319079 landing line, test_logs citing base-arm-affected.log and head-affected-arm-job.log, and a negative control naming logs/baseline-crew-recovery.log; it records no added-failure count or attribution for the affected arm, and its test_logs line also carries two shell fragments ('/home/ITER/mcintos/.config/reckon 2>/dev/null' and '/home/ITER/mcintos/.config/reckon/crew/runs 2>/dev/null') that are not log paths.\nVERDICT diff: Read e75c89f5c8, f2c7aada3e and d882fadb63 against base f0cbdd0b4e: the product commit extracts _spawn_evidence at reckon/crew/recovery_liveness.py:725 from _stranded_launch's four inline evidence checks plus a new folded-budget clause and requires it at reckon/crew/recovery_classification.py:1814 before granting the pre-spawn reading, the evidence commit adds the 74-line fragment with the base failure log, and the merge commit d882fadb63 brings origin/main only.\nCALL_SITES: reckon/crew/recovery_classification.py:1814, reckon/crew/admission/launching.py:558, reckon/crew/recovery_watch.py:750, reckon/crew/recovery_watch.py:1633, reckon/crew/obligations.py:1635, reckon/serve.py:902, reckon/crew/directory.py:342, reckon/crew/forgotten_runs.py:94\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: At reckon/crew/recovery_classification.py:1814 a launch whose records show a worker now takes the liveness arms, and logs/gate-all-debug.log and logs/gate-all-debug-merged.log each record tests/test_crew_recovery.py at 86 passed EXIT=0, pre-merge and at the landed head.\nSCORE evidence: 10\nJUSTIFICATION evidence: logs/gate-all-debug-merged.log:1-7 records the named-file gate at d882fadb63 with 86 passed EXIT=0 and sacct confirms all_debug job 1319079, but the done_when's arm clause is contradicted by logs/head-affected-arm-job.log:2057 and :2257, whose 2 head-only ids appear in manifest.md:13 without a count or attribution.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: e75c89f5c8 and f2c7aada3e write only reckon/crew/recovery_classification.py, reckon/crew/recovery_liveness.py and the declared fragment, and every other path in the base..head diff arrives through the instructed origin/main merge d882fadb63.\nSCORE durability: 16\nJUSTIFICATION durability: Restoring the earlier 'phase in _PRE_SPAWN_PHASES and not _stranded_launch(...)' reading at reckon/crew/recovery_classification.py:1813 re-reddens the 19 pre-existing ids logged in logs/baseline-crew-recovery.log, for example tests/test_crew_recovery.py::test_a_missing_manifest_still_abandons_with_its_existing_detail, but the run added no assertion of its own and the new budget clause at reckon/crew/recovery_liveness.py:744 has no test that reddens if it is reverted.\nSCORE fit: 16\nJUSTIFICATION fit: _spawn_evidence at reckon/crew/recovery_liveness.py:725 follows the module's private-helper and docstring idiom beside _stranded_launch, but that function's own docstring at :759 still enumerates only worker record, stream and launch log and so no longer describes the pid and budget arms the predicate supplies.\nSCORE reuse: 20\nJUSTIFICATION reuse: The capability already had one owner, _stranded_launch's four inline checks at reckon/crew/recovery_liveness.py:760-772; the change extracts them into _spawn_evidence at :725 and both the stranded test at :774 and classify_pointer at reckon/crew/recovery_classification.py:1814 call it, so no second implementation of spawn evidence exists. \nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224606567948-qwnw-red-file-crew-recovery/logs/head-affected-arm-job.log:2496 blocking: the affected arm adds two head-only failures (lines 2057 and 2257) against logs/base-arm-affected.log and records no EXIT= line, while manifest.md:11-13 reports neither the two ids nor an attribution, so the done_when clause 'adds no failure against the base' is contradicted by the run's own cited evidence.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224606567948-qwnw-red-file-crew-recovery/logs/head-affected-arm-job.log:2496 non-blocking: the log ends at pytest's summary with no EXIT= line because logs/head-affected-arm.sh:5 runs 'set -eu' and the failing pytest aborts the script before its EXIT echo at line 15, leaving the arm's status unreadable.\nFINDING reckon/crew/recovery_liveness.py:744 non-blocking: the new folded-budget clause changes _stranded_launch's answer for budget-only pre-spawn pointers, no test writes a pointer budget so reverting it leaves the 86 named-file tests green, and the docstring at :759 still lists only worker record, stream and launch log.",
+  "review_run_id": "r-20261116T043019224117-review-of-qwnw-red-file-crew-recovery-d882fadb6321",
+  "reviewed_base_sha": "f0cbdd0b4ebed84ee482f69efe93b1f4278cd5f1",
+  "reviewed_head_sha": "d882fadb6321b9f41fcdec5c68eb068d72d23096",
+  "reviewed_run_id": "r-20261115T224606567948-qwnw-red-file-crew-recovery",
+  "rubric": "review",
+  "scores": {
+    "durability": 16,
+    "evidence": 10,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T07:25:58.056820+00:00",
+  "total": 99
+}

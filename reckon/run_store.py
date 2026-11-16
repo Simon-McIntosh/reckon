@@ -268,11 +268,12 @@ def _record_rows(
     fields: tuple[str, ...] | None = None,
     activity_since: float | None = None,
 ) -> Iterator[tuple[Any, ...]]:
-    """Stream selected records through the single durable/detail join.
+    """Read selected records through the single durable/detail join.
 
     Projection and selection happen before SQLite returns any payload to Python.
-    Full history remains streamable without retaining a second list of encoded
-    records beside the decoded answer. Identity batches stay below driver limits.
+    Each query is fetched and its cursor closed before yielding, so decoding or
+    consuming its rows cannot prolong a rollback-journal read lock. Encoded rows
+    are buffered per query; identity batches stay below driver limits.
     """
     selected = None if run_ids is None else sorted(set(map(str, run_ids)))
     batches = (
@@ -286,7 +287,7 @@ def _record_rows(
         connection.create_function(
             "record_plan",
             1,
-            lambda value: ledger._row_plan(json.loads(value)),
+            lambda value: ledger.row_plan(json.loads(value)),
             deterministic=True,
         )
     if activity_since is not None:
@@ -356,7 +357,12 @@ def _record_rows(
                 params.append(activity_since)
             if clauses:
                 query += " WHERE " + " AND ".join(clauses)
-            yield from connection.execute(query, params)
+            cursor = connection.execute(query, params)
+            try:
+                rows = cursor.fetchall()
+            finally:
+                cursor.close()
+            yield from rows
 
 
 def record_file_additions(

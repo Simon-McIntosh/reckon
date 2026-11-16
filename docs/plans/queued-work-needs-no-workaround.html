@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="142">
+<meta name="plan-version" content="149">
 <meta name="plan-modified" content="2026-11-16">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -537,6 +537,21 @@
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261116T043325764160-review-of-qwnw-red-file-an-undeclared-project-shares-its-source-file-5ae25099ba7a" data-who="reckon-build" data-when="2026-11-16T04:43:02Z">
     <div class="r-comment-body"><p>Reviewed d0d77f07e2dcc64d74713755aebe748602f9a06f..5ae25099ba7a08b6cbbee940df6974899c65d4e7; scores 20/12/20/19/19/20 with 0 added failures; one blocking manifest-receipt finding and one non-blocking base-SHA transcription finding.</p></div>
 </div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261116T043019224117-review-of-qwnw-red-file-crew-recovery-d882fadb6321" data-who="reckon-build" data-when="2026-11-16T06:34:17.586Z">
+    <div class="r-comment-body"><p>review of r-20261115T224606567948-qwnw-red-file-crew-recovery at base f0cbdd0b4e and head d882fadb63 scores goal_fidelity 19, evidence 10, scope_discipline 18, durability 16, fit 16, reuse 20 for a total of 99, with one blocking finding (the affected arm head log shows two head-only failures against the base and records no EXIT line, and the manifest reports neither) and two non-blocking findings (the missing EXIT receipt and the untested folded-budget clause at reckon/crew/recovery_liveness.py:744).</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261116T042748571589-review-of-qwnw-red-file-plan-edit-never-strands-9feecddb7c85" data-who="reckon-build" data-when="2026-11-16T06:34:16.792Z">
+    <div class="r-comment-body"><p>review of r-20261115T224751501038-qwnw-red-file-plan-edit-never-strands at base d0d77f07 head 9feecddb — parsed, six dimensions scored 17/13/20/16/19/20, base..head diff inside the declared fragment directory, added_failure_count 0 with no added ids; two non-blocking findings (fragment cites the parent 0f6fb393 as the delivered head instead of 9feecddb, and the named gate ran in place rather than as an all_debug job).</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261116T062110543272-review-of-qwnw-red-file-queue-dag-waits-7b58c52cab02" data-who="reckon-build" data-when="2026-11-16T06:34:02.120Z">
+    <div class="r-comment-body"><p>reviewed run r-20261116T031335994022-qwnw-red-file-queue-dag-waits at base e35fd9f935225b7005482a75032eb28abeb46c63 and head 7b58c52cab02269b3129ef447e09bd1bbc9af347 — scores goal_fidelity 19, evidence 19, scope_discipline 20, durability 14, fit 18, reuse 20, total 110, added_failure_count 0 with no added failure ids, and two non-blocking findings on the evidence fragment.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261116T031335994022-qwnw-red-file-queue-dag-waits" data-who="reckon-build" data-when="2026-11-16T04:21:32.081Z">
+    <div class="r-comment-body"><p>tests/test_queue_dag_waits.py passes in full at head — 25 passed in 5.47s as batch job 1319129 on all_debug with SLURM_JOB_ID unset — against 14 failed and 8 passed at 8d50b0333f, where every failure was the queue-time refusal for a request naming no manifest path; the cause was product-side and its repair (c3933bacfb, assign durable manifests before validating requests) is an ancestor of the base, so no test assertion was edited, deleted or weakened, and the armed arm pair reads 58 passed at both the base revision and head.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261115T224606567948-qwnw-red-file-crew-recovery" data-who="reckon-build" data-when="2026-11-16T02:08:10Z">
+    <div class="r-comment-body"><p>the pre-spawn recovery reading now requires a launch that spawned nothing, so a run whose worker left a stream, a pid, a folded budget or a worker record takes the liveness arms and reads blocked, unreadable or abandoned; tests/test_crew_recovery.py went from 19 failed at the base revision to 86 passed at the merged head, measured as all_debug job 1319079.</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261115T005738501568-review-of-qwnw-a-declared-write-path-fences-nothing-bc0fa81931ba" data-who="reckon-build" data-when="2026-11-15T02:35:19.779Z">
     <div class="r-comment-body"><p>review record stored at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T200800793250-qwnw-a-declared-write-path-fences-nothing/review-records/r-20261114T200800793250-qwnw-a-declared-write-path-fences-nothing.at-bc0fa81931bac1c9bfc484536c8eff74b279d8e5.json ; no commit, this node writes outside the repository</p></div>
 </div>
@@ -590,6 +605,12 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261114T201210409568-qwnw-a-reservation-or-lock-holds-only-while-its-holde" data-who="reckon-build" data-when="2026-11-15T06:53:11Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-reservation-or-lock-holds-only-while-its-holde.html</p></div>
+</div>
+<div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
+    <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s30" data-id="c-run-r-20261116T064232030885-qwnw-s30" data-who="reckon-build" data-when="2026-11-16T07:05:24Z">
+    <div class="r-comment-body"><p>Shared manifest reader now refuses shell-redirection changed-path items by name with a remove-or-replace repair; preserves whole-field none reasons, both commitless promotion routes, and unresolved-citation refusal. Rigel: 66 armed tests pass; broader gate has 0 added failures (57 identical base/head failures), with 8 additional passes.</p></div>
 </div>
 </section>
 </main>

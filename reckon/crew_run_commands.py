@@ -4088,21 +4088,23 @@ def _refuse_a_plain_complete_off_the_branch(
     ``crew merge --run`` unable to find the run it was asked to land.
 
     The remote is read through the module that lands there, so the ancestry
-    decision is the one the merge makes. A review run is exempt: its pointer
-    carries the reviewed node's head by design, checked in the node's worktree
-    and never on the branch, and it is not a landing. A checkout that configures
-    no remote has no remote branch to be off, so the question does not arise and
-    the promotion proceeds.
+    decision is the one the merge makes. A review run is exempt because its
+    pointer carries the reviewed node's head by design, checked in the node's
+    worktree and never on the branch. A measurement run is also exempt because
+    its delivered head is never landed. A checkout that configures no remote
+    has no remote branch to be off, so the question does not arise and the
+    promotion proceeds.
 
     Nothing is written here: the pointer and the ledger are untouched when this
     refuses, which is what makes the refusal recoverable.
     """
     from reckon.crew import merge as merge_module
     from reckon.crew import promotion_release
+    from reckon.crew.recovery_classification import _is_measurement_run
     from reckon.crew.recovery_review_delivery import _is_review_run
     from reckon.crew.refusals import format_refusal
 
-    if _is_review_run(pointer):
+    if _is_review_run(pointer) or _is_measurement_run(pointer):
         return
     head = promotion_release._run_promoted_revision(pointer, list(commits or ()))
     if not head:
