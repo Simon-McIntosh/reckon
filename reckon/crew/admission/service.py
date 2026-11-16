@@ -211,16 +211,10 @@ def admit_until_stopped(
     was working. ``--once`` returns its pass to the caller instead and prints
     nothing here, because the verb reports that pass itself.
 
-    The code stamp is compared at the head of every pass, before the pass runs.
-    A pass must never validate or launch a queued request with code older than
-    the checkout it launches from, and the checkout can move during the wait
-    between passes: checking afterwards would let one more pass run on the old
-    code before the move was noticed. So a stamp the checkout has moved past, on
-    a checkout the trusted test accepts, re-executes this process in place before
-    the next pass begins, and the failure guard's code fingerprint retries
-    work held before re-exec. A stamp on a checkout the trusted test refuses
-    leaves the service on its current code, so a tree mid-merge never replaces a
-    running service.
+    The shared reload window observes the checkout at the head of each pass.
+    Code changes coalesce until its deadline and until this image has finished
+    and published a pass. An immediate request bypasses the deadline, while
+    the trust check and the drain still protect every replacement.
 
     A replacement ends every thread this process started, so a stamp that has
     moved no longer re-executes at once: the loop starts no further promotion or
@@ -234,14 +228,14 @@ def admit_until_stopped(
     from reckon import flight
     from reckon.crew.dispatch_launch import _adopt_launched_workers_from_reexec
     from reckon.crew.fleet_supervisor import service_pass
+    from reckon.crew.follower_reload import ReloadWindow
     from reckon.crew.promotion_requests import PromotionService
     from reckon.crew.resumption import _promotion_settings
 
     _adopt_launched_workers_from_reexec()
     promotion_width, _ = _promotion_settings(flight.resolve().config)
-    # The stamp is what the drain watches to stop starting work on code the
-    # service is about to replace in place.
-    promotions = PromotionService(width=promotion_width, code_stamp=_admit_code_stamp)
+    # The window owns the decision to drain; a moved stamp alone keeps work flowing.
+    promotions = PromotionService(width=promotion_width)
     admission_options: dict[str, Any] = {"lane": lane}
     if launcher is not None:
         admission_options["launcher"] = launcher
@@ -280,6 +274,10 @@ def admit_until_stopped(
         return result
     passes = 0
     code_stamp = _admit_code_stamp()
+    service_name = Path(
+        os.environ.get("RECKON_SERVICE_PASS_PATH", "admission.pass")
+    ).stem
+    reload_window = ReloadWindow(service_name, code_stamp)
     worker = _landing._LandingWorker(lander)
     # The queue refills itself between passes.
     promotions.start_refill()
@@ -288,12 +286,13 @@ def admit_until_stopped(
     # clock of its own.
     from .review_sweep import ReviewSweep
 
-    reviews = ReviewSweep(code_stamp=_admit_code_stamp)
+    reviews = ReviewSweep()
     reviews.start()
     try:
         while True:
             with service_pass():
-                if _admit_code_stamp() != code_stamp and _checkout_code_is_trusted():
+                newest_code = _admit_code_stamp()
+                if reload_window.due(newest_code) and _checkout_code_is_trusted():
                     # Replacing this image ends every thread it started, and the
                     # promotions and landings run on those threads. So no new
                     # one starts once the stamp has moved: the loop drains the
@@ -302,7 +301,8 @@ def admit_until_stopped(
                     reviews.stop()
                     promotions.wait_for_in_flight()
                     worker.settle()
-                    _reexec_into_current_code()
+                    with reload_window.replacement(newest_code):
+                        _reexec_into_current_code()
                 started_at = _utc_now()
                 started = time.monotonic()
                 # The landing runs in its own thread under its own lock, so this
@@ -331,6 +331,7 @@ def admit_until_stopped(
                         admitted, lane=lane, code_stamp=code_stamp
                     )
                 )
+                reload_window.exported()
                 passes += 1
             _pause(interval)
     except KeyboardInterrupt:

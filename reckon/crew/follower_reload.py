@@ -14,19 +14,181 @@ imported here, because that module imports this one to re-export it, and
 because a caller that patches one of those names does so on that module.
 """
 
+import getpass
 import json
 import os
 import random
 import re
 import shlex
 import signal
+import socket
 import sys
 import time
+import uuid
 from collections.abc import Iterable, Mapping
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
 from reckon import checkout_trust
+
+
+def reload_paths(service: str) -> tuple[Path, Path]:
+    """Separate a service's published schedule from its requested override."""
+    from reckon.crew import runs
+
+    if re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9_.-]*", service) is None:
+        raise ValueError("service must be a simple name")
+    root = runs.crew_home() / "service-reloads"
+    return root / f"{service}.json", root / f"{service}.request.json"
+
+
+def _reload_record(path: Path) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text())
+    except FileNotFoundError:
+        return {}
+    if not isinstance(value, dict):
+        raise TypeError(f"reload record is not an object: {path}")
+    return value
+
+
+def request_service_reload(service: str, reason: str) -> dict[str, Any]:
+    """Request an immediate replacement, retaining its requester and reason."""
+    from reckon._store import write_json_atomically
+
+    if not reason.strip():
+        raise ValueError("an immediate reload requires a reason")
+    _, path = reload_paths(service)
+    request = {
+        "id": uuid.uuid4().hex,
+        "service": service,
+        "reason": reason.strip(),
+        "requested_by": os.environ.get("CODEX_SESSION_ID")
+        or os.environ.get("CLAUDE_CODE_SESSION_ID")
+        or getpass.getuser(),
+        "requested_at": time.time(),
+    }
+    write_json_atomically(path, request)
+    return request
+
+
+def service_reload_status(service: str) -> dict[str, Any]:
+    """Read the service's own code identities and its next reload time."""
+    status, request = reload_paths(service)
+    return {
+        "service": service,
+        **_reload_record(status),
+        "request": _reload_record(request),
+    }
+
+
+class ReloadWindow:
+    """Coalesce code changes until a window and an exported tick have passed.
+
+    Automatic reloads keep their cadence when an immediate request intervenes.
+    Every replacement starts a new tick obligation; an override bypasses the
+    clock but still waits for a complete exported tick and the caller's trust
+    and in-flight-work guards. The schedule survives exec through its record,
+    keyed by the process's host and pid.
+    """
+
+    def __init__(self, service: str, running: str, *, clock=None, seconds=None):
+        from reckon import flight
+
+        self.clock = time.time if clock is None else clock
+        self.seconds = (
+            flight.service_reload_window_seconds(flight.resolve().config)
+            if seconds is None
+            else seconds
+        )
+        self.path, self.request_path = reload_paths(service)
+        self.service = service
+        self.process = [socket.gethostname(), os.getpid()]
+        previous = _reload_record(self.path)
+        self.running = running
+        self.newest = running
+        now = self.clock()
+        self.next_at = (
+            previous["next_reload_at"]
+            if previous.get("process") == self.process
+            else now + self.seconds
+        )
+        self.exported_at = None
+        self.last_request = previous.get("last_request", {})
+        self.last_reload_at = previous.get("last_reload_at")
+        self.reload_count = previous.get("reload_count", 0)
+        self.pending_request = {}
+        self._published = None
+        self.publish()
+
+    def report(self) -> dict[str, Any]:
+        return {
+            "service": self.service,
+            "process": self.process,
+            "running_code": self.running,
+            "newest_seen": self.newest,
+            "next_reload_at": self.next_at,
+            "window_seconds": self.seconds,
+            "tick_exported_at": self.exported_at,
+            "last_reload_at": self.last_reload_at,
+            "last_request": self.last_request,
+            "reload_count": self.reload_count,
+        }
+
+    def publish(self) -> None:
+        from reckon._store import write_json_atomically
+
+        record = self.report()
+        if record != self._published:
+            write_json_atomically(self.path, record)
+            self._published = record
+
+    def exported(self) -> None:
+        """The caller has finished and exported a tick in this image."""
+        if self.exported_at is None:
+            self.exported_at = self.clock()
+            self.publish()
+
+    def due(self, newest: str) -> bool:
+        if newest == checkout_trust.IDENTITY_UNKNOWN:
+            return False
+        self.newest = newest
+        request = _reload_record(self.request_path)
+        self.pending_request = (
+            request if request.get("id") != self.last_request.get("id") else {}
+        )
+        self.publish()
+        return self.exported_at is not None and (
+            bool(self.pending_request)
+            or (newest != self.running and self.clock() >= self.next_at)
+        )
+
+    def reloaded(self, running: str) -> None:
+        """Record the replacement at the final exec boundary."""
+        now = self.clock()
+        if now >= self.next_at:
+            self.next_at = now + self.seconds
+        self.last_request = self.pending_request or self.last_request
+        self.pending_request = {}
+        self.running = self.newest = running
+        self.last_reload_at = now
+        self.reload_count += 1
+        self.exported_at = None
+        self.publish()
+
+    @contextmanager
+    def replacement(self, running: str):
+        """Publish the exec handover, restoring it if the replacement fails."""
+        before = dict(self.__dict__)
+        self.reloaded(running)
+        try:
+            yield
+        except BaseException:
+            self.__dict__.update(before)
+            self._published = None
+            self.publish()
+            raise
 
 
 def image_reexec_argv(image_root: Path) -> list[str]:
