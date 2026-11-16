@@ -23,9 +23,9 @@
   <title>History Persists As Detail Washes Out | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="68">
+<meta name="plan-version" content="69">
 <meta name="plan-modified" content="2026-11-16">
-<meta name="plan-section-declarations" content="{&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;implementable&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s24&quot;:&quot;implementable&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s27&quot;:&quot;implementable&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s24&quot;:&quot;implementable&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s27&quot;:&quot;implementable&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;implementable&quot;}">
 <meta name="plan-section-depends-on" content="{&quot;s26&quot;:[&quot;history-persists-as-detail-washes-out#s21&quot;,&quot;history-persists-as-detail-washes-out#s22&quot;,&quot;history-persists-as-detail-washes-out#s23&quot;,&quot;history-persists-as-detail-washes-out#s24&quot;,&quot;history-persists-as-detail-washes-out#s25&quot;,&quot;history-persists-as-detail-washes-out#s28&quot;,&quot;history-persists-as-detail-washes-out#s29&quot;],&quot;s27&quot;:[&quot;history-persists-as-detail-washes-out#s26&quot;]}">
 </head>
 <body>
@@ -366,7 +366,7 @@
 <p><strong>Done when.</strong> A promotion whose store write raises refuses, names the store and the repair verb, and leaves no row in either store, asserted by injection; a healthy promotion writes both and <code>run_store.compare</code> returns 0/0/0. The test fails at base. Write paths: <code>reckon/ledger.py</code>, <code>reckon/run_store.py</code> and the new test.</p>
 
     <h2 id="s22">Every ledger question is answered by the store</h2>
-<section data-reckon="section" data-id="s22" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s22" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> The map lists every reader of the per-run files and the aggregate; untracking before they read the store leaves each with nothing to read.</p>
 <p><strong>Done when.</strong> Every existing reader test passes against a project whose <code>runs/</code> directory is absent and whose store holds the rows, and a store deleted and rebuilt returns an equal answer set. The read is bounded, because the first landing (98b7fdd438) was reverted by 195e7a80ac after every ledger load decoded the whole store and then stat-ed every run file, which took the station past 8 GB at a full core. On the live reckon project, three plan-scoped <code>read_records</code> calls peak under 300 MB resident and finish under 10 s together. A test that counts filesystem stats during one <code>ledger.load</code> over a fixture of 200 run files records no per-file stat. The station's memory and tick time on the landed code are checked at landing, not by this node. Write paths: <code>reckon/ledger.py</code> (<code>load</code>, <code>load_aggregate</code>, <code>runs</code>, <code>read_records</code>), <code>reckon/crew/open_run_index.py</code> and the new test.</p>
 
