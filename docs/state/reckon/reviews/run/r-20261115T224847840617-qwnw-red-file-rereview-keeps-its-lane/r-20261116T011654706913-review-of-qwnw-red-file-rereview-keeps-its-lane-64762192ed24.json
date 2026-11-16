@@ -1,0 +1,86 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": {
+    "added": "The diff adds no assertion at all: the only change under tests/ is the fixture's phase value and its comment at tests/test_rereview_keeps_its_lane.py:187-192, and _scoring_pointer is the one record every case builds through.",
+    "negative_control": "The condition under which the change fails is the fixture's own regression: base-arm.log shows the pre-spawn phase plus a complete manifest refused as 'the run is not awaiting review (running)' in 8 cases, at EXIT=1.",
+    "reachable": "The assertions this change makes reachable are pre-existing: :319 assert report['backend'] and :600 assert report['backend'] == OTHER_BACKEND compare the composed dispatch against module constants, so a lane rule that stopped steering reddens them; no assertion compares a value against the same variable the test handed the code under test."
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:2828 the classify_pointer refusal the fixture now clears",
+    "reckon/crew/recovery_classification.py:2051 manifest status complete -> scoring"
+  ],
+  "completed_at": "2026-11-16T01:25:32.540Z",
+  "dispatched_at": "2026-11-16T01:22:32Z",
+  "failure_delta_evidence": {
+    "after": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_rereview_keeps_its_lane.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224847840617-qwnw-red-file-rereview-keeps-its-lane/head-arm.log",
+      "revision": "9fe2fefad82cb6422668f705f8a138b74b3c1bdc",
+      "summary": "12 passed in 118.20s (0:01:58)"
+    },
+    "baseline": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_rereview_keeps_its_lane.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 8,
+      "failure_ids": [
+        "tests/test_rereview_keeps_its_lane.py::test_a_launched_attempt_with_no_stored_review_steers_off_its_lane",
+        "tests/test_rereview_keeps_its_lane.py::test_a_reclaimed_worktree_reads_the_head_from_the_run_record",
+        "tests/test_rereview_keeps_its_lane.py::test_a_reclaimed_worktree_with_no_recorded_head_does_not_accept_the_newest",
+        "tests/test_rereview_keeps_its_lane.py::test_a_recorded_attempt_for_the_current_head_still_demotes_its_lane",
+        "tests/test_rereview_keeps_its_lane.py::test_a_recorded_attempt_naming_no_head_does_not_demote_its_lane",
+        "tests/test_rereview_keeps_its_lane.py::test_a_refused_attempt_recomposes_onto_its_lane",
+        "tests/test_rereview_keeps_its_lane.py::test_a_review_at_a_new_head_keeps_the_lane_that_dropped_the_old_one",
+        "tests/test_rereview_keeps_its_lane.py::test_a_withdrawn_before_launch_attempt_recomposes_onto_its_lane"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224847840617-qwnw-red-file-rereview-keeps-its-lane/base-arm.log",
+      "revision": "d0d77f07e2dcc64d74713755aebe748602f9a06f",
+      "summary": "8 failed, 4 passed in 3.59s"
+    }
+  },
+  "findings": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224847840617-qwnw-red-file-rereview-keeps-its-lane/manifest.md:7 blocking: the commits line cites 64762192ed1b5b4b0e6a2d9b9b3ab1a79a2f2b6f and 9fe2fefad8fbecd1ae62d3aa7bcdbbef1de4fc7a, neither of which is an object in this repository; the commits the worktree actually holds are 9fe2fefad8, 0543ce79b1 and 64762192ed24, so _resolve_commits in reckon/crew/promotion_scope.py:298 raises 'does not resolve to a commit object in the run repository' and this node cannot land until the line is rewritten with the ids git holds",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224847840617-qwnw-red-file-rereview-keeps-its-lane/manifest.md:18 non-blocking: baseline_suite is not valid JSON - the revision value is missing its closing quote before the 'command' key and the fourth failure_ids entry is unterminated - so _baseline_suite_failure_ids at reckon/crew/promotion_checks.py:2345 reads a non-Mapping and returns set(), reporting the base arm as observed-nothing rather than as the 8 ids its log lists; the after_suite revision at :19 carries the same non-existent sha",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224847840617-qwnw-red-file-rereview-keeps-its-lane/manifest.md:23 non-blocking: the done_when's first step - merge the current origin/main and rerun the file - was not performed, so the goal's 'on the primary branch' half rests on a diff comparison instead of a run; the span d0d77f07..cbfc8346 (origin/main as it stands) touches no file under reckon/ or tests/, so the omission is recorded as unverified rather than shown harmless"
+  ],
+  "justifications": {
+    "durability": "reverting the fixture to the pre-spawn phase reddens 8 cases (base-arm.log); the reachable assertions compare against module constants rather than the input record.",
+    "evidence": "head-arm.log and base-arm.log record the two arms with revision, command and EXIT; the sibling arm and the origin/main rerun are claimed without a log or a run.",
+    "fit": "the fixture comment and the phase value follow the file's convention, though 'working' is not the phase a delivered pointer settles at (reckon/crew/dispatch_sessions.py:343).",
+    "goal_fidelity": "tests/test_rereview_keeps_its_lane.py:192 makes the fixture a delivered run so the file reads 12 passed in head-arm.log; the primary-branch clause rests on a base 26 commits behind origin/main.",
+    "reuse": "no definition is added; the pointer-phase vocabulary owner is recovery_liveness.py:56 and the file keeps its single _scoring_pointer builder.",
+    "scope_discipline": "the diff touches only tests/test_rereview_keeps_its_lane.py and two files under docs/evidence/fragments/queued-work-needs-no-workaround, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that tests/test_rereview_keeps_its_lane.py passes in full on the primary branch; the landed change repairs the test fixture, and the file reads 12 passed in 118.20s at head 9fe2fefad8 per base-arm.log/head-arm.log, with the primary-branch half unverified because origin/main was never merged for a full-file decision; reckon/crew/recovery_review_dispatch.py:2828 is the classify_pointer gate the file has to reach.\nVERDICT done_when: The done_when asks for the named file green as an all_debug job with SLURM_JOB_ID unset, a base run carrying the failing ids as negative control, no deleted or weakened assertion, a sibling arm adding no failure and clean ruff; admit_request.node.done_when names all six, and the manifest records the head arm green, the base arm red with 8 ids, and a 7-line fixture-only diff that removes no assertion.\nVERDICT write_paths: The node declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround (admit_request.node.write_paths); the diff's three paths - tests/test_rereview_keeps_its_lane.py and the two fragments under that fragment directory - sit inside them and no other path is touched.\nVERDICT manifest: Read manifest.md; it records status complete, three commits, the all_debug head arm at 12 passed EXIT=0, and the base arm at 8 failed EXIT=1, but its commits line at :7 names two ids no object store holds and its baseline_suite at :18 is not valid JSON.\nVERDICT diff: Read the three commits 9fe2fefad8, 0543ce79b1 and 64762192ed24 against base d0d77f07e2; tests/test_rereview_keeps_its_lane.py:187-192 changes only the fixture's pointer phase with a comment, and the two new fragments add 61 lines of evidence prose citing base-arm.log and head-arm.log.\nCALL_SITES: none - the diff changes no production module; the production path the file drives was read at reckon/crew/recovery_review_dispatch.py:2828 (the classify_pointer refusal) and reckon/crew/recovery_classification.py:2051 (the branch that reads manifest status complete as scoring)\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: tests/test_rereview_keeps_its_lane.py:192 makes the fixture a delivered run so the file reads 12 passed in head-arm.log, though the goal's primary-branch clause is carried by a base 26 commits behind origin/main rather than by a merged run.\nSCORE evidence: 15\nJUSTIFICATION evidence: head-arm.log names its revision, tree, command and partition and ends EXIT=0 with 12 passed, base-arm.log ends EXIT=1 with the 8 ids the fragment transcribes, but the sibling arm's 4-passed result at manifest.md:21 has no log and the origin/main merge was replaced by a diff comparison (manifest.md:23).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff d0d77f07..64762192ed24 --name-only is tests/test_rereview_keeps_its_lane.py or one of the two new docs/evidence/fragments/queued-work-needs-no-workaround files, all inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the regression - the fixture's pre-spawn phase at tests/test_rereview_keeps_its_lane.py:184 of the base tree - reddens 8 cases in base-arm.log, and the lane assertions it makes reachable compare report['backend'] against the module constants at :319 and :600, so a lane rule that stopped steering reddens them independently of any input the test supplies.\nSCORE fit: 17\nJUSTIFICATION fit: the change keeps the file's one-fixture convention and names a phase the product already owns (reckon/crew/dispatch_sessions.py:192), but 'working' is the phase a run carries while its worker lives rather than the status a delivered pointer settles at (dispatch_sessions.py:343), so the fixture models a window rather than the delivered state.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module to fork anything; I searched for the pointer-phase vocabulary and found its owner at reckon/crew/recovery_liveness.py:56 (_PRE_SPAWN_PHASES), which the change neither restates nor bypasses, and the fixture still builds its record through the file's single _scoring_pointer at tests/test_rereview_keeps_its_lane.py:162.\n",
+  "reuse_audit": {
+    "search": "Searched for an owner of the run-pointer phase vocabulary: reckon/crew/recovery_liveness.py:56 (_PRE_SPAWN_PHASES) and reckon/crew/dispatch_sessions.py:192/343 write and refresh the value, and the fixture names an existing value rather than adding a spelling."
+  },
+  "review_run_id": "r-20261116T011654706913-review-of-qwnw-red-file-rereview-keeps-its-lane-64762192ed24",
+  "reviewed_base_sha": "d0d77f07e2dcc64d74713755aebe748602f9a06f",
+  "reviewed_commits": [
+    "9fe2fefad82cb6422668f705f8a138b74b3c1bdc",
+    "0543ce79b1560027ece27cb63c41cf4b8ade7161",
+    "64762192ed24d73ecd2830b20c0c6cba88151811"
+  ],
+  "reviewed_head_sha": "64762192ed24d73ecd2830b20c0c6cba88151811",
+  "reviewed_run_id": "r-20261115T224847840617-qwnw-red-file-rereview-keeps-its-lane",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T01:45:16.017282+00:00",
+  "total": 105
+}
