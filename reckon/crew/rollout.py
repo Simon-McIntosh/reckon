@@ -26,6 +26,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import threading
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime
@@ -34,6 +35,7 @@ from pathlib import Path
 
 from reckon._timestamps import parse_iso
 from reckon.crew.quota_weight import RequestTokenUsage, UnknownQuotaWeight, quota_weight
+from reckon.file_memo import file_signature
 
 CLIENT_SESSIONS_DIR = Path.home() / ".codex" / "sessions"
 
@@ -182,41 +184,89 @@ def run_home_sessions_root(run_dir: str | Path) -> Path:
     return Path(run_dir).joinpath(*RUN_HOME_SESSIONS)
 
 
-# A station tick resolves the same session's rollout on every tick, and the
-# listing that finds it walks three day-directory levels per harness home.  A
-# directory's own identity, size and stamp move when an entry is created or
-# removed in it, so an unchanged directory answers from its last listing while
-# a new attempt's day directory still forces a fresh listing.  The store is
-# cleared whole when it reaches its bound, the same shape the completion-stamp
-# store uses: a long-lived reader forgets rather than growing without limit.
-_LISTINGS: dict[Path, tuple[tuple[int, int, int, int], tuple[str, ...]]] = {}
+# ── The one stat identity and the one listing cache ─────────────────────────
+#
+# The monitor's two reads of a harness home — a rollout receipt and a run's
+# spend — walk the same directories and ask the same question of a file: has it
+# moved since the last read?  Both ask it here rather than each spelling the
+# fields out, so a correction to the rule reaches both and a new field is added
+# in one place.  The identity itself is ``reckon.file_memo``'s to declare: it
+# carries the change time beside the modification time, so an in-place rewrite
+# that leaves a file's length and stamp where they were still reads as a change
+# rather than as an unchanged file.
+
+# A directory's own identity, size and stamp move when an entry is created or
+# removed in it, so an unchanged directory answers from its last listing while a
+# new attempt's day directory still forces a fresh one.  A station tick resolves
+# the same session's rollout and enumerates the same run's streams on every
+# pass, so one store serves both.  It is cleared whole when it reaches its
+# bound, the shape the completion-stamp store uses: a long-lived reader forgets
+# rather than growing without limit.
+_FileIdentity = tuple[int, int, int, int, int]
+_LISTINGS: dict[Path, tuple[_FileIdentity, tuple[str, ...]]] = {}
 _LISTINGS_LIMIT = 4096
+_LISTINGS_LOCK = threading.Lock()
 
 
-def _directory_entries(directory: Path) -> tuple[str, ...]:
-    """One directory's entry names, listed again only when it has changed."""
+def file_identity(path: Path) -> _FileIdentity | None:
+    """One file or directory's stat identity, or None if it cannot be read.
+
+    The fields and their order are ``reckon.file_memo``'s to declare rather
+    than this module's, so a reader that folds a file's bytes and a reader that
+    lists a directory agree on what "the same file" means — and an identity
+    field added there is seen by both without another copy to keep in step.
+    """
     try:
-        info = directory.stat()
+        return file_signature(path)
     except OSError:
+        return None
+
+
+def directory_entries(directory: Path) -> tuple[str, ...]:
+    """One directory's entry names, listed again only when it has changed."""
+    signature = file_identity(directory)
+    if signature is None:
         return ()
-    signature = (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns)
-    entries = _LISTINGS.get(directory)
-    if entries is not None and entries[0] == signature:
-        return entries[1]
+    with _LISTINGS_LOCK:
+        stored = _LISTINGS.get(directory)
+        if stored is not None and stored[0] == signature:
+            return stored[1]
     try:
         names = tuple(os.listdir(directory))
     except OSError:
         return ()
-    if len(_LISTINGS) >= _LISTINGS_LIMIT:
-        _LISTINGS.clear()
-    _LISTINGS[directory] = (signature, names)
+    with _LISTINGS_LOCK:
+        if len(_LISTINGS) >= _LISTINGS_LIMIT:
+            _LISTINGS.clear()
+        _LISTINGS[directory] = (signature, names)
     return names
+
+
+def fold_continues(
+    *, previous: _FileIdentity, offset: int, signature: _FileIdentity
+) -> bool:
+    """Whether a stored fold still describes the file it was read from.
+
+    The same object grown is extended from its offset.  A different object (a
+    replaced file), a shorter file (a truncated one), or one rewritten in place
+    is folded again from the start, because its earlier bytes are no longer the
+    ones the state was folded from.  A rewrite at the same length moves the
+    change time, so it is a change even where its length and stamp hold still.
+
+    Both readers of a harness home ask this of their own store, so the rule is
+    written once here rather than in each.
+    """
+    if previous[:2] != signature[:2]:
+        return False
+    if signature[2] < offset:
+        return False
+    return not (signature[2] == offset and previous != signature)
 
 
 def _subdirectories(directory: Path) -> list[Path]:
     return [
         child
-        for child in (directory / name for name in _directory_entries(directory))
+        for child in (directory / name for name in directory_entries(directory))
         if child.is_dir()
     ]
 
@@ -230,7 +280,7 @@ def _session_rollouts(root: Path, session_id: str) -> list[Path]:
             for day in _subdirectories(month):
                 found.extend(
                     day / name
-                    for name in _directory_entries(day)
+                    for name in directory_entries(day)
                     if pattern.match(name) and (day / name).is_file()
                 )
     return found
@@ -480,13 +530,15 @@ class _ReceiptFold:
     revision: int = 0
 
     def extend(self, path: Path) -> None:
-        """Decode the bytes of ``path`` past this fold's offset.
+        """Decode the bytes of ``text`` past this fold's offset.
 
         A writer leaves the file inside a line or inside a multibyte character,
         so an incomplete tail is held rather than decoded and read again with
-        the bytes that finish it.  Bytes that cannot be decoded mark the file
-        unreadable and stop the fold, which is what a whole-file read of the
-        same bytes reports.
+        the bytes that finish it.  A final record that simply carries no
+        trailing newline is folded rather than held for ever: a terminal run's
+        rollout stops growing, and a whole-file read decodes that record.
+        Bytes that cannot be decoded mark the file unreadable and stop the
+        fold, which is what a whole-file read of the same bytes reports.
         """
         try:
             with path.open("rb") as stream:
@@ -496,6 +548,9 @@ class _ReceiptFold:
             self.unreadable = True
             return
         if not chunk:
+            # Nothing arrived, so a held tail is still the same bytes: it is
+            # not attempted again, which is what keeps an unchanged file at no
+            # decode at all.
             return
         self.offset += len(chunk)
         data = self.pending + chunk
@@ -503,6 +558,7 @@ class _ReceiptFold:
         end = data.rfind(b"\n")
         if end < 0:
             self.pending = data
+            self._fold_tail()
             return
         self.pending = data[end + 1 :]
         try:
@@ -512,20 +568,48 @@ class _ReceiptFold:
             return
         for line in text.split("\n")[:-1]:
             self._observe(line)
+        self._fold_tail()
         self.revision += 1
 
-    def _observe(self, line: str) -> None:
-        """Fold one decoded record into the receipt's state."""
+    def _fold_tail(self) -> None:
+        """Fold a held-back tail once it decodes as one whole record.
+
+        The fold reads from an offset, so a record whose bytes are still
+        arriving must stay unread; a record a writer finished without writing
+        its newline must not.  The two are told apart by whether the held bytes
+        decode as one record: a record cut short does not, and stays held.
+        """
+        if not self.pending:
+            return
+        try:
+            text = self.pending.decode("utf-8")
+        except UnicodeError:
+            return
+        if not self._observe(text):
+            return
+        # The record is folded and will not be folded again: the next read
+        # starts at the offset the record ended on, which is where the bytes
+        # following it also begin.
+        self.pending = b""
+
+    def _observe(self, line: str) -> bool:
+        """Fold one decoded record into the receipt's state.
+
+        Answers whether the line was one whole record, which is the reading the
+        held-back tail needs beside every other caller's.  A line that does not
+        decode is skipped rather than refused: a rollout carries records this
+        reader does not shape.
+        """
         try:
             record = json.loads(line)
         except json.JSONDecodeError:
-            return
+            return False
         if not isinstance(record, Mapping):
-            return
+            return False
         self._observe_timestamp(record.get("timestamp"))
         payload = record.get("payload")
         if not isinstance(payload, Mapping):
-            return
+            return True
         payload_type = payload.get("type")
         if payload_type == "token_count":
             self.token_count_seen = True
@@ -575,6 +659,7 @@ class _ReceiptFold:
             started = self.open_calls.pop(call_id, None)
             if started is not None and moment is not None and moment >= started:
                 self.bounded_spans.append((started, moment))
+        return True
 
     def _observe_timestamp(self, value: object) -> None:
         moment = _parse_timestamp(value)
@@ -660,48 +745,43 @@ class _ReceiptFold:
         )
 
 
-def _rollout_signature(path: Path) -> tuple[int, int, int, int] | None:
-    """One file's identity, length and stamp, or None if it cannot be read."""
-    try:
-        info = path.stat()
-    except OSError:
-        return None
-    return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns)
-
-
 @dataclass(slots=True)
 class _CachedReceipts:
-    """One rollout's fold and the receipts already built from it."""
+    """One rollout's fold and the receipts already built from it.
 
-    signature: tuple[int, int, int, int]
+    The lock is the entry's own because the fold is mutated: a station thread
+    and a served request can read one rollout at once, and without it both
+    extends would seek from the same offset and the appended bytes would be
+    folded twice.
+    """
+
+    signature: _FileIdentity
     fold: _ReceiptFold
     receipts: dict[tuple[int, str | None], RolloutReceipt] = field(default_factory=dict)
+    lock: threading.Lock = field(default_factory=threading.Lock)
 
 
 # A tick reads the same sessions' receipts over and over.  The store is per
 # process, keyed by the rollout path, and cleared whole at its bound — the same
 # shape the completion-stamp store uses.  A fresh process holds no fold and
-# reads every byte again, which is what makes a cached answer checkable.
+# reads every byte again, which is what makes a cached answer checkable.  The
+# store itself is guarded because it is shared: the entry locks cover each
+# file's fold, and this lock covers the dict those entries live in.
 _RECEIPTS: dict[str, _CachedReceipts] = {}
 _RECEIPTS_LIMIT = 4096
+_RECEIPTS_LOCK = threading.Lock()
 
 
-def _fold_continues(
-    entry: _CachedReceipts, signature: tuple[int, int, int, int]
-) -> bool:
-    """Whether a stored fold still describes the file it was read from.
-
-    The same object grown is extended from its offset.  A different object (a
-    replaced file), a shorter file (a truncated one), or one rewritten in place
-    at the same length is folded again from the start, because its earlier
-    bytes are no longer the ones the state was folded from.
-    """
-    previous = entry.signature
-    if previous[:2] != signature[:2]:
-        return False
-    if signature[2] < entry.fold.offset:
-        return False
-    return not (signature[2] == entry.fold.offset and previous != signature)
+def _receipt_entry(key: str, signature: _FileIdentity) -> _CachedReceipts:
+    """This file's stored fold, created when it carries none."""
+    with _RECEIPTS_LOCK:
+        if len(_RECEIPTS) >= _RECEIPTS_LIMIT:
+            _RECEIPTS.clear()
+        entry = _RECEIPTS.get(key)
+        if entry is None:
+            entry = _CachedReceipts(signature=signature, fold=_ReceiptFold())
+            _RECEIPTS[key] = entry
+        return entry
 
 
 def read_rollout_receipt(
@@ -740,30 +820,36 @@ def read_rollout_receipt(
     path = _locate_rollout(str(session_id), run_id=run_id)
     if path is None:
         return _unmeasured(Unmeasured.MISSING_ROLLOUT)
-    signature = _rollout_signature(path)
+    signature = file_identity(path)
     if signature is None:
         return _unmeasured(Unmeasured.UNREADABLE_ROLLOUT)
 
-    key = str(path)
-    entry = _RECEIPTS.get(key)
-    if entry is None or not _fold_continues(entry, signature):
-        if len(_RECEIPTS) >= _RECEIPTS_LIMIT:
-            _RECEIPTS.clear()
-        entry = _CachedReceipts(signature=signature, fold=_ReceiptFold())
-        _RECEIPTS[key] = entry
-    if entry.fold.offset < signature[2]:
-        entry.fold.extend(path)
-        entry.receipts.clear()
-        refreshed = _rollout_signature(path)
-        if refreshed is not None and refreshed[:2] == signature[:2]:
-            signature = refreshed
-    entry.signature = signature
+    entry = _receipt_entry(str(path), signature)
+    with entry.lock:
+        # The identity is read again under the entry's own lock: another thread
+        # may have extended this fold between the lookup and here, and the
+        # decision to extend must be made against what this fold has read, not
+        # against what the caller saw before it waited.
+        current = file_identity(path) or signature
+        if not fold_continues(
+            previous=entry.signature, offset=entry.fold.offset, signature=current
+        ):
+            entry.signature = current
+            entry.fold = _ReceiptFold()
+            entry.receipts.clear()
+        if entry.fold.offset < current[2]:
+            entry.fold.extend(path)
+            entry.receipts.clear()
+            refreshed = file_identity(path)
+            if refreshed is not None and refreshed[:2] == current[:2]:
+                current = refreshed
+        entry.signature = current
 
-    built = entry.receipts.get((entry.fold.revision, model_identifier))
-    if built is None:
-        built = entry.fold.receipt(model_identifier)
-        entry.receipts = {(entry.fold.revision, model_identifier): built}
-    return built
+        built = entry.receipts.get((entry.fold.revision, model_identifier))
+        if built is None:
+            built = entry.fold.receipt(model_identifier)
+            entry.receipts = {(entry.fold.revision, model_identifier): built}
+        return built
 
 
 __all__ = [

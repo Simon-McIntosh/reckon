@@ -11,9 +11,9 @@ one exported predicate (:func:`is_durable`).
 from __future__ import annotations
 
 import json
-import os
 import re
 import sys
+import threading
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from reckon._timestamps import parse_utc
+from reckon.crew.rollout import directory_entries, file_identity, fold_continues
 
 # A request above this published threshold is charged at twice the input rate and
 # one and a half times the output rate for the whole request, not only the excess.
@@ -104,6 +105,10 @@ class _StreamFold:
         A worker writes its stream while this reads it, so a read can end
         inside a line or inside a multibyte character; an incomplete tail is
         held rather than decoded and read again with the bytes that finish it.
+        A final record a writer finished without writing its newline is folded
+        rather than held for ever: the stream of a terminal attempt stops
+        growing, and a request whose record was folded must not wait on a
+        newline that will never come.
         """
         try:
             with path.open("rb") as stream:
@@ -113,6 +118,9 @@ class _StreamFold:
             self.unreadable = True
             return
         if not chunk:
+            # Nothing arrived, so a held tail is still the same bytes: it is
+            # not attempted again, which is what keeps an unchanged file at no
+            # decode at all.
             return
         self.offset += len(chunk)
         data = self.pending + chunk
@@ -120,22 +128,47 @@ class _StreamFold:
         end = data.rfind(b"\n")
         if end < 0:
             self.pending = data
+            self._fold_tail()
             return
         self.pending = data[end + 1 :]
         # The tail a cut write leaves behind is replaced rather than refused,
         # so a character split across two reads cannot fail a whole tick.
         for line in data[: end + 1].decode("utf-8", errors="replace").split("\n")[:-1]:
             self._observe(line)
+        self._fold_tail()
         self.revision += 1
 
-    def _observe(self, line: str) -> None:
-        """Fold one decoded record into the stream's token and time state."""
+    def _fold_tail(self) -> None:
+        """Fold a held-back tail once it decodes as one whole record.
+
+        The fold reads from an offset, so a record whose bytes are still
+        arriving must stay unread; a record a writer finished without writing
+        its newline must not.  The two are told apart by whether the held bytes
+        decode whole as one record: a record cut short does not, and stays
+        held.
+        """
+        if not self.pending:
+            return
+        try:
+            text = self.pending.decode("utf-8")
+        except UnicodeError:
+            return
+        if not self._observe(text):
+            return
+        self.pending = b""
+
+    def _observe(self, line: str) -> bool:
+        """Fold one decoded record into the stream's token and time state.
+
+        Answers whether the line was one whole record, which is the reading
+        that tells a held-back final record from one still being written.
+        """
         try:
             record = json.loads(line)
         except (json.JSONDecodeError, TypeError):
-            return
+            return False
         if not isinstance(record, Mapping):
-            return
+            return False
         self._observe_time(record)
 
         kind = record.get("type")
@@ -143,18 +176,18 @@ class _StreamFold:
             thread_id = record.get("thread_id")
             if isinstance(thread_id, str) and thread_id:
                 self.thread_ids.add(thread_id)
-            return
+            return True
 
         if kind == "assistant":
             message = record.get("message")
             if not isinstance(message, Mapping):
-                return
+                return True
             usage = _measured_fields(
                 message.get("usage"),
                 _CLAUDE_INPUT_FIELDS + _CLAUDE_OUTPUT_FIELDS,
             )
             if usage is None:
-                return
+                return True
             message_id = message.get("id")
             if not isinstance(message_id, str) or not message_id:
                 self.anonymous_message += 1
@@ -165,7 +198,7 @@ class _StreamFold:
             # for each field preserves the most complete value.
             for field, value in usage.items():
                 maxima[field] = max(maxima.get(field, 0), value)
-            return
+            return True
 
         if kind == "result":
             usage = _measured_fields(
@@ -177,7 +210,7 @@ class _StreamFold:
                     usage,
                     _nonnegative_int(record.get("num_turns")),
                 )
-            return
+            return True
 
         if kind == "turn.completed":
             usage = _measured_fields(
@@ -188,7 +221,8 @@ class _StreamFold:
                 self.codex_turn_count += 1
                 for field, value in usage.items():
                     self.codex_totals[field] = self.codex_totals.get(field, 0) + value
-            return
+            return True
+        return True
 
     def _observe_time(self, record: Mapping[str, Any]) -> None:
         """Fold this record's own dates and reported durations into the span."""
@@ -253,84 +287,85 @@ class _StreamFold:
         return wall, _seconds_from_ms(self.model_ms)
 
 
-def _stream_signature(path: Path) -> tuple[int, int, int, int] | None:
-    """One stream file's identity, length and stamp, or None if unreadable."""
-    try:
-        info = path.stat()
-    except OSError:
-        return None
-    return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns)
-
-
 @dataclass(slots=True)
 class _CachedStream:
-    """One stream's fold, with both readings already built from it."""
+    """One stream's fold, with both readings already built from it.
 
-    signature: tuple[int, int, int, int]
+    The lock is the entry's own because the fold is mutated: a station thread
+    and a served request can read one stream at once, and without it both
+    extends would seek from the same offset and the appended turns would be
+    folded twice.
+    """
+
+    signature: tuple[int, int, int, int, int]
     fold: _StreamFold
     usage: StreamTokenUsage | MeasurementState | None = None
     span: tuple[float | None, float | None] | None = None
     built_revision: int = -1
+    lock: threading.Lock = field(default_factory=threading.Lock)
 
 
 # A terminal attempt's stream stops growing, so its measure and its span are
 # the same on every tick.  The store is per process, keyed by path, and cleared
 # whole at its bound; a fresh process reads every byte again, which is what
-# makes a cached figure checkable.
+# makes a cached figure checkable.  Each entry's lock covers its own fold, and
+# the store's lock covers the dict those entries live in.
 _STREAMS: dict[str, _CachedStream] = {}
 _STREAMS_LIMIT = 4096
+_STREAMS_LOCK = threading.Lock()
 
 
-def _read_continues(entry: _CachedStream, signature: tuple[int, int, int, int]) -> bool:
-    """Whether a stored fold still describes the stream it was read from.
-
-    The same file grown is extended from its offset.  A different object (a
-    replaced stream), a shorter file (a truncated one), or one rewritten in
-    place at the same length is folded again from the start, because its
-    earlier bytes are no longer the ones the state was folded from.
-    """
-    previous = entry.signature
-    if previous[:2] != signature[:2]:
-        return False
-    if signature[2] < entry.fold.offset:
-        return False
-    return not (signature[2] == entry.fold.offset and previous != signature)
-
-
-def _stream_entry(stream_path: str | Path) -> _CachedStream | None:
-    """One stream's stored fold, extended by whatever it gained."""
-    path = Path(stream_path)
-    signature = _stream_signature(path)
-    if signature is None:
-        return None
-    key = str(path)
-    entry = _STREAMS.get(key)
-    if entry is None or not _read_continues(entry, signature):
+def _stream_entry(key: str, signature: tuple[int, int, int, int, int]) -> _CachedStream:
+    """This stream's stored fold, created when it carries none."""
+    with _STREAMS_LOCK:
         if len(_STREAMS) >= _STREAMS_LIMIT:
             _STREAMS.clear()
-        entry = _CachedStream(signature=signature, fold=_StreamFold())
-        _STREAMS[key] = entry
-    if entry.fold.offset < signature[2]:
-        entry.fold.extend(path)
-        entry.built_revision = -1
-        refreshed = _stream_signature(path)
-        if refreshed is not None and refreshed[:2] == signature[:2]:
-            signature = refreshed
-    entry.signature = signature
-    return entry
+        entry = _STREAMS.get(key)
+        if entry is None:
+            entry = _CachedStream(signature=signature, fold=_StreamFold())
+            _STREAMS[key] = entry
+        return entry
 
 
-def _settled(
-    entry: _CachedStream,
+def _read_stream(
+    stream_path: str | Path,
 ) -> tuple[StreamTokenUsage | MeasurementState, tuple[float | None, float | None]]:
-    """Both readings of one stream, rebuilt if the fold has moved."""
-    if entry.built_revision != entry.fold.revision:
-        entry.usage = entry.fold.token_usage()
-        entry.span = entry.fold.time_span()
-        entry.built_revision = entry.fold.revision
-    usage = entry.usage if entry.usage is not None else UNMEASURED
-    span = entry.span if entry.span is not None else (None, None)
-    return usage, span
+    """Both readings of one stream, extended by whatever it gained.
+
+    One decode answers both, under the lock of the entry the fold lives in: a
+    second reader extends what the first left rather than the bytes it also
+    read, so an entry's bytes are folded once.
+    """
+    path = Path(stream_path)
+    signature = file_identity(path)
+    if signature is None:
+        return UNMEASURED, (None, None)
+    entry = _stream_entry(str(path), signature)
+    with entry.lock:
+        # The identity is read again under the entry's own lock: another thread
+        # may have extended this fold between the lookup and here, and the
+        # decision to extend must be made against what this fold has read.
+        current = file_identity(path) or signature
+        if not fold_continues(
+            previous=entry.signature, offset=entry.fold.offset, signature=current
+        ):
+            entry.signature = current
+            entry.fold = _StreamFold()
+            entry.built_revision = -1
+        if entry.fold.offset < current[2]:
+            entry.fold.extend(path)
+            entry.built_revision = -1
+            refreshed = file_identity(path)
+            if refreshed is not None and refreshed[:2] == current[:2]:
+                current = refreshed
+        entry.signature = current
+        if entry.built_revision != entry.fold.revision:
+            entry.usage = entry.fold.token_usage()
+            entry.span = entry.fold.time_span()
+            entry.built_revision = entry.fold.revision
+        usage = entry.usage if entry.usage is not None else UNMEASURED
+        span = entry.span if entry.span is not None else (None, None)
+        return usage, span
 
 
 def measure_stream_tokens(
@@ -347,10 +382,7 @@ def measure_stream_tokens(
     decoded at all. A replaced or truncated stream is read again from the
     start, so a rewritten file never answers with its predecessor's figures.
     """
-    entry = _stream_entry(stream_path)
-    if entry is None:
-        return UNMEASURED
-    usage, _span = _settled(entry)
+    usage, _span = _read_stream(stream_path)
     return usage
 
 
@@ -519,34 +551,6 @@ def _attempt_rank(path: Path) -> tuple[int, str]:
     return (int(match.group(1)), path.name) if match else (sys.maxsize, path.name)
 
 
-# A tick enumerates the same run's streams on every pass, for every row it
-# folds, so the listing itself is kept while the directory's identity, size and
-# stamp are unchanged — a new resume or lane-change file moves them.  The store
-# is cleared whole at its bound, the shape the completion-stamp store uses.
-_LISTINGS: dict[Path, tuple[tuple[int, int, int, int], tuple[str, ...]]] = {}
-_LISTINGS_LIMIT = 4096
-
-
-def _directory_entries(directory: Path) -> tuple[str, ...]:
-    """One directory's entry names, listed again only when it has changed."""
-    try:
-        info = directory.stat()
-    except OSError:
-        return ()
-    signature = (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns)
-    cached = _LISTINGS.get(directory)
-    if cached is not None and cached[0] == signature:
-        return cached[1]
-    try:
-        names = tuple(os.listdir(directory))
-    except OSError:
-        return ()
-    if len(_LISTINGS) >= _LISTINGS_LIMIT:
-        _LISTINGS.clear()
-    _LISTINGS[directory] = (signature, names)
-    return names
-
-
 def run_streams(stream_path: str | Path) -> list[Path]:
     """Every surviving stream one run wrote, in attempt then lane order.
 
@@ -566,7 +570,7 @@ def run_streams(stream_path: str | Path) -> list[Path]:
     original = (
         stream.parent / "stream.jsonl" if stream.name.startswith("resume-") else stream
     )
-    names = _directory_entries(stream.parent)
+    names = directory_entries(stream.parent)
     resumes = sorted(
         (
             stream.parent / name
@@ -741,10 +745,7 @@ def _stream_time_span(path: Path) -> tuple[float | None, float | None]:
     two readings of one stream share a single decode; an unchanged stream
     answers from that read.
     """
-    entry = _stream_entry(path)
-    if entry is None:
-        return None, None
-    _usage, span = _settled(entry)
+    _usage, span = _read_stream(path)
     return span
 
 
