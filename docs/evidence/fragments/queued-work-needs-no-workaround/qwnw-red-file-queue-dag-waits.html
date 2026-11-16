@@ -1,0 +1,67 @@
+<section id="qwnw-red-file-queue-dag-waits-gate">
+<h3>Queue DAG waits: the red file is green at head, measured</h3>
+<p>This node's done-when is that <code>tests/test_queue_dag_waits.py</code> passes in full at head with
+<code>SLURM_JOB_ID</code> unset. It does, and the defect the red file recorded still reproduces when the
+same file runs against the revision that recorded it, so the green run is a measurement rather than an
+absence. No product or test file changed: the repair had already landed between the recording revision
+and this node's base.</p>
+
+<h4 id="qwnw-red-file-queue-dag-waits-control">Negative control: 8d50b0333f, the revision that recorded the red file</h4>
+<pre id="qwnw-red-file-queue-dag-waits-control-log"># revision: 8d50b0333fe3fbdb17199253225f73730d22207d
+# tree: /tmp/reckon-crew-scratch/r-20261116T031335994022-qwnw-red-file-queue-dag-waits/base-8d50b
+# module.__file__: /tmp/reckon-crew-scratch/r-20261116T031335994022-qwnw-red-file-queue-dag-waits/base-8d50b/tests/test_queue_dag_waits.py
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_queue_dag_waits.py
+FAILED tests/test_queue_dag_waits.py::test_foreign_section_waits_for_its_declaration
+FAILED tests/test_queue_dag_waits.py::test_foreign_section_already_done_queues_directly
+FAILED tests/test_queue_dag_waits.py::test_batch_and_dispatch_share_the_queue_writer
+FAILED tests/test_queue_dag_waits.py::test_unshipped_plan_dependency_holds_its_section
+FAILED tests/test_queue_dag_waits.py::test_closed_upstream_blocks_its_waiter[blocked]
+FAILED tests/test_queue_dag_waits.py::test_closed_upstream_blocks_its_waiter[failed]
+FAILED tests/test_queue_dag_waits.py::test_complete_upstream_waits_for_its_revision_to_land
+FAILED tests/test_queue_dag_waits.py::test_base_revision_releases_a_promoted_request_that_committed_nothing
+FAILED tests/test_queue_dag_waits.py::test_refused_manifest_status_holds_and_raises_one_obligation
+FAILED tests/test_queue_dag_waits.py::test_foreign_gate_hold_keeps_waiter_waiting[s2]
+FAILED tests/test_queue_dag_waits.py::test_foreign_gate_hold_keeps_waiter_waiting[s1,s2]
+FAILED tests/test_queue_dag_waits.py::test_readiness_recheck_uses_named_section_declarations
+FAILED tests/test_queue_dag_waits.py::test_scoped_decision_holds_only_its_section
+FAILED tests/test_queue_dag_waits.py::test_after_survives_the_queued_pointer_round_trip
+14 failed, 8 passed in 14.95s
+EXIT=1</pre>
+<p>Every failure is the same refusal, raised at queue time before any wait is judged:</p>
+<pre id="qwnw-red-file-queue-dag-waits-control-refusal">reckon.crew.CrewError: node 'waiting' is refused at queue time: no manifest path is named,
+so completion could only be judged by reading the implementation</pre>
+<p><strong>Verdict: product wrong.</strong> The queued-request writer validated the node contract before it
+named the deliverable, so every request that did not spell a manifest path was refused — the whole queue
+DAG, waits included, never ran. Repaired by <code>c3933bacfb</code> <em>fix(queue): assign durable manifests
+before validating requests</em>, which sets <code>node.manifest_path</code> to the run's own
+<code>manifest.md</code> before <code>admission_domain_findings</code> judges it. That commit is an ancestor
+of this node's base, so no test in this file encodes a rule the code no longer keeps, and no assertion was
+edited, deleted or weakened.</p>
+
+<h4 id="qwnw-red-file-queue-dag-waits-green">The gate at head, and at the base revision it started from</h4>
+<pre id="qwnw-red-file-queue-dag-waits-green-log"># head 7dcc00c627c7c26b75b47c62e9b7883d90cef6c3 (origin/main merged into this worktree)
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_queue_dag_waits.py
+.........................                                                [100%]
+25 passed in 121.96s (0:02:01)
+EXIT=0
+
+# base e35fd9f935225b7005482a75032eb28abeb46c63 (git clone of the base revision, node-local scratch)
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_queue_dag_waits.py
+.........................                                                [100%]
+EXIT=0</pre>
+<table id="qwnw-red-file-queue-dag-waits-table">
+<thead>
+<tr><th>Run</th><th>Revision</th><th>Summary line</th><th>Exit</th></tr>
+</thead>
+<tbody>
+<tr><td>negative control</td><td>8d50b0333f</td><td>14 failed, 8 passed in 14.95s</td><td>1</td></tr>
+<tr><td>gate at base</td><td>e35fd9f935</td><td>25 passed in 24.27s</td><td>0</td></tr>
+<tr><td>gate at head</td><td>7dcc00c627</td><td>25 passed in 121.96s</td><td>0</td></tr>
+</tbody>
+</table>
+<p>Both arms of this node's armed suite command — the resolved pair
+<code>tests/test_staged_write_inventory.py</code> and
+<code>tests/test_every_shared_home_lock_holds_across_nodes.py</code> — report the same figure on either
+side of this node's change: 58 passed at the base revision, 58 passed at head. A node that changes neither
+product source nor a test cannot add a failure to an arm.</p>
+</section>
