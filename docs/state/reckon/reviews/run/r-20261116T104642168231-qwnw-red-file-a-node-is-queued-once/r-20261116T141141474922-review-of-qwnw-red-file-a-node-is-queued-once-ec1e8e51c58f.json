@@ -1,0 +1,97 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own suite arms. manifest.md:44 baseline_suite: revision 8fdf39585f1fb4b05ac8a6e5b707a7c651d42176, logs/suite-base.log '58 passed', EXIT=0, completed true, failure_count 0, all four fields recorded; manifest.md:45 after_suite: revision ec1e8e51c58f472694326ce84b550bfe72bd4277, logs/suite-after.log '58 passed', EXIT=0, completed true, failure_count 0. Both logs reach their summary line after 58 progress marks, so the empty added set is a measured zero on arms that collected the gate files.",
+  "assertion_analysis": [
+    {
+      "failure_condition": "Restoring 'node = _launching._node_from_pointer(pointer)' in place of the guarded rebuild at reckon/crew/admission/reviews.py:166 raises TypeError out of queue_dispatch, reddening test_a_dispatch_after_a_put_back_updates_that_one_pointer and test_a_queued_node_is_redispatched_in_place_with_no_scope_conflict; logs/base-goal.log lines 253-254 show exactly those two ids red with the TypeError.",
+      "file": "tests/test_a_node_is_queued_once.py",
+      "lines": "260-278"
+    },
+    {
+      "failure_condition": "Reading the dispatch answer from result.output, the interleaved stream, instead of result.stdout makes _payload raise JSONDecodeError when the launch this case triggers prints its own line first; the pre-fix arm shows that fault at logs/base-goal.log line 255 as 'JSONDecodeError: Expecting value: line 1 column 1' for test_a_different_node_over_a_queued_path_launches_the_older_request.",
+      "file": "tests/test_a_node_is_queued_once.py",
+      "lines": "322-348"
+    },
+    {
+      "failure_condition": "Fencing result.json instead of result.png makes the second node share the claim rather than collide, so the case stops refusing; it reddened at 8fdf39585f with 'AssertionError: reckon: created run r-...' at logs/base-goal.log line 256, and .png is exclusive under BINARY_SUFFIXES at reckon/crew/runs.py:1844.",
+      "file": "tests/test_a_node_is_queued_once.py",
+      "lines": "350-372"
+    },
+    {
+      "failure_condition": "The refusal is asserted against independent literals, exit_code 7 and the error string scope-conflict, and against the live pointer set read back from the store, so none of these compares a value with the input the test handed in.",
+      "file": "tests/test_a_node_is_queued_once.py",
+      "lines": "364-368"
+    }
+  ],
+  "assertions_added_note": "three added or moved assertions reviewed; every one names a code change that reddens it, and none compares a value against the input the test itself passed in.",
+  "call_sites": [
+    "reckon/crew/runs.py:993",
+    "reckon/crew/dispatch_batch.py:1027",
+    "reckon/crew/admission/release.py:667",
+    "reckon/crew/queue_edit.py:548"
+  ],
+  "completed_at": "2026-11-16T15:25:39.668Z",
+  "dispatched_at": "2026-11-16T15:25:12Z",
+  "findings": [
+    {
+      "file": "tests/test_a_node_is_queued_once.py",
+      "line": "85",
+      "severity": "non-blocking",
+      "text": "_payload duplicates tests/test_dispatch_names_its_backend.py:159, the shared reader this file already imported, instead of extending it. The owner still reads the interleaved result.output at line 161, so the Click 8.2 fault the new helper corrects is left in place for the twenty test modules that delegate to it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104642168231-qwnw-red-file-a-node-is-queued-once/manifest.md",
+      "line": "45",
+      "severity": "non-blocking",
+      "text": "after_suite records a command whose PYTHONPATH and interpreter both name '/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-node-is-once-placeholder, a path that never existed, while logs/suite-after.log line 5 records the real worktree path; the receipt the promotion re-runs therefore cannot be reproduced as written."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104642168231-qwnw-red-file-a-node-is-queued-once/logs/gate-head.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "the done_when requires the passing run 'as a job on all_debug with SLURM_JOB_ID unset'; the head arms ran pytest in the worktree as an ordinary command, and neither gate-head.log nor suite-after.log records a job id, a partition or a submission, so the all_debug clause is unrecorded rather than contradicted."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104642168231-qwnw-red-file-a-node-is-queued-once/logs/gate-head.log",
+      "line": "4",
+      "severity": "non-blocking",
+      "text": "the header line reads '# module: 1' in both gate-head.log and suite-after.log, so 'the absolute path of the module under test as imported' is in fact an integer and a reader checking which reckon/crew/admission/reviews.py the run imported gets nothing; the base arm at logs/base-goal.log line 4 does carry the path."
+    }
+  ],
+  "justifications": {
+    "durability": "logs/base-goal.log lines 253-254 red at 8fdf39585f with 'TypeError: TaskNode.__init__() missing 1 required positional argument: goal' raised at reckon/crew/admission/reviews.py:163, so restoring the unguarded rebuild reddens two of the file's cases; no case asserts that the pointer keeps no contract, only that the queue write does not raise.",
+    "evidence": "logs/gate-head.log (9 passed, EXIT=0) and logs/base-goal.log (4 failed, 5 passed, EXIT=1) are readable receipts at both revisions, but the done_when's 'as a job on all_debug' clause is recorded nowhere, and manifest.md:45 records an after_suite command whose PYTHONPATH names a placeholder path.",
+    "fit": "the guard at reckon/crew/admission/reviews.py:166-169 states the same 'keeps no contract' rule the module already applies at reckon/crew/admission/reviews.py:95 and :121, and the added helper at tests/test_a_node_is_queued_once.py:85 carries a docstring in its neighbours' style.",
+    "goal_fidelity": "tests/test_a_node_is_queued_once.py declares 9 test functions at both 8fdf39585f and ec1e8e51c5, and logs/gate-head.log records 9 passed at ec1e8e51c5, so the file the goal names passes in full with no case removed.",
+    "reuse": "tests/test_a_node_is_queued_once.py:85 duplicates tests/test_dispatch_names_its_backend.py:159, the payload reader the file already imported, rather than extending that owner, whose line 161 still splits the interleaved result.output.",
+    "scope_discipline": "the four landed commits touch only reckon/crew/admission/reviews.py, tests/test_a_node_is_queued_once.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-node-is-queued-once.html, all inside the declared write paths reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround."
+  },
+  "outside_scope": [
+    "tests/test_dispatch_names_its_backend.py:161 still parses the interleaved result.output for the twenty test modules that delegate to it; the fault the head arm corrected locally remains in the shared reader and its other callers."
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261116T141141474922-review-of-qwnw-red-file-a-node-is-queued-once-ec1e8e51c58f",
+  "reviewed_base_sha": "8fdf39585f1fb4b05ac8a6e5b707a7c651d42176",
+  "reviewed_head_sha": "ec1e8e51c58f472694326ce84b550bfe72bd4277",
+  "reviewed_run_id": "r-20261116T104642168231-qwnw-red-file-a-node-is-queued-once",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T21:04:50.827898+00:00",
+  "total": 94,
+  "verdicts": {
+    "diff": "read commit by commit against 8fdf39585f: b7192f7a1e guards the rebuild at reckon/crew/admission/reviews.py:166, 879b0249b3 adds the local reader at tests/test_a_node_is_queued_once.py:85 and declares the unmergeable result.png for one case at tests/test_a_node_is_queued_once.py:362, 24c2038ac0 and ec1e8e51c5 write and re-cite the evidence fragment, and fe81df49e0 is the origin/main merge the done_when requires.",
+    "done_when": "the done_when asks for a full pass at head with SLURM_JOB_ID unset, a listed cause per base failure, no weakened assertion and an importer arm with no added failure; logs/gate-head.log carries env -u SLURM_JOB_ID with 9 passed, logs/base-goal.log carries the four base ids and the three causes manifest.md names, the diff of 879b0249b3 swaps helper calls without weakening a comparison, and comm of logs/base-fail.ids against logs/after-fail-sliced.ids leaves 0 head-only ids and 18 cleared.",
+    "goal": "the node goal is that tests/test_a_node_is_queued_once.py pass in full; tests/test_a_node_is_queued_once.py declares 9 test functions at base and head, and logs/gate-head.log records '9 passed in 2.37s' at ec1e8e51c5.",
+    "manifest": "manifest.md records status complete, the three changed paths, the gate command with its logs, the three causes each with a product-or-test verdict, a 58/58 suite pair, and a 9-passed head arm against the 4-failed base arm it names as the negative control.",
+    "write_paths": "the declared write paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the four landed commits write only reckon/crew/admission/reviews.py, tests/test_a_node_is_queued_once.py and the one evidence fragment, so every changed file is inside them."
+  }
+}

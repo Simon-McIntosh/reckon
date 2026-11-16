@@ -91,6 +91,13 @@ LEDGER_SLUG = "crew"
 # evidence could not be produced is a recorded negative, not a silent pass.
 GATE_VERDICTS = ("passed", "failed", "not-run")
 
+#: The suite-delta outcomes the rollup tallies. The first four are what a
+#: promotion measures against its arms; ``not-run`` is what a hand-merged run
+#: records, because the branch already carries its change and there is no pair
+#: of arms left to compare. It counts under its own key so such a row stays
+#: visible in the rollup rather than dropping out of it.
+SUITE_DELTA_OUTCOMES = ("clean", "refused", "waived", "unchanged", "not-run")
+
 # Substitutions attributable only to the backend swap a shadow exists to
 # measure. Any other key in a lineage's "substituted" map means something
 # besides the candidate backend changed, which confounds the comparison.
@@ -3439,20 +3446,29 @@ def _index_append(project: str, record: Mapping[str, Any]) -> dict[str, Any]:
     The store retries a locked database with a bounded backoff inside this one
     call, so a lock held by a concurrent promotion lasts milliseconds and the
     row it costs is written rather than lost. A lock outlasting that bound, and
-    any other failure, is raised naming the store and the repair verb.
+    any other failure, is raised naming the store and the appropriate remedy.
     """
     from reckon import run_store
 
     try:
         run_store.append(project, dict(record))
     except Exception as exc:  # every store failure is a refusal
+        if run_store._locked(exc):
+            remedy = (
+                "the store was locked past the wait bound "
+                f"({run_store.INDEX_RETRY_SECONDS:g} s); promote the run again"
+            )
+        else:
+            remedy = (
+                "repair the store with `python scripts/import_runs_into_store.py "
+                f"--project {project}` and promote the run again"
+            )
         raise LedgerError(
             f"cannot record run {str(record.get('run_id'))!r} in the run store at "
             f"{_run_store_location()}: {type(exc).__name__}: {exc}. The run store "
             "is the durable authority for every promoted run, so this write is "
             "refused rather than leaving a run file whose row no store holds; "
-            "repair the store with `python scripts/import_runs_into_store.py "
-            f"--project {project}` and promote the run again"
+            f"{remedy}"
         ) from exc
     return {"status": "written"}
 
@@ -4638,8 +4654,8 @@ def summary(
         suite_delta = record.get("suite_delta")
         if kind == "live" and isinstance(suite_delta, Mapping):
             status = str(suite_delta.get("status") or "")
-            if status in suite_deltas:
-                suite_deltas[status] += 1
+            if status in SUITE_DELTA_OUTCOMES:
+                suite_deltas[status] = suite_deltas.get(status, 0) + 1
         if kind != "live":
             continue
         if verdict == "passed":

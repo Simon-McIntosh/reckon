@@ -1,0 +1,76 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite logs, read and reduced with reckon/crew/review.py:3150 added_failures_from_gate_logs: logs/base-suite.log '58 passed' at 69fab1372f and logs/after-suite.log '58 passed' at 0a6bd6b7c2, both pytest format, neither carrying a FAILED or ERROR id, so the head adds no failing test.",
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105116733844-qwnw-red-file-a-review-records-shas-resolve/logs/after-suite.log",
+  "base_log_revision": "69fab1372f16686ce6acdb6094a357c6f6bfe18d",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105116733844-qwnw-red-file-a-review-records-shas-resolve/logs/base-suite.log",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1398 -> reckon/hooks/worker_inbox.py:344 manifest_message_finding",
+    "reckon/crew_run_commands.py:1429 -> reckon/crew/review.py:1210 review_record_refusals",
+    "reckon/crew/review.py:3985 review_record_refusals"
+  ],
+  "completed_at": "2026-11-16T16:03:40.985Z",
+  "dispatched_at": "2026-11-16T16:03:13Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-records-shas-resolve.html",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "the fragment reports `7 passed in 1.46s` at head 6b4d42e5b1, but no recorded log carries that figure or that revision; head-gate.log names 0a6bd6b7c2 with `7 passed in 2.26s`, so the figure cannot be reconciled against a log by a later reader."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-records-shas-resolve.html",
+      "line": "55",
+      "severity": "non-blocking",
+      "text": "the arms table reports the after suite as `58 passed in 41.75s` while logs/after-suite.log prints `58 passed in 42.02s`, so the row's metric is not its log's own summary line and the fragment disagrees with the manifest's artifacts line."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105116733844-qwnw-red-file-a-review-records-shas-resolve/logs/head-gate.log",
+      "line": "2",
+      "severity": "non-blocking",
+      "text": "the done_when asks for the head gate as a job on all_debug and this log shows an in-place process in the worktree; the dispatch's HOST block forbade opening a step in this allocation, so the instructions conflict and the worker followed the dispatch \u2014 command, tree and result are the measure's, the job form is not."
+    }
+  ],
+  "head_log_revision": "0a6bd6b7c255b83815172743ce751b4a36be4505",
+  "item_verdicts": {
+    "diff": "read 69fab1372f..0a6bd6b7c2 commit by commit \u2014 6b4d42e5b1 adds one line, `messages_received: none`, to REVIEW_MANIFEST at tests/test_a_review_records_shas_resolve.py:43 with no assertion touched, and 0a6bd6b7c2 adds docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-records-shas-resolve.html and the done_when-named red-file-a-review-records-shas-resolve.html; nothing else is in the range.",
+    "done_when": "the dispatch's FENCE \u2014 EVIDENCE asks for the file green at head with SLURM_JOB_ID unset, the base failing ids, a per-cause verdict, no weakened assertion, an import arm and ruff; /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105116733844-qwnw-red-file-a-review-records-shas-resolve/logs/head-gate.log records `7 passed` EXIT=0 at 0a6bd6b7c2, /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105116733844-qwnw-red-file-a-review-records-shas-resolve/logs/base-gate.log `3 failed, 4 passed` EXIT=1 with the three ids, the manifest names the single cause as the fixture's missing `messages_received: none`, and both ruff logs read EXIT=0 \u2014 but the arm was an in-place process, not the job on all_debug the measure names.",
+    "goal": "the goal is that tests/test_a_review_records_shas_resolve.py passes in full on the primary branch, and a git archive of head 0a6bd6b7c2 extracted into a scratch tree ran that file at `7 passed`, EXIT=0 (/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T160054893013-review-of-qwnw-red-file-a-review-records-shas-resolve-0a6bd6b7c255/logs/review-head-gate.log), so the named file is green at the revision the run landed at.",
+    "manifest": "the reviewed manifest.md reads status complete with commits 6b4d42e5b1 and 0a6bd6b7c2, a `tests:` line carrying the `env -u SLURM_JOB_ID` file command, seven named logs, and baseline_suite/after_suite each `58 passed` at their own revisions with `completed: true`.",
+    "write_paths": "the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, that directory's qwnw-red-file-a-review-records-shas-resolve.html and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-a-review-records-shas-resolve, and the diff's three files \u2014 tests/test_a_review_records_shas_resolve.py plus the two fragments in that directory \u2014 all sit inside them."
+  },
+  "justifications": {
+    "durability": "no assertion was added or weakened, and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105116733844-qwnw-red-file-a-review-records-shas-resolve/logs/negative-control-fixture-line-removed.log shows deleting the added line reddens exactly the three ids, which my own base-arm run at 69fab1372f (/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T160054893013-review-of-qwnw-red-file-a-review-records-shas-resolve-0a6bd6b7c255/logs/review-base-gate.log, `3 failed, 4 passed`, EXIT=1) regenerates.",
+    "evidence": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105116733844-qwnw-red-file-a-review-records-shas-resolve/logs/head-gate.log and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105116733844-qwnw-red-file-a-review-records-shas-resolve/logs/base-gate.log carry the measure's command and both figures, but docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-records-shas-resolve.html:5 and :55 quote `7 passed in 1.46s` and `58 passed in 41.75s`, which no recorded log carries.",
+    "fit": "the added line spells the field as reckon/hooks/worker_inbox.py:57 defines MANIFEST_MESSAGES_KEY and NO_MESSAGES_VALUE, matching tests/test_a_suite_arm_is_refused_at_delivery.py:69.",
+    "goal_fidelity": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T160054893013-review-of-qwnw-red-file-a-review-records-shas-resolve-0a6bd6b7c255/logs/review-head-gate.log ran the file at 0a6bd6b7c2 to `7 passed` EXIT=0, and the diff changes only the fixture line at tests/test_a_review_records_shas_resolve.py:43 with every assertion kept.",
+    "reuse": "the file is a test fixture and the diff adds no function, class or module; the one mechanism it touches \u2014 the delivery-receipt manifest rule \u2014 is owned by reckon/hooks/worker_inbox.py:57, which the fixture conforms to rather than re-implements.",
+    "scope_discipline": "the three paths in the 69fab1372f..0a6bd6b7c2 diff \u2014 tests/test_a_review_records_shas_resolve.py and the two fragments under docs/evidence/fragments/queued-work-needs-no-workaround/ \u2014 are all inside the declared write paths, and nothing under reckon/ changed."
+  },
+  "node": "review-of-qwnw-red-file-a-review-records-shas-resolve-0a6bd6b7c255",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that tests/test_a_review_records_shas_resolve.py passes in full on the primary branch, and a git archive of head 0a6bd6b7c2 extracted into a scratch tree ran that file at `7 passed`, EXIT=0 (/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T160054893013-review-of-qwnw-red-file-a-review-records-shas-resolve-0a6bd6b7c255/logs/review-head-gate.log), so the named file is green at the revision the run landed at.\nVERDICT done_when: the dispatch's FENCE \u2014 EVIDENCE asks for the file green at head with SLURM_JOB_ID unset, the base failing ids, a per-cause verdict, no weakened assertion, an import arm and ruff; /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105116733844-qwnw-red-file-a-review-records-shas-resolve/logs/head-gate.log records `7 passed` EXIT=0 at 0a6bd6b7c2, /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105116733844-qwnw-red-file-a-review-records-shas-resolve/logs/base-gate.log `3 failed, 4 passed` EXIT=1 with the three ids, the manifest names the single cause as the fixture's missing `messages_received: none`, and both ruff logs read EXIT=0 \u2014 but the arm was an in-place process, not the job on all_debug the measure names.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, that directory's qwnw-red-file-a-review-records-shas-resolve.html and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-a-review-records-shas-resolve, and the diff's three files \u2014 tests/test_a_review_records_shas_resolve.py plus the two fragments in that directory \u2014 all sit inside them.\nVERDICT manifest: the reviewed manifest.md reads status complete with commits 6b4d42e5b1 and 0a6bd6b7c2, a `tests:` line carrying the `env -u SLURM_JOB_ID` file command, seven named logs, and baseline_suite/after_suite each `58 passed` at their own revisions with `completed: true`.\nVERDICT diff: read 69fab1372f..0a6bd6b7c2 commit by commit \u2014 6b4d42e5b1 adds one line, `messages_received: none`, to REVIEW_MANIFEST at tests/test_a_review_records_shas_resolve.py:43 with no assertion touched, and 0a6bd6b7c2 adds docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-records-shas-resolve.html and the done_when-named red-file-a-review-records-shas-resolve.html; nothing else is in the range.\nCALL_SITES: reckon/crew_run_commands.py:1398 -> reckon/hooks/worker_inbox.py:344 manifest_message_finding, reckon/crew_run_commands.py:1429 -> reckon/crew/review.py:1210 review_record_refusalss\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T160054893013-review-of-qwnw-red-file-a-review-records-shas-resolve-0a6bd6b7c255/logs/review-head-gate.log ran the file at 0a6bd6b7c2 to `7 passed` EXIT=0, and the diff changes only the fixture line at tests/test_a_review_records_shas_resolve.py:43 with every assertion kept.\nSCORE evidence: 16\nJUSTIFICATION evidence: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105116733844-qwnw-red-file-a-review-records-shas-resolve/logs/head-gate.log and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105116733844-qwnw-red-file-a-review-records-shas-resolve/logs/base-gate.log carry the measure's command and both figures, but docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-records-shas-resolve.html:5 and :55 quote `7 passed in 1.46s` and `58 passed in 41.75s`, which no recorded log carries.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the three paths in the 69fab1372f..0a6bd6b7c2 diff \u2014 tests/test_a_review_records_shas_resolve.py and the two fragments under docs/evidence/fragments/queued-work-needs-no-workaround/ \u2014 are all inside the declared write paths, and nothing under reckon/ changed.\nSCORE durability: 18\nJUSTIFICATION durability: no assertion was added or weakened, and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105116733844-qwnw-red-file-a-review-records-shas-resolve/logs/negative-control-fixture-line-removed.log shows deleting the added line reddens exactly the three ids, which my own base-arm run at 69fab1372f (/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T160054893013-review-of-qwnw-red-file-a-review-records-shas-resolve-0a6bd6b7c255/logs/review-base-gate.log, `3 failed, 4 passed`, EXIT=1) regenerates.\nSCORE fit: 19\nJUSTIFICATION fit: the added line spells the field as reckon/hooks/worker_inbox.py:57 defines MANIFEST_MESSAGES_KEY and NO_MESSAGES_VALUE, matching tests/test_a_suite_arm_is_refused_at_delivery.py:69.\nSCORE reuse: 20\nJUSTIFICATION reuse: the file is a test fixture and the diff adds no function, class or module; the one mechanism it touches \u2014 the delivery-receipt manifest rule \u2014 is owned by reckon/hooks/worker_inbox.py:57, which the fixture conforms to rather than re-implements.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-records-shas-resolve.html:5 non-blocking: the fragment reports `7 passed in 1.46s` at head 6b4d42e5b1, but no recorded log carries that figure or that revision \u2014 /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105116733844-qwnw-red-file-a-review-records-shas-resolve/logs/head-gate.log names 0a6bd6b7c2 with `7 passed in 2.26s` \u2014 so a later reader cannot reconcile the figure against a log.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-records-shas-resolve.html:55 non-blocking: the arms table reports the after suite as `58 passed in 41.75s` while /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105116733844-qwnw-red-file-a-review-records-shas-resolve/logs/after-suite.log, the log its own manifest's after suite ran into, prints `58 passed in 42.02s`, so the row's one metric is not its log's summary line and the fragment disagrees with the manifest's artifacts line.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105116733844-qwnw-red-file-a-review-records-shas-resolve/logs/head-gate.log:2 non-blocking: the done_when asks for the head gate as a job on all_debug, and this log's tree header plus the absent submission show an in-place process in the worktree; the dispatch's HOST block forbade opening a step in this allocation, so the instructions conflict and the worker followed the dispatch \u2014 command, tree and result are the measure's, the job form is not.",
+  "review_logs": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T160054893013-review-of-qwnw-red-file-a-review-records-shas-resolve-0a6bd6b7c255/logs/review-head-gate.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T160054893013-review-of-qwnw-red-file-a-review-records-shas-resolve-0a6bd6b7c255/logs/review-base-gate.log"
+  ],
+  "review_run_id": "r-20261116T160054893013-review-of-qwnw-red-file-a-review-records-shas-resolve-0a6bd6b7c255",
+  "reviewed_base_sha": "69fab1372f16686ce6acdb6094a357c6f6bfe18d",
+  "reviewed_head_sha": "0a6bd6b7c255b83815172743ce751b4a36be4505",
+  "reviewed_run_id": "r-20261116T105116733844-qwnw-red-file-a-review-records-shas-resolve",
+  "reviewer_run_id": "r-20261116T160054893013-review-of-qwnw-red-file-a-review-records-shas-resolve-0a6bd6b7c255",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T16:15:53.829659+00:00",
+  "total": 111
+}

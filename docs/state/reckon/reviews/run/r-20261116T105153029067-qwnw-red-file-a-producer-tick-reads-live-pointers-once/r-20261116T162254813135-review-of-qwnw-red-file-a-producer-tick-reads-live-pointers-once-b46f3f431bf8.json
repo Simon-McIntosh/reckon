@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own arms: baseline-suite.log (revision 69fab1372f, 58 passed, EXIT=0) and after-suite.log (revision b46f3f431b, 58 passed, EXIT=0) are both pytest format and both report no failing id, so the head adds no failing test and the count is a measured 0. The named-file arms were read the same way for corroboration: base-gate.log reports three ERROR ids and head-gate.log none, which also resolves to 0 added.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "call_sites_note": "The landed change touches no production module, so no runtime path can reach it; the production code it exercises instead is reckon/crew/recovery_watch.py:3620 watch_ticker and reckon/crew/runs.py:4815 watch_lease_remaining, both unmodified by these commits.",
+  "completed_at": "2026-11-16T16:26:07.856Z",
+  "dispatched_at": "2026-11-16T16:25:05Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-producer-tick-reads-live-pointers-once.html",
+      "line": "24",
+      "severity": "non-blocking",
+      "text": "The two quoted gate blocks carry header lines no gate log in the run directory contains: `# slurm_job_id: unset` (lines 24 and 39) is emitted by no version of gate.sh, and the quoted `# command: PYTHONPATH=. .venv/bin/python ...` (lines 22 and 37) is the relative form while every recorded log carries the absolute interpreter path, so the blocks read as verbatim receipts of a log a reader cannot open; the timings quoted (1.73s base, 4.13s head, 22.10s and 22.86s neighbours at line 44) also belong to job 1320259, whose fixed-name logs gate.sh overwrote when job 1320265 reran at b46f3f431b, leaving the surviving logs at 1.48s, 4.46s, 22.09s and 22.25s."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-producer-tick-reads-live-pointers-once/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105153029067-qwnw-red-file-a-producer-tick-reads-live-pointers-once/after-suite.log",
+      "revision": "b46f3f431bf804b05589407d310c8dc87a8aec6a"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-producer-tick-reads-live-pointers-once/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105153029067-qwnw-red-file-a-producer-tick-reads-live-pointers-once/baseline-suite.log",
+      "revision": "69fab1372f16686ce6acdb6094a357c6f6bfe18d"
+    }
+  },
+  "item_verdicts": {
+    "diff": "Read 69fab1372f..b46f3f431b commit by commit: f38e971f01 deletes only the watch_lease_renewed_at patch line at tests/test_a_producer_tick_reads_live_pointers_once.py:70 and b46f3f431b adds the 71-line evidence fragment, so the landed change carries no product edit and no changed assertion.",
+    "done_when": "The done_when in dispatch-detail.json asks for a full pass as an all_debug job with SLURM_JOB_ID unset, a per-cause verdict, no deleted or weakened assertion, a neighbour arm adding no failure, and a red base run; head-gate.log records 3 passed EXIT=0 at b46f3f431b, base-gate.log 3 errors EXIT=1 at 69fab1372f, baseline-neighbours.log and after-neighbours.log both record 2 failed 53 passed with the same two ids, sacct reports job 1320265 on all_debug COMPLETED, and the fragment's cause table names one cause with a test-wrong verdict.",
+    "goal": "The goal in dispatch-detail.json is that tests/test_a_producer_tick_reads_live_pointers_once.py passes in full on the primary branch; the reviewed head does that at tests/test_a_producer_tick_reads_live_pointers_once.py:70 by dropping a patch naming a symbol reckon/crew/recovery_watch.py no longer imports, and my own re-run at b46f3f431b answered 3 passed EXIT=0 while the same file at origin/main 69fab1372f answered 3 errors.",
+    "manifest": "The reviewed manifest records status complete, commits f38e971f01 and b46f3f431b, the literal gate command with absolute interpreter path, five log paths including head-gate.log and base-gate.log, baseline_suite and after_suite JSON each with completed true and failure_count 0, negative_control_log naming base-gate.log, and rubric lines for all six dimensions.",
+    "write_paths": "The declared write paths in dispatch-detail.json are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its named fragment, and docs/figures/queued-work-needs-no-workaround and its named figure; the diff's two files are tests/test_a_producer_tick_reads_live_pointers_once.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-producer-tick-reads-live-pointers-once.html, both beneath a declared path."
+  },
+  "justifications": {
+    "durability": "The node adds no assertion: reverting the deletion at tests/test_a_producer_tick_reads_live_pointers_once.py:70 reinstates an AttributeError in fixture setup that reddens the file, and the surviving assertions at :122 and :160 still fail if a tick reads pointers twice or publishes from an incomplete population.",
+    "evidence": "head-gate.log:1 names b46f3f431b and ends EXIT=0 while base-gate.log:1 names 69fab1372f and ends EXIT=1, sacct reports job 1320265 as partition all_debug COMPLETED, and the manifest records both arms as completed suite pairs, though gate.sh emits no job-id header so the run-to-job link rests on mtimes rather than on the log.",
+    "fit": "The one-line removal leaves the surrounding monkeypatch block at tests/test_a_producer_tick_reads_live_pointers_once.py:67-79 intact and unused import free, and both commit subjects follow the repository's conventional pairing of subject with body.",
+    "goal_fidelity": "tests/test_a_producer_tick_reads_live_pointers_once.py:70 at head b46f3f431b no longer patches recovery_watch.watch_lease_renewed_at, and a re-run of that file in the head tree answered 3 passed EXIT=0 against origin/main 69fab1372f where the same run answered 3 errors EXIT=1.",
+    "reuse": "The diff adds no function, class or module; the lease-stub capability it drops has no owner to fork, since the sibling tests at tests/test_producer_holds_a_lease.py:66 and tests/test_crew_census.py:480 each patch their own symbol and tests/conftest.py declares no lease fixture.",
+    "scope_discipline": "The two commits touch only tests/test_a_producer_tick_reads_live_pointers_once.py:70 and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-producer-tick-reads-live-pointers-once.html, both inside the declared write paths, with no product module, plan or state write."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal in dispatch-detail.json is that tests/test_a_producer_tick_reads_live_pointers_once.py passes in full on the primary branch, and it does \u2014 the head drops the patch at tests/test_a_producer_tick_reads_live_pointers_once.py:70 that named a symbol reckon/crew/recovery_watch.py no longer imports, and a re-run of that file in the head tree answered 3 passed EXIT=0 while origin/main 69fab1372f answered 3 errors EXIT=1.\nVERDICT done_when: The done_when asks for a full pass as an all_debug job with SLURM_JOB_ID unset, a per-cause verdict, no deleted or weakened assertion, a neighbour arm adding no failure, and a red base run; head-gate.log records 3 passed EXIT=0 at b46f3f431b, base-gate.log 3 errors EXIT=1 at 69fab1372f, baseline-neighbours.log and after-neighbours.log both record 2 failed 53 passed with the same two ids, sacct reports job 1320265 on partition all_debug COMPLETED in 00:02:12, and the fragment's cause table names one cause with a test-wrong verdict.\nVERDICT write_paths: The declared write paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its named fragment, and docs/figures/queued-work-needs-no-workaround and its named figure; the diff's two files, tests/test_a_producer_tick_reads_live_pointers_once.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-producer-tick-reads-live-pointers-once.html, are both beneath a declared path.\nVERDICT manifest: The reviewed manifest records status complete, commits f38e971f01 and b46f3f431b, the literal gate command with absolute interpreter path, five log paths, baseline_suite and after_suite JSON each with completed true and failure_count 0, negative_control_log naming base-gate.log, and rubric lines for all six dimensions.\nVERDICT diff: Read 69fab1372f..b46f3f431b commit by commit; f38e971f01 deletes one fixture line at tests/test_a_producer_tick_reads_live_pointers_once.py:70 and b46f3f431b adds the 71-line evidence fragment, so no product module and no assertion changed.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_producer_tick_reads_live_pointers_once.py:70 at head no longer patches recovery_watch.watch_lease_renewed_at and my re-run of the file answered 3 passed EXIT=0, against 3 errors EXIT=1 at origin/main 69fab1372f.\nSCORE evidence: 16\nJUSTIFICATION evidence: head-gate.log:1 names b46f3f431b and ends EXIT=0 while base-gate.log:1 names 69fab1372f and ends EXIT=1, and sacct puts job 1320265 on all_debug, though gate.sh emits no job-id header so the run-to-job link rests on mtimes.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The two commits touch only tests/test_a_producer_tick_reads_live_pointers_once.py:70 and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-producer-tick-reads-live-pointers-once.html, both inside the declared paths.\nSCORE durability: 15\nJUSTIFICATION durability: The node adds no assertion, so its guard is the reinstated failure \u2014 re-adding the patch at tests/test_a_producer_tick_reads_live_pointers_once.py:70 restores the AttributeError, while the surviving assertions at :122 and :160 still redden if a tick reads pointers twice.\nSCORE fit: 19\nJUSTIFICATION fit: The removal leaves the monkeypatch block at tests/test_a_producer_tick_reads_live_pointers_once.py:67-79 intact and import free, and both commit subjects carry the conventional subject-plus-body form.\nSCORE reuse: 20\nJUSTIFICATION reuse: The diff adds no definition; the lease stub it drops has no owner, since tests/test_producer_holds_a_lease.py:66 and tests/test_crew_census.py:480 each patch their own symbol and tests/conftest.py declares no lease fixture.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-producer-tick-reads-live-pointers-once.html:24 non-blocking: the quoted gate blocks carry `# slurm_job_id: unset` and a relative interpreter path that no recorded log contains, so they read as verbatim receipts of a log a reader cannot open, and their timings belong to job 1320259 whose logs gate.sh overwrote at job 1320265.",
+  "review_run_id": "r-20261116T162254813135-review-of-qwnw-red-file-a-producer-tick-reads-live-pointers-once-b46f3f431bf8",
+  "reviewed_base_sha": "69fab1372f16686ce6acdb6094a357c6f6bfe18d",
+  "reviewed_head_sha": "b46f3f431bf804b05589407d310c8dc87a8aec6a",
+  "reviewed_run_id": "r-20261116T105153029067-qwnw-red-file-a-producer-tick-reads-live-pointers-once",
+  "rubric": "review",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T21:17:37.461588+00:00",
+  "total": 108
+}

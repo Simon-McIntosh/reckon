@@ -329,7 +329,6 @@ function TitleBar({ route, onNav, onOpenPrompt, onPlanMutated }) {
     return null;
   }
   if (route.view === "plan") {
-    if (route.slug) return null;
     const p = M.inventory.find(x => (x.nav_key || x.slug) === route.slug);
     if (!p) return null;
     const isPlan = (p.type || "plan") === "plan";

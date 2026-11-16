@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import re
 import subprocess
+import threading
 from collections.abc import Iterable, Mapping, MutableMapping
 from dataclasses import dataclass, field, fields
 from pathlib import Path
@@ -1770,15 +1771,23 @@ def _claim_commit_answer(
     return answer
 
 
+_CLAIM_ANSWER_LOCK = threading.Lock()
+
+
 def _remember_claim_commit_answer(key: tuple[str, str, str, str], answer: str) -> None:
     """Keep one reachability answer, bounded by the fleet it describes."""
     cache = _CLAIM_COMMIT_ANSWERS
-    if len(cache) >= _CLAIM_ANSWER_CACHE_LIMIT and key not in cache:
-        for stale in [item for item in cache if not Path(item[0]).is_dir()]:
-            cache.pop(stale, None)
-        while len(cache) >= _CLAIM_ANSWER_CACHE_LIMIT:
-            cache.pop(next(iter(cache)), None)
-    cache[key] = answer
+    # Launches set up in parallel share this cache. The prune asks the
+    # filesystem about each key, which lets another launch write between two
+    # keys, so the keys are copied before they are walked and the whole update
+    # is made under one lock.
+    with _CLAIM_ANSWER_LOCK:
+        if len(cache) >= _CLAIM_ANSWER_CACHE_LIMIT and key not in cache:
+            for stale in [item for item in list(cache) if not Path(item[0]).is_dir()]:
+                cache.pop(stale, None)
+            while len(cache) >= _CLAIM_ANSWER_CACHE_LIMIT:
+                cache.pop(next(iter(list(cache))), None)
+        cache[key] = answer
 
 
 def _integration_ref_revision(worktree: Path, integration_ref: str) -> str:

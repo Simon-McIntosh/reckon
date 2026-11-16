@@ -3584,6 +3584,10 @@ def crew_complete(
         request_promotion,
     )
 
+    if gate not in _ledger_module().GATE_VERDICTS:
+        raise click.ClickException(
+            f"unknown gate verdict {gate!r}; expected passed, failed or not-run"
+        )
     if land and not dry_run:
         _refuse_a_landing_without_its_pointer(run_id)
     driven = False
@@ -3887,6 +3891,7 @@ def crew_declare_gate(
         GATE_DECLARATION_KEY,
         gate_declaration,
     )
+    from reckon.crew.run_paths import _utc_now
 
     try:
         pointer = runs_module.read_pointer(run_id)
@@ -3900,7 +3905,7 @@ def crew_declare_gate(
             str(long_partition).strip() or previous.get("long_partition", "")
         ),
         "reason": str(reason).strip(),
-        "declared_at": _utc_now_text(),
+        "declared_at": _utc_now(),
     }
     runs_module._mutate_pointer(
         run_id, lambda record: {**record, GATE_DECLARATION_KEY: declaration}
@@ -3914,12 +3919,6 @@ def crew_declare_gate(
         },
         pretty,
     )
-
-
-def _utc_now_text() -> str:
-    from datetime import UTC, datetime
-
-    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 @crew.command(name="record-merge")

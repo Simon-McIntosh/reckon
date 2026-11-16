@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own arms: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031908385809-qwnw-red-file-held-worktree-fallback-resolves-each-row-once/logs/baseline-suite.log (revision 0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc, 58 passed, EXIT=0) and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031908385809-qwnw-red-file-held-worktree-fallback-resolves-each-row-once/logs/after-suite.log (revision e2ea5a4f40, 58 passed, EXIT=0) both report no failing id, so the head adds no failing test and the count is a measured 0.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/merge.py:1544",
+    "reckon/crew/obligations.py:3667"
+  ],
+  "completed_at": "2026-11-16T10:01:44.836Z",
+  "dispatched_at": "2026-11-16T10:00:59Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "3627",
+      "severity": "non-blocking",
+      "text": "non-blocking: The new filing keys a run-less aggregate row by (0, ordinal), the aggregate's own index, while the row-filing loop at :3606 falls back to (0, position), an index into the merged reader's list, when a row's ordering key is absent from aggregate_order; the two coordinate systems share one key space, so a store row the aggregate has not taken at :3606 and a pending run-less row at :3627 whose ordinals coincide overwrite each other in WorktreeRecordIndex, and the tree named by the overwritten row stops being held on the reader-disagreement path this change is about."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031908385809-qwnw-red-file-held-worktree-fallback-resolves-each-row-once/logs/after-suite.log",
+      "revision": "e2ea5a4f40d507160489d46014217d10c2d1a3b3"
+    },
+    "baseline_suite": {
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031908385809-qwnw-red-file-held-worktree-fallback-resolves-each-row-once/logs/baseline-suite.log",
+      "revision": "0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read both commits against 0e0f25b commit by commit; e2ea5a4f40 adds the run-less-row filing loop at reckon/crew/obligations.py:3622-3627 and three test-side changes (uncommitted file per fixture tree at :64, _ledger_rows at :272-283, index reset at :228), and cdac5b089a adds the evidence fragment only.",
+    "done_when": "The done_when asks for a full pass at head as an all_debug job with SLURM_JOB_ID unset, a red base, a per-cause verdict, an importing-file arm and no deleted assertion; logs/gate-target.log:3 records job 1319560 (sacct: Partition all_debug, State COMPLETED, ExitCode 0:0) and logs/negative-control.log records 4 failed 1 passed EXIT=1 at 0e0f25b, logs/arm-holders.log and logs/base-holders.log carry identical 9-failure id sets, and the manifest's evidence_inputs name both causes with verdicts.",
+    "goal": "The goal is that tests/test_held_worktree_fallback_resolves_each_row_once.py passes in full; the head gate at logs/gate-target.log records 5 passed at e2ea5a4f40, and the mechanism is the added loop at reckon/crew/obligations.py:3622-3627.",
+    "manifest": "Read the reviewed run's manifest.md; it reads status complete with commits e2ea5a4f40 and cdac5b089a, a literal tests command, four arm logs plus the two probe logs, both suites completed with failure_count 0, the two scratch-tree suite failures attributed to a non-git tree, and a landing line.",
+    "write_paths": "Read dispatch-detail.json's node.write_paths (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its plan fragment and figures directory); git diff 0e0f25b..cdac5b08 touches only reckon/crew/obligations.py, tests/test_held_worktree_fallback_resolves_each_row_once.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-fallback-resolves-each-row-once.html, every one inside the declaration."
+  },
+  "justifications": {
+    "durability": "Removing the loop at reckon/crew/obligations.py:3622-3627 reddens tests/test_held_worktree_fallback_resolves_each_row_once.py:329, whose expected empty run id comes from the fixture's own run-less row rather than from the derivation, and :312 compares the derivation against the row-count reference built through ledger.run_rows_from_documents at :283.",
+    "evidence": "logs/gate-target.log:3 names all_debug job 1319560 and ends EXIT=0, and logs/base-holders.log and logs/arm-holders.log carry the same 9 failing ids, though the red arm at logs/negative-control.log:6 ran the base test file so the product defect's before/after rests on logs/probe-run-less-row.base.log and its head twin rather than on that arm.",
+    "fit": "The added comment block and loop at reckon/crew/obligations.py:3611-3627 follow the module's reasoned-comment idiom and reuse promotion_order_key and _retained_worktree, and no added name carries a plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/obligations.py:3627 files a pending aggregate row that carries no run id, which is the defect the file was red for, and the head gate at logs/gate-target.log records 5 passed.",
+    "reuse": "The change consumes the aggregate through ledger.load_aggregate and the existing WorktreeRecordIndex instead of adding a reader, and the run-less rows it files are a proper subset of what ledger.run_rows_from_documents at reckon/ledger.py:2528 already answers, so it borrows rather than forks that owner.",
+    "scope_discipline": "The three paths in git diff 0e0f25b..cdac5b08 all sit inside the dispatched write paths, and no path outside them is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is that tests/test_held_worktree_fallback_resolves_each_row_once.py passes in full; the head gate at logs/gate-target.log records 5 passed at e2ea5a4f40, and the mechanism is the added loop at reckon/crew/obligations.py:3622-3627.\nVERDICT done_when: The done_when asks for a full pass at head as an all_debug job with SLURM_JOB_ID unset, a red base, a per-cause verdict, an importing-file arm and no deleted assertion; logs/gate-target.log:3 records job 1319560 (sacct: Partition all_debug, State COMPLETED, ExitCode 0:0) and logs/negative-control.log records 4 failed 1 passed EXIT=1 at 0e0f25b, logs/arm-holders.log and logs/base-holders.log carry identical 9-failure id sets, and the manifest's evidence_inputs name both causes with verdicts.\nVERDICT write_paths: Read dispatch-detail.json's node.write_paths (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its plan fragment and figures directory); git diff 0e0f25b..cdac5b08 touches only reckon/crew/obligations.py, tests/test_held_worktree_fallback_resolves_each_row_once.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-fallback-resolves-each-row-once.html, every one inside the declaration.\nVERDICT manifest: Read the reviewed run's manifest.md; it reads status complete with commits e2ea5a4f40 and cdac5b089a, a literal tests command, four arm logs plus the two probe logs, both suites completed with failure_count 0, the two scratch-tree suite failures attributed to a non-git tree, and a landing line.\nVERDICT diff: Read both commits against 0e0f25b commit by commit; e2ea5a4f40 adds the run-less-row filing loop at reckon/crew/obligations.py:3622-3627 and three test-side changes (uncommitted file per fixture tree at :64, _ledger_rows at :272-283, index reset at :228), and cdac5b089a adds the evidence fragment only.\nCALL_SITES: reckon/crew/merge.py:1544, reckon/crew/obligations.py:3667\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:3627 files a pending aggregate row that carries no run id, which is the defect the file was red for, and the head gate at logs/gate-target.log records 5 passed.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/gate-target.log:3 names all_debug job 1319560 and ends EXIT=0, and logs/base-holders.log and logs/arm-holders.log carry the same 9 failing ids, though the red arm at logs/negative-control.log:6 ran the base test file so the product defect's before/after rests on logs/probe-run-less-row.base.log and its head twin rather than on that arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The three paths in git diff 0e0f25b..cdac5b08 all sit inside the dispatched write paths, and no path outside them is touched.\nSCORE durability: 19\nJUSTIFICATION durability: Removing the loop at reckon/crew/obligations.py:3622-3627 reddens tests/test_held_worktree_fallback_resolves_each_row_once.py:329, whose expected empty run id comes from the fixture's own run-less row rather than from the derivation, and :312 compares the derivation against the row-count reference built through ledger.run_rows_from_documents at :283.\nSCORE fit: 18\nJUSTIFICATION fit: The added comment block and loop at reckon/crew/obligations.py:3611-3627 follow the module's reasoned-comment idiom and reuse promotion_order_key and _retained_worktree, and no added name carries a plan or ticket identifier.\nSCORE reuse: 18\nJUSTIFICATION reuse: The change consumes the aggregate through ledger.load_aggregate and the existing WorktreeRecordIndex instead of adding a reader, and the run-less rows it files are a proper subset of what ledger.run_rows_from_documents at reckon/ledger.py:2528 already answers, so it borrows rather than forks that owner.\nFINDING reckon/crew/obligations.py:3627 non-blocking: The new filing keys a run-less aggregate row by (0, ordinal), the aggregate's own index, while the row-filing loop at :3606 falls back to (0, position), an index into the merged reader's list, when a row's ordering key is absent from aggregate_order; the two coordinate systems share one key space, so a store row the aggregate has not taken at :3606 and a pending run-less row at :3627 whose ordinals coincide overwrite each other in WorktreeRecordIndex, and the tree named by the overwritten row stops being held on the reader-disagreement path this change is about.\n",
+  "review_run_id": "r-20261116T095621584455-review-of-qwnw-red-file-held-worktree-fallback-resolves-each-row-once-cdac5b089a16",
+  "reviewed_base_sha": "0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc",
+  "reviewed_head_sha": "cdac5b089a16c5e642e45f529b8f3209f9e567cb",
+  "reviewed_run_id": "r-20261116T031908385809-qwnw-red-file-held-worktree-fallback-resolves-each-row-once",
+  "rubric": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T12:25:02.284326+00:00",
+  "total": 112
+}
