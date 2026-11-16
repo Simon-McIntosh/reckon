@@ -1,0 +1,85 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "Read from the reviewed run's own manifest-named arms. baseline_suite names suite-base.log: revision d0d77f07, tree bff3a503, '58 passed in 59.09s', EXIT=0, zero FAILED/ERROR lines, so its failure set is a measured empty set. after_suite names suite-head.log: revision d9793f992a, '.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py', '58 passed in 61.33s', EXIT=0, zero FAILED/ERROR lines and a pytest summary line, written at 04:54 against a commit made at 04:50, so the head arm is readable this time (the same field cited a four-line EXIT=143 log at the previous review). Difference of the two failure-id sets is empty: 0 added failures.",
+  "assertions": [
+    {
+      "added": "tests/test_spa_rendered_semantics.py:793 reads ok: state === 'unknown' && implementation === '0%' over a payload whose derived_state, implementation_pct and blocked are stripped and whose metrics block carries by_effective_status {active: 1} and mean_impl 0.42",
+      "fails_when": "restoring the removed browser-side derivation in docs/ui/sprint.jsx sprintStateRows (a state read from sprint.metrics.by_effective_status and an implementation read from sprint.metrics.mean_impl) against the same payload renders 'active' and '42%', so the ok expression is false and _assert_rendered_signal at tests/test_spa_rendered_semantics.py:802 raises; nc-fallback.log shows that failing observation",
+      "lines": "tests/test_spa_rendered_semantics.py:787-803"
+    },
+    {
+      "added": "tests/test_spa_rendered_semantics.py:126-145 removes the metrics block from the sprint fixture rows, leaving only the served derived_state, implementation_pct and blocked",
+      "fails_when": "this is a fixture change, not an assertion: it removes an alternative source, so the composed case at tests/test_spa_rendered_semantics.py:415 now reads 'active' and '42%' from one source only; the independent guard is the payload-only case above, not the deletion",
+      "lines": "tests/test_spa_rendered_semantics.py:126-145"
+    },
+    {
+      "added": "tests/test_spa_rendered_semantics.py:288 threads an index_state override into _rendered_probe",
+      "fails_when": "not an assertion: it moves the fixture the preload expression injects, defaulting to INDEX_STATE when the argument is omitted, so every pre-existing case still reads the same fixture",
+      "lines": "tests/test_spa_rendered_semantics.py:288,333"
+    }
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "docs/index.html:33",
+    "docs/ui/shell.jsx:532",
+    "docs/ui/sprint.jsx:372",
+    "docs/ui/sprint.jsx:425"
+  ],
+  "completed_at": "2026-11-16T04:21:44.085Z",
+  "dispatched_at": "2026-11-16T04:21:10Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-spa-rendered-semantics.html",
+      "line": "158",
+      "severity": "non-blocking",
+      "summary": "the fixture is claimed to carry the row the roadmap walk emits, but its items field is not that shape",
+      "text": "non-blocking: the added prose says the fixture 'now carries the row the roadmap walk emits and nothing else', but reckon/roadmap.py:4965 serves \"items\": len(members) as an integer with the plans under \"members\", while tests/test_spa_rendered_semantics.py:126 keeps \"items\" as a list of {slug} dicts and carries no \"members\" at all \u2014 so the payload-only case exercises a row shape production never emits, and a re-derivation written against the served \"members\" array would not be caught by it."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-spa-rendered-semantics.html",
+      "line": "151",
+      "severity": "non-blocking",
+      "summary": "the only log showing the new case red is keyed to a revision that does not contain the case",
+      "text": "non-blocking: the durability claim 'with the derivation put back in place the same case fails' rests on nc-fallback.log, whose first line reads '# revision: 73dd207e563b81aec18ea792c2afcaadc9ecae15' \u2014 a revision where tests/test_spa_rendered_semantics.py:755 does not exist (the case lands at ba8bc692c3) because the case and the restored derivation were both uncommitted in the tree at that moment; the log shows the real failure ({'state': 'active', 'implementation': '42%'}) but its recorded revision cannot reproduce it."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit by commit from 73dd207e56 to d9793f992a: ba8bc692c3 changes only tests/test_spa_rendered_semantics.py (+73/-26 \u2014 drops the sprint rows' metrics block, adds the index_state hook and the payload-only case), d9793f992a changes only the fragment (+24/-12 of evidence prose); two files, both inside the granted paths.",
+    "done_when": "measured: gate-head.log reads 11 passed EXIT=0 at revision d9793f992a with tree 5a7caa3d, which git rev-parse d9793f992a^{tree} confirms is that commit's tree; gate-base.log reads 8 failed 2 passed EXIT=1 at d0d77f07; suite-base.log and suite-head.log both read 58 passed EXIT=0 with no FAILED id, so both arms of manifest.md are readable and the added-failure count is a measured 0.",
+    "goal": "the goal from the run's admit_request is 'Make tests/test_spa_rendered_semantics.py pass in full on the primary branch'; the two commits this review reads, ba8bc692c3 and d9793f992a, add the committed control for the sprint table's served figures (tests/test_spa_rendered_semantics.py:755) and record it in the fragment (docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-spa-rendered-semantics.html:146-160).",
+    "manifest": "read; it records status complete, nineteen commits ending d9793f992a, the literal gate command, seven log paths, both suite arms with completed true and failure_count 0 at d0d77f07 and d9793f992a, negative_control_log gate-base.log, one attributed retry_failures entry per repeated case, and all six rubric self-check lines answered.",
+    "write_paths": "admit_request's write_paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; every path outside_scope names is outside them and no path in the reviewed range is."
+  },
+  "justifications": {
+    "durability": "tests/test_spa_rendered_semantics.py:793 fails if sprintStateRows regains a metrics-derived fallback, as nc-fallback.log shows, but that log is keyed to 73dd207e56 where the case does not exist and the fixture models an items shape reckon/roadmap.py:4965 does not serve.",
+    "evidence": "gate-head.log's revision and tree (d9793f992a, 5a7caa3d) match the reviewed head and its tree, and the manifest's two suite arms now read 58 passed EXIT=0 at d0d77f07 and d9793f992a with no FAILED id.",
+    "fit": "tests/test_spa_rendered_semantics.py:755-803 follows the surrounding case idiom \u2014 _rendered_probe, an ok expression over the DOM, _assert_rendered_signal and _assert_removal_is_detected \u2014 and its prose comment states why the payload is stripped in the same trap-explaining voice as the rest of the file.",
+    "goal_fidelity": "tests/test_spa_rendered_semantics.py:755 adds the committed control the previous review's durability finding asked for, and gate-head.log records the file at 11 passed EXIT=0 at d9793f992a.",
+    "reuse": "the case extends the existing browser harness by adding an index_state argument to tests/test_spa_rendered_semantics.py:288 rather than building a second probe, and reads the figures reckon/roadmap.py:4965 owns instead of deriving them again.",
+    "scope_discipline": "every path in the range is inside the declared write paths: tests/test_spa_rendered_semantics.py under tests and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is 'Make tests/test_spa_rendered_semantics.py pass in full on the primary branch'; tests/test_spa_rendered_semantics.py:755 adds the committed control the previous review said was missing, and gate-head.log records the file at 11 passed EXIT=0 at d9793f992a.\nVERDICT done_when: the done_when names the file passing in full at head as an all_debug job and an arm adding no failure; gate-head.log reads 11 passed EXIT=0 at revision d9793f992a on tree 5a7caa3d (that commit's tree), and suite-base.log/suite-head.log read 58 passed EXIT=0 with no FAILED id on both arms.\nVERDICT write_paths: admit_request declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; tests/test_spa_rendered_semantics.py and the fragment are inside, and nothing in the reviewed range is outside.\nVERDICT manifest: read; it records status complete, commits ending d9793f992a, the literal gate command, seven logs, both suite arms completed with failure_count 0 at d0d77f07 and d9793f992a, negative_control_log gate-base.log and six answered rubric lines.\nVERDICT diff: read commit by commit from 73dd207e56 to d9793f992a; ba8bc692c3 changes only tests/test_spa_rendered_semantics.py (+73/-26) and d9793f992a only the fragment (+24/-12), both inside the granted paths.\nCALL_SITES: docs/index.html:33, docs/ui/shell.jsx:532, docs/ui/sprint.jsx:372, docs/ui/sprint.jsx:425\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_spa_rendered_semantics.py:755 adds the committed payload-only control, and gate-head.log records the file at 11 passed EXIT=0 at d9793f992a.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate-head.log's revision d9793f992a and tree 5a7caa3d match the reviewed head and git rev-parse d9793f992a^{tree}, and both suite arms read 58 passed EXIT=0 with no FAILED id.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the range \u2014 tests/test_spa_rendered_semantics.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-spa-rendered-semantics.html \u2014 is inside the declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_spa_rendered_semantics.py:793 fails if sprintStateRows regains a metrics fallback, but its only red log is keyed to 73dd207e56 where the case does not exist.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_spa_rendered_semantics.py:779-803 reuses _rendered_probe, _assert_rendered_signal and _assert_removal_is_detected in the surrounding idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: no new mechanism is added; tests/test_spa_rendered_semantics.py:288 extends the existing browser harness with an index_state parameter and the figures stay owned by reckon/roadmap.py:4965.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-spa-rendered-semantics.html:158 non-blocking: the added prose says the fixture carries the row the roadmap walk emits, but the walk serves \"items\" as an integer with plans under \"members\" (reckon/roadmap.py:4965) while the fixture keeps items as a list of dicts and no members (tests/test_spa_rendered_semantics.py:126), so the case models a row shape production never emits.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-spa-rendered-semantics.html:151 non-blocking: the red-half evidence nc-fallback.log names revision 73dd207e56, where tests/test_spa_rendered_semantics.py:755 does not exist, so the demonstrated failure cannot be reproduced from the revision the log records.",
+  "review_run_id": "r-20261116T035750285790-review-of-qwnw-red-file-spa-rendered-semantics-d9793f992a5d",
+  "review_scope": "commits gained since the review at 73dd207e56: ba8bc692c3, d9793f992a",
+  "reviewed_base_sha": "73dd207e563b81aec18ea792c2afcaadc9ecae15",
+  "reviewed_head_sha": "d9793f992a5dc1b939d7c4516b754a68fab5ee94",
+  "reviewed_run_id": "r-20261115T224841266752-qwnw-red-file-spa-rendered-semantics",
+  "rubric": "",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T05:30:00.000000+00:00",
+  "total": 106
+}

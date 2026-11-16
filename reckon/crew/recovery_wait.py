@@ -627,6 +627,33 @@ def _wait_file_condition_observation(
     }
 
 
+def _wait_answer_names_terminal(
+    wait: Mapping[str, Any], lines: Sequence[str], observed: str
+) -> bool:
+    """Whether a probe's answer names one of the declaration's terminal states.
+
+    Every line's first token is a candidate, and so is the whole last line, so
+    a scheduler printing ``CANCELLED+ 01:02:03`` matches a declaration listing
+    ``CANCELLED``: the trailing ``+`` is the scheduler's own spelling of the
+    same state, and it is folded into the declared value here. One reader
+    answers this question, so a caller that needs to know whether a wait's own
+    probe says the work has ended asks this function rather than matching the
+    declaration's list again with its own strip set and its own candidate rule.
+    """
+    candidates = {observed.casefold()} if observed else set()
+    candidates.update(line.split(maxsplit=1)[0].casefold() for line in lines)
+    terminal = {str(value).strip().casefold() for value in wait.get("terminal") or ()}
+    return any(
+        candidate in terminal
+        or (
+            len(candidate) > 1
+            and candidate.endswith("+")
+            and any(value.startswith(candidate[:-1]) for value in terminal)
+        )
+        for candidate in candidates
+    )
+
+
 def _run_wait_condition_probe(
     record: Mapping[str, Any], wait: Mapping[str, Any]
 ) -> dict[str, str]:
@@ -682,19 +709,7 @@ def _run_wait_condition_probe(
                 f"{completed.returncode}"
             ),
         }
-    candidates = {observed.casefold()}
-    candidates.update(line.split(maxsplit=1)[0].casefold() for line in lines)
-    terminal = {str(value).strip().casefold() for value in wait.get("terminal") or ()}
-    matched = any(
-        candidate in terminal
-        or (
-            len(candidate) > 1
-            and candidate.endswith("+")
-            and any(value.startswith(candidate[:-1]) for value in terminal)
-        )
-        for candidate in candidates
-    )
-    if matched:
+    if _wait_answer_names_terminal(wait, lines, observed):
         return {
             "state": "met",
             "observed": observed,
@@ -1068,6 +1083,19 @@ def _wait_probe_job_values(value: str) -> list[str]:
     if listed:
         return listed
     return [value.strip()] if _wait_probe_names_a_count(value) else []
+
+
+def _wait_probe_answered(observation: Any) -> bool:
+    """Whether a wait's probe produced an answer about the thing watched.
+
+    ``answered`` is the structured fact the probe reader sets; a probe that
+    could not run or exited non-zero reports it false and is the only case that
+    says nothing about the condition. A result carrying no flag is one that
+    answered, because it produced the state it reports.
+    """
+    if not isinstance(observation, Mapping):
+        return False
+    return observation.get("answered") is not False
 
 
 def _wait_probe_job_ids(probe: Sequence[str]) -> tuple[str, ...]:

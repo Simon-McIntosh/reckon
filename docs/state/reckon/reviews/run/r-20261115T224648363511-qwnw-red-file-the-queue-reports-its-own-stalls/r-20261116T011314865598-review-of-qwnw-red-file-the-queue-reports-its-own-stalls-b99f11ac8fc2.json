@@ -1,0 +1,91 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "d0d77f07e2dcc64d74713755aebe748602f9a06f",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-16T01:31:48.636Z",
+  "dispatched_at": "2026-11-16T01:31:06Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "deferred",
+      "recorded_at": "2026-11-16T02:05:56.445210+00:00",
+      "rule": "landing-defers-non-blocking-findings",
+      "run": "r-20261115T224648363511-qwnw-red-file-the-queue-reports-its-own-stalls"
+    },
+    "1": {
+      "kind": "deferred",
+      "recorded_at": "2026-11-16T02:05:56.445210+00:00",
+      "rule": "landing-defers-non-blocking-findings",
+      "run": "r-20261115T224648363511-qwnw-red-file-the-queue-reports-its-own-stalls"
+    },
+    "2": {
+      "kind": "deferred",
+      "recorded_at": "2026-11-16T02:05:56.445210+00:00",
+      "rule": "landing-defers-non-blocking-findings",
+      "run": "r-20261115T224648363511-qwnw-red-file-the-queue-reports-its-own-stalls"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-queue-reports-its-own-stalls.html",
+      "id": "f981aa689ca",
+      "line": "58",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head suite-arm row credits revision f6aa019d75 while the log it cites, logs/after-suite.log, is headed with rev b99f11ac8f, so the 58-passed head figure cannot be tied to the revision it is credited to."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-queue-reports-its-own-stalls.html",
+      "id": "ff8dd6b4a6e",
+      "line": "64",
+      "severity": "non-blocking",
+      "text": "non-blocking: the prose calls logs/head-node-file.log (rev f6aa019d75, 15 passed in 333.84s) a repeat of the head run, but f6aa019d75 is 4460ed84e2's parent and the test file is unchanged from d0d77f07e2 to f6aa019d75, so that run exercised the old assertion and still passed; it evidences no head arm and silently shows the pre-fix failure is environment-dependent, which the record does not disclose."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224648363511-qwnw-red-file-the-queue-reports-its-own-stalls/manifest.md",
+      "id": "fad662bcf93",
+      "line": "16",
+      "severity": "non-blocking",
+      "text": "non-blocking: measurement_cwd and measurement_module place the base extraction under /tmp/reckon-crew-scratch/, a bare /tmp path where the dispatch's parallel-safety rule 8 requires $TMPDIR."
+    }
+  ],
+  "head_log_revision": "b99f11ac8fc204f1c49a90b341f2549c5fc2107e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the changed file is a test module that no production code imports, so there are no production call sites; I read the product mechanisms it exercises instead, reckon/crew/admission/shared.py:221 STALL_VERDICT, reckon/crew/watch_unit.py:511 announce_submission writing kind submission, and reckon/crew/run_paths.py:31 watch_stream_path.",
+    "diff": "read commit by commit from f6aa019d75, the parent of the node's first commit and one commit above the run's orientation base d0d77f07e2; 4460ed84e2 adds _stream_kinds at tests/test_the_queue_reports_its_own_stalls.py:104-114 and replaces the stream-absence assertion at :151-158, and b99f11ac8f adds the 101-line landing fragment.",
+    "done_when": "the done_when demands a full passing run of the file as a job on all_debug with SLURM_JOB_ID unset, one verdict per cause, no assertion deleted or weakened, an importer arm adding no failure, and a negative control; the manifest records logs/head-node-file-all-debug.log (job 1318861, all_debug, SLURM_JOB_ID unset, 15 passed, EXIT=0), logs/base-node-file.log (1 failed, 14 passed, EXIT=1), suite arms 58 passed on both revisions, and a 'the test was wrong' verdict, while the importer arm is vacuous because no module imports a test file.",
+    "goal": "the node's goal is that tests/test_the_queue_reports_its_own_stalls.py passes in full on the primary branch; the landed test-side repair at tests/test_the_queue_reports_its_own_stalls.py:151-158 replaces the stream-absence proxy and the file reads 15 passed at head b99f11ac8f.",
+    "manifest": "read; status complete, commits 4460ed84e2 b99f11ac8f, changed_paths the two landed files, tests the literal pytest command, test_logs five logs, baseline_suite and after_suite each completed true with 58 passed and 0 failures.",
+    "write_paths": "the declared write paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the two node commits touch only tests/test_the_queue_reports_its_own_stalls.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-queue-reports-its-own-stalls.html."
+  },
+  "justifications": {
+    "durability": "the reinstated absence check reddens the case at logs/base-node-file.log EXIT=1 and the added assertion at tests/test_the_queue_reports_its_own_stalls.py:158 reddens on a stalled-kind stream row, but it is vacuous when the pass never launches and blind to a stall published under another kind.",
+    "evidence": "logs/head-node-file-all-debug.log is headed job 1318861 partition all_debug with SLURM_JOB_ID unset and reads 15 passed EXIT=0, while logs/after-suite.log names rev b99f11ac8f and the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-queue-reports-its-own-stalls.html:58 credits that 58-passed figure to f6aa019d75.",
+    "fit": "the added _stream_kinds at tests/test_the_queue_reports_its_own_stalls.py:104-114 follows the sibling _stalls and _previous_pass helpers, carries no plan or ticket identifier, and passes ruff check and ruff format --check.",
+    "goal_fidelity": "tests/test_the_queue_reports_its_own_stalls.py:158 now asserts on the watch stream's row kinds instead of the file's absence, and the file reads 15 passed at head b99f11ac8f.",
+    "reuse": "no owner of the kinds present in the project's watch stream exists: runs.watch_stream_latest_events at reckon/crew/runs.py:3635 reduces classified events by run id and the watchers read by cursor, so the eleven-line helper duplicates nothing.",
+    "scope_discipline": "git show --stat of 4460ed84e2 and b99f11ac8f lists only tests/test_the_queue_reports_its_own_stalls.py and the landing fragment, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_the_queue_reports_its_own_stalls.py passes in full on the primary branch; the landed test-side repair at tests/test_the_queue_reports_its_own_stalls.py:158 now reads the watch stream's row kinds and the file reads 15 passed at head b99f11ac8f.\nVERDICT done_when: the done_when demands a full passing run of the file as a job on all_debug with SLURM_JOB_ID unset, one verdict per cause, no assertion deleted or weakened, an importer arm adding no failure, and a negative control; logs/head-node-file-all-debug.log is headed job 1318861 partition all_debug with SLURM_JOB_ID unset and reads 15 passed EXIT=0, logs/base-node-file.log reads 1 failed, 14 passed EXIT=1, both suite arms read 58 passed, and the importer arm is vacuous because no module imports a test file.\nVERDICT write_paths: the declared write paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git show --stat of 4460ed84e2 and b99f11ac8f touches only tests/test_the_queue_reports_its_own_stalls.py and the landing fragment in that directory.\nVERDICT manifest: read; status complete, commits 4460ed84e2 b99f11ac8f, changed_paths the two landed files, tests the literal pytest command, test_logs five logs, baseline_suite and after_suite each completed true with 58 passed and 0 failures.\nVERDICT diff: read commit by commit from f6aa019d75, the parent of the node's first commit and one commit above the run's orientation base d0d77f07e2; 4460ed84e2 adds _stream_kinds at tests/test_the_queue_reports_its_own_stalls.py:104-114 and replaces the stream-absence assertion at :151-158, and b99f11ac8f adds the 101-line landing fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_the_queue_reports_its_own_stalls.py:158 now asserts on the watch stream's row kinds instead of the file's absence, and the file reads 15 passed at head b99f11ac8f.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/head-node-file-all-debug.log is headed job 1318861 partition all_debug with SLURM_JOB_ID unset and reads 15 passed EXIT=0, while logs/after-suite.log names rev b99f11ac8f and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-queue-reports-its-own-stalls.html:58 credits that 58-passed figure to f6aa019d75.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat of 4460ed84e2 and b99f11ac8f lists only tests/test_the_queue_reports_its_own_stalls.py and the landing fragment, both inside the declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: the reinstated absence check reddens the case at logs/base-node-file.log EXIT=1 and the added assertion at tests/test_the_queue_reports_its_own_stalls.py:158 reddens on a stalled-kind stream row, but it is vacuous when the pass never launches and blind to a stall published under another kind.\nSCORE fit: 19\nJUSTIFICATION fit: the added _stream_kinds at tests/test_the_queue_reports_its_own_stalls.py:104-114 follows the sibling _stalls and _previous_pass helpers, carries no plan or ticket identifier, and passes ruff check and ruff format --check.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner of the kinds present in the project's watch stream exists, so the eleven-line helper duplicates neither the cursor readers at reckon/crew/dispatch_watch.py:498 nor the reduction at reckon/crew/runs.py:3635.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-queue-reports-its-own-stalls.html:58 non-blocking: the head suite-arm row credits revision f6aa019d75 while the log it cites, logs/after-suite.log, is headed with rev b99f11ac8f, so the 58-passed head figure cannot be tied to the revision it is credited to.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-queue-reports-its-own-stalls.html:64 non-blocking: the prose calls logs/head-node-file.log (rev f6aa019d75, 15 passed in 333.84s) a repeat of the head run, but f6aa019d75 is 4460ed84e2's parent and the test file is unchanged from d0d77f07e2 to f6aa019d75, so that run exercised the old assertion and still passed, evidencing no head arm and showing the pre-fix failure is environment-dependent without disclosing it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224648363511-qwnw-red-file-the-queue-reports-its-own-stalls/manifest.md:16 non-blocking: measurement_cwd and measurement_module place the base extraction under /tmp/reckon-crew-scratch/, a bare /tmp path where the dispatch's parallel-safety rule 8 requires $TMPDIR.\n",
+  "review_run_id": "r-20261116T011314865598-review-of-qwnw-red-file-the-queue-reports-its-own-stalls-b99f11ac8fc2",
+  "reviewed_base_sha": "f6aa019d75f1ecc5a4e36d0e82b5c551984ccd4f",
+  "reviewed_head_sha": "b99f11ac8fc204f1c49a90b341f2549c5fc2107e",
+  "reviewed_run_id": "r-20261115T224648363511-qwnw-red-file-the-queue-reports-its-own-stalls",
+  "reviewer_run_id": "r-20261116T011314865598-review-of-qwnw-red-file-the-queue-reports-its-own-stalls-b99f11ac8fc2",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T01:54:42.734257+00:00",
+  "total": 109
+}
