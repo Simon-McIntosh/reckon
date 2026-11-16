@@ -12,15 +12,7 @@ from reckon import ledger
 from reckon.crew import runs
 from reckon.crew.admission import readiness, release
 from reckon.crew.dispatch_sections import project_mount_repository
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    return subprocess.run(
-        ["git", "-C", str(repository), *arguments],
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
+from tests.test_a_wait_releases_when_its_upstream_lands import _git
 
 
 def _promotion(tmp_path, home, monkeypatch, *, carrier, reachable=True):
@@ -144,3 +136,9 @@ def test_the_queue_releases_a_waiter_only_after_its_brief_promotion_lands(
     phase = release.resolve_waits(waiter, live=[waiter], docs_dir=docs, cache={})
 
     assert phase == ("queued" if reachable else "awaiting-upstream")
+
+
+def test_git_commands_share_the_checked_helper():
+    from tests import test_a_wait_releases_when_its_upstream_lands as owner
+
+    assert _git is owner._git
