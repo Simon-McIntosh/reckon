@@ -69,8 +69,8 @@ FAILED tests/test_the_held_worktree_read_is_bounded.py::test_a_run_retaining_a_t
     <tbody>
       <tr><td>node tests, base (also the negative control)</td><td><code>ee93819a0d</code>, scratch tree at base</td><td>failing ids above, <code>EXIT=1</code></td></tr>
       <tr><td>node tests, after</td><td><code>4f04392824</code>, this worktree</td><td>6 passed, <code>EXIT=0</code></td></tr>
-      <tr><td>tests importing the changed modules, base</td><td><code>ee93819a0d</code>, scratch tree at base</td><td>recorded in the manifest's <code>baseline_suite</code></td></tr>
-      <tr><td>tests importing the changed modules, after</td><td>this worktree's head</td><td>recorded in the manifest's <code>after_suite</code></td></tr>
+      <tr><td>tests importing the changed modules, base</td><td><code>ee93819a0d</code>, clone of the primary repository at base</td><td>137 failed, 720 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>tests importing the changed modules, after</td><td><code>4f04392824</code>, this worktree's head</td><td>123 failed, 734 passed, <code>EXIT=1</code></td></tr>
     </tbody>
   </table>
 
@@ -80,4 +80,12 @@ FAILED tests/test_the_held_worktree_read_is_bounded.py::test_a_run_retaining_a_t
   trees is recorded rather than bounded, as the test itself states: a screen that
   never acts on a record older than its run file must stat every per-run document
   once and every held tree once.</p>
+
+  <p><strong>The arm adds nothing.</strong> The 67 test files whose source
+  names <code>run_store</code>, <code>sync_run</code> or
+  <code>write_run_file</code> were run at both revisions. Not one id failing at head is
+  absent from the base revision's 137: zero were added, and the fourteen the
+  head clears include this file's own four. The two arms
+  both report many pre-existing failures of the primary branch, which this node
+  neither triages nor repairs.</p>
 </section>
