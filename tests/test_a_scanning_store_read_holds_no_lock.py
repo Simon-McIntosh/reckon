@@ -101,43 +101,48 @@ def test_a_record_write_completes_while_selection_is_paused(
             errors.append(error)
 
     thread = threading.Thread(target=read)
-    thread.start()
-    try:
-        assert selecting.wait(10), "selection instrument did not observe a row"
-        started = time.monotonic()
-        write = subprocess.run(
-            [
-                sys.executable,
-                "-c",
-                (
-                    "import json, sys, time; from reckon import run_store; "
-                    "start = time.monotonic(); "
-                    "store = run_store.RunStore(sys.argv[1], busy_timeout=1.1); "
-                    "store.append('example', {'run_id': 'concurrent-write'}); "
-                    "row = store.get_run('concurrent-write'); store.close(); "
-                    "print(json.dumps({'row': row, 'seconds': time.monotonic()-start}))"
-                ),
-                str(path),
-            ],
-            capture_output=True,
-            text=True,
-            timeout=10,
-            check=False,
-        )
-        elapsed = time.monotonic() - started
-        release.wait(max(0, 3.0 - elapsed))
-        assert thread.is_alive(), "selection finished before the writer receipt"
-        assert write.returncode == 0, (
-            f"write waiting past one second during {kind} selection: {write.stderr}"
-        )
-        receipt = json.loads(write.stdout)
-        assert receipt["row"]["run_id"] == "concurrent-write"
-        assert receipt["seconds"] < 1.0, receipt
-        assert elapsed < 1.0, elapsed
-        print(f"{kind}: 20000 rows, write {elapsed:.3f}s, selection held >=3s")
-    finally:
-        release.set()
-        thread.join(timeout=15)
+    with subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import json, sys, time; from reckon import run_store; "
+                "store = run_store.RunStore(sys.argv[1], busy_timeout=1.1); "
+                "print('ready', flush=True); sys.stdin.readline(); "
+                "start = time.monotonic(); "
+                "store.append('example', {'run_id': 'concurrent-write'}); "
+                "row = store.get_run('concurrent-write'); store.close(); "
+                "print(json.dumps({'row': row, 'seconds': time.monotonic()-start}))"
+            ),
+            str(path),
+        ],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    ) as writer:
+        # The ready receipt separates write latency from interpreter and schema
+        # setup; the signal still issues the write while selection is paused.
+        assert writer.stdout.readline().strip() == "ready"
+        thread.start()
+        try:
+            assert selecting.wait(10), "selection instrument did not observe a row"
+            started = time.monotonic()
+            stdout, stderr = writer.communicate(input="\n", timeout=10)
+            elapsed = time.monotonic() - started
+            release.wait(max(0, 3.0 - elapsed))
+            assert thread.is_alive(), "selection finished before the writer receipt"
+            assert writer.returncode == 0, (
+                f"write waiting past one second during {kind} selection: {stderr}"
+            )
+            receipt = json.loads(stdout)
+            assert receipt["row"]["run_id"] == "concurrent-write"
+            assert receipt["seconds"] < 1.0, receipt
+            assert elapsed < 1.0, elapsed
+            print(f"{kind}: 20000 rows, write {elapsed:.3f}s, selection held >=3s")
+        finally:
+            release.set()
+            thread.join(timeout=15)
     assert not thread.is_alive()
     assert not errors
     assert answer == expected
