@@ -39,10 +39,10 @@ of this node's base, so no test in this file encodes a rule the code no longer k
 edited, deleted or weakened.</p>
 
 <h4 id="qwnw-red-file-queue-dag-waits-green">The gate at head, and at the base revision it started from</h4>
-<pre id="qwnw-red-file-queue-dag-waits-green-log"># head 3b43ab970a7546294b687ad88114d11f63e08854 (origin/main merged into this worktree), batch job 1319124 on all_debug, SLURM_JOB_ID unset for the measured process
+<pre id="qwnw-red-file-queue-dag-waits-green-log"># head 9fe2583d2ae7a3830ac7c5c423f420d6fc419a97, batch job 1319129 on all_debug, SLURM_JOB_ID unset for the measured process
 # command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_queue_dag_waits.py
 .........................                                                [100%]
-25 passed in 5.52s
+25 passed in 5.47s
 EXIT=0
 
 # base e35fd9f935225b7005482a75032eb28abeb46c63 (git clone of the base revision, node-local scratch)
@@ -56,13 +56,13 @@ EXIT=0</pre>
 <tbody>
 <tr><td>negative control</td><td>8d50b0333f</td><td>14 failed, 8 passed in 14.95s</td><td>1</td></tr>
 <tr><td>gate at base</td><td>e35fd9f935</td><td>25 passed in 24.27s</td><td>0</td></tr>
-<tr><td>gate at head</td><td>3b43ab970a</td><td>25 passed in 5.52s</td><td>0</td></tr>
+<tr><td>gate at head</td><td>9fe2583d2a</td><td>25 passed in 5.47s</td><td>0</td></tr>
 </tbody>
 </table>
 <p>Both arms of this node's armed suite command — the resolved pair
 <code>tests/test_staged_write_inventory.py</code> and
 <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code> — report the same figure on either
 side of this node's change: 58 passed at the base revision <code>e35fd9f935</code> (exit 0) and 58 passed
-at the run's head <code>3b43ab970a</code> in the same all_debug job (exit 0). A node that changes neither
+at the head <code>9fe2583d2a</code> in the same all_debug job (exit 0). A node that changes neither
 product source nor a test cannot add a failure to an arm.</p>
 </section>
