@@ -1483,6 +1483,15 @@ def _nothing_working_the_run(
             "launcher_job_id": launcher_job,
             "launcher_job_state": state,
         }
+    live = [
+        (job_id, state, started)
+        for job_id, state, started in rows
+        if state.casefold() in _JOB_LIVE_STATES
+    ]
+    if not live:
+        # Nothing on the node is in flight, so no job there can hold the
+        # worker and the launch instant is not needed to dismiss any of them.
+        return True, {"basis": "node-jobs", "live_jobs": []}
     launched = parse_utc(record.get("launched_at"))
     if launched is None:
         return False, {
@@ -1490,9 +1499,7 @@ def _nothing_working_the_run(
             "reason": "the record names no readable launch instant",
         }
     live_after_launch: list[dict[str, Any]] = []
-    for job_id, state, started in rows:
-        if state.casefold() not in _JOB_LIVE_STATES:
-            continue
+    for job_id, state, started in live:
         moment = parse_utc(started)
         if moment is None:
             return False, {

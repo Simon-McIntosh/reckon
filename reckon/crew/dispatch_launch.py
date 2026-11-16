@@ -627,11 +627,20 @@ def _record_launcher_job(run_id: str, record: Mapping[str, Any]) -> str | None:
         return None
     if str(record.get("launch") or "") != "cli" or record.get("job_id"):
         return None
+    if str(record.get("launcher_host") or "") != _reservation_host():
+        # The pointer names another machine: the attempt this launch prepares is
+        # not the one that ran inside this allocation, and stamping this job on
+        # it would name an allocation the run never ran in. A reading that names
+        # a job the node's answer does not carry stays unknown, so the cost of
+        # declining here is a run that keeps the unknown it had.
+        return None
     if record.get("launcher_job_id") == job_id:
         return job_id
 
     def mutation(pointer: dict[str, Any]) -> dict[str, Any]:
         if str(pointer.get("launch") or "") != "cli" or pointer.get("job_id"):
+            return pointer
+        if str(pointer.get("launcher_host") or "") != _reservation_host():
             return pointer
         pointer["launcher_job_id"] = job_id
         return pointer
@@ -2688,34 +2697,34 @@ def reservation_in_flight(
 ) -> bool:
     """Whether a reservation still holds its attempt.
 
-    Once a supervisor is recorded the reservation is freed by that supervisor's
-    exit, whatever the reserving process is doing — the admit service outlives
-    every run it launches. The one exception is a run parked on a declared
-    wait: its worker has ended its turn, the supervisor beside it is idle, and
-    the reservation holds nothing a resume could collide with, so the hold
-    lifts while the park stands and returns the moment a worker is running.
+        Once a supervisor is recorded the reservation is freed by that supervisor's
+        exit, whatever the reserving process is doing — the admit service outlives
+        every run it launches. The one exception is a run parked on a declared
+        wait: its worker has ended its turn, the supervisor beside it is idle, and
+        the reservation holds nothing a resume could collide with, so the hold
+        lifts while the park stands and returns the moment a worker is running.
 
-    Before one is recorded, the reserving process itself is the launch, and
-    while it lives the launch is in flight, including a launch still waiting for
-a scheduler slot.
+        Before one is recorded, the reserving process itself is the launch, and
+        while it lives the launch is in flight, including a launch still waiting for
+    a scheduler slot.
 
-    The attempt's own exit receipt answers for all of it: a reservation whose
-    attempt recorded its end holds nothing, whatever process it names, because
-    the launch that receipt describes is over.
+        The attempt's own exit receipt answers for all of it: a reservation whose
+        attempt recorded its end holds nothing, whatever process it names, because
+        the launch that receipt describes is over.
 
-    A live reserving process is not by itself enough to hold the attempt
-    forever, though: an attempt that recorded no supervisor and left no worker
-    record and is older than :data:`UNREACHED_LAUNCH_BOUND_SECONDS` never
-    reached its worker, so age frees that shape too — a reservation naming a
-    supervisor, or one whose attempt left a worker record, is otherwise held on
-    its liveness alone.
+        A live reserving process is not by itself enough to hold the attempt
+        forever, though: an attempt that recorded no supervisor and left no worker
+        record and is older than :data:`UNREACHED_LAUNCH_BOUND_SECONDS` never
+        reached its worker, so age frees that shape too — a reservation naming a
+        supervisor, or one whose attempt left a worker record, is otherwise held on
+        its liveness alone.
 
-    A pid that names this host's station names no process of this run, whichever
-    field carries it: the station launches runs from inside its own long-lived
-    process and outlives every one of them, so its liveness says nothing about
-    whether a worker is coming. A reservation naming the station as its
-    supervisor therefore holds nothing at all, and one whose door is the station
-    is judged by its age like any other launch that reached no supervisor.
+        A pid that names this host's station names no process of this run, whichever
+        field carries it: the station launches runs from inside its own long-lived
+        process and outlives every one of them, so its liveness says nothing about
+        whether a worker is coming. A reservation naming the station as its
+        supervisor therefore holds nothing at all, and one whose door is the station
+        is judged by its age like any other launch that reached no supervisor.
     """
     if not isinstance(payload, Mapping):
         return False
