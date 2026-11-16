@@ -23,7 +23,7 @@
     Measured completion commands retain landing options and receive a required
     gate option if a cached command omitted it. Node-review disposition commands
     omit the default rubric selector; figure-review commands retain theirs.</p>
-  <h3>Comparable importer measurement</h3>
+  <h3>Accepted importer measurement before assertion alignment</h3>
   <p>The adjudicated retry merged fetched main
     <code>0f487f9e31d2a46888a141ea009b31a69f05be1d</code> with a plain merge.
     Job <code>1319314</code> measured that main and product head
@@ -88,6 +88,42 @@
     byte-identical durable copies and receipts are under the run directory's
     <code>adjudicated-measurements/final/</code>. Plan state, promotion and
     verification of the eventual merged result remain the coordinator's work.</p>
+  <section id="no-unmeasured-remedy-s5-assertion-update">
+    <h3>The accepted superseded assertions now test the safe remedy</h3>
+    <p>After the coordinator accepted the same-tree measurement and its
+      classification, the three test files holding the five superseded cases
+      were granted. Job <code>1319729</code> reproduced all five failures at
+      <code>1b275948eed72e47bff819767015638d85c026b6</code> before editing.
+      Commit <code>e061949ac9a7a75503c2cc59bb5d1a10d7653622</code> changes
+      exactly four assertion lines across those files to expect
+      <code>crew observe</code>. Fixtures, other assertions and product source
+      are unchanged.</p>
+    <p>Job <code>1319734</code> reran the fenced pair on
+      <code>98dci4-clu-3141</code> under all_debug. Both source-only archives
+      share one temporary parent and have separate basetemps. The baseline
+      remains <code>e83210b89b0172304e3a86b6cd949038eb06de16</code>; the head
+      receipt names the actual assertion-update commit above. Every arm records
+      its revision, tree, imported module, command and terminal exit status.</p>
+    <table>
+      <thead><tr><th>Arm</th><th>Runner result</th></tr></thead>
+      <tbody>
+        <tr><td>Original-base fenced arm</td><td>4 failed, 113 passed in 287.42s (0:04:47); exit 1</td></tr>
+        <tr><td>Assertion-update head fenced arm</td><td>4 failed, 138 passed in 247.12s (0:04:07); exit 1</td></tr>
+        <tr><td>Failure-ID comparison</td><td>0 added, 0 removed; the same 4 base-red IDs</td></tr>
+        <tr><td>Selected head control, including all five updated cases</td><td>30 passed in 11.12s</td></tr>
+        <tr><td>Declared passing-gate-guard mutation</td><td>13 failed, 17 passed in 11.84s; exit 1</td></tr>
+      </tbody>
+    </table>
+    <p>The four shared failures are recorded individually as
+      <code>base-red</code> in the manifest. They concern the held-worktree
+      checklist, the landing and obligations history-read controls, and the
+      landed refused-request result. Their assertions remain untouched. Both
+      raw fenced receipts retain exit 1; the measured delta is zero. The five
+      accepted superseded cases now pass. Durable logs and receipts for this
+      update are under <code>adjudicated-measurements/assertion-update/</code>
+      in the run directory, with original logs under
+      <code>~/.cache/reckon-s5/attempt-3/</code>.</p>
+  </section>
 </section>
 </body>
 </html>
