@@ -29,7 +29,6 @@ SPRINT = "S1"
 ALPHA = "alpha-plan"
 BETA = "beta-plan"
 GAMMA = "gamma-plan"
-MISSING = "missing-plan"
 
 CAPABILITY = {
     "version": "1.0",
@@ -237,7 +236,7 @@ def _build_repo(root: Path) -> Path:
         PROJECT,
         "sprint",
         SPRINT,
-        {"status": "active", "items": [ALPHA, BETA, GAMMA, MISSING]},
+        {"status": "active", "items": [ALPHA, BETA, GAMMA]},
         0,
         create=True,
     )
@@ -321,9 +320,9 @@ def test_the_page_has_a_row_per_member_plan_with_its_overview_counts(
     checkout: Path,
 ) -> None:
     rows = _rows(_page(checkout))
-    assert len(rows) == 4, rows
+    assert len(rows) == 3, rows
     by_plan = {row["Plan"]: row for row in rows}
-    assert set(by_plan) == {"Alpha Plan", "Beta Plan", "Gamma Plan", MISSING}, by_plan
+    assert set(by_plan) == {"Alpha Plan", "Beta Plan", "Gamma Plan"}, by_plan
 
     for slug, title in ((ALPHA, "Alpha Plan"), (BETA, "Beta Plan")):
         runs, landed = _overview_counts(checkout, slug)
@@ -344,10 +343,15 @@ def test_a_done_section_without_a_landing_does_not_inflate_the_row(
 
 
 def test_a_member_with_no_document_is_listed_without_a_link(checkout: Path) -> None:
-    assert not (checkout / "docs" / "plans" / f"{MISSING}.html").exists()
-    page = _page(checkout)
+    docs = checkout / "docs"
+    sprint, _version = read_resource(docs, PROJECT, "sprint", SPRINT)
+    (docs / "plans" / f"{GAMMA}.html").unlink()
+    path = evidence.write_sprint_page(
+        docs, PROJECT, SPRINT, [item["slug"] for item in sprint["items"]]
+    )
+    page = BeautifulSoup(path.read_text(encoding="utf-8"), "html.parser")
     rows = page.find("section", id="sprint-plans").find("tbody").find_all("tr")
-    missing = next(row for row in rows if row.find("td").get_text() == MISSING)
+    missing = next(row for row in rows if row.find("td").get_text() == GAMMA)
     assert missing.find_all("td")[1].get_text() == "no plan document"
     assert missing.find("a") is None, missing
     present = next(row for row in rows if row.find("td").get_text() == "Alpha Plan")
