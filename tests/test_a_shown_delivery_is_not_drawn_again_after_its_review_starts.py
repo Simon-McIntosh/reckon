@@ -130,8 +130,10 @@ def test_a_new_attempt_after_the_review_prints_its_launch_and_its_delivery() -> 
             (120.0, _delivery()),
             (200.0, _review_row("working", "complete")),
             # The review sends the run back to work: a halt, then the resume.
-            (240.0, _row(IMPL, "complete", "interrupted")),
-            (250.0, _row(IMPL, "interrupted", "working")),
+            # The halt is a word the pane draws help, so the row is carried and
+            # the resume below opens a new attempt.
+            (240.0, _row(IMPL, "complete", "blocked")),
+            (250.0, _row(IMPL, "blocked", "working")),
             (300.0, _delivery()),
         ]
     )
@@ -141,7 +143,7 @@ def test_a_new_attempt_after_the_review_prints_its_launch_and_its_delivery() -> 
         "delivered",
         "in review",
         "delivered",
-        "needs you",
+        "help",
         "working",
         "delivered",
     ], _words(printed)
@@ -162,5 +164,5 @@ def test_a_new_attempt_after_the_review_prints_its_launch_and_its_delivery() -> 
     assert launches[1].get("review_run_id") == REVIEW, launches[1].get("review_run_id")
     assert [launches[0].get("from_state"), launches[2].get("from_state")] == [
         "dispatched",
-        "interrupted",
+        "blocked",
     ], [launches[0].get("from_state"), launches[2].get("from_state")]

@@ -268,6 +268,49 @@ def _parents(repo: Path, commit: str) -> list[str]:
     return [line.strip() for line in result.stdout.splitlines() if line.strip()]
 
 
+def commits_between(
+    tree: Path,
+    older: str,
+    newer: str,
+    *,
+    excluding: str = "",
+    first_parent: bool = False,
+) -> list[tuple[str, str]] | None:
+    """The commits between two revisions, oldest first, as ``(sha, subject)``.
+
+    ``first_parent`` follows the caller's own line, keeping its merge commits
+    and leaving out the commits their other parents introduced: a run's merge of
+    a shared branch is its work and is cited, while what that merge imported was
+    made by others.
+
+    ``excluding`` names a revision whose own history is none of the caller's
+    business — the shared branch a run merged into its own worktree — and its
+    reachable commits are left out of the answer even when they sit on the
+    caller's line, which is what a branch rebased onto the shared one has.
+
+    ``None`` when git cannot list the range, so a caller reports an unreadable
+    range as unreadable rather than as nothing changed.
+    """
+    arguments = ["log", "--reverse", "--format=%H %s"]
+    if first_parent:
+        arguments.append("--first-parent")
+    arguments.append(f"{older}..{newer}")
+    if excluding:
+        arguments += ["--not", excluding]
+    try:
+        completed = _run(tree, *arguments)
+    except OSError:
+        return None
+    if completed.returncode:
+        return None
+    commits: list[tuple[str, str]] = []
+    for line in completed.stdout.splitlines():
+        sha, _, subject = line.strip().partition(" ")
+        if sha:
+            commits.append((sha, subject.strip()))
+    return commits
+
+
 def _compose_message(subject: str, body: str) -> str:
     """Return a two-part commit message, refusing an empty body or a credit.
 

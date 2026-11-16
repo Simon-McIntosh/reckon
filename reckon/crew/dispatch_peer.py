@@ -57,6 +57,82 @@ def _scoped_python_files(paths: Iterable[str], repo: Path) -> tuple[Path, ...]:
     return tuple(sorted(files))
 
 
+#: How long one scope's listing answers a later launch in the same process. A
+#: service that launches many requests compares each with the same live scopes,
+#: and a scope's file list does not change between two launches a minute apart.
+_SCOPE_MEMO_SECONDS = 600.0
+_SCOPE_MEMO: dict[tuple[str, str, tuple[str, ...]], tuple[float, Any]] = {}
+
+
+def _scope_memo(kind: str, paths: tuple[str, ...], repo: Path, read: Any) -> Any:
+    """One scope's answer, read again only once its last reading has aged out."""
+    key = (kind, str(repo), paths)
+    held = _SCOPE_MEMO.get(key)
+    now = time.monotonic()
+    if held is not None and now - held[0] < _SCOPE_MEMO_SECONDS:
+        return held[1]
+    answer = read()
+    _SCOPE_MEMO[key] = (now, answer)
+    return answer
+
+
+#: A scope holding more Python files than this is not read file by file. It is
+#: a whole package or test tree, and every other scope in the repository
+#: imports from it or is imported by it.
+_WIDE_SCOPE_FILES = 200
+
+
+def _scope_is_wide(paths: Iterable[str], repo: Path) -> bool:
+    """Whether a scope holds more Python files than adjacency reads one by one.
+
+    The walk stops at the first file past the bound, so a scope naming a whole
+    tree costs the directories that hold its first files, not the tree.
+    """
+    seen = 0
+    for raw in paths:
+        candidate = Path(str(raw)).expanduser()
+        candidate = (
+            candidate if candidate.is_absolute() else repo / candidate
+        ).resolve()
+        try:
+            candidate.relative_to(repo)
+        except ValueError:
+            continue
+        if not candidate.is_dir():
+            continue
+        for _path in candidate.rglob("*.py"):
+            seen += 1
+            if seen > _WIDE_SCOPE_FILES:
+                return True
+    return False
+
+
+def _scopes_overlap(
+    left_paths: Iterable[str], right_paths: Iterable[str], repo: Path
+) -> bool:
+    """Whether one scope names a path equal to, inside or containing the other's.
+
+    Two scopes that share a path share its files, so each references the
+    other's modules by holding them. That answer needs no file to be read.
+    """
+
+    def resolved(paths: Iterable[str]) -> list[Path]:
+        found = []
+        for raw in paths:
+            candidate = Path(str(raw)).expanduser()
+            found.append(
+                (candidate if candidate.is_absolute() else repo / candidate).resolve()
+            )
+        return found
+
+    right = resolved(right_paths)
+    return any(
+        one == other or one in other.parents or other in one.parents
+        for one in resolved(left_paths)
+        for other in right
+    )
+
+
 def _module_aliases(path: Path, repo: Path) -> set[str]:
     """Return import spellings that can identify one Python source file."""
     relative = path.relative_to(repo).with_suffix("")
@@ -158,11 +234,36 @@ def _references_any_module(references: set[str], aliases: set[str]) -> bool:
 
 
 def _nodes_are_adjacent(
-    left_paths: Iterable[str], right_paths: Iterable[str], repo: Path
+    left_paths: Iterable[str],
+    right_paths: Iterable[str],
+    repo: Path,
+    files: dict[tuple[str, ...], tuple[Path, ...]] | None = None,
+    wide_scopes: dict[tuple[str, ...], bool] | None = None,
 ) -> bool:
-    """Return whether Python imports or calls connect two disjoint scopes."""
-    left_files = _scoped_python_files(left_paths, repo)
-    right_files = _scoped_python_files(right_paths, repo)
+    """Return whether Python imports or calls connect two disjoint scopes.
+
+    ``files`` holds the file list of each scope already listed in this pass, so
+    a launch compared with every live peer lists its own scope once, and
+    ``wide_scopes`` holds which scopes were found too wide to list at all.
+    """
+    left_key, right_key = tuple(left_paths), tuple(right_paths)
+    if _scopes_overlap(left_key, right_key, repo):
+        return True
+    known = files if files is not None else {}
+    wide = wide_scopes if wide_scopes is not None else {}
+    for key in (left_key, right_key):
+        if key not in wide:
+            wide[key] = _scope_memo(
+                "wide", key, repo, lambda key=key: _scope_is_wide(key, repo)
+            )
+    if wide[left_key] or wide[right_key]:
+        return True
+    for key in (left_key, right_key):
+        if key not in known:
+            known[key] = _scope_memo(
+                "files", key, repo, lambda key=key: _scoped_python_files(key, repo)
+            )
+    left_files, right_files = known[left_key], known[right_key]
     left_aliases = {
         alias for path in left_files for alias in _module_aliases(path, repo)
     }
@@ -195,6 +296,8 @@ def _adjacent_live_peers(
     """
     excluded = set(exclude_run_ids)
     adjacent: list[dict[str, Any]] = []
+    listed: dict[tuple[str, ...], tuple[Path, ...]] = {}
+    wide: dict[tuple[str, ...], bool] = {}
     for pointer in list_live(project=project):
         if str(pointer.get("run_id") or "") in excluded:
             continue
@@ -213,7 +316,11 @@ def _adjacent_live_peers(
             peer_id in explicitly_named
             or peer_named_new
             or _nodes_are_adjacent(
-                node.write_paths, peer_node.get("write_paths") or (), repo
+                node.write_paths,
+                peer_node.get("write_paths") or (),
+                repo,
+                listed,
+                wide,
             )
         ):
             continue

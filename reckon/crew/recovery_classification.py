@@ -1827,6 +1827,13 @@ def classify_pointer(
             detail = str(record.get("reason") or "") or (
                 f"waiting for {waiting_on} to land"
             )
+            # A section owns every run that names it, so a request can wait on
+            # it while one of those runs ends failed. The pass that judged the
+            # wait recorded the runs still on their way, and naming them is
+            # what tells this row apart from one whose section is gone.
+            working = [str(run) for run in record.get("upstream_live") or () if run]
+            if working:
+                detail += f" ({', '.join(working)} live on it)"
             action = f"wait for {waiting_on} to land"
     elif phase == HELD_PHASE and not launched:
         classification = HELD_PHASE

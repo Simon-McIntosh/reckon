@@ -20,11 +20,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-after" content="work-flows-to-the-lane">
   <meta name="plan-section-depends-on" content="{&quot;s2&quot;:[&quot;lead-decisions-reach-one-place#s1&quot;],&quot;s3&quot;:[&quot;lead-decisions-reach-one-place#s1&quot;],&quot;s4&quot;:[&quot;lead-decisions-reach-one-place#s1&quot;,&quot;lead-decisions-reach-one-place#s3&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
   <title>Lead Decisions Reach One Place | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="6">
 <meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
@@ -46,7 +46,7 @@
     </table>
 
     <h2 id="s1">§1 — Every decision waiting on the lead is one read</h2>
-    <section data-reckon="section" data-id="s1" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s1" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> One read, available from the command line and to any agent, returns every open decision that waits on the lead across the mounted projects. Each record carries the question, two to four sentences of context, two to four options with the owner's recommended option first, the owning project, session, plan and section, the time it was recorded, and what an answer releases: queued requests, runs, deferred sections, or a stated risk when nothing is queued. A record also states any action the answer needs from the lead, whether its recommendation comes from the plan's owner or from a reviewing session, and whether any live session owns the plan. A decision that will be needed only when a named run or gate reports is recorded as pending on it and is listed apart from the decisions that are ready. A decision a session has already taken under a standing rule may be recorded as taken and reversible, and is listed apart as well. The records are ordered by the amount of held work, largest first. An open decision already written in a plan's decisions block appears in the same read.</p>
     <p><strong>Done when.</strong> A test with a temporary crew home and two mounted projects records three decisions, one holding four queued requests, one holding one and one holding none, and reads them back in that order with every field present and the held requests named. A decision written only in a plan's decisions block, with no choice set, appears in the read with its plan and section. An answered decision does not appear, including one the lead answered directly in its owning session. A decision recorded as pending on a run appears in the pending list and not among the ready ones until that run reports. Negative control: at the base revision the read does not exist and the test fails at its first call; the failing run is logged to <code>docs/evidence/fragments/lead-decisions-reach-one-place/s1.html</code>. The tests run on <code>all_debug</code>.</p>
 
@@ -132,6 +132,9 @@
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20261115T182912662071-review-of-ldop-every-decision-waiting-on-the-lead-is-one-read-codex-d54cafe651a0" data-who="reckon-build" data-when="2026-11-15T18:37:36Z">
     <div class="r-comment-body"><p>Incremental review 30c7d39129054c63f91e1c6645799c505be9636c to d54cafe651a008c3aa1d3aa0cf3dd3b4ece07649 stores a parsed six-dimension record with no findings and zero added failures; coordinator owns promotion.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20261115T165130268039-ldop-every-decision-waiting-on-the-lead-is-one-read-codex" data-who="reckon-build" data-when="2026-11-15T18:18:41Z">
+    <div class="r-comment-body"><p>Shared lead-decision read now separates ready, pending and reversible choices; retains releases, risk, lead action and recommendation provenance; derives live ownership through the existing resolver and uses the shared option normalizer. Repair gate 41 passed; product reversal produces 12 failures and the corrected fixture oracle catches a mutation the reviewed test accepts.</p></div>
 </div>
 </section>
 </main>

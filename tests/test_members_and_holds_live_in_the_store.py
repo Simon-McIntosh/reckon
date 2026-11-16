@@ -317,16 +317,19 @@ def test_aggregate_gate_update_uses_its_file_version_after_roster_mutation(
 
 
 @pytest.mark.parametrize("path_kind", ["uncached", "indexed", "stale"])
-def test_plan_selection_reaches_file_and_store_history(roster, monkeypatch, path_kind):
+def test_plan_selection_reads_files_with_the_stored_roster(
+    roster, monkeypatch, path_kind
+):
     root, path = roster
     envelope = json.loads(path.read_text())
     envelope["data"]["runs"] = [
         {"run_id": "file-selected", "plan": "selected"},
+        {"run_id": "file-dispatched", "node_definition": {"plan": "selected"}},
         {"run_id": "file-other", "plan": "other"},
     ]
     path.write_text(json.dumps(envelope))
-    run_store.append(PROJECT, {"run_id": "store-selected", "plan": "selected"})
-    run_store.append(PROJECT, {"run_id": "store-other", "plan": "other"})
+    ledger.register_member(PROJECT, "registered", harness="test", root=root)
+    run_store.append(PROJECT, {"run_id": "store-only", "plan": "selected"})
     if path_kind == "stale":
         ledger.load(PROJECT, root=root, plan="selected")
 
@@ -334,23 +337,26 @@ def test_plan_selection_reaches_file_and_store_history(roster, monkeypatch, path
             raise sqlite3.OperationalError("fixture index unavailable")
 
         monkeypatch.setattr(ledger, "_indexed_data", unavailable)
-    merge = ledger._merge_stored_rows
-    selections = []
 
-    def merge_selected(project, data, **kwargs):
-        selections.append((kwargs.get("root"), kwargs.get("plan")))
-        return merge(project, data, **kwargs)
+    class NoRunPayload:
+        def __getattr__(self, name):
+            return getattr(json, name)
 
-    monkeypatch.setattr(ledger, "_merge_stored_rows", merge_selected)
+        def loads(self, payload, *args, **kwargs):
+            assert "store-only" not in payload, "history decoded a stored run payload"
+            return json.loads(payload, *args, **kwargs)
+
+    monkeypatch.setattr(run_store, "json", NoRunPayload())
     data, version = ledger.load(
         PROJECT, root=root, plan="selected", use_index=path_kind != "uncached"
     )
     assert sorted(row["run_id"] for row in data["runs"]) == [
+        "file-dispatched",
         "file-selected",
-        "store-selected",
     ]
     assert version == 7
-    assert selections == [(root, "selected")]
+    assert data["auxiliary_version"] == 8
+    assert "registered" in {member["id"] for member in data["members"]}
 
 
 def test_history_read_never_imports_or_migrates_mutable_state(roster, monkeypatch):

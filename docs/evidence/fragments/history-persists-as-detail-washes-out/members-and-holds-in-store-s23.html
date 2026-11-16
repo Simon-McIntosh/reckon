@@ -59,4 +59,19 @@
     removal. The manifest records both requested reader files and the armed
     gate at the repaired merged head.</p>
   </section>
+  <section id="members-and-holds-in-store-s23-primary-conflict">
+    <h4>Primary conflict preserves file-backed history and stored mutable state</h4>
+    <p>The primary branch deliberately removed store-backed run history after
+    unbounded decoding and directory scans caused resource failures. The merge
+    keeps that removal: indexed, stale and uncached history reads select from
+    the committed files, including plans recorded in dispatch definitions.
+    The read-only overlay still loads only the project's imported roster and
+    holds, with their separate mutable version.</p>
+    <p>The three selection cases now seed a store-only run and refuse any
+    attempt to decode its payload. They assert both selected file-backed rows,
+    the registered roster member and the separate file/store versions on all
+    three paths. The current armed gate is recorded at the repaired merge head
+    in the manifest; the earlier store-history comparison remains historical
+    evidence of the prior integrated revision.</p>
+  </section>
 </section>
