@@ -1445,11 +1445,16 @@ def _render_document(
             f"Closure synthesis for {plan_title}: {len(records)} committed run(s), "
             f"{comment_count} section-anchored comment(s), and {len(commits)} landed commit(s)."
         )
-    summary_source = _source(
-        "ledger",
-        project or plan_slug,
-        f"{len(records)} run(s)",
-    )
+    # The count sentence and the chip naming the ledger it was read from are one
+    # statement, so a synthesis states both. A frame an append creates read no
+    # ledger at all: it publishes neither the run count nor a source for it.
+    if created_by_append:
+        summary_paragraph = f"  <p>{_escape(summary)}</p>\n"
+    else:
+        summary_paragraph = (
+            f"  <p>{_escape(summary)} "
+            f"{_source('ledger', project or plan_slug, f'{len(records)} run(s)')}</p>\n"
+        )
     overview = (
         ""
         if created_by_append
@@ -1497,7 +1502,7 @@ def _render_document(
         "<body>\n"
         ' <main class="plan-doc">\n'
         f"  <h1>{_escape(plan_title)} — landed record</h1>\n"
-        f"  <p>{_escape(summary)} {summary_source}</p>\n"
+        f"{summary_paragraph}"
         "\n" + overview + "\n\n".join(sections) + "\n </main>\n"
         "</body>\n"
         "</html>\n"
