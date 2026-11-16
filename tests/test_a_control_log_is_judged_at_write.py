@@ -23,6 +23,7 @@ from reckon.cli import main as cli_main
 from reckon.crew.node import TaskNode
 from reckon.crew.reports import audit_manifest, parse_manifest
 from reckon.crew.runs import _write_json, pointer_path
+from reckon.hooks.worker_inbox import MANIFEST_MESSAGES_KEY
 
 RUN_ID = "r-20260930T213552839178-control-log-at-write"
 DECLARATION = "remove the guard so the named case fails"
@@ -42,10 +43,7 @@ def _node(**overrides: object) -> TaskNode:
 
 
 def _manifest(
-    *log_lines: str,
-    status: str = "complete",
-    changed: str = TEST_PATH,
-    test_logs: str = "/tmp/control-log-check.log",
+    *log_lines: str, status: str = "complete", changed: str = TEST_PATH
 ) -> str:
     lines = [
         "node: control-log-check",
@@ -53,11 +51,11 @@ def _manifest(
         "commits: 1a2b3c4",
         f"changed_paths: {changed}",
         "tests: pytest tests/test_example_check.py -> 1 passed",
-        f"test_logs: {test_logs}",
+        "test_logs: /tmp/control-log-check.log",
         # The fixture's run directory holds no receipt, so the record owes this
         # statement: the two are judged together wherever the manifest is read
         # beside its own run directory.
-        "messages_received: none",
+        f"{MANIFEST_MESSAGES_KEY}: none",
     ]
     lines.extend(log_lines)
     return "\n".join(lines) + "\n"
@@ -313,7 +311,10 @@ def _cli_manifest(cli_run: dict[str, Path], *log_lines: str, **fields: object) -
     declaration and non-zero exit. These tests judge the control log, so the
     fixture cites the durable log its run directory holds.
     """
-    return _manifest(*log_lines, test_logs=str(cli_run["gate"]), **fields)
+    body = _manifest(*log_lines, **fields)
+    return body.replace(
+        "test_logs: /tmp/control-log-check.log", f"test_logs: {cli_run['gate']}"
+    )
 
 
 def _write_cli_run(
