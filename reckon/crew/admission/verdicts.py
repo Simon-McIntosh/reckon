@@ -140,7 +140,7 @@ def _verdict_row(
     the hold itself is composed by.
     """
     row_remedy = ""
-    if verdict in HOLD_VERDICTS:
+    if verdict in CAPACITY_HOLD_VERDICTS:
         named = failure_hold(pointer)
         if named is not None:
             verdict = str(named["verdict"])
