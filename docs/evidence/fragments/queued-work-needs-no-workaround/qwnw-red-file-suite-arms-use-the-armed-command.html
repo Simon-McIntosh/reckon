@@ -1,0 +1,67 @@
+<section id="qwnw-red-file-suite-arms-use-the-armed-command-landing">
+  <h2>The suite-arming cases read the receipt the command now returns</h2>
+
+  <p><strong>What changed.</strong> Three cases in
+  <code>tests/test_suite_arms_use_the_armed_command.py</code> failed on the
+  primary branch, all in the test file and none in the product: the rule the
+  file guards — an armed run's suite pair must run the command the run was armed
+  with, and the refusal names only the arm that does not — is kept by
+  <code>_arm_missing_fields</code> in <code>reckon/crew/promotion_records.py</code>
+  and is unchanged. What moved is the surface the cases read and the record they
+  build.</p>
+
+  <table id="qwnw-red-file-suite-arms-use-the-armed-command-causes">
+    <caption>Each cause, with the verdict and the rule the code keeps</caption>
+    <thead><tr><th>Observed failure</th><th>Verdict</th><th>Rule the code keeps</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>All three cases: <code>crew complete</code> exits 0 and answers
+        <code>{"kind": "command", "phase": "promotion-requested"}</code>, so the
+        two refusal cases never see <code>error: suite-delta-refused</code> and
+        the accepted case raises <code>KeyError: 'record'</code> on
+        <code>["record"]["suite_delta"]</code></td>
+        <td>test wrong</td>
+        <td><code>crew complete</code> queues a promotion request by default and
+        returns that request's receipt; <code>--wait</code> carries out promotion
+        in the call and returns the promoted record, which is the shape these
+        cases assert. The cases now pass <code>--wait</code>.</td>
+      </tr>
+      <tr>
+        <td>With the receipt read, promotion refuses the fixture before it reaches
+        the suite delta: <code>has a passing gate and cites no commit, but its
+        worktree is at … rather than its base …</code>, and the manifest's
+        <code>abc123</code> does not resolve</td>
+        <td>test wrong</td>
+        <td>Promotion judges the cited commit, the worktree's head and each arm's
+        <code>revision</code> against the record. The fixture now seeds a real
+        base commit and a real run commit, cites the second in the manifest,
+        records it as the run's <code>base_sha</code>, and records the arms at
+        those two revisions — the record the guards are written against.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>No assertion was deleted or weakened: the diff carries no changed
+  <code>assert</code> line. The two refusal cases still assert exit 1, the
+  <code>suite-delta-refused</code> error and the exact
+  <code>missing_fields</code> entries — including that the baseline arm is
+  <em>not</em> named when it matches the arming — and the accepted case still
+  asserts exit 0, <code>status == "clean"</code> and
+  <code>added_failure_ids == []</code>. A mutation of the product's
+  arming-mismatch append makes two of the three fail, so the assertions fire
+  rather than merely pass.</p>
+
+  <p>Arms, all with <code>SLURM_JOB_ID</code> unset. The named file at base
+  <code>827719105952d26737ec2c5da31433132664e0b6</code> reads
+  <code>3 failed in 1.28s</code> with <code>EXIT=1</code>; at head
+  <code>8231d14518fdebcaeb43c5f16f67add5aad9aefb</code>, as an
+  <code>all_debug</code> job (1320015, <code>COMPLETED</code>), it reads
+  <code>3 passed in 2.62s</code> with <code>EXIT=0</code>. The armed pair over
+  <code>tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code>
+  reads <code>58 passed in 41.04s</code> with <code>EXIT=0</code> at the head
+  against <code>58 passed in 41.53s</code> with <code>EXIT=0</code> at the base,
+  so it adds no failure. <code>ruff check</code> and
+  <code>ruff format --check</code> report nothing on the changed path.</p>
+
+  <p><a href="/reckon/evidence/fragments/queued-work-needs-no-workaround/red-file-suite-arms-use-the-armed-command.html">Red-file record: base arm with its three failing ids, head gate, and the mutation control</a></p>
+</section>
