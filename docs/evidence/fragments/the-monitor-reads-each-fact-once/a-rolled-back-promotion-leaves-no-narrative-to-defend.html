@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s80">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-16">
+  <meta name="evidence-commit" content="dd047221e4">
+  <title>A rolled-back promotion leaves no narrative to defend | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="a-rolled-back-promotion-leaves-no-narrative-to-defend">
+  <h2>A rolled-back promotion leaves no narrative to defend</h2>
+
+  <p><strong>The defect.</strong> A promotion writes the plan's landing comment
+  before it appends the run's promotion row, and
+  <code>_record_landing_comment</code>
+  (<code>reckon/crew/promotion_scope.py</code> near line 1517, base
+  <code>baa6e8307</code>) deferred to an existing comment only when a ledger row
+  already existed. With the row rolled back by a failed store write, the guard
+  fell through to <code>CrewError: landing comment … already contains a
+  different narrative</code>, so the plan defended wording that no promotion had
+  recorded, for a run whose only trace was the comment an earlier attempt
+  committed.</p>
+
+  <p><strong>What landed.</strong> When the comment exists with a different body
+  and <code>_ledger_holds_row(project, root, run_id, unreadable=False)</code>
+  answers False, the promotion replaces that comment's body, author and time in
+  place under the same run-derived id (<code>c-run-&lt;run_id&gt;</code>) and
+  proceeds with its versioned plan write, so the row that follows records a
+  promotion whose narrative the plan carries. The row-present branch is
+  untouched: it reports the differing narrative beside the receipt as
+  <code>reason: "different_narrative"</code> with
+  <code>kept_narrative</code> and <code>requested_narrative</code>. The receipt
+  for a superseded comment carries <code>superseded_narrative</code> — the
+  plain text it replaced — so the earlier attempt's wording is reported rather
+  than silently dropped.</p>
+
+  <h3 id="a-rolled-back-promotion-leaves-no-narrative-to-defend-cases">Two cases on a temporary crew home</h3>
+
+  <p><code>tests/test_a_rolled_back_promotion_leaves_no_narrative_to_defend.py</code>
+  builds a committed plan repository and a crew home under a temporary
+  directory. Case (a) writes the landing comment through
+  <code>promotion._record_landing_comment</code> and confirms
+  <code>ledger.runs(…)</code> is empty — the state a rolled-back promotion
+  leaves — then promotes the run with a corrected narrative. The result is
+  <strong>one ledger row</strong>, the live pointer retired, and
+  <strong>exactly one</strong> comment on the plan, reading the corrected
+  narrative; the superseded text appears nowhere in it and is returned as
+  <code>superseded_narrative</code> on the receipt. Case (b) promotes the same
+  run twice with the row present: the row count stays at one, the comment keeps
+  the first narrative, and the second call reports
+  <code>kept_narrative</code> and <code>requested_narrative</code> beside the
+  receipt, as the base revision does.</p>
+
+  <p>The plan-facing sibling case in
+  <code>tests/test_a_second_complete_finishes_cleanup.py</code>
+  covered the same state and asserted the removed refusal; it now asserts the
+  landed behaviour as
+  <code>test_a_differing_narrative_without_a_row_supersedes_the_comment</code>,
+  because the refusal was the defect, not the contract.</p>
+
+  <h3 id="a-rolled-back-promotion-leaves-no-narrative-to-defend-negative">The negative control</h3>
+
+  <p>With the base guard restored — the supersede branch replaced by the
+  original <code>raise CrewError("… different narrative …")</code> — case (a) is
+  refused:
+  <code>FAILED tests/test_a_rolled_back_promotion_leaves_no_narrative_to_defend.py::test_a_comment_with_no_row_is_replaced_by_the_narrative_promoted_now</code>,
+  <strong>1 failed, 1 passed</strong> in 2.02s, <code>EXIT=1</code>. Case (b)
+  still passes under the mutation, which is the point: the change touches only
+  the no-row path. The log is <code>logs/negative-control.log</code> under the
+  run directory.</p>
+
+  <h3 id="a-rolled-back-promotion-leaves-no-narrative-to-defend-arms">Matched arms</h3>
+
+  <p>The base arm ran over the content of <code>baa6e8307</code> — a
+  git-initialised copy of that revision, because the worktree had advanced — on
+  <code>tests/test_a_second_complete_finishes_cleanup.py</code>,
+  <code>tests/test_staged_write_inventory.py</code> and
+  <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>:
+  <strong>66 passed</strong>, <code>EXIT=0</code>. The after arm ran at head
+  <code>dd047221e4</code> over those three files plus
+  <code>tests/test_a_rolled_back_promotion_leaves_no_narrative_to_defend.py</code>:
+  <strong>68 passed</strong>, <code>EXIT=0</code> — the node's new file is
+  absent from the base tree, so the two commands differ by exactly that one
+  path. Both arms were submitted on <code>all_debug</code> as
+  <code>env -u SLURM_JOB_ID -u SLURM_JOBID sbatch</code>; each log opens with
+  its revision, tree, literal command and the imported module's absolute path,
+  and ends in <code>EXIT=</code>.</p>
+
+  <p>The foreground gate over the same four files at head recorded
+  <strong>68 passed in 48.92s</strong>, <code>EXIT=0</code>, in
+  <code>logs/gate.log</code>. <code>ruff check</code> and
+  <code>ruff format --check</code> report no finding on the staged paths.</p>
+</section>
+</main>
+</body>
+</html>
