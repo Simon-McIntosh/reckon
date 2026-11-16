@@ -1,0 +1,59 @@
+<section id="qwnw-red-file-queue-depth-project-bound-record">
+<h3>Queue depth: the red file's two causes, and the runs that show them, repaired</h3>
+<p><code>tests/test_queue_depth_project_bound.py</code> reported <strong>5 failed, 6 passed</strong> at the base revision and at head before the repair, from two causes. Both were product defects: each broke a rule the code states in its own docstring, and neither assertion in the red file was deleted, weakened or edited.</p>
+
+<h4 id="qwnw-red-file-queue-depth-project-bound-causes">The two causes and their verdicts</h4>
+<table>
+<thead><tr><th>Cause</th><th>Failing ids</th><th>Verdict</th><th>Rule the code states, and broke</th></tr></thead>
+<tbody>
+<tr>
+<td>The launch rebuild of a queued node raised <code>TypeError: TaskNode.__init__() missing 1 required positional argument: 'goal'</code> when the stored node carried no required field. <code>queue_dispatch</code> stamps the review contract when a request enters the queue, and <code>record_review_contract</code> reads the node back out of the pointer, so the refusal escaped the whole dispatch instead of the rebuild alone.</td>
+<td><code>test_a_duplicate_request_returns_the_existing_id_and_stores_nothing</code>, <code>test_another_sessions_copy_of_one_request_is_the_same_request</code>, <code>test_a_review_of_a_delivered_run_is_never_refused_by_the_bound</code>, <code>test_a_queued_review_does_not_shrink_the_projects_room</code></td>
+<td>product wrong</td>
+<td><code>_node_from_pointer</code>: &ldquo;A field the stored node lacks takes the dataclass default&rdquo; &mdash; a required field has none, so the rebuild was not total. A required field now takes its type's empty value; an empty goal is still refused by the node's own well-formedness check where it matters.</td>
+</tr>
+<tr>
+<td>The crew live read answered <code>crew_error: '&lt;resolved flight&gt;: local_backend: must be set before `reckon crew dispatch --local` can route work'</code> on a host with no declared local route, for every row of a five-hundred-request queue.</td>
+<td><code>test_the_mcp_crew_reads_answer_inside_their_deadline_on_five_hundred</code></td>
+<td>product wrong</td>
+<td><code>_lane_config_for</code>: &ldquo;a configuration that cannot be resolved leaves the row with no reading rather than failing a view whose other rows are readable&rdquo; &mdash; the except clause caught <code>OSError</code>, <code>ValueError</code> and <code>ClickException</code>, and it did not catch <code>FlightConfigError</code>, which is a plain <code>Exception</code>. The flight schema says an absent <code>local_backend</code> means the host has no local worker route, so selecting one is a dispatch concern and not a read failure. <code>FlightConfigError</code> is now caught beside the others.</td>
+</tr>
+</tbody>
+</table>
+
+<h4 id="qwnw-red-file-queue-depth-project-bound-negative-control">Negative control &mdash; the base run of the named file, with its failing ids</h4>
+<pre id="qwnw-red-file-queue-depth-project-bound-base-gate"># revision: 0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc
+# tree: .../scratch/base-tree (git archive of the revision)
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_queue_depth_project_bound.py
+# measurement_cwd: .../scratch/base-tree
+.FF.....FFF                                                              [100%]
+FAILED tests/test_queue_depth_project_bound.py::test_a_duplicate_request_returns_the_existing_id_and_stores_nothing - TypeError: TaskNode.__init__() missing 1 required positional argument: 'goal'
+FAILED tests/test_queue_depth_project_bound.py::test_another_sessions_copy_of_one_request_is_the_same_request - TypeError: TaskNode.__init__() missing 1 required positional argument: 'goal'
+FAILED tests/test_queue_depth_project_bound.py::test_a_review_of_a_delivered_run_is_never_refused_by_the_bound - TypeError: TaskNode.__init__() missing 1 required positional argument: 'goal'
+FAILED tests/test_queue_depth_project_bound.py::test_a_queued_review_does_not_shrink_the_projects_room - TypeError: TaskNode.__init__() missing 1 required positional argument: 'goal'
+FAILED tests/test_queue_depth_project_bound.py::test_the_mcp_crew_reads_answer_inside_their_deadline_on_five_hundred - AssertionError: ('live', 'cold', {'ok': False, 'error': 'crew_error', 'project': 'queue-depth-fixture', 'detail': '&lt;resolved flight&gt;: local_backend: must be set before `reckon crew dispatch --local` can route work'})
+5 failed, 6 passed in 58.05s
+EXIT=1</pre>
+<p>The full log, header lines and exit receipt intact, is the file <code>logs/base-gate.log</code> in the run directory; the excerpt above is its summary. The same five ids reproduce the two causes quoted in the table.</p>
+
+<h4 id="qwnw-red-file-queue-depth-project-bound-head-run">The head run of the named file</h4>
+<p>Run as a job on <code>all_debug</code> (job 1319565, COMPLETED, 00:01:08, node 98dci4-clu-3141) with <code>SLURM_JOB_ID</code> unset inside the job: a probe run the same way printed <code>SLURM_JOB_ID present: False</code>.</p>
+<pre id="qwnw-red-file-queue-depth-project-bound-after-gate"># revision: c57f3b6865dcb848f8b7b54fc2f5783bd7a0f52c
+# tree: the node's worktree
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_queue_depth_project_bound.py
+...........                                                              [100%]
+11 passed in 65.77s (0:01:05)
+EXIT=0</pre>
+
+<h4 id="qwnw-red-file-request-bound-an-arm">An arm over the test files that import what changed</h4>
+<p>Twenty-seven test files import <code>reckon.crew.query</code>, <code>reckon.crew.admission.launching</code> or <code>_node_from_pointer</code>. Both arms ran the same resolved set over their own tree, and the failure and error ids are <strong>identical, 14 in each</strong> &mdash; the arm adds no failure against the base. Those fourteen are pre-existing failures in files this node did not touch, and are reported to the coordinator rather than repaired here.</p>
+<pre id="qwnw-red-file-request-bound-arm-base"># revision: 0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q &lt;27 importers&gt;
+4 failed, 278 passed, 10 errors in 56.43s
+EXIT=1</pre>
+<pre id="qwnw-red-file-request-bound-arm-after"># revision: c57f3b6865dcb848f8b7b54fc2f5783bd7a0f52c
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q &lt;27 importers&gt;
+4 failed, 280 passed, 10 errors in 48.88s
+EXIT=1</pre>
+<p>The two-test difference in passed is this node's own pair of regression tests: a stored node missing a required field takes an empty value, and a live view whose project configuration cannot be resolved still serves every row.</p>
+</section>
