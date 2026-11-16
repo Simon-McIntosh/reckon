@@ -3718,6 +3718,10 @@ def cached_stream_events(path: str | Path) -> tuple[list[dict[str, Any]], int]:
 _STREAM_SUMMARY_LOCK = threading.RLock()
 _STREAM_SUMMARIES: OrderedDict[str, _StreamSummary] = OrderedDict()
 _STREAM_SUMMARY_LIMIT = 2048
+# The stamp readers a summary answers. A stream is folded for every reader
+# already seen when its bytes are in hand, so a reader that arrives after a
+# stream was last read does not send the process back through its records.
+_STREAM_BOUND_READERS: set[Callable[[object], datetime | None]] = set()
 
 
 @dataclass
@@ -3743,9 +3747,6 @@ class _StreamSummary:
     head: dict[str, Any]
     folds: dict[str, _StreamFold] = field(default_factory=dict)
     bounds: dict[Any, tuple] = field(default_factory=dict)
-    added_events: list[dict[str, Any]] = field(default_factory=list)
-    added_malformed: int = 0
-    added_whole: bool = False
 
     @property
     def identity(self) -> tuple[int, int, int, int]:
@@ -3918,7 +3919,7 @@ def _stream_summary(
         if whole:
             bounds = {
                 reader: _extend_stamp_bounds(None, None, events, reader)
-                for reader in bounds
+                for reader in _STREAM_BOUND_READERS
             }
         else:
             bounds = {
@@ -3934,9 +3935,6 @@ def _stream_summary(
             head=head,
             folds=folds,
             bounds=bounds,
-            added_events=events,
-            added_malformed=malformed,
-            added_whole=whole,
         )
         _STREAM_SUMMARIES[key] = summary
         _STREAM_SUMMARIES.move_to_end(key)
@@ -3967,14 +3965,6 @@ def _summarised_observation(
     )
     with _STREAM_SUMMARY_LOCK:
         fold = summary.folds.get(settings)
-        if fold is None and summary.added_whole:
-            # The records the summary was last built from are the whole stream,
-            # so a reader arriving after that read folds them rather than
-            # paying for the same bytes a second time.
-            events = list(summary.added_events)
-            malformed = summary.added_malformed
-        elif fold is None:
-            whole = False
     if fold is None:
         if not whole:
             try:
@@ -4056,22 +4046,22 @@ def cached_stream_timestamp_bounds(
     stream once and then only its growth.
     """
     source = Path(path)
+    _STREAM_BOUND_READERS.add(reader)
     summary, events, _malformed, whole = _stream_summary(source)
     if summary is not None:
         with _STREAM_SUMMARY_LOCK:
             stored = summary.bounds.get(reader)
             if stored is not None:
                 return stored
-            if summary.added_whole:
-                events = list(summary.added_events)
-                whole = True
         if whole:
             bounds = _extend_stamp_bounds(None, None, events, reader)
-            with _STREAM_SUMMARY_LOCK:
-                live = _STREAM_SUMMARIES.get(str(source.resolve()))
-                if live is not None:
-                    live.bounds[reader] = bounds
-            return bounds
+        else:
+            bounds = _events_timestamp_bounds(path, reader)
+        with _STREAM_SUMMARY_LOCK:
+            live = _STREAM_SUMMARIES.get(str(source.resolve()))
+            if live is not None:
+                live.bounds[reader] = bounds
+        return bounds
     return _events_timestamp_bounds(path, reader)
 
 
