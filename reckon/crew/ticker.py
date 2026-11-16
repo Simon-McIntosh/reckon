@@ -488,6 +488,10 @@ PANE_STATES = {
             "unreadable",
             "unwritten",
             "exited-unfinished",
+            # A run the worker's own exit ended before a verdict delivers
+            # nothing a coordinator can promote, so its next move is the
+            # coordinator's: resume the session from the work on disk.
+            "cut-off",
             "ended-without-manifest",
             "launch-failed",
             "refused-at-admission",
