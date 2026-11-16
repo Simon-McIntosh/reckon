@@ -452,8 +452,8 @@ def test_dispatch_asks_a_waiting_host_for_a_foreignly_attached_session(
 
     The host answers a request by naming its child for the pair in its census,
     which is what the ask waits for, so the case writes that census before the
-    dispatch: this process holds the live registration below, so the census and
-    the registration describe one follower.
+    dispatch -- naming the watcher, not the follower it registers below, so the
+    ask is what draws the request and reports the delivery.
     """
     config_home, repo = request.getfixturevalue("isolated_project")
     runtime = tmp_path / "run-runtime"
@@ -465,11 +465,13 @@ def test_dispatch_asks_a_waiting_host_for_a_foreignly_attached_session(
     monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", SESSION)
     fifo = _session_host_fifo(runtime)
     descriptor = _hold_fifo(fifo)
-    # The waiting host's answer to the request the dispatch writes: its census
-    # names the follower it runs for the pair, carried by the same process that
-    # holds the live registration below.
-    _write_host_record([{"project": PROJECT, "session": SESSION, "pid": os.getpid()}])
     runner = _spawn_runner()
+    # The waiting host's answer to the request the dispatch writes: its census
+    # names the child it runs for the pair, which is the answer the ask waits
+    # for. That child is the watcher, not the follower this process registers
+    # below, so nothing reads the session as already the host's: the ask is
+    # what draws the request and the delivery verdict.
+    _write_host_record([{"project": PROJECT, "session": SESSION, "pid": runner.pid}])
     try:
         _register_watcher(PROJECT, runner.pid)
         with runs.follower_registration(PROJECT, SESSION, delivery="stream"):
