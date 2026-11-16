@@ -1,0 +1,129 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "fails_if": "worker_scratch_dir stops respecting the fixture scratch root; this is fixture orientation, not the production wiring guard.",
+      "lines": "141"
+    },
+    {
+      "fails_if": "step_launch_environment creates scratch on the composing host.",
+      "lines": "142"
+    },
+    {
+      "fails_if": "the helper drops expected TMPDIR from step_node_directories; the recorded mutation produces KeyError, independently confirming this assertion catches the intended omission rather than echoing an input.",
+      "lines": "143-145"
+    },
+    {
+      "fails_if": "the helper omits or mislocates RECKON_STEP_RECORD; the expected filename is derived independently from the run directory contract.",
+      "lines": "146"
+    },
+    {
+      "fails_if": "the composed wrapper fails before exec or fails to create the scratch directory checked by its child.",
+      "lines": "168"
+    },
+    {
+      "fails_if": "the wrapper leaves no actual scratch directory; this observes a filesystem effect.",
+      "lines": "169"
+    },
+    {
+      "fails_if": "dispatch imports or defines a different predicate object; the recorded duplicate-predicate mutation demonstrates it.",
+      "lines": "181"
+    },
+    {
+      "fails_if": "an unplaced srun is treated as a held-allocation step and receives record/directory environment; comparing against the input here is the deliberate unchanged-environment contract.",
+      "lines": "187-192"
+    },
+    {
+      "fails_if": "a held-allocation srun is not recognized and RECKON_STEP_RECORD is absent.",
+      "lines": "197"
+    }
+  ],
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:_worker_runtime_plan:1193",
+    "reckon/crew/dispatch_launch.py:_supervisor_spawn_worker:4253",
+    "reckon/crew/dispatch_launch.py:_supervisor_spawn_worker:4264",
+    "reckon/crew/process_signal.py:_run_uses_step:694",
+    "reckon/crew/process_signal.py:_step_worker_identity:700",
+    "reckon/crew/process_signal.py:signal_worker:979",
+    "reckon/crew/dispatch_sessions.py:1384",
+    "reckon/crew/dispatch_sessions.py:1904"
+  ],
+  "completed_at": "2026-11-16T07:04:44Z",
+  "dispatched_at": "2026-11-16T06:57:56Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T200804650837-wse-workers-run-on-compute-nodes/manifest.md",
+      "line": 38,
+      "severity": "blocking",
+      "text": "after_suite.log_path resolves to /home/ITER/mcintos/.config/reckon/crew/crew/runs/r-20261115T200804650837-wse-workers-run-on-compute-nodes/logs/after_arm_repair.log, which does not exist; change the receipt to the readable /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T200804650837-wse-workers-run-on-compute-nodes/logs/after_arm_repair.log so consumers can open the head arm it claims."
+    },
+    {
+      "file": "tests/test_a_worker_on_a_compute_node_leaves_no_fleet_scratch.py",
+      "line": 135,
+      "severity": "non-blocking",
+      "text": "the revised test invokes step_launch_environment directly; deleting its production invocation at reckon/crew/dispatch_launch.py:4264-4266 leaves every added assertion intact, so the helper is guarded but its connection to real worker spawning is still unguarded; add a supervisor-level assertion in the coordinator-assigned follow-up node."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "completed": true,
+      "declared_log_exists": false,
+      "declared_log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T200804650837-wse-workers-run-on-compute-nodes/logs/../../../crew/runs/r-20261115T200804650837-wse-workers-run-on-compute-nodes/logs/after_arm_repair.log",
+      "exit_status": 0,
+      "failure_ids": [],
+      "read_log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T200804650837-wse-workers-run-on-compute-nodes/logs/after_arm_repair.log",
+      "revision": "999ddd4c6fe14cc2ee5a228c502790ebe55fd519",
+      "summary": "58 passed in 66.18s (0:01:06)"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "declared_log_exists": true,
+      "declared_log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T200804650837-wse-workers-run-on-compute-nodes/logs/baseline_arm.log",
+      "exit_status": 0,
+      "failure_ids": [],
+      "read_log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T200804650837-wse-workers-run-on-compute-nodes/logs/baseline_arm.log",
+      "revision": "dafd87495fc749997947105eec1e2e0992fb8941",
+      "summary": "58 passed in 58.68s"
+    }
+  },
+  "item_verdicts": {
+    "diff": "Read ed050a836115b828bcf876f3161d5cbf18389f5c against 9ca517e3bc55eb2989c7eba791d56c51e54b8314 and merge 999ddd4c6fe14cc2ee5a228c502790ebe55fd519 against both parents for the three assigned targets; the predicate and environment extraction survive, with primary omp_headers preserved alongside placed_step at dispatch_launch.py:4261-4262.",
+    "done_when": "Read prompt.txt:164-165; logs/baseline_arm.log and logs/after_arm_repair.log each record 58 passed EXIT=0, and both new mutation logs record 1 failed, 3 passed EXIT=1, but those suite arms measure inventory/locks rather than the twenty-worker rehearsal or fleet memory delta.",
+    "goal": "Read prompt.txt:38 and live docs/plans/work-scales-to-eighty-across-nodes.html#s4; this incremental repair centralizes placed-step detection and preserves remote scratch composition at reckon/crew/dispatch_launch.py:1469 and :4264, while the section-wide rehearsal remains separately outstanding.",
+    "manifest": "Read the current source manifest.md and all four named logs; its two mutation results are recorded, but after_suite at manifest.md:38 names a nonexistent path even though test_logs names the readable after_arm_repair.log, and the claimed 27-pass focused head result has no named matching log.",
+    "write_paths": "Read prompt.txt:84-89 and manifest.md:5; the authored repair ed050a836115b828bcf876f3161d5cbf18389f5c touches only reckon/crew/dispatch_launch.py, reckon/crew/process_signal.py and tests/test_a_worker_on_a_compute_node_leaves_no_fleet_scratch.py, all within declared reckon and tests scopes."
+  },
+  "justifications": {
+    "durability": "tests/test_a_worker_on_a_compute_node_leaves_no_fleet_scratch.py:143 fails when the TMPDIR expected-source argument is removed, :168-169 fail when the wrapper stops making scratch, and :181 fails for a copied predicate, but none reaches the supervisor call at dispatch_launch.py:4264.",
+    "evidence": "logs/negative_control_wiring.log records KeyError RECKON_STEP_NODE_DIRS and logs/negative_control_predicate.log an identity AssertionError, each EXIT=1, but source manifest.md:38 misaddresses the after receipt and :42 supplies no named focused positive head log.",
+    "fit": "reckon/crew/dispatch_launch.py:1441 uses the existing Mapping-to-dict environment idiom and process_signal.py:677 names the capability directly, though the added test docstrings at tests/test_a_worker_on_a_compute_node_leaves_no_fleet_scratch.py:126 and :175 describe testing strategy at length.",
+    "goal_fidelity": "reckon/crew/dispatch_launch.py:1469 carries TMPDIR into the node-directory list, :4264 calls that composition in production, and process_signal.py:694 shares the predicate, satisfying the incremental repair within the larger section.",
+    "reuse": "Capability search over reckon at the reviewed head found step_node_directories in dispatch_launch.py:1392 and the existing _run_uses_step owner in process_signal.py:693; step_launch_environment wraps the former and argv_uses_step extends the latter while deleting the dispatch copy.",
+    "scope_discipline": "ed050a836115b828bcf876f3161d5cbf18389f5c changes only the three assigned targets under reckon and tests; merge 999ddd4c6fe14cc2ee5a228c502790ebe55fd519 imports primary content rather than authoring unrelated work."
+  },
+  "prior_findings_assessment": {
+    "predicate_duplication": "repaired by extending process_signal and importing the same callable",
+    "scratch_argument": "repaired inside the production helper; the supervisor-to-helper connection remains untested"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read prompt.txt:38 and live docs/plans/work-scales-to-eighty-across-nodes.html#s4; this incremental repair centralizes placed-step detection and preserves remote scratch composition at reckon/crew/dispatch_launch.py:1469 and :4264, while the section-wide rehearsal remains separately outstanding.\nVERDICT done_when: Read prompt.txt:164-165; logs/baseline_arm.log and logs/after_arm_repair.log each record 58 passed EXIT=0, and both new mutation logs record 1 failed, 3 passed EXIT=1, but those suite arms measure inventory/locks rather than the twenty-worker rehearsal or fleet memory delta.\nVERDICT write_paths: Read prompt.txt:84-89 and manifest.md:5; the authored repair ed050a836115b828bcf876f3161d5cbf18389f5c touches only reckon/crew/dispatch_launch.py, reckon/crew/process_signal.py and tests/test_a_worker_on_a_compute_node_leaves_no_fleet_scratch.py, all within declared reckon and tests scopes.\nVERDICT manifest: Read the current source manifest.md and all four named logs; its two mutation results are recorded, but after_suite at manifest.md:38 names a nonexistent path even though test_logs names the readable after_arm_repair.log, and the claimed 27-pass focused head result has no named matching log.\nVERDICT diff: Read ed050a836115b828bcf876f3161d5cbf18389f5c against 9ca517e3bc55eb2989c7eba791d56c51e54b8314 and merge 999ddd4c6fe14cc2ee5a228c502790ebe55fd519 against both parents for the three assigned targets; the predicate and environment extraction survive, with primary omp_headers preserved alongside placed_step at dispatch_launch.py:4261-4262.\nCALL_SITES: reckon/crew/dispatch_launch.py:_worker_runtime_plan:1193, reckon/crew/dispatch_launch.py:_supervisor_spawn_worker:4253, reckon/crew/dispatch_launch.py:_supervisor_spawn_worker:4264, reckon/crew/process_signal.py:_run_uses_step:694, reckon/crew/process_signal.py:_step_worker_identity:700, reckon/crew/process_signal.py:signal_worker:979, reckon/crew/dispatch_sessions.py:1384, reckon/crew/dispatch_sessions.py:1904\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:1469 carries TMPDIR into the node-directory list, :4264 calls that composition in production, and process_signal.py:694 shares the predicate, satisfying the incremental repair within the larger section.\nSCORE evidence: 12\nJUSTIFICATION evidence: logs/negative_control_wiring.log records KeyError RECKON_STEP_NODE_DIRS and logs/negative_control_predicate.log an identity AssertionError, each EXIT=1, but source manifest.md:38 misaddresses the after receipt and :42 supplies no named focused positive head log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: ed050a836115b828bcf876f3161d5cbf18389f5c changes only the three assigned targets under reckon and tests; merge 999ddd4c6fe14cc2ee5a228c502790ebe55fd519 imports primary content rather than authoring unrelated work.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_worker_on_a_compute_node_leaves_no_fleet_scratch.py:143 fails when the TMPDIR expected-source argument is removed, :168-169 fail when the wrapper stops making scratch, and :181 fails for a copied predicate, but none reaches the supervisor call at dispatch_launch.py:4264.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/dispatch_launch.py:1441 uses the existing Mapping-to-dict environment idiom and process_signal.py:677 names the capability directly, though the added test docstrings at tests/test_a_worker_on_a_compute_node_leaves_no_fleet_scratch.py:126 and :175 describe testing strategy at length.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability search over reckon at the reviewed head found step_node_directories in dispatch_launch.py:1392 and the existing _run_uses_step owner in process_signal.py:693; step_launch_environment wraps the former and argv_uses_step extends the latter while deleting the dispatch copy.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T200804650837-wse-workers-run-on-compute-nodes/manifest.md:38 blocking: after_suite.log_path resolves to /home/ITER/mcintos/.config/reckon/crew/crew/runs/r-20261115T200804650837-wse-workers-run-on-compute-nodes/logs/after_arm_repair.log, which does not exist; change the receipt to the readable /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T200804650837-wse-workers-run-on-compute-nodes/logs/after_arm_repair.log so consumers can open the head arm it claims.\nFINDING tests/test_a_worker_on_a_compute_node_leaves_no_fleet_scratch.py:135 non-blocking: the revised test invokes step_launch_environment directly; deleting its production invocation at reckon/crew/dispatch_launch.py:4264-4266 leaves every added assertion intact, so the helper is guarded but its connection to real worker spawning is still unguarded; add a supervisor-level assertion in the coordinator-assigned follow-up node.\n",
+  "remaining_section_evidence": "The twenty-worker rehearsal, fleet memory delta, and standalone-job scratch route are recorded by the source manifest as outside this repair; no fresh implementation finding is made about that pre-existing work.",
+  "review_run_id": "r-20261116T065627565912-review-of-wse-workers-run-on-compute-nodes-999ddd4c6fe1",
+  "reviewed_base_sha": "9ca517e3bc55eb2989c7eba791d56c51e54b8314",
+  "reviewed_head_sha": "999ddd4c6fe14cc2ee5a228c502790ebe55fd519",
+  "reviewed_run_id": "r-20261115T200804650837-wse-workers-run-on-compute-nodes",
+  "scope_note": "Incremental review only: authored repair plus its three-target merge survival; inherited primary changes were identified, not re-reviewed. No suite rerun or code mutation performed.",
+  "scores": {
+    "durability": 17,
+    "evidence": 12,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T12:13:32.444187+00:00",
+  "total": 107
+}
