@@ -1,0 +1,53 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Both arms are readable and carry their own exit line: baseline_suite is 2 failed, 85 passed, EXIT=1 at 63e6c58d (logs/base-arm-fixed-1319282.log) and after_suite is 2 failed, 94 passed, EXIT=1 at a7fc52f256 (logs/head-arm-final2-1319294.log). The failing id set is identical on both sides (tests/test_brief_prompt.py::test_a_plan_prompt_is_byte_identical_to_that_snapshot and ::test_the_manifest_template_states_the_red_logs_exit_line), so the added set is empty. The first of those ids is inherited as an id but its failing content changed: at head the byte-identical assertion reddens on the optional-fragment clause this node itself wrote (see finding), which a count over ids cannot show.",
+  "completed_at": "2026-11-16T10:51:54Z",
+  "dispatched_at": "2026-11-16T10:51:38Z",
+  "findings": [
+    {
+      "file": "tests/test_brief_prompt.py",
+      "line": 297,
+      "severity": "blocking",
+      "summary": "The pinned snapshot at tests/test_brief_prompt.py:295-306 does not describe the prompt the node ships. The snapshot reads 'Write a fragment only in one of the landing line's two exceptions - a negative result, ...' and places 'Nothing splices a fragment into the plan's landed record' before the small-node rule, while reckon/crew/prompts.py:197 emits 'Write a fragment only in one of the two cases it is for - you have a negative result, ...' and places that sentence after SMALL_NODE_RULE at :205-206. Both mismatches were introduced by 4f6c88c291, which hand-edited the snapshot instead of composing it, and they are visible in the run's own gate log (logs/head-arm-final2-1319294.log:16-31). The 'verbatim' pin therefore cannot guard the clause it exists to guard, and a reader of the snapshot is shown wording the product never emits."
+    },
+    {
+      "file": "skills/reckon-build/references/sprint-orchestration.md",
+      "line": 516,
+      "severity": "non-blocking",
+      "summary": "The paragraph says the contract is one 'the prompt embeds verbatim' and then quotes a clause the prompt does not carry: the quote gives 'write one only when you have a negative result or a mechanism that does not fit a landing line, the landing line being then the node's whole prose account', while reckon/crew/prompts.py:196-200 says 'A per-node evidence fragment is optional: it is not the record and a routine landing writes none, so the landing line is the whole prose account of the node. Write a fragment only in one of the two cases it is for'. The quotation marks also close after 'as follows.' and reopen at 'your plan section.' with no opening mark at :522, so the passage claims an accuracy it does not have and a coordinator reading it cannot tell which words are the contract's."
+    },
+    {
+      "file": "skills/reckon-build/references/coordinator-reference.md",
+      "line": 821,
+      "severity": "non-blocking",
+      "summary": "The quoted landing clause is a paraphrase presented as the workers' contract: it reads 'A per-node evidence fragment is optional: write one only when you have a negative result or a mechanism that does not fit a landing line, the landing line being then the node's whole prose account of the node, and place it as follows.', while reckon/crew/prompts.py:195-200 carries different wording for the same clause. The skill text a coordinator reads to verify a landing therefore quotes words a worker was never given."
+    }
+  ],
+  "plan_section": "s6",
+  "plan_slug": "a-landing-is-recorded-once",
+  "project": "reckon",
+  "review_run_id": "r-20261116T074543389125-review-of-alro-s6-a7fc52f2569c",
+  "review_text": "VERDICT goal: the node goal is 'Make the per-node evidence fragment optional'; in this increment reckon/crew/prompts.py:185-206 leads the landing contract with the `landing:` line and makes the fragment optional in two named cases, and skills/reckon-build/SKILL.md:333-349, references/worker-protocol.md:215, references/sprint-orchestration.md:420 and references/coordinator-reference.md:821 carry the same order, while reckon/evidence.py is untouched here because its change was reviewed at a6417654.\nVERDICT done_when: the seven enumerated cases sit in tests/test_a_per_node_fragment_is_optional.py and run green, and the gate command names five files and records 94 passed / 2 failed at a7fc52f256 against 85 passed / 2 failed at 63e6c58d, but the byte-identical pin among those files fails on this node's own clause, so the gate does not assert that the shipped prompt matches the snapshot.\nVERDICT write_paths: read the run's declared write_paths in its manifest; the four commits touch only reckon/crew/prompts.py, four skills/reckon-build files, tests/test_brief_prompt.py, tests/test_a_per_node_fragment_is_optional.py and docs/evidence/fragments/a-landing-is-recorded-once/alro-s6.html, every one of them inside the declared set.\nVERDICT manifest: read; status complete, the tests line names the five-file pytest command, baseline_suite and after_suite each carry a log path, revision and exit_status, and the negative control names logs/negative-control.log.\nVERDICT diff: read commit by commit from a6417654101d to a7fc52f256; the merge 44a379bac0 brings main's tree and is not the node's content, 705f0bb82d reorders the prompt and four skill passages and regenerates the snapshot whole, 4f6c88c291 reverts the snapshot to the landing block alone and hand-edits one clause, 075757b964 corrects a false claim in the fragment, and a7fc52f256 rewires the shared fixtures by name, leaving tests/test_brief_prompt.py:295-306 the whole net snapshot diff.\nCALL_SITES: reckon/crew/dispatch_claims.py:1517, reckon/crew/prompts.py:895\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/prompts.py:196-201 and skills/reckon-build/references/worker-protocol.md:215-222 state the fragment as optional with both cases, but the snapshot at tests/test_brief_prompt.py:297 records a third wording the product does not emit.\nSCORE evidence: 13\nJUSTIFICATION evidence: the arms at logs/base-arm-fixed-1319282.log and logs/head-arm-final2-1319294.log are readable and identical in failing ids, yet the head arm's own byte-identical failure at :16-31 shows the gate's pin disagreeing with the prompt it pins.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the four commits is inside the manifest's declared write paths, and the net snapshot diff at tests/test_brief_prompt.py:295-306 is confined to the landing block after 4f6c88c291 reverted 705f0bb82d's whole-file regeneration.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_per_node_fragment_is_optional.py:102-107 reddens when the optional clause is cut, as logs/negative-control.log shows, but tests/test_brief_prompt.py:297 pins the node's own clause to text the composer never emits, so that assertion guards nothing about the shipped prompt.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/prompts.py:190-207 keeps the module's parenthesised concatenation and contract-constant idiom, while skills/reckon-build/references/sprint-orchestration.md:516 calls a paraphrase 'verbatim' and leaves an unbalanced quotation mark at :522.\nSCORE reuse: 20\nJUSTIFICATION reuse: the increment adds no definition and instead extends the existing owners, PLAN_LANDING_CONTRACT at reckon/crew/prompts.py:185 and the landing paragraph in each skill file, and a search of reckon/crew found no second landing-contract owner to fork.\nFINDING tests/test_brief_prompt.py:297 blocking: the pinned snapshot states 'one of the landing line's two exceptions' and places 'Nothing splices a fragment...' before the small-node rule, while reckon/crew/prompts.py:197 and :206 emit 'one of the two cases it is for' and place that sentence after SMALL_NODE_RULE, so the pin misdescribes the shipped prompt and cannot catch a regression in the clause this node changed.\nFINDING skills/reckon-build/references/sprint-orchestration.md:516 non-blocking: the text quotes a clause as one the prompt 'embeds verbatim' that reckon/crew/prompts.py:196-200 does not contain, and the quotation marks are unbalanced at :522.\nFINDING skills/reckon-build/references/coordinator-reference.md:821 non-blocking: the quoted landing clause is a paraphrase of reckon/crew/prompts.py:195-200 presented as the worker's contract, so a coordinator verifying against it reads words no worker was given.",
+  "reviewed_base_sha": "a6417654101de1c3d3e1a8132956a9328e0f3e36",
+  "reviewed_head_commits": [
+    "705f0bb82dd8f26c35675d41abf9bec82347fbc3",
+    "4f6c88c291a8d29b025ab52ad6fbc987deb08b86",
+    "075757b964e4903890b0c3de3d7fc24e27e4b032",
+    "a7fc52f2569cb2bd9cbb3d74d07355a07aca95af"
+  ],
+  "reviewed_head_sha": "a7fc52f2569cb2bd9cbb3d74d07355a07aca95af",
+  "reviewed_run_id": "r-20261115T085735446128-alro-s6",
+  "scores": {
+    "durability": 15,
+    "evidence": 13,
+    "fit": 15,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T11:07:06.811763+00:00",
+  "total": 97
+}
