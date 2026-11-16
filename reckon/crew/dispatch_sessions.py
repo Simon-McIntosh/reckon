@@ -378,6 +378,7 @@ def _orientation_substance(
     record: Mapping[str, Any], reported: Mapping[str, Any]
 ) -> list[str]:
     """Verify the issued tree, ancestry and commit scope independently of echoes."""
+    from reckon.crew.promotion_evidence import _committed_scope
     from reckon.crew.promotion_scope import _outside_declared_scope
 
     worktree = Path(str(record.get("worktree") or ""))
@@ -404,23 +405,23 @@ def _orientation_substance(
             return [
                 f"commit {commit!r} is not in worktree {str(worktree)!r} history: {error}"
             ]
-    # Every commit's paths count, including a path a later commit deletes.
-    # First-parent non-merge diffs exclude content integrated from other runs.
-    changed, error = _worktree_git_read(
-        worktree,
-        "log",
-        "--first-parent",
-        "--no-merges",
-        "--format=",
-        "--name-only",
-        "--no-renames",
-        "-z",
-        f"{base}..HEAD",
-        "--",
+    # Measure every run commit, including paths a later commit deletes, with
+    # the same merge accounting promotion uses for its scope verdict.
+    revisions, error = _worktree_git_read(
+        worktree, "rev-list", "--first-parent", "--reverse", f"{base}..HEAD", "--"
     )
-    if error or changed is None:
-        return [f"worktree commit paths could not be read: {error}"]
-    paths = sorted({path for path in changed.stdout.split("\0") if path})
+    if error or revisions is None:
+        return [f"worktree commits could not be read: {error}"]
+    commits = revisions.stdout.splitlines()
+    paths: tuple[str, ...] = ()
+    if commits:
+        try:
+            scope = _committed_scope(cwd=worktree, commits=commits)
+        except CrewError as exc:
+            return [f"worktree commit paths could not be verified: {exc}"]
+        if not scope.changed_lines.get("available", True):
+            return [f"worktree commit paths could not be read: {scope.changed_lines}"]
+        paths = scope.paths
     outside = _outside_declared_scope(
         paths,
         (record.get("node") or {}).get("write_paths") or (),

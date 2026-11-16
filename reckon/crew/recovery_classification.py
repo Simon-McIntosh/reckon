@@ -1928,7 +1928,10 @@ def classify_pointer(
     if manifest_status == "complete" and not deferred_outcome:
         from reckon.crew.dispatch_sessions import _apply_orientation_check
 
+        if memo_fresh and isinstance(memo.get("orientation_check"), Mapping):
+            orientation_record["orientation_check"] = memo["orientation_check"]
         _apply_orientation_check(orientation_record, None, reported=manifest_data)
+        memo["orientation_check"] = orientation_record.get("orientation_check")
     orientation_check = orientation_record.get("orientation_check")
 
     # Classification order: the process is consulted before the manifest

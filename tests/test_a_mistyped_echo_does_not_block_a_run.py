@@ -125,9 +125,11 @@ def test_a_nonancestor_pointer_base_stays_blocked(delivered):
     unrelated = _git(tree, "commit-tree", "HEAD^{tree}", "-m", "unrelated root")
     record["base_sha"] = unrelated
     _report(record, manifest)
+    original = copy.deepcopy(record)
     _apply_orientation_check(record, manifest)
     assert record["phase"] == "blocked", record
     assert "ancestor" in record["detail"]
+    assert classify_pointer(original)["classification"] == "blocked"
 
 
 def test_a_commit_from_another_worktree_stays_blocked(delivered, tmp_path):
@@ -141,10 +143,12 @@ def test_a_commit_from_another_worktree_stays_blocked(delivered, tmp_path):
         _git(foreign, "commit", "--allow-empty", "-m", "foreign work")
         head = _git(foreign, "rev-parse", "HEAD")
         _report(record, manifest, commits=[head], orientation_worktree=str(foreign))
+        original = copy.deepcopy(record)
         _apply_orientation_check(record, manifest)
         assert record["phase"] == "blocked", record
         assert "worktree" in record["detail"]
         assert head in record["detail"]
+        assert classify_pointer(original)["classification"] == "blocked"
     finally:
         _git(tree, "worktree", "remove", str(foreign))
 
@@ -181,3 +185,33 @@ def test_an_outside_path_added_then_deleted_still_counts(delivered):
     _apply_orientation_check(record, manifest)
     assert record["phase"] == "blocked", record
     assert "outside.txt" in record["detail"]
+
+
+def test_an_empty_echo_of_the_scope_is_repaired(delivered):
+    record, manifest = delivered
+    _report(record, manifest, orientation_write_paths=[])
+    _apply_orientation_check(record, manifest)
+    assert record["phase"] == "complete", record
+    assert record["orientation_check"]["repaired_echo"]["write_paths"]["reported"] == []
+
+
+def test_an_unchanged_classification_reuses_the_git_reading(delivered, monkeypatch):
+    from reckon.crew import dispatch_sessions
+
+    record, _ = delivered
+    assert classify_pointer(record)["classification"] == "promotable"
+
+    def unexpected_read(*args, **kwargs):
+        pytest.fail("an unchanged run repeated its git measurement")
+
+    monkeypatch.setattr(dispatch_sessions, "_worktree_git_read", unexpected_read)
+    assert classify_pointer(record)["classification"] == "promotable"
+
+
+def test_a_classification_rechecks_scope_after_the_head_moves(delivered):
+    record, _ = delivered
+    assert classify_pointer(record)["classification"] == "promotable"
+    _commit(Path(record["worktree"]), "outside.txt")
+    classified = classify_pointer(record)
+    assert classified["classification"] == "blocked", classified
+    assert "outside.txt" in classified["detail"]
