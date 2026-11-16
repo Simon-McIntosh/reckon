@@ -53,10 +53,12 @@ def population(tmp_path_factory):
     return path, records
 
 
-def _legacy_copy(source, target):
+def _legacy_copy(source, target, *, omit_revision=False):
     """Copy payloads into the schema without a cached activity instant."""
     with sqlite3.connect(source) as original, sqlite3.connect(target) as legacy:
-        columns = ["run_id", *run_store.QUERY_KEYS, "revision", "payload"]
+        columns = ["run_id", *run_store.QUERY_KEYS, "payload"]
+        if not omit_revision:
+            columns.append("revision")
         declarations = ", ".join(
             f'"{key}" TEXT' + (" PRIMARY KEY" if key == "run_id" else "")
             for key in columns
@@ -67,6 +69,41 @@ def _legacy_copy(source, target):
             f"INSERT INTO runs ({names}) VALUES ({','.join('?' for _ in columns)})",  # noqa: S608 - fixed schema columns
             original.execute(f"SELECT {names} FROM runs"),  # noqa: S608 - fixed schema columns
         )
+
+
+def test_an_interrupted_backfill_retries_the_unfinished_rows(
+    tmp_path, monkeypatch, population
+):
+    source, _ = population
+    path = tmp_path / "interrupted.db"
+    _legacy_copy(source, path, omit_revision=True)
+    original = run_store._legacy_payload
+    calls = []
+
+    def interrupted(row):
+        calls.append(row["run_id"])
+        if len(calls) == 2:
+            raise RuntimeError("injected backfill interruption")
+        return original(row)
+
+    monkeypatch.setattr(run_store, "_legacy_payload", interrupted)
+    with pytest.raises(RuntimeError, match="injected backfill interruption"):
+        run_store.RunStore(path)
+    assert len(calls) == 2
+    calls.clear()
+
+    def counted(row):
+        calls.append(row["run_id"])
+        return original(row)
+
+    monkeypatch.setattr(run_store, "_legacy_payload", counted)
+    with run_store.RunStore(path):
+        pass
+    assert len(calls) == 20_000, "an unfinished backfill must run again"
+    assert (
+        len(run_store.stored_run_rows("example", path=path, activity_since=BOUNDARY))
+        == 50
+    )
 
 
 @pytest.mark.parametrize("storage", ["fresh", "migrated", "archive", "amended"])
