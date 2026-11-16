@@ -759,6 +759,22 @@ def _requeued_request(request: Mapping[str, Any], run_id: str) -> dict[str, Any]
     return restored
 
 
+def _failed_launch_follows_work(pointer: Mapping[str, Any]) -> bool:
+    """Whether a failed launch belongs to a run that has already worked.
+
+    A run that reached its model holds a session, and one launched again after
+    that is on a later attempt or was started as a resume. Any of the three
+    says the pointer describes more than a request waiting to start.
+    """
+    if str(pointer.get("session_id") or "").strip():
+        return True
+    kind = str(pointer.get("attempt_kind") or "").strip()
+    if kind and kind != "dispatch":
+        return True
+    attempt = pointer.get("attempt")
+    return isinstance(attempt, int) and not isinstance(attempt, bool) and attempt > 1
+
+
 def _requeue_admitted_failures(
     live: list[dict[str, Any]], *, verdicts: list[dict[str, Any]] | None = None
 ) -> list[str]:
@@ -775,6 +791,13 @@ def _requeue_admitted_failures(
             continue
         request = runs.dispatch_field(pointer, "admit_request")
         if not isinstance(request, Mapping):
+            continue
+        if _failed_launch_follows_work(pointer):
+            # The request stamp is the one the run's first launch was admitted
+            # from. Writing it back would replace a run that has a worktree, a
+            # session and possibly commits with a bare request, which the next
+            # pass would launch afresh in a new worktree. The run stays
+            # launch-failed, where its coordinator can see it and resume it.
             continue
         failures = list(pointer.get("launch_failures") or ())
         failure = dict(failures[-1]) if failures else {}
