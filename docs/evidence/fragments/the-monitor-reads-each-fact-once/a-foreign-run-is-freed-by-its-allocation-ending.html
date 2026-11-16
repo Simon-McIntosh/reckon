@@ -72,7 +72,7 @@
   none either &mdash; it already answers through the <code>job_id</code> its
   placement writes, and a second id would name a job it does not run in.</p>
 
-  <h3 id="a-foreign-run-is-freed-by-its-allocation-ending-cases">The five cases</h3>
+  <h3 id="a-foreign-run-is-freed-by-its-allocation-ending-cases">The six cases</h3>
 
   <p><code>tests/test_a_foreign_run_is_freed_by_its_allocation_ending.py</code>
   replaces the scheduler query with a recording stand-in on a temporary crew
@@ -106,27 +106,28 @@
   allocation on a pointer naming another machine would name an allocation the
   run never ran in.</p>
 
-  <p><strong>Arms.</strong> The gate and both suite arms ran as
-  <code>all_debug</code> partition jobs submitted with
-  <code>env -u SLURM_JOB_ID -u SLURM_JOBID sbatch</code>, never on the fleet
-  node. The gate at head <code>ea094de8b6</code> (job 1320602) reads
-  <code>12 passed in 1.28s</code>, <code>EXIT=0</code>; the matched suite arms
-  read <code>58 passed</code> at the base content (job 1320603) and
-  <code>58 passed</code> at head over the two test files the base tree carries,
-  and the head arm over all three reads <code>70 passed</code> (job 1320604) &mdash; the
-  added test accounts for the twelve-case difference.</p>
+  <p><strong>Arms.</strong> The gate ran in the foreground on the worktree; the
+  base arm ran in an extracted tree at the base content, and both suite arms
+  beside it. At head <code>14f214713c</code> the gate reads
+  <code>16 passed in 1.04s</code>, <code>EXIT=0</code>; the base arm reads
+  <code>10 failed, 6 passed</code>, <code>EXIT=1</code>; the matched suite arms
+  read <code>58 passed</code> at the base content and <code>74 passed</code> at
+  head over the three test files, which is the sixteen-case gate beside the
+  fifty-eight the base tree carries.</p>
 
-<p><strong>Negative control.</strong> The same test file against the base
-  content of <code>d72a7d9b251b</code> (job 1320600) fails six cases,
-  <code>EXIT=1</code>,
-  including <code>test_a_foreign_run_is_freed_by_its_allocation_ending</code>
-  case (a) &mdash; <code>test_a_launcher_job_that_left_the_queue_frees_the_run</code>
-  and <code>..._failed_to_boot_frees_the_run</code> &mdash; and case (c),
-  <code>test_a_record_with_no_launcher_job_is_freed_by_a_later_start</code>:
-  each reads <code>assert False is True</code>, because the base guard reports
-  any job on the node as a reason to keep liveness unknown. The two CLI-record
-  cases fail on the absent field with
-  <code>KeyError: 'launcher_job_id'</code>.</p>
+  <p><strong>Negative control.</strong> The same test file against the base
+  content of <code>d72a7d9b251b</code> fails ten cases, <code>EXIT=1</code>:
+  case (a) in its terminal, boot-failed and purged shapes &mdash;
+  <code>test_a_launcher_job_that_left_the_queue_frees_the_run</code>,
+  <code>..._failed_to_boot_frees_the_run</code>,
+  <code>..._purged_from_the_queue_frees_the_run</code> &mdash; read
+  <code>assert False is True</code>, because the base guard reports any job on
+  the node as a reason to keep liveness unknown; so does case (c); the two
+  observation tests fail on <code>relied_on</code>; and the record cases fail
+  on the absent field with <code>KeyError: 'launcher_job_id'</code>, including
+  the case where the cgroup's own job must outrank a stale fleet variable.
+  Every one of those ten is a case the repair round added or repaired, so the
+  base arm fails exactly the behaviour this node claims.</p>
 </section>
 </main>
 </body>
