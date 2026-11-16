@@ -25,7 +25,7 @@
   <title>A Landing Never Waits On A Shared Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="91">
+<meta name="plan-version" content="92">
 <meta name="plan-modified" content="2026-11-16">
 </head>
 <body>
@@ -302,6 +302,12 @@
 <div class="r-comment" data-section="s17" data-id="c-run-r-20261116T160349922889-review-of-refused-promotion-keeps-plan-committed-s17-eca11f779695" data-who="reckon-build" data-when="2026-11-16T16:11:18Z">
     <div class="r-comment-body"><p>Independent review of base faef8aae9a2af0d6caddfd07b8510391f5063be1 through head eca11f779695d39cb1949f202dde9dbe9082b7e6; scores goal_fidelity 20, evidence 20, scope_discipline 20, durability 18, fit 20, reuse 20; no blocking finding, one non-blocking finding.</p></div>
 </div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261116T115646310522-refused-promotion-keeps-plan-committed-s17" data-who="reckon-build" data-when="2026-11-16T12:29:46Z">
+    <div class="r-comment-body"><p>Store-refused promotions restore the committed plan even when the confirmation lookup refuses; subsequent dispatch remains visible and successful promotions still commit their comments. Armed gate: 62 passed versus 58 at base; base-order mutation: 3 failed, 1 passed; direct-importer comparison: zero added failure ids (77 base, 76 head).</p></div>
+</div>
+<div class="r-comment" data-section="s18" data-id="c-run-r-20261116T124217694542-review-of-lock-refusal-names-the-lock-s18-3358aa8492ed" data-who="reckon-build" data-when="2026-11-16T12:48:19Z">
+    <div class="r-comment-body"><p>Independent review records six dimensions; one blocking evidence finding because the required importer gate has one added failure ID; no implementation defect found.</p></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261114T203051455649-review-of-promotion-checks-read-only-what-moved-52e6182f1f8a" data-who="reckon-build" data-when="2026-11-15T00:53:08.156Z">
     <div class="r-comment-body"><p>independent review of r-20261114T143749419652-promotion-checks-read-only-what-moved at head 52e6182f1f: goal_fidelity 17, evidence 14, scope_discipline 19, durability 17, fit 18, reuse 17, added_failure_count 0, three non-blocking findings.</p></div>
 </div>
@@ -367,9 +373,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261113T024814201130-a-landing-write-outlasts-a-briefly-held-index-lock" data-who="reckon-build" data-when="2026-11-13T03:25:49.353Z">
     <div class="r-comment-body"><p>A landing's staging, commit and rollback now wait out a shared index lock another writer holds for up to a minute (130 attempts 0.5 s apart, a 64.5 s span, up from 12 attempts and a 5.5 s span) and refuse only on a lock that outlasts it, naming the lock's age and the bound; gate 53 passed at head 50493b22a8, base arm 51 passed, and the negative control is 2 failed at cb25b41dfd with the 20 s hold rolling the promotion back.</p></div>
-</div>
-<div class="r-comment" data-section="s18" data-id="c-run-r-20261116T124217694542-review-of-lock-refusal-names-the-lock-s18-3358aa8492ed" data-who="reckon-build" data-when="2026-11-16T12:48:19Z">
-    <div class="r-comment-body"><p>Independent review records six dimensions; one blocking evidence finding because the required importer gate has one added failure ID; no implementation defect found.</p></div>
 </div>
 </section>
 </main>
