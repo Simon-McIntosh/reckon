@@ -42,7 +42,10 @@ def _node(**overrides: object) -> TaskNode:
 
 
 def _manifest(
-    *log_lines: str, status: str = "complete", changed: str = TEST_PATH
+    *log_lines: str,
+    status: str = "complete",
+    changed: str = TEST_PATH,
+    test_logs: str = "/tmp/control-log-check.log",
 ) -> str:
     lines = [
         "node: control-log-check",
@@ -50,7 +53,11 @@ def _manifest(
         "commits: 1a2b3c4",
         f"changed_paths: {changed}",
         "tests: pytest tests/test_example_check.py -> 1 passed",
-        "test_logs: /tmp/control-log-check.log",
+        f"test_logs: {test_logs}",
+        # The fixture's run directory holds no receipt, so the record owes this
+        # statement: the two are judged together wherever the manifest is read
+        # beside its own run directory.
+        "messages_received: none",
     ]
     lines.extend(log_lines)
     return "\n".join(lines) + "\n"
@@ -290,10 +297,23 @@ def _home_tree(root: Path) -> set[str]:
 def cli_run(isolated_reckon_home: Path, tmp_path: Path) -> dict[str, Path]:
     """A run whose pointer, manifest and log all live inside the temporary home."""
     log = _red_log(tmp_path)
+    gate = _durable_test_log(tmp_path)
     manifest_path = tmp_path / "manifest.md"
     pointer = pointer_path(RUN_ID)
     assert pointer.is_relative_to(isolated_reckon_home)
-    return {"log": log, "manifest": manifest_path, "pointer": pointer}
+    return {"log": log, "gate": gate, "manifest": manifest_path, "pointer": pointer}
+
+
+def _cli_manifest(cli_run: dict[str, Path], *log_lines: str, **fields: object) -> str:
+    """A manifest citing the run directory's own durable gate log.
+
+    Every cited log must exist under the run directory the manifest is written
+    in, so a body naming a host path is refused for that reason alone, and a
+    test log must carry its command and its exit beside the control log's
+    declaration and non-zero exit. These tests judge the control log, so the
+    fixture cites the durable log its run directory holds.
+    """
+    return _manifest(*log_lines, test_logs=str(cli_run["gate"]), **fields)
 
 
 def _write_cli_run(
@@ -326,7 +346,7 @@ def _write_cli_run(
 def test_the_command_refuses_an_empty_control_log(
     cli_run: dict[str, Path], isolated_reckon_home: Path
 ) -> None:
-    _write_cli_run(cli_run, _manifest("negative_control_log:"))
+    _write_cli_run(cli_run, _cli_manifest(cli_run, "negative_control_log:"))
 
     result = _check()
 
@@ -340,7 +360,9 @@ def test_the_command_refuses_an_empty_control_log(
 def test_the_command_accepts_a_log_ending_in_a_non_zero_exit(
     cli_run: dict[str, Path],
 ) -> None:
-    _write_cli_run(cli_run, _manifest(f"negative_control_log: {cli_run['log']}"))
+    _write_cli_run(
+        cli_run, _cli_manifest(cli_run, f"negative_control_log: {cli_run['log']}")
+    )
 
     result = _check()
 
@@ -351,7 +373,9 @@ def test_the_command_accepts_a_log_ending_in_a_non_zero_exit(
 def test_the_command_accepts_a_run_that_declared_no_control(
     cli_run: dict[str, Path],
 ) -> None:
-    _write_cli_run(cli_run, _manifest("negative_control_log:"), negative_control="")
+    _write_cli_run(
+        cli_run, _cli_manifest(cli_run, "negative_control_log:"), negative_control=""
+    )
 
     result = _check()
 
@@ -361,7 +385,8 @@ def test_the_command_accepts_a_run_that_declared_no_control(
 def test_the_command_accepts_a_recorded_waiver(cli_run: dict[str, Path]) -> None:
     _write_cli_run(
         cli_run,
-        _manifest(
+        _cli_manifest(
+            cli_run,
             "negative_control_log:",
             "negative_control_waiver: the control ran on a lane whose log was reaped",
         ),
@@ -374,8 +399,8 @@ def test_the_command_accepts_a_recorded_waiver(cli_run: dict[str, Path]) -> None
 
 
 def test_the_command_refuses_a_path_carrying_prose(cli_run: dict[str, Path]) -> None:
-    body = _manifest(
-        f"negative_control_log: {cli_run['log']} (first line: {DECLARATION})"
+    body = _cli_manifest(
+        cli_run, f"negative_control_log: {cli_run['log']} (first line: {DECLARATION})"
     )
     _write_cli_run(cli_run, body)
 
@@ -389,7 +414,9 @@ def test_the_command_refuses_a_path_carrying_prose(cli_run: dict[str, Path]) -> 
 def test_the_command_writes_no_state_beside_the_run_it_reads(
     cli_run: dict[str, Path], isolated_reckon_home: Path
 ) -> None:
-    _write_cli_run(cli_run, _manifest(f"negative_control_log: {cli_run['log']}"))
+    _write_cli_run(
+        cli_run, _cli_manifest(cli_run, f"negative_control_log: {cli_run['log']}")
+    )
     before = _home_tree(isolated_reckon_home)
 
     result = _check()
