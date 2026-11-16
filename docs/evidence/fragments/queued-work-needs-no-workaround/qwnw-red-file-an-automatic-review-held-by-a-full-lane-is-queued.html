@@ -1,0 +1,129 @@
+<section id="qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued-landing">
+  <h2>A delivered run is read from its verdict, not from the phase label it was launched under</h2>
+
+  <p><strong>What changed.</strong> <code>classify_pointer</code> in
+  <code>reckon/crew/recovery_classification.py</code> read a pointer whose phase
+  is one of the pre-spawn labels (<code>starting</code>, <code>launching</code>,
+  <code>launcher</code>, <code>dispatching</code>) as a run its launcher has
+  claimed and not started, and that reading was taken ahead of every arm that
+  reads the run's manifest. The manifest is written by the worker, so a pointer
+  carrying one describes a launch that happened; a supervised launch writes the
+  pre-spawn label and never rewrites it, so a delivered run kept that label for
+  as long as its pointer lived.</p>
+
+  <p>Read as never started, such a run answered
+  <code>the run is not awaiting review (running)</code> — never
+  <code>scoring</code> — so the review reflex composed nothing, queued nothing
+  and reported nothing; and never <code>promotable</code>, so the run never
+  reached a promotion. The branch that produced the reading was added on
+  14 November for a real fault: a <code>starting</code> pointer raised
+  <code>UnboundLocalError</code> and took the project's whole live view down.
+  The repair classified that pointer from its label alone, and so let the label
+  outrank a verdict already on disk.</p>
+
+  <p>The label now applies only while no verdict is on disk. A pointer with no
+  manifest, no readable status, or a template body still reads as the run its
+  launcher has claimed, which is the case the arm exists for; a delivered,
+  blocked, failed or waiting run falls through to the arm that reads its word.</p>
+
+  <h3 id="qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued-arms">Measured</h3>
+
+  <table id="qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued-arms-table">
+    <thead>
+      <tr><th>Arm</th><th>Revision</th><th>Command</th><th>Result</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>base (negative control)</td>
+        <td><code>655a2befa979af690bab537523cd9ad97dc108c5</code></td>
+        <td><code>env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest
+        -p no:cacheprovider -q
+        tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py</code></td>
+        <td>3 failed, 1 passed — <code>EXIT=1</code></td>
+      </tr>
+      <tr>
+        <td>head</td>
+        <td><code>4a8a6c2d248080929eb6e895729f195874b8dd57</code></td>
+        <td>the same command</td>
+        <td>4 passed — <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>baseline suite</td>
+        <td><code>655a2befa979af690bab537523cd9ad97dc108c5</code></td>
+        <td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+        tests/test_staged_write_inventory.py
+        tests/test_every_shared_home_lock_holds_across_nodes.py</code></td>
+        <td>58 passed — <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>after suite</td>
+        <td><code>4a8a6c2d248080929eb6e895729f195874b8dd57</code></td>
+        <td>the same command</td>
+        <td>58 passed — <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>importers, base</td>
+        <td><code>655a2befa979af690bab537523cd9ad97dc108c5</code></td>
+        <td>the 110 test files importing <code>recovery_classification</code></td>
+        <td>44 failed, 825 passed, 10 errors — <code>EXIT=1</code></td>
+      </tr>
+      <tr>
+        <td>importers, head</td>
+        <td><code>4a8a6c2d248080929eb6e895729f195874b8dd57</code></td>
+        <td>the same 110 files</td>
+        <td>43 failed, 826 passed, 10 errors — <code>EXIT=1</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The two base arms ran against a <code>git archive</code> extraction of the
+  base revision's content under the run's scratch directory, so the base arm
+  imports the base <code>reckon</code> package rather than the worktree's; the
+  extracted tree was given a local repository holding exactly that content so
+  the git-driven tests in the suite arm can run. Each arm names the same test
+  files at its own revision, so the delta between the arms is the source change
+  rather than the test set.</p>
+
+  <h3 id="qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued-control">Negative control</h3>
+
+  <p>At the base revision the file fails three of its four cases; the ids:
+
+  <code>test_a_full_unpaused_lane_queues_the_review</code> —
+  <em>the fixture must raise a real router hold, not a shut gate: []</em>, the
+  dispatch never called because the classification refused the record before
+  composition;
+
+  <code>test_a_paused_gate_queues_nothing</code> — <em>the shut gate must arrive
+  as a lane hold</em>, <code>assert []</code>;
+
+  <code>test_a_queue_write_that_fails_reports_the_hold_without_propagating</code>
+  — <code>KeyError: 'error'</code>, the report carrying no lane-paused error
+  because no dispatch ran.</p>
+
+  <p>No assertion is deleted or weakened: the file is untouched by this node, and
+  its four cases pass at head where three failed at base. The red log is
+  <code>logs/base-target-file.log</code> in the run directory, beside the head
+  run at <code>logs/head-target-file.log</code>.</p>
+
+  <h3 id="qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued-outside">Outside scope</h3>
+
+  <p>The arm over the 110 files that import the changed module reports, at head
+  <code>43 failed, 826 passed, 10 errors</code> against
+  <code>44 failed, 825 passed, 10 errors</code> at the base revision. No failing
+  id is present at head that the base arm does not already fail, and one base
+  failure is repaired:
+  <code>tests/test_crew_recovery.py::test_refusal_block_names_delivery_from_an_unverdict_manifest</code>.
+  The same defect reddened the review-reflex files that build a delivered
+  pointer — <code>tests/test_a_review_waits_for_a_saturated_lane.py</code> and
+  <code>tests/test_dispatch_holds_while_the_lane_is_paused.py</code> — which are
+  green in the head arm, and <code>tests/test_a_starting_run_is_classified.py</code>,
+  the case the pre-spawn arm exists for, which is also green.</p>
+
+  <p>The failures both arms share, chiefly
+  <code>tests/test_a_malformed_request_is_refused_before_storage.py</code>'s
+  <em>storage was reached</em> assertions, are the primary branch's own and are
+  not triaged here.</p>
+
+  <p>This node measures only its own change. Verifying the merged result belongs
+  to a separately dispatched test node.</p>
+</section>
