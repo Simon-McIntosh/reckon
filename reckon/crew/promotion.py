@@ -294,6 +294,116 @@ def _newer_attempt_named(run_id: str, record: Mapping[str, Any]) -> str:
     return f": attempt {attempt} was recorded after this promotion read the pointer"
 
 
+def _pointer_attempt(pointer: Mapping[str, Any]) -> int | None:
+    """The attempt a pointer names, or None when it names none."""
+    try:
+        return int(pointer.get("attempt"))
+    except (TypeError, ValueError):
+        return None
+
+
+def _attempt_reservation(run_id: str, attempt: int) -> dict[str, Any]:
+    """The launch reservation a later attempt left in the run directory.
+
+    The reservation is what names the process that took the attempt and the
+    door that asked for it, so it is the only record a refusal can quote for a
+    launch whose pointer carries just the supervisor's own pid. An unreadable
+    file, or one naming another run, answers no record.
+
+    ``attempt-4.reservation`` is the file naming attempt 4. A record written by an
+    older launch has no reservation at all, which reads the same as none.
+    """
+    path = run_dir(run_id) / f"attempt-{attempt}.reservation"
+    try:
+        loaded = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(loaded, Mapping) or str(loaded.get("run_id") or "") != run_id:
+        return {}
+    return dict(loaded)
+
+
+def _launching_process_named(run_id: str, record: Mapping[str, Any]) -> str:
+    """Name the launch that owns the pointer this promotion could not retire.
+
+    A refusal is only as useful as the launch it points at: the attempt number
+    says which attempt to look for, and the reservation beside the run says
+    which process took it and which process launched that, which is what an
+    operator needs to find the work in flight instead of guessing from a pid
+    naming a supervisor they never started.
+    """
+    try:
+        current = read_pointer(run_id)
+    except CrewError:
+        return ""
+    attempt = _pointer_attempt(current)
+    if attempt is None or attempt == _pointer_attempt(record):
+        return ""
+    reservation = _attempt_reservation(run_id, attempt)
+    launcher = reservation.get("launcher_pid")
+    host = str(reservation.get("launcher_host") or "").strip()
+    supervisor = reservation.get("supervisor_pid") or current.get("pid")
+    named = ""
+    if launcher is not None:
+        on_host = f" on host {host}" if host else ""
+        named = f", launched by pid {launcher}{on_host}"
+        if supervisor is not None and supervisor != launcher:
+            named += f" (supervisor pid {supervisor})"
+    elif current.get("pid") is not None:
+        named = f", run by pid {current['pid']}"
+    return named
+
+
+def _attempt_has_ended(run_id: str, pointer: Mapping[str, Any]) -> bool:
+    """Whether the attempt a pointer names recorded its own end.
+
+    An attempt's exit receipt is the account its launch writes when it ends and
+    the same fact frees its launch reservation. A pointer naming an attempt
+    whose receipt is on disk therefore names work that is over, whatever state
+    the pointer's own fields are in.
+    """
+    attempt = _pointer_attempt(pointer)
+    if attempt is None:
+        return False
+    from reckon.crew.dispatch_launch import _reserved_attempt_ended
+
+    return _reserved_attempt_ended(run_dir(run_id), attempt)
+
+
+def _retire_a_pointer_whose_attempt_ended(
+    run_id: str, record: Mapping[str, Any]
+) -> bool:
+    """Finish cleanup against a pointer a later, ended launch left behind.
+
+    A promotion whose own attempt is no longer the pointer's cannot retire the
+    attempt it read, and refusing leaves the run's cleanup to a coordinator who
+    has to stop and discard it by hand although its row is already written.
+    When the attempt now on the pointer recorded its end, this promotion
+    completes the cleanup its own attempt started: the pointer goes, and the
+    run directory keeps the ended attempt's receipts. The pointer is removed
+    only while it still names the attempt this reading saw, so a launch that
+    started after it is left to its own promotion.
+    """
+    from reckon.crew import pending_landing
+
+    try:
+        current = read_pointer(run_id)
+    except CrewError:
+        return False
+    if _pointer_attempt(current) in (None, _pointer_attempt(record)):
+        return False
+    if not _attempt_has_ended(run_id, current):
+        return False
+    identity = pending_landing.attempt_identity(current)
+    return (
+        pending_landing.retire_pointer_if(
+            run_id,
+            lambda observed: pending_landing.attempt_identity(observed) == identity,
+        )
+        == pending_landing.POINTER_RETIRED
+    )
+
+
 def _keep_pointer_for_pending_landing(run_id: str) -> bool:
     """Mark the live pointer a promotion could not remove, or report failure.
 
@@ -458,6 +568,11 @@ def _remove_promoted_pointer_or_defer(
     still finishes it. A pointer another attempt owns is left exactly as it is:
     marking it would send that attempt into the repair-only branch with no
     record of its own to finish.
+
+    A pointer a later launch moved to its own attempt needs no landing repair
+    once the attempt it belongs to has ended: that launch recorded its own end,
+    so the promotion finishes cleanup by removing the pointer rather than
+    parking the run behind a mark nothing will come back for.
     """
     from reckon.crew.recovery_review_delivery import _is_review_run
 
@@ -473,6 +588,10 @@ def _remove_promoted_pointer_or_defer(
                 return True
             _mark_promoted_pointer(run_id)
             return False
+        if not finishing_another_writers_row and _retire_a_pointer_whose_attempt_ended(
+            run_id, record
+        ):
+            return True
         if finishing_another_writers_row:
             _record_a_raced_landing(run_id, record, reviewed_head=reviewed_head)
             retired = _retire_a_raced_pointer(run_id, record)
@@ -485,7 +604,8 @@ def _remove_promoted_pointer_or_defer(
         if not _keep_pointer_for_pending_landing(run_id):
             raise CrewError(
                 f"run {run_id!r} changed while promotion ran"
-                f"{_newer_attempt_named(run_id, record)} and its pointer "
+                f"{_newer_attempt_named(run_id, record)}"
+                f"{_launching_process_named(run_id, record)} and its pointer "
                 "could not be marked for the landing pass: its promotion is "
                 "recorded, and the merge of its reviewed head is left to the "
                 "landing record this promotion wrote"
@@ -494,7 +614,8 @@ def _remove_promoted_pointer_or_defer(
             return False
         raise CrewError(
             f"run {run_id!r} changed while promotion ran"
-            f"{_newer_attempt_named(run_id, record)}; its promotion is "
+            f"{_newer_attempt_named(run_id, record)}"
+            f"{_launching_process_named(run_id, record)}; its promotion is "
             "recorded and its pointer is kept, marked pending_landing_repair, so "
             "the next landing pass finishes the merge of its reviewed head"
         ) from exc
