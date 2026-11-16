@@ -1,0 +1,75 @@
+<section id="qwnw-red-file-a-merged-primary-run-keeps-its-own-commits-landing">
+  <h2>Green at the head, and the four failures named as the environment they came from</h2>
+
+  <p><strong>What the merge changed</strong>
+  <span id="qwnw-red-file-a-merged-primary-run-keeps-its-own-commits-merge">The
+  worktree's head as this dispatch was composed was
+  <code>827719105952</code>; the current <code>origin/main</code>
+  (<code>5c4ff3492998</code>) was fast-forwarded onto it, three commits, none
+  of them in <code>tests/test_a_merged_primary_run_keeps_its_own_commits.py</code>
+  or in the modules it imports. The file then passed in full, so no product
+  code and no test was changed by this node: the file already keeps the rule it
+  asserts, and every assertion it carries is kept as written.</span></p>
+
+  <p><strong>The recorded cause reproduces, and it is the host</strong>
+  <span id="qwnw-red-file-a-merged-primary-run-keeps-its-own-commits-cause">The
+  four ids the suite at <code>8d50b0333f</code> reported are red again when the
+  same revision runs on a host whose <code>PATH</code> carries no executable
+  named <code>python</code>: <strong>4 failed, 3 passed</strong>,
+  <code>EXIT=1</code>, every one of them the gate-command refusal
+  <em>records the gate command 'python -m pytest tests/test_history.py', whose
+  program 'python' names no executable</em>. The fixture writes that gate
+  command literally (<code>tests/test_a_merged_primary_run_keeps_its_own_commits.py:96</code>),
+  so its four landing cases only proceed where <code>python</code> resolves on
+  the host's <code>PATH</code>. On <code>all_debug</code> and on this node it
+  does, and the file passes 7 of 7 at both the merged head and the brief's base.
+  Verdict for every cause: neither the product nor an assertion is wrong — the
+  reading was taken on a host without <code>python</code>, and the delivered
+  file passes on the primary branch as the section's deliverable asks.</span></p>
+
+  <h3 id="qwnw-red-file-a-merged-primary-run-keeps-its-own-commits-arms">The arms</h3>
+
+  <table id="qwnw-red-file-a-merged-primary-run-keeps-its-own-commits-table">
+    <caption>Each log opens with the revision, tree, literal command, imported
+    module and resolved working directory, and ends with a bare
+    <code>EXIT=&lt;code&gt;</code> line.</caption>
+    <thead><tr><th>arm</th><th>revision and tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file, head arm (the gate)</td>
+        <td><code>5c4ff3492998</code>, worktree, a job on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset in the child</td>
+        <td><strong>7 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr><td>the named file, base arm</td>
+        <td><code>827719105952</code>, extraction of the brief's base revision</td>
+        <td><strong>7 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control: the same file, <code>PATH</code> with no <code>python</code></td>
+        <td><code>8d50b0333f</code>, extraction of the revision the failures were recorded at</td>
+        <td><strong>4 failed, 3 passed</strong>, <code>EXIT=1</code></td></tr>
+      <tr><td>suite arm before the change</td>
+        <td><code>827719105952</code>, extraction</td>
+        <td><strong>58 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr><td>suite arm at the head</td>
+        <td><code>5c4ff3492998</code>, worktree</td>
+        <td><strong>58 passed</strong>, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-a-merged-primary-run-keeps-its-own-commits-ids">The four ids the control fails</h3>
+
+  <ul id="qwnw-red-file-a-merged-primary-run-keeps-its-own-commits-id-list">
+    <li><code>test_one_landing_call_records_only_the_runs_line_of_history[True]</code></li>
+    <li><code>test_one_landing_call_records_only_the_runs_line_of_history[False]</code></li>
+    <li><code>test_manifest_accepts_owned_commits_and_ignores_imported_primary[False]</code></li>
+    <li><code>test_manifest_accepts_owned_commits_and_ignores_imported_primary[True]</code></li>
+  </ul>
+
+  <p><strong>The residual, reported rather than repaired</strong>
+  <span id="qwnw-red-file-a-merged-primary-run-keeps-its-own-commits-residual">The
+  fixture's recorded gate command is still the bare <code>python</code>, so the
+  file goes red on any host that has only <code>python3</code>. The section's
+  deliverable is the file green on the primary branch, which it is at the head
+  measured here, so this node changed nothing; making the fixture record an
+  interpreter path (<code>sys.executable</code>, as
+  <code>tests/test_a_damaged_run_record_stops_only_its_run.py:125</code> already
+  does) would remove the host dependency and belongs to a node that owns that
+  change.</span></p>
+</section>
