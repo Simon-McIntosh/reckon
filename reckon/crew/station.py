@@ -883,9 +883,7 @@ class StationReloader:
             os.environ.get(SOURCE_ROOT_ENV, str(self.import_root))
         ).resolve()
         self.identity = os.environ.pop(IMAGE_IDENTITY_ENV, "") or (
-            checkout_trust.source_code_identity(
-                self.source_root / "reckon", source_root=self.source_root
-            )
+            checkout_trust.running_code_identity(self.import_root / "reckon")
         )
         self.image_pin: int | None = None
         carried = os.environ.pop(IMAGE_PIN_ENV, "")

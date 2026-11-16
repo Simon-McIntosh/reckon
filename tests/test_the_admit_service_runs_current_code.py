@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import os
 import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
@@ -351,3 +352,51 @@ def test_the_replacement_leads_with_the_root_that_supplied_the_import(
 
     launcher = recorded["argv"][2]
     assert f"sys.path.insert(0, {str(checkout)!r})" in launcher
+
+
+@pytest.mark.parametrize("imports", [True, False])
+def test_an_immutable_admission_image_reloads_the_proved_new_image(
+    tmp_path, monkeypatch, imports
+):
+    from reckon import checkout_trust
+
+    source = tmp_path / "source"
+    imported = tmp_path / "images" / ("a" * 40)
+    replacement = tmp_path / "images" / ("b" * 40)
+    source.mkdir()
+    imported.mkdir(parents=True)
+    replacement.mkdir()
+    monkeypatch.setenv("RECKON_FOLLOWER_SOURCE_ROOT", str(source))
+    monkeypatch.setattr(queue_admission, "_source_root", lambda: imported)
+    monkeypatch.setattr(queue_admission, "_admit_code_stamp", lambda: "b" * 40)
+    descriptor = os.open(os.devnull, os.O_RDONLY)
+    materialized = []
+
+    def materialize(root, identity, *, active_root):
+        materialized.append((root, identity, active_root))
+        return replacement, [], [], descriptor
+
+    monkeypatch.setattr(checkout_trust, "materialize_committed_tree", materialize)
+    monkeypatch.setattr(
+        checkout_trust, "reckon_imports", lambda root: (imports, "invalid image")
+    )
+    execs = []
+    monkeypatch.setattr(
+        queue_admission.os,
+        "execve",
+        lambda executable, argv, env: execs.append((argv, env)),
+    )
+    if imports:
+        queue_admission._reexec_into_current_code()
+        assert str(replacement) in execs[0][0][2]
+        assert execs[0][1]["RECKON_FOLLOWER_IMAGE_COMMIT"] == "b" * 40
+        assert execs[0][1]["RECKON_FOLLOWER_SOURCE_ROOT"] == str(source)
+    else:
+        with pytest.raises(
+            RuntimeError, match="reload image does not import: invalid image"
+        ):
+            queue_admission._reexec_into_current_code()
+        assert execs == []
+    assert materialized == [(source, "b" * 40, imported)]
+    with pytest.raises(OSError, match="Bad file descriptor"):
+        os.fstat(descriptor)

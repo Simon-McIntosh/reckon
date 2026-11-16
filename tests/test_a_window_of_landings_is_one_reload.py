@@ -180,3 +180,20 @@ def test_status_names_running_seen_and_next_reload_and_requires_an_export(
         follower_reload.request_service_reload("station", " ")
     with pytest.raises(ValueError, match="simple name"):
         follower_reload.request_service_reload("../station", "urgent correction")
+
+
+def test_a_station_reports_its_imported_image_before_observing_newer_code(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path))
+    monkeypatch.delenv("RECKON_FOLLOWER_IMAGE_COMMIT", raising=False)
+    monkeypatch.setattr(checkout_trust, "running_code_identity", lambda path: "a" * 40)
+    monkeypatch.setattr(
+        checkout_trust, "source_code_identity", lambda *a, **k: "b" * 40
+    )
+    active = station.StationReloader(tmp_path)
+    active.start_window()
+    active.poll()
+    report = follower_reload.service_reload_status("station")
+    assert report["running_code"] == "a" * 40
+    assert report["newest_seen"] == "b" * 40

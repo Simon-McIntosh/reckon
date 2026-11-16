@@ -600,7 +600,9 @@ def test_supervision_waits_for_an_export_and_rechecks_a_racing_self_reload(
     stopped = []
     monkeypatch.setattr(manager, "_stop_locked", lambda *a: stopped.append(a))
     now[0] = 1800
+    report_before = follower_reload.service_reload_status("demo")
     assert manager._code_decision("demo", pid, state) == "adopt"
+    assert follower_reload.service_reload_status("demo") == report_before
     window.exported()
     assert manager._code_decision("demo", pid, state) == "restart"
     # The service replaces itself between the decision and the supervisor's stop.
@@ -608,3 +610,13 @@ def test_supervision_waits_for_an_export_and_rechecks_a_racing_self_reload(
     manager._restart_locked("demo", state)
     assert stopped == []
     assert follower_reload.service_reload_status("demo")["reload_count"] == 1
+
+
+def test_the_supervisor_passes_the_selected_image_identity(tmp_path, monkeypatch):
+    source = tmp_path / "source"
+    monkeypatch.setattr(fleet_supervisor, "_checkout_root", lambda: source)
+    manager = fleet_supervisor.DeclaredServices(tmp_path, {})
+    image = tmp_path / "images" / ("a" * 40)
+    environment = manager._child_environ(image)
+    assert environment["RECKON_FOLLOWER_SOURCE_ROOT"] == str(source)
+    assert environment["RECKON_FOLLOWER_IMAGE_COMMIT"] == image.name

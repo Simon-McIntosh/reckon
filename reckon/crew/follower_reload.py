@@ -181,7 +181,7 @@ class ReloadWindow:
             self.exported_at = self.clock()
             self.publish()
 
-    def due(self, newest: str) -> bool:
+    def due(self, newest: str, *, publish: bool = True) -> bool:
         if newest == checkout_trust.IDENTITY_UNKNOWN:
             return False
         self.newest = newest
@@ -189,7 +189,8 @@ class ReloadWindow:
         self.pending_request = (
             request if request.get("id") != self.last_request.get("id") else {}
         )
-        self.publish()
+        if publish:
+            self.publish()
         return self.exported_at is not None and (
             bool(self.pending_request)
             or (newest != self.running and self.clock() >= self.next_at)

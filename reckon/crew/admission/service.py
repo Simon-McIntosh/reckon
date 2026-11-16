@@ -98,7 +98,7 @@ def _checkout_code_is_trusted() -> bool:
     from reckon import checkout_trust
 
     stamp = _admit_code_stamp()
-    root = _source_root()
+    root = Path(os.environ.get("RECKON_FOLLOWER_SOURCE_ROOT", str(_source_root())))
     dirty, _detail = checkout_trust.tracked_reckon_tree_is_dirty(root)
     if dirty:
         return False
@@ -128,21 +128,40 @@ def _reexec_into_current_code() -> None:
     disk. The launcher leads with the sys.path root that supplied this import,
     so the replacement loads the checkout rather than whatever argv[0] named.
     """
-    root = str(_source_root())
-    launcher = (
-        f"import sys; sys.path.insert(0, {root!r}); from reckon.cli import main; main()"
-    )
-    # An admission pass runs on this service's threads, and one between taking a
-    # node's dispatch claim and starting its worker would be cut off by the
-    # replacement, leaving that claim with no worker behind it. Wait, bounded.
-    from reckon.crew import dispatch_claims
+    from reckon import checkout_trust
+    from reckon.crew import dispatch_claims, follower_reload
 
-    dispatch_claims.wait_for_dispatches_in_flight()
-    os.execve(
-        sys.executable,
-        [sys.executable, "-c", launcher, *sys.argv[1:]],
-        dict(os.environ),
+    imported_root = _source_root()
+    source_root = Path(
+        os.environ.get("RECKON_FOLLOWER_SOURCE_ROOT", str(imported_root))
     )
+    pin = None
+    root = imported_root
+    environment = dict(os.environ)
+    if source_root != imported_root:
+        current = _admit_code_stamp()
+        root, _removed, _kept, pin = checkout_trust.materialize_committed_tree(
+            source_root, current, active_root=imported_root
+        )
+        imports, reason = checkout_trust.reckon_imports(root)
+        if not imports:
+            os.close(pin)
+            raise RuntimeError(f"admission reload image does not import: {reason}")
+        environment = follower_reload.image_reexec_environment(
+            source_root, current, pin
+        )
+    launcher = f"import sys; sys.path.insert(0, {str(root)!r}); from reckon.cli import main; main()"
+    # A replacement must not cut off the thread between claiming and launching.
+    dispatch_claims.wait_for_dispatches_in_flight()
+    try:
+        os.execve(
+            sys.executable,
+            [sys.executable, "-c", launcher, *sys.argv[1:]],
+            environment,
+        )
+    finally:
+        if pin is not None:
+            os.close(pin)
 
 
 def _pause(seconds: float) -> None:
@@ -273,7 +292,13 @@ def admit_until_stopped(
         _verdicts._record_pass_verdicts(result, lane=lane, code_stamp=stamp)
         return result
     passes = 0
-    code_stamp = _admit_code_stamp()
+    from reckon import checkout_trust
+
+    code_stamp = (
+        checkout_trust.running_code_identity(_source_root() / "reckon")
+        if checkout_trust.published_reload_image(_source_root())
+        else _admit_code_stamp()
+    )
     service_name = Path(
         os.environ.get("RECKON_SERVICE_PASS_PATH", "admission.pass")
     ).stem

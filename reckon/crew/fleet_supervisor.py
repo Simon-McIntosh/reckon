@@ -1658,7 +1658,9 @@ class DeclaredServices:
         else:
             recorded = state.code_stamp
         state.reload_window = follower_reload.ReloadWindow.for_supervisor(name, pid)
-        if state.reload_window is not None and not state.reload_window.due(current):
+        if state.reload_window is not None and not state.reload_window.due(
+            current, publish=False
+        ):
             return "adopt"
         if not recorded or recorded == _unknown_code_stamp():
             if not self._pass_allows_restart(name, pid):
@@ -1760,7 +1762,9 @@ class DeclaredServices:
         window = state.reload_window
         if window is not None:
             window = follower_reload.ReloadWindow.for_supervisor(name, state.pid)
-            if window is None or not window.due(self._code_stamp_value()):
+            if window is None or not window.due(
+                self._code_stamp_value(), publish=False
+            ):
                 return
         if not self._stop_locked(name):
             # The stale copy is still alive, so it still holds the lock and
@@ -1874,6 +1878,7 @@ class DeclaredServices:
         existing = child.get("PYTHONPATH", "")
         child["PYTHONPATH"] = str(image) + (os.pathsep + existing if existing else "")
         child["RECKON_FOLLOWER_SOURCE_ROOT"] = str(_checkout_root())
+        child["RECKON_FOLLOWER_IMAGE_COMMIT"] = image.name
         return child
 
     def _release_image_pin(self, state: _ServiceState | None) -> None:
