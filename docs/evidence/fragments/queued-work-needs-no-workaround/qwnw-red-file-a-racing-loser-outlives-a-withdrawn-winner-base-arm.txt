@@ -1,0 +1,83 @@
+# arm: baseline
+# revision: 69fab1372f16686ce6acdb6094a357c6f6bfe18d
+# tree: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105143397850-qwnw-red-file-a-racing-loser-outlives-a-withdrawn-winner/scratch/redfile-racing-loser/base
+# cwd: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105143397850-qwnw-red-file-a-racing-loser-outlives-a-withdrawn-winner/scratch/redfile-racing-loser/base
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-racing-loser-outlives-a-withdrawn-winner/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_racing_loser_outlives_a_withdrawn_winner.py
+# slurm_job_id: 1320245
+# module under test: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105143397850-qwnw-red-file-a-racing-loser-outlives-a-withdrawn-winner/scratch/redfile-racing-loser/base/reckon/__init__.py
+.FFF.                                                                    [100%]
+=================================== FAILURES ===================================
+____________ test_the_loser_refuses_naming_the_winner_that_launches ____________
+
+tmp_path = PosixPath('/tmp/reckon-crew-scratch/r-20261116T105143397850-qwnw-red-file-a-racing-loser-outlives-a-withdrawn-winner/pytest-of-mcintos/pytest-1/test_the_loser_refuses_naming_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fb1d02a88a0>
+
+    def test_the_loser_refuses_naming_the_winner_that_launches(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The winner reaches its admission while the loser waits; the loser refuses."""
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        _stub_wait(
+            monkeypatch,
+            _Clock(),
+            lambda _run_id: _peer_claim(repo, launched=True),
+        )
+    
+>       with pytest.raises(crew.ScopeConflict) as refusal:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ScopeConflict
+
+tests/test_a_racing_loser_outlives_a_withdrawn_winner.py:151: Failed
+________________ test_the_loser_refuses_when_the_bound_expires _________________
+
+tmp_path = PosixPath('/tmp/reckon-crew-scratch/r-20261116T105143397850-qwnw-red-file-a-racing-loser-outlives-a-withdrawn-winner/pytest-of-mcintos/pytest-1/test_the_loser_refuses_when_th0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fb1d01a17f0>
+
+    def test_the_loser_refuses_when_the_bound_expires(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The winner neither launches nor withdraws; the loser refuses at the bound.
+    
+        The reason names the bound, so a reader can tell a wait that timed out from
+        a refusal that never waited.
+        """
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        clock = _Clock()
+        _stub_wait(monkeypatch, clock, lambda _run_id: _peer_claim(repo))
+        derived_wait = dispatch_claims_module.recent_claim_grace_seconds()
+    
+>       with pytest.raises(crew.ScopeConflict) as refusal:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ScopeConflict
+
+tests/test_a_racing_loser_outlives_a_withdrawn_winner.py:172: Failed
+___________________ test_a_launched_peer_is_never_waited_on ____________________
+
+tmp_path = PosixPath('/tmp/reckon-crew-scratch/r-20261116T105143397850-qwnw-red-file-a-racing-loser-outlives-a-withdrawn-winner/pytest-of-mcintos/pytest-1/test_a_launched_peer_is_never_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fb1cffe69c0>
+
+    def test_a_launched_peer_is_never_waited_on(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A claim whose worker has already launched refuses without any wait."""
+        repo = tmp_path / "repo"
+        repo.mkdir()
+    
+        def _must_not_be_called(_run_id: str):
+            raise AssertionError("a launched peer must not be waited on")
+    
+        _stub_wait(monkeypatch, _Clock(), _must_not_be_called)
+    
+>       with pytest.raises(crew.ScopeConflict) as refusal:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ScopeConflict
+
+tests/test_a_racing_loser_outlives_a_withdrawn_winner.py:194: Failed
+=========================== short test summary info ============================
+FAILED tests/test_a_racing_loser_outlives_a_withdrawn_winner.py::test_the_loser_refuses_naming_the_winner_that_launches - Failed: DID NOT RAISE ScopeConflict
+FAILED tests/test_a_racing_loser_outlives_a_withdrawn_winner.py::test_the_loser_refuses_when_the_bound_expires - Failed: DID NOT RAISE ScopeConflict
+FAILED tests/test_a_racing_loser_outlives_a_withdrawn_winner.py::test_a_launched_peer_is_never_waited_on - Failed: DID NOT RAISE ScopeConflict
+3 failed, 2 passed in 1.19s
+EXIT=1
