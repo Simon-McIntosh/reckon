@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "d0d77f07e2dcc64d74713755aebe748602f9a06f",
+  "call_site_count": 3,
+  "call_sites": [
+    "docs/ui/shell.jsx:527 App renders ArtifactSurface",
+    "docs/ui/shell-plans.jsx:611 ListCol definition, exported at :865",
+    "docs/ui/state-loader.js:401 window.revalidateProjectState, Object.assign merge at :603-616"
+  ],
+  "completed_at": "2026-11-16T07:10:52.809Z",
+  "dispatched_at": "2026-11-16T07:10:36Z",
+  "findings": [
+    {
+      "file": "docs/ui/shell.jsx",
+      "line": "38",
+      "severity": "non-blocking",
+      "text": "non-blocking: this mount, docs/ui/shell-titlebar.jsx:331 and docs/ui/state-loader.js:608 lie outside the node declared write paths, so the fence omitted the files the required product repair lives in; the code is correct and the dispatch record fence is what should be widened."
+    },
+    {
+      "file": "docs/ui/shell.jsx",
+      "line": "37",
+      "severity": "non-blocking",
+      "text": "non-blocking: the unconditional mount is guarded by no assertion, because every rendered case in tests/test_build.py uses route #plan/alpha, so restoring the selection condition leaves all 25 tests green and the bare plans route, the view whose purpose is picking a plan, unobserved by the gate."
+    }
+  ],
+  "head_log_revision": "78d96a3ec6ec2d7cac610c1adf1d2aeb0ccbea0f",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "pass: three production call sites verified, docs/ui/shell.jsx:527 rendering ArtifactSurface, docs/ui/shell-plans.jsx:611 owning ListCol, and docs/ui/state-loader.js:401 revalidateProjectState performing the merge that dispatches the derived event at :620.",
+    "diff": "pass: read the four non-merge commits and the merge bca7a5563b against base d0d77f07e2, and git diff 0f6fb393ae..bca7a5563b names only docs/ui/shell.jsx, docs/ui/shell-titlebar.jsx, docs/ui/state-loader.js and tests/test_build.py, so the upstream merge resolved cleanly.",
+    "done_when": "pass: the done_when names a full pass of tests/test_build.py as an all_debug job with SLURM_JOB_ID unset, a cause-per-id verdict, an importer arm adding no failure and a base negative control; the manifest records head 25 passed EXIT=0 at 78d96a3ec6, base 6 failed 19 passed EXIT=1 at d0d77f07e2, suite arms 58 passed and files arms 41 passed on both sides.",
+    "goal": "pass: the node goal is that tests/test_build.py passes in full, and the landed change repairs the three product regressions the file caught, mounting ListCol at docs/ui/shell.jsx:38, dropping the plan-route guard at docs/ui/shell-titlebar.jsx:331 and merging disc.north_stars at docs/ui/state-loader.js:608.",
+    "manifest": "pass: read; status complete, five commits, seven changed_paths, the literal gate command, six test_logs, baseline_suite and after_suite both revision-pinned with 0 failures, and negative_control_log naming logs/test_build_base.log.",
+    "write_paths": "fail: the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and tests/test_build.py and both evidence pages sit inside them, while docs/ui/shell.jsx, docs/ui/shell-titlebar.jsx and docs/ui/state-loader.js sit outside them."
+  },
+  "justifications": {
+    "durability": "logs/test_build_base.log six failed and EXIT=1 beside the head 25 passed and EXIT=0 shows the three repairs absence reddens four rendered ids, while the unconditional mount at docs/ui/shell.jsx:37 has no assertion that fails if it is restored to a selection-gated one.",
+    "evidence": "logs/test_build_head_gate.log records revision 78d96a3ec6, 25 passed and EXIT=0 under the literal gate command, logs/test_build_base.log records 6 failed, 19 passed and EXIT=1 at d0d77f07e2, and sacct shows jobs 1319123, 1319075 and 1319131 COMPLETED on all_debug.",
+    "fit": "docs/ui/shell.jsx:38-56 restores the prop set of the pre-decomposition ListCol call site at 0fd3ce8291^:docs/ui/shell.jsx:1307, inline onClearFilters and onClearContext closures included, and its filters-collapsed class matches the rule at docs/ui/plans.css:21.",
+    "goal_fidelity": "docs/ui/shell.jsx:37-56 mounts ListCol as the plans view first child, docs/ui/shell-titlebar.jsx:331 drops the plan-route guard, and docs/ui/state-loader.js:608 merges disc.north_stars, so the three product causes behind tests/test_build.py are repaired rather than the assertions relaxed.",
+    "reuse": "no definition is added: the mount calls the existing owner docs/ui/shell-plans.jsx:611 ListCol, and the north_stars line extends the existing Object.assign at docs/ui/state-loader.js:603-616, with a capability search over docs/ui at dcb4a52566 finding no second ListCol mount and no second context-clearing closure.",
+    "scope_discipline": "git diff d0d77f07e2..dcb4a52566 carries only the node four non-merge commits and one clean merge, but three of the seven changed files, docs/ui/shell.jsx, docs/ui/shell-titlebar.jsx and docs/ui/state-loader.js, sit outside the declared paths reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the landed change repairs the three product regressions tests/test_build.py caught, mounting ListCol at docs/ui/shell.jsx:38, dropping the plan-route guard at docs/ui/shell-titlebar.jsx:331 and merging disc.north_stars at docs/ui/state-loader.js:608.\nVERDICT done_when: the manifest records head 25 passed EXIT=0 at 78d96a3ec6, base 6 failed 19 passed EXIT=1 at d0d77f07e2, suite arms 58 passed and files arms 41 passed on both sides, against an all_debug job with SLURM_JOB_ID unset.\nVERDICT write_paths: the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and docs/ui/shell.jsx, docs/ui/shell-titlebar.jsx and docs/ui/state-loader.js sit outside them.\nVERDICT manifest: read; status complete, five commits, seven changed_paths, baseline_suite and after_suite both revision-pinned with 0 failures.\nVERDICT diff: read the four non-merge commits and the merge bca7a5563b against base d0d77f07e2, which names only docs/ui/shell.jsx, docs/ui/shell-titlebar.jsx, docs/ui/state-loader.js and tests/test_build.py.\nCALL_SITES: docs/ui/shell.jsx:527, docs/ui/shell-plans.jsx:611, docs/ui/state-loader.js:401\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/ui/shell.jsx:37-56 mounts ListCol as the plans view first child, so the product rule the file caught is repaired.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/test_build_head_gate.log reads 25 passed and EXIT=0 at 78d96a3ec6, and logs/test_build_base.log reads 6 failed, 19 passed and EXIT=1 at d0d77f07e2.\nSCORE scope_discipline: 9\nJUSTIFICATION scope_discipline: docs/ui/shell.jsx, docs/ui/shell-titlebar.jsx and docs/ui/state-loader.js are edited although the declared paths do not include docs/ui.\nSCORE durability: 18\nJUSTIFICATION durability: the base run 6 failed and EXIT=1 against the head 25 passed and EXIT=0 names the condition under which the repairs absence reddens the gate, while docs/ui/shell.jsx:37 has no such assertion.\nSCORE fit: 18\nJUSTIFICATION fit: docs/ui/shell.jsx:38-56 restores the prop set of the pre-decomposition call site at 0fd3ce8291^:1307 and its filters-collapsed class matches docs/ui/plans.css:21.\nSCORE reuse: 20\nJUSTIFICATION reuse: the mount calls the existing owner docs/ui/shell-plans.jsx:611 and the north_stars line extends docs/ui/state-loader.js:603-616, with no second ListCol mount found.\nFINDING docs/ui/shell.jsx:38 non-blocking: the mount and the edits at docs/ui/shell-titlebar.jsx:331 and docs/ui/state-loader.js:608 lie outside the node declared write paths.\nFINDING docs/ui/shell.jsx:37 non-blocking: the unconditional mount is unguarded, since every rendered case uses #plan/alpha, which is a route with a selected plan.\n",
+  "review_run_id": "r-20261116T061821808771-review-of-qwnw-red-file-build-dcb4a525660d",
+  "reviewed_base_sha": "d0d77f07e2dcc64d74713755aebe748602f9a06f",
+  "reviewed_head_sha": "dcb4a525660dbd3b22ce40cefe908d0f58aa4d5d",
+  "reviewed_run_id": "r-20261115T224739427254-qwnw-red-file-build",
+  "reviewer_run_id": "r-20261116T061821808771-review-of-qwnw-red-file-build-dcb4a525660d",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 9
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T12:04:06.932360+00:00",
+  "total": 101
+}

@@ -1792,14 +1792,19 @@ def _added_lines_since(store: Path, base: str) -> dict[str, dict[int, str]]:
     return added
 
 
-def _committed_paths_added_since(store: Path, base: str) -> set[str]:
-    """The paths ``store``'s committed head adds since ``base``.
+def _committed_paths_since(store: Path, base: str, *, added_only: bool) -> set[str]:
+    """The paths ``store``'s committed head changes since ``base``.
 
-    The run's own commits are what a twin is judged on, so the diff is taken
-    against the committed head rather than the working tree: a PNG a worker
-    rendered to look at but never staged is not a finding, because it reaches
-    no commit. A diff a store cannot produce leaves the set empty rather than
-    an error, since an unanswerable store measures the absence of a store.
+    The run's own commits are what a named path is judged on, so the diff is
+    taken against the committed head rather than the working tree: a file a
+    worker rendered to look at but never staged is not a finding, because it
+    reaches no commit. ``added_only`` picks the population — a path this run
+    introduces, or any path it adds or modifies. A figure is carried by either
+    act, because a node that redraws a figure already present at its base has
+    delivered that figure although the path itself is old; a PNG twin is a
+    new path by definition, so its check reads the narrower set. A diff a
+    store cannot produce leaves the set empty rather than an error, since an
+    unanswerable store measures the absence of a store.
     """
     probe = subprocess.run(
         [
@@ -1809,7 +1814,7 @@ def _committed_paths_added_since(store: Path, base: str) -> set[str]:
             "diff",
             "--name-only",
             "--no-renames",
-            "--diff-filter=A",
+            "--diff-filter=A" if added_only else "--diff-filter=AM",
             "--no-color",
             base,
             "HEAD",
@@ -1821,6 +1826,16 @@ def _committed_paths_added_since(store: Path, base: str) -> set[str]:
     if probe.returncode != 0:
         return set()
     return {line.strip() for line in probe.stdout.splitlines() if line.strip()}
+
+
+def _committed_paths_added_since(store: Path, base: str) -> set[str]:
+    """The paths ``store``'s committed head adds since ``base``."""
+    return _committed_paths_since(store, base, added_only=True)
+
+
+def _committed_paths_added_or_modified_since(store: Path, base: str) -> set[str]:
+    """The paths ``store``'s committed head adds or modifies since ``base``."""
+    return _committed_paths_since(store, base, added_only=False)
 
 
 def _revision_is_committed(store: Path, revision: str) -> bool:
@@ -1948,7 +1963,10 @@ def _figure_findings(
     the plan this run builds, and the run's own commits carry that path. The
     third is read from the committed head against the base the manifest records
     at orientation, so a figure rendered to look at but never staged does not
-    pass as delivered.
+    pass as delivered. A commit that adds the path and one that modifies it
+    both carry it: a node that redraws a figure already present at its base
+    has delivered that figure, and reading only added paths refused it on a
+    path its own commit changed.
 
     A manifest that records no base the run's store can resolve leaves the
     third fact unarmed rather than refusing on work no one can inspect — the
@@ -1991,7 +2009,7 @@ def _figure_findings(
         return findings
     if not _revision_is_committed(store, base):
         return findings
-    carried = _committed_paths_added_since(store, base)
+    carried = _committed_paths_added_or_modified_since(store, base)
     findings.extend(
         f"named figure {relative!r} is not carried by this run's commits: no "
         f"commit since {base} adds that path, so the manifest names a figure "

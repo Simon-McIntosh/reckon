@@ -1968,7 +1968,9 @@ def classify_pointer(
             f"the omp worker {_exit_record_end_phrase(ended_exit)} before its "
             f"manifest reached an outcome; last tool call: {cut_off_detail(cut_off)}"
         )
-        action = f"reckon crew resume --run {run_id} --advice 'continue the unfinished work'"
+        action = (
+            f"reckon crew resume --run {run_id} --advice 'continue the unfinished work'"
+        )
     elif interruption is not None:
         classification = INTERRUPTED_RUN_PHASE
         signal_name = interruption.get("signal_name")
@@ -2000,8 +2002,10 @@ def classify_pointer(
             "says so"
         )
         action = (
-            f"reckon crew repair --run {run_id} --status complete "
-            "--reason <the verdict the worker reached>"
+            f"reckon crew repair --run {shlex.quote(run_id)} --status complete "
+            "--reason '<the verdict the worker reached>'"
+            if completion_offer(record, repair=True)
+            else f"reckon crew observe --run {shlex.quote(run_id)}"
         )
     elif manifest_unwritten:
         classification = "running"
@@ -3189,7 +3193,12 @@ def _promotion_command(
     citation that reproduces the refusal.
     """
     from .promotion import _promotion_commits
+    from .promotion_checks import _fresh_manifest
 
+    if not completion_offer(record, repair=True):
+        return f"reckon crew observe --run {shlex.quote(run_id)}"
+    if not manifest_commits:
+        manifest_commits = (_fresh_manifest(record) or {}).get("commits") or ()
     commits = _canonical_commits(
         _review_tree(record), _promotion_commits(record, manifest_commits)
     )
@@ -3200,10 +3209,58 @@ def _promotion_command(
             "--no-commit '<why the run produced no commit>' "
             "--outcome '<what the run produced>'"
         )
-    action = f"reckon crew complete --run {run_id} --gate <verdict>"
+    if not completion_offer(record):
+        return f"reckon crew observe --run {shlex.quote(run_id)}"
+    action = f"reckon crew complete --run {shlex.quote(run_id)} --gate passed"
     for commit in commits:
         action += f" --commit {commit}"
     return action
+
+
+def completion_offer(record: Mapping[str, Any], *, repair: bool = False) -> bool:
+    """Whether this attempt's evidence permits offering a completion.
+
+    A repair changes a manifest verdict rather than asserting a gate result,
+    but neither form may settle an attempt that has not delivered. A terminal
+    report must postdate the recorded worker launch to establish that delivery.
+    Passing gates belong to a revision, so a manifest's completed head arm
+    must name the tree's current head before a promotion can assert passed.
+    """
+    from .promotion import discard_recorded
+    from .promotion_checks import _fresh_manifest
+    from .recovery_liveness import _worker_launch_seconds
+    from .recovery_review_dispatch import _review_head_and_tree
+    from .resumption import _live_attempt_number
+
+    run_id = str(record.get("run_id") or "")
+    if str(record.get("phase") or "") == "discarded" or (
+        run_id and discard_recorded(run_id)
+    ):
+        return False
+    manifest = _fresh_manifest(record) or {}
+    if _live_attempt_number(record) is not None or local_liveness(record)[0] is True:
+        if (
+            str(manifest.get("status") or "") not in TERMINAL_MANIFEST_STATUSES
+            or _worker_launch_seconds(record) is None
+            or _manifest_predates_the_current_attempt(
+                record, Path(str(record.get("manifest_path") or ""))
+            )
+        ):
+            return False
+    if repair:
+        return True
+    head, _tree = _review_head_and_tree(record)
+    after = manifest.get("after_suite")
+    return bool(
+        head
+        and isinstance(after, Mapping)
+        and after.get("completed") is True
+        and type(after.get("exit_status")) is int
+        and after["exit_status"] == 0
+        and same_revision(str(after.get("revision") or ""), head)
+        and str(after.get("command") or "").strip()
+        and (after.get("log_path") or after.get("log_digest"))
+    )
 
 
 from .recovery_liveness import (  # noqa: E402

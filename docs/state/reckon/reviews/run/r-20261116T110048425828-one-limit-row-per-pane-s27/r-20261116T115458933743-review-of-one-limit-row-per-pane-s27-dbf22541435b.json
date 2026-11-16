@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms on disk: baseline_suite at 8104a1af5f90dd8c3d3c17685053360f140cc555 names omp-home/.cache/reckon-mttu/one-limit-row-per-pane-s27-base-arm.log, which ends '58 passed in 37.92s' then EXIT=0, failure_ids []; after_suite at 5365077202421c94267b021a0450382570bda1ff names omp-home/.cache/reckon-mttu/one-limit-row-per-pane-s27-head-arm.log, which ends '62 passed in 41.40s' then EXIT=0, failure_ids []; the base red of the new file appears in the worker transcript but was not captured as a log, so it contributes no recorded failure id.",
+  "call_sites": [
+    "reckon/crew/station_subscriber.py:551 (StationSubscriber builds ticker.PaneRowPath with own_session=session and no lift_claim, the production path the fix reaches)",
+    "reckon/crew_follow_commands.py:1194 (follower_row_path builds PaneRowPath and already supplies its own session-bound claim, so the new default is not taken there)",
+    "reckon/crew/ticker.py:2944 (replay_row_policy builds PaneRowPath and now passes an always-permit claim, the measurement path the diff opts out explicitly)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-16T12:15:03Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "one-limit-row-per-pane-s27",
+      "recorded_at": "2026-11-16T12:34:17.578349+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "one-limit-row-per-pane-s27",
+      "recorded_at": "2026-11-16T12:34:20.089511+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/ticker.py",
+      "id": "f1a0c94b7d4",
+      "line": "2953",
+      "severity": "non-blocking",
+      "text": "replay_row_policy now passes a claim that always permits instead of no claim, and the two states are not equivalent: reckon/crew/ticker.py:2685 skips a lift end whenever the claim is not None and the group is not in the replay's own lift_groups, which is always true there because replay_row_policy passes none, so a recorded stream whose window begins after the grant loses its lift ends where the previous None printed them; the comment at :2949-2952 claiming no live claim can subtract a row is therefore false for the LIFT_ENDED branch, and no test covers a lift end through the replay."
+    },
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "id": "f2b6d1e05ac",
+      "line": "1190",
+      "severity": "non-blocking",
+      "text": "follower_row_path still resolves its own default claim inline (lift_* \u2192 take_lift_claim(session, ...)) while reckon/crew/ticker.py:1795-1799 now performs the same resolution inside PaneRowPath, so the rule for which claim a pane takes without one lives in two places and can drift; the wrapper at crew_follow_commands.py:1190 duplicates what the new default in ticker.py owns, and dropping it would leave one owner."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit against 8104a1af: 5365077202 changes reckon/crew/ticker.py (a per-pane claim default at 1795-1799, the _pane_lift_claim helper at 1820-1840, and an always-permit claim in replay_row_policy at 2953) plus the new 196-line test file; dbf2254143 adds only the 78-line evidence fragment.",
+    "done_when": "the plan's done_when at docs/plans/the-monitor-tells-the-truth-under-load.html:218 asks for new tests red at base, one row per pane whatever the follower count, two resets still two rows, and no added failure among ticker-importing tests on all_debug; the new file, its base-red run and the identical mutation red are in the transcript, the armed suite pair is logged, but no log records the ticker-importing comparison and no run names the all_debug partition.",
+    "goal": "the node's goal is that one limit reset draws one row per pane however many followers serve it; reckon/crew/ticker.py:1795-1799 resolves the pane's own shared claim when a path is handed none, so reckon/crew/station_subscriber.py:551 (own_session=session, no lift_claim) now takes the claim its producer-stream twin already took, and tests/test_one_limit_reset_draws_one_row_per_pane.py:126-132 draws one row for a reset across three subscribers where the base drew three.",
+    "manifest": "read at the reviewed run directory; it states the fix, names the three gate logs under omp-home/.cache/reckon-mttu/, records base 58 passed EXIT=0 and after 62 passed EXIT=0 with failure_ids [], and names the negative control whose log exists and shows 4 failed EXIT=1.",
+    "write_paths": "the source manifest's orientation_write_paths declares reckon/crew/ticker.py, tests/test_one_limit_reset_draws_one_row_per_pane.py and docs/evidence/fragments/the-monitor-tells-the-truth-under-load/one-limit-row-per-pane-s27.html; git diff 8104a1af..dbf2254 changes exactly those three paths and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_one_limit_reset_draws_one_row_per_pane.py:139 asserts a hard-coded count of 1 against three independent subscribers rather than against anything the test handed the code, and the recorded mutation at 5365077202 (per-pane default removed) reddens it with 'one reset drew 3 rows', so the guard is shown to fire on the regression it names.",
+    "evidence": "both arms match the armed template the source prompt resolves (base arm drops the file absent at 8104a1af) and their logs end EXIT=0, but the done_when's own base-red claim and its ticker-importing/all_debug clause rest on the transcript and a 65-passed aside with no log path, so the armed gate measures only the addition-not-regression half of the measure.",
+    "fit": "the helper at reckon/crew/ticker.py:1820-1840 uses the lazy import of reckon.crew_follow_commands that reckon/crew_follow_commands.py:1186 uses in the opposite direction, keeps the one-sentence-docstring style around it, and adds no forbidden name, though :1795 re-derives the session string :1715 already normalises.",
+    "goal_fidelity": "the defect was that the claim was wired only into the producer-stream path, and reckon/crew/ticker.py:1795-1799 closes precisely that gap by resolving the pane's session claim when the path is handed none, which the three-subscriber case at tests/test_one_limit_reset_draws_one_row_per_pane.py:126 proves.",
+    "reuse": "the claim itself is delegated to the owner reckon/crew_follow_commands.py:1103 take_lift_claim rather than reimplemented, but the rule 'a path with no explicit claim takes its session's' now exists twice, since follower_row_path:1190-1193 still resolves it inline and the new default has made that copy redundant.",
+    "scope_discipline": "git diff 8104a1af..dbf2254 touches only reckon/crew/ticker.py, tests/test_one_limit_reset_draws_one_row_per_pane.py and the evidence fragment, all inside the manifest's orientation_write_paths, and the station subscriber the defect lived in is untouched as the fix intends."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that one limit reset draws one row per pane however many followers serve it; reckon/crew/ticker.py:1795-1799 resolves the pane's own claim when the path is handed none, so reckon/crew/station_subscriber.py:551 takes the claim its producer-stream twin already took and tests/test_one_limit_reset_draws_one_row_per_pane.py:126-132 draws one row across three subscribers where the base drew three.\nVERDICT done_when: the plan's done_when at docs/plans/the-monitor-tells-the-truth-under-load.html:218 asks for new tests red at base, one row per pane whatever the follower count, two resets still two rows, and no added failure among ticker-importing tests on all_debug; the new file, its base-red run and the mutation red are real and the armed suite pair is logged, but no log records the ticker-importing comparison and no run names the all_debug partition.\nVERDICT write_paths: the source manifest declares reckon/crew/ticker.py, tests/test_one_limit_reset_draws_one_row_per_pane.py and docs/evidence/fragments/the-monitor-tells-the-truth-under-load/one-limit-row-per-pane-s27.html; git diff 8104a1af..dbf2254 changes exactly those three paths and nothing else.\nVERDICT manifest: read; it states the fix, names three gate logs, records base 58 passed EXIT=0 and after 62 passed EXIT=0 with failure_ids [], and names the negative control whose log exists and shows 4 failed EXIT=1.\nVERDICT diff: read commit by commit against 8104a1af: 5365077202 changes reckon/crew/ticker.py (per-pane claim default at 1795-1799, _pane_lift_claim at 1820-1840, always-permit claim in replay_row_policy at 2953) plus the new 196-line test; dbf2254143 adds only the 78-line evidence fragment.\nCALL_SITES: reckon/crew/station_subscriber.py:551, reckon/crew_follow_commands.py:1194, reckon/crew/ticker.py:2944\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:1795-1799 closes precisely the gap the defect named \u2014 the claim was wired only into the producer-stream path \u2014 and tests/test_one_limit_reset_draws_one_row_per_pane.py:126 proves one row across three subscribers.\nSCORE evidence: 16\nJUSTIFICATION evidence: both arms match the armed template and their logs at omp-home/.cache/reckon-mttu/ end EXIT=0, but the done_when's base-red clause and its ticker-importing/all_debug clause rest on the transcript and an unlogged 65-passed aside rather than a log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 8104a1af..dbf2254 touches only the three paths the manifest declares, and reckon/crew/station_subscriber.py \u2014 where the defect lived \u2014 is untouched as intended.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_one_limit_reset_draws_one_row_per_pane.py:139 asserts a hard-coded count of one against three subscribers and the recorded mutation at 5365077202 reddens it with 'one reset drew 3 rows', so the guard is shown to fire.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/ticker.py:1827 follows the lazy-import idiom reckon/crew_follow_commands.py:1186 uses in the opposite direction, though :1795 re-derives the session string that :1715 already normalises.\nSCORE reuse: 16\nJUSTIFICATION reuse: the claim is delegated to its owner reckon/crew_follow_commands.py:1103 rather than reimplemented, but the no-claim default now exists in two places because crew_follow_commands.py:1190-1193 keeps its own copy.\nFINDING reckon/crew/ticker.py:2953 non-blocking: the always-permit claim passed to the replay is not equivalent to the None it replaced, because the LIFT_ENDED branch at :2685 skips any end whose group is not in the replay's own lift_groups, which is always empty there, so a recorded window beginning after its grant now loses its lift ends and the comment at :2949-2952 is false for ends.\nFINDING reckon/crew_follow_commands.py:1190 non-blocking: follower_row_path still resolves its own default lift claim inline while reckon/crew/ticker.py:1795-1799 now performs the same resolution, so the rule for which claim a pane takes when handed none has two owners that can drift.",
+  "review_node": "review-of-one-limit-row-per-pane-s27-dbf22541435b",
+  "review_run_id": "r-20261116T115458933743-review-of-one-limit-row-per-pane-s27-dbf22541435b",
+  "reviewed_base_sha": "8104a1af5f90dd8c3d3c17685053360f140cc555",
+  "reviewed_head_sha": "dbf22541435b78192480a3b49d7cedc2018ec97d",
+  "reviewed_run_id": "r-20261116T110048425828-one-limit-row-per-pane-s27",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T115458933743-review-of-one-limit-row-per-pane-s27-dbf22541435b"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T12:40:00+00:00",
+  "total": 106
+}

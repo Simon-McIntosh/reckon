@@ -91,6 +91,13 @@ LEDGER_SLUG = "crew"
 # evidence could not be produced is a recorded negative, not a silent pass.
 GATE_VERDICTS = ("passed", "failed", "not-run")
 
+#: The suite-delta outcomes the rollup tallies. The first four are what a
+#: promotion measures against its arms; ``not-run`` is what a hand-merged run
+#: records, because the branch already carries its change and there is no pair
+#: of arms left to compare. It counts under its own key so such a row stays
+#: visible in the rollup rather than dropping out of it.
+SUITE_DELTA_OUTCOMES = ("clean", "refused", "waived", "unchanged", "not-run")
+
 # Substitutions attributable only to the backend swap a shadow exists to
 # measure. Any other key in a lineage's "substituted" map means something
 # besides the candidate backend changed, which confounds the comparison.
@@ -4638,8 +4645,8 @@ def summary(
         suite_delta = record.get("suite_delta")
         if kind == "live" and isinstance(suite_delta, Mapping):
             status = str(suite_delta.get("status") or "")
-            if status in suite_deltas:
-                suite_deltas[status] += 1
+            if status in SUITE_DELTA_OUTCOMES:
+                suite_deltas[status] = suite_deltas.get(status, 0) + 1
         if kind != "live":
             continue
         if verdict == "passed":
