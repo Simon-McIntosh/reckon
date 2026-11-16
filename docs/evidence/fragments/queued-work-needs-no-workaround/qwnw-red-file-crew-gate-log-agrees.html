@@ -50,16 +50,17 @@ EXIT=1
 
 <h4 id="qwnw-red-file-crew-gate-log-agrees-head-gate">Head gate: an all_debug job with SLURM_JOB_ID unset</h4>
 <pre>
-# revision: abd79da00426ef113350a3f25eeef23ec2afbbc8
+# revision: 163193826971cec1f4e51d8f0b71844b880d909d
 # tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-crew-gate-log-agrees
 # command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_gate_log_agrees.py
 # slurm_job_id: unset
 # module: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-crew-gate-log-agrees/reckon/__init__.py
 # cwd: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-crew-gate-log-agrees
 .................                                                        [100%]
-17 passed in 5.00s
+17 passed in 5.71s
 EXIT=0
 </pre>
+<p>The same file also read 17 passed with <code>EXIT=0</code> at <code>abd79da004</code>, the commit carrying the test change alone, as all_debug job <code>1318998</code>; the fragment commit that followed touches only this evidence file.</p>
 
 <h4 id="qwnw-red-file-crew-gate-log-agrees-arms">Armed suite arms: no failure added</h4>
 <pre>
@@ -72,10 +73,10 @@ EXIT=0
 58 passed in 48.85s
 EXIT=0
 
-# head at abd79da00426ef113350a3f25eeef23ec2afbbc8, in the run's own worktree
+# head at 163193826971cec1f4e51d8f0b71844b880d909d, in the run's own worktree
 # command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
 ..........................................................               [100%]
-58 passed in 60.21s (0:01:00)
+58 passed in 60.44s (0:01:00)
 EXIT=0
 </pre>
 <p>The node's change is confined to <code>tests/test_crew_gate_log_agrees.py</code>; no product module is touched, so the arm over the files that import what it changed is the gate itself, where 17 failing ids at base become none at head.</p>
