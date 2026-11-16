@@ -1,27 +1,28 @@
 <section id="qwnw-red-file-an-undeclared-project-shares-its-source-file-negative-control">
 <h2>A test file red on the primary branch: base run</h2>
-<p>The node's named file, run at the base revision <code>d0d77f07</code> in a synthesized tree checked out at that revision, with <code>SLURM_JOB_ID</code> unset. Two of its ten tests fail, and both fail by not refusing a claim the sharing policy no longer reserves:</p>
+<p>The node's named file, run over a tree whose content is the base revision <code>d0d77f07</code>, with <code>SLURM_JOB_ID</code> unset. Two of its ten tests fail, and both fail by not refusing a claim the sharing policy no longer reserves:</p>
 <pre># revision: d0d77f07e2dcc64d74713755aebe748602f9a06f
 # command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_undeclared_project_shares_its_source_files.py
-# module: /tmp/reckon-crew-scratch/.../base-d0d77f07/reckon/crew/runs.py
 .......FF.                                                               [100%]
-FAILED tests/test_an_undeclared_project_shares_its_source_files.py::test_an_unreadable_declaration_shares_nothing_and_names_itself - Failed: DID NOT RAISE</pre>
-<p>Reproduced failure, verbatim from the run: <code>Failed: DID NOT RAISE ScopeConflict</code> for <code>test_an_unreadable_declaration_shares_nothing_and_names_itself</code> and for <code>test_an_empty_shared_roots_list_keeps_source_files_exclusive</code>. Summary line: <code>2 failed, 8 passed</code>.</p>
+2 failed, 8 passed</pre>
+<p>The run's two failing ids, verbatim: <code>test_an_unreadable_declaration_shares_nothing_and_names_itself</code> and <code>test_an_empty_shared_roots_list_keeps_source_files_exclusive</code>, each <code>Failed: DID NOT RAISE ScopeConflict</code>. The full log is <code>logs/base-file-d0d77f07.log</code> beside this run's manifest.</p>
 </section>
 
 <section id="qwnw-red-file-an-undeclared-project-shares-its-source-file-verdicts">
 <h2>Each cause, with its verdict</h2>
 <ul>
-<li><strong>An unreadable <code>shared-write-paths.json</code> — test wrong.</strong> The test asserted that a declaration present but unreadable makes every path exclusive. Path claims were reserved for the artifacts a textual merge cannot reconcile, so a declaration now grants writes and cannot reintroduce a source hold; the unreadable marker survives only where a path is decided by class, which reads every path as exclusive at promotion. The test now asserts that rule and keeps the half that still holds: the declaration is still named.</li>
-<li><strong><code>"shared_roots": []</code> — test wrong.</strong> The test asserted that an explicit empty roots list keeps source files exclusive. The same rule applies: a declaration cannot hold a source file, so the two dispatches both launch, and the test keeps a class that does stay exclusive under that declaration — a plan document is still refused.</li>
+<li><strong>An unreadable <code>shared-write-paths.json</code> &mdash; test wrong.</strong> The test asserted that a declaration present but unreadable makes every path exclusive. Path claims were reserved for the artifacts a textual merge cannot reconcile, so a declaration now grants writes and cannot reintroduce a source hold; the unreadable marker survives only where a path is decided by class. The test now asserts that rule and keeps the half that still holds: the declaration is still named.</li>
+<li><strong>An empty <code>shared_roots</code> list &mdash; test wrong.</strong> The test asserted that an explicit empty roots list keeps source files exclusive. The same rule applies: a declaration cannot hold a source file, so both dispatches launch, and the test keeps a class that does stay exclusive under that declaration &mdash; a plan document is still refused.</li>
 </ul>
-<p>No assertion is deleted or weakened, and no product code changed. The rule these tests were brought up to is the one landed by <code>5695689722</code>, <em>reserve path claims for nonmergeable artifacts</em>, which added <code>tests/test_only_unmergeable_paths_are_claimed.py::test_a_sharing_declaration_cannot_reintroduce_a_source_hold</code> for exactly these two declarations.</p>
+<p>No assertion is deleted or weakened, and no product code changed. The rule these tests were brought up to is the one landed by <code>5695689722</code>, <em>reserve path claims for nonmergeable artifacts</em>, which added <code>tests/test_only_unmergeable_paths_are_claimed.py::test_a_sharing_declaration_cannot_reintroduce_a_source_hold</code> over exactly these two declarations.</p>
 </section>
 
 <section id="qwnw-red-file-an-undeclared-project-shares-its-source-file-head">
 <h2>Head run after the update</h2>
-<pre># revision: faa84aa492 (origin/main merged) plus the update
-# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_undeclared_project_shares_its_source_files.py
+<p>Submitted to <code>all_debug</code> as job <code>1318866</code> and run with <code>SLURM_JOB_ID</code> unset at the run's head. The ten tests the file collects all pass:</p>
+<pre># revision: b6e6153b6e33298e399007dfb4ec1d5f3424b879
+# host: 98dci4-clu-3141.iter.org (all_debug)
 ..........                                                               [100%]
-10 passed</pre>
+10 passed in 10.84s
+EXIT=0</pre>
 </section>
