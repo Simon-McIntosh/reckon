@@ -35,6 +35,12 @@ from reckon.crew.reports import (
 PROMOTED_UNMERGED_STATE = "complete"
 
 
+def _is_measurement_run(record: Mapping[str, Any]) -> bool:
+    """Whether dispatch marked this run to build and gate without landing."""
+    marker = record.get("measure_only")
+    return isinstance(marker, Mapping) or bool(str(marker or "").strip())
+
+
 def _manifest_is_the_predecessor_attempts_report(
     record: Mapping[str, Any],
     manifest: Path,
@@ -2042,7 +2048,14 @@ def classify_pointer(
         detail = "the process is alive"
         action = f"reckon crew observe --run {run_id}"
     elif manifest_status == "complete":
-        if _pointer_role(record) == REVIEW_ROLE:
+        if _is_measurement_run(record):
+            classification = "promotable"
+            detail = (
+                "the worker manifest reports completion; this is a measurement "
+                "run, so no review is owed and it is ready for promotion"
+            )
+            action = _promotion_command(run_id, record, manifest_commits)
+        elif _pointer_role(record) == REVIEW_ROLE:
             # A review run's deliverable is the review it wrote for another
             # run, so it is not itself awaiting review. The exemption is the
             # role the run carried, not the presence of a stored review: a run
