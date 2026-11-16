@@ -1213,11 +1213,18 @@ def _watch_verdict(
         # its own grid word would need a second routing route with no reader
         # benefit — the distinction that matters is that it is not blocked.
         state = WAITING_STATUS
-    elif classification in {INTERRUPTED_RUN_PHASE, "cut-off"}:
+    elif classification == INTERRUPTED_RUN_PHASE:
         # The compatibility watch vocabulary does not yet expose interruptions
-        # as their own column. Keep the run in the needs-action bucket while the
-        # row's recovery classification and action retain the precise cause.
+        # as their own column, so the run keeps the blocked word while the row's
+        # recovery classification and action retain the precise cause.
         state = "blocked"
+    elif classification == "cut-off":
+        # A run a worker's own exit ended before a verdict is a state a reader
+        # has to add up: its recovery class is in the vocabulary the four fleet
+        # buckets partition, so it is rendered as that word rather than hidden
+        # inside blocked, where the counter could not tell it from a halt that
+        # needs a decision.
+        state = "cut-off"
     elif classification in {"blocked", "failed"}:
         # A provider refusal blocks even though no manifest reached a verdict:
         # the process is gone, but the stop is triageable and resumable once

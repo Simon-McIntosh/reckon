@@ -1632,6 +1632,11 @@ WATCH_ATTENTION_STATES = (
     "unknown",
     "unreadable",
     "exited-unfinished",
+    # The classification a worker records when its own exit ended it before a
+    # manifest reached an outcome. It is read as a blocked row, so the state
+    # word belongs to the vocabulary a reader acts on rather than being
+    # classified as an unknown verdict.",
+    "cut-off",
     "wait-aged",
 )
 WATCH_PROGRESS_STATES = (
