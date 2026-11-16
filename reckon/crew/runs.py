@@ -4839,6 +4839,7 @@ def _project_watch_claim(project: str, stall_window: str):
             record["last_stage"] = "initial-publication"
             _publish_watch_stream(project, _list_live_records(project=project))
             record["last_stage"] = "registered"
+            _write_watch_record(handle, record)
             yield True, record
         except BaseException as exc:
             error = exc

@@ -270,3 +270,12 @@ def test_first_publication_failure_is_recorded_before_release(
     assert receipt["reason"] == type(error).__name__ + f": {error}"
     assert runs.read_watch_registration("sample")["exit_record"] == receipt
     assert runs._probe_seat_read_only("sample")[0] is False
+
+
+def test_registered_seat_carries_the_lifecycle_metadata(quiet_home):
+    with recovery_watch._watch_registration("sample", "1m") as (acquired, watcher):
+        assert acquired
+        seat = json.loads(runs.watch_lock_path("sample").read_text())
+        assert seat == watcher
+        assert seat["last_stage"] == "registered"
+        assert seat["started_at_epoch"] > 0
