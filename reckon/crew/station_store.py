@@ -1237,18 +1237,25 @@ class StationStore:
         differs from the one last decoded, so a pass over an unchanged fleet
         decodes nothing at all: the text a tick stores is rewritten only when
         the pointer itself moved.
+
+        The key is the row's path, and a row that carries none is keyed by its
+        run id instead: a caller folding rows it built itself supplies the
+        fields and the identity but no path, and the pass reads every row it is
+        handed rather than only the rows the store's own query shaped.
         """
         fields: dict[str, dict[str, Any]] = {}
         for row in self.pointer_rows():
-            path = str(row["path"])
+            identity = str(row.get("path") or row.get("run_id") or "")
             try:
-                kept = self._decoded_document("pointer", path, str(row["fields"] or ""))
+                kept = self._decoded_document(
+                    "pointer", identity, str(row["fields"] or "")
+                )
             except ValueError:
                 # One unreadable row costs its own pointer and never the pass.
                 continue
             if not isinstance(kept, Mapping):
                 continue
-            fields[path] = dict(kept)
+            fields[identity] = dict(kept)
         return fields
 
     def pointer_rows(self) -> list[dict[str, Any]]:
