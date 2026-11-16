@@ -29,6 +29,7 @@ from collections import OrderedDict, defaultdict, deque
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -3350,8 +3351,24 @@ def _tree_holds_unmerged_work(tree: Path) -> bool:
     return _unmerged_commit_answer(tree) is not False
 
 
-def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
-    """Return the record holding each registered, present and unoccupied tree.
+@dataclass(frozen=True)
+class _RecordedPass:
+    """One record pass's answer: the trees still owed, and the rows it filed.
+
+    Both travel together because they are one read. A caller that needs the
+    history this pass read takes it from here instead of opening the ledger
+    again, which is what keeps two derivations of the same tick to one read.
+    """
+
+    held: dict[Path, Mapping[str, Any]]
+    rows: tuple[Mapping[str, Any], ...]
+
+
+_EMPTY_PASS = _RecordedPass({}, ())
+
+
+def _held_records_pass(project: str) -> _RecordedPass:
+    """Return each held tree's record and the rows every record was filed from.
 
     Source identities validate per-run files, live claims, the common Git
     registry and registered-tree presence. Unchanged inputs reuse the answer;
@@ -3364,7 +3381,7 @@ def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
     """
     docs_dir = _store._docs_dir_for_project(project)
     if docs_dir is None:
-        return {}
+        return _EMPTY_PASS
     repository = docs_dir.parent.resolve()
     with file_memo.read_only_region():
         key = (project, str(repository), _held_records_signature(project, repository))
@@ -3379,9 +3396,41 @@ def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
         )
 
 
+def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
+    """Return the record holding each registered, present and unoccupied tree."""
+    return _held_records_pass(project).held
+
+
+def recorded_run_rows(
+    project: str, repository: Path | None = None
+) -> list[Mapping[str, Any]] | None:
+    """The history rows this process already read for ``project``, or ``None``.
+
+    The held-record pass reads every run record once and then decodes only a
+    document whose identity moved, keeping the union it filed. A second
+    derivation of the same tick that needs the same history takes that union
+    here rather than opening the ledger again: the per-document identities
+    validate the answer on every read, so a row handed out is as fresh as the
+    held answer derived beside it.
+
+    ``None`` means no pass has answered for this project in this process — its
+    mount is unknown, or the caller names a different repository — so the
+    caller keeps its own read rather than answering with nothing. The rows are
+    the reader's own records in promotion order and are read, never written, by
+    a caller.
+    """
+    docs_dir = _store._docs_dir_for_project(project)
+    if docs_dir is None:
+        return None
+    root = docs_dir.parent.resolve()
+    if repository is not None and root != repository.resolve():
+        return None
+    return list(_held_records_pass(project).rows)
+
+
 def _held_records_read_uncached(
     project: str, repository: Path, signature: tuple[Any, ...]
-) -> dict[Path, Mapping[str, Any]]:
+) -> _RecordedPass:
     """Read the held-tree records once, inside the region a fresh read opens."""
     token = _HELD_SOURCE_SIGNATURE.set(signature)
     try:
@@ -3649,9 +3698,20 @@ class _HeldWorktreeState:
                 self.held[tree] = record
 
 
+def _filed_rows(index: _HeldWorktreeState) -> tuple[Mapping[str, Any], ...]:
+    """The records an index was filed from, in promotion order.
+
+    A reader of the history wants the rows the ledger's own reader would have
+    returned, so they are ordered by the key :func:`reckon.ledger.load` sorts
+    its store rows by rather than by the order an incremental pass happened to
+    update them in.
+    """
+    return tuple(sorted(index.records.rows(), key=ledger.promotion_order_key))
+
+
 def _held_worktree_records_read(
     project: str, repository: Path, *, signature: tuple[Any, ...] | None = None
-) -> dict[Path, Mapping[str, Any]]:
+) -> _RecordedPass:
     """Apply changed run documents and tree registrations to the previous answer.
 
     File identities are still validated, including in-place document edits.
@@ -3660,6 +3720,8 @@ def _held_worktree_records_read(
     An aggregate rewrite rebuilds the index because its JSON envelope carries
     no per-row change identities; a refused merged read keeps the unrefused
     document-reader fallback rather than losing duties from healthy records.
+    The rows the index was filed from travel with the answer, so a second
+    derivation of the same tick reads the history this one already read.
     """
     signature = (
         signature
@@ -3682,8 +3744,9 @@ def _held_worktree_records_read(
     cache_key = (project, str(repository))
     with _HELD_READ_LOCK:
         previous = _HELD_RECORD_READS.get(cache_key) if reusable else None
-        if previous is None and not inspected:
-            return {}
+        # A project holding no retained tree still owes the history this pass
+        # files: the duty derived from those rows is derived from them here, so
+        # an empty tree set is not a reason to answer without a read.
         if previous is None or previous[0] != aggregate_stamp:
             fresh = _run_namings(project, repository)
             rows = (
@@ -3757,7 +3820,7 @@ def _held_worktree_records_read(
             _held_remember(
                 _HELD_RECORD_READS, cache_key, (aggregate_stamp, identities, index)
             )
-        return dict(index.held)
+        return _RecordedPass(dict(index.held), _filed_rows(index))
 
 
 def _held_worktrees_by_session(

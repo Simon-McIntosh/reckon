@@ -40,10 +40,14 @@ def merged_section_items_by_session(
     checkout = project_mount_repository(project)
     if checkout is None:
         return {}
-    history, _version = ledger.load(project, checkout)
+    from reckon.crew import obligations as obligations_module
+
+    rows = obligations_module.recorded_run_rows(project, checkout)
+    if rows is None:
+        rows, _version = ledger.load(project, checkout)
     candidates = {
         str(record.get("run_id") or ""): record
-        for record in [*pointers, *history["runs"]]
+        for record in [*pointers, *rows]
         if record.get("session") and (session is None or record["session"] == session)
     }
     plans: dict[str, tuple[dict, int]] = {}
