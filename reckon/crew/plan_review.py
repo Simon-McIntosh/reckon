@@ -75,6 +75,7 @@ from typing import Any
 from reckon import _plan_html, file_memo
 from reckon._plan_html import DOCUMENT_UNIT, landed_section_ids
 from reckon._store import write_json_atomically
+from reckon.crew import domain_rules as _domain_rules
 from reckon.crew import review as _review_store
 from reckon.crew import review_need, runs
 from reckon.served_code import neighbourhood
@@ -5791,21 +5792,57 @@ def code_review_subject(
     }
 
 
-def _open_findings_for(subject: Mapping[str, Any]) -> list[dict[str, Any]]:
-    """The open findings the stored reviews carry against the named paths."""
+def _named_finding_roots(named: Iterable[str]) -> list[str]:
+    """The repository paths a review's named paths cover.
+
+    A named path arrives in one of two shapes. A plan's section write paths are
+    repository paths — a file or a directory — and are taken as they are. The
+    paths a ``--path`` names are resolved to production modules at the reviewed
+    head, so they arrive dotted, and a stored finding is keyed by the file it
+    names rather than by the module that file holds. A dotted name therefore
+    contributes the module's file and the package directory of the same name, so
+    a finding on a module named either way is found. Matching a named directory
+    is by path boundary rather than by a bare string prefix, so a sibling whose
+    name merely begins with the directory's is not stored beneath it.
+    """
+    roots: list[str] = []
+    for name in named:
+        text = str(name).strip()
+        if not text:
+            continue
+        if "/" not in text and "." in text:
+            module_path = text.replace(".", "/")
+            roots.extend((module_path + ".py", module_path))
+        else:
+            roots.append(text.rstrip("/"))
+    return roots
+
+
+def _open_findings_for(subject: Mapping[str, Any]) -> list[dict[str, Any]] | None:
+    """The open findings the stored reviews carry against the named paths.
+
+    ``None`` is the store that exists and could not be read: no row was
+    measured, so a caller reporting a count must say so rather than report the
+    empty list an unread store and an empty one both produce.
+    """
     from reckon.crew import findings as findings_reader
 
-    named = {str(path) for path in subject.get("named_paths") or ()}
+    roots = _named_finding_roots(subject.get("named_paths") or ())
     try:
         grouped = findings_reader.findings_by_path(
             str(subject["project"]), root=str(subject["repo"])
         )
     except (OSError, ValueError):
-        return []
+        return None
+    if grouped.get("unreadable"):
+        return None
     return [
         row
         for group in grouped.get("paths") or ()
-        if str(group.get("path")) in named
+        if any(
+            _domain_rules.path_at_or_beneath(str(group.get("path")) or "", root)
+            for root in roots
+        )
         for row in group.get("rows") or ()
         if row.get("disposition") == "open"
     ]
@@ -5845,7 +5882,15 @@ def code_review_brief(subject: Mapping[str, Any]) -> str:
         _interface_figure_line(subject),
     ]
     open_findings = _open_findings_for(subject)
-    if open_findings:
+    if open_findings is None:
+        # The store exists and could not be read: no row was measured, so a
+        # count or "none" here would report an absence the reader never saw.
+        lines.append(
+            "Open findings: the stored findings could not be read for the named "
+            "paths, so this brief carries no count; treat the store as unknown "
+            "rather than empty."
+        )
+    elif open_findings:
         lines.append(
             "Open findings already stored against the named paths; cite these by "
             "their row rather than re-reporting them:"
