@@ -166,19 +166,36 @@ def test_one_wake_rechecks_a_hundred_parked_requests_under_one_second(
     service = requests.PromotionService(width=2)
     held = [service._claim(f"promotion-slot-{number}") for number in range(2)]
     assert all(held)
+    observed = []
+    real_waits = requests._review_self_waits
+
+    def observe(request):
+        observed.append(request["run_id"])
+        return real_waits(request)
+
+    monkeypatch.setattr(requests, "_review_self_waits", observe)
     try:
         began = time.perf_counter()
         assert service.tick() == []
         elapsed = time.perf_counter() - began
         refreshed = [requests.read_promotion(row["run_id"]) for row in parked]
         checked = sum(row["checked_at"] != NOW.isoformat() for row in refreshed)
-        print(f"readiness: {checked}/100 checked in {elapsed:.6f} seconds")
+        with capsys.disabled():
+            print(
+                f"readiness: {checked}/100 checked in {elapsed:.6f} seconds; complete={complete}"
+            )
         assert checked == 100
-        assert all(row["phase"] == requests.WAITING for row in refreshed)
-        assert all(
-            "manifest does not read complete" in row["waiting_reason"]
-            for row in refreshed
-        )
+        expected_phase = requests.REQUESTED if complete else requests.WAITING
+        assert all(row["phase"] == expected_phase for row in refreshed)
+        assert len(observed) == 101
+        assert all(observed.count(row["run_id"]) == 1 for row in parked)
+        if complete:
+            assert all(row["waiting_reason"] == "" for row in refreshed)
+        else:
+            assert all(
+                "manifest does not read complete" in row["waiting_reason"]
+                for row in refreshed
+            )
         assert elapsed < 1.0
     finally:
         for lease in held:

@@ -250,9 +250,11 @@ def read_promotion(run_id: str) -> dict[str, Any]:
     return _read(_request_path(run_id)) or _read(_receipt_path(run_id))
 
 
-def _mark_pointer(request: Mapping[str, Any], phase: str) -> None:
+def _mark_pointer(
+    request: Mapping[str, Any], phase: str, *, readiness_checked: bool = False
+) -> None:
     run_id = str(request["run_id"])
-    if phase == REQUESTED and _review_self_waits(request)[0]:
+    if phase == REQUESTED and not readiness_checked and _review_self_waits(request)[0]:
         phase = WAITING
     try:
         with runs._pointer_lock(run_id, blocking=False):
@@ -375,7 +377,7 @@ def _mark_readiness(
             # Another drain moved this request on while it was being judged.
             return {}
         runs._write_json(_request_path(run_id), refreshed)
-        _mark_pointer(refreshed, refreshed["phase"])
+        _mark_pointer(refreshed, refreshed["phase"], readiness_checked=True)
     return refreshed
 
 
