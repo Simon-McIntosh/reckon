@@ -1902,7 +1902,9 @@ def _live_item(
         if verdict:
             reason = _verdicts.hold_reason(hold)
             item["reason"] = f"{verdict}: {reason}" if reason else verdict
-            item["age_seconds"] = _seconds_since(hold.get("recorded_at"), now=now)
+            stamped = str(hold.get("recorded_at") or "").strip()
+            if stamped:
+                item["age_seconds"] = _seconds_since(stamped, now=now)
             remedy = str(hold.get("remedy") or "")
             item["next_command"] = remedy or f"wait: {item['reason']}"
     return item
@@ -2334,9 +2336,9 @@ def _queued_row_item(
             if detail:
                 item["reason"] = detail
                 item["next_command"] = str(refusal.get("next_command") or "")
-                item["age_seconds"] = _seconds_since(
-                    refusal.get("recorded_at"), now=now
-                )
+                stamped = str(refusal.get("recorded_at") or "").strip()
+                if stamped:
+                    item["age_seconds"] = _seconds_since(stamped, now=now)
         return item
     ordered = placements() if callable(placements) else placements
     return _queued_item(
