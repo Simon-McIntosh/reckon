@@ -101,6 +101,19 @@ def _stalls(result: dict) -> list[dict]:
     ]
 
 
+def _stream_kinds() -> set[str]:
+    """The kinds of the rows the project's monitor stream carries, if any."""
+    path = runs.watch_stream_path(PROJECT)
+    if not path.exists():
+        return set()
+    records = [
+        json.loads(line)
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    return {str(record.get("kind") or record.get("event") or "") for record in records}
+
+
 def _previous_pass(**durations) -> dict:
     """A verdict-log line as an earlier pass wrote it."""
     record = {
@@ -138,8 +151,11 @@ def test_an_eleven_minute_wait_on_a_lane_with_room_records_one_stall(
     assert result["admissible_age_seconds"] >= WAITED_SECONDS
     for verdict in result["verdicts"]:
         assert verdict["admissible_age_seconds"] == result["admissible_age_seconds"]
-    # The stall is the queue's record: no monitor-stream row is written for it.
-    assert not stream.exists()
+    # The stall is the queue's record, written to the verdict log and never to
+    # the monitor stream. A pass that ends the wait may still announce the
+    # launch it made — that submission row is the launch speaking, not the
+    # stall, so the stream is read for a stall row rather than for its absence.
+    assert queue_admission.STALL_VERDICT not in _stream_kinds()
 
 
 def test_a_stall_is_recorded_once_and_clears_on_a_later_verdict(chain_repo) -> None:

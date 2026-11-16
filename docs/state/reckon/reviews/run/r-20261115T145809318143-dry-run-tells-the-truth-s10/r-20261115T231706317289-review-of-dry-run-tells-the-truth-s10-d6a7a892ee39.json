@@ -1,0 +1,84 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "fd2fe9c17f80e5901236fb399cb7ac4831d2bcce",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_run_commands.py:3693 crew complete --dry-run -> promotion_module.complete_dry_run",
+    "reckon/crew/merge.py:185 merge preflight -> promotion_module.complete_dry_run",
+    "reckon/crew/merge.py:197 merge refuses on would_promote",
+    "reckon/mcp.py:3055 MCP refusal listing -> promotion_module.complete_dry_run"
+  ],
+  "completed_at": "2026-11-15T23:22:38.027Z",
+  "dispatched_at": "2026-11-15T23:21:55Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "1347",
+      "severity": "non-blocking",
+      "text": "non-blocking: the refusal detail still restates reckon/crew/promotion_records.py:1414-1426 verbatim in its opening clause and its declare-gate sentence, so the dry run's text and the raised refusal drift apart on the next edit to either while nothing fails; the repair answered the folded reuse finding for the condition only, which now imports the owner's predicates, and not for the wording it copies."
+    },
+    {
+      "file": "tests/test_a_dry_run_reports_what_the_real_call_refuses.py",
+      "line": "350",
+      "severity": "non-blocking",
+      "text": "non-blocking: the commit deleted assert owed[0][\"tier\"] not in (\"\", \"none\"), so nothing fails if reviews_owed stops naming the tier that decided the review is owed (reckon/crew/promotion_checks.py:1362), and the manifest's rubric.correctness still claims the review case asserts run, tier and head."
+    },
+    {
+      "file": "tests/test_a_dry_run_reports_what_the_real_call_refuses.py",
+      "line": "349",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion compares the run_id each entry echoes against the run_id the test itself wrote into the pointer, so it holds for any code that copies the field; the independent guards are the entry's existence and the head assertion on the next line."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "1330",
+      "severity": "non-blocking",
+      "text": "non-blocking: the docstring sentence \"Those are reported as one the landing would measure and refused only by the landing\" is ungrammatical in the one paragraph that explains why the two populations are reported differently."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T145809318143-dry-run-tells-the-truth-s10/manifest.md",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "non-blocking: the artifacts line states the four cases all fail at fd2fe9c17f0, but the recorded base arm runs only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py and logs/ holds no run of the new cases against base code, so the done_when's base-revision clause is asserted rather than shown; recorded in the earlier review of this run and still not answered."
+    }
+  ],
+  "head_log_revision": "d6a7a892ee3969c8e51d2201e25fb124a7d55e67",
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read the one commit 7134a2c438e..d6a7a892ee: promotion.py narrows _dry_run_suite_refusals (1311) to the landing's own predicates, imported from promotion_records, and adds the would_measure note in _dry_run_report (1445); the test file replaces the arm parameters with _set_arms (212) and adds the measurement case (297) while deleting the tier assertion; the fragment is rewritten to match.",
+    "done_when": "the done_when asks for cases failing at the base revision, the same suite refusal the real call raises, the owed review and no write lock; logs/after-suite-all-debug.log records 62 passed at d6a7a892ee against 58 at fd2fe9c17f0 and logs/negative-control.log reddens the suite case alone, but no log runs the four cases against base code, so that first clause rests on the manifest's artifacts prose.",
+    "goal": "the node goal is that a promotion dry run report what the real call will refuse; reckon/crew/promotion.py:1311 now reports the suite refusal for the arm-command population the landing refuses without measuring, and reports the population it measures as would_measure with a note instead of as a refusal.",
+    "manifest": "read; status complete, commits 5e8e1847c6e 7134a2c438e d6a7a892ee, changed_paths the four in-scope files, gate \"62 passed\" against \"58 passed\", negative control \"1 failed, 61 passed\" with EXIT=1.",
+    "write_paths": "read the source manifest's declared paths; git diff --stat 7134a2c438e..d6a7a892ee lists reckon/crew/promotion.py, tests/test_a_dry_run_reports_what_the_real_call_refuses.py and docs/evidence/fragments/the-monitor-tells-the-truth-under-load/dry-run-tells-the-truth-s10.html, all inside them, and this commit touches nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_dry_run_reports_what_the_real_call_refuses.py:328 is a real guard that reddens if a would-measure pair becomes a refusal, proven by logs/negative-control.log, but the same commit deleted the only assertion on entry[\"tier\"] at reckon/crew/promotion_checks.py:1362, so the report may stop naming its tier and nothing fails.",
+    "evidence": "the after arm records \"62 passed\" at d6a7a892ee and the base arm \"58 passed\" at fd2fe9c17f0, both EXIT=0 with no FAILED ids, yet no log runs the four new cases against base code as the done_when's first clause requires.",
+    "fit": "reckon/crew/promotion.py:1330 carries the garbled sentence \"Those are reported as one the landing would measure and refused only by the landing\" beside otherwise idiomatic private helpers and docstrings.",
+    "goal_fidelity": "reckon/crew/promotion.py:1343-1346 refuses only on the landing's own branch, so a pair the landing measures and records (reckon/crew/promotion_records.py:1358-1367) now reads would_promote true instead of refused, which is the repair the goal names.",
+    "reuse": "reckon/crew/promotion.py:1347 recomposes the refusal detail reckon/crew/promotion_records.py:1414-1426 already owns, while the condition at 1343-1346 correctly imports the owner's _only_command_mismatch and promotion_records.gate_declaration rather than restating them.",
+    "scope_discipline": "git diff --stat 7134a2c438e..d6a7a892ee names only reckon/crew/promotion.py, tests/test_a_dry_run_reports_what_the_real_call_refuses.py and docs/evidence/fragments/the-monitor-tells-the-truth-under-load/dry-run-tells-the-truth-s10.html, all three inside the source manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a promotion dry run report what the real call will refuse; reckon/crew/promotion.py:1311 now reports the suite refusal for the arm-command population the landing refuses without measuring, and reports the population it measures as would_measure with a note instead of as a refusal.\nVERDICT done_when: the done_when asks for cases failing at the base revision, the same suite refusal the real call raises, the owed review and no write lock; logs/after-suite-all-debug.log records 62 passed at d6a7a892ee against 58 at fd2fe9c17f0 and logs/negative-control.log reddens the suite case alone, but no log runs the four cases against base code, so that first clause rests on the manifest's artifacts prose.\nVERDICT write_paths: read the source manifest's declared paths; git diff --stat 7134a2c438e..d6a7a892ee lists reckon/crew/promotion.py, tests/test_a_dry_run_reports_what_the_real_call_refuses.py and docs/evidence/fragments/the-monitor-tells-the-truth-under-load/dry-run-tells-the-truth-s10.html, all inside them, and this commit touches nothing else.\nVERDICT manifest: read; status complete, commits 5e8e1847c6e 7134a2c438e d6a7a892ee, changed_paths the four in-scope files, gate \"62 passed\" against \"58 passed\", negative control \"1 failed, 61 passed\" with EXIT=1.\nVERDICT diff: read the one commit 7134a2c438e..d6a7a892ee: promotion.py narrows _dry_run_suite_refusals (1311) to the landing's own predicates, imported from promotion_records, and adds the would_measure note in _dry_run_report (1445); the test file replaces the arm parameters with _set_arms (212) and adds the measurement case (297) while deleting the tier assertion; the fragment is rewritten to match.\nCALL_SITES: reckon/crew_run_commands.py:3693 crew complete --dry-run -> promotion_module.complete_dry_run, reckon/crew/merge.py:185 merge preflight -> promotion_module.complete_dry_run, reckon/crew/merge.py:197 merge refuses on would_promote, reckon/mcp.py:3055 MCP refusal listing -> promotion_module.complete_dry_run\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:1343-1346 refuses only on the landing's own branch, so a pair the landing measures and records (reckon/crew/promotion_records.py:1358-1367) now reads would_promote true instead of refused, which is the repair the goal names.\nSCORE evidence: 14\nJUSTIFICATION evidence: the after arm records \"62 passed\" at d6a7a892ee and the base arm \"58 passed\" at fd2fe9c17f0, both EXIT=0 with no FAILED ids, yet no log runs the four new cases against base code as the done_when's first clause requires.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 7134a2c438e..d6a7a892ee names only reckon/crew/promotion.py, tests/test_a_dry_run_reports_what_the_real_call_refuses.py and docs/evidence/fragments/the-monitor-tells-the-truth-under-load/dry-run-tells-the-truth-s10.html, all three inside the source manifest's declared write paths.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_a_dry_run_reports_what_the_real_call_refuses.py:328 is a real guard that reddens if a would-measure pair becomes a refusal, proven by logs/negative-control.log, but the same commit deleted the only assertion on entry[\"tier\"] at reckon/crew/promotion_checks.py:1362, so the report may stop naming its tier and nothing fails.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/promotion.py:1330 carries the garbled sentence \"Those are reported as one the landing would measure and refused only by the landing\" beside otherwise idiomatic private helpers and docstrings.\nSCORE reuse: 10\nJUSTIFICATION reuse: reckon/crew/promotion.py:1347 recomposes the refusal detail reckon/crew/promotion_records.py:1414-1426 already owns, while the condition at 1343-1346 correctly imports the owner's _only_command_mismatch and promotion_records.gate_declaration rather than restating them.\nFINDING reckon/crew/promotion.py:1347 non-blocking: the refusal detail still restates reckon/crew/promotion_records.py:1414-1426 verbatim in its opening clause and its declare-gate sentence, so the dry run's text and the raised refusal drift apart on the next edit to either while nothing fails; the repair answered the folded reuse finding for the condition only, which now imports the owner's predicates, and not for the wording it copies.\nFINDING tests/test_a_dry_run_reports_what_the_real_call_refuses.py:350 non-blocking: the commit deleted assert owed[0][\"tier\"] not in (\"\", \"none\"), so nothing fails if reviews_owed stops naming the tier that decided the review is owed (reckon/crew/promotion_checks.py:1362), and the manifest's rubric.correctness still claims the review case asserts run, tier and head.\nFINDING tests/test_a_dry_run_reports_what_the_real_call_refuses.py:349 non-blocking: the assertion compares the run_id each entry echoes against the run_id the test itself wrote into the pointer, so it holds for any code that copies the field; the independent guards are the entry's existence and the head assertion on the next line.\nFINDING reckon/crew/promotion.py:1330 non-blocking: the docstring sentence \"Those are reported as one the landing would measure and refused only by the landing\" is ungrammatical in the one paragraph that explains why the two populations are reported differently.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T145809318143-dry-run-tells-the-truth-s10/manifest.md:21 non-blocking: the artifacts line states the four cases all fail at fd2fe9c17f0, but the recorded base arm runs only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py and logs/ holds no run of the new cases against base code, so the done_when's base-revision clause is asserted rather than shown; recorded in the earlier review of this run and still not answered.\n",
+  "review_run_id": "r-20261115T231706317289-review-of-dry-run-tells-the-truth-s10-d6a7a892ee39",
+  "reviewed_base_sha": "7134a2c438efece753ece6966508c6d3d932921d",
+  "reviewed_head_sha": "d6a7a892ee3969c8e51d2201e25fb124a7d55e67",
+  "reviewed_run_id": "r-20261115T145809318143-dry-run-tells-the-truth-s10",
+  "reviewer_run_id": "r-20261115T231706317289-review-of-dry-run-tells-the-truth-s10-d6a7a892ee39",
+  "scores": {
+    "durability": 13,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 10,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T00:11:04.140953+00:00",
+  "total": 90
+}

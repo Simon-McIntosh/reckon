@@ -1,0 +1,74 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-16T04:21:03.607Z",
+  "dispatched_at": "2026-11-16T04:19:17Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/history-persists-as-detail-washes-out/r-20261116T040927121656-plan-review-of-history-persists-as-detail-washes-out/plan.html:410",
+      "id": "wiring-1",
+      "reason": "without an edge or a queued build naming \u00a730 the plan claims to be heading for a state no dispatch reaches, the same unreachable-section defect already repaired for \u00a729 and \u00a722.",
+      "text": "\u00a730 is declared `implementable` while no dependency edge and no followup names it: `plan-section-depends-on` carries s26 and s27 only, and the sole open followup `f-hpdw-013` names \u00a722, \u00a724, \u00a728, \u00a729, \u00a726 and \u00a727 \u2014 so no dispatch will ever name \u00a730 and its deliverable is unreachable",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/history-persists-as-detail-washes-out/r-20261116T040927121656-plan-review-of-history-persists-as-detail-washes-out/plan.html:412",
+      "id": "done_when-1",
+      "reason": "the node's only measure cannot be constructed as written, so the worker has to invent the tolerance the section exists to fix.",
+      "text": "the failing-first arm requires a lock held \"longer than sqlite's default and less than the index refresh's busy timeout\", but `INDEX_BUSY_TIMEOUT_SECONDS = 0.2` (reckon/run_store.py:152) is twenty-five times shorter than sqlite's 5 s default, so no lock duration satisfies the clause; the refusal arm then says \"held past that bound\" without naming which bound, leaving the two arms unseparable",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/history-persists-as-detail-washes-out/r-20261116T040927121656-plan-review-of-history-persists-as-detail-washes-out/plan.html:411",
+      "id": "reasoning-1",
+      "reason": "a worker following the stated cause adds a per-attempt busy timeout that already exists and never touches the total retry bound, so a lock held past 3 s still refuses and the observed failure reproduces after the section closes.",
+      "text": "the named cause does not match the writer behind the cited error: a promoted run is written through `run_store.append`, which delegates to `_retrying` and opens `RunStore(busy_timeout=INDEX_BUSY_TIMEOUT_SECONDS)` (0.2 s per attempt) inside a `INDEX_RETRY_SECONDS = 3.0` wall-clock backoff, so the write gives up on that 3 s bound and not on sqlite's 5 s default; the claim that \"only the index refresh passes `INDEX_BUSY_TIMEOUT_SECONDS`\" is false because `append` and `import_ledger` pass it through the same helper, and `tests/test_a_locked_ledger_store_is_retried.py` already exercises a short lock waited out (0.4 s) and a lock past a lowered bound refused",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "f11428bff8eb4ddd42005b142a48b514127c15a1",
+  "plan_fingerprint": "a878b1f3a4b6c33aaad02d48bf581e092da85e324d0f40d2548c458a050e2f37",
+  "plan_slug": "history-persists-as-detail-washes-out",
+  "plan_version": 71,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261116T040927121656-plan-review-of-history-persists-as-detail-washes-out",
+  "reviewed_blob_sha": "ccb6fa01c1aebaeb4503629ba354bcb5f341a9bc",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/run_store.py` and `reckon/ledger.py` (plan.html:412) resolve, and the quoted failure text matches the refusal raised at `reckon/ledger.py:3435`.",
+    "done_when": "a finding \u2014 \u00a730's positive arm (plan.html:412) asks for a lock held \"longer than sqlite's default and less than the index refresh's busy timeout\", an empty interval because that constant is 0.2 s.",
+    "evidence_paths": "pass \u2014 \u00a730 names no scratchpad or node-local path; its evidence is a new test plus a suite comparison, the same convention the sibling nodes use.",
+    "naming": "pass \u2014 \u00a730 carries no plan label, stage or ticket reaching a symbol, and its prose cites two existing module paths and one existing constant rather than minting tracker-flavoured names.",
+    "reasoning": "a finding \u2014 the stated root cause (plan.html:411: the record writer opens `RunStore()` with no busy timeout and gives up after sqlite's 5 s default) is contradicted by the code the cited error comes from.",
+    "single_goal": "pass \u2014 \u00a730 names one deliverable, a store write that waits out a held lock and still refuses past its bound; the two arms are the two sides of one bound, not two goals.",
+    "wiring": "a finding \u2014 \u00a730 is declared `implementable` (plan.html:410) yet sits in no `plan-section-depends-on` edge (plan.html:28 carries only s26 and s27) and in no followup, whose sole open entry `f-hpdw-013` queues \u00a722 first."
+  },
+  "section_digests": {
+    "_document": "cff0d28ffa80dabc7578edbcf532be8ef74eb929e59680d927b12fd4b64f63c9",
+    "s1": "16a4b0ff613308f968af13a86453cdda7611fbb4a0b662f0998319199f08c1f2",
+    "s2": "81ea5591beea9f0bfe0621b90127946f5c732b8471e2c5373404a592fa5daefe",
+    "s20": "469126d7a8d70994107c002b967dbf9da3c5237e4a3d05823281a9885c92731d",
+    "s21": "b2ec3716b6dd37a6a203c9b9d7c0be1209c9fa8d48d83ddcdf537eb47428cd4c",
+    "s22": "5b80738fa65b0a373485bf67bf0f2f191c8cf69ad935ef9ae258accc3a43cfc1",
+    "s23": "5f979f2ac2c694c8465c9b3b76743b70a3df967a1496488ebe45e96a41451c59",
+    "s24": "ff4464a256205179d7e9af583afcd456372bf9b4a393a90fe8b93955826be5f8",
+    "s25": "6e50b703cae5c188d1fb24250a943eb5f654fc5c26334335a3a7288120690168",
+    "s26": "37c27b0d54e7bf1a99e322e08776a72ffa748c2b88388aaa51f267a1db5c358a",
+    "s27": "9d55fe84f9ee617248a7eec57379797bd44bc1cb050fc378d20ac1b3da8152b2",
+    "s28": "1b395017f55a124f94b5b856f557b80c1246dd6aa0b94d4c21a412922010b47f",
+    "s29": "08680da58b87d39a60d022d76781f1c03ec98c2eec17478fcee45582b9ef204e",
+    "s3": "3422a7a0a23c318e54716e2fbbaf99599e0142f7bbc74d9eb45f924541cd8ccf",
+    "s30": "3e7594221575d9c2213b24acba43bf000fd010c977c48bb510d555c56cbf8f47",
+    "s4": "6beff7af8378d0a3be80a490fb73cc8c5e6a8ee94449c98de40a252d2f57fcd5",
+    "s5": "0cd70cc30708f232bf564bff0e7825d783d5f5ab455747bfac40ebe742ea0ed3",
+    "s6": "5181e894e8b3823f366d0b459a48ecc8e236e645ca5b1f02071dfc0fdae47681",
+    "s7": "6173f16d89316af11f74c75b5bec44f90742582abf47efd7e72af7af3bb31b50"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T04:31:10.883979+00:00",
+  "total": null
+}

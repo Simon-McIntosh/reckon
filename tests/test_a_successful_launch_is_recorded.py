@@ -76,7 +76,15 @@ def _launch(repository, tmp_path, *, path, during_spawn=None):
 
 def _assert_identity(request, captured):
     record = runs.read_pointer(request["run_id"])
-    assert record.get("argv") == captured["argv"], record
+    # Dispatch-time detail is stored in the run's own file and published through
+    # one accessor, so argv is read through the accessor at both ends: the value
+    # recorded at the spawn and the value the pointer still answers for after a
+    # competing refusal write. The in-memory pointer a launched run leaves behind
+    # never carries it inline, and its absence is asserted so a record that
+    # started carrying it again is noticed rather than silently accepted.
+    assert runs.dispatch_field(captured["record"], "argv") == captured["argv"], record
+    assert runs.dispatch_field(record, "argv") == captured["argv"], record
+    assert "argv" not in record, record
     for key in ("worktree", "base_sha", "backend", "node", "prompt_path"):
         assert record.get(key) == captured["record"][key], (key, record)
     assert record.get("launch_recorded_at"), record
@@ -169,7 +177,7 @@ def test_publication_preserves_a_supervisors_newer_state(admit_repo, tmp_path):
     assert record["phase"] == "complete"
     assert record["session_id"] == "observed-session"
     assert record["launched_at"] == "2026-01-01T00:00:00Z"
-    assert record["argv"] == captured["argv"]
+    assert runs.dispatch_field(record, "argv") == captured["argv"]
 
 
 def test_a_peer_still_holds_a_launch_path(admit_repo):
@@ -243,7 +251,7 @@ def test_a_refused_dispatch_cannot_restore_over_another_launch(
             config_for=resolve,
         )
     record = runs.read_pointer(request["run_id"])
-    assert record["argv"] == captured["argv"]
+    assert runs.dispatch_field(record, "argv") == captured["argv"]
     assert record["worktree"] == launched["worktree"]
     assert record["base_sha"] == launched["base_sha"]
     assert record["launch_recorded_at"] == launched["launch_recorded_at"]

@@ -135,6 +135,7 @@ STATE_HUE = {
         "stopped": 124,
         "abandoned": 124,
         "lane-event": 124,
+        "cut-off": 124,
         "stalled": 130,
         "complete": 28,
         "promoted": 22,
@@ -162,6 +163,7 @@ STATE_HUE = {
         "stopped": 203,
         "abandoned": 203,
         "lane-event": 203,
+        "cut-off": 203,
         "stalled": 179,
         "complete": 78,
         "promoted": 71,
@@ -261,6 +263,12 @@ NEEDS_ACTION = frozenset(
         "unknown",
         "unreadable",
         "exited-unfinished",
+        # A worker whose own exit record ended it before its manifest reached
+        # an outcome resumes from the work already on disk, and nothing lifts
+        # it on its own: the classification reaches the pane as ``blocked``, so
+        # the word belongs in the set the blocked bucket and the marker are
+        # both derived from.
+        "cut-off",
         "wait-aged",
     }
 )
@@ -480,6 +488,10 @@ PANE_STATES = {
             "unreadable",
             "unwritten",
             "exited-unfinished",
+            # A run the worker's own exit ended before a verdict delivers
+            # nothing a coordinator can promote, so its next move is the
+            # coordinator's: resume the session from the work on disk.
+            "cut-off",
             "ended-without-manifest",
             "launch-failed",
             "refused-at-admission",

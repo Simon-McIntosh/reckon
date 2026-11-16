@@ -1,0 +1,92 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T23:05:41.715Z",
+  "dispatched_at": "2026-11-15T23:03:46Z",
+  "findings": [
+    {
+      "anchor": "plan.html:188",
+      "id": "done_when-1",
+      "reason": "the worker cannot satisfy the quantifier as written and either records a suite-green criterion as failed or has to reinterpret the section, so the clause has to be split out as a preservation measure, as already done for s19 and s20.",
+      "text": "the done-when quantifies \"New tests, each failing at the base revision\" over a no-added-failure suite clause, which by construction passes at the base revision, so the section declares a fail-first gate one of whose criteria can never be red",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:188",
+      "id": "reasoning-1",
+      "reason": "the node would be fenced out of the three modules that produce the surfaces its done-when measures, so it would either block on scope or land tests against a mechanism it may not change; adding those modules to the declaration is a change to the plan text.",
+      "text": "the write paths name `reckon/crew/admission/verdicts.py`, `reckon/crew/admission/launching.py` and `reckon/crew/obligations.py`, but the reason a hold shows is composed in `reckon/crew/admission/holds.py:1158` (\"last attempt failed: \u2026; not retried before \u2026\", with `_failure_text` at :298 returning only the failure kind \u2014 no remedy command), the lane-allowance reason is recorded ahead of it in `reckon/crew/admission/selection.py:384`, and an allowance hold is in `_DRAIN_STUCK_VERDICTS` at `reckon/crew/runs.py:2858`, so the forbidden \"stuck\" row is written by `stuck_verdict` and serialised at `reckon/crew/obligation_snapshot.py:1909`, so the fenced worker cannot change either the hold text, the verdict precedence, or the stuck row",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "2759811782a74de464fdaa2b49f5aeb27d3a164c",
+  "plan_fingerprint": "a4e7edcc645ff36a0e813af304d88065d17a796a1380a9dccdba0cb9014cab5c",
+  "plan_slug": "the-monitor-tells-the-truth-under-load",
+  "plan_version": 37,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "5ad7ecbd3ae25319b5433ea9e101c37bcc971175",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "the preservation clause was replaced at v36 by the lead's ruling: a request held only on a full lane is drawn as queued with no obligation, which fails at base where it reads stuck held-for-allowance",
+      "reason": "",
+      "when": "2026-11-16T00:16:21.996184+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "5ad7ecbd3ae25319b5433ea9e101c37bcc971175",
+      "commit_basis": "edit",
+      "note": "the preservation clause was replaced at v36 by the lead's ruling: a request held only on a full lane is drawn as queued with no obligation, which fails at base where it reads stuck held-for-allowance",
+      "reason": "",
+      "when": "2026-11-16T00:16:21.996184+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-monitor-tells-the-truth-under-load.v37.json",
+  "review_run_id": "r-20261115T225852397120-plan-review-of-the-monitor-tells-the-truth-under-load",
+  "reviewed_blob_sha": "99dbbe6dd04830962fa664c32416f91bf4efa6fd",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `r-20261115T123258219001-vofd-crossing-curves` resolves to a run directory under `/home/ITER/mcintos/.config/reckon/crew/runs/`, and s21 cites no href.",
+    "done_when": "a finding \u2014 s21's done-when at plan.html:188 opens with \"New tests, each failing at the base revision\" and then includes a preservation clause (\"The tests importing `reckon.crew.obligations` or `reckon.crew.admission` add no failure against the base on all_debug\") that the same section quantifies as fail-first.",
+    "evidence_paths": "pass \u2014 s21 names no gate log or evidence path that could be non-durable; the only cited evidence is a run id, which resolves.",
+    "naming": "pass \u2014 s21 carries no plan labels or ticket numbers into a symbol; the ids it quotes are evidence, not names.",
+    "reasoning": "a finding \u2014 the declared write paths at plan.html:188 cannot reach four of the section's five criteria: the hold reason for a failed attempt is composed in `reckon/crew/admission/holds.py:1158-1161`, the ordering that lets a lane-allowance reason outrank it is in `reckon/crew/admission/selection.py:384-398` before the back-off branch at `:489-506`, and the \"stuck\" row the ruling forbids is written in `reckon/crew/runs.py:2858` and serialised in `reckon/crew/obligation_snapshot.py:1909`, none of which is among `verdicts.py`, `launching.py`, `obligations.py`.",
+    "single_goal": "pass \u2014 every clause of s21 at plan.html:187-188 is one deliverable, that a hold states what holds the request and how long that reason has stood.",
+    "wiring": "pass \u2014 the new `plan-section-declarations` entry `s21:implementable` matches the `<section data-id=\"s21\" data-status=\"implementable\">` at plan.html:186, and s21 depends on no node that does not exist; the plan-level `plan-informs` and followup-chain gaps already reported as wiring-1/wiring-2 are unchanged in this revision, so they are not re-raised."
+  },
+  "section_digests": {
+    "_document": "950b8d28cd05787b254d306f8b87b014a5c05ba23c0cf817b5782b8f722029fe",
+    "s1": "7df70e005850ec7773b3db8cdf1384c5422e6cbfac994a1cfc3bdeca2fd47ef2",
+    "s10": "b83b287b25ce35ab03c105da8c02eec999809dbdea6073436eae2dc72bb0055d",
+    "s11": "db2972ed7155bc484ac98ce58f8c119ab201e99f5a53c1af54606eb6564a66e4",
+    "s12": "93d79e3e452ecd1f5c10186fc7eb1781f5e7455324237438f574fbc699447b31",
+    "s13": "79271d44153e341633146df7233120d46939c41b1ca66de6bac074c2472ea991",
+    "s14": "c0f58bcc6da33e5ff402ec71bef199b31de1619824a04f6db8d415d9669a38d7",
+    "s15": "3d6257718e450fda1363e42a9394f2cb631579e92f2cf0dbdaca2f25c62d6537",
+    "s16": "9c67ebb9a89d3b566da303e2866877a636f868c501bf32f08ff80e2c7a7f26da",
+    "s17": "229d1aee2b054a2680acdd7883f3d6cd8216513f31305ff21ed874c51b1af3a7",
+    "s18": "4a5429fac53529c64918e90d1bc4d47480e08689bea9601336332ce330c82e49",
+    "s19": "1f9e10fa3b0ee55a46bc415cf145a732b0361a363b70930a33a7c5ccbe2189ca",
+    "s2": "a065d657377c24ca69329c265d4a0a821a0104c7df8d1140dec9c3b9d1c6edf2",
+    "s20": "2a22cb56cd43d1c837c31506853a47a9de4ea2b23c97d583934c0f47da03fad0",
+    "s21": "07371265ca86b95aab0fcbd42d625a0c7e916b33588deff1593ecba977bf8566",
+    "s3": "f3cf9279ee0efc6c6e7b55dede5b9ff68ee3db1e40edd78b825098ecee64d396",
+    "s4": "739bbbd316f3b5138d938c01abaac59b3f08e1231effa6dc1e416fb46b9b34b1",
+    "s5": "2806db9da94cd21c23ef92806d85a99f15d28df20b272f97173d332fba5a1587",
+    "s6": "a8a7d00ef50ab0ca240bc59bb917ff62442d6f3567da095cb913cd5860246056",
+    "s7": "9f299f30b0fda7b1f5bbc9f6d7cf6b936604181068a2c9a8363b64e58ace0fd6",
+    "s8": "30f0e740e2caee5b735cc3bdc83d5eaa23eac7eeaae780899f811d7a1c32956c",
+    "s9": "56c122a4d4057a2e12e9ebbaae0a53fb955938f47dbe9275cdf2dd5566896f78"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T23:16:59.264304+00:00",
+  "total": null
+}

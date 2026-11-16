@@ -1,0 +1,259 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "digests": {
+        "s72": "21f696e860c549c437fbd701ea88cb7b21ce3e0938b0056083d32d631f1553a0",
+        "s73": "dda936adf887c425a26268f3d97ec2e2fe937b871d4a944cb73a6e2f784bd31b"
+      },
+      "reason": "s72 and s73 revised exactly as the five acted answers state",
+      "units": [
+        "s72",
+        "s73"
+      ],
+      "when": "2026-11-16T04:22:48.956466+00:00"
+    }
+  ],
+  "completed_at": "2026-11-16T03:41:37.965Z",
+  "dispatched_at": "2026-11-16T03:39:44Z",
+  "findings": [
+    {
+      "anchor": "the-monitor-reads-each-fact-once.html:772",
+      "id": "reasoning-1",
+      "reason": "a presence guard freezes every run after its own resume, since only `crew release` clears such a hold, so the section must say a hold defers a pass only while it covers the delivery and add a resume-held arm; the coordinator-hold fixture cannot catch this.",
+      "text": "s72's Deliverable blocks any station pass that finds a delivery hold present, but the repository carries two hold kinds: a coordinator's hold names no head and covers every delivery, while a resume's own hold names the head it was issued against and deliberately stops covering the run once a new head is delivered (resume.py:66 `covers_delivery`, called by both existing doors at queue_landing.py:2040 and recovery_review_acceptance.py:686)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "the-monitor-reads-each-fact-once.html:772",
+      "id": "done_when-1",
+      "reason": "a node can pass the gate having written half the declared record, which is exactly the incident's gap (a hold whose record does not survive).",
+      "text": "the Deliverable requires that a hold and its release both be written to the run directory, but the done-when asserts only that the run directory records the hold; the durable release record is never observed",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "the-monitor-reads-each-fact-once.html:776",
+      "id": "reasoning-2",
+      "reason": "64 of 88 samples cannot lie inside a 42-sample main-thread share, so the author must restate the sub-counts in the declared denominator (or label them all-thread) for the evidence to be recheckable.",
+      "text": "the Why declares every share to be of the profile's 184 main-thread samples, yet its parenthetical counts are all-thread: measured against the cited file, read_rollout_receipt holds 42 main-thread samples (22.8%, matching the quoted share) but 88 across all threads, rollout.py:444 holds 32 main-thread and 65 all-thread samples, and the `_locate_rollout`/`select_wildcard` path holds 7 main-thread samples, not 13",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "the-monitor-reads-each-fact-once.html:776",
+      "id": "done_when-2",
+      "reason": "the node's claim is that the cached answer equals what reading the file gives, so an arm must compare head's summary against a cold full read of the same fixture (base's own value); without it the gate certifies a cache, not correctness.",
+      "text": "s73's gate compares the second pass only with the first, so a summary that drops one quantity (an attempt's token measure or time span, or a receipt field) passes, and the append arm checks decodes rather than values; no independent reference for the cached answer is named",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "the-monitor-reads-each-fact-once.html:776",
+      "id": "reasoning-3",
+      "reason": "the function exists at rollout.py:212 and the profile confirms its wildcard walk, so the sentence describes code the node will read anyway; only its wording would change.",
+      "text": "the Deliverable names the private `_locate_rollout` and prescribes that it resolve once per run home rather than walk the wildcard each tick, which is an internal mechanism the endpoint rule leaves to the node brief",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "2c54fe523cc2231c7d9ede82ff073c021d512a3d",
+  "plan_fingerprint": "fcb4f539f65e9118cee379d3b22248f93b3626007110cf0a234b84c33df62551",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 370,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "2c54fe523cc2231c7d9ede82ff073c021d512a3d",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "s72 now scopes the block to a coordinator's hold, which names no head and covers every delivery; a resume's own head-scoped hold keeps its existing covers_delivery meaning at both doors.",
+      "reason": "",
+      "when": "2026-11-16T04:19:36.872960+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "2c54fe523cc2231c7d9ede82ff073c021d512a3d",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "s72's done-when now also asserts that after crew release the run directory records the release beside the hold.",
+      "reason": "",
+      "when": "2026-11-16T04:20:48.562084+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "2c54fe523cc2231c7d9ede82ff073c021d512a3d",
+      "commit_basis": "edit",
+      "finding": "reasoning-2",
+      "note": "s73's Why now gives main-thread counts throughout: read_rollout_receipt 42 of 184 samples (22.8%), the line loop at rollout.py:444 32, and _locate_rollout/select_wildcard 7.",
+      "reason": "",
+      "when": "2026-11-16T04:20:58.919084+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "2c54fe523cc2231c7d9ede82ff073c021d512a3d",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "s73's done-when now compares each cached answer with an uncached read in a fresh process for every receipt field, token measure and time span, including after the append and after the truncation.",
+      "reason": "",
+      "when": "2026-11-16T04:21:12.310987+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "2c54fe523cc2231c7d9ede82ff073c021d512a3d",
+      "commit_basis": "edit",
+      "finding": "reasoning-3",
+      "note": "s73's Deliverable no longer prescribes how _locate_rollout resolves; it states the endpoint, an unchanged run home is listed 0 times on the second pass, and leaves the mechanism to the node.",
+      "reason": "",
+      "when": "2026-11-16T04:21:19.983554+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "2c54fe523cc2231c7d9ede82ff073c021d512a3d",
+      "commit_basis": "edit",
+      "note": "s72's done-when now also asserts that after crew release the run directory records the release beside the hold.",
+      "reason": "",
+      "when": "2026-11-16T04:20:48.562084+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "2c54fe523cc2231c7d9ede82ff073c021d512a3d",
+      "commit_basis": "edit",
+      "note": "s73's done-when now compares each cached answer with an uncached read in a fresh process for every receipt field, token measure and time span, including after the append and after the truncation.",
+      "reason": "",
+      "when": "2026-11-16T04:21:12.310987+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "2c54fe523cc2231c7d9ede82ff073c021d512a3d",
+      "commit_basis": "edit",
+      "note": "s72 now scopes the block to a coordinator's hold, which names no head and covers every delivery; a resume's own head-scoped hold keeps its existing covers_delivery meaning at both doors.",
+      "reason": "",
+      "when": "2026-11-16T04:19:36.872960+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "2c54fe523cc2231c7d9ede82ff073c021d512a3d",
+      "commit_basis": "edit",
+      "note": "s73's Why now gives main-thread counts throughout: read_rollout_receipt 42 of 184 samples (22.8%), the line loop at rollout.py:444 32, and _locate_rollout/select_wildcard 7.",
+      "reason": "",
+      "when": "2026-11-16T04:20:58.919084+00:00"
+    },
+    "reasoning-3": {
+      "action": "acted",
+      "by": "",
+      "commit": "2c54fe523cc2231c7d9ede82ff073c021d512a3d",
+      "commit_basis": "edit",
+      "note": "s73's Deliverable no longer prescribes how _locate_rollout resolves; it states the endpoint, an unchanged run home is listed 0 times on the second pass, and leaves the mechanism to the node.",
+      "reason": "",
+      "when": "2026-11-16T04:21:19.983554+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-monitor-reads-each-fact-once.v370.json",
+  "review_run_id": "r-20261116T033543219419-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "ac4a31206869ed40692972a60a2a0901a971e967",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 station-prof-post-s68.raw exists (285,248 bytes, 184 main-thread samples), rollout.py:444 is `for line in stream`, attempt-4.reservation carries the quoted kind `resume`, pid 1522386, supervisor 2555604 and 2026-11-15T21:52:23Z, commit 5cdbc394e9 is a one-line fragment edit, and `crew hold`/`crew release` exist in reckon/crew/resume.py.",
+    "done_when": "a finding \u2014 s72 leaves the durable release record unobserved (line 772), and s73's gate compares the cached answer only with its own first pass (line 776).",
+    "evidence_paths": "pass \u2014 the profile and both gates sit on durable GPFS paths (~/.cache/reckon-landing and the run directory), s72 states that the incident's hold times survive only in the coordinator's session, and both gate commands are relative and literal.",
+    "naming": "pass \u2014 paths and test filenames state the mechanism (\"a held run is not resumed\", \"a receipt and a spend are read once\") with no plan, node or ticket labels.",
+    "reasoning": "a finding \u2014 s72's presence-based hold contradicts the revision-scoped hold a resume writes (line 772); s73's sub-counts use an all-thread denominator the section disclaims (line 776); s73 still names `_locate_rollout`'s implementation (line 776).",
+    "single_goal": "pass \u2014 s72 carries one guard (no station pass acts on a held run) and s73 one caching endpoint applied to the three per-file measures its two modules own, both closed by one verdict each.",
+    "wiring": "pass \u2014 s72 and s73 declare no depends-on row and none is missing: s73's cited context (s64, s65, s66, s68) is done and its write paths are disjoint from s69's, and s72's only upstream, the station repair pass, is live."
+  },
+  "section_digests": {
+    "_document": "1c902d481ebc072d8edd55753fc3a6958e8b24a2611449a9a977f93e2d2fec97",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s13": "3b11fe0cd53015121e6d566c554c6c77b13236b3700a90279e77a6bc755ea0a3",
+    "s14": "5f6675ba84aab4ad594b121e888aace2d69e497390559d38f0c220e5894ac588",
+    "s15": "efa38c205c7332a7867b6d87358cd9f89fe1568beaa9f9e5eee96862dd70b6f0",
+    "s16": "65cd8e559a7a5ebf018bc9fe50a07bb0954f67405ab6f17c7377c38ccd363aa7",
+    "s17": "1dee50822a308fa4eeea0a45fd3cdaf6de52d9a1d74a91c2b9c7605d179da2ad",
+    "s18": "ba63c0b1b83ec93cc99d92a3c1f67dcf92d700e20f4f9acd88362705d6b4d123",
+    "s19": "16239e5fae49e56b170433557a77981816880756e3ae545a741ca9ec70feae63",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s20": "d14d2b70bb40dd552f306726f24f5e3c79bc5efcd7f9b74bcb7d3de8f16f5e8e",
+    "s21": "9ff7b29b83f9c8ab95a0a469c997950ef226fc3d99d8dcffdbf0683df7a1f26c",
+    "s22": "1bdc9ac90396c56bcbcc8c3c4f44aa6b30cbd59c4da001825159a7b8245e054c",
+    "s23": "a810ffe181d2787722d8f9538a4348592269fe163ba23cc59939376cb13edcbb",
+    "s24": "e861dcc5044a0a1fb36c4a374ca71717aeb97054e5a3ff1aef57c9779c7147f5",
+    "s25": "a0939bd3d8ab0fa4b5c0c88de3cb9cdab3531338fe35d0c12b4338fc3c4d1563",
+    "s26": "a8fb9d8585830b87ed826347ff724ddecc8fb9a43ad9ac1540d6499e3689d03e",
+    "s27": "3c9e47dc777eeadabbe3898d4b8f69d91defbaff009d050f2906732cb87e50c8",
+    "s28": "982b473728d61b81a3d37050384bee85f3f1fb5366aad0668c5370a51367e82c",
+    "s29": "159b45ee319dc13bffea961474eb544e5a26d161bf686ebe5b7fabf95f5266c7",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s30": "2d8c9efccd4f8eeede43f5fabe6f6b9cacc2207ce97ca700584bfedd0e512dd2",
+    "s31": "27817d420beefc15258f2f52ea8c616f3e04b4035773fe437f6cfe7f31506100",
+    "s32": "836f1473b1691ab0150f1e32791c295f7511abd66cb29f93b48dc0d347998d51",
+    "s33": "39a7d7a43bc6e97cd0c11235cfbe6c06a5b6968dab69e8147978bd164bbfef4e",
+    "s34": "16da5de7a5c4ee31ac2d9a43b888bed8fb1ec1138a2194a35c9b8eacbf03a2b1",
+    "s35": "4a0acdec0fa4d9eaa1066ee46c8a4aec8079db0452d014a442005e104c03c2cc",
+    "s36": "2a4a0d6ab4a994e2d7542482f7b44d106ab0920143bf39d14b292c7c2ec02e8a",
+    "s37": "4d92cdfe9ba1661dc549241d07f5134250aedec9d46757600f427fc52c4741dd",
+    "s38": "2cd435157dcdf14e39d4dbcd90e98b171feba9df13c5e142e0edf0d8fd4a3bf5",
+    "s39": "8808ed4531ebe4589c1b5bb7c7b0e5644b141d532a6dcc3fef92ae640e08d57c",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s40": "444368fd31b2649852412e7533de8628a94071d7942154f1a75921b923006779",
+    "s41": "b1092da2f507a79ce2706ec4aa2660d53c3b5250d4790b92d2dcd190f4387e17",
+    "s42": "ef98f2534552feb3a2ebf8768c6fcb43355940cef2804ddc7c77c6917785de19",
+    "s43": "0ca81d067129f3af34ec2d359c605e716be1488a1545039d936cdb1c7bbee2ec",
+    "s44": "2f0b0e686cace2db876cf00fcfaf9bb695e130bf88094a901ff7e7808b059cfc",
+    "s45": "d69c6ab4c51eb99b6262547a934d3cadb8896d272251707771027d8dacb77bcb",
+    "s46": "15bf3fae7afcff6c9b316fb4d28bd070c2190192e9b9b5c3711b26f9dbc4895f",
+    "s47": "de3c85d7297232abbe6767af5f61b6546c68c206440469f03779df09dfe9c21f",
+    "s48": "c0407ba2af0106d21163a3e1ba1bcd7ea34373211a81f3c100d623def503ec70",
+    "s49": "244b3877f19c81d81c7fda520bf6bbf2ff2d74a6a23a463bc92b50fe0b2043e0",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s50": "1c953bda33cda6d81de9479ed929ef63b0796d3c593d23de08c5f4568449f544",
+    "s51": "dbea6dee91f6029d698f151362338fc42e7401db7c931fc9d87fada7c147fcbb",
+    "s52": "b35a6850269241b61ee3a2475ddb65e655481cf4051d580fb5402d19c1987d7a",
+    "s53": "d111daeb509976a72469123f1120b1d17d21c31ad0191760a8a3985623cb5d2c",
+    "s54": "00b9abf2130abb2999241ac6fd7315689fb0e33781634dd2dcc8a999e79a14cf",
+    "s55": "7c24db1096ad617ece378da333eb9b5e0ad8683c0dcf50f8834799b84ae1678a",
+    "s56": "60d073a3c86cef44d7cfdd7668cdab4ef60b8a9294237d2a8c26a7eb67f133cb",
+    "s57": "15a5aef3aac1c6e45bcbd001839d877449601748d48d6db3e47cfeb95e11d5f8",
+    "s58": "28953bb14404136c2573a3fdda96ed6a09cbb9317247c6999a20a2f6c474fda3",
+    "s59": "9994e27964e5588275320f6f6a965720e2c81d5ddf8a4e4f7fc08b5b4302961b",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s60": "4ac84162bc4236319ae405ae0c32937368b1339bcdee0178933b853401835a8e",
+    "s61": "36791e828ea3dd92554e24d83bef4d15f4eedbf54747aeb392f00d692b248a5f",
+    "s62": "de4be6e1dcda58963d4b6bcc718b61639a4e3824bc5bb398f37aa7393b796acf",
+    "s63": "a54d6f625d7423d77159f8077ad258832d2749da70ff77a69d13a69518ace496",
+    "s64": "9d881c2700f0ec618274645bc8918c8686d5424eb918c1c9e330a4f0a9fa5faf",
+    "s65": "a5176fbdb84822caa27c8d903a1d05f028a6d3e1cb41445ac305110711f32453",
+    "s66": "0dda301eaea993588a07325a8d82b67dcb0ff1510885e4cdd42ec92c2c819243",
+    "s67": "7bf45f29932f9144b112845d6233f8c2cebd26c86d0aeb6ef65ae730b57b1993",
+    "s68": "ffb1bfdff6d1b0d3d5ac34a659e0dbe002ee91de837165b1fdb638fe4b77c142",
+    "s69": "72a67772109aa8ea2f23838ac2d0c8835ead7cafa6de85b5997d234ea7db90d4",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s70": "357bda7e4581360e20290cd7778b5b377b3289c96449699c77e63791cd34bad4",
+    "s71": "8b0a3dd5255e299076560796af6e75dbfd587e4eedeaef2623ad18d9fb1f04bb",
+    "s72": "c3728ddb24a0759e94c8cc8cb68a93ca6812e02c8a84484be1da4b9006d75a67",
+    "s73": "db5918890eb4d9823c5b3693b3e72681374d721e0ab99ceb429d5fdd0b8a3202",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T04:13:18.642423+00:00",
+  "total": null
+}

@@ -23,7 +23,7 @@
   <title>A Landing Is Recorded Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="21">
+<meta name="plan-version" content="23">
 <meta name="plan-modified" content="2026-11-16">
 </head>
 <body>
@@ -131,7 +131,13 @@
     <div class="r-comment-body"><p>Landed in three nodes, each independently reviewed. <code>alro-s3</code> made the landed record one sourced overview. <code>alro-s3b</code> (head <code>87f63cd3c0</code>) made it quote the landed run's own landing line, the whole done-when and the review totals. <code>alro-s3e</code> (head <code>4dc3b65739</code>) made the plan-selected run read return runs dispatched with a brief: a read-only pass over the live store returned 15 and 14 runs for two plans where the base returned none, with two control plans unchanged. Two non-blocking review findings on the last node (three other plan-keyed readers, and a test for re-reading stored rows) are folded into node <code>alro-s3f</code>.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261115T225022785662-review-of-alro-s3f-9b24f4a00edc" data-who="reckon-build" data-when="2026-11-15T23:02:52Z">
-    <div class="r-comment-body"><p>Independent review of r-20261115T214842076443-alro-s3f at 9b24f4a00edc over base 397a3c2b443dbd444e585149c28b86f2851313e5 — parsed record, goal_fidelity 20, evidence 14, scope_discipline 20, durability 19, fit 18, reuse 20 (total 111), 0 added failures, and 2 non-blocking findings (the gate omits tests/test_a_one_plan_ledger_read.py, which the done_when names; the pre-repair reproductions and the reader cases&#x27; red-at-base state are prose only, with no log a reader can open); no blocking finding.</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261115T214842076443-alro-s3f at 9b24f4a00edc over base 397a3c2b443dbd444e585149c28b86f2851313e5 — parsed record, goal_fidelity 20, evidence 14, scope_discipline 20, durability 19, fit 18, reuse 20 (total 111), 0 added failures, and 2 non-blocking findings (the gate omits tests/test_a_one_plan_ledger_read.py, which the done_when names; the pre-repair reproductions and the reader cases' red-at-base state are prose only, with no log a reader can open); no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261115T214842076443-alro-s3f" data-who="reckon-build" data-when="2026-11-15T21:52:29.671Z">
+    <div class="r-comment-body"><p>ledger's scored read, effort rollup and plans index now take each run's plan from the one resolver `_row_plan`, so a brief-carried run is counted under the two plans it names and a run naming no plan stays in the empty bucket (8 passed at head); a row indexed under the earlier projection version is re-read for its plan by the current read, and with the index version returned to 6 that case fails (1 failed, 7 passed)</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261116T002311920260-review-of-alro-s3g-1abdeaa632e2" data-who="reckon-build" data-when="2026-11-16T00:43:04.585Z">
+    <div class="r-comment-body"><p>review scored 102, 4 finding(s)</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261115T103814404295-review-of-alro-s4-37cb0d686e10" data-who="reckon-build" data-when="2026-11-15T11:15:46.059Z">
     <div class="r-comment-body"><p>§4 review of r-20261115T085732662020-alro-s4 at 37cb0d686e — parsed record scoring goal_fidelity 19, evidence 15, scope_discipline 16, durability 19, fit 17, reuse 18 over base dffc9bccd5151443dbbb2d09f29ba30315298a30, 0 added failures, and 4 non-blocking findings (the recorded live-store blast radius understates sections 27 vs 49, the collision-free evidence fragment sits outside the declared write paths, `ledger.runs` is reloaded once per unfurnished section, and a state without project/slug silently skips the run-record branch).</p></div>

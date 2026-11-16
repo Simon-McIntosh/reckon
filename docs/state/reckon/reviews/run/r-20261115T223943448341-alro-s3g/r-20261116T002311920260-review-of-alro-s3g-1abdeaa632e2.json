@@ -1,0 +1,140 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own arms named in its manifest: base2-1318819.log (58 passed, no FAILED id) and head3-1318826.log (71 passed, no FAILED id), both EXIT=0, so the head arm reports no failure the base arm does not and the added set is empty.",
+  "assertion_analysis": [
+    {
+      "failure_condition": "Restoring str(row.get(\"plan\") or \"\") in section_holds._row_parts leaves the held map empty and the recorded negative control reddens exactly so (AssertionError: ... did not read as landed to the section-hold read: []).",
+      "lines": "tests/test_a_brief_carried_run_counts_toward_its_section.py:126"
+    },
+    {
+      "failure_condition": "Reverting snapshot._candidates_scan to row.get(\"plan\") leaves the node-id match with no plan match, so counted stays empty and both assertions redden.",
+      "lines": "tests/test_a_brief_carried_run_counts_toward_its_section.py:201,207"
+    },
+    {
+      "failure_condition": "Reverting outcomes.summarize to r.get(\"plan\") stops the hold matching the brief-carried row, so later_run_id reads None where LANDED is asserted.",
+      "lines": "tests/test_a_brief_carried_run_counts_toward_its_section.py:223"
+    },
+    {
+      "failure_condition": "Reverting replay to str(record.get(\"plan\") or \"\") makes the rebuilt request name no plan, so by_node[\"brief-landed\"] reads empty instead of NAMED.",
+      "lines": "tests/test_a_brief_carried_run_counts_toward_its_section.py:259"
+    },
+    {
+      "failure_condition": "Reverting schedule.derive_schedule to run.get(\"plan\") leaves runs_by_slug empty, the plan's bar is never bucketed, and the held-state assertion reddens.",
+      "lines": "tests/test_a_brief_carried_run_counts_toward_its_section.py:284"
+    },
+    {
+      "failure_condition": "Reverting capabilities to the flat field drops the observation (empty plan has no estimate) and leaves later_paths empty so reworked counts 0 instead of 1.",
+      "lines": "tests/test_a_brief_carried_run_counts_toward_its_section.py:322-323,351"
+    },
+    {
+      "failure_condition": "A resolver that answers a wildcard plan attributes the unplanned run to a named plan and the not-claimed assertion reddens.",
+      "lines": "tests/test_a_brief_carried_run_counts_toward_its_section.py:145"
+    }
+  ],
+  "base_log_revision": "e0efa7871f1dfb6147f40d256a7be5c7ca3661f3",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/roadmap.py:3798 section_holds.held_section_blockers (via section_holds._row_parts)",
+    "reckon/roadmap.py:2971 derive_schedule",
+    "reckon/capabilities.py:1268 derive_routing",
+    "reckon/capabilities.py:1283 derive_capabilities",
+    "reckon/serve.py:3250 capabilities.derive_routing",
+    "reckon/crew/picker/outcomes.py:683 summarize"
+  ],
+  "completed_at": "2026-11-16T00:43:04.585Z",
+  "dispatched_at": "2026-11-16T00:37:34Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "alro-s3g",
+      "recorded_at": "2026-11-16T03:14:40.268001+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "alro-s3g",
+      "recorded_at": "2026-11-16T03:14:47.277568+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "alro-s3g",
+      "recorded_at": "2026-11-16T03:15:05.925375+00:00"
+    },
+    "3": {
+      "kind": "folded",
+      "node": "alro-s3g",
+      "recorded_at": "2026-11-16T03:15:21.165356+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_admission.py",
+      "line": "560",
+      "severity": "non-blocking",
+      "text": "_lane_advisory_costs reads a ledger row's plan from the flat field (run.get(\"plan\"), again at :571) over rows returned by ledger.load, so a run dispatched with a brief is invisible to the lane advisory; the brief required every further such reader to be repaired or named under outside_scope, and this one is in neither, so the goal's \"every reader outside the ledger\" is not reached."
+    },
+    {
+      "file": "reckon/crew/picker/__init__.py",
+      "line": "527",
+      "severity": "non-blocking",
+      "text": "the diff moves pick's inline attempt tally onto row_plan but no added case exercises pick: tests/test_a_brief_carried_run_counts_toward_its_section.py:201 covers snapshot._candidates_scan only, so restoring row.get(\"plan\") at this line would leave the gate green."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T223943448341-alro-s3g/manifest.md",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "the after_suite command is truncated mid-path (\"...test_a_brief_carried_run_keeps\"), so the head gate cannot be re-run from the record, and the arms are not the same command over the same files: base2-1318819.log runs 58 tests while head3-1318826.log runs 71, the difference being the new file plus the four cases of tests/test_a_brief_carried_run_keeps_its_plan.py the base arm omits."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T223943448341-alro-s3g/repro2-1318817.log",
+      "line": "279",
+      "severity": "non-blocking",
+      "text": "the base-revision reproduction ends with a bare \"EXIT\" line followed by \"EXIT=0\" although its body records 8 failed, 1 passed, and neither this log nor head3-1318826.log carries a header naming the revision and command, so a reader taking the capture line as the status reads a red demonstration as green."
+    }
+  ],
+  "head_log_revision": "1abdeaa632e261318e69588add9ae1dd555ec340",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "examined six production readers that reach the changed readers: reckon/roadmap.py:3798 held_section_blockers, reckon/roadmap.py:2971 derive_schedule, reckon/capabilities.py:1268 derive_routing, reckon/capabilities.py:1283 derive_capabilities, reckon/serve.py:3250 derive_routing and reckon/crew/picker/outcomes.py:683 summarize.",
+    "diff": "read commit by commit against e0efa78; cf7d8e1390 renames _row_plan to row_plan at reckon/ledger.py:1690, stores its answer in picker_record at reckon/ledger.py:1625, moves the run index to version 8 and rewires the eight readers, and 1abdeaa632 changes three fixture lines in the new test file.",
+    "done_when": "the done_when asks for a temporary-store case per repaired reader and a reverted-repair negative control; tests/test_a_brief_carried_run_counts_toward_its_section.py carries nine cases, head3-1318826.log records 71 passed EXIT=0 over base2-1318819.log 58 passed EXIT=0 and negative-control.log records 1 failed EXIT=1, but no case exercises the tally at reckon/crew/picker/__init__.py:527 and the base arm omits a head-arm file.",
+    "goal": "the node's goal is that a run dispatched with a brief counts toward the section it names in every reader outside the ledger; reckon/ledger.py:1690 gives the one resolver the public name row_plan and the eight readers the diff edits call it, with reckon/crew/section_holds.py:81 taking the section's plan from it, while reckon/crew/dispatch_admission.py:560 remains a reader that does not.",
+    "manifest": "read; status complete, commits cf7d8e1390 and 1abdeaa632, tests the four-file pytest gate, test_logs naming head3-1318826.log, base2-1318819.log, repro2-1318817.log and negative_control_log, baseline_suite (e0efa78, 58 passed, 0 failures) and after_suite (1abdeaa, 71 passed, 0 failures).",
+    "write_paths": "the manifest declares eleven paths; git diff e0efa78..1abdeaa touches eight modules, the new test file and the fragment, every one inside that list, and the declared figure directory is unused."
+  },
+  "justifications": {
+    "durability": "each reader case asserts a literal plan name against a row whose flat plan field is empty, so restoring row.get(\"plan\") in any reader reddens its case, and negative-control.log shows the section-hold case at 1 failed EXIT=1; the edited tally at reckon/crew/picker/__init__.py:527 has no case.",
+    "evidence": "tests/test_a_brief_carried_run_counts_toward_its_section.py carries nine cases and re-runs at 9 passed EXIT=0, with base2-1318819.log (58 passed) and head3-1318826.log (71 passed) recorded, but the base arm omits tests/test_a_brief_carried_run_keeps_its_plan.py that the head arm runs and the manifest's after_suite command at manifest.md:17 is truncated mid-path.",
+    "fit": "reckon/crew/section_holds.py:73 takes ledger as a function-local import, the idiom reckon/roadmap.py:1900 already uses, and the added names row_plan and the docstrings carry no plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/ledger.py:1690 makes the resolver public as row_plan and the editors that should call it do (reckon/crew/section_holds.py:81, reckon/crew/picker/outcomes.py:542, reckon/crew/snapshot.py:344, reckon/crew/picker/replay.py:70, reckon/schedule.py:191, reckon/capabilities.py:825/855/1134), but reckon/crew/dispatch_admission.py:560 still reads a ledger row's plan from the flat field.",
+    "reuse": "no definition is added: reckon/ledger.py:1690 renames the existing _row_plan to row_plan and reckon/ledger.py:1625 has the picker projection store that one answer, while a search over reckon/ for another plan-of-a-run resolver found reckon/crew/dispatch_sessions.py:458 _record_plan, which the change neither extends nor removes.",
+    "scope_discipline": "git diff e0efa7871f1dfb6147f40d256a7be5c7ca3661f3..1abdeaa632e261318e69588add9ae1dd555ec340 touches ten files and every path is inside the declared write paths named at manifest.md:4."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a run dispatched with a brief counts toward the section it names in every reader outside the ledger; reckon/ledger.py:1690 gives the one resolver the public name row_plan and the eight readers the diff edits call it, with reckon/crew/section_holds.py:81 taking the section's plan from it, while reckon/crew/dispatch_admission.py:560 remains a reader that does not.\nVERDICT done_when: the done_when asks for a temporary-store case per repaired reader and a reverted-repair negative control; tests/test_a_brief_carried_run_counts_toward_its_section.py carries nine cases, head3-1318826.log records 71 passed EXIT=0 over base2-1318819.log 58 passed EXIT=0 and negative-control.log records 1 failed EXIT=1, but no case exercises the tally at reckon/crew/picker/__init__.py:527 and the base arm omits a head-arm file.\nVERDICT write_paths: the manifest declares eleven paths at manifest.md:4; git diff e0efa78..1abdeaa touches eight modules, the new test file and the fragment, every one inside that list, and the declared figure directory is unused.\nVERDICT manifest: read; status complete, commits cf7d8e1390 and 1abdeaa632, tests the four-file pytest gate, test_logs naming head3-1318826.log, base2-1318819.log, repro2-1318817.log and negative_control_log, baseline_suite (e0efa78, 58 passed, 0 failures) and after_suite (1abdeaa, 71 passed, 0 failures).\nVERDICT diff: read commit by commit against e0efa78; cf7d8e1390 renames _row_plan to row_plan at reckon/ledger.py:1690, stores its answer in picker_record at reckon/ledger.py:1625, moves the run index to version 8 and rewires the eight readers, and 1abdeaa632 changes three fixture lines in tests/test_a_brief_carried_run_counts_toward_its_section.py.\nCALL_SITES: reckon/roadmap.py:3798 section_holds.held_section_blockers, reckon/roadmap.py:2971 derive_schedule, reckon/capabilities.py:1268 derive_routing, reckon/capabilities.py:1283 derive_capabilities, reckon/serve.py:3250 capabilities.derive_routing, reckon/crew/picker/outcomes.py:683 summarize\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_admission.py:560 still reads a ledger row's plan from the flat field, so every reader outside the ledger is not reached.\nSCORE evidence: 12\nJUSTIFICATION evidence: the base arm base2-1318819.log omits tests/test_a_brief_carried_run_keeps_its_plan.py that head3-1318826.log runs, and after_suite at manifest.md:17 is truncated.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff e0efa78..1abdeaa is inside the declared write paths at manifest.md:4.\nSCORE durability: 15\nJUSTIFICATION durability: restoring row.get(\"plan\") reddens each reader case, but no case covers the edited tally at reckon/crew/picker/__init__.py:527.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/section_holds.py:73 takes ledger as a function-local import, the idiom reckon/roadmap.py:1900 uses.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/ledger.py:1690 renames the existing resolver rather than adding a second, and the search found reckon/crew/dispatch_sessions.py:458 _record_plan as the only other owner-shaped helper.\nFINDING reckon/crew/dispatch_admission.py:560 non-blocking: _lane_advisory_costs reads a ledger row's plan from the flat field over rows from ledger.load, so a brief-carried run is invisible to the lane advisory; the brief required every such reader to be repaired or named under outside_scope and this one is in neither.\nFINDING reckon/crew/picker/__init__.py:527 non-blocking: the diff moves pick's inline attempt tally onto row_plan but no added case exercises pick, so restoring row.get(\"plan\") here leaves the gate green.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T223943448341-alro-s3g/manifest.md:17 non-blocking: the after_suite command is truncated mid-path and the base arm runs 58 tests against the head arm's 71, so the arms are not the same command over the same files and the head gate cannot be re-run from the record.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T223943448341-alro-s3g/repro2-1318817.log:279 non-blocking: the reproduction ends with \"EXIT\" then \"EXIT=0\" though its body records 8 failed, 1 passed, and neither gate log names its revision, so a reader taking the capture line reads a red demonstration as green.\n",
+  "review_run_id": "r-20261116T002311920260-review-of-alro-s3g-1abdeaa632e2",
+  "reviewed_base_sha": "e0efa7871f1dfb6147f40d256a7be5c7ca3661f3",
+  "reviewed_head_sha": "1abdeaa632e261318e69588add9ae1dd555ec340",
+  "reviewed_run_id": "r-20261115T223943448341-alro-s3g",
+  "reviewer": {
+    "backend": "worker",
+    "effort": "high",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T002311920260-review-of-alro-s3g-1abdeaa632e2"
+  },
+  "reviewer_run_id": "r-20261116T002311920260-review-of-alro-s3g-1abdeaa632e2",
+  "scores": {
+    "durability": 15,
+    "evidence": 12,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T01:20:22.496288+00:00",
+  "total": 102
+}

@@ -1,0 +1,96 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "0f519315992f429fae018708f84eba960b99fb15",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/serve.py:2751 compose_landed_record in the evidence-page handler",
+    "reckon/mcp.py:1344 compose_landed_record in the MCP evidence read",
+    "reckon/evidence.py:1362 compose_landed_record composing a fragment body into the plan record"
+  ],
+  "completed_at": "2026-11-15T23:16:00.352Z",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "folded",
+      "node": "repair-of-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs-285e73a00185",
+      "recorded_at": "2026-11-16T01:03:51.800810+00:00"
+    },
+    "evidence": {
+      "kind": "folded",
+      "node": "repair-of-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs-285e73a00185",
+      "recorded_at": "2026-11-16T01:03:47.682790+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-15T23:14:37Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs-285e73a00185",
+      "recorded_at": "2026-11-16T01:03:44.333562+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html",
+      "line": "42",
+      "severity": "blocking",
+      "text": "blocking: the paragraph claims the two-file command is \"the template with this node's write scope resolved over each arm's own tree\", but tests/test_a_quiet_tick_at_fleet_scale_reads_no_stream.py exists at head and at 4d188b03e2, logs/suite-head.log records the resolved three-file run at 325e19aa as 61 passed, and the recorded after arm (logs/suite-head-repair.log at 285e73a0018) runs two files for 58 passed, so the gate receipt omits the test that guards the change."
+    },
+    {
+      "file": "docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html",
+      "line": "42",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head revision is deferred to \"its own gate log\" while the log list at s5.html:44 names no suite log, so the page alone cannot resolve which log or revision is meant."
+    },
+    {
+      "file": "docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html",
+      "line": "38",
+      "severity": "non-blocking",
+      "text": "non-blocking: the paragraph still says the measure \"appends 32 KiB to every run's stream\" and ties that to the timed arms whose medians are 1.523 s and 1.546 s, while logs/tick-base-all_debug.json and logs/tick-head-all_debug.json both record arrival_bytes 8192; this is the finding the previous review folded into the repair node that produced these commits, and the repair did not touch it."
+    }
+  ],
+  "head_log_revision": "285e73a001850cd5fef27cb9fb901f68102e1953",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 1b8e50f1f13e; the range is one file, docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html, +2/-1, adding the s5-gate paragraph at line 42 and then unpinning its head revision.",
+    "done_when": "the done_when (prompt.txt:164) is the 20-tick measure over 230 live runs on all_debug with every tick under 30 s and every reading under 2 GB plus a base-revision control recording ticks over 30 s, both logged to s5.html; neither gained commit adds or re-runs that measure, and the gate they add is the two-file suite arm rather than the tick measure.",
+    "goal": "the source node's goal is \"Keep the station tick under 30 seconds and under 2 GB with 230 live runs\" (prompt.txt:38 of the reviewed run); the two commits covered here (893e7436d7, 285e73a0018) touch no runtime code, adding to docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:42 the suite gate both arms ran and dropping that paragraph's pinned head revision in favour of the revision its gate log's first line names.",
+    "manifest": "read at the reviewed run's manifest.md; it carries a literal gate command and both suite arms at EXIT=0 with 58 passed each, but its after_suite at 285e73a0018 omits tests/test_a_quiet_tick_at_fleet_scale_reads_no_stream.py, which exists in that revision's tree.",
+    "write_paths": "the fence (prompt.txt:84-89) grants docs/evidence/fragments/work-scales-to-eighty-across-nodes, and `git diff --name-status 1b8e50f1f13e 285e73a0018` lists exactly one path, that directory's s5.html, inside it."
+  },
+  "justifications": {
+    "durability": "no test references s5.html or s5-gate (grep over tests/ and reckon/ returns nothing), so docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:42 can be deleted or re-pinned stale without reddening anything.",
+    "evidence": "logs/suite-head-repair.log records 58 passed for the two-file command while logs/suite-head.log records 61 passed for the three-file resolution the node's write scope implies, so the cited head arm does not cover the added test.",
+    "fit": "the paragraph follows the sibling paragraphs' id-and-strong-lead shape at s5.html:40, but s5.html:42 alone defers a revision to an unnamed log instead of citing it directly.",
+    "goal_fidelity": "docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:42 serves the record the goal is measured by but misstates the gate the head arm actually ran.",
+    "reuse": "the diff adds no definition; the page is consumed by the existing reckon/evidence.py:1362 compose_landed_record and its reckon/serve.py:2751 and reckon/mcp.py:1344 callers.",
+    "scope_discipline": "`git diff --name-status 1b8e50f1f13e 285e73a0018` lists only docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html, inside the fence at prompt.txt:87."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is \"Keep the station tick under 30 seconds and under 2 GB with 230 live runs\" (prompt.txt:38 of the reviewed run); the two commits covered here (893e7436d7, 285e73a0018) touch no runtime code, adding to docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:42 the suite gate both arms ran and dropping that paragraph's pinned head revision in favour of the revision its gate log's first line names.\nVERDICT done_when: the done_when (prompt.txt:164) is the 20-tick measure over 230 live runs on all_debug with every tick under 30 s and every reading under 2 GB plus a base-revision control recording ticks over 30 s, both logged to s5.html; neither gained commit adds or re-runs that measure, and the gate they add is the two-file suite arm rather than the tick measure.\nVERDICT write_paths: the fence (prompt.txt:84-89) grants docs/evidence/fragments/work-scales-to-eighty-across-nodes, and `git diff --name-status 1b8e50f1f13e 285e73a0018` lists exactly one path, that directory's s5.html, inside it.\nVERDICT manifest: read at the reviewed run's manifest.md; it carries a literal gate command and both suite arms at EXIT=0 with 58 passed each, but its after_suite at 285e73a0018 omits tests/test_a_quiet_tick_at_fleet_scale_reads_no_stream.py, which exists in that revision's tree.\nVERDICT diff: read commit by commit against 1b8e50f1f13e; the range is one file, docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html, +2/-1, adding the s5-gate paragraph at line 42 and then unpinning its head revision.\nCALL_SITES: reckon/serve.py:2751 compose_landed_record in the evidence-page handler, reckon/mcp.py:1344 compose_landed_record in the MCP evidence read, reckon/evidence.py:1362 compose_landed_record composing a fragment body into the plan record\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:42 serves the record the goal is measured by but misstates the gate the head arm actually ran.\nSCORE evidence: 9\nJUSTIFICATION evidence: logs/suite-head-repair.log records 58 passed for the two-file command while logs/suite-head.log records 61 passed for the three-file resolution the node's write scope implies, so the cited head arm does not cover the added test.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --name-status 1b8e50f1f13e 285e73a0018` lists only docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html, inside the fence at prompt.txt:87.\nSCORE durability: 7\nJUSTIFICATION durability: no test references s5.html or s5-gate (grep over tests/ and reckon/ returns nothing), so docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:42 can be deleted or re-pinned stale without reddening anything.\nSCORE fit: 15\nJUSTIFICATION fit: the paragraph follows the sibling paragraphs' id-and-strong-lead shape at s5.html:40, but s5.html:42 alone defers a revision to an unnamed log instead of citing it directly.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition; the page is consumed by the existing reckon/evidence.py:1362 compose_landed_record and its reckon/serve.py:2751 and reckon/mcp.py:1344 callers.\nFINDING docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:42 blocking: the paragraph claims the two-file command is \"the template with this node's write scope resolved over each arm's own tree\", but tests/test_a_quiet_tick_at_fleet_scale_reads_no_stream.py exists at head and at 4d188b03e2, logs/suite-head.log records the resolved three-file run at 325e19aa as 61 passed, and the recorded after arm (logs/suite-head-repair.log at 285e73a0018) runs two files for 58 passed, so the gate receipt omits the test that guards the change.\nFINDING docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:42 non-blocking: the head revision is deferred to \"its own gate log\" while the log list at s5.html:44 names no suite log, so the page alone cannot resolve which log or revision is meant.\nFINDING docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:38 non-blocking: the paragraph still says the measure \"appends 32 KiB to every run's stream\" and ties that to the timed arms whose medians are 1.523 s and 1.546 s, while logs/tick-base-all_debug.json and logs/tick-head-all_debug.json both record arrival_bytes 8192; this is the finding the previous review folded into the repair node that produced these commits, and the repair did not touch it.",
+  "review_run_id": "r-20261115T231133135088-review-of-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs-285e73a00185",
+  "reviewed_base_sha": "1b8e50f1f13eed6c6772d1267223d3085a88ee74",
+  "reviewed_head_sha": "285e73a001850cd5fef27cb9fb901f68102e1953",
+  "reviewed_run_id": "r-20261115T200323420839-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs",
+  "reviewer": {
+    "backend": "omp",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T231133135088-review-of-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs-285e73a00185"
+  },
+  "reviewer_run_id": "r-20261115T231133135088-review-of-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs-285e73a00185",
+  "scores": {
+    "durability": 7,
+    "evidence": 9,
+    "fit": 15,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T00:24:04.359397+00:00",
+  "total": 86
+}
