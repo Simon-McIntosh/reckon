@@ -141,6 +141,9 @@ def measure(
     label: str,
     streams: list[Path],
     arrival_bytes: bytes,
+    *,
+    tick_seconds: float = TICK_SECONDS,
+    memory_bytes: int = MEMORY_BYTES,
 ) -> dict:
     """Run consecutive ticks and record each duration and the memory after it."""
     store = station_store.StationStore(scratch / "runtime")
@@ -176,13 +179,14 @@ def measure(
         "stream_bytes": sum(stream.stat().st_size for stream in streams),
         "arrival_bytes": arrival_bytes,
         "ticks": readings,
-        "memory_bound_bytes": MEMORY_BYTES,
+        "tick_bound_seconds": tick_seconds,
+        "memory_bound_bytes": memory_bytes,
         "max_tick_seconds": max(row["seconds"] for row in readings),
         "max_resident_bytes": max(row["resident_bytes"] for row in readings),
         "over_bound": [
             row
             for row in readings
-            if row["seconds"] >= TICK_SECONDS or row["resident_bytes"] >= MEMORY_BYTES
+            if row["seconds"] >= tick_seconds or row["resident_bytes"] >= memory_bytes
         ],
     }
 
@@ -195,6 +199,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--label", default="head")
     parser.add_argument("--stream-bytes", type=int, default=256 * 1024)
     parser.add_argument("--arrival-bytes", type=int, default=8 * 1024)
+    parser.add_argument("--tick-bound-seconds", type=float, default=TICK_SECONDS)
+    parser.add_argument("--memory-bound-bytes", type=int, default=MEMORY_BYTES)
     args = parser.parse_args(argv)
 
     scratch = Path(
@@ -217,6 +223,8 @@ def main(argv: list[str] | None = None) -> int:
             args.label,
             streams,
             args.arrival_bytes,
+            tick_seconds=args.tick_bound_seconds,
+            memory_bytes=args.memory_bound_bytes,
         )
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
