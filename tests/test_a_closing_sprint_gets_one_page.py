@@ -337,7 +337,7 @@ def test_a_done_section_without_a_landing_does_not_inflate_the_row(
     assert list(plan["section_declarations"].values()) == ["done"] * 3
     assert not plan["comments"].get("s3")
     records = ledger.runs(PROJECT, root=checkout, plan=ALPHA)
-    assert {record["section"] for record in records} == {"s1", "s2"}
+    assert {record["section"] for record in records} == {"§1", "§2"}
     row = next(row for row in _rows(_page(checkout)) if row["Plan"] == "Alpha Plan")
     assert int(row["Sections landed"]) == 2, row
 
