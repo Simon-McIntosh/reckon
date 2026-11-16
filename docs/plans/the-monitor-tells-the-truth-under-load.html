@@ -24,7 +24,7 @@
   <title>The Monitor Tells The Truth Under Load | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="89">
+<meta name="plan-version" content="91">
 <meta name="plan-modified" content="2026-11-16">
 </head>
 <body>
@@ -219,8 +219,8 @@
 
     <h2 id="s28">A stale station answer never hides a fresh beat</h2>
 <section data-reckon="section" data-id="s28" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
-<p><strong>Why.</strong> After §25 landed at <code>d72a7d9b25</code> and the station and followers reloaded onto it at 21:08Z on 16 November, the lead still saw nova's pane draw <code>producer nova lost: snapshot age 285s exceeds 120s; re-arm with: reckon crew watch --ensure --project nova</code> and its matching restored row every few minutes, while the station's own health beat stayed seconds old through each slow tick. <code>ProducerSnapshotNotices.poll</code> consults the station's independent tick reading only when the station answer's source is the exported snapshot; when the answer comes from the station itself but has gone stale during a long derivation, the fresh tick is never asked, and the stale answer's age draws a loss and offers a re-arm. Agents follow that remedy and restart a producer that was alive.</p>
-<p><strong>Done when.</strong> New tests, each failing at the base revision. While the station's health beat is fresh and its tick is running, a pane draws no lost row and offers no re-arm whichever source its station answer came from and however stale that answer is, and it reads the station as alive but slow. Negative control: restore the base condition that consults the tick only for a snapshot-sourced answer, and the new station-sourced case draws a lost row and fails. These still hold: a station whose health beat has stopped draws a lost row with its remedy. The tests importing <code>reckon.crew.watch_unit</code> add no failure against the base on all_debug, with every log under the run directory. Write paths: <code>reckon/crew/watch_unit.py</code> and a new test.</p>
+<p><strong>Why.</strong> After §25 landed at <code>d72a7d9b25</code> and the station and followers reloaded onto it at 21:08Z on 16 November, panes still drew <code>producer &lt;project&gt; lost: snapshot age 285s exceeds 120s; re-arm with: reckon crew watch --ensure</code> and its matching restored row every few minutes. The coordinator obligations hook, which reads the station store directly, reported the station's heartbeat itself as 2m58s old at about 21:45Z, during a slow tick. So the rows report a beat that really stopped, not a stale export: the station's beat is meant to move every 5 s on its own thread, whatever the tick is doing, and during some long ticks it stops for minutes. Each beat writes the heartbeat row through its own store handle and then publishes the exported reading to the shared home, so a beat can be held behind work the tick is doing. Agents follow the row's remedy and restart a station that was alive.</p>
+<p><strong>Done when.</strong> New tests, each failing at the base revision. While a tick runs long, holding the station store and the shared home the way a slow per-project refresh does, the station's heartbeat moves at least once per stale window, so a pane draws no lost row and offers no re-arm. Negative control: restore the base beat path, and the beat goes stale behind the long tick and the test fails. These still hold: a station whose process has stopped draws a lost row with its remedy. The tests importing <code>reckon.crew.station</code> or <code>reckon.crew.watch_unit</code> add no failure against the base on all_debug, with every log under the run directory. Write paths: <code>reckon/crew/station.py</code>, <code>reckon/crew/station_store.py</code>, <code>reckon/crew/obligation_snapshot.py</code> and a new test.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -230,10 +230,16 @@
     <pre class="r-fu-prompt">/reckon-build the-monitor-tells-the-truth-under-load</pre>
     <p class="r-fu-outcome"><p>§2 landed. §4, §8, §11, §12, §13 and §20 have landed since; the rest of the build is carried by f-mttu-002.</p></p>
     </article>
-<article class="r-fu" data-id="f-mttu-002" data-status="open" data-written-by="reckon-a6" data-written-at="2026-11-15T23:15:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-mttu-002" data-status="resolved" data-written-by="reckon-a6" data-written-at="2026-11-15T23:15:00Z" data-recommends-skill="" data-resolved-at="2026-11-16T21:42:37+00:00" data-resolved-by="reckon-56">
     <h4 class="r-fu-title">Land §3, §5, §6, §7, §9, §10, §14 to §17, §19 and §21</h4>
     <div class="r-fu-body"><p>Each of these sections has a run delivered, in review, in repair or queued; §5 waits on the codex budget window. §21 is queued once its review is answered.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-monitor-tells-the-truth-under-load §21</pre>
+    <p class="r-fu-outcome"><p>§3, §5, §6, §7, §9, §10, §14 to §17, §19, §21 and §22 to §27 have landed or are declared done; the remaining work is §28.</p></p>
+    </article>
+<article class="r-fu" data-id="f-mttu-003" data-status="open" data-written-by="reckon-56" data-written-at="2026-11-16" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land §28</h4>
+    <div class="r-fu-body"><p>§28 keeps the station's heartbeat moving through a long tick, so panes stop drawing false producer-lost rows.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-monitor-tells-the-truth-under-load §28</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
