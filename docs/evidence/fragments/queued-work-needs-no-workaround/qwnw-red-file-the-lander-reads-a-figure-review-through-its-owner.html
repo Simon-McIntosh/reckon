@@ -1,0 +1,121 @@
+<section id="qwnw-red-file-the-lander-reads-a-figure-review-through-its-owner-landing">
+  <h2>A test file red on the primary branch passes: the lander reads a figure review through its owner</h2>
+
+  <p><strong>What changed.</strong> The base run of
+  <code>tests/test_the_lander_reads_a_figure_review_through_its_owner.py</code> at
+  <code>1edf1b0dba</code> read <code>4 failed, 1 passed</code>. All four failures
+  were the same assertion at the same step: the fixture stubs
+  <code>queue_landing._land</code> to fail with <em>held run landed</em>, and the
+  pass reached it. Each of the four cases therefore never saw the
+  <code>awaiting-review</code> record it asserts on.</p>
+
+  <p><strong>Cause, and its verdict: the product was wrong.</strong>
+  <code>recovery_review_dispatch._changed_figure_paths</code> asked
+  <code>clones.own_changed_paths</code> for the run's own commits and took that
+  helper's <code>None</code> for an empty delta. <code>None</code> is answered
+  when the tree carries no remote-tracking ref to exclude — a repository with no
+  remote at all — and its own docstring states that a caller “must read it as an
+  unshown delta rather than as an empty one”. Read as empty, no figure tier was
+  ever owed: <code>queue_landing._owed_review_tiers</code> returned
+  <code>['code']</code>, the lander judged the code review alone, and the run
+  landed on a figure review nobody had read. The same helper is the reflex's
+  dispatch rule, so the reflex dispatched no figure review either — both sides
+  agreed on the fail-open, which is why the two-file parity the tier docstring
+  promises held while both were wrong.</p>
+
+  <p>The replay of the defect, on the fixture's own repository (no remote, base
+  <code>d7aff9e7</code>, head <code>cca9ba28</code>, a changed
+  <code>docs/figures/delivery-plan/implementation/panel.svg</code> and a stored
+  run):</p>
+
+  <p><code>OWED ['code']</code><br>
+  <code>NEWEST {'rubric': 'figure', 'findings': [{'file': '…/panel.svg', 'severity': 'blocking', …}], …}</code><br>
+  <code>FIGPATHS []</code></p>
+
+  <p>The figure record was stored and readable the whole time; nothing asked for
+  it. The repair reads the base-to-head pair in place of the own-commit range
+  when that range cannot be compared, so the one comparison such a repository
+  still has is used rather than discarded. A file the integration branch brought
+  in then counts as the run's own, which asks for a review of a figure the run
+  did not draw — the safe direction for a guard. The reverse, no figure review
+  owed for a changed figure, is the fail-open the four cases caught.</p>
+
+  <h3 id="qwnw-red-file-the-lander-reads-a-figure-review-through-its-owner-measured">Measured</h3>
+
+  <table id="qwnw-red-file-the-lander-reads-a-figure-review-through-its-owner-arms">
+    <tr><th>arm</th><th>revision</th><th>result</th><th>log</th></tr>
+    <tr>
+      <td>base, the named file</td>
+      <td><code>1edf1b0dba</code></td>
+      <td><code>4 failed, 1 passed</code>, <code>EXIT=1</code></td>
+      <td><code>logs/base-node-file.log</code></td>
+    </tr>
+    <tr>
+      <td>head, the named file, as a job on <code>all_debug</code></td>
+      <td><code>6abccc51b2</code></td>
+      <td><code>5 passed</code>, <code>EXIT=0</code></td>
+      <td><code>logs/head-node-file-all-debug.log</code></td>
+    </tr>
+    <tr>
+      <td>base, suite arm</td>
+      <td><code>1edf1b0dba</code></td>
+      <td><code>58 passed</code>, <code>EXIT=0</code></td>
+      <td><code>logs/base-suite.log</code></td>
+    </tr>
+    <tr>
+      <td>head, suite arm</td>
+      <td><code>6abccc51b2</code></td>
+      <td><code>58 passed</code>, <code>EXIT=0</code></td>
+      <td><code>logs/after-suite.log</code></td>
+    </tr>
+  </table>
+
+  <p>The head run of the named file was made as job 1319272 on partition
+  <code>all_debug</code>, node <code>98dci4-clu-3141</code>, in this worktree,
+  with <code>SLURM_JOB_ID</code> unset inside the job; the log names the module
+  imported (<code>…/reckon/crew/recovery_review_dispatch.py</code> under this
+  worktree) and the working directory it resolved from. The suite arms are
+  <code>tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code>
+  resolved over each arm's own tree — <code>58 passed</code> on both, so the
+  delta is zero. The base arms ran in an extraction of the base revision.
+  <code>ruff check</code> passes on both changed files; <code>ruff format
+  --check</code> reports the same pre-existing unformatted docstring block at
+  <code>recovery_review_dispatch.py</code> before and after this change, and
+  <code>queue_landing.py</code> is clean.</p>
+
+  <h3 id="qwnw-red-file-the-lander-reads-a-figure-review-through-its-owner-control">Negative control</h3>
+
+  <p>The base revision's run of the named file, in an extraction of
+  <code>1edf1b0dba</code> with the module imported from that tree, is
+  <code>4 failed, 1 passed</code>:</p>
+
+  <p><code>FAILED tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_a_figure_review_with_an_undisposed_blocking_finding_holds_the_run</code><br>
+  <code>FAILED tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_an_unparsable_figure_record_is_recorded_as_unreadable</code><br>
+  <code>FAILED tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_the_awaiting_record_names_its_tier_under_its_own_key</code><br>
+  <code>FAILED tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_a_store_read_that_raises_records_its_error_apart_from_stale_head</code><br>
+  <code>4 failed, 1 passed in 2.72s</code><br>
+  <code>EXIT=1</code></p>
+
+  <p>beside the head run's <code>5 passed in 3.21s</code> and <code>EXIT=0</code>.
+  No assertion was deleted or weakened: the repair is in the product, and the
+  test file is unchanged from the base revision.</p>
+
+  <p>The guard's firing was also observed on a second surface, the sibling file
+  that shares this cause: <code>tests/test_the_lander_waits_for_every_owed_review.py</code>
+  read <code>2 failed</code> at the base revision and <code>3 passed</code> after
+  this change (its other two cases were already green).</p>
+
+  <h3 id="qwnw-red-file-the-lander-reads-a-figure-review-through-its-owner-outside">Outside scope</h3>
+
+  <p>Four other files were run beside the named one and fail identically at the
+  base revision and at head, so this change neither causes nor repairs them, and
+  they were not triaged here:
+  <code>tests/test_figure_review.py::test_changed_figure_dispatches_an_image_review_with_a_png</code>,
+  <code>::test_source_only_changes_keep_the_text_review</code>,
+  <code>::test_figure_review_waits_when_no_lane_declares_image_input</code>;
+  <code>tests/test_queue_landing.py::test_land_invokes_the_shared_path_through_the_scheduler_shim</code>,
+  <code>::test_accepted_delivery_uses_the_real_crew_land_path</code>;
+  <code>tests/test_review_reflex_skips_a_superseded_head.py::test_a_sweep_snapshot_from_before_resume_dispatches_no_superseded_review</code>.
+  This gate measures only this node's own change; verifying the merged result
+  belongs to a separately dispatched test node.</p>
+</section>
