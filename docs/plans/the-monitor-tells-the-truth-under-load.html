@@ -24,7 +24,7 @@
   <title>The Monitor Tells The Truth Under Load | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="65">
+<meta name="plan-version" content="66">
 <meta name="plan-modified" content="2026-11-16">
 </head>
 <body>
@@ -287,6 +287,9 @@
 </div>
 <div class="r-comment" data-section="s17" data-id="c-run-r-20261116T002932998542-review-of-resume-records-its-own-worker-s17-2d2b0dcdc396" data-who="reckon-build" data-when="2026-11-16T00:43:04.259Z">
     <div class="r-comment-body"><p>reviewed r-20261115T182507008232-resume-records-its-own-worker-s17 over 954285ce1491..2d2b0dcdc396, scoring goal_fidelity 18, evidence 15, scope_discipline 19, durability 18, fit 16, reuse 13 (total 99), with one blocking finding (the delivered manifest.md carries no tests:/baseline_suite/after_suite, so promotion has no gate to re-run) and two non-blocking findings (evidence-page rows cite 8d816b47 where their logs name 2d2b0dc; runs.py:1118 wraps host_lease's record read instead of extending it).</p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261115T182507008232-resume-records-its-own-worker-s17" data-who="reckon-build" data-when="2026-11-15T18:43:09Z">
+    <div class="r-comment-body"><p>A launch inside a long-lived door records the supervisor it started under the reservation pid and the door under launcher_pid, and the station is read as a live lease holder by start tick and process table whatever its renewal age, so a station-started resume neither holds its attempt for the station lifetime nor hands a stop the station pid.</p></div>
 </div>
 <div class="r-comment" data-section="s18" data-id="c-close-s18" data-who="reckon-a6" data-when="2026-11-15T15:30:00Z">
     <div class="r-comment-body"><p>§18 landed at <code>ee7fb80c4e</code>, taken in hand as a gate-safety fix. <code>_run_review_tier</code> now measures the cited commits plus every non-merge commit from the run's base to its head. The imas-codex reproduction now reads <code>light</code> when it cites only its docs-only evidence commit; before, it read <code>none</code>. Arms on all_debug over 145 test files: 92 failures and 8 errors at both base and head, none added, 2 more passes. The docs-only-citation test fails when the scope goes back to cited commits alone. The obligation's own guard (no <code>crew complete</code> offered for a run owing a review with none stored) follows from the corrected tier.</p></div>
