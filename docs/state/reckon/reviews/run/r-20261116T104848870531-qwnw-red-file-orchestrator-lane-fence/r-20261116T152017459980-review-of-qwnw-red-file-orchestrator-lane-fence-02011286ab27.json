@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "cd6f85d1db7153433ef395e52746bffc98f64639",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-16T15:25:57.146Z",
+  "dispatched_at": "2026-11-16T15:25:07Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-orchestrator-lane-fence.html",
+      "line": "58",
+      "severity": "non-blocking",
+      "text": "non-blocking: the sibling-arm row names revision 76386c3ed4 while the log it cites, logs/sibling-arm.log:1, names revision cd6f85d1db, so the arm proves only that tests/test_dispatch_names_its_backend.py passed before the change and not that the shared _payload rewrite left it green at head."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-orchestrator-lane-fence.html",
+      "line": "64",
+      "severity": "non-blocking",
+      "text": "non-blocking: the suite-arm row names revisions cd6f85d1db and 76386c3ed4 while logs/after-suite.log:1 names 02011286ab, so the head suite arm's revision is misstated in the record that cites it."
+    },
+    {
+      "file": "logs/base-gate.log",
+      "line": "4",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base arm records slurm_job_id 1319171 while the head arm records SLURM_JOB_ID unset, so the negative control changes the revision and the environment at once and cannot, on its own, attribute the three failures to the helper; a base re-run with SLURM_JOB_ID unset would isolate the regression the done_when names."
+    }
+  ],
+  "head_log_revision": "02011286ab27aed3ab1641b64aa313142cb4fcfb",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the change is confined to a test helper, so no production runtime code reaches it; its only consumers are tests/test_orchestrator_lane_fence.py:66 and the eleven cases in tests/test_dispatch_names_its_backend.py, both test modules.",
+    "diff": "read the four commits against cd6f85d1db: 76386c3ed4 changes _payload from result.output to result.stdout with a docstring naming the channel, afef6711f2 adds the red-file-orchestrator-lane-fence.html fragment, 1869f411ac adds the qwnw-...-landing fragment, and 02011286ab corrects the sibling-red count in the first fragment; no product source is touched.",
+    "done_when": "the done_when requires the file to pass in full as a job on all_debug with SLURM_JOB_ID unset, a cause with a product-or-test verdict, no added failure over the base, and a logged negative control; logs/head-gate-all-debug.log:3-6 gives partition all_debug, job 1320203, 'SLURM_JOB_ID unset' and 7 passed EXIT=0, logs/base-gate.log gives 3 failed EXIT=1 at cd6f85d1db, the two suite arms read 58 passed EXIT=0 each, and the cause is stated as test-wrong in docs/evidence/fragments/queued-work-needs-no-workaround/red-file-orchestrator-lane-fence.html:13-19 where the product contract is quoted.",
+    "goal": "the node's goal is that tests/test_orchestrator_lane_fence.py passes in full on the primary branch; the landed change is one helper at tests/test_dispatch_names_its_backend.py:166 and logs/head-gate-all-debug.log records that file at 7 passed EXIT=0 at head 02011286ab, so the goal's file passes in full at the reviewed head.",
+    "manifest": "read; status complete, four commits 76386c3..02011286ab, changed_paths three files, tests the pytest invocation of tests/test_orchestrator_lane_fence.py, test_logs naming head-gate, base-gate, base-suite, after-suite, sibling-arm and peers-json logs, and baseline_suite plus after_suite both completed at 0 failures.",
+    "write_paths": "the fence was reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, the qwnw-red-file-orchestrator-lane-fence.html fragment and docs/figures/queued-work-needs-no-workaround; the diff touches tests/test_dispatch_names_its_backend.py:166 and two fragments inside that directory, all inside the fence, and writes no figure."
+  },
+  "justifications": {
+    "durability": "restoring result.output at tests/test_dispatch_names_its_backend.py:166 reddens the three cases named in logs/base-gate.log, so the guard fires on the reinstated regression; the base arm's environment differs from the head arm's on SLURM_JOB_ID, so that revert was never shown under the head's env.",
+    "evidence": "logs/head-gate-all-debug.log:1-5 names revision 02011286ab, host 98dci4-clu-3141, partition all_debug, job 1320203 and SLURM_JOB_ID unset, so the recorded gate does assert the done_when's measure, while the base arm at logs/base-gate.log:4 ran with SLURM_JOB_ID=1319171 set.",
+    "fit": "tests/test_dispatch_names_its_backend.py:159-168 keeps the file's own _payload helper and states the channel contract in its docstring, matching the surrounding idiom, and the account matches click/testing.py:283, which records the 8.2 change to Result.output.",
+    "goal_fidelity": "tests/test_dispatch_names_its_backend.py:166 now reads result.stdout, and logs/head-gate-all-debug.log records tests/test_orchestrator_lane_fence.py at 7 passed EXIT=0 at the reviewed head, which is the goal's whole condition.",
+    "reuse": "no owner for reading a CLI invocation's JSON document exists: a search over tests/ for _payload, result.output and result.stdout found each file rolling its own reader, and the change extends the existing helper tests/test_dispatch_names_its_backend.py:159 instead of adding a second mechanism.",
+    "scope_discipline": "git diff --stat cd6f85d1db..02011286ab lists only tests/test_dispatch_names_its_backend.py and the two fragments under docs/evidence/fragments/queued-work-needs-no-workaround/, every one inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_orchestrator_lane_fence.py passes in full on the primary branch; the landed change is one helper at tests/test_dispatch_names_its_backend.py:166 and logs/head-gate-all-debug.log records that file at 7 passed EXIT=0 at head 02011286ab, so the goal's file passes in full at the reviewed head.\nVERDICT done_when: the done_when requires that file to pass in full as a job on all_debug with SLURM_JOB_ID unset, plus a cause verdict and no added failure; logs/head-gate-all-debug.log:1-6 gives revision 02011286ab, partition all_debug, job 1320203, 'SLURM_JOB_ID unset' and 7 passed EXIT=0, logs/base-gate.log gives 3 failed EXIT=1 at cd6f85d1db, and the after_suite and baseline_suite arms read 58 passed EXIT=0 each.\nVERDICT write_paths: the fence covered reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and a figures directory; git diff --stat cd6f85d1db..02011286ab touches tests/test_dispatch_names_its_backend.py and two fragments inside that directory, every path inside the fence and no figure written.\nVERDICT manifest: read; status complete, four commits 76386c3ed4..02011286ab, three changed paths, the pytest invocation of tests/test_orchestrator_lane_fence.py as the gate command line, six named logs, and baseline_suite plus after_suite both completed at 0 failures.\nVERDICT diff: read the four commits against cd6f85d1db: 76386c3ed4 changes _payload from result.output to result.stdout with a docstring naming the channel, afef6711f2 adds the red-file-orchestrator-lane-fence.html fragment, 1869f411ac adds the qwnw-...-landing fragment, and 02011286ab corrects the sibling-red count; no product source is touched.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_dispatch_names_its_backend.py:166 reads result.stdout, and logs/head-gate-all-debug.log records tests/test_orchestrator_lane_fence.py at 7 passed EXIT=0 at the reviewed head.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/head-gate-all-debug.log:1-6 names revision 02011286ab, partition all_debug, job 1320203 and 'SLURM_JOB_ID unset', so the recorded gate does assert the done_when's measure, while logs/base-gate.log:4 shows the base arm ran with SLURM_JOB_ID=1319171 set.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff --stat cd6f85d1db..02011286ab lists only tests/test_dispatch_names_its_backend.py and two fragments under docs/evidence/fragments/queued-work-needs-no-workaround/, all inside the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: restoring result.output at tests/test_dispatch_names_its_backend.py:166 reddens the three cases named in logs/base-gate.log, so the guard fires on the reinstated regression, though the base arm's SLURM_JOB_ID differs from the head arm's.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_dispatch_names_its_backend.py:159-166 extends the file's own _payload helper and states the channel contract in its docstring, and click/testing.py:283 confirms the 8.2 change it describes.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner for reading a CLI invocation's JSON document exists \u2014 a search over tests/ for _payload, result.output and result.stdout found each file rolling its own reader, and this change extends the existing helper rather than adding a mechanism.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-orchestrator-lane-fence.html:58 non-blocking: the sibling-arm row names revision 76386c3ed4 while logs/sibling-arm.log:1 names cd6f85d1db, so the arm proves the owning file passed before the change, not that the shared _payload rewrite left it green at head.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-orchestrator-lane-fence.html:64 non-blocking: the suite-arm row names cd6f85d1db and 76386c3ed4 while logs/after-suite.log:1 names 02011286ab.\nFINDING logs/base-gate.log:4 non-blocking: the base arm records slurm_job_id 1319171 while the head arm records SLURM_JOB_ID unset, so the negative control changes the revision and the environment at once and cannot alone attribute the three failures to the helper.\n",
+  "review_run_id": "r-20261116T152017459980-review-of-qwnw-red-file-orchestrator-lane-fence-02011286ab27",
+  "reviewed_base_sha": "cd6f85d1db7153433ef395e52746bffc98f64639",
+  "reviewed_head_sha": "02011286ab27aed3ab1641b64aa313142cb4fcfb",
+  "reviewed_run_id": "r-20261116T104848870531-qwnw-red-file-orchestrator-lane-fence",
+  "reviewer_run_id": "r-20261116T152017459980-review-of-qwnw-red-file-orchestrator-lane-fence-02011286ab27",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T21:13:39.049062+00:00",
+  "total": 109
+}

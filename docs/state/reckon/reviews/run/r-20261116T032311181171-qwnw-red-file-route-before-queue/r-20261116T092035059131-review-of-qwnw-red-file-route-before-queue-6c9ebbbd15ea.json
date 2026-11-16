@@ -1,0 +1,97 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own logs/wide-arm-base.log (revision cb557f9711670ca8a00dd1d6dd22a17b42d3a51e, read from the scratch tree the arm records) and logs/wide-arm-head3.log (revision 6c9ebbbd15eac8ad2b7f717f60e789f99b1823db): the base log reports 75 failed plus 8 errors, the head log 62 failed, both ran to their summary line, and the head failing set is a subset of the base set, so the added-failure set is empty.",
+  "assertion_analysis": [
+    {
+      "failure_condition": "Deleting the six-line write at preparation.py:708-713 leaves dispatch_field returning None, so the subscript raises TypeError; logs/negative-control.log:4067 shows that traceback.",
+      "lines": "tests/test_route_before_queue.py:245"
+    },
+    {
+      "failure_condition": "A launch that re-picks instead of replaying stores no picker_selection on the admitted request, reddening the same read; the control log reports test_metered_wait_keeps_its_pick_and_launches_after_upstream_lands FAILED at :5621.",
+      "lines": "tests/test_route_before_queue.py:267"
+    },
+    {
+      "failure_condition": "A queued request whose pick is dropped launches the default lane, so the stored selection's model is absent; the control log reports test_queued_pick_launches_the_selected_nondefault_model FAILED at :5622.",
+      "lines": "tests/test_route_before_queue.py:312"
+    },
+    {
+      "failure_condition": "A moved request losing its original pick reads None and reddens; the control log reports test_a_move_launches_on_its_explicit_destination FAILED at :5623.",
+      "lines": "tests/test_route_before_queue.py:351"
+    },
+    {
+      "failure_condition": "The fixture's picked_at is read from the clock rather than written down, so a launch replays only while the pick is inside the re-pick bound at reckon/crew/dispatch_picker.py:1584-1592; dropping it makes the launch re-pick and the fourth case's fallback list empty, which the control log reports at :5624.",
+      "lines": "tests/test_route_before_queue.py:106"
+    },
+    {
+      "failure_condition": "The two sides are copies of one dispatch_options entry, so only a copy step that drops route_fallback reddens it; it does not guard the fallback rule.",
+      "lines": "tests/test_route_before_queue.py:372"
+    }
+  ],
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:2415",
+    "reckon/crew_dispatch_commands.py:2179",
+    "reckon/crew/dispatching/requests.py:82",
+    "reckon/crew/dispatching/launch.py:610",
+    "reckon/crew/dispatching/launch.py:1231",
+    "reckon/run_record.py:187",
+    "reckon/crew/runs.py:242"
+  ],
+  "completed_at": "2026-11-16T09:21:35.365Z",
+  "dispatched_at": "2026-11-16T09:21:13Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-route-before-queue.html",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "The red-file record quotes the two gate summary lines as '4 failed, 8 passed in 3.54s' (line 13) and '12 passed in 5.07s' (line 20), but the logs it names read '4 failed, 8 passed in 4.75s' (logs/base-arm.log:161) and '12 passed in 6.32s' (logs/head-arm.log:7); line 19 records the head revision as 'cb557f9711 plus this node's change' where logs/head-arm.log:1 names 6c9ebbbd15. The counts reconcile and the ids are right, the quoted lines are in neither log."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032311181171-qwnw-red-file-route-before-queue/manifest.md",
+      "line": "9",
+      "severity": "non-blocking",
+      "text": "The done_when asks for the file to pass 'at head as a job on all_debug with SLURM_JOB_ID unset'; every arm the manifest and its logs record is an in-place local pytest run under `env -u SLURM_JOB_ID` (manifest.md:9, logs/base-arm.log:3, logs/head-arm.log:3) and no sbatch or srun invocation appears in the run's transcript. The variable-unset condition and the measure are met; the named environment is not, so the clause cannot be read as satisfied from the record."
+    },
+    {
+      "file": "tests/test_route_before_queue.py",
+      "line": "372",
+      "severity": "non-blocking",
+      "text": "`runs.dispatch_field(run, 'admit_request')['route_fallback'] == run['route_fallback']` compares two copies of one value: reckon/crew/dispatching/requests.py:82-84 writes route_fallback to the record and to dispatch_options from the same entry, and reckon/crew/dispatching/launch.py:610 writes the pointer's route_fallback from that same dict. The two sides move together, so the assertion holds whatever the replay or fallback rule does once the copy is made; the node's durability does not rest on it, since logs/negative-control.log reddens the file's four other ids."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Verified reckon/crew_dispatch_commands.py:2415 (crew_module.dispatch) and :2179 (plan_dispatch), reckon/crew/dispatching/requests.py:82-84 (_queued_request_record lifting the pick onto the queued pointer), reckon/crew/dispatching/launch.py:610 and :1231, reckon/run_record.py:187 (promoted_picker_selection) and reckon/crew/runs.py:242 reach the landed change.",
+    "diff": "Read 6c9ebbbd15 against cb557f9711 commit by commit; one commit, four files, all inside scope, carrying a six-line product write, five test reads redirected through the existing runs.dispatch_field, one picked_at in the fixture, and two evidence fragments.",
+    "done_when": "Read the clauses against logs/base-arm.log:161 (4 failed, 8 passed), logs/head-arm.log:7 (12 passed, EXIT=0), the two suite arms in manifest.md and logs/negative-control.log:5641; the file, the no-added-failure arm and the negative control are recorded, the all_debug clause is not.",
+    "goal": "Read the goal in dispatch-detail.json and live section s29 of docs/plans/queued-work-needs-no-workaround.html:332; reckon/crew/dispatching/preparation.py:708-713 writes the checked pick onto a non-admission dispatch's options, requests.py:82-84 lifts it onto the queued request, and the named file reads 12 passed at head.",
+    "manifest": "Read manifest.md at the reviewed run's directory; it records status complete, the commit, the gate command, five log paths, both suite arms as JSON with ids, and the three causes with verdicts.",
+    "write_paths": "Read the declared paths in dispatch-detail.json; every path in the diff \u2014 reckon/crew/dispatching/preparation.py, tests/test_route_before_queue.py and the two docs/evidence/fragments/queued-work-needs-no-workaround fragments \u2014 lies inside them."
+  },
+  "justifications": {
+    "durability": "logs/negative-control.log:5641 shows the same population at 66 failed, 361 passed with the six-line write deleted against 62 failed, 365 passed with it, and the four ids that appear are exactly tests/test_route_before_queue.py's four routes at negative-control.log:5621-5624, so reinstating the relative regression reddens the file.",
+    "evidence": "logs/base-arm.log:161 and logs/head-arm.log:7 record both arms of the named file and the suite arms carrying no added id, but manifest.md:9 shows a local run where the done_when names an all_debug job and red-file-route-before-queue.html:13,20 quote summary lines neither log contains.",
+    "fit": "The additions follow the surrounding comment and dispatch_options idiom and reuse the existing runs.dispatch_field accessor at reckon/crew/runs.py:242; the commit subject is a conventional fix(crew) line with no plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/dispatching/preparation.py:708-713 writes the checked pick for a non-admission dispatch and tests/test_route_before_queue.py is 12 passed at logs/head-arm.log:7, so the file passes on the rule the section names rather than by weakening it.",
+    "reuse": "No new definition is added: the write feeds reckon/crew/dispatching/requests.py:82-84's existing picker_selection lift and the tests read through reckon/crew/runs.py:242; the search over reckon/crew for an owner of a stored pick found dispatch_picker.py:1584, run_record.py:179 and requests.py:82, all extended or consumed rather than duplicated.",
+    "scope_discipline": "The diff's four paths all lie inside the declared write paths and nothing outside the file's three causes is touched beyond the two evidence fragments the section asks for."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is \"Make tests/test_route_before_queue.py pass in full on the primary branch\"; the landed reckon/crew/dispatching/preparation.py:708-713 writes the checked pick back onto a non-admission dispatch's options, which reckon/crew/dispatching/requests.py:82-84 lifts onto the queued pointer, so runs.dispatch_field(pointer, \"picker_selection\") answers with it and the file reads 12 passed at head in logs/head-arm.log against 4 failed, 8 passed at base in logs/base-arm.log.\nVERDICT done_when: the file's two arms are recorded (logs/base-arm.log:161 \"4 failed, 8 passed\", logs/head-arm.log:7 \"12 passed\" with EXIT=0), the wide population reads 83 non-passing at base and 62 at head with 0 ids added by reckon.crew.review.added_failures_from_gate_logs, and logs/negative-control.log:5641 shows the removed write reddening exactly the file's four routes; the clause \"as a job on all_debug\" is not met, every log being an in-place local run under env -u SLURM_JOB_ID.\nVERDICT write_paths: the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and all four paths in the diff lie inside them.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032311181171-qwnw-red-file-route-before-queue/manifest.md; it records status complete, commit 6c9ebbbd15, the gate command, five log paths, both suite arms as JSON with failure ids and a negative-control log, and it states each of the three causes with its verdict.\nVERDICT diff: read 6c9ebbbd15 against cb557f9711 commit by commit; one commit, four files, 146 insertions and 6 deletions: a six-line product write with its comment, five test reads redirected through the existing runs.dispatch_field, one picked_at added to the fixture, and two evidence fragments.\nCALL_SITES: reckon/crew_dispatch_commands.py:2415 (crew_module.dispatch), reckon/crew_dispatch_commands.py:2179 (plan_dispatch), reckon/crew/dispatching/requests.py:82 (_queued_request_record), reckon/crew/dispatching/launch.py:610 and :1231, reckon/run_record.py:187, reckon/crew/runs.py:242\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatching/preparation.py:708-713 restores the pick write for a non-admission dispatch and tests/test_route_before_queue.py reads 12 passed at logs/head-arm.log:7 against 4 failed at logs/base-arm.log:161, so the file passes on the rule the section names rather than by weakening it.\nSCORE evidence: 14\nJUSTIFICATION evidence: the named file's two arms and both suite arms with ids are recorded and the negative control is real, but manifest.md:9 shows a local run where the done_when names an all_debug job and docs/evidence/fragments/queued-work-needs-no-workaround/red-file-route-before-queue.html:13,20 quote summary lines their own logs do not contain.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff's four paths (reckon/crew/dispatching/preparation.py, tests/test_route_before_queue.py and the two evidence fragments) are all inside the declared write paths and nothing outside the file's three causes is touched.\nSCORE durability: 19\nJUSTIFICATION durability: logs/negative-control.log:5641 reads 66 failed, 361 passed with the six-line write at preparation.py:708-713 deleted against 62 failed, 365 passed with it, and the four ids that appear are exactly test_route_before_queue.py's four routes at negative-control.log:5621-5624.\nSCORE fit: 18\nJUSTIFICATION fit: the additions follow the surrounding comment and dispatch_options idiom and reuse the existing runs.dispatch_field accessor at reckon/crew/runs.py:242, and the commit subject is a conventional fix(crew) line with no plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: no new definition is added \u2014 the write feeds reckon/crew/dispatching/requests.py:82-84's existing picker_selection lift and the tests read through reckon/crew/runs.py:242; the search over reckon/crew for an owner of a stored pick found dispatch_picker.py:1584, run_record.py:179 and requests.py:82, all extended or consumed.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-route-before-queue.html:13 non-blocking: the record quotes \"4 failed, 8 passed in 3.54s\" and \"12 passed in 5.07s\" (line 20) where the logs read \"4 failed, 8 passed in 4.75s\" (logs/base-arm.log:161) and \"12 passed in 6.32s\" (logs/head-arm.log:7), and line 19 names the head as \"cb557f9711 plus this node's change\" where logs/head-arm.log:1 names 6c9ebbbd15, so the record's quoted summary lines reconcile in count but not with the logs they cite.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032311181171-qwnw-red-file-route-before-queue/manifest.md:9 non-blocking: the done_when asks for the file to pass \"as a job on all_debug with SLURM_JOB_ID unset\" and every recorded arm is an in-place local pytest run, with no sbatch or srun invocation anywhere in the run's transcript, so the named environment is unrecorded though the SLURM_JOB_ID-unset condition and the measure itself are met.\nFINDING tests/test_route_before_queue.py:372 non-blocking: the assertion compares runs.dispatch_field(run, \"admit_request\")[\"route_fallback\"] against run[\"route_fallback\"], two copies of one dispatch_options entry written by reckon/crew/dispatching/requests.py:82-84 and reckon/crew/dispatching/launch.py:610, so it guards the copy step rather than the fallback rule and shares the fate of the value it tests.",
+  "review_run_id": "r-20261116T092035059131-review-of-qwnw-red-file-route-before-queue-6c9ebbbd15ea",
+  "reviewed_base_sha": "cb557f9711670ca8a00dd1d6dd22a17b42d3a51e",
+  "reviewed_head_sha": "6c9ebbbd15eac8ad2b7f717f60e789f99b1823db",
+  "reviewed_run_id": "r-20261116T032311181171-qwnw-red-file-route-before-queue",
+  "rubric": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T20:37:56.913165+00:00",
+  "total": 109
+}

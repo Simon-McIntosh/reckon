@@ -1825,10 +1825,32 @@ def classify_pointer(
     stuck = _stuck_verdict_for(record) if phase else None
 
     # A pre-spawn launch past its bound with its holder gone is not waiting to
-    # start: the liveness arms read it as a failed launch, which the admission
-    # pass then releases or returns to the queue.
-    pre_spawn_waiting = phase in _PRE_SPAWN_PHASES and not _stranded_launch(
-        record, now_seconds=moment
+    # start: the pre-spawn reading needs a launch that has spawned nothing, and
+    # the liveness arms read the rest — a stranded launch as a failed launch the
+    # admission pass then releases or returns to the queue, and a launch whose
+    # worker has come and gone from that worker's own liveness and output.
+    #
+    # The pre-spawn phrase is the launcher's label and a stale one, so it cannot
+    # be trusted alone. A run that reached its worker carries a pid, a worker
+    # record, a stream or a launch log, and any of those outranks the label:
+    # reading them as a request that has not started held a refused, unreadable
+    # or dead run at ``running`` for as long as its pointer lived, and left
+    # ``fleet_verdict`` free to call the same row abandoned, so one row stated
+    # two outcomes and neither surface could be acted on.
+    pre_spawn_waiting = (
+        phase in _PRE_SPAWN_PHASES
+        and not _spawn_evidence(record)
+        and not _stranded_launch(record, now_seconds=moment)
+    )
+    # A pre-spawn phase is a reading of a claim, and a claim is all it is: the
+    # manifest is written by the worker the claim is waiting for, so a pointer
+    # whose manifest already carries a verdict word has delivered and is read
+    # from it. Without that precedence the phase label outranked every arm
+    # below, and a completed run left at its launcher's last phase read as
+    # running — invisible to the reader that dispatches the review a scoring
+    # run owes, which is what the phase reading was never about.
+    pre_spawn_reads_as_claim = (
+        pre_spawn_waiting and manifest_status not in TERMINAL_MANIFEST_STATUSES
     )
     # A parked phase is the launcher's statement that the request is waiting to
     # start, and it means that only while the pointer records no worker: a pid
@@ -1880,12 +1902,14 @@ def classify_pointer(
         else:
             detail = str(record.get("reason") or "waiting for a local lane slot")
             action = "wait for a local lane slot"
-    elif pre_spawn_waiting:
+    elif pre_spawn_reads_as_claim:
         # Claimed by its launcher with no worker yet: the phase reading stands,
         # as it does for a queued request, and it is reported as running, the
         # reading such a run carried before the liveness arms were skipped for
         # it. Without a classification here the arms below were skipped too,
-        # and the read raised for every row of the project.
+        # and the read raised for every row of the project. A claim whose
+        # manifest already carries a verdict is not a claim — it delivered, and
+        # the arms below read what it delivered.
         classification = "running"
         detail = (
             f"the launcher has claimed this run ({phase}) and has not started "
@@ -1900,7 +1924,7 @@ def classify_pointer(
     unlaunched = (
         phase in {QUEUED_PHASE, HELD_PHASE}
         or phase in WAITING_UPSTREAM_PHASES
-        or pre_spawn_waiting
+        or pre_spawn_reads_as_claim
     ) and not launched
     if unlaunched and stuck is None:
         pass
@@ -3290,6 +3314,7 @@ from .recovery_liveness import (  # noqa: E402
     _run_exit_record,
     _run_stream_mtime,
     _run_stream_quiet_seconds,
+    _spawn_evidence,
     _stranded_launch,
     _stranded_launch_age_seconds,
     _wait_judged_against_itself,
