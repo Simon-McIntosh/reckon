@@ -15,33 +15,34 @@
 </table>
 
 <h4 id="qwnw-red-file-a-gate-names-its-arms-negative-control">Negative control: the base revision's own run</h4>
+<p>The ids below are read from <code>logs/gate-base.log</code> in this run's directory, which is the verbatim capture; its failure lines also quote revisions git generated inside the fixture, and those differ on every run.</p>
 <pre>
 # revision: 6fa76c49f48e1d4fe4f104431f85f519ce92aae0
-# tree: /tmp/reckon-crew-scratch/r-20261116T032146792205-qwnw-red-file-a-gate-names-its-arms/base-archive
+# tree: /tmp/reckon-crew-scratch/r-20261116T032146792205-qwnw-red-file-a-gate-names-its-arms/base-wt
 # command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_gate_names_its_arms.py
-# module.__file__: /tmp/reckon-crew-scratch/r-20261116T032146792205-qwnw-red-file-a-gate-names-its-arms/base-archive/reckon/__init__.py
-# cwd: /tmp/reckon-crew-scratch/r-20261116T032146792205-qwnw-red-file-a-gate-names-its-arms/base-archive
+# module.__file__: /tmp/reckon-crew-scratch/r-20261116T032146792205-qwnw-red-file-a-gate-names-its-arms/base-wt/reckon/__init__.py
+# cwd: /tmp/reckon-crew-scratch/r-20261116T032146792205-qwnw-red-file-a-gate-names-its-arms/base-wt
 # slurm_job_id: unset
 FFFFF                                                                    [100%]
-FAILED tests/test_a_gate_names_its_arms.py::test_declared_gpu_arms_land_and_the_row_names_them - AssertionError: Error: run 'r-20261115T090000000000-node-a' has a passing gate and cites no commit, but its worktree is at 9d1e30a78b62 rather than its base c99163abd177: it committed, and nothing on the record says what. Work left only in a worktree is discarded the moment someone believes the ledger. Cite the commit, or pass --no-commit '&lt;why&gt;' to record deliberately that this node's commits are not being registered
-FAILED tests/test_a_gate_names_its_arms.py::test_the_same_arms_undeclared_are_refused_naming_the_mismatch - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
-FAILED tests/test_a_gate_names_its_arms.py::test_a_mismatch_waiver_lands_with_its_reason_and_the_held_arms - AssertionError: Error: run 'r-20261115T090200000000-node-a' has a passing gate and cites no commit, but its worktree is at 5fb829308604 rather than its base 601e568e81dd: it committed, and nothing on the record says what. Work left only in a worktree is discarded the moment someone believes the ledger. Cite the commit, or pass --no-commit '&lt;why&gt;' to record deliberately that this node's commits are not being registered
-FAILED tests/test_a_gate_names_its_arms.py::test_a_waiver_never_covers_a_failure_the_held_arms_add - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
-FAILED tests/test_a_gate_names_its_arms.py::test_a_refused_landing_returns_without_submitting_a_job - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
-5 failed in 1.54s
+FAILED tests/test_a_gate_names_its_arms.py::test_a_mismatch_waiver_lands_with_its_reason_and_the_held_arms
+FAILED tests/test_a_gate_names_its_arms.py::test_a_refused_landing_returns_without_submitting_a_job
+FAILED tests/test_a_gate_names_its_arms.py::test_a_waiver_never_covers_a_failure_the_held_arms_add
+FAILED tests/test_a_gate_names_its_arms.py::test_declared_gpu_arms_land_and_the_row_names_them
+FAILED tests/test_a_gate_names_its_arms.py::test_the_same_arms_undeclared_are_refused_naming_the_mismatch
+5 failed
 EXIT=1
 </pre>
 
 <h4 id="qwnw-red-file-a-gate-names-its-arms-head-gate">Head gate: an all_debug job with SLURM_JOB_ID unset</h4>
 <pre>
-# revision: f343599911ef27677b17e240ceb5aa7b2add0a66
+# revision: the delivered head of this run
 # tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-gate-names-its-arms
 # command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_gate_names_its_arms.py
 # module.__file__: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-gate-names-its-arms/reckon/__init__.py
 # cwd: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-gate-names-its-arms
 # slurm_job_id: unset
 .....                                                                    [100%]
-5 passed in 5.97s
+5 passed
 EXIT=0
 </pre>
 
@@ -50,8 +51,8 @@ EXIT=0
 <table>
 <thead><tr><th>Arm</th><th>Revision</th><th>Tree</th><th>Result</th></tr></thead>
 <tbody>
-<tr><td>baseline</td><td><code>6fa76c49f48e</code></td><td>a detached worktree at the base revision</td><td>58 passed in 32.49s, exit 0</td></tr>
-<tr><td>after</td><td><code>f343599911ef</code></td><td>the run's own worktree</td><td>58 passed in 33.88s, exit 0</td></tr>
+<tr><td>baseline</td><td><code>6fa76c49f48e</code></td><td>a detached worktree at the base revision</td><td>58 passed, exit 0</td></tr>
+<tr><td>after</td><td>the run's delivered head</td><td>the run's own worktree</td><td>58 passed, exit 0</td></tr>
 </tbody>
 </table>
 <p>No failure is added against the base, and the file this node changed is not among either arm's files. A first attempt at the baseline arm ran over a <code>git archive</code> extraction, which carries no <code>.git</code>: the census test's own <code>git ls-tree</code> then returned 128 and two cases errored before reaching code under test (<code>test_every_staged_write_reaches_the_owner</code>, <code>test_claim_move_aside_is_not_a_staged_write</code>, reproduced against the same extraction). The arm was re-measured over a real worktree, which is the figure above.</p>
