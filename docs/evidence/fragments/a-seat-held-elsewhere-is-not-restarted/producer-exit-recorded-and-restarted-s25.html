@@ -65,7 +65,29 @@
   and 922 head files. Their parsed failure and error counts agree with the
   runner summaries; the parser also sees both known negative-control failures.
   The manifest carries the comparison, its disposition and the scoped suite
-  receipts. All job scratch trees were removed after their measurements.</p>
+  receipts. Completed measurement jobs removed their scratch trees.</p>
+  <section id="producer-exit-recorded-and-restarted-s25-importer-attribution">
+    <h3>Importer baseline attribution awaits disposition</h3>
+    <p>Finding <code>f639fa940e6</code> correctly separates the scoped gate
+    from the importer condition. The single broad comparison above still has
+    four raw additions and is not presented as a zero-added-failure result.</p>
+    <p>A fixed diagnostic then ran those four cases five times at unchanged
+    base <code>de83f451011c33cfecc9c8ecd220e9a6cdf21bda</code> and reviewed
+    head <code>72ae697a1a5362ac250802be676e1654576a104e</code>, alternating arm
+    order on one <code>all_debug</code> allocation. All ten trial commands
+    completed: 20 case executions per arm, with 12 failures at base and nine
+    at head. Every disputed id failed at base, with the same failing assertion
+    seen at head. Three were also present in the earlier retained full-base
+    importer log.</p>
+    <p><code>importer-failure-pairs.json</code> retains every trial receipt;
+    <code>importer-baseline-attribution.json</code> binds each disputed id to
+    its positive baseline reproduction. The four affected test files are
+    byte-identical at base and head. The identity check also detects the known
+    change in <code>runs.py</code>, so equality is not an empty instrument.</p>
+    <p>This evidence supports baseline attribution. Coordinator disposition
+    is still required before landing; the worker does not waive the live
+    section's importer condition or infer approval from the scoped gate.</p>
+  </section>
   <p>The existing supervisor restart policy is reused. Catchable exits can
   write a before-release receipt; a SIGKILL or node loss cannot execute that
   write. The historical exit cause, restart initiator, delay cause and event-file
