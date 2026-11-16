@@ -132,39 +132,41 @@ def test_a_landing_line_with_its_own_fragment_also_passes(repo: Path) -> None:
 
 
 def test_the_landing_beat_records_a_landing_with_no_fragment(
-    promoted: Path,
+    request: pytest.FixtureRequest,
 ) -> None:
+    promoted_repo = request.getfixturevalue("promoted")
     from reckon import _store
     from reckon.crew.queue_landing import _landing_beat
     from tests.test_a_closing_plan_gets_one_sourced_overview import _synthesize
 
     # The landed record a landing beat appends its anchor to is created by the
     # synthesis a close runs, so the fixture renders it first.
-    _synthesize(promoted)
+    _synthesize(promoted_repo)
 
     pointer = {
         "node": {"id": NODE, "plan": PLAN, "section": "s1"},
         "project": PROJECT,
-        "repo": str(promoted),
+        "repo": str(promoted_repo),
     }
 
     assert _landing_beat(pointer, "s1-attempt-1") == ""
 
-    state, _version = _store.read_plan(PROJECT, PLAN, str(promoted))
+    state, _version = _store.read_plan(PROJECT, PLAN, str(promoted_repo))
     bodies = " ".join(
         comment.get("body", "") for comment in state["comments"].get("s1", [])
     )
     assert "s1-attempt-1" in bodies
-    assert not (promoted / "docs" / "evidence" / "fragments" / PLAN).exists()
+    assert not (promoted_repo / "docs" / "evidence" / "fragments" / PLAN).exists()
 
 
 def test_a_section_ticked_with_a_close_comment_that_links_no_anchor(
-    checkout: Path,
+    request: pytest.FixtureRequest,
 ) -> None:
+    plan_checkout = request.getfixturevalue("checkout")
     from reckon import _store
     from reckon.mcp_edit_plan import _edit_plan_tool
 
-    _state, version = _store.read_plan(PROJECT, PLAN, str(checkout))
+    _state, version = _store.read_plan(PROJECT, PLAN, str(plan_checkout))
     result = _edit_plan_tool(
         PROJECT,
         PLAN,
@@ -183,11 +185,11 @@ def test_a_section_ticked_with_a_close_comment_that_links_no_anchor(
                 },
             },
         ],
-        checkout_path=str(checkout),
+        checkout_path=str(plan_checkout),
     )
 
     assert result.get("ok"), result
-    state, _version = _store.read_plan(PROJECT, PLAN, str(checkout))
+    state, _version = _store.read_plan(PROJECT, PLAN, str(plan_checkout))
     assert state["section_declarations"]["s2"] == "done"
     bodies = " ".join(
         comment.get("body", "") for comment in state["comments"].get("s2", [])
@@ -197,8 +199,9 @@ def test_a_section_ticked_with_a_close_comment_that_links_no_anchor(
 
 
 def test_the_overview_links_a_landed_nodes_fragment_and_reads_none_of_it(
-    checkout: Path,
+    request: pytest.FixtureRequest,
 ) -> None:
+    plan_checkout = request.getfixturevalue("checkout")
     from bs4 import BeautifulSoup
 
     from tests.test_a_closing_plan_gets_one_sourced_overview import (
@@ -206,15 +209,15 @@ def test_the_overview_links_a_landed_nodes_fragment_and_reads_none_of_it(
         _synthesize,
     )
 
-    fragment = checkout / FRAGMENT
+    fragment = plan_checkout / FRAGMENT
     fragment.parent.mkdir(parents=True, exist_ok=True)
     fragment.write_text(
         f"<html><body><main><p>{FRAGMENT_MARKER}</p></main></body></html>",
         encoding="utf-8",
     )
 
-    _synthesize(checkout)
-    record = _record_path(checkout).read_text(encoding="utf-8")
+    _synthesize(plan_checkout)
+    record = _record_path(plan_checkout).read_text(encoding="utf-8")
     soup = BeautifulSoup(record, "html.parser")
     rows = soup.find("section", id="landed-nodes").find("table").find_all("tr")[1:]
     by_node = {row.find("td").get_text(strip=True): row for row in rows}
@@ -227,16 +230,17 @@ def test_the_overview_links_a_landed_nodes_fragment_and_reads_none_of_it(
 
 
 def test_an_existing_fragment_still_renders_through_the_served_page(
-    checkout: Path,
+    request: pytest.FixtureRequest,
 ) -> None:
+    plan_checkout = request.getfixturevalue("checkout")
     from tests.test_a_closing_plan_gets_one_sourced_overview import _record_path
 
-    _record_path(checkout).parent.mkdir(parents=True, exist_ok=True)
-    _record_path(checkout).write_text(
+    _record_path(plan_checkout).parent.mkdir(parents=True, exist_ok=True)
+    _record_path(plan_checkout).write_text(
         "<!doctype html><html><body><main><h1>Landed</h1></main></body></html>",
         encoding="utf-8",
     )
-    fragment = checkout / FRAGMENT
+    fragment = plan_checkout / FRAGMENT
     fragment.parent.mkdir(parents=True)
     fragment.write_text(
         f"<html><body><main><p>{FRAGMENT_MARKER}</p></main></body></html>",
@@ -244,7 +248,7 @@ def test_an_existing_fragment_still_renders_through_the_served_page(
     )
 
     composed = evidence.compose_landed_record(
-        _record_path(checkout), PLAN, project=PROJECT
+        _record_path(plan_checkout), PLAN, project=PROJECT
     )
     text = composed.decode("utf-8") if isinstance(composed, bytes) else composed
 
