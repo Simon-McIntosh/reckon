@@ -686,55 +686,67 @@ def _arm(
     if getattr(run, "partitioned", False):
         extra["arm_log_path"] = str(log_path)
         extra["arm_environment"] = environment or {}
-    started = time.monotonic()
-    try:
-        finished = run(
-            argv,
-            cwd=str(tree),
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=timeout,
-            **extra,
-        )
-    except subprocess.TimeoutExpired as expired:
-        elapsed = time.monotonic() - started
-        partial = f"{expired.stdout or ''}{expired.stderr or ''}"
-        mode = "a" if getattr(run, "partitioned", False) else "w"
-        with log_path.open(mode, encoding="utf-8") as stream:
-            stream.write(f"timed out after {timeout}s\n{partial}")
-        return Arm(
-            tuple(argv),
-            None,
-            (),
-            str(log_path),
-            timed_out=True,
-            elapsed_seconds=elapsed,
-            file_count=file_count,
-        )
-    except OSError as exc:
-        elapsed = time.monotonic() - started
-        log_path.write_text(f"{type(exc).__name__}: {exc}\n", encoding="utf-8")
-        return Arm(
-            tuple(argv),
-            None,
-            (),
-            str(log_path),
-            elapsed_seconds=elapsed,
-            file_count=file_count,
-        )
-    elapsed = time.monotonic() - started
-    output = f"{finished.stdout or ''}{finished.stderr or ''}"
-    log_path.write_text(output, encoding="utf-8")
-    return Arm(
-        tuple(argv),
-        int(finished.returncode),
-        failing_ids(output),
-        str(log_path),
-        unreadable_reason=str(getattr(finished, "unreadable_reason", "") or ""),
-        elapsed_seconds=elapsed,
-        file_count=file_count,
+    partitioned = getattr(run, "partitioned", False)
+    handle = (
+        contextlib.nullcontext(None)
+        if partitioned
+        else log_path.open("x", encoding="utf-8")
     )
+    with handle as stream:
+        started = time.monotonic()
+        try:
+            finished = run(
+                argv,
+                cwd=str(tree),
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=timeout,
+                **extra,
+            )
+        except subprocess.TimeoutExpired as expired:
+            elapsed = time.monotonic() - started
+            partial = f"{expired.stdout or ''}{expired.stderr or ''}"
+            if stream is not None:
+                stream.write(f"timed out after {timeout}s\n{partial}")
+            return Arm(
+                tuple(argv),
+                None,
+                (),
+                str(log_path),
+                timed_out=True,
+                elapsed_seconds=elapsed,
+                file_count=file_count,
+            )
+        except OSError as exc:
+            elapsed = time.monotonic() - started
+            if stream is not None:
+                stream.write(f"{type(exc).__name__}: {exc}\n")
+            return Arm(
+                tuple(argv),
+                None,
+                (),
+                str(log_path),
+                unreadable_reason=f"{type(exc).__name__}: {exc}",
+                elapsed_seconds=elapsed,
+                file_count=file_count,
+            )
+        elapsed = time.monotonic() - started
+        output = f"{finished.stdout or ''}{finished.stderr or ''}"
+        if stream is not None:
+            stream.write(output)
+            if output and not output.endswith("\n"):
+                stream.write("\n")
+            stream.write(f"EXIT={finished.returncode}\n")
+        return Arm(
+            tuple(argv),
+            int(finished.returncode),
+            failing_ids(output),
+            str(log_path),
+            unreadable_reason=str(getattr(finished, "unreadable_reason", "") or ""),
+            elapsed_seconds=elapsed,
+            file_count=file_count,
+        )
 
 
 _LONG_PARTITION_BOUND_SECONDS = 3600.0
@@ -781,6 +793,13 @@ def partition_submission(
     reports where its measure ran needs the partition the bound chose rather
     than the one that was declared for short bounds.
     """
+    log_path = Path(log_path).absolute()
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    # Reserve both outputs before submission; the task appends only to this run's files.
+    with log_path.open("x", encoding="utf-8"):
+        pass
+    with Path(f"{log_path}.scheduler").open("x", encoding="utf-8"):
+        pass
     selected = partition_for_bound(partition, long_partition, bound_seconds)
     seconds = max(1, math.ceil(bound_seconds))
     hours, remainder = divmod(seconds, 3600)
@@ -798,7 +817,7 @@ def partition_submission(
                 script,
             ]
         )
-        + " > "
+        + " >> "
         + shlex.quote(str(log_path))
         + " 2>&1"
     )
@@ -806,6 +825,7 @@ def partition_submission(
         "sbatch",
         "--wait",
         "--parsable",
+        "--open-mode=append",
         f"--partition={selected}",
         f"--time={bound}",
         "--nodes=1",
@@ -857,7 +877,7 @@ def _partition_runner(
     def run(command, **options):
         revision = base_sha if Path(options["cwd"]) == base_tree else head_sha
         timeout = options["timeout"]
-        log = Path(options.pop("arm_log_path")).resolve()
+        log = Path(options.pop("arm_log_path")).absolute()
         scratch_id = hashlib.sha256(str(log).encode()).hexdigest()[:12]
         quote = shlex.quote
         git = shlex.join(["git", "--git-dir", str(git_dir)])
@@ -901,7 +921,6 @@ exit "$status"
             chdir=shared_repo,
             log_path=log,
         )
-        log.write_text("")
         try:
             finished = runner(
                 argv,
