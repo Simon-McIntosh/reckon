@@ -27,6 +27,10 @@
     stage, preserves the original exception, and records the exit before
     <code>drop_watch_seat</code>. The outer registration no longer duplicates
     the guard.</p>
+    <p>Commit <code>38584b3ad9c54ed201facd604ad774f27cfc1f1a</code> also
+    writes the lifecycle metadata through the held seat handle before yielding,
+    preserving agreement between the seat file and the watcher handed to its
+    caller. Its new contract case failed before that write was restored.</p>
     <p>The two exposure cases exercise the real publication path through its
     snapshot read, raising <code>RuntimeError</code> and <code>SystemExit(75)</code>.
     Each inspects the receipt while the seat is still locked and confirms that
@@ -36,22 +40,23 @@
   <table id="producer-exit-recorded-and-restarted-s25-measures">
     <thead><tr><th>Check</th><th>Observed result</th></tr></thead>
     <tbody>
-      <tr><td>Focused lifecycle checks</td><td>12 passed in 14.31 seconds,
-      including both initial-publication failures, normal exit, interruption,
-      explicit exit, ticker stages, placement release and successor protection.</td></tr>
-      <tr><td>Supervisor restart</td><td>The real fallback supervisor restarted
+      <tr><td>Focused lifecycle checks</td><td>All 13 lifecycle cases and the
+      seat-record importer case pass: 14 passed in 8.52 seconds. This includes
+      both initial-publication failures, exit receipts, ticker stages, placement
+      release, successor protection and the persisted seat metadata.</td></tr>
+      <tr><td>Supervisor restart sample</td><td>The real fallback supervisor restarted
       the stub producer in 8.98 seconds after its lapse, within the 600-second
-      lease. Its pid matches the replacement receipt's parent pid.</td></tr>
+      lease in <code>owner-focused.log</code>. Its pid matches the replacement
+      receipt's parent pid; the updated lifecycle check also passes this lease
+      bound.</td></tr>
       <tr><td>Answering-commit negative control</td><td>Reverting only
       <code>44881ad5809b6a28a174d19803afb8ce64d78719</code> in a temporary tree
-      preserves the exposure tests and makes both fail: 2 failed in 0.56 seconds,
+      at source head <code>38584b3ad9</code> retains the later seat-handle write
+      and makes both exposure cases fail: 2 failed in 0.90 seconds,
       with <code>EXIT=1</code> in <code>negative-control.log</code>.</td></tr>
       <tr><td>Original-base scoped arm</td><td>58 passed in 33.18 seconds on
       <code>all_debug</code>; the final-head arm is recorded in the manifest.</td></tr>
-      <tr><td>Importer comparison</td><td>Base: 724 failed, 5616 passed, 1 skipped,
-      14 errors. Repair head: 723 failed, 5629 passed, 1 skipped, 14 errors.
-      Comparing full failure ids finds two additions and three removals. The
-      wider zero-added-failure condition is not claimed.</td></tr>
+      <tr><td>Importer comparison</td><td>Base: 724 failed, 5616 passed, 1 skipped, 63 warnings, 14 errors in 1625.79s (0:27:05). Repair head: 721 failed, 5632 passed, 1 skipped, 64 warnings, 14 errors in 1615.98s (0:26:55). Comparing full failure ids finds 4 additions and 7 removals. The wider zero-added-failure condition is not claimed.</td></tr>
       <tr><td>Ruff comparison</td><td>Zero added findings across all four changed
       Python files against the original base.</td></tr>
     </tbody>
