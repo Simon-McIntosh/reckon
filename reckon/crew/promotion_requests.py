@@ -39,9 +39,8 @@ DEFERRED = "promotion-deferred"
 # and so a coordinator reading it is not told a promotion failed.
 WAITING = "promotion-waiting"
 PENDING = frozenset({REQUESTED, RUNNING})
-# A review parked while its record is written is not drained, but it is still a
-# promotion this queue owes, so a run waiting on that review waits rather than
-# being refused for a review that is about to be stored.
+# Parked reviews are rechecked without a slot. A run waiting on one waits
+# rather than being refused for a review that is about to be stored.
 QUEUED = PENDING | {WAITING}
 ERRORS = frozenset({FAILED, REFUSED})
 # A refusal whose run has since been promoted, landed, discarded or has no live
@@ -53,6 +52,8 @@ SETTLED = "promotion-settled"
 # process queued. A freed slot wakes it immediately, so this only bounds the
 # latency of a request nobody told it about.
 REFILL_POLL_SECONDS = 2.0
+# A parked request older than half an hour is owed to its owning session.
+WAITING_OBLIGATION_SECONDS = 1800.0
 DRAINED_LOG_NAME = "promotion-drained.jsonl"
 _DRAINED_LOG_MAX_BYTES = 256_000
 _DRAINED_LOG_KEEP_LINES = 500
@@ -266,6 +267,16 @@ def request_promotion(
     path = _request_path(run_id)
     with runs._pointer_lock(f"promotion-request-{run_id}"):
         existing = read_promotion(run_id)
+        if existing.get("phase") == WAITING:
+            waiting, reason = _review_self_waits(existing)
+            existing = {
+                **existing,
+                "phase": WAITING if waiting else REQUESTED,
+                "checked_at": _now(),
+                "waiting_reason": reason,
+            }
+            runs._write_json(path, existing)
+            _mark_pointer(existing, existing["phase"])
         if existing and (
             existing.get("phase") in QUEUED
             or existing.get("phase") == PROMOTED
@@ -790,7 +801,13 @@ class PromotionService:
                     or current.get("phase") not in QUEUED
                 ):
                     return
-                request = {**current, "phase": RUNNING, "started_at": _now()}
+                request = {
+                    **current,
+                    "phase": RUNNING,
+                    "started_at": _now(),
+                    "checked_at": _now(),
+                    "waiting_reason": "",
+                }
                 runs._write_json(_request_path(run_id), request)
                 _mark_pointer(request, RUNNING)
             result = self.execute(request)
@@ -937,11 +954,17 @@ def settle_requests_for(run_id: str, *, settled_as: str = "promoted") -> list[st
 def failure_obligations(
     project: str, session: str, *, now: datetime | None = None
 ) -> list[dict[str, Any]]:
-    """Project the service's durable failures into the owning session's duties."""
+    """Project failures and overdue waits into the owning session's duties.
+
+    A waiting request takes no promotion slot, but after half an hour its
+    owner needs its condition and last observation. Rechecking never resets
+    the age, which is measured from the original request.
+    """
     items: list[dict[str, Any]] = []
     for path in _requests_dir().glob("*.json"):
         request = _read(path)
-        if request.get("phase") not in ERRORS:
+        waiting = request.get("phase") == WAITING
+        if request.get("phase") not in ERRORS and not waiting:
             continue
         if request.get("project") != project or request.get("session") != session:
             continue
@@ -951,6 +974,26 @@ def failure_obligations(
             # longer go anywhere: the request is settled here rather than
             # raising a duty whose next command cannot apply.
             _settle(request, settled)
+            continue
+        if waiting:
+            age = _waited_seconds(
+                request.get("requested_at"), (now or datetime.now(UTC)).isoformat()
+            )
+            if age is None or age <= WAITING_OBLIGATION_SECONDS:
+                continue
+            checked_at = str(request.get("checked_at") or "unknown")
+            items.append(
+                {
+                    "kind": WAITING,
+                    "run_id": request["run_id"],
+                    "node": request.get("node", ""),
+                    "plan": request.get("plan", ""),
+                    "age_seconds": int(age),
+                    "checked_at": checked_at,
+                    "reason": f"{request.get('waiting_reason') or 'promotion is waiting'}; last checked {checked_at}",
+                    "next_command": f"reckon crew complete --run {request['run_id']} --gate {((request.get('options') or {}).get('gate') or 'not-run')}",
+                }
+            )
             continue
         items.append(
             {
