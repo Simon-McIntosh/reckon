@@ -24,7 +24,7 @@
   <title>The Monitor Tells The Truth Under Load | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="85">
+<meta name="plan-version" content="87">
 <meta name="plan-modified" content="2026-11-16">
 </head>
 <body>
@@ -325,6 +325,9 @@
 <div class="r-comment" data-section="s25" data-id="c-run-r-20261116T132129769846-review-of-off-node-follower-reads-slow-tick-s25-700d846d6cf7" data-who="reckon-build" data-when="2026-11-16T13:28:22Z">
     <div class="r-comment-body"><p>Independent review at base c2fdfd6e4dd16628ab494ec1322e524ad75a18ae and head 700d846d6cf7c50126e3553de8c10c3c3e431858: scores 20/20/20/19/20/20, no findings, zero added failures; parsed records stored in the reviewed run.</p></div>
 </div>
+<div class="r-comment" data-section="s25" data-id="c-run-r-20261116T105542293134-off-node-follower-reads-slow-tick-s25" data-who="reckon-build" data-when="2026-11-16T11:26:54Z">
+    <div class="r-comment-body"><p>Off-node station health remains fresh across a 363-second running tick and equals the local slow reading without a re-arm remedy; armed gate 70 passed, direct-import delta 0 added failures, declared base-reading control 9 failed / 3 passed. Evidence: docs/evidence/fragments/the-monitor-tells-the-truth-under-load/off-node-follower-reads-slow-tick-s25.html#off-node-follower-reads-slow-tick-s25-change</p></div>
+</div>
 <div class="r-comment" data-section="s26" data-id="c-run-r-20261116T115309658164-review-of-ensure-beside-live-producer-starts-nothing-s26-a912426f0c98" data-who="reckon-build" data-when="2026-11-16T11:59:45Z">
     <div class="r-comment-body"><p>Reviewed base 3bba6b6a88f5ca95a8325ceb291c8977873f217b through head a912426f0c988f1b96cfffd4453ba7421c6a397a; six dimensions scored 20; no findings; zero added failures.</p></div>
 </div>
@@ -335,7 +338,10 @@
     <div class="r-comment-body"><p>review of r-20261116T110048425828-one-limit-row-per-pane-s27 at a874e779576b against base 8104a1af: stored a parsed record scoring goal_fidelity 18, evidence 15, scope_discipline 15, durability 18, fit 17, reuse 20 (total 103) with 5 non-blocking findings and 0 added failures across the reviewed run's two gate arms</p></div>
 </div>
 <div class="r-comment" data-section="s27" data-id="c-run-r-20261116T115458933743-review-of-one-limit-row-per-pane-s27-dbf22541435b" data-who="reckon-build" data-when="2026-11-16T12:15:28.129Z">
-    <div class="r-comment-body"><p>Review of the s27 node&#x27;s landed node at dbf22541435b against 8104a1af5f90: goal_fidelity 19, evidence 16, scope_discipline 19, durability 18, fit 18, reuse 16 (total 106), status parsed, two non-blocking findings — reports ok true at EXIT=0</p></div>
+    <div class="r-comment-body"><p>Review of the s27 node's landed node at dbf22541435b against 8104a1af5f90: goal_fidelity 19, evidence 16, scope_discipline 19, durability 18, fit 18, reuse 16 (total 106), status parsed, two non-blocking findings — reports ok true at EXIT=0</p></div>
+</div>
+<div class="r-comment" data-section="s27" data-id="c-run-r-20261116T110048425828-one-limit-row-per-pane-s27" data-who="reckon-build" data-when="2026-11-16T11:03:12Z">
+    <div class="r-comment-body"><p>One limit reset now draws one row per pane however many followers serve it — `ticker.PaneRowPath` takes the pane&#x27;s shared claim from its own session, `replay_row_policy` passes `NO_LIFT_CLAIM` so a recorded window keeps the lift ends it printed, and `follower_row_path` no longer duplicates the claim rule; 5 new cases (4 fail at 8104a1af), base arm 58 passed EXIT=0, after arm at the delivered head on all_debug 63 passed EXIT=0</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261115T212555586749-review-of-held-drawn-by-its-owner-s3-dd6df313c008" data-who="reckon-build" data-when="2026-11-15T21:33:20.827Z">
     <div class="r-comment-body"><p>review of run r-20261115T145426280351-held-drawn-by-its-owner-s3 at head dd6df313 — goal_fidelity 17, evidence 15, scope_discipline 20, durability 15, fit 17, reuse 5; added_failure_count 0 from both recorded suite arms; five non-blocking findings, none holding the node.</p></div>
