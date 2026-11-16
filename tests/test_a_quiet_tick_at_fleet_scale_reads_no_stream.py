@@ -5,7 +5,10 @@ stream carried an assistant record, and which tool call did it close on — and
 both walk the stream to answer. Unmemoised, a tick's cost is the fleet's whole
 stream volume rather than the bytes that arrived since the last one: at 230 live
 runs a tick with nothing new still opened roughly four stream files per run,
-which is the wall-clock the tick spent growing past its bound.
+which is the wall-clock the tick spent growing past its bound. This case drives
+60 live runs rather than 230: the property is that a quiet tick opens no stream
+at all, so its count is the same at any population, and a fleet-scale fixture
+inside a shared suite competes for the machine with the rest of the suite.
 
 The counter wraps ``Path.open`` and keeps the stream paths opened during a
 measured window, so the assertion is against the files actually read rather than
@@ -15,9 +18,11 @@ own control: it must see the reads that are known to happen.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import time
 from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
 from pathlib import Path
 
 import pytest
@@ -25,7 +30,8 @@ import pytest
 from reckon.crew import recovery_wait, station, station_store
 from tests.measure_station_tick_at_230_runs import populate, seed_projects
 
-STREAMS = 65536
+RUNS = 60
+STREAMS = 16384
 
 
 @pytest.fixture()
@@ -38,13 +44,20 @@ def fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("XDG_RUNTIME_DIR", str(tmp_path / "runtime"))
     (tmp_path / "runtime").mkdir()
     mounts = seed_projects(tmp_path / "projects", home)
-    streams = populate(home, 230, STREAMS)
+    streams = populate(home, RUNS, STREAMS)
     store = station_store.StationStore(tmp_path / "runtime")
-    node = station.Station(store, home=home / "crew", projects=lambda: dict(mounts))
+    node = station.Station(
+        store,
+        home=home / "crew",
+        projects=lambda: dict(mounts),
+        duties=SimpleNamespace(
+            committing=contextlib.nullcontext, request=lambda *a, **k: None
+        ),
+        sweeps=SimpleNamespace(request=lambda *a, **k: None),
+    )
     try:
         yield node, streams
     finally:
-        node.duties.drain(timeout=30)
         node.reflex.stop()
         store.close()
 
