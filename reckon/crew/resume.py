@@ -380,14 +380,19 @@ def _emit(payload: Mapping[str, Any], pretty: bool) -> None:
     )
 
 
-def _register_commands() -> None:
-    """Attach the two hold verbs to the crew group, once per process."""
-    from reckon.crew_dispatch_commands import crew
+def register_hold_commands(group: click.Group) -> None:
+    """Attach the two hold verbs to ``group``, once per process.
 
-    if "hold" in crew.commands:
+    The group is passed in rather than imported: this module sits deep in the
+    ``reckon.crew`` graph that the group's module imports, so importing the
+    group back from here closes a cycle and makes the verb module depend on
+    every module in between, which only shows when it is the one imported
+    first.
+    """
+    if "hold" in group.commands:
         return
 
-    @crew.command(name="hold")
+    @group.command(name="hold")
     @click.option("--run", "run_id", required=True, help="The delivered run to hold.")
     @click.option(
         "--reason", required=True, help="Why the landing is deferred; recorded."
@@ -406,7 +411,7 @@ def _register_commands() -> None:
             raise click.ClickException(str(exc)) from exc
         _emit(result, pretty)
 
-    @crew.command(name="release")
+    @group.command(name="release")
     @click.option("--run", "run_id", required=True, help="The held run to release.")
     @click.option("--reason", required=True, help="Why the deferral ended; recorded.")
     @click.option("--by", default=DEFAULT_HOLDER, help="Who released the hold.")
@@ -422,6 +427,3 @@ def _register_commands() -> None:
         except CrewError as exc:
             raise click.ClickException(str(exc)) from exc
         _emit(result, pretty)
-
-
-_register_commands()

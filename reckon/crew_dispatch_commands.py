@@ -12,6 +12,7 @@ import click
 from reckon._store import write_json_atomically
 from reckon.cli_entry import main
 from reckon.crew.tombstones import tombstone_command
+from reckon.crew.resume import register_hold_commands
 
 # Verbs whose stdout is one JSON document on every exit path, success and
 # refusal alike: a caller decodes the whole stream, so an exit that writes
@@ -3411,3 +3412,11 @@ def crew_observe(run_id, project, pretty):
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit_crew_result({**record, **resolved}, pretty, observation=True)
+
+
+# The hold verbs are declared beside the hold they take, in
+# ``reckon.crew.resume``, and attached here because this module owns the group
+# they belong to. A verb module may import the group; the group must not be
+# reached from a verb module, or the group's own import of the crew graph
+# closes a cycle.
+register_hold_commands(crew)
