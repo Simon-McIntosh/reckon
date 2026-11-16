@@ -19,6 +19,7 @@ from pathlib import Path
 
 import pytest
 
+from reckon import host
 from reckon.crew import dispatch_launch as launch
 from reckon.crew import process_liveness, runs
 from reckon.crew import recovery_liveness as liveness
@@ -153,6 +154,32 @@ def test_a_launcher_job_that_failed_to_boot_frees_the_run(
     assert _observation(crew_home)["relied_on"]["launcher_job_state"] == "BOOT_FAIL"
 
 
+def test_a_launcher_job_purged_from_the_queue_frees_the_run(
+    crew_home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """(a) A job the answer no longer lists has left the queue.
+
+    The scheduler keeps a finished job in ``squeue --states all`` only for its
+    retention window, so a run read after that window finds its launcher job
+    absent rather than reporting a terminal state. An answer that was taken and
+    does not name the job is the queue saying the job is no longer in it, and
+    the peer job still running on the node does not hold this run — which is
+    the distinction from the failed query below, where no answer was taken and
+    the run stays unknown.
+    """
+    record = _foreign_pointer(crew_home, launcher_job_id="1319675")
+    scheduler = Scheduler(f"1320449|RUNNING|{AFTER_LAUNCH}\n")
+    monkeypatch.setattr(process_liveness, "_run_scheduler_query", scheduler)
+
+    assert liveness.launcher_host_is_gone(record) is True
+
+    observed = _observation(crew_home)
+    assert observed["process_gone"] is True
+    assert observed["relied_on"]["launcher_job_id"] == "1319675"
+    assert observed["relied_on"]["launcher_job_state"] is None
+    assert "1320449" not in json.dumps(observed["relied_on"])
+
+
 def test_a_launcher_job_still_running_keeps_the_run_unknown(
     crew_home: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -176,19 +203,25 @@ def test_a_record_with_no_launcher_job_is_freed_by_a_later_start(
     """
     record = _foreign_pointer(crew_home)
     assert "launcher_job_id" not in record
-    scheduler = Scheduler(
-        f"1320441|COMPLETED|2026-11-14T21:00:00\n1320449|RUNNING|{AFTER_LAUNCH}\n"
-    )
-    monkeypatch.setattr(process_liveness, "_run_scheduler_query", scheduler)
+    # The start time is the only fact that differs between these two answers, so
+    # the pair is the assertion: one live job frees the run from one side of the
+    # launch and keeps it unknown from the other, and the terminal job is beside
+    # the point either way.
+    for started, expected in ((AFTER_LAUNCH, True), (BEFORE_LAUNCH, False)):
+        scheduler = Scheduler(
+            f"1320441|COMPLETED|2026-11-14T21:00:00\n1320449|RUNNING|{started}\n"
+        )
+        monkeypatch.setattr(process_liveness, "_run_scheduler_query", scheduler)
 
-    assert liveness.launcher_host_is_gone(record) is True
+        assert liveness.launcher_host_is_gone(record) is expected, started
 
-    observed = _observation(crew_home)
-    assert observed["relied_on"]["basis"] == "node-jobs"
-    assert observed["relied_on"]["launched_at"] == LAUNCHED_AT
-    assert [
-        row["job_id"] for row in observed["relied_on"]["live_jobs_started_after_launch"]
-    ] == ["1320449"]
+        observed = _observation(crew_home)
+        assert observed["relied_on"]["basis"] == "node-jobs"
+        dismissed = [
+            row["job_id"]
+            for row in observed["relied_on"].get("live_jobs_started_after_launch", ())
+        ]
+        assert dismissed == (["1320449"] if expected else []), started
 
 
 def test_a_live_job_that_started_before_the_launch_keeps_the_run_unknown(
@@ -234,14 +267,33 @@ def _prepared_pointer(directory: Path, **overrides) -> dict:
     return _foreign_pointer(directory, launcher_host=socket.gethostname(), **overrides)
 
 
-def test_a_cli_launch_records_the_allocation_it_runs_inside(
-    crew_home: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """A CLI launch inside an ordinary allocation records its job id."""
-    _prepared_pointer(crew_home)
-    monkeypatch.delenv("FLEET_JOB_ID", raising=False)
-    monkeypatch.setenv("SLURM_JOB_ID", "1319168")
+def _placement(
+    tmp_path: Path, *, environ: dict[str, str], cgroup: str
+) -> host.HostFacts:
+    """The host's own placement reading, over fixtures rather than this machine."""
+    return host.host_facts(
+        environ=environ,
+        self_cgroup=cgroup,
+        cgroup_root=tmp_path / "cgroup",
+        mountinfo_path=tmp_path / "mountinfo",
+        tmp_path=tmp_path / "tmp",
+        home_path=tmp_path / "home",
+    )
 
+
+def _launch_records(
+    crew_home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    *,
+    environ: dict[str, str],
+    cgroup: str,
+    **pointer: object,
+) -> dict:
+    """Prepare an attempt as a CLI launch under one placement reading."""
+    _prepared_pointer(crew_home, **pointer)
+    placement = _placement(tmp_path, environ=environ, cgroup=cgroup)
+    monkeypatch.setattr(launch, "_current_host_facts", lambda: placement)
     launch._prepare_attempt_records(
         crew_home,
         run_id=RUN_ID,
@@ -249,74 +301,162 @@ def test_a_cli_launch_records_the_allocation_it_runs_inside(
         attempt_kind="dispatch",
         attempt_started_at="2026-11-16T21:00:00Z",
     )
+    return runs.read_pointer(RUN_ID)
 
-    assert runs.read_pointer(RUN_ID)["launcher_job_id"] == "1319168"
+
+def _job_cgroup(job_id: str) -> str:
+    return f"0::/system.slice/slurmstepd.scope/job_{job_id}/step_0"
+
+
+NO_JOB_CGROUP = "0::/user.slice/user-1.slice/session-1.scope"
+
+
+def test_a_cli_launch_records_the_allocation_it_runs_inside(
+    crew_home: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A CLI launch inside an ordinary allocation records its cgroup's job."""
+    pointer = _launch_records(
+        crew_home,
+        monkeypatch,
+        tmp_path,
+        environ={"SLURM_JOB_ID": "1319168"},
+        cgroup=_job_cgroup("1319168"),
+    )
+
+    assert pointer["launcher_job_id"] == "1319168"
 
 
 def test_a_cli_launch_prefers_the_allocation_the_fleet_published(
-    crew_home: Path, monkeypatch: pytest.MonkeyPatch
+    crew_home: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """The fleet's published job outranks an environment that inherited one."""
-    _prepared_pointer(crew_home)
-    monkeypatch.setenv("FLEET_JOB_ID", "1319168")
-    monkeypatch.setenv("SLURM_JOB_ID", "4242")
+    """The fleet's published job outranks a ``SLURM_JOB_ID`` it inherited.
 
-    launch._prepare_attempt_records(
+    The fleet supervisor exports ``FLEET_JOB_ID`` for everything it starts, so
+    a process outside any allocation but carrying one of its variables must not record
+    the variable it inherited instead of the allocation the fleet holds.
+    """
+    pointer = _launch_records(
         crew_home,
-        run_id=RUN_ID,
-        attempt=2,
-        attempt_kind="dispatch",
-        attempt_started_at="2026-11-16T21:00:00Z",
+        monkeypatch,
+        tmp_path,
+        environ={"FLEET_JOB_ID": "1319168", "SLURM_JOB_ID": "4242"},
+        cgroup=NO_JOB_CGROUP,
     )
 
-    assert runs.read_pointer(RUN_ID)["launcher_job_id"] == "1319168"
+    assert pointer["launcher_job_id"] == "1319168"
+
+
+def test_the_allocation_this_process_sits_in_outranks_the_fleet_variable(
+    crew_home: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """An sbatch job submitted from inside the fleet records its own allocation.
+
+    ``FLEET_JOB_ID`` is inherited by everything the fleet starts, a submitted
+    job included, while that job's own cgroup names the allocation it actually
+    runs inside. Recording the fleet's id there would name an allocation this
+    launch never ran in.
+    """
+    pointer = _launch_records(
+        crew_home,
+        monkeypatch,
+        tmp_path,
+        environ={"FLEET_JOB_ID": "1319168", "SLURM_JOB_ID": "1320600"},
+        cgroup=_job_cgroup("1320600"),
+    )
+
+    assert pointer["launcher_job_id"] == "1320600"
+
+
+def test_the_slurm_jobid_alias_is_read_as_one_name(
+    crew_home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """The old ``SLURM_JOBID`` spelling names the same allocation."""
+    pointer = _launch_records(
+        crew_home,
+        monkeypatch,
+        tmp_path,
+        environ={"SLURM_JOBID": "1319168"},
+        cgroup=_job_cgroup("1319168"),
+    )
+
+    assert pointer["launcher_job_id"] == "1319168"
 
 
 def test_an_in_harness_launch_records_no_launcher_job(
-    crew_home: Path, monkeypatch: pytest.MonkeyPatch
+    crew_home: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """An in-harness run does not run inside the allocation it is started from."""
-    _prepared_pointer(crew_home, launch="in-harness")
-    monkeypatch.setenv("SLURM_JOB_ID", "1319168")
-
-    launch._prepare_attempt_records(
+    pointer = _launch_records(
         crew_home,
-        run_id=RUN_ID,
-        attempt=2,
-        attempt_kind="dispatch",
-        attempt_started_at="2026-11-16T21:00:00Z",
+        monkeypatch,
+        tmp_path,
+        environ={"SLURM_JOB_ID": "1319168"},
+        cgroup=_job_cgroup("1319168"),
+        launch="in-harness",
     )
 
-    assert "launcher_job_id" not in runs.read_pointer(RUN_ID)
+    assert "launcher_job_id" not in pointer
 
 
 def test_a_placed_run_keeps_answering_through_its_placement_job(
-    crew_home: Path, monkeypatch: pytest.MonkeyPatch
+    crew_home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     """A run whose placement wrote a job id is not given a second one."""
-    _prepared_pointer(crew_home, job_id="1319168")
-    monkeypatch.setenv("SLURM_JOB_ID", "4242")
-
-    launch._prepare_attempt_records(
+    pointer = _launch_records(
         crew_home,
-        run_id=RUN_ID,
-        attempt=2,
-        attempt_kind="dispatch",
-        attempt_started_at="2026-11-16T21:00:00Z",
+        monkeypatch,
+        tmp_path,
+        environ={"SLURM_JOB_ID": "4242"},
+        cgroup=_job_cgroup("4242"),
+        job_id="1319168",
     )
 
-    assert "launcher_job_id" not in runs.read_pointer(RUN_ID)
-    assert runs.read_pointer(RUN_ID)["job_id"] == "1319168"
+    assert "launcher_job_id" not in pointer
+    assert pointer["job_id"] == "1319168"
 
 
 def test_no_allocation_records_no_launcher_job(
-    crew_home: Path, monkeypatch: pytest.MonkeyPatch
+    crew_home: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """A launch made outside any allocation writes no launcher job."""
-    _prepared_pointer(crew_home)
-    monkeypatch.delenv("SLURM_JOB_ID", raising=False)
-    monkeypatch.delenv("SLURM_JOBID", raising=False)
-    monkeypatch.delenv("FLEET_JOB_ID", raising=False)
+    pointer = _launch_records(
+        crew_home,
+        monkeypatch,
+        tmp_path,
+        environ={},
+        cgroup=NO_JOB_CGROUP,
+    )
+
+    assert "launcher_job_id" not in pointer
+
+
+def test_a_pointer_naming_another_machine_records_no_launcher_job(
+    crew_home: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The field describes the allocation this attempt runs inside.
+
+    A pointer naming another machine is an attempt that ran there, so this
+    host's allocation would name a job the run never ran in — and a reading
+    that names a job its node's answer does not carry frees nothing. The
+    node's answer here reports the foreign launcher job as finished, which is
+    what lets the launch proceed past its own liveness guard to the write.
+    """
+    placement = _placement(
+        tmp_path,
+        environ={"SLURM_JOB_ID": "1319168"},
+        cgroup=_job_cgroup("1319168"),
+    )
+    monkeypatch.setattr(launch, "_current_host_facts", lambda: placement)
+    monkeypatch.setattr(
+        process_liveness,
+        "_run_scheduler_query",
+        Scheduler("1320441|CANCELLED|2026-11-14T21:00:00\n"),
+    )
+    _foreign_pointer(crew_home)
 
     launch._prepare_attempt_records(
         crew_home,

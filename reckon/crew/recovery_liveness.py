@@ -1456,9 +1456,14 @@ def _nothing_working_the_run(
     a job that began after the worker was launched cannot be the allocation the
     worker runs inside.
 
-    ``relied_on`` names the facts the answer was read against, so the
-    observation file carries the job id or the start times a later reader can
-    check the verdict with.
+    ``relied_on`` names the facts the answer was read against, so the reading can be
+    checked afterwards with nothing but what the record and the answer hold.
+
+    Where the record names the launcher job, an answer that does not list it is
+    read as the job having left the queue: the scheduler lists a finished job
+    only for its retention window, so the state a purged job would report is not
+    in the answer at all. That verdict rests on the answer having been taken,
+    which is the distinction between this shape and a query that failed.
     """
     from reckon.crew.process_liveness import _JOB_LIVE_STATES
 
@@ -1471,10 +1476,19 @@ def _nothing_working_the_run(
     if launcher_job:
         named = [row for row in rows if row[0] == launcher_job]
         if not named:
-            return False, {
+            # ``squeue --states all`` lists a finished job only for the
+            # scheduler's own retention window, so a run read minutes after its
+            # allocation ended finds the job gone from the answer rather than
+            # reporting a terminal state. An answer that was taken and does not
+            # name the job is the queue saying the job is no longer in it, and
+            # that is the run's allocation having left the queue — the case
+            # this reading exists for. An answer that could not be taken is the
+            # case above and keeps the run unknown.
+            return True, {
                 "basis": "launcher-job",
                 "launcher_job_id": launcher_job,
-                "reason": "the node's answer does not name the launcher job",
+                "launcher_job_state": None,
+                "reason": "the node's answer does not name the launcher job, so it has left the queue",
             }
         state = named[0][1]
         gone = state.casefold() not in _JOB_LIVE_STATES

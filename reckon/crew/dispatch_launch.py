@@ -584,23 +584,6 @@ def _current_host_facts() -> Any:
     return host.host_facts()
 
 
-def _allocation_job_id() -> str | None:
-    """The scheduler job this process's own launch runs inside, or None.
-
-    The fleet supervisor publishes the allocation it holds as ``FLEET_JOB_ID``
-    for everything it starts, so a launch made from inside the fleet job names
-    that job even where ``SLURM_JOB_ID`` was cleared for it. On an ordinary
-    allocation the two agree. Outside any allocation both are absent, and the
-    pointer then records no launcher job — the same state a pointer written
-    before the field existed reads as.
-    """
-    for name in ("FLEET_JOB_ID", "SLURM_JOB_ID"):
-        value = os.environ.get(name, "").strip()
-        if value:
-            return value
-    return None
-
-
 def _record_launcher_job(run_id: str, record: Mapping[str, Any]) -> str | None:
     """Record on the run's pointer the allocation a CLI launch runs inside.
 
@@ -618,13 +601,15 @@ def _record_launcher_job(run_id: str, record: Mapping[str, Any]) -> str | None:
     conditions are read again under the pointer's lock, where the write itself
     decides. Answers the job id the pointer now carries, or None.
 
+    The id comes from ``host_facts``, which owns the reading of
+    ``FLEET_JOB_ID``, ``SLURM_JOB_ID`` and the ``SLURM_JOBID`` alias and picks
+    the one this process's own cgroup names, so a launch made inside a step of
+    the fleet job does not record the fleet's allocation instead of its own.
+
     A pointer that cannot be rewritten leaves the launch to proceed as it did
     before the field existed, which is a reading this change keeps unknown
     rather than a launch it refuses.
     """
-    job_id = _allocation_job_id()
-    if job_id is None:
-        return None
     if str(record.get("launch") or "") != "cli" or record.get("job_id"):
         return None
     if str(record.get("launcher_host") or "") != _reservation_host():
@@ -633,6 +618,13 @@ def _record_launcher_job(run_id: str, record: Mapping[str, Any]) -> str | None:
         # it would name an allocation the run never ran in. A reading that names
         # a job the node's answer does not carry stays unknown, so the cost of
         # declining here is a run that keeps the unknown it had.
+        return None
+    # The host's own placement reading answers which job this process runs
+    # inside, so the environment names are read in one place rather than
+    # again here. Reading it last keeps a launch that takes no field free of
+    # the probe.
+    job_id = _current_host_facts().job_id
+    if not job_id:
         return None
     if record.get("launcher_job_id") == job_id:
         return job_id
