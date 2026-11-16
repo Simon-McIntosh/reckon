@@ -110,4 +110,17 @@ a stale <code>TaskNode</code> call and an MCP fixture with no
 <code>local_backend</code> route. Those failures are the same at the base
 revision, are not caused by this change, and are recorded as outside this node's
 scope rather than repaired here.</p>
+<h4>Review round: the manifest carried no suite arms</h4>
+<p>The independent review of this run refused its delivered manifest
+(<code>f4e4691c56c</code>): it said <code>status: complete</code> without
+recording a <code>baseline_suite</code> arm, an <code>after_suite</code> arm, or a
+<code>messages_received</code> line, so <code>reckon crew check --manifest</code>
+exited 1 on its own findings before promotion ever read it. The manifest now
+records both arms — the baseline measured at <code>d0d77f07</code> over that
+revision's exported tree and the after arm measured at this repair's head over
+this worktree, each with the fence's exact command — and states
+<code>messages_received: none</code>, which the run directory's absent
+<code>inbox/receipts.jsonl</code> makes the true statement. The same check run
+against the manifest as it was delivered still refuses it with the messages
+finding, which is the control for this repair.</p>
 </section>
