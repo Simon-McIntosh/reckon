@@ -202,6 +202,19 @@ def require_promotable_head(
             )
 
 
+def _on_fleet_node() -> bool:
+    """Whether this host is the node the published fleet record names."""
+    import socket
+
+    from reckon.crew import watch_unit
+
+    try:
+        node = watch_unit.fleet_record_node()
+    except Exception:  # noqa: BLE001 - an unreadable record names no node
+        return False
+    return watch_unit._hosts_match(socket.gethostname(), node)
+
+
 def _run(
     repo: Path,
     *args: str,
@@ -209,7 +222,12 @@ def _run(
     env: dict[str, str] | None = None,
     extra_env: Mapping[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
-    remote = bool(args) and args[0] in {"ls-remote", "fetch"}
+    verb = args[0] if args else ""
+    # The fleet node reaches the remote only on port 443, and its port 22 fails
+    # by timing out, so every remote call there takes the 443 route at once. A
+    # push elsewhere keeps Git's own route and falls back only when refused.
+    direct = verb in {"ls-remote", "fetch", "push"} and _on_fleet_node()
+    remote = verb in {"ls-remote", "fetch"} or direct
     if remote:
         env = dict(os.environ if env is None else env)
         ssh = (env.get("GIT_SSH_COMMAND") or "").strip()
@@ -222,8 +240,9 @@ def _run(
             # Only an absent setting permits the default: Git owns configured
             # identities, proxies and wrappers, and reports config errors itself.
             if configured.returncode == 1:
+                route = FALLBACK_SSH_COMMAND if direct else "ssh"
                 env["GIT_SSH_COMMAND"] = (
-                    f"ssh -o ConnectTimeout={SSH_CONNECT_TIMEOUT_SECONDS}"
+                    f"{route} -o ConnectTimeout={SSH_CONNECT_TIMEOUT_SECONDS}"
                 )
     if extra_env:
         env = {**(os.environ if env is None else env), **extra_env}
