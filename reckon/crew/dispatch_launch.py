@@ -2730,6 +2730,10 @@ def _reservation_holder_running(
         home = crew_home()
 
         def foreign(_record: Mapping[str, Any]) -> bool:
+            from reckon.crew.recovery_liveness import launcher_host_is_gone
+
+            if launcher_host_is_gone(payload):
+                return False
             return host_heartbeat.host_is_live(home, host)
 
         return foreign
