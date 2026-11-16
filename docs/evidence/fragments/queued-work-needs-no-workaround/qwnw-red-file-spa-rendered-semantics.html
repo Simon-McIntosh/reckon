@@ -143,13 +143,25 @@
   states the served fields, and the fixture now carries the row shape the walk
   emits.</p>
 
-  <p>The control for that removal is a probe over a sprint payload with
-  <code>derived_state</code> and <code>implementation_pct</code> stripped. With
-  the removal in place the row states
+  <p>The control is a case, not a scratch probe:
+  <code>test_sprint_table_states_only_the_figures_the_payload_serves</code>
+  supplies a payload that carries the <code>metrics</code> block a derivation
+  would read and omits the derived fields. The table states
   <code>{"state": "unknown", "implementation": "0%"}</code> — the payload's
-  answer. With the derivation temporarily restored the same payload renders
-  <code>{"state": "active", "implementation": "42%"}</code>, which is the
-  browser inventing the figure the finding named.</p>
+  answer. With the derivation put back in place the same case fails reading
+  <code>{"state": "active", "implementation": "42%"}</code>: the browser
+  inventing the figure. Reverting the sprint change therefore reds the file,
+  which is what the earlier scratch probe could not show.</p>
+
+  <p>The sprint fixture carried the derived fields beside a
+  <code>metrics</code> block with identical figures, so no assertion in the
+  composed case could tell a served answer from a derived one. The fixture now
+  carries the row the roadmap walk emits and nothing else; the payload-only case
+  above then supplies the block deliberately.</p>
+
+  <p>The sprint module is outside this node's granted write paths; see
+  <code>over_fence_reason</code> in the manifest, which names the grant this
+  repair needs.</p>
 
   <p>The compact-progress case now reports the hash it observed rather than
   whether the hash matched, so a red run prints the destination a reader needs.
