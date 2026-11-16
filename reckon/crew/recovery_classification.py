@@ -34,6 +34,9 @@ from reckon.crew.reports import (
 #: report the same run as two different outcomes.
 PROMOTED_UNMERGED_STATE = "complete"
 
+# The supervisor's own cause, carried verbatim to the pane and the duty.
+SUPERVISOR_STOP_PREFIX = "supervisor force-stopped: "
+
 
 def _is_measurement_run(record: Mapping[str, Any]) -> bool:
     """Whether dispatch marked this run to build and gate without landing."""
@@ -1417,6 +1420,15 @@ def classify_pointer(
     ended_exit = exit_record if exit_record is not None and alive is not True else None
     if ended_exit is not None:
         alive = False
+    forced_exit = ended_exit.get("forced_exit") if ended_exit else None
+    current_attempt = _current_attempt_number(record)
+    supervisor_stop_reason = (
+        str(forced_exit.get("reason") or "unspecified")
+        if isinstance(forced_exit, Mapping)
+        and (current_attempt is None or ended_exit.get("attempt") == current_attempt)
+        and manifest_status not in TERMINAL_MANIFEST_STATUSES
+        else ""
+    )
     # A review run whose worker has ended is read from the review it filed
     # rather than from the working word its manifest may still carry: the
     # supervisor files each delivered record into the store and records where,
@@ -1958,6 +1970,10 @@ def classify_pointer(
             "attempt the pointer still names"
         )
         action = f"reckon crew observe --run {run_id}"
+    elif supervisor_stop_reason:
+        classification = "stopped"
+        detail = SUPERVISOR_STOP_PREFIX + supervisor_stop_reason
+        action = f"inspect the worktree at {record.get('worktree')} before resuming"
     elif (
         cut_off := omp_cut_off(
             record, manifest_status=manifest_status, exit_record=ended_exit, stream=log
@@ -1968,7 +1984,9 @@ def classify_pointer(
             f"the omp worker {_exit_record_end_phrase(ended_exit)} before its "
             f"manifest reached an outcome; last tool call: {cut_off_detail(cut_off)}"
         )
-        action = f"reckon crew resume --run {run_id} --advice 'continue the unfinished work'"
+        action = (
+            f"reckon crew resume --run {run_id} --advice 'continue the unfinished work'"
+        )
     elif interruption is not None:
         classification = INTERRUPTED_RUN_PHASE
         signal_name = interruption.get("signal_name")
@@ -2837,8 +2855,18 @@ def classify_pointer(
                 f"the {resume_remedy['source']} record"
             )
 
+    if classification == "stopped" and supervisor_stop_reason:
+        # Repair the stale terminal phase as blocked before resuming unfinished
+        # work; declaring completion here would assert a verdict nobody wrote.
+        repair = (
+            f"reckon crew repair --run {run_id} --status blocked --reason "
+            f"{shlex.quote(SUPERVISOR_STOP_PREFIX + supervisor_stop_reason)}"
+        )
+        action = f"{repair} && {action}"
     hold = refusal_block or exhaustion_block or retry_block or budget_hold
-    if classification == INTERRUPTED_RUN_PHASE:
+    if classification == "stopped" and supervisor_stop_reason:
+        recovery_classification = "stopped"
+    elif classification == INTERRUPTED_RUN_PHASE:
         recovery_classification = INTERRUPTED_RUN_PHASE
     elif manifest_unwritten:
         # A live worker between its orientation write and its first status has
@@ -2891,6 +2919,8 @@ def classify_pointer(
         # redispatch its work. A session that survives means the turns come
         # back with it, so continuing is the remedy.
         recovery_verb = "resume"
+    if classification == "stopped" and supervisor_stop_reason:
+        recovery_verb = "repair"
 
     lifting_condition = None
     if classification == WAITING_STATUS and wait is not None:
@@ -2982,6 +3012,8 @@ def classify_pointer(
         "effective_phase": (
             INTERRUPTED_RUN_PHASE
             if classification == INTERRUPTED_RUN_PHASE
+            else "stopped"
+            if classification == "stopped" and supervisor_stop_reason
             else observed_phase
         ),
         "interruption": interruption,

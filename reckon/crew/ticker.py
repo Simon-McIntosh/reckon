@@ -572,7 +572,9 @@ PANE_STATES = {
 # replay of a start, a re-arm or reload baseline, and a reload notice. The row
 # policy and the summary lines read the rule from here rather than restating it,
 # so a row the stream withholds is withheld by one decision.
-CARRIED_PANE_WORDS = frozenset({"delivered", "help", "in review", "seat moved"})
+CARRIED_PANE_WORDS = frozenset(
+    {"delivered", "help", "stopped", "in review", "seat moved"}
+)
 
 # The pane words of a run whose work is over: a written record, or a drop. A
 # landing is news only when the pane itself drew the delivery before it, and a
@@ -1160,13 +1162,15 @@ def _remembered_word(state: Any) -> str:
     ``halted``, is read by ``_display_state`` as the word the pane draws now.
     """
     spelled = str(state or "")
-    if spelled in PANE_STATES:
+    if spelled in PANE_STATES or spelled == "stopped":
         return spelled
     return _display_state(spelled)
 
 
 def _state_hue(theme: str, word: str) -> Any:
     """The hue of the pane's state word, or dim for a non-state marker."""
+    if word == "stopped":
+        return STATE_HUE[theme][word]
     return DISPLAY_HUE[theme].get(word, "dim")
 
 
@@ -1566,12 +1570,26 @@ def _pane_word(event: Mapping[str, Any]) -> str:
     rather than by the event's own field.
     """
     typed = str(event.get("recovery_classification") or "")
+    if supervisor_stop_clause(event):
+        return "stopped"
     entry = (
         typed
         if typed in {"held", "needs-help", "unwritten"}
         else str(event.get("to_state") or "")
     )
     return _display_state(entry)
+
+
+def supervisor_stop_clause(event: Mapping[str, Any]) -> str:
+    """The supervisor stop's cause, as the classifier wrote it."""
+    from reckon.crew.recovery_classification import SUPERVISOR_STOP_PREFIX
+
+    detail = str(event.get("detail") or "")
+    if event.get("recovery_classification") == "stopped" and detail.startswith(
+        SUPERVISOR_STOP_PREFIX
+    ):
+        return detail.partition(";")[0]
+    return ""
 
 
 def is_submission_row(event: Mapping[str, Any]) -> bool:
@@ -3448,15 +3466,9 @@ class Ticker:
         # as the fresh grant having landed.
         if raw_to_state in LIFT_STATES and event.get("lift_replaces"):
             return self._lift_line(event)
-        typed_state = str(event.get("recovery_classification") or "")
         # The compatibility lifecycle state may group several stops as blocked.
         # The row spells the cause-specific type when the producer supplied one.
-        entry_state = (
-            typed_state
-            if typed_state in {"held", "needs-help", "unwritten"}
-            else raw_to_state
-        )
-        to_state = _display_state(entry_state)
+        to_state = _pane_word(event)
         run_id = str(event.get("run_id") or node)
         stream_event = bool(str(event.get("event") or "").strip())
         # A run an admission pass launched from a queued request continues the
@@ -3566,8 +3578,8 @@ class Ticker:
         # reads as the lift it is — form, scope and id — rather than as the
         # run-state word its transition maps to. The clause takes the room the
         # pane has left and is cut like any other cell, so it never wraps.
-        if raw_to_state in LIFT_STATES:
-            clause = lift_clause(event)
+        if raw_to_state in LIFT_STATES or supervisor_stop_clause(event):
+            clause = supervisor_stop_clause(event) or lift_clause(event)
             spare = self._grid_width() - sum(len(text) for text, _ in cells)
             if clause and spare > GAP + 1:
                 text = elide(clause, spare - GAP)
