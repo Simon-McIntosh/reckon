@@ -120,9 +120,10 @@ def _committed_node_runs(
 ) -> list[dict[str, Any]]:
     """The committed runs of one node, in completion order.
 
-    Read from the project's run index with one filtered query, so a dispatch
-    pays for its own node's rows rather than for the whole ledger. An index
-    that cannot be read falls back to the full ledger read, filtered here.
+    Read with one filtered query, so a dispatch pays for its own node's rows
+    rather than for the whole ledger. The run store answers when it exists,
+    through its node column; a project with no store asks its run index, and an
+    index that cannot be read falls back to the full ledger read, filtered here.
     """
     import json as _json
     import sqlite3
@@ -137,6 +138,11 @@ def _committed_node_runs(
             ),
         )
 
+    from reckon import run_store
+
+    stored = run_store.stored_run_rows(project, node=node_id)
+    if stored is not None:
+        return ordered(stored)
     query = (
         "SELECT payload FROM aggregate_rows "  # noqa: S608 - values are bound
         "WHERE json_extract(payload, '$.node') = ? "
