@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="408">
+<meta name="plan-version" content="409">
 <meta name="plan-modified" content="2026-11-16">
 </head>
 <body>
@@ -1577,6 +1577,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s79" data-id="c-run-r-20261116T211912273793-review-of-the-landing-check-reads-only-the-runs-it-checks-1c43c31cf1d4" data-who="reckon-build" data-when="2026-11-16T21:24:19.122Z">
     <div class="r-comment-body"><p>review of r-20261116T204433617287-the-landing-check-reads-only-the-runs-it-checks at baa6e83..1c43c31cf1 stored at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T204433617287-the-landing-check-reads-only-the-runs-it-checks/review-records/r-20261116T204433617287-the-landing-check-reads-only-the-runs-it-checks.json, scored 19/16/20/15/19/20 with 0 added failures and 2 non-blocking findings</p></div>
+</div>
+<div class="r-comment" data-section="s79" data-id="c-run-r-20261116T204433617287-the-landing-check-reads-only-the-runs-it-checks" data-who="reckon-build" data-when="2026-11-16T20:59:49.537Z">
+    <div class="r-comment-body"><p>`_unlanded_run_findings` now collects the run ids of the promoted holds on the sections a plan declares done and passes them to `ledger.read_records`, whose new `run_ids` selection is threaded through `ledger.load` to `run_store.stored_run_rows` so the store answers those identities by key; on the done-when&#x27;s 2,000-row store the build decodes at most 3 rows where the restored base read decodes 2,000, a plan with no done section decodes 0 rows, exactly one `run-not-landed` finding names the unlanded run, and the findings are otherwise unchanged.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261027T064548615537-review-of-a-follower-is-a-station-subscriber-3e6c0bc43826" data-who="reckon-build" data-when="2026-10-27T06:53:37.691Z">
     <div class="r-comment-body"><p>Independent review of r-20261027T042459263998-a-follower-is-a-station-subscriber at head 3e6c0bc43826 (base c30c057d4) scores goal_fidelity 18, evidence 15, scope_discipline 16, durability 16, fit 17, reuse 5, with 0 added failures and three non-blocking findings: events_for duplicates the existing events() reader, a session-less subscriber's cursors row is keyed on audience alone and collides across projects, and a figure was added that the done-when did not name.</p></div>
