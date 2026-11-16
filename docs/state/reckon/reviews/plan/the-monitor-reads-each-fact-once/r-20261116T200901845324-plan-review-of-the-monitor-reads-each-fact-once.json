@@ -51,6 +51,16 @@
       "note": "s78 now uses process_liveness._JOB_LIVE_STATES and the scheduler_job_state rule (any state outside the live set is gone), with BOOT_FAIL added to case (a); s80 classifies the lock through run_store._locked rather than a text match.",
       "reason": "",
       "when": "2026-11-16T20:33:20.656592+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "4ffd97352b9083593e3fb5e63063abae77bacf47",
+      "commit_basis": "edit",
+      "finding": "reuse_search-1",
+      "note": "s78 keeps placed runs on their placement job_id and placement_job_alive unchanged; launcher_job_id is written only for a CLI launch with no placement job, read from FLEET_JOB_ID or else SLURM_JOB_ID.",
+      "reason": "",
+      "when": "2026-11-16T20:33:49.548081+00:00"
     }
   ],
   "responses": {
@@ -62,6 +72,15 @@
       "note": "s78 now uses process_liveness._JOB_LIVE_STATES and the scheduler_job_state rule (any state outside the live set is gone), with BOOT_FAIL added to case (a); s80 classifies the lock through run_store._locked rather than a text match.",
       "reason": "",
       "when": "2026-11-16T20:33:20.656592+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "4ffd97352b9083593e3fb5e63063abae77bacf47",
+      "commit_basis": "edit",
+      "note": "s78 keeps placed runs on their placement job_id and placement_job_alive unchanged; launcher_job_id is written only for a CLI launch with no placement job, read from FLEET_JOB_ID or else SLURM_JOB_ID.",
+      "reason": "",
+      "when": "2026-11-16T20:33:49.548081+00:00"
     }
   },
   "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-monitor-reads-each-fact-once/r-20261116T200901845324-plan-review-of-the-monitor-reads-each-fact-once.json",
