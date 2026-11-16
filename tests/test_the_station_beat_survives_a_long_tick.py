@@ -73,6 +73,7 @@ def test_a_long_tick_cannot_hold_the_local_beat(held, tmp_path, monkeypatch):
 
         beat = station.StationBeat(root, beat_seconds=0.01, clock=lambda: clock[0])
         beat.start()
+        threads = (beat._thread, beat._publisher)
         try:
             assert published.wait(3), "positive control never published a beat"
             initial = snapshots.read_station_answer(PROJECT, SESSION)
@@ -119,10 +120,7 @@ def test_a_long_tick_cannot_hold_the_local_beat(held, tmp_path, monkeypatch):
                 beat.stop()
         assert beat._thread is None
         assert export.read_bytes() == original, "a beat rewrote the obligation export"
-        assert not any(
-            thread.name in {"station-beat", "station-beat-publisher"}
-            for thread in threading.enumerate()
-        )
+        assert all(thread is not None and not thread.is_alive() for thread in threads)
         path = root / snapshots.STATION_HEARTBEAT_NAME
         current = path.read_bytes()
         markers = json.loads(current)
@@ -149,3 +147,39 @@ def test_a_long_tick_cannot_hold_the_local_beat(held, tmp_path, monkeypatch):
         rows = ProducerSnapshotNotices(PROJECT, SESSION).poll()
         assert [row["event"] for row in rows] == ["producer-lost"], rows
         assert rows[0]["remedy"] == watcher_ensure_line(PROJECT)
+
+
+def test_stop_waits_for_its_blocked_publisher(tmp_path, monkeypatch):
+    entered = threading.Event()
+    release = threading.Event()
+    returned = threading.Event()
+    beat = station.StationBeat(tmp_path, beat_seconds=0.01)
+    monkeypatch.setattr(beat, "_local_beat", lambda: ({}, None))
+
+    def publish(*_args, **_kwargs):
+        entered.set()
+        assert release.wait(10), "the test did not release publication"
+
+    monkeypatch.setattr(snapshots, "publish_station_reading", publish)
+    beat.start()
+    threads = (beat._thread, beat._publisher)
+
+    def stop():
+        beat.stop()
+        returned.set()
+
+    stopper = threading.Thread(target=stop)
+    try:
+        assert entered.wait(3), "publication never started"
+        stopper.start()
+        assert not returned.wait(1.5), "stop returned while its publisher was blocked"
+        assert beat._publisher is threads[1], "stop discarded its live publisher"
+    finally:
+        release.set()
+        if stopper.ident is not None:
+            stopper.join(3)
+        else:
+            beat.stop()
+    assert returned.is_set()
+    assert all(thread is not None and not thread.is_alive() for thread in threads)
+    assert beat._thread is None and beat._publisher is None

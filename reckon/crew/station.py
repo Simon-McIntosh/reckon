@@ -217,10 +217,10 @@ class StationBeat:
         self._stop.set()
         self._publication_due.set()
         if self._thread is not None:
-            self._thread.join(timeout=max(1.0, self.beat_seconds * 2))
+            self._thread.join()
             self._thread = None
         if self._publisher is not None:
-            self._publisher.join(timeout=max(1.0, self.beat_seconds * 2))
+            self._publisher.join()
             self._publisher = None
 
 
