@@ -109,10 +109,11 @@ def test_mismatch_without_waiver_still_refuses(
     _prepare(repository, tmp_path)
     result = _complete_cli(repository, tmp_path)
     assert result.exit_code == 1
-    # This fixture's log carries no exit record and no failing test id, so the
-    # gate refuses it on the facts it cannot read; the declaration's wording is
-    # no longer compared, so this asserts the missing fact, not a mismatch.
-    assert "records no EXIT status" in result.output
+    # This fixture's log ends in a bare failing count with no failing test id,
+    # so the run's own output is enough to say its run failed and short of
+    # saying what broke: the gate refuses it on that missing fact, not on a
+    # comparison against the declaration's wording, which is never compared.
+    assert "names no failing test id" in result.output
     assert "--waive-negative-control REASON" in result.output
     _assert_not_promoted(repository)
 
@@ -203,9 +204,16 @@ def test_waiver_option_requires_an_argument(repository: Path, tmp_path: Path) ->
 
 
 @pytest.mark.parametrize("missing", ["path", "file"])
-def test_waiver_cannot_substitute_for_missing_control_log(
+def test_reasoned_waiver_lands_without_a_readable_control_log(
     repository: Path, tmp_path: Path, missing: str
 ) -> None:
+    # A reasoned waiver displaces the control-log judgement rather than
+    # discharging it: the manifest check leaves a recorded waiver to a person
+    # and the gate's refusal offers this waiver as the way past an absent
+    # control, so a run with no control log may be judged by that citation as
+    # far as a citation goes. What is asserted here is that the row keeps the
+    # record the run left — the declaration, the reason, and whichever of the
+    # waiver's log paths the manifest actually names.
     red_log = _prepare(repository, tmp_path)
     if missing == "path":
         manifest = Path(read_pointer(RUN_ID)["manifest_path"])
@@ -218,9 +226,19 @@ def test_waiver_cannot_substitute_for_missing_control_log(
     else:
         red_log.unlink()
     result = _complete_cli(repository, tmp_path, "--waive-negative-control", REASON)
-    assert result.exit_code == 1
-    assert "negative_control_log" in result.output
-    _assert_not_promoted(repository)
+    assert result.exit_code == 0, result.output
+    control = _row(repository, RUN_ID)["negative_control"]
+    assert control["verdict"] == "waived"
+    assert control["reason"] == REASON
+    assert control["declaration"] == DECLARATION
+    assert control["control_log_source"] == "none"
+    if missing == "path":
+        assert control["log"] == ""
+        assert "resolved_log" not in control
+    else:
+        assert control["log"] == red_log.name
+        assert control["resolved_log"] == str(red_log.resolve())
+    assert not pointer_path(RUN_ID).exists()
 
 
 def test_python_entry_point_persists_the_same_waiver(
