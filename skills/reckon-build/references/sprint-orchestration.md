@@ -417,13 +417,14 @@ WORKTREE AND PARALLEL-SAFETY RULES (binding):
    path restoration.
 3. Stage only explicit assigned paths. Never use git add -A, git add .,
    wildcards, git commit -a, or git commit -am.
-4. Write your landing record to your own fragment path and never to the plan:
+4. A per-node evidence fragment is optional: write one only when you have a
+   negative result or a mechanism that does not fit a landing line, and a
+   routine landing writes none, so the landing line is the whole prose account
+   of the node. When you write one, place it as follows. Write your landing
+   record to your own fragment path and never to the plan:
    your evidence anchor to your scope's fragment under
    docs/evidence/fragments/<plan>/<node-id>.html, and exactly one `landing:`
-   line in your manifest in place of a plan edit. A per-node evidence fragment
-   is optional: write one only when you have a negative result or a mechanism
-   that does not fit a landing line, and a routine landing writes none, its
-   `landing:` line being then the whole prose account of the node. The fragment
+   line in your manifest in place of a plan edit. The fragment
    goes into your final commit; promotion lands the `landing:` line on your
    plan section. Nothing splices a fragment into the plan's landed record: that
    record is synthesized once at closure and links the fragment from your
@@ -512,17 +513,18 @@ beat is a review of an authored record, not a transcription of a manifest. Do
 not promote another run or merge another commit between those operations. The
 plan write is mandatory, but dispatching an unrelated ready node is outside this
 freeze and may refill a free slot. Workers author their own landing record in
-the same beat, per the contract the prompt embeds verbatim: "Write your landing
-record to your own fragment path and never to the plan: your evidence anchor to
-your scope's fragment under docs/evidence/fragments/<plan>/<node-id>.html, and
-exactly one `landing:` line in your manifest in place of a plan edit. A
-per-node evidence fragment is optional: write one only when you have a negative
-result or a mechanism that does not fit a landing line, and a routine landing
-writes none, its `landing:` line being then the whole prose account of the
-node. The fragment goes into your final commit; promotion lands the `landing:`
-line on your plan section. Nothing splices a fragment into the plan's landed
-record: that record is synthesized once at closure and links the fragment from
-your node's row without reproducing its text." The shared-state ban narrows
+the same beat, per the contract the prompt embeds verbatim: "A per-node
+evidence fragment is optional: write one only when you have a negative result
+or a mechanism that does not fit a landing line, the landing line being then the
+node's whole prose account. When you write one, place it as follows." Write your
+landing record to your own fragment path and never to the plan: your evidence
+anchor to your scope's fragment under
+docs/evidence/fragments/<plan>/<node-id>.html, and
+exactly one `landing:` line in your manifest in place of a plan edit. The
+fragment goes into your final commit; promotion lands the `landing:` line on
+your plan section." Nothing splices a fragment into the plan's landed record:
+that record is synthesized once at closure and links the fragment from your
+node's row without reproducing its text. The shared-state ban narrows
 with it: "Never mutate the shared
 project index, sprint state, or a plan other than the one you are landing
 against. Do not edit the plan-version or plan-modified meta lines: every worker
