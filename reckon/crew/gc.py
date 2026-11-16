@@ -2148,6 +2148,12 @@ def retention_sweep(
     the next hour. A removal is written to one log under the crew home, and a
     pass that removed nothing writes nothing.
 
+    It also removes the execution identity files of executions that have gone:
+    ``--sweep-exec-identities`` alone never ran on a schedule, so every
+    maintenance pass makes the same judgment. A file is removed only when the
+    process that published it is no longer that process, which is why a live
+    run's file survives the pass that runs while it is being written.
+
     The pass resumes from the cursor the previous pass persisted, so a long run
     of permanently withheld directories at the head of the sorted list is walked
     over once per cycle rather than re-judged on every pass. Each project's
@@ -2165,6 +2171,10 @@ def retention_sweep(
         raise CrewError("store row and compaction page limits must be positive")
     ended_cleanup = sweep_ended_runs(limit=limit) if apply else []
     phase_seconds: dict[str, float] = {}
+
+    started = time.perf_counter()
+    identities = sweep_exec_identities(apply=apply)
+    _emit_phase("identities", started, phase_seconds)
 
     started = time.perf_counter()
     mounted = flight.mounted_project_docs()
@@ -2300,6 +2310,7 @@ def retention_sweep(
         or trash_removed
         or caches_removed
         or store_retention["retired"]
+        or identities["removed"]
     ):
         from reckon.crew.watch_unit import _WatchLogStream
 
@@ -2316,6 +2327,8 @@ def retention_sweep(
                 stream.write(f"removed cache {row['path']} ({row['size']} bytes)\n")
             for run_id in store_retention["retired"]:
                 stream.write(f"archived run {run_id} to {store_retention['archive']}\n")
+            for row in identities["removed"]:
+                stream.write(f"removed identity file {row['path']}\n")
         finally:
             stream.close()
         written = str(target)
@@ -2327,6 +2340,10 @@ def retention_sweep(
         "unreachable_projects": unreachable,
         "limit": limit,
         "ended_cleanup": ended_cleanup,
+        "exec_identities": {
+            "removed": len(identities["removed"]),
+            "kept": len(identities["kept"]),
+        },
         "examined": examined,
         "judged": judged,
         "offered": offered,
