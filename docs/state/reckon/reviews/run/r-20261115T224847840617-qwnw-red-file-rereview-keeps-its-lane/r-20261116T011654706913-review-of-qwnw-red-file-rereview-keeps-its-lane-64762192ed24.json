@@ -44,6 +44,13 @@
       "summary": "8 failed, 4 passed in 3.59s"
     }
   },
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the finding is that the manifest cites commit ids with wrong endings; the coordinator rewrites the commits line from the worktree's own first-parent list before landing, so the work itself is unaffected",
+      "recorded_at": "2026-11-16T04:29:50.262551+00:00"
+    }
+  },
   "findings": [
     "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224847840617-qwnw-red-file-rereview-keeps-its-lane/manifest.md:7 blocking: the commits line cites 64762192ed1b5b4b0e6a2d9b9b3ab1a79a2f2b6f and 9fe2fefad8fbecd1ae62d3aa7bcdbbef1de4fc7a, neither of which is an object in this repository; the commits the worktree actually holds are 9fe2fefad8, 0543ce79b1 and 64762192ed24, so _resolve_commits in reckon/crew/promotion_scope.py:298 raises 'does not resolve to a commit object in the run repository' and this node cannot land until the line is rewritten with the ids git holds",
     "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224847840617-qwnw-red-file-rereview-keeps-its-lane/manifest.md:18 non-blocking: baseline_suite is not valid JSON - the revision value is missing its closing quote before the 'command' key and the fourth failure_ids entry is unterminated - so _baseline_suite_failure_ids at reckon/crew/promotion_checks.py:2345 reads a non-Mapping and returns set(), reporting the base arm as observed-nothing rather than as the 8 ids its log lists; the after_suite revision at :19 carries the same non-existent sha",
