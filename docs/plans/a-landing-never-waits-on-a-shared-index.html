@@ -20,13 +20,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-monitor-reads-each-fact-once">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;descoped&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;descoped&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;a-landing-never-waits-on-a-shared-index#s3&quot;,&quot;a-landing-never-waits-on-a-shared-index#s13&quot;]}">
   <title>A Landing Never Waits On A Shared Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="86">
-<meta name="plan-modified" content="2026-11-15">
+<meta name="plan-version" content="89">
+<meta name="plan-modified" content="2026-11-16">
 </head>
 <body>
   <main class="plan-doc">
@@ -137,6 +137,16 @@
 <p><strong>Deliverable.</strong> The citations <code>promotion.complete_dry_run</code> infers for a run exclude commits reachable from the primary revision, so a run's own merge of the primary branch cites only what the run made.</p>
 <p><strong>Done when.</strong> A new test, failing at the base revision: a run whose worktree merged a primary-branch commit after its base passes the dry run with no <code>--commit</code> given, citing its own commits and its merge and not the primary-branch commit. A run citing a commit from another branch is still refused. The tests importing <code>reckon.crew.merge</code> or <code>reckon.crew.promotion_evidence</code> add no failure against the base on all_debug. Write paths: the module where <code>complete_dry_run</code> infers citations, <code>reckon/crew/merge.py</code> and the new test.</p>
 
+    <h2 id="s17">A refused promotion leaves its plan as committed</h2>
+<section data-reckon="section" data-id="s17" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
+<p><strong>Why.</strong> reckon-28 reported that on 16 November a promotion wrote its outcome comment into a plan in the main checkout and was then refused at the run store, leaving that plan file modified and uncommitted. Every dispatch on the plan was then refused with <code>PlanVisibilityError</code>, which emptied the local lane from 07:49Z until the file was committed by hand (<code>cb557f9711</code>).</p>
+<p><strong>Done when.</strong> New tests, each failing at the base revision. A promotion refused at the run store after writing to a plan leaves that plan file in the main checkout exactly as committed, and a dispatch on that plan afterwards is not refused for a dirty plan file. These still hold: a promotion that succeeds commits its plan writes. The tests importing <code>reckon.crew.promotion</code> add no failure against the base on all_debug. Write paths: <code>reckon/crew/promotion.py</code> and a new test.</p>
+
+    <h2 id="s18">A locked store&#x27;s refusal names the lock</h2>
+<section data-reckon="section" data-id="s18" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
+<p><strong>Why.</strong> While the run store was locked on 16 November, every refused promotion told its caller to repair the store with <code>scripts/import_runs_into_store.py</code>. That script rebuilds a store; it does nothing for a lock, and three sessions asked reckon-28 whether to run it.</p>
+<p><strong>Done when.</strong> New tests, each failing at the base revision. A run-store refusal caused by a locked database says the store was locked past the wait bound and that promoting again is the remedy, and does not name the import script. These still hold: a refusal from a store that is missing or unreadable still names the import script as its repair. The tests importing <code>reckon.ledger</code> add no failure against the base on all_debug. Write paths: <code>reckon/ledger.py</code> and a new test.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-alnw-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-22" data-recommends-skill="/reckon-build a-landing-never-waits-on-a-shared-index §2" data-resolved-at="2026-11-06T08:48:44+00:00" data-resolved-by="">
@@ -204,20 +214,28 @@
     <div class="r-fu-body"><p>The stale-lock check reuses the holder scan and the lock-age owner.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-landing-never-waits-on-a-shared-index §12</pre>
     </article>
-<article class="r-fu" data-id="f-alnw-015" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-a6" data-written-at="2026-11-15 13:50" data-recommends-skill="/reckon-build a-landing-never-waits-on-a-shared-index §14" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-alnw-015" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-a6" data-written-at="2026-11-15 13:50" data-recommends-skill="/reckon-build a-landing-never-waits-on-a-shared-index §14" data-resolved-at="2026-11-16T11:56:14+00:00" data-resolved-by="reckon-56">
     <h4 class="r-fu-title">Build §14</h4>
     <div class="r-fu-body"><p>A suite arm the lander cannot read is refused at delivery.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-landing-never-waits-on-a-shared-index §14</pre>
+    <p class="r-fu-outcome"><p>§14 has landed; its run's head is an ancestor of main.</p></p>
     </article>
-<article class="r-fu" data-id="f-alnw-016" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-a6" data-written-at="2026-11-15 13:50" data-recommends-skill="/reckon-build a-landing-never-waits-on-a-shared-index §15" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-alnw-016" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-a6" data-written-at="2026-11-15 13:50" data-recommends-skill="/reckon-build a-landing-never-waits-on-a-shared-index §15" data-resolved-at="2026-11-16T11:56:14+00:00" data-resolved-by="reckon-56">
     <h4 class="r-fu-title">Build §15</h4>
     <div class="r-fu-body"><p>A merge repair's gate judges added failures, not absolute green.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-landing-never-waits-on-a-shared-index §15</pre>
+    <p class="r-fu-outcome"><p>§15 has landed; its run's head is an ancestor of main.</p></p>
     </article>
-<article class="r-fu" data-id="f-alnw-017" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-a6" data-written-at="2026-11-15 13:50" data-recommends-skill="/reckon-build a-landing-never-waits-on-a-shared-index §16" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-alnw-017" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-a6" data-written-at="2026-11-15 13:50" data-recommends-skill="/reckon-build a-landing-never-waits-on-a-shared-index §16" data-resolved-at="2026-11-16T11:56:14+00:00" data-resolved-by="reckon-56">
     <h4 class="r-fu-title">Build §16</h4>
     <div class="r-fu-body"><p>A run that merged the primary branch into its worktree lands through crew merge.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-landing-never-waits-on-a-shared-index §16</pre>
+    <p class="r-fu-outcome"><p>§16 has landed; its run's head is an ancestor of main.</p></p>
+    </article>
+<article class="r-fu" data-id="f-alnw-018" data-status="open" data-written-by="reckon-56" data-written-at="2026-11-16" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land §17 and §18</h4>
+    <div class="r-fu-body"><p>§17 keeps a refused promotion's plan file as committed; §18 makes a store-lock refusal name the lock. Both come from the 16 November store-lock outage.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-landing-never-waits-on-a-shared-index §17 §18</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -261,7 +279,7 @@
     <div class="r-comment-body"><p>reviewed r-20261115T124002481692-suite-arm-refused-at-delivery-s14 at 3bc474f926..c6fd7c4c9b and stored a parsed record scoring all six dimensions (goal_fidelity 18, evidence 17, scope_discipline 20, durability 18, fit 17, reuse 19; total 109) with reviewed_base_sha 3bc474f9263c2bc01bc34638128dd5834ede7baf and reviewed_head_sha c6fd7c4c9bcceb7c5180d1fb4ccc4bfd79cfa5ab at review-records/r-20261115T124002481692-suite-arm-refused-at-delivery-s14.json and its head-keyed twin, five non-blocking findings, added_failure_count 0, and the record contract answering ok:true on both paths</p></div>
 </div>
 <div class="r-comment" data-section="s14" data-id="c-run-r-20261115T124002481692-suite-arm-refused-at-delivery-s14" data-who="reckon-build" data-when="2026-11-15T13:52:03Z">
-    <div class="r-comment-body"><p>refuse a suite arm that is not the inline JSON observation at `crew check --manifest`: the audit reads the flight&#x27;s declared command from the run&#x27;s own live pointer (`suite_command_resolved`) and judges each arm through `reports.suite_observation`, the same reader the landing guard now calls, so a prose sentence and a bare command string fail the check while the worker still holds a pen — 2 new tests red at the base revision (ok:true with no findings) and green at head, with the lander&#x27;s refusal text unchanged</p></div>
+    <div class="r-comment-body"><p>refuse a suite arm that is not the inline JSON observation at `crew check --manifest`: the audit reads the flight's declared command from the run's own live pointer (`suite_command_resolved`) and judges each arm through `reports.suite_observation`, the same reader the landing guard now calls, so a prose sentence and a bare command string fail the check while the worker still holds a pen — 2 new tests red at the base revision (ok:true with no findings) and green at head, with the lander's refusal text unchanged</p></div>
 </div>
 <div class="r-comment" data-section="s15" data-id="c-run-r-20261115T141619372523-review-of-repair-gate-judges-added-s15-135c9aaea946" data-who="reckon-build" data-when="2026-11-15T14:44:51.822Z">
     <div class="r-comment-body"><p>Independent review of r-20261115T124004568066-repair-gate-judges-added-s15 at 135c9aae: parsed record scoring goal_fidelity 18, evidence 15, scope_discipline 19, durability 16, fit 18, reuse 17; added_failure_count 0 from the reviewed run's own baseline_suite (3 failed/60 passed) and after_suite (63 passed) gate logs; two non-blocking findings (an arm-completion rule weaker than its owner, and the untested primary-argument wiring at pending_landing.py:390).</p></div>

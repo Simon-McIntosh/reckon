@@ -27,6 +27,7 @@ from reckon.crew.runs import (
     list_live,
     read_pointer,
 )
+from reckon.crew.resume import station_hold_reason
 
 
 REPAIR_ADVICE_HOLD_SECONDS = 60
@@ -1156,8 +1157,7 @@ def supersede_a_held_repair_round(run_id: str) -> int | None:
     record = _live_pointer_or_absent(run_id) or {}
     held_round = record.get(REPAIR_DISPATCH_FIELD)
     if not (
-        isinstance(held_round, Mapping)
-        and held_round.get("status") == "advice-hold"
+        isinstance(held_round, Mapping) and held_round.get("status") == "advice-hold"
     ):
         return None
     reservation = dispatch_launch.held_launch_reservation(directory)
@@ -1441,6 +1441,20 @@ def dispatch_repair_for_run(
     capacity on it again.
     """
     run_id = str(record.get("run_id") or "")
+    held = station_hold_reason(record)
+    if held:
+        # A coordinator's hold covers every delivery, so the round this pass
+        # would compose belongs to a run the coordinator has taken by hand. A
+        # resume taken here moved a held delivery's head and drew a review
+        # nobody asked for, so the round is reported and left alone: the run
+        # keeps the head, the record and the review it had, and the next pass
+        # after `crew release` is the one that acts.
+        return {
+            "run_id": run_id,
+            "dispatched": False,
+            "held": True,
+            "reason": f"the run is under a delivery hold — {held}",
+        }
     refusal = _repair_source_refusal(record)
     if refusal:
         return {"run_id": run_id, "dispatched": False, "reason": refusal}
@@ -1836,6 +1850,19 @@ def dispatch_repair_for_run(
         from reckon.crew.dispatch import BudgetHold, LanePaused
 
         durable = read_pointer(run_id) or {}
+        # The hold is re-read at the launch, not only at entry: a coordinator
+        # can hold the run during the lane resolution above, and a resume
+        # offered from the entry-time record would launch beside that hold.
+        held_at_launch = station_hold_reason(durable or record)
+        if held_at_launch:
+            return {
+                "run_id": run_id,
+                "dispatched": False,
+                "held": True,
+                "round_id": round_id,
+                "node_id": node_id,
+                "reason": f"the run is under a delivery hold — {held_at_launch}",
+            }
         recorded = durable.get(REPAIR_DISPATCH_FIELD)
         same_round = isinstance(recorded, Mapping) and str(
             recorded.get("round_id") or ""

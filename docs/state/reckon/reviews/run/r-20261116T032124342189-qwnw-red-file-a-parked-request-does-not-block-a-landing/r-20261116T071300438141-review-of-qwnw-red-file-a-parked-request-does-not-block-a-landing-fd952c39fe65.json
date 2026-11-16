@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion_scope.py:_accepted_scope_exceptions",
+    "reckon/crew_run_commands.py:336"
+  ],
+  "completed_at": "2026-11-16T07:53:45.750Z",
+  "dispatched_at": "2026-11-16T07:53:02Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032124342189-qwnw-red-file-a-parked-request-does-not-block-a-landing/logs/cause-b-mergeable-path.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the isolation log the fragment cites names no revision, tree or module and appends prose to its command line, so the command it prints is not re-runnable and a later reader cannot tell which revision produced the five ids it reports."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-parked-request-does-not-block-a-landing.html",
+      "line": "69",
+      "severity": "non-blocking",
+      "text": "non-blocking: the recorded suite arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports the changed file, so the done_when's arm over the test files that import what changed is answered by prose substituting the gate rather than by the arm it names."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit from base 6fa76c49 to head fd952c39: 88eeabda changes two lines in the named test (ACCEPTED to an unmergeable class, --wait added), 75c428c8 merges origin/main as the done_when orders, and 5736cfb144 and fd952c39 write only the evidence fragment.",
+    "done_when": "the done_when names the file passing in full on all_debug with SLURM_JOB_ID unset plus an arm; logs/gate-parked-request.log:7-10 records \"6 passed in 4.36s\" and EXIT=0 under \"# slurm_job_id: 1319233\" and \"# partition: all_debug\", logs/base-arm-parked-request.log records \"5 failed, 1 passed\" EXIT=1 at 6fa76c49, and those five ids appear for the same file in the named baseline log /home/ITER/mcintos/.cache/reckon-suite-at-head/suite-at-8d50b0333f.log:2958-2963.",
+    "goal": "the source node's goal in its dispatch detail is \"Make tests/test_a_parked_request_does_not_block_a_landing.py pass in full on the primary branch\"; the landed commits change that file at two lines (tests/test_a_parked_request_does_not_block_a_landing.py:31,193) and the file reads 6 passed at the code head in logs/gate-parked-request.log.",
+    "manifest": "read; it records commits 88eeabda/75c428c8/5736cfb144/fd952c39, the gate command and its 6-passed result, both suite arms at 0 failures, a base arm at 5 failed, and each cause with its verdict, and every one of those figures is present in the logs it names.",
+    "write_paths": "the node declares [\"reckon\", \"tests\", \"docs/evidence/fragments/queued-work-needs-no-workaround\"], and the only paths its own commits touch are tests/test_a_parked_request_does_not_block_a_landing.py and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround/, with no reckon/ path changed at all."
+  },
+  "justifications": {
+    "durability": "reinstating either removed line reddens the file, as logs/base-arm-parked-request.log records the five ids at the base and logs/cause-b-mergeable-path.log records the same five with only ACCEPTED reverted to declared-b.txt.",
+    "evidence": "logs/gate-parked-request.log:7-10 records \"6 passed in 4.36s\" and EXIT=0 at revision 5736cfb144, the parent of the reviewed head whose delta the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-parked-request-does-not-block-a-landing.html:72 states is the evidence file alone.",
+    "fit": "the two values land in the file's existing constant block and complete_arguments (tests/test_a_parked_request_does_not_block_a_landing.py:177,193), introducing no new name or helper.",
+    "goal_fidelity": "tests/test_a_parked_request_does_not_block_a_landing.py:31,193 are the whole change and logs/gate-parked-request.log records the file at 6 passed, leaving only the promotion onto the primary branch.",
+    "reuse": "the accepted class is the repository's own declared unmergeable class *.receipt (reckon/crew/runs.py:1828) and the completion mode is the existing --wait option (reckon/crew_run_commands.py:336), so the change adds no definition and forks no capability.",
+    "scope_discipline": "the only two paths the node's own commits touch, tests/test_a_parked_request_does_not_block_a_landing.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-parked-request-does-not-block-a-landing.html, both lie inside the declared [\"reckon\", \"tests\", \"docs/evidence/fragments/queued-work-needs-no-workaround\"]."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal in its dispatch detail is \"Make tests/test_a_parked_request_does_not_block_a_landing.py pass in full on the primary branch\"; the landed commits change that file at two lines (tests/test_a_parked_request_does_not_block_a_landing.py:31,193) and the file reads 6 passed at the code head in logs/gate-parked-request.log.\nVERDICT done_when: the done_when names the file passing in full on all_debug with SLURM_JOB_ID unset plus an arm; logs/gate-parked-request.log:7-10 records \"6 passed in 4.36s\" and EXIT=0 under \"# slurm_job_id: 1319233\" and \"# partition: all_debug\", logs/base-arm-parked-request.log records \"5 failed, 1 passed\" EXIT=1 at 6fa76c49, and those five ids appear for the same file in the named baseline log /home/ITER/mcintos/.cache/reckon-suite-at-head/suite-at-8d50b0333f.log:2958-2963.\nVERDICT write_paths: the node declares [\"reckon\", \"tests\", \"docs/evidence/fragments/queued-work-needs-no-workaround\"], and the only paths its own commits touch are tests/test_a_parked_request_does_not_block_a_landing.py and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround/, with no reckon/ path changed at all.\nVERDICT manifest: read; it records commits 88eeabda/75c428c8/5736cfb144/fd952c39, the gate command and its 6-passed result, both suite arms at 0 failures, a base arm at 5 failed, and each cause with its verdict, and every one of those figures is present in the logs it names.\nVERDICT diff: read commit by commit from base 6fa76c49 to head fd952c39: 88eeabda changes two lines in the named test (ACCEPTED to an unmergeable class, --wait added), 75c428c8 merges origin/main as the done_when orders, and 5736cfb144 and fd952c39 write only the evidence fragment.\nCALL_SITES: reckon/crew/promotion_scope.py:_accepted_scope_exceptions, reckon/crew_run_commands.py:336\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_parked_request_does_not_block_a_landing.py:31,193 are the whole change and logs/gate-parked-request.log records the file at 6 passed, leaving only the promotion onto the primary branch.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/gate-parked-request.log:7-10 records \"6 passed in 4.36s\" and EXIT=0 at revision 5736cfb144, the parent of the reviewed head whose delta the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-parked-request-does-not-block-a-landing.html:72 states is the evidence file alone.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only two paths the node's own commits touch, tests/test_a_parked_request_does_not_block_a_landing.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-parked-request-does-not-block-a-landing.html, both lie inside the declared [\"reckon\", \"tests\", \"docs/evidence/fragments/queued-work-needs-no-workaround\"].\nSCORE durability: 19\nJUSTIFICATION durability: reinstating either removed line reddens the file, as logs/base-arm-parked-request.log records the five ids at the base and logs/cause-b-mergeable-path.log records the same five with only ACCEPTED reverted to declared-b.txt.\nSCORE fit: 19\nJUSTIFICATION fit: the two values land in the file's existing constant block and complete_arguments (tests/test_a_parked_request_does_not_block_a_landing.py:177,193), introducing no new name or helper.\nSCORE reuse: 20\nJUSTIFICATION reuse: the accepted class is the repository's own declared unmergeable class *.receipt (reckon/crew/runs.py:1828) and the completion mode is the existing --wait option (reckon/crew_run_commands.py:336), so the change adds no definition and forks no capability.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032124342189-qwnw-red-file-a-parked-request-does-not-block-a-landing/logs/cause-b-mergeable-path.log:1 non-blocking: the isolation log the fragment cites names no revision, tree or module and appends prose to its command line, so the command it prints is not re-runnable and a later reader cannot tell which revision produced the five ids it reports.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-parked-request-does-not-block-a-landing.html:69 non-blocking: the recorded suite arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports the changed file, so the done_when's arm over the test files that import what changed is answered by prose substituting the gate rather than by the arm it names.",
+  "review_run_id": "r-20261116T071300438141-review-of-qwnw-red-file-a-parked-request-does-not-block-a-landing-fd952c39fe65",
+  "reviewed_base_sha": "6fa76c49f48e1d4fe4f104431f85f519ce92aae0",
+  "reviewed_head_sha": "fd952c39fe6587342d717e57c066777de130d649",
+  "reviewed_run_id": "r-20261116T032124342189-qwnw-red-file-a-parked-request-does-not-block-a-landing",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T12:15:21.966066+00:00",
+  "total": 113
+}

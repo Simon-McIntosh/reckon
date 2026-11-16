@@ -1,0 +1,83 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_source": {
+    "after_suite": {
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031823540481-qwnw-red-file-routing-picker-key/logs/head-arm.log"
+    },
+    "baseline_suite": {
+      "failure_count": 5,
+      "failure_ids": [
+        "tests/test_routing_picker_key.py::test_dispatch_resolves_routing_key[shadow-None-alpha-shadow-False]",
+        "tests/test_routing_picker_key.py::test_dispatch_resolves_routing_key[route-None-beta-picker-False]",
+        "tests/test_routing_picker_key.py::test_dispatch_resolves_routing_key[route-deterministic-alpha-deterministic-False]",
+        "tests/test_routing_picker_key.py::test_dispatch_resolves_routing_key[shadow-picker-beta-picker-False]",
+        "tests/test_routing_picker_key.py::test_project_routing_layer_drives_dispatch"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031823540481-qwnw-red-file-routing-picker-key/logs/base-arm.log"
+    }
+  },
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-16T09:18:36.415Z",
+  "dispatched_at": "2026-11-16T09:18:18Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-routing-picker-key.html",
+      "line": "43",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head-run block quotes \"# revision: 228f17c182\" and \"18 passed in 8.12s\" while the manifest's after_suite arm and logs/head-arm.log record d161d8d837 and \"18 passed in 8.51s\", so the landed evidence carries two unlabelled head measurements and a reader cannot tell which run the after_suite citation refers to."
+    },
+    {
+      "file": "logs/head-arm.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gate log's header names revision, tree, module and cwd but not the SLURM_JOB_ID state, so the node's done_when (\"as a job on all_debug with SLURM_JOB_ID unset\") is satisfied only in its \"passes in full\" half and the named environment is never shown."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-routing-picker-key.html",
+      "line": "31",
+      "severity": "non-blocking",
+      "text": "non-blocking: the cause-2 verdict states that record[\"picker_selection\"] raised KeyError, but cause 1 masks it in the recorded base arm, whose five reds are all JSONDecodeError at the helper, so the second defect's reproduction is inferred rather than shown red at the base."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit from ee93819a0d to d161d8d837; 228f17c182 rewrites the invoke helper and the deterministic-route wait in tests/test_routing_picker_key.py (12 added, 4 deleted) and d161d8d837 adds the 50-line landing fragment, with no product file touched.",
+    "done_when": "the done_when asks for a full pass at head as a job on all_debug with SLURM_JOB_ID unset; logs/head-arm.log:1-4 name the revision, tree and command and its last line is EXIT=0, but no line records whether SLURM_JOB_ID was unset, so the environment the measure names is unrecorded.",
+    "goal": "the source node's goal is \"Make tests/test_routing_picker_key.py pass in full on the primary branch\"; commit 228f17c182 changes only tests/test_routing_picker_key.py and logs/head-arm.log records \"18 passed\" EXIT=0 at head d161d8d837.",
+    "manifest": "read at the reviewed run directory; it carries status complete, both arms as JSON with log paths, the two cause verdicts, a landing line, and the figure-free declaration the small-node rule requires.",
+    "write_paths": "the source node was fenced to reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, that directory's qwnw-red-file-routing-picker-key.html and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-routing-picker-key; both paths in the diff lie inside that grant."
+  },
+  "justifications": {
+    "durability": "tests/test_routing_picker_key.py:106-114 reddens if dispatch stops recording picker_selection, which the base arm's five JSONDecodeError ids at logs/base-arm.log show already fires on the reverted helper.",
+    "evidence": "logs/base-arm.log ends \"5 failed, 13 passed\" EXIT=1 and logs/head-arm.log ends \"18 passed\" EXIT=0, but neither header records the SLURM_JOB_ID state the done_when names and the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-routing-picker-key.html:43-47 quotes a different head run than the after_suite arm.",
+    "fit": "the added import at tests/test_routing_picker_key.py:16 uses the module-alias form the file already uses for dispatch_plan_module and picker, and the comment style matches the surrounding explanatory comments.",
+    "goal_fidelity": "tests/test_routing_picker_key.py:61 decodes result.stdout and tests/test_routing_picker_key.py:106 reads the picker answer through crew_runs.dispatch_field, and logs/head-arm.log closes EXIT=0 at d161d8d837 with 18 passed.",
+    "reuse": "the diff adds no definition; it reuses reckon/crew/runs.py:242 dispatch_field, the accessor that already answers a dispatch-time detail field for either pointer shape, rather than re-implementing the two-shape read inline.",
+    "scope_discipline": "the diff touches only the two files named in the manifest, both inside the declared write paths, at 62 added and 4 deleted lines for a small node."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is \"Make tests/test_routing_picker_key.py pass in full on the primary branch\"; commit 228f17c182 changes only tests/test_routing_picker_key.py and logs/head-arm.log records \"18 passed\" EXIT=0 at head d161d8d837.\nVERDICT done_when: the done_when asks for a full pass at head as a job on all_debug with SLURM_JOB_ID unset; logs/head-arm.log:1-4 name the revision, tree and command and its last line is EXIT=0, but no line records whether SLURM_JOB_ID was unset, so the environment the measure names is unrecorded.\nVERDICT write_paths: the source node was fenced to reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, that directory's qwnw-red-file-routing-picker-key.html and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-routing-picker-key; both paths in the diff lie inside that grant.\nVERDICT manifest: read at the reviewed run directory; it carries status complete, both arms as JSON with log paths, the two cause verdicts, a landing line, and the figure-free declaration the small-node rule requires.\nVERDICT diff: read commit by commit from ee93819a0d to d161d8d837; 228f17c182 rewrites the invoke helper and the deterministic-route wait in tests/test_routing_picker_key.py (12 added, 4 deleted) and d161d8d837 adds the 50-line landing fragment, with no product file touched.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_routing_picker_key.py:61 decodes result.stdout and tests/test_routing_picker_key.py:106 reads the picker answer through crew_runs.dispatch_field, and logs/head-arm.log closes EXIT=0 at d161d8d837 with 18 passed.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/base-arm.log ends \"5 failed, 13 passed\" EXIT=1 and logs/head-arm.log ends \"18 passed\" EXIT=0, but neither header records the SLURM_JOB_ID state the done_when names and the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-routing-picker-key.html:43-47 quotes a different head run than the after_suite arm.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only the two files named in the manifest, both inside the declared write paths, at 62 added and 4 deleted lines for a small node.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_routing_picker_key.py:106-114 reddens if dispatch stops recording picker_selection, which the base arm's five JSONDecodeError ids at logs/base-arm.log show already fires on the reverted helper.\nSCORE fit: 16\nJUSTIFICATION fit: the added import at tests/test_routing_picker_key.py:16 uses the module-alias form the file already uses for dispatch_plan_module and picker, and the comment style matches the surrounding explanatory comments.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition; it reuses reckon/crew/runs.py:242 dispatch_field, the accessor that already answers a dispatch-time detail field for either pointer shape, rather than re-implementing the two-shape read inline.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-routing-picker-key.html:43 non-blocking: the head-run block quotes \"# revision: 228f17c182\" and \"18 passed in 8.12s\" while the manifest's after_suite arm and logs/head-arm.log record d161d8d837 and \"18 passed in 8.51s\", so the landed evidence carries two unlabelled head measurements and a reader cannot tell which run the after_suite citation refers to.\nFINDING logs/head-arm.log:1 non-blocking: the gate log's header names revision, tree, module and cwd but not the SLURM_JOB_ID state, so the node's done_when (\"as a job on all_debug with SLURM_JOB_ID unset\") is satisfied only in its \"passes in full\" half and the named environment is never shown.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-routing-picker-key.html:31 non-blocking: the cause-2 verdict states that record[\"picker_selection\"] raised KeyError, but cause 1 masks it in the recorded base arm, whose five reds are all JSONDecodeError at the helper, so the second defect's reproduction is inferred rather than shown red at the base.\n",
+  "review_run_id": "r-20261116T091741475849-review-of-qwnw-red-file-routing-picker-key-d161d8d837bc",
+  "reviewed_base_sha": "ee93819a0dfd283816a577795513c00bca2b8e19",
+  "reviewed_head_sha": "d161d8d837bcbf7c1ce7eeb9c28e298e6923e141",
+  "reviewed_run_id": "r-20261116T031823540481-qwnw-red-file-routing-picker-key",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T09:24:18.671422+00:00",
+  "total": 105
+}

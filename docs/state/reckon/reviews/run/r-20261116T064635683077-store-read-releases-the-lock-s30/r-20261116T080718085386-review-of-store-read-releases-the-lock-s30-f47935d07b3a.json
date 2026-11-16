@@ -1,0 +1,176 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "assert store._conn.execute(\"PRAGMA journal_mode\").fetchone()[0] == \"delete\"",
+      "failure_condition": "Switching the initial journal to WAL or another non-delete mode fails this assertion.",
+      "file": "tests/test_a_store_write_completes_during_a_long_read.py",
+      "line": 41
+    },
+    {
+      "assertion": "assert store._conn.execute(\"PRAGMA busy_timeout\").fetchone()[0] == int(\n            run_store.RECORD_BUSY_TIMEOUT_SECONDS * 1000\n        )",
+      "failure_condition": "Not applying the declared busy timeout to SQLite fails this assertion; the next literal 120.0 assertion independently fixes the intended bound.",
+      "file": "tests/test_a_store_write_completes_during_a_long_read.py",
+      "line": 42
+    },
+    {
+      "assertion": "assert run_store.RECORD_BUSY_TIMEOUT_SECONDS == 120.0",
+      "failure_condition": "Changing the declared timeout away from 120 seconds fails this independent literal assertion.",
+      "file": "tests/test_a_store_write_completes_during_a_long_read.py",
+      "line": 45
+    },
+    {
+      "assertion": "assert len(expected) == len(rows)",
+      "failure_condition": "Dropping or duplicating a hot or retired input row fails the expected cardinality check.",
+      "file": "tests/test_a_store_write_completes_during_a_long_read.py",
+      "line": 59
+    },
+    {
+      "assertion": "assert {row[\"run_id\"] for row in expected} == {row[\"run_id\"] for row in rows}",
+      "failure_condition": "Returning the wrong identities despite the same cardinality fails the fixture identity-set check.",
+      "file": "tests/test_a_store_write_completes_during_a_long_read.py",
+      "line": 60
+    },
+    {
+      "assertion": "assert release.wait(15), \"consumer was not released\"",
+      "failure_condition": "The controller failing to release the consumer within 15 seconds fails this synchronization assertion and is propagated through errors.",
+      "file": "tests/test_a_store_write_completes_during_a_long_read.py",
+      "line": 68
+    },
+    {
+      "assertion": "assert consuming.wait(10), \"reader did not reach record consumption\"",
+      "failure_condition": "The reader never reaching the patched normalization consumer fails the start barrier.",
+      "file": "tests/test_a_store_write_completes_during_a_long_read.py",
+      "line": 86
+    },
+    {
+      "assertion": "assert thread.is_alive(), \"read consumption ended before the write receipt\"",
+      "failure_condition": "The reader finishing or its synchronization failing before the subprocess receipt fails the overlap assertion.",
+      "file": "tests/test_a_store_write_completes_during_a_long_read.py",
+      "line": 108
+    },
+    {
+      "assertion": "assert write.returncode == 0, write.stderr",
+      "failure_condition": "Restoring yield from connection.execute keeps the read cursor live during the pause, so the separate writer exceeds its one-second busy timeout and this returncode assertion fails; all three recorded negative-control cases do so.",
+      "file": "tests/test_a_store_write_completes_during_a_long_read.py",
+      "line": 109
+    },
+    {
+      "assertion": "assert json.loads(write.stdout)[\"run_id\"] == \"concurrent-write\"",
+      "failure_condition": "The subprocess not retrieving the inserted record, or returning another identity, fails the JSON receipt check; stdout comes from get_run, not directly from its input literal.",
+      "file": "tests/test_a_store_write_completes_during_a_long_read.py",
+      "line": 110
+    },
+    {
+      "assertion": "assert not thread.is_alive()",
+      "failure_condition": "The reader hanging after release fails the bounded join check.",
+      "file": "tests/test_a_store_write_completes_during_a_long_read.py",
+      "line": 115
+    },
+    {
+      "assertion": "assert not errors",
+      "failure_condition": "A reader exception, including a failed release barrier, fails the captured errors check.",
+      "file": "tests/test_a_store_write_completes_during_a_long_read.py",
+      "line": 116
+    },
+    {
+      "assertion": "assert sorted(answer, key=lambda row: row[\"run_id\"]) == sorted(\n        expected, key=lambda row: row[\"run_id\"]\n    )",
+      "failure_condition": "The concurrent read differing in fields or row membership from its uncontended read fails the snapshot comparison; identity and cardinality are independently anchored above, while this assertion claims concurrency equivalence rather than a complete external semantics oracle.",
+      "file": "tests/test_a_store_write_completes_during_a_long_read.py",
+      "line": 117
+    },
+    {
+      "assertion": "assert store.get_run(\"concurrent-write\")[\"run_id\"] == \"concurrent-write\"",
+      "failure_condition": "The committed concurrent row not surviving subprocess exit fails the fresh-connection readback.",
+      "file": "tests/test_a_store_write_completes_during_a_long_read.py",
+      "line": 121
+    },
+    {
+      "assertion": "assert store._conn.execute(\"PRAGMA journal_mode\").fetchone()[0] == \"delete\"",
+      "failure_condition": "The journal mode changing during the exercise fails the final rollback-mode check.",
+      "file": "tests/test_a_store_write_completes_during_a_long_read.py",
+      "line": 122
+    }
+  ],
+  "assertion_independence": "No added assertion is invariant under restoring the live-cursor regression: returncode exposes it. The timeout comparison is tied to configuration but anchored by the separate 120.0 literal; read equality is intentionally between two separate executions with and without a concurrent writer, anchored by fixture IDs and count.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/run_store.py:stored_run_rows",
+    "reckon/run_store.py:RunStore._indexed_records",
+    "reckon/ledger.py:load",
+    "reckon/ledger.py:runs"
+  ],
+  "completed_at": "2026-11-16T08:15:38Z",
+  "dispatched_at": "2026-11-16T08:09:06Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read all three commits b70f957266d58747c7dcded865780a118450afbe, a7e6b07745cf4b50a8956b250638abb2b6d5b8bd and f47935d07b3a19eb07a037a209b3bbe10369ca15 against 2f5dffd47271265c2a67ae2df52e4a84d3d30245; four paths contain the cursor change, contention tests, evidence fragment and granted timestamp-fixture repair.",
+    "done_when": "Read live history-persists-as-detail-washes-out.html:412 and source prompt.txt:212-215; the three subprocess contention cases assert commits during paused consumption, unchanged rows, rollback mode and the 120-second default, with final resume-base-initial.log and resume-after-arm.log recording 66 and 69 passed respectively.",
+    "goal": "Read the source goal in prompt.txt:38; reckon/run_store.py:360-365 closes each query before yielding and removes Python consumer work from the rollback read-lock lifetime.",
+    "manifest": "Read manifest.md:1-33 and opened its base/head, reproduction, mutation and receipt-control logs; the final suite pair reports zero added failures, while its evidence_inputs explicitly retains the historical broad-cohort result and explains the targeted fixture repair.",
+    "write_paths": "Read prompt.txt:84-88 and resume-1-advice.txt:1; all four changed paths fall within the original grants plus the coordinator-granted tests/test_dispatch_records_the_pace_row.py."
+  },
+  "justifications": {
+    "durability": "tests/test_a_store_write_completes_during_a_long_read.py asserts the subprocess succeeds before consumer release; restoring the base live-cursor yield fails all three cases with database-is-locked errors in negative-control.log.",
+    "evidence": "manifest.md:18-21 is supported by resume-base-initial.log (66 passed, EXIT=0), resume-after-arm.log (69 passed, EXIT=0), and base/mutation lock failures, although the broad importer cohort was not repeated after the fixture repair.",
+    "fit": "reckon/run_store.py:360-365 keeps the existing shared join and generator API, and tests/test_dispatch_records_the_pace_row.py:133 preserves timestamp precision with mechanism-based names and comments.",
+    "goal_fidelity": "reckon/run_store.py:360-365 fetches and closes the shared query before yielding, covering the stored and indexed production readers without changing query selection or the writer timeout.",
+    "reuse": "Capability searches for record fetching and lock coordination found and opened the existing _record_rows owner in reckon/run_store.py plus tests/test_a_locked_ledger_store_is_retried.py and tests/test_the_run_store_retires_old_runs.py; the change extends that owner and adds scenario-specific tests rather than another product mechanism.",
+    "scope_discipline": "The four paths in the base-to-head diff match prompt.txt:84-88 and the explicit tests/test_dispatch_records_the_pace_row.py scope extension in resume-1-advice.txt:1."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the source goal in prompt.txt:38; reckon/run_store.py:360-365 closes each query before yielding and removes Python consumer work from the rollback read-lock lifetime.\nVERDICT done_when: Read live history-persists-as-detail-washes-out.html:412 and source prompt.txt:212-215; the three subprocess contention cases assert commits during paused consumption, unchanged rows, rollback mode and the 120-second default, with final resume-base-initial.log and resume-after-arm.log recording 66 and 69 passed respectively.\nVERDICT write_paths: Read prompt.txt:84-88 and resume-1-advice.txt:1; all four changed paths fall within the original grants plus the coordinator-granted tests/test_dispatch_records_the_pace_row.py.\nVERDICT manifest: Read manifest.md:1-33 and opened its base/head, reproduction, mutation and receipt-control logs; the final suite pair reports zero added failures, while its evidence_inputs explicitly retains the historical broad-cohort result and explains the targeted fixture repair.\nVERDICT diff: Read all three commits b70f957266d58747c7dcded865780a118450afbe, a7e6b07745cf4b50a8956b250638abb2b6d5b8bd and f47935d07b3a19eb07a037a209b3bbe10369ca15 against 2f5dffd47271265c2a67ae2df52e4a84d3d30245; four paths contain the cursor change, contention tests, evidence fragment and granted timestamp-fixture repair.\nCALL_SITES: reckon/run_store.py:stored_run_rows, reckon/run_store.py:RunStore._indexed_records, reckon/ledger.py:load, reckon/ledger.py:runs\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/run_store.py:360-365 fetches and closes the shared query before yielding, covering the stored and indexed production readers without changing query selection or the writer timeout.\nSCORE evidence: 19\nJUSTIFICATION evidence: manifest.md:18-21 is supported by resume-base-initial.log (66 passed, EXIT=0), resume-after-arm.log (69 passed, EXIT=0), and base/mutation lock failures, although the broad importer cohort was not repeated after the fixture repair.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The four paths in the base-to-head diff match prompt.txt:84-88 and the explicit tests/test_dispatch_records_the_pace_row.py scope extension in resume-1-advice.txt:1.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_store_write_completes_during_a_long_read.py asserts the subprocess succeeds before consumer release; restoring the base live-cursor yield fails all three cases with database-is-locked errors in negative-control.log.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/run_store.py:360-365 keeps the existing shared join and generator API, and tests/test_dispatch_records_the_pace_row.py:133 preserves timestamp precision with mechanism-based names and comments.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for record fetching and lock coordination found and opened the existing _record_rows owner in reckon/run_store.py plus tests/test_a_locked_ledger_store_is_retried.py and tests/test_the_run_store_retires_old_runs.py; the change extends that owner and adds scenario-specific tests rather than another product mechanism.\n",
+  "review_run_id": "r-20261116T080718085386-review-of-store-read-releases-the-lock-s30-f47935d07b3a",
+  "reviewed_base_sha": "2f5dffd47271265c2a67ae2df52e4a84d3d30245",
+  "reviewed_commits": [
+    "b70f957266d58747c7dcded865780a118450afbe",
+    "a7e6b07745cf4b50a8956b250638abb2b6d5b8bd",
+    "f47935d07b3a19eb07a037a209b3bbe10369ca15"
+  ],
+  "reviewed_head_sha": "f47935d07b3a19eb07a037a209b3bbe10369ca15",
+  "reviewed_run_id": "r-20261116T064635683077-store-read-releases-the-lock-s30",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_delta_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/store-read-releases-the-lock-s30 /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/store-read-releases-the-lock-s30/.venv/bin/python -m pytest -p no:cacheprovider -q /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/store-read-releases-the-lock-s30/tests/test_a_store_write_completes_during_a_long_read.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/store-read-releases-the-lock-s30/tests/test_dispatch_records_the_pace_row.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/store-read-releases-the-lock-s30/tests/test_staged_write_inventory.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/store-read-releases-the-lock-s30/tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T064635683077-store-read-releases-the-lock-s30/resume-after-arm.log",
+      "revision": "f47935d07b3a19eb07a037a209b3bbe10369ca15"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=/tmp/store-importers-2ofw2ihp /tmp/store-importers-2ofw2ihp/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/store-importers-2ofw2ihp/tests/test_dispatch_records_the_pace_row.py /tmp/store-importers-2ofw2ihp/tests/test_staged_write_inventory.py /tmp/store-importers-2ofw2ihp/tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T064635683077-store-read-releases-the-lock-s30/resume-base-initial.log",
+      "revision": "2f5dffd47271265c2a67ae2df52e4a84d3d30245"
+    },
+    "broad_cohort_caveat": "Historical broad importer cohort not rerun after coordinator-granted fixture precision repair; final declared suite pair is the source of this delta.",
+    "method": "FAILED ids parsed from each named log; summaries and terminal EXIT=0 checked; extractor positive control finds three FAILED ids in base-reproduction.log",
+    "positive_control_failure_ids": [
+      "tests/test_a_store_write_completes_during_a_long_read.py::test_a_store_write_completes_during_a_long_read[indexed]",
+      "tests/test_a_store_write_completes_during_a_long_read.py::test_a_store_write_completes_during_a_long_read[projected]",
+      "tests/test_a_store_write_completes_during_a_long_read.py::test_a_store_write_completes_during_a_long_read[stored]"
+    ]
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T10:53:43.054483+00:00",
+  "total": 119
+}

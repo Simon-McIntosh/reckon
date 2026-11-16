@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import socket
+import subprocess
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -11,6 +12,7 @@ from typing import Any, Mapping, Sequence
 
 from reckon._timestamps import parse_utc
 from reckon.crew import runs
+from reckon.crew.fleet_node import remaining_seconds
 from reckon.crew.node import (
     LOG_STALE_AFTER_SECONDS,
 )
@@ -1101,6 +1103,168 @@ def _manifest_wait(
     }
 
 
+#: A cancelled job's state, in the spellings a scheduler prints it. Slurm's
+#: ``CANCELLED+`` marks a batch step of the cancelled job.
+_WAIT_CANCELLED_STATES = frozenset({"cancelled", "canceled", "cancelling", "canceling"})
+
+#: An elapsed time of nothing at all: the job held its allocation for no time.
+_WAIT_ZERO_ELAPSED = frozenset({"00:00:00", "0:00:00", "0-00:00:00"})
+
+#: The answers a probe gives when it reported no state at all: a missing or
+#: unreadable value is not a live one, but it is not ``absent`` either — the
+#: condition is pending on the paths or on the scheduler and nothing has said
+#: otherwise. Only a probe that reported nothing lands here, and only a state
+#: is read from what it did report.
+_WAIT_STATE_NOT_REPORTED = frozenset({"", "unavailable", "unknown", "none", "absent"})
+
+
+def _wait_probe_live_state(wait: Mapping[str, Any], observation: Any) -> str:
+    """The state a wait's own probe reported while the awaited work has not ended.
+
+    A ``wait_file`` condition declares no probe of its own — this reader derives
+    one from the paths, and their absence is the wait's own state rather than
+    anything the awaited work said about itself — so a file condition reports no
+    live state here.
+
+    What counts as "ended" is the declaration's own terminal list, not a
+    vocabulary this reader carries.
+    :data:`reckon.crew.process_liveness._JOB_LIVE_STATES` and
+    :data:`reckon.crew.recovery_wait._WAIT_LIVE_STATE_TOKENS` name the states
+    the two readers already know, and neither is complete: a scheduler prints
+    ``QUEUED``, ``REQUEUED``, ``RESIZING`` and ``SIGNALING`` as well, and a
+    vocabulary that has to grow before a reading works reintroduces the default
+    horizon exactly when a new spelling appears. So the answer decides: a state
+    the declaration does not name as terminal is a live one, whatever it is
+    called, and the name is carried through for the row.
+    """
+    if wait.get("files") or not _wait_probe_answered(observation):
+        return ""
+    if not isinstance(observation, Mapping):
+        return ""
+    observed = str(observation.get("observed") or "").strip()
+    if not observed or observed.casefold() in _WAIT_STATE_NOT_REPORTED:
+        return ""
+    lines = [line.strip() for line in observed.splitlines() if line.strip()]
+    if not lines or _wait_answer_names_terminal(wait, lines, lines[-1]):
+        return ""
+    return lines[0].split(maxsplit=1)[0].strip("\"'()[]{}:;,").casefold()
+
+
+def _wait_probe_suspect(
+    wait: Mapping[str, Any], observation: Any
+) -> dict[str, Any] | None:
+    """A wait probe naming a job that the scheduler cancelled before it ran.
+
+    A job cancelled in the queue reports ``CANCELLED`` with an elapsed time of
+    zero: nothing of the awaited work ever ran, so the state names the
+    allocation's cancellation rather than the end of the condition the wait is
+    on. A declaration lists ``CANCELLED`` among its terminal states — it is a
+    way a job ends — and the reading then matches it and offers the run a
+    resume, which is how a dispersed worker was woken against a job that never
+    started. The reading is returned here as its own fact so the row can say
+    the probe is suspect instead of reporting a terminal state.
+    """
+    if wait.get("files") or not _wait_probe_answered(observation):
+        return None
+    probe = [str(item) for item in (wait.get("probe") or ())]
+    jobs = _wait_probe_job_ids(probe)
+    if not jobs:
+        return None
+    observed = str(observation.get("observed") or "")
+    words = [word.strip("\"'()[]{}:;,").casefold() for word in observed.split()]
+    cancelled = next(
+        (
+            word
+            for word in words
+            if word.split("+")[0] in _WAIT_CANCELLED_STATES or word.startswith("cancel")
+        ),
+        "",
+    )
+    zero = next((word for word in words if word in _WAIT_ZERO_ELAPSED), "")
+    if not cancelled or not zero:
+        return None
+    return {
+        "state": cancelled,
+        "observed": observed,
+        "jobs": list(jobs),
+        "detail": (
+            f"the wait probe names job {', '.join(jobs)} and reported "
+            f"{observed!r}: {cancelled!r} with no elapsed time, so the job was "
+            "cancelled before it started and its state names the allocation's "
+            "cancellation rather than the end of what this wait is on"
+        ),
+    }
+
+
+def _wait_probe_reported_limit(wait: Mapping[str, Any], observation: Any) -> int | None:
+    """The job's own time limit, in seconds, as the wait's probe reports it.
+
+    The scheduler is the only party that knows how long a job may run, and a
+    probe that asks for that field reports it beside the state: ``%L`` in a
+    midday ``squeue`` format, ``Timelimit`` in an ``sacct`` one. A declaration
+    that asks for neither is a declaration that never named a limit, so nothing
+    is read here and the reader's default stays in force.
+
+    The parse is :func:`reckon.crew.fleet_node.remaining_seconds`, the one
+    owner of the scheduler's ``[DD-]HH:MM:SS`` wall clock and of its unbounded
+    token, so a spelling learning there reaches this reading too.
+    """
+    if wait.get("files") or not _wait_probe_answered(observation):
+        return None
+    probe = [str(item) for item in (wait.get("probe") or ()) if str(item).strip()]
+    if not _wait_probe_job_ids(probe):
+        return None
+    asked = " ".join(probe).casefold()
+    if "%l" not in asked and "timelimit" not in asked and "time_limit" not in asked:
+        return None
+    if not _wait_probe_live_state(wait, observation):
+        return None
+    if not isinstance(observation, Mapping):
+        return None
+    observed = str(observation.get("observed") or "")
+    for word in observed.replace(",", " ").split():
+        limit = remaining_seconds(word.strip("\"'()[]{}:;"))
+        if limit:
+            return limit
+    return None
+
+
+def _wait_judged_against_itself(
+    wait: dict[str, Any], observation: Any, *, horizon_declared: bool
+) -> dict[str, Any]:
+    """Judge a wait's overdue flag against its own limit and its own probe.
+
+    A declaration's own horizon is the limit the wait named for itself, so the
+    flag is what it always was: the age against that horizon. A declaration that
+    names no horizon is held to the limit the scheduler reports for the job its
+    probe names, when the probe asks the scheduler for that limit at all;
+    ``horizon_declared`` says which of the two is in force. Measured
+    2026-11-14: a multi-hour compute wait was read overdue and sent to
+    "investigate" at 900 s while its probe reported the job RUNNING, so the
+    reader had held a scheduler's job to a bound invented for a log file.
+
+    While the probe reports a live state there is nothing to investigate, so the
+    limit the scheduler reports for that job is the one in force rather than the
+    reader's default. A probe that stops answering, or answers with something
+    that is not a live state, is read against the horizon exactly as before, and
+    a probe that names no job or asks for no limit leaves the default in force:
+    the reading is the scheduler's own limit, not a general reprieve from the
+    clock, so a wait nobody reported a limit for still ages into the alarm that
+    reports it.
+
+    The probe's own reading is also where a suspect declaration is caught, so
+    the row and the overdue flag are judged on one answer rather than two.
+    """
+    wait["probe_live_state"] = _wait_probe_live_state(wait, observation) or None
+    wait["suspect_probe"] = _wait_probe_suspect(wait, observation)
+    if not horizon_declared:
+        limit = _wait_probe_reported_limit(wait, observation)
+        if limit is not None and wait.get("age_seconds") is not None:
+            wait["expected_horizon_seconds"] = limit
+            wait["overdue"] = float(wait["age_seconds"]) > limit
+    return wait
+
+
 def external_wait(
     record: Mapping[str, Any],
     *,
@@ -1258,6 +1422,67 @@ def _record_is_known_foreign(record: Mapping[str, Any]) -> bool:
     return host is not None and str(host) != _reading_host()
 
 
+def launcher_host_is_gone(record: Mapping[str, Any]) -> bool:
+    """Prove a foreign compute launcher holds no job belonging to this user.
+
+    Slurm's node inventory excludes login hosts, whose processes outlive jobs.
+    A successful empty queue answer then proves the allocation cannot hold the
+    worker. Any job still holding the node, an unrecognised node or a failed
+    query keeps liveness unknown. The observation is written before it licenses
+    recovery, so a launch cannot rely on an answer that nobody can later read.
+    """
+    from reckon.crew.process_liveness import _run_scheduler_query
+
+    if not _record_is_known_foreign(record):
+        return False
+    host = str(record.get("launcher_host") or "")
+    node = host.split(".", 1)[0]
+    if not node or not all(char.isalnum() or char in "-_" for char in node):
+        return False
+    node_query = ["scontrol", "show", "node", node, "--oneliner"]
+    jobs_query = [
+        "squeue",
+        "--noheader",
+        "--user",
+        str(os.getuid()),
+        "--nodelist",
+        node,
+        "--states",
+        "all",
+        "--format",
+        "%i|%T",
+    ]
+    node_output = None
+    jobs_output = None
+    try:
+        node_output = _run_scheduler_query(node_query)
+        if node_output is not None and f"NodeName={node}" in node_output.split():
+            jobs_output = _run_scheduler_query(jobs_query)
+    except (OSError, subprocess.SubprocessError):
+        pass
+    observation = {
+        "run_id": record.get("run_id"),
+        "attempt": record.get("attempt"),
+        "host": host,
+        "user_id": os.getuid(),
+        "observed_at": datetime.now(UTC).isoformat(),
+        "node_query": node_query,
+        "node_output": node_output,
+        "jobs_query": jobs_query,
+        "jobs_output": jobs_output,
+        "process_gone": jobs_output is not None and not jobs_output.strip(),
+    }
+    try:
+        runs._write_json(
+            _run_directory(record) / "launcher-host-observation.json", observation
+        )
+    except OSError:
+        return False
+    if isinstance(record, dict):
+        record["launcher_host_observation"] = observation
+    return observation["process_gone"]
+
+
 def _recorded_end_of_the_current_attempt(record: Mapping[str, Any]) -> bool:
     """Whether the run's exit record ends the attempt whose worker it names.
 
@@ -1287,7 +1512,10 @@ def _recorded_end_of_the_current_attempt(record: Mapping[str, Any]) -> bool:
 def local_liveness(record: Mapping[str, Any]) -> tuple[bool | None, bool]:
     """The liveness this host can stand behind for one live pointer.
 
-    Returns ``(alive, proven)``. The process table answers only when the
+    Returns ``(alive, proven)``. A foreign compute launcher is proven gone
+    when the scheduler reports no job holding its node for this user; the
+    recorded scheduler answer is independent of this host's process table.
+    Otherwise the process table answers only when the
     record's launching host is this host: a pid is meaningful only on the
     machine that issued it, and the crew home is shared across login nodes, so
     asking a foreign process table — or carrying an answer taken there —
@@ -1316,6 +1544,8 @@ def local_liveness(record: Mapping[str, Any]) -> tuple[bool | None, bool]:
     an end that is not this attempt's and the live process outranks it, exactly
     as before the record was read at all.
     """
+    if launcher_host_is_gone(record):
+        return False, True
     launched_here = _launched_on_this_host(record)
     if launched_here and record.get("pid"):
         # The launched pid's kernel state is the authority at this instant, and
@@ -1392,7 +1622,8 @@ def live_worker_reading(record: Mapping[str, Any]) -> LivenessReading:
     rather than letting the client's pid stand in for the worker.
     """
     if not _launched_on_this_host(record):
-        return LivenessReading(LIVENESS_UNKNOWN, None)
+        gone = launcher_host_is_gone(record)
+        return LivenessReading(LIVENESS_UNKNOWN, False if gone else None)
     # The pointer arm is taken only where the record carries a pid, as
     # :func:`live_worker_pid` has always required: the arm it reports says how
     # that pid read, not whether a pid was written at all.
@@ -1806,6 +2037,7 @@ from .recovery_wait import (  # noqa: E402
     _newest_stream_shows_work,
     _run_directory,
     _unquote_wait_declaration_scalar,
+    _wait_answer_names_terminal,
     _wait_condition_declares_no_wait,
     _wait_declaration_signature,
     _wait_expected_seconds,
@@ -1813,9 +2045,11 @@ from .recovery_wait import (  # noqa: E402
     _wait_file_probe,
     _wait_file_shape_refusal,
     _wait_probe,
+    _wait_probe_answered,
     _wait_probe_cannot_fail,
     _wait_probe_interpreter_code,
     _wait_probe_is_a_no_op,
+    _wait_probe_job_ids,
     _wait_probe_program_words,
     _wait_probe_shape_refusal,
     _wait_terminal_names_a_live_state,

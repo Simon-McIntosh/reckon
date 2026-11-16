@@ -37,6 +37,13 @@
       "summary": "62 passed in 58.18s"
     }
   },
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the coordinator rebuilt the manifest's tests, test_logs, suite arms, negative_control_log and landing line from the run's own logs at its reviewed head 6e5c1fd1c2; the record check now passes",
+      "recorded_at": "2026-11-16T03:48:09.402314+00:00"
+    }
+  },
   "findings": [
     "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224328568660-verdict-role-matches-run-role-s13/manifest.md:5 blocking: the delivered manifest carries no tests:, test_logs:, baseline_suite, after_suite, negative_control_log or landing line - audit_manifest over its own text prints 'status is complete but no test result is recorded', 'status is complete but baseline_suite is missing' and 'status is complete but after_suite is missing' (suite_armed=True), and promotion fills its gate receipt from the tests: line and compares those two arms, so the reviewed gate facts survive only as logs/baseline-suite.log and logs/after-suite.log on disk while the record promotion reads has no gate.",
     "reckon/crew/admission/ordering.py:156 non-blocking: the implementation role name stays a module-local literal beside a review role that ordering.py:159-163 imports from reckon.crew.recovery_vocabulary.REVIEW_ROLE, and the repository states the implement spelling in three other places (reckon/crew/worker_digest.py:63, reckon/crew/ticker.py:657, reckon/crew/dispatching/preparation.py:237) with no owner, so the same key drift this node repaired can recur without any gate noticing."

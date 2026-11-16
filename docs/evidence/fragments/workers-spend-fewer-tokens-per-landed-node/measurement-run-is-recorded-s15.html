@@ -1,0 +1,39 @@
+<section id="measurement-run-is-recorded-s15-landing">
+  <h2>Measurement completions do not owe a review</h2>
+
+  <p><strong>What changed.</strong> The completion guard and recovery classifier
+  now share the dispatch marker predicate. A complete measurement run bypasses
+  the off-primary-branch refusal, records its <code>measured</code> ledger row,
+  and classifies as promotable with no review owed. The existing reflex control
+  now removes classifier recognition as well as the reflex skip so it continues
+  to test the reflex path itself.</p>
+
+  <p><strong>Reproduced before repair.</strong> With a synthesized repository
+  whose <code>origin/main</code> did not carry the run's head,
+  <code>crew complete --gate passed</code> refused with: “the reviewed head
+  9728b7f166befff342acb6f4a9dfde79e02636cb is not on origin/main, so promoting
+  it as passed would record landed work the primary branch does not carry.”
+  The classifier returned <code>scoring</code> and said: “the worker manifest
+  reports completion, but no independent review is attached; an independent
+  review must be produced before promotion.”</p>
+
+  <h3 id="measurement-run-is-recorded-s15-arms">Verification</h3>
+
+  <table>
+    <caption>Each test log starts with its revision and command and ends with an exit status.</caption>
+    <thead><tr><th>Arm</th><th>Revision</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Base</td><td><code>6fa76c49f48e</code></td>
+        <td>68 passed, 0 failed</td></tr>
+      <tr><td>After</td><td><code>10e0959e57cd</code></td>
+        <td><strong>70 passed, 0 failed</strong>; the captured
+        <code>origin/main</code> head was unchanged</td></tr>
+      <tr><td>Negative control</td><td><code>10e0959e57cd</code> with measurement recognition removed</td>
+        <td>2 failed as expected: the complete case refused on <code>origin/main</code>, and the classifier case returned <code>scoring</code></td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Ruff.</strong> Ruff check passed. Ruff format reports the same
+  existing formatting finding in <code>recovery_classification.py</code> on the
+  base and after trees; this change adds no format finding.</p>
+</section>

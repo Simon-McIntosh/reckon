@@ -24,8 +24,8 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="362">
-<meta name="plan-modified" content="2026-11-15">
+<meta name="plan-version" content="365">
+<meta name="plan-modified" content="2026-11-16">
 </head>
 <body>
   <main class="plan-doc">
@@ -956,6 +956,9 @@
 <div class="r-comment" data-section="s42" data-id="c-run-r-20261115T144407157182-review-of-wftl-a-run-held-only-for-its-stream-figures-has-them-03737753d13f" data-who="reckon-build" data-when="2026-11-15T15:05:09.193Z">
     <div class="r-comment-body"><p>§42 review of r-20261114T202416024266-wftl-a-run-held-only-for-its-stream-figures-has-them at base 256fbbefeb head 03737753d1 — parsed, 101/120 (goal_fidelity 17, evidence 15, scope_discipline 18, durability 15, fit 18, reuse 18), 0 added failures; the delta answers the prior review's three findings and four non-blocking findings are recorded.</p></div>
 </div>
+<div class="r-comment" data-section="s42" data-id="c-run-r-20261114T202416024266-wftl-a-run-held-only-for-its-stream-figures-has-them" data-who="reckon-build" data-when="2026-11-15T14:21:17Z">
+    <div class="r-comment-body"><p>§42 — the four projects' 2,709 figure-bearing rows now carry tool_steps and orientation_input_tokens derived from their own streams (nova 1298, imas-codex 1081, imas-ambix 326, imas-standard-names 4), none skipped and none unmeasurable; 20 of 20 re-derived rows match and a fresh-cursor retention pass reports 0 missing-derived-figure, against 2,614 before; each project's ledger still holds the fill only in its working tree, so the four ledger commits are outstanding.</p></div>
+</div>
 <div class="r-comment" data-section="s43" data-id="c-run-r-20261113T164551493960-review-of-deferred-promotion-resolves-relative-program-a782501f11aa" data-who="reckon-build" data-when="2026-11-13T17:10:46.528Z">
     <div class="r-comment-body"><p>A deferred promotion now resolves a relative gate program against the run's recorded worktree and then its repository, refusing with a message naming the directories tried; the change is sound and tested for the checkout case, and the review records two non-blocking findings: an absolute-program refusal that misstates where it looked, and no test for the repository-fallback root.</p></div>
 </div>
@@ -1310,6 +1313,12 @@
 <div class="r-comment" data-section="s78" data-id="c-run-r-20261115T132239549895-wftl-an-omp-worker-cut-off-is-classified-and-resumed-codex" data-who="reckon-build" data-when="2026-11-15T15:07:30Z">
     <div class="r-comment-body"><p>Complete: omp cut-off recovery now reuses recovery_wait last-tool traversal; the duplicate scanner is removed and the owner decodes omp events and toolCall blocks. Review finding dimension-reuse is answered by aa349bcbe03f87665530ac96991d2a453b6bbd19. Focused gate passes 20 tests; inverse-commit negative control fails as expected; declared base, repair base and repaired head each pass the exact 58-test suite on all_debug.</p></div>
 </div>
+<div class="r-comment" data-section="s79" data-id="c-run-r-20261115T222820952097-review-of-wftl-a-full-reading-does-not-hold-queued-work-db04a33ee164" data-who="reckon-build" data-when="2026-11-15T22:34:30.186Z">
+    <div class="r-comment-body"><p>Independent review of r-20261115T210614019724-wftl-a-full-reading-does-not-hold-queued-work at 6b7c8a2bf2b4..db04a33ee164: all six dimensions scored (goal_fidelity 18, evidence 13, scope_discipline 18, durability 16, fit 17, reuse 19), three findings recorded (one blocking on the reviewed manifest's unreadable suite fields and negative-control path, two non-blocking on the untested launches_by_key guard and the one-second pause overshoot), added_failure_count 0 derived from suite-base-arm.log (6b7c8a2, 58 passed, EXIT=0) and suite-after-arm.log (db04a33ee1, 58 passed, EXIT=0).</p></div>
+</div>
+<div class="r-comment" data-section="s79" data-id="c-run-r-20261115T210614019724-wftl-a-full-reading-does-not-hold-queued-work" data-who="reckon-build" data-when="2026-11-15T21:16:26.877Z">
+    <div class="r-comment-body"><p>Admission now waits, bounded at 30 seconds and by the pass's own budget, for a lane that read full to publish room again before holding queued work, deferring allowance-held candidates to a second sweep and re-reading the lane once per session per pass; the measure reads all 12 queued requests launched within 60 seconds of the first open reading (head: 18 passed; base: 1 failed, 2 passed with none launched).</p></div>
+</div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261111T203346637638-review-of-re-review-need-in-shadow-da305d74a3c1" data-who="reckon-build" data-when="2026-11-11T20:51:44.324Z">
     <div class="r-comment-body"><p>the review of r-20261111T203346637638 records a parsed record for run r-20261111T185601723958 at reviewed_base_sha 8c5c7ad581829874b7f7bf463fdd5f61bfc7e48d and reviewed_head_sha da305d74a3c13365c388ae28750962505253aa1c, scoring all six dimensions between 0 and 20 (goal_fidelity 16, evidence 14, scope_discipline 18, durability 12, fit 15, reuse 16, total 91), carrying added_failure_count 0 with an empty added_failure_ids derived from the reviewed run's own baseline_suite and after_suite gate logs (51 passed EXIT=0 and 59 passed EXIT=0, zero FAILED or ERROR lines in either), and emitting 5 verdicts, 6 scores, 6 justifications, a CALL_SITES line naming two production call sites, and 6 non-blocking findings; the gate re-read both records through `crew check --review` and asserted the record shape at EXIT=0, and the negative control reddens both the tool check and the shape assertion at EXIT=1.</p></div>
 </div>
@@ -1331,8 +1340,8 @@
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261114T222338072670-wftl-the-lane-is-fed-while-coordinators-land" data-who="reckon-build" data-when="2026-11-15T10:15:56Z">
     <div class="r-comment-body"><p>Measured the closed 2026-11-14 21:00 to 2026-11-15 01:00 UTC window with scripts/lane_window_census.py, which now reads the ledger through the store that owns it (11,670 hot rows plus 12,227 retired): a time-weighted mean of 23.55 working workers against a 4.34 baseline (criterion 12, met), a median completion-to-promotion of 92.5 minutes for the 39 implement runs (criterion 20 minutes, not met), 27,854 worker identity files at the window's end (criterion under 100, not met), and 5 of 8 admit passes holding a request on a claim under the shared crew home (criterion none, not met).</p></div>
 </div>
-<div class="r-comment" data-section="s79" data-id="c-run-r-20261115T222820952097-review-of-wftl-a-full-reading-does-not-hold-queued-work-db04a33ee164" data-who="reckon-build" data-when="2026-11-15T22:34:30.186Z">
-    <div class="r-comment-body"><p>Independent review of r-20261115T210614019724-wftl-a-full-reading-does-not-hold-queued-work at 6b7c8a2bf2b4..db04a33ee164: all six dimensions scored (goal_fidelity 18, evidence 13, scope_discipline 18, durability 16, fit 17, reuse 19), three findings recorded (one blocking on the reviewed manifest&#x27;s unreadable suite fields and negative-control path, two non-blocking on the untested launches_by_key guard and the one-second pause overshoot), added_failure_count 0 derived from suite-base-arm.log (6b7c8a2, 58 passed, EXIT=0) and suite-after-arm.log (db04a33ee1, 58 passed, EXIT=0).</p></div>
+<div class="r-comment" data-section="s68" data-id="c-run-r-20261116T081152488558-review-of-wftl-ended-run-identities-are-removed-739a9f3a0fbf" data-who="reckon-build" data-when="2026-11-16T08:52:37.312Z">
+    <div class="r-comment-body"><p>review of run r-20261116T040255665307-wftl-ended-run-identities-are-removed at head 739a9f3a0fbfe1e877aa4faa2f2b20b7ce637bdf against base c6f9f10f23da2cf7def2808528252eaffa0ea4dd, stored parsed with goal_fidelity 19, evidence 17, scope_discipline 13, durability 17, fit 18, reuse 20 and three non-blocking findings</p></div>
 </div>
 </section>
 </main>

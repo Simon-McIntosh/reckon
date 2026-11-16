@@ -822,7 +822,7 @@ def derive_routing(
         list
     )
     for run in usable_outcomes:
-        plan = str(run.get("plan") or "").strip()
+        plan = ledger.row_plan(run).strip()
         paths = _write_paths(run)
         if plan and paths:
             later_paths[(run["_project"], plan)].append((run["_ledger_index"], paths))
@@ -852,7 +852,7 @@ def derive_routing(
             excluded["missing_" + "_and_".join(missing)] += 1
             continue
         own_paths = _write_paths(run)
-        plan = str(run.get("plan") or "").strip()
+        plan = ledger.row_plan(run).strip()
         reworked = bool(own_paths and plan) and any(
             index > run["_ledger_index"] and _paths_overlap(own_paths, paths)
             for index, paths in later_paths.get((run["_project"], plan), ())
@@ -1131,7 +1131,7 @@ def derive_capabilities(
                 if agent_key:
                     exclusions_by_agent[agent_key][exclusion] += 1
                 continue
-            plan = str(run.get("plan") or "")
+            plan = ledger.row_plan(run)
             try:
                 estimated_hours = float(estimates[plan])
                 actual_hours = float(run.get("worker_seconds")) / 3600.0
