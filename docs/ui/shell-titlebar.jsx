@@ -180,6 +180,19 @@ function ReaderChrome({
             <span>{dependencyLabel}</span>
           </button>
         )}
+        {/* The reader owns the handoff for the document it is showing: the
+            plan route has no titlebar, so without this control the prompt the
+            plan surface builds is reachable only by a keyboard palette. */}
+        {kind === "plan" && (
+          <button
+            type="button"
+            className="r-reading-prompt gen-prompt"
+            title="Generate handoff prompt"
+            onClick={() => window.dispatchEvent(new CustomEvent("r-open-prompt"))}
+          >
+            Generate prompt
+          </button>
+        )}
         <button type="button" className="r-reading-copy" onClick={copy} title={`Copy ${copyValue}`}>Copy</button>
       </nav>
       <div className="r-reading-metadata" aria-label="Reader metadata">
