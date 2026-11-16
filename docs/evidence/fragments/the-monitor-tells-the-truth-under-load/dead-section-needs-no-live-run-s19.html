@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-tells-the-truth-under-load">
+  <meta name="plan-evidence-for" content="the-monitor-tells-the-truth-under-load">
+  <title>A section can no longer land only when none of its runs still can &middot; reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A section can no longer land only when none of its runs still can</h1>
+      <p class="lead">One node of a section writing <code>failed</code> turned every request waiting on that section into <code>blocked-upstream</code>, which reads &ldquo;a section this request waits on can no longer land&rdquo; and offers to recover or drop the request. The section still owned a second run, in flight on a scheduler job, and the failed run was resumed within a minute. The section's death is now a judgement about every run that names it, and a request that stays waiting names the run it is waiting for. The new checks fail at the base revision; the already-correct third case stayed green through both arms.</p>
+    </header>
+
+    <section id="dead-section-what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/crew/admission/release.py</code>: <code>_dead_sections</code> now builds two sets over the live pointers instead of one. A section lands in the ended set when one of its runs reads <code>failed</code> or <code>blocked-upstream</code>, or has a discard recorded; it lands in the standing set when a run it owns may still land, which is any other phase plus an ended run carrying a resume mark. The answer is ended minus standing, so one failed node no longer closes a section that still owns a queued, held, working or resuming run. <code>_section_key</code> is the one place a pointer's <code>(plan, section)</code> is spelled, so the two sets cannot disagree about identity; a pointer whose phase is <code>complete</code> neither keeps the section open nor closes it. <code>_resume_in_flight</code> reads the mark <code>mark_resume_launching</code> writes on the pointer before the resumed attempt records its own, through <code>resumption.launch_in_flight</code>, so the window in which a resumed run still reads <code>failed</code> no longer closes its section. <code>_live_runs_on</code> reads the same judgement for one waiting request, and <code>resolve_waits</code> records those run ids on the request as <code>upstream_live</code>.</li>
+        <li><code>reckon/crew/admission/release.py</code>, <code>_advance_waiting_requests</code>: the pass persists <code>upstream_live</code> beside <code>upstream_obligations</code> whenever either changes, so a name recorded for a live sibling is cleared when the section does die.</li>
+        <li><code>reckon/crew/admission/shared.py</code>: <code>DEAD_RUN_PHASES</code> is documented as one run's vote rather than the section's verdict, and <code>LANDED_RUN_PHASES</code> names <code>complete</code> &mdash; the phase of a run whose work already landed whose pointer may outlive it. Both are exported from the module that owns the phase vocabulary.</li>
+        <li><code>reckon/crew/recovery_classification.py</code>: the <code>awaiting-upstream</code> row appends the runs recorded in <code>upstream_live</code> to its detail, so the row says which run is still live on the section instead of naming only the section. The <code>blocked-upstream</code> wording and its <code>recover or drop</code> remedy are untouched: they remain the honest reading for a section no run of which can land, which is the case this change keeps.</li>
+        <li><code>tests/test_a_section_with_a_live_run_can_still_land.py</code> (new): three cases over a synthesised crew home, checkout and plan, storing one pointer per run and driving the admission pass directly. Each asserts the real crew home is untouched.</li>
+      </ul>
+    </section>
+
+    <section id="dead-section-the-gate">
+      <h2>The gate</h2>
+      <p>The gate is the suite template resolved over each arm's own tree: <code>PYTHONPATH=. .venv/bin/python3 -m pytest -p no:cacheprovider -q &lt;node tests&gt;</code>, with <code>&lt;node tests&gt;</code> standing for this node's test files that exist in that arm's tree. The new test file exists only at head, so the two arms' commands differ by exactly it; both ran against the project interpreter at <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python3</code>. The base arm ran in a scratch mirror of the worktree whose three changed modules were replaced with their base blobs, with sizes checked against <code>git cat-file -s</code> (<code>release.py</code> 21391, <code>shared.py</code> 15654, <code>recovery_classification.py</code> 160005 bytes); that tree prints its own <code>module.__file__</code> and <code>cwd</code> on the log's header lines. The head arm ran in the worktree at the committed revision.</p>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>Base <code>5624e41095</code>, scratch mirror, two files that exist there</td><td><code>58 passed</code>, <code>EXIT=0</code></td><td><code>gate_base.log</code></td></tr>
+          <tr><td>Base <code>5624e41095</code>, new test file copied onto base source</td><td><code>2 failed, 1 passed</code>, <code>EXIT=1</code> &mdash; both new clauses fail, the already-correct case passes</td><td><code>base_new_test.log</code></td></tr>
+          <tr><td>Head <code>1bf34caf0b</code>, worktree, three files</td><td><code>61 passed</code>, <code>EXIT=0</code></td><td><code>gate_head.log</code></td></tr>
+          <tr><td>Head + declared mutation, scratch mirror of head</td><td><code>2 failed, 1 passed</code>, <code>EXIT=1</code>; the two ids the head arm does not fail</td><td><code>negative-control.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>What the base arm shows is the defect itself: with the section holding one failed run and one queued sibling, the waiting request is moved to <code>blocked-upstream</code> at base (<code>assert 'blocked-upstream' == 'awaiting-upstream'</code>). With the resume mark standing on the failed run the base arm keeps the same wrong answer, which is the second clause. The third case &mdash; a section none of whose runs can land &mdash; passes in both arms, so the narrower judgement did not lose the honest reading it was narrowing around.</p>
+      <p>A regression sweep of the waiters around the changed rule ran in both arms over the same six files: <code>tests/test_section_waits_read_normalised_keys.py</code>, <code>tests/test_queue_dag_waits.py</code>, <code>tests/test_a_dropped_request_strands_no_waiter.py</code>, <code>tests/test_dead_wait_blocks_only_its_request.py</code>, <code>tests/test_a_finished_upstream_releases_its_waiters.py</code> and <code>tests/test_a_refused_wait_is_an_obligation.py</code>. Both arms report <code>22 failed, 29 passed</code>, and the set difference of the failing ids is empty: no id fails only at head. The shared failures are queue-time refusals in this sandbox (<code>node 'prior' is refused at queue time: no manifest path is named</code>), which read the fixtures rather than the dead-section rule. Logs: <code>regression_waiters.log</code> (head) and <code>regression_waiters_base.log</code> (base mirror).</p>
+      <p>Logs live under the run directory <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T184142644946-dead-section-needs-no-live-run-s19/</code>. Ruff was run over the staged paths only: <code>ruff check</code> is clean on all four, and <code>ruff format --check</code> is clean on the three files that wait, the test and the two admission modules. <code>reckon/crew/recovery_classification.py</code> was already unformatted at base and its backlog is untouched here.</p>
+    </section>
+
+    <section id="dead-section-negative-control">
+      <h2>Declared negative control</h2>
+      <p>Declared mutation: <em>marking a section dead on any one failed run again fails the sibling-run test</em>. Applied to <code>_dead_sections</code> in a scratch mirror of the head tree &mdash; the body returns the ended set without subtracting the standing one &mdash; the new test file reports <code>2 failed, 1 passed</code> with <code>EXIT=1</code>: <code>test_a_failed_run_beside_a_live_sibling_keeps_its_waiter_waiting</code> and <code>test_a_resumed_failed_run_returns_its_waiters_to_waiting</code>, neither of which the head arm fails. The third case still passes, which is why the mutation is visible rather than fatal to the whole file.</p>
+    </section>
+
+    <section id="dead-section-commits">
+      <h2>Commits</h2>
+      <p><code>1bf34caf0bf80e3186e666923c5f890da2a92fca</code> &mdash; fix(crew): judge a section's death over every run that names it. Changes <code>reckon/crew/admission/release.py</code>, <code>reckon/crew/admission/shared.py</code>, <code>reckon/crew/recovery_classification.py</code> and adds <code>tests/test_a_section_with_a_live_run_can_still_land.py</code>.</p>
+    </section>
+  </main>
+</body>
+</html>

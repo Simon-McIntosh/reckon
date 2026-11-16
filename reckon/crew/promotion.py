@@ -126,6 +126,7 @@ from reckon.crew.routing import (
     _git,
     _inspect_workspace,
     _live_pointer_worktrees,
+    _release_worktree_whole,
     _repository_tree_snapshot,
     _shadow_patch_retained,
     _shadow_worktree_records,
@@ -268,10 +269,29 @@ def _remove_promoted_pointer(run_id: str, record: Mapping[str, Any]) -> bool:
         return False
     if outcome != pending_landing.POINTER_RETIRED:
         raise CrewError(
-            f"run {run_id!r} changed while promotion ran; "
-            "its pointer and workspace are preserved; retry promotion"
+            f"run {run_id!r} changed while promotion ran"
+            f"{_newer_attempt_named(run_id, record)}; its pointer and "
+            "workspace are preserved; retry promotion"
         )
     return True
+
+
+def _newer_attempt_named(run_id: str, record: Mapping[str, Any]) -> str:
+    """Name the attempt a later launch recorded, for a refusal that kept it.
+
+    A cleanup that found the pointer belonging to another attempt preserves it,
+    and the attempt number is what tells a coordinator which launch owns the run.
+    The refusal says which field moved, so a pointer that changed for any other
+    reason still reads as the generic mismatch it is.
+    """
+    try:
+        current = read_pointer(run_id)
+    except CrewError:
+        return ""
+    attempt = current.get("attempt")
+    if attempt is None or attempt == record.get("attempt"):
+        return ""
+    return f": attempt {attempt} was recorded after this promotion read the pointer"
 
 
 def _keep_pointer_for_pending_landing(run_id: str) -> bool:
@@ -464,7 +484,8 @@ def _remove_promoted_pointer_or_defer(
                 return False
         if not _keep_pointer_for_pending_landing(run_id):
             raise CrewError(
-                f"run {run_id!r} changed while promotion ran and its pointer "
+                f"run {run_id!r} changed while promotion ran"
+                f"{_newer_attempt_named(run_id, record)} and its pointer "
                 "could not be marked for the landing pass: its promotion is "
                 "recorded, and the merge of its reviewed head is left to the "
                 "landing record this promotion wrote"
@@ -472,7 +493,8 @@ def _remove_promoted_pointer_or_defer(
         if finishing_another_writers_row:
             return False
         raise CrewError(
-            f"run {run_id!r} changed while promotion ran; its promotion is "
+            f"run {run_id!r} changed while promotion ran"
+            f"{_newer_attempt_named(run_id, record)}; its promotion is "
             "recorded and its pointer is kept, marked pending_landing_repair, so "
             "the next landing pass finishes the merge of its reviewed head"
         ) from exc
@@ -707,6 +729,83 @@ def _default_gate_evidence_from_manifest(
     )
 
 
+#: The waiver a measurement run's row carries where an ordinary implement run
+#: would owe a review: nothing reviews a run nobody merges.
+MEASUREMENT_REVIEW_WAIVER = (
+    "the run is a measurement run: it builds and gates, and nothing reviews or lands it"
+)
+
+#: The declaration a measurement run's row carries where an ordinary run states
+#: why its plan's impl did not move.
+MEASUREMENT_IMPL_WAIVER = (
+    "a measurement run replays a section already declared done, so it moves no impl"
+)
+
+
+def _measurement_reason(record: Mapping[str, Any]) -> str:
+    """The reason this run was dispatched as a measurement run, or "".
+
+    Read off the pointer the dispatch wrote, so the review reflex's decision and
+    the promotion's are made from one record: a run the reflex refused to review
+    is exactly the run whose row states a measurement.
+    """
+    marker = record.get("measure_only")
+    if isinstance(marker, Mapping):
+        return str(marker.get("reason") or "").strip() or "measurement run"
+    return str(marker or "").strip()
+
+
+def _release_measurement_worktree(record: Mapping[str, Any]) -> dict[str, Any]:
+    """Remove a measurement run's worktree, whose head is never merged.
+
+    The ordinary release withholds a worktree whose HEAD is not an ancestor of
+    the integration branch, because that head is the only copy of work nobody
+    has merged yet. A measurement run's head is never merged — not landing is
+    what the run is for — so the same policy would hold every replay's tree
+    back, and a measurement population, which by construction is every arm
+    building the same landed sections, would fill the disk it is measured on.
+    Nothing is lost by removing it: the commit lives in the repository's object
+    store and the ledger row names it, and what the run produced is its figures.
+
+    Removal happens before the ordinary release rather than after it, so the
+    release reports the tree as already absent and its audit describes the
+    trees this removal left behind instead of contradicting them. A tree
+    another live pointer names is left in place: a share of the tree is not
+    this run's to take.
+    """
+    if not _measurement_reason(record):
+        return {}
+    worktree_value = str(record.get("worktree") or "")
+    repo_value = str(record.get("repo") or "")
+    if not worktree_value:
+        return {}
+    worktree = Path(worktree_value)
+    if not worktree.is_dir():
+        return {}
+    repo = Path(repo_value) if repo_value else None
+    if repo is None or not repo.is_dir():
+        return {"released": False, "withheld": "repository root is unavailable"}
+    run_id = str(record.get("run_id") or "")
+    claims = [
+        claim
+        for claim in _live_pointer_worktrees().get(worktree.resolve(), [])
+        if claim != run_id
+    ]
+    if claims:
+        return {
+            "released": False,
+            "withheld": "another live run names this worktree: "
+            + ", ".join(sorted(claims)),
+        }
+    released = _release_worktree_whole(repo, worktree, run_id=run_id)
+    if not released.get("released", True):
+        return {"released": False, "withheld": released["withheld"]}
+    outcome: dict[str, Any] = {"released": True}
+    if not released.get("trash_removed"):
+        outcome["trash_left"] = released["trash"]
+    return outcome
+
+
 def _run_plan_slug(record: Mapping[str, Any], node: Mapping[str, Any]) -> str:
     """The plan a run works on, named by its node or by its own subject.
 
@@ -793,6 +892,21 @@ def complete(
         with _pointer_lock(run_id):
             record = _read_pointer_or_rebuild(run_id, root=root)
         record = {**record, **read_dispatch_detail(record)}
+        # A measurement run is one its dispatch marked: it replays work that has
+        # already landed, so its row records a measurement rather than a landing
+        # and nothing about it is ever reviewed or merged.
+        measurement_reason = _measurement_reason(record)
+        if measurement_reason:
+            outcome = (
+                f"measured: {str(outcome).strip()}"
+                if str(outcome).strip()
+                else "measured"
+            )
+            if not str(no_impl_change).strip():
+                # A replay must not move the plan it replays: the section is
+                # already declared done, and an impl tick from a duplicate of
+                # that work would be a plan movement describing nothing.
+                no_impl_change = MEASUREMENT_IMPL_WAIVER
         # A dispatch whose launch was refused leaves a run that names no
         # project: the refusal removed the pointer or never let it carry a
         # project, and the run directory it left behind holds no supervisor
@@ -917,6 +1031,12 @@ def complete(
                 commit_list=gate_commits,
                 root=resolved.get("root", root),
             )
+            if measurement_reason:
+                # The reflex composes no review for a measurement run, so the
+                # run owes none and the row states why instead of holding the
+                # landing for a review that will never arrive. The tier is still
+                # resolved, because the row records what the run changed.
+                return {"reason": MEASUREMENT_REVIEW_WAIVER}
             return _require_review_waiver(
                 run_id,
                 record,
@@ -2289,6 +2409,14 @@ def _complete_locked(
         comment = (
             {"recorded": False, "reason": "shadow evidence does not land code"}
             if shadow
+            else {
+                "recorded": False,
+                "reason": (
+                    "a measurement run builds and gates and lands nothing, so it "
+                    "records no landing comment on the plan"
+                ),
+            }
+            if _measurement_reason(record)
             else _record_landing_comment(
                 project=project,
                 plan=str(node.get("plan") or ""),
@@ -2454,6 +2582,7 @@ def _complete_locked(
         # copy is left to the trash sweep rather than deleted here: a copy
         # deleted inline keeps a serial review sweep waiting on the filesystem.
         with deferring_worktree_copy_deletion():
+            measurement_worktree = _release_measurement_worktree(record)
             release = _release_after_promotion(
                 run_id,
                 record,
@@ -2461,6 +2590,8 @@ def _complete_locked(
                 process_already_ended=ended_writer,
                 gate=str(gate),
             )
+        if measurement_worktree:
+            release["measurement_worktree"] = measurement_worktree
         _stop_at_stage_boundary("the release record")
         release, recorded = _record_release_on_ledger(
             project=project,
@@ -2640,6 +2771,11 @@ def discard(run_id: str, *, allowed_phases: Sequence[str] = ()) -> dict[str, Any
     phases, tested against the record re-read under the lock, so a caller whose
     own pre-check raced a test sees a launch as the refusal it is rather than
     removing a run that has started.
+
+    A run whose attempt is still in flight is refused for the same reason: a
+    reservation names the launch the pointer has not recorded yet, and an
+    attempt that has ended — an exit receipt, or a supervisor this host
+    probes dead — holds nothing, so only a live one refuses.
     """
     with _promotion_lock(run_id), _pointer_lock(run_id):
         record = read_pointer(run_id)
@@ -2656,6 +2792,21 @@ def discard(run_id: str, *, allowed_phases: Sequence[str] = ()) -> dict[str, Any
             raise CrewError(
                 f"cannot discard live run {run_id!r}: recorded pid {pid} is alive"
             )
+        # The pointer's pid is one account of what holds the run and it is not
+        # always the worker's: a resume's attempt is recorded on its
+        # reservation before the pointer learns the pid, and a supervisor that
+        # exited early takes the pointer's pid with it. The attempt's own
+        # reservation is the other account, and an attempt that has recorded
+        # either its end or a process this host probes gone holds nothing, so
+        # only a live attempt refuses here.
+        from reckon.crew.dispatch_launch import (
+            _reservation_refusal,
+            held_launch_reservation,
+        )
+
+        held = held_launch_reservation(run_dir(run_id))
+        if held is not None:
+            raise _reservation_refusal(run_id, held)
         path = pointer_path(run_id)
         # Before the pointer goes: a reader that sees the absence must find the
         # record behind it, and a record written afterwards leaves a window in
