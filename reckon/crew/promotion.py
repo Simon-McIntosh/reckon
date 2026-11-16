@@ -34,6 +34,7 @@ from datetime import (
     datetime,
     timezone,
 )
+from functools import wraps
 from pathlib import (
     Path,
 )
@@ -1842,7 +1843,123 @@ def _budget_overrun_facts(
     }
 
 
+@dataclass
+class _PlanWriteSnapshot:
+    """The plan and its path's index state before a landing writes them."""
+
+    checkout: Path
+    path: Path
+    content: bytes
+    mode: int
+    index: str
+    head_entry: str
+
+    def index_entry(self) -> str:
+        return _git(
+            self.checkout, "ls-files", "--stage", "-z", "--", str(self.path)
+        ).stdout
+
+    def committed_entry(self) -> str:
+        return _git(self.checkout, "ls-tree", "-z", "HEAD", "--", str(self.path)).stdout
+
+    def restore(self) -> None:
+        if not self.path.is_file() or self.path.read_bytes() != self.content:
+            _store.write_atomically(
+                self.path,
+                lambda target: target.write(self.content),
+                binary=True,
+                mode=self.mode,
+            )
+        if self.path.stat().st_mode != self.mode:
+            self.path.chmod(self.mode)
+        # Restore only this path: replacing the whole index would discard a
+        # peer's staging at unrelated paths in the shared checkout.
+        if self.index_entry() != self.index:
+            from reckon.crew.merge import _run_waiting_out_a_held_index_lock
+            from reckon.crew.promotion_scope import (
+                _INDEX_LOCK_RETRY_ATTEMPTS,
+                _INDEX_LOCK_RETRY_INTERVAL_SECONDS,
+            )
+
+            relative = self.path.relative_to(self.checkout).as_posix()
+            object_length = len(_git(self.checkout, "rev-parse", "HEAD").stdout.strip())
+            entries = f"0 {'0' * object_length}\t{relative}\0" + self.index
+            restored, _retries = _run_waiting_out_a_held_index_lock(
+                self.checkout,
+                lambda _attempt: subprocess.run(
+                    ["git", "update-index", "-z", "--index-info"],
+                    cwd=self.checkout,
+                    input=entries,
+                    text=True,
+                    capture_output=True,
+                    check=False,
+                ),
+                attempts=_INDEX_LOCK_RETRY_ATTEMPTS,
+                retry_seconds=_INDEX_LOCK_RETRY_INTERVAL_SECONDS,
+            )
+            if restored.returncode:
+                raise CrewError(
+                    restored.stderr.strip()
+                    or "git could not restore the plan index entry"
+                )
+        if self.path.read_bytes() != self.content or self.index_entry() != self.index:
+            raise CrewError(
+                "the restored plan or its index entry differs from its snapshot"
+            )
+
+
+def _preserve_plan_on_refusal(promote: Callable[..., dict[str, Any]]) -> Callable:
+    """Restore uncommitted plan writes on every exit that refuses a landing."""
+
+    @wraps(promote)
+    def guarded(run_id: str, **kwargs: Any) -> dict[str, Any]:
+        record = kwargs.get("record")
+        if record is None:
+            record = read_pointer(run_id)
+        record = {**record, **read_dispatch_detail(record)}
+        root = kwargs.get("root")
+        if root is None:
+            root = record.get("repo")
+        project = str(record.get("project") or "")
+        plan = str((record.get("node") or {}).get("plan") or "")
+        path = (
+            _store._resolve_html_file(project, plan, root, artifact_type="plan")
+            if root is not None and plan and not _is_shadow(record)
+            else None
+        )
+        if path is None:
+            return promote(run_id, **kwargs)
+        checkout = Path(root).expanduser().resolve()
+        path = path.resolve()
+        snapshot = _PlanWriteSnapshot(
+            checkout=checkout,
+            path=path,
+            content=path.read_bytes(),
+            mode=path.stat().st_mode,
+            index=_git(checkout, "ls-files", "--stage", "-z", "--", str(path)).stdout,
+            head_entry=_git(checkout, "ls-tree", "-z", "HEAD", "--", str(path)).stdout,
+        )
+        try:
+            return promote(run_id, **kwargs)
+        except BaseException as exc:
+            # A committed landing survives a cleanup failure. Rewinding its
+            # plan here would stage a reversal of a commit that already landed.
+            if snapshot.committed_entry() != snapshot.head_entry:
+                raise
+            try:
+                snapshot.restore()
+            except (CrewError, OSError) as restore_error:
+                message = f"{exc}; could not restore plan document and index entry {path}: {restore_error}"
+            else:
+                message = f"{exc}; restored plan document, version and index entry {path} to their pre-promotion state"
+            exc.args = (message,)
+            raise
+
+    return guarded
+
+
 @operational_read
+@_preserve_plan_on_refusal
 def _complete_locked(
     run_id: str,
     *,
