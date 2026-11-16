@@ -1826,9 +1826,15 @@ def classify_pointer(
 
     # A pre-spawn launch past its bound with its holder gone is not waiting to
     # start: the liveness arms read it as a failed launch, which the admission
-    # pass then releases or returns to the queue.
-    pre_spawn_waiting = phase in _PRE_SPAWN_PHASES and not _stranded_launch(
-        record, now_seconds=moment
+    # pass then releases or returns to the queue. A pointer whose liveness is
+    # already recorded dead is not waiting to start either, whatever label it
+    # still carries: a killed run keeps the phase it held when it died, so
+    # honouring the label here would let a pre-spawn word outrank the process
+    # and report a lane kill as running for as long as the pointer lived.
+    pre_spawn_waiting = (
+        phase in _PRE_SPAWN_PHASES
+        and alive is not False
+        and not _stranded_launch(record, now_seconds=moment)
     )
     # A parked phase is the launcher's statement that the request is waiting to
     # start, and it means that only while the pointer records no worker: a pid
