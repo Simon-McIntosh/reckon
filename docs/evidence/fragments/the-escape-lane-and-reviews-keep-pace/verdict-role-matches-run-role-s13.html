@@ -1,0 +1,88 @@
+<section id="verdict-role-matches-run-role-s13-landing">
+  <h2>The verdict row names the implementation role as a run pointer does</h2>
+
+  <p><strong>What changed.</strong>
+  <code>reckon/crew/admission/ordering.py</code> now spells the implementation
+  role <code>implement</code> (<code>IMPLEMENTATION_ROLE</code>), so the
+  <code>roles</code> map a pass writes to
+  <code>admission-verdicts.jsonl</code> carries the same two role values a run
+  pointer carries — <code>implement</code> and <code>review</code> — and a
+  reader can join a pass's per-role figures to the runs they count. The
+  role string is a key only: <code>_role_of</code> classifies a request and
+  <code>role_cadence</code> counts it, and no ordering decision reads the
+  spelling, so the seat order is untouched.</p>
+
+  <p><strong>The defect, reproduced before the repair.</strong> On the base tree
+  the same twelve requests — nine implementations ahead of three reviews, one
+  project — produce a cadence keyed</p>
+
+  <pre id="verdict-role-matches-run-role-s13-repro"><code>cadence keys: ['implementation', 'review']
+pointer roles: ['implement', 'review']
+unjoinable: ['implementation'] ['implement']</code></pre>
+
+  <p>Neither side contains the other's key, so the implementation side of every
+  verdict row was unjoinable. After the change the same probe prints
+  <code>cadence keys: ['implement', 'review']</code> against the same pointer
+  roles.</p>
+
+  <p><strong>The test that could have passed on nothing.</strong> The verdict-row
+  case in <code>tests/test_reviews_and_implementations_share_the_seats.py</code>
+  queued each pointer by copying the shared fixture's pointer and then
+  overriding every field from the ordering case — including
+  <code>backend: "local"</code>, a backend no config in the test defines. Every
+  request was therefore refused, the pass launched nothing, and the row it
+  asserted on was the shape a stalled cadence writes: <code>review</code> 0
+  launched / 3 waiting, <code>implement</code> 0 launched / 9 waiting. The
+  assertions only summed <code>launched + waiting</code>, so that the launched
+  count was zero never failed. The case now takes the fixture's own backend and
+  dispatch options and changes only the identity and the queue position, and it
+  asserts three things against the row it reads back:</p>
+
+  <ul>
+    <li>the role values read back from the queued run pointers are exactly
+      <code>{review, implement}</code>, and the row's role keys equal that
+      set — the join the defect broke;</li>
+    <li>the launched counts across roles sum to the pass's seats
+      (<code>SEATS</code> = 3), so a cadence that launches nothing fails;</li>
+    <li>each role's <code>launched + waiting</code> still accounts for its whole
+      backlog.</li>
+  </ul>
+
+  <h3 id="verdict-role-matches-run-role-s13-measured">Measured</h3>
+
+  <table id="verdict-role-matches-run-role-s13-arms">
+    <caption>Each arm is one log whose header names its revision, tree and
+    command and whose last line is a bare <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the armed set at the base tree — the row case as it stood, which
+        could not see a zero-launch cadence</td>
+        <td><code>93e596c64faa</code></td>
+        <td>62 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the armed set at the delivered head — the repointed row case with
+        the join and the launched-count pin</td>
+        <td>this node's head</td>
+        <td>62 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the row case, read back from the pass's own log line</td>
+        <td>this node's head</td>
+        <td><code>{"review": {"launched": 1, "waiting": 2}, "implement":
+        {"launched": 2, "waiting": 7}}</code> — three launches for three
+        seats</td></tr>
+      <tr><td>the nine-implementations, three-reviews seat order, base tree and
+        delivered head</td>
+        <td><code>93e596c64faa</code> and this node's head</td>
+        <td>identical: <code>review, implement, implement, implement, review,
+        implement, implement, review, implement, implement, implement,
+        implement</code></td></tr>
+      <tr><td>control: the role renamed back to <code>implementation</code></td>
+        <td>this node's head + mutation</td>
+        <td>1 failed, 3 passed, <code>EXIT=1</code> — the join assertion names
+        <code>{'implementation', 'review'}</code> against
+        <code>{'implement', 'review'}</code></td></tr>
+    </tbody>
+  </table>
+
+  <p id="verdict-role-matches-run-role-s13-line" data-landing="the verdict row now keys its implementation role implement, the value a run pointer carries, so a pass's per-role figures join to the runs they count, and the verdict-row case queues pointers on the fixture's own backend so the pass launches, pinning the launched count at the three seats and asserting the row's role keys equal the roles the pointers carry; the base tree reproduces the unjoinable keys, the seat order for nine implementations and three reviews is unchanged, and the armed set reads 62 passed EXIT=0 at both arms with the control that renames the role failing the join assertion">the seat share and the verdict row name the implementation role
+  <code>implement</code>, and the row case pins its launched count at the
+  pass's seats.</p>
+</section>

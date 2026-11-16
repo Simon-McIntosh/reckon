@@ -446,6 +446,27 @@ def declared_task_count(options: Sequence[str]) -> int | None:
     return None
 
 
+def step_cpu_options(
+    reservation: Mapping[str, Any] | None, options: Sequence[str]
+) -> list[str]:
+    """The CPU request a step into ``reservation`` states, or none when declared.
+
+    A step client that names no CPU count reads one from its environment, and
+    the service launching workers runs inside the fleet job, whose per-task
+    figure is its own: when that figure exceeds the reservation's, the scheduler
+    refuses every step as asking for more processors than permitted. Stating
+    the reservation's width on the command line overrides the inherited figure.
+    The width is the whole reservation, the size it was held at, so a worker
+    keeps the affinity an unconstrained step had rather than being pinned to
+    the one core a bare count of one would give it. A placement that declares
+    its own count keeps it.
+    """
+    if option_values(options, _CPU_OPTION_NAMES):
+        return []
+    held = declared_task_count((reservation or {}).get("options") or [])
+    return [f"--cpus-per-task={held or RESERVATION_CORES}"]
+
+
 def declared_memory_bytes(options: Sequence[str]) -> int | None:
     """The whole bound a placement declares, in bytes, or None.
 

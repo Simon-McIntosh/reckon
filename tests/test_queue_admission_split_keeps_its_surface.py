@@ -405,6 +405,7 @@ def test_modules_fit_the_worker_window():
         "__init__",
         "interrupted",
         "attempts",
+        "review_sweep",
     }
     for path in [Path(queue_admission.__file__), *paths]:
         assert len(path.read_text().splitlines()) <= 2000, path.name

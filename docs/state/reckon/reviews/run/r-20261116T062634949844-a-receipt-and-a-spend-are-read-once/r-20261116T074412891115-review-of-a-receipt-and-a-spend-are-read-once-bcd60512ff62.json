@@ -1,0 +1,94 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 10,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:2952",
+    "reckon/crew/promotion_checks.py:125",
+    "reckon/crew/promotion_checks.py:147",
+    "reckon/crew/promotion_checks.py:392",
+    "reckon/crew/promotion_release.py:941",
+    "reckon/crew/promotion_scope.py:1139",
+    "reckon/crew/recovery_stream.py:59",
+    "reckon/ledger.py:4196",
+    "reckon/budget.py:2789",
+    "reckon/mcp_views.py:949"
+  ],
+  "completed_at": "2026-11-16T07:52:59.208Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-a-receipt-and-a-spend-are-read-once-bcd60512ff62",
+      "recorded_at": "2026-11-16T09:00:34.830975+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-16T07:50:40Z",
+  "findings": [
+    {
+      "file": "reckon/crew/rollout.py",
+      "line": "503",
+      "severity": "non-blocking",
+      "text": "a rollout or stream whose final record carries no trailing newline stays in _ReceiptFold.pending for ever once the file stops growing, so that record is never folded where the base whole-file loop at rollout.py:444 of 6fa76c49f4 processed it; all four added tests write a trailing newline, so nothing asserts the divergence."
+    },
+    {
+      "file": "reckon/crew/rollout.py",
+      "line": "196",
+      "severity": "non-blocking",
+      "text": "_LISTINGS and _directory_entries are duplicated verbatim at reckon/crew/metering.py:526-546 in the same change, so one capability now has two copies and a correction to either is invisible to the other."
+    },
+    {
+      "file": "reckon/crew/rollout.py",
+      "line": "663",
+      "severity": "non-blocking",
+      "text": "_rollout_signature and its twin at reckon/crew/metering.py:256 re-implement reckon/file_memo.py:277 file_signature and drop the ctime_ns field listed at :283, so an in-place rewrite that leaves size and mtime unmoved is indistinguishable from an unchanged file and the fold answers with the predecessor's bytes."
+    },
+    {
+      "file": "reckon/crew/rollout.py",
+      "line": "685",
+      "severity": "non-blocking",
+      "text": "_RECEIPTS, _STREAMS at reckon/crew/metering.py:280 and both _LISTINGS stores at rollout.py:192 and metering.py:526 are mutated with no lock, unlike reckon/file_memo.py:57 _LOCK, and the base readers held no shared state, so a station thread and a served request reading one rollout can extend the same fold twice and double-count the appended lines."
+    },
+    {
+      "file": "tests/test_a_receipt_and_spend_are_read_once.py",
+      "line": "409",
+      "severity": "non-blocking",
+      "text": "cached == fresh runs the same implementation in both arms, so it is independent of the stored summary but not of the fold's arithmetic; the regression it was added to catch is a fold that disagrees with a whole-file read, and that one survives it."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read 5a14b2291a, c7c5f77cbb, 2b3e55d8a4 and bcd60512ff against base 6fa76c49f4 commit by commit: the two readers are rewritten onto per-path folds, one 506-line test file is added, its stand-ins are corrected to closures, and one evidence fragment lands.",
+    "done_when": "Read every clause against tests/test_a_receipt_and_spend_are_read_once.py:38-39, :394-396, :409, :489 and :507 and against logs/head-node.log (4 passed, EXIT=0) and logs/base-node.log (3 failed, 1 passed, EXIT=1, 138000 decodes); the zero-decode, zero-listing, fresh-process, appended and truncation clauses are each asserted and three of them redden at the base revision, while the ruff clause is satisfied by my own run over the head copies of the three staged paths and is recorded nowhere in the manifest.",
+    "goal": "Read prompt.txt:38 and docs/plans/the-monitor-reads-each-fact-once.html:775; reckon/crew/rollout.py:707 answers from the per-path fold opened at :685 and validated by _fold_continues, and reckon/crew/metering.py:336 shares one fold with :737, so a receipt and a spend are each read once per file identity and size.",
+    "manifest": "Read manifest.md; it states 4 passed EXIT=0 at head, 3 failed and 1 passed at base with 138000 decodes, suite arms of 58 and 62 passed, four commits, and negative_control_log logs/base-node.log, but records no ruff result.",
+    "write_paths": "Read prompt.txt:84-89 and the diff; the four changed paths are all inside the declared five, and the declared figure directory is absent from the diff."
+  },
+  "justifications": {
+    "durability": "tests/test_a_receipt_and_spend_are_read_once.py:396, :489 and :507 redden under a named mutation and three of them redden at the base revision, but :409 compares the fold against the same fold in a second process rather than against an independent computation, so a fold that mis-sums a receipt field passes every added assertion.",
+    "evidence": "logs/head-node.log ends 4 passed with EXIT=0 and logs/base-node.log records 3 failed at 138000 decodes with EXIT=1, while logs/head-suite.log and logs/base-suite.log end EXIT=0 at 62 and 58 passed, leaving only the done_when's ruff clause unrecorded in manifest.md although satisfied at head.",
+    "fit": "the two stores follow the bounded per-process shape their comments name at reckon/crew/rollout.py:685 and reckon/crew/metering.py:280, and every addition is a private docstringed helper on the module that owns its reader.",
+    "goal_fidelity": "reckon/crew/rollout.py:757 extends a grown rollout past its stored offset and answers an unchanged one from the fold at :685, and reckon/crew/metering.py:336 and :737 read one stream once for both its measure and its span.",
+    "reuse": "reckon/crew/rollout.py:196 and reckon/crew/metering.py:530 are verbatim copies of one listing cache added by this change, and reckon/crew/rollout.py:663 with reckon/crew/metering.py:256 re-implement reckon/file_memo.py:277 file_signature, whose fields at :283 the owner calls the one place the identity's fields and their order are written, without extending that owner.",
+    "scope_discipline": "every path in the diff, reckon/crew/rollout.py, reckon/crew/metering.py, tests/test_a_receipt_and_spend_are_read_once.py and the evidence fragment, is inside prompt.txt:84-89, and the listing fold is what the done_when's zero-listing clause requires."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read prompt.txt:38 and docs/plans/the-monitor-reads-each-fact-once.html:775; reckon/crew/rollout.py:707 answers from the per-path fold opened at :685 and validated by _fold_continues, and reckon/crew/metering.py:336 shares one fold with :737, so a receipt and a spend are each read once per file identity and size.\nVERDICT done_when: Read every clause against tests/test_a_receipt_and_spend_are_read_once.py:38-39, :394-396, :409, :489 and :507 and against logs/head-node.log (4 passed, EXIT=0) and logs/base-node.log (3 failed, 1 passed, EXIT=1, 138000 decodes); the zero-decode, zero-listing, fresh-process, appended and truncation clauses are each asserted and three of them redden at the base revision, while the ruff clause is satisfied by my own run over the head copies of the three staged paths and is recorded nowhere in the manifest.\nVERDICT write_paths: Read prompt.txt:84-89 and the diff; the four changed paths are all inside the declared five, and the declared figure directory is absent from the diff.\nVERDICT manifest: Read manifest.md; it states 4 passed EXIT=0 at head, 3 failed and 1 passed at base with 138000 decodes, suite arms of 58 and 62 passed, four commits, and negative_control_log logs/base-node.log, but records no ruff result.\nVERDICT diff: Read 5a14b2291a, c7c5f77cbb, 2b3e55d8a4 and bcd60512ff against base 6fa76c49f4 commit by commit: the two readers are rewritten onto per-path folds, one 506-line test file is added, its stand-ins are corrected to closures, and one evidence fragment lands.\nCALL_SITES: reckon/crew/recovery_watch.py:2952, reckon/crew/promotion_checks.py:125, reckon/crew/promotion_checks.py:147, reckon/crew/promotion_checks.py:392, reckon/crew/promotion_release.py:941, reckon/crew/promotion_scope.py:1139, reckon/crew/recovery_stream.py:59, reckon/ledger.py:4196, reckon/budget.py:2789, reckon/mcp_views.py:949\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/rollout.py:757 extends a grown rollout past its stored offset and answers an unchanged one from the fold at :685, and reckon/crew/metering.py:336 and :737 read one stream once for both its measure and its span.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/head-node.log ends 4 passed with EXIT=0 and logs/base-node.log records 3 failed at 138000 decodes with EXIT=1, while logs/head-suite.log and logs/base-suite.log end EXIT=0 at 62 and 58 passed, leaving only the done_when's ruff clause unrecorded in manifest.md although satisfied at head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff, reckon/crew/rollout.py, reckon/crew/metering.py, tests/test_a_receipt_and_spend_are_read_once.py and the evidence fragment, is inside prompt.txt:84-89, and the listing fold is what the done_when's zero-listing clause requires.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_receipt_and_spend_are_read_once.py:396, :489 and :507 redden under a named mutation and three of them redden at the base revision, but :409 compares the fold against the same fold in a second process rather than against an independent computation, so a fold that mis-sums a receipt field passes every added assertion.\nSCORE fit: 18\nJUSTIFICATION fit: the two stores follow the bounded per-process shape their comments name at reckon/crew/rollout.py:685 and reckon/crew/metering.py:280, and every addition is a private docstringed helper on the module that owns its reader.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/rollout.py:196 and reckon/crew/metering.py:530 are verbatim copies of one listing cache added by this change, and reckon/crew/rollout.py:663 with reckon/crew/metering.py:256 re-implement reckon/file_memo.py:277 file_signature, whose fields at :283 the owner calls the one place the identity's fields and their order are written, without extending that owner.\nFINDING reckon/crew/rollout.py:503 non-blocking: a rollout or stream whose final record carries no trailing newline stays in _ReceiptFold.pending for ever once the file stops growing, so that record is never folded where the base whole-file loop at rollout.py:444 of 6fa76c49f4 processed it; all four added tests write a trailing newline, so nothing asserts the divergence.\nFINDING reckon/crew/rollout.py:196 non-blocking: _LISTINGS and _directory_entries are duplicated verbatim at reckon/crew/metering.py:526-546 in the same change, so one capability now has two copies and a correction to either is invisible to the other.\nFINDING reckon/crew/rollout.py:663 non-blocking: _rollout_signature and its twin at reckon/crew/metering.py:256 re-implement reckon/file_memo.py:277 file_signature and drop the ctime_ns field listed at :283, so an in-place rewrite that leaves size and mtime unmoved is indistinguishable from an unchanged file and the fold answers with the predecessor's bytes.\nFINDING reckon/crew/rollout.py:685 non-blocking: _RECEIPTS, _STREAMS at reckon/crew/metering.py:280 and both _LISTINGS stores at rollout.py:192 and metering.py:526 are mutated with no lock, unlike reckon/file_memo.py:57 _LOCK, and the base readers held no shared state, so a station thread and a served request reading one rollout can extend the same fold twice and double-count the appended lines.\nFINDING tests/test_a_receipt_and_spend_are_read_once.py:409 non-blocking: cached == fresh runs the same implementation in both arms, so it is independent of the stored summary but not of the fold's arithmetic; the regression it was added to catch is a fold that disagrees with a whole-file read, and that one survives it.",
+  "review_run_id": "r-20261116T074412891115-review-of-a-receipt-and-a-spend-are-read-once-bcd60512ff62",
+  "reviewed_base_sha": "6fa76c49f48e1d4fe4f104431f85f519ce92aae0",
+  "reviewed_head_sha": "bcd60512ff62795346ab3da0f0bb80d0d2084e62",
+  "reviewed_run_id": "r-20261116T062634949844-a-receipt-and-a-spend-are-read-once",
+  "rubric": "review",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T08:17:59.398130+00:00",
+  "total": 94
+}
