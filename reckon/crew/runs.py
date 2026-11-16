@@ -4948,6 +4948,8 @@ def _take_watch_seat_fd() -> Any:
 @contextmanager
 def _project_watch_claim(project: str, stall_window: str):
     """Claim the local seat path, then the lease shared between hosts."""
+    from reckon.crew.watch_unit import record_producer_exit, record_producer_start
+
     path = watch_lock_path(project)
     path.parent.mkdir(parents=True, exist_ok=True)
     if project in _WATCH_HOST_LEASES:
@@ -4996,6 +4998,7 @@ def _project_watch_claim(project: str, stall_window: str):
         # is a predecessor whose seat was never erased, and a fresh arming over
         # it would otherwise report the predecessor's start -- reading as a
         # producer that has run for hours when it was armed seconds ago.
+        parent_pid = os.getppid()
         pid_start_time = _process_start_time(os.getpid())
         carried = (
             previous.get("pid"),
@@ -5006,6 +5009,8 @@ def _project_watch_claim(project: str, stall_window: str):
             "project": project,
             "pid": os.getpid(),
             "pid_start_time": pid_start_time,
+            "parent_pid": parent_pid,
+            "parent_start_time": _process_start_time(parent_pid),
             # The host that issued this pid. The seat lives on the shared home
             # every fleet node mounts, so without this a reader on another host
             # probes its own process table for a pid that belongs to someone
@@ -5059,11 +5064,22 @@ def _project_watch_claim(project: str, stall_window: str):
         _WATCH_STREAM_PRODUCERS[project] = producer
         _WATCH_SEAT_HANDLES[project] = handle
         _WATCH_HOST_LEASES[project] = lease
+        error = None
         try:
+            record_producer_start(project, record)
+            record["last_stage"] = "initial-publication"
             _publish_watch_stream(project, _list_live_records(project=project))
+            record["last_stage"] = "registered"
+            _write_watch_record(handle, record)
             yield True, record
+        except BaseException as exc:
+            error = exc
+            raise
         finally:
-            drop_watch_seat(project, handle)
+            try:
+                record_producer_exit(project, record, error)
+            finally:
+                drop_watch_seat(project, handle)
     finally:
         handle.close()
         if lease is not None:
