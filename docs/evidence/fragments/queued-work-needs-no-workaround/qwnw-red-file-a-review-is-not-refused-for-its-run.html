@@ -1,0 +1,26 @@
+<section id="qwnw-red-file-a-review-is-not-refused-for-its-run-record">
+<h3>A terminal manifest ends the pre-spawn reading</h3>
+<p>Base revision <code>69fab1372f16686ce6acdb6094a357c6f6bfe18d</code> (current <code>origin/main</code>) failed this file: <strong>2 failed, 2 passed</strong>. Both failures have one cause, and the cause is a product rule that broke, not a test that encoded a stale rule: <code>classify_pointer</code> consulted its pre-spawn arm — a pointer whose phase is one of the launcher's pre-spawn labels reads as <code>running</code> — ahead of the manifest arms and bounded that reading only by the stranded-launch bound. A run whose worker had finished and whose manifest read <code>status: complete</code> therefore stayed <code>running</code> for as long as its pointer's phase was never rewritten, so it never read as awaiting review. The first failure is that reading refused to dispatch its review (<code>the run is not awaiting review (running)</code>); the second is its consequence, a direct dispatch whose recorded backlog was <code>None</code> because the session's overdue terminal runs were empty (<code>TypeError: 'NoneType' object is not subscriptable</code> at <code>backlog["requested"]</code>). Nothing was deleted or weakened: the file passes in full at head with all four assertions intact.</p>
+<p>The repair names the terminal verdict once (<code>manifest_status in TERMINAL_MANIFEST_STATUSES and not deferred_outcome</code>) and uses it both to date the terminal age and to end the pre-spawn reading. The deferral that keeps a live, superseded or completion-unproven manifest classifying from its pointer is unchanged, so a run still being launched reads <code>running</code> exactly as before; only a verdict written after the phase label now outranks it.</p>
+<h4 id="qwnw-red-file-a-review-is-not-refused-for-its-run-negative-control">Negative control — base run of the named file</h4>
+<pre># revision: 69fab1372f16686ce6acdb6094a357c6f6bfe18d
+# tree: /tmp/reckon-crew-scratch/r-20261116T105135011731-qwnw-red-file-a-review-is-not-refused-for-its-run/base-69fab137
+# command env -u SLURM_JOB_ID PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_review_is_not_refused_for_its_run.py
+# module /tmp/reckon-crew-scratch/r-20261116T105135011731-qwnw-red-file-a-review-is-not-refused-for-its-run/base-69fab137/reckon/crew/recovery_classification.py
+# cwd /tmp/reckon-crew-scratch/r-20261116T105135011731-qwnw-red-file-a-review-is-not-refused-for-its-run/base-69fab137
+FAILED tests/test_a_review_is_not_refused_for_its_run.py::test_a_queued_reflex_review_carries_the_waiver_and_launches - AssertionError: {'run_id': 'r-delivered-awaiting-review', 'dispatched': False, 'reason': 'the run is not awaiting review (running)'}
+FAILED tests/test_a_review_is_not_refused_for_its_run.py::test_an_implementation_dispatch_in_the_same_state_records_the_backlog - TypeError: 'NoneType' object is not subscriptable
+2 failed, 2 passed in 2.67s
+EXIT=1</pre>
+<h4 id="qwnw-red-file-a-review-is-not-refused-for-its-run-gate">Head run of the named file — job 1320258 on all_debug</h4>
+<pre># revision: 4fcb673bca60ac75f508c2da70a95e43e3a1757e
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-review-is-not-refused-for-its-run
+# host 98dci4-clu-3141.iter.org
+# slurm_job 1320258
+# command env -u SLURM_JOB_ID PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_review_is_not_refused_for_its_run.py
+# module /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-review-is-not-refused-for-its-run/reckon/crew/recovery_classification.py
+# cwd /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-review-is-not-refused-for-its-run
+....                                                                     [100%]
+4 passed in 2.71s
+EXIT=0</pre>
+</section>
