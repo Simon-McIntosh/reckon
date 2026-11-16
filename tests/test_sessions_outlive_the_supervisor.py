@@ -241,8 +241,10 @@ def test_sessions_survive_a_killed_supervisor_and_a_broken_interpreter(tmp_path)
             receipt["thirty_second_queue"] = query(
                 "squeue", "-h", "-j", job, "-o", "%T"
             )
-            receipt["thirty_second_steps"] = query(
-                "squeue", "-h", "--steps", "-j", job, "-o", "%i|%T"
+            receipt["thirty_second_steps"] = (
+                query("scontrol", "show", "step", f"{job}.0", "-o")
+                if receipt["thirty_second_queue"] == "RUNNING"
+                else ""
             )
             receipt["thirty_second_processes"] = _read_json(work / "survivors.json")
             receipt["starts"] = (work / "starts").read_text().splitlines()
@@ -252,7 +254,7 @@ def test_sessions_survive_a_killed_supervisor_and_a_broken_interpreter(tmp_path)
                 "descendant": True,
                 "step": True,
             }, receipt
-            assert "RUNNING" in receipt["thirty_second_steps"], receipt
+            assert "State=RUNNING" in receipt["thirty_second_steps"], receipt
             assert len(receipt["starts"]) >= 2, receipt
             second = _read_json(work / "current.json")
             assert second["descendant"] == first["descendant"]
@@ -328,8 +330,8 @@ from pathlib import Path
 work = Path(os.environ['REHEARSAL_DIRECTORY'])
 first = json.loads((work / 'ready.json').read_text())
 while not (work / 'kill').exists(): time.sleep(.1)
-os.kill(first['supervisor'], signal.SIGKILL)
 (work / 'killed').touch()
+os.kill(first['supervisor'], signal.SIGKILL)
 time.sleep(29)
 def alive(pid):
     try: os.kill(pid, 0); return Path(f"/proc/{pid}/stat").read_text().split(") ", 1)[1][0] != "Z"
