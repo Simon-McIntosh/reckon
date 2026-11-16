@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <title>Off-node followers keep reading a live station | landing fragment</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="off-node-follower-reads-slow-tick-s25-change">Off-node followers keep reading a live station</h2>
+    <p>The station heartbeat now publishes its four health markers independently of obligation derivation. One small atomic record per host and allocation carries the beat, tick stage, start and finish. An exported obligation reading uses only a matching record whose beat is at least as recent as its own. Missing, damaged, mismatched and older records retain the export's original beat. Obligation documents and their timestamps stay unchanged.</p>
+    <p>The follower keeps that exported health reading when its node cannot open the station store. Local and off-node readers therefore report the same slow tick, with no lost row and no re-arm remedy. A stopped heartbeat still draws a lost row and its remedy on both readers.</p>
+    <h3 id="off-node-follower-reads-slow-tick-s25-reproduction">Reproduction and measure</h3>
+    <p>Before repair, both off-node regressions at <code>c2fdfd6e4dd16628ab494ec1322e524ad75a18ae</code> failed with <code>AssertionError: assert ['producer-lost'] == ['producer-slow']</code>; the initial reproduction recorded <code>2 failed, 3 passed</code>. At the implemented head a simulated tick runs for 363 seconds, over three 120-second freshness windows, while its beat stays at age zero. The off-node answer equals the local answer in state, beat age, tick stage, tick age and start instant, and the obligation export remains byte-for-byte unchanged. Twelve focused cases cover slow ticks, one recovery when the tick ends, real loss on both readers and refusal to trust invalid health evidence.</p>
+    <table>
+      <thead><tr><th>Arm</th><th>Result</th><th>Reading</th></tr></thead>
+      <tbody>
+        <tr><td>Armed base</td><td>58 passed</td><td>The two existing scope guards; the new test file is absent.</td></tr>
+        <tr><td>Armed head</td><td>70 passed</td><td>The same guards and all 12 new cases.</td></tr>
+        <tr><td>Direct-import base</td><td>39 failed, 398 passed</td><td>79 existing files at the assigned base.</td></tr>
+        <tr><td>Direct-import head</td><td>38 failed, 411 passed</td><td>80 files including the new regression; zero added failing test IDs.</td></tr>
+        <tr><td>Restored base reading</td><td>9 failed, 3 passed</td><td>The off-node follower draws producer-lost again; genuine-loss controls still pass.</td></tr>
+      </tbody>
+    </table>
+    <p id="off-node-follower-reads-slow-tick-s25-controls">The negative control replaces the three changed product modules with their base contents in a temporary extraction of the implemented head, retaining the head's new tests. Its receipt records the mutation, imported module path, working directory and nonzero exit. Both suite arms and the control ran on <code>all_debug</code>. One baseline-only failure did not recur in the head arm; no claim is made that this change repaired it. The full inherited failure sets are recorded under <code>outside_scope</code> in the manifest. Ruff check and format check pass on all four touched Python files.</p>
+    <p id="off-node-follower-reads-slow-tick-s25-paths">Implementation: <code>reckon/crew/station.py</code>, <code>reckon/crew/obligation_snapshot.py</code> and <code>reckon/crew/watch_unit.py</code>. Regression: <code>tests/test_an_off_node_follower_reads_a_slow_tick.py</code>. Gate receipts live under <code>~/.cache/reckon-mttu/</code>, keyed by the worker run; the manifest carries their exact commands, revisions, import provenance and failure IDs.</p>
+  </main>
+</body>
+</html>
