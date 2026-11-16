@@ -828,13 +828,18 @@ class RunStore:
     def sync_run(self, project: str, record: Mapping[str, Any]) -> str:
         """Ensure one run's row matches the record, returning what happened.
 
-        The outcome is one of ``inserted`` (the run was absent), ``updated``
-        (the run was present but its durable payload disagreed and was
-        rewritten to match), or ``unchanged`` (the run was present and already
-        byte-identical, so it was left untouched). The last case is what makes
-        a corpus import re-runnable: once the store holds the committed
-        content, a second pass does no work at all. ``store_write`` is never
-        part of the stored payload, exactly as in ``append``.
+        The outcome is ``inserted`` when the store held no row for this run,
+        ``updated`` when it held one that disagreed, and ``unchanged`` when it
+        already held the record byte for byte. ``store_write`` is never part of
+        the stored payload, exactly as in ``append``.
+
+        An ``unchanged`` answer is what makes a corpus import and a repeated
+        amendment no work at all, so the row is compared whole: the durable
+        payload and the wide detail. The detail is exactly the fields a
+        rotation may wash out — a retention, a lane receipt, a gate check — and
+        an amendment confined to one of them moves without its durable payload
+        moving. Comparing the payload alone reports that amendment as
+        ``unchanged`` and leaves the store holding the revision it superseded.
         """
         run_id, payload, detail = _split_durable(project, record)
         encoded_payload = json.dumps(payload, sort_keys=True, separators=(",", ":"))
@@ -845,10 +850,12 @@ class RunStore:
             details = (
                 "archive.run_details" if table == "archive.runs" else "run_details"
             )
+            # Both names are this class's own declarations rather than anything
+            # a caller supplies, so the statement is fixed text.
             select = (
-                "SELECT payload FROM archive.runs WHERE run_id = ?"
-                if table == "archive.runs"
-                else "SELECT payload FROM runs WHERE run_id = ?"
+                f"SELECT stored.payload, wide.detail FROM {table} AS stored "  # noqa: S608
+                f"LEFT JOIN {details} AS wide ON wide.run_id = stored.run_id "
+                "WHERE stored.run_id = ?"
             )
             existing = self._conn.execute(select, (run_id,)).fetchone()
             if existing is None:
@@ -866,7 +873,7 @@ class RunStore:
                     (run_id, encoded_detail),
                 )
                 return "inserted"
-            if existing[0] == encoded_payload:
+            if existing[0] == encoded_payload and (existing[1] or "") == encoded_detail:
                 return "unchanged"
             self._conn.execute(
                 _RUNS_UPDATE.replace('"runs"', table),
@@ -1405,6 +1412,33 @@ def append(project: str, record: Mapping[str, Any]) -> None:
     already written, leaving neither store holding a row.
     """
     _retrying(lambda store: store.append(project, record))
+
+
+def sync(project: str, record: Mapping[str, Any]) -> str | None:
+    """Bring the store's own row for one run up to date with ``record``.
+
+    Returns the store's outcome — ``inserted``, ``updated`` or ``unchanged`` —
+    or ``None`` when the store is absent or holds no row for this run. An
+    amendment therefore reaches the store through this seam rather than through
+    :func:`append`, which writes a new row and refuses one already there, and a
+    store that does not hold the run is left exactly as it was: a project with
+    no store does not acquire one from an amendment, and a run the store has
+    never seen is a corpus import's row rather than one write's.
+
+    A locked store is retried inside this one call, as :func:`append` retries
+    it, so a concurrent writer's millisecond lock costs the amendment no row.
+    A failure of any other kind is raised: the store is the copy a stored read
+    answers from, so an amendment it declined would be read as the revision it
+    superseded.
+    """
+    run_id = str(record.get("run_id") or "")
+    if not run_id:
+        return None
+    if not stored_run_rows(project, run_ids=(run_id,), fields=("run_id",)):
+        return None
+    outcomes: list[str] = []
+    _retrying(lambda store: outcomes.append(store.sync_run(project, dict(record))))
+    return outcomes[-1] if outcomes else None
 
 
 def runs_for_node(node: str, *, project: str | None = None) -> list[dict[str, Any]]:

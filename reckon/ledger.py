@@ -936,6 +936,11 @@ def write_run_file(
     ``mode`` is the permission bits the file must carry. A caller amending a
     file it did not create passes ``None``, leaving the bits the file already
     has, which is what a rewrite that only re-encodes an existing row wants.
+
+    The store holds the same row, and it is the copy a stored read answers
+    from, so an amendment reaches it here too: a row rewritten in its file and
+    left stale in the store would be read as the revision it superseded by
+    every reader that does not walk the documents.
     """
     target = run_path(project, str(row["run_id"]), root)
     _store.write_atomically(
@@ -944,12 +949,44 @@ def write_run_file(
         mode=mode,
         fsync=fsync,
     )
+    _sync_amended_run(project, row)
     from reckon.crew import open_run_index
 
     _bump_generation(project)
     open_run_index.record_written(project, row, root)
     _index_record_written_document(project, root, row, target)
     return target
+
+
+def _sync_amended_run(project: str, row: Mapping[str, Any]) -> None:
+    """Bring the store's copy of an amended run row up to date, or refuse.
+
+    A store that does not hold the run is left alone — a project with no store
+    does not acquire one from an amendment — so the ordinary write of a row
+    nothing has promoted costs one existence check and no store write.
+
+    A store that declines the amendment is a refusal rather than an unhealthy
+    index: the store is the durable authority, and a row amended in its file
+    while the store keeps the revision it superseded is exactly the history a
+    stored read would answer with. The file has already been rewritten when
+    this runs, so the refusal names the repair. A caller that must leave
+    neither copy ahead of the other passes the row it read, and a rerun after
+    the repair converges.
+    """
+    from reckon import run_store
+
+    try:
+        run_store.sync(project, dict(row))
+    except Exception as exc:  # every store failure is a refusal
+        raise LedgerError(
+            f"cannot record the amendment to run {str(row.get('run_id'))!r} in "
+            f"the run store at {_run_store_location()}: {type(exc).__name__}: "
+            f"{exc}. The run store is the durable authority for every promoted "
+            "run, so a row amended only in its own file would be read as the "
+            "revision that amendment superseded; repair the store with "
+            f"`python scripts/import_runs_into_store.py --project {project}` "
+            "and amend the run again"
+        ) from exc
 
 
 def _run_files(project: str, root: str | Path | None = None) -> list[Path]:
