@@ -37,3 +37,11 @@ ask_with_census=True lines=1</pre>
 <p>The first two lines are cause 1: the same call writes nothing for a pair that is not the calling session's, and writes the one request line for the pair that is. The last four are cause 3: the ask reports <code>False</code> while the census names no child and <code>True</code> once it does, which is why the case had to write the census. Its whole output, with the module and working directory it read, is <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031916920770-qwnw-red-file-follower-hands-off-to-host/logs/probe-causes.log</code>.</p>
 <p>No product rule was changed by this node: the diff is <code>tests/test_follower_hands_off_to_host.py</code> alone. No assertion was deleted or weakened — the two-key comparisons became three-key comparisons, and the handoff and delivery claims are asserted exactly as before.</p>
 </section>
+
+<section id="qwnw-red-file-follower-hands-off-to-host-suite">
+<h3>The armed suite pair reads the same at both revisions</h3>
+<p>The flight arms this node's suite as its fenced test paths plus the project's census tests, and no fenced write path here is itself a test file, so the command resolves to the census pair. Both arms ran in one scratch clone, each with its revision, module and working directory on its log header:</p>
+<pre># revision 0e0f25b0f9  tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py  58 passed in 38.84s  EXIT=0
+# revision 328079f86a  tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py  58 passed in 35.80s  EXIT=0</pre>
+<p>Neither arm carries a failure, so the change adds none. The logs are <code>logs/suite-baseline.log</code> and <code>logs/suite-after.log</code> beside the two file arms.</p>
+</section>
