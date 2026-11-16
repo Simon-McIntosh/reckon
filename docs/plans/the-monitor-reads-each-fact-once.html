@@ -25,8 +25,8 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="411">
-<meta name="plan-modified" content="2026-11-16">
+<meta name="plan-version" content="412">
+<meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
   <main class="plan-doc">
@@ -1575,6 +1575,9 @@ staged paths.</p>
 <div class="r-comment" data-section="s77" data-id="c-run-r-20261116T124343194850-the-obligation-sweep-shares-the-review-index" data-who="reckon-build" data-when="2026-11-16T13:25:41.968Z">
     <div class="r-comment-body"><p>routed the obligation sweep's review lookup through the per-tick index — the index files each live pointer once (by granted record directory, by the run its declarations or node id spell, and an unresolved list every query also reads), answers each run's standing review from that filing in the read's order, resolves a live run's record directory without an existence check, and reads the head and project the rule keys on instead of composing a dispatch command — so checks made inside the three lookup entry points over a 200-pointer fleet fall from 20,920 at base to 720 over 800 asks, and the review matched to all 160 delivered runs equals the base read path's.</p></div>
 </div>
+<div class="r-comment" data-section="s78" data-id="c-run-r-20261116T214005658459-review-of-a-foreign-run-is-freed-by-its-allocation-ending-a606f0345a96" data-who="reckon-build" data-when="2026-11-16T21:47:59.302Z">
+    <div class="r-comment-body"><p>independent review of run r-20261116T204314708309-a-foreign-run-is-freed-by-its-allocation-ending over base d72a7d9b2 to head a606f0345a scores goal_fidelity 16, evidence 18, scope_discipline 19, durability 17, fit 18, reuse 5, carries added_failure_count 0, and files three non-blocking findings; the parsed record is stored in the reviewed run's review-records/ directory and passes `crew check --review`</p></div>
+</div>
 <div class="r-comment" data-section="s79" data-id="c-run-r-20261116T211912273793-review-of-the-landing-check-reads-only-the-runs-it-checks-1c43c31cf1d4" data-who="reckon-build" data-when="2026-11-16T21:24:19.122Z">
     <div class="r-comment-body"><p>review of r-20261116T204433617287-the-landing-check-reads-only-the-runs-it-checks at baa6e83..1c43c31cf1 stored at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T204433617287-the-landing-check-reads-only-the-runs-it-checks/review-records/r-20261116T204433617287-the-landing-check-reads-only-the-runs-it-checks.json, scored 19/16/20/15/19/20 with 0 added failures and 2 non-blocking findings</p></div>
 </div>
@@ -1608,6 +1611,9 @@ staged paths.</p>
 <div class="r-comment" data-section="s80" data-id="c-run-r-20261116T211230545839-review-of-a-rolled-back-promotion-leaves-no-narrative-to-defend-821f240e9617" data-who="reckon-build" data-when="2026-11-16T21:18:48.171Z">
     <div class="r-comment-body"><p>Reviewed r-20261116T204438652864-a-rolled-back-promotion-leaves-no-narrative-to-defend at head 821f240e96 against base baa6e8307b: goal_fidelity 19, evidence 19, scope_discipline 20, durability 19, fit 19, reuse 20 (total 116), one non-blocking finding for the unused declared evidence fragment; no blocking defect.</p></div>
 </div>
+<div class="r-comment" data-section="s80" data-id="c-run-r-20261116T221200483497-review-of-a-rolled-back-promotion-leaves-no-narrative-to-defend-3814e6beec55" data-who="reckon-build" data-when="2026-11-16T22:22:41.948Z">
+    <div class="r-comment-body"><p>Reviewed run r-20261116T204438652864-a-rolled-back-promotion-leaves-no-narrative-to-defend over the commits it gained after the review at 821f240e96 (821f240e96..3814e6beec: dd047221e4 rewritten case 4 and 3814e6beec evidence fragment); parsed record at both declared review-records paths with reviewed_base_sha 821f240e9617a91f55e7f12f023ea633fa0f9331, reviewed_head_sha 3814e6beec559289d1eebfdeb9d87b363b788ca3, scores 19/14/19/18/19/20, added_failure_count 0 and [] derived from the reviewed run&#x27;s own base and after arms, two non-blocking findings.</p></div>
+</div>
 <div class="r-comment" data-section="s82" data-id="c-20261116T213655040575" data-who="reckon-96" data-when="2026-11-16T21:50:00Z">
     <div class="r-comment-body"><p>s82 is already implemented on main. <code>d6da74c2de</code> ("fix(ledger): name store contention in run refusals", 16 November 13:21 local time) makes <code>ledger._index_append</code> branch on <code>run_store._locked</code>. Its lock refusal says the store was locked past the wait bound and to promote the run again, and names no import script. <code>tests/test_a_locked_store_refusal_names_the_lock.py</code> asserts both arms s82 specified. The section was written from an earlier reading of the module. Its queued run <code>r-20261116T204441080785-a-locked-store-refusal-names-the-retry</code> was dropped, and the section is declared done, answering the design review of revision 404.</p></div>
 </div>
@@ -1619,9 +1625,6 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T042852990093-obligations-read-the-station" data-who="reckon-build" data-when="2026-10-27T13:28:42Z">
     <div class="r-comment-body"><p>The station computes each live session's obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
-</div>
-<div class="r-comment" data-section="s78" data-id="c-run-r-20261116T214005658459-review-of-a-foreign-run-is-freed-by-its-allocation-ending-a606f0345a96" data-who="reckon-build" data-when="2026-11-16T21:47:59.302Z">
-    <div class="r-comment-body"><p>independent review of run r-20261116T204314708309-a-foreign-run-is-freed-by-its-allocation-ending over base d72a7d9b2 to head a606f0345a scores goal_fidelity 16, evidence 18, scope_discipline 19, durability 17, fit 18, reuse 5, carries added_failure_count 0, and files three non-blocking findings; the parsed record is stored in the reviewed run&#x27;s review-records/ directory and passes `crew check --review`</p></div>
 </div>
 </section>
 </main>
