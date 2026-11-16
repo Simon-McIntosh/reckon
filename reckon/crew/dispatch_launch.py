@@ -62,6 +62,7 @@ from reckon.crew.process_liveness import (
 )
 from reckon.crew.process_signal import _run_uses_step, signal_pending_step_client
 from reckon.crew.runs import (
+    PointerLockHeldError,
     _mutate_pointer,
     _pointer_lock,
     _process_start_time,
@@ -4877,6 +4878,41 @@ def _record_step_wait(run_directory: Path, client_pid: int) -> None:
     )
 
 
+def _attempt_ending_receipt(
+    record: Mapping[str, Any], attempt: Mapping[str, Any]
+) -> bool:
+    """Whether this attempt holds the exit receipt its own ending wrote.
+
+    The supervisor that ends an attempt writes ``attempt-<n>-exit.json`` for it,
+    and the canonical ``exit.json`` is cleared before every launch, so either
+    file naming this attempt is proof the attempt has ended. A phase word is not:
+    measured on 15 November, eight resumed attempts were signalled as terminal
+    runs while working, because a writer had restored ``complete`` — the word
+    their earlier delivery left — onto the live attempt's pointer. The receipt is
+    immutable and belongs to one attempt; the word belongs to whoever wrote it
+    last. Both files are read through the one owner of that payload,
+    ``_run_exit_record``, under its strict reading, so this guard and every other
+    reader of an attempt's end cannot answer on different terms.
+    """
+    from reckon.crew.recovery_liveness import _run_exit_record
+
+    try:
+        number = max(1, int(attempt.get("attempt") or 1))
+    except (TypeError, ValueError):
+        return False
+    for name in (f"attempt-{number}-{EXIT_RECORD_NAME}", EXIT_RECORD_NAME):
+        receipt = _run_exit_record(record, name, require_run_id=True)
+        if receipt is None:
+            continue
+        try:
+            recorded = int(receipt["attempt"])
+        except (TypeError, ValueError, KeyError):
+            continue
+        if recorded == number:
+            return True
+    return False
+
+
 def _terminal_attempt_phase(run_directory: Path, attempt: Mapping[str, Any]) -> str:
     """The current attempt's terminal pointer phase, or an empty string."""
     try:
@@ -4884,11 +4920,66 @@ def _terminal_attempt_phase(run_directory: Path, attempt: Mapping[str, Any]) -> 
     except CrewError:
         return ""
     phase = str(pointer.get("phase") or "")
-    return (
-        phase
-        if phase in _TERMINAL_RUN_PHASES and _record_is_this_attempt(pointer, attempt)
-        else ""
-    )
+    if phase not in _TERMINAL_RUN_PHASES:
+        return ""
+    if not _record_is_this_attempt(pointer, attempt):
+        return ""
+    # The two words a delivery writes are this module's own delivery statuses,
+    # read here from the owner rather than restated beside the guard.
+    if phase in _WORKER_DONE_MANIFEST_STATUSES and not _attempt_ending_receipt(
+        pointer, attempt
+    ):
+        # The word arrived from somewhere other than this attempt's ending, so
+        # this attempt has not delivered and the phase describes an earlier one.
+        return ""
+    return phase
+
+
+def _reopen_a_live_attempt_phase(
+    run_directory: Path, attempt: Mapping[str, Any]
+) -> None:
+    """Restore a live attempt's phase to ``working`` when a stale word reads as
+    its delivery.
+
+    A run resumed for a repair round carries the delivered ``complete`` its
+    earlier attempt left on the pointer until its own next delivery, and any
+    writer that restores that word makes the live attempt read as finished to
+    every reader — the reaper that ends it, the pane that draws it, the
+    obligations view that offers it remedies. The worker is live in this
+    process's own charge and has made no delivery, so the word is restored to
+    the phase the resume wrote, exactly as a fold reopens a resumed attempt.
+    ``stopped`` and ``interrupted`` are left alone: they are deliberate facts
+    about the run rather than words a delivery leaves behind.
+    """
+    try:
+        mtime_ns = pointer_path(run_directory.name).stat().st_mtime_ns
+    except OSError:
+        return
+    if attempt.get("reopened_pointer_mtime_ns") == mtime_ns:
+        # The pointer has not been written since the last look, so the word it
+        # carried then is the word it carries now: there is nothing to restore
+        # and no reason to take the lock.
+        return
+    try:
+        held = _pointer_lock(run_directory.name, blocking=False)
+        with held:
+            try:
+                record = read_pointer(run_directory.name)
+            except CrewError:
+                return
+            attempt["reopened_pointer_mtime_ns"] = mtime_ns
+            if str(record.get("phase") or "") not in _WORKER_DONE_MANIFEST_STATUSES:
+                return
+            if not _record_is_this_attempt(record, attempt):
+                return
+            if _attempt_ending_receipt(record, attempt):
+                return
+            record["phase"] = "working"
+            _write_existing_pointer(run_directory.name, record)
+    except (PointerLockHeldError, OSError, CrewError, ValueError):
+        # A held lock belongs to a writer that is changing the pointer already,
+        # and the next poll reads what it wrote. Nothing here may wait on it.
+        return
 
 
 def _reap_worker_on_its_terminal_manifest(
@@ -4970,6 +5061,12 @@ def _reap_worker_on_its_terminal_manifest(
         if phase:
             terminal_state.setdefault("deadline", now + TERMINAL_MANIFEST_GRACE_DEFAULT)
             terminal_state.setdefault("phase", phase)
+        else:
+            # A delivered word this attempt did not earn is a fact the resume
+            # has already answered: the worker is in this process's charge and
+            # has made no delivery, so the run reads as working again rather
+            # than as a finished attempt with a live process.
+            _reopen_a_live_attempt_phase(run_directory, terminal_state)
         if (
             stop_requested is not None
             and stop_deadline is None
