@@ -23,7 +23,7 @@
   <title>A Landing Is Recorded Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="31">
+<meta name="plan-version" content="33">
 <meta name="plan-modified" content="2026-11-16">
 </head>
 <body>
@@ -62,7 +62,7 @@
 
     <h2 id="s7">The closing page&#x27;s tests fail on a miscounted row and on a link with no overview</h2>
 <section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
-<p><strong>Why.</strong> The review of the node that landed §5 (101, no added failure) left two findings on the strength of its tests. The sections-landed count on the closing page is asserted only for member plans whose every section is declared done, so a page that counted declared sections in place of landed ones would still pass. And §5 names its negative control as a row linking a plan that has no overview, but the control that was run dropped a table row, so the link case is asserted and was never shown to fail.</p><p><strong>Deliverable.</strong> The closing page's tests fail when a member plan's row shows a count of declared sections in place of landed ones, and fail when a row links a plan that has no overview.</p><p><strong>Done when.</strong> The closing-page test file holds a member plan with sections both done and not done whose row is asserted to show the landed count, and that assertion is shown to fail when the count is taken from the declarations. Negative control: with the check that withholds a link for a plan with no overview removed, the link case fails, and that run is logged. The test files that import the overview module add no failure against the base revision, each arm run on <code>rigel</code>.</p>
+<p><strong>Why.</strong> The review of the node that landed §5 (101, no added failure) left two findings on the strength of its tests. The sections-landed count on the closing page is asserted only for member plans whose every section is declared done, so a page that counted declared sections in place of landed ones would still pass. And the control that was run for §5 dropped a table row, so the page's rule for when a row carries a link, which is that a member plan with no document is not linked, is asserted and was never shown to fail.</p><p><strong>Deliverable.</strong> The closing page's tests fail when a member plan's row shows a count of declared sections in place of landed ones, and fail when a row links a member plan that has no document.</p><p><strong>Done when.</strong> The closing-page test file holds a member plan on which the two counts differ, one section declared done that has neither a landing comment nor a landed run beside sections that landed, whose row is asserted to show the landed count; that assertion is shown to fail when the count is taken from the declarations. It also holds a member plan with no document, whose row is asserted to carry no link. Negative control: with the check that withholds a link for a member plan with no document removed, that case fails, and that run is logged. The test files that import the overview module add no failure against the base revision, each arm run on <code>rigel</code>.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -90,7 +90,7 @@
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-alro-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-15" data-recommends-skill="/reckon-build a-landing-is-recorded-once" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Build the plan</h4>
-    <div class="r-fu-body"><p>§2, §3 and §4 are independent. §3 waits on §2 for the figures a run names, §4 is independent, and §5 waits on §3. §6 waits on §3 and §4, so the fragment requirement is relaxed only after the overview and the closure guard exist.</p></div>
+    <div class="r-fu-body"><p>§2, §3, §4 and §5 have landed. Two sections remain to build: §6, which waited on §3 and §4 so that the fragment requirement is relaxed only after the overview and the closure guard exist, and §7, which strengthens the tests §5 landed and waits on nothing unlanded.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-landing-is-recorded-once</pre>
     </article>
 </section>
