@@ -1,0 +1,82 @@
+<section id="qwnw-red-file-dispatch-returns-without-worker-landing">
+  <h2><code>tests/test_dispatch_returns_without_worker.py</code> passes in full</h2>
+
+  <p><strong>Verdict per cause: the product was wrong, once.</strong> The file
+  reported one cause of its own, and it was a product regression rather than a
+  test encoding a retired rule.</p>
+
+  <ul>
+    <li><strong>The repository-tree boundary check exempted every source
+    path.</strong> <code>_repository_tree_boundary_violations</code> asked
+    <code>_claim_paths_share(shared_files, changed, changed)</code> — whether
+    two claims on the path would share — and every source and test path shares,
+    so the scan reported no source edit at all. The delegated-launch case sees
+    it as an empty violation list for a stray edit at its declared path in the
+    main checkout. The filter now asks the project's own declaration
+    (<code>changed not in shared_files</code>), which is what the comment above
+    it and the two cases in <code>tests/test_boundary_check_reads_two_trees.py</code>
+    and <code>tests/test_boundary_check_reads_only_declared_roots.py</code> have
+    always described.</li>
+    <li><strong>The fixture repository published no sharing declaration.</strong>
+    A project that declares nothing shares its source paths by default, so no
+    boundary violation is possible there. The fixture now writes
+    <code>docs/state/sample/shared-write-paths.json</code> with
+    <code>{"shared_roots": []}</code>, the same declaration the boundary modules'
+    fixtures carry.</li>
+  </ul>
+
+  <p><strong>Not a cause: the scratch headroom refusal.</strong> Run in place on
+  this node, five cases fail with
+  <code>tmp-headroom-refusal: … bytes free, floor 5368709120</code> — the node's
+  <code>/tmp</code> held 0.7–1.1 GB free at the time, and the check reads the
+  filesystem the run's scratch sits on. The rule is right and is exercised by
+  <code>tests/test_dispatch_refuses_without_tmp_headroom.py</code>; the gate
+  therefore runs where the scratch disk has room, as its done-when says (a job
+  on <code>all_debug</code>, 24 GB free there).</p>
+
+  <h3 id="qwnw-red-file-dispatch-returns-without-worker-arms">Base and head</h3>
+
+  <table id="qwnw-red-file-dispatch-returns-without-worker-runs">
+    <thead>
+      <tr><th>revision</th><th>where</th><th>result</th><th>failing ids</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>0e0f25b0f941</code></td>
+        <td>base tree extracted from the base revision, TMPDIR under the run
+        directory</td>
+        <td>1 failed, 9 passed</td>
+        <td><code>test_a_delegated_launch_records_a_boundary_snapshot</code></td>
+      </tr>
+      <tr>
+        <td><code>d3acd1579122</code></td>
+        <td>the node's worktree, job on <code>all_debug</code> (node
+        <code>98dci4-clu-3142</code>), TMPDIR under the run directory,
+        <code>SLURM_JOB_ID</code> unset</td>
+        <td>10 passed</td>
+        <td>none</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Negative control.</strong> The base run of the named file, at
+  <code>0e0f25b0f941</code>, failed on
+  <code>tests/test_dispatch_returns_without_worker.py::test_a_delegated_launch_records_a_boundary_snapshot</code>
+  with <code>AssertionError: a stray uncommitted edit at the run's declared path
+  in the main checkout was not reported, so the boundary check is not reading
+  this lane's snapshot</code> and <code>assert []</code>. The same case passes at
+  head, and the four cases that read the boundary check through promotion pass
+  as well: the arm over the five test files that import what changed went from
+  five failures in 48 tests to none.</p>
+
+  <h3 id="qwnw-red-file-dispatch-returns-without-worker-sealed-tmp">A scratch root the nested fence seals</h3>
+
+  <p>One environment arm is recorded because it looks like four failures and is
+  not: the same head revision, the same node, with <code>TMPDIR</code> left at
+  the crew worker's own scratch root under <code>/tmp/reckon-crew-scratch</code>,
+  reads four failures in the cases that spawn a worker. The cases' marker
+  directory lands inside that root, and a nested worker's fence overlays every
+  other run's scratch read-only, so the stub cannot write its marker. With
+  <code>TMPDIR</code> under the run directory the same four pass; that is the
+  arm recorded above.</p>
+</section>
