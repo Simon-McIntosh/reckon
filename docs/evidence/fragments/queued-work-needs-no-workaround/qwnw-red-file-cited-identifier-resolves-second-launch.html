@@ -1,0 +1,70 @@
+<section id="qwnw-red-file-cited-identifier-resolves-second-launch-landing">
+  <h2>The citation test file passes in full at head</h2>
+
+  <p><strong>Measure.</strong> <code>tests/test_cited_identifier_resolves.py</code>
+  at head over the primary branch: <strong>10 passed</strong>,
+  <code>EXIT=0</code>. Its base run at revision <code>0e0f25b0f941</code> read
+  <strong>10 failed</strong>, <code>EXIT=1</code>. The base run is the negative
+  control and is logged beside the head run in
+  <code>red-file-cited-identifier-resolves.html</code>, which also names each
+  cause and its verdict.</p>
+
+  <h3 id="qwnw-red-file-cited-identifier-resolves-second-launch-what-changed">What changed</h3>
+
+  <p><strong>One product repair.</strong> <code>reckon/crew/promotion_scope.py</code>:
+  <code>_declared_manifest_commits</code> assembled the citation list a
+  manifest declares without asking the per-entry reader that
+  <code>_unresolved_citations</code> already asks. A record stating
+  <code>commits: none (repository worktree remained clean)</code> therefore
+  reached the figure-twin check as a citation and was refused by the very value
+  that declares its absence, with <code>--no-commit</code> stating the reason.
+  The list now drops entries the declaration reader reads as an absence. A
+  value that opens with an absence word and continues with a revision —
+  <code>none 7892cb69…</code> — is not that declaration under the same reader,
+  so it stays in the list and is still refused by value; the fabricated value
+  and the non-hexadecimal one are still refused, which their cases assert.</p>
+
+  <p><strong>Two test corrections, no assertion weakened.</strong>
+  <code>crew complete</code> records a promotion request and lets the station
+  carry it out, so the helper now passes <code>--wait</code>, the flag that
+  performs the promotion in the call — as the rest of the promotion suite does.
+  And the two commitless cases started the run at a base the worktree had
+  already left, which the commitless guard refuses on purpose; each now starts
+  at its own HEAD, the state the declaration describes. All ten cases keep
+  their assertions: the admitted citations, the refused ones, the absence that
+  is not a citation, and the refusal that leaves no row behind.</p>
+
+  <h3 id="qwnw-red-file-cited-identifier-resolves-second-launch-arms">Arms</h3>
+
+  <table id="qwnw-red-file-cited-identifier-resolves-second-launch-arms">
+    <caption>Each log's first lines name the revision, tree, module and command;
+    its last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>selection</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base, the negative control</td>
+        <td>the node's test file</td><td>10 failed, <code>EXIT=1</code></td></tr>
+      <tr><td>head, the gate</td>
+        <td>the node's test file</td><td>10 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>base</td>
+        <td>the 23 test files importing <code>reckon/crew/promotion_scope.py</code></td>
+        <td>17 failed, 258 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>head</td>
+        <td>the same 23 files</td>
+        <td id="qwnw-red-file-cited-identifier-resolves-second-launch-affected-head">17 failed, 258 passed, <code>EXIT=1</code> — the same 17 ids</td></tr>
+    </tbody>
+  </table>
+
+  <p>Every failure the base arm of the wider selection carries is carried
+  unchanged at head: the two id sets are identical, 17 each, compared as sets
+  rather than by count, so the node adds no failure to any file that imports
+  what it changed.</p>
+
+  <p><strong>Instrument check.</strong> The wider selection's first head run
+  read one failure more than the base — 18 against 17 — and the added case was
+  refused by <code>require_worker_scratch_headroom</code>: 5,321,150,464 bytes
+  free against a floor of 5,368,709,120, after twenty minutes of both arms'
+  pytest scratch had filled <code>$TMPDIR</code>. That is a reading of the
+  machine, not of the code, so the scratch was cleared and the same head arm
+  rerun, which reported the base's own 17. Both logs are kept; the refused run
+  is <code>affected-head-headroom-refused.log</code>.</p>
+</section>
