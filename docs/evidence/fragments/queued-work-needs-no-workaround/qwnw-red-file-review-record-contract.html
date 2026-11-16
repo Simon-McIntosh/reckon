@@ -1,0 +1,45 @@
+<section id="qwnw-red-file-review-record-contract-verdict">
+<h3>The red file passes at head, and its two causes are named</h3>
+<p><code>tests/test_review_record_contract.py</code> read <code>4 failed, 7 passed</code> at <code>24bc79d8ee8e73d6d262d0879a27cd27d5a4048c</code> and <code>11 passed</code> at the delivered head <code>c820c173d03db5cedce0feb7a377fd2b910beb48</code>, both as <code>all_debug</code> batch jobs with <code>SLURM_JOB_ID</code> unset for the pytest process (<code>job 1319783</code>). The four failing ids are the four the node recorded:</p>
+<ul>
+<li><code>test_complete_reports_a_refused_review_before_promotion[change0-status 'complete']</code></li>
+<li><code>test_complete_reports_a_refused_review_before_promotion[change1-no subject]</code></li>
+<li><code>test_obligation_names_a_delivered_refusal_and_its_repair[change0-status 'complete']</code></li>
+<li><code>test_obligation_names_a_delivered_refusal_and_its_repair[change1-no subject]</code></li>
+</ul>
+<table>
+<thead><tr><th>Cause</th><th>Verdict</th><th>What was wrong</th></tr></thead>
+<tbody>
+<tr><td><code>test_complete_reports_a_refused_review_before_promotion</code> (both cases)</td><td>product wrong</td><td>The refusal existed but was judged inside the promotion the command runs itself. <code>crew complete</code> without <code>--wait</code> answers with a queued promotion request before that point, so a review's unfileable record was never named to the command that queued the work. The guard now runs ahead of that branch and reads the paths this call accepts beside the run's declaration.</td></tr>
+<tr><td><code>test_obligation_names_a_delivered_refusal_and_its_repair</code> (both cases)</td><td>test wrong</td><td>The case registers a review-in-flight reader of the rule's older one-argument shape. The rule is asked with the launched pointer set, so the double raised <code>TypeError</code> before reaching the obligation it measures. The double now takes the snapshot keyword and answers the same review id; no assertion was removed or weakened.</td></tr>
+</tbody>
+</table>
+</section>
+
+<section id="qwnw-red-file-review-record-contract-negative-control">
+<h3>The guarded command refuses at head and did not before</h3>
+<p>One invocation — a queued <code>crew complete --run r-review-fixture --gate not-run</code> over a review record carrying <code>status: "complete"</code> — at each revision. At the base revision the command answered with a request receipt and exit code 0, so nothing told the reviewer the record could not be filed:</p>
+<pre>exit_code: 0
+receipt: {"kind": "command", "node": "review-of-fixture", "ok": true, "options": {..., "run_id": "r-review-fixture", ...}</pre>
+<p>At the head the same call refuses, naming the record path and the field to repair, and exits 1:</p>
+<pre>exit_code: 1
+receipt: {"ok": false, "refused": [{"reasons": ["review record carries status 'complete', which no reader acts on; the accepted statuses are incomplete, parsed, unparsed"], "record": ".../r-reviewed-fixture/review-records/r-reviewed-fixture.json"}], "review_filed": false}</pre>
+<p>Logs <code>logs/show-base.log</code> and <code>logs/show-head.log</code> in the run directory <code>r-20261116T104355176177-qwnw-red-file-review-record-contract</code>. The pytest-level control is <code>logs/node-base.log</code>: <code>4 failed, 7 passed in 1.73s</code>, <code>EXIT=1</code>, carrying the four ids above; the head arm is <code>logs/node-head.log</code>: <code>11 passed in 0.98s</code>, <code>EXIT=0</code>.</p>
+</section>
+
+<section id="qwnw-red-file-review-record-contract-arms">
+<h3>Arms, and what each measured</h3>
+<table>
+<thead><tr><th>Arm</th><th>Revision</th><th>Summary line</th><th>Exit</th></tr></thead>
+<tbody>
+<tr><td>node gate, head</td><td><code>c820c173d0</code></td><td><code>11 passed in 0.98s</code></td><td><code>EXIT=0</code></td></tr>
+<tr><td>node gate, base (negative control)</td><td><code>24bc79d8ee</code></td><td><code>4 failed, 7 passed in 1.73s</code></td><td><code>EXIT=1</code></td></tr>
+<tr><td>suite base</td><td><code>24bc79d8ee</code></td><td><code>58 passed in 34.17s</code></td><td><code>EXIT=0</code></td></tr>
+<tr><td>suite after</td><td><code>c820c173d0</code></td><td><code>58 passed in 33.94s</code></td><td><code>EXIT=0</code></td></tr>
+<tr><td>ruff check</td><td><code>c820c173d0</code></td><td><code>All checks passed!</code></td><td><code>EXIT=0</code></td></tr>
+<tr><td>ruff format --check</td><td><code>c820c173d0</code></td><td><code>2 files already formatted</code></td><td><code>EXIT=0</code></td></tr>
+</tbody>
+</table>
+<p>Both suite arms ran the template <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code> resolved over their own tree: the base arm in a <code>--shared</code> clone of the primary checkout checked out at <code>24bc79d8ee</code>, the after arm in this worktree at its head. Both gate and suite arms ran as <code>all_debug</code> batch jobs (<code>job 1319783</code>) with <code>SLURM_JOB_ID</code> unset for the pytest process.</p>
+<p><strong>Importers arm.</strong> The 28 test files that import <code>reckon.crew_run_commands</code> ran at each revision: <code>g00</code> <code>10 failed, 53 passed</code> at base and head, <code>g02</code> <code>11 failed, 312 passed</code>, <code>g03</code> <code>9 failed, 95 passed</code>, and the six files of the fourth group <code>5</code>, <code>4</code>, <code>3</code>, <code>2</code>, <code>5</code> and <code>6</code> passed at both revisions: base <code>30 failed, 485 passed</code> against head <code>30 failed, 485 passed</code>, <strong>0 added and 0 removed failing ids</strong>. The failures in <code>g00</code>, <code>g02</code> and <code>g03</code> are the same ids at both revisions; the comparison is over the runner's <code>FAILED</code>/<code>ERROR</code> ids, not over counts. The last two files (<code>git status</code> inside a tree snapshot stalls under a batch node in this environment) were measured on the login node at both revisions, each reading 5 and 6 passed, and the log header records which host they ran on.</p>
+</section>
