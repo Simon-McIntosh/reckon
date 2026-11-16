@@ -23,7 +23,7 @@
   <title>History Persists As Detail Washes Out | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="72">
+<meta name="plan-version" content="73">
 <meta name="plan-modified" content="2026-11-16">
 <meta name="plan-section-declarations" content="{&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s27&quot;:&quot;implementable&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;implementable&quot;,&quot;s30&quot;:&quot;implementable&quot;}">
 <meta name="plan-section-depends-on" content="{&quot;s26&quot;:[&quot;history-persists-as-detail-washes-out#s21&quot;,&quot;history-persists-as-detail-washes-out#s22&quot;,&quot;history-persists-as-detail-washes-out#s23&quot;,&quot;history-persists-as-detail-washes-out#s24&quot;,&quot;history-persists-as-detail-washes-out#s25&quot;,&quot;history-persists-as-detail-washes-out#s28&quot;,&quot;history-persists-as-detail-washes-out#s29&quot;],&quot;s27&quot;:[&quot;history-persists-as-detail-washes-out#s26&quot;]}">
@@ -582,6 +582,9 @@
 </div>
 <div class="r-comment" data-section="s24" data-id="c-run-r-20261115T230531026304-review-of-revision-reads-on-the-store-s24-a3fceee5fb46" data-who="reckon-build" data-when="2026-11-15T23:08:04.442Z">
     <div class="r-comment-body"><p>independent review of revision-reads-on-the-store-s24 at the gained commit a3fceee5fb over base c2c40ab117 stores a parsed record scoring all six dimensions (goal_fidelity 14, evidence 16, scope_discipline 20, durability 8, fit 18, reuse 20), cites the examined call sites, carries added_failure_count 0 from both arms' EXIT=0 logs, and raises no finding</p></div>
+</div>
+<div class="r-comment" data-section="s24" data-id="c-run-r-20261115T102555144818-revision-reads-on-the-store-s24" data-who="reckon-build" data-when="2026-11-15T17:13:38Z">
+    <div class="r-comment-body"><p>velocity and the review-cycle figure read their revision-scoped history from the run store; the revision column names the commit a run&#x27;s record file entered the tree at and is written only by run_store.backfill_revisions, because a promotion&#x27;s promoted_revision is its work tip rather than that commit; both readers refuse an empty store naming it instead of answering zero, the eight tests pass at the head and fail at the base revision, and they fail again when the repair&#x27;s product modules are reverted</p></div>
 </div>
 <div class="r-comment" data-section="s25" data-id="c-run-r-20261115T114400888370-review-of-guards-without-tracked-ledger-s25-a25650c7735d" data-who="reckon-build" data-when="2026-11-15T12:04:12.446Z">
     <div class="r-comment-body"><p>independent review of a25650c7735db7aeb7fe3cf398f80feb0eda05a1 scoring goal_fidelity 20, evidence 17, scope_discipline 20, durability 18, fit 15, reuse 15 (total 105); added_failure_count 0 derived from the reviewed run's own base-arm.log and after-arm.log (58 passed EXIT=0 against 63 passed EXIT=0); two non-blocking findings, the index.json marker also matching a docs-only repository that reckon build published, and repository_root's docstring keeping the two-file wording; the node's goal, done_when, declared scope and its 'test fails at base' claim are met</p></div>
