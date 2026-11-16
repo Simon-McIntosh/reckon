@@ -892,6 +892,11 @@ class RunStore:
             else _RUNS_UPDATE.replace('"runs"', "archive.runs")
         )
         with self._conn:
+            # DDL needs an explicit transaction: implicit transactions begin
+            # only at the first data write, leaving added columns behind if
+            # the backfill fails and making a retry mistake shape for completion.
+            if not self._conn.in_transaction:
+                self._conn.execute("BEGIN IMMEDIATE")
             # Added columns are nullable because SQLite cannot add a NOT NULL
             # payload without rebuilding the table; the backfill supplies it.
             for name in (*QUERY_KEYS, ROW_REVISION, "payload", "activity_seconds"):
