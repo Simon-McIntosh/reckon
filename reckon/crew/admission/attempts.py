@@ -27,7 +27,7 @@ from .shared import (
 #: pool trades that allowance for setup speed, and past it the kernel reclaims
 #: the allowance by killing workers, so the width is kept to what the setup
 #: memory of a pass can cost without reaching them.
-LAUNCH_POOL_WIDTH = 4
+LAUNCH_POOL_WIDTH = 8
 
 
 class LaunchBatch:
