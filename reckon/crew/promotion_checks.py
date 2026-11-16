@@ -3013,15 +3013,18 @@ def _staging_review_record_by_run(
     stored here and returns no payload: a code review names neither a plan nor a
     reviewed run, so it is not committed to the staging-to-committed tree.
     """
-    if record is not None:
-        from reckon.crew.recovery_review_delivery import _report_review_delivery
-
-        report = _report_review_delivery(record)
-        if report is not None:
-            # Scope-keyed reports stay in their own store; the committed run
-            # review tree has no subject directory for a neighbourhood or portfolio.
-            plan_review._store_delivered_report(report["sidecar"])
-            return None
+    if record is not None and _code_review_key_for_promoting_run(record):
+        _store_code_review_for_promoting_run(project, record)
+        return None
+    node_id = str(((record or {}).get("node") or {}).get("id") or "")
+    if node_id.startswith(plan_review.PORTFOLIO_NODE_PREFIX):
+        key = node_id.removeprefix(plan_review.PORTFOLIO_NODE_PREFIX)
+        for sidecar in plan_review.delivered_portfolio_reviews(project):
+            if sidecar.get("scope_key") == key:
+                if not sidecar.get("stored"):
+                    plan_review._store_deliveries([sidecar])
+                break
+        return None
     found = review_module.record_for_review_run(project, run_id)
     if found is not None:
         return found[1]

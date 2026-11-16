@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+import os
+import shlex
+import sys
 from pathlib import Path
 
 import pytest
@@ -10,12 +13,17 @@ import pytest
 from reckon import _plan_html, ledger
 from reckon.crew import plan_review, recovery, runs
 from reckon.crew import review as review_module
-from reckon.crew.recovery_review_acceptance import promote_review_run_itself
+from reckon.crew.recovery_review_acceptance import (
+    accept_clean_review,
+    promote_review_run_itself,
+)
+from tests import test_review_acceptance_promotes as acceptance_cases
 from tests.helpers.git import git
 from tests.test_a_review_run_promotes_itself import PLAN, PROJECT
 from tests.test_a_review_run_promotes_itself import repository as report_repository
 
 repository = report_repository
+implementation_repository = acceptance_cases.repository
 
 KINDS = ("composed", "code", "prose-commits", "portfolio")
 
@@ -53,6 +61,28 @@ def _deliver(root: Path, kind: str, *, manifest_text: str | None = None) -> dict
                 }
             )
         )
+    elif kind == "plan":
+        node_id = f"plan-review-of-{PLAN}"
+        report_dir = plan_review.review_report_directory(PROJECT, PLAN, run_id)
+        report_dir.mkdir(parents=True, exist_ok=True)
+        path = report_dir / "report.md"
+        path.write_text(
+            "".join(
+                f"RUBRIC {item}: pass\n" for item in review_module.PLAN_REVIEW_ITEMS
+            )
+        )
+        runs._write_json(report_dir / "dispatch.json", {"run_id": run_id})
+        plan_review.write_review_sidecar(
+            report_dir,
+            project=PROJECT,
+            plan_slug=PLAN,
+            plan_version=1,
+            reviewed_blob_sha="b" * 40,
+            document="<html><body>reviewed plan</body></html>",
+            rubric="content",
+            report_path=path,
+            name="plan-review.json",
+        )
     else:
         key = f"fixture-{kind}"
         if kind == "code":
@@ -84,7 +114,7 @@ def _deliver(root: Path, kind: str, *, manifest_text: str | None = None) -> dict
         path.write_text(report)
         runs._write_json(
             report_dir / sidecar_name,
-            {**sidecar, "project": PROJECT, "review_run_id": run_id},
+            {**sidecar, "project": PROJECT, "review_run_id": f"composed-{kind}"},
         )
     worktree = root.parent / f"worker-{kind}"
     git(root, "worktree", "add", "--detach", "-q", str(worktree), "HEAD")
@@ -167,3 +197,84 @@ def test_an_unreadable_report_is_refused_with_its_condition(
     assert not result["promoted"], result
     assert "report" in result["reason"], result
     assert runs.pointer_path(pointer["run_id"]).exists()
+
+
+def test_a_plan_review_also_promotes_in_one_pass(repository: Path) -> None:
+    pointer = _deliver(repository, "plan")
+    report = recovery.dispatch_awaiting_reviews(project=PROJECT)
+    assert report["self_promoted"] == [pointer["run_id"]], report
+    [row] = ledger.runs(PROJECT, root=repository)
+    assert row["promoted_by"] == "review-self"
+    assert row["gate"] == "not-run"
+
+
+@pytest.mark.parametrize("kind", ["code", "portfolio"])
+@pytest.mark.parametrize("condition", ["stale", "wrong-subject", "undeclared"])
+def test_a_report_from_another_delivery_is_refused(
+    repository: Path, kind: str, condition: str
+) -> None:
+    pointer = _deliver(repository, kind)
+    path = Path(pointer["node"]["write_paths"][0])
+    if condition == "stale":
+        os.utime(path, (1, 1))
+        expected = "not written after"
+    elif condition == "wrong-subject":
+        name = (
+            plan_review.CODE_REVIEW_SIDECAR_NAME
+            if kind == "code"
+            else plan_review.PORTFOLIO_SIDECAR_NAME
+        )
+        sidecar = path.parent / name
+        body = json.loads(sidecar.read_text())
+        body["project"] = "another-project"
+        sidecar.write_text(json.dumps(body))
+        expected = "different subject"
+    else:
+        pointer["node"]["write_paths"] = []
+        expected = "outside this run's declarations"
+    result = promote_review_run_itself(pointer)
+    assert not result["promoted"], result
+    assert expected in result["reason"], result
+    assert runs.pointer_path(pointer["run_id"]).exists()
+
+
+def test_a_red_implementation_gate_keeps_its_failing_test_ids(
+    implementation_repository: Path, tmp_path: Path
+) -> None:
+    root = implementation_repository
+    acceptance_cases._land_and_review(root, tmp_path)
+    worktree = tmp_path / "implementation-worker"
+    git(root, "worktree", "add", "--detach", "-q", str(worktree), "HEAD")
+    pointer = runs.read_pointer(acceptance_cases.RUN_ID)
+    pointer["worktree"] = str(worktree)
+    runs._write_json(runs.pointer_path(acceptance_cases.RUN_ID), pointer)
+    tests = root / "tests"
+    tests.mkdir()
+    (tests / "test_delivery_gate.py").write_text(
+        "def test_contract():\n    assert False\n"
+    )
+    (root / "gate.sh").write_text(
+        f"#!/bin/sh\nexec {shlex.quote(sys.executable)} -m pytest -q tests/test_delivery_gate.py\n"
+    )
+    git(root, "add", "gate.sh", "tests/test_delivery_gate.py")
+    git(
+        root,
+        "commit",
+        "-m",
+        "test: expose an integrated gate failure",
+        "-m",
+        "The merged tree must retain its failing test identity.",
+    )
+    git(root, "push", "-q", "origin", "main")
+    pointer = runs.read_pointer(acceptance_cases.RUN_ID)
+    assert promote_review_run_itself(pointer) is None
+    refusal = accept_clean_review(pointer)
+    assert refusal is not None
+    assert refusal["accepted"] is False, refusal
+    assert refusal["gate_report"]["integrated_verdict"] == "failed"
+    assert (
+        "tests/test_delivery_gate.py::test_contract"
+        in refusal["gate_report"]["finding"]["failure_ids"]
+    )
+    assert runs.pointer_path(acceptance_cases.RUN_ID).exists()
+    assert ledger.runs(acceptance_cases.PROJECT, root=root) == []
