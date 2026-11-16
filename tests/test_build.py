@@ -666,9 +666,7 @@ def test_served_component_edit_is_visible_on_the_next_load(
             ready_expression="Boolean(document.querySelector('.r-topbar-brand'))",
         )
         topbar.write_text(
-            topbar.read_text().replace(
-                'title="reckon · fleet"', 'title="edited live"'
-            )
+            topbar.read_text().replace('title="reckon · fleet"', 'title="edited live"')
         )
         after = spa.run_probe(
             brand_title,
