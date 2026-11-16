@@ -1826,14 +1826,22 @@ def classify_pointer(
 
     # A pre-spawn launch past its bound with its holder gone is not waiting to
     # start: the liveness arms read it as a failed launch, which the admission
-    # pass then releases or returns to the queue. A pointer whose liveness is
+    # pass then releases or returns to the queue.
+    #
+    # The pre-spawn phrase is the launcher's label and a stale one, so it cannot
+    # be trusted alone. A run that reached its worker carries a pid, a worker
+    # record, a stream or a launch log, and any of those outranks the label:
+    # reading them as a request that has not started held a refused, unreadable
+    # or dead run at ``running`` for as long as its pointer lived, and left
+    # ``fleet_verdict`` free to match the same row abandoned, so one row
+    # stated two outcomes and neither surface could be acted on. A pointer
     # already recorded dead is not waiting to start either, whatever label it
     # still carries: a killed run keeps the phase it held when it died, so
-    # honouring the label here would let a pre-spawn word outrank the process
-    # and report a lane kill as running for as long as the pointer lived.
+    # honouring the label there would let a pre-spawn word outrank the process.
     pre_spawn_waiting = (
         phase in _PRE_SPAWN_PHASES
         and alive is not False
+        and not _spawn_evidence(record)
         and not _stranded_launch(record, now_seconds=moment)
     )
     # A parked phase is the launcher's statement that the request is waiting to
@@ -3296,6 +3304,7 @@ from .recovery_liveness import (  # noqa: E402
     _run_exit_record,
     _run_stream_mtime,
     _run_stream_quiet_seconds,
+    _spawn_evidence,
     _stranded_launch,
     _stranded_launch_age_seconds,
     _wait_judged_against_itself,

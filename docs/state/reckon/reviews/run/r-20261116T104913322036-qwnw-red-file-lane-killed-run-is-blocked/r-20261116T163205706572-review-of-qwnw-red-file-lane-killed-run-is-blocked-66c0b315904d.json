@@ -1,0 +1,78 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/query.py:597",
+    "reckon/crew/query.py:1075",
+    "reckon/crew/recovery_watch.py:750",
+    "reckon/crew/recovery_watch.py:1640",
+    "reckon/crew/directory.py:342",
+    "reckon/crew/queue_landing.py:1704",
+    "reckon/crew/resumption.py:2675",
+    "reckon/crew/obligations.py:1663",
+    "reckon/serve.py:902"
+  ],
+  "completed_at": "2026-11-16T16:34:36.038Z",
+  "dispatched_at": "2026-11-16T16:33:37Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-lane-killed-run-is-blocked.html",
+      "line": "74",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gate row records the revision as 64b94b1ba7 while the log it cites, logs/gate-head.log, heads itself with `# revision: 66c0b315904da98ae0e408dfac6479d44b19b021`; the after-suite row at :80 repeats the same off-by-one-commit label against logs/after-suite-arm.log, and the row at :71 labels the pre-repair head run `398015d5d5 plus the edit` although logs/head-run-1.log records a clean tree at 398015d5d5 and the edit-bearing run is logs/head-run-2.log at 10 passed, so a reader reconciling the table against the logs cannot match a row to its receipt."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-lane-killed-run-is-blocked.html",
+      "line": "90",
+      "severity": "non-blocking",
+      "text": "non-blocking: the batch 02a row claims `0 added, 5 fixed`, but that batch's own recorded id lists are 17 ids at the base and 13 at the after arm, which is 5 fixed and 1 added \u2014 tests/test_a_worker_never_outlives_its_supervisor.py::test_a_run_whose_supervisor_exited_is_not_classified_complete, absent from logs/base-02a-failed.txt and present in logs/head-02a-failed.txt; the prose at :105-109 explains that id as order-sensitive and present in the reverted arm too, so the explanation is sound and only the row's count is wrong, which makes the one arm claim the done_when turns on read as stronger than its receipt."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104913322036-qwnw-red-file-lane-killed-run-is-blocked/manifest.md",
+      "line": "10",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when asks for the file to pass `as a job on all_debug with SLURM_JOB_ID unset`, and the recorded gate ran `env -u SLURM_JOB_ID ... pytest` in the worker's own worktree inside its allocation rather than as a submitted all_debug job; the evidence still discriminates because the same host reddens the same three ids at the base extraction (logs/negative-control-base.log, EXIT=1), so an environment-driven pass is excluded, but the named environment was not the one measured."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified the production readers that reach classify_pointer: reckon/crew/query.py:597 and :1075, reckon/crew/recovery_watch.py:750 and :1640, reckon/crew/directory.py:342, reckon/crew/queue_landing.py:1704, reckon/crew/resumption.py:2675, reckon/crew/obligations.py:1663, and reckon/serve.py:902.",
+    "diff": "read both commits against base ba3443a9ae (the range also carries three sibling-node commits, 398015d5d5, 272a3bc0e7 and 25dcca50a9, not this node's): 64b94b1ba7 changes only the pre_spawn_waiting expression plus its comment in recovery_classification.py, and 66c0b31590 rewrites only the evidence fragment's prose and tables; no other file moved.",
+    "done_when": "the done_when names the file passing in full at head with SLURM_JOB_ID unset, each cause verdicted, no assertion deleted or weakened, and an arm adding no failure; logs/gate-head.log gives 10 passed EXIT=0, logs/negative-control-base.log gives the same 3 ids failing at EXIT=1, the test file is byte-unchanged across the diff, and arm batches 00, 01 and 03 add no failing id while 02b adds none either by id, so the measure is met \u2014 except that the gate ran, with SLURM_JOB_ID unset, in the worker's own allocation rather than as the submitted all_debug job the done_when names.",
+    "goal": "the goal is to make tests/test_lane_killed_run_is_blocked.py pass in full; the landed change is one conjunct on pre_spawn_waiting at reckon/crew/recovery_classification.py:1830-1835 that stops a pre-spawn phase label from outranking a pointer already recorded dead, and the named file reads 10 passed at head.",
+    "manifest": "read; status complete, commits 64b94b1ba7 and 66c0b31590, changed_paths the two landed files, tests the single-file gate with its result recorded in test_logs, baseline_suite and after_suite both 58 passed EXIT=0 with zero failures, negative_control_log naming the base run, and outside_scope naming the one order-sensitive id with the revert evidence.",
+    "write_paths": "the manifest declares reckon, tests and the plan's fragment and figure paths; git show --stat of 64b94b1ba7 and 66c0b31590 lists reckon/crew/recovery_classification.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-lane-killed-run-is-blocked.html, both inside that fence, and the done_when's alternative fragment filename red-file-lane-killed-run-is-blocked.html was not used because the node-id path it names is the one declared."
+  },
+  "justifications": {
+    "durability": "tests/test_lane_killed_run_is_blocked.py is unchanged between ba3443a9ae and 66c0b3159 and its three ids fail at the base extraction and in the pre-repair head run (logs/head-run-1.log, 3 failed EXIT=1), so restoring the removed conjunct reddens exactly the assertions the repair turns green; no assertion was added, so the guard is the pre-existing file verified by those two red runs.",
+    "evidence": "logs/gate-head.log records 10 passed EXIT=0 at revision 66c0b315904, logs/negative-control-base.log records the same three ids failing EXIT=1, and logs/base-suite-arm.log plus logs/after-suite-arm.log are both 58 passed EXIT=0, so the gate measures the done_when; but the gate ran in the worker's own allocation rather than as a submitted all_debug job, and the fragment's arm table names revisions and counts its cited logs do not carry.",
+    "fit": "the added condition uses `alive is not False`, the same spelling the module already uses for a recorded-death gate at reckon/crew/recovery_classification.py:495, 765 and 1557, and introduces no new name or identifier.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:1830-1835 adds the `alive is not False` conjunct to pre_spawn_waiting, and the named file reads 10 passed EXIT=0 at head (logs/gate-head.log) against 3 failed, 7 passed at the base extraction (logs/negative-control-base.log) with the same three ids.",
+    "reuse": "the change extends the single owner of recovery classification, reckon/crew/recovery_classification.py:1246 classify_pointer, and a search for _PRE_SPAWN_PHASES and for classify_pointer over reckon/ found no second classifier: recovery_liveness.py:57 owns the phase set, recovery_watch.py:1820 reads through the classifier, and nothing was duplicated.",
+    "scope_discipline": "git show --stat 64b94b1ba7 and 66c0b31590 name exactly reckon/crew/recovery_classification.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-lane-killed-run-is-blocked.html, both inside the declared write_paths, and no test file was edited."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make tests/test_lane_killed_run_is_blocked.py pass in full; the landed change is one conjunct on pre_spawn_waiting at reckon/crew/recovery_classification.py:1830-1835 that stops a pre-spawn phase label from outranking a pointer already recorded dead, and the named file reads 10 passed at head.\nVERDICT done_when: the done_when names the file passing in full at head with SLURM_JOB_ID unset, each cause verdicted, no assertion deleted or weakened, and an arm adding no failure; logs/gate-head.log gives 10 passed EXIT=0, logs/negative-control-base.log gives the same 3 ids failing at EXIT=1, the test file is byte-unchanged across the diff, and arm batches 00, 01 and 03 add no failing id while 02b adds none either by id, so the measure is met \u2014 except that the gate ran, with SLURM_JOB_ID unset, in the worker's own allocation rather than as the submitted all_debug job the done_when names.\nVERDICT write_paths: the manifest declares reckon, tests and the plan's fragment and figure paths; git show --stat of 64b94b1ba7 and 66c0b31590 lists reckon/crew/recovery_classification.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-lane-killed-run-is-blocked.html, both inside that fence, and the done_when's alternative fragment filename red-file-lane-killed-run-is-blocked.html was not used because the node-id path it names is the one declared.\nVERDICT manifest: read; status complete, commits 64b94b1ba7 and 66c0b31590, changed_paths the two landed files, tests the single-file gate with its result recorded in test_logs, baseline_suite and after_suite both 58 passed EXIT=0 with zero failures, negative_control_log naming the base run, and outside_scope naming the one order-sensitive id with the revert evidence.\nVERDICT diff: read both commits against base ba3443a9ae (the range also carries three sibling-node commits, 398015d5d5, 272a3bc0e7 and 25dcca50a9, not this node's): 64b94b1ba7 changes only the pre_spawn_waiting expression plus its comment in recovery_classification.py, and 66c0b31590 rewrites only the evidence fragment's prose and tables; no other file moved.\nCALL_SITES: reckon/crew/query.py:597, reckon/crew/query.py:1075, reckon/crew/recovery_watch.py:750, reckon/crew/recovery_watch.py:1640, reckon/crew/directory.py:342, reckon/crew/queue_landing.py:1704, reckon/crew/resumption.py:2675, reckon/crew/obligations.py:1663, reckon/serve.py:902\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:1830-1835 adds the `alive is not False` conjunct to pre_spawn_waiting, and the named file reads 10 passed EXIT=0 at head (logs/gate-head.log) against 3 failed, 7 passed at the base extraction (logs/negative-control-base.log) with the same three ids.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-head.log records 10 passed EXIT=0 at revision 66c0b315904, logs/negative-control-base.log records the same three ids failing EXIT=1, and logs/base-suite-arm.log plus logs/after-suite-arm.log are both 58 passed EXIT=0, so the gate measures the done_when; but the gate ran in the worker's own allocation rather than as a submitted all_debug job, and the fragment's arm table names revisions and counts its cited logs do not carry.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 64b94b1ba7 and 66c0b31590 name exactly reckon/crew/recovery_classification.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-lane-killed-run-is-blocked.html, both inside the declared write_paths, and no test file was edited.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_lane_killed_run_is_blocked.py is unchanged between ba3443a9ae and 66c0b3159 and its three ids fail at the base extraction and in the pre-repair head run (logs/head-run-1.log, 3 failed EXIT=1), so restoring the removed conjunct reddens exactly the assertions the repair turns green; no assertion was added, so the guard is the pre-existing file verified by those two red runs.\nSCORE fit: 19\nJUSTIFICATION fit: the added condition uses `alive is not False`, the same spelling the module already uses for a recorded-death gate at reckon/crew/recovery_classification.py:495, 765 and 1557, and introduces no new name or identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the single owner of recovery classification, reckon/crew/recovery_classification.py:1246 classify_pointer, and a search for _PRE_SPAWN_PHASES and for classify_pointer over reckon/ found no second classifier: recovery_liveness.py:57 owns the phase set, recovery_watch.py:1820 reads through the classifier, and nothing was duplicated.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-lane-killed-run-is-blocked.html:74 non-blocking: the gate row records the revision as 64b94b1ba7 while the log it cites, logs/gate-head.log, heads itself with `# revision: 66c0b315904da98ae0e408dfac6479d44b19b021`; the after-suite row at :80 repeats the same off-by-one-commit label against logs/after-suite-arm.log, and the row at :71 labels the pre-repair head run `398015d5d5 plus the edit` although logs/head-run-1.log records a clean tree at 398015d5d5 and the edit-bearing run is logs/head-run-2.log at 10 passed, so a reader reconciling the table against the logs cannot match a row to its receipt.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-lane-killed-run-is-blocked.html:90 non-blocking: the batch 02a row claims `0 added, 5 fixed`, but that batch's own recorded id lists are 17 ids at the base and 13 at the after arm, which is 5 fixed and 1 added \u2014 tests/test_a_worker_never_outlives_its_supervisor.py::test_a_run_whose_supervisor_exited_is_not_classified_complete, absent from logs/base-02a-failed.txt and present in logs/head-02a-failed.txt; the prose at :105-109 explains that id as order-sensitive and present in the reverted arm too, so the explanation is sound and only the row's count is wrong, which makes the one arm claim the done_when turns on read as stronger than its receipt.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104913322036-qwnw-red-file-lane-killed-run-is-blocked/manifest.md:10 non-blocking: the done_when asks for the file to pass `as a job on all_debug with SLURM_JOB_ID unset`, and the recorded gate ran `env -u SLURM_JOB_ID ... pytest` in the worker's own worktree inside its allocation rather than as a submitted all_debug job; the evidence still discriminates because the same host reddens the same three ids at the base extraction (logs/negative-control-base.log, EXIT=1), so an environment-driven pass is excluded, but the named environment was not the one measured.",
+  "review_run_id": "r-20261116T163205706572-review-of-qwnw-red-file-lane-killed-run-is-blocked-66c0b315904d",
+  "reviewed_base_sha": "ba3443a9ae6a2bc171c76560016a6ca24e055f02",
+  "reviewed_head_sha": "66c0b315904da98ae0e408dfac6479d44b19b021",
+  "reviewed_run_id": "r-20261116T104913322036-qwnw-red-file-lane-killed-run-is-blocked",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T163205706572-review-of-qwnw-red-file-lane-killed-run-is-blocked-66c0b315904d"
+  },
+  "reviewer_run_id": "r-20261116T163205706572-review-of-qwnw-red-file-lane-killed-run-is-blocked-66c0b315904d",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T21:18:20.828088+00:00",
+  "total": 112
+}

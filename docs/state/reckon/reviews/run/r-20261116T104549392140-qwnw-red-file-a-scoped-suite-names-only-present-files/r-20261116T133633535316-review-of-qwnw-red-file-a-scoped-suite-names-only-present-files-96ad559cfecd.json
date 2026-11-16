@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion_evidence.py:1217",
+    "reckon/crew/promotion_scope.py:1332",
+    "reckon/crew/promotion_records.py:911"
+  ],
+  "completed_at": "2026-11-16T14:24:17.646Z",
+  "dispatched_at": "2026-11-16T14:23:56Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-scoped-suite-names-only-present-files.html",
+      "line": "61",
+      "severity": "non-blocking",
+      "text": "non-blocking: the import arm's base side reports module.__file__ as the head worktree in logs/import_arm_base.log:6, so its 7 failed, 81 passed cannot be read as a base measurement and the set difference of zero does not show the arm adds no failure against the base."
+    },
+    {
+      "file": "tests/test_a_scoped_suite_names_only_present_files.py",
+      "line": "145",
+      "severity": "non-blocking",
+      "text": "non-blocking: the shared fixture gains a commits parameter only here, while the pre-existing copies at tests/test_gate_evidence.py:229, tests/test_a_gate_names_its_arms.py:167 and tests/test_suite_arms_use_the_armed_command.py:118 keep the old signature, so the duplication drifts further instead of the owner being extended."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 8fdf39585f; af9ef20d15 threads a commits value into the manifest fixture and drops the --no-commit declaration, 96ad559cfe adds two evidence fragments, and no assertion or production rule changed.",
+    "done_when": "the done_when asks for a full pass at head as an all_debug job with SLURM_JOB_ID unset, the four base ids logged beside the head run; the manifest records both arms and logs/negative_control.log reproduces 4 failed, 1 passed, EXIT=1 at 8fdf39585f.",
+    "goal": "the node goal is that tests/test_a_scoped_suite_names_only_present_files.py passes in full; the gate log logs/gate_all_debug.log reads 5 passed at af9ef20d15 with EXIT=0, and the diff changes only the fixture plumbing at tests/test_a_scoped_suite_names_only_present_files.py:145-359.",
+    "manifest": "read; it states 5 passed in 3.00s EXIT=0 for the head arm, 4 failed, 1 passed EXIT=1 for the base arm, the 58-passed suite pair, ruff clean, and names logs/gate_all_debug.log and logs/negative_control.log.",
+    "write_paths": "the declared scope is reckon, tests, and docs/evidence/fragments/queued-work-needs-no-workaround; git diff 8fdf39585f..96ad559cfe touches only tests/test_a_scoped_suite_names_only_present_files.py and two files under that fragment directory."
+  },
+  "justifications": {
+    "durability": "reverting tests/test_a_scoped_suite_names_only_present_files.py:145 to cite abc123 and reinstate --no-commit reddens four ids, which logs/negative_control.log shows at 8fdf39585f.",
+    "evidence": "logs/negative_control.log reproduces the four base ids at 8fdf39585f, but logs/import_arm_base.log:6 names the head worktree as module.__file__, so the import arm's base side does not show it measured the base.",
+    "fit": "the keyword-only commits parameter at tests/test_a_scoped_suite_names_only_present_files.py:145 follows the same file's _observation keyword-only idiom and ruff reports nothing on the path.",
+    "goal_fidelity": "logs/gate_all_debug.log records 5 passed EXIT=0 for tests/test_a_scoped_suite_names_only_present_files.py at af9ef20d15, which is the goal's deliverable.",
+    "reuse": "the diff adds no definition; _write_suite_manifest keeps the capability it already had, though its three pre-existing twins at tests/test_gate_evidence.py:229 now diverge further.",
+    "scope_discipline": "git diff 8fdf39585f..96ad559cfe stays inside tests/ and docs/evidence/fragments/queued-work-needs-no-workaround/, the paths declared at the manifest's orientation_write_paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_a_scoped_suite_names_only_present_files.py passes in full; the gate log logs/gate_all_debug.log reads 5 passed at af9ef20d15 with EXIT=0, and the diff changes only the fixture plumbing at tests/test_a_scoped_suite_names_only_present_files.py:145-359.\nVERDICT done_when: the done_when asks for a full pass at head as an all_debug job with SLURM_JOB_ID unset, the four base ids logged beside the head run; the manifest records both arms and logs/negative_control.log reproduces 4 failed, 1 passed, EXIT=1 at 8fdf39585f.\nVERDICT write_paths: the declared scope is reckon, tests, and docs/evidence/fragments/queued-work-needs-no-workaround; git diff 8fdf39585f..96ad559cfe touches only tests/test_a_scoped_suite_names_only_present_files.py and two files under that fragment directory.\nVERDICT manifest: read; it states 5 passed in 3.00s EXIT=0 for the head arm, 4 failed, 1 passed EXIT=1 for the base arm, the 58-passed suite pair, ruff clean, and names logs/gate_all_debug.log and logs/negative_control.log.\nVERDICT diff: read commit by commit against 8fdf39585f; af9ef20d15 threads a commits value into the manifest fixture and drops the --no-commit declaration, 96ad559cfe adds two evidence fragments, and no assertion or production rule changed.\nCALL_SITES: reckon/crew/promotion_evidence.py:1217, reckon/crew/promotion_scope.py:1332, reckon/crew/promotion_records.py:911\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: logs/gate_all_debug.log records 5 passed EXIT=0 for tests/test_a_scoped_suite_names_only_present_files.py at af9ef20d15, which is the goal's deliverable.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/negative_control.log reproduces the four base ids at 8fdf39585f, but logs/import_arm_base.log:6 names the head worktree as module.__file__, so the import arm's base side does not show it measured the base.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 8fdf39585f..96ad559cfe stays inside tests/ and docs/evidence/fragments/queued-work-needs-no-workaround/, the paths declared at the manifest's orientation_write_paths.\nSCORE durability: 17\nJUSTIFICATION durability: reverting tests/test_a_scoped_suite_names_only_present_files.py:145 to cite abc123 and reinstate --no-commit reddens four ids, which logs/negative_control.log shows at 8fdf39585f.\nSCORE fit: 18\nJUSTIFICATION fit: the keyword-only commits parameter at tests/test_a_scoped_suite_names_only_present_files.py:145 follows the same file's _observation keyword-only idiom and ruff reports nothing on the path.\nSCORE reuse: 17\nJUSTIFICATION reuse: the diff adds no definition; _write_suite_manifest keeps the capability it already had, though its three pre-existing twins at tests/test_gate_evidence.py:229 now diverge further.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-scoped-suite-names-only-present-files.html:61 non-blocking: the import arm's base side reports module.__file__ as the head worktree in logs/import_arm_base.log:6, so its 7 failed, 81 passed cannot be read as a base measurement and the set difference of zero does not show the arm adds no failure against the base.\nFINDING tests/test_a_scoped_suite_names_only_present_files.py:145 non-blocking: the shared fixture gains a commits parameter only here, while the pre-existing copies at tests/test_gate_evidence.py:229, tests/test_a_gate_names_its_arms.py:167 and tests/test_suite_arms_use_the_armed_command.py:118 keep the old signature, so the duplication drifts further instead of the owner being extended.\nReviewed run: r-20261116T104549392140-qwnw-red-file-a-scoped-suite-names-only-present-files\nReviewed base: 8fdf39585f1fb4b05ac8a6e5b707a7c651d42176\nReviewed head: 96ad559cfecdabaca4b0e18cadc5f3796d77c2b6\n",
+  "review_run_id": "r-20261116T133633535316-review-of-qwnw-red-file-a-scoped-suite-names-only-present-files-96ad559cfecd",
+  "reviewed_base_sha": "8fdf39585f1fb4b05ac8a6e5b707a7c651d42176",
+  "reviewed_head_sha": "96ad559cfecdabaca4b0e18cadc5f3796d77c2b6",
+  "reviewed_run_id": "r-20261116T104549392140-qwnw-red-file-a-scoped-suite-names-only-present-files",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T20:33:18.548841+00:00",
+  "total": 103
+}

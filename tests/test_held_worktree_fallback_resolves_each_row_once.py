@@ -50,10 +50,18 @@ def _tree_name(index: int) -> str:
 
 
 def _worktree(root: Path, node: str) -> Path:
-    """Register a tree the way a dispatched run leaves one behind."""
+    """Register a tree the way a dispatched run leaves one behind.
+
+    The derivation holds a retained tree only while it carries work no landing
+    has taken, so every tree this fixture retains carries an uncommitted
+    change. A clean tree would be dropped for holding nothing, and this module
+    measures the naming rule and the fallback over the trees that rule holds,
+    so a fixture of clean trees would measure neither.
+    """
     path = root.parent / "managed-worktrees" / SESSION / node
     path.parent.mkdir(parents=True, exist_ok=True)
     _git(root, "worktree", "add", "-q", "--detach", str(path), "HEAD")
+    (path / "uncommitted.txt").write_text("work\n", encoding="utf-8")
     return path
 
 
@@ -213,6 +221,11 @@ def fleet(
     monkeypatch.setenv("RECKON_STATE_ROOT", str(tmp_path / "state"))
     monkeypatch.setenv("RECKON_MOUNTS_PATH", str(config_home / "mounts.json"))
     file_memo.clear()
+    # The derivation keeps its own incremental index beside the shared memo, so
+    # dropping the memo alone hands back the answer a previous case computed and
+    # a case that counts resolutions would measure an empty re-read. Dropping
+    # both makes every case read the fixture cold.
+    obligations_module._HELD_RECORD_READS.clear()
     return root, named, unnamed, records
 
 
@@ -256,6 +269,20 @@ def _head_held() -> dict[str, str]:
     }
 
 
+def _ledger_rows(root: Path) -> list[dict[str, Any]]:
+    """Every row the ledger holds, through the reader that keeps the aggregate's.
+
+    The merged reader answers from the run store, whose identity is a run id, so
+    a row the aggregate carries without one is not a run it can return, even
+    though the aggregate still holds that row. The derivation reads the
+    aggregate anyway and files the rows the merged read did not deliver, so the
+    reference is built from the reader that files them too; a reference keyed to
+    the merged reader alone would disagree about the one tree only such a row
+    names.
+    """
+    return ledger.run_rows_from_documents(PROJECT, root=root)
+
+
 def test_the_fixture_holds_trees_no_record_names(
     fleet: tuple[Path, list[Path], list[Path], list[dict[str, Any]]],
 ) -> None:
@@ -264,7 +291,7 @@ def test_the_fixture_holds_trees_no_record_names(
     assert len(records) >= 500
     assert len(unnamed) >= 20
     assert len(named) >= 20
-    reference = _reference_held(ledger.runs(PROJECT, root=root), root)
+    reference = _reference_held(_ledger_rows(root), root)
     named_paths = {str(path.resolve()) for path in named}
     assert named_paths <= set(reference), (
         "the fixture's named trees are not all held by a record that names them"
@@ -281,7 +308,7 @@ def test_the_held_map_is_the_naming_rule_applied_to_every_row(
 ) -> None:
     """Every tree the rule holds is held, by the same run, and no other is."""
     root, named, unnamed, _records = fleet
-    reference = _reference_held(ledger.runs(PROJECT, root=root), root)
+    reference = _reference_held(_ledger_rows(root), root)
     assert _head_held() == reference
     assert {str(path.resolve()) for path in named} <= set(reference)
     assert not ({str(path.resolve()) for path in unnamed} & set(reference))
@@ -295,7 +322,7 @@ def test_the_tree_only_a_run_less_row_names_is_held(
     orphan_tree = str(
         (root.parent / "managed-worktrees" / SESSION / ORPHAN_TREE_NAME).resolve()
     )
-    reference = _reference_held(ledger.runs(PROJECT, root=root), root)
+    reference = _reference_held(_ledger_rows(root), root)
     assert reference.get(orphan_tree) == "", (
         "the fixture's run-less row does not hold the tree it names"
     )
@@ -357,7 +384,7 @@ def test_the_fallback_resolves_each_row_a_bounded_number_of_times(
         f"{resolution_count} path resolutions over {len(rows)} records; the "
         "fallback is resolving each row's path once per unresolved tree"
     )
-    assert held == _reference_held(rows, root)
+    assert held == _reference_held(_ledger_rows(root), root)
     assert len(records) == RECORD_COUNT
 
 

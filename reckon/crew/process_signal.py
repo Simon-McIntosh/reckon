@@ -674,13 +674,24 @@ def _step_argv(run_dir: str | Path | None) -> list[str]:
     return [str(word) for word in argv] if isinstance(argv, list) else []
 
 
+def argv_uses_step(argv: Any) -> bool:
+    """Whether a launch argv runs as a step inside a held allocation.
+
+    The one owner of the question: a step client named ``srun`` carrying a
+    ``--jobid=`` option runs its worker on the node the allocation is held on,
+    which need not be the host that composed the argv. Dispatch asks it to
+    decide whether the worker's scratch directory belongs to the composing host,
+    and the signal path asks the same question of the argv a run recorded, so a
+    change to what counts as a placed step is made in this one place.
+    """
+    words = [str(word) for word in (argv or ())]
+    if not words or Path(words[0]).name != "srun":
+        return False
+    return any(word.startswith("--jobid=") and word != words[0] for word in words)
+
+
 def _run_uses_step(run_dir: str | Path | None) -> bool:
-    argv = _step_argv(run_dir)
-    return bool(
-        argv
-        and Path(argv[0]).name == "srun"
-        and any(word.startswith("--jobid=") for word in argv)
-    )
+    return argv_uses_step(_step_argv(run_dir))
 
 
 def _step_worker_identity(run_dir: str | Path | None) -> tuple[str, int, str] | None:
