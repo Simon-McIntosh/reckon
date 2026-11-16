@@ -101,7 +101,7 @@ class StationBeat:
     alive, and the tick is the worst place to write it: a tick walks mounted
     projects across ledger reads and path resolution, and under a loaded
     filesystem one takes minutes. So liveness is written here, on its own
-    thread and its own store handle, for as long as the process lives; what the
+    thread and a node-local file, for as long as the process lives; what the
     tick records instead is progress -- the stage it has entered and the
     instants that bound it -- and the reader compares the two to tell a slow
     station from a stopped one.
@@ -113,7 +113,6 @@ class StationBeat:
         *,
         beat_seconds: float | None = None,
         clock: Callable[[], datetime] | None = None,
-        store: station_store.StationStore | None = None,
         guard: station_store.StoreWriteGuard | None = None,
     ) -> None:
         self.root = root
@@ -121,35 +120,76 @@ class StationBeat:
             STATION_BEAT_SECONDS if beat_seconds is None else beat_seconds
         )
         self._clock = clock or (lambda: datetime.now(tz=UTC))
-        self._store = store
         self.guard = guard
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
+        self._publisher: threading.Thread | None = None
+        self._publication_due = threading.Event()
+        self._publication_lock = threading.Lock()
+        self._pending: tuple[dict[str, str], str | None] | None = None
 
-    def _handle(self) -> station_store.StationStore:
-        """This thread's own store handle, opened on first use.
+    def _local_beat(self) -> tuple[dict[str, str], str | None]:
+        """Write liveness without taking the tick's database writer lock."""
+        from reckon._store import write_json_atomically
 
-        A handle of its own rather than the tick's: the two write the same
-        table from different threads, and a connection shared across threads is
-        the kind of coupling that turns one slow tick into a corrupted beat.
-        """
-        if self._store is None:
-            self._store = station_store.StationStore(self.root, guard=self.guard)
-        return self._store
+        def read(connection):
+            markers = obligation_snapshot._station_markers(connection)
+            row = connection.execute(
+                "SELECT value FROM station WHERE key = ?",
+                (station_store.CREW_HOME_KEY,),
+            ).fetchone()
+            return markers, None if row is None else str(row[0])
+
+        answered, reading = obligation_snapshot._station_read(
+            self.root / station_store.DATABASE_NAME, read
+        )
+        if not answered:
+            raise RuntimeError("the station's heartbeat could not read its identity")
+        markers, home = reading
+        markers[station_store.HEARTBEAT_KEY] = self._clock().isoformat()
+        if self.guard is not None:
+            self.guard.check()
+        write_json_atomically(
+            self.root / obligation_snapshot.STATION_HEARTBEAT_NAME,
+            {key: markers[key] for key in ("heartbeat", "store_identity")},
+            fsync=False,
+        )
+        return markers, home
 
     def beat_once(self) -> None:
-        """Move the local beat and publish its tick for off-node readers."""
-        handle = self._handle()
-        handle.heartbeat(now=self._clock())
-        markers = obligation_snapshot._station_markers(handle.connect())
-        home = handle.station_value(station_store.CREW_HOME_KEY)
-        handle.guard.check()
+        """Move the local beat and synchronously publish one off-node reading."""
+        markers, home = self._local_beat()
+        if self.guard is not None:
+            self.guard.check()
         obligation_snapshot.publish_station_reading(markers, home=home)
+
+    def _publish(self) -> None:
+        """Publish the latest beat, coalescing while shared storage is slow."""
+        while not self._stop.is_set():
+            self._publication_due.wait()
+            self._publication_due.clear()
+            if self._stop.is_set():
+                return
+            with self._publication_lock:
+                pending, self._pending = self._pending, None
+            if pending is None:
+                continue
+            try:
+                if self.guard is not None:
+                    self.guard.check()
+                markers, home = pending
+                obligation_snapshot.publish_station_reading(markers, home=home)
+            except Exception:  # noqa: BLE001 - publication is retried next beat
+                print("station-beat-publication-failure", file=sys.stderr, flush=True)
+                traceback.print_exc(file=sys.stderr)
 
     def _run(self) -> None:
         while not self._stop.is_set():
             try:
-                self.beat_once()
+                reading = self._local_beat()
+                with self._publication_lock:
+                    self._pending = reading
+                self._publication_due.set()
             except Exception:  # noqa: BLE001 - a missed beat is retried on the next
                 print(
                     "station-beat-failure: the heartbeat could not be written",
@@ -163,20 +203,25 @@ class StationBeat:
         """Beat once, then keep beating on its own thread."""
         if self._thread is not None:
             return
+        self._publisher = threading.Thread(
+            target=self._publish, name="station-beat-publisher", daemon=True
+        )
+        self._publisher.start()
         self._thread = threading.Thread(
             target=self._run, name="station-beat", daemon=True
         )
         self._thread.start()
 
     def stop(self) -> None:
-        """Stop beating and close this thread's handle."""
+        """Stop requesting beats and publications, and join both threads."""
         self._stop.set()
+        self._publication_due.set()
         if self._thread is not None:
             self._thread.join(timeout=max(1.0, self.beat_seconds * 2))
             self._thread = None
-        if self._store is not None:
-            self._store.close()
-            self._store = None
+        if self._publisher is not None:
+            self._publisher.join(timeout=max(1.0, self.beat_seconds * 2))
+            self._publisher = None
 
 
 # A census reads local processes and ownership records. One pass per minute

@@ -330,6 +330,7 @@ def station_runtime_candidate(
 
 
 STATION_SNAPSHOT_NAME = "station-snapshot.json"
+STATION_HEARTBEAT_NAME = "station-heartbeat.json"
 
 
 def station_database_name() -> str:
@@ -517,18 +518,36 @@ def _station_read(database: Path, read: Callable[[Any], Any]) -> tuple[bool, Any
 
 def _station_markers(connection: Any) -> dict[str, str]:
     """The station's beat and tick, without unrelated maintenance records."""
-    return {
+    markers = {
         str(key): str(value)
         for key, value in connection.execute(
-            "SELECT key, value FROM station WHERE key IN (?, ?, ?, ?)",
+            "SELECT key, value FROM station WHERE key IN (?, ?, ?, ?, ?)",
             (
                 "heartbeat",
                 STATION_TICK_STAGE_KEY,
                 STATION_TICK_STARTED_AT_KEY,
                 STATION_TICK_FINISHED_AT_KEY,
+                "store_identity",
             ),
         )
     }
+    # The beat is independent of SQLite's writer lock. Bind it to this store
+    # so replacing a database cannot borrow the previous store's liveness.
+    database = connection.execute("PRAGMA database_list").fetchone()[2]
+    try:
+        beat = json.loads((Path(database).parent / STATION_HEARTBEAT_NAME).read_text())
+    except (OSError, ValueError):
+        return markers
+    if (
+        isinstance(beat, Mapping)
+        and markers.get("store_identity")
+        and (beat.get("store_identity") == markers["store_identity"])
+    ):
+        stamped = _parse_instant(beat.get("heartbeat"))
+        carried = _parse_instant(markers.get("heartbeat"))
+        if stamped is not None and (carried is None or stamped >= carried):
+            markers["heartbeat"] = str(beat["heartbeat"])
+    return markers
 
 
 def _read_station_document(
