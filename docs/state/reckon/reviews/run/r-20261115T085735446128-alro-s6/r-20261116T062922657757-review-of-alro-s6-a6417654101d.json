@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "both recorded arms are readable and green: baseline_suite is 64 passed EXIT=0 at 63e6c58d from logs/base-arm-local.log and after_suite is 73 passed EXIT=0 at 4b66c42325 from logs/after-arm-head2-1319106.log, so neither arm contributes a failing id. The failure found at the reviewed head is in tests/test_brief_prompt.py, which the after arm's four-file command does not run, so it is recorded as a blocking finding rather than as an added failure id.",
+  "completed_at": "2026-11-16T06:30:26Z",
+  "dispatched_at": "2026-11-16T06:30:03Z",
+  "findings": [
+    {
+      "file": "tests/test_brief_prompt.py",
+      "line": 241,
+      "severity": "blocking",
+      "summary": "test_a_plan_prompt_is_byte_identical_to_that_snapshot asserts the composed plan-carrier prompt equals PLAN_PROMPT_SNAPSHOT, whose landing block at :293-296 ends on 'plan edit. The fragment goes into your final commit; promotion lands the landing line on your plan section.' and runs straight into SMALL_NODE_RULE; the change inserts the optional-fragment sentence and the 'Nothing splices a fragment into the plan's landed record' sentence between those two, so the composition no longer matches and the test fails at the reviewed head with the differing lines '- lan edit. The fragment goes into your' and '+ lan edit. A per-node evidence'. The gate's after arm ran four files where the done-when names every test file importing the prompt composer or the manifest check, so a red test in exactly that population went unseen."
+    },
+    {
+      "file": "reckon/crew/prompts.py",
+      "line": 195,
+      "severity": "non-blocking",
+      "summary": "PLAN_LANDING_CONTRACT still opens 'Write your landing record to your own fragment path and never to the plan:' as an imperative and only then says 'A per-node evidence fragment is optional'; a worker reading the clause in order is told to write the fragment before being told it need not, so the optionality reads as an exception to a standing command rather than as the rule the goal asks for."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T085735446128-alro-s6/logs/gate-skill-passages.log",
+      "line": 23,
+      "severity": "non-blocking",
+      "summary": "the BEFORE arm prints no line for skills/reckon-edit/SKILL.md, skills/reckon-create/SKILL.md or skills/reckon-sprint/SKILL.md, although the base revision carries 'fragment' at skills/reckon-edit/SKILL.md:83 and skills/reckon-sprint/SKILL.md:296; an arm reporting an absence on files where the string is present at base has not measured the before text, so the done-when's quote-before-and-after clause is verified for four skill files and unverified for three of the seven."
+    },
+    {
+      "file": "docs/evidence/fragments/a-landing-is-recorded-once/alro-s6.html",
+      "line": 18,
+      "severity": "non-blocking",
+      "summary": "the fragment reports one pinned literal as unsatisfied in tests/test_skill_contracts.py and the run's manifest repeats it under outside_scope; that assertion ends at 'in place of a plan edit.', which the new text still carries, so the pin passes and the outside_scope entry reports a defect that does not exist."
+    }
+  ],
+  "plan_section": "s6",
+  "plan_slug": "a-landing-is-recorded-once",
+  "project": "reckon",
+  "review_run_id": "r-20261116T062922657757-review-of-alro-s6-a6417654101d",
+  "review_text": "VERDICT goal: the node goal is 'Make the per-node evidence fragment optional'; reckon/crew/prompts.py:199-203 and :249-252 present the fragment as optional in the plan and brief carriers and name both cases, and the seven skill files the plan names state the same.\nVERDICT done_when: the seven enumerated cases are covered by tests/test_a_per_node_fragment_is_optional.py:102-251, but the closing clause, that the test files importing the prompt composer or the manifest check add no failure against the base revision, is not met: tests/test_brief_prompt.py:241 fails at the reviewed head.\nVERDICT write_paths: the source node declares 14 paths; all 13 paths its four commits touch lie inside them and no path outside the fence appears in the diff.\nVERDICT manifest: read; it records the after arm as 73 passed at 4b66c42325 against a 64-passed base arm at 63e6c58d with both logs named, and its outside_scope entry about tests/test_skill_contracts.py:1162 is wrong, that assertion being a substring the new text still carries.\nVERDICT diff: read the four commits 1d52cd97ba, b6f84811db, 4b66c42325 and a6417654101d against 63e6c58d, 13 files and +437/-32; reckon/crew/reports.py:1996 makes the figure clause read add-or-modify while the PNG twin check at :1862 keeps added-only, and reckon/evidence.py:853 builds the row's fragment link from the file's presence alone.\nCALL_SITES: reckon/crew/dispatch_claims.py:1517, reckon/crew/prompts.py:911, reckon/crew/reports.py:3016, reckon/crew/reports.py:1862, reckon/evidence.py:1082\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: the optionality is stated in both carriers at reckon/crew/prompts.py:199-203 and :249-252, but the same clause still commands 'Write your landing record to your own fragment path' at :195 before granting the exception.\nSCORE evidence: 7\nJUSTIFICATION evidence: the gate ran four files (logs/after-arm-head2-1319106.log, 73 passed EXIT=0) where the done-when names every test file importing the composer or the manifest check, and tests/test_brief_prompt.py:241 is red at a6417654101d.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff against 63e6c58d lies inside the write_paths the source node declared, the node's own fragment included.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_manifest_names_its_figure.py:140-152 reddens if reckon/crew/reports.py:1996 returns to _committed_paths_added_since, and tests/test_a_per_node_fragment_is_optional.py:222-226 reddens if the row link is removed, while four of the new file's cases, the manifest with and without a fragment, the close comment and the served-page render, assert behaviour that already held at base and pass there unchanged.\nSCORE fit: 17\nJUSTIFICATION fit: the added helpers sit beside their neighbours at reckon/evidence.py:853-911 and reckon/crew/reports.py:1796-1824, each docstring states its reason, and no forbidden name is introduced.\nSCORE reuse: 19\nJUSTIFICATION reuse: _committed_paths_since wraps the existing diff probe at reckon/crew/reports.py:1782 rather than forking it, and a capability search for a served-address builder found only reckon/resources.py:1209 for link rewriting and reckon/crew/queue_landing.py:1598 for archive anchor records, neither of which owns the fragment address the new _fragment_href at reckon/evidence.py:853 is the first to build.\nFINDING tests/test_brief_prompt.py:241 blocking: test_a_plan_prompt_is_byte_identical_to_that_snapshot asserts the composed plan-carrier prompt equals PLAN_PROMPT_SNAPSHOT, whose landing block at :293-296 ends on 'plan edit. The fragment goes into your final commit; promotion lands the landing line on your plan section.' and runs straight into SMALL_NODE_RULE; the change inserts the optional-fragment sentence and the 'Nothing splices a fragment into the plan's landed record' sentence between those two, so the composition no longer matches and the test fails at the reviewed head with the differing lines '- lan edit. The fragment goes into your' and '+ lan edit. A per-node evidence'. The gate's after arm ran four files where the done-when names every test file importing the prompt composer or the manifest check, so a red test in exactly that population went unseen.\nFINDING reckon/crew/prompts.py:195 non-blocking: PLAN_LANDING_CONTRACT still opens 'Write your landing record to your own fragment path and never to the plan:' as an imperative and only then says 'A per-node evidence fragment is optional'; a worker reading the clause in order is told to write the fragment before being told it need not, so the optionality reads as an exception to a standing command rather than as the rule the goal asks for.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T085735446128-alro-s6/logs/gate-skill-passages.log:23 non-blocking: the BEFORE arm prints no line for skills/reckon-edit/SKILL.md, skills/reckon-create/SKILL.md or skills/reckon-sprint/SKILL.md, although the base revision carries 'fragment' at skills/reckon-edit/SKILL.md:83 and skills/reckon-sprint/SKILL.md:296; an arm reporting an absence on files where the string is present at base has not measured the before text, so the done-when's quote-before-and-after clause is verified for four skill files and unverified for three of the seven.\nFINDING docs/evidence/fragments/a-landing-is-recorded-once/alro-s6.html:18 non-blocking: the fragment reports one pinned literal as unsatisfied in tests/test_skill_contracts.py and the run's manifest repeats it under outside_scope; that assertion ends at 'in place of a plan edit.', which the new text still carries, so the pin passes and the outside_scope entry reports a defect that does not exist.",
+  "reviewed_base_sha": "63e6c58d3f2f65be5f725f6f37262895f8cec047",
+  "reviewed_head_commits": [
+    "1d52cd97baa496980e0f05e656e149e9a8e6d93d",
+    "b6f84811db0d91e00e768478baf3d45b6fcff61f",
+    "4b66c42325f1a2ce7176034e97ce418c83837791",
+    "a6417654101de1c3d3e1a8132956a9328e0f3e36"
+  ],
+  "reviewed_head_sha": "a6417654101de1c3d3e1a8132956a9328e0f3e36",
+  "reviewed_run_id": "r-20261115T085735446128-alro-s6",
+  "scores": {
+    "durability": 15,
+    "evidence": 7,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T07:19:45.327870+00:00",
+  "total": 93
+}
