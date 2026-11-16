@@ -111,8 +111,11 @@ def test_a_record_write_completes_while_selection_is_paused(
                 "print('ready', flush=True); sys.stdin.readline(); "
                 "start = time.monotonic(); "
                 "store.append('example', {'run_id': 'concurrent-write'}); "
-                "row = store.get_run('concurrent-write'); store.close(); "
-                "print(json.dumps({'row': row, 'seconds': time.monotonic()-start}))"
+                "seconds = time.monotonic()-start; "
+                "row = json.loads(store._conn.execute("
+                "\"SELECT payload FROM runs WHERE run_id = 'concurrent-write'\""
+                ").fetchone()[0]); store.close(); "
+                "print(json.dumps({'row': row, 'seconds': seconds}))"
             ),
             str(path),
         ],
