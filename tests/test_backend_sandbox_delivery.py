@@ -10,11 +10,13 @@ is checked by reading the rendered invocation.
 from __future__ import annotations
 
 import json
+import tempfile
 from pathlib import Path
 
 import pytest
 
 from reckon import _backends
+from reckon._worker_fence import node_tmp_seal_root
 from reckon.hooks.install import worker_inbox_group
 
 CODEX = {"launch": "cli", "command": "codex", "sandbox": "worktree-full"}
@@ -108,8 +110,19 @@ def test_claude_read_only_argv_has_no_write_withholding_permission_mode(
     assert "plan" not in plan.argv
 
 
-def test_claude_read_only_grants_every_computed_write_root(tmp_path: Path) -> None:
-    """Each root sandbox_write_roots computes appears as a writable directory."""
+def test_claude_read_only_grants_every_computed_write_root(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Each root sandbox_write_roots computes appears as a writable directory.
+
+    The ambient temp root is pinned into ``tmp_path`` rather than taken from
+    the machine. On a node whose ``TMPDIR`` is unset it resolves to the node's
+    own ``/tmp``, which the fence seals read-only for every run, so the
+    computed root and the grant legitimately differ there; a run-scoped
+    scratch is the case where every computed root survives, and the sealed
+    case is asserted on its own below.
+    """
+    monkeypatch.setattr(tempfile, "tempdir", str(tmp_path))
     worktree = tmp_path / "worktree"
     run_dir = tmp_path / "run"
     reports = tmp_path / "reports"
@@ -133,6 +146,51 @@ def test_claude_read_only_grants_every_computed_write_root(tmp_path: Path) -> No
     )
     grant = plan.argv[plan.argv.index("--add-dir") + 1 :]
     for root in roots:
+        assert root in grant
+
+
+def test_claude_read_only_withholds_a_temp_root_the_fence_seals(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The sealed node temp root is withheld, and every other computed root is not.
+
+    ``delivery_write_roots`` names the ambient temp root for the tier, and the
+    fence seals the node's own ``/tmp`` read-only for every run — which is why
+    the two sets can differ. The root counts as grantable only when it lies
+    beneath that seal, which a run-scoped ``TMPDIR`` gives; the roots a worker
+    can actually write are the rest, and each of those reaches the grant.
+    """
+    seal = node_tmp_seal_root()
+    assert seal is not None
+    monkeypatch.setattr(tempfile, "tempdir", str(seal))
+    worktree = tmp_path / "worktree"
+    run_dir = tmp_path / "run"
+    reports = tmp_path / "reports"
+    worktree.mkdir()
+    run_dir.mkdir()
+    reports.mkdir()
+    manifest = tmp_path / "run" / "manifest.md"
+    roots = _computed_write_roots(
+        repository=worktree,
+        run_directory=run_dir,
+        reports_directory=reports,
+        manifest_path=manifest,
+    )
+    sealed = str(seal)
+    assert sealed in roots
+    plan = _backends.launch_plan(
+        backend_name="b",
+        backend=_read_only(CLAUDE),
+        manifest_path=str(manifest),
+        prompt="p",
+        worktree=str(worktree),
+        writable_directories=roots,
+    )
+    grant = plan.argv[plan.argv.index("--add-dir") + 1 :]
+    assert sealed not in grant
+    for root in roots:
+        if root == sealed:
+            continue
         assert root in grant
 
 
