@@ -1,0 +1,51 @@
+<section id="qwnw-red-file-a-review-manifest-passes-its-own-check-record">
+<h3>A review manifest passes its own check: measured runs</h3>
+<p>The file failed seven tests at base <code>cb557f9711670ca8a00dd1d6dd22a17b42d3a51e</code>: six from one stale fixture line and one from a rule the delivery check no longer keeps. Both causes are the test's, not the product's; each is named with the verdict and the commit that settled the rule. The suite arms, the node gate and the probe below were run on this worktree; the gate ran as an <code>all_debug</code> job with <code>SLURM_JOB_ID</code> unset inside it.</p>
+<h4>Cause 1 — a fixture manifest from before the inbox statement (test wrong)</h4>
+<p>The check refuses a manifest whose run directory recorded no delivery receipt unless the manifest says <code>messages_received: none</code> (<code>reckon/hooks/worker_inbox.py:manifest_message_finding</code>, called from <code>crew check --manifest</code> at <code>reckon/crew_run_commands.py</code>). The rule is the one <code>tests/test_worker_inbox.py</code> asserts and the plan records for the live tell check. The fixture manifests here were written before it, so the repair adds the statement to the fixture and to the two inline bodies. No assertion was touched.</p>
+<h4>Cause 2 — a scope refusal the code no longer makes (test wrong)</h4>
+<p>The refusal case asserted that a changed path outside the declaration is refused. Commit <code>78752b3438</code>, <em>fix(crew): treat a declared write path as a hint on promotion and audit</em>, replaced that rule: only a path whose class git cannot reconcile is a hint's exception, and the write-time audit reads that class through the same module promotion and claims use. The case now names generated state, which the rule still refuses, so the pairing stays declaration-bound rather than blanket. The probe below shows both directions on the head tree.</p>
+<pre># revision: cb557f9711670ca8a00dd1d6dd22a17b42d3a51e
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-review-manifest-passes-its-own-check
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_review_manifest_passes_its_own_check.py
+7 failed in 1.30s
+FAILED tests/test_a_review_manifest_passes_its_own_check.py::test_a_review_naming_its_record_and_the_head_keyed_copy_passes
+FAILED tests/test_a_review_manifest_passes_its_own_check.py::test_a_review_naming_the_granted_record_alone_passes
+FAILED tests/test_a_review_manifest_passes_its_own_check.py::test_a_review_naming_the_head_keyed_copy_alone_passes
+FAILED tests/test_a_review_manifest_passes_its_own_check.py::test_a_review_annotating_an_empty_changed_paths_list_passes
+FAILED tests/test_a_review_manifest_passes_its_own_check.py::test_a_review_naming_a_path_outside_its_declaration_is_still_refused
+FAILED tests/test_a_review_manifest_passes_its_own_check.py::test_a_non_review_run_is_still_asked_for_the_commit_it_owes
+FAILED tests/test_a_review_manifest_passes_its_own_check.py::test_a_run_inside_its_repository_declaration_still_passes
+EXIT=1
+</pre>
+<h4>Head gate — an all_debug job with SLURM_JOB_ID unset</h4>
+<pre># revision: 81ab2fa35de39d9aa67e4ab8a8b1fe9005fae83e
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-review-manifest-passes-its-own-check
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_review_manifest_passes_its_own_check.py
+.......                                                                  [100%]
+7 passed in 1.05s
+EXIT=0
+</pre>
+<h4>Probe — the two directions of the scope rule at head</h4>
+<pre># revision: 81ab2fa35de39d9aa67e4ab8a8b1fe9005fae83e
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-review-manifest-passes-its-own-check
+# probe: audit_manifest over an undeclared store record, then over generated state
+undeclared store record -&gt; []
+undeclared generated state -&gt; ['changed paths outside the write scope: "docs/state/r-2.json"']
+EXIT=0
+</pre>
+<h4>Armed suite arms</h4>
+<p>The arm's two files are byte-identical at the base revision and at the head (<code>git diff cb557f97 HEAD --</code> over them is empty), so one run measures both arms.</p>
+<pre># revision named: cb557f9711670ca8a00dd1d6dd22a17b42d3a51e
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+..........................................................               [100%]
+58 passed in 44.59s
+EXIT=0
+</pre>
+<pre># revision: 81ab2fa35de39d9aa67e4ab8a8b1fe9005fae83e
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+..........................................................               [100%]
+58 passed in 47.94s
+EXIT=0
+</pre>
+</section>
