@@ -1,0 +1,205 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-16T13:46:11.676Z",
+  "dispatched_at": "2026-11-16T13:45:52Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/crew-state-stays-bounded/r-20261116T125944384005-plan-review-of-crew-state-stays-bounded/plan.html:23",
+      "id": "wiring-1",
+      "reason": "with \u00a72 marked done, the two undeclared nodes are never dispatched and the 12 KB pointer bound the section exists to hold is left unmeasured.",
+      "text": "the declarations map and \u00a72's section element (plan.html:65) both read `s2: done`, but the plan's own `c-partial-r-20261107T162323087195` comment at plan.html:315, written the day before, states that only the first of the section's three nodes has landed and that \"the second (small dispatch-time fields and peer_channel) and third (dispatch_options at launch, suite_evidence) remain, so the section stays implementable\"; the record also names no landing evidence for those two nodes",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/crew-state-stays-bounded/r-20261116T125944384005-plan-review-of-crew-state-stays-bounded/plan.html:225",
+      "id": "done_when-1",
+      "reason": "an unstated margin and an unbounded exclusion leave the worker to invent the threshold, so the gate it builds is not the one the plan says counts as done.",
+      "text": "the launch clause is \"a launch that would leave the node's scratch volume below a stated free margin is held as a placement wait\", but the section states no margin (plan.html:222-225 give a 23 GB volume and its 17 GB occupancy, never a threshold), and the first clause's \"no per-run scratch \u2026 beyond what its review and landing read\" defines no quantity a test can assert, so two of the node's three measures have no tolerance to be judged against",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/crew-state-stays-bounded/r-20261116T125944384005-plan-review-of-crew-state-stays-bounded/plan.html:225",
+      "id": "done_when-2",
+      "reason": "with no reverted guard the placement-wait case can pass on a launch that never consults free space, so the node closes without showing its refusal fires.",
+      "text": "\u00a713 declares no negative control, where \u00a72, \u00a73, \u00a74, \u00a75 and \u00a76 each name one as a mutated guard that must fail (plan.html:109, 130, 141, 151, 172); \"these still hold: a live run keeps its scratch, and settling never removes a directory whose run is live\" restates invariants the new code must preserve rather than a mutation that reddens a case",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/crew-state-stays-bounded/r-20261116T125944384005-plan-review-of-crew-state-stays-bounded/plan.html:225",
+      "id": "single_goal-1",
+      "reason": "one gate cannot show both guards fire, so a node that lands settling and leaves admission unbuilt closes as done on half its endpoint.",
+      "text": "the done-when joins two independent deliverables: a settling change so a delivered run's per-run scratch is gone, and an admission change so a launch whose node would fall below a free margin is held as a placement wait; they fail independently, live in different code paths (`reckon/crew/gc.py` versus `reckon/crew/placement.py` and the launch path) and the stated write scope names both plus `dispatch_launch.py`",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/crew-state-stays-bounded/r-20261116T125944384005-plan-review-of-crew-state-stays-bounded/plan.html:225",
+      "id": "evidence_paths-1",
+      "reason": "without a named durable path the node's all_debug arms and its before/after volume readings survive only in a run directory \u00a73 retires after a day's grace, so no later reader can check the claim the section was written for.",
+      "text": "\u00a713's gate and base arms run on all_debug and its only host facts are measurements of the reservation node's volume, yet the section names no log directory, no evidence fragment and no committed record, unlike \u00a78 and \u00a711 which say \"Every log is under the run directory\" and cite a fragment; the 23 GB volume, 17 GB and 61-directory figures in the Why also carry no committed source",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/crew-state-stays-bounded/r-20261116T125944384005-plan-review-of-crew-state-stays-bounded/plan.html:222",
+      "id": "reasoning-1",
+      "reason": "the node as written would reimplement a guard that already fires and rebuild a test that is green at base, leaving the actual cause of 17 GB on the reservation node \u2014 a scratch/state-root pairing refusal (`settle_run_scratch` returns \"state and scratch roots differ\"), copies whose run directories lack an exit record, or a backlog of live runs \u2014 undiscovered.",
+      "text": "the Why claims scratch is settled \"only once a run is over\" and that \"a delivered run awaiting review or landing is not over, so a backlog of delivered runs \u2026 keeps its scratch\", but \u00a78's landed `settle_run_scratch` (`reckon/crew/gc.py:1672-1780`) settles on exactly three facts \u2014 no live pointer, no process holder, and `_run_directory_records_end` (`exit.json`/`discard.json`/`attempt-*-exit.json`, gc.py:1656-1670) \u2014 with no grace and no review state, and it is already called from every launch (dispatch_launch.py:928), from the step wrapper (dispatch_launch.py:1367) and from the retention sweep (gc.py:2266); so the stated cause names a review-state gate the code does not have, and the section's first clause would pass on the base revision, contradicting \"New tests, each failing at the base revision\"",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "31b539c1257849678bb741182348013214a1603a",
+  "plan_fingerprint": "fc9ec208f09bfa7f8870c938296211af8122cc43824977b6139bce2c3bbc8fe7",
+  "plan_slug": "crew-state-stays-bounded",
+  "plan_version": 84,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "s2's done declaration was recorded on 15 November after its remaining nodes landed; the 7 November partial comment predates it and describes the section's state at that time",
+      "when": "2026-11-16T19:59:00.909848+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "31b539c1257849678bb741182348013214a1603a",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "s13 is rewritten to one measurable endpoint with no margin: a resumed run's scratch survives the settle its own new step runs, on any node",
+      "reason": "",
+      "when": "2026-11-16T19:59:06.564081+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "31b539c1257849678bb741182348013214a1603a",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "s13 now names its negative control: restore the base settle predicate and the resumed-step test must find its scratch removed",
+      "reason": "",
+      "when": "2026-11-16T19:59:12.746013+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "31b539c1257849678bb741182348013214a1603a",
+      "commit_basis": "edit",
+      "finding": "single_goal-1",
+      "note": "s13 now carries one deliverable; the launch-margin clause is dropped, since the review showed its stated cause was wrong",
+      "reason": "",
+      "when": "2026-11-16T19:59:17.724745+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "31b539c1257849678bb741182348013214a1603a",
+      "commit_basis": "edit",
+      "finding": "evidence_paths-1",
+      "note": "s13 names its log directory and cites the failed attempt's evidence kept at ~/.cache/power_convertor-filter-review/resume-scratch-bug/",
+      "reason": "",
+      "when": "2026-11-16T19:59:21.758508+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "31b539c1257849678bb741182348013214a1603a",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "s13's Why now states the shipped predicate (no live pointer, no holder, an end record in the run directory) and how a resumed run's earlier exit record makes its new step's settle remove its own scratch",
+      "reason": "",
+      "when": "2026-11-16T19:59:25.088690+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "31b539c1257849678bb741182348013214a1603a",
+      "commit_basis": "edit",
+      "note": "s13 is rewritten to one measurable endpoint with no margin: a resumed run's scratch survives the settle its own new step runs, on any node",
+      "reason": "",
+      "when": "2026-11-16T19:59:06.564081+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "31b539c1257849678bb741182348013214a1603a",
+      "commit_basis": "edit",
+      "note": "s13 now names its negative control: restore the base settle predicate and the resumed-step test must find its scratch removed",
+      "reason": "",
+      "when": "2026-11-16T19:59:12.746013+00:00"
+    },
+    "evidence_paths-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "31b539c1257849678bb741182348013214a1603a",
+      "commit_basis": "edit",
+      "note": "s13 names its log directory and cites the failed attempt's evidence kept at ~/.cache/power_convertor-filter-review/resume-scratch-bug/",
+      "reason": "",
+      "when": "2026-11-16T19:59:21.758508+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "31b539c1257849678bb741182348013214a1603a",
+      "commit_basis": "edit",
+      "note": "s13's Why now states the shipped predicate (no live pointer, no holder, an end record in the run directory) and how a resumed run's earlier exit record makes its new step's settle remove its own scratch",
+      "reason": "",
+      "when": "2026-11-16T19:59:25.088690+00:00"
+    },
+    "single_goal-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "31b539c1257849678bb741182348013214a1603a",
+      "commit_basis": "edit",
+      "note": "s13 now carries one deliverable; the launch-margin clause is dropped, since the review showed its stated cause was wrong",
+      "reason": "",
+      "when": "2026-11-16T19:59:17.724745+00:00"
+    },
+    "wiring-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "s2's done declaration was recorded on 15 November after its remaining nodes landed; the 7 November partial comment predates it and describes the section's state at that time",
+      "when": "2026-11-16T19:59:00.909848+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-crew-state-stays-bounded.v84.json",
+  "review_run_id": "r-20261116T125944384005-plan-review-of-crew-state-stays-bounded",
+  "reviewed_blob_sha": "275c60b65187acb1d97c574bb3d5e2b11ed776ab",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the three write paths \u00a713 cites (`reckon/crew/gc.py`, `reckon/crew/placement.py`, `reckon/crew/dispatch_launch.py`) all exist, and the fragment the new `_document` comment cites resolves (`docs/evidence/fragments/crew-state-stays-bounded/run-store-retires-old-runs-after-cache.html`, containing the anchor `run-store-retires-old-runs-after-cache-bounded-operation`).",
+    "done_when": "a finding \u2014 \u00a713's done-when names \"a stated free margin\" that the plan never states, and measures scratch kept \"beyond what its review and landing read\", which no test can bound.",
+    "evidence_paths": "a finding \u2014 \u00a713 names no location for its gate logs, its base-arm logs or its host facts, where \u00a76, \u00a78, \u00a79, \u00a710 and \u00a711 each name the run directory or a fragment (plan.html:225).",
+    "naming": "pass \u2014 \u00a713's prose carries no host, run or session identifier into a symbol, filename or comment, and the only mechanism names it uses are existing module paths.",
+    "reasoning": "a finding \u2014 \u00a713's stated cause (\"scratch is settled only once a run is over, and a delivered run awaiting review or landing is not over\") is contradicted by the shipped \u00a78 predicate, which settles on the run directory recording its end, never on review state.",
+    "single_goal": "a finding \u2014 \u00a713 carries two deliverables under one verdict: scratch of a delivered non-live run is removed, and a launch is settled as a placement wait on a low free margin.",
+    "wiring": "a finding \u2014 \u00a72 is declared `done` in `plan-section-declarations` and on its own section element, while the plan's newest comment on the same section says two of its three nodes remain."
+  },
+  "section_digests": {
+    "_document": "f64656d730f671c0e52b0a36a381e35a3627651a859b227c1b670c25a785445f",
+    "s1": "61be6bb6df8b986fbb68c3273e136fcef1b9fa13e7bcadb4fb62eab2fa4145ff",
+    "s10": "12c6b13006e1e29ba78ff8b4b1433daf63861ae2082f24a27887d4203a3903fa",
+    "s11": "8847ba87c7fb173087784a7ef2a3f06b409c3330469aa9bdcbfe4cf05d2c307e",
+    "s12": "f032475b303144a0f62f2838bd9a0efa3292acd1f43de5fabc7c4feb6c484d42",
+    "s13": "791ba21d406fed6048ba16e9f966795579fb323397f0663ad8da7dbe14fb908f",
+    "s2": "0809becc839b3ed5586cc9018606732a929379de88ab524968574e8429943a9b",
+    "s3": "9aa4d5f5a6287b698b7d6011ac8fcc295589c20484d8892a3c86d88d629b8793",
+    "s4": "2681ac58d6ae7457bc800678db433ce359be271248b74a429b44ee4d817769b4",
+    "s5": "bba37241ec93e13e0fb1eb173abfd49db0b6e77d788aa2dbec1608d164852542",
+    "s6": "c491229cedc576a79a4628da53168b317ce14fef88d78739c48e86b16aaff17a",
+    "s7": "1f6a99e4b8834c4a8bea5559a1507e6da85988f873d5547c7804930237104694",
+    "s8": "bc03fa54cdefe8b48312fabda86a4fca8277e025db66430978900e888a969066",
+    "s9": "94c64e9a52c50d223769478a5aa73517f29bc51fd5a6b123d7978de2b35c4317"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T19:58:58.864420+00:00",
+  "total": null
+}

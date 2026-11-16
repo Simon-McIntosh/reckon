@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own manifest suite records on disk: baseline_suite at 0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc (logs/picker-in-dispatch-base.log, completed=true, exit_status=1) lists 10 failure ids, all tests/test_picker_in_dispatch.py, and after_suite at 675ea296a71c228fe7775ec95b3291e167682db7 (logs/picker-in-dispatch-head.log, completed=true, exit_status=0) lists 0; the set difference after-minus-base is therefore empty and nothing was added. I opened both logs: each carries a '# revision:' header, a '# tree:' and '# command:' line, and a '# module:' and '# cwd:' line that name the tree the module was imported from, and a bare final EXIT= line (EXIT=1 at base, EXIT=0 at head).",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-16T10:09:13.489Z",
+  "dispatched_at": "2026-11-16T10:08:47Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-picker-in-dispatch.html",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: a second evidence file beside the landing fragment. The dispatch's landing contract allows a node whose done-when names no artifact to write evidence prose only in its landing fragment (qwnw-red-file-picker-in-dispatch-second-launch.html), and says so explicitly for this node; this file is a 58-line copy of the base, head and arm logs that duplicates the durable logs under the run directory, so the two copies can drift and a reader has two sources for one reading. Its stated motivation, the 300,000-byte data-file cap, does not apply: the four pytest logs total well under that."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T064918796238-qwnw-red-file-picker-in-dispatch-second-launch/manifest.md",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "non-blocking: both recorded suite arms run tests/test_picker_in_dispatch.py, while the node's suite fence resolves to 'tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py' with this node's write scope substituted. Promotion compares each arm's command with that template resolved over the arm's own tree, so the arm pair it reads may not be the one the manifest records. The substitution itself looks wrong for a node whose write scope is the whole tests directory, but the record does not describe the deviation, and a declared spec deviation is meant to be reported rather than left implicit."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none \u2014 the change is a test-helper line, so no production code reaches it; the production path the helper exercises was read and verified instead: reckon/cli.py:153 re-exports _holds_stdout_for_one_document, reckon/crew_dispatch_commands.py:1605 applies it to the dispatch command, and _OneDocumentStdout at :234 documents that an ordinary write goes to stderr while stdout keeps the single payload.",
+    "diff": "read commit by commit against 0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc: c2567688a1 replaces json.loads(result.output.splitlines()[0]) with json.loads(result.stdout) in tests/test_picker_in_dispatch.py:185 and adds two comment lines; 675ea296a7 creates the landing fragment and the second evidence file with the arm logs; ae428c8f69 re-keys the cited revisions and timings in both; 72 insertions, 1 deletion, 3 files, all inside the declared fence and no product source changed.",
+    "done_when": "the done_when asks for that file passing in full at head as an all_debug job with SLURM_JOB_ID unset, the base run at 8d50b0333f-class revision reporting its failing ids beside it, each cause carrying a product-or-test verdict, and an arm over the importers adding no failure; the manifest records one cause with the verdict test-wrong, logs/picker-in-dispatch-base.log shows '10 failed, 3 passed' with the ten ids, logs/run_arm.sh unsets SLURM_JOB_ID and the stream records sbatch job submissions 1319568/1319569, and the arms move 11 failed, 184 passed to 1 failed, 194 passed with the survivor pre-existing in another file.",
+    "goal": "the node goal is to make tests/test_picker_in_dispatch.py pass in full on the primary branch; at the landed head the helper at tests/test_picker_in_dispatch.py:185 parses result.stdout and logs/picker-in-dispatch-head.log records '13 passed' with EXIT=0, so the file is green and no product rule was broken doing it.",
+    "manifest": "read; it reports status complete at head ae428c8f69 with commits c2567688a1, 675ea296a7 and ae428c8f69, a baseline arm of 10 failed and 3 passed at 0e0f25b0f941 and an after arm of 13 passed at 675ea296a7, names four pytest logs and four ruff logs, and I opened every one to its bare EXIT= line: the recorded result is recorded, not merely claimed.",
+    "write_paths": "the declared paths in the source manifest are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and a docs/figures directory; the diff touches tests/test_picker_in_dispatch.py, docs/evidence/fragments/queued-work-needs-no-workaround/red-file-picker-in-dispatch.html and .../qwnw-red-file-picker-in-dispatch-second-launch.html, every one inside the fence and nothing in reckon/ touched."
+  },
+  "justifications": {
+    "durability": "the assertion at tests/test_picker_in_dispatch.py:185 compares parsed stdout against nothing the test itself supplied, and it reddens on any byte beyond the one JSON document the dispatch command is documented to keep on stdout at reckon/crew_dispatch_commands.py:234; the recorded negative control reddens for the helper bug rather than for that rule, and no mutation was run to show the product-side regression reddening, so the guard is reasoned rather than demonstrated.",
+    "evidence": "logs/picker-in-dispatch-base.log and logs/picker-in-dispatch-head.log each carry a '# revision:', '# tree:' and '# command:' header plus a bare '10 failed, 3 passed'/'13 passed' summary and EXIT line, but the after arm sits at 675ea296a7 rather than the landed head ae428c8f69 (docs-only, so no behavioural gap) and both arms name a different command from the fence's resolved template.",
+    "fit": "the two comment lines and the comment style at tests/test_picker_in_dispatch.py:183-185 match the module's surrounding prose, the commits carry conventional subjects with bodies, and no symbol, file or comment introduces a plan or node identifier.",
+    "goal_fidelity": "tests/test_picker_in_dispatch.py:185 reads result.stdout and logs/picker-in-dispatch-head.log records '13 passed' with EXIT=0, and the rule it now asserts is the product's own, documented at reckon/crew_dispatch_commands.py:234, so the goal is met without a product change and the cause verdict (test wrong) is the correct one.",
+    "reuse": "the diff adds no definition at all; it reuses json.loads and defers the single-document rule to its owner at reckon/crew_dispatch_commands.py:271-305, and a search of reckon/crew over payload-parse and stdout-guard helpers found no separately owned parse mechanism the change forks.",
+    "scope_discipline": "every diff path is inside the declared fence, yet docs/evidence/fragments/queued-work-needs-no-workaround/red-file-picker-in-dispatch.html is 58 lines of evidence prose the landing contract forbids outside the landing fragment for a done-when that names no artifact."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_picker_in_dispatch.py pass in full on the primary branch; tests/test_picker_in_dispatch.py:185 parses the dispatch payload from result.stdout and logs/picker-in-dispatch-head.log records '13 passed' at revision 675ea296a7 with EXIT=0, so the file is green at the landed head ae428c8f69.\nVERDICT done_when: the done_when asks for that file passing in full at head as an all_debug job with SLURM_JOB_ID unset, the base run's failing ids logged beside it, each cause carrying a product-or-test verdict, and an importer arm adding no failure; logs/picker-in-dispatch-base.log records '10 failed, 3 passed' with the ten ids, logs/run_arm.sh unsets SLURM_JOB_ID with sbatch jobs 1319568/1319569 recorded in the stream, and the arms move 11 failed/184 passed to 1 failed/194 passed with the survivor pre-existing in another node's file, so the gate asserts the measure.\nVERDICT write_paths: the source manifest declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and a docs/figures directory; the diff touches tests/test_picker_in_dispatch.py and two fragment files under that directory, all inside the fence, with nothing under reckon/ changed.\nVERDICT manifest: read; it reports status complete at head ae428c8f69 with commits c2567688a1, 675ea296a7 and ae428c8f69, a baseline arm of 10 failed and 3 passed at 0e0f25b0f941 and an after arm of 13 passed at 675ea296a7, and names eight logs, each of which I opened to its bare EXIT= line.\nVERDICT diff: read commit by commit against 0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc: c2567688a1 changes tests/test_picker_in_dispatch.py:185 from json.loads(result.output.splitlines()[0]) to json.loads(result.stdout); 675ea296a7 creates the landing fragment and a second evidence file; ae428c8f69 re-keys their cited revisions; 72 insertions and 1 deletion in three files, no product source touched.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_picker_in_dispatch.py:185 reads result.stdout and logs/picker-in-dispatch-head.log records '13 passed' with EXIT=0, and the rule it asserts is the product's own.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/picker-in-dispatch-base.log and logs/picker-in-dispatch-head.log carry revision, tree, command and a bare EXIT line, though the after arm sits at 675ea296a7 rather than the landed head and both arms name a command the fence's resolved template does not.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: every diff path is inside the declared fence, but docs/evidence/fragments/queued-work-needs-no-workaround/red-file-picker-in-dispatch.html is evidence prose the landing contract permits only in the landing fragment for a done-when naming no artifact.\nSCORE durability: 17\nJUSTIFICATION durability: the assertion at tests/test_picker_in_dispatch.py:185 reddens on any byte beyond the one JSON document the rule owner documents at reckon/crew_dispatch_commands.py:234, but no mutation shows that and the base control reddens on the helper bug instead.\nSCORE fit: 18\nJUSTIFICATION fit: the comment and return at tests/test_picker_in_dispatch.py:183-185 match the module's surrounding style and the commits carry conventional subjects and bodies with no new symbol.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition and defers the stdout rule to its owner at reckon/crew_dispatch_commands.py:271-305, and a search over reckon/crew found no payload-parse mechanism it forks.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-picker-in-dispatch.html:1 non-blocking: a second evidence file beside the landing fragment duplicates the run logs the landing contract allows only in the landing fragment for a done-when that names no artifact, so two copies of one reading can drift.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T064918796238-qwnw-red-file-picker-in-dispatch-second-launch/manifest.md:17 non-blocking: both recorded suite arms run tests/test_picker_in_dispatch.py while the node's suite fence resolves to tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, so the arm pair promotion compares with that template is not the pair the manifest records.\n",
+  "review_node": "review-of-qwnw-red-file-picker-in-dispatch-second-launch-ae428c8f6977",
+  "review_run_id": "r-20261116T100541829398-review-of-qwnw-red-file-picker-in-dispatch-second-launch-ae428c8f6977",
+  "reviewed_base_sha": "0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc",
+  "reviewed_head_sha": "ae428c8f69772553eb251f307b4fe76910aa469a",
+  "reviewed_run_id": "r-20261116T064918796238-qwnw-red-file-picker-in-dispatch-second-launch",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T100541829398-review-of-qwnw-red-file-picker-in-dispatch-second-launch-ae428c8f6977"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T20:10:39.436587+00:00",
+  "total": 106
+}

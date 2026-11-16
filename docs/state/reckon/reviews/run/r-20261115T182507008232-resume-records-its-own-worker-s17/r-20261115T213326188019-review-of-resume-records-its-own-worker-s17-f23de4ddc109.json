@@ -1,0 +1,91 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "both arms read: the base suite 58 passed EXIT=0 and the after suite 61 passed EXIT=0, so the head arm added no failing test; the reviewed manifest names its logs only under the scratch directory its own cleanup removed, so those summary lines were read from the run's transcript and from the landed evidence fragment.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:reserve_launch_attempt -> reservation_in_flight",
+    "reckon/crew/dispatch_launch.py:supervised_launch -> _reservation_taken_by_this_process, release_unspawned_reservations, _refuse_superseded_launch",
+    "reckon/crew/dispatch_launch.py:held_launch_reservation -> reservation_in_flight",
+    "reckon/crew/runs.py:1185 read_pointer -> crew stop, crew discard, recovery_liveness",
+    "reckon/crew/recovery_liveness.py:1162 _latest_reservation"
+  ],
+  "completed_at": "2026-11-15T21:54:37.877Z",
+  "dispatched_at": "2026-11-15T21:53:43Z",
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "1097",
+      "severity": "non-blocking",
+      "text": "station_pid_on_this_host duplicates the station-lease reader the repository owns in reckon/crew/host_lease.py, whose HostLease.holder reads the same leases/station.json and whose process_runs_here owns the pid-plus-start-tick match, so two readers of one lease format can drift."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "1137",
+      "severity": "non-blocking",
+      "text": "the start-tick comparison drops the pid_namespace the station lease records and that host_lease.process_runs_here requires, so a reader in another pid namespace (every crew worker runs under bwrap --unshare-pid) matches the station by pid number alone, and the guard can fail open or mistake another process for the station."
+    },
+    {
+      "file": "tests/test_a_resume_in_the_station_records_its_own_worker.py",
+      "line": "295",
+      "severity": "non-blocking",
+      "text": "assert taken.attempt >= 1 cannot fail for any reservation the code returns, so it guards nothing and reads as coverage the case does not have."
+    },
+    {
+      "file": "tests/test_a_resume_in_the_station_records_its_own_worker.py",
+      "line": "122",
+      "severity": "non-blocking",
+      "text": "the fixture builds the lease's pid_start with runs._process_start_time, the same reader the guard compares against, so the setup and the check move together and a regression inside that helper leaves every case green."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182507008232-resume-records-its-own-worker-s17/manifest.md",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "every test_logs and negative_control_log path lies under the run's own /tmp/reckon-crew-scratch directory, which the scratch cleanup removed, so a reviewer or a promotion reader cannot open the arms the record rests on."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182507008232-resume-records-its-own-worker-s17/manifest.md",
+      "line": "8",
+      "severity": "non-blocking",
+      "text": "changed_paths and retry_failures are written on one line, so changed_paths swallows the retry_failures key and a reader parsing changed_paths gets a value with the next field appended."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified five production call sites: the reservation writer's own reader, supervised_launch's adoption and supersede fences, held_launch_reservation, runs.read_pointer as reached by crew stop, crew discard and recovery_liveness, and recovery_liveness's reservation reader.",
+    "diff": "read commit by commit from af516b3ac95301b84b0958cad3c7d93db776c98b to f23de4ddc1097458f9ad5302c567aff6b255fb68: 0c10b1f972 rewrites the reservation writer, the three fences that recognise a reservation and read_pointer; 61de2771a2 and ef63881b0b add the 340-line test file; f23de4ddc1 adds the 83-line evidence fragment.",
+    "done_when": "the done_when asks for new tests that fail at base, a launch inside a long-lived process recording the process it started, and no stop or discard signalling a station pid; the worker's gate is PYTHONPATH=. .venv/bin/python -m pytest -q over tests/test_a_resume_in_the_station_records_its_own_worker.py plus the two structural guards, recorded as base suite 58 passed EXIT=0, after suite 61 passed EXIT=0, and the new tests at base 3 failed EXIT=1.",
+    "goal": "the node's goal is that a resume started inside the station records its own worker's pid, never the station's; reckon/crew/dispatch_launch.py:2806 leaves the reservation's pid unset until record_reservation_supervisor writes the supervisor's pid at 2859, and keeps the door that took it under launcher_pid.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182507008232-resume-records-its-own-worker-s17/manifest.md; it reads status complete with four commits and its stated arms, but every test_logs and negative_control_log path it names is under /tmp/reckon-crew-scratch/<run>/, which no longer exists.",
+    "write_paths": "the declared fence is reckon/crew/dispatch_launch.py, reckon/crew/runs.py, tests/test_a_resume_in_the_station_records_its_own_worker.py, the evidence fragment and a figures directory; git diff --stat af516b3ac95301b84b0958cad3c7d93db776c98b..f23de4ddc1097458f9ad5302c567aff6b255fb68 changes exactly those four and nothing else."
+  },
+  "justifications": {
+    "durability": "the declared mutation at reckon/crew/dispatch_launch.py:2806 reddens tests/test_a_resume_in_the_station_records_its_own_worker.py:247 with 1 failed, 2 passed EXIT=1, while the two reader guards at that file's lines 290 and 326 fail at base only by AttributeError, so their firing rests on reading the code.",
+    "evidence": "the recorded arms read base 58 passed EXIT=0 and after 61 passed EXIT=0, but the logs the reviewed manifest.md:11-12 names are gone and it records no baseline_suite/after_suite block, so the delta is read from the run's own transcript rather than from a gate log.",
+    "fit": "the added code follows the shape of reckon/crew/runs.py around it (module constants, private helpers, a local import beside the call at reckon/crew/runs.py:1090) and names no plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew/dispatch_launch.py:2859 records the spawned supervisor under pid and the door under launcher_pid, so a station-started resume no longer names the station.",
+    "reuse": "reckon/crew/runs.py:1097 station_pid_on_this_host re-implements the station-lease read and the pid-plus-start-tick match that reckon/crew/host_lease.py already owns as HostLease.holder and process_runs_here, and runs.py already imports HostLease at line 46.",
+    "scope_discipline": "git diff --stat af516b3a..f23de4ddc1 lists only reckon/crew/dispatch_launch.py, reckon/crew/runs.py, the new test file and the evidence fragment, all inside the declared fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a resume started inside the station records its own worker's pid, never the station's; reckon/crew/dispatch_launch.py:2806 leaves the reservation's pid unset until record_reservation_supervisor writes the supervisor's pid at 2859, and keeps the door that took it under launcher_pid.\nVERDICT done_when: the done_when asks for new tests that fail at base, a launch inside a long-lived process recording the process it started, and no stop or discard signalling a station pid; the worker's gate is PYTHONPATH=. .venv/bin/python -m pytest -q over tests/test_a_resume_in_the_station_records_its_own_worker.py plus the two structural guards, recorded as base suite 58 passed EXIT=0, after suite 61 passed EXIT=0, and the new tests at base 3 failed EXIT=1.\nVERDICT write_paths: the declared fence is reckon/crew/dispatch_launch.py, reckon/crew/runs.py, tests/test_a_resume_in_the_station_records_its_own_worker.py, the evidence fragment and a figures directory; git diff --stat af516b3ac95301b84b0958cad3c7d93db776c98b..f23de4ddc1097458f9ad5302c567aff6b255fb68 changes exactly those four and nothing else.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182507008232-resume-records-its-own-worker-s17/manifest.md; it reads status complete with four commits and its stated arms, but every test_logs and negative_control_log path it names is under /tmp/reckon-crew-scratch/<run>/, which no longer exists.\nVERDICT diff: read commit by commit from af516b3ac95301b84b0958cad3c7d93db776c98b to f23de4ddc1097458f9ad5302c567aff6b255fb68: 0c10b1f972 rewrites the reservation writer, the three fences that recognise a reservation and read_pointer; 61de2771a2 and ef63881b0b add the 340-line test file; f23de4ddc1 adds the 83-line evidence fragment.\nCALL_SITES: reckon/crew/dispatch_launch.py:reserve_launch_attempt -> reservation_in_flight, reckon/crew/dispatch_launch.py:supervised_launch -> _reservation_taken_by_this_process, release_unspawned_reservations, _refuse_superseded_launch, reckon/crew/dispatch_launch.py:held_launch_reservation -> reservation_in_flight, reckon/crew/runs.py:1185 read_pointer -> crew stop, crew discard, recovery_liveness, reckon/crew/recovery_liveness.py:1162 _latest_reservation\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:2859 records the spawned supervisor under pid and the door under launcher_pid, so a station-started resume no longer names the station.\nSCORE evidence: 13\nJUSTIFICATION evidence: the recorded arms read base 58 passed EXIT=0 and after 61 passed EXIT=0, but the logs the reviewed manifest.md:11-12 names are gone and it records no baseline_suite/after_suite block, so the delta is read from the run's own transcript rather than from a gate log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat af516b3a..f23de4ddc1 lists only reckon/crew/dispatch_launch.py, reckon/crew/runs.py, the new test file and the evidence fragment, all inside the declared fence.\nSCORE durability: 15\nJUSTIFICATION durability: the declared mutation at reckon/crew/dispatch_launch.py:2806 reddens tests/test_a_resume_in_the_station_records_its_own_worker.py:247 with 1 failed, 2 passed EXIT=1, while the two reader guards at that file's lines 290 and 326 fail at base only by AttributeError, so their firing rests on reading the code.\nSCORE fit: 16\nJUSTIFICATION fit: the added code follows the shape of reckon/crew/runs.py around it (module constants, private helpers, a local import beside the call at reckon/crew/runs.py:1090) and names no plan, sprint or ticket identifier.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/runs.py:1097 station_pid_on_this_host re-implements the station-lease read and the pid-plus-start-tick match that reckon/crew/host_lease.py already owns as HostLease.holder and process_runs_here, and runs.py already imports HostLease at line 46.\nFINDING reckon/crew/runs.py:1097 non-blocking: station_pid_on_this_host duplicates the station-lease reader the repository owns in reckon/crew/host_lease.py, whose HostLease.holder reads the same leases/station.json and whose process_runs_here owns the pid-plus-start-tick match, so two readers of one lease format can drift.\nFINDING reckon/crew/runs.py:1137 non-blocking: the start-tick comparison drops the pid_namespace the station lease records and that host_lease.process_runs_here requires, so a reader in another pid namespace (every crew worker runs under bwrap --unshare-pid) matches the station by pid number alone, and the guard can fail open or mistake another process for the station.\nFINDING tests/test_a_resume_in_the_station_records_its_own_worker.py:295 non-blocking: assert taken.attempt >= 1 cannot fail for any reservation the code returns, so it guards nothing and reads as coverage the case does not have.\nFINDING tests/test_a_resume_in_the_station_records_its_own_worker.py:122 non-blocking: the fixture builds the lease's pid_start with runs._process_start_time, the same reader the guard compares against, so the setup and the check move together and a regression inside that helper leaves every case green.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182507008232-resume-records-its-own-worker-s17/manifest.md:11 non-blocking: every test_logs and negative_control_log path lies under the run's own /tmp/reckon-crew-scratch directory, which the scratch cleanup removed, so a reviewer or a promotion reader cannot open the arms the record rests on.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182507008232-resume-records-its-own-worker-s17/manifest.md:8 non-blocking: changed_paths and retry_failures are written on one line, so changed_paths swallows the retry_failures key and a reader parsing changed_paths gets a value with the next field appended.",
+  "review_run_id": "r-20261115T213326188019-review-of-resume-records-its-own-worker-s17-f23de4ddc109",
+  "reviewed_base_sha": "af516b3ac95301b84b0958cad3c7d93db776c98b",
+  "reviewed_head_sha": "f23de4ddc1097458f9ad5302c567aff6b255fb68",
+  "reviewed_run_id": "r-20261115T182507008232-resume-records-its-own-worker-s17",
+  "reviewer_run_id": "r-20261115T213326188019-review-of-resume-records-its-own-worker-s17-f23de4ddc109",
+  "scores": {
+    "durability": 15,
+    "evidence": 13,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T22:32:12.897516+00:00",
+  "total": 86
+}

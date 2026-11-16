@@ -1,0 +1,101 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own gate logs named in its manifest baseline_suite and after_suite: base log /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T075735569432-review-promotion-derives-gate-s1/arms/base.log at 39c52edbf709fb345de519ffbdd6d477aa2a88ef reports FAILED case1, case2 and case5 with '3 failed, 62 passed'; head log /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T075735569432-review-promotion-derives-gate-s1/arms/head.log at 81260d12cb2c86a028919c4ffd6edf8c808d2e20 reports no FAILED id with '65 passed', so the added set is empty and the count is a measured zero.",
+  "base_log_revision": "39c52edbf709fb345de519ffbdd6d477aa2a88ef",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:1040 (_require_gate_log_agrees call in the promotion fill)",
+    "reckon/crew/promotion_evidence.py:1657 (_require_gate_log_agrees",
+    "whose pytest-summary branch at promotion_evidence.py:1793 case5 exercises)"
+  ],
+  "completed_at": "2026-11-15T21:54:32.683Z",
+  "dispatched_at": "2026-11-15T21:53:40Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking record or assertion-strength point from the review at 81260d12cb; behaviour verified by arms at that head (65 passed, base command matching)",
+      "recorded_at": "2026-11-15T22:44:47.738153+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking record or assertion-strength point from the review at 81260d12cb; behaviour verified by arms at that head (65 passed, base command matching)",
+      "recorded_at": "2026-11-15T22:44:51.503678+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "non-blocking record or assertion-strength point from the review at 81260d12cb; behaviour verified by arms at that head (65 passed, base command matching)",
+      "recorded_at": "2026-11-15T22:44:55.565384+00:00"
+    },
+    "3": {
+      "kind": "exempted",
+      "reason": "non-blocking record or assertion-strength point from the review at 81260d12cb; behaviour verified by arms at that head (65 passed, base command matching)",
+      "recorded_at": "2026-11-15T22:44:59.311665+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_review_runs_promotion_derives_its_own_gate.py",
+      "line": "262",
+      "severity": "non-blocking",
+      "text": "non-blocking: the replacement assertion compares the promoted log's text with the same literal the fixture wrote at :244, so both sides share the test's own input; asserting against gate_log.read_text() would tie the copied log to its source and still redden if the promotion cited the derived record."
+    },
+    {
+      "file": "manifest.md",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "non-blocking: the negative_control_note records that case5 failed under the mutation, but negative-control.log ends '2 failed, 5 passed' with FAILED ids for case1 and case2 only, so the note overstates the control's red set."
+    },
+    {
+      "file": "docs/evidence/fragments/the-crew-does-its-own-bookkeeping/review-promotion-derives-gate-s1.html",
+      "line": "7",
+      "severity": "non-blocking",
+      "text": "non-blocking: the measure paragraph cites head 15c52220 for '65 passed' while arms/ holds only base.log (39c52edb) and head.log (81260d12), so the cited revision has no recorded arm and the figure is not tied to a log a reader can open."
+    },
+    {
+      "file": "tests/test_a_review_runs_promotion_derives_its_own_gate.py",
+      "line": "244",
+      "severity": "non-blocking",
+      "text": "non-blocking: the delta makes case5 pass at head, which no longer matches the source node's done_when requirement that the head arm show case5 still failing on the unrelaxed guard; the guard is unrelaxed and the fragment restates the measure, so this is a record correction rather than a behaviour defect."
+    }
+  ],
+  "head_log_revision": "81260d12cb2c86a028919c4ffd6edf8c808d2e20",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read 15c52220 and 81260d12 against base 3e144f8875 commit by commit; 15c52220 adds '1 passed in 0.01s' to case5's fixture log and follows the assertion with the same text, 81260d12 rewrites three fragment paragraphs to the new base-arm reading, the case5 repair and the '65 passed' head measure, and no production file changes.",
+    "done_when": "Read the done_when in dispatch-detail.json and the gate the worker ran (the three-test pytest command whose arms/base.log records '3 failed, 62 passed' and arms/head.log at 81260d12 records '65 passed'); the gate now asserts that all five cases pass, which is the delta's outcome and not the done_when's stated expectation that case5 still fails on the unrelaxed guard.",
+    "goal": "Read the source node's goal in dispatch-detail.json (\"deliver section s1 ... as its done-when states\") beside the two commits gained since the prior review; tests/test_a_review_runs_promotion_derives_its_own_gate.py:244 repairs case5's fixture log and docs/evidence/fragments/the-crew-does-its-own-bookkeeping/review-promotion-derives-gate-s1.html:4-7 restates the landing, so the delta serves s1 while overturning the done_when clause that case5 still fails at head.",
+    "manifest": "Read manifest.md in full; it records commits c1a5111b, 3e144f88, 15c52220 and 81260d12, the literal tests: command, both arm logs and both suite records, though its negative_control_note at manifest.md:19 says case5 failed in the control when negative-control.log reports '2 failed, 5 passed'.",
+    "write_paths": "node.write_paths names promotion_checks.py, promotion_evidence.py, recovery_review_delivery.py and the test file, and the delta changes only tests/test_a_review_runs_promotion_derives_its_own_gate.py:244,262 (+4/-2) and the fragment at docs/evidence/fragments/the-crew-does-its-own-bookkeeping/review-promotion-derives-gate-s1.html:4-7 (+3/-3), both inside the goal's named paths and nothing else."
+  },
+  "justifications": {
+    "durability": "the assertion at tests/test_a_review_runs_promotion_derives_its_own_gate.py:261-264 reddens if the promotion cites the derived record instead of the caller's log, yet it compares against the literal the fixture at :244 supplied rather than reading the source log, and no red run exercises case5.",
+    "evidence": "arms/base.log and arms/head.log record '3 failed, 62 passed' and '65 passed' with EXIT= lines, but docs/evidence/fragments/the-crew-does-its-own-bookkeeping/review-promotion-derives-gate-s1.html:7 cites head 15c52220 for the 65-passed figure while arms/ holds no log at that revision.",
+    "fit": "the fixture and assertion follow the file's existing shape (tests/test_a_review_runs_promotion_derives_its_own_gate.py:238-267) and the fragment keeps its four-paragraph landing idiom at docs/evidence/fragments/the-crew-does-its-own-bookkeeping/review-promotion-derives-gate-s1.html:3-8.",
+    "goal_fidelity": "tests/test_a_review_runs_promotion_derives_its_own_gate.py:244 makes case5 measure the behaviour the section names, but the same change leaves the dispatched done_when's clause that case5 still fails at head untrue.",
+    "reuse": "the delta adds no function, class or module; the fixture reuses the existing promotion path at reckon/crew/promotion.py:1040 and the guard at reckon/crew/promotion_evidence.py:1793 rather than re-implementing it.",
+    "scope_discipline": "the only paths in the diff are tests/test_a_review_runs_promotion_derives_its_own_gate.py and docs/evidence/fragments/the-crew-does-its-own-bookkeeping/review-promotion-derives-gate-s1.html, both named by the goal."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the source node's goal in dispatch-detail.json (\"deliver section s1 ... as its done-when states\") beside the two commits gained since the prior review; tests/test_a_review_runs_promotion_derives_its_own_gate.py:244 repairs case5's fixture log and docs/evidence/fragments/the-crew-does-its-own-bookkeeping/review-promotion-derives-gate-s1.html:4-7 restates the landing, so the delta serves s1 while overturning the done_when clause that case5 still fails at head.\nVERDICT done_when: Read the done_when in dispatch-detail.json and the gate the worker ran (the three-test pytest command whose arms/base.log records '3 failed, 62 passed' and arms/head.log at 81260d12 records '65 passed'); the gate now asserts that all five cases pass, which is the delta's outcome and not the done_when's stated expectation that case5 still fails on the unrelaxed guard.\nVERDICT write_paths: node.write_paths names promotion_checks.py, promotion_evidence.py, recovery_review_delivery.py and the test file, and the delta changes only tests/test_a_review_runs_promotion_derives_its_own_gate.py:244,262 (+4/-2) and the fragment at docs/evidence/fragments/the-crew-does-its-own-bookkeeping/review-promotion-derives-gate-s1.html:4-7 (+3/-3), both inside the goal's named paths and nothing else.\nVERDICT manifest: Read manifest.md in full; it records commits c1a5111b, 3e144f88, 15c52220 and 81260d12, the literal tests: command, both arm logs and both suite records, though its negative_control_note at manifest.md:19 says case5 failed in the control when negative-control.log reports '2 failed, 5 passed'.\nVERDICT diff: Read 15c52220 and 81260d12 against base 3e144f8875 commit by commit; 15c52220 adds '1 passed in 0.01s' to case5's fixture log and follows the assertion with the same text, 81260d12 rewrites three fragment paragraphs to the new base-arm reading, the case5 repair and the '65 passed' head measure, and no production file changes.\nCALL_SITES: reckon/crew/promotion.py:1040 (_require_gate_log_agrees call in the promotion fill), reckon/crew/promotion_evidence.py:1657 (_require_gate_log_agrees, whose pytest-summary branch at promotion_evidence.py:1793 case5 exercises)\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: tests/test_a_review_runs_promotion_derives_its_own_gate.py:244 makes case5 measure the behaviour the section names, but the same change leaves the dispatched done_when's clause that case5 still fails at head untrue.\nSCORE evidence: 14\nJUSTIFICATION evidence: arms/base.log and arms/head.log record '3 failed, 62 passed' and '65 passed' with EXIT= lines, but docs/evidence/fragments/the-crew-does-its-own-bookkeeping/review-promotion-derives-gate-s1.html:7 cites head 15c52220 for the 65-passed figure while arms/ holds no log at that revision.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only paths in the diff are tests/test_a_review_runs_promotion_derives_its_own_gate.py and docs/evidence/fragments/the-crew-does-its-own-bookkeeping/review-promotion-derives-gate-s1.html, both named by the goal.\nSCORE durability: 15\nJUSTIFICATION durability: the assertion at tests/test_a_review_runs_promotion_derives_its_own_gate.py:261-264 reddens if the promotion cites the derived record instead of the caller's log, yet it compares against the literal the fixture at :244 supplied rather than reading the source log, and no red run exercises case5.\nSCORE fit: 18\nJUSTIFICATION fit: the fixture and assertion follow the file's existing shape (tests/test_a_review_runs_promotion_derives_its_own_gate.py:238-267) and the fragment keeps its four-paragraph landing idiom at docs/evidence/fragments/the-crew-does-its-own-bookkeeping/review-promotion-derives-gate-s1.html:3-8.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no function, class or module; the fixture reuses the existing promotion path at reckon/crew/promotion.py:1040 and the guard at reckon/crew/promotion_evidence.py:1793 rather than re-implementing it.\nFINDING tests/test_a_review_runs_promotion_derives_its_own_gate.py:262 non-blocking: the replacement assertion compares the promoted log's text with the same literal the fixture wrote at :244, so both sides share the test's own input; asserting against gate_log.read_text() would tie the copied log to its source and still redden if the promotion cited the derived record.\nFINDING manifest.md:19 non-blocking: the negative_control_note records that case5 failed under the mutation, but negative-control.log ends '2 failed, 5 passed' with FAILED ids for case1 and case2 only, so the note overstates the control's red set.\nFINDING docs/evidence/fragments/the-crew-does-its-own-bookkeeping/review-promotion-derives-gate-s1.html:7 non-blocking: the measure paragraph cites head 15c52220 for '65 passed' while arms/ holds only base.log (39c52edb) and head.log (81260d12), so the cited revision has no recorded arm and the figure is not tied to a log a reader can open.\nFINDING tests/test_a_review_runs_promotion_derives_its_own_gate.py:244 non-blocking: the delta makes case5 pass at head, which no longer matches the source node's done_when requirement that the head arm show case5 still failing on the unrelaxed guard; the guard is unrelaxed and the fragment restates the measure, so this is a record correction rather than a behaviour defect.\n",
+  "review_run_id": "r-20261115T214119713404-review-of-review-promotion-derives-gate-s1-81260d12cb2c",
+  "reviewed_base_sha": "3e144f8875f638d521d58822ab99a745cb72f41a",
+  "reviewed_head_sha": "81260d12cb2c86a028919c4ffd6edf8c808d2e20",
+  "reviewed_run_id": "r-20261115T075735569432-review-promotion-derives-gate-s1",
+  "rubric": "review",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T22:12:24.644944+00:00",
+  "total": 102
+}

@@ -1,0 +1,39 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T23:15:51.272Z",
+  "dispatched_at": "2026-11-15T23:15:14Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": 3517,
+      "severity": "non-blocking",
+      "text": "the last_stage annotations write into the watcher dict from _wait and the ticker, but a provider that hands back an opaque handle gets watch_record = {} so last_stage is silently absent; the test at tests/test_a_producer_exit_is_recorded_and_restarted.py:186 pins exactly this divergence (expected 'registered' when expose_record is false) rather than guarding the recorded stage, so the exit receipt's last_stage is only meaningful for dict registrations."
+    },
+    {
+      "file": "tests/test_a_producer_exit_is_recorded_and_restarted.py",
+      "line": 68,
+      "severity": "non-blocking",
+      "text": "the expectations for exit_status, last_stage and reason are the same values the parametrisation hands the producer, so the assertion reads the receipt against the test's own input; it is independent only because the receipt is re-read from the registration file, and it would not notice a defect that echoed those locals into the record under a second key."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261115T225556209385-review-of-producer-exit-recorded-and-restarted-s25-04166ed71e7e",
+  "review_text": "VERDICT goal: the source prompt's goal is to deliver plan section s25 of a-seat-held-elsewhere-is-not-restarted, and the landed change does what its done_when states: a producer that exits leaves its exit status and last stage in its registration (reckon/crew/watch_unit.py:57 record_producer_exit), a lapsed producer is restarted within one lease interval with the restart recorded (watch_unit.py:33 record_producer_start, driven from reckon/crew/recovery_watch.py:701), and tests/test_a_producer_exit_is_recorded_and_restarted.py exercises both, with a documented negative control (delivery-negative.log, 8 failed / 2 passed).\nVERDICT done_when: the done_when names the three capabilities, the negative control, the importer-delta condition and 'Ruff adds no findings on the staged paths'; the manifest records the scope gate (delivery-scope.log, 68 passed vs 0 failed at base), the negative control (delivery-negative.log, 8 failed / 2 passed) and the importer delta, whose seven added ids were initially unadjudicated outside scope and then adjudicated by the manifest's blockers line against coordinator-adjudication/ as flaky (1 failed then 7 passed at both revisions, coordinator-adjudication/), so no added importer failure stands.\nVERDICT write_paths: declared scope is reckon/crew/watch_unit.py, reckon/crew/recovery_watch.py, tests/test_a_producer_exit_is_recorded_and_restarted.py, the evidence fragment and the figure directory; all four changed paths in the diff are inside that list and the figure directory is untouched because the done-when names no figure.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T204841537282-producer-exit-recorded-and-restarted-s25/manifest.md; it states the scoped gate command, both suite arms with logs, the negative control log, three commits and a landing line, and carries an explicit rubric self-check whose two missing dimensions name what was outstanding at the time of writing.\nVERDICT diff: read all three commits against base de83f451011: 70574ff9a4 adds record_producer_start/record_producer_exit and the stage annotations in recovery_watch.py, 4b4846fe85 adds docs/evidence/fragments/.../producer-exit-recorded-and-restarted-s25.html, 04166ed71e narrows the dict assumption to opaque handles; 4 files, 398 insertions, 2 deletions, all inside the declared scope.\nCALL_SITES: reckon/crew/recovery_watch.py:_watch_registration, reckon/crew/recovery_watch.py:watch_ticker, reckon/crew/recovery_watch.py:watch_follow, reckon/crew/watch_unit.py:release_watch_seat\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/watch_unit.py:57 records exit status, reason, last stage and lease lapse before release_watch_seat (watch_unit.py:461) drops the inode, and recovery_watch.py:701 records the successor's restart record, which is the goal's deliverable.\nSCORE evidence: 13\nJUSTIFICATION evidence: the gate at delivery-scope.log records 68 passed and the negative control at delivery-negative.log records 8 failed/2 passed, but the done_when's importer condition was not met in the worker's own arms and was only cleared by adjudication recorded in the manifest's blockers line rather than in a gate log.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: all four paths in the diff against de83f451011 lie inside the five declared write paths and no unrelated file is re-added.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_producer_exit_is_recorded_and_restarted.py:64-73 fails if record_producer_exit stops writing the receipt before release_watch_seat, as delivery-negative.log's 8 failed cases show, though line 186's expectation is conditional on the input the test itself supplied.\nSCORE fit: 16\nJUSTIFICATION fit: record_producer_exit at reckon/crew/watch_unit.py:57 uses the module's existing exclusive_lock/read_watch_registration/write_json_atomically idiom and a plain verb-noun name, with one '_watch_registration' scope exception at recovery_watch.py:701 matched by the surrounding module.\nSCORE reuse: 20\nJUSTIFICATION reuse: the search over reckon/crew for an existing exit-record writer found none \u2014 reckon/crew/runs.py has watch_registration_lock_path (runs.py:3338), read_watch_registration (runs.py:3362) and watch_lease_remaining_from_record (runs.py:4558) but no exit_record writer \u2014 so watch_unit.py is the first owner of that capability and the addition extends the registration API rather than duplicating it.\nFINDING reckon/crew/recovery_watch.py:3517 non-blocking: stage annotations are dropped for opaque watcher handles (watch_record = {}), so a non-dict provider's exit receipt always records 'registered', which the test at tests/test_a_producer_exit_is_recorded_and_restarted.py:186 pins rather than guards.\nFINDING tests/test_a_producer_exit_is_recorded_and_restarted.py:68 non-blocking: exit_status/last_stage/reason are asserted against the same parametrised values the test hands the producer; independence comes only from re-reading the receipt off disk, so an implementation echoing its inputs would still pass.",
+  "reviewed_base_sha": "de83f451011c33cfecc9c8ecd220e9a6cdf21bda",
+  "reviewed_head_sha": "04166ed71e7e42ebaccd16dec42167de79b5ca1c",
+  "reviewed_run_id": "r-20261115T204841537282-producer-exit-recorded-and-restarted-s25",
+  "scores": {
+    "durability": 17,
+    "evidence": 13,
+    "fit": 16,
+    "fit_note": null,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T23:29:25.959526+00:00",
+  "total": 102
+}

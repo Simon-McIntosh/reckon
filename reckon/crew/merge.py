@@ -202,6 +202,19 @@ def require_promotable_head(
             )
 
 
+def _on_fleet_node() -> bool:
+    """Whether this host is the node the published fleet record names."""
+    import socket
+
+    from reckon.crew import watch_unit
+
+    try:
+        node = watch_unit.fleet_record_node()
+    except Exception:  # noqa: BLE001 - an unreadable record names no node
+        return False
+    return watch_unit._hosts_match(socket.gethostname(), node)
+
+
 def _run(
     repo: Path,
     *args: str,
@@ -209,7 +222,12 @@ def _run(
     env: dict[str, str] | None = None,
     extra_env: Mapping[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
-    remote = bool(args) and args[0] in {"ls-remote", "fetch"}
+    verb = args[0] if args else ""
+    # The fleet node reaches the remote only on port 443, and its port 22 fails
+    # by timing out, so every remote call there takes the 443 route at once. A
+    # push elsewhere keeps Git's own route and falls back only when refused.
+    direct = verb in {"ls-remote", "fetch", "push"} and _on_fleet_node()
+    remote = verb in {"ls-remote", "fetch"} or direct
     if remote:
         env = dict(os.environ if env is None else env)
         ssh = (env.get("GIT_SSH_COMMAND") or "").strip()
@@ -222,8 +240,9 @@ def _run(
             # Only an absent setting permits the default: Git owns configured
             # identities, proxies and wrappers, and reports config errors itself.
             if configured.returncode == 1:
+                route = FALLBACK_SSH_COMMAND if direct else "ssh"
                 env["GIT_SSH_COMMAND"] = (
-                    f"ssh -o ConnectTimeout={SSH_CONNECT_TIMEOUT_SECONDS}"
+                    f"{route} -o ConnectTimeout={SSH_CONNECT_TIMEOUT_SECONDS}"
                 )
     if extra_env:
         env = {**(os.environ if env is None else env), **extra_env}
@@ -266,6 +285,49 @@ def _rev_parse(repo: Path, revision: str) -> str:
 def _parents(repo: Path, commit: str) -> list[str]:
     result = _run(repo, "rev-parse", f"{commit}^@")
     return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+
+
+def commits_between(
+    tree: Path,
+    older: str,
+    newer: str,
+    *,
+    excluding: str = "",
+    first_parent: bool = False,
+) -> list[tuple[str, str]] | None:
+    """The commits between two revisions, oldest first, as ``(sha, subject)``.
+
+    ``first_parent`` follows the caller's own line, keeping its merge commits
+    and leaving out the commits their other parents introduced: a run's merge of
+    a shared branch is its work and is cited, while what that merge imported was
+    made by others.
+
+    ``excluding`` names a revision whose own history is none of the caller's
+    business — the shared branch a run merged into its own worktree — and its
+    reachable commits are left out of the answer even when they sit on the
+    caller's line, which is what a branch rebased onto the shared one has.
+
+    ``None`` when git cannot list the range, so a caller reports an unreadable
+    range as unreadable rather than as nothing changed.
+    """
+    arguments = ["log", "--reverse", "--format=%H %s"]
+    if first_parent:
+        arguments.append("--first-parent")
+    arguments.append(f"{older}..{newer}")
+    if excluding:
+        arguments += ["--not", excluding]
+    try:
+        completed = _run(tree, *arguments)
+    except OSError:
+        return None
+    if completed.returncode:
+        return None
+    commits: list[tuple[str, str]] = []
+    for line in completed.stdout.splitlines():
+        sha, _, subject = line.strip().partition(" ")
+        if sha:
+            commits.append((sha, subject.strip()))
+    return commits
 
 
 def _compose_message(subject: str, body: str) -> str:

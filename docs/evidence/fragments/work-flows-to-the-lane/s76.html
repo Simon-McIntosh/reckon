@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-flows-to-the-lane">
+  <meta name="plan-evidence-for" content="reckon:work-flows-to-the-lane">
+  <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s76">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <title>A killed producer is restarted: what the instrument saw | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="wftl-a-producer-restarts-without-linger-record"
+  data-node="wftl-a-producer-restarts-without-linger" data-reckon="evidence"
+  data-when="2026-11-15">
+  <h2>A killed producer is restarted: what the instrument saw</h2>
+
+  <p>The section names a negative control: at the base revision the
+  killed-producer case reads no producer two minutes after the kill.
+  <strong>It does not reproduce.</strong> At
+  <code>8863ecb4f3690956868bab0b12e2b7961f98b2b9</code>, the revision this node
+  was dispatched at, the two cases were green and the producer was back well
+  inside the bound.</p>
+
+  <pre id="wftl-a-producer-restarts-without-linger-base-arm"># revision: 8863ecb4f3690956868bab0b12e2b7961f98b2b9
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_killed_producer_is_restarted_without_linger.py
+..                                                                       [100%]
+2 passed in 9.54s
+EXIT=0</pre>
+
+  <p>The restart is not new. <code>reckon/crew/dispatch_watch.py</code> has
+  carried it since <code>4152e8c57b</code> — <em>fix(crew): restart a crashed
+  fallback watch producer</em>, 13 October 2026. The arming supervisor launches
+  the producer as its child and reads a signal death as a crash, so a SIGKILL
+  lands in the same branch as a non-zero exit. This node changed no product
+code; its work is the case that pins the measure end to end.</p>
+
+  <h2>A green case does not show the assertion can fail</h2>
+
+  <p>So the check was made to fire. The supervisor's exit-status branch was
+  rewritten inside the test process — every child death made fatal — through a
+  pytest plugin, and the killed-producer case was run against it on
+  <code>all_debug</code> (job 1317933). It went red at its own bound:</p>
+
+  <pre id="wftl-a-producer-restarts-without-linger-red-run"># mutation: the supervisor's crash test replaced by an unconditional exit
+# command: PYTHONPATH=.:&lt;run&gt;/logs /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q -p negctl_plugin tests/test_a_killed_producer_is_restarted_without_linger.py::test_a_killed_producer_is_restarted_without_linger
+E       Failed: no new producer served a fresh snapshot within two minutes
+tests/test_a_killed_producer_is_restarted_without_linger.py:83: Failed
+=========================== short test summary info ============================
+FAILED tests/test_a_killed_producer_is_restarted_without_linger.py::test_a_killed_producer_is_restarted_without_linger - Failed: no new producer served a fresh snapshot within two minutes
+1 failed in 122.66s (0:02:02)
+EXIT=1</pre>
+
+  <p>Full log:
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T124306832456-wftl-a-producer-restarts-without-linger/logs/s76-negative-control.log</code>.</p>
+
+  <h2>The case itself</h2>
+
+  <p>Arming goes through <code>watch_unit.ensure_watcher_service</code> with a
+  manager whose <code>enable_linger</code> raises
+  <code>LingerUnavailableError</code>, so the fallback is the path that starts
+  the producer, in a temporary <code>RECKON_HOME</code>. The pid that took the
+  producer seat is killed with <code>SIGKILL</code>; the case then requires a
+  different live pid writing a snapshot stamped after the kill, and the armings
+  the calling process made across the kill to be zero. On <code>all_debug</code>
+  (job 1317932) at <code>b0ddae8593a1b7e3afcd726bb939343c304d6d38</code>:</p>
+
+  <pre id="wftl-a-producer-restarts-without-linger-head-gate"># revision: b0ddae8593a1b7e3afcd726bb939343c304d6d38
+# host: 98dci4-clu-3143.iter.org
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_killed_producer_is_restarted_without_linger.py
+..                                                                       [100%]
+2 passed in 2.68s
+EXIT=0</pre>
+</article>
+</body>
+</html>

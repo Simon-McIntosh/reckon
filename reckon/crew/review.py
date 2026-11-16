@@ -486,6 +486,112 @@ ITEM_VERDICT_RUBRICS: frozenset[str] = frozenset(
     }
 )
 
+# ── The figures one figure review judges ────────────────────────────────────
+# A run that changed several figures gets one figure review, whose brief
+# attaches each of them, so its record states the rubric verdicts per figure
+# rather than once for the run: a single item map cannot hold two figures'
+# ``legibility`` verdicts without one overwriting the other. The field below is
+# that per-figure map — figure path to item verdicts — and every reader that
+# asks whether the review answered its rubric reads it through
+# :func:`figure_rubric_verdicts` and :func:`with_figure_verdicts`, so a record
+# written in the per-figure shape and one written flat are answered alike. A
+# reader that read the flat map alone reported a complete per-figure record as
+# carrying no verdict at all, which is the refusal two sessions met.
+FIGURE_VERDICTS_KEY = "figures"
+
+# The figure-and-item pairs a per-figure record left unanswered, under the key
+# a refusal reads them from. The folded item map can only say that an item is
+# absent; this says which figure and which item, because a figure defect is
+# repaired by opening the figure and an item name alone does not say which one.
+FIGURE_VERDICT_SHORTFALLS_KEY = "figure_verdict_shortfalls"
+
+
+def figure_rubric_verdicts(
+    record: Mapping[str, Any],
+) -> tuple[dict[str, str], list[str]]:
+    """A figure record's item verdicts, folded from its per-figure verdicts.
+
+    Returns the item map every rubric reader asks and the ``<figure>: <item>``
+    pairs left unanswered. An item is present in the folded map only when every
+    figure the record names carries a non-blank verdict for it, because a
+    verdict for one figure says nothing about the next: a folded map that
+    counted one figure's verdict for another's would report a review nobody
+    made. A record stating its verdicts flat — one figure's record, the shape
+    written before several figures shared a review — is returned as it stands,
+    with no shortfall, so its reading does not move.
+    """
+    flat = record.get("rubric_items")
+    stated = (
+        {str(key): str(value) for key, value in flat.items()}
+        if isinstance(flat, Mapping)
+        else {}
+    )
+    figures = record.get(FIGURE_VERDICTS_KEY)
+    if not isinstance(figures, Mapping):
+        return stated, []
+    folded: dict[str, list[str]] = {item: [] for item in FIGURE_REVIEW_ITEMS}
+    shortfalls: list[str] = []
+    named = 0
+    for key, verdicts in sorted(figures.items(), key=lambda row: str(row[0])):
+        path = str(key)
+        named += 1
+        stated_items = verdicts if isinstance(verdicts, Mapping) else {}
+        for item in FIGURE_REVIEW_ITEMS:
+            verdict = str(stated_items.get(item) or "").strip()
+            if verdict:
+                folded[item].append(f"{path}: {verdict}")
+            else:
+                shortfalls.append(f"{path}: {item}")
+    return {
+        item: "; ".join(rows) for item, rows in folded.items() if len(rows) == named
+    }, shortfalls
+
+
+def with_figure_verdicts(record: Mapping[str, Any]) -> dict[str, Any]:
+    """Return ``record`` carrying a figure review's verdicts as one item map.
+
+    A per-figure record is folded to the item map the completeness rule reads,
+    and the pairs it left unanswered are carried beside it under
+    :data:`FIGURE_VERDICT_SHORTFALLS_KEY` so a refusal can name the figure. A
+    record already written flat is returned unchanged, so no reader sees a
+    field it did not ask for.
+    """
+    if not isinstance(record.get(FIGURE_VERDICTS_KEY), Mapping):
+        return dict(record)
+    folded, shortfalls = figure_rubric_verdicts(record)
+    return {
+        **record,
+        "rubric_items": folded,
+        FIGURE_VERDICT_SHORTFALLS_KEY: [str(entry) for entry in shortfalls],
+    }
+
+
+# ── The template a reviewer may still be writing ────────────────────────────
+# A review's brief hands the reviewer the line shapes its report must take, and
+# a reviewer that pastes those shapes before it has read anything leaves the
+# template's placeholders where a verdict and a finding go. Such a report parses
+# as a finished review — the placeholder is non-empty text in the verdict cell
+# and a claimless finding on the FINDING line — and storing it takes a record
+# with no verdict and no finding back to the gate, which is how three real
+# findings never reached one. The token is machine-only, so a report that still
+# carries one is a report whose reviewer had not finished writing it.
+REPORT_PLACEHOLDER_RE = re.compile(r"\b[A-Z][A-Z0-9_]*-PLACEHOLDER(?:-\d+)?\b")
+
+
+def report_placeholders(text: str) -> list[str]:
+    """The template placeholders a report still carries, each named once.
+
+    Order is the order they appear in the report, named once each: a reviewer
+    fixing its report reads the list as the places to fill, and a list that
+    repeated one token per section would be longer than the repair it asks for.
+    """
+    found: list[str] = []
+    for token in REPORT_PLACEHOLDER_RE.findall(text):
+        if token not in found:
+            found.append(token)
+    return found
+
+
 # ── The revision pair a review read ─────────────────────────────────────────
 # The store already carries these five spellings. Base spellings describe the
 # tree before the reviewed work; head spellings describe the landed work. A
@@ -1613,6 +1719,9 @@ def parse_plan_review_report(text: str, *, rubric: str) -> dict[str, Any]:
       counting the report's findings of that item in the order they appear, so
       an id is stable across a re-read of the same report and two findings of
       one type never share an id.
+    - ``placeholders`` — the template placeholders the report still carries,
+      each named once. A report carrying one was being written when it was
+      read, and the verdicts above are the template's own text.
     """
     items = _plan_report_rubric_items(rubric)
     rubric_items: dict[str, str] = {}
@@ -1643,6 +1752,11 @@ def parse_plan_review_report(text: str, *, rubric: str) -> dict[str, Any]:
         "rubric_items": rubric_items,
         "absent_items": absent_items,
         "findings": findings,
+        # A report whose lines still read the brief's placeholders has not been
+        # written yet, and the lines above read as a finished review because a
+        # placeholder is non-empty text. The tokens are returned beside them so
+        # the store refuses the report by name rather than reading it.
+        "placeholders": report_placeholders(text),
     }
 
 
@@ -4105,6 +4219,7 @@ def read_review(
     )
     if record is None:
         return None
+    record = with_figure_verdicts(record)
     record = with_normalised_findings(record)
     record = with_canonical_claims(record)
     if not _has_integer_total(record):

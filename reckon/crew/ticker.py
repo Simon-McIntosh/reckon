@@ -135,6 +135,7 @@ STATE_HUE = {
         "stopped": 124,
         "abandoned": 124,
         "lane-event": 124,
+        "cut-off": 124,
         "stalled": 130,
         "complete": 28,
         "promoted": 22,
@@ -162,6 +163,7 @@ STATE_HUE = {
         "stopped": 203,
         "abandoned": 203,
         "lane-event": 203,
+        "cut-off": 203,
         "stalled": 179,
         "complete": 78,
         "promoted": 71,
@@ -190,7 +192,7 @@ DISPLAY_HUE = {
         "queued": 97,
         "working": 26,
         "waiting": 97,
-        "needs you": 124,
+        "help": 124,
         "delivered": 30,
         "in review": 30,
         "landed": 22,
@@ -202,7 +204,7 @@ DISPLAY_HUE = {
         "queued": 104,
         "working": 75,
         "waiting": 104,
-        "needs you": 203,
+        "help": 203,
         "delivered": 80,
         "in review": 80,
         "landed": 71,
@@ -261,6 +263,12 @@ NEEDS_ACTION = frozenset(
         "unknown",
         "unreadable",
         "exited-unfinished",
+        # A worker whose own exit record ended it before its manifest reached
+        # an outcome resumes from the work already on disk, and nothing lifts
+        # it on its own: the classification reaches the pane as ``blocked``, so
+        # the word belongs in the set the blocked bucket and the marker are
+        # both derived from.
+        "cut-off",
         "wait-aged",
     }
 )
@@ -446,21 +454,33 @@ PANE_STATES = {
             "gate-ended",
         }
     ),
-    # A request held on a section it waits for is not working and not halted: it
-    # sits in the waiting pane until its upstream lands, and is never released
-    # by a lane slot. One whose wait can no longer land asks for the decision a
-    # blocked run asks for, so it sits beside blocked.
-    "waiting": frozenset({"waiting", "paused", "wait-aged", "awaiting-upstream"}),
-    # A run the orchestrator whose pane this is must act on next: it is blocked,
-    # failed, stalled, stopped, abandoned, held, or its manifest is unreadable.
-    # The word says so rather than reading as a state the run sits in by
-    # itself, because every state below is the orchestrator's move.
-    "needs you": frozenset(
+    # A run that moves on its own once other work finishes, so nothing about it
+    # asks the coordinator for anything. A request held on a section it waits
+    # for is not working and not halted: it sits in the waiting pane until its
+    # upstream lands, and is never released by a lane slot. The same is true of
+    # a run held on a refusal, one interrupted mid-work and one ready to start:
+    # each changes state without a coordinator's hand, so each counts here.
+    "waiting": frozenset(
         {
+            "waiting",
+            "paused",
+            "wait-aged",
+            "awaiting-upstream",
             "blocked-upstream",
+            "held",
+            "interrupted",
+            "ready",
+        }
+    ),
+    # A run the orchestrator whose pane this is must act on next: it is blocked,
+    # failed, stalled, stopped, abandoned, or its manifest is unreadable. The
+    # word says so rather than reading as a state the run sits in by itself,
+    # because every state below is the orchestrator's move and none of them
+    # lifts without one.
+    "help": frozenset(
+        {
             "blocked",
             "needs-help",
-            "held",
             "stalled",
             "stopped",
             "abandoned",
@@ -468,11 +488,13 @@ PANE_STATES = {
             "unreadable",
             "unwritten",
             "exited-unfinished",
+            # A run the worker's own exit ended before a verdict delivers
+            # nothing a coordinator can promote, so its next move is the
+            # coordinator's: resume the session from the work on disk.
+            "cut-off",
             "ended-without-manifest",
             "launch-failed",
             "refused-at-admission",
-            "ready",
-            "interrupted",
             "lane-event",
             "unknown",
         }
@@ -510,7 +532,7 @@ PANE_STATES = {
 # follower's own end are carried by their own facts too:
 #
 #   delivered      a run of this session delivered and unpromoted;
-#   needs you      a run that reads as halted, which is blocked, failed,
+#   help           a run that reads as halted, which is blocked, failed,
 #                  stalled, or carried an unreadable manifest;
 #   in review      a run delivered whose review has started, drawn under the
 #                  reviewed run's node and naming the review run;
@@ -550,7 +572,7 @@ PANE_STATES = {
 # replay of a start, a re-arm or reload baseline, and a reload notice. The row
 # policy and the summary lines read the rule from here rather than restating it,
 # so a row the stream withholds is withheld by one decision.
-CARRIED_PANE_WORDS = frozenset({"delivered", "needs you", "in review", "seat moved"})
+CARRIED_PANE_WORDS = frozenset({"delivered", "help", "in review", "seat moved"})
 
 # The pane words of a run whose work is over: a written record, or a drop. A
 # landing is news only when the pane itself drew the delivery before it, and a
@@ -704,7 +726,7 @@ HIDDEN_AT_ATTACH = SETTLED_STATES - frozenset(
     {"completed_unpromoted", "failed", "abandoned"}
 )
 
-_CELLS = ("working", "in review", "needs you", "delivered")
+_CELLS = ("working", "in review", "help", "delivered")
 _WAIT_CELL = "waiting"
 # The stuck count is a figure beside the buckets rather than one of them: a
 # stuck request keeps the cell its phase belongs to, so this cell recounts
@@ -717,7 +739,7 @@ _STUCK_CELL = "stuck"
 # use pane words; a waiting count includes queued and externally waiting runs.
 _COUNT_FIELD = {
     "in review": "reviewing",
-    "needs you": "blocked",
+    "help": "blocked",
     "delivered": "unpromoted",
     "waiting": "waiting",
     "stuck": "stuck",
@@ -727,13 +749,13 @@ _COUNT_FIELD = {
 # waiting bucket holds queued runs as well as runs waiting on a declared
 # condition, and its label is ``q`` for the queued word. ``r`` is the review
 # bucket's letter, so a session whose only live run is a review reads as review
-# work rather than as an idle session. ``n`` is the needs-you bucket's letter,
-# and no other counter uses it, so no two labels share a letter and none needs a
+# work rather than as an idle session. ``h`` is the help bucket's letter, and
+# no other counter uses it, so no two labels share a letter and none needs a
 # case to tell it apart.
 STAT_LETTER = {
     "working": "w",
     "in review": "r",
-    "needs you": "n",
+    "help": "h",
     "delivered": "d",
     "waiting": "q",
     "stuck": "s",
@@ -967,7 +989,7 @@ def _bucket_of(state: Any, classification: Any) -> str | None:
     if word in FLEET_UNPROMOTED_STATES:
         return "delivered"
     if word in FLEET_BLOCKED_STATES:
-        return "needs you"
+        return "help"
     if word in FLEET_WAITING_STATES:
         return _WAIT_CELL
     if word in FLEET_WORKING_STATES:
@@ -1104,9 +1126,12 @@ def lane_mean_from_text(raw: str | None, *, now: datetime) -> float | str:
 # A pane word written before a state was renamed. A checkpoint, a stored
 # history and a delivered-state record all hold pane words, so a record written
 # by an earlier pane names the same state with the word it used then. The reader
-# takes such a word in as the word the pane draws now, so a run whose only
-# change since that record is the word draws no row.
-SUPERSEDED_PANE_WORDS = {"halted": "needs you"}
+# takes such a word in as the word the pane draws now, so a record whose only
+# change is the word draws no row: ``halted`` was the word before the group was
+# named for what it asks, and ``needs you`` was the word before the requirement
+# for help was told apart from waiting on other work. Both read as ``help``,
+# because a run in that group still needs its coordinator.
+SUPERSEDED_PANE_WORDS = {"halted": "help", "needs you": "help"}
 
 
 def _display_state(state: Any) -> str:
@@ -1128,7 +1153,7 @@ def _remembered_word(state: Any) -> str:
     a run live across a re-arm shows its pane word on the left.
 
     A state that is already one of the pane's words maps to itself. Five of
-    them — ``delivered``, ``needs you``, ``in review``, ``landed`` and
+    them — ``delivered``, ``help``, ``in review``, ``landed`` and
     ``dropped`` — are not also internal states, so ``_display_state`` blanks
     them; the identity is therefore taken first rather than falling through to
     the blank. A word a previous pane wrote for one of these states, such as
@@ -1402,12 +1427,12 @@ ARRIVAL_WINDOW = 90.0
 #
 # A run reaches ``working`` from ``dispatched`` on a fresh launch, from
 # ``starting`` on a relaunched attempt, and from any stop state the pane drew as
-# ``needs you`` when an attempt is resumed. All announce the same news — the run
+# ``help`` when an attempt is resumed. All announce the same news — the run
 # began doing the work — so all are starts. ``START_KIND`` is the fresh-launch
 # pair a reader names when it means the canonical start; ``RowPolicy`` reads the
 # set when it decides whether a row is a start. The stop states are read from
 # the pane's own vocabulary rather than listed here, so every state the pane
-# draws ``needs you`` — ``blocked``, ``exited-unfinished``, ``stalled``,
+# draws ``help`` — ``blocked``, ``exited-unfinished``, ``stalled``,
 # ``abandoned`` and the rest — pairs with ``working`` and a new one is a start
 # the moment it is drawn. The states the pane draws ``delivered`` or ``landed``
 # are excluded, because a producer re-reading a rewritten manifest as working
@@ -1425,7 +1450,7 @@ ARRIVAL_WINDOW = 90.0
 START_KIND: tuple[Any, Any] = ("dispatched", "working")
 START_KINDS: frozenset[tuple[Any, Any]] = frozenset(
     {START_KIND, ("starting", "working"), ("queued", "working"), (None, "working")}
-) | frozenset((state, "working") for state in PANE_STATES["needs you"])
+) | frozenset((state, "working") for state in PANE_STATES["help"])
 
 # ── The settle hold ───────────────────────────────────────────────────────────
 #
@@ -1609,17 +1634,17 @@ def stream_carries(event: Mapping[str, Any]) -> bool:
         # can steer the worker from the moment it starts, which is the news the
         # row exists to say and which no state transition carries.
         return True
-    if event.get("status_repair") and _pane_word(event) == "needs you":
-        # A transition into a needs-you word that a coordinator's own ``crew
+    if event.get("status_repair") and _pane_word(event) == "help":
+        # A transition into a help word that a coordinator's own ``crew
         # repair --status`` caused: the coordinator wrote the word itself, so
         # the row carries nothing it does not already know — the same reading a
         # ``landed`` or ``dropped`` row from its own merge or discard is given.
         # The repair is a duty the coordinator discharged, not one it owes, so
         # it is left to ``crew view`` and the pane history and prints nothing.
         # A repair not followed by a resume still leaves the run in the
-        # needs-you summary, so nothing actionable is lost with the row.
+        # help summary, so nothing actionable is lost with the row.
         #
-        # Only the needs-you word is withheld. This rule removes the row a halt
+        # Only the help word is withheld. This rule removes the row a halt
         # produces, not every row a repair causes: a repair that lands a run on
         # the other carried word, a delivery, is judged as any other row is, so
         # the rule cannot silence a delivery it did not itself complete.
@@ -1659,6 +1684,26 @@ def stream_carries(event: Mapping[str, Any]) -> bool:
     )
 
 
+class _NoLiftClaim:
+    """The value a row path passes to say it shares no claim with anyone.
+
+    Distinct from ``None``, which asks a path naming a pane's session for that
+    pane's shared claim. A measurement replaying a recorded stream passes this
+    because a claim is not only a filter on what draws: a path holding a claim
+    withholds a lift's end unless it drew the grant, so a claim here would drop
+    the ends of grants that sit outside the replayed window, which the pane did
+    print.
+    """
+
+    __slots__ = ()
+
+    def __repr__(self) -> str:
+        return "NO_LIFT_CLAIM"
+
+
+NO_LIFT_CLAIM = _NoLiftClaim()
+
+
 class RowPolicy:
     """Decide which rows reach the pane, holding back the ones that ask for none.
 
@@ -1681,7 +1726,7 @@ class RowPolicy:
         own_session: str | None = None,
         observed_sessions: Iterable[str] = (),
         lift_groups: Iterable[str] = (),
-        lift_claim: Callable[[str, str], bool] | None = None,
+        lift_claim: Callable[[str, str], bool] | _NoLiftClaim | None = None,
     ) -> None:
         self._show_observer = bool(show_observer)
         # The session this pane follows. A start row is delivered for this
@@ -1757,9 +1802,29 @@ class RowPolicy:
         # first take it and the rest draw nothing. The pane's key is the host
         # that spawned the followers when they have one, and the follower's own
         # session otherwise, so a host following two sessions draws each lift
-        # once between them. ``None`` draws every lift row on this pane's own
-        # memory alone, the behaviour before the claim.
-        self._lift_claim = lift_claim
+        # once between them. A path that names the pane's own session and is
+        # handed no claim takes that session's shared one, because the claim
+        # belongs to the pane rather than to the delivery path a follower
+        # happened to read through: the station subscriber builds its path
+        # without one, and a pane served by several followers drew the same
+        # limit reset once per follower.
+        #
+        # A caller that must draw with no claim says so with
+        # :data:`NO_LIFT_CLAIM` rather than by passing nothing, because a claim
+        # is not merely a filter on draws: a row path holding one skips a lift's
+        # end unless it drew the grant, which is what a live follower wants and
+        # what a measurement replaying a window that opens after the grant does
+        # not. A path with no session — the fleet-wide reader — takes no claim
+        # either, and draws every lift row on its own memory alone, the
+        # behaviour before the claim.
+        if lift_claim is NO_LIFT_CLAIM:
+            self._lift_claim: Callable[[str, str], bool] | None = None
+        elif lift_claim is not None:
+            self._lift_claim = lift_claim
+        else:
+            self._lift_claim = self._pane_lift_claim(
+                str(own_session) if own_session else ""
+            )
         # run_id -> the launch ordinal at which this pane drew the run's
         # in-review row. A producer resweeps a delivered run whose state has not
         # changed, so the delivery it writes again is a row this pane already
@@ -1780,6 +1845,29 @@ class RowPolicy:
         # request under the id it already had, so one request's attempts and
         # re-queues share an id while two requests do not.
         self._refusals: dict[str, set[str]] = {}
+
+    @staticmethod
+    def _pane_lift_claim(session: str) -> Callable[[str, str], bool] | None:
+        """The pane's shared lift claim, keyed on its own session.
+
+        One pane is one session, and every follower serving it writes the same
+        claim directory beneath the crew home, so an exclusive create there is
+        the arbitration they share whether they run in one process, several on
+        a node, or several on nodes sharing a home. The claim is resolved at the
+        row rather than when the path is built, so a path that never draws a
+        lift opens nothing, and a claim that cannot be written leaves the row
+        drawn rather than dropped, which is :func:`take_lift_claim`'s own
+        answer.
+        """
+        if not session:
+            return None
+
+        def claim(lift_id: str, transition: str) -> bool:
+            from reckon.crew_follow_commands import take_lift_claim
+
+            return take_lift_claim(session, lift_id, transition)
+
+        return claim
 
     @property
     def lift_groups(self) -> frozenset[str]:
@@ -1897,7 +1985,7 @@ class RowPolicy:
         The attempt's own memory decides once-only: a run the pane already
         shows ``working`` has had its launch drawn, so a replayed or
         re-announced start adds nothing and a resume, which leaves a word the
-        pane draws ``needs you``, prints its own.
+        pane draws ``help``, prints its own.
 
         A review run's launch is drawn under the reviewed run's node as the
         reviewed run's ``in review`` row, naming the review run in its own
@@ -1911,7 +1999,7 @@ class RowPolicy:
         # it already shows did not begin under it: the row is a re-derivation
         # after a reload, or a producer rewriting the state it had recorded, and
         # neither opens an attempt the reader is watching start. A resume, whose
-        # pair leaves a word the pane draws ``needs you``, is a launch either way.
+        # pair leaves a word the pane draws ``help``, is a launch either way.
         if (
             kind == START_KIND
             and run_id
@@ -2727,6 +2815,13 @@ class PaneRowPath:
             lift_groups=lift_groups,
             lift_claim=lift_claim,
         )
+        # run_id -> the observation moment of the newest row this path emitted
+        # for the run. A stream can reach a pane out of order — a producer's
+        # sweep rewrites a stream while a follower is reading it, and a re-armed
+        # follower picks up rows written before the ones it already showed — so
+        # a row stamped before one already emitted for its run is a redraw of an
+        # instant the pane has passed. This is the memory that drops it.
+        self._emitted_moment: dict[str, float] = {}
         for run_id, state in self.reported.items():
             self._policy.seed(run_id, state)
 
@@ -2786,6 +2881,33 @@ class PaneRowPath:
                 self.reported[run_id] = str(row.get("to_state") or "")
         return printed
 
+    def _in_order(self, rows: Iterable[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
+        """Drop each row older than one already emitted for its own run.
+
+        A run's rows are emitted in the order of their observation times: the
+        pane draws the state as of the update the reader has already seen, so a
+        row stamped before that instant would redraw the run in a state it has
+        left and read as a fresh transition. The running figure is updated by
+        every row this path emits, so a replay of the same stream is ordered
+        against itself and not against the clock a reader happens to hold. A row
+        carrying no observation time cannot be ordered and is passed through; so
+        is a row whose run this path has not emitted anything for, because there
+        is no later row for it to be older than.
+        """
+        kept: list[Mapping[str, Any]] = []
+        for row in rows:
+            run_id = str(row.get("run_id") or "")
+            moment = _stamped_moment(row)
+            if not run_id or moment <= 0.0:
+                kept.append(row)
+                continue
+            emitted = self._emitted_moment.get(run_id, 0.0)
+            if emitted and moment < emitted:
+                continue
+            self._emitted_moment[run_id] = moment
+            kept.append(row)
+        return kept
+
     def feed(
         self, event: Mapping[str, Any] | None, *, now: float
     ) -> list[Mapping[str, Any]]:
@@ -2794,11 +2916,11 @@ class PaneRowPath:
             return []
         if self._selects is not None and not self._selects(event):
             return []
-        return self._remember(self._policy.feed(event, now=now))
+        return self._remember(self._in_order(self._policy.feed(event, now=now)))
 
     def flush(self, *, now: float) -> list[Mapping[str, Any]]:
         """Openers whose hold window has closed, released to the pane."""
-        return self._remember(self._policy.flush(now=now))
+        return self._remember(self._in_order(self._policy.flush(now=now)))
 
 
 def row_moment(event: Mapping[str, Any]) -> float:
@@ -2853,6 +2975,13 @@ def replay_row_policy(
         show_observer=show_observer,
         own_session=own_session,
         observed_sessions=observed_sessions,
+        # The replay prints a recorded stream and shares no claim with anyone: a
+        # claim here is not only a filter on draws, it also withholds a lift's
+        # end unless this path drew the grant, so a stream whose window opens
+        # after a grant would lose the ends the pane printed. The claim
+        # directory is never consulted, so the count does not depend on which
+        # followers happen to hold it today.
+        lift_claim=NO_LIFT_CLAIM,
     )
     printed: list[Mapping[str, Any]] = []
     for event in events:
@@ -3427,14 +3556,18 @@ class Ticker:
             # The row's destination repeats the word the pane already shows for
             # the run. That draws no transition — unless the row carries a duty
             # (:func:`same_word_row_is_news`), which the pane owes the reader
-            # even when the word repeats. Such a row prints the destination word
-            # twice, or its own left word where the row names a different one,
-            # so a block or an unreadable the pane already shows is never
-            # released as an empty line the reader never saw.
+            # even when the word repeats. Such a row prints its own left word
+            # where the row names a different one, so a block or an unreadable
+            # the pane already shows is never released as an empty line the
+            # reader never saw. Where the row's own left word is the destination
+            # too, the row carries news and no transition: it names the state
+            # the run stands in and leaves the arrow's left side blank, because
+            # one word printed around an arrow claims a move between two states
+            # that are the same state, which is the noise a coordinator woke for.
             if not same_word_row_is_news(event, self._shown_wait.get(run_id)):
                 return ""
             own_left = _display_state(event.get("from_state"))
-            from_state = own_left if own_left and own_left != to_state else to_state
+            from_state = own_left if own_left and own_left != to_state else ""
         if stream_event:
             self._reported[run_id] = to_state
             # The wait facts the pane has now shown, so a later row repeating

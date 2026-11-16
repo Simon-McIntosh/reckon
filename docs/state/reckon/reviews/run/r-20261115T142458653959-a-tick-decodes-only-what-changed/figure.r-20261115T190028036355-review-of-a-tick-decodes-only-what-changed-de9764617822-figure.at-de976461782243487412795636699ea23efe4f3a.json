@@ -1,0 +1,106 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T19:40:48Z",
+  "dispatched_at": "2026-11-15T19:06:20Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "Gridlines are faint and carry no data claim; the figures are evidence for one landing and are not redrawn for style alone.",
+      "recorded_at": "2026-11-15T19:51:57.192035+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "Every base bar carries its printed value, so the comparison reads at full size; not redrawn for contrast alone.",
+      "recorded_at": "2026-11-15T19:52:04.638971+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "The pale band ends at the printed total and no claim depends on its value.",
+      "recorded_at": "2026-11-15T19:52:11.913444+00:00"
+    },
+    "3": {
+      "kind": "exempted",
+      "reason": "Grammar slip in a subtitle; it does not change the claim.",
+      "recorded_at": "2026-11-15T19:52:20.246345+00:00"
+    },
+    "4": {
+      "kind": "exempted",
+      "reason": "The ceiling rule passes between legend entries without touching a glyph or a data mark; nothing is hidden.",
+      "recorded_at": "2026-11-15T19:52:27.733311+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/figures/the-monitor-reads-each-fact-once/a-tick-decodes-only-what-changed/tick_decode.py",
+      "id": "fb1ef306f08",
+      "line": 163,
+      "severity": "non-blocking",
+      "summary": "Both figures draw gridlines, which the repository's plot style removes. The decode figure calls axes.grid(axis='x') at line 163 and renders seven vertical rules in rgb(226,232,240) at 1.23:1 against white (measured at columns 202, 379, 556, 733, 911, 1088, 1265); the peak figure calls axes.grid(axis='y') at line 206 and renders one horizontal rule per y tick. They add no reading aid the figures do not already get from printed values and labelled axis ticks, and they are the only non-data ink besides the axis furniture. Non-blocking: the data still carry the weight and nothing is unreadable, so the node is not held."
+    },
+    {
+      "file": "docs/figures/the-monitor-reads-each-fact-once/a-tick-decodes-only-what-changed/tick_decode.py",
+      "id": "f1fe2f224b2",
+      "line": 176,
+      "severity": "non-blocking",
+      "summary": "The peak figure draws the base arm in rgb(160,174,192), measured at 2.26:1 against the white page. The style standard sets about 3:1 (rgb(146,146,146)) as the floor for a data grey and records a near-2:1 grey as rejected for fading out, so this fill sits on the rejected side of that line. The base bars are the quieter half of the comparison the figure exists to make, and they read washed out beside the blue arm when the image is seen at reduced size or on a projector. Non-blocking: every bar is labelled with its value and the comparison remains readable at full size."
+    },
+    {
+      "file": "docs/figures/the-monitor-reads-each-fact-once/a-tick-decodes-only-what-changed/tick_decode.py",
+      "id": "f069ee390f7",
+      "line": 47,
+      "severity": "non-blocking",
+      "summary": "The decode figure's 'everything else' series is filled with rgb(203,213,224), measured at 1.49:1 against the white page, and it is the one series never labelled in the bars because its segment falls under the 6 percent threshold in every row. A reader sees a very pale band at the end of each bar but must subtract the printed segments from the printed total to know what it is worth. Non-blocking: the band is discernible against its neighbours, both end at the printed total, and no reading of the figure's main claim depends on the value."
+    },
+    {
+      "file": "docs/figures/the-monitor-reads-each-fact-once/a-tick-decodes-only-what-changed/tick_decode.py",
+      "id": "fd0863d60e1",
+      "line": 147,
+      "severity": "non-blocking",
+      "summary": "The decode figure's subtitle reads 'the fleet's fields per stream leaves the head arm entirely'. The subject is plural ('the fleet's fields per stream') so the verb should be 'leave'. It is the figure's most prominent explanatory sentence, sitting in the title block, and the slip is visible at full size. Non-blocking: it does not obscure the claim, which the six base rows and six head rows make plain."
+    },
+    {
+      "file": "docs/figures/the-monitor-reads-each-fact-once/a-tick-decodes-only-what-changed/tick_decode.py",
+      "id": "ff2d5d76f9b",
+      "line": 203,
+      "severity": "non-blocking",
+      "summary": "In the peak figure the 600 MB ceiling rule spans the full plot width and runs through the legend's block: the dashes occupy rows 147 to 149 across x 110 to 1376, passing between the legend's second entry (text ends at row 140) and its third entry (swatch starts at row 153), 3 px from that swatch. No glyph and no data mark is touched, but the dashed rule visibly cuts the legend into two, so at reduced scale the rule can read as another legend row or as a divider between entries. Non-blocking: all three legend entries and their swatches stay legible, so nothing is hidden. A legend drawn outside the axes, or in the lower right where no bar reaches, removes the ambiguity."
+    }
+  ],
+  "item_verdicts": {
+    "contrast": "pass, both figures, with one recorded non-blocking note. Measured on the rendered PNGs: in-bar white values are 5.42:1 on rgb(43,108,176), 5.47:1 on rgb(197,48,48) and 7.53:1 on rgb(74,85,104); dark in-bar and true-up values rgb(26,32,44) are 10.98:1 on rgb(203,213,224); the peak figure's axis, legend and bar labels are black at 21:1 on white, and the ceiling rule, its swatch and its direct label are 5.47:1. No value is drawn on the mid-grey rgb(113,128,150) band (measured: zero label rows inside it), so the 4.06:1 that fill would give a label is never used for text. The peak figure's base-bar fill rgb(160,174,192) sits at 2.26:1 against white, which is a data mark rather than text and is recorded as a non-blocking finding on lightness.",
+    "data_ink": "pass, both figures. Every mark is a flat solid fill and no area is shaded. decode figure: five exact fills carry the data, measured blue rgb(43,108,176) 101,739 px, red rgb(197,48,48) 35,249 px, slate rgb(74,85,104) 102,185 px, mid grey rgb(113,128,150) 8,047 px and pale rgb(203,213,224) 13,531 px, against 0.754 of the canvas being pure white. peak figure: twelve bars in rgb(43,108,176) 74,238 px and rgb(160,174,192) 71,980 px plus one 1.4 pt dashed rule in rgb(197,48,48), against 0.801 of the canvas being pure white. No gradient, hatch, drop shadow or confidence band appears in either figure.",
+    "decoration": "pass, both figures, with a recorded defect. Fills are flat, spines are removed where they carry no scale (both figures drop the top and right spine, the decode figure also the left), and no background fill or gradient is used. The only stylisation is a faint rule set in rgb(226,232,240) at 1.23:1 against white: seven vertical rules in the decode figure (columns 202, 379, 556, 733, 911, 1088, 1265) and one horizontal rule per y tick in the peak figure. The style standard removes gridlines, so this is recorded as a non-blocking finding rather than passed silently; it does not hold the node because the data still carry the weight and every value is printed.",
+    "label_collision": "pass, both figures. In each PNG all four outermost pixel rows and columns are pure white, so nothing is clipped at the canvas edge. In the decode figure every in-bar value is centred inside its segment and drawn only on segments at least 63 px wide, each total label sits in white space past the bar end, and the frameless legend sits below the axis label clear of the data. In the peak figure each value sits 9 MB above its own bar with no neighbour label inside a bar-pair's spacing, and the legend sits above every bar. The one geometric note: the ceiling rule in the peak figure passes through the legend's empty margin (rows 147 to 149, x 110 to 1376, between the 'base' text ending at row 140 and the 'head' swatch starting at row 153), touching no glyph and no data mark, but coming within 3 px of that swatch; it is recorded as a non-blocking finding.",
+    "legibility": "pass, both figures. decode-bytes-by-census-pass (1400x925): twelve row labels in two arms, 'base 2780ddad t1' to 't6' then 'head 33f28354f7 t1' to 't6', a two-line title, the axis label 'bytes decoded in one station tick [MB]', a value printed inside every segment wider than 6 percent of the largest bar and a total 'NNN MB' past each bar's end, so the reader's question (is the fleet's-fields band present at base and absent at head) is answered at a glance. peak-bytes-per-tick (1400x670): six tick positions, a grey base and a blue bar per tick, the value printed above every bar, y ticks 0 to 600 labelled in 100s, y label 'peak traced bytes', the ceiling drawn as a dashed red rule and named, and a three-entry legend; the message is immediate.",
+    "table_form": "pass, both figures. Neither depicts information that reads better as a table. The decode figure's payload is the presence of a band in six rows and its absence in the other six, a categorical pattern that a twelve-row by five-pass table would make the reader hunt for; its printed numbers support that shape. The peak figure's payload is the distance of twelve peaks below one rule spanning the plot, which a table of numbers would make the reader compute."
+  },
+  "notes": "Read-only figure review. Only the two PNGs named in the two attached figures were opened, plus in-memory pixel reads of those same PNGs; no SVG was opened, read, listed, searched, rendered or git-shown, no other image was opened, and no file was edited, created, moved, deleted, redrawn, relabelled or reformatted. Every verdict above is about the rendered picture: the measurements (colour histograms, gridline positions, border ink, contrast ratios) were taken from the PNG arrays in memory. The figures' values were checked against the run's own artifact line and agree (base ticks 372, 442, 536, 459, 583, 523 MB and head 295, 419, 396, 343, 322, 354 MB in the decode figure, against the census totals 372.4, 441.8, 536.4, 459.0, 582.9, 523.1 and 294.6, 418.6, 396.5, 342.6, 321.6, 353.5; base peaks 176, 222, 214, 230, 240, 251 and head 186, 235, 245, 239, 229, 242 MB, against the recorded peaks 175532440, 221546802, 213683083, 230499074, 240499970, 251020932 and 185646977, 235322507, 244571954, 238507488, 229471471, 242280950 bytes). No caption finding is recorded: both captions add a fact the title does not carry (the decode caption names which band was removed, the peak caption names the ceiling as the node's own criterion), rather than only repeating the title. This review is a figure review, so it ran no suite; the reviewed figures come from the reviewed run's own commits 33f28354f7 and b4b015898e under head de97646178.",
+  "project": "reckon",
+  "review_run_id": "r-20261115T190028036355-review-of-a-tick-decodes-only-what-changed-de9764617822-figure",
+  "reviewed_base_sha": "2780ddad207d0d96a00114169e6a5f9730752227",
+  "reviewed_commits": [
+    "de976461782243487412795636699ea23efe4f3a"
+  ],
+  "reviewed_figures": [
+    {
+      "drawing_script": "docs/figures/the-monitor-reads-each-fact-once/a-tick-decodes-only-what-changed/tick_decode.py",
+      "image": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T190028036355-review-of-a-tick-decodes-only-what-changed-de9764617822-figure/image-0.png",
+      "pixels": "1400x925",
+      "rendered_from": "docs/figures/the-monitor-reads-each-fact-once/a-tick-decodes-only-what-changed/decode-bytes-by-census-pass.svg"
+    },
+    {
+      "drawing_script": "docs/figures/the-monitor-reads-each-fact-once/a-tick-decodes-only-what-changed/tick_decode.py",
+      "image": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T190028036355-review-of-a-tick-decodes-only-what-changed-de9764617822-figure/image-1.png",
+      "pixels": "1400x670",
+      "rendered_from": "docs/figures/the-monitor-reads-each-fact-once/a-tick-decodes-only-what-changed/peak-bytes-per-tick.svg"
+    }
+  ],
+  "reviewed_head_sha": "de976461782243487412795636699ea23efe4f3a",
+  "reviewed_run_id": "r-20261115T142458653959-a-tick-decodes-only-what-changed",
+  "rubric": "figure",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T20:20:00Z",
+  "total": null
+}

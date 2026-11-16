@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/section_obligations.py:43",
+    "reckon/crew/section_obligations.py:176",
+    "reckon/crew/obligation_snapshot.py:1823",
+    "reckon/crew/obligations.py:4130"
+  ],
+  "completed_at": "2026-11-16T13:51:31.867Z",
+  "dispatched_at": "2026-11-16T13:51:04Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-hot-path-reads-only-live-runs.html",
+      "line": "29",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head-run section cites batch job 1319788 and 263.49s, while the head-gate.log named in the manifest's test_logs holds job 1319833 at 14 passed in 246.97s, and the quoted command header is not the absolute-path line run-gate.sh writes, so the record a reader reconciles against does not match the log it cites (the substance holds: sacct reports 1319833 COMPLETED on all_debug with exit 0)."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "4130",
+      "severity": "non-blocking",
+      "text": "non-blocking: the importer arm selected the eight test files that import the changed modules by name at module scope, which misses tests/test_a_merged_section_owes_its_declaration.py and tests/test_crew_obligations.py because the import of merged_section_items is function-local here, so the arm never exercised the population the change replaces; tests/test_a_merged_section_owes_its_declaration.py:104 would redden on a reader that returned nothing, but that case is not among the tests done_when had actually run."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": "4729",
+      "severity": "non-blocking",
+      "text": "non-blocking: the docstring's premise, that promoted work leaves the live index before its section is accounted for, reads as if the rows it needs are absent from the source it reads, when dispatched_rows at reckon/crew/open_run_index.py:637 reads exactly those promoted records from the projection; the code is right and the rationale a maintainer would trust is not."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read the three node commits against aa086f1e29 and reviewed the hunks one by one: a 35-line projection reader plus its history fallback at reckon/crew/open_run_index.py:114 and :637, the duty's switch to ledger.session_rows at reckon/crew/section_obligations.py:43, a 15-line ledger.session_rows delegator at reckon/ledger.py:4725, the station fixture's plan record gaining its h2 and required section fields at tests/test_the_station_reads_only_what_changed.py:93, and a 65-line evidence fragment; no assertion is deleted or weakened, and the other paths in the range are other runs' release commits carried in by the fast-forward of main.",
+    "done_when": "it asks for the file green at head as an all_debug job with SLURM_JOB_ID unset, a verdict per cause, no weaker assertion, an importer arm and a logged negative control; head-gate.sbatch:3 names partition all_debug, run-gate.sh unsets SLURM_JOB_ID and closes its log with a bare EXIT= line, base-hot-path.log records 2 failed, 12 passed with both ids, and the evidence fragment tabulates one verdict per cause; the gate ran at eb23ed9b24, which is one docs-only commit behind the reviewed head 20cbca5cb3.",
+    "goal": "the node's goal is that tests/test_hot_path_reads_only_live_runs.py passes in full; head-gate.log records 14 passed and EXIT=0 at eb23ed9b24 (all_debug batch job 1319833, which sacct reports COMPLETED), and the file's two base failures are repaired at reckon/crew/section_obligations.py:43 and tests/test_the_station_reads_only_what_changed.py:93.",
+    "manifest": "read at the run directory; status complete, commits be4c64b1cf, eb23ed9b24 and 20cbca5cb3, changed_paths matching the diff, the head-gate command on its tests line, head-gate/base-hot-path/baseline-suite/after-suite/importer logs on test_logs, base-hot-path.log as negative_control_log, and outside_scope naming the six checkout-guard failures that sit at both arms.",
+    "write_paths": "the declared scope is reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the three node commits touch reckon/crew/open_run_index.py, reckon/crew/section_obligations.py, reckon/ledger.py, tests/test_the_station_reads_only_what_changed.py and docs/evidence/fragments/queued-work-needs-no-workaround/red-file-hot-path-reads-only-live-runs.html, all inside it."
+  },
+  "justifications": {
+    "durability": "reverting reckon/crew/section_obligations.py:43 to ledger.load reddens tests/test_hot_path_reads_only_live_runs.py:110.",
+    "evidence": "the done_when's measure is recorded as an all_debug job with EXIT=0 and base-hot-path.log carries both base ids, but the gate ran at eb23ed9b24 rather than the reviewed head and the importer arm at reckon/crew/open_run_index.py:637 missed the consumers that reach the change through the function-local import at reckon/crew/obligations.py:4130.",
+    "fit": "dispatched_rows mirrors its siblings' _read_fallback/_hydrate shape at reckon/crew/open_run_index.py:637, though it builds its SQL by f-string at :657 where rows_naming_trees at :627 uses a literal, and the rationale at reckon/ledger.py:4729 misstates its own source.",
+    "goal_fidelity": "tests/test_hot_path_reads_only_live_runs.py reads 14 passed at eb23ed9b24 (head-gate.log), with the complete-ledger read removed at reckon/crew/section_obligations.py:43.",
+    "reuse": "the new reader extends the owner of the projection read at reckon/crew/open_run_index.py:637 and reckon/ledger.py:4725 delegates to it in the same shape ledger.open_runs uses, so no second projection reader is forked; the search over reckon/ledger.py found only single-identity and retained-row selectors, none enumerating a session's rows.",
+    "scope_discipline": "every path the three node commits touch is inside the declared scope listed in the manifest, and no plan document or shared index was edited."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_hot_path_reads_only_live_runs.py passes in full; head-gate.log records 14 passed and EXIT=0 at eb23ed9b24 (all_debug batch job 1319833, which sacct reports COMPLETED), and the file's two base failures are repaired at reckon/crew/section_obligations.py:43 and tests/test_the_station_reads_only_what_changed.py:93.\nVERDICT done_when: it asks for the file green at head as an all_debug job with SLURM_JOB_ID unset, a verdict per cause, no weaker assertion, an importer arm and a logged negative control; head-gate.sbatch:3 names partition all_debug, run-gate.sh unsets SLURM_JOB_ID and closes its log with a bare EXIT= line, base-hot-path.log records 2 failed, 12 passed with both ids, and the evidence fragment tabulates one verdict per cause; the gate ran at eb23ed9b24, which is one docs-only commit behind the reviewed head 20cbca5cb3.\nVERDICT write_paths: the declared scope is reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the three node commits touch reckon/crew/open_run_index.py, reckon/crew/section_obligations.py, reckon/ledger.py, tests/test_the_station_reads_only_what_changed.py and docs/evidence/fragments/queued-work-needs-no-workaround/red-file-hot-path-reads-only-live-runs.html, all inside it.\nVERDICT manifest: read at the run directory; status complete, commits be4c64b1cf, eb23ed9b24 and 20cbca5cb3, changed_paths matching the diff, the head-gate command on its tests line, head-gate/base-hot-path/baseline-suite/after-suite/importer logs on test_logs, base-hot-path.log as negative_control_log, and outside_scope naming the six checkout-guard failures that sit at both arms.\nVERDICT diff: read the three node commits against aa086f1e29 and reviewed the hunks one by one: a 35-line projection reader plus its history fallback at reckon/crew/open_run_index.py:114 and :637, the duty's switch to ledger.session_rows at reckon/crew/section_obligations.py:43, a 15-line ledger.session_rows delegator at reckon/ledger.py:4725, the station fixture's plan record gaining its h2 and required section fields at tests/test_the_station_reads_only_what_changed.py:93, and a 65-line evidence fragment; no assertion is deleted or weakened, and the other paths in the range are other runs' release commits carried in by the fast-forward of main.\nCALL_SITES: reckon/crew/section_obligations.py:43, reckon/crew/section_obligations.py:176, reckon/crew/obligation_snapshot.py:1823, reckon/crew/obligations.py:4130\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_hot_path_reads_only_live_runs.py reads 14 passed at eb23ed9b24 (head-gate.log), with the complete-ledger read removed at reckon/crew/section_obligations.py:43.\nSCORE evidence: 16\nJUSTIFICATION evidence: the done_when's measure is recorded as an all_debug job with EXIT=0 and base-hot-path.log carries both base ids, but the gate ran at eb23ed9b24 rather than the reviewed head and the importer arm at reckon/crew/open_run_index.py:637 missed the consumers that reach the change through the function-local import at reckon/crew/obligations.py:4130.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path the three node commits touch is inside the declared scope listed in the manifest, and no plan document or shared index was edited.\nSCORE durability: 18\nJUSTIFICATION durability: reverting reckon/crew/section_obligations.py:43 to ledger.load reddens tests/test_hot_path_reads_only_live_runs.py:110.\nSCORE fit: 17\nJUSTIFICATION fit: dispatched_rows mirrors its siblings' _read_fallback/_hydrate shape at reckon/crew/open_run_index.py:637, though it builds its SQL by f-string at :657 where rows_naming_trees at :627 uses a literal, and the rationale at reckon/ledger.py:4729 misstates its own source.\nSCORE reuse: 19\nJUSTIFICATION reuse: the new reader extends the owner of the projection read at reckon/crew/open_run_index.py:637 and reckon/ledger.py:4725 delegates to it in the same shape ledger.open_runs uses, so no second projection reader is forked; the search over reckon/ledger.py found only single-identity and retained-row selectors, none enumerating a session's rows.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-hot-path-reads-only-live-runs.html:29 non-blocking: the head-run section cites batch job 1319788 and 263.49s, while the head-gate.log named in the manifest's test_logs holds job 1319833 at 14 passed in 246.97s, and the quoted command header is not the absolute-path line run-gate.sh writes, so the record a reader reconciles against does not match the log it cites (the substance holds: sacct reports 1319833 COMPLETED on all_debug with exit 0).\nFINDING reckon/crew/obligations.py:4130 non-blocking: the importer arm selected the eight test files that import the changed modules by name at module scope, which misses tests/test_a_merged_section_owes_its_declaration.py and tests/test_crew_obligations.py because the import of merged_section_items is function-local here, so the arm never exercised the population the change replaces; tests/test_a_merged_section_owes_its_declaration.py:104 would redden on a reader that returned nothing, but that case is not among the tests done_when had actually run.\nFINDING reckon/ledger.py:4729 non-blocking: the docstring's premise, that promoted work leaves the live index before its section is accounted for, reads as if the rows it needs are absent from the source it reads, when dispatched_rows at reckon/crew/open_run_index.py:637 reads exactly those promoted records from the projection; the code is right and the rationale a maintainer would trust is not.\n",
+  "review_run_id": "r-20261116T132702647171-review-of-qwnw-red-file-hot-path-reads-only-live-runs-20cbca5cb37b",
+  "reviewed_base_sha": "aa086f1e29d70f7c3bf63a4bd47d8ddfac35715b",
+  "reviewed_head_sha": "20cbca5cb37b98d800642538336fc60a80032013",
+  "reviewed_run_id": "r-20261116T104459305059-qwnw-red-file-hot-path-reads-only-live-runs",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T14:05:31.481400+00:00",
+  "total": 107
+}

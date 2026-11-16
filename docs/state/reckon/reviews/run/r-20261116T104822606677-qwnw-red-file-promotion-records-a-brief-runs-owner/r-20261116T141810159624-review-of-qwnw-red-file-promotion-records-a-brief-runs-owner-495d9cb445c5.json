@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:3529",
+    "reckon/crew/promotion_evidence.py:1814"
+  ],
+  "completed_at": "2026-11-16T14:20:10.310Z",
+  "dispatched_at": "2026-11-16T14:19:40Z",
+  "findings": [
+    {
+      "file": "tests/test_promotion_records_a_brief_runs_owner.py",
+      "line": "211",
+      "severity": "non-blocking",
+      "text": "non-blocking: the helper passes --wait but no case in the file exercises the bare form, so the durable-request rule its docstring at line 182 states is asserted nowhere here and a product reversion to synchronous bare completion would leave all seven cases green."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "two commits against f361d2b; 10ff263c4c changes 12 lines of the test (adds --wait at tests/test_promotion_records_a_brief_runs_owner.py:211 and an `EXIT=0` line to three fixture logs, no assertion edited) and 495d9cb adds the 83-line evidence fragment; no product module is touched.",
+    "done_when": "it names the file, an all_debug job with SLURM_JOB_ID unset, and 3 failures at 8d50b0333f; logs/base-node-test-prelaunch.log:5 names the 3 failures (3 failed, 4 passed, EXIT=1) and logs/head-node-test-final.log:4-8 records `env -u SLURM_JOB_ID` on partition all_debug at 7 passed EXIT=0.",
+    "goal": "the goal is to make tests/test_promotion_records_a_brief_runs_owner.py pass in full; at head 495d9cb the file reads \"7 passed in 6.02s / EXIT=0\" in logs/head-node-test-final.log:7-8, and the 3 ids red at the base all pass.",
+    "manifest": "it reads status complete with the two commits, the gate command, six log paths, both suite arms 58 passed EXIT=0, the negative-control log and the six rubric lines; the eval I could re-read, logs/base-suite-arm.log and logs/after-suite-arm-final.log, match what it claims.",
+    "write_paths": "the manifest declares tests/, reckon/, the queued-work-needs-no-workaround fragment directory and the node's fragment file; the diff's two files, tests/test_promotion_records_a_brief_runs_owner.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-records-a-brief-runs-owner.html, are both inside them."
+  },
+  "justifications": {
+    "durability": "the repair is guarded by the base arm that fires on its reversion (3 failed, 4 passed, EXIT=1 in logs/post-merge-node-test.log) but the diff adds no assertion, so the receipt-only rule the helper's docstring states at tests/test_promotion_records_a_brief_runs_owner.py:182-186 is described rather than guarded.",
+    "evidence": "the recorded gate is the done_when's own command at logs/head-node-test-final.log:3-8, whose EXIT=0 follows the base arm's 3 failed / EXIT=1 at logs/base-node-test-prelaunch.log:118-119.",
+    "fit": "`--wait` at tests/test_promotion_records_a_brief_runs_owner.py:211 is the form the rest of the suite uses (tests/test_crew_promotion.py:544) and the fixture's terminal `EXIT=0` matches tests/test_a_clean_landing_releases_its_worktree.py:82.",
+    "goal_fidelity": "tests/test_promotion_records_a_brief_runs_owner.py:211 carries the added --wait and the file's seven cases pass at the head commit, so the deliverable the goal names exists.",
+    "reuse": "the diff adds no function or module, extending the file's existing helper at tests/test_promotion_records_a_brief_runs_owner.py:176; a capability search over tests/ and reckon/cli.py:3532 found no shared CLI driver it should have called, so no owner is forked.",
+    "scope_discipline": "git show 10ff263c4c and 495d9cb touch only tests/test_promotion_records_a_brief_runs_owner.py and the declared fragment path, and no file outside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make tests/test_promotion_records_a_brief_runs_owner.py pass in full; at head 495d9cb the file reads \"7 passed in 6.02s / EXIT=0\" in logs/head-node-test-final.log:7-8, and the 3 ids red at the base all pass.\nVERDICT done_when: it names the file, an all_debug job with SLURM_JOB_ID unset, and 3 failures at 8d50b0333f; logs/base-node-test-prelaunch.log:5 names the 3 failures (3 failed, 4 passed, EXIT=1) and logs/head-node-test-final.log:4-8 records `env -u SLURM_JOB_ID` on partition all_debug at 7 passed EXIT=0.\nVERDICT write_paths: the manifest declares tests/, reckon/, the queued-work-needs-no-workaround fragment directory and the node's fragment file; the diff's two files, tests/test_promotion_records_a_brief_runs_owner.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-records-a-brief-runs-owner.html, are both inside them.\nVERDICT manifest: it reads status complete with the two commits, the gate command, six log paths, both suite arms 58 passed EXIT=0, the negative-control log and the six rubric lines; the eval I could re-read, logs/base-suite-arm.log and logs/after-suite-arm-final.log, match what it claims.\nVERDICT diff: two commits against f361d2b; 10ff263c4c changes 12 lines of the test (adds --wait at tests/test_promotion_records_a_brief_runs_owner.py:211 and an `EXIT=0` line to three fixture logs, no assertion edited) and 495d9cb adds the 83-line evidence fragment; no product module is touched.\nCALL_SITES: reckon/crew_run_commands.py:3529, reckon/crew/promotion_evidence.py:1814\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_promotion_records_a_brief_runs_owner.py:211 carries the added --wait and the file's seven cases pass at the head commit, so the deliverable the goal names exists.\nSCORE evidence: 18\nJUSTIFICATION evidence: the recorded gate is the done_when's own command at logs/head-node-test-final.log:3-8, whose EXIT=0 follows the base arm's 3 failed / EXIT=1 at logs/base-node-test-prelaunch.log:118-119.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show 10ff263c4c and 495d9cb touch only tests/test_promotion_records_a_brief_runs_owner.py and the declared fragment path, and no file outside the declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: the repair is guarded by the base arm that fires on its reversion (3 failed, 4 passed, EXIT=1 in logs/post-merge-node-test.log) but the diff adds no assertion, so the receipt-only rule the helper's docstring states at tests/test_promotion_records_a_brief_runs_owner.py:182-186 is described rather than guarded.\nSCORE fit: 19\nJUSTIFICATION fit: `--wait` at tests/test_promotion_records_a_brief_runs_owner.py:211 is the form the rest of the suite uses (tests/test_crew_promotion.py:544) and the fixture's terminal `EXIT=0` matches tests/test_a_clean_landing_releases_its_worktree.py:82.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function or module, extending the file's existing helper at tests/test_promotion_records_a_brief_runs_owner.py:176; a capability search over tests/ and reckon/cli.py:3532 found no shared CLI driver it should have called, so no owner is forked.\nFINDING tests/test_promotion_records_a_brief_runs_owner.py:211 non-blocking: the helper passes --wait but no case in the file exercises the bare form, so the durable-request rule its docstring at line 182 states is asserted nowhere here and a product reversion to synchronous bare completion would leave all seven cases green.\nreviewed_base_sha: f361d2bcfcedaa2068686dd3588b2907527613f2\nreviewed_head_sha: 495d9cb445c54fe7cbd3d2c342c8d6069d59a7db\nReviewed run: r-20261116T104822606677-qwnw-red-file-promotion-records-a-brief-runs-owner\n",
+  "review_run_id": "r-20261116T141810159624-review-of-qwnw-red-file-promotion-records-a-brief-runs-owner-495d9cb445c5",
+  "reviewed_base_sha": "f361d2bcfcedaa2068686dd3588b2907527613f2",
+  "reviewed_head_sha": "495d9cb445c54fe7cbd3d2c342c8d6069d59a7db",
+  "reviewed_run_id": "r-20261116T104822606677-qwnw-red-file-promotion-records-a-brief-runs-owner",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T21:08:07.038406+00:00",
+  "total": 110
+}

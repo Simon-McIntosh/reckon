@@ -15,7 +15,7 @@
     "reckon/crew/live_worker_census.py:147 ticker._pane_word({'to_state': state})",
     "reckon/crew/live_worker_census.py:233 ticker._pane_word(event) in PROGRESS_PANE_WORDS"
   ],
-  "completed_at": "",
+  "completed_at": "2026-11-15T15:49:08.892Z",
   "dimension_dispositions": {
     "evidence": {
       "kind": "folded",
@@ -69,84 +69,72 @@
   "findings": [
     {
       "file": "tests/test_a_discarded_run_is_never_listed_as_blocked.py",
-      "id": "ff893ac8ca3",
       "line": "186",
       "severity": "blocking",
       "text": "blocking: the module imports ticker at :30 and asserts `\"\u2192 needs you\" in halted_line` and `\" 1n \" in halted_line`, both of which the landed rename makes untrue at f7c7b422 (`new -> help ... 0w 0r 1h 0d 0q 0s`); the test passes at 889f7e78 and fails at head, and the done_when requires exactly this literal to change and be named in the manifest."
     },
     {
       "file": "tests/test_a_wait_nothing_can_lift_needs_the_coordinator.py",
-      "id": "f91013f7bcc",
       "line": "216",
       "severity": "blocking",
       "text": "blocking: three assertions (`:216`, `:296`, `:372`) compare `ticker._pane_word(...)` to the retired word `needs you`, each `assert 'help' == 'needs you'` at f7c7b422 and green at 889f7e78; the module is absent from the arm population, so the run's `0 added` never saw them."
     },
     {
       "file": "tests/test_a_live_workers_unreadable_manifest_is_working.py",
-      "id": "ffe27228d12",
       "line": "217",
       "severity": "blocking",
       "text": "blocking: `assert _pane_word(row) == \"needs you\"` fails at both parametrisations at f7c7b422 (`assert 'help' == 'needs you'`) and passes at 889f7e78; the pane word the module pins is the one this node renamed."
     },
     {
       "file": "tests/test_a_status_repair_prints_no_halted_row.py",
-      "id": "f13602d262f",
       "line": "93",
       "severity": "blocking",
       "text": "blocking: `assert ticker._pane_word(printed[0]) == \"needs you\"` is red at f7c7b422 and green at 889f7e78, and it is the assertion the module's own guarantee (a repair draws no row) is read against, so the module now fails for the patch's reason rather than its subject."
     },
     {
       "file": "tests/test_a_foreign_pid_never_reads_dead.py",
-      "id": "fd6fc67b391",
       "line": "319",
       "severity": "blocking",
       "text": "blocking: `assert \"needs you\" in line` on a rendered row fails at f7c7b422 because the row now reads `new -> help`, and passes at 889f7e78; the module reaches the pane through recovery and was not in the 139-module list."
     },
     {
       "file": "tests/test_a_rearmed_pipe_follower_shows_its_live_work.py",
-      "id": "fb6e78f507d",
       "line": "131",
       "severity": "blocking",
       "text": "blocking: the expected pane-word map at `:131` and `:209` pins `needs you`, so test_the_drawn_row_carries_the_word_the_record_is_written_in is red at f7c7b422 and green at 889f7e78; the module reaches the pane through the follow commands rather than importing ticker by name, which is why the importer list missed it."
     },
     {
       "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174718151481-help-word-and-waiting-states-s141/importers.txt",
-      "id": "f8f00ba0990",
       "line": "1",
       "severity": "blocking",
       "text": "blocking: the 139-module population the arms ran omits six modules that reach the pane and now fail (the five above plus test_a_rearmed_pipe_follower_shows_its_live_work.py), so the arm that produced `0 added` measured a population that could not contain the regression; the done_when's clause is about test files importing the two modules, and list membership was never shown to cover them."
     },
     {
       "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174718151481-help-word-and-waiting-states-s141/manifest.md",
-      "id": "f78d6d2a054",
       "line": "11",
       "severity": "blocking",
       "text": "blocking: the landing line states the head population had `the same failure id set as base 889f7e78 with 0 added`, but logs/importers-head-final2.log at head f7c7b422 ends `40 failed, 1218 passed, 31 warnings, 6 errors` while the base arm ends `39 failed, 1212 passed` and `comm` over the two logs' FAILED/ERROR lines yields one id present only at head: tests/test_producer_takes_new_code.py::test_a_producer_defers_a_reload_onto_unimportable_code_and_keeps_producing (_queue.Empty); an added failure reported as zero must be attributed or repaired before this lands."
     },
     {
       "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174718151481-help-word-and-waiting-states-s141/manifest.md",
-      "id": "f4478971f95",
       "line": "18",
       "severity": "non-blocking",
       "text": "non-blocking: the artifacts line quotes `importers-head-final2.log 39 failed, 1219 passed` and the base arm as `1219 passed`, while the logs themselves read `40 failed, 1218 passed` and `39 failed, 1212 passed`; the headline metrics do not reconcile with the logs they cite, so a reader comparing arms is told the populations matched when they also differ by two modules (137 vs 139)."
     },
     {
       "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174718151481-help-word-and-waiting-states-s141/manifest.md",
-      "id": "fcf70284d30",
       "line": "16",
       "severity": "non-blocking",
       "text": "non-blocking: baseline_suite declares revision 889f7e78, but logs/baseline-arm.log:1 records `# revision: 3efa649f03be78718ebc3bc9222d7c0500d8f58c`, the commit carrying this node's own product change, so the record's base arm was run at the change rather than before it; the landing fragment repeats the same misattribution."
     },
     {
       "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174718151481-help-word-and-waiting-states-s141/logs/importers-head-final.log",
-      "id": "fffd6646d98",
       "line": "1",
       "severity": "non-blocking",
       "text": "non-blocking: the header reads `# revision: ` with nothing after it, so that 39-failed arm names no revision and cannot be tied to a commit; the later arm at f7c7b422 is the one a reader has to trust."
     },
     {
       "file": "tests/test_a_run_that_needs_its_orchestrator_reads_needs_you.py",
-      "id": "ff68e906c9c",
       "line": "1",
       "severity": "non-blocking",
       "text": "non-blocking: the module was edited to assert `help` and `h` but keeps the retired word in its filename and docstring heading, so a reader searching for the current vocabulary finds a file that says the old one; a rename is cheapest while the file is already open."
@@ -190,6 +178,6 @@
   },
   "status": "parsed",
   "times_source": "run-record",
-  "timestamp": "2026-11-15T16:12:42.587528+00:00",
+  "timestamp": "2026-11-15T19:05:46.526963+00:00",
   "total": 82
 }

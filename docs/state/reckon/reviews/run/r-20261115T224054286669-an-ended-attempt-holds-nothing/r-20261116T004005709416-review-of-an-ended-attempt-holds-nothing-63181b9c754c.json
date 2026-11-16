@@ -1,0 +1,100 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own arm logs: arms/baseline.log at 6acc2ef37f records `58 passed in 32.83s` with no `FAILED` line and `EXIT=0`; arms/after.log at 63181b9c75 records `61 passed in 34.42s` with no `FAILED` line and `EXIT=0`; the set difference is empty. The instrument is shown to see failures: negative-control.log, from the same runner, records `2 failed, 1 passed in 38.73s` and `EXIT=1`.",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:2833 reserve_launch_attempt",
+    "reckon/crew/dispatch_launch.py:2857 reserve_launch_attempt lost-reclaim branch",
+    "reckon/crew/dispatch_launch.py:2931 refuse_held_launch",
+    "reckon/crew/dispatch_launch.py:4111 _supervisor_spawn_worker",
+    "reckon/crew/admission/interrupted.py:66",
+    "reckon/crew/recovery_repair_dispatch.py:1163",
+    "reckon/crew/promotion.py:2695 discard and :468 _remove_promoted_pointer_or_defer"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-an-ended-attempt-holds-nothing-63181b9c754c",
+      "recorded_at": "2026-11-16T01:46:24.605990+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-16T00:46:35Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-an-ended-attempt-holds-nothing-63181b9c754c",
+      "recorded_at": "2026-11-16T01:46:23.950651+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "id": "f8af9beed9a",
+      "line": "493",
+      "severity": "blocking",
+      "text": "blocking: the attempt-naming refusal built at promotion.py:264 is discarded by the caller every promotion goes through \u2014 `_remove_promoted_pointer_or_defer` catches the CrewError at :469 and either returns False or re-raises its own attempt-free text at :493 \u2014 so no promotion-level refusal names the launch that kept the pointer, which is the whole of the done_when's third case; tests/test_an_ended_attempt_holds_nothing.py:308 passes only because it calls the private `_remove_promoted_pointer` directly, a call site production reaches only through the wrapper that drops the message."
+    },
+    {
+      "file": "reckon/crew/recovery_liveness.py",
+      "id": "f51404858d0",
+      "line": "1534",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_reserved_attempt_ended` at reckon/crew/dispatch_launch.py:2734 re-implements the strict attempt-receipt read inline \u2014 json.loads, Mapping check, run-id equality \u2014 duplicating `_run_exit_record(..., require_run_id=True)` at reckon/crew/recovery_liveness.py:1534 rather than extending that owner with the directory argument the fix needed, while the module's own `_retired_attempt_ended` at dispatch_launch.py:2238 still routes through the owner, so two readings of one receipt can diverge without either failing."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/an-ended-attempt-holds-nothing.html",
+      "id": "f6cf9907449",
+      "line": "34",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states the after arm ran at `f5f4675488`, while arms/after.log line 1 records `# revision: 63181b9c75` and manifest.md's after_suite records 63181b9c75 too, so the record a reader checks before promotion disagrees with the log it cites about which revision was measured."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call sites",
+    "diff": "Read both commits against 6acc2ef37f: f5f4675488 changes `reservation_in_flight` at dispatch_launch.py:2610-2640, `_reserved_attempt_ended` at :2718-2740 and discard plus `_newer_attempt_named` in promotion.py; 63181b9c adds the 40-line evidence fragment; every hunk sits inside the declared write paths.",
+    "done_when": "The done_when names tests/test_an_ended_attempt_holds_nothing.py on a temporary crew home plus matched arms and ruff; the manifest records that command and arms/after.log records `61 passed` EXIT=0, but the third case at tests/test_an_ended_attempt_holds_nothing.py:308 calls the private cleanup instead of starting a promotion, so the promotion-level half of the measure is unasserted.",
+    "goal": "The node goal is to free an ended attempt on every launch, resume and discard path; all four `_reservation_refusal` sites \u2014 reckon/crew/dispatch_launch.py:2833, :2857, :2931 and :4111 \u2014 now ask a question that reads the attempt's own `attempt-N-exit.json`, and reckon/crew/promotion.py:2695 adds the same question to discard.",
+    "manifest": "Read; it records the three-file gate command, both arm logs with their revisions and `EXIT=` lines, the negative-control log, and measurement_module/measurement_cwd for the base checkout, and its results are the logs' own summary lines.",
+    "write_paths": "Read the node's declared paths \u2014 reckon/crew/dispatch_launch.py, reckon/crew/promotion.py, tests/test_an_ended_attempt_holds_nothing.py, docs/evidence/fragments/the-monitor-reads-each-fact-once/an-ended-attempt-holds-nothing.html \u2014 and `git diff --stat` between the base and the head changes exactly those four files."
+  },
+  "justifications": {
+    "durability": "tests/test_an_ended_attempt_holds_nothing.py:227 would redden if `_reserved_attempt_ended` resolved the receipt out of the reader's own crew home again, and negative-control.log shows exactly that at EXIT=1, but the third case's guard at :309 protects a message the production caller at promotion.py:468 discards, so it does not guard the behaviour it was written for.",
+    "evidence": "manifest.md records the literal three-file gate command and both arms, arms/baseline.log reads `58 passed in 32.83s` EXIT=0 and arms/after.log `61 passed in 34.42s` EXIT=0, negative-control.log reads `2 failed, 1 passed` EXIT=1, but the third case the done_when names is asserted by calling promotion.py:259 directly instead of starting a promotion, and no ruff result is recorded.",
+    "fit": "`_newer_attempt_named` at promotion.py:279 sits beside its only caller and follows the module's message-building and lazy-import idiom, with a docstring in the same register as `_remove_promoted_pointer` above it.",
+    "goal_fidelity": "Every door that raises `_reservation_refusal` now asks a question the receipt answers: dispatch_launch.py:2833 and :2857 read `held_launch_reservation`/`reservation_in_flight`, :2931 reads `held_launch_reservation`, :4111 reads it with `exclude_attempt`, and promotion.py:2695 asks `held_launch_reservation` before discarding, so an ended attempt frees launch, resume and discard alike.",
+    "reuse": "reckon/crew/recovery_liveness.py:1534 `_run_exit_record(record, name, require_run_id=True)` already owns the strict attempt-receipt read \u2014 the module's own `_retired_attempt_ended` at dispatch_launch.py:2238 still routes through it \u2014 while `_reserved_attempt_ended` at dispatch_launch.py:2734 re-implemented that read inline instead of extending the owner with a directory argument.",
+    "scope_discipline": "`git diff --stat 6acc2ef37f 63181b9c75` names exactly reckon/crew/dispatch_launch.py, reckon/crew/promotion.py, tests/test_an_ended_attempt_holds_nothing.py and docs/evidence/fragments/the-monitor-reads-each-fact-once/an-ended-attempt-holds-nothing.html, the four paths the manifest declares, and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to free an ended attempt on every launch, resume and discard path; all four sites that raise `_reservation_refusal` in reckon/crew/dispatch_launch.py \u2014 :2833, :2857, :2931 and :4111 \u2014 now ask a question that reads the attempt's own `attempt-N-exit.json`, and reckon/crew/promotion.py:2695 adds the same question to discard.\nVERDICT done_when: the done_when names tests/test_an_ended_attempt_holds_nothing.py on a temporary crew home plus matched arms and ruff; the manifest records the command and arms/after.log `61 passed` EXIT=0 and arms/baseline.log `58 passed` EXIT=0, but the third case at tests/test_an_ended_attempt_holds_nothing.py:308 calls the private cleanup instead of starting a promotion, so the promotion-level half of the measure is unasserted.\nVERDICT write_paths: read the node's declared paths \u2014 reckon/crew/dispatch_launch.py, reckon/crew/promotion.py, tests/test_an_ended_attempt_holds_nothing.py, docs/evidence/fragments/the-monitor-reads-each-fact-once/an-ended-attempt-holds-nothing.html; `git diff --stat 6acc2ef37f 63181b9c75` changes exactly those four files.\nVERDICT manifest: read; it records the literal three-file gate command, both arm logs with their revisions and `EXIT=` lines, the negative-control log, and measurement_module/measurement_cwd for the base checkout, and its results are the logs' own summary lines.\nVERDICT diff: read both commits against 6acc2ef37f \u2014 f5f4675488 changes `reservation_in_flight` at dispatch_launch.py:2610-2640, `_reserved_attempt_ended` at :2718-2740 and discard plus `_newer_attempt_named` in promotion.py, and 63181b9c adds the 40-line evidence fragment; every hunk is inside the declared write paths.\nCALL_SITES: reckon/crew/dispatch_launch.py:2833 reserve_launch_attempt, reckon/crew/dispatch_launch.py:2857 reserve_launch_attempt lost-reclaim branch, reckon/crew/dispatch_launch.py:2931 refuse_held_launch, reckon/crew/dispatch_launch.py:4111 _supervisor_spawn_worker, reckon/crew/admission/interrupted.py:66, reckon/crew/recovery_repair_dispatch.py:1163, reckon/crew/promotion.py:2695 discard and :468 _remove_promoted_pointer_or_defer\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: every door raising `_reservation_refusal` at reckon/crew/dispatch_launch.py:2833, :2857, :2931 and :4111 now reaches `held_launch_reservation`, which skips an attempt whose receipt is present at :2774.\nSCORE evidence: 13\nJUSTIFICATION evidence: arms/after.log records `61 passed in 34.42s` EXIT=0 and negative-control.log `2 failed, 1 passed` EXIT=1, but tests/test_an_ended_attempt_holds_nothing.py:308 narrows the third case and no ruff result is on record.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat 6acc2ef37f 63181b9c75` names only the four declared paths.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_an_ended_attempt_holds_nothing.py:227 fails if the receipt is resolved from the reader's own crew home again, and negative-control.log shows it failing at EXIT=1.\nSCORE fit: 17\nJUSTIFICATION fit: `_newer_attempt_named` at reckon/crew/promotion.py:279 sits beside its only caller in the module's own message-building idiom.\nSCORE reuse: 5\nJUSTIFICATION reuse: `_reserved_attempt_ended` at reckon/crew/dispatch_launch.py:2734 duplicates the strict receipt read `_run_exit_record` owns at reckon/crew/recovery_liveness.py:1534 rather than extending it.\nFINDING reckon/crew/promotion.py:493 blocking: the attempt-naming refusal built at :264 is discarded by `_remove_promoted_pointer_or_defer`, which catches at :469 and re-raises its own attempt-free text at :493, so the promotion-level refusal the done_when's third case asks for never names the attempt; tests/test_an_ended_attempt_holds_nothing.py:308 passes only because it calls the private helper directly.\nFINDING reckon/crew/recovery_liveness.py:1534 non-blocking: `_reserved_attempt_ended` re-implements the strict attempt-receipt read inline at dispatch_launch.py:2734 instead of extending the owner with a directory argument, and the two readings of one receipt are outside the owner's rule.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/an-ended-attempt-holds-nothing.html:34 non-blocking: the fragment names f5f4675488 as the after arm's revision while arms/after.log line 1 and manifest.md's after_suite both record 63181b9c75.\n",
+  "review_node": "review-of-an-ended-attempt-holds-nothing-63181b9c754c",
+  "review_run_id": "r-20261116T004005709416-review-of-an-ended-attempt-holds-nothing-63181b9c754c",
+  "reviewed_base_sha": "6acc2ef37f3ff08cb61c34802f2efb7f13445bcb",
+  "reviewed_commits": [
+    "f5f467548862b92c99ad26e7381822e920d34b60",
+    "63181b9c754cbd2fd30a812aa051d2e1d6bca1e4"
+  ],
+  "reviewed_head_sha": "63181b9c754cbd2fd30a812aa051d2e1d6bca1e4",
+  "reviewed_run_id": "r-20261115T224054286669-an-ended-attempt-holds-nothing",
+  "reviewer": {
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T004005709416-review-of-an-ended-attempt-holds-nothing-63181b9c754c"
+  },
+  "scores": {
+    "durability": 14,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T02:22:00+00:00",
+  "total": 87
+}

@@ -91,6 +91,15 @@ PID_NAMESPACE_ARGS = ("--unshare-pid", "--proc", "/proc")
 # The same allowlist governs user-scope and project-scope servers.
 WORKER_MCP_SERVERS = "worker_mcp_servers"
 
+# The flight-config key that names MCP sets: each entry a set name and the
+# servers that set holds. A node names one set and its worker connects to
+# exactly those servers, so what a worker may start is a property of the work
+# it was dispatched for rather than of the whole project. The flat key above is
+# the set a node naming none gets, which is the declaration projects carried
+# before sets existed: a flight naming no list there names nothing, so a node
+# that names no set starts no server.
+MCP_SETS = "mcp_sets"
+
 # The two harness settings the seed writes into a run home's ``settings.json``.
 # ``enableAllProjectMcpServers`` is the switch the harness reads for the
 # project's ``.mcp.json`` servers as a group, and ``enabledMcpjsonServers`` is
@@ -365,6 +374,88 @@ def _declared_worker_mcp_servers(config: Mapping[str, Any] | None) -> list[str]:
         if name and name not in names:
             names.append(name)
     return names
+
+
+class WorkerMcpSetsError(ValueError):
+    """A project's ``mcp_sets`` declaration is not a mapping of server lists.
+
+    Raised rather than read as an empty declaration: a value the reader cannot
+    interpret would otherwise connect every worker of a flight that declares
+    sets to nothing, while reporting that the flight asked for nothing.
+    """
+
+    constraint = "must be a mapping from set name to a list of MCP server names"
+
+    def __init__(self, name: str = "") -> None:
+        location = f"{MCP_SETS}.{name}" if name else MCP_SETS
+        super().__init__(f"{location}: {self.constraint}")
+
+
+class WorkerMcpSetError(ValueError):
+    """A node names an MCP set the resolved flight configuration does not hold.
+
+    The set a worker connects to is a fact about the node, so a name the flight
+    does not declare is refused by name rather than read as no set: a worker
+    that silently started nothing would report a node that asked for servers as
+    one that asked for none.
+    """
+
+    def __init__(self, name: str, declared: Iterable[str]) -> None:
+        self.name = name
+        self.declared = sorted(declared)
+        available = ", ".join(self.declared) or "none"
+        super().__init__(
+            f"node names {MCP_SETS} entry {name!r}, which this flight does not "
+            f"declare; declared sets: {available}"
+        )
+
+
+def _declared_mcp_sets(config: Mapping[str, Any] | None) -> dict[str, list[str]]:
+    """Return the MCP sets a resolved flight config declares, in declaration order.
+
+    Each set's value is read by :func:`_declared_worker_mcp_servers`, so a set
+    and the flat declaration refuse a malformed list the same way, and a set of
+    no servers is written as an empty list rather than as an absent one. An
+    empty set name is refused: it is the spelling a node that names no set
+    carries, so a set declared under it could never be selected and would read
+    as a declaration that vanished.
+    """
+    if not isinstance(config, Mapping):
+        return {}
+    declared = config.get(MCP_SETS)
+    if declared is None:
+        return {}
+    if not isinstance(declared, Mapping):
+        raise WorkerMcpSetsError()
+    sets: dict[str, list[str]] = {}
+    for name, servers in declared.items():
+        if not isinstance(name, str) or not name:
+            raise WorkerMcpSetsError()
+        try:
+            sets[name] = _declared_worker_mcp_servers({WORKER_MCP_SERVERS: servers})
+        except WorkerMcpServersError as exc:
+            raise WorkerMcpSetsError(name) from exc
+    return sets
+
+
+def worker_mcp_selection(
+    config: Mapping[str, Any] | None, mcp_set: str = ""
+) -> tuple[str, list[str]]:
+    """Return the set name a node connects under, and the servers in that set.
+
+    A node that names a set gets exactly that set's servers, and a name the
+    flight does not declare is refused by name. A node that names none gets the
+    flight's flat ``worker_mcp_servers`` declaration — the set projects carried
+    before sets existed — or no server at all when the flight names neither. The
+    returned name is the empty string in that case, because a run's record
+    states which set was selected and no set was.
+    """
+    declared = _declared_mcp_sets(config)
+    if mcp_set:
+        if mcp_set not in declared:
+            raise WorkerMcpSetError(mcp_set, declared)
+        return mcp_set, list(declared[mcp_set])
+    return "", _declared_worker_mcp_servers(config)
 
 
 def _seed_worker_inbox_hook(home: Path) -> None:
@@ -1472,6 +1563,33 @@ def create_node_tmp_runtime_paths() -> list[Path]:
     return [resolved_destination(path) for path in paths]
 
 
+def worker_scratch_write_roots(
+    writable_roots: Iterable[str | Path],
+) -> set[Path]:
+    """The handed writable roots that are some run's own scratch directory.
+
+    Every run's scratch directory is a direct child of one node-local root
+    (:func:`reckon.crew.dispatch_launch.worker_scratch_root`), and dispatch
+    hands the fence the run's own directory so the seal can re-bind it
+    writable. That directory belongs to the node that runs the worker: creating
+    it while composing the argv would place one on the host that composed the
+    launch, which for a placed step is the fleet node and not the node the
+    worker runs on. The caller therefore creates every handed root except these
+    and leaves them to the launch that knows where the worker lands.
+
+    The scratch root itself is not one of them: it is the directory sealed
+    read-only and it holds every other run's copy.
+    """
+    from reckon.crew.dispatch_launch import worker_scratch_root
+
+    root = resolved_destination(worker_scratch_root())
+    return {
+        target
+        for target in (resolved_destination(Path(raw)) for raw in writable_roots)
+        if target != root and target.is_relative_to(root)
+    }
+
+
 def worker_tmp_mount_source(
     writable_roots: Iterable[str | Path], *, node_tmp: str | Path | None
 ) -> Path | None:
@@ -1887,6 +2005,13 @@ def fence_argv(
             roots.append(target.parent)
 
     granted: set[str] = set()
+    # The run's own scratch directory is a handed root that this host may
+    # deliberately not have created: it belongs to the node that runs the
+    # worker, so the composition grants it while it is absent here and the
+    # launch that knows where the worker lands makes it before the fence runs.
+    # Every other absent root composes no grant; see
+    # :func:`worker_scratch_write_roots`.
+    by_construction = worker_scratch_write_roots(roots)
     # The handed roots minus the sealed delivery stores, resolved the way this
     # loop resolves them, so the rule that decides which roots the fence binds
     # writable is the same one the dialect is handed and an argv's ``--add-dir``
@@ -1910,8 +2035,10 @@ def fence_argv(
         # source is absent refuses the launch outright, so it composes no
         # grant. The caller creates the roots it means to hand before it
         # composes the fence, and a root it has not created yet is granted on
-        # the composition after it does.
-        if not target.exists():
+        # the composition after it does. The run's own scratch directory is the
+        # exception: it is made on the node that runs the worker, so it is
+        # granted here while absent and created there before the fence runs.
+        if not target.exists() and target not in by_construction:
             continue
         granted.add(key)
         fenced += ["--bind", key, key]

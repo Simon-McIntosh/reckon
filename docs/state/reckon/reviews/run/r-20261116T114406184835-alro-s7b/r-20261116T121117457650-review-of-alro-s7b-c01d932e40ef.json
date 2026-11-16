@@ -1,0 +1,119 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "assertion": "test_a_closing_sprint_gets_one_page.py:336 declarations equal three done values",
+      "fails_when": "Fixture stops creating three sections declared done; fixture precondition, not claimed as a production regression guard."
+    },
+    {
+      "assertion": "test_a_closing_sprint_gets_one_page.py:337 third section has no comment",
+      "fails_when": "Fixture gives the third section a landing comment; prevents erasing the count distinction."
+    },
+    {
+      "assertion": "test_a_closing_sprint_gets_one_page.py:339 ledger sections equal two canonical labels",
+      "fails_when": "A run appears for the third section or either intended landing disappears; fixture precondition independently checks the ledger."
+    },
+    {
+      "assertion": "test_a_closing_sprint_gets_one_page.py:342 rendered landed count equals literal 2",
+      "fails_when": "read_sprint_plan_row substitutes done declarations for landed sections; recorded mutation produces 3 == 2."
+    },
+    {
+      "assertion": "test_a_closing_sprint_gets_one_page.py:355 missing row status equals no plan document",
+      "fails_when": "The missing-resource branch gives another status, or the intended missing row is not found."
+    },
+    {
+      "assertion": "test_a_closing_sprint_gets_one_page.py:356 missing row has no anchor",
+      "fails_when": "_sprint_row emits an anchor without row.href; recorded mutation renders an empty-href anchor."
+    },
+    {
+      "assertion": "test_a_closing_sprint_gets_one_page.py:358-360 existing member retains an anchor",
+      "fails_when": "The renderer suppresses links indiscriminately, including a member whose document exists; positive control for the absence assertion."
+    }
+  ],
+  "assertion_independence": "No added behavior assertion compares a returned value with the same value supplied as the expected output to the tested renderer; literal 2 is independently constrained by the ledger precondition, and anchor absence/presence is inspected from rendered HTML.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/project_state.py:2438 _write_sprint_closing_page",
+    "reckon/evidence.py:1320 write_sprint_page",
+    "reckon/evidence.py:1160 read_sprint_plan_row",
+    "reckon/evidence.py:1216 _sprint_row"
+  ],
+  "completed_at": "2026-11-16T12:21:04Z",
+  "dispatched_at": "2026-11-16T12:15:12Z",
+  "failure_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T114406184835-alro-s7b/verified.log",
+      "revision": "c01d932e40ef9ad4ce344328cdcad0255826bf48",
+      "summary": "64 passed in 67.78s (0:01:07)"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T114406184835-alro-s7b/baseline.log",
+      "revision": "6d632316162ad4088235c45d9e6d14421027c22c",
+      "summary": "62 passed in 64.86s (0:01:04)"
+    }
+  },
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read all four commits from 6d632316162ad4088235c45d9e6d14421027c22c to c01d932e40ef9ad4ce344328cdcad0255826bf48; the final test fixture removes one landing comment, adds two assertions of behavior, and preserves valid sprint creation before deleting a member document.",
+    "done_when": "prompt.txt:276 requires distinguishable landed counts, a missing-document row, failing mutations and zero added importer failures on rigel; negative-control-count.log, negative-control-link.log and the paired overview logs record those measurements.",
+    "goal": "prompt.txt:38 asks for tests that reject a miscounted closing-page row and a missing-document link; tests/test_a_closing_sprint_gets_one_page.py:333-360 adds both cases without changing working production guards.",
+    "manifest": "manifest.md names four resolvable commits and completed baseline_suite/after_suite receipts; baseline.log records 62 passed with EXIT=0 and verified.log records 64 passed with EXIT=0 at the reviewed revisions.",
+    "write_paths": "prompt.txt:84-88 declares four writable paths; the base-to-head diff changes only tests/test_a_closing_sprint_gets_one_page.py and docs/evidence/fragments/a-landing-is-recorded-once/alro-s7b.html, both declared."
+  },
+  "justifications": {
+    "durability": "tests/test_a_closing_sprint_gets_one_page.py:342 fails when reckon/evidence.py:1206 counts done declarations, :356 fails when :1220-1221 stops withholding absent-document links, and :358-360 retains a positive existing-document control.",
+    "evidence": "negative-control-count.log records assert 3 == 2 at tests/test_a_closing_sprint_gets_one_page.py:342, negative-control-link.log records the erroneous empty-href anchor at :356, and verified-overview.log has the same five failure IDs as baseline-overview.log on rigel.",
+    "fit": "tests/test_a_closing_sprint_gets_one_page.py:116 extends the existing plan fixture and :333-360 follows the file's pytest and BeautifulSoup idioms with behavior-based names and an isolated checkout.",
+    "goal_fidelity": "tests/test_a_closing_sprint_gets_one_page.py:342 requires two actual landings despite three done declarations, and :356 refuses an anchor for the missing document.",
+    "reuse": "the capability search over tests found the existing overview unlanded-section check in tests/test_a_closing_plan_gets_one_sourced_overview.py:422, which checks implementable-section prose rather than sprint rows; the additions extend the existing sprint-page test owner and its _write_plan fixture instead of adding a parallel mechanism.",
+    "scope_discipline": "the complete diff touches only the declared closing-page test file and its declared four-line evidence fragment, and reckon/evidence.py remains unchanged."
+  },
+  "overview_importer_delta": {
+    "added_failure_ids": [],
+    "after_failure_ids": [
+      "tests/test_an_appended_record_claims_no_counts.py::test_an_appended_record_states_no_counts_and_no_verdict",
+      "tests/test_an_appended_record_claims_no_counts.py::test_control_a_meta_left_holding_counts_fails_case_one",
+      "tests/test_an_appended_record_claims_no_counts.py::test_control_the_renderer_without_the_flag_claims_zero_counts",
+      "tests/test_section_spelling_grammars_share_one_core.py::test_number_grammar_census_has_six_composed_frames",
+      "tests/test_structural_invariants.py::test_only_the_shared_parser_calls_fromisoformat"
+    ],
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T114406184835-alro-s7b/verified-overview.log",
+    "baseline_failure_ids": [
+      "tests/test_an_appended_record_claims_no_counts.py::test_an_appended_record_states_no_counts_and_no_verdict",
+      "tests/test_an_appended_record_claims_no_counts.py::test_control_a_meta_left_holding_counts_fails_case_one",
+      "tests/test_an_appended_record_claims_no_counts.py::test_control_the_renderer_without_the_flag_claims_zero_counts",
+      "tests/test_section_spelling_grammars_share_one_core.py::test_number_grammar_census_has_six_composed_frames",
+      "tests/test_structural_invariants.py::test_only_the_shared_parser_calls_fromisoformat"
+    ],
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T114406184835-alro-s7b/baseline-overview.log"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 asks for tests that reject a miscounted closing-page row and a missing-document link; tests/test_a_closing_sprint_gets_one_page.py:333-360 adds both cases without changing working production guards.\nVERDICT done_when: prompt.txt:276 requires distinguishable landed counts, a missing-document row, failing mutations and zero added importer failures on rigel; negative-control-count.log, negative-control-link.log and the paired overview logs record those measurements.\nVERDICT write_paths: prompt.txt:84-88 declares four writable paths; the base-to-head diff changes only tests/test_a_closing_sprint_gets_one_page.py and docs/evidence/fragments/a-landing-is-recorded-once/alro-s7b.html, both declared.\nVERDICT manifest: manifest.md names four resolvable commits and completed baseline_suite/after_suite receipts; baseline.log records 62 passed with EXIT=0 and verified.log records 64 passed with EXIT=0 at the reviewed revisions.\nVERDICT diff: read all four commits from 6d632316162ad4088235c45d9e6d14421027c22c to c01d932e40ef9ad4ce344328cdcad0255826bf48; the final test fixture removes one landing comment, adds two assertions of behavior, and preserves valid sprint creation before deleting a member document.\nCALL_SITES: reckon/project_state.py:2438 _write_sprint_closing_page, reckon/evidence.py:1320 write_sprint_page, reckon/evidence.py:1160 read_sprint_plan_row, reckon/evidence.py:1216 _sprint_row\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_a_closing_sprint_gets_one_page.py:342 requires two actual landings despite three done declarations, and :356 refuses an anchor for the missing document.\nSCORE evidence: 20\nJUSTIFICATION evidence: negative-control-count.log records assert 3 == 2 at tests/test_a_closing_sprint_gets_one_page.py:342, negative-control-link.log records the erroneous empty-href anchor at :356, and verified-overview.log has the same five failure IDs as baseline-overview.log on rigel.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the complete diff touches only the declared closing-page test file and its declared four-line evidence fragment, and reckon/evidence.py remains unchanged.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_closing_sprint_gets_one_page.py:342 fails when reckon/evidence.py:1206 counts done declarations, :356 fails when :1220-1221 stops withholding absent-document links, and :358-360 retains a positive existing-document control.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_a_closing_sprint_gets_one_page.py:116 extends the existing plan fixture and :333-360 follows the file's pytest and BeautifulSoup idioms with behavior-based names and an isolated checkout.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search over tests found the existing overview unlanded-section check in tests/test_a_closing_plan_gets_one_sourced_overview.py:422, which checks implementable-section prose rather than sprint rows; the additions extend the existing sprint-page test owner and its _write_plan fixture instead of adding a parallel mechanism.\n",
+  "review_run_id": "r-20261116T121117457650-review-of-alro-s7b-c01d932e40ef",
+  "reviewed_base_sha": "6d632316162ad4088235c45d9e6d14421027c22c",
+  "reviewed_head_sha": "c01d932e40ef9ad4ce344328cdcad0255826bf48",
+  "reviewed_run_id": "r-20261116T114406184835-alro-s7b",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T12:30:35.466957+00:00",
+  "total": 120
+}

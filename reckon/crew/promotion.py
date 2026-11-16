@@ -126,6 +126,7 @@ from reckon.crew.routing import (
     _git,
     _inspect_workspace,
     _live_pointer_worktrees,
+    _release_worktree_whole,
     _repository_tree_snapshot,
     _shadow_patch_retained,
     _shadow_worktree_records,
@@ -268,10 +269,140 @@ def _remove_promoted_pointer(run_id: str, record: Mapping[str, Any]) -> bool:
         return False
     if outcome != pending_landing.POINTER_RETIRED:
         raise CrewError(
-            f"run {run_id!r} changed while promotion ran; "
-            "its pointer and workspace are preserved; retry promotion"
+            f"run {run_id!r} changed while promotion ran"
+            f"{_newer_attempt_named(run_id, record)}; its pointer and "
+            "workspace are preserved; retry promotion"
         )
     return True
+
+
+def _newer_attempt_named(run_id: str, record: Mapping[str, Any]) -> str:
+    """Name the attempt a later launch recorded, for a refusal that kept it.
+
+    A cleanup that found the pointer belonging to another attempt preserves it,
+    and the attempt number is what tells a coordinator which launch owns the run.
+    The refusal says which field moved, so a pointer that changed for any other
+    reason still reads as the generic mismatch it is.
+    """
+    try:
+        current = read_pointer(run_id)
+    except CrewError:
+        return ""
+    attempt = current.get("attempt")
+    if attempt is None or attempt == record.get("attempt"):
+        return ""
+    return f": attempt {attempt} was recorded after this promotion read the pointer"
+
+
+def _pointer_attempt(pointer: Mapping[str, Any]) -> int | None:
+    """The attempt a pointer names, or None when it names none."""
+    try:
+        return int(pointer.get("attempt"))
+    except (TypeError, ValueError):
+        return None
+
+
+def _attempt_reservation(run_id: str, attempt: int) -> dict[str, Any]:
+    """The launch reservation a later attempt left in the run directory.
+
+    The reservation names the process that took the attempt and the door that
+    asked for it, so it is the only record a refusal can quote for a launch
+    whose pointer carries just the supervisor's own pid. The file is parsed by
+    its owner, ``dispatch_launch._read_reservation``, so every reader of a
+    reservation agrees about what one is; this reader adds only the check that
+    the record names the run it was looked up for, because a file naming another
+    run is no record of this one. A reservation the launch never wrote reads the
+    same as an unreadable one.
+    """
+    from reckon.crew.dispatch_launch import _read_reservation
+
+    loaded = _read_reservation(run_dir(run_id) / f"attempt-{attempt}.reservation")
+    if loaded is None or str(loaded.get("run_id") or "") != run_id:
+        return {}
+    return dict(loaded)
+
+
+def _launching_process_named(run_id: str, record: Mapping[str, Any]) -> str:
+    """Name the launch that owns the pointer this promotion could not retire.
+
+    A refusal is only as useful as the launch it points at: the attempt number
+    says which attempt to look for, and the reservation beside the run says
+    which process took it and which process launched that, which is what an
+    operator needs to find the work in flight instead of guessing from a pid
+    naming a supervisor they never started.
+    """
+    try:
+        current = read_pointer(run_id)
+    except CrewError:
+        return ""
+    attempt = _pointer_attempt(current)
+    if attempt is None or attempt == _pointer_attempt(record):
+        return ""
+    reservation = _attempt_reservation(run_id, attempt)
+    from reckon.crew.dispatch_launch import _reservation_launcher
+
+    launcher = _reservation_launcher(reservation).get("pid") if reservation else None
+    host = str(reservation.get("launcher_host") or "").strip()
+    supervisor = reservation.get("supervisor_pid") or current.get("pid")
+    named = ""
+    if launcher is not None:
+        on_host = f" on host {host}" if host else ""
+        named = f", launched by pid {launcher}{on_host}"
+        if supervisor is not None and supervisor != launcher:
+            named += f" (supervisor pid {supervisor})"
+    elif current.get("pid") is not None:
+        named = f", run by pid {current['pid']}"
+    return named
+
+
+def _attempt_has_ended(run_id: str, pointer: Mapping[str, Any]) -> bool:
+    """Whether the attempt a pointer names recorded its own end.
+
+    An attempt's exit receipt is the account its launch writes when it ends and
+    the same fact frees its launch reservation. A pointer naming an attempt
+    whose receipt is on disk therefore names work that is over, whatever state
+    the pointer's own fields are in.
+    """
+    attempt = _pointer_attempt(pointer)
+    if attempt is None:
+        return False
+    from reckon.crew.dispatch_launch import _reserved_attempt_ended
+
+    return _reserved_attempt_ended(run_dir(run_id), attempt)
+
+
+def _retire_a_pointer_whose_attempt_ended(
+    run_id: str, record: Mapping[str, Any]
+) -> bool:
+    """Finish cleanup against a pointer a later, ended launch left behind.
+
+    A promotion whose own attempt is no longer the pointer's cannot retire the
+    attempt it read, and refusing leaves the run's cleanup to a coordinator who
+    has to stop and discard it by hand although its row is already written.
+    When the attempt now on the pointer recorded its end, this promotion
+    completes the cleanup its own attempt started: the pointer goes, and the
+    run directory keeps the ended attempt's receipts. The pointer is removed
+    only while it still names the attempt this reading saw, so a launch that
+    started after it is left to its own promotion.
+    """
+    from reckon.crew import pending_landing
+
+    try:
+        current = read_pointer(run_id)
+    except CrewError:
+        return False
+    if _pointer_attempt(current) in (None, _pointer_attempt(record)):
+        return False
+    if not _attempt_has_ended(run_id, current):
+        return False
+    identity = pending_landing.attempt_identity(current)
+    return (
+        pending_landing.retire_pointer_if(
+            run_id,
+            lambda observed: pending_landing.attempt_identity(observed) == identity,
+        )
+        == pending_landing.POINTER_RETIRED
+    )
 
 
 def _keep_pointer_for_pending_landing(run_id: str) -> bool:
@@ -438,6 +569,11 @@ def _remove_promoted_pointer_or_defer(
     still finishes it. A pointer another attempt owns is left exactly as it is:
     marking it would send that attempt into the repair-only branch with no
     record of its own to finish.
+
+    A pointer a later launch moved to its own attempt needs no landing repair
+    once the attempt it belongs to has ended: that launch recorded its own end,
+    so the promotion finishes cleanup by removing the pointer rather than
+    parking the run behind a mark nothing will come back for.
     """
     from reckon.crew.recovery_review_delivery import _is_review_run
 
@@ -453,6 +589,10 @@ def _remove_promoted_pointer_or_defer(
                 return True
             _mark_promoted_pointer(run_id)
             return False
+        if not finishing_another_writers_row and _retire_a_pointer_whose_attempt_ended(
+            run_id, record
+        ):
+            return True
         if finishing_another_writers_row:
             _record_a_raced_landing(run_id, record, reviewed_head=reviewed_head)
             retired = _retire_a_raced_pointer(run_id, record)
@@ -464,7 +604,9 @@ def _remove_promoted_pointer_or_defer(
                 return False
         if not _keep_pointer_for_pending_landing(run_id):
             raise CrewError(
-                f"run {run_id!r} changed while promotion ran and its pointer "
+                f"run {run_id!r} changed while promotion ran"
+                f"{_newer_attempt_named(run_id, record)}"
+                f"{_launching_process_named(run_id, record)} and its pointer "
                 "could not be marked for the landing pass: its promotion is "
                 "recorded, and the merge of its reviewed head is left to the "
                 "landing record this promotion wrote"
@@ -472,7 +614,9 @@ def _remove_promoted_pointer_or_defer(
         if finishing_another_writers_row:
             return False
         raise CrewError(
-            f"run {run_id!r} changed while promotion ran; its promotion is "
+            f"run {run_id!r} changed while promotion ran"
+            f"{_newer_attempt_named(run_id, record)}"
+            f"{_launching_process_named(run_id, record)}; its promotion is "
             "recorded and its pointer is kept, marked pending_landing_repair, so "
             "the next landing pass finishes the merge of its reviewed head"
         ) from exc
@@ -607,40 +751,79 @@ def _landing_checkout(
 #: learn that nothing has changed.
 
 
+def _shared_branch_revision(record: Mapping[str, Any]) -> str:
+    """The revision the shared checkout's primary branch carries, or "".
+
+    A run's citations are what it made beyond its base, and a repair tells a
+    worker to merge the shared branch into its worktree. The commits that merge
+    brought in were made by peers and by already-landed runs, so the inference
+    subtracts this revision's history and cites only what the run itself made.
+
+    Read from the checkout the run was dispatched from, through the reader the
+    classification sweep already uses, because that reader answers for a whole
+    pass from one git process rather than one per live run. A record naming no
+    readable checkout answers empty, and the caller then cites the plain range:
+    an unknown shared branch is not evidence that its commits are the run's.
+    """
+    repository_raw = str(record.get("repo") or "").strip()
+    if not repository_raw:
+        return ""
+    repository = Path(repository_raw).expanduser()
+    if not repository.is_dir():
+        return ""
+    from .recovery_classification import _primary_branch_revision
+
+    return _primary_branch_revision(repository, time.monotonic())
+
+
 def _promotion_commits(
     record: Mapping[str, Any], manifest_commits: Sequence[Any]
 ) -> list[str]:
     """Read the run's committed range even when a repair cleared its citations.
 
-    The range is the first-parent line in ``base..HEAD`` in the run's own
-    tree: imports through a merge belong to primary, while the merge belongs
-    to the run. A tree whose head has
-    not moved answers from the previous read. The head is resolved as files
-    rather than by spawning git, so the check itself costs no process; when the
-    head cannot be read the answer is not stored, because an unreadable head is
-    not a stable one.
+    The range is the run's own line in ``base..HEAD`` in the run's own tree,
+    less the history the shared branch reaches, so imports through a merge
+    belong to primary while the merge itself stays the run's. A run that merged
+    the shared branch into its worktree therefore cites its own commit and that
+    merge and not the commits the merge brought in, and no commit it imported
+    from another branch is credited to it either.
+
+    The exclusion is not made redundant by the traversal: a run whose branch was
+    rebased onto the shared one has primary's own commits on its first-parent
+    line, and those are still not the run's work.
+
+    The range is answered from the previous read until the tree's own head or
+    the shared branch moves, and both are resolved as files or by one cached
+    read rather than by a git process per live run. When the head cannot be
+    read the answer is not stored.
     """
+    from .merge import commits_between
     from .recovery_memo import _worktree_head_identity
-    from .recovery_review_subject import _review_tree, reviewed_commits
+    from .recovery_review_subject import _review_tree
 
     tree = _review_tree(record)
     base = str(record.get("base_sha") or record.get("base") or "").strip()
     citations = tuple(str(sha) for sha in manifest_commits)
+    shared = _shared_branch_revision(record)
 
     def read() -> list[str]:
-        history = reviewed_commits(tree, base, "HEAD", first_parent=True)
+        if tree is None:
+            return [str(sha) for sha in manifest_commits]
+        history = commits_between(
+            tree, base, "HEAD", excluding=shared, first_parent=True
+        )
         return (
             [sha for sha, _subject in history]
             if history
             else [str(sha) for sha in manifest_commits]
         )
 
-    key = (str(tree) if tree is not None else "", base, citations)
+    key = (str(tree) if tree is not None else "", base, citations, shared)
     head_identity = _worktree_head_identity(tree)
     if head_identity in {"no-tree", "no-git", "no-head"}:
         return read()
     return file_memo.memoized_key(
-        "promotion_first_parent_commits", (*key, head_identity), read
+        "promotion_commits_beyond_primary", (*key, head_identity), read
     )
 
 
@@ -666,6 +849,83 @@ def _default_gate_evidence_from_manifest(
         commits=commits,
         no_commit_reason=no_commit_reason,
     )
+
+
+#: The waiver a measurement run's row carries where an ordinary implement run
+#: would owe a review: nothing reviews a run nobody merges.
+MEASUREMENT_REVIEW_WAIVER = (
+    "the run is a measurement run: it builds and gates, and nothing reviews or lands it"
+)
+
+#: The declaration a measurement run's row carries where an ordinary run states
+#: why its plan's impl did not move.
+MEASUREMENT_IMPL_WAIVER = (
+    "a measurement run replays a section already declared done, so it moves no impl"
+)
+
+
+def _measurement_reason(record: Mapping[str, Any]) -> str:
+    """The reason this run was dispatched as a measurement run, or "".
+
+    Read off the pointer the dispatch wrote, so the review reflex's decision and
+    the promotion's are made from one record: a run the reflex refused to review
+    is exactly the run whose row states a measurement.
+    """
+    marker = record.get("measure_only")
+    if isinstance(marker, Mapping):
+        return str(marker.get("reason") or "").strip() or "measurement run"
+    return str(marker or "").strip()
+
+
+def _release_measurement_worktree(record: Mapping[str, Any]) -> dict[str, Any]:
+    """Remove a measurement run's worktree, whose head is never merged.
+
+    The ordinary release withholds a worktree whose HEAD is not an ancestor of
+    the integration branch, because that head is the only copy of work nobody
+    has merged yet. A measurement run's head is never merged — not landing is
+    what the run is for — so the same policy would hold every replay's tree
+    back, and a measurement population, which by construction is every arm
+    building the same landed sections, would fill the disk it is measured on.
+    Nothing is lost by removing it: the commit lives in the repository's object
+    store and the ledger row names it, and what the run produced is its figures.
+
+    Removal happens before the ordinary release rather than after it, so the
+    release reports the tree as already absent and its audit describes the
+    trees this removal left behind instead of contradicting them. A tree
+    another live pointer names is left in place: a share of the tree is not
+    this run's to take.
+    """
+    if not _measurement_reason(record):
+        return {}
+    worktree_value = str(record.get("worktree") or "")
+    repo_value = str(record.get("repo") or "")
+    if not worktree_value:
+        return {}
+    worktree = Path(worktree_value)
+    if not worktree.is_dir():
+        return {}
+    repo = Path(repo_value) if repo_value else None
+    if repo is None or not repo.is_dir():
+        return {"released": False, "withheld": "repository root is unavailable"}
+    run_id = str(record.get("run_id") or "")
+    claims = [
+        claim
+        for claim in _live_pointer_worktrees().get(worktree.resolve(), [])
+        if claim != run_id
+    ]
+    if claims:
+        return {
+            "released": False,
+            "withheld": "another live run names this worktree: "
+            + ", ".join(sorted(claims)),
+        }
+    released = _release_worktree_whole(repo, worktree, run_id=run_id)
+    if not released.get("released", True):
+        return {"released": False, "withheld": released["withheld"]}
+    outcome: dict[str, Any] = {"released": True}
+    if not released.get("trash_removed"):
+        outcome["trash_left"] = released["trash"]
+    return outcome
 
 
 def _run_plan_slug(record: Mapping[str, Any], node: Mapping[str, Any]) -> str:
@@ -754,6 +1014,21 @@ def complete(
         with _pointer_lock(run_id):
             record = _read_pointer_or_rebuild(run_id, root=root)
         record = {**record, **read_dispatch_detail(record)}
+        # A measurement run is one its dispatch marked: it replays work that has
+        # already landed, so its row records a measurement rather than a landing
+        # and nothing about it is ever reviewed or merged.
+        measurement_reason = _measurement_reason(record)
+        if measurement_reason:
+            outcome = (
+                f"measured: {str(outcome).strip()}"
+                if str(outcome).strip()
+                else "measured"
+            )
+            if not str(no_impl_change).strip():
+                # A replay must not move the plan it replays: the section is
+                # already declared done, and an impl tick from a duplicate of
+                # that work would be a plan movement describing nothing.
+                no_impl_change = MEASUREMENT_IMPL_WAIVER
         # A dispatch whose launch was refused leaves a run that names no
         # project: the refusal removed the pointer or never let it carry a
         # project, and the run directory it left behind holds no supervisor
@@ -878,6 +1153,12 @@ def complete(
                 commit_list=gate_commits,
                 root=resolved.get("root", root),
             )
+            if measurement_reason:
+                # The reflex composes no review for a measurement run, so the
+                # run owes none and the row states why instead of holding the
+                # landing for a review that will never arrive. The tier is still
+                # resolved, because the row records what the run changed.
+                return {"reason": MEASUREMENT_REVIEW_WAIVER}
             return _require_review_waiver(
                 run_id,
                 record,
@@ -2250,6 +2531,14 @@ def _complete_locked(
         comment = (
             {"recorded": False, "reason": "shadow evidence does not land code"}
             if shadow
+            else {
+                "recorded": False,
+                "reason": (
+                    "a measurement run builds and gates and lands nothing, so it "
+                    "records no landing comment on the plan"
+                ),
+            }
+            if _measurement_reason(record)
             else _record_landing_comment(
                 project=project,
                 plan=str(node.get("plan") or ""),
@@ -2276,11 +2565,37 @@ def _complete_locked(
     profile_anchor = _profile_fold_anchor(project, ledger_root)
     try:
         written = ledger.append_run(project, run, root=ledger_root)
-    except ledger.LedgerError:
+    except ledger.LedgerError as exc:
         # Another completion can land after the read above. Treat only an
         # observed matching record as success; every other ledger error is
-        # still a refusal.
-        existing = row_for_run(project, run_id, ledger_root)
+        # still a refusal. A failed lookup must also restore the plan write:
+        # a store that cannot accept a row may be unable to read it back.
+        existing = None
+        try:
+            existing = row_for_run(project, run_id, ledger_root)
+        finally:
+            if existing is None:
+                rollback = _restore_landing_writes(
+                    checkout,
+                    _plan_comment_store_path(
+                        project=project,
+                        plan=str(node.get("plan") or ""),
+                        comment=comment,
+                        root=ledger_root,
+                        checkout=checkout,
+                    ),
+                )
+                _record_landing_refusal(
+                    run_id,
+                    step="run-store",
+                    message=str(exc),
+                    checkout=checkout,
+                    rollback=rollback,
+                )
+                if not all(rollback.values()):
+                    raise ledger.LedgerError(
+                        f"{exc}{_unrestored_landing_writes(rollback)}"
+                    ) from exc
         if existing is None:
             raise
         already_promoted = True
@@ -2415,6 +2730,7 @@ def _complete_locked(
         # copy is left to the trash sweep rather than deleted here: a copy
         # deleted inline keeps a serial review sweep waiting on the filesystem.
         with deferring_worktree_copy_deletion():
+            measurement_worktree = _release_measurement_worktree(record)
             release = _release_after_promotion(
                 run_id,
                 record,
@@ -2422,6 +2738,8 @@ def _complete_locked(
                 process_already_ended=ended_writer,
                 gate=str(gate),
             )
+        if measurement_worktree:
+            release["measurement_worktree"] = measurement_worktree
         _stop_at_stage_boundary("the release record")
         release, recorded = _record_release_on_ledger(
             project=project,
@@ -2601,6 +2919,11 @@ def discard(run_id: str, *, allowed_phases: Sequence[str] = ()) -> dict[str, Any
     phases, tested against the record re-read under the lock, so a caller whose
     own pre-check raced a test sees a launch as the refusal it is rather than
     removing a run that has started.
+
+    A run whose attempt is still in flight is refused for the same reason: a
+    reservation names the launch the pointer has not recorded yet, and an
+    attempt that has ended — an exit receipt, or a supervisor this host
+    probes dead — holds nothing, so only a live one refuses.
     """
     with _promotion_lock(run_id), _pointer_lock(run_id):
         record = read_pointer(run_id)
@@ -2617,6 +2940,21 @@ def discard(run_id: str, *, allowed_phases: Sequence[str] = ()) -> dict[str, Any
             raise CrewError(
                 f"cannot discard live run {run_id!r}: recorded pid {pid} is alive"
             )
+        # The pointer's pid is one account of what holds the run and it is not
+        # always the worker's: a resume's attempt is recorded on its
+        # reservation before the pointer learns the pid, and a supervisor that
+        # exited early takes the pointer's pid with it. The attempt's own
+        # reservation is the other account, and an attempt that has recorded
+        # either its end or a process this host probes gone holds nothing, so
+        # only a live attempt refuses here.
+        from reckon.crew.dispatch_launch import (
+            _reservation_refusal,
+            held_launch_reservation,
+        )
+
+        held = held_launch_reservation(run_dir(run_id))
+        if held is not None:
+            raise _reservation_refusal(run_id, held)
         path = pointer_path(run_id)
         # Before the pointer goes: a reader that sees the absence must find the
         # record behind it, and a record written afterwards leaves a window in
@@ -3228,6 +3566,7 @@ from reckon.crew.promotion_scope import (
     _shadow_stream_contamination,
     _snapshot_entries,
     _strip_store_owned_content,
+    _unrestored_landing_writes,
     _wall_exceeded_budget,
     _worker_authored_landing_record,
     _write_shadow_patch,

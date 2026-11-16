@@ -340,7 +340,8 @@ def _candidates_scan(
     moved_off: dict[tuple[str, str | None], int] = {}
     for row in records:
         if attempts_out is not None and (
-            row.get("node") == request.node.id and row.get("plan") == request.node.plan
+            row.get("node") == request.node.id
+            and ledger.row_plan(row) == request.node.plan
         ):
             attempts_out["attempts"] = attempts_out.get("attempts", 0) + 1
         stamp = parse_utc(

@@ -1,0 +1,354 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [
+    {
+      "assertion": "assert row[\"question\"] == _record()[\"question\"]",
+      "failure_condition": "Replacing question or context in validate_decision with a constant makes the persisted/read field differ from the fresh _record fixture; the writer return is no longer the oracle.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 115
+    },
+    {
+      "assertion": "assert row[\"context\"] == _record()[\"context\"]",
+      "failure_condition": "Replacing question or context in validate_decision with a constant makes the persisted/read field differ from the fresh _record fixture; the writer return is no longer the oracle.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 116
+    },
+    {
+      "assertion": "assert row[\"question\"] == question",
+      "failure_condition": "Replacing either authored field with a fixed or swapped string in validate_decision makes the read disagree with the original parameter values; two different authored pairs prevent a single correct-looking constant from satisfying both.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 303
+    },
+    {
+      "assertion": "assert row[\"context\"] == context",
+      "failure_condition": "Replacing either authored field with a fixed or swapped string in validate_decision makes the read disagree with the original parameter values; two different authored pairs prevent a single correct-looking constant from satisfying both.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 304
+    },
+    {
+      "assertion": "assert calls == [authored[\"options\"]]",
+      "failure_condition": "Bypassing the shared normalizer leaves calls empty, and omitting recommendation-first ordering makes the first saved option wait instead of route; the call assertion guards delegation, not option semantics on its own.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 321
+    },
+    {
+      "assertion": "assert saved[\"options\"][0][\"value\"] == \"route\"",
+      "failure_condition": "Bypassing the shared normalizer leaves calls empty, and omitting recommendation-first ordering makes the first saved option wait instead of route; the call assertion guards delegation, not option semantics on its own.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 322
+    },
+    {
+      "assertion": "assert saved[\"options\"] == [\n        {\"value\": \"route\", \"label\": \"route\"},\n        {\"value\": \"wait\", \"label\": \"wait\"},\n    ]",
+      "failure_condition": "Rejecting a supported spelling or dropping, relabelling or failing to reorder its options prevents the saved list from equalling the two literal expected choices.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 337
+    },
+    {
+      "assertion": "assert before[\"decisions\"] == []",
+      "failure_condition": "Dropping pending_on or treating a missing, foreign or partial exit receipt as completion puts the decision in ready too early; never recognising its matching exit leaves pending populated and ready missing; removing the retained reference fails the literal pending_on expectation. Identity assertions compare independently read lists against the created identity and guard routing, not ID generation.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 349
+    },
+    {
+      "assertion": "assert [row[\"id\"] for row in before[\"pending\"]] == [saved[\"id\"]]",
+      "failure_condition": "Dropping pending_on or treating a missing, foreign or partial exit receipt as completion puts the decision in ready too early; never recognising its matching exit leaves pending populated and ready missing; removing the retained reference fails the literal pending_on expectation. Identity assertions compare independently read lists against the created identity and guard routing, not ID generation.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 350
+    },
+    {
+      "assertion": "assert after[\"pending\"] == []",
+      "failure_condition": "Dropping pending_on or treating a missing, foreign or partial exit receipt as completion puts the decision in ready too early; never recognising its matching exit leaves pending populated and ready missing; removing the retained reference fails the literal pending_on expectation. Identity assertions compare independently read lists against the created identity and guard routing, not ID generation.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 359
+    },
+    {
+      "assertion": "assert [row[\"id\"] for row in after[\"decisions\"]] == [saved[\"id\"]]",
+      "failure_condition": "Dropping pending_on or treating a missing, foreign or partial exit receipt as completion puts the decision in ready too early; never recognising its matching exit leaves pending populated and ready missing; removing the retained reference fails the literal pending_on expectation. Identity assertions compare independently read lists against the created identity and guard routing, not ID generation.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 360
+    },
+    {
+      "assertion": "assert after[\"decisions\"][0][\"pending_on\"] == {\"run_id\": \"awaited-run\"}",
+      "failure_condition": "Dropping pending_on or treating a missing, foreign or partial exit receipt as completion puts the decision in ready too early; never recognising its matching exit leaves pending populated and ready missing; removing the retained reference fails the literal pending_on expectation. Identity assertions compare independently read lists against the created identity and guard routing, not ID generation.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 361
+    },
+    {
+      "assertion": "assert serve_crew_view(\"decisions\")[\"pending\"][0][\"id\"] == saved[\"id\"]",
+      "failure_condition": "Treating a running gate as complete removes the expected pending row, while ignoring gate_watch.end leaves pending nonempty and the ready identity absent.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 373
+    },
+    {
+      "assertion": "assert result[\"pending\"] == []",
+      "failure_condition": "Treating a running gate as complete removes the expected pending row, while ignoring gate_watch.end leaves pending nonempty and the ready identity absent.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 376
+    },
+    {
+      "assertion": "assert result[\"decisions\"][0][\"id\"] == saved[\"id\"]",
+      "failure_condition": "Treating a running gate as complete removes the expected pending row, while ignoring gate_watch.end leaves pending nonempty and the ready identity absent.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 377
+    },
+    {
+      "assertion": "assert [row[\"id\"] for row in result[\"decisions\"]] == [ready[\"id\"]]",
+      "failure_condition": "Filtering every nonempty choice removes the reversible row, mixing it with ready changes the ready identity list, and losing choice or standing_rule violates the literal expectations.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 388
+    },
+    {
+      "assertion": "assert result[\"pending\"] == []",
+      "failure_condition": "Filtering every nonempty choice removes the reversible row, mixing it with ready changes the ready identity list, and losing choice or standing_rule violates the literal expectations.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 389
+    },
+    {
+      "assertion": "assert [row[\"id\"] for row in result[\"taken_and_reversible\"]] == [taken[\"id\"]]",
+      "failure_condition": "Filtering every nonempty choice removes the reversible row, mixing it with ready changes the ready identity list, and losing choice or standing_rule violates the literal expectations.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 390
+    },
+    {
+      "assertion": "assert result[\"taken_and_reversible\"][0][\"choice\"] == \"route\"",
+      "failure_condition": "Filtering every nonempty choice removes the reversible row, mixing it with ready changes the ready identity list, and losing choice or standing_rule violates the literal expectations.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 391
+    },
+    {
+      "assertion": "assert (\n        result[\"taken_and_reversible\"][0][\"standing_rule\"] == \"Use available capacity\"\n    )",
+      "failure_condition": "Filtering every nonempty choice removes the reversible row, mixing it with ready changes the ready identity list, and losing choice or standing_rule violates the literal expectations.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 392
+    },
+    {
+      "assertion": "assert row[key] == authored[key]",
+      "failure_condition": "Dropping or replacing any of risk, lead_action, recommended_by, recommendation_source or held_runs in validate_decision or the read makes that row field differ from the untouched authored input; record_decision return values are not used as content expectations.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 417
+    },
+    {
+      "assertion": "assert \"sample\" in calls",
+      "failure_condition": "Bypassing the resolver leaves calls empty; discarding the plan recommendation or using the recommending session as owner makes the literal recommendation, provenance, owner, liveness or session assertion fail.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 454
+    },
+    {
+      "assertion": "assert row[\"recommended_by\"] == \"review-session\"",
+      "failure_condition": "Bypassing the resolver leaves calls empty; discarding the plan recommendation or using the recommending session as owner makes the literal recommendation, provenance, owner, liveness or session assertion fail.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 455
+    },
+    {
+      "assertion": "assert row[\"recommendation_source\"] == \"reviewer\"",
+      "failure_condition": "Bypassing the resolver leaves calls empty; discarding the plan recommendation or using the recommending session as owner makes the literal recommendation, provenance, owner, liveness or session assertion fail.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 456
+    },
+    {
+      "assertion": "assert row[\"owner_session\"] == \"owner-session\"",
+      "failure_condition": "Bypassing the resolver leaves calls empty; discarding the plan recommendation or using the recommending session as owner makes the literal recommendation, provenance, owner, liveness or session assertion fail.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 457
+    },
+    {
+      "assertion": "assert row[\"plan_has_live_session\"] is True",
+      "failure_condition": "Bypassing the resolver leaves calls empty; discarding the plan recommendation or using the recommending session as owner makes the literal recommendation, provenance, owner, liveness or session assertion fail.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 458
+    },
+    {
+      "assertion": "assert row[\"plan_has_live_session\"] is False",
+      "failure_condition": "Equating recorder presence with live ownership makes liveness true or owner_session non-null, and dropping the no-queue risk breaks its literal assertion.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 469
+    },
+    {
+      "assertion": "assert row[\"owner_session\"] is None",
+      "failure_condition": "Equating recorder presence with live ownership makes liveness true or owner_session non-null, and dropping the no-queue risk breaks its literal assertion.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 470
+    },
+    {
+      "assertion": "assert row[\"risk\"] == \"Deferred compatibility work accumulates.\"",
+      "failure_condition": "Equating recorder presence with live ownership makes liveness true or owner_session non-null, and dropping the no-queue risk breaks its literal assertion.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 471
+    },
+    {
+      "assertion": "assert row[\"owner_session\"] == \"owner-session\"",
+      "failure_condition": "Resolving ownership only from held requests loses the active owner, conflating historical ownership with liveness loses the owner or leaves live true after sessions end, and misclassifying the recommending owner breaks the owner provenance assertion.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 495
+    },
+    {
+      "assertion": "assert row[\"plan_has_live_session\"] is True",
+      "failure_condition": "Resolving ownership only from held requests loses the active owner, conflating historical ownership with liveness loses the owner or leaves live true after sessions end, and misclassifying the recommending owner breaks the owner provenance assertion.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 496
+    },
+    {
+      "assertion": "assert row[\"recommendation_source\"] == \"owner\"",
+      "failure_condition": "Resolving ownership only from held requests loses the active owner, conflating historical ownership with liveness loses the owner or leaves live true after sessions end, and misclassifying the recommending owner breaks the owner provenance assertion.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 497
+    },
+    {
+      "assertion": "assert ended[\"owner_session\"] == \"owner-session\"",
+      "failure_condition": "Resolving ownership only from held requests loses the active owner, conflating historical ownership with liveness loses the owner or leaves live true after sessions end, and misclassifying the recommending owner breaks the owner provenance assertion.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 502
+    },
+    {
+      "assertion": "assert ended[\"plan_has_live_session\"] is False",
+      "failure_condition": "Resolving ownership only from held requests loses the active owner, conflating historical ownership with liveness loses the owner or leaves live true after sessions end, and misclassifying the recommending owner breaks the owner provenance assertion.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 503
+    },
+    {
+      "assertion": "assert serve_crew_view(\"decisions\")[\"count\"] == 2",
+      "failure_condition": "Suppressing open records too early makes the initial count differ from two; removing _answered_in_plan leaves the linked crew question in the final ready list after the authored answer.",
+      "file": "tests/test_lead_decision_read.py",
+      "independent_of_writer": true,
+      "line": 512
+    }
+  ],
+  "call_sites": [
+    "reckon/crew_run_commands.py:crew_view:708",
+    "reckon/crew_run_commands.py:crew_decision_record:582",
+    "reckon/mcp.py:_crew:2978",
+    "reckon/mcp_views.py:serve_crew_view:4467"
+  ],
+  "completed_at": "2026-11-15T18:37:36Z",
+  "dispatched_at": "2026-11-15T18:32:37Z",
+  "failure_delta_evidence": {
+    "after": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T165130268039-ldop-every-decision-waiting-on-the-lead-is-one-read-codex/repair-after-suite.log",
+      "revision": "d54cafe651a008c3aa1d3aa0cf3dd3b4ece07649",
+      "summary": "58 passed in 36.23s"
+    },
+    "baseline": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T165130268039-ldop-every-decision-waiting-on-the-lead-is-one-read-codex/baseline.log",
+      "revision": "b46256908fc3eac1a5b4f4dc5f21ec0740feee34",
+      "summary": "58 passed in 34.55s"
+    },
+    "method": "Read completed baseline_suite and after_suite logs named by source manifest; compare FAILED identifiers with passing summaries and terminal EXIT=0. The base suite revision is original dispatch base, not the incremental review base."
+  },
+  "findings": [],
+  "item_verdicts": {
+    "call_sites": "verified 4 production call sites at reviewed head",
+    "diff": "Read commits 8e614eba94c82082d124368c7841e58400d5021b and d54cafe651a008c3aa1d3aa0cf3dd3b4ece07649 separately against previous reviewed head 30c7d39129054c63f91e1c6645799c505be9636c; the product/test repair and appended evidence address the prior findings without unrelated edits.",
+    "done_when": "Source prompt.txt:164 and live docs/plans/lead-decisions-reach-one-place.html section s1 are covered by the retained 4/1/0 and plan-only cases plus tests/test_lead_decision_read.py:343-377 for pending-to-ready receipts and :506 for direct plan answers.",
+    "goal": "Source prompt.txt:38 requires one mounted-project read ordered by held work; reckon/crew/lead_decisions.py:306 now retains release context and ownership and partitions ready, pending and reversible questions as live plan section s1 requires.",
+    "manifest": "Source manifest.md records completed baseline_suite and after_suite receipts with 58 passes each, a focused 41-pass repair gate, and product-reversal and content-mutation controls whose on-disk summaries and EXIT lines agree.",
+    "write_paths": "Source manifest.md:3 declares reckon, tests and the evidence-fragment subtree; the incremental diff contains exactly the three paths named in this review's goal and each fits those grants."
+  },
+  "justifications": {
+    "durability": "tests/test_lead_decision_read.py:115-116 and :303-304 use independent authored expectations, :349-361 reject foreign and partial receipts, and :388-517 guard classification and ownership, although the ledger-receipt fallback at reckon/crew/lead_decisions.py:282-286 has no dedicated new assertion.",
+    "evidence": "repair-final-focused.log records 41 passed at 8e614eba94c82082d124368c7841e58400d5021b, whose product and tests are unchanged at reviewed head, and repair-reversed-product-verified.log records 12 failed with the repair removed.",
+    "fit": "reckon/crew/lead_decisions.py:49 wraps the established option normalizer and :334 uses the existing coordinator resolver, while the added helper names and comments describe mechanisms without transient source labels.",
+    "goal_fidelity": "reckon/crew/lead_decisions.py:115-129 preserves the missing context, :334-386 resolves live ownership and provenance, and :389-415 separates pending and reversible questions while :295 suppresses linked plan answers.",
+    "reuse": "Capability searches over reckon/crew and the decision owners found no existing pending-decision reference/classification helper; reckon/crew/lead_decisions.py:51, :276, :334 and :350 wrap the opened _store, recovery_liveness, plan_coordinator and gate_watch owners rather than forking them.",
+    "scope_discipline": "The incremental diff changes only reckon/crew/lead_decisions.py, tests/test_lead_decision_read.py and the named evidence fragment, all authorised and relevant to the aggregate-read goal."
+  },
+  "negative_control_evidence": {
+    "repaired_content_mutation": {
+      "exit_status": 1,
+      "failure_id": "tests/test_lead_decision_read.py::test_every_open_decision_is_one_read_in_held_work_order",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T165130268039-ldop-every-decision-waiting-on-the-lead-is-one-read-codex/repair-content-mutation-verified.log",
+      "quote": "1 failed in 0.35s"
+    },
+    "reproduction": {
+      "exit_status": 1,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T165130268039-ldop-every-decision-waiting-on-the-lead-is-one-read-codex/repair-reproduction.log",
+      "quote": "8 failed, 18 passed in 2.58s",
+      "revision": "30c7d39129054c63f91e1c6645799c505be9636c"
+    },
+    "reversed_product": {
+      "exit_status": 1,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T165130268039-ldop-every-decision-waiting-on-the-lead-is-one-read-codex/repair-reversed-product-verified.log",
+      "quote": "12 failed, 18 passed in 4.24s"
+    },
+    "reviewed_content_mutation": {
+      "exit_status": 0,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T165130268039-ldop-every-decision-waiting-on-the-lead-is-one-read-codex/repair-original-content-oracle-verified.log",
+      "quote": "1 passed in 0.31s"
+    }
+  },
+  "previous_findings_resolution": "All four previous blocking findings and reuse dimension addressed by 8e614eba94c82082d124368c7841e58400d5021b; no new blocking finding in the incremental change.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Source prompt.txt:38 requires one mounted-project read ordered by held work; reckon/crew/lead_decisions.py:306 now retains release context and ownership and partitions ready, pending and reversible questions as live plan section s1 requires.\nVERDICT done_when: Source prompt.txt:164 and live docs/plans/lead-decisions-reach-one-place.html section s1 are covered by the retained 4/1/0 and plan-only cases plus tests/test_lead_decision_read.py:343-377 for pending-to-ready receipts and :506 for direct plan answers.\nVERDICT write_paths: Source manifest.md:3 declares reckon, tests and the evidence-fragment subtree; the incremental diff contains exactly the three paths named in this review's goal and each fits those grants.\nVERDICT manifest: Source manifest.md records completed baseline_suite and after_suite receipts with 58 passes each, a focused 41-pass repair gate, and product-reversal and content-mutation controls whose on-disk summaries and EXIT lines agree.\nVERDICT diff: Read commits 8e614eba94c82082d124368c7841e58400d5021b and d54cafe651a008c3aa1d3aa0cf3dd3b4ece07649 separately against previous reviewed head 30c7d39129054c63f91e1c6645799c505be9636c; the product/test repair and appended evidence address the prior findings without unrelated edits.\nCALL_SITES: reckon/crew_run_commands.py:crew_view:708, reckon/crew_run_commands.py:crew_decision_record:582, reckon/mcp.py:_crew:2978, reckon/mcp_views.py:serve_crew_view:4467\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/lead_decisions.py:115-129 preserves the missing context, :334-386 resolves live ownership and provenance, and :389-415 separates pending and reversible questions while :295 suppresses linked plan answers.\nSCORE evidence: 20\nJUSTIFICATION evidence: repair-final-focused.log records 41 passed at 8e614eba94c82082d124368c7841e58400d5021b, whose product and tests are unchanged at reviewed head, and repair-reversed-product-verified.log records 12 failed with the repair removed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The incremental diff changes only reckon/crew/lead_decisions.py, tests/test_lead_decision_read.py and the named evidence fragment, all authorised and relevant to the aggregate-read goal.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_lead_decision_read.py:115-116 and :303-304 use independent authored expectations, :349-361 reject foreign and partial receipts, and :388-517 guard classification and ownership, although the ledger-receipt fallback at reckon/crew/lead_decisions.py:282-286 has no dedicated new assertion.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/lead_decisions.py:49 wraps the established option normalizer and :334 uses the existing coordinator resolver, while the added helper names and comments describe mechanisms without transient source labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches over reckon/crew and the decision owners found no existing pending-decision reference/classification helper; reckon/crew/lead_decisions.py:51, :276, :334 and :350 wrap the opened _store, recovery_liveness, plan_coordinator and gate_watch owners rather than forking them.\n",
+  "reuse_search": {
+    "definitions": {
+      "_answered_in_plan": "Small join against parsed plan decision choice; extends existing decision aggregate and uses existing parsed state rather than a second plan parser.",
+      "_pending_reference": "New decision-specific single run/gate reference validator in existing decision owner; searched reference validation and pending_on capabilities; no existing owner found.",
+      "_report_received": "Composes existing strict recovery_liveness._run_exit_record, ledger.run_path/_read_run and gate_watch.read_document receipts; no competing decision-readiness owner found.",
+      "added_test_functions": "Extend test_lead_decision_read.py, the existing owner of aggregate decision-read contract checks."
+    },
+    "owners_opened": [
+      "reckon/_store.py:4122",
+      "reckon/crew/recovery_liveness.py:1534",
+      "reckon/crew/plan_coordinator.py:256",
+      "reckon/crew/gate_watch.py:96"
+    ],
+    "search_scope": "Capability searches for pending, reversible, decision, reference, report and coordinator mechanisms over reckon/crew and existing decision owners."
+  },
+  "review_basis": "Incremental review of the two commits after the preceding reviewed head; exact git show at reviewed_head_sha, separate from assigned read-only worktree HEAD cb220df9218b66df7365214b28c7634774a0abe9.",
+  "review_run_id": "r-20261115T182912662071-review-of-ldop-every-decision-waiting-on-the-lead-is-one-read-codex-d54cafe651a0",
+  "reviewed_base_sha": "30c7d39129054c63f91e1c6645799c505be9636c",
+  "reviewed_head_sha": "d54cafe651a008c3aa1d3aa0cf3dd3b4ece07649",
+  "reviewed_run_id": "r-20261115T165130268039-ldop-every-decision-waiting-on-the-lead-is-one-read-codex",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T18:39:56.640058+00:00",
+  "total": 119
+}

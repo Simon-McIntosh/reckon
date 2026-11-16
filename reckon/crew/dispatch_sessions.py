@@ -1227,7 +1227,12 @@ def resume_plan(
     record = read_pointer(run_id)
     if record.get("launch") != "cli":
         raise CrewError(f"run {run_id!r} is not a spawned run; resume it in-harness")
-    if record_process_alive(record, process_alive) is True:
+    from reckon.crew.recovery_liveness import _record_is_known_foreign
+
+    if (
+        not _record_is_known_foreign(record)
+        and record_process_alive(record, process_alive) is True
+    ):
         from reckon.crew import resumption as _resumption
 
         _resumption.store_refused_advice(run_id, advice)
@@ -1365,6 +1370,10 @@ def resume_plan(
             images=(record.get("node") or {}).get("images") or (),
             fence=FENCE_WORKERS,
             fence_config=config,
+            # The set is the node's, so a resume reconnects the worker to the
+            # same servers the dispatch did rather than to whatever the flight's
+            # default list says now.
+            worker_mcp_set=str((record.get("node") or {}).get("mcp_set") or ""),
             unmergeable_patterns=_resume_unmergeable_patterns(record),
             masked_paths=_shadow_masks_for_record(record),
         )
@@ -1386,6 +1395,8 @@ def resume_plan(
     )
 
     def capture(current: dict[str, Any]) -> dict[str, Any]:
+        if "launcher_host_observation" in record:
+            current["launcher_host_observation"] = record["launcher_host_observation"]
         # The held reservation's reach statement, resolved above onto the
         # pointer this attempt read, so the pointer persisted below carries it.
         if "placement_reservation" in record:
@@ -1480,6 +1491,7 @@ def _recorded_task_node(record: Mapping[str, Any]) -> TaskNode:
             data.get("manifest_path") or record.get("manifest_path") or ""
         ),
         negative_control=str(data.get("negative_control") or ""),
+        mcp_set=str(data.get("mcp_set") or ""),
         estimated_hours=data.get("estimated_hours"),
         requires_decisions=[str(key) for key in data.get("requires_decisions") or ()],
         images=[str(path) for path in data.get("images") or ()],
@@ -1891,6 +1903,7 @@ def change_lane(
                 images=(record.get("node") or {}).get("images") or (),
                 fence=FENCE_WORKERS,
                 fence_config=config,
+                worker_mcp_set=str((record.get("node") or {}).get("mcp_set") or ""),
                 unmergeable_patterns=_resume_unmergeable_patterns(record),
                 masked_paths=_shadow_masks_for_record(record),
             )
@@ -2127,6 +2140,17 @@ def terminate(run_id: str) -> dict[str, Any]:
     """
 
     def stop(record: dict[str, Any]) -> dict[str, Any]:
+        from reckon.crew.recovery_liveness import (
+            _record_is_known_foreign,
+            launcher_host_is_gone,
+        )
+
+        foreign = _record_is_known_foreign(record)
+        if foreign and not launcher_host_is_gone(record):
+            raise CrewError(
+                f"run {run_id!r} launched on {record.get('launcher_host')}: "
+                "scheduler has not established its worker is gone; stop it there"
+            )
         run_directory = run_dir(run_id)
         recorded_pid = record.get("pid")
         project = str(record.get("project") or "") or None
@@ -2143,63 +2167,71 @@ def terminate(run_id: str) -> dict[str, Any]:
         # away from its supervisor is reached by the run's environment mark
         # rather than by descent, which is why the resolution is the run's own
         # rather than the recorded pid's.
-        target_pids = _run_process_pids(
-            int(recorded_pid) if recorded_pid else None,
-            run_id=run_id,
-            run_dir=run_directory,
-            expected_start_time=start_time,
-        )
-        # A recorded pid that still names a process goes through the
-        # identity-checked signal: it refuses a pid the kernel has since
-        # recycled rather than signalling an unrelated process. A recorded
-        # start tick alone is not a reason to take that path — it is evidence
-        # about a process the table no longer holds, where there is no identity
-        # left to protect. A supervisor that has already exited leaves exactly
-        # that record, so taking the identity-checked path on the tick alone
-        # would refuse, or fail a group lookup for a pid with no process, and
-        # never reap the worker it left reparented to init — which the run's
-        # environment mark reaches.
-        if recorded_pid and process_alive(int(recorded_pid)) is True:
-            ended = _signal_process_group(
-                int(recorded_pid),
-                record.get("pid_start_time"),
-                run_dir=run_directory,
-                reason="run-stop",
-                project=project,
-            )
+        # Foreign pids can collide with unrelated local processes. The
+        # scheduler settles the remote end without probing or signalling them.
+        if foreign:
+            target_pids = []
+            ended = []
+            alive_after = []
+            killed = []
         else:
-            ended = signal_worker(
-                0,
-                signal.SIGTERM,
-                reason="run-stop",
+            target_pids = _run_process_pids(
+                int(recorded_pid) if recorded_pid else None,
+                run_id=run_id,
                 run_dir=run_directory,
-                project=project,
-                run_id=run_id,
-                reach_run=True,
+                expected_start_time=start_time,
             )
-            if not ended and not recorded_pid:
-                raise CrewError(f"run {run_id!r} has no process to stop")
-        alive_after = _await_run_processes_gone(
-            int(recorded_pid) if recorded_pid else None,
-            run_id=run_id,
-            run_dir=run_directory,
-            expected_start_time=start_time,
-        )
-        killed: list[int] = []
-        if alive_after:
-            killed = _escalate_run_stop(
-                recorded_pid,
-                start_time,
-                run_id=run_id,
-                run_directory=run_directory,
-                project=project,
-            )
+            # A recorded pid that still names a process goes through the
+            # identity-checked signal: it refuses a pid the kernel has since
+            # recycled rather than signalling an unrelated process. A recorded
+            # start tick alone is not a reason to take that path — it is evidence
+            # about a process the table no longer holds, where there is no identity
+            # left to protect. A supervisor that has already exited leaves exactly
+            # that record, so taking the identity-checked path on the tick alone
+            # would refuse, or fail a group lookup for a pid with no process, and
+            # never reap the worker it left reparented to init — which the run's
+            # environment mark reaches.
+            if recorded_pid and process_alive(int(recorded_pid)) is True:
+                ended = _signal_process_group(
+                    int(recorded_pid),
+                    record.get("pid_start_time"),
+                    run_dir=run_directory,
+                    reason="run-stop",
+                    project=project,
+                )
+            else:
+                ended = signal_worker(
+                    0,
+                    signal.SIGTERM,
+                    reason="run-stop",
+                    run_dir=run_directory,
+                    project=project,
+                    run_id=run_id,
+                    reach_run=True,
+                )
+                if not ended and not recorded_pid:
+                    raise CrewError(f"run {run_id!r} has no process to stop")
             alive_after = _await_run_processes_gone(
                 int(recorded_pid) if recorded_pid else None,
                 run_id=run_id,
                 run_dir=run_directory,
                 expected_start_time=start_time,
             )
+            killed: list[int] = []
+            if alive_after:
+                killed = _escalate_run_stop(
+                    recorded_pid,
+                    start_time,
+                    run_id=run_id,
+                    run_directory=run_directory,
+                    project=project,
+                )
+                alive_after = _await_run_processes_gone(
+                    int(recorded_pid) if recorded_pid else None,
+                    run_id=run_id,
+                    run_dir=run_directory,
+                    expected_start_time=start_time,
+                )
         worktree = str(record.get("worktree") or "")
         holders = _processes_holding(Path(worktree)) if worktree else []
         record["target_pids"] = target_pids
@@ -2258,9 +2290,14 @@ def _record_stopped_attempt_exit(run_id: str, record: Mapping[str, Any]) -> bool
         _supervisor_write,
     )
     from reckon.crew.process_signal import _recorded_worker_pid
-    from reckon.crew.recovery_liveness import _current_attempt_number, _run_exit_record
+    from reckon.crew.recovery_liveness import (
+        _current_attempt_number,
+        _record_is_known_foreign,
+        _run_exit_record,
+        launcher_host_is_gone,
+    )
 
-    if record.get("launcher_host") not in (None, socket.gethostname()):
+    if _record_is_known_foreign(record) and not launcher_host_is_gone(record):
         return False
     directory = run_dir(run_id)
     attempt = _current_attempt_number(record) or 1
@@ -2292,6 +2329,8 @@ def _record_stopped_attempt_exit(run_id: str, record: Mapping[str, Any]) -> bool
     receipt = receipt | {
         "stop": {"reason": "run-stop", "stopped_at": record["stopped_at"]}
     }
+    if "launcher_host_observation" in record:
+        receipt["launcher_host_observation"] = record["launcher_host_observation"]
     if not (directory / name).exists() and not _supervisor_write(
         directory / name, receipt
     ):

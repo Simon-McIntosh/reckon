@@ -1,5 +1,18 @@
 {
   "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "digests": {
+        "s66": "0dda301eaea993588a07325a8d82b67dcb0ff1510885e4cdd42ec92c2c819243"
+      },
+      "reason": "s66 revised exactly as the three acted answers state: per-tree files, directory-wide write measure, two pinned tests added to the write paths",
+      "units": [
+        "s66"
+      ],
+      "when": "2026-11-15T18:43:34.631198+00:00"
+    }
+  ],
   "completed_at": "2026-11-15T16:23:02.980Z",
   "dispatched_at": "2026-11-15T16:22:43Z",
   "findings": [
@@ -33,7 +46,68 @@
   "plan_slug": "the-monitor-reads-each-fact-once",
   "plan_version": 343,
   "project": "reckon",
-  "responses": {},
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "0e356ec6a3277de7c9505b7838beb11b2338bbba",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "s66's done-when now snapshots every file under the store's directory (path, st_ino, st_mtime_ns, size) before and after each pass: a write is any file whose identity changed or appeared, and bytes written are the summed sizes of those files; no stand-in over one function.",
+      "reason": "",
+      "when": "2026-11-15T18:41:00.340178+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "0e356ec6a3277de7c9505b7838beb11b2338bbba",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "s66 now fixes the mechanism: one answer file per tree, named from a digest of the tree path, so a new answer rewrites only its tree's file; the per-tree-cap option is removed.",
+      "reason": "",
+      "when": "2026-11-15T18:41:12.834729+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "0e356ec6a3277de7c9505b7838beb11b2338bbba",
+      "commit_basis": "edit",
+      "finding": "reasoning-2",
+      "note": "s66's write paths now add tests/test_a_fresh_process_asks_git_only_what_moved.py and tests/test_a_stopped_claims_git_answer_is_reused_until_its_worktree_moves.py, which the node moves onto the per-tree layout without weakening what they assert.",
+      "reason": "",
+      "when": "2026-11-15T18:41:27.623841+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "0e356ec6a3277de7c9505b7838beb11b2338bbba",
+      "commit_basis": "edit",
+      "note": "s66's done-when now snapshots every file under the store's directory (path, st_ino, st_mtime_ns, size) before and after each pass: a write is any file whose identity changed or appeared, and bytes written are the summed sizes of those files; no stand-in over one function.",
+      "reason": "",
+      "when": "2026-11-15T18:41:00.340178+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "0e356ec6a3277de7c9505b7838beb11b2338bbba",
+      "commit_basis": "edit",
+      "note": "s66 now fixes the mechanism: one answer file per tree, named from a digest of the tree path, so a new answer rewrites only its tree's file; the per-tree-cap option is removed.",
+      "reason": "",
+      "when": "2026-11-15T18:41:12.834729+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "0e356ec6a3277de7c9505b7838beb11b2338bbba",
+      "commit_basis": "edit",
+      "note": "s66's write paths now add tests/test_a_fresh_process_asks_git_only_what_moved.py and tests/test_a_stopped_claims_git_answer_is_reused_until_its_worktree_moves.py, which the node moves onto the per-tree layout without weakening what they assert.",
+      "reason": "",
+      "when": "2026-11-15T18:41:27.623841+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-monitor-reads-each-fact-once/r-20261115T162038848230-plan-review-of-the-monitor-reads-each-fact-once.json",
   "review_run_id": "r-20261115T162038848230-plan-review-of-the-monitor-reads-each-fact-once",
   "reviewed_blob_sha": "e3eaffa579b7b2d5a51ad15d5cf4c6f1e047afb2",
   "rubric": "content",

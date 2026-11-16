@@ -1,0 +1,101 @@
+<section id="red-file-an-acceptance-check-holds-no-lease-landing">
+  <h2>The acceptance-lease suite passes in full at head</h2>
+
+  <p><strong>What changed.</strong> Two defects in
+  <code>tests/test_an_acceptance_check_holds_no_lease.py</code>, both in the
+  test and neither in the product.</p>
+
+  <p><strong>Cause one: the fixture wrote a role the product no longer
+  refuses.</strong> Every fixture in the file recorded its run with
+  <code>"role": "implement"</code> and then asserted a refusal carrying
+  <code>"unmerged_commits"</code>. Acceptance now lands an implementation
+  itself: <code>accept_clean_review</code> computes
+  <code>automatic_land = bool(missing and implementation)</code> and measures the
+  work at a merge candidate instead of refusing it, so the
+  <code>unmerged_commits</code> refusal survives only in the arm kept for a role
+  acceptance does not land (<code>if missing and not implementation</code>). The
+  assertion was reading a key the product stopped producing, and three tests
+  raised <code>KeyError: 'unmerged_commits'</code> against a run the product was
+  promoting.</p>
+
+  <p><strong>Cause two: the file never stubbed the measure transport.</strong>
+  That merge-candidate measure runs as a job on the project's measure partition,
+  so <code>review_landing.replay_candidate</code> submitted
+  <code>sbatch --wait --parsable --partition=all_debug</code>. The file reached a
+  scheduler verb it never provided, and the repository's
+  <code>_refuse_real_scheduler</code> guard in <code>tests/conftest.py</code>
+  failed eight tests at teardown naming the verb it caught. That guard is why a
+  real submission is a failure here rather than a submitted job.</p>
+
+  <p><strong>What the file now asserts.</strong> The delivered implementation's
+  own commit breaks the gate it recorded green: <code>node.txt</code> no longer
+  contains <code>satisfied</code>, and <code>gate.sh</code> reports
+  <code>FAILED node.txt::satisfied</code> with a non-zero exit, which is the
+  shape the arm reader needs before it may call a gate failed rather than
+  unreadable. The scheduler transport is replaced by one function that runs the
+  partition's own wrap script in this allocation and writes the receipt that
+  script produces; the archive script, the gate command and the
+  <code>EXIT=</code> receipt remain the product's own.</p>
+
+  <p>No assertion was deleted. The refusal is read as
+  <code>gate_report["integrated_verdict"] == "failed"</code>. The memo tests
+  still count one <code>_commits_missing_from</code> call per unchanged input and
+  two once a revised head or a changed stored review moves. The coordinator test
+  still completes on the real cross-host lease while the sweep is held inside the
+  commit check, and the two lease tests still observe the lease and the ledger
+  row. Two tests were re-expressed against the rule that displaced the old one: a
+  run the primary branch already carries is re-gated in place and promoted
+  without a measure, and a run refused at its merge candidate is judged again
+  rather than promoted when the branch the remote carries moves at an unchanged
+  head, because the remote answer is one of the inputs a refusal memo is keyed
+  on.</p>
+
+  <p><code>_sweep()</code> calls
+  <code>acceptance.dispatch_awaiting_reviews(project=PROJECT, session="")</code>
+  rather than handing each promotion to a worker: a promotion handed to a worker
+  reports only what finished inside its wait, and these tests ask about one run's
+  own outcome.</p>
+
+  <h3 id="red-file-an-acceptance-check-holds-no-lease-measured">Measured</h3>
+
+  <table id="red-file-an-acceptance-check-holds-no-lease-arms">
+    <caption>Each arm is a log whose first lines name the label, revision, tree
+    and command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's file, head arm</td>
+        <td><code>faa84aa492</code>, working tree</td>
+        <td>13 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the node's file, base arm</td>
+        <td><code>faa84aa492</code>, the file at that revision</td>
+        <td>3 failed, 9 passed, 8 errors, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The head arm runs with <code>SLURM_JOB_ID</code> unset, so the scheduler
+  guard is armed and every submission the file reaches is the stub it installs.
+  The base arm is the same revision with the node's file restored to its
+  committed form and restored afterwards, so the only difference between the arms
+  is this change. Both arms run the same command.</p>
+
+  <h3 id="red-file-an-acceptance-check-holds-no-lease-control">Negative control</h3>
+
+  <p>The base arm reports eleven non-passing ids, and they are the two causes in
+  one log. Three are the unmerged-commit assertions, each
+  <code>KeyError: 'unmerged_commits'</code>: the three memo tests,
+  <code>test_unchanged_refusal_is_skipped_and_a_new_head_is_judged</code>,
+  <code>test_a_changed_stored_review_rejudges_the_same_head</code> and
+  <code>test_missing_commits_reaching_primary_rejudges_the_same_head</code>. The
+  other eight are teardown errors naming a scheduler verb the file never
+  provided, <code>sbatch --wait --parsable --partition=all_debug</code>:
+  <code>test_coordinator_completes_while_the_sweep_checks_unmerged_commits</code>,
+  <code>test_a_changed_remote_releases_the_refusal_and_promotes</code>, the two
+  memo tests that also assert a refusal, and the three arms of
+  <code>test_changed_refusal_inputs_are_judged_again</code>.</p>
+
+  <h3 id="red-file-an-acceptance-check-holds-no-lease-outside">Outside scope</h3>
+
+  <p>No product file changed, so the arm over the test files that import the
+  change is the node's own file, which no other test imports. Nothing else in the
+  suite is touched by this change, and nothing failed in the head arm.</p>
+</section>

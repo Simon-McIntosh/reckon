@@ -1,0 +1,51 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T20:47:45.651Z",
+  "dispatched_at": "2026-11-15T20:46:38Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "revision-reads-on-the-store-s24",
+      "recorded_at": "2026-11-15T21:47:43.298020+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "logs/negative-control.log",
+      "line": 5,
+      "severity": "blocking",
+      "text": "logs/negative-control.log:5 blocking: the log the manifest files as `negative_control_log` stops after five progress dots \u2014 no FAILED ids, no \"N failed\" summary and no bare `EXIT=` line \u2014 so the repair's negative control cannot be read as a red run; the manifest's artifacts line quotes \"2 failed, 6 passed\" for this path and the evidence fragment quotes \"3 failed, 3 passed in 32.66s\", so no two records agree and the durability claim rests on no readable receipt."
+    },
+    {
+      "file": "docs/evidence/fragments/history-persists-as-detail-washes-out/revision-reads-on-the-store-s24.html",
+      "line": 98,
+      "severity": "non-blocking",
+      "text": "docs/evidence/fragments/history-persists-as-detail-washes-out/revision-reads-on-the-store-s24.html:98 non-blocking: the arms table still names `aea929edc1f8` as the run's head with \"64 passed in 71.64s\", and :95 a negative control of \"3 failed, 3 passed in 32.66s\", while the head that ships is 588705d9c6 with 66 passed (logs/after-suite.log) and the run's own manifest states 2 failed, 6 passed; the landed fragment reports arms the run did not finish on."
+    },
+    {
+      "file": "docs/figures/plan-review-cycles/measure_review_cycles.py",
+      "line": 1072,
+      "severity": "non-blocking",
+      "text": "docs/figures/plan-review-cycles/measure_review_cycles.py:1072 non-blocking: the repair commit leaves `ax.tick_params(                    axis=\"y\", labelsize=20)` and removes the file's trailing newline, so `ruff format --check` reports 11 hunks at the head where the base revision (84165b187d) was formatted \u2014 a fix commit that adds a finding to a path it stages, contrary to the repository's pre-commit rule."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal (prompt.txt:38, 'Answer velocity's revision-scoped figures and the review-cycle script from the run store') is served at the head \u2014 reckon/velocity.py:1294 `_record_file_additions` now wraps reckon/run_store.py:1132 `record_file_additions`, and docs/figures/plan-review-cycles/measure_review_cycles.py:329 still reads `run_store.stored_run_rows`, so both readers answer from the store.\nVERDICT done_when: the done-when (prompt.txt:166) asks that a runs-absent revision answer from the store with a nonzero population equal to the ledger's at the earlier revision and an empty store refused; tests/test_revision_reads_restate_against_the_store.py:322 asserts the population is nonzero and equals `_ledger_run_count(history, history.held_head)`, :340-341 that the figures restate and the sources are the store's, and :371-396 that an empty or absent store raises naming it.\nVERDICT write_paths: the six declared paths (prompt.txt:52-57) cover all five files in `git show --stat 588705d9c6` \u2014 the fragment, the figure script, reckon/run_store.py, reckon/velocity.py and tests/test_revision_reads_restate_against_the_store.py.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T102555144818-revision-reads-on-the-store-s24/manifest.md \u2014 status complete, commits aea929edc1 84165b187d 588705d9c6, after-suite \"66 passed in 339.17s\" and base arm \"58 passed in 107.17s\" with the log paths given; its artifacts line quotes \"2 failed, 6 passed\" for logs/negative-control.log, which that file does not carry.\nVERDICT diff: read 588705d9c6 against 84165b187d (one commit, five files, 215 insertions and 154 deletions): the promotion stamp is replaced by None at six call sites, `_record_file_revisions` is rebuilt on the new `record_file_additions`, velocity delegates to it and widens `_landed_in_window` to COMMITTED_RECORD_SOURCES, two tests are appended, and the figure script carries formatter churn including a mangled `ax.tick_params(` at :1072 and a lost trailing newline.\nCALL_SITES: reckon/velocity.py:1392 (recover_ledger_clocks -> run_store.record_file_additions), reckon/velocity.py:825 (_read_store_records -> stored_run_revisions), reckon/crew/promotion_gate.py:1236 (run_store.import_ledger -> backfill_revisions at reckon/run_store.py:1444), reckon/velocity.py:1880 (_landed_in_window, reached through coordinator_cost at :2545), scripts/import_runs_into_store.py:46\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/run_store.py:1132 is now the one scan of a run's record-file addition and reckon/velocity.py:1309 reads it, so the revision the store serves is the tree's own fact rather than a record field that names a different commit.\nSCORE evidence: 12\nJUSTIFICATION evidence: logs/after-suite.log ends \"66 passed in 339.17s\" with EXIT=0 at 588705d9c6 and logs/base-arm.log \"58 passed in 107.17s\" with EXIT=0 at 27958ce9c4fa, but logs/negative-control.log ends after five progress dots with no FAILED ids, no summary and no EXIT line while the manifest's artifacts line quotes \"2 failed, 6 passed\".\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: every path in `git show --stat 588705d9c6` is inside the declared write paths, but docs/figures/plan-review-cycles/measure_review_cycles.py carries roughly ninety changed lines of formatter churn the goal does not imply and is left unformatted at :1072.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_revision_reads_restate_against_the_store.py:412 reddens if a promotion row resumes stamping the record's promoted_revision and :443 reddens if reckon/velocity.py:1896 narrows back to \"committed_primary_snapshot\" alone, though the negative control that would show the second failing is truncated.\nSCORE fit: 14\nJUSTIFICATION fit: the delegating call at reckon/velocity.py:1306 uses the module's existing function-local import form (see :813), but docs/figures/plan-review-cycles/measure_review_cycles.py:1072 ships `ax.tick_params(                    axis=\"y\", labelsize=20)` and drops the trailing newline, which `ruff format --check` rewrites at the head and left the base alone.\nSCORE reuse: 16\nJUSTIFICATION reuse: the duplication the previous review named is resolved \u2014 reckon/velocity.py:1294 wraps reckon/run_store.py:1132 instead of repeating its log \u2014 and the search for a sibling owner found reckon/git_dates.py:_git_first_committed, which answers HTML page birth epochs rather than a run's record commit, so the addition neither extends nor duplicates it.\nFINDING logs/negative-control.log:5 blocking: the log the manifest files as `negative_control_log` stops after five progress dots \u2014 no FAILED ids, no \"N failed\" summary and no bare `EXIT=` line \u2014 so the repair's negative control cannot be read as a red run; the manifest's artifacts line quotes \"2 failed, 6 passed\" for this path and the evidence fragment quotes \"3 failed, 3 passed in 32.66s\", so no two records agree and the durability claim rests on no readable receipt.\nFINDING docs/evidence/fragments/history-persists-as-detail-washes-out/revision-reads-on-the-store-s24.html:98 non-blocking: the arms table still names `aea929edc1f8` as the run's head with \"64 passed in 71.64s\", and :95 a negative control of \"3 failed, 3 passed in 32.66s\", while the head that ships is 588705d9c6 with 66 passed (logs/after-suite.log) and the run's own manifest states 2 failed, 6 passed; the landed fragment reports arms the run did not finish on.\nFINDING docs/figures/plan-review-cycles/measure_review_cycles.py:1072 non-blocking: the repair commit leaves `ax.tick_params(                    axis=\"y\", labelsize=20)` and removes the file's trailing newline, so `ruff format --check` reports 11 hunks at the head where the base revision (84165b187d) was formatted \u2014 a fix commit that adds a finding to a path it stages, contrary to the repository's pre-commit rule.\n",
+  "review_run_id": "r-20261115T203930470784-review-of-revision-reads-on-the-store-s24-588705d9c698",
+  "reviewed_base_sha": "84165b187d1cc7f94ead43c9c0cc854280dfb91c",
+  "reviewed_head_sha": "588705d9c698c22a690dcb5b54714461d6133517",
+  "reviewed_run_id": "r-20261115T102555144818-revision-reads-on-the-store-s24",
+  "scores": {
+    "durability": 15,
+    "evidence": 12,
+    "fit": 14,
+    "goal_fidelity": 17,
+    "reuse": 16,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T21:23:23.543483+00:00",
+  "total": 87
+}
