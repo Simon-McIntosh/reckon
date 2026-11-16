@@ -62,6 +62,7 @@ from reckon.crew.process_liveness import (
 )
 from reckon.crew.process_signal import _run_uses_step, signal_pending_step_client
 from reckon.crew.runs import (
+    PointerLockHeldError,
     _mutate_pointer,
     _pointer_lock,
     _process_start_time,
@@ -72,6 +73,7 @@ from reckon.crew.runs import (
     find_handover,
     placement_job_alive,
     pointer_path,
+    pid_belongs_to_the_station,
     process_alive,
     read_pointer,
     record_process_alive,
@@ -2504,11 +2506,10 @@ def _reservation_taken_by_this_process(
     launch's attempt or a later one, is adopted; another process's hold is never
     taken over, and neither is an earlier attempt's.
     """
-    pid = os.getpid()
     for attempt, path, payload in reservations_in(run_directory):
         if payload.get("supervisor_pid") is not None:
             continue
-        if payload.get("pid") != pid:
+        if not _reservation_names_this_process(payload):
             continue
         if attempt < at_least:
             continue
@@ -2527,6 +2528,32 @@ def _read_reservation(path: Path) -> Mapping[str, Any] | None:
     except (OSError, ValueError):
         return None
     return payload if isinstance(payload, Mapping) else None
+
+
+def _reservation_launcher(payload: Mapping[str, Any]) -> dict[str, Any]:
+    """The process that took this reservation, as a liveness record.
+
+    A reservation taken by this version records its door under ``launcher_pid``,
+    because ``pid`` belongs to the process that runs the attempt — the
+    supervisor the launch starts. A reservation written before that split names
+    its door under ``pid``, and there the two are the same process, so the
+    older field is the fallback rather than a second answer.
+    """
+    pid = payload.get("launcher_pid")
+    if pid is None:
+        return {
+            "pid": payload.get("pid"),
+            "pid_start_time": payload.get("pid_start_time"),
+        }
+    return {
+        "pid": pid,
+        "pid_start_time": payload.get("launcher_pid_start_time"),
+    }
+
+
+def _reservation_names_this_process(payload: Mapping[str, Any]) -> bool:
+    """Whether the process reading this reservation is the one that took it."""
+    return _reservation_launcher(payload).get("pid") == os.getpid()
 
 
 def _reservation_age_seconds(path: Path) -> float | None:
@@ -2606,7 +2633,7 @@ def reservation_in_flight(
 
     Before one is recorded, the reserving process itself is the launch, and
     while it lives the launch is in flight, including a launch still waiting for
-    a scheduler slot.
+a scheduler slot.
 
     The attempt's own exit receipt answers for all of it: a reservation whose
     attempt recorded its end holds nothing, whatever process it names, because
@@ -2618,6 +2645,13 @@ def reservation_in_flight(
     reached its worker, so age frees that shape too — a reservation naming a
     supervisor, or one whose attempt left a worker record, is otherwise held on
     its liveness alone.
+
+    A pid that names this host's station names no process of this run, whichever
+    field carries it: the station launches runs from inside its own long-lived
+    process and outlives every one of them, so its liveness says nothing about
+    whether a worker is coming. A reservation naming the station as its
+    supervisor therefore holds nothing at all, and one whose door is the station
+    is judged by its age like any other launch that reached no supervisor.
     """
     if not isinstance(payload, Mapping):
         return False
@@ -2640,6 +2674,15 @@ def reservation_in_flight(
             "pid": payload.get("supervisor_pid"),
             "pid_start_time": payload.get("supervisor_pid_start_time"),
         }
+        if pid_belongs_to_the_station(supervisor["pid"]):
+            # The station is not this run's process, whatever the record names.
+            # A reservation written by a launch made inside the station's own
+            # process has been seen naming the station as its supervisor, and
+            # then the supervisor arm below holds the attempt for as long as the
+            # station lives: age never frees a reservation that names a
+            # supervisor, so nothing could declare that attempt ended. A pid
+            # naming this host's station names no worker and holds nothing.
+            return False
         if not holder_running(supervisor):
             return False
         # An idle supervisor holds nothing. A run whose worker has parked on a
@@ -2649,7 +2692,15 @@ def reservation_in_flight(
         # stands. A worker that is still running is not parked, and its
         # reservation still holds.
         return not _run_is_parked_on_a_declared_wait(run_directory)
-    if not holder_running(payload):
+    launcher = _reservation_launcher(payload)
+    if pid_belongs_to_the_station(launcher.get("pid")):
+        # A reservation naming this host's station names the door that was
+        # asked to launch, not anything of the run: the station outlives every
+        # run it starts, so its liveness is no evidence that a worker is coming.
+        # What remains as evidence is the launch's own age, which is the same
+        # reading an attempt that never reached a worker is given.
+        return not _unreached_launch(payload, run_directory, attempt)
+    if not holder_running(launcher):
         return False
     return not _unreached_launch(payload, run_directory, attempt)
 
@@ -2830,12 +2881,24 @@ def reserve_launch_attempt(
     for _ in range(_RESERVATION_ATTEMPTS):
         attempt = launch_reservation_key(run_directory)
         path = launch_reservation_path(run_directory, attempt)
+        launcher_pid = os.getpid()
         payload = {
             "run_id": run_id,
             "attempt": attempt,
             "kind": kind,
-            "pid": os.getpid(),
-            "pid_start_time": _process_start_time(os.getpid()),
+            # The reservation names the process that will run the attempt, never
+            # the one that asked for it. A launch made inside a long-lived door —
+            # the station, an admit service — would otherwise name a process that
+            # outlives every run it launches: the hold would read as in flight
+            # for the door's whole life, and nothing could declare the attempt
+            # ended. ``pid`` is left for the supervisor the launch starts, and
+            # the door that took the reservation is recorded beside it under
+            # names of its own, for the fences that must recognise the process
+            # which took this attempt.
+            "pid": None,
+            "pid_start_time": None,
+            "launcher_pid": launcher_pid,
+            "launcher_pid_start_time": _process_start_time(launcher_pid),
             "launcher_host": _reservation_host(),
             "at": _utc_now(),
             "supervisor_pid": None,
@@ -2875,11 +2938,16 @@ def record_reservation_supervisor(reservation: LaunchReservation, pid: int) -> b
             "run_id": reservation.run_id,
             "attempt": reservation.attempt,
             "kind": reservation.kind,
-            "pid": os.getpid(),
-            "pid_start_time": _process_start_time(os.getpid()),
             "at": _utc_now(),
         }
     record = dict(payload)
+    # ``pid`` names the process of this attempt, and the supervisor is it: a
+    # reader asking whether the attempt is still running asks about the
+    # supervisor's process, and the process that took the reservation is only
+    # the door. Keeping ``pid`` on the door is what made a station-launched
+    # reservation read as in flight for the station's whole life.
+    record["pid"] = pid
+    record["pid_start_time"] = _process_start_time(pid)
     record["supervisor_pid"] = pid
     record["supervisor_pid_start_time"] = _process_start_time(pid)
     try:
@@ -3023,7 +3091,7 @@ def release_unspawned_reservations(run_directory: Path, *, reason: str) -> int:
         payload = _read_reservation(path)
         if not isinstance(payload, Mapping):
             continue
-        if payload.get("pid") != os.getpid():
+        if not _reservation_names_this_process(payload):
             continue
         if payload.get("launcher_host") not in (None, _reservation_host()):
             continue
@@ -3091,11 +3159,12 @@ def _refuse_superseded_launch(
             "reservation is no longer on disk, so another launch has taken the "
             "run; it abandons without starting a supervisor"
         )
-    if payload.get("pid") != os.getpid():
+    if not _reservation_names_this_process(payload):
         raise CrewError(
             f"run {run_id!r} attempt {reservation.attempt}: the reservation now "
-            f"names pid {payload.get('pid')} rather than this launch, so another "
-            "launch has taken the run; it abandons without starting a supervisor"
+            f"names pid {_reservation_launcher(payload).get('pid')} rather than "
+            "this launch, so another launch has taken the run; it abandons "
+            "without starting a supervisor"
         )
     for name in sorted(p.name for p in run_directory.iterdir()):
         match = _RESERVATION_PATTERN.match(name)
@@ -4877,6 +4946,41 @@ def _record_step_wait(run_directory: Path, client_pid: int) -> None:
     )
 
 
+def _attempt_ending_receipt(
+    record: Mapping[str, Any], attempt: Mapping[str, Any]
+) -> bool:
+    """Whether this attempt holds the exit receipt its own ending wrote.
+
+    The supervisor that ends an attempt writes ``attempt-<n>-exit.json`` for it,
+    and the canonical ``exit.json`` is cleared before every launch, so either
+    file naming this attempt is proof the attempt has ended. A phase word is not:
+    measured on 15 November, eight resumed attempts were signalled as terminal
+    runs while working, because a writer had restored ``complete`` — the word
+    their earlier delivery left — onto the live attempt's pointer. The receipt is
+    immutable and belongs to one attempt; the word belongs to whoever wrote it
+    last. Both files are read through the one owner of that payload,
+    ``_run_exit_record``, under its strict reading, so this guard and every other
+    reader of an attempt's end cannot answer on different terms.
+    """
+    from reckon.crew.recovery_liveness import _run_exit_record
+
+    try:
+        number = max(1, int(attempt.get("attempt") or 1))
+    except (TypeError, ValueError):
+        return False
+    for name in (f"attempt-{number}-{EXIT_RECORD_NAME}", EXIT_RECORD_NAME):
+        receipt = _run_exit_record(record, name, require_run_id=True)
+        if receipt is None:
+            continue
+        try:
+            recorded = int(receipt["attempt"])
+        except (TypeError, ValueError, KeyError):
+            continue
+        if recorded == number:
+            return True
+    return False
+
+
 def _terminal_attempt_phase(run_directory: Path, attempt: Mapping[str, Any]) -> str:
     """The current attempt's terminal pointer phase, or an empty string."""
     try:
@@ -4884,11 +4988,66 @@ def _terminal_attempt_phase(run_directory: Path, attempt: Mapping[str, Any]) -> 
     except CrewError:
         return ""
     phase = str(pointer.get("phase") or "")
-    return (
-        phase
-        if phase in _TERMINAL_RUN_PHASES and _record_is_this_attempt(pointer, attempt)
-        else ""
-    )
+    if phase not in _TERMINAL_RUN_PHASES:
+        return ""
+    if not _record_is_this_attempt(pointer, attempt):
+        return ""
+    # The two words a delivery writes are this module's own delivery statuses,
+    # read here from the owner rather than restated beside the guard.
+    if phase in _WORKER_DONE_MANIFEST_STATUSES and not _attempt_ending_receipt(
+        pointer, attempt
+    ):
+        # The word arrived from somewhere other than this attempt's ending, so
+        # this attempt has not delivered and the phase describes an earlier one.
+        return ""
+    return phase
+
+
+def _reopen_a_live_attempt_phase(
+    run_directory: Path, attempt: Mapping[str, Any]
+) -> None:
+    """Restore a live attempt's phase to ``working`` when a stale word reads as
+    its delivery.
+
+    A run resumed for a repair round carries the delivered ``complete`` its
+    earlier attempt left on the pointer until its own next delivery, and any
+    writer that restores that word makes the live attempt read as finished to
+    every reader — the reaper that ends it, the pane that draws it, the
+    obligations view that offers it remedies. The worker is live in this
+    process's own charge and has made no delivery, so the word is restored to
+    the phase the resume wrote, exactly as a fold reopens a resumed attempt.
+    ``stopped`` and ``interrupted`` are left alone: they are deliberate facts
+    about the run rather than words a delivery leaves behind.
+    """
+    try:
+        mtime_ns = pointer_path(run_directory.name).stat().st_mtime_ns
+    except OSError:
+        return
+    if attempt.get("reopened_pointer_mtime_ns") == mtime_ns:
+        # The pointer has not been written since the last look, so the word it
+        # carried then is the word it carries now: there is nothing to restore
+        # and no reason to take the lock.
+        return
+    try:
+        held = _pointer_lock(run_directory.name, blocking=False)
+        with held:
+            try:
+                record = read_pointer(run_directory.name)
+            except CrewError:
+                return
+            attempt["reopened_pointer_mtime_ns"] = mtime_ns
+            if str(record.get("phase") or "") not in _WORKER_DONE_MANIFEST_STATUSES:
+                return
+            if not _record_is_this_attempt(record, attempt):
+                return
+            if _attempt_ending_receipt(record, attempt):
+                return
+            record["phase"] = "working"
+            _write_existing_pointer(run_directory.name, record)
+    except (PointerLockHeldError, OSError, CrewError, ValueError):
+        # A held lock belongs to a writer that is changing the pointer already,
+        # and the next poll reads what it wrote. Nothing here may wait on it.
+        return
 
 
 def _reap_worker_on_its_terminal_manifest(
@@ -4970,6 +5129,12 @@ def _reap_worker_on_its_terminal_manifest(
         if phase:
             terminal_state.setdefault("deadline", now + TERMINAL_MANIFEST_GRACE_DEFAULT)
             terminal_state.setdefault("phase", phase)
+        else:
+            # A delivered word this attempt did not earn is a fact the resume
+            # has already answered: the worker is in this process's charge and
+            # has made no delivery, so the run reads as working again rather
+            # than as a finished attempt with a live process.
+            _reopen_a_live_attempt_phase(run_directory, terminal_state)
         if (
             stop_requested is not None
             and stop_deadline is None
