@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s73">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-16">
+  <meta name="evidence-commit" content="2b3e55d8a4">
+  <title>A receipt and a spend are read once | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="a-receipt-and-a-spend-are-read-once">
+  <h2>A receipt and a spend are read once</h2>
+
+  <p><strong>The defect.</strong> A station tick asked every terminal run for its
+  client receipt and its spend, and both answers decoded the same files again:
+  <code>promotion_checks._measured_rollout_receipt</code> opened a codex run's
+  rollout and decoded every line, and
+  <code>recovery_watch._spend_facts</code> read each attempt's stream twice —
+  once in <code>measure_stream_tokens</code>, once in
+  <code>_stream_time_span</code>. A 60 s main-thread profile of the station put
+  22.8% in the receipt's line loop and a further 17.9% in the spend's passes,
+  though neither file changes once its run is terminal.</p>
+
+  <p><strong>What changed.</strong> Each reader keeps a per-process fold of one
+  file, keyed by the file's path and validated by its identity, length and
+  stamp. An unchanged file is answered from the fold; a grown one is decoded
+  only past its stored offset; a replaced, truncated or in-place-rewritten one
+  is folded again from the start. The stream's token measure and its time span
+  now come from one decode of that stream rather than two. The directory
+  listings these lookups need are kept while the directory's own identity,
+  size and stamp are unchanged, so resolving an unchanged harness home costs no
+  directory read. Nothing is written to disk: a fresh process holds no fold and
+  reads every byte again.</p>
+
+  <p><strong>The measure.</strong> Over a temporary crew home holding 20
+  terminal codex runs, each with a 3,000-line rollout and a 3,000-line stream,
+  and with a recording stand-in counting <code>json.loads</code> calls
+  attributed to <code>reckon.crew.rollout</code> and
+  <code>reckon.crew.metering</code> plus every directory listing under the
+  fixture:</p>
+
+  <table>
+    <thead>
+      <tr><th>Pass</th><th>Decodes</th><th>Listings</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td id="a-receipt-and-a-spend-are-read-once-pass-1">first (cold)</td>
+        <td>126,000</td>
+        <td>101</td>
+      </tr>
+      <tr>
+        <td id="a-receipt-and-a-spend-are-read-once-pass-2">second (same files)</td>
+        <td>0</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td id="a-receipt-and-a-spend-are-read-once-pass-append">after 5 lines appended</td>
+        <td>5</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td id="a-receipt-and-a-spend-are-read-once-pass-truncate">after truncation</td>
+        <td>1,500 — every complete line left</td>
+        <td>0</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The cold pass is the instrument's own check that it sees work before it
+  reports an absence: 126,000 decodes is every line of the fixture's 126,000
+  lines. The second pass answers byte-identically to a separate process holding
+  no summary at all, and both the grown and the truncated rollout agree with an
+  uncached read of the same file.</p>
+
+  <p><strong>Negative control.</strong> The declared mutation — restoring
+  whole-file reads — is the base arm: base code at
+  <code>6fa76c49f48e1d4fe4f104431f85f519ce92aae0</code> with this node's test
+  copied in. Its second pass made 138,000 decodes and 300 listings, and the
+  test failed on that count (<code>logs/base-node.log</code>, ending
+  <code>EXIT=1</code>); the appended and truncated cases failed there too, at
+  138,005 and 136,501 decodes. At the head the same file passes
+  (<code>logs/head-node.log</code>, <code>EXIT=0</code>), and the suite
+  template's own test files pass in both arms — 58 at base, 62 with the node's
+  test added.</p>
+</section>
+</main>
