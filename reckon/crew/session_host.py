@@ -654,6 +654,12 @@ class SessionHost:
         existing = self._children.get(key)
         if existing is not None:
             del self._children[key]
+        if self._session_has_its_own_host(session):
+            # Another live host serves that session, so its runs belong in that
+            # session's pane, not this one: following it here would deliver
+            # every one of its rows to a coordinator that did not ask for them.
+            self._write_record()
+            return
         if self._foreign_live_follower(
             project, session, pid=None, owner_checked=owner_checked
         ):
@@ -750,6 +756,26 @@ class SessionHost:
         except (OSError, ValueError):
             return {}
         return payload if isinstance(payload, Mapping) else {}
+
+    def _session_has_its_own_host(self, session: str) -> bool:
+        """Whether a live host other than this one serves ``session``.
+
+        A host follows its own owner's sessions. A session whose own Claude
+        process runs a live host is that host's to follow, however a request for
+        it reached this one.
+        """
+        if not session or session == self._current_session():
+            return False
+        from reckon.crew.dispatch_watch import (
+            _owning_session_host_fifo,
+            _session_host_fifo_path,
+        )
+
+        owning = _owning_session_host_fifo(session)
+        if owning is None:
+            return False
+        own = _session_host_fifo_path((self._owner["pid"], self._owner["start_time"]))
+        return owning != own
 
     def _current_session(self) -> str:
         """The crew session this host process serves, or "" outside a harness."""
@@ -946,6 +972,11 @@ class SessionHost:
                 if now < child.next_attempt:
                     continue
                 child.next_attempt = None
+                if self._session_has_its_own_host(child.session):
+                    # The session's own host serves it now; a pair this host
+                    # once took for it is dropped rather than restarted.
+                    self._children.pop((child.project, child.session), None)
+                    continue
                 if self._foreign_live_follower(
                     child.project,
                     child.session,

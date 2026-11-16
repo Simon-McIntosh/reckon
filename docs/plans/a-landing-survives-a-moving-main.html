@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="work-is-never-stuck-behind-the-admission-loop">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;}">
   <title>A Landing Survives A Moving Main | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="7">
-<meta name="plan-modified" content="2026-11-12">
+<meta name="plan-version" content="10">
+<meta name="plan-modified" content="2026-11-15">
 </head>
 <body>
   <main class="plan-doc">
@@ -35,7 +35,7 @@
     <p>A lander measurement took 342 to 413 s per pass that day, while main moved every few minutes from plan edits, review-answer commits and promotion and release records, none of which touch product code. Each pass therefore measured, found main moved, deferred, and measured again: a livelock that leaves reviewed work unlanded for as long as main stays busy. Coordinators landed by hand, serially, at 20 to 40 minutes each.</p>
 
     <h2 id="s2">§2 — A measurement survives commits that cannot change what it measured</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> When main has moved since a delivery was measured, the lander keeps the measurement if every commit between the measured primary and the current one touches only paths outside the measured population's inputs, and the delivery still merges cleanly onto the current primary. The worker first reproduces the livelock: a stubbed pass in which a docs-only commit lands on main during measurement, showing the run deferred again on the next pass. It then decides, and states in its manifest, which paths cannot change the measurement. Product source under <code>reckon/</code>, <code>tests/</code>, <code>pyproject.toml</code> and <code>uv.lock</code> always invalidate it; <code>docs/</code> plans, state, evidence and figures do not. It applies that test at the deferral near line 1460 and at the stored-measurement lookup, so the measurement is reused rather than repeated.</p>
     <p><strong>Done when</strong> a new <code>tests/test_a_landing_survives_a_moving_main.py</code> shows four things with a temporary repository and a stubbed measure: a delivery measured before a commit touching only <code>docs/plans/</code> lands on the next pass without being measured again; a delivery measured before a commit touching <code>reckon/</code> is measured again; a delivery that no longer merges cleanly after a docs-only commit is not landed on the stale measurement; and the pass record names a deferred run's reason. Negative control: treating every moved primary as invalidating again makes the first case defer. The test files importing <code>reckon.crew.queue_landing</code> add no failure against the base revision, run one arm at a time with at most <code>-n 4</code>. Ruff check and ruff format --check add no findings on the staged paths. Write paths: <code>reckon/crew/queue_landing.py</code> and the new test.</p>
 
@@ -66,6 +66,12 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261112T060610237668-a-measurement-survives-commits-that-cannot-chang" data-who="reckon-build" data-when="2026-11-12T06:46:03.519Z">
     <div class="r-comment-body"><p>Verified §2 at base b958dba405: the committed measurement-reuse implementation (reckon/crew/queue_landing.py via 6e257846c5) and its four-claim test file already satisfy the done-when, so no source was rewritten; gate 57 passed EXIT=0, and forcing every moved primary to invalidate the measurement makes the docs-only case repeat its measurement (1 failed EXIT=1), which is the livelock fix.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261115T195417624195-review-of-wave4-omp-local-a-landing-survives-a-mov-s2-a4c98f5c2973" data-who="reckon-build" data-when="2026-11-15T20:00:47.790Z">
+    <div class="r-comment-body"><p>Reviewed a4c98f5c2973662c0f2aeffddbe6bb1bb3f486d9 against base 9fcf1375abfdb1148fa3086ead9cdb64c87ed544: scores goal_fidelity 15, evidence 17, scope_discipline 15, durability 17, fit 18, reuse 20, one non-blocking finding on the read-back assertions at tests/test_a_landing_survives_a_moving_main.py:340, zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261114T151253041536-wave4-omp-local-a-landing-survives-a-mov-s2" data-who="reckon-build" data-when="2026-11-14T15:53:38Z">
+    <div class="r-comment-body"><p>tests/test_a_landing_survives_a_moving_main.py now hands the measurement a detached worktree of the fixture repository instead of an empty stub, so the four section claims reach the code they guard: focused file 3 failed, 3 passed at 9fcf1375 (EXIT=1) to 6 passed at a4c98f5c (EXIT=0), and the template arm 3 failed, 58 passed (EXIT=1) to 61 passed (EXIT=0), zero added failure ids.</p></div>
 </div>
 </section>
 </main>

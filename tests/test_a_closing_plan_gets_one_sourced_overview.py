@@ -12,6 +12,7 @@ and no fragment text read into any of it.
 
 from __future__ import annotations
 
+import json
 from copy import deepcopy
 from pathlib import Path
 
@@ -45,12 +46,21 @@ S2_LANDED = "Section two landed; the figure renders from the plan mount."
 
 HEADINGS = ("s1", "s2", "s3")
 
+DONE_WHEN_PATH = f"docs/evidence/archive/{PLAN}-landed.html"
+REVIEW_A = "r-20261107T120000000000-plan-review-of-demo-plan"
+REVIEW_B = "r-20261107T123000000000-plan-review-of-demo-plan"
+FOLD_REASON = "carried into the node that owned the path"
+EXEMPT_REASON = "outside this plan's remit"
+PROMOTION_LANDED = "Section one landed by the promotion of its landed run."
+REVIEW_NOTE = "Reviewed the landed run and raised what this record holds."
+
 
 def _authored() -> str:
     body = "".join(
         f'<h2 id="{section_id}">§{index} — {section_id} delivery</h2>'
         f"<p>{section_id} sets out to do its own work.</p>"
-        f"<p><strong>Done when</strong> {section_id} holds a landed record.</p>"
+        f"<p><strong>Done when</strong> {section_id} shows <code>reckon audit-doc</code>"
+        f" passes on {DONE_WHEN_PATH}.</p>"
         for index, section_id in enumerate(HEADINGS, start=1)
     )
     return (
@@ -117,12 +127,65 @@ def _plan_file(root: Path) -> Path:
     return root / "docs" / "plans" / f"{PLAN}.html"
 
 
-def _write_plan(root: Path) -> None:
+def _write_plan(root: Path, comments: dict) -> None:
     path = _plan_file(root)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
-        _plan_html.write_state(_authored(), _state(_landing_comments())),
+        _plan_html.write_state(_authored(), _state(comments)),
         encoding="utf-8",
+    )
+
+
+def _write_review(root: Path, review_run_id: str, record: dict) -> Path:
+    """Store one committed plan review where the project's reader looks for it."""
+    path = (
+        root
+        / "docs"
+        / "state"
+        / PROJECT
+        / "reviews"
+        / "plan"
+        / PLAN
+        / f"{review_run_id}.json"
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps({"project": PROJECT, "plan_slug": PLAN, **record}, indent=2),
+        encoding="utf-8",
+    )
+    return path
+
+
+def _review_records() -> tuple[tuple[str, dict], ...]:
+    """Two stored reviews: one folded a finding twice, one exempted a finding."""
+    return (
+        (
+            REVIEW_A,
+            {
+                "review_run_id": REVIEW_A,
+                "status": "ready",
+                "findings": [
+                    {"id": f"f{index}", "text": "a finding"} for index in range(3)
+                ],
+                "finding_dispositions": {
+                    "0": {"kind": "folded", "node": "s1-node"},
+                    "1": {"kind": "folded", "node": "s2-node"},
+                },
+            },
+        ),
+        (
+            REVIEW_B,
+            {
+                "review_run_id": REVIEW_B,
+                "status": "ready",
+                "findings": [
+                    {"id": f"g{index}", "text": "a finding"} for index in range(2)
+                ],
+                "finding_dispositions": {
+                    "0": {"kind": "exempted", "reason": EXEMPT_REASON}
+                },
+            },
+        ),
     )
 
 
@@ -194,12 +257,45 @@ def _run_record(
     )
 
 
-@pytest.fixture()
-def checkout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
-    root = tmp_path / "repo"
-    _write_plan(root)
+def _promotion_comments() -> dict:
+    """s1 landed by promotion only; s2 carries a review's comment last."""
+    return {
+        "s1": [
+            {
+                "id": "c-run-s1-attempt-3",
+                "who": "reckon-build",
+                "when": "2026-11-07T11:00:00Z",
+                "body": f"<p>{PROMOTION_LANDED}</p>",
+            },
+            {
+                "id": f"c-run-{REVIEW_B}",
+                "who": "reckon-build",
+                "when": "2026-11-07T12:45:00Z",
+                "body": f"<p>{REVIEW_NOTE}</p>",
+            },
+        ],
+        "s2": [
+            {
+                "id": "c-close-s2",
+                "who": "reckon-build",
+                "when": "2026-11-07T12:30:00Z",
+                "body": f"<p>{S2_LANDED}</p>",
+            },
+            {
+                "id": f"c-run-{REVIEW_A}",
+                "who": "reckon-build",
+                "when": "2026-11-07T13:00:00Z",
+                "body": f"<p>{REVIEW_NOTE}</p>",
+            },
+        ],
+    }
+
+
+def _build_repo(root: Path, comments: dict) -> Path:
+    _write_plan(root, comments)
     ledger.write(PROJECT, {"members": [], "runs": [], "holds": []}, 0, root=root)
+    for review_run_id, record in _review_records():
+        _write_review(root, review_run_id, record)
     latest = _write_manifest(root, "s1-node", figures=f'figures: ["{FIGURE_PATH}"]\n')
     _write_manifest(root, "s2-node")
     for attempt, stamp in enumerate(
@@ -235,6 +331,18 @@ def checkout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         root=root,
     )
     return root
+
+
+@pytest.fixture()
+def checkout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    return _build_repo(tmp_path / "repo", _landing_comments())
+
+
+@pytest.fixture()
+def promoted(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    return _build_repo(tmp_path / "repo", _promotion_comments())
 
 
 def _record_path(root: Path) -> Path:
@@ -292,10 +400,12 @@ def check_one_row_per_landed_node(soup: BeautifulSoup) -> None:
     nodes = [row.find("td").get_text(strip=True) for row in rows]
     assert nodes == ["s1-node", "s2-node"], nodes
     attempts = {
-        row.find_all("td")[0].get_text(strip=True): row.find_all("td")[2]
+        row.find_all("td")[0].get_text(strip=True): row.find_all("td")[2].get_text(
+            strip=True
+        )
         for row in rows
     }
-    assert attempts["s1-node"].get_text(strip=True) == "3 attempts", attempts
+    assert attempts == {"s1-node": "3 attempts", "s2-node": "1 attempt"}, attempts
 
 
 def check_gate_figures_carry_their_run(soup: BeautifulSoup) -> None:
@@ -328,6 +438,66 @@ def check_figure_with_its_caption(soup: BeautifulSoup) -> None:
         "src"
     ]
     assert "attempts.svg" in figure.find("figcaption").get_text(" ")
+
+
+def check_promotion_landing(soup: BeautifulSoup) -> None:
+    """A section landed by promotion quotes the landing comment of the landed run."""
+    text = _paragraph_texts(soup)["s1"]
+    assert PROMOTION_LANDED in text, text
+    assert REVIEW_NOTE not in text, text
+    sources = {
+        span["data-source"]
+        for span in soup.find("p", attrs={"data-section": "s1"}).find_all(
+            class_=evidence.SOURCE_CLASS
+        )
+    }
+    assert "c-run-s1-attempt-3" in sources, sources
+
+
+def check_a_review_comment_is_not_the_landing(soup: BeautifulSoup) -> None:
+    """A trailing review comment is never quoted as the section's landing.
+
+    The section read here holds two comments and no close comment: the landing
+    comment of the run that landed it, and a review of that run written after
+    it. Reading the last comment therefore reads the review, which is the
+    mistake this case exists to catch. The close-comment section proves the
+    other half: a close comment wins even with a review written after it.
+    """
+    paragraph = soup.find("p", attrs={"data-section": "s1"})
+    text = paragraph.get_text(" ")
+    assert PROMOTION_LANDED in text, text
+    assert REVIEW_NOTE not in text, text
+    sources = {
+        span["data-source"] for span in paragraph.find_all(class_=evidence.SOURCE_CLASS)
+    }
+    assert f"c-run-{REVIEW_B}" not in sources, sources
+    close_paragraph = _paragraph_texts(soup)["s2"]
+    assert S2_LANDED in close_paragraph, close_paragraph
+    assert REVIEW_NOTE not in close_paragraph, close_paragraph
+
+
+def check_the_whole_done_when_is_quoted(soup: BeautifulSoup) -> None:
+    """A done-when holding an abbreviation and a dotted path is quoted whole."""
+    paragraph = soup.find("p", attrs={"data-section": "s1"})
+    quoted = paragraph.find("q", class_="done-when").get_text(" ")
+    assert "reckon audit-doc" in quoted, quoted
+    assert DONE_WHEN_PATH in quoted, quoted
+
+
+def check_review_totals(soup: BeautifulSoup) -> None:
+    """Review findings and their dispositions appear, cited to their reviews."""
+    paragraph = soup.find("p", class_="overview-totals")
+    text = paragraph.get_text(" ")
+    assert "5 finding(s) raised" in text, text
+    assert "2 folded" in text, text
+    assert "1 exempted" in text, text
+    assert "2 open" in text, text
+    assert REVIEW_A in text, text
+    assert REVIEW_B in text, text
+    sources = {
+        span["data-source"] for span in paragraph.find_all(class_=evidence.SOURCE_CLASS)
+    }
+    assert {REVIEW_A, REVIEW_B} <= sources, sources
 
 
 def check_no_fragment_text(root: Path) -> None:
@@ -404,6 +574,46 @@ def test_a_rerun_writes_the_overview_once(checkout: Path) -> None:
     assert len(soup.find_all("section", id="s1")) == 1
 
 
+def test_a_section_landed_by_promotion_quotes_its_run_comment(
+    promoted: Path,
+) -> None:
+    _synthesize(promoted)
+
+    check_promotion_landing(_soup(promoted))
+
+
+def test_a_reviews_last_comment_is_not_the_landing(promoted: Path) -> None:
+    _synthesize(promoted)
+
+    check_a_review_comment_is_not_the_landing(_soup(promoted))
+
+
+def test_the_done_when_is_quoted_whole(checkout: Path) -> None:
+    _synthesize(checkout)
+
+    check_the_whole_done_when_is_quoted(_soup(checkout))
+
+
+def test_a_body_with_no_paragraph_yields_no_done_when() -> None:
+    """A body with no block boundary is not quoted: its whole text would be."""
+    source = (
+        '<!doctype html><html lang="en"><body><main class="plan-doc">'
+        '<h2 id="s1">§1 — s1 delivery</h2>'
+        "<div>s1 sets out to do its own work. Done when s1 holds a record.</div>"
+        "</main></body></html>"
+    )
+
+    bodies = evidence._section_texts(source)
+
+    assert evidence._done_when(bodies["s1"]) == "", bodies["s1"]
+
+
+def test_the_review_findings_are_totalled_by_disposition(checkout: Path) -> None:
+    _synthesize(checkout)
+
+    check_review_totals(_soup(checkout))
+
+
 def test_control_no_source_element_fails_the_sourced_case(
     checkout: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -446,10 +656,28 @@ def test_control_omitting_the_run_figures_fails_the_figure_case(
         check_figure_with_its_caption(_soup(checkout))
 
 
+def test_control_the_last_comment_fallback_fails_the_promotion_case(
+    promoted: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The declared mutation: the landing read from whichever comment came last."""
+
+    def last_comment(comments, runs=()):
+        for comment in comments:
+            if str(comment.get("id") or "").startswith("c-close-"):
+                return comment
+        return comments[-1] if comments else {}
+
+    monkeypatch.setattr(evidence, "_landing_comment", last_comment)
+    _synthesize(promoted)
+
+    with pytest.raises(AssertionError):
+        check_promotion_landing(_soup(promoted))
+
+
 def test_control_skipping_the_unlanded_section_fails_its_case(
     checkout: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    def landed_only(plan, source, records, project=""):
+    def landed_only(plan, source, records, project="", **kwargs):
         return [
             landing
             for landing in _read_all(plan, source, records, project)

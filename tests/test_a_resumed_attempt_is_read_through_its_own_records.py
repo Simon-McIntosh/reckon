@@ -21,7 +21,7 @@ from reckon.crew import recovery, runs
 from reckon.crew.ticker import PANE_STATES
 
 # The words the pane draws halted, taken from the pane's own vocabulary.
-HALTED_STATES = PANE_STATES["needs you"]
+HALTED_STATES = PANE_STATES["help"]
 
 # A pid nothing runs under, for the predecessor's own process.
 DEAD_PID = 99999999

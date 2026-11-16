@@ -22,8 +22,8 @@
   <title>A crew process ends with its owner | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="305">
-<meta name="plan-modified" content="2026-11-12">
+<meta name="plan-version" content="307">
+<meta name="plan-modified" content="2026-11-15">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;}">
 </head>
 <body>
@@ -1349,7 +1349,13 @@
     <div class="r-comment-body"><p>Independent incremental review of 837b04c0..d9195ad8 stores a parsed record scoring goal_fidelity 14, evidence 13, scope_discipline 19, durability 19, fit 18, reuse 20 with zero added failures and two non-blocking findings — the updated evidence fragment still misstates the landed lint, suite and importer figures and contradicts its own CLI change, and the production station launcher still passes no --census-sweep so the goal's automatic stop is not reached by this delta.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261112T043103964878-station-runs-the-census" data-who="reckon-build" data-when="2026-11-12T10:38:44Z">
-    <div class="r-comment-body"><p>The station sweep is opt-in through `crew station --census-sweep`, off by default, revalidates a whole sweep from one process-table read, announces a stop only after the target&#x27;s start tick is reconfirmed, and joins its thread with a bounded timeout; the opt-in guard records census and apply calls and fails when the gate is deleted. Final-head gate 59 passed versus 51 at base; importer arms add zero failures.</p></div>
+    <div class="r-comment-body"><p>The station sweep is opt-in through `crew station --census-sweep`, off by default, revalidates a whole sweep from one process-table read, announces a stop only after the target's start tick is reconfirmed, and joins its thread with a bounded timeout; the opt-in guard records census and apply calls and fails when the gate is deleted. Final-head gate 59 passed versus 51 at base; importer arms add zero failures.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-partial-r-20261111T210250166348-crew-census-lists-and-stops-ownerless" data-who="1fb615a0-2801-4418-bbb4-c2914719e520" data-when="2026-11-15T19:50:00+00:00">
+    <div class="r-comment-body">Run r-20261111T210250166348-crew-census-lists-and-stops-ownerless delivered the census and its --apply. Together with r-20261112T043103964878-station-runs-the-census, which runs it from the station, the code half is in. The section's live bound (zero ownerless reckon processes on the login node after a working day) has not been measured, so it stays implementable.</div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-partial-r-20261112T043103964878-station-runs-the-census" data-who="1fb615a0-2801-4418-bbb4-c2914719e520" data-when="2026-11-15T19:16:00+00:00">
+    <div class="r-comment-body">Run r-20261112T043103964878-station-runs-the-census delivered the station's scheduled census pass. The section's live bound (zero ownerless reckon processes on the login node after a working day) has not been measured, so it stays implementable.</div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-20261001T191500Z-s7-census-pending" data-who="s21-fin" data-when="2026-10-01T19:15:00Z">
     <div class="r-comment-body">Dispatch reading (s21-fin, 2026-10-01). The currency scout at 6a3fab271 (report ~/.config/reckon/crew/reports/reckon/s21-currency-crew.md, item 3) found none of the three rules in skills/reckon-build/SKILL.md or the Claude Code harness reference, and found that reckon crew census does not exist, because §6 is deferred out of S21. So rule 1's session-end step lists the session's own processes with the ancestry-excluding recipe in ~/.agents/AGENTS.md (bracketed pattern, own ancestry excluded by pid, near-zero ages discarded), and says that §6's crew census replaces that recipe when it lands. The rest of §7's done-when is unchanged.</div>

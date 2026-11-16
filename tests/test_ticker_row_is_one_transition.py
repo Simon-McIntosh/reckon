@@ -213,8 +213,8 @@ def test_reported_state_chains_when_the_producer_skips_an_observation() -> None:
         )
     )
 
-    assert "new → needs you" in abandoned
-    assert "needs you → working" in working
+    assert "new → help" in abandoned
+    assert "help → working" in working
     assert "working → working" not in working
 
 
@@ -403,7 +403,7 @@ def test_every_pane_word_is_a_hued_table_key() -> None:
         "queued",
         "working",
         "waiting",
-        "needs you",
+        "help",
         "delivered",
         "landed",
         "dropped",

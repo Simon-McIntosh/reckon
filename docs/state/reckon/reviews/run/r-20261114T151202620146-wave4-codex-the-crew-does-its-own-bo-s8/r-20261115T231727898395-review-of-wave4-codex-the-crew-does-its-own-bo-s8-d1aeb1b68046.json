@@ -1,0 +1,122 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived by reading the reviewed run baseline_suite and after_suite logs, comparing their FAILED/ERROR IDs, and checking completed summaries and terminal EXIT lines; both have zero failures. The importer logs additionally contain the same six nonempty failure IDs in each arm, confirming the failure parser sees failures known present.",
+  "assertion_analysis": [
+    {
+      "condition_for_failure": "Setup assertions fail if the temporary file still exists, declared content differs from delivered, or the cited union no longer contains the transient path; these establish the Git-history preconditions rather than claim production coverage.",
+      "lines": "tests/test_promotion_s_scope_check_reads_the_paths_at_the_head.py:89-91"
+    },
+    {
+      "condition_for_failure": "Restore union-only scope accounting and promotion raises CrewError on temporary.html instead of returning an empty acceptance list; negative-control.log records this failure.",
+      "lines": "tests/test_promotion_s_scope_check_reads_the_paths_at_the_head.py:93"
+    },
+    {
+      "condition_for_failure": "The independent Git diff must be empty for restored draft.html and the cited union must contain it; either assertion fails if fixture history or union accounting changes.",
+      "lines": "tests/test_promotion_s_scope_check_reads_the_paths_at_the_head.py:103-104"
+    },
+    {
+      "condition_for_failure": "Restore union-only accounting and promotion raises on the restored draft.html; negative-control.log records this failure.",
+      "lines": "tests/test_promotion_s_scope_check_reads_the_paths_at_the_head.py:106"
+    },
+    {
+      "condition_for_failure": "Allow a surviving undeclared edit or misreport the charged path and the raises expectation or diagnostic membership fails.",
+      "lines": "tests/test_promotion_s_scope_check_reads_the_paths_at_the_head.py:114-117"
+    },
+    {
+      "condition_for_failure": "Replace the net-diff read with head existence filtering and the deleted undeclared file is excused, so the required CrewError is absent.",
+      "lines": "tests/test_promotion_s_scope_check_reads_the_paths_at_the_head.py:125-128"
+    },
+    {
+      "condition_for_failure": "Swallow an unreadable-base error and return no paths or retain the union silently; the specific cannot-measure CrewError expectation fails.",
+      "lines": "tests/test_promotion_s_scope_check_reads_the_paths_at_the_head.py:138-139"
+    },
+    {
+      "condition_for_failure": "Treat a missing base as an empty surviving set and the undeclared surviving edit is admitted, so the required refusal is absent.",
+      "lines": "tests/test_promotion_s_scope_check_reads_the_paths_at_the_head.py:148-149"
+    },
+    {
+      "condition_for_failure": "The Git diff must actually contain imported.html, independently proving the merge fixture has imported content; charging the cited merge in the union also violates the exact declared-only tuple.",
+      "lines": "tests/test_promotion_s_scope_check_reads_the_paths_at_the_head.py:171-172"
+    },
+    {
+      "condition_for_failure": "Replace the intersection with the base-to-head span alone and imported.html is charged, causing refusal instead of an empty acceptance list.",
+      "lines": "tests/test_promotion_s_scope_check_reads_the_paths_at_the_head.py:174"
+    }
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion_checks.py:2770:_landing_scope_products",
+    "reckon/crew/promotion_checks.py:2880:_landing_preconditions",
+    "reckon/crew/promotion.py:989:_landing_gate",
+    "reckon/crew/promotion.py:1841"
+  ],
+  "completed_at": "2026-11-15T23:27:48Z",
+  "dispatched_at": "2026-11-15T23:20:07Z",
+  "execution_context": "The reviewed node explicitly specifies in-place pytest -n 8 in its live done_when; the receipts and measurement helper agree with that node-specific instruction. No suite was rerun by this review.",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read 06fc1e023206dfd4e8f5f2c07e86556f83abdab3, 99f341aca10ed7e7a13770db33e8da60773606c8 and d1aeb1b680462590188addf2e3d08c532b8e711f commit by commit; they add seven regression cases, the intersection and wiring, and a 31-line evidence fragment.",
+    "done_when": "the live plan's four behavioral cases are covered in tests/test_promotion_s_scope_check_reads_the_paths_at_the_head.py:80-176; after-suite.log records 65 passed, negative-control.log records the two required admission failures, and importer logs retain the same six failures.",
+    "goal": "dispatch-detail.json:admit_request.node.goal delegates to the live plan section; reckon/crew/promotion_checks.py:2770 now filters cited paths by their surviving base-to-head changes before scope acceptance.",
+    "manifest": "manifest.md names three resolvable commits and complete baseline_suite/after_suite receipts; the opened logs confirm 58 then 65 passed and zero added failure IDs.",
+    "write_paths": "prompt.txt's FENCE scope includes both source files, the new test and the evidence fragment; all four paths in the base-to-head diff are within that declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_promotion_s_scope_check_reads_the_paths_at_the_head.py:93 and :106 fail when the intersection is replaced by the union, :114-147 require genuine refusals, and :171-174 protect the cited-merge exclusion using real Git histories.",
+    "evidence": "baseline-suite.log and after-suite.log contain revision/import identities, completed pytest summaries of 58 and 65 passed and EXIT=0, while negative-control.log records EXIT=1 and precisely the two required admission failures.",
+    "fit": "reckon/crew/promotion_evidence.py:271 follows its surrounding typed private-helper idiom, reckon/crew/promotion_checks.py:3530 uses the existing compatibility import block, and the added source/test definitions contain no banned stage labels.",
+    "goal_fidelity": "reckon/crew/promotion_evidence.py:284-291 intersects the cited paths with the pinned base-to-head diff while preserving deletion accounting, conservative missing-base behavior and unreadable-base refusal.",
+    "reuse": "capability searches for scope/net-diff/surviving paths found and opened reckon/crew/merge.py:673, whose landed_paths implementation the new helper wraps, while _committed_scope remains the cited-commit owner and the added test helpers only construct isolated histories.",
+    "scope_discipline": "the four changed paths match prompt.txt's FENCE scope and docs/evidence/fragments/the-crew-does-its-own-bookkeeping/wave4-codex-the-crew-does-its-own-bo-s8.html records only the assigned behavior and measured evidence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json:admit_request.node.goal delegates to the live plan section; reckon/crew/promotion_checks.py:2770 now filters cited paths by their surviving base-to-head changes before scope acceptance.\nVERDICT done_when: the live plan's four behavioral cases are covered in tests/test_promotion_s_scope_check_reads_the_paths_at_the_head.py:80-176; after-suite.log records 65 passed, negative-control.log records the two required admission failures, and importer logs retain the same six failures.\nVERDICT write_paths: prompt.txt's FENCE scope includes both source files, the new test and the evidence fragment; all four paths in the base-to-head diff are within that declared scope.\nVERDICT manifest: manifest.md names three resolvable commits and complete baseline_suite/after_suite receipts; the opened logs confirm 58 then 65 passed and zero added failure IDs.\nVERDICT diff: read 06fc1e023206dfd4e8f5f2c07e86556f83abdab3, 99f341aca10ed7e7a13770db33e8da60773606c8 and d1aeb1b680462590188addf2e3d08c532b8e711f commit by commit; they add seven regression cases, the intersection and wiring, and a 31-line evidence fragment.\nCALL_SITES: reckon/crew/promotion_checks.py:2770:_landing_scope_products, reckon/crew/promotion_checks.py:2880:_landing_preconditions, reckon/crew/promotion.py:989:_landing_gate, reckon/crew/promotion.py:1841\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_evidence.py:284-291 intersects the cited paths with the pinned base-to-head diff while preserving deletion accounting, conservative missing-base behavior and unreadable-base refusal.\nSCORE evidence: 20\nJUSTIFICATION evidence: baseline-suite.log and after-suite.log contain revision/import identities, completed pytest summaries of 58 and 65 passed and EXIT=0, while negative-control.log records EXIT=1 and precisely the two required admission failures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the four changed paths match prompt.txt's FENCE scope and docs/evidence/fragments/the-crew-does-its-own-bookkeeping/wave4-codex-the-crew-does-its-own-bo-s8.html records only the assigned behavior and measured evidence.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_promotion_s_scope_check_reads_the_paths_at_the_head.py:93 and :106 fail when the intersection is replaced by the union, :114-147 require genuine refusals, and :171-174 protect the cited-merge exclusion using real Git histories.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/promotion_evidence.py:271 follows its surrounding typed private-helper idiom, reckon/crew/promotion_checks.py:3530 uses the existing compatibility import block, and the added source/test definitions contain no banned stage labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability searches for scope/net-diff/surviving paths found and opened reckon/crew/merge.py:673, whose landed_paths implementation the new helper wraps, while _committed_scope remains the cited-commit owner and the added test helpers only construct isolated histories.\n",
+  "reuse_search": "Searched production promotion_evidence.py, promotion_scope.py and merge.py by scope, base_sha, landed_paths and diff/name capabilities; opened merge.landed_paths and surviving_change_refusals. The latter verifies post-merge content markers, a different capability. Searched shared test fixtures for Git repository/commit builders; conftest.py supplies home isolation but no shared history-builder for these seven scenarios.",
+  "review_run_id": "r-20261115T231727898395-review-of-wave4-codex-the-crew-does-its-own-bo-s8-d1aeb1b68046",
+  "reviewed_base_sha": "8fcd249a19716e15cb696c78c618035483b6370d",
+  "reviewed_commits": [
+    "06fc1e023206dfd4e8f5f2c07e86556f83abdab3",
+    "99f341aca10ed7e7a13770db33e8da60773606c8",
+    "d1aeb1b680462590188addf2e3d08c532b8e711f"
+  ],
+  "reviewed_head_sha": "d1aeb1b680462590188addf2e3d08c532b8e711f",
+  "reviewed_run_id": "r-20261114T151202620146-wave4-codex-the-crew-does-its-own-bo-s8",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_referential_assertions": "None: outcome expectations are literal empty acceptances or required CrewError refusals over real Git histories; path membership checks inspect Git output or exception diagnostics and are not the sole coverage of an echo of an input.",
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_promotion_s_scope_check_reads_the_paths_at_the_head.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T151202620146-wave4-codex-the-crew-does-its-own-bo-s8/after-suite.log",
+      "revision": "d1aeb1b680462590188addf2e3d08c532b8e711f"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T151202620146-wave4-codex-the-crew-does-its-own-bo-s8/baseline-suite.log",
+      "revision": "8fcd249a19716e15cb696c78c618035483b6370d"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T23:32:23.763292+00:00",
+  "total": 120
+}

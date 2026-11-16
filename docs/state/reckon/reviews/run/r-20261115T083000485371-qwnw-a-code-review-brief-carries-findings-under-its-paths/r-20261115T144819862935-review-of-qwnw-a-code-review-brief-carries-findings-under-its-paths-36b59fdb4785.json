@@ -1,0 +1,107 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures": [],
+  "added_failures_note": "Derived with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own arms: logs/base-arm-s22.log (revision 6cc82823, scratch tree, 2 failed 1 passed, EXIT=1) reports the two gate ids and logs/head-arm-s22.log (revision 3ee856215e, 3 passed, EXIT=0) reports none, so the head adds no failing test and the count is a measured 0 rather than an unmeasured one.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/plan_review.py:5751",
+    "reckon/crew/plan_review.py:5803",
+    "reckon/crew/dispatch_admission.py:956",
+    "reckon/mcp_views.py:4530",
+    "reckon/crew/domain_rules.py:99"
+  ],
+  "completed_at": "2026-11-15T15:24:49.648Z",
+  "dispatched_at": "2026-11-15T15:24:29Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths/manifest.md",
+      "line": "5",
+      "severity": "blocking",
+      "text": "The delivered manifest is still a five-line stub: status complete over no commits, no tests line, no test_logs, no baseline_suite/after_suite and no landing. `crew check --manifest --run r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths` answers ok=false with 'status is complete but no commit is recorded' and 'status is complete but no test result is recorded'. The repair attempt was signalled at 14:46:35Z, so nothing in the record ties a11bd1381a, 10e7b2f1aa, 3ee856215e or 36b59fdb47 to the 3-passed head arm at 3ee856215e or to the red base arm, and with no landing line there is nothing for promotion to land."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-code-review-brief-carries-findings-under-its-paths.html",
+      "line": "37",
+      "severity": "non-blocking",
+      "text": "The paragraph still says `_finding_is_beneath` matches at or beneath the named roots, but 3ee856215e deletes that function and the match is now `path_at_or_beneath` at reckon/crew/plan_review.py:5762, so the fragment describes a function the reviewed head does not contain."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-code-review-brief-carries-findings-under-its-paths.html",
+      "line": "61",
+      "severity": "non-blocking",
+      "text": "The measure claims the affected population ran 109 passed, but no gate log records it: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths/logs/population-s22.log still holds 85 passed at 6cc82823, and the command that printed '109 passed in 43.33s' assigned LOG without redirecting to it, so the larger figure is asserted with no log a reader can open."
+    },
+    {
+      "file": "reckon/crew/findings.py",
+      "line": "1076",
+      "severity": "non-blocking",
+      "text": "The docstring still says `path` restricts the result to rows whose path begins with the named prefix, while line 1103 now applies at-or-beneath containment; a caller reading the contract, such as reckon/mcp_views.py:4530 passing --path, is promised prefix semantics the function no longer gives."
+    },
+    {
+      "file": "tests/test_a_code_review_brief_carries_findings_under_its_paths.py",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "This test file and the three production modules 3ee856215e edits (reckon/crew/domain_rules.py, reckon/crew/findings.py, reckon/crew/plan_review.py) lie outside the dispatch's declared write paths at prompt.txt:85-86; the plan section names no write path and no grant widened the fence."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-a-code-review-brief-carries-findings-under-its-paths /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_code_review_brief_carries_findings_under_its_paths.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths/logs/head-arm-s22.log",
+      "revision": "3ee856215e19ed4b246e7ae8b0de2a99b149347f"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=/tmp/reckon-crew-scratch/r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths/base-arm /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_code_review_brief_carries_findings_under_its_paths.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 2,
+      "failure_ids": [
+        "tests/test_a_code_review_brief_carries_findings_under_its_paths.py::test_a_named_directory_carries_every_open_finding_beneath_it",
+        "tests/test_a_code_review_brief_carries_findings_under_its_paths.py::test_an_unreadable_store_says_so_rather_than_none"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths/logs/base-arm-s22.log",
+      "revision": "6cc82823b5917cc458b5064ee49efb1cba97e093"
+    }
+  },
+  "item_verdicts": {
+    "diff": "Read 3ee856215e and 36b59fdb47 against 10e7b2f1aa commit by commit; 3ee856215e adds path_at_or_beneath at reckon/crew/domain_rules.py:64, routes reckon/crew/findings.py:1103 and reckon/crew/plan_review.py:5762 through it, deletes _finding_is_beneath and adds the SIBLING fixture at tests/test_a_code_review_brief_carries_findings_under_its_paths.py:37, while 36b59fdb47 rewrites two fragment paragraphs and refreshes s22.html from the base arm.",
+    "done_when": "Read the done_when's three clauses against tests/test_a_code_review_brief_carries_findings_under_its_paths.py:140 (bullet count equals the view's open rows), :157 (named file only) and :175 (unreadable store says so), and against logs/head-arm-s22.log which records 3 passed EXIT=0 at 3ee856215e plus logs/all-debug-gate.out which records the same 3 passed EXIT=0 at job 1317890.",
+    "goal": "Read the goal in dispatch-detail.json and the live plan section s22 against the reviewed head; reckon/crew/plan_review.py:5762 matches every stored row's path to the brief's named roots through reckon/crew/domain_rules.py:64, and the gained commit makes that one boundary rule serve both the brief and the findings view, so the goal's named-directory case now holds identically in both readings.",
+    "manifest": "Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths/manifest.md; it is a 258-byte stub ending SENTINEL with status complete, no commits, no tests, no test_logs, no suites and no landing, and crew check --manifest answers ok=false with 'status is complete but no commit is recorded' and 'status is complete but no test result is recorded'.",
+    "write_paths": "Read the dispatch fence at prompt.txt:84-86, which declares only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-code-review-brief-carries-findings-under-its-paths.html and docs/figures/queued-work-needs-no-workaround/qwnw-a-code-review-brief-carries-findings-under-its-paths; the gained commit 3ee856215e edits reckon/crew/domain_rules.py, reckon/crew/findings.py, reckon/crew/plan_review.py and tests/test_a_code_review_brief_carries_findings_under_its_paths.py, none of which that declaration names."
+  },
+  "justifications": {
+    "durability": "Putting the bare prefix back at reckon/crew/findings.py:1103 reddens tests/test_a_code_review_brief_carries_findings_under_its_paths.py:140 with four view rows against the three BENEATH fixtures, and a prefix match at reckon/crew/plan_review.py:5762 reddens the same line on the bullet count, though the single-owner property at reckon/crew/domain_rules.py:64 is not observable to any test.",
+    "evidence": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths/logs/head-arm-s22.log:1 names 3ee856215e and ends EXIT=0, and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths/logs/all-debug-gate.out:1 names job 1317890, yet /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths/manifest.md:5 records no test result and crew check refuses that manifest, so the receipt exists only in files the run never cited.",
+    "fit": "path_at_or_beneath at reckon/crew/domain_rules.py:64 follows the module's docstringed-helper idiom, but the change leaves findings_by_path's docstring at reckon/crew/findings.py:1076 describing a prefix filter the function no longer applies.",
+    "goal_fidelity": "reckon/crew/domain_rules.py:64 is now the single containment rule behind both readings the goal names, the brief's root match at reckon/crew/plan_review.py:5762 and the view's filter at reckon/crew/findings.py:1103.",
+    "reuse": "The gained commit deletes the private copy that stood at reckon/crew/plan_review.py:5739 and adds the rule to reckon/crew/domain_rules.py:64, which its own write-path matcher at :99 and both readings now call; the containment spells at reckon/shadow_reads.py:233 and reckon/served_code.py:1052 serve other capabilities and the delta leaves them alone.",
+    "scope_discipline": "prompt.txt:85-86 declares only the evidence fragment and its figures directory while 3ee856215e writes reckon/crew/domain_rules.py:64 and three other repository files outside that declaration."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the goal in dispatch-detail.json and the live plan section s22 against the reviewed head; reckon/crew/plan_review.py:5762 matches every stored row's path to the brief's named roots through reckon/crew/domain_rules.py:64, and the gained commit makes that one boundary rule serve both the brief and the findings view, so the goal's named-directory case now holds identically in both readings.\nVERDICT done_when: Read the done_when's three clauses against tests/test_a_code_review_brief_carries_findings_under_its_paths.py:140 (bullet count equals the view's open rows), :157 (named file only) and :175 (unreadable store says so), and against logs/head-arm-s22.log which records 3 passed EXIT=0 at 3ee856215e plus logs/all-debug-gate.out which records the same 3 passed EXIT=0 at job 1317890.\nVERDICT write_paths: Read the dispatch fence at prompt.txt:84-86, which declares only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-code-review-brief-carries-findings-under-its-paths.html and docs/figures/queued-work-needs-no-workaround/qwnw-a-code-review-brief-carries-findings-under-its-paths; the gained commit 3ee856215e edits reckon/crew/domain_rules.py, reckon/crew/findings.py, reckon/crew/plan_review.py and tests/test_a_code_review_brief_carries_findings_under_its_paths.py, none of which that declaration names.\nVERDICT manifest: Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths/manifest.md; it is a 258-byte stub ending SENTINEL with status complete, no commits, no tests, no test_logs, no suites and no landing, and crew check --manifest answers ok=false with 'status is complete but no commit is recorded' and 'status is complete but no test result is recorded'.\nVERDICT diff: Read 3ee856215e and 36b59fdb47 against 10e7b2f1aa commit by commit; 3ee856215e adds path_at_or_beneath at reckon/crew/domain_rules.py:64, routes reckon/crew/findings.py:1103 and reckon/crew/plan_review.py:5762 through it, deletes _finding_is_beneath and adds the SIBLING fixture at tests/test_a_code_review_brief_carries_findings_under_its_paths.py:37, while 36b59fdb47 rewrites two fragment paragraphs and refreshes s22.html from the base arm.\nCALL_SITES: reckon/crew/plan_review.py:5751, reckon/crew/plan_review.py:5803, reckon/crew/dispatch_admission.py:956, reckon/mcp_views.py:4530, reckon/crew/domain_rules.py:99\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/domain_rules.py:64 is now the single containment rule behind both readings the goal names, the brief's root match at reckon/crew/plan_review.py:5762 and the view's filter at reckon/crew/findings.py:1103.\nSCORE evidence: 12\nJUSTIFICATION evidence: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths/logs/head-arm-s22.log:1 names 3ee856215e and ends EXIT=0, and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths/logs/all-debug-gate.out:1 names job 1317890, yet /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths/manifest.md:5 records no test result and crew check refuses that manifest, so the receipt exists only in files the run never cited.\nSCORE scope_discipline: 10\nJUSTIFICATION scope_discipline: prompt.txt:85-86 declares only the evidence fragment and its figures directory while 3ee856215e writes reckon/crew/domain_rules.py:64 and three other repository files outside that declaration.\nSCORE durability: 17\nJUSTIFICATION durability: Putting the bare prefix back at reckon/crew/findings.py:1103 reddens tests/test_a_code_review_brief_carries_findings_under_its_paths.py:140 with four view rows against the three BENEATH fixtures, and a prefix match at reckon/crew/plan_review.py:5762 reddens the same line on the bullet count, though the single-owner property at reckon/crew/domain_rules.py:64 is not observable to any test.\nSCORE fit: 15\nJUSTIFICATION fit: path_at_or_beneath at reckon/crew/domain_rules.py:64 follows the module's docstringed-helper idiom, but the change leaves findings_by_path's docstring at reckon/crew/findings.py:1076 describing a prefix filter the function no longer applies.\nSCORE reuse: 19\nJUSTIFICATION reuse: The gained commit deletes the private copy that stood at reckon/crew/plan_review.py:5739 and adds the rule to reckon/crew/domain_rules.py:64, which its own write-path matcher at :99 and both readings now call; the containment spells at reckon/shadow_reads.py:233 and reckon/served_code.py:1052 serve other capabilities and the delta leaves them alone.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths/manifest.md:5 blocking: The delivered manifest is still a five-line stub: status complete over no commits, no tests line, no test_logs, no baseline_suite/after_suite and no landing. `crew check --manifest --run r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths` answers ok=false with 'status is complete but no commit is recorded' and 'status is complete but no test result is recorded'. The repair attempt was signalled at 14:46:35Z, so nothing in the record ties a11bd1381a, 10e7b2f1aa, 3ee856215e or 36b59fdb47 to the 3-passed head arm at 3ee856215e or to the red base arm, and with no landing line there is nothing for promotion to land.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-code-review-brief-carries-findings-under-its-paths.html:37 non-blocking: The paragraph still says `_finding_is_beneath` matches at or beneath the named roots, but 3ee856215e deletes that function and the match is now `path_at_or_beneath` at reckon/crew/plan_review.py:5762, so the fragment describes a function the reviewed head does not contain.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-code-review-brief-carries-findings-under-its-paths.html:61 non-blocking: The measure claims the affected population ran 109 passed, but no gate log records it: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths/logs/population-s22.log still holds 85 passed at 6cc82823, and the command that printed '109 passed in 43.33s' assigned LOG without redirecting to it, so the larger figure is asserted with no log a reader can open.\nFINDING reckon/crew/findings.py:1076 non-blocking: The docstring still says `path` restricts the result to rows whose path begins with the named prefix, while line 1103 now applies at-or-beneath containment; a caller reading the contract, such as reckon/mcp_views.py:4530 passing --path, is promised prefix semantics the function no longer gives.\nFINDING tests/test_a_code_review_brief_carries_findings_under_its_paths.py:1 non-blocking: This test file and the three production modules 3ee856215e edits (reckon/crew/domain_rules.py, reckon/crew/findings.py, reckon/crew/plan_review.py) lie outside the dispatch's declared write paths at prompt.txt:85-86; the plan section names no write path and no grant widened the fence.\n",
+  "review_run_id": "r-20261115T144819862935-review-of-qwnw-a-code-review-brief-carries-findings-under-its-paths-36b59fdb4785",
+  "reviewed_base_sha": "10e7b2f1aa8f1c662cb42e1e4ab9f8dbe2a976ba",
+  "reviewed_head_sha": "36b59fdb47857680300daf40630ad28675600618",
+  "reviewed_run_id": "r-20261115T083000485371-qwnw-a-code-review-brief-carries-findings-under-its-paths",
+  "rubric": "review",
+  "scores": {
+    "durability": 17,
+    "evidence": 12,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 10
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T22:00:09.619941+00:00",
+  "total": 91
+}

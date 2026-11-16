@@ -1,0 +1,79 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/station.py:1076 StationRunner.tick -> self.store.tick(home=self.home)",
+    "reckon/crew/station.py:136 StationRunner._handle -> StationStore(...) -> connect -> _ensure_pointer_columns",
+    "reckon/crew/station.py:1236 StationStore.at_runtime_root",
+    "reckon/crew_follow_commands.py:230 StationStore.at_runtime_root",
+    "reckon/crew/promotion_release.py:1101 StationStore.at_runtime_root"
+  ],
+  "completed_at": "2026-11-15T19:10:33.855Z",
+  "dispatched_at": "2026-11-15T19:09:10Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "Valid test gap, non-blocking: the backend and dialect columns are written by the new ingest and read by the fold, but only the backfill path is asserted. Carried to the next station_store section, which restructures classify_tick's inputs and will assert the dialect of a freshly ingested non-default row.",
+      "recorded_at": "2026-11-15T19:50:51.664459+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "The figure script and SVGs are this node's own evidence, in the repository's per-figure layout; the coordinator accepts the path at landing.",
+      "recorded_at": "2026-11-15T19:50:57.056793+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "Agreed: the 600 MB ceiling does not discriminate on this population. The node's discriminating evidence is the test (3 of 4 fail at base) and _pointer_for_stream leaving the head census, which is what the landing relies on.",
+      "recorded_at": "2026-11-15T19:51:03.194910+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_tick_decodes_only_what_changed.py",
+      "id": "fbf41311e9a",
+      "line": 265,
+      "severity": "non-blocking",
+      "text": "The dialect/backend guard covers only a store written before the columns: test_a_store_written_before_the_scalars_backfills_them builds an old `pointers` table and asserts the backfilled row folds as codex, but nothing asserts the dialect of a row written by the new `_write_pointer_row` (reckon/crew/station_store.py:724-730). Dropping `backend`/`dialect` from that INSERT leaves all four tests green, because log_path is still written (so the fixture's streams are still found) and the only codex pointer in the fixture is the one the pre-existing table carries; every newly ingested codex or other non-default run would then fold in the default dialect with no test reddening."
+    },
+    {
+      "file": "docs/figures/the-monitor-reads-each-fact-once/a-tick-decodes-only-what-changed/tick_decode.py",
+      "id": "f704cfbec80",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "This 232-line figure script and the two SVGs beside it are outside the paths the node was declared: the dispatch and plan name reckon/crew/station_store.py, reckon/crew/recovery_stream.py, reckon/crew/review_records.py, tests/test_a_tick_decodes_only_what_changed.py and 'the node's fragment'. The figure directory appears only in the worker's own orientation_write_paths, so the write was not fenced by the dispatch it reports to; the figures do belong to this node's evidence and are the repository's per-figure idiom (docs/figures/the-monitor-reads-each-fact-once/the-station-carries-every-row-at-cutover/rows-by-session-of-addressing.py), which is why this does not hold the node."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-tick-decodes-only-what-changed.html",
+      "id": "f5cbf92e8ef",
+      "line": 145,
+      "severity": "non-blocking",
+      "text": "The census arm's 'at most 600 MB per tick' clause cannot discriminate: the base arm peaks at 175.5-251.0 MB (census/decode-census-base.log:2622, :2670, :2718, :2766, :2814, :2862) against the head's 185.6-244.6 MB, so a node that changed nothing would pass it and the head envelope is not lower than base's. The node's real discriminating evidence is the new test file (3 of 4 ids fail at base) and the disappearance of `_pointer_for_stream` from the head census, not the ceiling; the fragment reports the peaks honestly rather than claiming a fall, but the done_when clause it satisfies measures nothing about this change."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Five production call sites reach the change: the station's per-tick store.tick at reckon/crew/station.py:1076, its store handle construction at :136 (connect runs _ensure_pointer_columns), StationStore.at_runtime_root at station.py:1236, and the two at_runtime_root readers at reckon/crew_follow_commands.py:230 and reckon/crew/promotion_release.py:1101.",
+    "diff": "Read all seven commits against 2780ddad: 33f28354f7 adds the three columns, the backfill, the column-keyed _pointer_streams and the text signature comparison; eda14c13cf adds the backfill test; fc28dab1d3, 5798e96903 and de97646178 write the fragment; b4b015898e adds the two SVGs and tick_decode.py; c0c896367e is docstring-only in station_store.py.",
+    "done_when": "The done_when's gate is tests/test_a_tick_decodes_only_what_changed.py; census/gate-head.log:9 records '4 passed in 1.47s' with EXIT=0, census/negative-control-base.log ends '3 failed, 1 passed' with EXIT=1, and the six head ticks in census/decode-census-head.log peak at 185.6-244.6 MB, under the 600 MB clause.",
+    "goal": "The node goal is 'make the decode that sets a tick's peak read only what changed'; reckon/crew/station_store.py:646-673 replaces the per-stream pointer-fields decode with one column query whose scalars ingest_pointer writes at :724-730, and census/decode-census-head.log carries no `_pointer_for_stream` entry in any of its six ticks against base's 96.5-132.4 MB per tick.",
+    "manifest": "Read in full; it records the seven commits, gate 4 passed EXIT=0, base negative control 3 failed EXIT=1, the matched population arms (base 11 failed/273 passed, head 11 failed/277 passed, identical failing ids), baseline suite 58 passed and after suite 62 passed, and names every census and gate log by path.",
+    "write_paths": "The dispatch declares reckon/crew/station_store.py, reckon/crew/recovery_stream.py, reckon/crew/review_records.py, tests/test_a_tick_decodes_only_what_changed.py and, in the plan, the node's fragment; the diff touches station_store.py, the test file, the fragment, and three files under docs/figures/the-monitor-reads-each-fact-once/a-tick-decodes-only-what-changed/ that no declared path names."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"make the decode that sets a tick's peak read only what changed\"; reckon/crew/station_store.py:646-673 replaces the per-stream pointer-fields decode with one column query, and census/decode-census-head.log carries no `_pointer_for_stream` entry in any tick against base's 96.5-132.4 MB per tick.\nVERDICT done_when: the done_when's gate is tests/test_a_tick_decodes_only_what_changed.py; census/gate-head.log:9 records \"4 passed in 1.47s\" with EXIT=0, census/negative-control-base.log ends \"3 failed, 1 passed\" with EXIT=1, and the six head peaks in census/decode-census-head.log are 185.6-244.6 MB, under the 600 MB clause.\nVERDICT write_paths: the dispatch declared reckon/crew/station_store.py, reckon/crew/recovery_stream.py, reckon/crew/review_records.py and tests/test_a_tick_decodes_only_what_changed.py plus the plan's node fragment; the diff touches station_store.py, the test file, the fragment, and three files under docs/figures/the-monitor-reads-each-fact-once/a-tick-decodes-only-what-changed/ that no declared path names.\nVERDICT manifest: read in full; it records the seven commits, gate 4 passed EXIT=0, base negative control 3 failed EXIT=1, the matched population arms with identical failing ids, baseline suite 58 passed and after suite 62 passed, and names every census and gate log by path.\nVERDICT diff: read all seven commits against 2780ddad; 33f28354f7 carries the production change and 257 test lines, eda14c13cf the backfill test, fc28dab1d3/5798e96903/de97646178 the fragment, b4b015898e the two SVGs and tick_decode.py, and c0c896367e a docstring-only edit in station_store.py.\nCALL_SITES: reckon/crew/station.py:1076 StationRunner.tick -> self.store.tick(home=self.home), reckon/crew/station.py:136 StationRunner._handle -> StationStore(...) -> connect/_ensure_pointer_columns, reckon/crew/station.py:1236 StationStore.at_runtime_root, reckon/crew_follow_commands.py:230 StationStore.at_runtime_root, reckon/crew/promotion_release.py:1101 StationStore.at_runtime_root\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/station_store.py:658-673 selects path, run_id, log_path, backend and dialect from the pointers table so the pass that decoded 96.5-132.4 MB per base tick decodes no document at head.\nSCORE evidence: 15\nJUSTIFICATION evidence: census/gate-head.log records 4 passed EXIT=0 and census/negative-control-base.log 3 failed EXIT=1, but the census arm's 600 MB clause is passed by base at 175.5-251.0 MB (census/decode-census-base.log:2622), so one clause of the done_when would pass before the change.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the production diff is confined to reckon/crew/station_store.py and the declared test file, and the documentation additions stay with the node's fragment and its figures.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_tick_decodes_only_what_changed.py:183-190 reddens if _pointer_streams or pointer_is_current decode again, but :265 guards only a pre-existing store's backfill and no test pins a freshly written row's dialect (reckon/crew/station_store.py:724-730).\nSCORE fit: 19\nJUSTIFICATION fit: _ensure_pointer_columns at reckon/crew/station_store.py:465 mirrors the existing _ensure_stream_columns at :458 and _ensure_cursor_columns, and no symbol or comment names a plan, section or ticket.\nSCORE reuse: 19\nJUSTIFICATION reuse: a search by capability over reckon/crew found lane_document.py:275 _as_mapping (lane-report shaped) and dispatch_claims.py:729 _read_node_dispatch_claim (retrying, run_id-keyed) but no owner of \"stored pointer fields text -> mapping\", so _pointer_fields at station_store.py:266 is the first, and the column migration extends the existing _ensure_*_columns owner.\nFINDING tests/test_a_tick_decodes_only_what_changed.py:265 non-blocking: the dialect guard covers only a store written before the columns; dropping backend/dialect from _write_pointer_row (reckon/crew/station_store.py:724-730) leaves all four tests green because log_path is still written and the only codex pointer in the fixture is the pre-existing one, so every newly ingested non-default run would fold in the default dialect untested.\nFINDING docs/figures/the-monitor-reads-each-fact-once/a-tick-decodes-only-what-changed/tick_decode.py:1 non-blocking: this script and the two SVGs beside it sit outside the declared write paths; the figure directory appears only in the worker's own orientation_write_paths, though the figures are this node's own evidence figures and follow the repository's per-figure script idiom.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/a-tick-decodes-only-what-changed.html:145 non-blocking: the census arm's 600 MB ceiling is passed by base at 175.5-251.0 MB so it cannot distinguish this change from base, and the head envelope (185.6-244.6 MB) is not lower; the discriminating evidence is the test's base failures and the census's missing _pointer_for_stream, not this clause.",
+  "review_run_id": "r-20261115T185928788172-review-of-a-tick-decodes-only-what-changed-de9764617822",
+  "reviewed_base_sha": "2780ddad207d0d96a00114169e6a5f9730752227",
+  "reviewed_head_sha": "de976461782243487412795636699ea23efe4f3a",
+  "reviewed_run_id": "r-20261115T142458653959-a-tick-decodes-only-what-changed",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T19:27:27.595029+00:00",
+  "total": 103
+}

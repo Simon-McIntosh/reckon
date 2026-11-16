@@ -1,0 +1,125 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "digests": {
+        "s28": "7456663a1516834f96910a588c2bfef971ac8759485a26e01d93ff834ae5b664"
+      },
+      "reason": "the edit to section 28 since the newest review answers its finding done_when-1",
+      "units": [
+        "s28"
+      ],
+      "when": "2026-11-15T20:44:12.328036+00:00"
+    }
+  ],
+  "completed_at": "2026-11-15T17:39:28.587Z",
+  "dispatched_at": "2026-11-15T17:39:11Z",
+  "findings": [
+    {
+      "anchor": "plan.html:335",
+      "id": "wiring-1",
+      "reason": "the followup is the only driving instruction, so a section missing from it is work nobody queues until a coordinator notices by hand.",
+      "text": "the open followup lists \"\u00a72\u2013\u00a716 and \u00a719\u2013\u00a725\" as the batch to queue and names \u00a728 nowhere, while plan-section-declarations declares s28 implementable; a coordinator obeying the followup leaves the new section undispatched, and the gap already open for \u00a726 and \u00a727 now covers a third section",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:329",
+      "id": "done_when-1",
+      "reason": "the case needs either disjoint declared write paths stated for the two requests or a declared wait on \u00a723, without which the gate fails on the overlap rule and the control proves nothing about answered findings.",
+      "text": "\u00a728's first case requires that two requests queued on one section are both admitted at the next pass, but the base holds a later queued request behind an earlier one whose declared write paths overlap by containment in the same repository (reckon/crew/admission/holds.py:_queued_requests_overlap), which two requests derived from one section's sentence share; with \u00a723 open and no dependency declared, the second request stays held at head for a reason this section does not change, and at base the same overlap hold makes the negative control read as passing evidence of the review hold it never exercised",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "",
+  "plan_fingerprint": "cacee7f4eb9ea45acc585d2797836a764c15831897fa3a67a07f76b0aebd0dc0",
+  "plan_slug": "queued-work-needs-no-workaround",
+  "plan_version": 107,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "the coordinator queues from the section declarations, which admission and the obligations view read and which name every implementable section; the followup's list is prose that those readers do not use, and sections 26 and 27 were dispatched and have landed",
+      "when": "2026-11-15T20:43:49.792489+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "0817e4658aa971b9029fb627c9dfc53cb743c949",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "section 28's first case now queues one request on each of two edited sections, so the write-path overlap hold cannot stand in for the review hold",
+      "reason": "",
+      "when": "2026-11-15T20:43:59.812458+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "0817e4658aa971b9029fb627c9dfc53cb743c949",
+      "commit_basis": "edit",
+      "note": "section 28's first case now queues one request on each of two edited sections, so the write-path overlap hold cannot stand in for the review hold",
+      "reason": "",
+      "when": "2026-11-15T20:43:59.812458+00:00"
+    },
+    "wiring-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "the coordinator queues from the section declarations, which admission and the obligations view read and which name every implementable section; the followup's list is prose that those readers do not use, and sections 26 and 27 were dispatched and have landed",
+      "when": "2026-11-15T20:43:49.792489+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/queued-work-needs-no-workaround/r-20261115T172716127242-plan-review-of-queued-work-needs-no-workaround.json",
+  "review_run_id": "r-20261115T172716127242-plan-review-of-queued-work-needs-no-workaround",
+  "reviewed_blob_sha": "073029edf0cd2240aa91d0ec9275633515b2071e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a728 cites only its evidence fragment path under the repository's evidence directory, consistent with the sibling sections; the declarations and section id s28 resolve in the snapshot.",
+    "done_when": "a finding \u2014 \u00a728's first case at plan.html:329 asserts \"both requests are admitted\", an arm admission already fails on the base's queued-request overlap rule (\u00a723's subject), so the case cannot go green on this section's change alone and the negative control cannot show the review hold fires.",
+    "evidence_paths": "pass \u2014 \u00a728's failing run is logged to docs/evidence/fragments/queued-work-needs-no-workaround/s28.html beside the other sections' fragments, not a node-local or session path.",
+    "naming": "pass \u2014 \u00a728's endpoint language is mechanism-first (\"a finding is answered as acted on\", \"stay covered by that review\") and carries no plan label, stage name or ticket id.",
+    "reasoning": "pass \u2014 the Why matches the cited behaviour on all three checks: admission does hold a request whose section moved and release it only when the gate passes again (reckon/crew/admission/reviews.py:_release_plan_review_holds, reckon/crew/routing.py:require_plan_reviewed), and answering a finding persists a finding disposition without recording the acceptance that coverage reads (reckon/crew/review_dispositions.py, plan_review._compute_coverage's acceptance clause), so the stated cause is accurate and the section names no code path, step sequence or function.",
+    "single_goal": "pass \u2014 \u00a728 carries one deliverable: an answered finding keeps its edited sections covered, with the later-unanswered-edit clause as the boundary of that same coverage rule.",
+    "wiring": "a finding \u2014 the single open followup at plan.html:335 still dispatches only \"\u00a72\u2013\u00a716 and \u00a719\u2013\u00a725\", so the newly added \u00a728 (declared implementable at plan.html:23) is in no dispatch list, the same gap already open for \u00a726 and \u00a727."
+  },
+  "section_digests": {
+    "_document": "0cac6743d236eaa0de2de2a212a9c0cc30c88a7076cd01886c0dbbde300c0801",
+    "s1": "965e293bc718e24bc6e0b306c2e31f4694e8d3d1f2aafc97e86aac0ccdc0eb46",
+    "s10": "501d0d72406c2fda4dc47939b9700d2c42eb9011387b4df7abdfcc55d906d345",
+    "s11": "4dc7e37e7c9ff6d074c540a19ff75d7db784999f7b811a999a052a00fcbacb39",
+    "s12": "cf244a99091ee04721474e6caad0adad1fb1c907edc99e9fd73b86fb3251685c",
+    "s13": "8cdf1aaa77a692163d0b36bc751a206e8f6c96460d0e44b85d9feb5a76f99659",
+    "s14": "e033ab0daa427195a357d93c3b5969c3fae24f311a8dafa8b2a6bad8db0b518e",
+    "s15": "c271f7bcaa272ebd4bf87d7b1e7153251ec38aa5863fd8a3d7f12cdf1c66bd06",
+    "s16": "e958886ca859d584799d4d94514466d7e14ba4c818ac307fcb864c7eb39fa549",
+    "s17": "dd6b738e7e017fe3bc312e85841a1a6a4b4d5dc818c618040249040acf51ff19",
+    "s18": "cce913fd1fd3cd0d62df97ae997ebb6708c0f8082d5fb90425f676f105322724",
+    "s19": "eaeead248338c8d630a84c78ae20179b603aa87fc7b0a599cced40377f9d8297",
+    "s2": "872b1ec9c49f32d972d450016002b1265e846673cd1aef42c41aaccc50583998",
+    "s20": "0e0d4849ea6b6f69d5354bef8f8699320f369433778609f009cf726a6657a1ee",
+    "s21": "1ba6fbba19ed595b11f5efb9d35bd3b6620bad888924989e016324a2ad6a714e",
+    "s22": "fce0ba09ddb9ec3bc2b594b7cd00683449d9a170142add8d81af3fdd14b02100",
+    "s23": "43fe6c8d8a3118b055dc76b75bd328396172198ba8c599d5fd70be079950e6f4",
+    "s24": "04f04dd8812de5d9c7b9410b01df1ecca1b5d54a6033156ef6c0e016e94d83a8",
+    "s25": "afd11e98028c6beb77d132f656f7e433fab87c40e3e0f5257920383e880c2cd9",
+    "s26": "86ee010dedc3babeebe536a7600e36d642ff7e96b15d2ca37ba6543b3da2caa0",
+    "s27": "77553fb962d6e701c89758fbdc77af812395fd33dff4a7bb97d3449f9a7a549a",
+    "s28": "8c12a481e56bbf80435b73d02e6e051872615a4567ecff631000b56d18031791",
+    "s3": "2a385591edce8d1cb26d41f176fb084cd634d113eb130d2581ce97000bcb3eea",
+    "s4": "0116c3c4a34b6e607b2564cc4300d3784ba5d7596a0000d0b59c40e1801dcd1a",
+    "s5": "81cc22db14da433d65d2cbfd466e233d778e9b5d50552dc7a013e94a3b25ad15",
+    "s6": "91849d1cd49d8e783c893b01272f0e0f505aed67e379d52d354011a619270a1d",
+    "s7": "0eb7720abb0f46f8d48d47fcf646be85ae58c8a5cc37c98f7ad06ac2f9deb6ff",
+    "s8": "5dcf0f324a6b831b76a043e465731eff46456979ae084bcfc764ff0d40816359",
+    "s9": "b22a82394cfc2b7163b7fbd8be1087fdb6ec66a16524e9d194431d418894d798"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T18:00:00.368572+00:00",
+  "total": null
+}

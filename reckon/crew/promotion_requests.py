@@ -227,6 +227,8 @@ def read_promotion(run_id: str) -> dict[str, Any]:
 
 def _mark_pointer(request: Mapping[str, Any], phase: str) -> None:
     run_id = str(request["run_id"])
+    if phase == REQUESTED and _review_self_waits(request)[0]:
+        phase = WAITING
     try:
         with runs._pointer_lock(run_id, blocking=False):
             if not runs.pointer_path(run_id).exists():
@@ -265,7 +267,7 @@ def request_promotion(
     with runs._pointer_lock(f"promotion-request-{run_id}"):
         existing = read_promotion(run_id)
         if existing and (
-            existing.get("phase") in PENDING
+            existing.get("phase") in QUEUED
             or existing.get("phase") == PROMOTED
             or (existing.get("phase") in ERRORS and not retry)
         ):
@@ -308,15 +310,9 @@ def _review_self_waits(request: Mapping[str, Any]) -> tuple[bool, str]:
         # vanished run the way every other request kind does.
         return False, ""
     state, reason, _record = acceptance.review_self_state(pointer)
-    if state != acceptance.REVIEW_SELF_WAITING:
-        return False, ""
-    # Only a reviewer that is still running holds the queue. One that is not
-    # running is drained, so a run that ended without its record leaves the
-    # refusal its coordinator has to see rather than a request that never
-    # moves.
-    if runs.record_process_alive(pointer) is True:
-        return True, reason
-    return False, ""
+    # Readiness includes the manifest, worker liveness and supervisor exit.
+    # An ended review with no record is refused by that same verdict.
+    return state == acceptance.REVIEW_SELF_WAITING, reason
 
 
 def _mark_waiting(request: Mapping[str, Any], reason: str) -> dict[str, Any]:
@@ -474,7 +470,7 @@ def _pending_requests() -> list[dict[str, Any]]:
     pending = []
     for path in sorted(_requests_dir().glob("*.json")):
         request = _read(path)
-        if request.get("phase") in PENDING:
+        if request.get("phase") in QUEUED:
             pending.append(request)
     waiting = {str(request.get("run_id") or "") for request in pending}
     review_first = {
@@ -791,7 +787,7 @@ class PromotionService:
                     return
                 if (
                     current.get("request_id") != request["request_id"]
-                    or current.get("phase") not in PENDING
+                    or current.get("phase") not in QUEUED
                 ):
                     return
                 request = {**current, "phase": RUNNING, "started_at": _now()}

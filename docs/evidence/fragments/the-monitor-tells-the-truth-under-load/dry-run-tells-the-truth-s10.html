@@ -4,48 +4,42 @@
     Three dry-run gaps, each reproduced at the base revision before it was
     repaired, and each held by a test that fails against the code it replaces.
     <code>crew complete --dry-run</code> reported <code>would_promote: true</code>
-    for a run whose armed suite pair the landing refuses: both arms ran a
-    command other than the one the run was armed with, the run declared no
-    command of its own, and the landing refuses on those fields without
-    measuring anything, because there is nothing it could measure over a
-    question the run has already answered differently. The dry run carried no
-    refusals and named no measurement it had not taken, so a coordinator planned
-    around a promotion the <code>--land</code> refused.
+    for a run the landing would not promote, and answered the question a
+    coordinator did not ask. A delivered implementation with no stored review of
+    its head reported <code>would_file_reviews: []</code>, which answers which
+    delivered review records a filing would move into the store — not whether a
+    review is owed — so an owed review looked like none. And the dry run took the
+    run's pointer lock and its cross-host claim, so it could queue behind a
+    promotion of the same run and answer as a write that timed out.
   </p>
   <p>
-    The suite evaluation the promotion already runs now reaches the report —
-    the delta itself, <code>would_measure</code>, and the arm fields the pair is
-    missing — and the refusal is reported exactly when the landing refuses
-    without measuring, spoken with the landing's own predicates so the two
-    cannot drift. The other population is reported as what it is: a pair the
-    landing takes itself by running the armed command over the base and head
-    trees is not a refusal, because a merge reads <code>would_promote</code>
-    before it moves anything and a run the landing would promote must not read
-    as refused. That case carries the fields a failing measurement refuses on in
-    the delta, names the measurement as the landing's, and notes that this call
-    measured nothing.
+    The report now carries the suite evaluation the promotion itself reached —
+    the delta, its <code>would_measure</code> state, and the arm fields the pair
+    is missing — rather than a second reading of the record that could drift from
+    the landing's own. The one unmeasured state a landing acts on is a
+    measurement it takes itself, by running the armed command over the base and
+    head trees, so that state is reported as the measurement it is and <em>not</em>
+    as a refusal: a merge reads <code>would_promote</code> before it moves
+    anything, so a run the landing would promote must never read as refused. The
+    dry run still measures nothing and starts nothing; the dry-run answer is
+    stated by the evaluation itself, in the landing's own words.
   </p>
   <p>
-    A second gap: a delivered implementation with no stored review of its head
-    reported <code>would_file_reviews: []</code>, which answers a different
-    question — which delivered review records a filing would move into the store
-    — and left an owed review looking like none. The review gate's own predicate
-    is extracted and read by a helper that states the review owed as a fact: the
-    run, the tier that decided it is owed and the head it must read. Third, the
-    dry run took the run's pointer lock and its cross-host claim, so it could
-    queue behind a promotion of the same run and answer as a write that timed
-    out; a dry run writes nothing, so it now takes neither.
+    The review gate's own predicate is extracted and read by a helper that states
+    the review owed as a fact — the run, the tier that decided it is owed and the
+    head it must read — and the dry run takes neither the pointer lock nor the
+    cross-host claim, because a dry run writes nothing and a lock it waits on is
+    itself a write.
   </p>
   <p id="dry-run-tells-the-truth-s10-measure">
     Measure. The gate is
     <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_dry_run_reports_what_the_real_call_refuses.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code>,
     reported in the run's manifest with both arms. Against the base revision all
-    four new cases fail: the suite case on <code>would_promote</code> being
-    true, the measurement case on the report carrying no <code>would_measure</code>
-    and no delta at all, the review case on <code>reviews_owed</code> being
-    absent, and the lock case on the dry run taking a write lock. The declared
-    mutation skips the armed suite check in the dry run, and the suite case then
-    fails alone while the other three still pass, so the pass rests on the check
-    being there.
+    four new cases fail: the suite case on the report carrying no delta at all,
+    the measurement case on no <code>would_measure</code>, the review case on
+    <code>reviews_owed</code> being absent, and the lock case on the dry run
+    taking a write lock. The declared mutation drops the delta from the report,
+    and only the two suite cases fail, so their pass rests on the delta being
+    the landing's own evaluation.
   </p>
 </section>

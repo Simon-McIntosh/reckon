@@ -1,0 +1,150 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the source manifest baseline_suite and after_suite log FAILED ids and completed summary lines; both logs have zero failures. Broader importer deltas were separately adjudicated by the coordinator and are not silently conflated with this scoped measure.",
+  "assertion_independence": "No regression assertion is tautologically coupled to a test-supplied input: explicit exception/status/stage literals check serialization, while the actual ticker and subprocess tests derive expected stages and identities independently; receipt snapshot equality is supplemental persistence evidence and is not credited as proof of correct receipt contents.",
+  "assertion_review": [
+    {
+      "failure_conditions": "Refusing acquisition fails acquired; swallowing/replacing the exception fails caught.value is error; missing or delayed write fails the pre-release snapshot; a changed receipt fails snapshot equality; wrong status, stage, reason or current pid fails the respective fixed expectation; reversed timestamps fail ordering; failing to release the lock fails the final probe. Reinstating the missing writer reddens the receipt assertion, as delivery-negative.log shows.",
+      "lines": "59-73",
+      "test": "test_exit_is_recorded_before_seat_is_released"
+    },
+    {
+      "failure_conditions": "An unacquired stub seat raises before adding an attempt; this is fixture validation, not independent lifecycle coverage.",
+      "lines": "92",
+      "test": "_STUB_PRODUCER"
+    },
+    {
+      "failure_conditions": "An ended supervisor fails poll; no replacement or repeated replacement fails exactly-two actual subprocess pids; mislinked old/new pids, supervisor pid, exit code or last stage fail comparisons against independently observed subprocess identities and known exit path; restarting after the lease fails elapsed bound; no held seat fails live probe; lost termination receipt or incorrect termination status fails stopped assertions. Removing restart persistence or the supervisor restart would redden these assertions.",
+      "lines": "126-154",
+      "test": "test_lapsed_producer_is_restarted_and_recorded_within_its_lease"
+    },
+    {
+      "failure_conditions": "Failed acquisition fails acquired; removing the record/watcher identity check writes an old-producer exit into the successor registration and fails the absent-exit assertion.",
+      "lines": "161-163",
+      "test": "test_registration_is_not_overwritten_after_a_successor_takes_the_seat"
+    },
+    {
+      "failure_conditions": "Swallowing the injected wait exception fails pytest.raises; removing actual waiting-stage annotation fails the exposed-record stage expectation; treating an opaque handle as a mutable dict raises TypeError instead of the expected RuntimeError; incorrect status or reason fails fixed literals.",
+      "lines": "183-188",
+      "test": "test_ticker_exit_records_the_actual_wait_stage"
+    },
+    {
+      "failure_conditions": "Failed acquisition or release fails truth assertions; deleting the placement receipt write leaves no snapshot and fails status/stage checks; overwriting that receipt on outer teardown fails final equality.",
+      "lines": "203-207",
+      "test": "test_placement_release_records_exit_before_dropping_the_seat"
+    },
+    {
+      "failure_conditions": "Failed reacquisition fails acquired; failing to clear an earlier same-process exit fails exit_record is None; classifying same-process reentry as a replacement creates restart_record and fails absence.",
+      "lines": "213-216",
+      "test": "test_reentry_by_the_same_process_is_not_a_restart"
+    }
+  ],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:_watch_registration:691-713",
+    "reckon/crew/recovery_watch.py:watch_ticker:3565",
+    "reckon/crew/recovery_watch.py:watch_follow:3894",
+    "reckon/crew/watch_unit.py:release_watch_seat:464-468",
+    "reckon/crew/runs.py:_project_watch_claim:4832-4835",
+    "reckon/crew/dispatch_watch.py:_WATCH_PRODUCER_SUPERVISOR:299-331"
+  ],
+  "completed_at": "2026-11-15T23:10:45Z",
+  "dispatched_at": "2026-11-15T23:02:58Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "last_stage is recorded for dict registrations, which is every registration the producer writes; an opaque-handle provider is a test seam only",
+      "recorded_at": "2026-11-15T23:31:39.667635+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "691",
+      "severity": "blocking",
+      "text": "blocking: _project_watch_claim performs its first _publish_watch_stream at runs.py:4832 before yielding to this context, and its finally drops the seat at :4835 if publication raises, so the newly added record_producer_exit finally at :713 is never entered and a producer can still exit without status or last stage; the new fixture stubs that publication at tests/test_a_producer_exit_is_recorded_and_restarted.py:24, leaving the stated producer-exit guarantee untested on this path."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_producer_exit_is_recorded_and_restarted.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T204841537282-producer-exit-recorded-and-restarted-s25/delivery-scope.log",
+      "measurement_cwd": "/tmp/producer-gate-y1h6h7sa/tree",
+      "measurement_module": "/tmp/producer-gate-y1h6h7sa/tree/reckon/crew/watch_unit.py",
+      "revision": "04166ed71e7e42ebaccd16dec42167de79b5ca1c",
+      "summary": "68 passed in 40.40s"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T204841537282-producer-exit-recorded-and-restarted-s25/base-armed-scope.log",
+      "measurement_cwd": "/tmp/producer-gate-5h_nbndy/tree",
+      "measurement_module": "/tmp/producer-gate-5h_nbndy/tree/reckon/crew/watch_unit.py",
+      "revision": "de83f451011c33cfecc9c8ecd220e9a6cdf21bda",
+      "summary": "58 passed in 44.16s"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Read 70574ff9a4be6e37678391cfa6444da67b4d1cb8, 4b4846fe85db606adc3f82b0afbf545ff401e307 and 04166ed71e7e42ebaccd16dec42167de79b5ca1c against de83f451011c33cfecc9c8ecd220e9a6cdf21bda; four scoped files add lifecycle receipts and tests, with one startup coverage defect at recovery_watch.py:691-713.",
+    "done_when": "Read prompt.txt:164 and the base-armed-scope.log and delivery-scope.log receipts; 58 base passes and 68 head passes establish zero added scoped failures, while the 8-failure negative control demonstrates exit-receipt refusal and compatibility-repair.log records an 8.38-second restart inside the 600-second lease.",
+    "goal": "Read prompt.txt:38 and live docs/plans/a-seat-held-elsewhere-is-not-restarted.html:230; exit and restart receipts implement the steady-state deliverable but omit failures during the initial publication.",
+    "manifest": "Read the source manifest.md and its named logs; the revision-pinned scoped receipts agree, while the manifest's older checkpoint and rubric lines still describe seven importer failures as unadjudicated despite its appended coordinator adjudication.",
+    "write_paths": "Read prompt.txt:84-89; all four changed files in the base-to-head diff are declared, including the evidence fragment, and no shared plan was changed."
+  },
+  "justifications": {
+    "durability": "tests/test_a_producer_exit_is_recorded_and_restarted.py:60-70 fails when exit recording is removed and :134-143 detects missing or late restarts, but its :24 publication stub prevents it exercising the unrecorded startup failure.",
+    "evidence": "base-armed-scope.log and delivery-scope.log carry the correct base/head and 58/68 passes with EXIT=0, delivery-negative.log records 8 failures with EXIT=1, and compatibility-repair.log measures restart delay against the actual 600-second lease.",
+    "fit": "reckon/crew/watch_unit.py:45-62 and :91-115 use the existing registration lock and atomic JSON writer, and the added source names and comments describe mechanisms without forbidden plan labels.",
+    "goal_fidelity": "reckon/crew/recovery_watch.py:704-713 records body exits but runs.py:4832 can raise and release the acquired seat before that recorder is entered.",
+    "reuse": "Capability searches of the reviewed crew code found registration merging in runs.py:3379, startup ownership in runs.py:4718 and supervision in dispatch_watch.py:249, all reused; none already owns conditional exit/restart receipt creation, which watch_unit.py:33-115 adds without a second supervisor.",
+    "scope_discipline": "All four files in git diff de83f451011c33cfecc9c8ecd220e9a6cdf21bda..04166ed71e7e42ebaccd16dec42167de79b5ca1c match prompt.txt:84-89 and contain only the requested lifecycle work and its evidence."
+  },
+  "limits": "Read-only review; no suite rerun or mutation experiment performed. The blocking startup finding is control-flow analysis, not a claimed reproduced execution. Historical incident causes remain unknown as allowed by the live plan.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read prompt.txt:38 and live docs/plans/a-seat-held-elsewhere-is-not-restarted.html:230; exit and restart receipts implement the steady-state deliverable but omit failures during the initial publication.\nVERDICT done_when: Read prompt.txt:164 and the base-armed-scope.log and delivery-scope.log receipts; 58 base passes and 68 head passes establish zero added scoped failures, while the 8-failure negative control demonstrates exit-receipt refusal and compatibility-repair.log records an 8.38-second restart inside the 600-second lease.\nVERDICT write_paths: Read prompt.txt:84-89; all four changed files in the base-to-head diff are declared, including the evidence fragment, and no shared plan was changed.\nVERDICT manifest: Read the source manifest.md and its named logs; the revision-pinned scoped receipts agree, while the manifest's older checkpoint and rubric lines still describe seven importer failures as unadjudicated despite its appended coordinator adjudication.\nVERDICT diff: Read 70574ff9a4be6e37678391cfa6444da67b4d1cb8, 4b4846fe85db606adc3f82b0afbf545ff401e307 and 04166ed71e7e42ebaccd16dec42167de79b5ca1c against de83f451011c33cfecc9c8ecd220e9a6cdf21bda; four scoped files add lifecycle receipts and tests, with one startup coverage defect at recovery_watch.py:691-713.\nCALL_SITES: reckon/crew/recovery_watch.py:_watch_registration:691-713, reckon/crew/recovery_watch.py:watch_ticker:3565, reckon/crew/recovery_watch.py:watch_follow:3894, reckon/crew/watch_unit.py:release_watch_seat:464-468, reckon/crew/runs.py:_project_watch_claim:4832-4835, reckon/crew/dispatch_watch.py:_WATCH_PRODUCER_SUPERVISOR:299-331\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_watch.py:704-713 records body exits but runs.py:4832 can raise and release the acquired seat before that recorder is entered.\nSCORE evidence: 18\nJUSTIFICATION evidence: base-armed-scope.log and delivery-scope.log carry the correct base/head and 58/68 passes with EXIT=0, delivery-negative.log records 8 failures with EXIT=1, and compatibility-repair.log measures restart delay against the actual 600-second lease.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: All four files in git diff de83f451011c33cfecc9c8ecd220e9a6cdf21bda..04166ed71e7e42ebaccd16dec42167de79b5ca1c match prompt.txt:84-89 and contain only the requested lifecycle work and its evidence.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_producer_exit_is_recorded_and_restarted.py:60-70 fails when exit recording is removed and :134-143 detects missing or late restarts, but its :24 publication stub prevents it exercising the unrecorded startup failure.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/watch_unit.py:45-62 and :91-115 use the existing registration lock and atomic JSON writer, and the added source names and comments describe mechanisms without forbidden plan labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches of the reviewed crew code found registration merging in runs.py:3379, startup ownership in runs.py:4718 and supervision in dispatch_watch.py:249, all reused; none already owns conditional exit/restart receipt creation, which watch_unit.py:33-115 adds without a second supervisor.\nFINDING reckon/crew/recovery_watch.py:691 blocking: _project_watch_claim performs its first _publish_watch_stream at runs.py:4832 before yielding to this context, and its finally drops the seat at :4835 if publication raises, so the newly added record_producer_exit finally at :713 is never entered and a producer can still exit without status or last stage; the new fixture stubs that publication at tests/test_a_producer_exit_is_recorded_and_restarted.py:24, leaving the stated producer-exit guarantee untested on this path.\n",
+  "reuse_search": {
+    "capabilities": [
+      "producer lifecycle exit/restart receipt",
+      "registration update and identity protection",
+      "supervisor restart",
+      "atomic durable JSON"
+    ],
+    "conclusion": "New lifecycle definitions extend producer registration using shared storage and lock owners; no duplicate lifecycle recorder or supervisor found.",
+    "owners_examined": [
+      "reckon/crew/runs.py:update_watch_registration",
+      "reckon/crew/runs.py:_project_watch_claim",
+      "reckon/crew/runs.py:_node_identity (request identity, distinct capability)",
+      "reckon/crew/dispatch_watch.py:_WATCH_PRODUCER_SUPERVISOR",
+      "reckon/_store.py:write_json_atomically (existing imported owner)"
+    ],
+    "reviewed_revision": "04166ed71e7e42ebaccd16dec42167de79b5ca1c"
+  },
+  "review_run_id": "r-20261115T225431002936-review-of-producer-exit-recorded-and-restarted-s25-04166ed71e7e",
+  "reviewed_base_sha": "de83f451011c33cfecc9c8ecd220e9a6cdf21bda",
+  "reviewed_head_sha": "04166ed71e7e42ebaccd16dec42167de79b5ca1c",
+  "reviewed_run_id": "r-20261115T204841537282-producer-exit-recorded-and-restarted-s25",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T23:11:42.156403+00:00",
+  "total": 111
+}

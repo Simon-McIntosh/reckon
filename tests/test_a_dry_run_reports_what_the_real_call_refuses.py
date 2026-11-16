@@ -6,19 +6,22 @@ a real ``--land`` that then refuses the same run costs the round trip the dry
 run was asked to save. Three gaps are closed here, each exercised by making the
 guarded thing happen rather than by reading the code that guards it:
 
-* a run whose armed suite pair the landing cannot read is refused by the real
-  call and reported by the dry run as the same refusal, naming the fields it is
-  missing. The dry run still measures nothing: the pair the landing would take
-  is named, never taken.
+* a run whose armed suite pair the landing cannot read from the record is
+  measured by the real call rather than refused, so the dry run states the
+  measurement as the landing's — the fields the pair is missing, carried in
+  ``suite_delta`` — instead of refusing a run the landing would promote. A
+  refused pair is still reported, because the evaluation raises it. The dry run
+  still measures nothing: the pair the landing would take is named, never taken.
 * a delivered implementation with no stored review of its head reports the
   review it owes, so the answer to "what is missing" is a list a reader can act
   with rather than an empty ``would_file_reviews``.
 * a dry run takes no write lock and holds no cross-host claim, so it cannot
   queue behind a promotion of the same run.
 
-The suite case compares the dry run's answer with the refusal the real call
-raises over one record, so the two surfaces are held to the same evaluation
-rather than to two readings of it.
+The suite case runs both surfaces over one record: the dry run names the pair
+and the fields it is missing, and the real call measures that same pair and,
+when the measurement reads nothing, refuses on those same fields, so the two
+surfaces are held to one evaluation rather than to two readings of it.
 """
 
 from __future__ import annotations
@@ -238,17 +241,22 @@ def _dry_run(run_id: str, repository: Path, **kwargs) -> dict:
     )
 
 
-def test_a_dry_run_reports_the_suite_refusal_the_real_call_raises(
+def test_the_suite_evidence_a_dry_run_names_is_the_pair_the_landing_measures(
     repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """One record, two surfaces: the dry run's answer is the real call's refusal.
+    """One record, two surfaces: the pair the dry run reports is the pair measured.
 
     Both arms ran a command other than the one the run was armed with, and the
-    run declared no command of its own, so the landing cannot measure the pair
-    at all — there is nothing it could measure over a question the run already
-    answered differently — and refuses on the arm fields. That refusal is
-    knowable before anything runs, and a dry run that answered
-    ``would_promote: true`` sent a coordinator to a ``--land`` that refused it.
+    run declared no command of its own. The landing answers that by running the
+    armed command over the base and head trees itself rather than refusing, so a
+    dry run that raised a suite refusal here sent a coordinator to repair
+    evidence a ``--land`` would have promoted. The dry run states the landing's
+    measurement instead, and the fields it names are the ones a measurement that
+    cannot read the pair refuses on — asserted here by making the real call's
+    measurement unreadable and reading its refusal.
+
+    This is the case that pinned the refusal open: no other suite state is both
+    unmeasured and refused, so the report refutes nothing the landing raises.
     """
     run_id = "r-20261115T090000000000-node-a"
     _set_plan_impl(repository, 1.0)
@@ -258,7 +266,7 @@ def test_a_dry_run_reports_the_suite_refusal_the_real_call_raises(
     _set_arms(manifest, _arm(base), _arm(head))
 
     def _nobody_measured(*_args, **_kwargs):
-        raise AssertionError("a landing that refuses the pair measured it")
+        raise AssertionError("a dry run measured a suite")
 
     monkeypatch.setattr(promotion_records, "_measure_missing_arms", _nobody_measured)
     report = _dry_run(
@@ -266,19 +274,23 @@ def test_a_dry_run_reports_the_suite_refusal_the_real_call_raises(
         repository,
         review_waiver="a sibling node already read this change",
     )
-    refusals = "\n".join(report["refusals"])
 
     assert report["dry_run"] is True
-    assert report["would_promote"] is False, refusals
-    assert (
-        "armed promotion requires complete baseline and after suite evidence"
-        in refusals
-    )
+    assert report["refusals"] == [], report["refusals"]
     assert report["suite_delta"]["status"] == "would-measure"
     assert report["would_measure"] is True
+    dry_fields = set(report["suite_delta"]["missing_fields"])
+    assert dry_fields, "the unmeasured pair named no field"
 
-    # The real call over the same record refuses without measuring, naming the
-    # fields the dry run reported.
+    # The real call over the same record takes that population, and refuses on
+    # exactly the fields the dry run carried when its measurement reads nothing.
+    measured: list[tuple[str, str]] = []
+
+    def _unreadable(run: str, *_args, **_kwargs):
+        measured.append((run, head))
+        return {"unreadable": "the armed command could not be read here"}
+
+    monkeypatch.setattr(promotion_records, "_measure_missing_arms", _unreadable)
     with pytest.raises(ledger.SuiteDeltaError) as refused:
         promotion_module.complete(
             run_id,
@@ -288,9 +300,8 @@ def test_a_dry_run_reports_the_suite_refusal_the_real_call_raises(
             require_gate_check=True,
             review_waiver="a sibling node already read this pair",
         )
-    assert refused.value.missing_fields
-    for field in refused.value.missing_fields:
-        assert field in refusals, field
+    assert measured, "the landing did not measure the pair the dry run named"
+    assert set(refused.value.missing_fields) == dry_fields
 
 
 def test_a_run_the_landing_would_measure_is_not_reported_refused(

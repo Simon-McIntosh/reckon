@@ -310,7 +310,7 @@ def _observed_transport(record: Mapping[str, Any]) -> dict[str, str] | None:
         if not stream.is_file():
             continue
         try:
-            with stream.open(encoding="utf-8") as events:
+            with stream.open(encoding="utf-8", errors="replace") as events:
                 for line in events:
                     try:
                         event = json.loads(line)

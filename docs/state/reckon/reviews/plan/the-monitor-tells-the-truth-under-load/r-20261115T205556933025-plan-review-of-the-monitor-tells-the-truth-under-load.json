@@ -1,0 +1,84 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T21:26:10.501Z",
+  "dispatched_at": "2026-11-15T21:25:42Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-tells-the-truth-under-load/r-20261115T205556933025-plan-review-of-the-monitor-tells-the-truth-under-load/plan.html:182",
+      "id": "reasoning-1",
+      "reason": "a node briefed with this Why can suppress lift rows and satisfy its own test while the anonymous row it was sent to remove still prints, so the section should carry the lift correspondence as a lead to confirm and let its invariant (\"no row carries both an unknown node and a missing run id\") be the endpoint, which it already states.",
+      "text": "\u00a720's Why blames the anonymous row on `baseline` events with `run_id` null and state `lift-in-force`, but it also states the row carries \"no time, role, node, run or lane\" while those events carry the budget group in their own node field: a lift row built from such an event names `codex-sub` in the node cell (`_lift_row` sets `node=str(lift.get(\"group\"))`, `reckon/crew/lift_watch.py:279-283`, and the follower renders `event.get(\"node\") or event.get(\"run_id\") or \"unknown\"`, `reckon/crew/ticker.py:3391`), so the blamed event cannot render `unknown` and the observed row came from something with neither node nor run id",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-tells-the-truth-under-load/r-20261115T205556933025-plan-review-of-the-monitor-tells-the-truth-under-load/plan.html:183",
+      "id": "done_when-1",
+      "reason": "this is the shape \u00a719 was split to fix at r-20261115T181801525667, and left whole it either forces a false \"fails at base\" claim or leaves the preservation clause unmeasured; splitting it costs one sentence.",
+      "text": "\u00a720's done-when quantifies \"New tests, each failing at the base revision\" over a clause that already holds at base (\"A run's own transitions are drawn as before\"), so the section declares a fail-first gate that no preservation test can meet",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-tells-the-truth-under-load/r-20261115T205556933025-plan-review-of-the-monitor-tells-the-truth-under-load/plan.html:22",
+      "id": "wiring-1",
+      "reason": "the one destination \u00a71 routes outside the informs list is undeclared, so a reader of the plan's relationships cannot reach the owner of a cluster this plan explicitly hands off, and the recorded answer currently misdescribes the artifact.",
+      "text": "`plan-informs` lists four plans and omits `queued-work-needs-no-workaround`, although \u00a71's \"Already owned elsewhere\" row (plan.html:48) routes \"worktree withheld after a land\" to queued-work \u00a720, and that plan exists and owns the cluster (`docs/plans/queued-work-needs-no-workaround.html:8,297`); an earlier review recorded this as acted, and the composed declaration shows it was not",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-tells-the-truth-under-load/r-20261115T205556933025-plan-review-of-the-monitor-tells-the-truth-under-load/plan.html:32",
+      "id": "reasoning-2",
+      "reason": "the heading is the section title the surface shows, so the plan now contradicts itself in the one line a reader sees first, and the correction is one word.",
+      "text": "\u00a71's heading still reads \"fourteen sessions reported the monitor misleading them in one day\" while the section body names fifteen sessions and `plan-summary`, changed in this revision, now says fifteen",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "dcc893e596cd5e22b59a1f99400eda40ab593528",
+  "plan_fingerprint": "c99bf9b2b9124ca8fb7853683789fdbbebccfdf9e5ff099eeea99fce167e5a5b",
+  "plan_slug": "the-monitor-tells-the-truth-under-load",
+  "plan_version": 14,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261115T205556933025-plan-review-of-the-monitor-tells-the-truth-under-load",
+  "reviewed_blob_sha": "fae8af73a676b4487217b8fcf0b05f3122728ff6",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the three write-path anchors of \u00a720 resolve in the repository (`reckon/crew/ticker.py`, `reckon/crew/lift_watch.py`, `reckon/crew/recovery_watch.py`), and \u00a720 cites no run id or commit that would need one.",
+    "done_when": "a finding \u2014 \u00a720's done-when (plan.html:183) declares \"New tests, each failing at the base revision\" and then includes \"A run's own transitions are drawn as before\", a preservation clause that already holds at base.",
+    "evidence_paths": "pass \u2014 \u00a720 states no path of its own; its gate is the all_debug arm recorded under the run's own log directory, and no section in the reviewed units points at a scratchpad.",
+    "naming": "pass \u2014 \u00a720's text names mechanisms (baseline event, lift-in-force state, budget group, unknown node) and no plan label, stage name or ticket number.",
+    "reasoning": "a finding \u2014 \u00a720's Why (plan.html:182) blames a `baseline` lift-in-force event whose node is the budget group `codex-sub` for a row whose own node cell reads `unknown`, which its cited event's shape cannot produce.",
+    "single_goal": "pass \u2014 \u00a720 names one deliverable (no pane row without a run) and carries `data-id=\"s20\"` with one declaration in `plan-section-declarations`.",
+    "wiring": "a finding \u2014 `plan-informs` (plan.html:22) omits `queued-work-needs-no-workaround`, and \u00a71's \"Already owned elsewhere\" row (plan.html:48) routes the withheld-worktree cluster to \"queued-work \u00a720\"."
+  },
+  "section_digests": {
+    "_document": "d7cd0aaed389cbd8bb6866503ce62ae49d6f42124cecdfebbaf4825156427148",
+    "s1": "7df70e005850ec7773b3db8cdf1384c5422e6cbfac994a1cfc3bdeca2fd47ef2",
+    "s10": "b83b287b25ce35ab03c105da8c02eec999809dbdea6073436eae2dc72bb0055d",
+    "s11": "db2972ed7155bc484ac98ce58f8c119ab201e99f5a53c1af54606eb6564a66e4",
+    "s12": "93d79e3e452ecd1f5c10186fc7eb1781f5e7455324237438f574fbc699447b31",
+    "s13": "79271d44153e341633146df7233120d46939c41b1ca66de6bac074c2472ea991",
+    "s14": "c0f58bcc6da33e5ff402ec71bef199b31de1619824a04f6db8d415d9669a38d7",
+    "s15": "3d6257718e450fda1363e42a9394f2cb631579e92f2cf0dbdaca2f25c62d6537",
+    "s16": "9c67ebb9a89d3b566da303e2866877a636f868c501bf32f08ff80e2c7a7f26da",
+    "s17": "229d1aee2b054a2680acdd7883f3d6cd8216513f31305ff21ed874c51b1af3a7",
+    "s18": "4a5429fac53529c64918e90d1bc4d47480e08689bea9601336332ce330c82e49",
+    "s19": "1f9e10fa3b0ee55a46bc415cf145a732b0361a363b70930a33a7c5ccbe2189ca",
+    "s2": "a065d657377c24ca69329c265d4a0a821a0104c7df8d1140dec9c3b9d1c6edf2",
+    "s20": "2a22cb56cd43d1c837c31506853a47a9de4ea2b23c97d583934c0f47da03fad0",
+    "s3": "f3cf9279ee0efc6c6e7b55dede5b9ff68ee3db1e40edd78b825098ecee64d396",
+    "s4": "739bbbd316f3b5138d938c01abaac59b3f08e1231effa6dc1e416fb46b9b34b1",
+    "s5": "2806db9da94cd21c23ef92806d85a99f15d28df20b272f97173d332fba5a1587",
+    "s6": "a8a7d00ef50ab0ca240bc59bb917ff62442d6f3567da095cb913cd5860246056",
+    "s7": "9f299f30b0fda7b1f5bbc9f6d7cf6b936604181068a2c9a8363b64e58ace0fd6",
+    "s8": "30f0e740e2caee5b735cc3bdc83d5eaa23eac7eeaae780899f811d7a1c32956c",
+    "s9": "56c122a4d4057a2e12e9ebbaae0a53fb955938f47dbe9275cdf2dd5566896f78"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T22:00:59.166332+00:00",
+  "total": null
+}
