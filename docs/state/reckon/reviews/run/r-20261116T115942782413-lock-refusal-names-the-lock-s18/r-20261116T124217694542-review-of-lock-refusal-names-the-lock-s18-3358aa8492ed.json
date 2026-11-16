@@ -1,0 +1,141 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "fails_if": "The refusal omits or substitutes the store path; input-path comparison constrains emitted output rather than comparing the input to itself.",
+      "lines": "16,86"
+    },
+    {
+      "fails_if": "The lock branch returns the base import-only message or drops the explicit exhausted-wait wording.",
+      "lines": "17"
+    },
+    {
+      "fails_if": "Either exception branch omits the instruction to promote again.",
+      "lines": "18,88"
+    },
+    {
+      "fails_if": "The lock branch retains the import script, including when the old handler is restored.",
+      "lines": "19"
+    },
+    {
+      "fails_if": "A store failure is swallowed or raised as a different exception type.",
+      "lines": "35-36,60-61,82-83"
+    },
+    {
+      "fails_if": "Exception chaining is removed or its SQLite cause is replaced.",
+      "lines": "38"
+    },
+    {
+      "fails_if": "A row is written despite refusal while the real write lock is held.",
+      "lines": "39"
+    },
+    {
+      "fails_if": "The post-release append fails or reports a result other than written.",
+      "lines": "43"
+    },
+    {
+      "fails_if": "The successful retry fails to persist the expected literal run identity.",
+      "lines": "44"
+    },
+    {
+      "fails_if": "Non-contention failures lose the import repair or its independently specified project argument.",
+      "lines": "87"
+    },
+    {
+      "fails_if": "Non-contention failures are misclassified as exhausted locks.",
+      "lines": "89"
+    },
+    {
+      "fails_if": "The wrapper loses or replaces the injected exception as its cause; the injected object and observed exception chain do not move together automatically.",
+      "lines": "90"
+    }
+  ],
+  "assertion_independence": "No self-equal or mutually moving assertion found; output path and cause checks can fail when production code omits or replaces them.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/ledger.py:append_run:3659",
+    "reckon/crew/promotion.py:_complete_locked:2445"
+  ],
+  "completed_at": "2026-11-16T12:48:19Z",
+  "dispatched_at": "2026-11-16T12:44:04Z",
+  "failure_delta_source": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_locked_store_refusal_names_the_lock.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T115942782413-lock-refusal-names-the-lock-s18/after.log",
+      "revision": "3358aa8492ed79816488952de6738dcf3d25445d"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T115942782413-lock-refusal-names-the-lock-s18/baseline.log",
+      "revision": "e304d5fef41b384d498c830686de4f1419b8e828"
+    }
+  },
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "coordinator adjudication: the single added id is in tests/test_a_commit_that_fails_to_resolve_refuses_the_promotion.py, whose fixtures compare the real crew home before and after each test, so it flips whenever the live fleet writes there mid-run; s31 and s18 each show one added and one removed id in that same file with unchanged totals, and neither change touches what the test exercises",
+      "recorded_at": "2026-11-16T19:30:09.982116+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "23",
+      "severity": "blocking",
+      "text": "blocking: The required no-added-failure importer measure is unmet; unchanged aggregate counts conceal one added failure ID, so coordinator-scoped investigation or further evidence must resolve this gate before the implementation can land."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read d6da74c2de101939a955a6e90e6768e11a95aad8 and 3358aa8492ed79816488952de6738dcf3d25445d separately against e304d5fef41b384d498c830686de4f1419b8e828; the first changes the existing refusal owner and adds eight test cases, and the second adds only six lines of evidence.",
+    "done_when": "Read docs/plans/a-landing-never-waits-on-a-shared-index.html:148 and prompt.txt:280-281; the focused reproduction and mutation prove the message change, but importer-after.log has one failure ID absent from importer-baseline.log, so the no-added-failure measure remains unmet.",
+    "goal": "Read prompt.txt:38 of the reviewed run; reckon/ledger.py:3448-3464 changes exhausted-lock refusals to name contention and promotion again while preserving import repair for other failures.",
+    "manifest": "Read the reviewed run's manifest.md:18-23 and its referenced receipts; focused arms are complete with zero failure IDs, and the manifest explicitly records the broader importer gate as blocked.",
+    "write_paths": "Read prompt.txt:84-88 and the exact base-to-head diff; all three changed paths are declared, including the evidence fragment, and no figure was added."
+  },
+  "justifications": {
+    "durability": "tests/test_a_locked_store_refusal_names_the_lock.py:16-19 fails when the base import-only handler is restored, as negative-control.log:157-162 records for four lock cases, while lines 86-90 protect the repair branch.",
+    "evidence": "reviewed-run manifest.md:18-23 is supported by 58 baseline passes, 66 head passes and four mutation failures, but the required importer comparison still adds one failure ID.",
+    "fit": "reckon/ledger.py:3448-3464 extends its existing exception wrapper, preserves chaining, and the new test symbols describe behavior without forbidden labels.",
+    "goal_fidelity": "reckon/ledger.py:3448-3464 gives exhausted locks the required remedy and preserves the original repair for other exceptions.",
+    "reuse": "reckon/ledger.py:3448 reuses the lock classifier and wait bound owned by reckon/run_store.py:1356-1413, and the new assertion helper factors local message checks while complementing the existing refusal tests in tests/test_a_failed_store_write_leaves_no_row.py:62-89.",
+    "scope_discipline": "the three paths in the base-to-head diff match reviewed-run prompt.txt:84-88 and contain only refusal handling, regression coverage and its evidence."
+  },
+  "negative_control_parser_positive_control": [
+    "tests/test_a_locked_store_refusal_names_the_lock.py::test_a_held_database_lock_names_contention_and_allows_retry",
+    "tests/test_a_locked_store_refusal_names_the_lock.py::test_sqlite_contention_variants_offer_promotion_again[database is busy]",
+    "tests/test_a_locked_store_refusal_names_the_lock.py::test_sqlite_contention_variants_offer_promotion_again[database is locked]",
+    "tests/test_a_locked_store_refusal_names_the_lock.py::test_sqlite_contention_variants_offer_promotion_again[database table is locked]"
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read prompt.txt:38 of the reviewed run; reckon/ledger.py:3448-3464 changes exhausted-lock refusals to name contention and promotion again while preserving import repair for other failures.\nVERDICT done_when: Read docs/plans/a-landing-never-waits-on-a-shared-index.html:148 and prompt.txt:280-281; the focused reproduction and mutation prove the message change, but importer-after.log has one failure ID absent from importer-baseline.log, so the no-added-failure measure remains unmet.\nVERDICT write_paths: Read prompt.txt:84-88 and the exact base-to-head diff; all three changed paths are declared, including the evidence fragment, and no figure was added.\nVERDICT manifest: Read the reviewed run's manifest.md:18-23 and its referenced receipts; focused arms are complete with zero failure IDs, and the manifest explicitly records the broader importer gate as blocked.\nVERDICT diff: Read d6da74c2de101939a955a6e90e6768e11a95aad8 and 3358aa8492ed79816488952de6738dcf3d25445d separately against e304d5fef41b384d498c830686de4f1419b8e828; the first changes the existing refusal owner and adds eight test cases, and the second adds only six lines of evidence.\nCALL_SITES: reckon/ledger.py:append_run:3659, reckon/crew/promotion.py:_complete_locked:2445\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/ledger.py:3448-3464 gives exhausted locks the required remedy and preserves the original repair for other exceptions.\nSCORE evidence: 14\nJUSTIFICATION evidence: reviewed-run manifest.md:18-23 is supported by 58 baseline passes, 66 head passes and four mutation failures, but the required importer comparison still adds one failure ID.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three paths in the base-to-head diff match reviewed-run prompt.txt:84-88 and contain only refusal handling, regression coverage and its evidence.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_locked_store_refusal_names_the_lock.py:16-19 fails when the base import-only handler is restored, as negative-control.log:157-162 records for four lock cases, while lines 86-90 protect the repair branch.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/ledger.py:3448-3464 extends its existing exception wrapper, preserves chaining, and the new test symbols describe behavior without forbidden labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/ledger.py:3448 reuses the lock classifier and wait bound owned by reckon/run_store.py:1356-1413, and the new assertion helper factors local message checks while complementing the existing refusal tests in tests/test_a_failed_store_write_leaves_no_row.py:62-89.\nFINDING manifest.md:23 blocking: The required no-added-failure importer measure is unmet; unchanged aggregate counts conceal one added failure ID, so coordinator-scoped investigation or further evidence must resolve this gate before the implementation can land.\n",
+  "reuse_search": "Searched the reviewed revision for lock/refusal message assertions, refusal definitions and _index_append call sites; opened run_store._locked/_retrying/append and tests/test_a_failed_store_write_leaves_no_row.py. No added production definition; test-local helper adds the new lock-message contract.",
+  "review_run_id": "r-20261116T124217694542-review-of-lock-refusal-names-the-lock-s18-3358aa8492ed",
+  "reviewed_base_sha": "e304d5fef41b384d498c830686de4f1419b8e828",
+  "reviewed_head_sha": "3358aa8492ed79816488952de6738dcf3d25445d",
+  "reviewed_run_id": "r-20261116T115942782413-lock-refusal-names-the-lock-s18",
+  "scores": {
+    "durability": 20,
+    "evidence": 14,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T20:12:25.002488+00:00",
+  "total": 114
+}

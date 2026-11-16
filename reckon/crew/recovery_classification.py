@@ -1824,18 +1824,32 @@ def classify_pointer(
     # exactly as the drain view and the stop hook judge it.
     stuck = _stuck_verdict_for(record) if phase else None
 
-    # A pre-spawn launch past its bound with its holder gone is not waiting to
-    # start: the liveness arms read it as a failed launch, which the admission
-    # pass then releases or returns to the queue. A pointer whose manifest
-    # carries a terminal verdict is not waiting to start either: a worker
-    # cannot report an outcome before it has run, so the delivered report is
-    # the launch evidence its launcher's label failed to record, exactly as
-    # :func:`_observed_phase` reads it. Holding such a run at ``running`` here
-    # overrode its own verdict and left every reader — the review reflex
-    # included — seeing work in progress for a run that had delivered.
+    # A pre-spawn launch whose phase says it has not started is not waiting to
+    # start on that label alone: the pre-spawn reading needs a launch that has
+    # spawned nothing, and the liveness arms read the rest — a launch whose
+    # worker has come and gone from that worker's own liveness and output, which
+    # is a failed launch the admission pass then releases or returns to the
+    # queue.
+    #
+    # The pre-spawn phrase is the launcher's label and a stale one, so it cannot
+    # be trusted alone. A run that reached its worker carries a pid, a worker
+    # record, a stream or a launch log, and any of those outranks the label:
+    # reading them as a request that has not started held a refused, unreadable
+    # or dead run at ``running`` for as long as its pointer lived, and left
+    # ``fleet_verdict`` free to call the same row abandoned, so one row stated
+    # two outcomes and neither surface could be acted on.
+    #
+    # A delivered manifest is the same evidence and one witness further on: a
+    # worker cannot report an outcome before it has run, so the report is what a
+    # pre-spawn label failed to record, exactly as :func:`_observed_phase` reads
+    # it. It is read here beside the spawn evidence because that helper does not
+    # count a manifest, and a run whose only remaining record is the verdict it
+    # is delivered on would otherwise still read as a request that never
+    # started.
     pre_spawn_waiting = (
         phase in _PRE_SPAWN_PHASES
         and manifest_status not in TERMINAL_MANIFEST_STATUSES
+        and not _spawn_evidence(record)
         and not _stranded_launch(record, now_seconds=moment)
     )
     # A parked phase is the launcher's statement that the request is waiting to
@@ -3298,6 +3312,7 @@ from .recovery_liveness import (  # noqa: E402
     _run_exit_record,
     _run_stream_mtime,
     _run_stream_quiet_seconds,
+    _spawn_evidence,
     _stranded_launch,
     _stranded_launch_age_seconds,
     _wait_judged_against_itself,

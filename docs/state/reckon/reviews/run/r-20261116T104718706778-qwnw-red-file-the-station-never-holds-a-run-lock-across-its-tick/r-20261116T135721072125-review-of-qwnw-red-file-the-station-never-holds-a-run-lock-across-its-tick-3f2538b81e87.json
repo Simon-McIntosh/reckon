@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "125628f608ef00b5f4a4a9ce845c5e8a04b12f58",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-16T14:55:17.004Z",
+  "dispatched_at": "2026-11-16T14:54:41Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-station-never-holds-a-run-lock-across-its-tick.html",
+      "line": "41",
+      "severity": "non-blocking",
+      "text": "the all_debug gate job 1319923 ran at 3544df51f2, one docs-only commit before the reviewed head 3f2538b81e, so the done_when's \"passes in full at head as a job on all_debug\" is satisfied by a run at the parent commit plus inspection of an unchanged test file, not by an all_debug run at the head itself."
+    }
+  ],
+  "head_log_revision": "3544df51f21fd63bd1bd6d3f6cdd6840562f8e20",
+  "item_verdicts": {
+    "diff": "read commit by commit against 125628f608: 632057be rewrites the two station cases and the moved-pointer case in the test file (41 insertions and 9 deletions), 3544df51 adds the 55-line evidence fragment, and 3f2538b81e only repoints the fragment's job and timing figures; no product source changed.",
+    "done_when": "the done_when names the file passing at head as an all_debug job with SLURM_JOB_ID unset plus a base arm and per-cause verdicts; the manifest records job 1319923 on all_debug at 3544df51f2 (gate-head.log:5) and a separate in-place run at 3f2538b81e (gate-final-head.log), so the all_debug figure sits one docs-only commit behind the recorded head.",
+    "goal": "the node's goal is that tests/test_the_station_never_holds_a_run_lock_across_its_tick.py passes in full on the primary branch; the file at 3f2538b81e completes all six cases (gate-final-head.log reads 6 passed in 2.71s EXIT=0) after three stale expectations were updated to the rules the code keeps.",
+    "manifest": "read; it states status complete, three commits, the single-file pytest gate, baseline_suite 125628f608 with 3 failures and after_suite 3544df51f2 with 0, and its failure ids match base-arm.log's three FAILED lines.",
+    "write_paths": "the node's fence was reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff 125628f608..3f2538b81e changes exactly tests/test_the_station_never_holds_a_run_lock_across_its_tick.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-station-never-holds-a-run-lock-across-its-tick.html, both inside it."
+  },
+  "justifications": {
+    "durability": "tests/test_the_station_never_holds_a_run_lock_across_its_tick.py:151 reddens if a sweep promotes inline again (no promotion- acquisition) and :200-204 redden if the promotion retires or rewrites the newer attempt's pointer, though the recorded base arm shows the stale test failing rather than a product mutation.",
+    "evidence": "base-arm.log reads 3 failed, 3 passed in 61.51s EXIT=1 at 125628f608 and gate-head.log:5 records job 1319923 on all_debug, but that job ran at 3544df51f2 while the head 3f2538b81e's own run in gate-final-head.log is in-place.",
+    "fit": "the helper and its comment at tests/test_the_station_never_holds_a_run_lock_across_its_tick.py:117-127 explain the mechanism with no plan or ticket identifier and follow the sibling harness style at tests/test_a_sweep_failure_is_an_obligation.py:48.",
+    "goal_fidelity": "tests/test_the_station_never_holds_a_run_lock_across_its_tick.py:145-153 asserts a promotion- worker's acquisition, and gate-final-head.log reads 6 passed in 2.71s EXIT=0 at 3f2538b81e, so the file passes in full at the reviewed head.",
+    "reuse": "the added sweep helper supplies resumption.PromotionWorkers, the seam tests/test_a_sweep_failure_is_an_obligation.py:48 and tests/test_one_run_cannot_stop_a_sweep.py:100 already drive, so no second harness is forked.",
+    "scope_discipline": "every path in git diff 125628f608..3f2538b81e, namely the test file and its evidence fragment, is inside the declared fence of reckon, tests and the fragments directory."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_the_station_never_holds_a_run_lock_across_its_tick.py passes in full on the primary branch; the file at 3f2538b81e completes all six cases (gate-final-head.log reads 6 passed in 2.71s EXIT=0) after three stale expectations were updated to the rules the code keeps.\nVERDICT done_when: the done_when names the file passing at head as an all_debug job with SLURM_JOB_ID unset plus a base arm and per-cause verdicts; the manifest records job 1319923 on all_debug at 3544df51f2 (gate-head.log:5) and an in-place run at 3f2538b81e (gate-final-head.log), so the all_debug figure sits one docs-only commit behind the recorded head.\nVERDICT write_paths: the node's fence was reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff 125628f608..3f2538b81e changes exactly tests/test_the_station_never_holds_a_run_lock_across_its_tick.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-station-never-holds-a-run-lock-across-its-tick.html, both inside it.\nVERDICT manifest: read; it states status complete, three commits, the single-file pytest gate, baseline_suite 125628f608 with 3 failures and after_suite 3544df51f2 with 0, and its failure ids match base-arm.log's three FAILED lines.\nVERDICT diff: read commit by commit against 125628f608: 632057be rewrites the two station cases and the moved-pointer case in the test file, 3544df51 adds the 55-line evidence fragment, and 3f2538b81e only repoints the fragment's job and timing figures; no product source changed.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_the_station_never_holds_a_run_lock_across_its_tick.py:145-153 asserts a promotion- worker's acquisition, and gate-final-head.log reads 6 passed in 2.71s EXIT=0 at 3f2538b81e.\nSCORE evidence: 16\nJUSTIFICATION evidence: base-arm.log reads 3 failed, 3 passed at 125628f608 and gate-head.log:5 records job 1319923 on all_debug at 3544df51f2, not at the head 3f2538b81e whose own run is in-place.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff 125628f608..3f2538b81e, namely the test file and its evidence fragment, is inside the declared fence.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_station_never_holds_a_run_lock_across_its_tick.py:151 reddens if a sweep promotes inline again and :200-204 redden if the promotion retires or rewrites the newer pointer, though the recorded base arm shows the stale test failing rather than a product mutation.\nSCORE fit: 19\nJUSTIFICATION fit: the helper and its comment at tests/test_the_station_never_holds_a_run_lock_across_its_tick.py:117-127 explain the mechanism with no plan or ticket identifier and follow the sibling harness at tests/test_a_sweep_failure_is_an_obligation.py:48.\nSCORE reuse: 20\nJUSTIFICATION reuse: the added sweep helper supplies resumption.PromotionWorkers, the seam tests/test_a_sweep_failure_is_an_obligation.py:48 and tests/test_one_run_cannot_stop_a_sweep.py:100 already drive.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-station-never-holds-a-run-lock-across-its-tick.html:41 non-blocking: the all_debug gate job 1319923 ran at 3544df51f2, one docs-only commit before the reviewed head 3f2538b81e, so the head's all_debug run is the parent commit's run plus an unchanged test file rather than an all_debug run at the head itself.\n",
+  "review_run_id": "r-20261116T135721072125-review-of-qwnw-red-file-the-station-never-holds-a-run-lock-across-its-tick-3f2538b81e87",
+  "reviewed_base_sha": "125628f608ef00b5f4a4a9ce845c5e8a04b12f58",
+  "reviewed_head_sha": "3f2538b81e877f2342214ea127ad603f64f8ccdc",
+  "reviewed_run_id": "r-20261116T104718706778-qwnw-red-file-the-station-never-holds-a-run-lock-across-its-tick",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T135721072125-review-of-qwnw-red-file-the-station-never-holds-a-run-lock-across-its-tick-3f2538b81e87"
+  },
+  "reviewer_run_id": "r-20261116T135721072125-review-of-qwnw-red-file-the-station-never-holds-a-run-lock-across-its-tick-3f2538b81e87",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T20:58:33.521168+00:00",
+  "total": 112
+}

@@ -22,7 +22,6 @@ from pathlib import Path
 from typing import Any, Self
 
 from reckon import _store, run_record
-from reckon._timestamps import parse_utc
 
 # The single detail-field declaration. A field on a run record named here is
 # wide detail a later rotation stage may wash out once its derived value
@@ -192,12 +191,13 @@ INDEX_BUSY_TIMEOUT_SECONDS = 0.2
 #: scan so the write lands once the reader is done.
 RECORD_BUSY_TIMEOUT_SECONDS = 120.0
 
-# The bound on retrying an append that lost a race for the store's write lock.
-# A lock held by a concurrent writer lasts milliseconds, so a few seconds of
-# backoff writes the row a single attempt would have lost; a store locked past
-# this bound is raised to the caller and left to the repair pass rather than
-# holding a promotion open.
-INDEX_RETRY_SECONDS = 3.0
+# The bound on retrying an append that lost a race for the store's lock. A
+# concurrent writer holds it for milliseconds, but the store keeps a rollback
+# journal, so one reader scanning it holds off every writer for as long as the
+# scan runs, and a scan of the whole store takes several seconds. A bound
+# shorter than one scan refused a promotion on every scan it met; the bound is
+# set well past the longest scan so the row is written once the reader is done.
+INDEX_RETRY_SECONDS = 120.0
 INDEX_RETRY_MAX_DELAY_SECONDS = 0.2
 
 # A scheduled pass bounds both its row transfers and its physical page moves.
@@ -316,10 +316,10 @@ def _record_rows(
 ) -> Iterator[tuple[Any, ...]]:
     """Read selected records through the single durable/detail join.
 
-    Projection and selection happen before SQLite returns any payload to Python.
-    Each query is fetched and its cursor closed before yielding, so decoding or
-    consuming its rows cannot prolong a rollback-journal read lock. Encoded rows
-    are buffered per query; identity batches stay below driver limits.
+    Plan and activity predicates consume a buffered narrow projection after
+    its cursor closes, then only matching identities fetch the requested payload.
+    Python selection, decoding and consumption therefore hold no read lock.
+    Encoded rows are buffered per query; identity batches stay below driver limits.
     """
     selected = None if run_ids is None else sorted(set(map(str, run_ids)))
     batches = (
@@ -327,46 +327,56 @@ def _record_rows(
         if selected is None
         else [selected[index : index + 500] for index in range(0, len(selected), 500)]
     )
-    if plan:
+    filtering = bool(plan) or activity_since is not None
+    if filtering:
         from reckon import ledger
 
-        connection.create_function(
-            "record_plan",
-            1,
-            lambda value: ledger.row_plan(json.loads(value)),
-            deterministic=True,
-        )
-    if activity_since is not None:
-
-        def epoch(value):
-            stamp = parse_utc(value)
-            return stamp.timestamp() if stamp is not None else None
-
-        connection.create_function("record_epoch", 1, epoch, deterministic=True)
     for schema in schemas:
         if schema not in ("main", "archive"):
             raise ValueError(f"unknown store schema {schema!r}")
         for batch in batches:
             params: list[Any] = []
             columns = []
-            for column in ("r.payload", "d.detail"):
-                if fields == ("run_id",) or (
-                    column == "d.detail"
-                    and fields is not None
-                    and not any(field in DETAIL_FIELDS for field in fields)
-                ):
-                    columns.append("NULL")
-                elif fields is None:
-                    columns.append(column)
-                else:
-                    marks = ",".join("?" for _ in fields)
-                    columns.append(
-                        "(SELECT json_group_object(key, CASE "  # noqa: S608 - fixed columns and parameter markers
-                        "WHEN type IN ('object','array') THEN json(value) "
-                        "WHEN type IN ('true','false') THEN json(type) ELSE value END) "
-                        f"FROM json_each({column}) WHERE key IN ({marks}))"
+            if filtering:
+                pairs = []
+                if plan:
+                    pairs.extend(
+                        (
+                            "'plan', json_extract(r.payload, '$.plan')",
+                            "'impl_move', json_object('plan', json_extract(r.payload, '$.impl_move.plan'))",
+                            "'node_definition', json_object('plan', json_extract(d.detail, '$.node_definition.plan'))",
+                        )
                     )
-                    params.extend(fields)
+                if activity_since is not None:
+                    pairs.extend(
+                        f"'{key}', json_extract(r.payload, '$.{key}')"
+                        for key in (
+                            "launched_at",
+                            "created_at",
+                            "dispatched_at",
+                            "completed_at",
+                        )
+                    )
+                columns = [f"json_object({','.join(pairs)})", "NULL"]
+            else:
+                for column in ("r.payload", "d.detail"):
+                    if fields == ("run_id",) or (
+                        column == "d.detail"
+                        and fields is not None
+                        and not any(field in DETAIL_FIELDS for field in fields)
+                    ):
+                        columns.append("NULL")
+                    elif fields is None:
+                        columns.append(column)
+                    else:
+                        marks = ",".join("?" for _ in fields)
+                        columns.append(
+                            "(SELECT json_group_object(key, CASE "  # noqa: S608 - fixed columns and parameter markers
+                            "WHEN type IN ('object','array') THEN json(value) "
+                            "WHEN type IN ('true','false') THEN json(type) ELSE value END) "
+                            f"FROM json_each({column}) WHERE key IN ({marks}))"
+                        )
+                        params.extend(fields)
             query = (
                 f'SELECT r.run_id, {columns[0]}, {columns[1]} FROM "{schema}".runs r '  # noqa: S608 - fixed schema and column names
                 f'LEFT JOIN "{schema}".run_details d ON r.run_id = d.run_id'
@@ -383,29 +393,6 @@ def _record_rows(
                 # without visiting any other row's payload.
                 clauses.append("r.node = ?")
                 params.append(node)
-            if plan:
-                # Resolve the same narrow record through the ledger's owner;
-                # the store query must not invent a separate fallback order.
-                clauses.append(
-                    "record_plan(json_object("
-                    "'plan', json_extract(r.payload, '$.plan'), "
-                    "'impl_move', json_object('plan', json_extract(r.payload, '$.impl_move.plan')), "
-                    "'node_definition', json_object('plan', json_extract(d.detail, '$.node_definition.plan'))"
-                    ")) = ?"
-                )
-                params.append(plan)
-            if activity_since is not None:
-                stamps = [
-                    f"coalesce(record_epoch(json_extract(r.payload, '$.{key}')), -1e300)"
-                    for key in (
-                        "launched_at",
-                        "created_at",
-                        "dispatched_at",
-                        "completed_at",
-                    )
-                ]
-                clauses.append(f"max({','.join(stamps)}) >= ?")
-                params.append(activity_since)
             if clauses:
                 query += " WHERE " + " AND ".join(clauses)
             cursor = connection.execute(query, params)
@@ -413,6 +400,35 @@ def _record_rows(
                 rows = cursor.fetchall()
             finally:
                 cursor.close()
+            if filtering:
+                identities = []
+                for identity, payload, _detail in rows:
+                    record = json.loads(payload)
+                    if plan and ledger.row_plan(record) != plan:
+                        continue
+                    if activity_since is not None:
+                        moment = ledger.run_activity_seconds(record)
+                        if moment is None or moment < activity_since:
+                            continue
+                    identities.append(identity)
+                # Fetch by identity only after predicate work has released the
+                # cursor, retaining the scan order even across identity batches.
+                matching = {
+                    row[0]: row
+                    for row in _record_rows(
+                        connection,
+                        schemas=(schema,),
+                        project=project,
+                        run_ids=identities,
+                        node=node,
+                        fields=fields,
+                    )
+                }
+                rows = [
+                    matching[identity]
+                    for identity in identities
+                    if identity in matching
+                ]
             yield from rows
 
 

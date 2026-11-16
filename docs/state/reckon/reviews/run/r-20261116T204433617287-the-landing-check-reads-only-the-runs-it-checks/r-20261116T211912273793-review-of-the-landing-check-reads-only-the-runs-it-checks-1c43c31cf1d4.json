@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own manifest arms: baseline_suite at baa6e83 reports completed true, exit_status 0, failure_count 0, failure_ids []; after_suite at 1c43c31cf1 reports completed true, exit_status 0, failure_count 0, failure_ids []. Logs arms-base.log ('58 passed', EXIT=0) and arms-after.log ('60 passed', EXIT=0).",
+  "call_sites": [
+    "reckon/roadmap.py:4725 build_roadmap -> _unlanded_run_findings",
+    "reckon/roadmap.py:1883 _unlanded_run_findings",
+    "reckon/ledger.py:3946 read_records",
+    "reckon/run_store.py:609 stored_run_rows (run_ids selection owner)"
+  ],
+  "completed_at": "2026-11-16T21:24:19.122Z",
+  "dispatched_at": "2026-11-16T21:22:20Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T204433617287-the-landing-check-reads-only-the-runs-it-checks/arms-after.log:5",
+      "file": "arms-after.log",
+      "line": 5,
+      "severity": "non-blocking",
+      "text": "the matched arms run only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, and neither imports reckon/roadmap.py (importing reckon.serve and reckon._store leaves 'reckon.roadmap' out of sys.modules), so the base arm never loads the changed roadmap module and a roadmap regression outside the arm files is unmeasured against base; the pair covers the changed ledger.py only."
+    },
+    {
+      "anchor": "reckon/ledger.py:2427",
+      "file": "reckon/ledger.py",
+      "line": 2427,
+      "severity": "non-blocking",
+      "text": "the run-id narrowing on the file-backed index and aggregate fallback returns (reckon/ledger.py:2427, 2445, 2452) is untested: the gate runs with a store present, so _selected_rows returns early on the store path and reverting those three narrowing calls leaves every added assertion green."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261116T211912273793-review-of-the-landing-check-reads-only-the-runs-it-checks-1c43c31cf1d4",
+  "reviewed_base_sha": "baa6e8307b454f36655ac6d25f42480243619f99",
+  "reviewed_commits": [
+    "aebdd416e2487f815b5773180874b95fedc79b00",
+    "1c43c31cf1d452c342b421ab58277631d4d43a39"
+  ],
+  "reviewed_head_sha": "1c43c31cf1d452c342b421ab58277631d4d43a39",
+  "reviewed_run_id": "r-20261116T204433617287-the-landing-check-reads-only-the-runs-it-checks",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T21:39:02.228659+00:00",
+  "total": 109,
+  "verdicts": {
+    "diff": "read both commits against baa6e83 commit by commit (aebdd416e2 the roadmap and ledger change plus the test, 1c43c31cf1 the assertion reordering); the diff carries no file outside the declared write paths and no change the goal does not imply.",
+    "done_when": "read the done_when; the gate runs tests/test_the_landing_check_reads_only_the_runs_it_checks.py, whose lines 232-249 assert the 2,000-row fixture population, a single landing read naming run ids, at most 3 decoded rows, and exactly one run-not-landed finding naming the unlanded run, with a second test asserting 0 rows for a plan with no done section.",
+    "goal": "read the node goal ('Read only the promoted held runs in the roadmap's unlanded-run check'); the diff at reckon/roadmap.py:1936 passes the promoted holds' run ids to ledger.read_records, which threads them to run_store.stored_run_rows' existing run_ids selection.",
+    "manifest": "read the reviewed run's manifest; it records status complete with gate.log '2 passed in 6.50s' EXIT=0, arms-base.log '58 passed' EXIT=0, arms-after.log '60 passed' EXIT=0, and negative-control.log 'assert 2000 <= 3' EXIT=1.",
+    "write_paths": "read the declared write paths (reckon/roadmap.py, reckon/ledger.py, tests/test_the_landing_check_reads_only_the_runs_it_checks.py, docs/evidence/fragments/the-monitor-reads-each-fact-once/the-landing-check-reads-only-the-runs-it-checks.html); git diff baa6e83..1c43c31c touches only the first three."
+  }
+}
