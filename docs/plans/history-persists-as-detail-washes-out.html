@@ -23,8 +23,8 @@
   <title>History Persists As Detail Washes Out | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="65">
-<meta name="plan-modified" content="2026-11-15">
+<meta name="plan-version" content="68">
+<meta name="plan-modified" content="2026-11-16">
 <meta name="plan-section-declarations" content="{&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;implementable&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s24&quot;:&quot;implementable&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s27&quot;:&quot;implementable&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;implementable&quot;}">
 <meta name="plan-section-depends-on" content="{&quot;s26&quot;:[&quot;history-persists-as-detail-washes-out#s21&quot;,&quot;history-persists-as-detail-washes-out#s22&quot;,&quot;history-persists-as-detail-washes-out#s23&quot;,&quot;history-persists-as-detail-washes-out#s24&quot;,&quot;history-persists-as-detail-washes-out#s25&quot;,&quot;history-persists-as-detail-washes-out#s28&quot;,&quot;history-persists-as-detail-washes-out#s29&quot;],&quot;s27&quot;:[&quot;history-persists-as-detail-washes-out#s26&quot;]}">
 </head>
@@ -551,11 +551,17 @@
 <div class="r-comment" data-section="s22" data-id="c-run-r-20261115T213643211346-review-of-bounded-store-read-s22-e1037006e083" data-who="reckon-build" data-when="2026-11-15T21:48:10Z">
     <div class="r-comment-body"><p>Independent review of a4085603a2cabb227db10167e8a0305ab84599e5..e1037006e08323ff8d595c878ae17a23deb05341 stored as parsed; scores 19/18/20/16/18/5, zero added failures, one blocking reuse finding and one non-blocking rebuild-oracle finding.</p></div>
 </div>
+<div class="r-comment" data-section="s22" data-id="c-run-r-20261116T004121468989-review-of-bounded-store-read-s22-ff5241ac6b84" data-who="reckon-build" data-when="2026-11-16T00:56:52Z">
+    <div class="r-comment-body"><p>Reviewed only two gained commits; all six dimensions score 20/20, zero new findings, zero added failures; prior blocking ownership finding is repaired and the prior non-blocking rebuild-test finding remains in its earlier immutable review.</p></div>
+</div>
 <div class="r-comment" data-section="s23" data-id="c-run-r-20261115T145940333281-review-of-members-and-holds-in-store-s23-2527b74492c2" data-who="reckon-build" data-when="2026-11-15T15:07:50Z">
     <div class="r-comment-body"><p>Independent review scores 16/20/20/18/18/20; one blocking version-domain finding; recorded suite delta is 0 added failures.</p></div>
 </div>
 <div class="r-comment" data-section="s23" data-id="c-run-r-20261115T153536870379-review-of-members-and-holds-in-store-s23-764f1ce8e066" data-who="reckon-build" data-when="2026-11-15T15:43:35Z">
     <div class="r-comment-body"><p>Independent incremental review of 2527b74492c2c5f1fdac51f46f7f04b9336cdd79 to 764f1ce8e066cf291b448af42f0b8e5e508db0e9: parsed, six dimensions 20/20 each, no findings, zero added failures; prior blocking version-domain finding answered.</p></div>
+</div>
+<div class="r-comment" data-section="s23" data-id="c-run-r-20261115T232016472037-review-of-members-and-holds-in-store-s23-88e0eca44557" data-who="reckon-build" data-when="2026-11-15T23:31:57Z">
+    <div class="r-comment-body"><p>Independent incremental review from 764f1ce8e066cf291b448af42f0b8e5e508db0e9 through 88e0eca44557518c3523a850a405fa430b5a077f records all six dimensions at 20/20, no findings and zero added gate failures; both declared record paths validate.</p></div>
 </div>
 <div class="r-comment" data-section="s24" data-id="c-run-r-20261115T183015279464-review-of-revision-reads-on-the-store-s24-84165b187d1c" data-who="reckon-build" data-when="2026-11-15T18:33:49.419Z">
     <div class="r-comment-body"><p>reviewed r-20261115T102555144818-revision-reads-on-the-store-s24 at 27958ce9c4fa..84165b187d1c across two commits; 5 of 6 declared write paths touched, all inside scope; blocking finding that reckon/run_store.py:280 stamps `promoted_revision` as the commit a row's record file entered the tree at, which promotion_scope.py:305 defines differently, and that no backfill repairs; reuse 5 because run_store.py:1142 duplicates velocity.py:1294.</p></div>
@@ -565,6 +571,9 @@
 </div>
 <div class="r-comment" data-section="s24" data-id="c-run-r-20261115T220347865853-review-of-revision-reads-on-the-store-s24-c2c40ab117bd" data-who="reckon-build" data-when="2026-11-15T22:23:24.007Z">
     <div class="r-comment-body"><p>reviewed r-20261115T102555144818-revision-placeholder</p></div>
+</div>
+<div class="r-comment" data-section="s24" data-id="c-run-r-20261115T230531026304-review-of-revision-reads-on-the-store-s24-a3fceee5fb46" data-who="reckon-build" data-when="2026-11-15T23:08:04.442Z">
+    <div class="r-comment-body"><p>independent review of revision-reads-on-the-store-s24 at the gained commit a3fceee5fb over base c2c40ab117 stores a parsed record scoring all six dimensions (goal_fidelity 14, evidence 16, scope_discipline 20, durability 8, fit 18, reuse 20), cites the examined call sites, carries added_failure_count 0 from both arms' EXIT=0 logs, and raises no finding</p></div>
 </div>
 <div class="r-comment" data-section="s25" data-id="c-run-r-20261115T114400888370-review-of-guards-without-tracked-ledger-s25-a25650c7735d" data-who="reckon-build" data-when="2026-11-15T12:04:12.446Z">
     <div class="r-comment-body"><p>independent review of a25650c7735db7aeb7fe3cf398f80feb0eda05a1 scoring goal_fidelity 20, evidence 17, scope_discipline 20, durability 18, fit 15, reuse 15 (total 105); added_failure_count 0 derived from the reviewed run's own base-arm.log and after-arm.log (58 passed EXIT=0 against 63 passed EXIT=0); two non-blocking findings, the index.json marker also matching a docs-only repository that reckon build published, and repository_root's docstring keeping the two-file wording; the node's goal, done_when, declared scope and its 'test fails at base' claim are met</p></div>

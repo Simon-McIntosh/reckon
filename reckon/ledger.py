@@ -4002,7 +4002,7 @@ def review_scores(
     for record in records:
         if not isinstance(record, Mapping):
             continue
-        if plan is not None and str(record.get("plan") or "") != str(plan):
+        if plan is not None and _row_plan(record) != str(plan):
             continue
         if node is not None and str(record.get("node") or "") != str(node):
             continue
@@ -4014,7 +4014,7 @@ def review_scores(
         selected.append(
             {
                 "run_id": str(record.get("run_id") or ""),
-                "plan": str(record.get("plan") or ""),
+                "plan": _row_plan(record),
                 "node": str(record.get("node") or ""),
                 "status": str(block.get("status") or "unparsed"),
                 "scores": dict(block.get("scores") or {}),
@@ -4485,7 +4485,7 @@ def effort_report(
     excluded_stalled = 0
     excluded_unusable_completion = 0
     for record in runs(project, root):
-        plan = str(record.get("plan") or "")
+        plan = _row_plan(record)
         row = by_plan.setdefault(
             plan,
             {
@@ -4656,7 +4656,7 @@ def summary(
         "gates": {kind: dict(sorted(counts.items())) for kind, counts in gates.items()},
         "worker_gate": worker_gate,
         "suite_deltas": suite_deltas,
-        "plans": sorted({str(record.get("plan") or "") for record in records}),
+        "plans": sorted({_row_plan(record) for record in records}),
         "effort": effort_report(project, root=root, declared=declared),
     }
 
