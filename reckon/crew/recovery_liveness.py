@@ -1143,11 +1143,10 @@ def _wait_probe_live_state(wait: Mapping[str, Any], observation: Any) -> str:
     observed = str(observation.get("observed") or "").strip()
     if not observed or observed.casefold() in _WAIT_STATE_NOT_REPORTED:
         return ""
-    terminal = {str(item).casefold() for item in (wait.get("terminal") or ())}
-    words = [word.strip("\"'()[]{}:;,.") for word in observed.replace(",", " ").split()]
-    if not words or words[0].casefold() in terminal:
+    lines = [line.strip() for line in observed.splitlines() if line.strip()]
+    if not lines or _wait_answer_names_terminal(wait, lines, lines[-1]):
         return ""
-    return words[0].casefold()
+    return lines[0].split(maxsplit=1)[0].strip("\"'()[]{}:;,").casefold()
 
 
 def _wait_probe_suspect(
@@ -1970,6 +1969,7 @@ from .recovery_wait import (  # noqa: E402
     _newest_stream_shows_work,
     _run_directory,
     _unquote_wait_declaration_scalar,
+    _wait_answer_names_terminal,
     _wait_condition_declares_no_wait,
     _wait_declaration_signature,
     _wait_expected_seconds,

@@ -50,6 +50,7 @@ RUN_IDS = (
     "r-scheduler-spelling-completing",
     "r-scheduler-spelling-suspended",
     "r-watch-snapshot-over-its-limit",
+    "r-trailing-plus-spelling",
 )
 
 
@@ -366,3 +367,29 @@ def test_the_watch_snapshot_reads_the_same_limit() -> None:
     assert row["wait_overdue"] is False
     assert row["external_wait"]["expected_horizon_seconds"] == 4 * HOUR
     assert snapshot["state"] == "waiting"
+
+
+def test_a_trailing_plus_is_the_state_the_declaration_names() -> None:
+    """One reading answers whether the answer named a terminal state.
+
+    A scheduler spells a state it is still settling as ``CANCELLED+``, and the
+    declaration lists ``CANCELLED``. The condition reader folds that spelling
+    into the declared value, so the live-state reader asks the same function
+    rather than matching the declaration's list again: a second match with its
+    own strip set keeps the ``+``, reads ``cancelled+`` as a live state, and
+    leaves the row carrying a condition that has ended beside a live probe —
+    the disagreement, and the alarm deferred to the job's reported limit.
+    """
+    run = _waiting_run(
+        "r-trailing-plus-spelling",
+        probe=["squeue", "-h", "-j", "1317867", "-o", "%T %L"],
+        terminal=("COMPLETED", "FAILED", "CANCELLED"),
+        started_seconds_ago=3 * HOUR,
+    )
+
+    row = _row(run, condition_test=_live_job("CANCELLED+ 01:02:03"))
+
+    # The defect first: a second match keeps the "+", reads the answer as a
+    # live state and measures the ended condition by the job's 4 h limit.
+    assert row["external_wait"]["expected_horizon_seconds"] == STALE_AFTER_SECONDS
+    assert row["recovery_classification"] == "wait-aged"
