@@ -1914,11 +1914,27 @@ def _unlanded_run_findings(
             if str(classification or "").strip().lower() == "done"
             and held.get(str(section))
         ]
-        if not suspects:
+        # The promoted rows are the runs this check reads, so their ids are the
+        # read: a plan's whole history decoded under one read lock blocked every
+        # concurrent run-store write for minutes, and the rows outside these are
+        # never looked at.
+        promoted = {
+            section: [
+                row
+                for row in held[section]
+                if str(row.get("state") or "") == "promoted"
+                and str(row.get("run_id") or "")
+            ]
+            for section in suspects
+        }
+        wanted = sorted(
+            {str(row.get("run_id") or "") for rows in promoted.values() for row in rows}
+        )
+        if not wanted:
             continue
         try:
             records, _version = ledger.read_records(
-                project, root, plan=slug, with_figures=False
+                project, root, plan=slug, with_figures=False, run_ids=wanted
             )
         except Exception:  # noqa: BLE001 - an unreadable ledger reports nothing
             records = []
@@ -1931,9 +1947,7 @@ def _unlanded_run_findings(
         if not branch:
             continue
         for section in suspects:
-            for row in held[section]:
-                if str(row.get("state") or "") != "promoted":
-                    continue
+            for row in promoted[section]:
                 run_id = str(row.get("run_id") or "")
                 record = by_run.get(run_id)
                 if record is None:

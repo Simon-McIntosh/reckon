@@ -64,14 +64,37 @@ def _pointer_parts(pointer: Mapping[str, Any]) -> tuple[str, str, str, str, str]
 
 
 def _row_parts(row: Mapping[str, Any]) -> tuple[str, str, str, str]:
-    """The node identity, plan, section and role of one ledger row, stored flat."""
+    """The node identity, plan, section and role of one ledger row, stored flat.
+
+    The plan is the ledger's own answer rather than the row's flat field: a run
+    dispatched with a brief records no top-level ``plan`` and names it on its
+    impl move or its node definition, and the projection this reader consumes
+    drops both. :func:`reckon.ledger.row_plan` is the one owner of that fact,
+    and the projection stores its answer, so a brief-carried run holds the same
+    section an ordinary one does.
+    """
+
+    from reckon import ledger
 
     return (
         str(row.get("node") or ""),
-        str(row.get("plan") or ""),
+        ledger.row_plan(row),
         section_record_id(row.get("section") or ""),
         str(row.get("role") or "implement"),
     )
+
+
+#: The last section-history read per project, held with the run store's change
+#: token it was read at. The queue ordering rebuilds the roadmap whenever a plan
+#: input moves, which is most ticks, and every rebuild asks this module for the
+#: project's promoted rows. Those rows live in the run store, which gains a few
+#: an hour, so a token that has not moved answers a rebuild without decoding a
+#: row; a promotion replaces the entry rather than accumulating one per change.
+#: The rows handed out are the cached ones: every caller reads history and none
+#: of them writes it.
+_HISTORY_READS: dict[
+    tuple[str, str, str], tuple[tuple[int, ...], list[dict[str, Any]]]
+] = {}
 
 
 def _history_rows(project: str, root: str | Path | None) -> list[dict[str, Any]]:
@@ -83,14 +106,30 @@ def _history_rows(project: str, root: str | Path | None) -> list[dict[str, Any]]
     under any of them holds its node. Filtering on ``passed`` would read a
     section whose run skipped or lost its check as never delivered, which is the
     delivered state this module exists to stop offering again.
+
+    The read answers from the run store, so it is keyed on the store's own
+    change token: an unchanged store answers from the last read and decodes no
+    row. The token is read again after the rows are, and they are kept only if
+    it did not move under them — a promotion landing mid-read would otherwise be
+    cached as already seen, and the section it delivered would read free until
+    some later promotion.
     """
 
-    from reckon import ledger
+    from reckon import ledger, run_store
 
+    stamp = run_store.store_stamp()
+    key = (project, str(root or ""), str(run_store.store_path()))
+    if stamp is not None:
+        cached = _HISTORY_READS.get(key)
+        if cached is not None and cached[0] == stamp:
+            return cached[1]
     try:
-        return ledger.picker_runs(project, root)
+        rows = ledger.picker_runs(project, root)
     except Exception:  # noqa: BLE001 - an unreadable ledger holds nothing
         return []
+    if stamp is not None and run_store.store_stamp() == stamp:
+        _HISTORY_READS[key] = (stamp, rows)
+    return rows
 
 
 def _collect(

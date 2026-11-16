@@ -17,6 +17,11 @@ host writes, with no marker set, and shows the follower staying put.
 Every absence is preceded by showing the same instrument reading a known-present
 value: the follower streams with no reader on the FIFO, and hands over -- one
 request line, one handoff line, a clean exit -- when a reader holds it.
+
+Every case names the served session as its own harness identity, because a
+follow request names only the calling session's pair: the line carries the pair
+and its ``owner_checked`` mark, and a follower armed for any other name has no
+host of its session to hand over to.
 """
 
 from __future__ import annotations
@@ -51,6 +56,7 @@ from tests.test_dispatch_session_host import (  # noqa: F401
     _register_watcher,
     _session_host_fifo,
     _spawn_runner,
+    _write_host_record,
     isolated_project,
 )
 
@@ -101,6 +107,11 @@ def _follower_env(home: Path, runtime: Path, owner_pid: int) -> dict[str, str]:
     session runs under a follower exports ``RECKON_FOLLOWER_OWNER`` and its own
     Claude identity, and inherited unchanged they would make this follower
     believe it belongs to another session. Only what the case sets is kept.
+
+    The harness identity is the session this follower serves, because a follow
+    request names only the calling session's pair: a host serves its Claude
+    session's own name, so a follower armed for any other name has no host to
+    hand over to.
     """
     env = {
         key: value
@@ -111,7 +122,7 @@ def _follower_env(home: Path, runtime: Path, owner_pid: int) -> dict[str, str]:
     env["PYTHONPATH"] = str(REPO_ROOT)
     env["XDG_RUNTIME_DIR"] = str(runtime)
     env["CLAUDE_PID"] = str(owner_pid)
-    env["CLAUDE_CODE_SESSION_ID"] = "claude-session-host-handoff"
+    env["CLAUDE_CODE_SESSION_ID"] = SESSION
     return env
 
 
@@ -136,7 +147,7 @@ def _isolated_harness_env(
     monkeypatch.setenv("RECKON_HOME", str(home))
     monkeypatch.setenv("XDG_RUNTIME_DIR", str(runtime))
     monkeypatch.setenv("CLAUDE_PID", str(owner_pid))
-    monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", "claude-session-host-handoff")
+    monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", SESSION)
 
 
 def _follow_argv(*args: str, session: str | None = SESSION) -> list[str]:
@@ -172,7 +183,7 @@ def _arm(
 # provides: it writes the host's census record naming this child's pid, then
 # runs the follower in the same process, so the record is present before the
 # follower reads it. No marker is set in the environment.
-_CENSUS_LAUNCHER = '''\
+_CENSUS_LAUNCHER = """\
 import json, os, sys
 from reckon.crew import runs, session_host
 
@@ -196,7 +207,7 @@ from reckon.cli import main
 
 del sys.argv[1:3]
 main()
-'''
+"""
 
 
 def _arm_listed_by_host(
@@ -251,6 +262,16 @@ def _read_one_line(descriptor: int, timeout: float) -> str:
             if chunk:
                 data += chunk
     return data.decode("utf-8", errors="replace")
+
+
+def _request_payload() -> dict[str, object]:
+    """The one line a follow request carries: the pair, and the ownership mark.
+
+    A request names only the calling session's pair, and marks it
+    ``owner_checked`` so the host reading it can tell a request made for its own
+    session from one it was never asked to honour.
+    """
+    return {"project": PROJECT, "session": SESSION, "owner_checked": True}
 
 
 def _kill(process: subprocess.Popen) -> tuple[str, str]:
@@ -315,7 +336,7 @@ def test_a_follower_hands_off_to_a_waiting_host_and_exits(home, tmp_path) -> Non
         written = _read_one_line(descriptor, 2.0)
         lines = [line for line in written.splitlines() if line.strip()]
         assert len(lines) == 1, f"exactly one request line, got {written!r}"
-        assert json.loads(lines[0]) == {"project": PROJECT, "session": SESSION}
+        assert json.loads(lines[0]) == _request_payload()
     finally:
         _kill(process)
         os.close(descriptor)
@@ -410,7 +431,7 @@ def test_the_lifetime_end_row_hands_over_without_a_re_arm_command(
         )
         written = _read_one_line(descriptor, 2.0)
         assert HANDOFF_MARKER not in written  # the request is JSON, not the line
-        assert json.loads(written.strip()) == {"project": PROJECT, "session": SESSION}
+        assert json.loads(written.strip()) == _request_payload()
     finally:
         if descriptor is not None:
             os.close(descriptor)
@@ -422,21 +443,35 @@ def test_the_lifetime_end_row_hands_over_without_a_re_arm_command(
 def test_dispatch_asks_a_waiting_host_for_a_foreignly_attached_session(
     request, tmp_path, monkeypatch
 ) -> None:
-    """A waiting host is asked even when a follower the host does not run holds
-    the session, and the dispatch reports delivery ``host``.
+    """A waiting host is asked even when another follower holds the session.
 
     The session reads as attached by a hand-armed follower, so the old path
-    never asked the host and reported ``monitor``. A host waiting on its FIFO
-    can take the pair over once that follower ends, so the dispatch writes the
-    request and reports ``host`` instead.
+    never asked the dispatch and reported ``monitor``. A host waiting on its
+    FIFO can take the pair over once that follower ends, so the dispatch writes
+    the request and reports ``host`` instead.
+
+    The host answers a request by naming its child for the pair in its census,
+    which is what the ask waits for, so the case writes that census before the
+    dispatch -- naming the watcher, not the follower it registers below, so the
+    ask is what draws the request and reports the delivery.
     """
     config_home, repo = request.getfixturevalue("isolated_project")
     runtime = tmp_path / "run-runtime"
     runtime.mkdir()
     _claude_env(monkeypatch, runtime)
+    # The dispatch is for this session's own pair: a request names only the
+    # calling session's, so the process asking must read as the session the
+    # dispatch names, which is what a coordinator's own dispatch does.
+    monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", SESSION)
     fifo = _session_host_fifo(runtime)
     descriptor = _hold_fifo(fifo)
     runner = _spawn_runner()
+    # The waiting host's answer to the request the dispatch writes: its census
+    # names the child it runs for the pair, which is the answer the ask waits
+    # for. That child is the watcher, not the follower this process registers
+    # below, so nothing reads the session as already the host's: the ask is
+    # what draws the request and the delivery verdict.
+    _write_host_record([{"project": PROJECT, "session": SESSION, "pid": runner.pid}])
     try:
         _register_watcher(PROJECT, runner.pid)
         with runs.follower_registration(PROJECT, SESSION, delivery="stream"):
@@ -448,7 +483,7 @@ def test_dispatch_asks_a_waiting_host_for_a_foreignly_attached_session(
         runner.wait(timeout=5)
 
     assert written, "the dispatch must write the request to the waiting host"
-    assert json.loads(written.strip()) == {"project": PROJECT, "session": SESSION}
+    assert json.loads(written.strip()) == _request_payload()
     assert record["watch"]["session_attached"] is True
     assert record["watch"]["delivery"] == "host"
 
@@ -508,7 +543,7 @@ def test_a_reloaded_follower_adopts_launched_workers_before_it_hands_off(
             f"the reloaded follower must print the handoff line; {out!r}"
         )
         written = _read_one_line(descriptor, 2.0)
-        assert json.loads(written.strip()) == {"project": PROJECT, "session": SESSION}
+        assert json.loads(written.strip()) == _request_payload()
         # The adoption ran before the handoff returned: the carried pid is
         # registered and a reaper owns it, so the child is not abandoned.
         with _LAUNCHED_WORKERS_LOCK:
@@ -590,7 +625,7 @@ def test_a_follower_no_census_lists_hands_off(home, tmp_path) -> None:
             f"a follower no census lists must hand off; stdout={stdout!r}"
         )
         written = _read_one_line(descriptor, 2.0)
-        assert json.loads(written.strip()) == {"project": PROJECT, "session": SESSION}
+        assert json.loads(written.strip()) == _request_payload()
     finally:
         _kill(process)
         os.close(descriptor)

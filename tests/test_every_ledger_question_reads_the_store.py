@@ -524,9 +524,9 @@ def test_store_selection_uses_the_ledger_plan_owner(aggregate, monkeypatch, figu
     ]
     fill_store(rows)
     assert not aggregate.exists()
-    expected = [row for row in rows if ledger._row_plan(row) == "selected"]
+    expected = [row for row in rows if ledger.row_plan(row) == "selected"]
     assert len(expected) == 3
-    original = ledger._row_plan
+    original = ledger.row_plan
     resolved = []
 
     def observed(row):
@@ -534,7 +534,7 @@ def test_store_selection_uses_the_ledger_plan_owner(aggregate, monkeypatch, figu
         assert "outcome" not in row or row in rows
         return original(row)
 
-    monkeypatch.setattr(ledger, "_row_plan", observed)
+    monkeypatch.setattr(ledger, "row_plan", observed)
     actual, _ = ledger.read_records(PROJECT, plan="selected", with_figures=figures)
     assert [row["run_id"] for row in actual] == [row["run_id"] for row in expected]
     assert len(resolved) >= len(rows), "SQL selection bypassed the shared plan owner"

@@ -22,7 +22,6 @@ from pathlib import Path
 from typing import Any, Self
 
 from reckon import _store, run_record
-from reckon._timestamps import parse_utc
 
 # The single detail-field declaration. A field on a run record named here is
 # wide detail a later rotation stage may wash out once its derived value
@@ -192,12 +191,13 @@ INDEX_BUSY_TIMEOUT_SECONDS = 0.2
 #: scan so the write lands once the reader is done.
 RECORD_BUSY_TIMEOUT_SECONDS = 120.0
 
-# The bound on retrying an append that lost a race for the store's write lock.
-# A lock held by a concurrent writer lasts milliseconds, so a few seconds of
-# backoff writes the row a single attempt would have lost; a store locked past
-# this bound is raised to the caller and left to the repair pass rather than
-# holding a promotion open.
-INDEX_RETRY_SECONDS = 3.0
+# The bound on retrying an append that lost a race for the store's lock. A
+# concurrent writer holds it for milliseconds, but the store keeps a rollback
+# journal, so one reader scanning it holds off every writer for as long as the
+# scan runs, and a scan of the whole store takes several seconds. A bound
+# shorter than one scan refused a promotion on every scan it met; the bound is
+# set well past the longest scan so the row is written once the reader is done.
+INDEX_RETRY_SECONDS = 120.0
 INDEX_RETRY_MAX_DELAY_SECONDS = 0.2
 
 # A scheduled pass bounds both its row transfers and its physical page moves.
@@ -217,6 +217,51 @@ def store_path() -> Path:
     if override:
         return Path(override).expanduser()
     return _store._config_home() / "crew" / "run_store.db"
+
+
+#: The database header's length up to and including SQLite's file change
+#: counter (four bytes at offset 24), which every transaction that writes the
+#: file bumps. Read rather than queried, because ``PRAGMA data_version`` counts
+#: changes for one connection and a reader that opens its own connection has no
+#: answer to compare with the last read.
+_STAMPED_HEADER_BYTES = 28
+
+
+def store_stamp(path: str | Path | None = None) -> tuple[int, ...] | None:
+    """A token that moves whenever the store's contents may have changed.
+
+    A reader that keeps an answer derived from the store holds this token
+    beside it and reads the store again only when the token is not the one it
+    was built from. Two markers rather than one, because each alone leaves a
+    hole: a commit that writes into a freed page can land inside the
+    filesystem's timestamp tick with the file's size unchanged, and an inserted
+    row is that case: the header's counter moves where the stat does not. A
+    store replaced wholesale moves the stat even when the replacement's counter
+    starts where the old one left off.
+
+    ``None`` means the store is absent, so a caller caches nothing and reads
+    uncached — an absent store's answer is not a store's answer.
+    """
+    target = store_path() if path is None else Path(path)
+    try:
+        info = target.stat()
+        with target.open("rb") as handle:
+            header = handle.read(_STAMPED_HEADER_BYTES)
+    except OSError:
+        return None
+    counter = (
+        int.from_bytes(header[24:28], "big")
+        if len(header) == _STAMPED_HEADER_BYTES
+        else -1
+    )
+    return (
+        info.st_dev,
+        info.st_ino,
+        info.st_size,
+        info.st_mtime_ns,
+        info.st_ctime_ns,
+        counter,
+    )
 
 
 def enable_incremental_vacuum(path: str | Path | None = None) -> dict[str, Any]:
@@ -265,14 +310,16 @@ def _record_rows(
     project: str | None = None,
     run_ids: Iterable[str] | None = None,
     plan: str | None = None,
+    node: str | None = None,
     fields: tuple[str, ...] | None = None,
     activity_since: float | None = None,
 ) -> Iterator[tuple[Any, ...]]:
-    """Stream selected records through the single durable/detail join.
+    """Read selected records through the single durable/detail join.
 
-    Projection and selection happen before SQLite returns any payload to Python.
-    Full history remains streamable without retaining a second list of encoded
-    records beside the decoded answer. Identity batches stay below driver limits.
+    Plan and activity predicates consume a buffered narrow projection after
+    its cursor closes, then only matching identities fetch the requested payload.
+    Python selection, decoding and consumption therefore hold no read lock.
+    Encoded rows are buffered per query; identity batches stay below driver limits.
     """
     selected = None if run_ids is None else sorted(set(map(str, run_ids)))
     batches = (
@@ -280,46 +327,56 @@ def _record_rows(
         if selected is None
         else [selected[index : index + 500] for index in range(0, len(selected), 500)]
     )
-    if plan:
+    filtering = bool(plan) or activity_since is not None
+    if filtering:
         from reckon import ledger
 
-        connection.create_function(
-            "record_plan",
-            1,
-            lambda value: ledger._row_plan(json.loads(value)),
-            deterministic=True,
-        )
-    if activity_since is not None:
-
-        def epoch(value):
-            stamp = parse_utc(value)
-            return stamp.timestamp() if stamp is not None else None
-
-        connection.create_function("record_epoch", 1, epoch, deterministic=True)
     for schema in schemas:
         if schema not in ("main", "archive"):
             raise ValueError(f"unknown store schema {schema!r}")
         for batch in batches:
             params: list[Any] = []
             columns = []
-            for column in ("r.payload", "d.detail"):
-                if fields == ("run_id",) or (
-                    column == "d.detail"
-                    and fields is not None
-                    and not any(field in DETAIL_FIELDS for field in fields)
-                ):
-                    columns.append("NULL")
-                elif fields is None:
-                    columns.append(column)
-                else:
-                    marks = ",".join("?" for _ in fields)
-                    columns.append(
-                        "(SELECT json_group_object(key, CASE "  # noqa: S608 - fixed columns and parameter markers
-                        "WHEN type IN ('object','array') THEN json(value) "
-                        "WHEN type IN ('true','false') THEN json(type) ELSE value END) "
-                        f"FROM json_each({column}) WHERE key IN ({marks}))"
+            if filtering:
+                pairs = []
+                if plan:
+                    pairs.extend(
+                        (
+                            "'plan', json_extract(r.payload, '$.plan')",
+                            "'impl_move', json_object('plan', json_extract(r.payload, '$.impl_move.plan'))",
+                            "'node_definition', json_object('plan', json_extract(d.detail, '$.node_definition.plan'))",
+                        )
                     )
-                    params.extend(fields)
+                if activity_since is not None:
+                    pairs.extend(
+                        f"'{key}', json_extract(r.payload, '$.{key}')"
+                        for key in (
+                            "launched_at",
+                            "created_at",
+                            "dispatched_at",
+                            "completed_at",
+                        )
+                    )
+                columns = [f"json_object({','.join(pairs)})", "NULL"]
+            else:
+                for column in ("r.payload", "d.detail"):
+                    if fields == ("run_id",) or (
+                        column == "d.detail"
+                        and fields is not None
+                        and not any(field in DETAIL_FIELDS for field in fields)
+                    ):
+                        columns.append("NULL")
+                    elif fields is None:
+                        columns.append(column)
+                    else:
+                        marks = ",".join("?" for _ in fields)
+                        columns.append(
+                            "(SELECT json_group_object(key, CASE "  # noqa: S608 - fixed columns and parameter markers
+                            "WHEN type IN ('object','array') THEN json(value) "
+                            "WHEN type IN ('true','false') THEN json(type) ELSE value END) "
+                            f"FROM json_each({column}) WHERE key IN ({marks}))"
+                        )
+                        params.extend(fields)
             query = (
                 f'SELECT r.run_id, {columns[0]}, {columns[1]} FROM "{schema}".runs r '  # noqa: S608 - fixed schema and column names
                 f'LEFT JOIN "{schema}".run_details d ON r.run_id = d.run_id'
@@ -331,32 +388,48 @@ def _record_rows(
             if batch is not None:
                 clauses.append(f"r.run_id IN ({','.join('?' for _ in batch)})")
                 params.extend(batch)
-            if plan:
-                # Resolve the same narrow record through the ledger's owner;
-                # the store query must not invent a separate fallback order.
-                clauses.append(
-                    "record_plan(json_object("
-                    "'plan', json_extract(r.payload, '$.plan'), "
-                    "'impl_move', json_object('plan', json_extract(r.payload, '$.impl_move.plan')), "
-                    "'node_definition', json_object('plan', json_extract(d.detail, '$.node_definition.plan'))"
-                    ")) = ?"
-                )
-                params.append(plan)
-            if activity_since is not None:
-                stamps = [
-                    f"coalesce(record_epoch(json_extract(r.payload, '$.{key}')), -1e300)"
-                    for key in (
-                        "launched_at",
-                        "created_at",
-                        "dispatched_at",
-                        "completed_at",
-                    )
-                ]
-                clauses.append(f"max({','.join(stamps)}) >= ?")
-                params.append(activity_since)
+            if node:
+                # The node column is indexed, so one node's rows are found
+                # without visiting any other row's payload.
+                clauses.append("r.node = ?")
+                params.append(node)
             if clauses:
                 query += " WHERE " + " AND ".join(clauses)
-            yield from connection.execute(query, params)
+            cursor = connection.execute(query, params)
+            try:
+                rows = cursor.fetchall()
+            finally:
+                cursor.close()
+            if filtering:
+                identities = []
+                for identity, payload, _detail in rows:
+                    record = json.loads(payload)
+                    if plan and ledger.row_plan(record) != plan:
+                        continue
+                    if activity_since is not None:
+                        moment = ledger.run_activity_seconds(record)
+                        if moment is None or moment < activity_since:
+                            continue
+                    identities.append(identity)
+                # Fetch by identity only after predicate work has released the
+                # cursor, retaining the scan order even across identity batches.
+                matching = {
+                    row[0]: row
+                    for row in _record_rows(
+                        connection,
+                        schemas=(schema,),
+                        project=project,
+                        run_ids=identities,
+                        node=node,
+                        fields=fields,
+                    )
+                }
+                rows = [
+                    matching[identity]
+                    for identity in identities
+                    if identity in matching
+                ]
+            yield from rows
 
 
 def record_file_additions(
@@ -539,6 +612,7 @@ def stored_run_rows(
     path: str | Path | None = None,
     run_ids: Iterable[str] | None = None,
     plan: str | None = None,
+    node: str | None = None,
     fields: tuple[str, ...] | None = None,
     activity_since: float | None = None,
 ) -> list[dict[str, Any]] | None:
@@ -565,6 +639,7 @@ def stored_run_rows(
             project=project,
             run_ids=run_ids,
             plan=plan,
+            node=node,
             fields=fields,
             activity_since=activity_since,
         ):
@@ -828,13 +903,18 @@ class RunStore:
     def sync_run(self, project: str, record: Mapping[str, Any]) -> str:
         """Ensure one run's row matches the record, returning what happened.
 
-        The outcome is one of ``inserted`` (the run was absent), ``updated``
-        (the run was present but its durable payload disagreed and was
-        rewritten to match), or ``unchanged`` (the run was present and already
-        byte-identical, so it was left untouched). The last case is what makes
-        a corpus import re-runnable: once the store holds the committed
-        content, a second pass does no work at all. ``store_write`` is never
-        part of the stored payload, exactly as in ``append``.
+        The outcome is ``inserted`` when the store held no row for this run,
+        ``updated`` when it held one that disagreed, and ``unchanged`` when it
+        already held the record byte for byte. ``store_write`` is never part of
+        the stored payload, exactly as in ``append``.
+
+        An ``unchanged`` answer is what makes a corpus import and a repeated
+        amendment no work at all, so the row is compared whole: the durable
+        payload and the wide detail. The detail is exactly the fields a
+        rotation may wash out — a retention, a lane receipt, a gate check — and
+        an amendment confined to one of them moves without its durable payload
+        moving. Comparing the payload alone reports that amendment as
+        ``unchanged`` and leaves the store holding the revision it superseded.
         """
         run_id, payload, detail = _split_durable(project, record)
         encoded_payload = json.dumps(payload, sort_keys=True, separators=(",", ":"))
@@ -845,10 +925,12 @@ class RunStore:
             details = (
                 "archive.run_details" if table == "archive.runs" else "run_details"
             )
+            # Both names are this class's own declarations rather than anything
+            # a caller supplies, so the statement is fixed text.
             select = (
-                "SELECT payload FROM archive.runs WHERE run_id = ?"
-                if table == "archive.runs"
-                else "SELECT payload FROM runs WHERE run_id = ?"
+                f"SELECT stored.payload, wide.detail FROM {table} AS stored "  # noqa: S608
+                f"LEFT JOIN {details} AS wide ON wide.run_id = stored.run_id "
+                "WHERE stored.run_id = ?"
             )
             existing = self._conn.execute(select, (run_id,)).fetchone()
             if existing is None:
@@ -866,7 +948,7 @@ class RunStore:
                     (run_id, encoded_detail),
                 )
                 return "inserted"
-            if existing[0] == encoded_payload:
+            if existing[0] == encoded_payload and (existing[1] or "") == encoded_detail:
                 return "unchanged"
             self._conn.execute(
                 _RUNS_UPDATE.replace('"runs"', table),
@@ -1405,6 +1487,33 @@ def append(project: str, record: Mapping[str, Any]) -> None:
     already written, leaving neither store holding a row.
     """
     _retrying(lambda store: store.append(project, record))
+
+
+def sync(project: str, record: Mapping[str, Any]) -> str | None:
+    """Bring the store's own row for one run up to date with ``record``.
+
+    Returns the store's outcome — ``inserted``, ``updated`` or ``unchanged`` —
+    or ``None`` when the store is absent or holds no row for this run. An
+    amendment therefore reaches the store through this seam rather than through
+    :func:`append`, which writes a new row and refuses one already there, and a
+    store that does not hold the run is left exactly as it was: a project with
+    no store does not acquire one from an amendment, and a run the store has
+    never seen is a corpus import's row rather than one write's.
+
+    A locked store is retried inside this one call, as :func:`append` retries
+    it, so a concurrent writer's millisecond lock costs the amendment no row.
+    A failure of any other kind is raised: the store is the copy a stored read
+    answers from, so an amendment it declined would be read as the revision it
+    superseded.
+    """
+    run_id = str(record.get("run_id") or "")
+    if not run_id:
+        return None
+    if not stored_run_rows(project, run_ids=(run_id,), fields=("run_id",)):
+        return None
+    outcomes: list[str] = []
+    _retrying(lambda store: outcomes.append(store.sync_run(project, dict(record))))
+    return outcomes[-1] if outcomes else None
 
 
 def runs_for_node(node: str, *, project: str | None = None) -> list[dict[str, Any]]:

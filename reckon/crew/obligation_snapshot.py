@@ -38,6 +38,7 @@ import hashlib
 import json
 import os
 import re
+import socket
 import sys
 import traceback
 from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -374,6 +375,59 @@ def station_snapshot_path(project: str, *, home: str | Path | None = None) -> Pa
     return base / "obligations" / _project_token(project) / STATION_SNAPSHOT_NAME
 
 
+def station_reading_path(
+    host: str, job: str, *, home: str | Path | None = None
+) -> Path:
+    """One small health publication per station host and allocation."""
+    base = Path(home) if home is not None else crew_home()
+    identity = hashlib.sha256(json.dumps([host, job]).encode()).hexdigest()
+    return base / "station-readings" / f"{identity}.json"
+
+
+def publish_station_reading(
+    markers: Mapping[str, str], *, home: str | Path | None = None
+) -> Path:
+    """Publish the beat and tick without rewriting any session's obligations."""
+    from reckon._store import write_json_atomically
+
+    host, job = socket.gethostname(), os.environ.get("SLURM_JOB_ID", "")
+    return write_json_atomically(
+        station_reading_path(host, job, home=home),
+        {"host": host, "job": job, "station": dict(markers)},
+        fsync=False,
+    )
+
+
+def _exported_station_markers(
+    station: Mapping[str, Any], *, home: str | Path | None = None
+) -> dict[str, Any]:
+    """Use health from the exporting station only, never an unrelated live one."""
+    markers = dict(station)
+    host, job = station.get("host"), station.get("job")
+    if not isinstance(host, str) or not host or not isinstance(job, str):
+        return markers
+    try:
+        reading = json.loads(station_reading_path(host, job, home=home).read_text())
+    except (OSError, ValueError):
+        return markers
+    if not isinstance(reading, Mapping) or (
+        reading.get("host"),
+        reading.get("job"),
+    ) != (
+        host,
+        job,
+    ):
+        return markers
+    current = reading.get("station")
+    if not isinstance(current, Mapping):
+        return markers
+    beat = _parse_instant(current.get("heartbeat"))
+    carried = _parse_instant(station.get("heartbeat"))
+    if beat is not None and (carried is None or beat >= carried):
+        return dict(current)
+    return markers
+
+
 def station_heartbeat_age(value: Any, *, now: datetime | None = None) -> int | None:
     """How many seconds ago the station beat, or None when the stamp is unreadable."""
     stamped = _parse_instant(value)
@@ -462,10 +516,18 @@ def _station_read(database: Path, read: Callable[[Any], Any]) -> tuple[bool, Any
 
 
 def _station_markers(connection: Any) -> dict[str, str]:
-    """The station table's own key/value rows, without a session's document."""
+    """The station's beat and tick, without unrelated maintenance records."""
     return {
         str(key): str(value)
-        for key, value in connection.execute("SELECT key, value FROM station")
+        for key, value in connection.execute(
+            "SELECT key, value FROM station WHERE key IN (?, ?, ?, ?)",
+            (
+                "heartbeat",
+                STATION_TICK_STAGE_KEY,
+                STATION_TICK_STARTED_AT_KEY,
+                STATION_TICK_FINISHED_AT_KEY,
+            ),
+        )
     }
 
 
@@ -523,9 +585,7 @@ def read_station_tick(
 ) -> dict[str, Any] | None:
     """The station store's own beat and running tick, read without a session.
 
-    The exported snapshot carries the heartbeat and nothing about the tick, so a
-    reader that fell back to it cannot tell a station working through a long
-    tick from one that stopped. This is the station's answer to that question:
+    This is the local station's answer without a session document:
     the beat, the stage a running tick has entered, the instant that tick
     started, and the verdict those two ages make. The started instant identifies
     the tick, so a reader can report one row per tick rather than one per sample.
@@ -583,8 +643,11 @@ def _read_station_export(
     exported = dict(document)
     exported.setdefault("project", snapshot.get("project"))
     station = snapshot.get("station")
-    beat = station.get("heartbeat") if isinstance(station, Mapping) else None
-    exported["_station_heartbeat"] = beat
+    exported["_station_markers"] = (
+        _exported_station_markers(station, home=home)
+        if isinstance(station, Mapping)
+        else {}
+    )
     return exported
 
 
@@ -608,9 +671,9 @@ def read_station_answer(
     it: a station can be quiet because the fleet is quiet, which is not a
     station that stopped. A fresh beat with a tick that has outlived the window
     is ``slow`` instead -- alive, working, and not something to cycle. An
-    exported snapshot names no tick stage, so an off-node reading is either
-    ``stopped`` or ``live`` and never claims a progress it cannot see; a reader
-    that needs the tick on that branch asks :func:`read_station_tick`.
+    exported snapshot uses the exporting station's independent health
+    publication when available, so a long derivation does not freeze the beat
+    or hide the running tick from a reader on another node.
     """
     instant = _utc_now() if now is None else now
     found = _read_station_document(project, session, environ=environ)
@@ -619,8 +682,7 @@ def read_station_answer(
         exported = _read_station_export(project, session, home=home)
         if exported is None:
             return None
-        beat = exported.pop("_station_heartbeat", None)
-        found = (exported, {"heartbeat": "" if beat is None else str(beat)})
+        found = (exported, exported.pop("_station_markers"))
         source = "snapshot"
     document, markers = found
     age = station_heartbeat_age(markers.get("heartbeat"), now=instant)

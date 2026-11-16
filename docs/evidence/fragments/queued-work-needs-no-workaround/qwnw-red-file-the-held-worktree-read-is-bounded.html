@@ -1,0 +1,91 @@
+<section id="qwnw-red-file-the-held-worktree-read-is-bounded-landing">
+  <h2>A held worktree read is bounded</h2>
+
+  <p><strong>What changed.</strong> The file was red on the primary branch for two
+  causes.</p>
+
+  <p><strong>An amendment reached the file and its indexes, never the store.</strong>
+  <code>ledger.write_run_file</code> is the one seam every writer amending a run's
+  own document goes through, and it rewrote the document, bumped the write
+  generation and published the disposable index — but not the run store, which is
+  the copy a stored read answers from. A row amended in its file was therefore
+  read as the later record still names no tree, so the derivation answered with
+  the earlier run. Verdict: <em>product wrong</em>.
+  <code>run_store.sync</code> is now the store-side seam for an amendment, and
+  <code>write_run_file</code> calls it; a store that does not hold the run is left
+  alone, so an amendment never creates a store for a project that has none and an
+  unpromoted write costs one existence check. A store that declines the amendment
+  is a refusal, not an unhealthy index, and the refusal names the
+  <code>scripts/import_runs_into_store.py</code> repair.</p>
+
+  <p><strong>The store compared half a row.</strong> <code>RunStore.sync_run</code>
+  answered <code>unchanged</code> when the durable payload matched, while the wide
+  detail — <code>worktree_retention</code>, <code>lane_receipt</code>,
+  <code>gate_check</code> and the rest of the declared washable fields — is exactly
+  what an amendment can move on its own. The retention this file writes is one of
+  those fields, so the amendment was answered <code>unchanged</code> and the store
+  kept the row it superseded. The row is now compared whole, and the detail row is
+  rewritten when only it moved. Verdict: <em>product wrong</em>.</p>
+
+  <p><strong>The fixture held nothing.</strong> A retained tree is a duty only
+  while it carries work no landing has taken, and a clean tree whose head its
+  primary branch reaches holds nothing. The fixture created every tree with
+  <code>git worktree add --detach</code> at <code>HEAD</code> and never wrote to
+  them, so all fifteen were excluded by that rule and the file compared two empty
+  answers. Verdict: <em>test wrong</em> — the test encoded the pre-rule
+  expectation. Each tree now carries a commit the primary branch does not reach,
+  which is what makes a run's retained tree a duty; no assertion was deleted,
+  weakened or reordered.</p>
+
+  <h3 id="qwnw-red-file-the-held-worktree-read-is-bounded-measured">Measured</h3>
+
+  <p>The base run at <code>ee93819a0d</code> reported four failures, and one of
+  them showed the answer the derivation produced against the whole-ledger one:</p>
+
+  <pre id="qwnw-red-file-the-held-worktree-read-is-bounded-base-failure">FAILED tests/test_the_held_worktree_read_is_bounded.py::test_one_derivation_reads_only_the_documents_that_can_change_it - AssertionError: assert set() == {'r-20261016T...node-05', ...}
+FAILED tests/test_the_held_worktree_read_is_bounded.py::test_the_head_derivation_equals_the_whole_ledger - AssertionError: assert {} == {'/tmp/reckon...node-03', ...}
+FAILED tests/test_the_held_worktree_read_is_bounded.py::test_a_refused_namings_reader_leaves_every_run_a_candidate - AssertionError: assert {} == {'/tmp/reckon...node-03', ...}
+FAILED tests/test_the_held_worktree_read_is_bounded.py::test_a_run_retaining_a_tree_after_the_index_is_published_is_read - AssertionError: assert {} == {'/tmp/reckon...node-03', ...}
+
+4 failed, 2 passed</pre>
+
+  <p>With the trees carrying unmerged work, the last of those failures moved to the
+  one comparison that isolates the second cause: the bounded derivation answered
+  <code>r-20261016T100499-ghost-499</code> for the tree while the whole-ledger scan
+  still answered <code>r-20261016T100003-node-03</code>, the run the amended
+  record was meant to supersede.</p>
+
+  <p>At head the file passes in full and records its own instrument reading, which
+  is the point of the node test: one derivation over 500 documents and 15 held
+  trees:</p>
+
+  <pre id="qwnw-red-file-the-held-worktree-read-is-bounded-head-measurement">held-worktree derivation: posix.stat 638, decoded 0, copy.deepcopy 0 over 500 documents and 15 held trees
+6 passed</pre>
+
+  <table id="qwnw-red-file-the-held-worktree-read-is-bounded-arms">
+    <caption>Every arm is a log whose first line names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision and tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>node tests, base (also the negative control)</td><td><code>ee93819a0d</code>, scratch tree at base</td><td>failing ids above, <code>EXIT=1</code></td></tr>
+      <tr><td>node tests, after</td><td><code>4f04392824</code>, this worktree</td><td>6 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>tests importing the changed modules, base</td><td><code>ee93819a0d</code>, clone of the primary repository at base</td><td>137 failed, 720 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>tests importing the changed modules, after</td><td><code>4f04392824</code>, this worktree's head</td><td>123 failed, 734 passed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>What the bound is.</strong> The derivation decodes no document at all
+  on this corpus — the screen answers the namings before any row is read — and the
+  read-only path copies nothing. The stat count of 638 over 500 documents and 15
+  trees is recorded rather than bounded, as the test itself states: a screen that
+  never acts on a record older than its run file must stat every per-run document
+  once and every held tree once.</p>
+
+  <p><strong>The arm adds nothing.</strong> The 67 test files whose source
+  names <code>run_store</code>, <code>sync_run</code> or
+  <code>write_run_file</code> were run at both revisions. Not one id failing at head is
+  absent from the base revision's 137: zero were added, and the fourteen the
+  head clears include this file's own four. The two arms
+  both report many pre-existing failures of the primary branch, which this node
+  neither triages nor repairs.</p>
+</section>

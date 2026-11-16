@@ -802,9 +802,7 @@ def _validate_persisted_items(data: dict[str, Any]) -> dict[str, Any]:
             raise ValueError("a persisted data record must name its figure")
         for field in ("plan", "section"):
             value = raw.get(field)
-            if value is not None and (
-                not isinstance(value, str) or not value.strip()
-            ):
+            if value is not None and (not isinstance(value, str) or not value.strip()):
                 raise ValueError(f"persisted item record {field} must be text or null")
         size = raw.get("bytes")
         if isinstance(size, bool) or not isinstance(size, int) or size < 0:
@@ -2399,9 +2397,7 @@ def push_sprint(
     leaving a torn write.
     """
     composed = compose_project_state(docs_dir, project)
-    sprint_ids = [
-        str(sprint.get("id") or "") for sprint in composed.get("sprints", [])
-    ]
+    sprint_ids = [str(sprint.get("id") or "") for sprint in composed.get("sprints", [])]
     if sprint_id not in sprint_ids:
         raise ValueError(f"sprint {sprint_id!r} not found")
     target_path = resource_path(docs_dir, project, "sprint", sprint_id)
@@ -2437,6 +2433,31 @@ def push_sprint(
 
 def _sprint_item_payload(row: Any) -> dict[str, Any]:
     return {"slug": row} if isinstance(row, str) else dict(row)
+
+
+def _write_sprint_closing_page(
+    docs_dir: Path, project: str, sprint_id: str, items: list[dict[str, Any]]
+) -> None:
+    """Write the one page a closing sprint owes, naming every member plan.
+
+    The page is written after the sprint's own resources, from the same items
+    the close read, so a carried plan is still a member of the sprint that
+    closed. Its failure fails the close: a sprint recorded as closed with no
+    page would leave what its plans landed unreadable.
+    """
+    from reckon import evidence
+
+    slugs = [
+        str(item.get("slug") or "").strip()
+        for item in items
+        if str(item.get("slug") or "").strip()
+    ]
+    try:
+        evidence.write_sprint_page(docs_dir, project, sprint_id, slugs)
+    except evidence.EvidenceSynthesisError as exc:
+        raise ProjectStateError(
+            f"sprint {sprint_id!r} closed but its page could not be written: {exc}"
+        ) from exc
 
 
 def _close_sprint_with_carry_forward(
@@ -2489,12 +2510,11 @@ def _close_sprint_with_carry_forward(
         )
 
     if not incomplete:
-        return (
-            write_resource(
-                docs_dir, project, "sprint", sprint_id, working, expected_version
-            ),
-            [],
+        version = write_resource(
+            docs_dir, project, "sprint", sprint_id, working, expected_version
         )
+        _write_sprint_closing_page(docs_dir, project, sprint_id, items)
+        return (version, [])
 
     ordered = [str(sprint.get("id", "")) for sprint in composed.get("sprints", [])]
     position = ordered.index(sprint_id) if sprint_id in ordered else None
@@ -2587,6 +2607,7 @@ def _close_sprint_with_carry_forward(
             _durable_unlink(journal)
             raise
         carried_warnings = _retire_move_journal(journal)
+    _write_sprint_closing_page(docs_dir, project, sprint_id, items)
     return new_closing, [
         f"carried {len(incomplete)} item(s) to sprint {advancing_id}",
         *carried_warnings,

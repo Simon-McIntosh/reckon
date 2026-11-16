@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite at 0e0f25b0f9 records 5 failing ids (logs/base-arm.log, EXIT=1) and after_suite at 079905e189 records 0 (logs/head-arm.log, '7 passed', EXIT=0), so the head-minus-base set difference is empty.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/dispatch_claims.py:2282",
+    "reckon/crew/dispatch_claims.py:2352",
+    "reckon/crew/dispatch_plan.py:1148",
+    "reckon/crew/dispatching/launch.py:659",
+    "reckon/crew/runs.py:1913",
+    "reckon/crew_dispatch_commands.py:1553"
+  ],
+  "completed_at": "2026-11-16T10:22:43.523Z",
+  "dispatched_at": "2026-11-16T10:22:11Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_dryrun.py",
+      "id": "f8dd7a8031e",
+      "line": "349",
+      "severity": "non-blocking",
+      "text": "non-blocking: \"docs/evidence/fragments/dispatch-safety/candidate.html\" not in accepted cannot fail in this fixture, because reckon/crew/dispatch_claims.py:2282 skips every candidate that does not overlap the live claim and the fragment shares no prefix with the docs/state claim the test writes, so the line states the mergeable-fragment rule without guarding it."
+    },
+    {
+      "file": "tests/test_crew_dryrun.py",
+      "id": "f27b7674ef4",
+      "line": "329",
+      "severity": "non-blocking",
+      "text": "non-blocking: the row check compares the product's directory_claim_acceptances against the same two values the test passed in, path as the CLI argument and \"docs/state\" as the claim it wrote, so only the list length and emptiness are independent of the input; the guard is the count, not the tuple."
+    },
+    {
+      "file": "tests/test_crew_dryrun.py",
+      "id": "fd14dbf5563",
+      "line": "347",
+      "severity": "non-blocking",
+      "text": "non-blocking: the comment calls docs/state \"the exclusive figure tree\", naming a class the fixture does not use, so a reader seeking the claim the test now makes is told the wrong one."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit from 0e0f25b0f9: 571b01de8f rewrites six fixtures onto docs/state and adds test_dry_run_admits_an_overlap_over_a_mergeable_path, 079905e189 reformats the added test only, f766b7c9c3 adds the 69-line landing fragment; no assertion is deleted, and one acceptance assertion is replaced with a not-in check that cannot fail in this fixture.",
+    "done_when": "the done_when asks for the file in full at head as an all_debug job with SLURM_JOB_ID unset, a verdict per cause, an importer arm adding no failure and the base run's ids logged beside it; logs/head-arm.sbatch is the gate, sacct shows job 1319604 COMPLETED on all_debug, run-arm.sh unsets SLURM_JOB_ID for the measured process, and logs/base-arm.log carries the five ids.",
+    "goal": "the node goal is to make tests/test_crew_dryrun.py pass in full on the primary branch, and at f766b7c9c3 the file passes 7 of 7 (logs/head-arm.log:7 reads \"7 passed in 4.59s\"), reached by the fixture renames across tests/test_crew_dryrun.py:152-380.",
+    "manifest": "read the manifest at the reviewed run directory; it states status complete, the three commits, baseline_suite 5 failed at 0e0f25b0f9, after_suite 0 failed, four arm logs named, and every arm I opened reconciles with it except that the gate ran at 079905e189 rather than at the fragment commit f766b7c9c3.",
+    "write_paths": "the declared scope is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround plus the node fragment there and a figures directory; the two landed files are tests/test_crew_dryrun.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-dryrun.html, both inside it."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_dryrun.py:274 reddens against a product that refuses a claim over a mergeable source path, but the guard added at tests/test_crew_dryrun.py:349 cannot redden in this fixture and the row check at :329 compares against the values the test itself supplied.",
+    "evidence": "logs/base-arm.log carries the five failing ids and exit 1 against logs/head-arm.log's exit 0, both with a header naming revision, tree and command, though the gate log itself names neither the partition nor the job id that the manifest and sacct supply.",
+    "fit": "the new case follows the surrounding fixture, helper and comment idiom of tests/test_crew_dryrun.py:152, but the comment at :347 names \"the exclusive figure tree\" for a claim the fixture places on docs/state.",
+    "goal_fidelity": "tests/test_crew_dryrun.py:274 and the six renamed fixtures make the file pass at head, which logs/head-arm.log:7 records as \"7 passed in 4.59s\" EXIT=0.",
+    "reuse": "the diff adds no definition beyond one test function and reuses _claim, _node and _arguments; the rule it asserts is owned by reckon/crew/runs.py:1821 DEFAULT_EXCLUSIVE_PATHS and reckon/crew/dispatch_claims.py:1691 _directory_claim_overlaps, neither of which a second implementation was written for.",
+    "scope_discipline": "the diff touches only tests/test_crew_dryrun.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-dryrun.html, both inside the declared write paths, and no product file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_crew_dryrun.py pass in full on the primary branch, and at f766b7c9c3 the file passes 7 of 7 (logs/head-arm.log:7 reads \"7 passed in 4.59s\"), reached by the fixture renames across tests/test_crew_dryrun.py:152-380.\nVERDICT done_when: the done_when asks for the file in full at head as an all_debug job with SLURM_JOB_ID unset, a verdict per cause, an importer arm adding no failure and the base run's ids logged beside it; logs/head-arm.sbatch is the gate, sacct shows job 1319604 COMPLETED on all_debug, run-arm.sh unsets SLURM_JOB_ID for the measured process, and logs/base-arm.log carries the five ids.\nVERDICT write_paths: the declared scope is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround plus the node fragment there and a figures directory; the two landed files are tests/test_crew_dryrun.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-dryrun.html, both inside it.\nVERDICT manifest: read the manifest at the reviewed run directory; it states status complete, the three commits, baseline_suite 5 failed at 0e0f25b0f9, after_suite 0 failed, four arm logs named, and every arm I opened reconciles with it except that the gate ran at 079905e189 rather than at the fragment commit f766b7c9c3.\nVERDICT diff: read commit by commit from 0e0f25b0f9: 571b01de8f rewrites six fixtures onto docs/state and adds test_dry_run_admits_an_overlap_over_a_mergeable_path, 079905e189 reformats the added test only, f766b7c9c3 adds the 69-line landing fragment; no assertion is deleted, and one acceptance assertion is replaced with a not-in check that cannot fail in this fixture.\nCALL_SITES: reckon/crew/dispatch_claims.py:2282, reckon/crew/dispatch_claims.py:2352, reckon/crew/dispatch_plan.py:1148, reckon/crew/dispatching/launch.py:659, reckon/crew/runs.py:1913, reckon/crew_dispatch_commands.py:1553\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_crew_dryrun.py:274 and the six renamed fixtures make the file pass at head, which logs/head-arm.log:7 records as \"7 passed in 4.59s\" EXIT=0.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/base-arm.log carries the five failing ids and exit 1 against logs/head-arm.log's exit 0, both with a header naming revision, tree and command, though the gate log itself names neither the partition nor the job id that the manifest and sacct supply.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only tests/test_crew_dryrun.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-dryrun.html, both inside the declared write paths, and no product file.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_crew_dryrun.py:274 reddens against a product that refuses a claim over a mergeable source path, but the guard added at tests/test_crew_dryrun.py:349 cannot redden in this fixture and the row check at :329 compares against the values the test itself supplied.\nSCORE fit: 17\nJUSTIFICATION fit: the new case follows the surrounding fixture, helper and comment idiom of tests/test_crew_dryrun.py:152, but the comment at :347 names \"the exclusive figure tree\" for a claim the fixture places on docs/state.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition beyond one test function and reuses _claim, _node and _arguments; the rule it asserts is owned by reckon/crew/runs.py:1821 DEFAULT_EXCLUSIVE_PATHS and reckon/crew/dispatch_claims.py:1691 _directory_claim_overlaps, neither of which a second implementation was written for.\nFINDING tests/test_crew_dryrun.py:349 non-blocking: \"docs/evidence/fragments/dispatch-safety/candidate.html\" not in accepted cannot fail in this fixture, because reckon/crew/dispatch_claims.py:2282 skips every candidate that does not overlap the live claim and the fragment shares no prefix with the docs/state claim the test writes, so the line states the mergeable-fragment rule without guarding it.\nFINDING tests/test_crew_dryrun.py:329 non-blocking: the row check compares the product's directory_claim_acceptances against the same two values the test passed in, path as the CLI argument and \"docs/state\" as the claim it wrote, so only the list length and emptiness are independent of the input; the guard is the count, not the tuple.\nFINDING tests/test_crew_dryrun.py:347 non-blocking: the comment calls docs/state \"the exclusive figure tree\", naming a class the fixture does not use, so a reader seeking the claim the test now makes is told the wrong one.",
+  "review_node": "review-of-qwnw-red-file-crew-dryrun-f766b7c9c373",
+  "review_run_id": "r-20261116T102044739233-review-of-qwnw-red-file-crew-dryrun-f766b7c9c373",
+  "reviewed_base_sha": "0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc",
+  "reviewed_head_sha": "f766b7c9c37382f31d19dad12ba122e8c219987d",
+  "reviewed_run_id": "r-20261116T031958673341-qwnw-red-file-crew-dryrun",
+  "reviewer": "omp-local review worker",
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T20:38:51.574735+00:00",
+  "total": 107
+}
