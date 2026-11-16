@@ -1,0 +1,26 @@
+<section id="qwnw-red-file-review-lane-follows-its-run">
+<h3>A review follows the lane its run recorded: the four red cases and their one cause</h3>
+<p><strong>Verdict: the product was wrong, in one place.</strong> <code>classify_pointer</code> gave a pre-spawn phase label priority over the run's own manifest, so every delivered run whose pointer still read <code>starting</code> was classified <code>running</code>. The review reflex refuses a run that is not <code>scoring</code>, so all four failing cases stopped at the refusal — <em>the run is not awaiting review (running)</em> — before reaching the lane selection, the exclusion refusal or the sweep's session ownership they measure. The classification module's own derived phase already stated the rule the product broke: a delivered manifest is evidence the launch got past starting, and a delivered report never falls back to the launcher's label.</p>
+<p>No assertion was deleted or weakened. The fix is one predicate in <code>reckon/crew/recovery_classification.py</code>: <code>pre_spawn_waiting</code> no longer holds when the manifest carries a terminal status. A pointer with no manifest, and a strand past its bound, read exactly as they did; a launch that has spawned nothing is still the running row it was.</p>
+<h4 id="qwnw-red-file-review-lane-follows-its-run-head">Head gate</h4>
+<pre># revision: 55e48f3bd8
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_review_lane_follows_its_run.py
+......                                                                   [100%]
+6 passed in 52.74s
+EXIT=0</pre>
+<p>The gate ran as its own <code>all_debug</code> job (1319800) submitted with <code>SLURM_JOB_ID</code> unset, from the worktree named on the log's <code># tree:</code> header, and the log's <code># measurement_module:</code> header names the classifier the run actually imported.</p>
+<h4 id="qwnw-red-file-review-lane-follows-its-run-negative-control">Negative control: the base revision's run of the same file</h4>
+<pre># revision: 24bc79d8ee8e73d6d262d0879a27cd27d5a4048c
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_review_lane_follows_its_run.py
+FAILED tests/test_review_lane_follows_its_run.py::test_a_review_runs_on_the_lane_its_owning_run_recorded
+FAILED tests/test_review_lane_follows_its_run.py::test_a_failed_owning_lane_falls_back_only_to_a_lane_not_excluded
+FAILED tests/test_review_lane_follows_its_run.py::test_a_fully_excluded_wave_refuses_naming_the_exclusion
+FAILED tests/test_review_lane_follows_its_run.py::test_the_sweep_bookends_only_its_own_sessions_runs
+4 failed, 2 passed in 1.75s
+EXIT=1</pre>
+<p>The reproduction was read before the repair, not after: the same four ids fail at <code>52f2055b65</code> (the merged primary head this node started from) with the composed report printing <code>{'dispatched': False, 'reason': 'the run is not awaiting review (running)'}</code>, and the excluded-wave case additionally raised <code>KeyError: 'awaiting_lane'</code> because the refusal arm was never reached. The base job (1319804) ran over a tree extracted from <code>24bc79d8ee</code> with a git head over its content.</p>
+<h4 id="qwnw-red-file-review-lane-follows-its-run-arm">The arm over the test files that import the changed module</h4>
+<p>109 test files import <code>reckon.crew.recovery_classification</code>; 844 tests collected. Base (job 1319806) and head (job 1319822) report the same 43 failed and 10 errors, and the two failure-id sets are identical: 53 ids each, zero added, zero removed. The ids that remain red are the primary branch's pre-existing backlog in those files, outside this node's declared scope.</p>
+<h4 id="qwnw-red-file-review-lane-follows-its-run-lint">Lint and format on the changed path</h4>
+<p><code>ruff check reckon/crew/recovery_classification.py</code> reports nothing. <code>ruff format --check</code> reports one reformat at the <code>--advice 'continue the unfinished work'</code> line, which is present and identical at the base revision, so this change adds no finding.</p>
+</section>
