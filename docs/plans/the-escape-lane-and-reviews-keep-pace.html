@@ -26,7 +26,7 @@
   <title>The Escape Lane And Reviews Keep Pace | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="48">
+<meta name="plan-version" content="50">
 <meta name="plan-modified" content="2026-11-16">
 </head>
 <body>
@@ -131,6 +131,12 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261115T130007037608-released-review-recomposed-s11" data-who="reckon-build" data-when="2026-11-15T14:22:58.926Z">
     <div class="r-comment-body"><p>a composed review the admission pass releases as a stranded launch now writes its release onto the reviewed run's own dispatch record, so the next reflex pass composes it again for the same run and head (base 2424ab7511: the recompose case fails with "the review ... has no eligible lane (backend 'clive' already dropped it)"; after arm 60 passed, EXIT=0)</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261116T040656712837-review-of-hand-merged-run-in-rollup-s12-a0d6763e431b" data-who="reckon-build" data-when="2026-11-16T04:21:03.664Z">
+    <div class="r-comment-body"><p>Reviewed r-20261115T224219922567-hand-merged-run-in-rollup-s12 at base d14fff07134b4f72b8639cc00e59a18112c0acd2 / head a0d6763e431b27cd471dfa9dde34edaa67d5bca3: the rollup counts a hand-merged row under not-run (reckon/ledger.py:99,4605) and the declaration stamps through reckon/crew/run_paths.py:36 (reckon/crew_run_commands.py:3904, _utc_now_text deleted); scores goal_fidelity 20, evidence 14, scope_discipline 20, durability 18, fit 18, reuse 18, total 108, added_failure_count 0, one non-blocking finding at reckon/ledger.py:4605.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261115T224219922567-hand-merged-run-in-rollup-s12" data-who="reckon-build" data-when="2026-11-15T23:06:08Z">
+    <div class="r-comment-body"><p>The suite-delta rollup counts a hand-merged row under not-run and the gate declaration is stamped by run_paths._utc_now with the local formatter deleted; the new test reads 2 failed at base (KeyError &#x27;not-run&#x27; plus the second formatter&#x27;s instant), the node gate reads 60 passed at a0d6763e43 against 58 passed on the base arm, and the declared mutation drops the new test to 1 failed EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261116T001433927866-review-of-verdict-role-matches-run-role-s13-6e5c1fd1c2b5" data-who="reckon-build" data-when="2026-11-16T00:43:04.278Z">
     <div class="r-comment-body"><p>review of run r-20261115T224328568660-verdict-role-matches-run-role-s13 at 93e596c64faa..6e5c1fd1c2b5 scores goal_fidelity 19, evidence 15, scope_discipline 19, durability 19, fit 18, reuse 17 over 0 added failures against its 62-passed/EXIT=0 baseline arm, with 1 blocking finding (the delivered manifest records no tests:, baseline_suite, after_suite or landing line, so its own audit reports no gate) and 1 non-blocking finding (the role name has no owner, so the drift can recur).</p></div>
