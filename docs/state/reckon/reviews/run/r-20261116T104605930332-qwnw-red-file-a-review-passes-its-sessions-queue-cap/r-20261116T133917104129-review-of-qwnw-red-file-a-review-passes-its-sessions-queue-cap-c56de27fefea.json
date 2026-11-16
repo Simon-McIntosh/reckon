@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "52f2055b65a61a81b796c7e5e315e5a003801a59",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/runs.py:858 queue_dispatch",
+    "reckon/crew/admission/reviews.py:151 record_review_contract",
+    "reckon/crew/admission/launching.py:71 _node_from_pointer"
+  ],
+  "completed_at": "2026-11-16T14:23:43.256Z",
+  "dispatched_at": "2026-11-16T14:23:18Z",
+  "findings": [
+    {
+      "file": "tests/test_a_review_passes_its_sessions_queue_cap.py",
+      "line": "37",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fixture hand-builds the queued node dict rather than deriving it from TaskNode.as_dict() at reckon/crew/node.py:838, the owner the dispatch path really stores, so the next field TaskNode declares without a default breaks these four cases with the same TypeError; deriving the literal would close the failure class instead of the one instance of it."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-passes-its-sessions-queue-cap.html",
+      "line": "10",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states at :10 that every arm ran as an all_debug job with SLURM_JOB_ID unset, but neither base-gate.log nor head-gate.log records a partition, a job id or the environment, so the done_when's condition is claimed in prose rather than shown, and only grepping reckon/crew for SLURM_JOB_ID shows the exercised path reads none."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-passes-its-sessions-queue-cap.html",
+      "line": "49",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head arm is recorded at revision 704f7a5ad1 rather than at the delivered head c56de27fef, so the receipt does not name the revision being promoted; the delta is the docs-only commit c56de27fef, whose name-only diff touches no code, and the test file is identical at both, so the arm's result carries."
+    }
+  ],
+  "head_log_revision": "704f7a5ad1fdf0f1d2aafcb401cc19079ca18b34",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the runtime path the reviewed tests exercise: reckon/crew/runs.py:858 queue_dispatch calls reckon/crew/admission/reviews.py:151 record_review_contract, which rebuilds the node through reckon/crew/admission/launching.py:71 _node_from_pointer; none of the three changed.",
+    "diff": "read both commits against base 52f2055b65: 704f7a5ad1 adds one goal key to the _request node literal (5 lines), c56de27fef adds the 84-line evidence fragment; no product module changed and no assertion was deleted or weakened.",
+    "done_when": "the done_when asks for the file passing in full at head with 4 failing before, and no added failure over the importing suite; base-gate.log:340 reads '4 failed, 2 passed' EXIT=1, head-gate.log:8 reads '6 passed' EXIT=0, suite-base.log and suite-head.log each read '58 passed' EXIT=0, so the arms measure it, though neither log records the all_debug partition or SLURM_JOB_ID unset the same sentence names.",
+    "goal": "the node's goal is that tests/test_a_review_passes_its_sessions_queue_cap.py passes in full on the primary branch; commit 704f7a5ad1 adds the missing goal to the fixture node at tests/test_a_review_passes_its_sessions_queue_cap.py:39, and the file is byte-identical at origin/main 915acff37f, so the fix is still owed there and 6 of 6 pass at the delivered head.",
+    "manifest": "read; status complete, commits 704f7a5ad1 and c56de27fef, tests naming the pytest command the log headers also carry, baseline_suite and after_suite each revision-tagged with 58 passed, completed true and failure_count 0, negative_control_log naming base-gate.log whose four red ids do not reappear at head, and all six rubric lines plus negative_control and regression answered.",
+    "write_paths": "the declared fence was reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff --name-only 52f2055b65..c56de27fef returns exactly two paths, both inside it, and the tree is clean at head."
+  },
+  "justifications": {
+    "durability": "the base arm is the regression reinstated \u2014 the fixture node without its goal reddens exactly the four queue_dispatch cases at base-gate.log:22-30 with 'TaskNode.__init__() missing 1 required positional argument' \u2014 so the guard demonstrably fires; the point withheld is the hand-built literal at tests/test_a_review_passes_its_sessions_queue_cap.py:37 that made it break.",
+    "evidence": "the gate logs the worker recorded carry the done_when's central measure \u2014 base-gate.log:340 reads '4 failed, 2 passed' EXIT=1 at 52f2055b65 and head-gate.log:8 reads '6 passed' EXIT=0 \u2014 so the two non-blocking evidence findings below cost the score rather than the arm itself.",
+    "fit": "the added key joins the surrounding literal at tests/test_a_review_passes_its_sessions_queue_cap.py:38-43 in TaskNode's own field order, and the two commit subjects carry no plan, sprint, ticket or run identifier.",
+    "goal_fidelity": "tests/test_a_review_passes_its_sessions_queue_cap.py:37-43 now names the goal that reckon/crew/node.py:780 declares without a default, and the file passes 6 of 6 at the delivered head c56de27fef, which is the goal's own replay and covers the promotion step it leaves to the lander.",
+    "reuse": "the diff adds no function or module, but the node literal it extends stands in for the owner at reckon/crew/node.py:838 TaskNode.as_dict, which is the shape the dispatch path really stores, so the fixture restates a capability rather than extending it.",
+    "scope_discipline": "git diff --stat 52f2055b65..c56de27fef lists only tests/test_a_review_passes_its_sessions_queue_cap.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-passes-its-sessions-queue-cap.html, both inside the declared write paths reckon/tests/docs-evidence-fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_a_review_passes_its_sessions_queue_cap.py passes in full on the primary branch; commit 704f7a5ad1 adds the missing goal to the fixture node at tests/test_a_review_passes_its_sessions_queue_cap.py:39, and that file is byte-identical at origin/main 915acff37f, where the fix is still owed, while 6 of 6 pass at the delivered head.\nVERDICT done_when: the done_when asks for the file passing in full at head after 4 failures, and no added failure over the importing suite; base-gate.log:340 reads '4 failed, 2 passed' EXIT=1 at 52f2055b65, head-gate.log:8 reads '6 passed' EXIT=0 at 704f7a5ad1, and suite-base.log and suite-head.log each read '58 passed' EXIT=0, so the arms measure the measure, though neither gate log records the all_debug partition or SLURM_JOB_ID unset the same sentence names.\nVERDICT write_paths: the declared fence was reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff --name-only 52f2055b65..c56de27fef returns exactly tests/test_a_review_passes_its_sessions_queue_cap.py and the queue-cap fragment, both inside it, and the reviewed tree is clean at head.\nVERDICT manifest: read; status complete, commits 704f7a5ad1 and c56de27fef, tests naming the pytest command the log headers carry, baseline_suite and after_suite each revision-tagged with 58 passed and failure_count 0, negative_control_log naming base-gate.log whose four red ids do not reappear at head, and every rubric line answered.\nVERDICT diff: read both commits against base 52f2055b65: 704f7a5ad1 adds one goal key to the _request node literal and c56de27fef adds the 84-line evidence fragment; no product module changed and no assertion was deleted or weakened.\nCALL_SITES: reckon/crew/runs.py:858 queue_dispatch, reckon/crew/admission/reviews.py:151 record_review_contract, reckon/crew/admission/launching.py:71 _node_from_pointer\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_review_passes_its_sessions_queue_cap.py:37-43 now names the goal that reckon/crew/node.py:780 declares without a default, and the file passes 6 of 6 at the delivered head c56de27fef.\nSCORE evidence: 19\nJUSTIFICATION evidence: base-gate.log:340 reads '4 failed, 2 passed' EXIT=1 and suite-base.log/suite-head.log each read '58 passed' EXIT=0, so the failure-count pair is derived from recorded arms rather than claims.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 52f2055b65..c56de27fef lists only the fixture file and the evidence fragment, both inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: the base arm reinstates the regression \u2014 the goal-less fixture node reddens exactly the four queue_dispatch cases at base-gate.log:22-30 with the missing-goal TypeError \u2014 so the guard demonstrably fires.\nSCORE fit: 18\nJUSTIFICATION fit: the added key joins the literal at tests/test_a_review_passes_its_sessions_queue_cap.py:38-43 in TaskNode's own field order, and neither commit subject carries a plan, sprint, ticket or run identifier.\nSCORE reuse: 14\nJUSTIFICATION reuse: the diff adds no definition, but the node literal it extends stands in for the owner at reckon/crew/node.py:838 TaskNode.as_dict, the shape the dispatch path really stores, so the fixture restates rather than extends it.\nFINDING tests/test_a_review_passes_its_sessions_queue_cap.py:37 non-blocking: the fixture hand-builds the queued node dict instead of deriving it from TaskNode.as_dict() at reckon/crew/node.py:838, so the next field TaskNode declares without a default breaks these four cases with the same TypeError.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-passes-its-sessions-queue-cap.html:10 non-blocking: the fragment asserts every arm ran as an all_debug job with SLURM_JOB_ID unset, but no gate log records a partition, job id or environment, so the done_when's condition is claimed rather than shown.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-passes-its-sessions-queue-cap.html:49 non-blocking: the head arm is recorded at 704f7a5ad1 rather than the delivered head c56de27fef, so the receipt does not name the revision being promoted, though the delta is docs-only and the test file is identical at both.",
+  "review_run_id": "r-20261116T133917104129-review-of-qwnw-red-file-a-review-passes-its-sessions-queue-cap-c56de27fefea",
+  "reviewed_base_sha": "52f2055b65a61a81b796c7e5e315e5a003801a59",
+  "reviewed_head_sha": "c56de27fefea4872ccfe9b4b4dd45efac58128f2",
+  "reviewed_run_id": "r-20261116T104605930332-qwnw-red-file-a-review-passes-its-sessions-queue-cap",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T133917104129-review-of-qwnw-red-file-a-review-passes-its-sessions-queue-cap-c56de27fefea"
+  },
+  "reviewer_run_id": "r-20261116T133917104129-review-of-qwnw-red-file-a-review-passes-its-sessions-queue-cap-c56de27fefea",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T22:02:18.515493+00:00",
+  "total": 109
+}
