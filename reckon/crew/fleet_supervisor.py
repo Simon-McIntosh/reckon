@@ -2769,6 +2769,13 @@ class StationProcess:
             self.process.wait()
 
 
+def _mark_allocation_lifetime(environ: Mapping[str, str], name: str) -> None:
+    """Tell the shell holder about explicit retirement or standby promotion."""
+    directory = environ.get("FLEET_LIFETIME_DIRECTORY")
+    if directory:
+        (Path(directory) / name).touch()
+
+
 def handle_line(
     line: str,
     runtime: Path,
@@ -2824,6 +2831,7 @@ def handle_line(
         except (OSError, ValueError, KeyError, TypeError) as exc:
             log(f"spawn failed for {run_id}: {type(exc).__name__}: {exc}")
     elif request.verb == "stop":
+        _mark_allocation_lifetime(os.environ if environ is None else environ, "stop")
         log("stopping")
         return False
     elif request.verb == "":
@@ -2919,6 +2927,7 @@ def serve(
         is_standby = True
     if not is_standby:
         publish_record(runtime, environ)
+        _mark_allocation_lifetime(environ, "active")
         reserve_fleet_projects(environ)
     fifo = runtime / REQUEST_FIFO_NAME
     with suppress(FileNotFoundError):
@@ -2955,6 +2964,7 @@ def serve(
         if not is_standby:
             return
         publish_record(runtime, environ)
+        _mark_allocation_lifetime(environ, "active")
         reserve_fleet_projects(environ)
         is_standby = False
         services.reload()

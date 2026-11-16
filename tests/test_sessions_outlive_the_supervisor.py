@@ -106,6 +106,30 @@ def test_deliberate_retirement_exits_the_holder(tmp_path):
         _finish(process, log)
 
 
+def test_promoted_standby_stays_active_across_a_crash(tmp_path):
+    home = _home(
+        tmp_path,
+        """echo "$*" >> "$HOME/modes"
+if [ ! -f "$FLEET_LIFETIME_DIRECTORY/active" ]; then
+    : > "$FLEET_LIFETIME_DIRECTORY/active"
+else
+    : > "$FLEET_LIFETIME_DIRECTORY/stop"
+fi""",
+    )
+    script = fleet_node.generate_hold_script(
+        fleet_node.fleet_size({}),
+        log_path=home / "batch.log",
+        standby=True,
+        environ={"PATH": os.environ["PATH"]},
+    )
+    process, log = _launch(home, script)
+    try:
+        assert process.wait(timeout=10) == 0
+        assert (home / "modes").read_text().splitlines() == ["--standby", ""]
+    finally:
+        _finish(process, log)
+
+
 def test_the_holder_uses_the_service_backoff(monkeypatch, tmp_path):
     monkeypatch.setattr(fleet_supervisor, "FIRST_BACKOFF_SECONDS", 7.0)
     monkeypatch.setattr(fleet_supervisor, "BACKOFF_CAP_SECONDS", 80.0)
@@ -116,6 +140,7 @@ def test_the_holder_uses_the_service_backoff(monkeypatch, tmp_path):
     assert "ran >= 120" in script
 
 
+@pytest.mark.timeout(550)
 @pytest.mark.skipif(
     os.environ.get("RECKON_FLEET_REHEARSAL") != "1",
     reason="requires an explicit all_debug scheduler rehearsal",
@@ -234,13 +259,20 @@ def test_sessions_survive_a_killed_supervisor_and_a_broken_interpreter(tmp_path)
             assert second["step"] == first["step"]
             assert float(receipt["starts"][1]) - float(receipt["starts"][0]) < 10
             # Only the decoy copy is replaced; the account's interpreter is untouched.
+            interpreter.unlink()
             interpreter.write_text("broken interpreter\n")
+            interpreter.chmod(0o755)
             before = len(receipt["starts"])
+            attempts_before = (
+                (receipts / f"rehearsal-{job}.log")
+                .read_text()
+                .count("fleet supervisor starting")
+            )
             (work / "break").touch()
             time.sleep(61)
             batch_log = (receipts / f"rehearsal-{job}.log").read_text()
             receipt["broken_restart_count"] = (
-                batch_log.count("fleet supervisor exited") - 1
+                batch_log.count("fleet supervisor starting") - attempts_before
             )
             receipt["broken_queue"] = query("squeue", "-h", "-j", job, "-o", "%T")
             receipt_path.write_text(json.dumps(receipt, indent=2))
@@ -300,7 +332,7 @@ os.kill(first['supervisor'], signal.SIGKILL)
 (work / 'killed').touch()
 time.sleep(29)
 def alive(pid):
-    try: os.kill(pid, 0); return True
+    try: os.kill(pid, 0); return Path(f"/proc/{pid}/stat").read_text().split(") ", 1)[1][0] != "Z"
     except ProcessLookupError: return False
 (work / 'survivors.json').write_text(json.dumps({name: alive(first[name]) for name in ('descendant', 'step')}))
 while not (work / 'break').exists(): time.sleep(.1)
