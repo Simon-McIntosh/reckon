@@ -409,7 +409,11 @@ def _record_rows(
             query += f'LEFT JOIN "{schema}".run_details d ON r.run_id = d.run_id'
             clauses = []
             if project is not None:
-                clauses.append("r.project = ?")
+                # Identity and node lookups must not fall back to walking the
+                # project's history after the activity range selected its ids.
+                clauses.append(
+                    "+r.project = ?" if batch is not None or node else "r.project = ?"
+                )
                 params.append(project)
             if batch is not None:
                 clauses.append(f"r.run_id IN ({','.join('?' for _ in batch)})")
