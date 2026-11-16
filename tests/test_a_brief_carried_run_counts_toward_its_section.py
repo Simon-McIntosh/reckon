@@ -83,10 +83,11 @@ def _record(
         role="implement",
         spec_level="exact",
         backend="worker",
-        agent={"backend": "worker", "model": "concrete"},
+        agent={"backend": "worker", "model": "concrete", "effort": "high"},
         node_definition=definition,
         dispatched_at="2026-01-02T00:00:00Z",
         completed_at="2026-01-02T00:10:00Z",
+        completed_at_source="stream_mtime",
         brief=BRIEF,
         worker_seconds=worker_seconds,
     )
@@ -212,8 +213,8 @@ def test_the_outcome_hold_names_the_run_that_followed_it(tmp_path: Path) -> None
     store = _store(tmp_path)
     rows = _rows(store)
     holds = [
-        {"node": "brief-landed", "plan": NAMED, "held_at": "2026-01-02T00:00:00Z"},
-        {"node": "brief-unplanned", "plan": NAMED, "held_at": "2026-01-02T00:00:00Z"},
+        {"node": "brief-landed", "plan": NAMED, "held_at": "2026-01-01T00:00:00Z"},
+        {"node": "brief-unplanned", "plan": NAMED, "held_at": "2026-01-01T00:00:00Z"},
     ]
 
     summary = outcomes_module.summarize({PROJECT: rows}, {PROJECT: holds})
