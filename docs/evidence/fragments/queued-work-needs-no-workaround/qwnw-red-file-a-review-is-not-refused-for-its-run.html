@@ -42,5 +42,13 @@ EXIT=0
 58 passed in 55.63s
 EXIT=0</pre>
 <p>The twenty-one pre-spawn lines are the only change either side carries in that path, so the merged file differs from primary only by the terminal-verdict bound and its comment. <code>ruff check</code> reports the same single pre-existing SIM102 finding at line 3254 that base and primary both carry, and <code>ruff format --check</code> is clean.</p>
-<p>Merging primary's bound moved one id in the importing arm: <code>tests/test_review_reflex_sweep.py::test_the_review_dispatch_waives_the_unreconciled_fence</code> is red on the primary branch itself — in a tree of <code>ef83af75fa</code> alone it reports <code>dispatched: []</code>, which is the defect this node repairs — and at this merge head it dispatches its review and then reads no <code>unreconciled_override</code> on the review run's pointer (<code>KeyError</code>). The id fails in the base arm as well, so the arm adds no failure; the remaining gap is the reflex path's own record and is reported under outside scope rather than repaired here.</p>
+<h4 id="qwnw-red-file-a-review-is-not-refused-for-its-run-arm-merge">Arm at the merge head</h4>
+<p>The same 216 modules were run again at the merge head <code>44b546bde9</code>. The base arm keeps 114 failing-or-erroring ids and the merge head keeps 74, so 42 ids that were red at base are green. Two ids are green at base and red at the merge head, and neither is this node&#x27;s:</p>
+<pre># merge head 63 failed, 1717 passed, 13 errors in 1542.91s
+# base   105 failed, 1675 passed, 13 errors
+# ids only at merge head: 2
+# ids only at base:        42
+EXIT=1</pre>
+<p>Both added ids live in <code>tests/test_a_classification_read_creates_no_run_directory.py</code>, and both fail in a tree of primary <code>ef83af75fa</code> alone, with neither side of this node applied: the read leaves <code>classification.json</code> and <code>launcher-host-observation.json</code> in the run directory. Primary&#x27;s own spawn-evidence bound introduced that write, so the pair is reported under outside scope.</p>
+<p>One id that is red at base and red at the merge head changed its failure mode rather than its verdict: <code>tests/test_review_reflex_sweep.py::test_the_review_dispatch_waives_the_unreconciled_fence</code> reports <code>dispatched: []</code> at primary alone, and at the merge head it dispatches its review and then reads no <code>unreconciled_override</code> on the review run&#x27;s pointer (<code>KeyError</code>). It fails at base too, so the arm adds no failure; the remaining gap is the reflex path&#x27;s own record and it is left under outside scope.</p>
 </section>
