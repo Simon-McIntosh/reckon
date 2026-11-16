@@ -157,8 +157,13 @@ def _invoke(
 
 
 def _payload(result) -> dict:
-    """Read the documented JSON response ahead of Click's stderr echo."""
-    return json.loads(result.output.splitlines()[0])
+    """Read the JSON document the command writes to stdout.
+
+    Dispatch notices go to stderr, and Click 8.2's ``Result.output`` interleaves
+    the two streams in write order, so the notice lands first there. Stdout is
+    the one channel that carries the document.
+    """
+    return json.loads(result.stdout.splitlines()[0])
 
 
 def _observe_window(
