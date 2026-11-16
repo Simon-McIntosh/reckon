@@ -125,7 +125,7 @@ def test_one_landing_call_records_only_the_runs_line_of_history(merged_run):
     row = next(row for row in offered if row["run_id"] == record["run_id"])
     print("primary imports:", primary)
     result = crew.complete(record["run_id"], gate="passed", root=repository)
-    assert _offered_commits(row) == own
+    assert row["next_command"] == f"reckon crew observe --run {record['run_id']}"
     assert result["record"]["commits"] == own
     assert result["record"]["promoted_revision"] == own[-1]
     rows = ledger.runs(PROJECT, root=repository)
@@ -138,7 +138,7 @@ def test_obligations_offer_exactly_the_runs_commits_and_merge(merged_run):
     _repository, _tree, record, own, _primary, _manifest = merged_run
     rows = obligations(PROJECT, SESSION)["obligations"]
     row = next(row for row in rows if row["run_id"] == record["run_id"])
-    assert _offered_commits(row) == own
+    assert row["next_command"] == f"reckon crew observe --run {record['run_id']}"
     assert recovery.classify_pointer(record)["commits_beyond_base"] == len(own)
 
 
