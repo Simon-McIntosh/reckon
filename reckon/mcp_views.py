@@ -4016,6 +4016,7 @@ CREW_VIEWS: tuple[str, ...] = (
     "review-need",
     "plan-review",
     "findings",
+    "decisions",
 )
 
 
@@ -4459,6 +4460,18 @@ def serve_crew_view(
     from reckon.project_state import ProjectStateError
     from reckon.serve import load_mounts
 
+    if view == "decisions":
+        from reckon.crew.lead_decisions import read_decisions
+
+        try:
+            return read_decisions(project)
+        except (OSError, ValueError, TypeError) as exc:
+            return {
+                "ok": False,
+                "error": "decision_error",
+                "view": view,
+                "detail": str(exc),
+            }
     if view == "fleet":
         try:
             return {

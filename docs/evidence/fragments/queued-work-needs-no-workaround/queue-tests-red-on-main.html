@@ -1,0 +1,3043 @@
+<section id="qwnw-queue-tests-red-on-main-are-repaired-codex-logs">
+<h3>Queue and readiness repair: measured runs</h3>
+<p>The historical control and assigned base each reproduce 24 failed, 13 passed. The repaired four-file gate reports 41 passed. All executions used separate all_debug jobs with SLURM_JOB_ID unset at submission. Logs below retain their commands, revisions, import paths and exit receipts.</p>
+<h4>Historical negative control</h4>
+<pre># revision: fdd817d3ff7b745bc8a0e7766f3d156e95ad3419
+# tree: /tmp/queue-repair-a076l0i4/negative
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_queue_dag_waits.py tests/test_dead_wait_blocks_only_its_request.py tests/test_an_admission_pass_reads_the_roadmap_once.py tests/test_a_dispatch_reads_one_sections_readiness.py
+# measurement_module: /tmp/queue-repair-a076l0i4/negative/reckon/crew/dispatching/requests.py
+# measurement_cwd: /tmp/queue-repair-a076l0i4/negative
+FF.F......FFFFFFFFFF.FFFFFFFFFF.....F                                    [100%]
+=================================== FAILURES ===================================
+________________ test_foreign_section_waits_for_its_declaration ________________
+
+projects = (PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_foreign_section_waits_for0/checkout&#x27;), PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_foreign_section_waits_for0/other-checkout&#x27;))
+
+    def test_foreign_section_waits_for_its_declaration(projects: tuple[Path, Path]) -&gt; None:
+        first, second = projects
+        fixtures._declare_wait_refs(first, section=&quot;s2&quot;, refs=[&quot;other:plan-b#s2&quot;])
+&gt;       stored = _queue(first, _node(&quot;waiting&quot;, &quot;s2&quot;), run_ids={&quot;waiting&quot;: &quot;r-waiting&quot;})
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_queue_dag_waits.py:161: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_queue_dag_waits.py:101: in _queue
+    return queue_admission.queue_requests(
+reckon/crew/admission/release.py:555: in queue_requests
+    stored = dispatch_queue_requests(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+nodes = [TaskNode(id=&#x27;waiting&#x27;, goal=&#x27;build the waiting work&#x27;, plan=&#x27;plan-a&#x27;, section=&#x27;s2&#x27;, after=[], waits_only_after=False, ...ated_hours=None, requires_decisions=[], peer_scopes={}, images=[], inputs=[], compares_with=&#x27;&#x27;, admission_findings=[])]
+project = &#x27;proj&#x27;, session = &#x27;coordinator-a&#x27;
+repo_root = PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_foreign_section_waits_for0/checkout&#x27;)
+config = {&#x27;default_backend&#x27;: &#x27;clive&#x27;, &#x27;local_backend&#x27;: &#x27;clive&#x27;, &#x27;backends&#x27;: {&#x27;clive&#x27;: {&#x27;launch&#x27;: &#x27;cli&#x27;, &#x27;command&#x27;: &#x27;codex&#x27;, &#x27;model&#x27;: &#x27;local-model&#x27;, &#x27;effort&#x27;: &#x27;medium&#x27;, ...}}, &#x27;roles&#x27;: {&#x27;implement&#x27;: {}}, ...}
+backend_name = &#x27;&#x27;, launch_kind = &#x27;cli&#x27;, run_ids = {&#x27;waiting&#x27;: &#x27;r-waiting&#x27;}
+cap = None, allow_unreviewed_plan = False
+
+    def queue_requests(
+        nodes: Iterable[TaskNode],
+        *,
+        project: str,
+        session: str,
+        repo_root: str | Path,
+        config: Mapping[str, Any],
+        backend_name: str = &quot;&quot;,
+        launch_kind: str = &quot;cli&quot;,
+        run_ids: Mapping[str, str] | None = None,
+        cap: int | None = None,
+        allow_unreviewed_plan: bool = False,
+    ) -&gt; dict[str, Any]:
+        &quot;&quot;&quot;Validate a request batch, then use dispatch&#x27;s queue writer for each.
+    
+        ``allow_unreviewed_plan`` carries the plan-review waiver the same way a
+        single dispatch does: it rides the request&#x27;s ``dispatch_options``, which
+        admission reads before it holds the request on the review gate. A caller
+        that leaves it unset queues a request the gate judges on its own.
+        &quot;&quot;&quot;
+        from reckon.crew import queue_admission
+        from reckon.crew.dispatch_admission import (
+            INPUTS_PROPERTY,
+            _require_write_paths_in_authority,
+            admission_domain_findings,
+            admission_refusals_and_warnings,
+        )
+    
+        nodes = list(nodes)
+        lane = str(backend_name or &quot;&quot;).strip() or str(
+            config.get(&quot;local_backend&quot;) or config.get(&quot;default_backend&quot;) or &quot;&quot;
+        )
+        if not lane:
+            raise CrewError(&quot;queueing a request names no backend to queue it for&quot;)
+        assigned_ids = {
+            node.id: str((run_ids or {}).get(node.id) or new_run_id(node.id))
+            for node in nodes
+        }
+        ceiling = resolved_time_ceiling(config)
+        # The waits are resolved before the node contract is judged, because a
+        # request that waits may name an input its upstream is still to write: that
+        # absence is not a refusal at queue time, and the launch re-checks every
+        # input against the tree the work will actually run in.
+        live = list_live()
+        refs_by_run, projects_by_run = queue_admission._validated_batch_waits(
+            nodes,
+            assigned_ids,
+            project=project,
+            repo_root=repo_root,
+            live=live,
+        )
+        for node in nodes:
+            # The whole node contract is judged here, beside the admission domain,
+            # so a batch entry that a single dispatch would refuse is refused while
+            # it is still a request rather than surfaced later at its launch, where
+            # the refusal costs the queue position and reaches nobody. The role&#x27;s
+            # overlay is resolved against the lane the request records, so the
+            # execution verdict does not depend on whatever lane admission later
+            # binds.
+            _lane_name, effective_backend = resolve_role_override(
+                config, node.role, node.spec_level, lane
+            )
+            # The write-scope fence is judged here on the authority a launch
+            # resolves, so a batch entry whose path lies outside the repository and
+            # the delivery directories is refused while it is still a request. Left
+            # to the launch, that refusal would cost the queue position and reach
+            # nobody, and the entry could never run.
+            _require_write_paths_in_authority(
+                node, resolve_dispatch_authority(project, repo_root)
+            )
+            findings = admission_domain_findings(
+                node, project=project, repository=repo_root
+            )
+            if refs_by_run.get(assigned_ids[node.id]):
+                # A request that waits may name a path its upstream creates, so an
+                # input the repository does not hold is deferred rather than
+                # refused: it is judged at the release, against the tree the launch
+                # reads, and refused there if it genuinely is still absent.
+                findings = [
+                    finding
+                    for finding in findings
+                    if str(finding.get(&quot;property&quot;) or &quot;&quot;) != INPUTS_PROPERTY
+                ]
+            refusals, _warnings = admission_refusals_and_warnings(findings)
+            verdict = validate_node(
+                node,
+                budget_ceiling=ceiling,
+                execution_capable=effective_backend.get(&quot;execution_capable&quot;),
+                repository=repo_root,
+            )
+            refusals.extend(verdict.findings)
+            if refusals:
+&gt;               raise CrewError(
+                    f&quot;node {node.id!r} is refused at queue time: &quot;
+                    + &quot;; &quot;.join(str(finding.get(&quot;detail&quot;) or &quot;&quot;) for finding in refusals)
+                )
+E               reckon.crew.CrewError: node &#x27;waiting&#x27; is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+
+reckon/crew/dispatching/requests.py:216: CrewError
+______________ test_foreign_section_already_done_queues_directly _______________
+
+projects = (PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_foreign_section_already_d0/checkout&#x27;), PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_foreign_section_already_d0/other-checkout&#x27;))
+
+    def test_foreign_section_already_done_queues_directly(
+        projects: tuple[Path, Path],
+    ) -&gt; None:
+        first, second = projects
+        fixtures._declare_wait_refs(first, section=&quot;s2&quot;, refs=[&quot;other:plan-b#s2&quot;])
+        _write_other_plan(second, declarations={&quot;s1&quot;: &quot;implementable&quot;, &quot;s2&quot;: &quot;done&quot;})
+        _git(second, &quot;add&quot;, &quot;--&quot;, &quot;docs/plans/plan-b.html&quot;)
+        _git(second, &quot;commit&quot;, &quot;-q&quot;, &quot;-m&quot;, &quot;chore: finish section&quot;)
+&gt;       stored = _queue(first, _node(&quot;waiting&quot;, &quot;s2&quot;), run_ids={&quot;waiting&quot;: &quot;r-waiting&quot;})
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_queue_dag_waits.py:182: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_queue_dag_waits.py:101: in _queue
+    return queue_admission.queue_requests(
+reckon/crew/admission/release.py:555: in queue_requests
+    stored = dispatch_queue_requests(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+nodes = [TaskNode(id=&#x27;waiting&#x27;, goal=&#x27;build the waiting work&#x27;, plan=&#x27;plan-a&#x27;, section=&#x27;s2&#x27;, after=[], waits_only_after=False, ...ated_hours=None, requires_decisions=[], peer_scopes={}, images=[], inputs=[], compares_with=&#x27;&#x27;, admission_findings=[])]
+project = &#x27;proj&#x27;, session = &#x27;coordinator-a&#x27;
+repo_root = PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_foreign_section_already_d0/checkout&#x27;)
+config = {&#x27;default_backend&#x27;: &#x27;clive&#x27;, &#x27;local_backend&#x27;: &#x27;clive&#x27;, &#x27;backends&#x27;: {&#x27;clive&#x27;: {&#x27;launch&#x27;: &#x27;cli&#x27;, &#x27;command&#x27;: &#x27;codex&#x27;, &#x27;model&#x27;: &#x27;local-model&#x27;, &#x27;effort&#x27;: &#x27;medium&#x27;, ...}}, &#x27;roles&#x27;: {&#x27;implement&#x27;: {}}, ...}
+backend_name = &#x27;&#x27;, launch_kind = &#x27;cli&#x27;, run_ids = {&#x27;waiting&#x27;: &#x27;r-waiting&#x27;}
+cap = None, allow_unreviewed_plan = False
+
+    def queue_requests(
+        nodes: Iterable[TaskNode],
+        *,
+        project: str,
+        session: str,
+        repo_root: str | Path,
+        config: Mapping[str, Any],
+        backend_name: str = &quot;&quot;,
+        launch_kind: str = &quot;cli&quot;,
+        run_ids: Mapping[str, str] | None = None,
+        cap: int | None = None,
+        allow_unreviewed_plan: bool = False,
+    ) -&gt; dict[str, Any]:
+        &quot;&quot;&quot;Validate a request batch, then use dispatch&#x27;s queue writer for each.
+    
+        ``allow_unreviewed_plan`` carries the plan-review waiver the same way a
+        single dispatch does: it rides the request&#x27;s ``dispatch_options``, which
+        admission reads before it holds the request on the review gate. A caller
+        that leaves it unset queues a request the gate judges on its own.
+        &quot;&quot;&quot;
+        from reckon.crew import queue_admission
+        from reckon.crew.dispatch_admission import (
+            INPUTS_PROPERTY,
+            _require_write_paths_in_authority,
+            admission_domain_findings,
+            admission_refusals_and_warnings,
+        )
+    
+        nodes = list(nodes)
+        lane = str(backend_name or &quot;&quot;).strip() or str(
+            config.get(&quot;local_backend&quot;) or config.get(&quot;default_backend&quot;) or &quot;&quot;
+        )
+        if not lane:
+            raise CrewError(&quot;queueing a request names no backend to queue it for&quot;)
+        assigned_ids = {
+            node.id: str((run_ids or {}).get(node.id) or new_run_id(node.id))
+            for node in nodes
+        }
+        ceiling = resolved_time_ceiling(config)
+        # The waits are resolved before the node contract is judged, because a
+        # request that waits may name an input its upstream is still to write: that
+        # absence is not a refusal at queue time, and the launch re-checks every
+        # input against the tree the work will actually run in.
+        live = list_live()
+        refs_by_run, projects_by_run = queue_admission._validated_batch_waits(
+            nodes,
+            assigned_ids,
+            project=project,
+            repo_root=repo_root,
+            live=live,
+        )
+        for node in nodes:
+            # The whole node contract is judged here, beside the admission domain,
+            # so a batch entry that a single dispatch would refuse is refused while
+            # it is still a request rather than surfaced later at its launch, where
+            # the refusal costs the queue position and reaches nobody. The role&#x27;s
+            # overlay is resolved against the lane the request records, so the
+            # execution verdict does not depend on whatever lane admission later
+            # binds.
+            _lane_name, effective_backend = resolve_role_override(
+                config, node.role, node.spec_level, lane
+            )
+            # The write-scope fence is judged here on the authority a launch
+            # resolves, so a batch entry whose path lies outside the repository and
+            # the delivery directories is refused while it is still a request. Left
+            # to the launch, that refusal would cost the queue position and reach
+            # nobody, and the entry could never run.
+            _require_write_paths_in_authority(
+                node, resolve_dispatch_authority(project, repo_root)
+            )
+            findings = admission_domain_findings(
+                node, project=project, repository=repo_root
+            )
+            if refs_by_run.get(assigned_ids[node.id]):
+                # A request that waits may name a path its upstream creates, so an
+                # input the repository does not hold is deferred rather than
+                # refused: it is judged at the release, against the tree the launch
+                # reads, and refused there if it genuinely is still absent.
+                findings = [
+                    finding
+                    for finding in findings
+                    if str(finding.get(&quot;property&quot;) or &quot;&quot;) != INPUTS_PROPERTY
+                ]
+            refusals, _warnings = admission_refusals_and_warnings(findings)
+            verdict = validate_node(
+                node,
+                budget_ceiling=ceiling,
+                execution_capable=effective_backend.get(&quot;execution_capable&quot;),
+                repository=repo_root,
+            )
+            refusals.extend(verdict.findings)
+            if refusals:
+&gt;               raise CrewError(
+                    f&quot;node {node.id!r} is refused at queue time: &quot;
+                    + &quot;; &quot;.join(str(finding.get(&quot;detail&quot;) or &quot;&quot;) for finding in refusals)
+                )
+E               reckon.crew.CrewError: node &#x27;waiting&#x27; is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+
+reckon/crew/dispatching/requests.py:216: CrewError
+________________ test_batch_and_dispatch_share_the_queue_writer ________________
+
+projects = (PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_batch_and_dispatch_share_0/checkout&#x27;), PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_batch_and_dispatch_share_0/other-checkout&#x27;))
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7fd422265260&gt;
+
+    def test_batch_and_dispatch_share_the_queue_writer(
+        projects: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+    ) -&gt; None:
+        first, _ = projects
+        calls: list[str] = []
+        original = dispatch_module._queue_validated_waits
+    
+        def record_write(pointer, **kwargs):
+            calls.append(str(pointer[&quot;run_id&quot;]))
+            return original(pointer, **kwargs)
+    
+        monkeypatch.setattr(dispatch_module, &quot;_queue_validated_waits&quot;, record_write)
+&gt;       _queue(first, _node(&quot;batch&quot;, &quot;s2&quot;), run_ids={&quot;batch&quot;: &quot;r-batch&quot;})
+
+tests/test_queue_dag_waits.py:217: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_queue_dag_waits.py:101: in _queue
+    return queue_admission.queue_requests(
+reckon/crew/admission/release.py:555: in queue_requests
+    stored = dispatch_queue_requests(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+nodes = [TaskNode(id=&#x27;batch&#x27;, goal=&#x27;build the waiting work&#x27;, plan=&#x27;plan-a&#x27;, section=&#x27;s2&#x27;, after=[], waits_only_after=False, br...ated_hours=None, requires_decisions=[], peer_scopes={}, images=[], inputs=[], compares_with=&#x27;&#x27;, admission_findings=[])]
+project = &#x27;proj&#x27;, session = &#x27;coordinator-a&#x27;
+repo_root = PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_batch_and_dispatch_share_0/checkout&#x27;)
+config = {&#x27;default_backend&#x27;: &#x27;clive&#x27;, &#x27;local_backend&#x27;: &#x27;clive&#x27;, &#x27;backends&#x27;: {&#x27;clive&#x27;: {&#x27;launch&#x27;: &#x27;cli&#x27;, &#x27;command&#x27;: &#x27;codex&#x27;, &#x27;model&#x27;: &#x27;local-model&#x27;, &#x27;effort&#x27;: &#x27;medium&#x27;, ...}}, &#x27;roles&#x27;: {&#x27;implement&#x27;: {}}, ...}
+backend_name = &#x27;&#x27;, launch_kind = &#x27;cli&#x27;, run_ids = {&#x27;batch&#x27;: &#x27;r-batch&#x27;}
+cap = None, allow_unreviewed_plan = False
+
+    def queue_requests(
+        nodes: Iterable[TaskNode],
+        *,
+        project: str,
+        session: str,
+        repo_root: str | Path,
+        config: Mapping[str, Any],
+        backend_name: str = &quot;&quot;,
+        launch_kind: str = &quot;cli&quot;,
+        run_ids: Mapping[str, str] | None = None,
+        cap: int | None = None,
+        allow_unreviewed_plan: bool = False,
+    ) -&gt; dict[str, Any]:
+        &quot;&quot;&quot;Validate a request batch, then use dispatch&#x27;s queue writer for each.
+    
+        ``allow_unreviewed_plan`` carries the plan-review waiver the same way a
+        single dispatch does: it rides the request&#x27;s ``dispatch_options``, which
+        admission reads before it holds the request on the review gate. A caller
+        that leaves it unset queues a request the gate judges on its own.
+        &quot;&quot;&quot;
+        from reckon.crew import queue_admission
+        from reckon.crew.dispatch_admission import (
+            INPUTS_PROPERTY,
+            _require_write_paths_in_authority,
+            admission_domain_findings,
+            admission_refusals_and_warnings,
+        )
+    
+        nodes = list(nodes)
+        lane = str(backend_name or &quot;&quot;).strip() or str(
+            config.get(&quot;local_backend&quot;) or config.get(&quot;default_backend&quot;) or &quot;&quot;
+        )
+        if not lane:
+            raise CrewError(&quot;queueing a request names no backend to queue it for&quot;)
+        assigned_ids = {
+            node.id: str((run_ids or {}).get(node.id) or new_run_id(node.id))
+            for node in nodes
+        }
+        ceiling = resolved_time_ceiling(config)
+        # The waits are resolved before the node contract is judged, because a
+        # request that waits may name an input its upstream is still to write: that
+        # absence is not a refusal at queue time, and the launch re-checks every
+        # input against the tree the work will actually run in.
+        live = list_live()
+        refs_by_run, projects_by_run = queue_admission._validated_batch_waits(
+            nodes,
+            assigned_ids,
+            project=project,
+            repo_root=repo_root,
+            live=live,
+        )
+        for node in nodes:
+            # The whole node contract is judged here, beside the admission domain,
+            # so a batch entry that a single dispatch would refuse is refused while
+            # it is still a request rather than surfaced later at its launch, where
+            # the refusal costs the queue position and reaches nobody. The role&#x27;s
+            # overlay is resolved against the lane the request records, so the
+            # execution verdict does not depend on whatever lane admission later
+            # binds.
+            _lane_name, effective_backend = resolve_role_override(
+                config, node.role, node.spec_level, lane
+            )
+            # The write-scope fence is judged here on the authority a launch
+            # resolves, so a batch entry whose path lies outside the repository and
+            # the delivery directories is refused while it is still a request. Left
+            # to the launch, that refusal would cost the queue position and reach
+            # nobody, and the entry could never run.
+            _require_write_paths_in_authority(
+                node, resolve_dispatch_authority(project, repo_root)
+            )
+            findings = admission_domain_findings(
+                node, project=project, repository=repo_root
+            )
+            if refs_by_run.get(assigned_ids[node.id]):
+                # A request that waits may name a path its upstream creates, so an
+                # input the repository does not hold is deferred rather than
+                # refused: it is judged at the release, against the tree the launch
+                # reads, and refused there if it genuinely is still absent.
+                findings = [
+                    finding
+                    for finding in findings
+                    if str(finding.get(&quot;property&quot;) or &quot;&quot;) != INPUTS_PROPERTY
+                ]
+            refusals, _warnings = admission_refusals_and_warnings(findings)
+            verdict = validate_node(
+                node,
+                budget_ceiling=ceiling,
+                execution_capable=effective_backend.get(&quot;execution_capable&quot;),
+                repository=repo_root,
+            )
+            refusals.extend(verdict.findings)
+            if refusals:
+&gt;               raise CrewError(
+                    f&quot;node {node.id!r} is refused at queue time: &quot;
+                    + &quot;; &quot;.join(str(finding.get(&quot;detail&quot;) or &quot;&quot;) for finding in refusals)
+                )
+E               reckon.crew.CrewError: node &#x27;batch&#x27; is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+
+reckon/crew/dispatching/requests.py:216: CrewError
+_______________ test_unshipped_plan_dependency_holds_its_section _______________
+
+projects = (PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_unshipped_plan_dependency0/checkout&#x27;), PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_unshipped_plan_dependency0/other-checkout&#x27;))
+
+    def test_unshipped_plan_dependency_holds_its_section(
+        projects: tuple[Path, Path],
+    ) -&gt; None:
+        first, _ = projects
+        path = first / &quot;docs&quot; / &quot;plans&quot; / &quot;plan-a.html&quot;
+        text = path.read_text(encoding=&quot;utf-8&quot;)
+        text = text.replace(
+            &#x27;&lt;meta name=&quot;plan-status&quot; content=&quot;active&quot;&gt;&#x27;,
+            &#x27;&lt;meta name=&quot;plan-status&quot; content=&quot;active&quot;&gt;&#x27;
+            &#x27;&lt;meta name=&quot;plan-depends-on&quot; content=&quot;other:plan-b&quot;&gt;&#x27;,
+        )
+        path.write_text(text, encoding=&quot;utf-8&quot;)
+        _git(first, &quot;add&quot;, &quot;--&quot;, &quot;docs/plans/plan-a.html&quot;)
+        _git(first, &quot;commit&quot;, &quot;-q&quot;, &quot;-m&quot;, &quot;chore: declare dependency&quot;)
+    
+&gt;       stored = _queue(first, _node(&quot;waiting&quot;, &quot;s1&quot;), run_ids={&quot;waiting&quot;: &quot;r-waiting&quot;})
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_queue_dag_waits.py:288: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_queue_dag_waits.py:101: in _queue
+    return queue_admission.queue_requests(
+reckon/crew/admission/release.py:555: in queue_requests
+    stored = dispatch_queue_requests(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+nodes = [TaskNode(id=&#x27;waiting&#x27;, goal=&#x27;build the waiting work&#x27;, plan=&#x27;plan-a&#x27;, section=&#x27;s1&#x27;, after=[], waits_only_after=False, ...ated_hours=None, requires_decisions=[], peer_scopes={}, images=[], inputs=[], compares_with=&#x27;&#x27;, admission_findings=[])]
+project = &#x27;proj&#x27;, session = &#x27;coordinator-a&#x27;
+repo_root = PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_unshipped_plan_dependency0/checkout&#x27;)
+config = {&#x27;default_backend&#x27;: &#x27;clive&#x27;, &#x27;local_backend&#x27;: &#x27;clive&#x27;, &#x27;backends&#x27;: {&#x27;clive&#x27;: {&#x27;launch&#x27;: &#x27;cli&#x27;, &#x27;command&#x27;: &#x27;codex&#x27;, &#x27;model&#x27;: &#x27;local-model&#x27;, &#x27;effort&#x27;: &#x27;medium&#x27;, ...}}, &#x27;roles&#x27;: {&#x27;implement&#x27;: {}}, ...}
+backend_name = &#x27;&#x27;, launch_kind = &#x27;cli&#x27;, run_ids = {&#x27;waiting&#x27;: &#x27;r-waiting&#x27;}
+cap = None, allow_unreviewed_plan = False
+
+    def queue_requests(
+        nodes: Iterable[TaskNode],
+        *,
+        project: str,
+        session: str,
+        repo_root: str | Path,
+        config: Mapping[str, Any],
+        backend_name: str = &quot;&quot;,
+        launch_kind: str = &quot;cli&quot;,
+        run_ids: Mapping[str, str] | None = None,
+        cap: int | None = None,
+        allow_unreviewed_plan: bool = False,
+    ) -&gt; dict[str, Any]:
+        &quot;&quot;&quot;Validate a request batch, then use dispatch&#x27;s queue writer for each.
+    
+        ``allow_unreviewed_plan`` carries the plan-review waiver the same way a
+        single dispatch does: it rides the request&#x27;s ``dispatch_options``, which
+        admission reads before it holds the request on the review gate. A caller
+        that leaves it unset queues a request the gate judges on its own.
+        &quot;&quot;&quot;
+        from reckon.crew import queue_admission
+        from reckon.crew.dispatch_admission import (
+            INPUTS_PROPERTY,
+            _require_write_paths_in_authority,
+            admission_domain_findings,
+            admission_refusals_and_warnings,
+        )
+    
+        nodes = list(nodes)
+        lane = str(backend_name or &quot;&quot;).strip() or str(
+            config.get(&quot;local_backend&quot;) or config.get(&quot;default_backend&quot;) or &quot;&quot;
+        )
+        if not lane:
+            raise CrewError(&quot;queueing a request names no backend to queue it for&quot;)
+        assigned_ids = {
+            node.id: str((run_ids or {}).get(node.id) or new_run_id(node.id))
+            for node in nodes
+        }
+        ceiling = resolved_time_ceiling(config)
+        # The waits are resolved before the node contract is judged, because a
+        # request that waits may name an input its upstream is still to write: that
+        # absence is not a refusal at queue time, and the launch re-checks every
+        # input against the tree the work will actually run in.
+        live = list_live()
+        refs_by_run, projects_by_run = queue_admission._validated_batch_waits(
+            nodes,
+            assigned_ids,
+            project=project,
+            repo_root=repo_root,
+            live=live,
+        )
+        for node in nodes:
+            # The whole node contract is judged here, beside the admission domain,
+            # so a batch entry that a single dispatch would refuse is refused while
+            # it is still a request rather than surfaced later at its launch, where
+            # the refusal costs the queue position and reaches nobody. The role&#x27;s
+            # overlay is resolved against the lane the request records, so the
+            # execution verdict does not depend on whatever lane admission later
+            # binds.
+            _lane_name, effective_backend = resolve_role_override(
+                config, node.role, node.spec_level, lane
+            )
+            # The write-scope fence is judged here on the authority a launch
+            # resolves, so a batch entry whose path lies outside the repository and
+            # the delivery directories is refused while it is still a request. Left
+            # to the launch, that refusal would cost the queue position and reach
+            # nobody, and the entry could never run.
+            _require_write_paths_in_authority(
+                node, resolve_dispatch_authority(project, repo_root)
+            )
+            findings = admission_domain_findings(
+                node, project=project, repository=repo_root
+            )
+            if refs_by_run.get(assigned_ids[node.id]):
+                # A request that waits may name a path its upstream creates, so an
+                # input the repository does not hold is deferred rather than
+                # refused: it is judged at the release, against the tree the launch
+                # reads, and refused there if it genuinely is still absent.
+                findings = [
+                    finding
+                    for finding in findings
+                    if str(finding.get(&quot;property&quot;) or &quot;&quot;) != INPUTS_PROPERTY
+                ]
+            refusals, _warnings = admission_refusals_and_warnings(findings)
+            verdict = validate_node(
+                node,
+                budget_ceiling=ceiling,
+                execution_capable=effective_backend.get(&quot;execution_capable&quot;),
+                repository=repo_root,
+            )
+            refusals.extend(verdict.findings)
+            if refusals:
+&gt;               raise CrewError(
+                    f&quot;node {node.id!r} is refused at queue time: &quot;
+                    + &quot;; &quot;.join(str(finding.get(&quot;detail&quot;) or &quot;&quot;) for finding in refusals)
+                )
+E               reckon.crew.CrewError: node &#x27;waiting&#x27; is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+
+reckon/crew/dispatching/requests.py:216: CrewError
+_______________ test_closed_upstream_blocks_its_waiter[blocked] ________________
+
+projects = (PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_closed_upstream_blocks_it0/checkout&#x27;), PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_closed_upstream_blocks_it0/other-checkout&#x27;))
+status = &#x27;blocked&#x27;
+
+    @pytest.mark.parametrize(&quot;status&quot;, [&quot;blocked&quot;, &quot;failed&quot;])
+    def test_closed_upstream_blocks_its_waiter(
+        projects: tuple[Path, Path], status: str
+    ) -&gt; None:
+        first, _ = projects
+&gt;       _queue(first, _node(&quot;prior&quot;, &quot;s1&quot;), run_ids={&quot;prior&quot;: &quot;r-prior&quot;})
+
+tests/test_queue_dag_waits.py:298: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_queue_dag_waits.py:101: in _queue
+    return queue_admission.queue_requests(
+reckon/crew/admission/release.py:555: in queue_requests
+    stored = dispatch_queue_requests(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+nodes = [TaskNode(id=&#x27;prior&#x27;, goal=&#x27;build the waiting work&#x27;, plan=&#x27;plan-a&#x27;, section=&#x27;s1&#x27;, after=[], waits_only_after=False, br...ated_hours=None, requires_decisions=[], peer_scopes={}, images=[], inputs=[], compares_with=&#x27;&#x27;, admission_findings=[])]
+project = &#x27;proj&#x27;, session = &#x27;coordinator-a&#x27;
+repo_root = PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_closed_upstream_blocks_it0/checkout&#x27;)
+config = {&#x27;default_backend&#x27;: &#x27;clive&#x27;, &#x27;local_backend&#x27;: &#x27;clive&#x27;, &#x27;backends&#x27;: {&#x27;clive&#x27;: {&#x27;launch&#x27;: &#x27;cli&#x27;, &#x27;command&#x27;: &#x27;codex&#x27;, &#x27;model&#x27;: &#x27;local-model&#x27;, &#x27;effort&#x27;: &#x27;medium&#x27;, ...}}, &#x27;roles&#x27;: {&#x27;implement&#x27;: {}}, ...}
+backend_name = &#x27;&#x27;, launch_kind = &#x27;cli&#x27;, run_ids = {&#x27;prior&#x27;: &#x27;r-prior&#x27;}
+cap = None, allow_unreviewed_plan = False
+
+    def queue_requests(
+        nodes: Iterable[TaskNode],
+        *,
+        project: str,
+        session: str,
+        repo_root: str | Path,
+        config: Mapping[str, Any],
+        backend_name: str = &quot;&quot;,
+        launch_kind: str = &quot;cli&quot;,
+        run_ids: Mapping[str, str] | None = None,
+        cap: int | None = None,
+        allow_unreviewed_plan: bool = False,
+    ) -&gt; dict[str, Any]:
+        &quot;&quot;&quot;Validate a request batch, then use dispatch&#x27;s queue writer for each.
+    
+        ``allow_unreviewed_plan`` carries the plan-review waiver the same way a
+        single dispatch does: it rides the request&#x27;s ``dispatch_options``, which
+        admission reads before it holds the request on the review gate. A caller
+        that leaves it unset queues a request the gate judges on its own.
+        &quot;&quot;&quot;
+        from reckon.crew import queue_admission
+        from reckon.crew.dispatch_admission import (
+            INPUTS_PROPERTY,
+            _require_write_paths_in_authority,
+            admission_domain_findings,
+            admission_refusals_and_warnings,
+        )
+    
+        nodes = list(nodes)
+        lane = str(backend_name or &quot;&quot;).strip() or str(
+            config.get(&quot;local_backend&quot;) or config.get(&quot;default_backend&quot;) or &quot;&quot;
+        )
+        if not lane:
+            raise CrewError(&quot;queueing a request names no backend to queue it for&quot;)
+        assigned_ids = {
+            node.id: str((run_ids or {}).get(node.id) or new_run_id(node.id))
+            for node in nodes
+        }
+        ceiling = resolved_time_ceiling(config)
+        # The waits are resolved before the node contract is judged, because a
+        # request that waits may name an input its upstream is still to write: that
+        # absence is not a refusal at queue time, and the launch re-checks every
+        # input against the tree the work will actually run in.
+        live = list_live()
+        refs_by_run, projects_by_run = queue_admission._validated_batch_waits(
+            nodes,
+            assigned_ids,
+            project=project,
+            repo_root=repo_root,
+            live=live,
+        )
+        for node in nodes:
+            # The whole node contract is judged here, beside the admission domain,
+            # so a batch entry that a single dispatch would refuse is refused while
+            # it is still a request rather than surfaced later at its launch, where
+            # the refusal costs the queue position and reaches nobody. The role&#x27;s
+            # overlay is resolved against the lane the request records, so the
+            # execution verdict does not depend on whatever lane admission later
+            # binds.
+            _lane_name, effective_backend = resolve_role_override(
+                config, node.role, node.spec_level, lane
+            )
+            # The write-scope fence is judged here on the authority a launch
+            # resolves, so a batch entry whose path lies outside the repository and
+            # the delivery directories is refused while it is still a request. Left
+            # to the launch, that refusal would cost the queue position and reach
+            # nobody, and the entry could never run.
+            _require_write_paths_in_authority(
+                node, resolve_dispatch_authority(project, repo_root)
+            )
+            findings = admission_domain_findings(
+                node, project=project, repository=repo_root
+            )
+            if refs_by_run.get(assigned_ids[node.id]):
+                # A request that waits may name a path its upstream creates, so an
+                # input the repository does not hold is deferred rather than
+                # refused: it is judged at the release, against the tree the launch
+                # reads, and refused there if it genuinely is still absent.
+                findings = [
+                    finding
+                    for finding in findings
+                    if str(finding.get(&quot;property&quot;) or &quot;&quot;) != INPUTS_PROPERTY
+                ]
+            refusals, _warnings = admission_refusals_and_warnings(findings)
+            verdict = validate_node(
+                node,
+                budget_ceiling=ceiling,
+                execution_capable=effective_backend.get(&quot;execution_capable&quot;),
+                repository=repo_root,
+            )
+            refusals.extend(verdict.findings)
+            if refusals:
+&gt;               raise CrewError(
+                    f&quot;node {node.id!r} is refused at queue time: &quot;
+                    + &quot;; &quot;.join(str(finding.get(&quot;detail&quot;) or &quot;&quot;) for finding in refusals)
+                )
+E               reckon.crew.CrewError: node &#x27;prior&#x27; is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+
+reckon/crew/dispatching/requests.py:216: CrewError
+________________ test_closed_upstream_blocks_its_waiter[failed] ________________
+
+projects = (PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_closed_upstream_blocks_it1/checkout&#x27;), PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_closed_upstream_blocks_it1/other-checkout&#x27;))
+status = &#x27;failed&#x27;
+
+    @pytest.mark.parametrize(&quot;status&quot;, [&quot;blocked&quot;, &quot;failed&quot;])
+    def test_closed_upstream_blocks_its_waiter(
+        projects: tuple[Path, Path], status: str
+    ) -&gt; None:
+        first, _ = projects
+&gt;       _queue(first, _node(&quot;prior&quot;, &quot;s1&quot;), run_ids={&quot;prior&quot;: &quot;r-prior&quot;})
+
+tests/test_queue_dag_waits.py:298: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_queue_dag_waits.py:101: in _queue
+    return queue_admission.queue_requests(
+reckon/crew/admission/release.py:555: in queue_requests
+    stored = dispatch_queue_requests(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+nodes = [TaskNode(id=&#x27;prior&#x27;, goal=&#x27;build the waiting work&#x27;, plan=&#x27;plan-a&#x27;, section=&#x27;s1&#x27;, after=[], waits_only_after=False, br...ated_hours=None, requires_decisions=[], peer_scopes={}, images=[], inputs=[], compares_with=&#x27;&#x27;, admission_findings=[])]
+project = &#x27;proj&#x27;, session = &#x27;coordinator-a&#x27;
+repo_root = PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_closed_upstream_blocks_it1/checkout&#x27;)
+config = {&#x27;default_backend&#x27;: &#x27;clive&#x27;, &#x27;local_backend&#x27;: &#x27;clive&#x27;, &#x27;backends&#x27;: {&#x27;clive&#x27;: {&#x27;launch&#x27;: &#x27;cli&#x27;, &#x27;command&#x27;: &#x27;codex&#x27;, &#x27;model&#x27;: &#x27;local-model&#x27;, &#x27;effort&#x27;: &#x27;medium&#x27;, ...}}, &#x27;roles&#x27;: {&#x27;implement&#x27;: {}}, ...}
+backend_name = &#x27;&#x27;, launch_kind = &#x27;cli&#x27;, run_ids = {&#x27;prior&#x27;: &#x27;r-prior&#x27;}
+cap = None, allow_unreviewed_plan = False
+
+    def queue_requests(
+        nodes: Iterable[TaskNode],
+        *,
+        project: str,
+        session: str,
+        repo_root: str | Path,
+        config: Mapping[str, Any],
+        backend_name: str = &quot;&quot;,
+        launch_kind: str = &quot;cli&quot;,
+        run_ids: Mapping[str, str] | None = None,
+        cap: int | None = None,
+        allow_unreviewed_plan: bool = False,
+    ) -&gt; dict[str, Any]:
+        &quot;&quot;&quot;Validate a request batch, then use dispatch&#x27;s queue writer for each.
+    
+        ``allow_unreviewed_plan`` carries the plan-review waiver the same way a
+        single dispatch does: it rides the request&#x27;s ``dispatch_options``, which
+        admission reads before it holds the request on the review gate. A caller
+        that leaves it unset queues a request the gate judges on its own.
+        &quot;&quot;&quot;
+        from reckon.crew import queue_admission
+        from reckon.crew.dispatch_admission import (
+            INPUTS_PROPERTY,
+            _require_write_paths_in_authority,
+            admission_domain_findings,
+            admission_refusals_and_warnings,
+        )
+    
+        nodes = list(nodes)
+        lane = str(backend_name or &quot;&quot;).strip() or str(
+            config.get(&quot;local_backend&quot;) or config.get(&quot;default_backend&quot;) or &quot;&quot;
+        )
+        if not lane:
+            raise CrewError(&quot;queueing a request names no backend to queue it for&quot;)
+        assigned_ids = {
+            node.id: str((run_ids or {}).get(node.id) or new_run_id(node.id))
+            for node in nodes
+        }
+        ceiling = resolved_time_ceiling(config)
+        # The waits are resolved before the node contract is judged, because a
+        # request that waits may name an input its upstream is still to write: that
+        # absence is not a refusal at queue time, and the launch re-checks every
+        # input against the tree the work will actually run in.
+        live = list_live()
+        refs_by_run, projects_by_run = queue_admission._validated_batch_waits(
+            nodes,
+            assigned_ids,
+            project=project,
+            repo_root=repo_root,
+            live=live,
+        )
+        for node in nodes:
+            # The whole node contract is judged here, beside the admission domain,
+            # so a batch entry that a single dispatch would refuse is refused while
+            # it is still a request rather than surfaced later at its launch, where
+            # the refusal costs the queue position and reaches nobody. The role&#x27;s
+            # overlay is resolved against the lane the request records, so the
+            # execution verdict does not depend on whatever lane admission later
+            # binds.
+            _lane_name, effective_backend = resolve_role_override(
+                config, node.role, node.spec_level, lane
+            )
+            # The write-scope fence is judged here on the authority a launch
+            # resolves, so a batch entry whose path lies outside the repository and
+            # the delivery directories is refused while it is still a request. Left
+            # to the launch, that refusal would cost the queue position and reach
+            # nobody, and the entry could never run.
+            _require_write_paths_in_authority(
+                node, resolve_dispatch_authority(project, repo_root)
+            )
+            findings = admission_domain_findings(
+                node, project=project, repository=repo_root
+            )
+            if refs_by_run.get(assigned_ids[node.id]):
+                # A request that waits may name a path its upstream creates, so an
+                # input the repository does not hold is deferred rather than
+                # refused: it is judged at the release, against the tree the launch
+                # reads, and refused there if it genuinely is still absent.
+                findings = [
+                    finding
+                    for finding in findings
+                    if str(finding.get(&quot;property&quot;) or &quot;&quot;) != INPUTS_PROPERTY
+                ]
+            refusals, _warnings = admission_refusals_and_warnings(findings)
+            verdict = validate_node(
+                node,
+                budget_ceiling=ceiling,
+                execution_capable=effective_backend.get(&quot;execution_capable&quot;),
+                repository=repo_root,
+            )
+            refusals.extend(verdict.findings)
+            if refusals:
+&gt;               raise CrewError(
+                    f&quot;node {node.id!r} is refused at queue time: &quot;
+                    + &quot;; &quot;.join(str(finding.get(&quot;detail&quot;) or &quot;&quot;) for finding in refusals)
+                )
+E               reckon.crew.CrewError: node &#x27;prior&#x27; is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+
+reckon/crew/dispatching/requests.py:216: CrewError
+____________ test_complete_upstream_waits_for_its_revision_to_land _____________
+
+projects = (PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_complete_upstream_waits_f0/checkout&#x27;), PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_complete_upstream_waits_f0/other-checkout&#x27;))
+
+    def test_complete_upstream_waits_for_its_revision_to_land(
+        projects: tuple[Path, Path],
+    ) -&gt; None:
+        first, _ = projects
+        fixtures._declare_wait_refs(first, section=&quot;s2&quot;, refs=[])
+&gt;       _queue(first, _node(&quot;prior&quot;, &quot;s1&quot;), run_ids={&quot;prior&quot;: &quot;r-prior&quot;})
+
+tests/test_queue_dag_waits.py:326: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_queue_dag_waits.py:101: in _queue
+    return queue_admission.queue_requests(
+reckon/crew/admission/release.py:555: in queue_requests
+    stored = dispatch_queue_requests(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+nodes = [TaskNode(id=&#x27;prior&#x27;, goal=&#x27;build the waiting work&#x27;, plan=&#x27;plan-a&#x27;, section=&#x27;s1&#x27;, after=[], waits_only_after=False, br...ated_hours=None, requires_decisions=[], peer_scopes={}, images=[], inputs=[], compares_with=&#x27;&#x27;, admission_findings=[])]
+project = &#x27;proj&#x27;, session = &#x27;coordinator-a&#x27;
+repo_root = PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_complete_upstream_waits_f0/checkout&#x27;)
+config = {&#x27;default_backend&#x27;: &#x27;clive&#x27;, &#x27;local_backend&#x27;: &#x27;clive&#x27;, &#x27;backends&#x27;: {&#x27;clive&#x27;: {&#x27;launch&#x27;: &#x27;cli&#x27;, &#x27;command&#x27;: &#x27;codex&#x27;, &#x27;model&#x27;: &#x27;local-model&#x27;, &#x27;effort&#x27;: &#x27;medium&#x27;, ...}}, &#x27;roles&#x27;: {&#x27;implement&#x27;: {}}, ...}
+backend_name = &#x27;&#x27;, launch_kind = &#x27;cli&#x27;, run_ids = {&#x27;prior&#x27;: &#x27;r-prior&#x27;}
+cap = None, allow_unreviewed_plan = False
+
+    def queue_requests(
+        nodes: Iterable[TaskNode],
+        *,
+        project: str,
+        session: str,
+        repo_root: str | Path,
+        config: Mapping[str, Any],
+        backend_name: str = &quot;&quot;,
+        launch_kind: str = &quot;cli&quot;,
+        run_ids: Mapping[str, str] | None = None,
+        cap: int | None = None,
+        allow_unreviewed_plan: bool = False,
+    ) -&gt; dict[str, Any]:
+        &quot;&quot;&quot;Validate a request batch, then use dispatch&#x27;s queue writer for each.
+    
+        ``allow_unreviewed_plan`` carries the plan-review waiver the same way a
+        single dispatch does: it rides the request&#x27;s ``dispatch_options``, which
+        admission reads before it holds the request on the review gate. A caller
+        that leaves it unset queues a request the gate judges on its own.
+        &quot;&quot;&quot;
+        from reckon.crew import queue_admission
+        from reckon.crew.dispatch_admission import (
+            INPUTS_PROPERTY,
+            _require_write_paths_in_authority,
+            admission_domain_findings,
+            admission_refusals_and_warnings,
+        )
+    
+        nodes = list(nodes)
+        lane = str(backend_name or &quot;&quot;).strip() or str(
+            config.get(&quot;local_backend&quot;) or config.get(&quot;default_backend&quot;) or &quot;&quot;
+        )
+        if not lane:
+            raise CrewError(&quot;queueing a request names no backend to queue it for&quot;)
+        assigned_ids = {
+            node.id: str((run_ids or {}).get(node.id) or new_run_id(node.id))
+            for node in nodes
+        }
+        ceiling = resolved_time_ceiling(config)
+        # The waits are resolved before the node contract is judged, because a
+        # request that waits may name an input its upstream is still to write: that
+        # absence is not a refusal at queue time, and the launch re-checks every
+        # input against the tree the work will actually run in.
+        live = list_live()
+        refs_by_run, projects_by_run = queue_admission._validated_batch_waits(
+            nodes,
+            assigned_ids,
+            project=project,
+            repo_root=repo_root,
+            live=live,
+        )
+        for node in nodes:
+            # The whole node contract is judged here, beside the admission domain,
+            # so a batch entry that a single dispatch would refuse is refused while
+            # it is still a request rather than surfaced later at its launch, where
+            # the refusal costs the queue position and reaches nobody. The role&#x27;s
+            # overlay is resolved against the lane the request records, so the
+            # execution verdict does not depend on whatever lane admission later
+            # binds.
+            _lane_name, effective_backend = resolve_role_override(
+                config, node.role, node.spec_level, lane
+            )
+            # The write-scope fence is judged here on the authority a launch
+            # resolves, so a batch entry whose path lies outside the repository and
+            # the delivery directories is refused while it is still a request. Left
+            # to the launch, that refusal would cost the queue position and reach
+            # nobody, and the entry could never run.
+            _require_write_paths_in_authority(
+                node, resolve_dispatch_authority(project, repo_root)
+            )
+            findings = admission_domain_findings(
+                node, project=project, repository=repo_root
+            )
+            if refs_by_run.get(assigned_ids[node.id]):
+                # A request that waits may name a path its upstream creates, so an
+                # input the repository does not hold is deferred rather than
+                # refused: it is judged at the release, against the tree the launch
+                # reads, and refused there if it genuinely is still absent.
+                findings = [
+                    finding
+                    for finding in findings
+                    if str(finding.get(&quot;property&quot;) or &quot;&quot;) != INPUTS_PROPERTY
+                ]
+            refusals, _warnings = admission_refusals_and_warnings(findings)
+            verdict = validate_node(
+                node,
+                budget_ceiling=ceiling,
+                execution_capable=effective_backend.get(&quot;execution_capable&quot;),
+                repository=repo_root,
+            )
+            refusals.extend(verdict.findings)
+            if refusals:
+&gt;               raise CrewError(
+                    f&quot;node {node.id!r} is refused at queue time: &quot;
+                    + &quot;; &quot;.join(str(finding.get(&quot;detail&quot;) or &quot;&quot;) for finding in refusals)
+                )
+E               reckon.crew.CrewError: node &#x27;prior&#x27; is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+
+reckon/crew/dispatching/requests.py:216: CrewError
+____ test_base_revision_releases_a_promoted_request_that_committed_nothing _____
+
+projects = (PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_base_revision_releases_a_0/checkout&#x27;), PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_base_revision_releases_a_0/other-checkout&#x27;))
+
+    def test_base_revision_releases_a_promoted_request_that_committed_nothing(
+        projects: tuple[Path, Path],
+    ) -&gt; None:
+        first, _ = projects
+        fixtures._declare_wait_refs(first, section=&quot;s2&quot;, refs=[])
+&gt;       _queue(first, _node(&quot;prior&quot;, &quot;s1&quot;), run_ids={&quot;prior&quot;: &quot;r-prior&quot;})
+
+tests/test_queue_dag_waits.py:365: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_queue_dag_waits.py:101: in _queue
+    return queue_admission.queue_requests(
+reckon/crew/admission/release.py:555: in queue_requests
+    stored = dispatch_queue_requests(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+nodes = [TaskNode(id=&#x27;prior&#x27;, goal=&#x27;build the waiting work&#x27;, plan=&#x27;plan-a&#x27;, section=&#x27;s1&#x27;, after=[], waits_only_after=False, br...ated_hours=None, requires_decisions=[], peer_scopes={}, images=[], inputs=[], compares_with=&#x27;&#x27;, admission_findings=[])]
+project = &#x27;proj&#x27;, session = &#x27;coordinator-a&#x27;
+repo_root = PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_base_revision_releases_a_0/checkout&#x27;)
+config = {&#x27;default_backend&#x27;: &#x27;clive&#x27;, &#x27;local_backend&#x27;: &#x27;clive&#x27;, &#x27;backends&#x27;: {&#x27;clive&#x27;: {&#x27;launch&#x27;: &#x27;cli&#x27;, &#x27;command&#x27;: &#x27;codex&#x27;, &#x27;model&#x27;: &#x27;local-model&#x27;, &#x27;effort&#x27;: &#x27;medium&#x27;, ...}}, &#x27;roles&#x27;: {&#x27;implement&#x27;: {}}, ...}
+backend_name = &#x27;&#x27;, launch_kind = &#x27;cli&#x27;, run_ids = {&#x27;prior&#x27;: &#x27;r-prior&#x27;}
+cap = None, allow_unreviewed_plan = False
+
+    def queue_requests(
+        nodes: Iterable[TaskNode],
+        *,
+        project: str,
+        session: str,
+        repo_root: str | Path,
+        config: Mapping[str, Any],
+        backend_name: str = &quot;&quot;,
+        launch_kind: str = &quot;cli&quot;,
+        run_ids: Mapping[str, str] | None = None,
+        cap: int | None = None,
+        allow_unreviewed_plan: bool = False,
+    ) -&gt; dict[str, Any]:
+        &quot;&quot;&quot;Validate a request batch, then use dispatch&#x27;s queue writer for each.
+    
+        ``allow_unreviewed_plan`` carries the plan-review waiver the same way a
+        single dispatch does: it rides the request&#x27;s ``dispatch_options``, which
+        admission reads before it holds the request on the review gate. A caller
+        that leaves it unset queues a request the gate judges on its own.
+        &quot;&quot;&quot;
+        from reckon.crew import queue_admission
+        from reckon.crew.dispatch_admission import (
+            INPUTS_PROPERTY,
+            _require_write_paths_in_authority,
+            admission_domain_findings,
+            admission_refusals_and_warnings,
+        )
+    
+        nodes = list(nodes)
+        lane = str(backend_name or &quot;&quot;).strip() or str(
+            config.get(&quot;local_backend&quot;) or config.get(&quot;default_backend&quot;) or &quot;&quot;
+        )
+        if not lane:
+            raise CrewError(&quot;queueing a request names no backend to queue it for&quot;)
+        assigned_ids = {
+            node.id: str((run_ids or {}).get(node.id) or new_run_id(node.id))
+            for node in nodes
+        }
+        ceiling = resolved_time_ceiling(config)
+        # The waits are resolved before the node contract is judged, because a
+        # request that waits may name an input its upstream is still to write: that
+        # absence is not a refusal at queue time, and the launch re-checks every
+        # input against the tree the work will actually run in.
+        live = list_live()
+        refs_by_run, projects_by_run = queue_admission._validated_batch_waits(
+            nodes,
+            assigned_ids,
+            project=project,
+            repo_root=repo_root,
+            live=live,
+        )
+        for node in nodes:
+            # The whole node contract is judged here, beside the admission domain,
+            # so a batch entry that a single dispatch would refuse is refused while
+            # it is still a request rather than surfaced later at its launch, where
+            # the refusal costs the queue position and reaches nobody. The role&#x27;s
+            # overlay is resolved against the lane the request records, so the
+            # execution verdict does not depend on whatever lane admission later
+            # binds.
+            _lane_name, effective_backend = resolve_role_override(
+                config, node.role, node.spec_level, lane
+            )
+            # The write-scope fence is judged here on the authority a launch
+            # resolves, so a batch entry whose path lies outside the repository and
+            # the delivery directories is refused while it is still a request. Left
+            # to the launch, that refusal would cost the queue position and reach
+            # nobody, and the entry could never run.
+            _require_write_paths_in_authority(
+                node, resolve_dispatch_authority(project, repo_root)
+            )
+            findings = admission_domain_findings(
+                node, project=project, repository=repo_root
+            )
+            if refs_by_run.get(assigned_ids[node.id]):
+                # A request that waits may name a path its upstream creates, so an
+                # input the repository does not hold is deferred rather than
+                # refused: it is judged at the release, against the tree the launch
+                # reads, and refused there if it genuinely is still absent.
+                findings = [
+                    finding
+                    for finding in findings
+                    if str(finding.get(&quot;property&quot;) or &quot;&quot;) != INPUTS_PROPERTY
+                ]
+            refusals, _warnings = admission_refusals_and_warnings(findings)
+            verdict = validate_node(
+                node,
+                budget_ceiling=ceiling,
+                execution_capable=effective_backend.get(&quot;execution_capable&quot;),
+                repository=repo_root,
+            )
+            refusals.extend(verdict.findings)
+            if refusals:
+&gt;               raise CrewError(
+                    f&quot;node {node.id!r} is refused at queue time: &quot;
+                    + &quot;; &quot;.join(str(finding.get(&quot;detail&quot;) or &quot;&quot;) for finding in refusals)
+                )
+E               reckon.crew.CrewError: node &#x27;prior&#x27; is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+
+reckon/crew/dispatching/requests.py:216: CrewError
+_________ test_refused_manifest_status_holds_and_raises_one_obligation _________
+
+projects = (PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_refused_manifest_status_h0/checkout&#x27;), PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_refused_manifest_status_h0/other-checkout&#x27;))
+
+    def test_refused_manifest_status_holds_and_raises_one_obligation(
+        projects: tuple[Path, Path],
+    ) -&gt; None:
+        first, _ = projects
+&gt;       _queue(first, _node(&quot;prior&quot;, &quot;s1&quot;), run_ids={&quot;prior&quot;: &quot;r-prior&quot;})
+
+tests/test_queue_dag_waits.py:383: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_queue_dag_waits.py:101: in _queue
+    return queue_admission.queue_requests(
+reckon/crew/admission/release.py:555: in queue_requests
+    stored = dispatch_queue_requests(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+nodes = [TaskNode(id=&#x27;prior&#x27;, goal=&#x27;build the waiting work&#x27;, plan=&#x27;plan-a&#x27;, section=&#x27;s1&#x27;, after=[], waits_only_after=False, br...ated_hours=None, requires_decisions=[], peer_scopes={}, images=[], inputs=[], compares_with=&#x27;&#x27;, admission_findings=[])]
+project = &#x27;proj&#x27;, session = &#x27;coordinator-a&#x27;
+repo_root = PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_refused_manifest_status_h0/checkout&#x27;)
+config = {&#x27;default_backend&#x27;: &#x27;clive&#x27;, &#x27;local_backend&#x27;: &#x27;clive&#x27;, &#x27;backends&#x27;: {&#x27;clive&#x27;: {&#x27;launch&#x27;: &#x27;cli&#x27;, &#x27;command&#x27;: &#x27;codex&#x27;, &#x27;model&#x27;: &#x27;local-model&#x27;, &#x27;effort&#x27;: &#x27;medium&#x27;, ...}}, &#x27;roles&#x27;: {&#x27;implement&#x27;: {}}, ...}
+backend_name = &#x27;&#x27;, launch_kind = &#x27;cli&#x27;, run_ids = {&#x27;prior&#x27;: &#x27;r-prior&#x27;}
+cap = None, allow_unreviewed_plan = False
+
+    def queue_requests(
+        nodes: Iterable[TaskNode],
+        *,
+        project: str,
+        session: str,
+        repo_root: str | Path,
+        config: Mapping[str, Any],
+        backend_name: str = &quot;&quot;,
+        launch_kind: str = &quot;cli&quot;,
+        run_ids: Mapping[str, str] | None = None,
+        cap: int | None = None,
+        allow_unreviewed_plan: bool = False,
+    ) -&gt; dict[str, Any]:
+        &quot;&quot;&quot;Validate a request batch, then use dispatch&#x27;s queue writer for each.
+    
+        ``allow_unreviewed_plan`` carries the plan-review waiver the same way a
+        single dispatch does: it rides the request&#x27;s ``dispatch_options``, which
+        admission reads before it holds the request on the review gate. A caller
+        that leaves it unset queues a request the gate judges on its own.
+        &quot;&quot;&quot;
+        from reckon.crew import queue_admission
+        from reckon.crew.dispatch_admission import (
+            INPUTS_PROPERTY,
+            _require_write_paths_in_authority,
+            admission_domain_findings,
+            admission_refusals_and_warnings,
+        )
+    
+        nodes = list(nodes)
+        lane = str(backend_name or &quot;&quot;).strip() or str(
+            config.get(&quot;local_backend&quot;) or config.get(&quot;default_backend&quot;) or &quot;&quot;
+        )
+        if not lane:
+            raise CrewError(&quot;queueing a request names no backend to queue it for&quot;)
+        assigned_ids = {
+            node.id: str((run_ids or {}).get(node.id) or new_run_id(node.id))
+            for node in nodes
+        }
+        ceiling = resolved_time_ceiling(config)
+        # The waits are resolved before the node contract is judged, because a
+        # request that waits may name an input its upstream is still to write: that
+        # absence is not a refusal at queue time, and the launch re-checks every
+        # input against the tree the work will actually run in.
+        live = list_live()
+        refs_by_run, projects_by_run = queue_admission._validated_batch_waits(
+            nodes,
+            assigned_ids,
+            project=project,
+            repo_root=repo_root,
+            live=live,
+        )
+        for node in nodes:
+            # The whole node contract is judged here, beside the admission domain,
+            # so a batch entry that a single dispatch would refuse is refused while
+            # it is still a request rather than surfaced later at its launch, where
+            # the refusal costs the queue position and reaches nobody. The role&#x27;s
+            # overlay is resolved against the lane the request records, so the
+            # execution verdict does not depend on whatever lane admission later
+            # binds.
+            _lane_name, effective_backend = resolve_role_override(
+                config, node.role, node.spec_level, lane
+            )
+            # The write-scope fence is judged here on the authority a launch
+            # resolves, so a batch entry whose path lies outside the repository and
+            # the delivery directories is refused while it is still a request. Left
+            # to the launch, that refusal would cost the queue position and reach
+            # nobody, and the entry could never run.
+            _require_write_paths_in_authority(
+                node, resolve_dispatch_authority(project, repo_root)
+            )
+            findings = admission_domain_findings(
+                node, project=project, repository=repo_root
+            )
+            if refs_by_run.get(assigned_ids[node.id]):
+                # A request that waits may name a path its upstream creates, so an
+                # input the repository does not hold is deferred rather than
+                # refused: it is judged at the release, against the tree the launch
+                # reads, and refused there if it genuinely is still absent.
+                findings = [
+                    finding
+                    for finding in findings
+                    if str(finding.get(&quot;property&quot;) or &quot;&quot;) != INPUTS_PROPERTY
+                ]
+            refusals, _warnings = admission_refusals_and_warnings(findings)
+            verdict = validate_node(
+                node,
+                budget_ceiling=ceiling,
+                execution_capable=effective_backend.get(&quot;execution_capable&quot;),
+                repository=repo_root,
+            )
+            refusals.extend(verdict.findings)
+            if refusals:
+&gt;               raise CrewError(
+                    f&quot;node {node.id!r} is refused at queue time: &quot;
+                    + &quot;; &quot;.join(str(finding.get(&quot;detail&quot;) or &quot;&quot;) for finding in refusals)
+                )
+E               reckon.crew.CrewError: node &#x27;prior&#x27; is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+
+reckon/crew/dispatching/requests.py:216: CrewError
+_______________ test_foreign_gate_hold_keeps_waiter_waiting[s2] ________________
+
+projects = (PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_foreign_gate_hold_keeps_w0/checkout&#x27;), PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_foreign_gate_hold_keeps_w0/other-checkout&#x27;))
+gated = &#x27;s2&#x27;
+
+    @pytest.mark.parametrize(&quot;gated&quot;, [&quot;s2&quot;, &quot;s1,s2&quot;])
+    def test_foreign_gate_hold_keeps_waiter_waiting(
+        projects: tuple[Path, Path], gated: str
+    ) -&gt; None:
+        first, second = projects
+        fixtures._declare_wait_refs(first, section=&quot;s2&quot;, refs=[&quot;other:plan-b#s2&quot;])
+        gate = (
+            &#x27;&lt;section data-reckon=&quot;gates&quot;&gt;&lt;div class=&quot;r-gate&quot; data-id=&quot;measure&quot; &#x27;
+            f&#x27;data-status=&quot;open&quot; data-verdict=&quot;&quot; data-gated-sections=&quot;{gated}&quot;&gt;&#x27;
+            &#x27;&lt;h4 class=&quot;r-gate-measure&quot;&gt;pass&lt;/h4&gt;&lt;/div&gt;&lt;/section&gt;&#x27;
+        )
+        _write_other_plan(second, gates=gate)
+        _git(second, &quot;add&quot;, &quot;--&quot;, &quot;docs/plans/plan-b.html&quot;)
+        _git(second, &quot;commit&quot;, &quot;-q&quot;, &quot;-m&quot;, &quot;chore: author gate&quot;)
+&gt;       stored = _queue(first, _node(&quot;waiting&quot;, &quot;s2&quot;), run_ids={&quot;waiting&quot;: &quot;r-waiting&quot;})
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_queue_dag_waits.py:412: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_queue_dag_waits.py:101: in _queue
+    return queue_admission.queue_requests(
+reckon/crew/admission/release.py:555: in queue_requests
+    stored = dispatch_queue_requests(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+nodes = [TaskNode(id=&#x27;waiting&#x27;, goal=&#x27;build the waiting work&#x27;, plan=&#x27;plan-a&#x27;, section=&#x27;s2&#x27;, after=[], waits_only_after=False, ...ated_hours=None, requires_decisions=[], peer_scopes={}, images=[], inputs=[], compares_with=&#x27;&#x27;, admission_findings=[])]
+project = &#x27;proj&#x27;, session = &#x27;coordinator-a&#x27;
+repo_root = PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_foreign_gate_hold_keeps_w0/checkout&#x27;)
+config = {&#x27;default_backend&#x27;: &#x27;clive&#x27;, &#x27;local_backend&#x27;: &#x27;clive&#x27;, &#x27;backends&#x27;: {&#x27;clive&#x27;: {&#x27;launch&#x27;: &#x27;cli&#x27;, &#x27;command&#x27;: &#x27;codex&#x27;, &#x27;model&#x27;: &#x27;local-model&#x27;, &#x27;effort&#x27;: &#x27;medium&#x27;, ...}}, &#x27;roles&#x27;: {&#x27;implement&#x27;: {}}, ...}
+backend_name = &#x27;&#x27;, launch_kind = &#x27;cli&#x27;, run_ids = {&#x27;waiting&#x27;: &#x27;r-waiting&#x27;}
+cap = None, allow_unreviewed_plan = False
+
+    def queue_requests(
+        nodes: Iterable[TaskNode],
+        *,
+        project: str,
+        session: str,
+        repo_root: str | Path,
+        config: Mapping[str, Any],
+        backend_name: str = &quot;&quot;,
+        launch_kind: str = &quot;cli&quot;,
+        run_ids: Mapping[str, str] | None = None,
+        cap: int | None = None,
+        allow_unreviewed_plan: bool = False,
+    ) -&gt; dict[str, Any]:
+        &quot;&quot;&quot;Validate a request batch, then use dispatch&#x27;s queue writer for each.
+    
+        ``allow_unreviewed_plan`` carries the plan-review waiver the same way a
+        single dispatch does: it rides the request&#x27;s ``dispatch_options``, which
+        admission reads before it holds the request on the review gate. A caller
+        that leaves it unset queues a request the gate judges on its own.
+        &quot;&quot;&quot;
+        from reckon.crew import queue_admission
+        from reckon.crew.dispatch_admission import (
+            INPUTS_PROPERTY,
+            _require_write_paths_in_authority,
+            admission_domain_findings,
+            admission_refusals_and_warnings,
+        )
+    
+        nodes = list(nodes)
+        lane = str(backend_name or &quot;&quot;).strip() or str(
+            config.get(&quot;local_backend&quot;) or config.get(&quot;default_backend&quot;) or &quot;&quot;
+        )
+        if not lane:
+            raise CrewError(&quot;queueing a request names no backend to queue it for&quot;)
+        assigned_ids = {
+            node.id: str((run_ids or {}).get(node.id) or new_run_id(node.id))
+            for node in nodes
+        }
+        ceiling = resolved_time_ceiling(config)
+        # The waits are resolved before the node contract is judged, because a
+        # request that waits may name an input its upstream is still to write: that
+        # absence is not a refusal at queue time, and the launch re-checks every
+        # input against the tree the work will actually run in.
+        live = list_live()
+        refs_by_run, projects_by_run = queue_admission._validated_batch_waits(
+            nodes,
+            assigned_ids,
+            project=project,
+            repo_root=repo_root,
+            live=live,
+        )
+        for node in nodes:
+            # The whole node contract is judged here, beside the admission domain,
+            # so a batch entry that a single dispatch would refuse is refused while
+            # it is still a request rather than surfaced later at its launch, where
+            # the refusal costs the queue position and reaches nobody. The role&#x27;s
+            # overlay is resolved against the lane the request records, so the
+            # execution verdict does not depend on whatever lane admission later
+            # binds.
+            _lane_name, effective_backend = resolve_role_override(
+                config, node.role, node.spec_level, lane
+            )
+            # The write-scope fence is judged here on the authority a launch
+            # resolves, so a batch entry whose path lies outside the repository and
+            # the delivery directories is refused while it is still a request. Left
+            # to the launch, that refusal would cost the queue position and reach
+            # nobody, and the entry could never run.
+            _require_write_paths_in_authority(
+                node, resolve_dispatch_authority(project, repo_root)
+            )
+            findings = admission_domain_findings(
+                node, project=project, repository=repo_root
+            )
+            if refs_by_run.get(assigned_ids[node.id]):
+                # A request that waits may name a path its upstream creates, so an
+                # input the repository does not hold is deferred rather than
+                # refused: it is judged at the release, against the tree the launch
+                # reads, and refused there if it genuinely is still absent.
+                findings = [
+                    finding
+                    for finding in findings
+                    if str(finding.get(&quot;property&quot;) or &quot;&quot;) != INPUTS_PROPERTY
+                ]
+            refusals, _warnings = admission_refusals_and_warnings(findings)
+            verdict = validate_node(
+                node,
+                budget_ceiling=ceiling,
+                execution_capable=effective_backend.get(&quot;execution_capable&quot;),
+                repository=repo_root,
+            )
+            refusals.extend(verdict.findings)
+            if refusals:
+&gt;               raise CrewError(
+                    f&quot;node {node.id!r} is refused at queue time: &quot;
+                    + &quot;; &quot;.join(str(finding.get(&quot;detail&quot;) or &quot;&quot;) for finding in refusals)
+                )
+E               reckon.crew.CrewError: node &#x27;waiting&#x27; is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+
+reckon/crew/dispatching/requests.py:216: CrewError
+______________ test_foreign_gate_hold_keeps_waiter_waiting[s1,s2] ______________
+
+projects = (PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_foreign_gate_hold_keeps_w1/checkout&#x27;), PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_foreign_gate_hold_keeps_w1/other-checkout&#x27;))
+gated = &#x27;s1,s2&#x27;
+
+    @pytest.mark.parametrize(&quot;gated&quot;, [&quot;s2&quot;, &quot;s1,s2&quot;])
+    def test_foreign_gate_hold_keeps_waiter_waiting(
+        projects: tuple[Path, Path], gated: str
+    ) -&gt; None:
+        first, second = projects
+        fixtures._declare_wait_refs(first, section=&quot;s2&quot;, refs=[&quot;other:plan-b#s2&quot;])
+        gate = (
+            &#x27;&lt;section data-reckon=&quot;gates&quot;&gt;&lt;div class=&quot;r-gate&quot; data-id=&quot;measure&quot; &#x27;
+            f&#x27;data-status=&quot;open&quot; data-verdict=&quot;&quot; data-gated-sections=&quot;{gated}&quot;&gt;&#x27;
+            &#x27;&lt;h4 class=&quot;r-gate-measure&quot;&gt;pass&lt;/h4&gt;&lt;/div&gt;&lt;/section&gt;&#x27;
+        )
+        _write_other_plan(second, gates=gate)
+        _git(second, &quot;add&quot;, &quot;--&quot;, &quot;docs/plans/plan-b.html&quot;)
+        _git(second, &quot;commit&quot;, &quot;-q&quot;, &quot;-m&quot;, &quot;chore: author gate&quot;)
+&gt;       stored = _queue(first, _node(&quot;waiting&quot;, &quot;s2&quot;), run_ids={&quot;waiting&quot;: &quot;r-waiting&quot;})
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_queue_dag_waits.py:412: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_queue_dag_waits.py:101: in _queue
+    return queue_admission.queue_requests(
+reckon/crew/admission/release.py:555: in queue_requests
+    stored = dispatch_queue_requests(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+nodes = [TaskNode(id=&#x27;waiting&#x27;, goal=&#x27;build the waiting work&#x27;, plan=&#x27;plan-a&#x27;, section=&#x27;s2&#x27;, after=[], waits_only_after=False, ...ated_hours=None, requires_decisions=[], peer_scopes={}, images=[], inputs=[], compares_with=&#x27;&#x27;, admission_findings=[])]
+project = &#x27;proj&#x27;, session = &#x27;coordinator-a&#x27;
+repo_root = PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_foreign_gate_hold_keeps_w1/checkout&#x27;)
+config = {&#x27;default_backend&#x27;: &#x27;clive&#x27;, &#x27;local_backend&#x27;: &#x27;clive&#x27;, &#x27;backends&#x27;: {&#x27;clive&#x27;: {&#x27;launch&#x27;: &#x27;cli&#x27;, &#x27;command&#x27;: &#x27;codex&#x27;, &#x27;model&#x27;: &#x27;local-model&#x27;, &#x27;effort&#x27;: &#x27;medium&#x27;, ...}}, &#x27;roles&#x27;: {&#x27;implement&#x27;: {}}, ...}
+backend_name = &#x27;&#x27;, launch_kind = &#x27;cli&#x27;, run_ids = {&#x27;waiting&#x27;: &#x27;r-waiting&#x27;}
+cap = None, allow_unreviewed_plan = False
+
+    def queue_requests(
+        nodes: Iterable[TaskNode],
+        *,
+        project: str,
+        session: str,
+        repo_root: str | Path,
+        config: Mapping[str, Any],
+        backend_name: str = &quot;&quot;,
+        launch_kind: str = &quot;cli&quot;,
+        run_ids: Mapping[str, str] | None = None,
+        cap: int | None = None,
+        allow_unreviewed_plan: bool = False,
+    ) -&gt; dict[str, Any]:
+        &quot;&quot;&quot;Validate a request batch, then use dispatch&#x27;s queue writer for each.
+    
+        ``allow_unreviewed_plan`` carries the plan-review waiver the same way a
+        single dispatch does: it rides the request&#x27;s ``dispatch_options``, which
+        admission reads before it holds the request on the review gate. A caller
+        that leaves it unset queues a request the gate judges on its own.
+        &quot;&quot;&quot;
+        from reckon.crew import queue_admission
+        from reckon.crew.dispatch_admission import (
+            INPUTS_PROPERTY,
+            _require_write_paths_in_authority,
+            admission_domain_findings,
+            admission_refusals_and_warnings,
+        )
+    
+        nodes = list(nodes)
+        lane = str(backend_name or &quot;&quot;).strip() or str(
+            config.get(&quot;local_backend&quot;) or config.get(&quot;default_backend&quot;) or &quot;&quot;
+        )
+        if not lane:
+            raise CrewError(&quot;queueing a request names no backend to queue it for&quot;)
+        assigned_ids = {
+            node.id: str((run_ids or {}).get(node.id) or new_run_id(node.id))
+            for node in nodes
+        }
+        ceiling = resolved_time_ceiling(config)
+        # The waits are resolved before the node contract is judged, because a
+        # request that waits may name an input its upstream is still to write: that
+        # absence is not a refusal at queue time, and the launch re-checks every
+        # input against the tree the work will actually run in.
+        live = list_live()
+        refs_by_run, projects_by_run = queue_admission._validated_batch_waits(
+            nodes,
+            assigned_ids,
+            project=project,
+            repo_root=repo_root,
+            live=live,
+        )
+        for node in nodes:
+            # The whole node contract is judged here, beside the admission domain,
+            # so a batch entry that a single dispatch would refuse is refused while
+            # it is still a request rather than surfaced later at its launch, where
+            # the refusal costs the queue position and reaches nobody. The role&#x27;s
+            # overlay is resolved against the lane the request records, so the
+            # execution verdict does not depend on whatever lane admission later
+            # binds.
+            _lane_name, effective_backend = resolve_role_override(
+                config, node.role, node.spec_level, lane
+            )
+            # The write-scope fence is judged here on the authority a launch
+            # resolves, so a batch entry whose path lies outside the repository and
+            # the delivery directories is refused while it is still a request. Left
+            # to the launch, that refusal would cost the queue position and reach
+            # nobody, and the entry could never run.
+            _require_write_paths_in_authority(
+                node, resolve_dispatch_authority(project, repo_root)
+            )
+            findings = admission_domain_findings(
+                node, project=project, repository=repo_root
+            )
+            if refs_by_run.get(assigned_ids[node.id]):
+                # A request that waits may name a path its upstream creates, so an
+                # input the repository does not hold is deferred rather than
+                # refused: it is judged at the release, against the tree the launch
+                # reads, and refused there if it genuinely is still absent.
+                findings = [
+                    finding
+                    for finding in findings
+                    if str(finding.get(&quot;property&quot;) or &quot;&quot;) != INPUTS_PROPERTY
+                ]
+            refusals, _warnings = admission_refusals_and_warnings(findings)
+            verdict = validate_node(
+                node,
+                budget_ceiling=ceiling,
+                execution_capable=effective_backend.get(&quot;execution_capable&quot;),
+                repository=repo_root,
+            )
+            refusals.extend(verdict.findings)
+            if refusals:
+&gt;               raise CrewError(
+                    f&quot;node {node.id!r} is refused at queue time: &quot;
+                    + &quot;; &quot;.join(str(finding.get(&quot;detail&quot;) or &quot;&quot;) for finding in refusals)
+                )
+E               reckon.crew.CrewError: node &#x27;waiting&#x27; is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+
+reckon/crew/dispatching/requests.py:216: CrewError
+____________ test_readiness_recheck_uses_named_section_declarations ____________
+
+projects = (PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_readiness_recheck_uses_na0/checkout&#x27;), PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_readiness_recheck_uses_na0/other-checkout&#x27;))
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7fd4228ba0f0&gt;
+
+    def test_readiness_recheck_uses_named_section_declarations(
+        projects: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+    ) -&gt; None:
+        first, _ = projects
+        from reckon.crew import plan_review
+    
+        fixtures._declare_wait_refs(first, section=&quot;s2&quot;, refs=[&quot;plan-a#s1&quot;])
+&gt;       stored = _queue(first, _node(&quot;waiting&quot;, &quot;s2&quot;), run_ids={&quot;waiting&quot;: &quot;r-waiting&quot;})
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_queue_dag_waits.py:425: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_queue_dag_waits.py:101: in _queue
+    return queue_admission.queue_requests(
+reckon/crew/admission/release.py:555: in queue_requests
+    stored = dispatch_queue_requests(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+nodes = [TaskNode(id=&#x27;waiting&#x27;, goal=&#x27;build the waiting work&#x27;, plan=&#x27;plan-a&#x27;, section=&#x27;s2&#x27;, after=[], waits_only_after=False, ...ated_hours=None, requires_decisions=[], peer_scopes={}, images=[], inputs=[], compares_with=&#x27;&#x27;, admission_findings=[])]
+project = &#x27;proj&#x27;, session = &#x27;coordinator-a&#x27;
+repo_root = PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_readiness_recheck_uses_na0/checkout&#x27;)
+config = {&#x27;default_backend&#x27;: &#x27;clive&#x27;, &#x27;local_backend&#x27;: &#x27;clive&#x27;, &#x27;backends&#x27;: {&#x27;clive&#x27;: {&#x27;launch&#x27;: &#x27;cli&#x27;, &#x27;command&#x27;: &#x27;codex&#x27;, &#x27;model&#x27;: &#x27;local-model&#x27;, &#x27;effort&#x27;: &#x27;medium&#x27;, ...}}, &#x27;roles&#x27;: {&#x27;implement&#x27;: {}}, ...}
+backend_name = &#x27;&#x27;, launch_kind = &#x27;cli&#x27;, run_ids = {&#x27;waiting&#x27;: &#x27;r-waiting&#x27;}
+cap = None, allow_unreviewed_plan = False
+
+    def queue_requests(
+        nodes: Iterable[TaskNode],
+        *,
+        project: str,
+        session: str,
+        repo_root: str | Path,
+        config: Mapping[str, Any],
+        backend_name: str = &quot;&quot;,
+        launch_kind: str = &quot;cli&quot;,
+        run_ids: Mapping[str, str] | None = None,
+        cap: int | None = None,
+        allow_unreviewed_plan: bool = False,
+    ) -&gt; dict[str, Any]:
+        &quot;&quot;&quot;Validate a request batch, then use dispatch&#x27;s queue writer for each.
+    
+        ``allow_unreviewed_plan`` carries the plan-review waiver the same way a
+        single dispatch does: it rides the request&#x27;s ``dispatch_options``, which
+        admission reads before it holds the request on the review gate. A caller
+        that leaves it unset queues a request the gate judges on its own.
+        &quot;&quot;&quot;
+        from reckon.crew import queue_admission
+        from reckon.crew.dispatch_admission import (
+            INPUTS_PROPERTY,
+            _require_write_paths_in_authority,
+            admission_domain_findings,
+            admission_refusals_and_warnings,
+        )
+    
+        nodes = list(nodes)
+        lane = str(backend_name or &quot;&quot;).strip() or str(
+            config.get(&quot;local_backend&quot;) or config.get(&quot;default_backend&quot;) or &quot;&quot;
+        )
+        if not lane:
+            raise CrewError(&quot;queueing a request names no backend to queue it for&quot;)
+        assigned_ids = {
+            node.id: str((run_ids or {}).get(node.id) or new_run_id(node.id))
+            for node in nodes
+        }
+        ceiling = resolved_time_ceiling(config)
+        # The waits are resolved before the node contract is judged, because a
+        # request that waits may name an input its upstream is still to write: that
+        # absence is not a refusal at queue time, and the launch re-checks every
+        # input against the tree the work will actually run in.
+        live = list_live()
+        refs_by_run, projects_by_run = queue_admission._validated_batch_waits(
+            nodes,
+            assigned_ids,
+            project=project,
+            repo_root=repo_root,
+            live=live,
+        )
+        for node in nodes:
+            # The whole node contract is judged here, beside the admission domain,
+            # so a batch entry that a single dispatch would refuse is refused while
+            # it is still a request rather than surfaced later at its launch, where
+            # the refusal costs the queue position and reaches nobody. The role&#x27;s
+            # overlay is resolved against the lane the request records, so the
+            # execution verdict does not depend on whatever lane admission later
+            # binds.
+            _lane_name, effective_backend = resolve_role_override(
+                config, node.role, node.spec_level, lane
+            )
+            # The write-scope fence is judged here on the authority a launch
+            # resolves, so a batch entry whose path lies outside the repository and
+            # the delivery directories is refused while it is still a request. Left
+            # to the launch, that refusal would cost the queue position and reach
+            # nobody, and the entry could never run.
+            _require_write_paths_in_authority(
+                node, resolve_dispatch_authority(project, repo_root)
+            )
+            findings = admission_domain_findings(
+                node, project=project, repository=repo_root
+            )
+            if refs_by_run.get(assigned_ids[node.id]):
+                # A request that waits may name a path its upstream creates, so an
+                # input the repository does not hold is deferred rather than
+                # refused: it is judged at the release, against the tree the launch
+                # reads, and refused there if it genuinely is still absent.
+                findings = [
+                    finding
+                    for finding in findings
+                    if str(finding.get(&quot;property&quot;) or &quot;&quot;) != INPUTS_PROPERTY
+                ]
+            refusals, _warnings = admission_refusals_and_warnings(findings)
+            verdict = validate_node(
+                node,
+                budget_ceiling=ceiling,
+                execution_capable=effective_backend.get(&quot;execution_capable&quot;),
+                repository=repo_root,
+            )
+            refusals.extend(verdict.findings)
+            if refusals:
+&gt;               raise CrewError(
+                    f&quot;node {node.id!r} is refused at queue time: &quot;
+                    + &quot;; &quot;.join(str(finding.get(&quot;detail&quot;) or &quot;&quot;) for finding in refusals)
+                )
+E               reckon.crew.CrewError: node &#x27;waiting&#x27; is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+
+reckon/crew/dispatching/requests.py:216: CrewError
+_________________ test_scoped_decision_holds_only_its_section __________________
+
+projects = (PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_scoped_decision_holds_onl0/checkout&#x27;), PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_scoped_decision_holds_onl0/other-checkout&#x27;))
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7fd423297350&gt;
+
+    def test_scoped_decision_holds_only_its_section(
+        projects: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+    ) -&gt; None:
+        first, _ = projects
+        from reckon.crew import plan_review
+    
+        fixtures._declare_wait_refs(first, section=&quot;s2&quot;, refs=[])
+        real = plan_review.project_section_readiness
+    
+        def scoped(project: str, docs_dir: Path) -&gt; dict:
+            answer = real(project, docs_dir)
+            if project == fixtures.PROJECT:
+                answer[fixtures.PLAN][&quot;readiness&quot;] = &quot;blocked&quot;
+                answer[fixtures.PLAN][&quot;sections&quot;][&quot;s1&quot;] = {
+                    &quot;section&quot;: &quot;s1&quot;,
+                    &quot;ready&quot;: True,
+                    &quot;blockers&quot;: [],
+                }
+                answer[fixtures.PLAN][&quot;sections&quot;][&quot;s2&quot;] = {
+                    &quot;section&quot;: &quot;s2&quot;,
+                    &quot;ready&quot;: False,
+                    &quot;blockers&quot;: [{&quot;kind&quot;: &quot;decision&quot;, &quot;key&quot;: &quot;choice&quot;}],
+                }
+            return answer
+    
+        monkeypatch.setattr(plan_review, &quot;project_section_readiness&quot;, scoped)
+&gt;       stored = _queue(
+            first,
+            _node(&quot;ready&quot;, &quot;s1&quot;),
+            _node(&quot;held&quot;, &quot;s2&quot;),
+            run_ids={&quot;ready&quot;: &quot;r-ready&quot;, &quot;held&quot;: &quot;r-held&quot;},
+        )
+
+tests/test_queue_dag_waits.py:467: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_queue_dag_waits.py:101: in _queue
+    return queue_admission.queue_requests(
+reckon/crew/admission/release.py:555: in queue_requests
+    stored = dispatch_queue_requests(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+nodes = [TaskNode(id=&#x27;ready&#x27;, goal=&#x27;build the waiting work&#x27;, plan=&#x27;plan-a&#x27;, section=&#x27;s1&#x27;, after=[], waits_only_after=False, br...ated_hours=None, requires_decisions=[], peer_scopes={}, images=[], inputs=[], compares_with=&#x27;&#x27;, admission_findings=[])]
+project = &#x27;proj&#x27;, session = &#x27;coordinator-a&#x27;
+repo_root = PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_scoped_decision_holds_onl0/checkout&#x27;)
+config = {&#x27;default_backend&#x27;: &#x27;clive&#x27;, &#x27;local_backend&#x27;: &#x27;clive&#x27;, &#x27;backends&#x27;: {&#x27;clive&#x27;: {&#x27;launch&#x27;: &#x27;cli&#x27;, &#x27;command&#x27;: &#x27;codex&#x27;, &#x27;model&#x27;: &#x27;local-model&#x27;, &#x27;effort&#x27;: &#x27;medium&#x27;, ...}}, &#x27;roles&#x27;: {&#x27;implement&#x27;: {}}, ...}
+backend_name = &#x27;&#x27;, launch_kind = &#x27;cli&#x27;
+run_ids = {&#x27;ready&#x27;: &#x27;r-ready&#x27;, &#x27;held&#x27;: &#x27;r-held&#x27;}, cap = None
+allow_unreviewed_plan = False
+
+    def queue_requests(
+        nodes: Iterable[TaskNode],
+        *,
+        project: str,
+        session: str,
+        repo_root: str | Path,
+        config: Mapping[str, Any],
+        backend_name: str = &quot;&quot;,
+        launch_kind: str = &quot;cli&quot;,
+        run_ids: Mapping[str, str] | None = None,
+        cap: int | None = None,
+        allow_unreviewed_plan: bool = False,
+    ) -&gt; dict[str, Any]:
+        &quot;&quot;&quot;Validate a request batch, then use dispatch&#x27;s queue writer for each.
+    
+        ``allow_unreviewed_plan`` carries the plan-review waiver the same way a
+        single dispatch does: it rides the request&#x27;s ``dispatch_options``, which
+        admission reads before it holds the request on the review gate. A caller
+        that leaves it unset queues a request the gate judges on its own.
+        &quot;&quot;&quot;
+        from reckon.crew import queue_admission
+        from reckon.crew.dispatch_admission import (
+            INPUTS_PROPERTY,
+            _require_write_paths_in_authority,
+            admission_domain_findings,
+            admission_refusals_and_warnings,
+        )
+    
+        nodes = list(nodes)
+        lane = str(backend_name or &quot;&quot;).strip() or str(
+            config.get(&quot;local_backend&quot;) or config.get(&quot;default_backend&quot;) or &quot;&quot;
+        )
+        if not lane:
+            raise CrewError(&quot;queueing a request names no backend to queue it for&quot;)
+        assigned_ids = {
+            node.id: str((run_ids or {}).get(node.id) or new_run_id(node.id))
+            for node in nodes
+        }
+        ceiling = resolved_time_ceiling(config)
+        # The waits are resolved before the node contract is judged, because a
+        # request that waits may name an input its upstream is still to write: that
+        # absence is not a refusal at queue time, and the launch re-checks every
+        # input against the tree the work will actually run in.
+        live = list_live()
+        refs_by_run, projects_by_run = queue_admission._validated_batch_waits(
+            nodes,
+            assigned_ids,
+            project=project,
+            repo_root=repo_root,
+            live=live,
+        )
+        for node in nodes:
+            # The whole node contract is judged here, beside the admission domain,
+            # so a batch entry that a single dispatch would refuse is refused while
+            # it is still a request rather than surfaced later at its launch, where
+            # the refusal costs the queue position and reaches nobody. The role&#x27;s
+            # overlay is resolved against the lane the request records, so the
+            # execution verdict does not depend on whatever lane admission later
+            # binds.
+            _lane_name, effective_backend = resolve_role_override(
+                config, node.role, node.spec_level, lane
+            )
+            # The write-scope fence is judged here on the authority a launch
+            # resolves, so a batch entry whose path lies outside the repository and
+            # the delivery directories is refused while it is still a request. Left
+            # to the launch, that refusal would cost the queue position and reach
+            # nobody, and the entry could never run.
+            _require_write_paths_in_authority(
+                node, resolve_dispatch_authority(project, repo_root)
+            )
+            findings = admission_domain_findings(
+                node, project=project, repository=repo_root
+            )
+            if refs_by_run.get(assigned_ids[node.id]):
+                # A request that waits may name a path its upstream creates, so an
+                # input the repository does not hold is deferred rather than
+                # refused: it is judged at the release, against the tree the launch
+                # reads, and refused there if it genuinely is still absent.
+                findings = [
+                    finding
+                    for finding in findings
+                    if str(finding.get(&quot;property&quot;) or &quot;&quot;) != INPUTS_PROPERTY
+                ]
+            refusals, _warnings = admission_refusals_and_warnings(findings)
+            verdict = validate_node(
+                node,
+                budget_ceiling=ceiling,
+                execution_capable=effective_backend.get(&quot;execution_capable&quot;),
+                repository=repo_root,
+            )
+            refusals.extend(verdict.findings)
+            if refusals:
+&gt;               raise CrewError(
+                    f&quot;node {node.id!r} is refused at queue time: &quot;
+                    + &quot;; &quot;.join(str(finding.get(&quot;detail&quot;) or &quot;&quot;) for finding in refusals)
+                )
+E               reckon.crew.CrewError: node &#x27;ready&#x27; is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+
+reckon/crew/dispatching/requests.py:216: CrewError
+______________ test_after_survives_the_queued_pointer_round_trip _______________
+
+projects = (PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_after_survives_the_queued0/checkout&#x27;), PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_after_survives_the_queued0/other-checkout&#x27;))
+
+    def test_after_survives_the_queued_pointer_round_trip(
+        projects: tuple[Path, Path],
+    ) -&gt; None:
+        first, _ = projects
+&gt;       _queue(first, _node(&quot;prior&quot;, &quot;s1&quot;), run_ids={&quot;prior&quot;: &quot;r-prior&quot;})
+
+tests/test_queue_dag_waits.py:486: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_queue_dag_waits.py:101: in _queue
+    return queue_admission.queue_requests(
+reckon/crew/admission/release.py:555: in queue_requests
+    stored = dispatch_queue_requests(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+nodes = [TaskNode(id=&#x27;prior&#x27;, goal=&#x27;build the waiting work&#x27;, plan=&#x27;plan-a&#x27;, section=&#x27;s1&#x27;, after=[], waits_only_after=False, br...ated_hours=None, requires_decisions=[], peer_scopes={}, images=[], inputs=[], compares_with=&#x27;&#x27;, admission_findings=[])]
+project = &#x27;proj&#x27;, session = &#x27;coordinator-a&#x27;
+repo_root = PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_after_survives_the_queued0/checkout&#x27;)
+config = {&#x27;default_backend&#x27;: &#x27;clive&#x27;, &#x27;local_backend&#x27;: &#x27;clive&#x27;, &#x27;backends&#x27;: {&#x27;clive&#x27;: {&#x27;launch&#x27;: &#x27;cli&#x27;, &#x27;command&#x27;: &#x27;codex&#x27;, &#x27;model&#x27;: &#x27;local-model&#x27;, &#x27;effort&#x27;: &#x27;medium&#x27;, ...}}, &#x27;roles&#x27;: {&#x27;implement&#x27;: {}}, ...}
+backend_name = &#x27;&#x27;, launch_kind = &#x27;cli&#x27;, run_ids = {&#x27;prior&#x27;: &#x27;r-prior&#x27;}
+cap = None, allow_unreviewed_plan = False
+
+    def queue_requests(
+        nodes: Iterable[TaskNode],
+        *,
+        project: str,
+        session: str,
+        repo_root: str | Path,
+        config: Mapping[str, Any],
+        backend_name: str = &quot;&quot;,
+        launch_kind: str = &quot;cli&quot;,
+        run_ids: Mapping[str, str] | None = None,
+        cap: int | None = None,
+        allow_unreviewed_plan: bool = False,
+    ) -&gt; dict[str, Any]:
+        &quot;&quot;&quot;Validate a request batch, then use dispatch&#x27;s queue writer for each.
+    
+        ``allow_unreviewed_plan`` carries the plan-review waiver the same way a
+        single dispatch does: it rides the request&#x27;s ``dispatch_options``, which
+        admission reads before it holds the request on the review gate. A caller
+        that leaves it unset queues a request the gate judges on its own.
+        &quot;&quot;&quot;
+        from reckon.crew import queue_admission
+        from reckon.crew.dispatch_admission import (
+            INPUTS_PROPERTY,
+            _require_write_paths_in_authority,
+            admission_domain_findings,
+            admission_refusals_and_warnings,
+        )
+    
+        nodes = list(nodes)
+        lane = str(backend_name or &quot;&quot;).strip() or str(
+            config.get(&quot;local_backend&quot;) or config.get(&quot;default_backend&quot;) or &quot;&quot;
+        )
+        if not lane:
+            raise CrewError(&quot;queueing a request names no backend to queue it for&quot;)
+        assigned_ids = {
+            node.id: str((run_ids or {}).get(node.id) or new_run_id(node.id))
+            for node in nodes
+        }
+        ceiling = resolved_time_ceiling(config)
+        # The waits are resolved before the node contract is judged, because a
+        # request that waits may name an input its upstream is still to write: that
+        # absence is not a refusal at queue time, and the launch re-checks every
+        # input against the tree the work will actually run in.
+        live = list_live()
+        refs_by_run, projects_by_run = queue_admission._validated_batch_waits(
+            nodes,
+            assigned_ids,
+            project=project,
+            repo_root=repo_root,
+            live=live,
+        )
+        for node in nodes:
+            # The whole node contract is judged here, beside the admission domain,
+            # so a batch entry that a single dispatch would refuse is refused while
+            # it is still a request rather than surfaced later at its launch, where
+            # the refusal costs the queue position and reaches nobody. The role&#x27;s
+            # overlay is resolved against the lane the request records, so the
+            # execution verdict does not depend on whatever lane admission later
+            # binds.
+            _lane_name, effective_backend = resolve_role_override(
+                config, node.role, node.spec_level, lane
+            )
+            # The write-scope fence is judged here on the authority a launch
+            # resolves, so a batch entry whose path lies outside the repository and
+            # the delivery directories is refused while it is still a request. Left
+            # to the launch, that refusal would cost the queue position and reach
+            # nobody, and the entry could never run.
+            _require_write_paths_in_authority(
+                node, resolve_dispatch_authority(project, repo_root)
+            )
+            findings = admission_domain_findings(
+                node, project=project, repository=repo_root
+            )
+            if refs_by_run.get(assigned_ids[node.id]):
+                # A request that waits may name a path its upstream creates, so an
+                # input the repository does not hold is deferred rather than
+                # refused: it is judged at the release, against the tree the launch
+                # reads, and refused there if it genuinely is still absent.
+                findings = [
+                    finding
+                    for finding in findings
+                    if str(finding.get(&quot;property&quot;) or &quot;&quot;) != INPUTS_PROPERTY
+                ]
+            refusals, _warnings = admission_refusals_and_warnings(findings)
+            verdict = validate_node(
+                node,
+                budget_ceiling=ceiling,
+                execution_capable=effective_backend.get(&quot;execution_capable&quot;),
+                repository=repo_root,
+            )
+            refusals.extend(verdict.findings)
+            if refusals:
+&gt;               raise CrewError(
+                    f&quot;node {node.id!r} is refused at queue time: &quot;
+                    + &quot;; &quot;.join(str(finding.get(&quot;detail&quot;) or &quot;&quot;) for finding in refusals)
+                )
+E               reckon.crew.CrewError: node &#x27;prior&#x27; is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+
+reckon/crew/dispatching/requests.py:216: CrewError
+__________ test_foreign_broken_wait_does_not_refuse_own_ready_section __________
+
+projects = (PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_foreign_broken_wait_does_0/checkout&#x27;), PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_foreign_broken_wait_does_0/other-checkout&#x27;))
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7fd4228abcb0&gt;
+
+    def test_foreign_broken_wait_does_not_refuse_own_ready_section(
+        projects: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+    ) -&gt; None:
+        first, second = projects
+&gt;       _broken_request(first)
+
+tests/test_dead_wait_blocks_only_its_request.py:49: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_dead_wait_blocks_only_its_request.py:31: in _broken_request
+    wait_cases._queue(
+tests/test_queue_dag_waits.py:101: in _queue
+    return queue_admission.queue_requests(
+reckon/crew/admission/release.py:555: in queue_requests
+    stored = dispatch_queue_requests(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+nodes = [TaskNode(id=&#x27;broken&#x27;, goal=&#x27;build the waiting work&#x27;, plan=&#x27;plan-a&#x27;, section=&#x27;s1&#x27;, after=[], waits_only_after=False, b...ated_hours=None, requires_decisions=[], peer_scopes={}, images=[], inputs=[], compares_with=&#x27;&#x27;, admission_findings=[])]
+project = &#x27;proj&#x27;, session = &#x27;coordinator-a&#x27;
+repo_root = PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_foreign_broken_wait_does_0/checkout&#x27;)
+config = {&#x27;default_backend&#x27;: &#x27;clive&#x27;, &#x27;local_backend&#x27;: &#x27;clive&#x27;, &#x27;backends&#x27;: {&#x27;clive&#x27;: {&#x27;launch&#x27;: &#x27;cli&#x27;, &#x27;command&#x27;: &#x27;codex&#x27;, &#x27;model&#x27;: &#x27;local-model&#x27;, &#x27;effort&#x27;: &#x27;medium&#x27;, ...}}, &#x27;roles&#x27;: {&#x27;implement&#x27;: {}}, ...}
+backend_name = &#x27;&#x27;, launch_kind = &#x27;cli&#x27;, run_ids = {&#x27;broken&#x27;: &#x27;r-broken&#x27;}
+cap = None, allow_unreviewed_plan = False
+
+    def queue_requests(
+        nodes: Iterable[TaskNode],
+        *,
+        project: str,
+        session: str,
+        repo_root: str | Path,
+        config: Mapping[str, Any],
+        backend_name: str = &quot;&quot;,
+        launch_kind: str = &quot;cli&quot;,
+        run_ids: Mapping[str, str] | None = None,
+        cap: int | None = None,
+        allow_unreviewed_plan: bool = False,
+    ) -&gt; dict[str, Any]:
+        &quot;&quot;&quot;Validate a request batch, then use dispatch&#x27;s queue writer for each.
+    
+        ``allow_unreviewed_plan`` carries the plan-review waiver the same way a
+        single dispatch does: it rides the request&#x27;s ``dispatch_options``, which
+        admission reads before it holds the request on the review gate. A caller
+        that leaves it unset queues a request the gate judges on its own.
+        &quot;&quot;&quot;
+        from reckon.crew import queue_admission
+        from reckon.crew.dispatch_admission import (
+            INPUTS_PROPERTY,
+            _require_write_paths_in_authority,
+            admission_domain_findings,
+            admission_refusals_and_warnings,
+        )
+    
+        nodes = list(nodes)
+        lane = str(backend_name or &quot;&quot;).strip() or str(
+            config.get(&quot;local_backend&quot;) or config.get(&quot;default_backend&quot;) or &quot;&quot;
+        )
+        if not lane:
+            raise CrewError(&quot;queueing a request names no backend to queue it for&quot;)
+        assigned_ids = {
+            node.id: str((run_ids or {}).get(node.id) or new_run_id(node.id))
+            for node in nodes
+        }
+        ceiling = resolved_time_ceiling(config)
+        # The waits are resolved before the node contract is judged, because a
+        # request that waits may name an input its upstream is still to write: that
+        # absence is not a refusal at queue time, and the launch re-checks every
+        # input against the tree the work will actually run in.
+        live = list_live()
+        refs_by_run, projects_by_run = queue_admission._validated_batch_waits(
+            nodes,
+            assigned_ids,
+            project=project,
+            repo_root=repo_root,
+            live=live,
+        )
+        for node in nodes:
+            # The whole node contract is judged here, beside the admission domain,
+            # so a batch entry that a single dispatch would refuse is refused while
+            # it is still a request rather than surfaced later at its launch, where
+            # the refusal costs the queue position and reaches nobody. The role&#x27;s
+            # overlay is resolved against the lane the request records, so the
+            # execution verdict does not depend on whatever lane admission later
+            # binds.
+            _lane_name, effective_backend = resolve_role_override(
+                config, node.role, node.spec_level, lane
+            )
+            # The write-scope fence is judged here on the authority a launch
+            # resolves, so a batch entry whose path lies outside the repository and
+            # the delivery directories is refused while it is still a request. Left
+            # to the launch, that refusal would cost the queue position and reach
+            # nobody, and the entry could never run.
+            _require_write_paths_in_authority(
+                node, resolve_dispatch_authority(project, repo_root)
+            )
+            findings = admission_domain_findings(
+                node, project=project, repository=repo_root
+            )
+            if refs_by_run.get(assigned_ids[node.id]):
+                # A request that waits may name a path its upstream creates, so an
+                # input the repository does not hold is deferred rather than
+                # refused: it is judged at the release, against the tree the launch
+                # reads, and refused there if it genuinely is still absent.
+                findings = [
+                    finding
+                    for finding in findings
+                    if str(finding.get(&quot;property&quot;) or &quot;&quot;) != INPUTS_PROPERTY
+                ]
+            refusals, _warnings = admission_refusals_and_warnings(findings)
+            verdict = validate_node(
+                node,
+                budget_ceiling=ceiling,
+                execution_capable=effective_backend.get(&quot;execution_capable&quot;),
+                repository=repo_root,
+            )
+            refusals.extend(verdict.findings)
+            if refusals:
+&gt;               raise CrewError(
+                    f&quot;node {node.id!r} is refused at queue time: &quot;
+                    + &quot;; &quot;.join(str(finding.get(&quot;detail&quot;) or &quot;&quot;) for finding in refusals)
+                )
+E               reckon.crew.CrewError: node &#x27;broken&#x27; is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+
+reckon/crew/dispatching/requests.py:216: CrewError
+_____________________ test_own_missing_wait_still_refuses ______________________
+
+projects = (PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_own_missing_wait_still_re0/checkout&#x27;), PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_own_missing_wait_still_re0/other-checkout&#x27;))
+
+    def test_own_missing_wait_still_refuses(projects: tuple[Path, Path]) -&gt; None:
+        first, _ = projects
+&gt;       _broken_request(first)
+
+tests/test_dead_wait_blocks_only_its_request.py:125: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_dead_wait_blocks_only_its_request.py:31: in _broken_request
+    wait_cases._queue(
+tests/test_queue_dag_waits.py:101: in _queue
+    return queue_admission.queue_requests(
+reckon/crew/admission/release.py:555: in queue_requests
+    stored = dispatch_queue_requests(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+nodes = [TaskNode(id=&#x27;broken&#x27;, goal=&#x27;build the waiting work&#x27;, plan=&#x27;plan-a&#x27;, section=&#x27;s1&#x27;, after=[], waits_only_after=False, b...ated_hours=None, requires_decisions=[], peer_scopes={}, images=[], inputs=[], compares_with=&#x27;&#x27;, admission_findings=[])]
+project = &#x27;proj&#x27;, session = &#x27;coordinator-a&#x27;
+repo_root = PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_own_missing_wait_still_re0/checkout&#x27;)
+config = {&#x27;default_backend&#x27;: &#x27;clive&#x27;, &#x27;local_backend&#x27;: &#x27;clive&#x27;, &#x27;backends&#x27;: {&#x27;clive&#x27;: {&#x27;launch&#x27;: &#x27;cli&#x27;, &#x27;command&#x27;: &#x27;codex&#x27;, &#x27;model&#x27;: &#x27;local-model&#x27;, &#x27;effort&#x27;: &#x27;medium&#x27;, ...}}, &#x27;roles&#x27;: {&#x27;implement&#x27;: {}}, ...}
+backend_name = &#x27;&#x27;, launch_kind = &#x27;cli&#x27;, run_ids = {&#x27;broken&#x27;: &#x27;r-broken&#x27;}
+cap = None, allow_unreviewed_plan = False
+
+    def queue_requests(
+        nodes: Iterable[TaskNode],
+        *,
+        project: str,
+        session: str,
+        repo_root: str | Path,
+        config: Mapping[str, Any],
+        backend_name: str = &quot;&quot;,
+        launch_kind: str = &quot;cli&quot;,
+        run_ids: Mapping[str, str] | None = None,
+        cap: int | None = None,
+        allow_unreviewed_plan: bool = False,
+    ) -&gt; dict[str, Any]:
+        &quot;&quot;&quot;Validate a request batch, then use dispatch&#x27;s queue writer for each.
+    
+        ``allow_unreviewed_plan`` carries the plan-review waiver the same way a
+        single dispatch does: it rides the request&#x27;s ``dispatch_options``, which
+        admission reads before it holds the request on the review gate. A caller
+        that leaves it unset queues a request the gate judges on its own.
+        &quot;&quot;&quot;
+        from reckon.crew import queue_admission
+        from reckon.crew.dispatch_admission import (
+            INPUTS_PROPERTY,
+            _require_write_paths_in_authority,
+            admission_domain_findings,
+            admission_refusals_and_warnings,
+        )
+    
+        nodes = list(nodes)
+        lane = str(backend_name or &quot;&quot;).strip() or str(
+            config.get(&quot;local_backend&quot;) or config.get(&quot;default_backend&quot;) or &quot;&quot;
+        )
+        if not lane:
+            raise CrewError(&quot;queueing a request names no backend to queue it for&quot;)
+        assigned_ids = {
+            node.id: str((run_ids or {}).get(node.id) or new_run_id(node.id))
+            for node in nodes
+        }
+        ceiling = resolved_time_ceiling(config)
+        # The waits are resolved before the node contract is judged, because a
+        # request that waits may name an input its upstream is still to write: that
+        # absence is not a refusal at queue time, and the launch re-checks every
+        # input against the tree the work will actually run in.
+        live = list_live()
+        refs_by_run, projects_by_run = queue_admission._validated_batch_waits(
+            nodes,
+            assigned_ids,
+            project=project,
+            repo_root=repo_root,
+            live=live,
+        )
+        for node in nodes:
+            # The whole node contract is judged here, beside the admission domain,
+            # so a batch entry that a single dispatch would refuse is refused while
+            # it is still a request rather than surfaced later at its launch, where
+            # the refusal costs the queue position and reaches nobody. The role&#x27;s
+            # overlay is resolved against the lane the request records, so the
+            # execution verdict does not depend on whatever lane admission later
+            # binds.
+            _lane_name, effective_backend = resolve_role_override(
+                config, node.role, node.spec_level, lane
+            )
+            # The write-scope fence is judged here on the authority a launch
+            # resolves, so a batch entry whose path lies outside the repository and
+            # the delivery directories is refused while it is still a request. Left
+            # to the launch, that refusal would cost the queue position and reach
+            # nobody, and the entry could never run.
+            _require_write_paths_in_authority(
+                node, resolve_dispatch_authority(project, repo_root)
+            )
+            findings = admission_domain_findings(
+                node, project=project, repository=repo_root
+            )
+            if refs_by_run.get(assigned_ids[node.id]):
+                # A request that waits may name a path its upstream creates, so an
+                # input the repository does not hold is deferred rather than
+                # refused: it is judged at the release, against the tree the launch
+                # reads, and refused there if it genuinely is still absent.
+                findings = [
+                    finding
+                    for finding in findings
+                    if str(finding.get(&quot;property&quot;) or &quot;&quot;) != INPUTS_PROPERTY
+                ]
+            refusals, _warnings = admission_refusals_and_warnings(findings)
+            verdict = validate_node(
+                node,
+                budget_ceiling=ceiling,
+                execution_capable=effective_backend.get(&quot;execution_capable&quot;),
+                repository=repo_root,
+            )
+            refusals.extend(verdict.findings)
+            if refusals:
+&gt;               raise CrewError(
+                    f&quot;node {node.id!r} is refused at queue time: &quot;
+                    + &quot;; &quot;.join(str(finding.get(&quot;detail&quot;) or &quot;&quot;) for finding in refusals)
+                )
+E               reckon.crew.CrewError: node &#x27;broken&#x27; is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+
+reckon/crew/dispatching/requests.py:216: CrewError
+______________ test_cycle_through_existing_requests_still_refuses ______________
+
+projects = (PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_cycle_through_existing_re0/checkout&#x27;), PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_cycle_through_existing_re0/other-checkout&#x27;))
+
+    def test_cycle_through_existing_requests_still_refuses(
+        projects: tuple[Path, Path],
+    ) -&gt; None:
+        first, _ = projects
+&gt;       wait_cases._queue(
+            first,
+            wait_cases._node(&quot;prior&quot;, &quot;s1&quot;),
+            run_ids={&quot;prior&quot;: &quot;r-prior&quot;},
+        )
+
+tests/test_dead_wait_blocks_only_its_request.py:138: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_queue_dag_waits.py:101: in _queue
+    return queue_admission.queue_requests(
+reckon/crew/admission/release.py:555: in queue_requests
+    stored = dispatch_queue_requests(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+nodes = [TaskNode(id=&#x27;prior&#x27;, goal=&#x27;build the waiting work&#x27;, plan=&#x27;plan-a&#x27;, section=&#x27;s1&#x27;, after=[], waits_only_after=False, br...ated_hours=None, requires_decisions=[], peer_scopes={}, images=[], inputs=[], compares_with=&#x27;&#x27;, admission_findings=[])]
+project = &#x27;proj&#x27;, session = &#x27;coordinator-a&#x27;
+repo_root = PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_cycle_through_existing_re0/checkout&#x27;)
+config = {&#x27;default_backend&#x27;: &#x27;clive&#x27;, &#x27;local_backend&#x27;: &#x27;clive&#x27;, &#x27;backends&#x27;: {&#x27;clive&#x27;: {&#x27;launch&#x27;: &#x27;cli&#x27;, &#x27;command&#x27;: &#x27;codex&#x27;, &#x27;model&#x27;: &#x27;local-model&#x27;, &#x27;effort&#x27;: &#x27;medium&#x27;, ...}}, &#x27;roles&#x27;: {&#x27;implement&#x27;: {}}, ...}
+backend_name = &#x27;&#x27;, launch_kind = &#x27;cli&#x27;, run_ids = {&#x27;prior&#x27;: &#x27;r-prior&#x27;}
+cap = None, allow_unreviewed_plan = False
+
+    def queue_requests(
+        nodes: Iterable[TaskNode],
+        *,
+        project: str,
+        session: str,
+        repo_root: str | Path,
+        config: Mapping[str, Any],
+        backend_name: str = &quot;&quot;,
+        launch_kind: str = &quot;cli&quot;,
+        run_ids: Mapping[str, str] | None = None,
+        cap: int | None = None,
+        allow_unreviewed_plan: bool = False,
+    ) -&gt; dict[str, Any]:
+        &quot;&quot;&quot;Validate a request batch, then use dispatch&#x27;s queue writer for each.
+    
+        ``allow_unreviewed_plan`` carries the plan-review waiver the same way a
+        single dispatch does: it rides the request&#x27;s ``dispatch_options``, which
+        admission reads before it holds the request on the review gate. A caller
+        that leaves it unset queues a request the gate judges on its own.
+        &quot;&quot;&quot;
+        from reckon.crew import queue_admission
+        from reckon.crew.dispatch_admission import (
+            INPUTS_PROPERTY,
+            _require_write_paths_in_authority,
+            admission_domain_findings,
+            admission_refusals_and_warnings,
+        )
+    
+        nodes = list(nodes)
+        lane = str(backend_name or &quot;&quot;).strip() or str(
+            config.get(&quot;local_backend&quot;) or config.get(&quot;default_backend&quot;) or &quot;&quot;
+        )
+        if not lane:
+            raise CrewError(&quot;queueing a request names no backend to queue it for&quot;)
+        assigned_ids = {
+            node.id: str((run_ids or {}).get(node.id) or new_run_id(node.id))
+            for node in nodes
+        }
+        ceiling = resolved_time_ceiling(config)
+        # The waits are resolved before the node contract is judged, because a
+        # request that waits may name an input its upstream is still to write: that
+        # absence is not a refusal at queue time, and the launch re-checks every
+        # input against the tree the work will actually run in.
+        live = list_live()
+        refs_by_run, projects_by_run = queue_admission._validated_batch_waits(
+            nodes,
+            assigned_ids,
+            project=project,
+            repo_root=repo_root,
+            live=live,
+        )
+        for node in nodes:
+            # The whole node contract is judged here, beside the admission domain,
+            # so a batch entry that a single dispatch would refuse is refused while
+            # it is still a request rather than surfaced later at its launch, where
+            # the refusal costs the queue position and reaches nobody. The role&#x27;s
+            # overlay is resolved against the lane the request records, so the
+            # execution verdict does not depend on whatever lane admission later
+            # binds.
+            _lane_name, effective_backend = resolve_role_override(
+                config, node.role, node.spec_level, lane
+            )
+            # The write-scope fence is judged here on the authority a launch
+            # resolves, so a batch entry whose path lies outside the repository and
+            # the delivery directories is refused while it is still a request. Left
+            # to the launch, that refusal would cost the queue position and reach
+            # nobody, and the entry could never run.
+            _require_write_paths_in_authority(
+                node, resolve_dispatch_authority(project, repo_root)
+            )
+            findings = admission_domain_findings(
+                node, project=project, repository=repo_root
+            )
+            if refs_by_run.get(assigned_ids[node.id]):
+                # A request that waits may name a path its upstream creates, so an
+                # input the repository does not hold is deferred rather than
+                # refused: it is judged at the release, against the tree the launch
+                # reads, and refused there if it genuinely is still absent.
+                findings = [
+                    finding
+                    for finding in findings
+                    if str(finding.get(&quot;property&quot;) or &quot;&quot;) != INPUTS_PROPERTY
+                ]
+            refusals, _warnings = admission_refusals_and_warnings(findings)
+            verdict = validate_node(
+                node,
+                budget_ceiling=ceiling,
+                execution_capable=effective_backend.get(&quot;execution_capable&quot;),
+                repository=repo_root,
+            )
+            refusals.extend(verdict.findings)
+            if refusals:
+&gt;               raise CrewError(
+                    f&quot;node {node.id!r} is refused at queue time: &quot;
+                    + &quot;; &quot;.join(str(finding.get(&quot;detail&quot;) or &quot;&quot;) for finding in refusals)
+                )
+E               reckon.crew.CrewError: node &#x27;prior&#x27; is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+
+reckon/crew/dispatching/requests.py:216: CrewError
+___________ test_blocked_request_does_not_bind_but_launched_run_does ___________
+
+dispatch_repo = PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_blocked_request_does_not_0/repo&#x27;)
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7fd42299ae40&gt;
+
+    def test_blocked_request_does_not_bind_but_launched_run_does(
+        dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+    ) -&gt; None:
+        scope_cases._configure(dispatch_repo, monkeypatch, session_slots=4)
+        scope_cases._live(
+            dispatch_repo,
+            &quot;r-blocked&quot;,
+            phase=&quot;blocked-upstream&quot;,
+            write_paths=[scope_cases.SHARED],
+        )
+        allowed = scope_cases._dispatch(dispatch_repo, &quot;ready&quot;, paths=(scope_cases.SHARED,))
+        assert allowed.exit_code == 0, allowed.output
+&gt;       assert scope_cases._payload(allowed)[&quot;phase&quot;] == &quot;starting&quot;
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_dead_wait_blocks_only_its_request.py:167: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_overlapping_queued_requests_launch_in_turn.py:206: in _payload
+    return json.loads(result.output.splitlines()[0])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/ITER/mcintos/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/json/__init__.py:352: in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/ITER/mcintos/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/json/decoder.py:345: in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;json.decoder.JSONDecoder object at 0x7fd4264e38c0&gt;
+s = &#x27;reckon: created run r-20261115T200640097744-ready&#x27;, idx = 0
+
+    def raw_decode(self, s, idx=0):
+        &quot;&quot;&quot;Decode a JSON document from ``s`` (a ``str`` beginning with
+        a JSON document) and return a 2-tuple of the Python
+        representation and the index in ``s`` where the document ended.
+    
+        This can be used to decode a JSON document from a string that may
+        have extraneous data at the end.
+    
+        &quot;&quot;&quot;
+        try:
+            obj, end = self.scan_once(s, idx)
+        except StopIteration as err:
+&gt;           raise JSONDecodeError(&quot;Expecting value&quot;, s, err.value) from None
+E           json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+
+/home/ITER/mcintos/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/json/decoder.py:363: JSONDecodeError
+_____ test_queued_pointer_survives_refused_launch_and_own_launch_proceeds ______
+
+dispatch_repo = PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_queued_pointer_survives_r0/repo&#x27;)
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7fd42299aa50&gt;
+
+    def test_queued_pointer_survives_refused_launch_and_own_launch_proceeds(
+        dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+    ) -&gt; None:
+        config = scope_cases._configure(dispatch_repo, monkeypatch, session_slots=4)
+        dependent_config = json.loads(json.dumps(config))
+        dependent_lane = dispatch_repo.parent / &quot;dependent-lane.json&quot;
+        dependent_lane.write_text(
+            json.dumps({&quot;headroom&quot;: 0, &quot;admission&quot;: {&quot;worker_slots&quot;: 0}}),
+            encoding=&quot;utf-8&quot;,
+        )
+        dependent_config[&quot;backends&quot;][scope_cases.LANE][&quot;lane_document&quot;] = str(
+            dependent_lane
+        )
+        pointer = scope_cases._queue(
+            dispatch_repo,
+            node_id=&quot;queued&quot;,
+            run_id=&quot;r-queued&quot;,
+            session=scope_cases.SESSION_A,
+            write_paths=[scope_cases.SHARED],
+            queued_at=scope_cases.START.isoformat(),
+        )
+        runs.queue_dispatch(pointer)
+        scope_cases._live(
+            dispatch_repo,
+            &quot;r-peer&quot;,
+            phase=&quot;starting&quot;,
+            write_paths=[scope_cases.SHARED],
+        )
+        real_dispatch = dispatch_module.dispatch
+        observed: list[bool] = []
+    
+        def observed_dispatch(**kwargs):
+            observed.append(runs.read_pointer(&quot;r-queued&quot;) is not None)
+            dependent = TaskNode(
+                id=&quot;dependent&quot;,
+                goal=&quot;follow queued request&quot;,
+                plan=&quot;plan-a&quot;,
+                section=&quot;dispatch&quot;,
+                after=[&quot;r-queued&quot;],
+                done_when=&quot;pytest reports passed&quot;,
+                write_paths=[&quot;dependent.txt&quot;],
+                time_budget=&quot;20m&quot;,
+                spec_level=&quot;exact&quot;,
+            )
+            try:
+                answer = real_dispatch(
+                    node=dependent,
+                    project=scope_cases.PROJECT,
+                    repo=dispatch_repo,
+                    config=dependent_config,
+                    session=scope_cases.SESSION_B,
+                    run_id=&quot;r-dependent&quot;,
+                    check_budget=False,
+                    watch_override=True,
+                    unreviewed_plan_override=True,
+                    local=True,
+                    backend_override=scope_cases.LANE,
+                    launcher=scope_cases._launcher([]),
+                )
+            except wait_cases.LaneHeld as held:
+                answer = dict(held.queued or {})
+            assert answer[&quot;run_id&quot;] == &quot;r-dependent&quot;
+            assert &quot;run:r-queued&quot; in answer[&quot;waits&quot;]
+            assert runs.pointer_path(&quot;r-queued&quot;).exists()
+            return real_dispatch(**kwargs)
+    
+        monkeypatch.setattr(dispatch_module, &quot;dispatch&quot;, observed_dispatch)
+&gt;       with pytest.raises(ScopeConflict):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ScopeConflict
+
+tests/test_dead_wait_blocks_only_its_request.py:249: Failed
+----------------------------- Captured stderr call -----------------------------
+reckon: created run r-queued
+________ test_a_pass_launching_three_requests_builds_the_readiness_once ________
+
+pass_repo = PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_a_pass_launching_three_re0/checkout&#x27;)
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7fd422d99320&gt;
+
+    def test_a_pass_launching_three_requests_builds_the_readiness_once(
+        pass_repo: Path, monkeypatch: pytest.MonkeyPatch
+    ) -&gt; None:
+        &quot;&quot;&quot;Three launches on one plan share its bounded verdict.&quot;&quot;&quot;
+&gt;       stored = _queue(pass_repo)
+                 ^^^^^^^^^^^^^^^^^
+
+tests/test_an_admission_pass_reads_the_roadmap_once.py:143: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_an_admission_pass_reads_the_roadmap_once.py:94: in _queue
+    return queue_admission.queue_requests(
+reckon/crew/admission/release.py:555: in queue_requests
+    stored = dispatch_queue_requests(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+nodes = [TaskNode(id=&#x27;n0&#x27;, goal=&#x27;build s1&#x27;, plan=&#x27;plan-a&#x27;, section=&#x27;s1&#x27;, after=[], waits_only_after=False, brief=&#x27;&#x27;, brief_sha...ated_hours=None, requires_decisions=[], peer_scopes={}, images=[], inputs=[], compares_with=&#x27;&#x27;, admission_findings=[])]
+project = &#x27;proj&#x27;, session = &#x27;coordinator-a&#x27;
+repo_root = PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_a_pass_launching_three_re0/checkout&#x27;)
+config = {&#x27;default_backend&#x27;: &#x27;clive&#x27;, &#x27;local_backend&#x27;: &#x27;clive&#x27;, &#x27;backends&#x27;: {&#x27;clive&#x27;: {&#x27;launch&#x27;: &#x27;cli&#x27;, &#x27;command&#x27;: &#x27;codex&#x27;, &#x27;model&#x27;: &#x27;local-model&#x27;, &#x27;effort&#x27;: &#x27;medium&#x27;, ...}}, &#x27;roles&#x27;: {&#x27;implement&#x27;: {}}, ...}
+backend_name = &#x27;&#x27;, launch_kind = &#x27;cli&#x27;
+run_ids = {&#x27;n0&#x27;: &#x27;r-s1&#x27;, &#x27;n1&#x27;: &#x27;r-s2&#x27;, &#x27;n2&#x27;: &#x27;r-s3&#x27;}, cap = None
+allow_unreviewed_plan = False
+
+    def queue_requests(
+        nodes: Iterable[TaskNode],
+        *,
+        project: str,
+        session: str,
+        repo_root: str | Path,
+        config: Mapping[str, Any],
+        backend_name: str = &quot;&quot;,
+        launch_kind: str = &quot;cli&quot;,
+        run_ids: Mapping[str, str] | None = None,
+        cap: int | None = None,
+        allow_unreviewed_plan: bool = False,
+    ) -&gt; dict[str, Any]:
+        &quot;&quot;&quot;Validate a request batch, then use dispatch&#x27;s queue writer for each.
+    
+        ``allow_unreviewed_plan`` carries the plan-review waiver the same way a
+        single dispatch does: it rides the request&#x27;s ``dispatch_options``, which
+        admission reads before it holds the request on the review gate. A caller
+        that leaves it unset queues a request the gate judges on its own.
+        &quot;&quot;&quot;
+        from reckon.crew import queue_admission
+        from reckon.crew.dispatch_admission import (
+            INPUTS_PROPERTY,
+            _require_write_paths_in_authority,
+            admission_domain_findings,
+            admission_refusals_and_warnings,
+        )
+    
+        nodes = list(nodes)
+        lane = str(backend_name or &quot;&quot;).strip() or str(
+            config.get(&quot;local_backend&quot;) or config.get(&quot;default_backend&quot;) or &quot;&quot;
+        )
+        if not lane:
+            raise CrewError(&quot;queueing a request names no backend to queue it for&quot;)
+        assigned_ids = {
+            node.id: str((run_ids or {}).get(node.id) or new_run_id(node.id))
+            for node in nodes
+        }
+        ceiling = resolved_time_ceiling(config)
+        # The waits are resolved before the node contract is judged, because a
+        # request that waits may name an input its upstream is still to write: that
+        # absence is not a refusal at queue time, and the launch re-checks every
+        # input against the tree the work will actually run in.
+        live = list_live()
+        refs_by_run, projects_by_run = queue_admission._validated_batch_waits(
+            nodes,
+            assigned_ids,
+            project=project,
+            repo_root=repo_root,
+            live=live,
+        )
+        for node in nodes:
+            # The whole node contract is judged here, beside the admission domain,
+            # so a batch entry that a single dispatch would refuse is refused while
+            # it is still a request rather than surfaced later at its launch, where
+            # the refusal costs the queue position and reaches nobody. The role&#x27;s
+            # overlay is resolved against the lane the request records, so the
+            # execution verdict does not depend on whatever lane admission later
+            # binds.
+            _lane_name, effective_backend = resolve_role_override(
+                config, node.role, node.spec_level, lane
+            )
+            # The write-scope fence is judged here on the authority a launch
+            # resolves, so a batch entry whose path lies outside the repository and
+            # the delivery directories is refused while it is still a request. Left
+            # to the launch, that refusal would cost the queue position and reach
+            # nobody, and the entry could never run.
+            _require_write_paths_in_authority(
+                node, resolve_dispatch_authority(project, repo_root)
+            )
+            findings = admission_domain_findings(
+                node, project=project, repository=repo_root
+            )
+            if refs_by_run.get(assigned_ids[node.id]):
+                # A request that waits may name a path its upstream creates, so an
+                # input the repository does not hold is deferred rather than
+                # refused: it is judged at the release, against the tree the launch
+                # reads, and refused there if it genuinely is still absent.
+                findings = [
+                    finding
+                    for finding in findings
+                    if str(finding.get(&quot;property&quot;) or &quot;&quot;) != INPUTS_PROPERTY
+                ]
+            refusals, _warnings = admission_refusals_and_warnings(findings)
+            verdict = validate_node(
+                node,
+                budget_ceiling=ceiling,
+                execution_capable=effective_backend.get(&quot;execution_capable&quot;),
+                repository=repo_root,
+            )
+            refusals.extend(verdict.findings)
+            if refusals:
+&gt;               raise CrewError(
+                    f&quot;node {node.id!r} is refused at queue time: &quot;
+                    + &quot;; &quot;.join(str(finding.get(&quot;detail&quot;) or &quot;&quot;) for finding in refusals)
+                )
+E               reckon.crew.CrewError: node &#x27;n0&#x27; is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+
+reckon/crew/dispatching/requests.py:216: CrewError
+__________ test_a_plan_touched_between_two_launches_forces_a_rebuild ___________
+
+pass_repo = PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_a_plan_touched_between_tw0/checkout&#x27;)
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7fd422d4b7e0&gt;
+
+    def test_a_plan_touched_between_two_launches_forces_a_rebuild(
+        pass_repo: Path, monkeypatch: pytest.MonkeyPatch
+    ) -&gt; None:
+        &quot;&quot;&quot;An edit landing mid-pass is read, not answered from the pass&#x27;s cache.&quot;&quot;&quot;
+&gt;       _queue(pass_repo)
+
+tests/test_an_admission_pass_reads_the_roadmap_once.py:160: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_an_admission_pass_reads_the_roadmap_once.py:94: in _queue
+    return queue_admission.queue_requests(
+reckon/crew/admission/release.py:555: in queue_requests
+    stored = dispatch_queue_requests(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+nodes = [TaskNode(id=&#x27;n0&#x27;, goal=&#x27;build s1&#x27;, plan=&#x27;plan-a&#x27;, section=&#x27;s1&#x27;, after=[], waits_only_after=False, brief=&#x27;&#x27;, brief_sha...ated_hours=None, requires_decisions=[], peer_scopes={}, images=[], inputs=[], compares_with=&#x27;&#x27;, admission_findings=[])]
+project = &#x27;proj&#x27;, session = &#x27;coordinator-a&#x27;
+repo_root = PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_a_plan_touched_between_tw0/checkout&#x27;)
+config = {&#x27;default_backend&#x27;: &#x27;clive&#x27;, &#x27;local_backend&#x27;: &#x27;clive&#x27;, &#x27;backends&#x27;: {&#x27;clive&#x27;: {&#x27;launch&#x27;: &#x27;cli&#x27;, &#x27;command&#x27;: &#x27;codex&#x27;, &#x27;model&#x27;: &#x27;local-model&#x27;, &#x27;effort&#x27;: &#x27;medium&#x27;, ...}}, &#x27;roles&#x27;: {&#x27;implement&#x27;: {}}, ...}
+backend_name = &#x27;&#x27;, launch_kind = &#x27;cli&#x27;
+run_ids = {&#x27;n0&#x27;: &#x27;r-s1&#x27;, &#x27;n1&#x27;: &#x27;r-s2&#x27;, &#x27;n2&#x27;: &#x27;r-s3&#x27;}, cap = None
+allow_unreviewed_plan = False
+
+    def queue_requests(
+        nodes: Iterable[TaskNode],
+        *,
+        project: str,
+        session: str,
+        repo_root: str | Path,
+        config: Mapping[str, Any],
+        backend_name: str = &quot;&quot;,
+        launch_kind: str = &quot;cli&quot;,
+        run_ids: Mapping[str, str] | None = None,
+        cap: int | None = None,
+        allow_unreviewed_plan: bool = False,
+    ) -&gt; dict[str, Any]:
+        &quot;&quot;&quot;Validate a request batch, then use dispatch&#x27;s queue writer for each.
+    
+        ``allow_unreviewed_plan`` carries the plan-review waiver the same way a
+        single dispatch does: it rides the request&#x27;s ``dispatch_options``, which
+        admission reads before it holds the request on the review gate. A caller
+        that leaves it unset queues a request the gate judges on its own.
+        &quot;&quot;&quot;
+        from reckon.crew import queue_admission
+        from reckon.crew.dispatch_admission import (
+            INPUTS_PROPERTY,
+            _require_write_paths_in_authority,
+            admission_domain_findings,
+            admission_refusals_and_warnings,
+        )
+    
+        nodes = list(nodes)
+        lane = str(backend_name or &quot;&quot;).strip() or str(
+            config.get(&quot;local_backend&quot;) or config.get(&quot;default_backend&quot;) or &quot;&quot;
+        )
+        if not lane:
+            raise CrewError(&quot;queueing a request names no backend to queue it for&quot;)
+        assigned_ids = {
+            node.id: str((run_ids or {}).get(node.id) or new_run_id(node.id))
+            for node in nodes
+        }
+        ceiling = resolved_time_ceiling(config)
+        # The waits are resolved before the node contract is judged, because a
+        # request that waits may name an input its upstream is still to write: that
+        # absence is not a refusal at queue time, and the launch re-checks every
+        # input against the tree the work will actually run in.
+        live = list_live()
+        refs_by_run, projects_by_run = queue_admission._validated_batch_waits(
+            nodes,
+            assigned_ids,
+            project=project,
+            repo_root=repo_root,
+            live=live,
+        )
+        for node in nodes:
+            # The whole node contract is judged here, beside the admission domain,
+            # so a batch entry that a single dispatch would refuse is refused while
+            # it is still a request rather than surfaced later at its launch, where
+            # the refusal costs the queue position and reaches nobody. The role&#x27;s
+            # overlay is resolved against the lane the request records, so the
+            # execution verdict does not depend on whatever lane admission later
+            # binds.
+            _lane_name, effective_backend = resolve_role_override(
+                config, node.role, node.spec_level, lane
+            )
+            # The write-scope fence is judged here on the authority a launch
+            # resolves, so a batch entry whose path lies outside the repository and
+            # the delivery directories is refused while it is still a request. Left
+            # to the launch, that refusal would cost the queue position and reach
+            # nobody, and the entry could never run.
+            _require_write_paths_in_authority(
+                node, resolve_dispatch_authority(project, repo_root)
+            )
+            findings = admission_domain_findings(
+                node, project=project, repository=repo_root
+            )
+            if refs_by_run.get(assigned_ids[node.id]):
+                # A request that waits may name a path its upstream creates, so an
+                # input the repository does not hold is deferred rather than
+                # refused: it is judged at the release, against the tree the launch
+                # reads, and refused there if it genuinely is still absent.
+                findings = [
+                    finding
+                    for finding in findings
+                    if str(finding.get(&quot;property&quot;) or &quot;&quot;) != INPUTS_PROPERTY
+                ]
+            refusals, _warnings = admission_refusals_and_warnings(findings)
+            verdict = validate_node(
+                node,
+                budget_ceiling=ceiling,
+                execution_capable=effective_backend.get(&quot;execution_capable&quot;),
+                repository=repo_root,
+            )
+            refusals.extend(verdict.findings)
+            if refusals:
+&gt;               raise CrewError(
+                    f&quot;node {node.id!r} is refused at queue time: &quot;
+                    + &quot;; &quot;.join(str(finding.get(&quot;detail&quot;) or &quot;&quot;) for finding in refusals)
+                )
+E               reckon.crew.CrewError: node &#x27;n0&#x27; is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+
+reckon/crew/dispatching/requests.py:216: CrewError
+_____________ test_a_direct_dispatch_outside_a_pass_builds_its_own _____________
+
+pass_repo = PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_a_direct_dispatch_outside0/checkout&#x27;)
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7fd422d4ba10&gt;
+
+    def test_a_direct_dispatch_outside_a_pass_builds_its_own(
+        pass_repo: Path, monkeypatch: pytest.MonkeyPatch
+    ) -&gt; None:
+        &quot;&quot;&quot;A dispatch no pass holds a cache for derives its own readiness.&quot;&quot;&quot;
+&gt;       _queue(pass_repo)
+
+tests/test_an_admission_pass_reads_the_roadmap_once.py:190: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_an_admission_pass_reads_the_roadmap_once.py:94: in _queue
+    return queue_admission.queue_requests(
+reckon/crew/admission/release.py:555: in queue_requests
+    stored = dispatch_queue_requests(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+nodes = [TaskNode(id=&#x27;n0&#x27;, goal=&#x27;build s1&#x27;, plan=&#x27;plan-a&#x27;, section=&#x27;s1&#x27;, after=[], waits_only_after=False, brief=&#x27;&#x27;, brief_sha...ated_hours=None, requires_decisions=[], peer_scopes={}, images=[], inputs=[], compares_with=&#x27;&#x27;, admission_findings=[])]
+project = &#x27;proj&#x27;, session = &#x27;coordinator-a&#x27;
+repo_root = PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_a_direct_dispatch_outside0/checkout&#x27;)
+config = {&#x27;default_backend&#x27;: &#x27;clive&#x27;, &#x27;local_backend&#x27;: &#x27;clive&#x27;, &#x27;backends&#x27;: {&#x27;clive&#x27;: {&#x27;launch&#x27;: &#x27;cli&#x27;, &#x27;command&#x27;: &#x27;codex&#x27;, &#x27;model&#x27;: &#x27;local-model&#x27;, &#x27;effort&#x27;: &#x27;medium&#x27;, ...}}, &#x27;roles&#x27;: {&#x27;implement&#x27;: {}}, ...}
+backend_name = &#x27;&#x27;, launch_kind = &#x27;cli&#x27;
+run_ids = {&#x27;n0&#x27;: &#x27;r-s1&#x27;, &#x27;n1&#x27;: &#x27;r-s2&#x27;, &#x27;n2&#x27;: &#x27;r-s3&#x27;}, cap = None
+allow_unreviewed_plan = False
+
+    def queue_requests(
+        nodes: Iterable[TaskNode],
+        *,
+        project: str,
+        session: str,
+        repo_root: str | Path,
+        config: Mapping[str, Any],
+        backend_name: str = &quot;&quot;,
+        launch_kind: str = &quot;cli&quot;,
+        run_ids: Mapping[str, str] | None = None,
+        cap: int | None = None,
+        allow_unreviewed_plan: bool = False,
+    ) -&gt; dict[str, Any]:
+        &quot;&quot;&quot;Validate a request batch, then use dispatch&#x27;s queue writer for each.
+    
+        ``allow_unreviewed_plan`` carries the plan-review waiver the same way a
+        single dispatch does: it rides the request&#x27;s ``dispatch_options``, which
+        admission reads before it holds the request on the review gate. A caller
+        that leaves it unset queues a request the gate judges on its own.
+        &quot;&quot;&quot;
+        from reckon.crew import queue_admission
+        from reckon.crew.dispatch_admission import (
+            INPUTS_PROPERTY,
+            _require_write_paths_in_authority,
+            admission_domain_findings,
+            admission_refusals_and_warnings,
+        )
+    
+        nodes = list(nodes)
+        lane = str(backend_name or &quot;&quot;).strip() or str(
+            config.get(&quot;local_backend&quot;) or config.get(&quot;default_backend&quot;) or &quot;&quot;
+        )
+        if not lane:
+            raise CrewError(&quot;queueing a request names no backend to queue it for&quot;)
+        assigned_ids = {
+            node.id: str((run_ids or {}).get(node.id) or new_run_id(node.id))
+            for node in nodes
+        }
+        ceiling = resolved_time_ceiling(config)
+        # The waits are resolved before the node contract is judged, because a
+        # request that waits may name an input its upstream is still to write: that
+        # absence is not a refusal at queue time, and the launch re-checks every
+        # input against the tree the work will actually run in.
+        live = list_live()
+        refs_by_run, projects_by_run = queue_admission._validated_batch_waits(
+            nodes,
+            assigned_ids,
+            project=project,
+            repo_root=repo_root,
+            live=live,
+        )
+        for node in nodes:
+            # The whole node contract is judged here, beside the admission domain,
+            # so a batch entry that a single dispatch would refuse is refused while
+            # it is still a request rather than surfaced later at its launch, where
+            # the refusal costs the queue position and reaches nobody. The role&#x27;s
+            # overlay is resolved against the lane the request records, so the
+            # execution verdict does not depend on whatever lane admission later
+            # binds.
+            _lane_name, effective_backend = resolve_role_override(
+                config, node.role, node.spec_level, lane
+            )
+            # The write-scope fence is judged here on the authority a launch
+            # resolves, so a batch entry whose path lies outside the repository and
+            # the delivery directories is refused while it is still a request. Left
+            # to the launch, that refusal would cost the queue position and reach
+            # nobody, and the entry could never run.
+            _require_write_paths_in_authority(
+                node, resolve_dispatch_authority(project, repo_root)
+            )
+            findings = admission_domain_findings(
+                node, project=project, repository=repo_root
+            )
+            if refs_by_run.get(assigned_ids[node.id]):
+                # A request that waits may name a path its upstream creates, so an
+                # input the repository does not hold is deferred rather than
+                # refused: it is judged at the release, against the tree the launch
+                # reads, and refused there if it genuinely is still absent.
+                findings = [
+                    finding
+                    for finding in findings
+                    if str(finding.get(&quot;property&quot;) or &quot;&quot;) != INPUTS_PROPERTY
+                ]
+            refusals, _warnings = admission_refusals_and_warnings(findings)
+            verdict = validate_node(
+                node,
+                budget_ceiling=ceiling,
+                execution_capable=effective_backend.get(&quot;execution_capable&quot;),
+                repository=repo_root,
+            )
+            refusals.extend(verdict.findings)
+            if refusals:
+&gt;               raise CrewError(
+                    f&quot;node {node.id!r} is refused at queue time: &quot;
+                    + &quot;; &quot;.join(str(finding.get(&quot;detail&quot;) or &quot;&quot;) for finding in refusals)
+                )
+E               reckon.crew.CrewError: node &#x27;n0&#x27; is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+
+reckon/crew/dispatching/requests.py:216: CrewError
+________ test_the_launches_read_the_waits_an_uncached_computation_gives ________
+
+tmp_path = PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_the_launches_read_the_wai0&#x27;)
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7fd422d4b9a0&gt;
+
+    def test_the_launches_read_the_waits_an_uncached_computation_gives(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -&gt; None:
+        &quot;&quot;&quot;Caching the readiness changes how often it is built, not what it says.&quot;&quot;&quot;
+        repository = _seed(
+            tmp_path, monkeypatch, {&quot;s2&quot;: [f&quot;{PLAN}#s1&quot;], &quot;s3&quot;: [f&quot;{PLAN}#s1&quot;]}
+        )
+&gt;       _queue(repository)
+
+tests/test_an_admission_pass_reads_the_roadmap_once.py:225: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_an_admission_pass_reads_the_roadmap_once.py:94: in _queue
+    return queue_admission.queue_requests(
+reckon/crew/admission/release.py:555: in queue_requests
+    stored = dispatch_queue_requests(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+nodes = [TaskNode(id=&#x27;n0&#x27;, goal=&#x27;build s1&#x27;, plan=&#x27;plan-a&#x27;, section=&#x27;s1&#x27;, after=[], waits_only_after=False, brief=&#x27;&#x27;, brief_sha...ated_hours=None, requires_decisions=[], peer_scopes={}, images=[], inputs=[], compares_with=&#x27;&#x27;, admission_findings=[])]
+project = &#x27;proj&#x27;, session = &#x27;coordinator-a&#x27;
+repo_root = PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_the_launches_read_the_wai0/checkout&#x27;)
+config = {&#x27;default_backend&#x27;: &#x27;clive&#x27;, &#x27;local_backend&#x27;: &#x27;clive&#x27;, &#x27;backends&#x27;: {&#x27;clive&#x27;: {&#x27;launch&#x27;: &#x27;cli&#x27;, &#x27;command&#x27;: &#x27;codex&#x27;, &#x27;model&#x27;: &#x27;local-model&#x27;, &#x27;effort&#x27;: &#x27;medium&#x27;, ...}}, &#x27;roles&#x27;: {&#x27;implement&#x27;: {}}, ...}
+backend_name = &#x27;&#x27;, launch_kind = &#x27;cli&#x27;
+run_ids = {&#x27;n0&#x27;: &#x27;r-s1&#x27;, &#x27;n1&#x27;: &#x27;r-s2&#x27;, &#x27;n2&#x27;: &#x27;r-s3&#x27;}, cap = None
+allow_unreviewed_plan = False
+
+    def queue_requests(
+        nodes: Iterable[TaskNode],
+        *,
+        project: str,
+        session: str,
+        repo_root: str | Path,
+        config: Mapping[str, Any],
+        backend_name: str = &quot;&quot;,
+        launch_kind: str = &quot;cli&quot;,
+        run_ids: Mapping[str, str] | None = None,
+        cap: int | None = None,
+        allow_unreviewed_plan: bool = False,
+    ) -&gt; dict[str, Any]:
+        &quot;&quot;&quot;Validate a request batch, then use dispatch&#x27;s queue writer for each.
+    
+        ``allow_unreviewed_plan`` carries the plan-review waiver the same way a
+        single dispatch does: it rides the request&#x27;s ``dispatch_options``, which
+        admission reads before it holds the request on the review gate. A caller
+        that leaves it unset queues a request the gate judges on its own.
+        &quot;&quot;&quot;
+        from reckon.crew import queue_admission
+        from reckon.crew.dispatch_admission import (
+            INPUTS_PROPERTY,
+            _require_write_paths_in_authority,
+            admission_domain_findings,
+            admission_refusals_and_warnings,
+        )
+    
+        nodes = list(nodes)
+        lane = str(backend_name or &quot;&quot;).strip() or str(
+            config.get(&quot;local_backend&quot;) or config.get(&quot;default_backend&quot;) or &quot;&quot;
+        )
+        if not lane:
+            raise CrewError(&quot;queueing a request names no backend to queue it for&quot;)
+        assigned_ids = {
+            node.id: str((run_ids or {}).get(node.id) or new_run_id(node.id))
+            for node in nodes
+        }
+        ceiling = resolved_time_ceiling(config)
+        # The waits are resolved before the node contract is judged, because a
+        # request that waits may name an input its upstream is still to write: that
+        # absence is not a refusal at queue time, and the launch re-checks every
+        # input against the tree the work will actually run in.
+        live = list_live()
+        refs_by_run, projects_by_run = queue_admission._validated_batch_waits(
+            nodes,
+            assigned_ids,
+            project=project,
+            repo_root=repo_root,
+            live=live,
+        )
+        for node in nodes:
+            # The whole node contract is judged here, beside the admission domain,
+            # so a batch entry that a single dispatch would refuse is refused while
+            # it is still a request rather than surfaced later at its launch, where
+            # the refusal costs the queue position and reaches nobody. The role&#x27;s
+            # overlay is resolved against the lane the request records, so the
+            # execution verdict does not depend on whatever lane admission later
+            # binds.
+            _lane_name, effective_backend = resolve_role_override(
+                config, node.role, node.spec_level, lane
+            )
+            # The write-scope fence is judged here on the authority a launch
+            # resolves, so a batch entry whose path lies outside the repository and
+            # the delivery directories is refused while it is still a request. Left
+            # to the launch, that refusal would cost the queue position and reach
+            # nobody, and the entry could never run.
+            _require_write_paths_in_authority(
+                node, resolve_dispatch_authority(project, repo_root)
+            )
+            findings = admission_domain_findings(
+                node, project=project, repository=repo_root
+            )
+            if refs_by_run.get(assigned_ids[node.id]):
+                # A request that waits may name a path its upstream creates, so an
+                # input the repository does not hold is deferred rather than
+                # refused: it is judged at the release, against the tree the launch
+                # reads, and refused there if it genuinely is still absent.
+                findings = [
+                    finding
+                    for finding in findings
+                    if str(finding.get(&quot;property&quot;) or &quot;&quot;) != INPUTS_PROPERTY
+                ]
+            refusals, _warnings = admission_refusals_and_warnings(findings)
+            verdict = validate_node(
+                node,
+                budget_ceiling=ceiling,
+                execution_capable=effective_backend.get(&quot;execution_capable&quot;),
+                repository=repo_root,
+            )
+            refusals.extend(verdict.findings)
+            if refusals:
+&gt;               raise CrewError(
+                    f&quot;node {node.id!r} is refused at queue time: &quot;
+                    + &quot;; &quot;.join(str(finding.get(&quot;detail&quot;) or &quot;&quot;) for finding in refusals)
+                )
+E               reckon.crew.CrewError: node &#x27;n0&#x27; is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+
+reckon/crew/dispatching/requests.py:216: CrewError
+___________ test_an_admission_pass_holds_the_review_store_read_once ____________
+
+tmp_path = PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_an_admission_pass_holds_t0&#x27;)
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7fd421ffa200&gt;
+
+    def test_an_admission_pass_holds_the_review_store_read_once(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -&gt; None:
+        &quot;&quot;&quot;A real pass reads each plan&#x27;s stored reviews once, not once per request.&quot;&quot;&quot;
+        from tests import test_an_admission_pass_reads_the_roadmap_once as pass_fixtures
+    
+        repository = pass_fixtures._seed(tmp_path, monkeypatch, {})
+&gt;       pass_fixtures._queue(repository)
+
+tests/test_a_dispatch_reads_one_sections_readiness.py:397: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_an_admission_pass_reads_the_roadmap_once.py:94: in _queue
+    return queue_admission.queue_requests(
+reckon/crew/admission/release.py:555: in queue_requests
+    stored = dispatch_queue_requests(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+nodes = [TaskNode(id=&#x27;n0&#x27;, goal=&#x27;build s1&#x27;, plan=&#x27;plan-a&#x27;, section=&#x27;s1&#x27;, after=[], waits_only_after=False, brief=&#x27;&#x27;, brief_sha...ated_hours=None, requires_decisions=[], peer_scopes={}, images=[], inputs=[], compares_with=&#x27;&#x27;, admission_findings=[])]
+project = &#x27;proj&#x27;, session = &#x27;coordinator-a&#x27;
+repo_root = PosixPath(&#x27;/tmp/queue-repair-a076l0i4/pytest-of-mcintos/pytest-0/test_an_admission_pass_holds_t0/checkout&#x27;)
+config = {&#x27;default_backend&#x27;: &#x27;clive&#x27;, &#x27;local_backend&#x27;: &#x27;clive&#x27;, &#x27;backends&#x27;: {&#x27;clive&#x27;: {&#x27;launch&#x27;: &#x27;cli&#x27;, &#x27;command&#x27;: &#x27;codex&#x27;, &#x27;model&#x27;: &#x27;local-model&#x27;, &#x27;effort&#x27;: &#x27;medium&#x27;, ...}}, &#x27;roles&#x27;: {&#x27;implement&#x27;: {}}, ...}
+backend_name = &#x27;&#x27;, launch_kind = &#x27;cli&#x27;
+run_ids = {&#x27;n0&#x27;: &#x27;r-s1&#x27;, &#x27;n1&#x27;: &#x27;r-s2&#x27;, &#x27;n2&#x27;: &#x27;r-s3&#x27;}, cap = None
+allow_unreviewed_plan = False
+
+    def queue_requests(
+        nodes: Iterable[TaskNode],
+        *,
+        project: str,
+        session: str,
+        repo_root: str | Path,
+        config: Mapping[str, Any],
+        backend_name: str = &quot;&quot;,
+        launch_kind: str = &quot;cli&quot;,
+        run_ids: Mapping[str, str] | None = None,
+        cap: int | None = None,
+        allow_unreviewed_plan: bool = False,
+    ) -&gt; dict[str, Any]:
+        &quot;&quot;&quot;Validate a request batch, then use dispatch&#x27;s queue writer for each.
+    
+        ``allow_unreviewed_plan`` carries the plan-review waiver the same way a
+        single dispatch does: it rides the request&#x27;s ``dispatch_options``, which
+        admission reads before it holds the request on the review gate. A caller
+        that leaves it unset queues a request the gate judges on its own.
+        &quot;&quot;&quot;
+        from reckon.crew import queue_admission
+        from reckon.crew.dispatch_admission import (
+            INPUTS_PROPERTY,
+            _require_write_paths_in_authority,
+            admission_domain_findings,
+            admission_refusals_and_warnings,
+        )
+    
+        nodes = list(nodes)
+        lane = str(backend_name or &quot;&quot;).strip() or str(
+            config.get(&quot;local_backend&quot;) or config.get(&quot;default_backend&quot;) or &quot;&quot;
+        )
+        if not lane:
+            raise CrewError(&quot;queueing a request names no backend to queue it for&quot;)
+        assigned_ids = {
+            node.id: str((run_ids or {}).get(node.id) or new_run_id(node.id))
+            for node in nodes
+        }
+        ceiling = resolved_time_ceiling(config)
+        # The waits are resolved before the node contract is judged, because a
+        # request that waits may name an input its upstream is still to write: that
+        # absence is not a refusal at queue time, and the launch re-checks every
+        # input against the tree the work will actually run in.
+        live = list_live()
+        refs_by_run, projects_by_run = queue_admission._validated_batch_waits(
+            nodes,
+            assigned_ids,
+            project=project,
+            repo_root=repo_root,
+            live=live,
+        )
+        for node in nodes:
+            # The whole node contract is judged here, beside the admission domain,
+            # so a batch entry that a single dispatch would refuse is refused while
+            # it is still a request rather than surfaced later at its launch, where
+            # the refusal costs the queue position and reaches nobody. The role&#x27;s
+            # overlay is resolved against the lane the request records, so the
+            # execution verdict does not depend on whatever lane admission later
+            # binds.
+            _lane_name, effective_backend = resolve_role_override(
+                config, node.role, node.spec_level, lane
+            )
+            # The write-scope fence is judged here on the authority a launch
+            # resolves, so a batch entry whose path lies outside the repository and
+            # the delivery directories is refused while it is still a request. Left
+            # to the launch, that refusal would cost the queue position and reach
+            # nobody, and the entry could never run.
+            _require_write_paths_in_authority(
+                node, resolve_dispatch_authority(project, repo_root)
+            )
+            findings = admission_domain_findings(
+                node, project=project, repository=repo_root
+            )
+            if refs_by_run.get(assigned_ids[node.id]):
+                # A request that waits may name a path its upstream creates, so an
+                # input the repository does not hold is deferred rather than
+                # refused: it is judged at the release, against the tree the launch
+                # reads, and refused there if it genuinely is still absent.
+                findings = [
+                    finding
+                    for finding in findings
+                    if str(finding.get(&quot;property&quot;) or &quot;&quot;) != INPUTS_PROPERTY
+                ]
+            refusals, _warnings = admission_refusals_and_warnings(findings)
+            verdict = validate_node(
+                node,
+                budget_ceiling=ceiling,
+                execution_capable=effective_backend.get(&quot;execution_capable&quot;),
+                repository=repo_root,
+            )
+            refusals.extend(verdict.findings)
+            if refusals:
+&gt;               raise CrewError(
+                    f&quot;node {node.id!r} is refused at queue time: &quot;
+                    + &quot;; &quot;.join(str(finding.get(&quot;detail&quot;) or &quot;&quot;) for finding in refusals)
+                )
+E               reckon.crew.CrewError: node &#x27;n0&#x27; is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+
+reckon/crew/dispatching/requests.py:216: CrewError
+=========================== short test summary info ============================
+FAILED tests/test_queue_dag_waits.py::test_foreign_section_waits_for_its_declaration
+FAILED tests/test_queue_dag_waits.py::test_foreign_section_already_done_queues_directly
+FAILED tests/test_queue_dag_waits.py::test_batch_and_dispatch_share_the_queue_writer
+FAILED tests/test_queue_dag_waits.py::test_unshipped_plan_dependency_holds_its_section
+FAILED tests/test_queue_dag_waits.py::test_closed_upstream_blocks_its_waiter[blocked]
+FAILED tests/test_queue_dag_waits.py::test_closed_upstream_blocks_its_waiter[failed]
+FAILED tests/test_queue_dag_waits.py::test_complete_upstream_waits_for_its_revision_to_land
+FAILED tests/test_queue_dag_waits.py::test_base_revision_releases_a_promoted_request_that_committed_nothing
+FAILED tests/test_queue_dag_waits.py::test_refused_manifest_status_holds_and_raises_one_obligation
+FAILED tests/test_queue_dag_waits.py::test_foreign_gate_hold_keeps_waiter_waiting[s2]
+FAILED tests/test_queue_dag_waits.py::test_foreign_gate_hold_keeps_waiter_waiting[s1,s2]
+FAILED tests/test_queue_dag_waits.py::test_readiness_recheck_uses_named_section_declarations
+FAILED tests/test_queue_dag_waits.py::test_scoped_decision_holds_only_its_section
+FAILED tests/test_queue_dag_waits.py::test_after_survives_the_queued_pointer_round_trip
+FAILED tests/test_dead_wait_blocks_only_its_request.py::test_foreign_broken_wait_does_not_refuse_own_ready_section
+FAILED tests/test_dead_wait_blocks_only_its_request.py::test_own_missing_wait_still_refuses
+FAILED tests/test_dead_wait_blocks_only_its_request.py::test_cycle_through_existing_requests_still_refuses
+FAILED tests/test_dead_wait_blocks_only_its_request.py::test_blocked_request_does_not_bind_but_launched_run_does
+FAILED tests/test_dead_wait_blocks_only_its_request.py::test_queued_pointer_survives_refused_launch_and_own_launch_proceeds
+FAILED tests/test_an_admission_pass_reads_the_roadmap_once.py::test_a_pass_launching_three_requests_builds_the_readiness_once
+FAILED tests/test_an_admission_pass_reads_the_roadmap_once.py::test_a_plan_touched_between_two_launches_forces_a_rebuild
+FAILED tests/test_an_admission_pass_reads_the_roadmap_once.py::test_a_direct_dispatch_outside_a_pass_builds_its_own
+FAILED tests/test_an_admission_pass_reads_the_roadmap_once.py::test_the_launches_read_the_waits_an_uncached_computation_gives
+FAILED tests/test_a_dispatch_reads_one_sections_readiness.py::test_an_admission_pass_holds_the_review_store_read_once
+24 failed, 13 passed in 12.10s
+EXIT=1
+</pre>
+<h4>Repaired four-file gate</h4>
+<pre># revision: 6ae6265d6b528726a2b0905439fc8897437ed5fc
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-queue-tests-red-on-main-are-repaired-codex
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_queue_dag_waits.py tests/test_dead_wait_blocks_only_its_request.py tests/test_an_admission_pass_reads_the_roadmap_once.py tests/test_a_dispatch_reads_one_sections_readiness.py
+# measurement_module: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-queue-tests-red-on-main-are-repaired-codex/reckon/crew/dispatching/requests.py
+# measurement_cwd: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-queue-tests-red-on-main-are-repaired-codex
+.........................................                                [100%]
+41 passed in 21.61s
+EXIT=0
+</pre>
+<h4>Armed baseline</h4>
+<pre># revision: 32e147040e78caf8d9321eec920c5e413436aac6
+# tree: /tmp/queue-repair-23vtm9e1/baseline-suite-git
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+# measurement_module: /tmp/queue-repair-23vtm9e1/baseline-suite-git/reckon/crew/dispatching/requests.py
+# measurement_cwd: /tmp/queue-repair-23vtm9e1/baseline-suite-git
+..........................................................               [100%]
+58 passed in 35.65s
+EXIT=0
+</pre>
+<h4>Armed head</h4>
+<pre># revision: 6ae6265d6b528726a2b0905439fc8897437ed5fc
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-queue-tests-red-on-main-are-repaired-codex
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+# measurement_module: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-queue-tests-red-on-main-are-repaired-codex/reckon/crew/dispatching/requests.py
+# measurement_cwd: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-queue-tests-red-on-main-are-repaired-codex
+..........................................................               [100%]
+58 passed in 36.07s
+EXIT=0
+</pre>
+</section>

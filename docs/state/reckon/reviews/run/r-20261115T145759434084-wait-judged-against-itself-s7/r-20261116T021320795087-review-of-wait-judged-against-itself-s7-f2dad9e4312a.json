@@ -1,0 +1,79 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own arm records in manifest.md, each of which ran to a summary line and a bare final EXIT= line. baseline_suite: revision 977adcbef6fbd4cfc3a2a3d59a694f9c37407902, exit_status 0, completed true, failure_count 0, failure_ids [], log logs/baseline.log, summary '58 passed in 32.11s'. after_suite: revision 823d226ab40b93624ad8dd0cb91b5cdacca154f2, exit_status 0, completed true, failure_count 0, failure_ids [], log logs/after.log, summary '65 passed in 36.20s'. Neither arm names a failing test id, so after-minus-base is empty and the added count is zero. The last gained commit f2dad9e431 changes only the evidence fragment, so the after arm at 823d226 covers the code and test content at the reviewed head.",
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:_watch_snapshot",
+    "reckon/crew/resumption.py:2636",
+    "reckon/crew/recovery_liveness.py:1294 parked_on_declared_wait"
+  ],
+  "completed_at": "2026-11-16T02:15:40.204Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-wait-judged-against-itself-s7-f2dad9e4312a",
+      "recorded_at": "2026-11-16T02:46:27.427715+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-16T02:14:52Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-wait-judged-against-itself-s7-f2dad9e4312a",
+      "recorded_at": "2026-11-16T02:46:19.289264+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_liveness.py",
+      "line": "1146-1150",
+      "severity": "blocking",
+      "text": "blocking: the new live-state read implements the declaration's terminal match itself instead of calling the owner, reckon/crew/recovery_wait.py:_run_wait_condition_probe (:531-541), which matches every line's first token plus the whole last line and folds the trailing '+' spelling into the declared value. The two readings diverge on shapes the owner handles: 'CANCELLED+ 01:02:03' against a declaration listing CANCELLED is 'met' to the owner via its candidate.endswith('+') branch while :1150 returns 'cancelled+' as live, because :1147 strips \"'()[]{}:;,. and not '+', and :1148 tests only words[0]. The row then carries a row-level condition that has ended beside a live probe, which is the disagreement the fragment says cannot happen, and the live branch at :1220 defers the alarm to the job's reported limit."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-tells-the-truth-under-load/wait-judged-against-itself-s7.html",
+      "line": "46",
+      "severity": "non-blocking",
+      "text": "non-blocking: the measure paragraph states the same arm twice, once as 'The fourteen wait-behaviour files this change can move were run at this head too: 144 passed, EXIT=0, so the suite the wider reading had turned red holds here.' and again as 'The 14 wait-behaviour files this change can move were run at this head as well: 144 passed', with only the closing clause differing. The metric itself reconciles with logs/wait-family.log ('144 passed in 6.11s', EXIT=0 at 823d226), so this is a duplicated sentence in the shipped evidence rather than a wrong figure."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-tells-the-truth-under-load/wait-judged-against-itself-s7.html",
+      "line": "46",
+      "severity": "non-blocking",
+      "text": "non-blocking: the paragraph's base-arm count 'Against the base tree they give 6 failed and EXIT=1' has no log on disk. gate/base-new-tests.log is the only recorded base arm for this file: it names 977adcb, collected two cases at 977adcb and reports '2 failed in 1.54s' at EXIT=1, and its mtime (1794780266) precedes the four cases added by the two commits under review. The count is arithmetically consistent - 65 after minus 58 baseline is the seven cases, less the file-wait control that passes on both sides - but the arm it quotes was run without a saved receipt, so a reader cannot check the done_when clause 'New tests, each failing at the base revision' for the four new cases."
+    }
+  ],
+  "justifications": {
+    "durability": "test_a_scheduler_spelling_outside_the_known_vocabulary_is_still_live at tests/test_a_declared_wait_is_judged_against_itself.py:319-343 reddens on the exact regression this range repairs - restoring the three-token read makes QUEUED, COMPLETING and SUSPENDED return no live state, so expected_horizon_seconds falls to 4*HOUR->900 and wait_overdue flips True - but test_the_watch_snapshot_reads_the_same_limit at :345-366 uses RUNNING, which both vocabularies accept, so it does not redden on that regression.",
+    "evidence": "logs/after.log and logs/baseline.log are complete and reconcile with the manifest's suite pair, but the fragment at :46 quotes a base arm of '6 failed' that no log carries while gate/base-new-tests.log still records the older two-case arm.",
+    "fit": "the change follows the module's shorthand-constant-and-docstring idiom (_WAIT_CANCELLED_STATES at :1100, _WAIT_ZERO_ELAPSED at :1104) and names the new constant _WAIT_STATE_NOT_REPORTED in the same _WAIT_ prefix every neighbour uses.",
+    "goal_fidelity": "reckon/crew/recovery_liveness.py:1146-1150 decides liveness by the declaration's own terminal list, and the delivered case at tests/test_a_declared_wait_is_judged_against_itself.py:331-343 shows QUEUED carrying its 14400 s limit instead of the 900 s default the previous head gave it.",
+    "reuse": "reckon/crew/recovery_wait.py:_run_wait_condition_probe:531-541 already owns matching a probe's answer against the declaration's terminal list, including the trailing '+' spelling, and :1146-1150 re-implements that match from scratch rather than extending it.",
+    "scope_discipline": "git diff --name-only f9cba3c0ee..f2dad9e431 lists three files and all three are inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to judge a declared wait against its own limit and its own probe (dispatch-detail.json node.goal), and the gained commits move the live-state read to the declaration's terminal list so QUEUED, COMPLETING and SUSPENDED carry their reported limit instead of the 900 s default - reckon/crew/recovery_liveness.py:1139-1150.\nVERDICT done_when: the live-shape clause is asserted at tests/test_a_declared_wait_is_judged_against_itself.py:319-343 and recorded green at logs/after.log ('65 passed in 36.20s', EXIT=0) against logs/baseline.log ('58 passed in 32.11s', EXIT=0); the base arm for the four cases added in this range has no log - gate/base-new-tests.log predates them at '2 failed in 1.54s' - while the fragment at :46 reports '6 failed'.\nVERDICT write_paths: the dispatch node's write paths are the three recovery modules, tests/test_a_declared_wait_is_judged_against_itself.py and the fragment, and git diff --name-only f9cba3c0ee..f2dad9e431 names only the first, fourth and fifth of those, so nothing landed outside the fence.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T145759434084-wait-judged-against-itself-s7/manifest.md; status complete, baseline/after/wider arms reconcile with logs/baseline.log, logs/after.log and logs/wait-family.log, and negative_control_log names logs/negative-control.log which exists and ends EXIT=1.\nVERDICT diff: two commits and three files against f9cba3c0ee: 823d226ab4 rewrites _wait_probe_live_state at reckon/crew/recovery_liveness.py:1120-1150 and adds four cases plus deletes one assertion in tests/test_a_declared_wait_is_judged_against_itself.py, and f2dad9e431 touches only docs/evidence/fragments/the-monitor-tells-the-truth-under-load/wait-judged-against-itself-s7.html:23-32,46.\nCALL_SITES: reckon/crew/recovery_watch.py:_watch_snapshot, reckon/crew/resumption.py:2636, reckon/crew/recovery_liveness.py:1294 parked_on_declared_wait\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_liveness.py:1146-1150 decides liveness by the declaration's own terminal list, and tests/test_a_declared_wait_is_judged_against_itself.py:331-343 shows QUEUED carrying its 14400 s limit instead of the 900 s default.\nSCORE evidence: 11\nJUSTIFICATION evidence: logs/after.log and logs/baseline.log reconcile with the manifest's suite pair, but the fragment at :46 quotes a base arm of '6 failed' that no log carries while gate/base-new-tests.log records the older two-case arm.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --name-only f9cba3c0ee..f2dad9e431 lists three files and all three are inside the node's declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: the spelling cases at tests/test_a_declared_wait_is_judged_against_itself.py:319-343 redden if the three-token vocabulary returns, while the snapshot case at :345-366 uses RUNNING, which both readings accept, so it does not guard that regression.\nSCORE fit: 18\nJUSTIFICATION fit: _WAIT_STATE_NOT_REPORTED at reckon/crew/recovery_liveness.py:1117 follows the _WAIT_CANCELLED_STATES and _WAIT_ZERO_ELAPSED constants beside it.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/recovery_wait.py:_run_wait_condition_probe:531-541 already owns the terminal match and :1146-1150 re-implements it rather than calling it.\nFINDING reckon/crew/recovery_liveness.py:1147 blocking: the new live-state read duplicates the terminal match owned at reckon/crew/recovery_wait.py:_run_wait_condition_probe:531-541 without its trailing-'+' branch or its whole-line candidate, so 'CANCELLED+ 01:02:03' against a declaration listing CANCELLED is met to the owner and live at :1150, putting an ended condition beside a live probe on one row.\nFINDING docs/evidence/fragments/the-monitor-tells-the-truth-under-load/wait-judged-against-itself-s7.html:46 non-blocking: the measure paragraph states the 14-file, 144-passed arm twice in two sentences with only the closing clause changed, and the figure itself reconciles with logs/wait-family.log.\nFINDING docs/evidence/fragments/the-monitor-tells-the-truth-under-load/wait-judged-against-itself-s7.html:46 non-blocking: the quoted base arm '6 failed and EXIT=1' has no log on disk - gate/base-new-tests.log names 977adcb, collected two cases and reported '2 failed in 1.54s' before the four cases added in this range - so the done_when's base-revision clause is unreadable for those four cases.",
+  "review_run_id": "r-20261116T021320795087-review-of-wait-judged-against-itself-s7-f2dad9e4312a",
+  "reviewed_base_sha": "f9cba3c0ee36023fe85d68e652be85b8c5efac31",
+  "reviewed_head_sha": "f2dad9e4312a82b8cca46172ae0e8ecc8639c520",
+  "reviewed_run_id": "r-20261115T145759434084-wait-judged-against-itself-s7",
+  "scores": {
+    "durability": 16,
+    "evidence": 11,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T02:31:32.666850+00:00",
+  "total": 87,
+  "verdicts": {
+    "diff": "git diff f9cba3c0ee..f2dad9e431 carries two commits and three files: 823d226ab4 rewrites _wait_probe_live_state in reckon/crew/recovery_liveness.py:1120-1150 (terminal list from the declaration, a new _WAIT_STATE_NOT_REPORTED at :1117, the _WAIT_LIVE_STATE_TOKENS import removed at :1968), adds the three spelling cases and the watch-scheduler snapshot case in tests/test_a_declared_wait_is_judged_against_itself.py:304-366 and deletes the probe_live_state key assertion at :306; f2dad9e431 adds the spelling paragraph and rewrites the measure paragraph at docs/evidence/fragments/the-monitor-tells-the-truth-under-load/wait-judged-against-itself-s7.html:23-32,46.",
+    "done_when": "The done_when's first clause is asserted by the three parametrized cases at tests/test_a_declared_wait_is_judged_against_itself.py:319-343 (expected_horizon_seconds 4*HOUR, wait_overdue False, classification 'waiting'); the second and third clauses are unchanged by this range. The manifest records the gate pair at logs/after.log ('65 passed in 36.20s', EXIT=0) and logs/baseline.log ('58 passed in 32.11s', EXIT=0), and the base arm for the four cases added here has no log: gate/base-new-tests.log predates them and reports two failures.",
+    "goal": "The node's goal is 'Judge a declared wait against its own limit and its own probe' with the done_when that a probe reporting a live state is never overdue before its own declared or scheduler-known limit; the two gained commits replace the three-token vocabulary read at reckon/crew/recovery_liveness.py:1139-1150 with the declaration's own terminal list, so QUEUED, COMPLETING and SUSPENDED carry their reported limit instead of falling to the 900 s default, and the reused import of _WAIT_LIVE_STATE_TOKENS is dropped from the tail import at :1967-1976.",
+    "manifest": "Read in full at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T145759434084-wait-judged-against-itself-s7/manifest.md: status complete, eight commits, baseline_suite and after_suite reconciling with logs/baseline.log and logs/after.log, wider_suite 144 passed at logs/wait-family.log, negative_control_log naming logs/negative-control.log which exists and ends EXIT=1 with 'FAILED tests/test_a_declared_wait_is_judged_against_itself.py::test_a_live_job_inside_its_scheduler_limit_is_not_overdue'.",
+    "write_paths": "The dispatch node's write paths are reckon/crew/recovery_liveness.py, reckon/crew/recovery_classification.py, reckon/crew/recovery_watch.py, tests/test_a_declared_wait_is_judged_against_itself.py and docs/evidence/fragments/the-monitor-tells-the-truth-under-load/wait-judged-against-itself-s7.html (dispatch-detail.json node.write_paths); git diff --name-only f9cba3c0ee..f2dad9e431 names exactly the first, fourth and fifth, so every landed path is inside the fence."
+  }
+}

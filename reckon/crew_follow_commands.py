@@ -1253,7 +1253,7 @@ def _stream_events_upto(stream_path: Path, *, offset: int, boundary: int) -> lis
     if boundary <= offset:
         return events
     try:
-        stream = Path(stream_path).open(encoding="utf-8")
+        stream = Path(stream_path).open(encoding="utf-8", errors="replace")
     except OSError:
         return events
     with stream:
@@ -2690,7 +2690,7 @@ def _follow_watch_lines(
         if not stream_path.exists():
             continue
 
-        with stream_path.open(encoding="utf-8") as stream:
+        with stream_path.open(encoding="utf-8", errors="replace") as stream:
             stream.seek(cursor["offset"])
             # The open file's identity, taken once here and carried with every
             # offset read from it: a replacement that lands while this handle is
@@ -3783,9 +3783,11 @@ def crew_follow(
                 FOLLOWER_PRODUCER_RELOADING_EVENT,
                 "producer-lost",
                 "producer-restored",
+                "producer-slow",
             ):
                 # Producer health notices carry a sentence, not a run's
-                # transition. JSON retains the age, code stamps and remedy;
+                # transition: painted as one, a notice with no run, node, state
+                # or time drew "unknown new -> help". JSON retains the age, code stamps and remedy;
                 # text prints the sentence. A reload inside its window marks
                 # pane_line false until host-specific advice is owed.
                 pane_line = bool(event.pop("pane_line", True))

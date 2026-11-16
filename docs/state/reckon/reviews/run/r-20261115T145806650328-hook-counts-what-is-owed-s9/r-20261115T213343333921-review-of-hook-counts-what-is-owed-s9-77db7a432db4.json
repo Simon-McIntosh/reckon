@@ -1,0 +1,104 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own two arms: its baseline_suite record (revision fd2fe9c17f80e5901236fb399cb7ac4831d2bcce) reads 58 passed, 0 failed, EXIT=0 and its after_suite record (revision 77db7a432db488f6b9a717a37480f93f8f5c42ca) reads 68 passed, 0 failed, EXIT=0 , so failures(after) minus failures(baseline) is empty. Neither cited log is still a gate receipt: logs/suite-after-arm.log now ends EXIT=137 (an srun step killed at 21:17) and logs/suite-base-arm.log ends EXIT=1 (slurmstepd could not chdir to the scratch clone); neither carries a pytest summary line or a FAILED id, and the log_digest values the manifest records (a46bd4e3 for the after arm, 5186a44e for the base arm) match neither file on disk (427ee17e and 27ca3631). The zero therefore rests on the gate output the run captured when it wrote those records (58 passed EXIT=0 in stream.jsonl base-arm tool result, 68 passed EXIT=0 in resume-2.jsonl) and on an independent re-run of the head arm at 77db7a432d made for this review: 68 passed, EXIT=0, /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T213343333921-review-of-hook-counts-what-is-owed-s9-77db7a432db4/logs/review-head-gate.log",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:1334 emit calls format_checklist for the stop-mode reading",
+    "reckon/hooks/coordinator_obligations.py:1386 _inject_list calls format_checklist for the prompt-path reading",
+    "reckon/hooks/coordinator_obligations.py:1562 _prompt gates the absent-producer line on session_holds_live_work"
+  ],
+  "completed_at": "2026-11-15T21:54:19.774Z",
+  "dimension_dispositions": {
+    "evidence": {
+      "kind": "folded",
+      "node": "repair-of-hook-counts-what-is-owed-s9-77db7a432db4",
+      "recorded_at": "2026-11-15T22:45:47.591462+00:00"
+    },
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-hook-counts-what-is-owed-s9-77db7a432db4",
+      "recorded_at": "2026-11-15T22:45:53.615892+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-15T21:53:36Z",
+  "finding_dispositions": {
+    "3": {
+      "kind": "folded",
+      "node": "repair-of-hook-counts-what-is-owed-s9-77db7a432db4",
+      "recorded_at": "2026-11-15T22:45:41.341678+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/hooks/coordinator_obligations.py",
+      "line": "1092",
+      "severity": "non-blocking",
+      "text": "non-blocking: _ENDED_POINTER_PHASES restates reckon/crew/node.py:35 _TERMINAL_RUN_PHASES as a second statement of one vocabulary, so a terminal phase added to the owner leaves this hook reading that pointer's session as holding live work; the owner is reachable cheaply, the way reckon/crew/session_host.py:434 imports it inside a function."
+    },
+    {
+      "file": "reckon/hooks/coordinator_obligations.py",
+      "line": "1096",
+      "severity": "non-blocking",
+      "text": "non-blocking: _pointer_owes_its_session duplicates reckon/crew/station_subscriber.py:254 _record_has_pending_work clause for clause -- promoted_revision, complete with manifest_path, and review_dispatch or figure_review_dispatch whose status is neither empty nor withdrawn -- so the pane population and the hook can drift about what an ended pointer still owes."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-tells-the-truth-under-load/hook-counts-what-is-owed-s9.html",
+      "line": "60",
+      "severity": "non-blocking",
+      "text": "non-blocking: the landed arms table records the after arm as 64 passed at head and the base arm as 6 failed, while the landed test file carries 10 cases and measures 68 passed at 77db7a432d (logs/review-head-gate.log) and 9 failed, 1 passed at the base source (logs/base-arm-repair.log:343); the fragment was committed at 215392550c before f28d04b260 added four cases, so the evidence document understates both arms and three quarters of the base redness."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T145806650328-hook-counts-what-is-owed-s9/manifest.md",
+      "line": "19",
+      "severity": "blocking",
+      "text": "blocking: baseline_suite.log_path and after_suite.log_path (manifest.md:19-20) name logs that no longer hold the arms they claim -- logs/suite-base-arm.log ends EXIT=1 after slurmstepd could not chdir to its scratch clone and logs/suite-after-arm.log ends EXIT=137 after the srun step was killed -- and neither carries a pytest summary line or a FAILED id, so the run's gate receipts read as failed runs at promotion while completed is recorded true and the recorded log_digest values (a46bd4e3, 5186a44e) match neither file (427ee17e, 27ca3631); the two arms must be re-recorded at their revisions before this node lands."
+    },
+    {
+      "file": "reckon/hooks/coordinator_obligations.py",
+      "line": "1562",
+      "severity": "non-blocking",
+      "text": "non-blocking: the new silence leaves five hook-importing tests red only at head, which is the done_when fourth clause unmet, and the manifest's line 'acted tests/test_coordinator_obligations_hook.py:735: 77db7a432d' names a commit that touches only reckon/hooks/coordinator_obligations.py; the evidence fragment at docs/evidence/fragments/the-monitor-tells-the-truth-under-load/hook-counts-what-is-owed-s9.html:44 also claims the no-follower reading still speaks, while two cases in tests/test_a_missing_snapshot_names_a_live_seat.py that assert exactly that reading for a registered session are red at head."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read both commits commit by commit: f28d04b260 adds _ENDED_POINTER_PHASES, _NEVER_LAUNCHED_POINTER_PHASE, _pointer_owes_its_session, session_holds_live_work and the prompt guard with four new cases; 77db7a432d narrows that guard to the prompt path and keeps a due limit reset.",
+    "done_when": "the plan s9 done_when (docs/plans/the-monitor-tells-the-truth-under-load.html:126) carries four clauses; three are asserted by tests/test_the_hook_counts_only_what_is_owed.py:177-300 and the fourth, that the tests importing reckon.hooks.coordinator_obligations add no failure against the base, is measurably unmet: five ids fail only at head in logs/importing-tests-head-77db7a43.log against logs/importing-tests-base.log.",
+    "goal": "the node goal is to make the obligations hook count only what is owed; reckon/hooks/coordinator_obligations.py:912 takes the header figure from len(items), :953 prints the work trailer only over an actionable row, and :1562 silences the absent-producer line for a session holding no unsettled pointer, so both halves of the goal are landed.",
+    "manifest": "read; it records 10 new cases with 9 red at base, a base arm of 58 passed EXIT=0, an after arm of 68 passed EXIT=0, and both baseline_suite and after_suite log_path values now hold aborted srun wrappers whose digests match neither.",
+    "write_paths": "git log --stat 215392550c..77db7a432d names only reckon/hooks/coordinator_obligations.py (59 lines in f28d04b260, 20 in 77db7a432d) and tests/test_the_hook_counts_only_what_is_owed.py (63 lines in f28d04b260), both inside the node's declared write paths."
+  },
+  "justifications": {
+    "durability": "tests/test_the_hook_counts_only_what_is_owed.py:183 asserts 0 outstanding and the absence of the work instruction over a payload whose summary reports unreconciled_runs=3, so restoring the unconditional trailer at reckon/hooks/coordinator_obligations.py:953 reddens it, and logs/negative-control-repair.log and logs/negative-control-narrowing.log record three failures each for the two mutations.",
+    "evidence": "the head arm re-runs green at 77db7a432d (68 passed, EXIT=0 in logs/review-head-gate.log), but the manifest's two cited gate logs hold aborted srun wrappers ending EXIT=137 and EXIT=1 with digests that match neither file, and the done_when fourth clause is unmet with five ids red only at head in logs/importing-tests-head-77db7a43.log.",
+    "fit": "the added helpers follow the module idiom of module-level frozensets, Mapping-typed private predicates and snapshot_module() for the crew home, as at reckon/hooks/coordinator_obligations.py:1092-1150, and no added name breaks the repository conventions.",
+    "goal_fidelity": "reckon/hooks/coordinator_obligations.py:912 and :953 make both figures the rendered rows and :1562 makes the absent-producer line a reading of the session's own pointers, which is the plan's second clause.",
+    "reuse": "reckon/hooks/coordinator_obligations.py:1096 reproduces reckon/crew/station_subscriber.py:254 _record_has_pending_work clause for clause and :1092 restates reckon/crew/node.py:35 _TERMINAL_RUN_PHASES instead of importing the owner.",
+    "scope_discipline": "git log --stat 215392550c..77db7a432d lists only reckon/hooks/coordinator_obligations.py and tests/test_the_hook_counts_only_what_is_owed.py, exactly the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the obligations hook count only what is owed; reckon/hooks/coordinator_obligations.py:912 takes the header figure from len(items), :953 prints the work trailer only over an actionable row, :1562 silences the absent-producer line for a session holding no unsettled pointer, and both halves are landed.\nVERDICT done_when: the done_when at docs/plans/the-monitor-tells-the-truth-under-load.html:126 carries four clauses; three are asserted by tests/test_the_hook_counts_only_what_is_owed.py:177-300 and shown red at base (logs/base-arm-repair.log ends 9 failed, 1 passed), while the fourth is unmet: five ids fail only at head in logs/importing-tests-head-77db7a43.log against logs/importing-tests-base.log.\nVERDICT write_paths: the declared paths are reckon/hooks/coordinator_obligations.py and tests/test_the_hook_counts_only_what_is_owed.py, and git log --stat 215392550c..77db7a432d names those two files and nothing else.\nVERDICT manifest: read; it records 10 cases with 9 red at base, base arm 58 passed EXIT=0, after arm 68 passed EXIT=0 and both negative controls, while both cited gate log paths now hold aborted srun wrappers ending EXIT=137 and EXIT=1 whose digests do not match the files.\nVERDICT diff: read f28d04b260 and 77db7a432d commit by commit; the delta adds the pointer reading at reckon/hooks/coordinator_obligations.py:1092-1150, the prompt guard at :1557-1570 and four cases at tests/test_the_hook_counts_only_what_is_owed.py:300-358, and nothing outside the fence.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:1334, reckon/hooks/coordinator_obligations.py:1386, reckon/hooks/coordinator_obligations.py:1562\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/hooks/coordinator_obligations.py:912 and :953 make both figures the rendered rows and :1562 makes the absent-producer line a reading of the digits session.\nSCORE evidence: 8\nJUSTIFICATION evidence: the head arm re-runs green at 77db7a432d (68 passed, EXIT=0 in logs/review-head-gate.log), but the manifest's two cited gate logs hold aborted srun wrappers ending EXIT=137 and EXIT=1 with digests matching neither file, and the done_when fourth clause is unmet with five ids red only at head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git log --stat 215392550c..77db7a432d lists only reckon/hooks/coordinator_obligations.py and tests/test_the_hook_counts_only_what_is_owed.py, exactly the node's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_hook_counts_only_what_is_owed.py:183 asserts 0 outstanding and no work instruction over a payload whose summary reports unreconciled_runs=3, so restoring the unconditional trailer at reckon/hooks/coordinator_obligations.py:953 reddens it, as logs/negative-control-repair.log and logs/negative-control-narrowing.log record for the two mutations.\nSCORE fit: 18\nJUSTIFICATION fit: the added helpers use the module's module-level frozensets, Mapping-typed predicates and snapshot_module() idiom at reckon/hooks/coordinator_obligations.py:1092-1150.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/hooks/coordinator_obligations.py:1096 reproduces reckon/crew/station_subscriber.py:254 _record_has_pending_work clause for clause and :1092 restates reckon/crew/node.py:35 _TERMINAL_RUN_PHASES.\nFINDING reckon/hooks/coordinator_obligations.py:1092 non-blocking: _ENDED_POINTER_PHASES restates reckon/crew/node.py:35 _TERMINAL_RUN_PHASES, so a phase added to the owner leaves this hook reading that pointer's session as holding live work, and the owner is reachable the way reckon/crew/session_host.py:434 imports it.\nFINDING reckon/hooks/coordinator_obligations.py:1096 non-blocking: _pointer_owes_its_session duplicates reckon/crew/station_subscriber.py:254 _record_has_pending_work clause for clause, so the pane population and the hook can drift about what an ended pointer owes.\nFINDING docs/evidence/fragments/the-monitor-tells-the-truth-under-load/hook-counts-what-is-owed-s9.html:60 non-blocking: the arms table records 64 passed at head and 6 failed at base, while the landed 10-case file measures 68 passed at 77db7a432d and 9 failed, 1 passed at the base source (logs/base-arm-repair.log:343).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T145806650328-hook-counts-what-is-owed-s9/manifest.md:19 blocking: both gate log paths now hold aborted srun wrappers ending EXIT=137 and EXIT=1 with no pytest summary, and the recorded log_digest values match neither file, so the receipts read as failed runs at promotion.\nFINDING reckon/hooks/coordinator_obligations.py:1562 non-blocking: the new silence leaves five hook-importing tests red only at head (the done_when fourth clause unmet), and the manifest's acted note pins tests/test_coordinator_obligations_hook.py:735 to 77db7a432d, a commit that touches only the hook module.\n",
+  "review_run_id": "r-20261115T213343333921-review-of-hook-counts-what-is-owed-s9-77db7a432db4",
+  "reviewed_base_sha": "215392550c93b1b473f43ae60080f64992873bcf",
+  "reviewed_head_sha": "77db7a432db488f6b9a717a37480f93f8f5c42ca",
+  "reviewed_run_id": "r-20261115T145806650328-hook-counts-what-is-owed-s9",
+  "scores": {
+    "durability": 18,
+    "evidence": 8,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T22:32:33.637805+00:00",
+  "total": 87,
+  "verdicts": {
+    "diff": "f28d04b260 adds the unsettled-pointer reading at reckon/hooks/coordinator_obligations.py:1092-1150 and the prompt guard at :1557-1570 plus four cases at tests/test_the_hook_counts_only_what_is_owed.py:300-358, and 77db7a432d narrows the guard by keeping a due limit reset and dropping the stop path's copy of it; no function the delta adds is called from outside reckon/hooks/coordinator_obligations.py.",
+    "done_when": "three of the four clauses are asserted and shown red at base (logs/base-arm-repair.log ends 9 failed, 1 passed, EXIT=1), but the fourth is unmet: 27 ids fail at 77db7a432d where 24 fail at fd2fe9c1, and the five that fail only at head are the two no-producer cases in tests/test_a_missing_snapshot_names_a_live_seat.py, the two lease cases in tests/test_a_quiet_foreign_producer_reads_live.py, and tests/test_obligations_hook_reads_the_snapshot.py::test_each_not_fresh_reason_speaks_once, all of which assert the reading this diff set out to stop.",
+    "goal": "the goal is to make the hook count only what is owed; reckon/hooks/coordinator_obligations.py:912 counts the rendered rows, :953 prints the trailer only when a row is actionable, and :1562 keeps the absent-producer line for a session holding unsettled work, so the count and the absent-producer reading both follow the fleet rather than the closure figures.",
+    "manifest": "the manifest states the arms, the five outside-scope ids and both negative controls, while its two gate log paths no longer hold the runs they name: logs/suite-after-arm.log ends EXIT=137 and logs/suite-base-arm.log ends EXIT=1, with recorded log_digest values matching neither file.",
+    "write_paths": "the two commits touch reckon/hooks/coordinator_obligations.py and tests/test_the_hook_counts_only_what_is_owed.py only, both declared; the evidence fragment was committed earlier at 215392550c and is untouched in this delta."
+  }
+}

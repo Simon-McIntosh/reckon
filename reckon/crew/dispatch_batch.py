@@ -42,6 +42,7 @@ BATCH_ENTRY_FIELDS = frozenset(
         "regenerate_paths",
         "anchor_paths",
         "negative_control",
+        "mcp_set",
         "time_budget",
         "over_fence_reason",
         "estimated_hours",
@@ -246,7 +247,7 @@ def _built_once(
                 # reads who coordinates a critical-path link, so the build skips
                 # that resolution: it reads every run's ledger document, which
                 # was most of each entry's queue time.
-                with roadmap_build_scope(resolve_coordinators=False) as scope:
+                with roadmap_build_scope(resolve_coordinators=False, audit_landings=False) as scope:
                     discovered = _discover_project(
                         str(project), Path(resolved).parent if resolved else None
                     )
@@ -639,6 +640,7 @@ def _entry_node(
         role=str(entry.get("role") or "implement"),
         spec_level=spec_level,
         negative_control=str(entry.get("negative_control") or ""),
+        mcp_set=str(entry.get("mcp_set") or ""),
         done_when=done_when,
         write_paths=list(write_paths),
         regenerate_paths=_as_list(entry.get("regenerate_paths")),

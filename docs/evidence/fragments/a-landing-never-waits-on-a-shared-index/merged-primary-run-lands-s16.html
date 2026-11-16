@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A run that merged the shared branch is cited for its own work</title>
+<meta name="docs-project" content="reckon">
+</head>
+<body>
+<main class="plan-doc">
+
+<h2 id="merged-primary-run-lands-s16-summary">A discharged refusal, and the clause it superseded</h2>
+
+<p id="merged-primary-run-lands-s16-defect">A merge repair tells a worker to merge the current shared branch into its worktree, and <code>crew merge --head</code> then runs the promotion's dry run against that head. The dry run filled the run's citations from <code>base..HEAD</code> in the run's own tree. Every commit the merge had brought in from the shared branch was inside that range, and the citation guard in <code>reckon/crew/promotion_evidence.py</code> refused a citation that was not a commit the run made beyond its base. A peer forks its branch before the run's base and lands it on the shared branch afterwards, so the shared branch reaches commits that do not descend from the run's base; the run's merge pulls them in, and the dry run refused with <code>cites &lt;sha&gt;, which is not a commit this run made beyond its base</code>. The dry run went past the guard only when the coordinator retyped the run's own commits with <code>--commit</code>, so the repair advice led straight to a refusal.</p>
+
+<p id="merged-primary-run-lands-s16-reproduce">Reproduced at base revision <code>622ef4617d73</code> over a temporary primary checkout, a peer worktree, the run's worktree and a temporary crew home: the peer's branch forks before the run's base and lands on the shared branch, the run commits its own work and merges the shared branch in, and the dry run with no commit supplied reports <code>would_promote: false</code> with exactly that refusal, naming the peer's commit <code>c1a0573194</code>.</p>
+
+<h2 id="merged-primary-run-lands-s16-change">The change</h2>
+
+<p id="merged-primary-run-lands-s16-change-exclude">The citations are no longer the plain <code>base..HEAD</code> range. <code>reckon/crew/merge.py</code> gains <code>commits_between</code>, which lists a range oldest first, follows one traversal, and leaves out the reachable commits of one revision named as <code>excluding</code>. The inference in <code>reckon/crew/promotion.py</code> asks it for the run's own line (<code>--first-parent</code>) less the history the shared branch reaches, so a run cites its own commit and its own merge of the shared branch and neither the commits that merge imported nor the shared branch's own commits.</p>
+
+<p id="merged-primary-run-lands-s16-change-reader">The shared revision is read through <code>recovery_classification._primary_branch_revision</code>, the reader the classification sweep already uses, so a sweep over many live runs asks git once per checkout instead of once per row. A record naming no readable checkout answers empty and the inference falls back to the plain range, because an unreadable shared branch is not evidence that its commits belong to the run.</p>
+
+<p id="merged-primary-run-lands-s16-change-memo">The range is memoised against the tree's own head, the base, the manifest's citations and the shared revision, under a key name that says what it now holds. A landing that moves the shared branch changes the key, so the citations are re-read rather than answered from a read taken before that landing.</p>
+
+<p id="merged-primary-run-lands-s16-change-merge">The merge with the primary branch conflicted on this function, because the primary branch had landed its own answer to the same defect: cite the run's first-parent line, and accept any citation reachable from the run's head as a valid import rather than refusing it. Both changes keep their intent. The traversal is the primary branch's, and the reachability exclusion is kept beside it because it is the one that holds for a run whose branch was rebased onto the shared branch: there the shared branch's own commits sit on the run's first-parent line, and they are still not the run's work.</p>
+
+<p id="merged-primary-run-lands-s16-change-guard">One clause of this section no longer holds, and the change did not cause it. The primary branch's guard now treats a commit reachable from the run's head as a valid citation, so a run citing a commit from another branch is not refused for it; the refusal that remains is for a commit outside the run's history at all. What the row credits is therefore decided by the inference, and the second case pins that: another branch's commit, merged into the run's worktree, is not cited as the run's own and the dry run does not refuse it either.</p>
+
+<h2 id="merged-primary-run-lands-s16-measure">Measure</h2>
+
+<p id="merged-primary-run-lands-s16-measure-cases">The cases are <code>tests/test_a_run_that_merged_primary_lands.py</code>. Both fail at the base revision and pass at the head. The first makes the recorded defect happen — a peer's branch forked before the run's base and landed on the shared branch, then merged into the run's worktree — and asserts both that the dry run promotes with no commit supplied and that the citations are exactly the run's own commit and its merge. The second merges an unrelated branch as well and asserts that branch's commit is not credited to the run.</p>
+
+<p id="merged-primary-run-lands-s16-measure-arms">Both arms run as <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q</code> over the files this node's write scope resolves to on each arm's own tree, so the base arm's command drops the test file this node adds and names only <code>tests/test_staged_write_inventory.py</code> and <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>. At the base revision <code>622ef4617d73</code> that arm reports <strong>58 passed</strong>, exit 0. At the repaired head <code>0cb2e73380</code> the arm adds this node's file and reports <strong>60 passed</strong>, exit 0. Both logs open with the revision, the tree, the imported module path, the working directory and the literal command, and end with <code>EXIT=</code>.</p>
+
+<p id="merged-primary-run-lands-s16-measure-importers">The seventeen existing test files that import <code>reckon.crew.merge</code>, import <code>reckon.crew.promotion_evidence</code> or call <code>complete_dry_run</code> were run before the merge as well. They report four failures and nothing else, and each of those files was then run at the base revision <code>622ef4617d73</code>, where the same four fail the same way: one in <code>tests/test_complete_reports_every_refusal.py</code>, three across <code>tests/test_every_review_round_is_committed.py</code> and <code>tests/test_promotion_keeps_every_round.py</code>, all of them the gate-log refusal for a cited log carrying no terminal <code>EXIT=</code> line.</p>
+
+<p id="merged-primary-run-lands-s16-measure-primary-side">The primary branch's own cases for this behaviour, <code>tests/test_a_merged_primary_run_keeps_its_own_commits.py</code>, report the same four failures at the primary revision <code>8bb015c640</code> as at the repaired head: <strong>4 failed, 3 passed</strong>, exit 1, twenty-four refusals reading <em>names no executable</em> because the fixture records the gate command <code>python -m pytest</code> and this host has no <code>python</code> on <code>PATH</code>, only <code>python3</code>. The cause is the environment, not either revision.</p>
+
+<p id="merged-primary-run-lands-s16-measure-control">The negative control applies the declared mutation — inferring the citations from base to head again — and both cases go red, <strong>2 failed</strong>, exit 1, the first naming the shared branch's commit it now cites and the second naming the foreign branch's commit it now credits to the run. The cases measure the inference, not the harness around it.</p>
+
+</main>
+</body>
+</html>

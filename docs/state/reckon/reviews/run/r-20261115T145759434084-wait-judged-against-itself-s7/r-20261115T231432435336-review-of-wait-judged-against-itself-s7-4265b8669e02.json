@@ -1,0 +1,111 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs: gate/baseline.log at 977adcbef6fbd4cfc3a2a3d59a694f9c37407902 runs the two inventory files and reports 58 passed, EXIT=0; gate/after.log at 4265b8669e0273ea9e65bcf442d846a5128722de runs the new file plus the same two inventory files and reports 60 passed, EXIT=0. Both completed (summary line plus bare EXIT= line). No test id fails in the after arm that does not fail in the baseline arm, so zero added failures. The reviewed run's manifest.md no longer carries these arms (its baseline_suite/after_suite fields read PLACEHOLDER_BASELINE/PLACEHOLDER_AFTER under paths naming user mcintosh), so the figures are read from the gate logs the arms wrote.",
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:603",
+    "reckon/crew/recovery_watch.py:1498",
+    "reckon/crew/directory.py:342",
+    "reckon/crew/obligations.py:1526",
+    "reckon/serve.py:902"
+  ],
+  "completed_at": "2026-11-15T23:18:14Z",
+  "dimension_dispositions": {
+    "evidence": {
+      "kind": "folded",
+      "node": "repair-of-wait-judged-against-itself-s7-4265b8669e02",
+      "recorded_at": "2026-11-16T01:09:41.442196+00:00"
+    },
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-wait-judged-against-itself-s7-4265b8669e02",
+      "recorded_at": "2026-11-16T01:09:47.341128+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-15T23:17:51Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-wait-judged-against-itself-s7-4265b8669e02",
+      "recorded_at": "2026-11-16T01:09:36.235857+00:00"
+    }
+  },
+  "findings": [
+    {
+      "disposition_hint": "restore the attempt-1 suite/artifacts/evidence_inputs values, or re-derive them from gate/baseline.log and gate/after.log, and correct the test_logs and negative_control_log paths",
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T145759434084-wait-judged-against-itself-s7/manifest.md",
+      "line": "16-21",
+      "severity": "blocking",
+      "text": "blocking: the delivered manifest's suite and evidence fields are unfilled template text. baseline_suite (line 16) carries PLACEHOLDER_BASELINE and a command naming /home/ITER/mcintosh/placeholder/.venv/bin/python, after_suite (line 17) reads PLACEHOLDER_AFTER, artifacts (19), evidence_inputs (20) and outside_scope (21) read PLACEHOLDER values, test_logs (13) and negative_control_log (14) name /home/ITER/mcintosh/ rather than /home/ITER/mcintos/, and negative_control_note (15) names test_a_live_job_placeholder. The real arm records survive only in manifest.md.attempt-1.asdelivered; they were destroyed by the resumed attempt. Promotion reads arm fields from this manifest, so the record as delivered cannot be reconciled with gate/baseline.log and gate/after.log and its log pointers resolve to a user that does not exist."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-tells-the-truth-under-load/wait-judged-against-itself-s7.html",
+      "line": "34",
+      "severity": "non-blocking",
+      "text": "non-blocking: the measure paragraph says 'the after arm at this head gave 61 passed and EXIT=0', but gate/after.log at this head (4265b8669e) records '60 passed' at EXIT=0. The 61 belongs to gate/after-prefix.log, a three-case prefix run at 9e498420db with uncommitted work, and the third case was removed in this commit. A fragment quoting a superseded count is the kind of number a later reader re-derives and mistrusts the rest of the record over."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-tells-the-truth-under-load/wait-judged-against-itself-s7.html",
+      "line": "36",
+      "severity": "non-blocking",
+      "text": "non-blocking: the controls paragraph claims 'a wait_file condition still ages into the alarm' is a control inside the cases, but the head test file has no case that sets files= (only the fixture branch at tests/test_a_declared_wait_is_judged_against_itself.py:106 does), so the claim records coverage the case does not assert. The behaviour is guarded elsewhere in the wait suite, but not by this node's cases."
+    },
+    {
+      "file": "reckon/crew/recovery_liveness.py",
+      "line": "1211",
+      "severity": "non-blocking",
+      "text": "non-blocking: _wait_probe_reported_limit re-implements the Slurm wall-clock parse owned by remaining_seconds at reckon/crew/fleet_node.py:526 \u2014 the same [DD-]HH:MM:SS to seconds conversion, with the same unbounded-token-to-None rule \u2014 rather than extending or importing it. Two parsers of one scheduler field will drift when a spelling changes, and the fleet owner already carries the unbounded case as a constant."
+    },
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "1594",
+      "severity": "non-blocking",
+      "text": "non-blocking: the comment beside the call says the wait is judged by 'its own declared horizon or its own probe's live answer, never a default horizon borrowed from the log-staleness bound', which describes the reading this commit reverted. The code keeps that default in force whenever the probe names no job or asks for no limit, as _wait_probe_reported_limit's docstring states. A comment that contradicts its code is where the next reader takes the wrong invariant from."
+    },
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "755",
+      "severity": "non-blocking",
+      "text": "non-blocking: the node's done_when clause 'Any declared probe that answers counts as the wait's evidence, whatever its argv names, so a parked worker with such a probe is never read as abandoned' is not landed: the early return this commit removes is the only path that honoured it, and _producer_gone_verdict now reads only process liveness, stillness and the host scheduler. The commit and the fragment record that the wider reading turns seven committed tests red, so the gap is a plan decision the run recorded rather than a silent omission, but the clause is still unmet."
+    },
+    {
+      "file": "tests/test_a_declared_wait_is_judged_against_itself.py",
+      "line": "262",
+      "severity": "non-blocking",
+      "text": "non-blocking: 'assert row[\"external_wait\"][\"probe\"][2:] == [\"-j\", \"1310001\"]' compares the parsed declaration against the same probe_extra literal the fixture passed in, so it holds whatever the suspect-probe reading does. Carried from the previous revision (previously reported at line 295); the guard for the case is the suspect_probe assertions at lines 271-273, which do redden at the base tree."
+    }
+  ],
+  "justifications": {
+    "durability": "gate/negative-control.log reddens tests/test_a_declared_wait_is_judged_against_itself.py:191 with 'assert True is False' at exit 1 when the reported limit is not read, and gate/base-new-tests.log reddens both new cases at 977adcb, so the guards fail on the regression they were added for \u2014 although the probe-echo assertion at line 262 is not independent of the value the fixture supplies.",
+    "evidence": "gate/after.log at 4265b8669e reports 60 passed at EXIT=0 and gate/baseline.log at 977adcb reports 58 passed at EXIT=0, but the done_when's fourth clause is measured nowhere at this head (the only 14-file family log, gate/head-wait-targeted.log, names 5a5548e5f6 with uncommitted work), the fragment at line 34 quotes a superseded 61, and the delivered manifest's arm fields are placeholders.",
+    "fit": "the additions follow the module's constant-and-docstring idiom and ruff check passes on reckon/crew/recovery_liveness.py at this head, but the comment at reckon/crew/recovery_classification.py:1594 still describes the reverted reading instead of the code beneath it.",
+    "goal_fidelity": "reckon/crew/recovery_liveness.py:1276-1282 now judges an undeclared wait by the limit its probing job reports, but reckon/crew/recovery_classification.py:755 no longer counts an answering declared probe as the wait's evidence, so half of the node's own goal text is not landed.",
+    "reuse": "the new _wait_probe_reported_limit at reckon/crew/recovery_liveness.py:1211 duplicates the [DD-]HH:MM:SS parsing that reckon/crew/fleet_node.py:526 already owns, and the earlier forks of the answered flag and live-state vocabulary that the previous review named are still present in the same file.",
+    "scope_discipline": "every path in git diff 5a5548e5f6 4265b8669e is one of the five declared write paths, and the one declared file the change does not need, reckon/crew/recovery_watch.py, is untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to judge a declared wait against its own limit and its own probe; reckon/crew/recovery_liveness.py:1250 rewires the overdue flag to the scheduler limit the probe reports, while reckon/crew/recovery_classification.py:755 removes the clause that any answering declared probe is the wait's evidence.\nVERDICT done_when: the done_when carries four clauses \u2014 the scheduler-known limit is asserted at tests/test_a_declared_wait_is_judged_against_itself.py:196 and 213, the suspect probe at 269-273, both recorded red at the base tree in gate/base-new-tests.log (2 failed, EXIT=1), while the answering-probe clause is not landed and the no-added-failure clause is measured at no log naming this head.\nVERDICT write_paths: read the manifest's declared paths; the diff from 5a5548e5f6 to 4265b8669e touches four of the five declared paths (reckon/crew/recovery_watch.py untouched) and nothing outside them.\nVERDICT manifest: read the delivered manifest.md; it records status complete and the two gate exits but its baseline_suite/after_suite/artifacts/evidence_inputs/outside_scope fields are literal PLACEHOLDER tokens under /home/ITER/mcintosh paths at lines 13-21.\nVERDICT diff: read the one commit 4265b8669e against 5a5548e5f6 \u2014 126 insertions, 160 deletions across the two recovery modules, the new test file and the evidence fragment, all inside the fence, removing the answering-probe clause and adding the scheduler-limit reading.\nCALL_SITES: reckon/crew/recovery_watch.py:603, reckon/crew/recovery_watch.py:1498, reckon/crew/directory.py:342, reckon/crew/obligations.py:1526, reckon/serve.py:902\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:755 no longer reads an answering declared probe as the wait's evidence, so the goal's own-probe half is not landed even though the limit half is at reckon/crew/recovery_liveness.py:1276-1282.\nSCORE evidence: 7\nJUSTIFICATION evidence: gate/after.log at 4265b8669e reports 60 passed at EXIT=0 against gate/baseline.log's 58 passed, but the only 14-file family log at a head, gate/head-wait-targeted.log, names 5a5548e5f6 with uncommitted work, and the delivered manifest's arm fields are placeholders.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in git diff 5a5548e5f6 4265b8669e is inside the five declared write paths and the unneeded declared file reckon/crew/recovery_watch.py is untouched.\nSCORE durability: 17\nJUSTIFICATION durability: gate/negative-control.log reddens tests/test_a_declared_wait_is_judged_against_itself.py:191 at exit 1 when the reported limit is not read, and gate/base-new-tests.log reddens both new cases at the base, though line 262 compares against the fixture's own probe_extra literal.\nSCORE fit: 15\nJUSTIFICATION fit: the comment at reckon/crew/recovery_classification.py:1594 describes the reading this commit reverted while the code beneath it keeps the default horizon, so the idiom is followed but the statement beside the call is wrong.\nSCORE reuse: 5\nJUSTIFICATION reuse: _wait_probe_reported_limit at reckon/crew/recovery_liveness.py:1211 re-implements the wall-clock parse owned by reckon/crew/fleet_node.py:526 rather than extending it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T145759434084-wait-judged-against-itself-s7/manifest.md:16-21 blocking: the delivered manifest carries PLACEHOLDER_BASELINE/PLACEHOLDER_AFTER and placeholder artifacts/evidence_inputs/outside_scope under /home/ITER/mcintosh paths, so its arm records cannot be read against gate/baseline.log and gate/after.log.\nFINDING docs/evidence/fragments/the-monitor-tells-the-truth-under-load/wait-judged-against-itself-s7.html:34 non-blocking: the measure paragraph quotes 61 passed for the after arm while gate/after.log at 4265b8669e records 60 passed, the 61 belonging to the superseded three-case prefix run in gate/after-prefix.log.\nFINDING docs/evidence/fragments/the-monitor-tells-the-truth-under-load/wait-judged-against-itself-s7.html:36 non-blocking: the controls paragraph claims a wait_file control inside the cases, but no case at this head sets files=, so the coverage it records is not asserted.\nFINDING reckon/crew/recovery_liveness.py:1211 non-blocking: _wait_probe_reported_limit duplicates the [DD-]HH:MM:SS parse owned by reckon/crew/fleet_node.py:526 instead of extending it, so one scheduler field now has two parsers.\nFINDING reckon/crew/recovery_classification.py:1594 non-blocking: the comment claims the wait is never judged by the log-staleness default, which is the reading this commit reverted and contradicts the code below it.\nFINDING reckon/crew/recovery_classification.py:755 non-blocking: the done_when clause that an answering declared probe counts as the wait's evidence is not landed; the fragment records the seven-test measurement behind that choice, so it is a plan decision, but the clause remains unmet.\nFINDING tests/test_a_declared_wait_is_judged_against_itself.py:262 non-blocking: the assertion compares the parsed probe against the same probe_extra literal the fixture passed in, so it holds whatever the suspect-probe reading does.\n",
+  "review_run_id": "r-20261115T231432435336-review-of-wait-judged-against-itself-s7-4265b8669e02",
+  "reviewed_base_sha": "5a5548e5f6c32d69767b14a055b9a68b06667b0d",
+  "reviewed_head_sha": "4265b8669e0273ea9e65bcf442d846a5128722de",
+  "reviewed_run_id": "r-20261115T145759434084-wait-judged-against-itself-s7",
+  "scores": {
+    "durability": 17,
+    "evidence": 7,
+    "fit": 15,
+    "goal_fidelity": 13,
+    "reuse": 5,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T00:10:54.284474+00:00",
+  "total": 75,
+  "verdicts": {
+    "diff": "read the single gained commit 4265b8669e against 5a5548e5f6: it removes the answering-probe early return and its import from reckon/crew/recovery_classification.py, adds _wait_probe_reported_limit and the scheduler-limit rewiring to reckon/crew/recovery_liveness.py, drops a third case and the producer-gone fixture machinery from tests/test_a_declared_wait_is_judged_against_itself.py, and rewrites the two evidence paragraphs in the fragment; 126 insertions and 160 deletions, no file outside the declared paths. Commit by commit: this is the only commit after the reviewed head.",
+    "done_when": "the done_when has four clauses: the scheduler-known limit is asserted at tests/test_a_declared_wait_is_judged_against_itself.py:196 and 213, the suspect probe at 269-273, and both new cases are recorded red at the base tree in gate/base-new-tests.log (2 failed, EXIT=1); the answering-probe clause is not landed at all, and the fourth clause (tests importing the two modules add no failure at the base) is measured nowhere at this revision \u2014 the run's 14-file family log gate/head-wait-targeted.log names revision 5a5548e5f6 and 144 passed, not 4265b8669e.",
+    "goal": "the node goal, judge a declared wait against its own limit and its own probe, is partly landed: reckon/crew/recovery_liveness.py:1250 rewires the overdue flag to the scheduler limit the probe reports and classify_pointer carries external_wait.suspect_probe, while the clause that any answering declared probe is the wait's evidence was removed in this commit at reckon/crew/recovery_classification.py:755 and the fragment at docs/evidence/fragments/the-monitor-tells-the-truth-under-load/wait-judged-against-itself-s7.html:21 records that the wider reading is not carried because it reddens seven committed tests.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T145759434084-wait-judged-against-itself-s7/manifest.md: it records status complete, five commits and both gate exits, but its baseline_suite and after_suite fields are literal PLACEHOLDER tokens under /home/ITER/mcintosh paths (lines 16-17) and artifacts/evidence_inputs/outside_scope are placeholders too, so the arm records it claims are not readable from the delivered file.",
+    "write_paths": "the declared write paths are reckon/crew/recovery_liveness.py, reckon/crew/recovery_classification.py, reckon/crew/recovery_watch.py, tests/test_a_declared_wait_is_judged_against_itself.py and docs/evidence/fragments/the-monitor-tells-the-truth-under-load/wait-judged-against-itself-s7.html; the diff from 5a5548e5f6 to 4265b8669e touches four of those and nothing outside them, leaving recovery_watch.py declared but untouched."
+  }
+}

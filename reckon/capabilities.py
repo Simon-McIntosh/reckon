@@ -524,7 +524,7 @@ def _orientation_input_tokens(run: Mapping[str, Any]) -> float | None:
     anonymous_message = 0
     for stream in _orientation_stream_paths(run):
         try:
-            with stream.open(encoding="utf-8") as handle:
+            with stream.open(encoding="utf-8", errors="replace") as handle:
                 for line in handle:
                     try:
                         event = json.loads(line)
@@ -583,7 +583,7 @@ def _tool_steps(run: Mapping[str, Any]) -> float | None:
     completed_items = 0
     tool_use_blocks = 0
     try:
-        with stream.open(encoding="utf-8") as handle:
+        with stream.open(encoding="utf-8", errors="replace") as handle:
             for line in handle:
                 try:
                     event = json.loads(line)

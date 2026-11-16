@@ -809,8 +809,8 @@ def test_a_followers_trailing_figures_count_only_the_session_it_was_given(
     )
     scoped = recovery.format_watch_transition(event, session="mine")
     unscoped = recovery.format_watch_transition(event)
-    assert " 1w  0r  0n  0d" in scoped, scoped
-    assert " 2w  0r  1n  0d" in unscoped, unscoped
+    assert " 1w  0r  0h  0d" in scoped, scoped
+    assert " 2w  0r  1h  0d" in unscoped, unscoped
     assert scoped != unscoped
 
 
@@ -902,7 +902,7 @@ def test_observe_and_watch_render_failure_only_after_the_process_stops(
         recovery.format_watch_transition(event, ticker=wide) for event in events
     ]
     assert "working" in rendered[0]
-    assert "needs you" in rendered[1]
+    assert "help" in rendered[1]
     # The row carries no free text: the reason a run stopped is read from the
     # run, never cut to fit a line.
     assert "implementation and required evidence" not in rendered[1]
@@ -1831,7 +1831,7 @@ def test_a_complete_needs_help_report_becomes_the_reason_with_a_question_marker(
     line = recovery.format_watch_transition(
         transition, ticker=ticker_module.Ticker(width=208, color=False)
     )
-    assert "needs you" in line
+    assert "help" in line
     assert "the schema rejects an enum value" not in line
 
 
