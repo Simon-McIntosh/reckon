@@ -1,0 +1,79 @@
+<section id="qwnw-red-file-dispatch-launch-is-not-its-own-conflict-landing">
+  <h3>A launch's claim is published before the preflight that had been reading without it</h3>
+  <p>The file reported <code>3 failed, 2 passed</code> at base
+  <code>398015d5d5fb31e353d1e29a4d2d78324aac9d88</code> and reads
+  <code>5 passed</code> at head <code>cc32e64be94228009c496ac481da45a40a2954d1</code>.
+  Two causes, with different verdicts, are behind the three failures.</p>
+  <table id="qwnw-red-file-dispatch-launch-is-not-its-own-conflict-causes">
+    <thead><tr><th>Observed failure</th><th>Verdict</th><th>Rule the code keeps</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>test_a_second_dispatch_meets_the_claim_of_the_launch_in_flight</code>,
+        <code>test_a_second_dispatch_meets_the_claim_made_before_the_preflight</code>: the refusal
+        names <code>docs/figures/fixture/node-claiming</code>, and the second case also saw no live
+        pointer for the first launch at its first preflight read</td>
+        <td>product wrong (first), test wrong (second)</td>
+        <td>A dispatch publishes its claim once, before the placement-bound read, the lane gate and
+        the fence gate, and the guard that gives it back opens around all of them</td>
+      </tr>
+      <tr>
+        <td><code>test_a_claim_appearing_during_the_launch_is_met_at_the_pointer_write</code>:
+        no <code>ScopeConflict</code> at all, although a peer claim on <code>src/claimed.py</code>
+        was published from inside the worktree seam</td>
+        <td>test wrong</td>
+        <td>A mergeable file shares between worktrees, so a peer claim on one overlaps nothing; the
+        node's figure topic is an unmergeable artifact class and is the entry two live claims
+        cannot share, so it is what the peer must hold</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>The product cause: <code>reckon/crew/dispatching/preparation.py</code> published the deciding
+  claim only after <code>_refuse_over_concurrency_ceiling</code>, the lane gate and the first
+  placement-bound read, and published a second time at the pointer write. A sibling dispatch's
+  exclusion depended on that second, private publication, so a launch could be fenced by nothing
+  while it composed, and a dispatch's own claim could refuse itself. The claim is now one
+  publication ahead of the bound read, and the bound read, the second ceiling read, the queued
+  hold, the yield-to-older-request arm and the fence-capability refusal all sit inside the guard
+  those refusals unwind.</p>
+  <p>A hold is not a refusal: it stores the node as a queued request and keeps its pointer, so
+  <code>reckon/crew/dispatch_claims.py</code> gained <code>_withdraw_launch_claim</code> and the
+  guard's <code>LaneHeld</code> arm removes only <code>claim.json</code>, leaving the request
+  waiting exactly as it would have without a launch in front of it. Every other exception still
+  takes <code>_release_launch_claim</code>, which removes the pointer and the run directory.</p>
+  <p>The test cause is the sharing rule, not a weakened assertion. <code>DEFAULT_EXCLUSIVE_PATHS</code>
+  plus <code>_SharedWritePaths(default_share=True)</code> landed in <code>5695689722</code> and
+  <code>471bf98366</code>, after the file's last edit at <code>410d7b48d7</code>: a mergeable
+  <code>.html</code> fragment now shares between worktrees, so the path a refusal between two live
+  claims names is the node's figure topic. The constant is renamed to <code>FIGURE_TOPIC</code>,
+  both assertions still assert that the named path appears in the refusal, and the third case's
+  peer claim now holds the figure topic beside its mergeable source file. No assertion was deleted
+  or weakened.</p>
+  <p>Arms for the file, all with <code>SLURM_JOB_ID</code> unset, both running
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_dispatch_launch_is_not_its_own_conflict.py</code>:
+  at base <code>398015d5d5</code> it reads <code>3 failed, 2 passed in 10.23s</code> with
+  <code>EXIT=1</code>, the three ids being
+  <code>test_a_second_dispatch_meets_the_claim_of_the_launch_in_flight</code>,
+  <code>test_a_second_dispatch_meets_the_claim_made_before_the_preflight</code> and
+  <code>test_a_claim_appearing_during_the_launch_is_met_at_the_pointer_write</code>; at head
+  <code>cc32e64be9</code> it reads <code>5 passed in 14.49s</code> with <code>EXIT=0</code>. The
+  suite the brief arms reads <code>58 passed</code> with <code>EXIT=0</code> at both revisions, and
+  the twelve test files that exercise the changed modules read <code>3 failed, 84 passed</code> at
+  both revisions with the same three ids, so the change adds no failure. Those three are
+  <code>launch-failed</code> readings this sandbox produces without a worker, present identically
+  at base. <code>ruff check</code> and <code>ruff format --check</code> report no finding on the
+  three changed paths; the one <code>RUF100</code> in <code>preparation.py</code> is present at base
+  and untouched.</p>
+  <p id="qwnw-red-file-dispatch-launch-is-not-its-own-conflict-mutation">Mutation control for the
+  product change: with both product files reverted, and only the repaired test file in place, the
+  file reads <code>1 failed, 4 passed in 10.14s</code> and the failing case is
+  <code>test_a_second_dispatch_meets_the_claim_made_before_the_preflight</code> asserting
+  <code>observed["held"] == []</code> against the first launch's run id — so the ordering repair,
+  not the renamed expectation, is what the first launch's claim assertion measures.</p>
+  <p>The brief's first instruction, to merge the current <code>origin/main</code> before rerunning,
+  reports nothing to do: <code>origin/main</code> resolves to this worktree's head, and
+  <code>git fetch origin main</code> cannot run in this sandbox (<code>Bad owner or permissions on
+  /etc/ssh/ssh_config.d/50-redhat.conf</code>), so no merge was possible or needed.</p>
+  <p>The done-when spells this record <code>red-file-dispatch-launch-is-not-its-own-conflict.html</code>;
+  the granted fragment path is <code>qwnw-red-file-dispatch-launch-is-not-its-own-conflict.html</code>
+  and this record is written there.</p>
+</section>
