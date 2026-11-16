@@ -112,8 +112,43 @@ EXIT=1
 head 39d618a32a on all_debug job 1319980:
 4 passed in 51.72s
 EXIT=0
-and again at 4f6e87b6f8 on job 1320050, this fragment the only difference:
+again at 4f6e87b6f8 on job 1320050, this fragment the only difference:
 4 passed in 53.58s
 EXIT=0
+merge head a39a5e4037 on all_debug job 1320657:
+4 passed in 51.74s
+EXIT=0
   </pre>
+  <h3 id="qwnw-red-file-review-reflex-selects-a-backend-merge">The merge into primary main keeps both arms</h3>
+  <p>Promotion met a conflict in <code>reckon/crew/recovery_classification.py</code>
+  against primary main at <code>9c9fa0ab0d</code>: both sides narrowed the same
+  <code>pre_spawn_waiting</code> expression, from opposite evidence. This node
+  required that the pointer carry no manifest verdict; main required that it
+  carry no spawn evidence — no pid, worker record, stream or launch log. Neither
+  reading is a superset of the other, so dropping either would restore a bug the
+  other had fixed: without the manifest arm a run whose worker finished still
+  reads as one that never started, and without the spawn arm a run that reached
+  a worker still reads from a label the launcher could not advance.</p>
+  <p>The resolution keeps both, in one conjunction over the same phase test:</p>
+  <pre>
+pre_spawn_waiting = (
+    phase in _PRE_SPAWN_PHASES
+    and not manifest_status
+    and not _spawn_evidence(record)
+    and not _stranded_launch(record, now_seconds=moment)
+)</pre>
+  <p>Both comments are carried too, because each names a separate receipt that
+  outranks the launcher's label. No other path conflicted; the merge commit
+  <code>a39a5e4037</code> has both parents and no conflict marker.</p>
+  <p id="qwnw-red-file-review-reflex-selects-a-backend-merge-arm">The same arm
+  at the merge head runs cleaner than either earlier head:
+  <code>63 failed, 1717 passed, 13 errors in 1048.21s</code>, <code>EXIT=1</code>
+  on all_debug job 1320659. The union comparison against the base arms leaves
+  six ids that no base run reported, and all six are red on primary main itself:
+  running their five files at <code>9c9fa0ab0d</code> and at the merge head
+  returns the same seven ids in the same order
+  (<code>7 failed, 17 passed</code> at both, job 1320831), so they are inherited
+  from primary's newer commits rather than introduced by this merge. The id
+  <code>test_a_tier_none_run_owes_no_review.py::test_a_tier_none_run_reads_a_promotable_kind_and_a_source_run_stays_missing</code>
+  is red at <code>9c9fa0ab0d</code> as well.</p>
 </section>
