@@ -1,0 +1,89 @@
+<section id="qwnw-red-file-a-control-log-is-judged-at-write-landing">
+  <h3>The control-log command tests' fixture cites the log its run directory holds</h3>
+  <p>The file failed in five cases on the primary branch, all from the same
+  cause: the six cases that judge a record through <code>crew check --manifest
+  --run</code> build their manifest with a fixture whose <code>test_logs</code>
+  line names <code>/tmp/control-log-check.log</code> and which carries no
+  statement about delivered messages. Neither rule is stale in the product, so
+  the verdict is <strong>test wrong</strong> twice over, and no product rule was
+  repaired.</p>
+  <p>The reproduction, quoted from the base arm, is the empty-control case
+  reporting three findings where the test requires one:</p>
+  <pre id="qwnw-red-file-a-control-log-is-judged-at-write-repro">FAILED tests/test_a_control_log_is_judged_at_write.py::test_the_command_refuses_an_empty_control_log - assert 3 == 1
+ +  where 3 = len(["negative_control_log is empty: the fixture log ...",
+ 'test_logs log \'/tmp/control-log-check.log\' resolves outside the run directory: every cited log must exist under the run directory ...',
+ 'messages_received: no delivery receipt was recorded, so the manifest must say `messages_received: none`'])</pre>
+  <table id="qwnw-red-file-a-control-log-is-judged-at-write-causes">
+    <thead><tr><th>Observed failure</th><th>Verdict</th><th>Rule the code keeps</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>test_logs log '/tmp/control-log-check.log' resolves outside the
+        run directory</code>: every one of the five failing cases, because the
+        fixture cited a host path where the record is read beside its own run
+        directory</td>
+        <td>test wrong</td>
+        <td><code>reports._log_location_findings</code>: every cited log must be a
+        readable file under the manifest's run directory, resolved after
+        symlinks</td>
+      </tr>
+      <tr>
+        <td><code>messages_received: no delivery receipt was
+        recorded, so the manifest must say `messages_received: none`</code>: the
+        same five cases</td>
+        <td>test wrong</td>
+        <td><code>worker_inbox.manifest_message_finding</code>, read by
+        <code>crew check --manifest --run</code>: a run whose directory holds no
+        receipt owes the statement</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>Both rules arrived after this fixture and both are asserted elsewhere in
+  the same file: the external-log refusal is what
+  <code>_assert_only_external_test_log_is_refused</code> checks, and the message
+  statement is asserted in <code>tests/test_worker_inbox.py</code>. So the
+  fixture is what moved, and the repair is the fixture: the run-directory
+  fixture now writes its durable gate log beside the manifest and the command
+  bodies cite that log, and the fixture manifest states that no message was
+  received — the true statement for a run directory holding no receipt, taken
+  from <code>worker_inbox.MANIFEST_MESSAGES_KEY</code> so the fixture cannot
+  drift from the reader's own name for the field.</p>
+  <p>No assertion was deleted or weakened. The six command cases still require
+  the control-log finding to be the only one (<code>len(findings) == 1</code>),
+  and the acceptance cases still require an empty finding list, which is what
+  makes the refusal a statement about the control log rather than about the
+  field being present. The four audit cases that resolve a log beside a real
+  manifest path keep their <code>resolves outside the run directory</code>
+  assertion unchanged.</p>
+  <p>Arms, all as <code>all_debug</code> jobs with <code>SLURM_JOB_ID</code>
+  unset, running
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_control_log_is_judged_at_write.py</code>:
+  at base <code>6fa76c49f48e1d4fe4f104431f85f519ce92aae0</code> (a clone at that
+  revision) it reads <code>5 failed, 19 passed in 0.56s</code> with
+  <code>EXIT=1</code>; at head
+  <code>8741924bacb0c53c29da737d5ec8b5f9d92dcf5b</code> it reads
+  <code>24 passed in 1.47s</code> with <code>EXIT=0</code>. The suite selection
+  this node's write scope resolves to over both trees reads
+  <code>58 passed in 32.08s</code> <code>EXIT=0</code> at base and
+  <code>58 passed in 33.99s</code> <code>EXIT=0</code> at head, so this change
+  adds no failure. No product module changed, so the added-failure arm over the
+  files that import it is the gate file itself.
+  <code>ruff check</code> and <code>ruff format --check</code> report nothing on
+  the changed path at either revision; the first draft of the fixture moved the
+  host log literal into a parameter default, which <code>S108</code> flags where
+  a list element was not, and the delivered form keeps the literal in the list
+  and rewrites that one line in the command fixture instead.</p>
+  <p id="qwnw-red-file-a-control-log-is-judged-at-write-mutation">Negative
+  control: the base arm is the red log, and the five failing ids it reports —
+  <code>test_the_command_refuses_an_empty_control_log</code>,
+  <code>test_the_command_accepts_a_log_ending_in_a_non_zero_exit</code>,
+  <code>test_the_command_accepts_a_run_that_declared_no_control</code>,
+  <code>test_the_command_accepts_a_recorded_waiver</code>,
+  <code>test_the_command_writes_no_state_beside_the_run_it_reads</code> — are
+  none of the ids the head arm fails, because the head arm fails none. The base
+  arm's first attempt ran in a <code>git archive</code> extraction; the two
+  selected suite files shell out to <code>git ls-tree HEAD</code> and errored
+  there, which is an instrument artefact rather than a code result, so the
+  recorded base arms were re-run in a clone checked out at the base revision and
+  the extraction figure is not used.</p>
+  <p><a href="/reckon/evidence/fragments/queued-work-needs-no-workaround/red-file-a-control-log-is-judged-at-write.html">Red-file record: base arm and head arm</a></p>
+</section>
