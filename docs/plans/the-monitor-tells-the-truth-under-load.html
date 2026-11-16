@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-informs" content="the-monitor-shows-the-work-it-watches,the-monitor-reads-each-fact-once,a-landing-never-waits-on-a-shared-index,the-escape-lane-and-reviews-keep-pace">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;implementable&quot;,&quot;s22&quot;:&quot;implementable&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s24&quot;:&quot;implementable&quot;,&quot;s25&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;implementable&quot;,&quot;s22&quot;:&quot;implementable&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s24&quot;:&quot;implementable&quot;,&quot;s25&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <title>The Monitor Tells The Truth Under Load | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="66">
+<meta name="plan-version" content="68">
 <meta name="plan-modified" content="2026-11-16">
 </head>
 <body>
@@ -87,7 +87,7 @@
     <p><strong>Done when.</strong> New tests, each failing at the base revision. A report still carrying a template placeholder is not stored while its reviewer is running, and a later read of the finished report stores its findings. A report still carrying one once its reviewer has ended is refused as a delivery defect naming the placeholders, which opens a repair round rather than holding the review open. A figure-review record with complete per-figure verdicts promotes, while one missing a figure's verdict is refused naming the figure. The tests importing <code>reckon.crew.plan_review</code> or <code>reckon.crew.recovery_review_delivery</code> add no failure against the base on all_debug. Write paths: <code>reckon/crew/plan_review.py</code>, <code>reckon/crew/recovery_review_delivery.py</code>, <code>reckon/crew/review.py</code> and a new test.</p>
 
     <h2 id="s7">§7 — A declared wait is judged against itself</h2>
-    <section data-reckon="section" data-id="s7" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s7" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p><strong>Why.</strong> Three sessions found the same misreading from different angles:</p>
     <ul>
       <li>nova-a8: a multi-hour compute wait read overdue and went to "investigate" because the expected horizon defaulted to 900 s, while its job was RUNNING (r-20261114T211231918544).</li>
@@ -335,6 +335,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261116T024837872500-review-of-wait-judged-against-itself-s7-dab3a694a273" data-who="reckon-build" data-when="2026-11-16T02:53:08.543Z">
     <div class="r-comment-body"><p>Review of run r-20261115T145759434084-wait-judged-against-itself-s7 at dab3a694a27361d2300c473ad805db20b69c09fb (base f2dad9e4312a82b8cca46172ae0e8ecc8639c520) stored as parsed, scoring goal_fidelity 18, evidence 13, scope_discipline 15, durability 17, fit 18, reuse 5, with three non-blocking findings: the resumption terminal matcher left unowned, the fragment's 4 h figure against a %L probe, and the narrowed punctuation strip in the live-state read.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261115T145759434084-wait-judged-against-itself-s7" data-who="reckon-build" data-when="2026-11-15T17:16:29Z">
+    <div class="r-comment-body"><p>The answer&#x27;s terminal match now has one owner: reckon/crew/recovery_wait.py carries _wait_answer_names_terminal, the condition reader calls it, and the live-state reader asks it instead of matching the declaration&#x27;s list with its own strip set. The scheduler&#x27;s trailing &#x27;+&#x27; folds into the declared value for both readers, so a CANCELLED+ answer reads as the state the declaration names rather than as a live one, and the ended condition is no longer measured by the job&#x27;s limit.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261115T212630905715-review-of-only-real-transitions-s8-64b2c9ad6b2a" data-who="reckon-build" data-when="2026-11-15T21:29:22.055Z">
     <div class="r-comment-body"><p>reviewed r-20261115T145802867790-only-real-transitions-s8 at head 64b2c9ad6b2a3c75ec9beff3fb9c4f59ab464a59 off base b46256908fc3eac1a5b4f4dc5f21ec0740feee34 — record parsed, all 6 dimensions scored 0..20 (goal_fidelity 16, evidence 13, scope: 19, 15, 17, 12), added_failure_count 0 with no added ids, 7 non-blocking findings and no blocking one, record at review-records/r-20261115T145802867790-only-real-transitions-s8.at-64b2c9ad6b2a3c75ec9beff3fb9c4f59ab464a59.json</p></div>
