@@ -1,7 +1,7 @@
 import inspect
 import os
 import time
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
