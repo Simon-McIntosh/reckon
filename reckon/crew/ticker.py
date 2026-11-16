@@ -572,9 +572,7 @@ PANE_STATES = {
 # replay of a start, a re-arm or reload baseline, and a reload notice. The row
 # policy and the summary lines read the rule from here rather than restating it,
 # so a row the stream withholds is withheld by one decision.
-CARRIED_PANE_WORDS = frozenset(
-    {"delivered", "help", "stopped", "in review", "seat moved"}
-)
+CARRIED_PANE_WORDS = frozenset({"delivered", "help", "in review", "seat moved"})
 
 # The pane words of a run whose work is over: a written record, or a drop. A
 # landing is news only when the pane itself drew the delivery before it, and a
@@ -1694,7 +1692,7 @@ def stream_carries(event: Mapping[str, Any]) -> bool:
         # notice a coordinator gets that the launch will repeat the same
         # refusal until the remedy is run.
         return True
-    if _pane_word(event) in CARRIED_PANE_WORDS:
+    if _pane_word(event) in CARRIED_PANE_WORDS or supervisor_stop_clause(event):
         return True
     return (
         transition_class(event.get("from_state"), event.get("to_state"))

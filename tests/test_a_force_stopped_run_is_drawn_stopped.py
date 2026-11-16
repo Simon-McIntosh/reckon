@@ -160,3 +160,18 @@ def test_a_row_without_a_destination_keeps_its_unknown_word() -> None:
 
 def test_a_generic_stopped_state_keeps_its_remembered_help_word() -> None:
     assert ticker._remembered_word("stopped") == "help"
+
+
+def test_a_supervisor_stop_reaches_the_follower_row_path(run: dict) -> None:
+    snapshot = recovery._watch_snapshot(run, moment=time.time(), stall_seconds=900)
+    event = {
+        **snapshot,
+        "event": "transition",
+        "to_state": snapshot["state"],
+        "from_state": "working",
+    }
+    path = ticker.PaneRowPath(own_session="owner")
+    rows = path.feed(event, now=1000.0) + path.flush(now=1100.0)
+    assert rows, event
+    line = ticker.Ticker(color=False).render(rows[-1])
+    assert "→ stopped" in line and "terminal-run" in line, line
