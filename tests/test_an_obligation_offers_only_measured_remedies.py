@@ -136,6 +136,30 @@ def test_normalizing_a_commitless_delivery_keeps_its_declaration(delivered):
     assert rows[0]["next_command"] == command
 
 
+def test_waiting_request_keeps_its_row_when_the_remedy_target_is_live(delivered):
+    pointer, _, _ = delivered
+    runs._write_json(
+        runs.run_dir(pointer["run_id"]) / "attempt-2-worker.json",
+        {"pid": os.getpid(), "host": socket.gethostname(), "attempt": 2},
+    )
+    duty = _duty(pointer, kind="queued-awaiting-session")
+    duty["run_id"] = "r-waiting"
+    rows, _ = obligations._partition_acknowledged([duty], {})
+    assert [row["run_id"] for row in rows] == ["r-waiting"]
+    assert rows[0]["next_command"] == "reckon crew observe --run r-remedy"
+
+
+def test_acknowledged_departed_request_keeps_its_safe_deferred_row():
+    duty = _duty({"run_id": "r-departed"})
+    rows, deferred = obligations._partition_acknowledged(
+        [duty],
+        {"r-departed": {"reason": "the refusal has been deferred", "until": "later"}},
+    )
+    assert rows == []
+    assert [row["run_id"] for row in deferred] == ["r-departed"]
+    assert deferred[0]["next_command"] == "reckon crew observe --run r-departed"
+
+
 @pytest.mark.parametrize(
     "command",
     [

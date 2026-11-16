@@ -1809,7 +1809,7 @@ def _partition_acknowledged(
         else candidate
         for candidate in items
     ]
-    for item in measured_remedy_items(candidates):
+    for item in measured_remedy_items(candidates, deferred_runs=acknowledgements):
         record = acknowledgements.get(str(item.get("run_id") or ""))
         if record is None:
             owed.append(item)
@@ -1830,13 +1830,16 @@ def _partition_acknowledged(
     return owed, deferred
 
 
-def measured_remedy_items(items: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+def measured_remedy_items(
+    items: Sequence[Mapping[str, Any]], *, deferred_runs: Iterable[str] = ()
+) -> list[dict[str, Any]]:
     """Offer settlement commands only from the attempt's current evidence.
 
     Both the direct view and the station's snapshot partition here, so the
     hook renders the same decision without importing the derivation.
     """
     checked: list[dict[str, Any]] = []
+    deferred = set(deferred_runs)
     for original in items:
         item = dict(original)
         command = str(item.get("next_command") or "")
@@ -1863,11 +1866,13 @@ def measured_remedy_items(items: Sequence[Mapping[str, Any]]) -> list[dict[str, 
         except CrewError:
             pointer = {}
         if not pointer:
-            if item.get("kind") == "promotion-failed":
+            if item.get("kind") == "promotion-failed" and run_id not in deferred:
                 continue
             item["next_command"] = f"reckon crew observe --run {shlex.quote(run_id)}"
         elif not recovery_classification.completion_offer(pointer, repair=True):
-            continue
+            if settlement_kind:
+                continue
+            item["next_command"] = f"reckon crew observe --run {shlex.quote(run_id)}"
         elif not repairing:
             offered = recovery_classification._promotion_command(
                 run_id, pointer, list(item.get("manifest_commits") or ())
