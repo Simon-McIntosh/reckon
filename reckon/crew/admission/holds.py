@@ -691,11 +691,80 @@ def _named_runs(record: Mapping[str, Any]) -> list[str]:
     return named
 
 
+def _carried_hold(
+    pointer: Mapping[str, Any], record: Mapping[str, Any]
+) -> dict[str, Any]:
+    """The hold record to store, keeping an unchanged record's own instant.
+
+    ``recorded_at`` dates the reason, not the pass that last confirmed it, so a
+    pass that writes the record it already finds leaves the stored instant where
+    it was. The identity comparison ignores only that instant: every other key
+    is what a reader of the request is being told.
+    """
+
+    def without_time(row: Mapping[str, Any]) -> dict[str, Any]:
+        return {key: value for key, value in row.items() if key != "recorded_at"}
+
+    previous = recorded_pass_hold(pointer)
+    if previous and without_time(previous) == without_time(record):
+        return previous
+    return dict(record)
+
+
+def _released_claim(
+    record: Mapping[str, Any], live: Sequence[Mapping[str, Any]]
+) -> bool:
+    """Whether the run a stored scope refusal names claims its path no longer.
+
+    A refusal is written from the launch check's view of one run and the path it
+    claimed, and that view is evidence for the pass that saw it. A later pass
+    reads the fleet again, so the same pass can see that run's pointer: a holder
+    whose declared paths no longer include the claimed one holds nothing there,
+    and a scope refusal kept because its own text said so is the reason a
+    request carries for hours after its cause went away. A holder the pass did
+    not observe is no evidence either way.
+    """
+    holder = record.get("holder")
+    if not isinstance(holder, Mapping):
+        return False
+    holders = {str(candidate.get("run_id") or ""): candidate for candidate in live}
+    observed = holders.get(str(holder.get("run_id") or ""))
+    claimed = str(holder.get("path") or "")
+    if observed is None or not claimed:
+        return False
+    return not any(
+        runs._scopes_overlap(path, claimed) for path in _declared_scope_paths(observed)
+    )
+
+
+def _declined_refusal_hold(
+    record: Mapping[str, Any], *, moment: datetime
+) -> dict[str, Any]:
+    """Describe a stored scope refusal whose claim its holder no longer declares.
+
+    Nothing the request waits on is still held, so the refusal is retired and
+    the request reads as waiting out the ordinary back-off: the record says what
+    the pass saw rather than repeating a claim nobody makes.
+    """
+    holder = record.get("holder") if isinstance(record.get("holder"), Mapping) else {}
+    holder_run = str(holder.get("run_id") or "")
+    claimed = str(holder.get("path") or "")
+    return {
+        "verdict": "held-on-retry-backoff",
+        "reason": (
+            f"the launch was refused on a scope conflict with run {holder_run!r}, "
+            f"which no longer declares the write path {claimed!r}; the refusal is "
+            "retired and the request waits out the bounded retry back-off"
+        ),
+        "recorded_at": moment.isoformat(),
+    }
+
+
 def _refusal_hold(
     caught: Exception, live: Sequence[Mapping[str, Any]], *, moment: datetime
 ) -> dict[str, Any] | None:
     """Describe a launch refusal that names the run holding the request."""
-    holders = {str(pointer.get("run_id") or ""): pointer for pointer in live}
+    holders = {str(candidate.get("run_id") or ""): candidate for candidate in live}
     if isinstance(caught, ScopeConflict):
         holder_run = str(caught.run_id or "")
         holder = holders.get(holder_run) or {}
@@ -762,10 +831,18 @@ def _record_pass_hold(
         # A retry timer cannot settle the named runs. A scope conflict takes
         # this path only after the claim check found no binding collision.
         chosen = previous
+    if str(
+        previous.get("verdict") or ""
+    ) == "refused-scope-conflict" and _released_claim(previous, live):
+        # The pass re-read the run the stored refusal names and found it no
+        # longer claims the path, so the refusal is retired and the request
+        # reads as waiting out the ordinary back-off.
+        chosen = _declined_refusal_hold(previous, moment=moment)
 
     def without_time(row: Mapping[str, Any]) -> dict[str, Any]:
         return {key: value for key, value in row.items() if key != "recorded_at"}
 
+    chosen = _carried_hold(pointer, chosen)
     if without_time(chosen) == without_time(previous):
         return
     chosen["recorded_at"] = moment.isoformat()

@@ -915,8 +915,9 @@ def _restore_queued(
             restored, failure, moment=moment or _service._now(), guard=guard
         )
     else:
-        restored[RECORDED_HOLD_FIELD] = dict(hold)
-        restored["reason"] = str(hold.get("reason") or "")
+        carried = _holds._carried_hold(snapshot, hold)
+        restored[RECORDED_HOLD_FIELD] = carried
+        restored["reason"] = str(carried.get("reason") or "")
     for key in (
         "pid",
         "pid_start_time",
