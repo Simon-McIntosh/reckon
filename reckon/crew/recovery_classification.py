@@ -1826,9 +1826,17 @@ def classify_pointer(
 
     # A pre-spawn launch past its bound with its holder gone is not waiting to
     # start: the liveness arms read it as a failed launch, which the admission
-    # pass then releases or returns to the queue.
-    pre_spawn_waiting = phase in _PRE_SPAWN_PHASES and not _stranded_launch(
-        record, now_seconds=moment
+    # pass then releases or returns to the queue. A pointer whose manifest
+    # carries a terminal verdict is not waiting to start either: a worker
+    # cannot report an outcome before it has run, so the delivered report is
+    # the launch evidence its launcher's label failed to record, exactly as
+    # :func:`_observed_phase` reads it. Holding such a run at ``running`` here
+    # overrode its own verdict and left every reader — the review reflex
+    # included — seeing work in progress for a run that had delivered.
+    pre_spawn_waiting = (
+        phase in _PRE_SPAWN_PHASES
+        and manifest_status not in TERMINAL_MANIFEST_STATUSES
+        and not _stranded_launch(record, now_seconds=moment)
     )
     # A parked phase is the launcher's statement that the request is waiting to
     # start, and it means that only while the pointer records no worker: a pid
