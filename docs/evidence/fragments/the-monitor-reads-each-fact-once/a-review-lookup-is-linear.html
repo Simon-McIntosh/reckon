@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s74">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-16">
+  <meta name="evidence-commit" content="bc54586305">
+  <title>A review lookup is linear | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="a-review-lookup-is-linear">
+  <h2>A review lookup is linear</h2>
+
+  <p><strong>The defect.</strong> The station classifies every live pointer once
+  a tick, and each delivered run that owes a review asks the reflex's own
+  recognition which live reviewer stands for the run's head. That recognition
+  walked the live pointers and read each candidate's reviewed run directory
+  inside the walk &mdash; <code>_review_pointer_rubric</code> through
+  <code>runs.run_dir</code> and <code>Path.exists</code>, and
+  <code>_review_subject</code> through the same read again: two GPFS stats and a
+  config-home check per candidate, for a reviewed run that is the same on every
+  iteration of one row. A tick over P pointers therefore cost on the order of
+  P&sup2; filesystem checks, which is what the station's first tick after the
+  06:00Z restart on 16 November never finished.</p>
+
+  <p><strong>What landed.</strong> A snapshot index
+  (<code>_ReviewInFlightIndex</code>) holds, for one read of the live pointers,
+  the answers that depend on a pointer or on a reviewed run alone: the run's
+  directory, the directory it keeps its review records in, the record names each
+  pointer declares, the record name each rubric composes for a reviewed head, and
+  the subject a review pointer stands for. <code>_review_pointer_rubric</code>
+  and <code>_review_in_flight</code> read the walk through it, so every
+  classified run pays each of those reads at most once for the whole snapshot
+  rather than once per candidate. The index is keyed on the identity of the
+  sequence the caller passed and holds that sequence, so a later read's list
+  cannot answer from an earlier reading; a caller that passes no snapshot &mdash;
+  every reader outside a tick &mdash; gets an index for that one call, and
+  outside a tick every answer is derived from the pointers the call held.</p>
+
+  <h3 id="a-review-lookup-is-linear-case">Two hundred pointers, classified once</h3>
+
+  <p><code>tests/test_a_review_lookup_is_linear.py</code> builds a temporary crew
+  home of 160 delivered implement runs, each with a manifest reporting
+  completion and no review attached, so each reaches the scoring branch of
+  <code>classify_pointer</code>, and 40 live reviews declaring the head-keyed
+  record path of one of those runs: 200 live pointers. A recording stand-in
+  counts every <code>Path.exists</code> and <code>Path.is_dir</code> call made
+  under the crew home while the lookup looks a review in flight, and every
+  pointer is classified once.</p>
+
+  <p>At head <code>bc54586305</code> the pass makes <strong>400 checks for 200
+  live pointers &mdash; 2.00 each</strong>, against a budget of five per
+  pointer. Counting every existence check the whole classification pass made at
+  the base revision, the same fixture cost <strong>73,601 checks</strong> &mdash;
+  368 per pointer &mdash; so the stand-in is shown seeing a population whose
+  cost is known to be large before a small number is claimed for it, and the
+  negative control below applies this case's own instrument to the base
+  lookup. The review the lookup matches to each of the 160 delivered runs is
+  compared, run by run, with a candidate-at-a-time walk of the base
+  algorithm: the pairing is identical, so answering those reads once changes
+  how often the question is asked, never the answer.</p>
+
+  <h3 id="a-review-lookup-is-linear-doubling">A doubled fleet at doubled cost</h3>
+
+  <p>The second case builds the same fixture at twice the size &mdash; 320
+  delivered runs and 80 reviews, 400 live pointers &mdash; in a home of its own,
+  and asserts the sweep's count at most doubles: it makes
+  <strong>800 checks for 400 pointers &mdash; 2.00 each again</strong>, exactly
+  double the 400 the 200-pointer fleet took. A count quadratic in the pointers
+  would have quadrupled.</p>
+
+  <h3 id="a-review-lookup-is-linear-negative">The negative control</h3>
+
+  <p>With the base lookup restored &mdash; each candidate's reviewed run
+  directory read again inside the sweep, and each candidate's subject read again
+  per row &mdash; the same file fails both cases: the first makes
+  <strong>60,960 checks for 200 live pointers (304.80 each)</strong> and the
+  second <strong>243,520 for 400 (608.80 each)</strong>, four times the smaller
+  fleet's count rather than twice it. The log is
+  <code>logs/negative-control.log</code> under the run directory, ending
+  <code>EXIT=1</code>.</p>
+
+  <h3 id="a-review-lookup-is-linear-arms">Matched arms</h3>
+
+  <p>The node's suite template resolves to 56 passed with 2 errors at base
+  <code>cc8a94d939</code> and 58 passed with the same 2 errors at head
+  <code>bc54586305</code>; both errors are
+  <code>tests/test_staged_write_inventory.py</code> reading
+  <code>git ls-tree HEAD</code> in an extracted arm, which has no repository,
+  and the command differs between the arms only by the new case, absent at
+  base.</p>
+
+  <p>The 168 test files importing <code>recovery_review_dispatch</code> or
+  <code>recovery_classification</code> ran as matched arms on
+  <code>all_debug</code>, submitted with
+  <code>env -u SLURM_JOB_ID -u SLURM_JOBID sbatch</code>: 66 failed with 3
+  errors at base and 66 at head, with identical failure ids &mdash; no failure
+  is added over the base revision.</p>
+</section>
+</main>
+</body>
+</html>
