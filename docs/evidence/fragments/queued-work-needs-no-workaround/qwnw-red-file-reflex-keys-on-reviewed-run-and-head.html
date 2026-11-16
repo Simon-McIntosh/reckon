@@ -50,14 +50,33 @@
     </tbody>
   </table>
 
-  <h3 id="qwnw-red-file-reflex-keys-on-reviewed-run-and-head-control">Base arm and negative control</h3>
+  <h3 id="qwnw-red-file-reflex-keys-on-reviewed-run-and-head-control">The two arms and the negative control</h3>
 
-  <p id="qwnw-red-file-reflex-keys-on-reviewed-run-and-head-p2">The base run is
-  the unmodified fixture at <code>ee93819a0d</code> in a scratch tree. It exits
-  1 with the five ids below — the same ids the manifest's
-  <code>negative_control_log</code> names. The head run of the unchanged gate
-  command exits 0, so none of these ids is in the head arm:
-  <code>tests/test_reflex_keys_on_reviewed_run_and_head.py</code> passes.</p>
+  <table id="qwnw-red-file-reflex-keys-on-reviewed-run-and-head-t2">
+    <thead>
+      <tr><th>Arm</th><th>Revision</th><th>Result</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>base, scratch tree, unmodified fixture (<code>base-suite.log</code>)</td>
+        <td><code>ee93819a0d</code></td>
+        <td>5 failed, <code>EXIT=1</code> — the ids below</td>
+      </tr>
+      <tr>
+        <td>head, sbatch job on <code>all_debug</code> with
+        <code>SLURM_JOB_ID</code> unset (<code>gate-head.log</code>)</td>
+        <td>the run's head; the log's first line names it</td>
+        <td>5 passed, <code>EXIT=0</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p id="qwnw-red-file-reflex-keys-on-reviewed-run-and-head-p2">Both arms ran
+  the same command, resolved over their own tree:
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_reflex_keys_on_reviewed_run_and_head.py</code>. The base run's
+  failing ids are the ones the manifest's <code>negative_control_log</code>
+  names, and none of them is in the head arm.</p>
 
   <ol id="qwnw-red-file-reflex-keys-on-reviewed-run-and-head-control-list">
     <li><code>test_a_live_review_under_any_node_id_suppresses_the_reflex</code></li>
