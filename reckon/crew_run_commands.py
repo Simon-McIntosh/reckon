@@ -3280,6 +3280,57 @@ def _refuse_a_flag_as_a_reason(
     return value
 
 
+def _refuse_an_unfileable_review_record(
+    run_id: str, *, accepted: "Iterable[str]" = (), pretty: bool = False
+) -> None:
+    """Refuse a review run whose every delivered record the store would reject.
+
+    A review writes its record into its own run directory rather than into the
+    store, so the file a promotion files is the one on a path the run declared.
+    Reading it before the promotion is requested is what keeps the refusal on
+    the command that would have queued the work: the queued path answers with
+    its request receipt immediately, so a guard placed behind it reports a
+    review claims files that the reviewer is never told about until a drain
+    refuses them. A path this call accepts is read beside the declaration
+    because a widen lands it on the pointer only after this point.
+    """
+    import json
+
+    from reckon.crew import review as review_module
+    from reckon.crew import runs as runs_module
+    from reckon.crew.node import CrewError
+
+    try:
+        pointer = runs_module.read_pointer(run_id)
+    except CrewError:
+        return
+    node = pointer.get("node") or {}
+    if str(pointer.get("role") or node.get("role") or "") != "review":
+        return
+    declared = [*(node.get("write_paths") or ()), *accepted]
+    delivered = []
+    for name in dict.fromkeys(str(path) for path in declared):
+        source = Path(name)
+        if (
+            source.parent.name != review_module.RUN_REVIEW_RECORD_DIRNAME
+            or not source.is_file()
+        ):
+            continue
+        try:
+            body = json.loads(source.read_text(encoding="utf-8"))
+            reasons = (
+                review_module.store_review_refusals(body)
+                if isinstance(body, dict)
+                else ["record is not an object"]
+            )
+        except (OSError, ValueError) as exc:
+            reasons = [f"unreadable JSON: {exc}"]
+        delivered.append({"record": str(source), "reasons": reasons})
+    if delivered and all(entry["reasons"] for entry in delivered):
+        _emit({"ok": False, "review_filed": False, "refused": delivered}, pretty)
+        raise click.exceptions.Exit(1)
+
+
 @crew.command(name="complete")
 @click.option("--run", "run_id", required=True, help="Run id to promote.")
 @click.option(
@@ -3586,6 +3637,11 @@ def crew_complete(
 
     if land and not dry_run:
         _refuse_a_landing_without_its_pointer(run_id)
+    # Judged here, ahead of the queued request, so a review learns its record
+    # is unfileable from the command that would have queued the promotion.
+    _refuse_an_unfileable_review_record(
+        run_id, accepted=[path for path, _ in accepted_paths], pretty=pretty
+    )
     driven = False
     if not wait and not dry_run and COMMAND_REPLY.get() is None:
         # The drain forwards every stored option as a keyword, so the snapshot
@@ -3624,7 +3680,6 @@ def crew_complete(
         )
     crew_module, _ = _crew_modules()
     ledger_module = _ledger_module()
-    from reckon.crew import review as review_module
     from reckon.crew import runs as runs_module
 
     try:
@@ -3652,34 +3707,6 @@ def crew_complete(
             pointer = runs_module.read_pointer(run_id)
         except crew_module.CrewError as exc:
             raise click.ClickException(str(exc)) from exc
-    if (
-        pointer
-        and str(pointer.get("role") or (pointer.get("node") or {}).get("role") or "")
-        == "review"
-    ):
-        delivered = []
-        for declared in (pointer.get("node") or {}).get("write_paths") or ():
-            source = Path(str(declared))
-            if (
-                source.parent.name != review_module.RUN_REVIEW_RECORD_DIRNAME
-                or not source.is_file()
-            ):
-                continue
-            try:
-                import json
-
-                body = json.loads(source.read_text(encoding="utf-8"))
-                reasons = (
-                    review_module.store_review_refusals(body)
-                    if isinstance(body, dict)
-                    else ["record is not an object"]
-                )
-            except (OSError, ValueError) as exc:
-                reasons = [f"unreadable JSON: {exc}"]
-            delivered.append({"record": str(source), "reasons": reasons})
-        if delivered and all(entry["reasons"] for entry in delivered):
-            _emit({"ok": False, "review_filed": False, "refused": delivered}, pretty)
-            raise click.exceptions.Exit(1)
     gate_check = {
         "command": gate_command,
         "exit_status": gate_exit_status,
