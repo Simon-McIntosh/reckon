@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="242">
+<meta name="plan-version" content="244">
 <meta name="plan-modified" content="2026-11-16">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -826,7 +826,13 @@
     <div class="r-comment-body"><p>Reviewed run r-20261116T105126521019-qwnw-red-file-a-review-never-runs-in-harness from base 69fab1372f to head 94250afbda: parsed, scoring goal_fidelity 18, evidence 16, scope_discipline 19, durability 19, fit 19, reuse 18 (total 109), added failures 0, with two non-blocking findings on the fragment naming neither arm's log path and on the head gate header recording no job or SLURM_JOB_ID state</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261116T031908385809-qwnw-red-file-held-worktree-fallback-resolves-each-row-once" data-who="reckon-build" data-when="2026-11-16T09:21:55.033Z">
-    <div class="r-comment-body"><p>repaired `reckon.crew.obligations._held_worktree_records_read` so an aggregate row without a run id, which the store-backed merged reader cannot return, is filed from the aggregate&#x27;s own position and the tree only it names stays held, and brought `tests/test_held_worktree_fallback_resolves_each_row_once.py` to the rule the code keeps; measure: 5 passed at the head gate (base arm of the same command 4 failed, 1 passed), suite arms 58 passed either side, 501 path resolutions over 500 records against a bound of 1000</p></div>
+    <div class="r-comment-body"><p>repaired `reckon.crew.obligations._held_worktree_records_read` so an aggregate row without a run id, which the store-backed merged reader cannot return, is filed from the aggregate's own position and the tree only it names stays held, and brought `tests/test_held_worktree_fallback_resolves_each_row_once.py` to the rule the code keeps; measure: 5 passed at the head gate (base arm of the same command 4 failed, 1 passed), suite arms 58 passed either side, 501 path resolutions over 500 records against a bound of 1000</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261116T031916920770-qwnw-red-file-follower-hands-off-to-host" data-who="reckon-build" data-when="2026-11-16T09:31:59.604Z">
+    <div class="r-comment-body"><p>§29 tests/test_follower_hands_off_to_host.py passes 8/8 at head 5b242a46cf where base 0e0f25b0 failed five of the same eight, all three causes test-wrong and the product tree unchanged: the cases armed `--session session-handoff` while exporting a different harness identity so the follow request was refused by the guard that writes only the calling session's own pair, their request assertions predated the `owner_checked` mark the line carries, and the dispatch case expected delivery `host` without writing the census the ask reads; no assertion was deleted or weakened (two-key request comparisons became three-key against one `_request_payload()` helper) and the armed suite pair reads 58 passed at both revisions.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261115T224617007555-qwnw-red-file-gate-evidence" data-who="reckon-build" data-when="2026-11-16T00:01:42Z">
+    <div class="r-comment-body"><p>delivered the gate-evidence fixture repairs; tests/test_gate_evidence.py reads 25 passed at 3a543c4441 against 15 failing at d0d77f07e2</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
