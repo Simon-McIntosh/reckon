@@ -1,0 +1,37 @@
+<section id="qwnw-red-file-held-worktree-records-match-each-record-once-repair">
+<h2>Held-tree records: a fixture tree that carries no unmerged work is not held</h2>
+<p>The derivation is right and the fixture was wrong. <code>_held_worktree_records</code>
+returns the record holding each registered, present, unoccupied tree that still owes a
+landing; since <code>c778aaa1f6</code> it drops a tree whose working copy is clean and whose
+head is reachable from its primary branch. The fixture registered twenty trees with
+<code>git worktree add --detach HEAD</code> and committed nothing in them, so every tree was
+clean and reachable, the filter removed all twenty before any naming rule was consulted,
+and the derivation returned <code>{}</code>. The repair gives each fixture tree one commit
+its primary branch does not reach, which is the state a dispatched run leaves behind; the
+rule the test now asserts is unchanged and no assertion was deleted or weakened.</p>
+<p>Reproduction before the repair, on the base tree at
+<code>0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc</code>, showed the filter directly:
+<code>git status --porcelain</code> was empty, <code>_unmerged_commit_answer</code> answered
+<code>False</code> and <code>_tree_holds_unmerged_work</code> answered <code>False</code> for
+<code>node-00</code> while the same run counted 20 registered and present trees.</p>
+</section>
+
+<section id="qwnw-red-file-held-worktree-records-match-each-record-once-negative-control">
+<h2>Base run: two failures, both from the empty derivation</h2>
+<pre># revision: 0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_held_worktree_records_match_each_record_once.py
+FAILED tests/test_held_worktree_records_match_each_record_once.py::test_each_record_is_filed_once_not_compared_per_tree - AssertionError: assert set() == {PosixPath('/...ode-05'), ...}
+FAILED tests/test_held_worktree_records_match_each_record_once.py::test_the_held_trees_equal_the_whole_ledger_derivation - AssertionError: assert {} == {'/tmp/reckon...23-r023', ...}
+2 failed, 3 passed in 4.71s
+EXIT=1</pre>
+</section>
+
+<section id="qwnw-red-file-held-worktree-records-match-each-record-once-head-run">
+<h2>Head run: the file passes in full</h2>
+<pre># command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_held_worktree_records_match_each_record_once.py
+.....                                                                    [100%]
+5 passed in 4.36s
+EXIT=0</pre>
+<p>The graded head run is the <code>all_debug</code> job recorded on the manifest's
+<code>tests:</code> line.</p>
+</section>
