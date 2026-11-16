@@ -1658,9 +1658,10 @@ def _run_directory_records_end(run_directory: Path) -> bool:
 
     A supervisor writes ``exit.json`` beside the attempt's own exit record when
     the worker process ends, and a discarded run leaves its discard marker. Both
-    say the run is over; a directory holding neither belongs to a run that is
-    still working or one whose supervisor died before writing the record, and
-    its scratch is not settled on that reading alone.
+    record an end but can survive a resume, so the caller also checks the
+    current run identity and live pointers. A directory holding neither belongs
+    to a run that is still working or one whose supervisor died before writing
+    the record, and its scratch is not settled on that reading alone.
     """
     if (run_directory / "exit.json").is_file():
         return True
@@ -1687,10 +1688,11 @@ def settle_run_scratch(
 
     The decision is made from the crew home, which every host shares, and never
     from a project ledger: a directory named for a run whose run directory
-    records that the run ended, and that no live pointer names and no process
-    holds, is removed at once with no age wait. The run-directory pass retires a
-    finished run's directory after its grace, so a copy can outlive its record; such a copy is
-    removed under the same ``SCRATCH_GRACE_SECONDS`` rule the orphan sweep
+    records that the run ended, and that neither the current run identity nor a
+    live pointer names and no process holds, is removed at once with no age
+    wait. The run-directory pass retires a finished run's directory after its
+    grace, so a copy can outlive its record; such a copy is removed under the
+    same ``SCRATCH_GRACE_SECONDS`` rule the orphan sweep
     applies, after the same holder check. A directory not named for a run is
     left to :func:`garbage_collect_orphan_scratch`.
 
@@ -1721,6 +1723,7 @@ def settle_run_scratch(
         return {"root": str(scratch), "entries": [], "removed": [], "bytes_freed": 0}
     stamp = time.time() if now is None else now
     live_ids = {str(record.get("run_id") or "") for record in list_live()}
+    current_run_id = os.environ.get("RECKON_RUN_ID", "")
     holders = _scratch_process_holders(scratch)
     home = Path(runs_root) if runs_root is not None else None
     entries: list[dict[str, Any]] = []
@@ -1734,7 +1737,12 @@ def settle_run_scratch(
             continue
         directory = (home / name) if home is not None else run_dir(name)
         age = max(0.0, stamp - _scratch_ctime(child))
-        if name in live_ids:
+        # A resumed step creates its scratch before entering the worker and
+        # can still carry an earlier attempt's exit record while its pointer
+        # is not yet visible. Its own launch identity already proves it live.
+        if name == current_run_id:
+            state, reason = RUN_SCRATCH_LIVE, "current run"
+        elif name in live_ids:
             state, reason = RUN_SCRATCH_LIVE, "live pointer"
         elif holders.get(name):
             state, reason = RUN_SCRATCH_HELD, f"held by process {holders[name]}"
