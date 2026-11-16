@@ -16,4 +16,18 @@
   the blocked commit within the consumer's 3 s pause. The base-reader negative
   control records 3 failed in 9.37 s, exit 1; the focused repaired run records
   3 passed in 12.31 s, exit 0. Both ran on <code>all_debug</code>.</p>
+  <section id="store-read-releases-the-lock-s30-receipt-order">
+    <h3>Receipt replay preserves observation order</h3>
+    <p>The expanded gate reproduces the pace replay failure: 66 passed at base,
+    then 1 failed and 68 passed at the reader head. A controlled probe places
+    the next fixture receipt one microsecond after the promotion receipt.
+    The fixture's whole-second formatter turns that later observation into a
+    tie, leaving the stored, unmeasured receipt selected. The replay fails
+    at both revisions under this control; both readers answer identical
+    row order, fields and membership over the same promoted history.</p>
+    <p>The repair belongs to the test fixture: its timestamp formatter retains
+    microseconds. The controlled replay then reports 1 passed in 6.87 s,
+    exit 0, with reader equality checked after both promotions. The product
+    reader needs no further change. All probe arms ran on <code>all_debug</code>.</p>
+  </section>
 </section>
