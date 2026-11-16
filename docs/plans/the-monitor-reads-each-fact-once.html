@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="391">
+<meta name="plan-version" content="393">
 <meta name="plan-modified" content="2026-11-16">
 </head>
 <body>
@@ -1568,7 +1568,13 @@ staged paths.</p>
     <div class="r-comment-body"><p>Parsed revision-bound independent review stored; all six dimensions 20/20; no findings; added_failure_count=0 from complete baseline and after gate logs.</p></div>
 </div>
 <div class="r-comment" data-section="s76" data-id="c-run-r-20261116T124250552356-queue-ordering-reads-history-once" data-who="reckon-build" data-when="2026-11-16T13:25:49Z">
-    <div class="r-comment-body"><p>run_store.store_stamp names the store&#x27;s contents and section_holds keys the section history read on it; three queue orderings over 2,000 promoted rows decode 2,000 rows, then 0, then 0, and a recorded promotion is read again</p></div>
+    <div class="r-comment-body"><p>run_store.store_stamp names the store's contents and section_holds keys the section history read on it; three queue orderings over 2,000 promoted rows decode 2,000 rows, then 0, then 0, and a recorded promotion is read again</p></div>
+</div>
+<div class="r-comment" data-section="s77" data-id="c-run-r-20261116T144953843693-review-of-the-obligation-sweep-shares-the-review-index-98fccdc87d22" data-who="reckon-build" data-when="2026-11-16T14:57:32.728Z">
+    <div class="r-comment-body"><p>independent review of r-20261116T124343194850-the-obligation-sweep-shares-the-review-index at base 915acff37f4d535f44f39ebf0cc21827bbfc5827 and head 98fccdc87d22229dfecf95e7af14f5e52b0ab611 — scores goal_fidelity 18, evidence 16, scope_discipline 16, durability 14, fit 18, reuse 18 (100 of 120), added_failure_count 0 derived from the reviewed run's own arm logs (baseline 58 passed, after 59 passed, no failing ids in either), four non-blocking findings and no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s77" data-id="c-run-r-20261116T124343194850-the-obligation-sweep-shares-the-review-index" data-who="reckon-build" data-when="2026-11-16T13:25:41.968Z">
+    <div class="r-comment-body"><p>routed the obligation sweep&#x27;s review lookup through the per-tick index — the index files each live pointer once (by granted record directory, by the run its declarations or node id spell, and an unresolved list every query also reads), answers each run&#x27;s standing review from that filing in the read&#x27;s order, resolves a live run&#x27;s record directory without an existence check, and reads the head and project the rule keys on instead of composing a dispatch command — so checks made inside the three lookup entry points over a 200-pointer fleet fall from 20,920 at base to 720 over 800 asks, and the review matched to all 160 delivered runs equals the base read path&#x27;s.</p></div>
 </div>
 </section>
 </main>
