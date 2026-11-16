@@ -1802,6 +1802,16 @@ def classify_pointer(
     pre_spawn_waiting = phase in _PRE_SPAWN_PHASES and not _stranded_launch(
         record, now_seconds=moment
     )
+    # A pre-spawn phase is a reading of a claim, and a claim is all it is: the
+    # manifest is written by the worker the claim is waiting for, so a pointer
+    # whose manifest already carries a verdict word has delivered and is read
+    # from it. Without that precedence the phase label outranked every arm
+    # below, and a completed run left at its launcher's last phase read as
+    # running — invisible to the reader that dispatches the review a scoring
+    # run owes, which is what the phase reading was never about.
+    pre_spawn_reads_as_claim = (
+        pre_spawn_waiting and manifest_status not in TERMINAL_MANIFEST_STATUSES
+    )
     # A parked phase is the launcher's statement that the request is waiting to
     # start, and it means that only while the pointer records no worker: a pid
     # or a launch clock on a queued request is a request that has launched, and
@@ -1852,12 +1862,14 @@ def classify_pointer(
         else:
             detail = str(record.get("reason") or "waiting for a local lane slot")
             action = "wait for a local lane slot"
-    elif pre_spawn_waiting:
+    elif pre_spawn_reads_as_claim:
         # Claimed by its launcher with no worker yet: the phase reading stands,
         # as it does for a queued request, and it is reported as running, the
         # reading such a run carried before the liveness arms were skipped for
         # it. Without a classification here the arms below were skipped too,
-        # and the read raised for every row of the project.
+        # and the read raised for every row of the project. A claim whose
+        # manifest already carries a verdict is not a claim — it delivered, and
+        # the arms below read what it delivered.
         classification = "running"
         detail = (
             f"the launcher has claimed this run ({phase}) and has not started "
@@ -1872,7 +1884,7 @@ def classify_pointer(
     unlaunched = (
         phase in {QUEUED_PHASE, HELD_PHASE}
         or phase in WAITING_UPSTREAM_PHASES
-        or pre_spawn_waiting
+        or pre_spawn_reads_as_claim
     ) and not launched
     if unlaunched and stuck is None:
         pass
