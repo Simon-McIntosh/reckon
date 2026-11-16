@@ -19,7 +19,13 @@ from pathlib import Path
 import pytest
 
 from reckon import _plan_html
-from reckon.crew import landing_measure, promotion_requests, queue_admission, queue_landing, runs
+from reckon.crew import (
+    landing_measure,
+    promotion_requests,
+    queue_admission,
+    queue_landing,
+    runs,
+)
 from reckon.crew import review as review_module
 from tests import test_a_landed_section_releases_its_waiters as release_waits
 from tests import test_a_queued_request_waits_on_its_dependencies as waits
