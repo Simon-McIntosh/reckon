@@ -238,8 +238,14 @@ def _rendered_north_star_state(
     tmp_path: Path,
     docs_dir: Path,
     browser: str,
+    *,
+    directions_expected: bool = False,
 ) -> dict:
-
+    # The page paints the persisted rows first and merges the derived payload,
+    # which carries the project's directions, one turn later. A rendered
+    # direction is therefore read after that merge: the badge exists on the
+    # second paint, and the unlabelled fixture is judged after the same merge
+    # rather than against the first paint.
     with served_spa(
         tmp_path,
         browser,
@@ -258,7 +264,20 @@ def _rendered_north_star_state(
           })()
             """,
             viewport=(1374, 900),
-            ready_expression="Boolean(document.querySelector('.r-list-body'))",
+            preload_expression=(
+                "window.__derivedStateSeen = false;"
+                "window.addEventListener('reckon:derived', () => {"
+                " window.__derivedStateSeen = true; });"
+            ),
+            ready_expression=(
+                "Boolean(document.querySelector('.r-list-body'))"
+                " && window.__derivedStateSeen === true"
+                + (
+                    " && Boolean(document.querySelector('.r-north-star-badge'))"
+                    if directions_expected
+                    else ""
+                )
+            ),
         )
 
 
@@ -632,7 +651,8 @@ def test_served_component_edit_is_visible_on_the_next_load(
     ui_root = tmp_path / "editable-ui"
     shutil.copytree(REPO_ROOT / "docs" / "ui", ui_root)
     monkeypatch.setenv("RECKON_UI_ROOT", str(ui_root))
-    shell = ui_root / "shell.jsx"
+    topbar = ui_root / "shell-topbar.jsx"
+    brand_title = "document.querySelector('.r-topbar-brand')?.getAttribute('title')"
 
     with served_spa(
         tmp_path,
@@ -642,18 +662,20 @@ def test_served_component_edit_is_visible_on_the_next_load(
         route="#plan/alpha",
     ) as spa:
         before = spa.run_probe(
-            "document.querySelector('.r-topbar-brand span')?.textContent",
-            ready_expression="Boolean(document.querySelector('.r-topbar-brand span'))",
+            brand_title,
+            ready_expression="Boolean(document.querySelector('.r-topbar-brand'))",
         )
-        shell.write_text(
-            shell.read_text().replace("<span>reckon</span>", "<span>edited live</span>")
+        topbar.write_text(
+            topbar.read_text().replace(
+                'title="reckon · fleet"', 'title="edited live"'
+            )
         )
         after = spa.run_probe(
-            "document.querySelector('.r-topbar-brand span')?.textContent",
-            ready_expression="Boolean(document.querySelector('.r-topbar-brand span'))",
+            brand_title,
+            ready_expression="Boolean(document.querySelector('.r-topbar-brand'))",
         )
 
-    assert before == "reckon"
+    assert before == "reckon · fleet"
     assert after == "edited live"
 
 
@@ -832,7 +854,9 @@ def test_build_carries_directions_into_the_project_surfaces(
     assert result.exit_code == 0, result.output
     data = json.loads(index_path.read_text())["data"]
     alpha = next(item for item in data["inventory"] if item["slug"] == "alpha")
-    rendered = _rendered_north_star_state(tmp_path, docs_dir, rendered_browser)
+    rendered = _rendered_north_star_state(
+        tmp_path, docs_dir, rendered_browser, directions_expected=True
+    )
     assert data["north_stars"] == directions
     assert alpha["north_star"] == "reliable-delivery"
     assert rendered == {

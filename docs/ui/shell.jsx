@@ -10,11 +10,14 @@ function ArtifactSurface({
   filters,
   setFilters,
   readingMode,
+  filtersHidden,
   sortBy,
   setSortBy,
   sortDir,
   toggleSortDir,
   onSelect,
+  onSelectPlan,
+  onSetContext,
   onOpenPrompt,
   onPlanMutated,
   attachmentGroups,
@@ -26,10 +29,32 @@ function ArtifactSurface({
 }) {
   const label = window.ReckonShell.route.ARTIFACT_TABS.find(tab => tab.key === kind)?.label || kind;
   const SharedIndex = window.ReckonShell.plans.ArtifactIndex;
+  const ListCol = window.ReckonShell.plans.ListCol;
   const selected = route.slug || null;
 
   return (
-    <div className={`r-canvas-view ${kind === "plan" ? "r-plans-view" : `r-${kind}-view`} ${readingMode ? "reading-mode" : ""}`} data-artifact-kind={kind} data-artifact-selection={selected || ""}>
+    <div className={`r-canvas-view ${kind === "plan" ? "r-plans-view" : `r-${kind}-view`} ${kind === "plan" && filtersHidden ? "filters-collapsed" : ""} ${readingMode ? "reading-mode" : ""}`} data-artifact-kind={kind} data-artifact-selection={selected || ""}>
+      {selected && kind === "plan" && !readingMode && (
+        <ListCol
+          route={route}
+          onNav={nav}
+          onSelectPlan={onSelectPlan}
+          items={items}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+          sortDir={sortDir}
+          toggleSortDir={toggleSortDir}
+          filters={filters}
+          setFilters={setFilters}
+          onClearFilters={() => setFilters({})}
+          onClearContext={() => setFilters(current => {
+            const next = { ...current };
+            delete next.context;
+            return next;
+          })}
+          onSetContext={onSetContext}
+        />
+      )}
       {selected ? (
         <div className="r-content" style={readingMode ? { height: "100vh", overflow: "auto" } : undefined}>
           {!readingMode && kind === "plan" && <window.ReckonShell.title.TitleBar route={route} onNav={nav} onOpenPrompt={onOpenPrompt} onPlanMutated={onPlanMutated} />}
@@ -508,11 +533,14 @@ function App() {
           filters={filters}
           setFilters={setFilters}
           readingMode={readingMode}
+          filtersHidden={filtersHidden}
           sortBy={groupBy}
           setSortBy={setGroupBy}
           sortDir={sortDir}
           toggleSortDir={toggleSortDir}
           onSelect={onSelectArtifact}
+          onSelectPlan={onSelectArtifact}
+          onSetContext={onSetContext}
           onOpenPrompt={() => setPromptOpen(true)}
           onPlanMutated={bumpInv}
           attachmentGroups={attachmentGroups}
