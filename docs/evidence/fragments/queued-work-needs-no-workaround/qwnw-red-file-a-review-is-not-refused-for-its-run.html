@@ -23,6 +23,7 @@ EXIT=1</pre>
 ....                                                                     [100%]
 4 passed in 2.71s
 EXIT=0</pre>
+<p>The same file passes again at the node's final head <code>894e759a352a</code>, which differs from the code revision above only in this record's own commit: job 1320281 on all_debug reads <code>4 passed in 2.83s</code>, <code>EXIT=0</code>, with the module imported from the worktree.</p>
 <h4 id="qwnw-red-file-a-review-is-not-refused-for-its-run-arm">Arm over the files that import the changed module</h4>
 <p>The 216 test modules naming <code>recovery_classification</code> or <code>classify_pointer</code> were run at both revisions with the same command. The head adds <strong>no</strong> failure: its 98 failing-or-erroring ids are exactly the base arm's own, and the base arm carries <strong>16 further ids</strong> that the head passes. Those sixteen are in the review-reflex and review-role files — <code>tests/test_review_reflex_sweep.py</code>, <code>tests/test_review_role_is_not_reviewed.py</code>, <code>tests/test_a_queued_launch_never_classifies_the_fleet.py</code> and <code>tests/test_a_tier_none_run_owes_no_review.py</code> — and they were red at base for the same cause this node repaired: a completed run whose pointer still carried a pre-spawn phase was classified <code>running</code>, so no review was dispatched for the run awaiting one. The arm ran in a scratch extraction of base and in the worktree at head, concurrently on the node.</p>
 <pre># base   105 failed, 1675 passed, 13 errors in 1094.93s
