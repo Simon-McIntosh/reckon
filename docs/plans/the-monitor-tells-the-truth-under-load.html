@@ -24,7 +24,7 @@
   <title>The Monitor Tells The Truth Under Load | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="68">
+<meta name="plan-version" content="69">
 <meta name="plan-modified" content="2026-11-16">
 </head>
 <body>
@@ -205,7 +205,7 @@
     <h2 id="s25">The pane and the hook read the producer the same way</h2>
 <section data-reckon="section" data-id="s25" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
 <p><strong>Why.</strong> imas-codex-5a reported, at about 00:20 local on 16 November, the pane drawing "producer imas-codex lost: snapshot age 206s exceeds 120s; re-arm with: reckon crew watch --ensure". At the same prompt, the obligations hook read "the station is alive but slow: its tick has run 3m26s in the per-project-refresh stage, so no restart is needed". A coordinator that follows the pane restarts a slow station and adds load to it. The pane judged the snapshot's age, while the hook judged the station's own heartbeat and tick.</p>
-<p><strong>Done when.</strong> New tests, each failing at the base revision. When the station's heartbeat is fresh and its tick is running, the pane draws no lost row and offers no re-arm, whatever the snapshot's age. Like the hook, it reads the station as alive but slow, and a slow tick stays off the pane, as the slow notice already does. A station whose heartbeat is stale still draws a lost row with its remedy. The tests importing <code>reckon.crew.watch_unit</code> add no failure against the base on all_debug. Write paths: <code>reckon/crew/watch_unit.py</code> and a new test.</p>
+<p><strong>Done when.</strong> New tests, each failing at the base revision. When the station's heartbeat is fresh and its tick is running, the pane draws no lost row and offers no re-arm, whatever the snapshot's age. Like the hook, it reads the station as alive but slow, and a slow tick stays off the pane, as the slow notice already does. A station whose heartbeat is stale still draws a lost row with its remedy. A <code>crew watch --ensure</code> that finds the project's producer alive starts nothing and reports <code>started: false</code>: on 16 November nova-84 re-armed six times on these rows and every ensure answered <code>started: true</code>, while the one nova watcher (alive 29 hours) never changed. The tests importing <code>reckon.crew.watch_unit</code> add no failure against the base on all_debug. Write paths: <code>reckon/crew/watch_unit.py</code> and a new test.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -337,7 +337,7 @@
     <div class="r-comment-body"><p>Review of run r-20261115T145759434084-wait-judged-against-itself-s7 at dab3a694a27361d2300c473ad805db20b69c09fb (base f2dad9e4312a82b8cca46172ae0e8ecc8639c520) stored as parsed, scoring goal_fidelity 18, evidence 13, scope_discipline 15, durability 17, fit 18, reuse 5, with three non-blocking findings: the resumption terminal matcher left unowned, the fragment's 4 h figure against a %L probe, and the narrowed punctuation strip in the live-state read.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261115T145759434084-wait-judged-against-itself-s7" data-who="reckon-build" data-when="2026-11-15T17:16:29Z">
-    <div class="r-comment-body"><p>The answer&#x27;s terminal match now has one owner: reckon/crew/recovery_wait.py carries _wait_answer_names_terminal, the condition reader calls it, and the live-state reader asks it instead of matching the declaration&#x27;s list with its own strip set. The scheduler&#x27;s trailing &#x27;+&#x27; folds into the declared value for both readers, so a CANCELLED+ answer reads as the state the declaration names rather than as a live one, and the ended condition is no longer measured by the job&#x27;s limit.</p></div>
+    <div class="r-comment-body"><p>The answer's terminal match now has one owner: reckon/crew/recovery_wait.py carries _wait_answer_names_terminal, the condition reader calls it, and the live-state reader asks it instead of matching the declaration's list with its own strip set. The scheduler's trailing '+' folds into the declared value for both readers, so a CANCELLED+ answer reads as the state the declaration names rather than as a live one, and the ended condition is no longer measured by the job's limit.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261115T212630905715-review-of-only-real-transitions-s8-64b2c9ad6b2a" data-who="reckon-build" data-when="2026-11-15T21:29:22.055Z">
     <div class="r-comment-body"><p>reviewed r-20261115T145802867790-only-real-transitions-s8 at head 64b2c9ad6b2a3c75ec9beff3fb9c4f59ab464a59 off base b46256908fc3eac1a5b4f4dc5f21ec0740feee34 — record parsed, all 6 dimensions scored 0..20 (goal_fidelity 16, evidence 13, scope: 19, 15, 17, 12), added_failure_count 0 with no added ids, 7 non-blocking findings and no blocking one, record at review-records/r-20261115T145802867790-only-real-transitions-s8.at-64b2c9ad6b2a3c75ec9beff3fb9c4f59ab464a59.json</p></div>
