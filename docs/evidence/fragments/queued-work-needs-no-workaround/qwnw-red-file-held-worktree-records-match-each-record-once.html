@@ -19,22 +19,22 @@ rule the test asserts is unchanged and no assertion was deleted or weakened.</p>
 <section id="qwnw-red-file-held-worktree-records-match-each-record-once-negative-control">
 <h2>Base run: two failures, both from the empty derivation</h2>
 <pre># revision: 0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc (git archive of the base revision)
-# host: 98dci4-clu-3141.iter.org job 1319562
+# host: 98dci4-clu-3141.iter.org job 1319587
 # command: /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_held_worktree_records_match_each_record_once.py
 .F.F.                                                                    [100%]
 FAILED tests/test_held_worktree_records_match_each_record_once.py::test_each_record_is_filed_once_not_compared_per_tree - AssertionError: assert set() == {PosixPath('/...ode-05'), ...}
 FAILED tests/test_held_worktree_records_match_each_record_once.py::test_the_held_trees_equal_the_whole_ledger_derivation - AssertionError: assert {} == {'/tmp/pytest...23-r023', ...}
-2 failed, 3 passed in 5.43s
+2 failed, 3 passed in 5.08s
 EXIT=1</pre>
 </section>
 
 <section id="qwnw-red-file-held-worktree-records-match-each-record-once-head-run">
 <h2>Head run: the file passes in full</h2>
-<pre># revision: 980a8e8a8a29c7429da507e9fefbf58d9c72d8c8
-# host: 98dci4-clu-3141.iter.org job 1319561
+<pre># revision: 9527583d2281604e625e62776935b25afba7e28f
+# host: 98dci4-clu-3141.iter.org job 1319586
 # command: /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_held_worktree_records_match_each_record_once.py
 .....                                                                    [100%]
-5 passed in 5.05s
+5 passed in 5.04s
 EXIT=0</pre>
 <p>Both runs were submitted to <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset;
 the head run is the command the manifest's <code>tests:</code> line records.</p>
