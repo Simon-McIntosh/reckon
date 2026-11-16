@@ -1,0 +1,113 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures": [],
+  "added_failures_note": "Derived with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own arms: logs/suite-base.log (revision 4992939f84cb, 58 passed, EXIT=0) and logs/suite-after.log (revision f30c8b62d8, 63 passed, EXIT=0); both parse as pytest logs with no FAILED or ERROR id, so the count is a measured 0 rather than an unmeasured one. The base log's own '# command:' line names no test path and its progress line is NUL-padded, so the base arm's scope is taken from manifest.md rather than from the log.",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/station.py:1191",
+    "reckon/crew/station_store.py:1069",
+    "reckon/crew/station_store.py:983",
+    "reckon/crew/station_store.py:1456",
+    "reckon/crew/recovery_watch.py:1303",
+    "reckon/crew/recovery_repair_dispatch.py:362",
+    "reckon/crew/recovery_cut_off.py:34"
+  ],
+  "completed_at": "2026-11-16T01:47:04.184Z",
+  "dispatched_at": "2026-11-16T01:46:15Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-classification-reads-only-new-stream-lines.html",
+      "line": "85",
+      "severity": "non-blocking",
+      "text": "The negative-control paragraph says the mutated tree 'fails 3 of 5 cases', but the log it cites (logs/negative-control-restore-whole-stream-scans.log, 'FF.FF', '4 failed, 1 passed', EXIT=1) reports four failures, so the fragment understates the coverage its own control demonstrated."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-classification-reads-only-new-stream-lines.html",
+      "line": "93",
+      "severity": "non-blocking",
+      "text": "The arms paragraph records '63 passed at head 825335b101', but the after-arm log the manifest cites for that figure (logs/suite-after.log:1) carries revision f30c8b62d8, so the fragment names a revision its own receipt does not carry and a reader cannot line the two up."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T222819513530-a-classification-reads-only-new-stream-lines/logs/suite-base.log",
+      "line": "3",
+      "severity": "non-blocking",
+      "text": "The base arm's '# command:' line ends at a bare '-q ' with no test path while manifest.md records two test files for it, and line 6 is a NUL-padded progress line carrying F markers over a '58 passed' summary, so the base receipt is not one clean invocation a reader can reconstruct and the pair's scope is taken on the manifest's word."
+    },
+    {
+      "file": "tests/test_a_classification_reads_only_new_stream_lines.py",
+      "line": "305",
+      "severity": "non-blocking",
+      "text": "The quiet-tick zero has no positive half: the decodes are reset before each tick at :302 and nothing asserts the first _tick decoded a document, so a tick that stopped reading pointers and verdicts entirely, or a decode that moved into a module outside the counted set, leaves this assertion green where the stream case does assert its positive half at :163."
+    },
+    {
+      "file": "reckon/crew/recovery_wait.py",
+      "line": "131",
+      "severity": "non-blocking",
+      "text": "_stream_scan reuses a record on inode equality plus st_size >= covered, which is the same-file/not-truncated test reckon/crew/follow_checkpoint.py:123 continues owns, re-expressed instead of called; it also drops the head-fingerprint guard the repository's other incremental reader uses (reckon/crew/recovery_stream.py:540 through _backends.stream_head_fingerprint), so a stream rewritten in place without shrinking keeps the predecessor's assistant-seen flag and last record type."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_classification_reads_only_new_stream_lines.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": "true",
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T222819513530-a-classification-reads-only-new-stream-lines/logs/suite-after.log",
+      "revision": "f30c8b62d8632d7a5a54fca491d91ccb52be399e"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": "true",
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T222819513530-a-classification-reads-only-new-stream-lines/logs/suite-base.log",
+      "revision": "4992939f84cb5aaa5802cbbc1dd3e79e96c43117"
+    },
+    "gate": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_classification_reads_only_new_stream_lines.py",
+      "completed": "true",
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T222819513530-a-classification-reads-only-new-stream-lines/logs/gate-head.log",
+      "revision": "f30c8b62d8632d7a5a54fca491d91ccb52be399e"
+    }
+  },
+  "item_verdicts": {
+    "diff": "Read the five commits against 4992939f84cb one at a time: 60dab4e501 adds _StreamScan and the three offset readers, 15c2018bc8 adds StationStore._decoded_document/_remember_decoded and pointer_fields, 825335b101 and e6fabd7700 add the failure figure and the evidence fragment, f30c8b62d8 falls the pointer_fields key back to the run id for rows a caller built itself.",
+    "done_when": "Read the done_when clause by clause against tests/test_a_classification_reads_only_new_stream_lines.py: 30 runs of 2,000 lines classified twice with a zero second pass at :163/:168, one appended line decoded and the verdict flipped at :191/:196, truncation rescanned at :213, an unterminated record held at its last newline at :235/:247, the codex ingest columns and quiet tick at :294/:305, and the 60,000-decode control at logs/negative-control-restore-whole-stream-scans.log:244251; the manifest's gate is that file, which I re-ran at the head (5 passed, EXIT=0).",
+    "goal": "Read the goal in dispatch-detail.json (node.goal: 'Classify each run by reading only the stream lines appended since its last scan') against the head; reckon/crew/recovery_wait.py:1644 answers the assistant-record question from a stored byte offset, :241 and :1571 the two tail questions, so every stream read a later pass makes is over appended bytes.",
+    "manifest": "Read manifest.md: status complete over the five commits 60dab4e501..f30c8b62d8, the gate at 5 passed EXIT=0, both suite arms at 0 failures, the negative control at 60000 decodes with 4 failed, the matched 69-file importer arms at 13 failed with 389 vs 394 passed and an empty added set, and one entry under outside_scope.",
+    "write_paths": "Read the dispatch fence at prompt.txt:85-90 (recovery_wait.py, station.py, station_store.py, the new test file, the evidence fragment, one figure directory) against `git diff --name-only 4992939f84cb f30c8b62d8`, which lists five files, every one inside that declaration."
+  },
+  "justifications": {
+    "durability": "Restoring the whole-stream scan reddens tests/test_a_classification_reads_only_new_stream_lines.py:168 with 60000 decodes (logs/negative-control-restore-whole-stream-scans.log:29-32) and reinstating json.loads at reckon/crew/station_store.py:483 reddens :305, but nothing asserts the first _tick decodes a document so :305 also stays green on a tick that stopped reading the store, and the in-place rewrite has no test.",
+    "evidence": "tests/test_a_classification_reads_only_new_stream_lines.py:163 asserts the first pass clears RUNS*LINES before the zero is reported and logs/gate-head.log records 5 passed EXIT=0 at f30c8b62 which I reproduced, but logs/suite-base.log:3 names no test path and its progress line at :6 is NUL-padded with F markers over a '58 passed' summary, so the base arm's scope rests on the manifest.",
+    "fit": "The helpers follow the module's docstringed private-function idiom (reckon/crew/recovery_wait.py:157), but the process-global _STREAM_SCANS at reckon/crew/recovery_wait.py:127 is module-level mutable state where the repository's other incremental reader threads a caller-owned memo (reckon/crew/recovery_stream.py:540).",
+    "goal_fidelity": "reckon/crew/recovery_wait.py:1644 and :241 both resume from a stored offset and rescan only when the inode moved or the file shrank, so classifying a long-lived run no longer decodes its whole stream, which is the goal stated.",
+    "reuse": "reckon/crew/recovery_wait.py:131's continuation test is reckon/crew/follow_checkpoint.py:123 continues' same-file/not-truncated predicate re-expressed without calling that owner, while _decoded_document at reckon/crew/station_store.py:473 has no owner (a search over reckon/crew for a text-keyed decode cache found only admission/readiness.py:334, which serves a different capability).",
+    "scope_discipline": "Every path in `git diff --name-only 4992939f84cb f30c8b62d8` is one of those declared at prompt.txt:85-90, and the sixth declared path (the figure directory) is left untouched rather than filled."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the goal in dispatch-detail.json (node.goal: 'Classify each run by reading only the stream lines appended since its last scan') against the head; reckon/crew/recovery_wait.py:1644 answers the assistant-record question from a stored byte offset, :241 and :1571 the two tail questions, so every stream read a later pass makes is over appended bytes.\nVERDICT done_when: Read the done_when clause by clause against tests/test_a_classification_reads_only_new_stream_lines.py: 30 runs of 2,000 lines classified twice with a zero second pass at :163/:168, one appended line decoded and the verdict flipped at :191/:196, truncation rescanned at :213, an unterminated record held at its last newline at :235/:247, the codex ingest columns and quiet tick at :294/:305, and the 60,000-decode control at logs/negative-control-restore-whole-stream-scans.log:244251; the manifest's gate is that file, which I re-ran at the head (5 passed, EXIT=0).\nVERDICT write_paths: Read the dispatch fence at prompt.txt:85-90 (recovery_wait.py, station.py, station_store.py, the new test file, the evidence fragment, one figure directory) against `git diff --name-only 4992939f84cb f30c8b62d8`, which lists five files, every one inside that declaration.\nVERDICT manifest: Read manifest.md: status complete over the five commits 60dab4e501..f30c8b62d8, the gate at 5 passed EXIT=0, both suite arms at 0 failures, the negative control at 60000 decodes with 4 failed, the matched 69-file importer arms at 13 failed with 389 vs 394 passed and an empty added set, and one entry under outside_scope.\nVERDICT diff: Read the five commits against 4992939f84cb one at a time: 60dab4e501 adds _StreamScan and the three offset readers, 15c2018bc8 adds StationStore._decoded_document/_remember_decoded and pointer_fields, 825335b101 and e6fabd7700 add the failure figure and the evidence fragment, f30c8b62d8 falls the pointer_fields key back to the run id for rows a caller built itself.\nCALL_SITES: reckon/crew/station.py:1191, reckon/crew/station_store.py:1069, reckon/crew/station_store.py:983, reckon/crew/station_store.py:1456, reckon/crew/recovery_watch.py:1303, reckon/crew/recovery_repair_dispatch.py:362, reckon/crew/recovery_cut_off.py:34\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_wait.py:1644 and :241 both resume from a stored offset and rescan only when the inode moved or the file shrank, so classifying a long-lived run no longer decodes its whole stream, which is the goal stated.\nSCORE evidence: 14\nJUSTIFICATION evidence: tests/test_a_classification_reads_only_new_stream_lines.py:163 asserts the first pass clears RUNS*LINES before the zero is reported and logs/gate-head.log records 5 passed EXIT=0 at f30c8b62 which I reproduced, but logs/suite-base.log:3 names no test path and its progress line at :6 is NUL-padded with F markers over a '58 passed' summary, so the base arm's scope rests on the manifest.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: Every path in `git diff --name-only 4992939f84cb f30c8b62d8` is one of those declared at prompt.txt:85-90, and the sixth declared path (the figure directory) is left untouched rather than filled.\nSCORE durability: 16\nJUSTIFICATION durability: Restoring the whole-stream scan reddens tests/test_a_classification_reads_only_new_stream_lines.py:168 with 60000 decodes (logs/negative-control-restore-whole-stream-scans.log:29-32) and reinstating json.loads at reckon/crew/station_store.py:483 reddens :305, but nothing asserts the first _tick decodes a document so :305 also stays green on a tick that stopped reading the store, and the in-place rewrite has no test.\nSCORE fit: 14\nJUSTIFICATION fit: The helpers follow the module's docstringed private-function idiom (reckon/crew/recovery_wait.py:157), but the process-global _STREAM_SCANS at reckon/crew/recovery_wait.py:127 is module-level mutable state where the repository's other incremental reader threads a caller-owned memo (reckon/crew/recovery_stream.py:540).\nSCORE reuse: 10\nJUSTIFICATION reuse: reckon/crew/recovery_wait.py:131's continuation test is reckon/crew/follow_checkpoint.py:123 continues' same-file/not-truncated predicate re-expressed without calling that owner, while _decoded_document at reckon/crew/station_store.py:473 has no owner (a search over reckon/crew for a text-keyed decode cache found only admission/readiness.py:334, which serves a different capability).\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/a-classification-reads-only-new-stream-lines.html:85 non-blocking: The negative-control paragraph says the mutated tree 'fails 3 of 5 cases', but the log it cites (logs/negative-control-restore-whole-stream-scans.log, 'FF.FF', '4 failed, 1 passed', EXIT=1) reports four failures, so the fragment understates the coverage its own control demonstrated.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/a-classification-reads-only-new-stream-lines.html:93 non-blocking: The arms paragraph records '63 passed at head 825335b101', but the after-arm log the manifest cites for that figure (logs/suite-after.log:1) carries revision f30c8b62d8, so the fragment names a revision its own receipt does not carry and a reader cannot line the two up.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T222819513530-a-classification-reads-only-new-stream-lines/logs/suite-base.log:3 non-blocking: The base arm's '# command:' line ends at a bare '-q ' with no test path while manifest.md records two test files for it, and line 6 is a NUL-padded progress line carrying F markers over a '58 passed' summary, so the base receipt is not one clean invocation a reader can reconstruct and the pair's scope is taken on the manifest's word.\nFINDING tests/test_a_classification_reads_only_new_stream_lines.py:305 non-blocking: The quiet-tick zero has no positive half: the decodes are reset before each tick at :302 and nothing asserts the first _tick decoded a document, so a tick that stopped reading pointers and verdicts entirely, or a decode that moved into a module outside the counted set, leaves this assertion green where the stream case does assert its positive half at :163.\nFINDING reckon/crew/recovery_wait.py:131 non-blocking: _stream_scan reuses a record on inode equality plus st_size >= covered, which is the same-file/not-truncated test reckon/crew/follow_checkpoint.py:123 continues owns, re-expressed instead of called; it also drops the head-fingerprint guard the repository's other incremental reader uses (reckon/crew/recovery_stream.py:540 through _backends.stream_head_fingerprint), so a stream rewritten in place without shrinking keeps the predecessor's assistant-seen flag and last record type.\n",
+  "review_run_id": "r-20261116T013112736880-review-of-a-classification-reads-only-new-stream-lines-f30c8b62d863",
+  "reviewed_base_sha": "4992939f84cb5aaa5802cbbc1dd3e79e96c43117",
+  "reviewed_head_sha": "f30c8b62d8632d7a5a54fca491d91ccb52be399e",
+  "reviewed_run_id": "r-20261115T222819513530-a-classification-reads-only-new-stream-lines",
+  "rubric": "review",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 14,
+    "goal_fidelity": 18,
+    "reuse": 10,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T02:08:40.759387+00:00",
+  "total": 91
+}

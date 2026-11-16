@@ -268,6 +268,29 @@ def _committed_scope_uncached(
     )
 
 
+def _scope_paths_at_head(
+    record: Mapping[str, Any], *, tree: Path, head: str, paths: Sequence[str]
+) -> tuple[str, ...]:
+    """Keep cited paths whose change survives between the run's base and head.
+
+    The intersection drops temporary paths and restored content without charging
+    paths imported by a merge. Deletions survive the diff too: testing existence
+    at the head would silently excuse an undeclared removal. A record with no
+    base retains the conservative cited-path union because it cannot establish
+    which changes disappeared.
+    """
+    from reckon.crew import merge
+
+    base = str(record.get("base_sha") or "").strip()
+    if not base or not paths:
+        return tuple(paths)
+    try:
+        surviving = set(merge.landed_paths(tree, base, head))
+    except merge.MergeError as exc:
+        raise CrewError(f"cannot measure scope paths at the run's head: {exc}") from exc
+    return tuple(path for path in paths if path in surviving)
+
+
 def _uncommitted_paths(tree: Path, *, roots: Iterable[Path] | None = None) -> list[str]:
     """Return the tree's own report of the paths it holds uncommitted.
 
