@@ -1,0 +1,24 @@
+<section id="qwnw-red-file-a-node-names-its-inputs-and-measurement-red-file">
+<h2>Red file: a node names its inputs and measurement</h2>
+<p>On the primary branch at <code>8fdf3958</code> the file read <strong>4 failed, 12 passed</strong>. All four failures errored on a missing key before reaching the rule they assert: three on <code>payload["validation"]</code> and one on <code>payload["warnings"]</code>.</p>
+<pre># baseline arm, scratch tree extracted from 8fdf3958
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_node_names_its_inputs_and_measurement.py
+4 failed, 12 passed in 0.63s
+FAILED ...::test_the_dry_run_refuses_the_missing_input_and_warns_the_comparison
+FAILED ...::test_the_dry_run_admits_a_model_node_and_warns_the_comparison
+FAILED ...::test_a_node_rebuilt_from_its_stored_record_reports_the_same_warning
+FAILED ...::test_the_dry_run_admits_a_node_that_answers_both_checks
+EXIT=1</pre>
+<p><strong>Cause, and verdict: test wrong.</strong> One cause. The dry-run fixture dispatches a brief <em>implement</em> run with no plan link and no unplanned reason, and the brief-owner rule (<code>brief_plan_owner_finding</code> in <code>reckon/crew/node.py</code>) is asked above admission&#x2014;where the input and comparison checks live. The preview therefore answered the owner refusal, whose payload is <code>ok/error/detail/findings/properties</code> and carries no <code>validation</code> or <code>warnings</code> key, so each test raised <code>KeyError</code> at its first line instead of reading the admission split it exists to assert. The rule is deliberate and separately covered by <code>tests/test_a_brief_run_names_its_plan_at_dispatch.py</code>; the product is not asked to change.</p>
+<p><strong>Repair</strong> (<code>c42992bca9</code>): the fixture's <code>_dry_run_arguments</code> states <code>--unplanned-reason "the fixture node fits a tape model no plan owns"</code>, so the preview reaches the checks under test. The diff is six added lines in the fixture; no assertion is deleted, loosened or reworded.</p>
+<pre># head arm, worktree at c42992bca9, as its own job on all_debug
+# job 1319929 on 98dci4-clu-3143, SLURM_JOB_ID unset for the run
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_node_names_its_inputs_and_measurement.py
+................                                                         [100%]
+16 passed in 1.03s
+EXIT=0</pre>
+<p><strong>The guarded thing made to happen.</strong> With the fixture fixed, the assertions bite: dropping the warning channel in <code>admission_refusals_and_warnings</code> turns 4 of them red, and making <code>node_inputs_finding</code> always admit turns 5 red, both over the head test file in a scratch tree at the base revision.</p>
+<pre># mutation 1: the warning channel is dropped        -> 4 failed, 12 passed, EXIT=1
+# mutation 2: the input check always admits         -> 5 failed, 11 passed, EXIT=1</pre>
+<p>No product source changed, so no test file importing changed product code exists to arm. <code>ruff check</code> and <code>ruff format --check</code> report nothing on the changed path.</p>
+</section>
