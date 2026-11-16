@@ -349,3 +349,128 @@ def test_the_routing_rework_count_reads_a_brief_carried_run(tmp_path: Path) -> N
     assert report["rows"], report
     reworked = sum(int(item["reworked"]) for item in report["rows"])
     assert reworked == 1, report["rows"]
+
+
+def test_the_waiter_release_read_holds_a_brief_carried_run_not_landed(
+    tmp_path: Path,
+) -> None:
+    """A section whose brief-carried run is promoted and not landed holds its waiters.
+
+    The read identifies that run as the section's, so it reaches the landing
+    question instead of answering "no run here" and releasing the waiter.
+    """
+
+    from reckon.crew.admission import readiness
+
+    store = _store(tmp_path)
+    extra = _record(LANDED + "-promoted", definition_plan=NAMED, node="brief-landed")
+    extra["promoted_revision"] = "0" * 40
+    extra["run_id"] = LANDED
+    ledger.write_run_file(PROJECT, extra, store, fsync=False)
+    assert _rows(store), "the instrument must see the store before a read is trusted"
+
+    held = readiness._section_run_unlanded(
+        PROJECT,
+        NAMED,
+        SECTION,
+        live=(),
+        cache={},
+    )
+
+    assert held is True, (
+        "the waiter-release read released a section whose brief-carried run is "
+        "promoted and not landed"
+    )
+
+
+def test_the_lane_advisory_charges_a_brief_carried_rework(tmp_path: Path) -> None:
+    """A later run on the same plan reworks its brief-carried predecessor."""
+
+    from reckon.crew import dispatch_admission
+
+    rows = [
+        _record(
+            "r-early", definition_plan=NAMED, node="exact", write_paths=["src/a.py"]
+        ),
+        _record(
+            "r-late", definition_plan=NAMED, node="exact", write_paths=["src/a.py"]
+        ),
+    ]
+
+    evidence = dispatch_admission._lane_advisory_costs(
+        rows, role="implement", spec_level="exact"
+    )
+
+    assert evidence, evidence
+    assert evidence["worker"]["rework_rate"] == 1.0, evidence
+
+
+def test_a_pick_counts_a_brief_carried_attempt(tmp_path: Path, monkeypatch) -> None:
+    """The state a pick renders counts an attempt that named its plan on its definition."""
+
+    from reckon.crew.picker import pick as picker_module
+    from reckon.crew.picker.types import Candidate
+
+    store = _store(tmp_path)
+    rows = _rows(store)
+    assert rows, "the instrument must see the store before a count is trusted"
+    seen: dict[str, object] = {}
+
+    real_render = picker_module.prompts.render
+
+    def render(template, **kwargs):
+        seen["attempts"] = kwargs.get("attempts")
+        return real_render(template, **kwargs)
+
+    def snapshotter(*_args, **_kwargs):
+        return [
+            Candidate(
+                backend="worker",
+                family="local",
+                model="concrete",
+                effort="high",
+                local=True,
+                availability="served",
+                utilisation_pct=None,
+                burn_multiple=None,
+                pace_allowance=None,
+                resets_at=None,
+                worker_slots=None,
+                congestion=None,
+                outcomes={"passed": 0, "failed": 0, "not-run": 0, "unknown": 0},
+            )
+        ]
+
+    def caller(_state, _questions, **_kwargs):
+        return {
+            "model": "stub",
+            "usage": {},
+            "answers": {
+                "route": {
+                    "choice": "local:concrete:worker",
+                    "confidence": 0.9,
+                    "probabilities": {
+                        "local:concrete:worker": 0.9,
+                        "worker:concrete:worker": 0.1,
+                    },
+                }
+            },
+        }
+
+    monkeypatch.setattr(picker_module.prompts, "render", render)
+    monkeypatch.setattr(
+        picker_module, "_declared_difficulty", lambda *_a, **_k: ({}, None, "")
+    )
+
+    picker_module.pick(
+        _request("brief-landed", NAMED),
+        {"backends": {}, "roles": {"implement": {}}},
+        repo=store,
+        snapshotter=snapshotter,
+        caller=caller,
+        records=rows,
+        budget_snapshot={},
+        authority={},
+    )
+
+    assert seen.get("attempts") == 1, seen

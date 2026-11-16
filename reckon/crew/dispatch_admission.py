@@ -557,7 +557,7 @@ def _lane_advisory_costs(
     ]
     later_paths: dict[str, list[tuple[int, tuple[str, ...]]]] = defaultdict(list)
     for index, run in enumerate(usable):
-        plan = str(run.get("plan") or "").strip()
+        plan = ledger.row_plan(run).strip()
         paths = capabilities_module._write_paths(run)
         if plan and paths:
             later_paths[plan].append((index, paths))
@@ -568,7 +568,7 @@ def _lane_advisory_costs(
         if not lane:
             continue
         paths = capabilities_module._write_paths(run)
-        plan = str(run.get("plan") or "").strip()
+        plan = ledger.row_plan(run).strip()
         reworked = bool(paths and plan) and any(
             later > index and capabilities_module._paths_overlap(paths, other)
             for later, other in later_paths.get(plan, ())
