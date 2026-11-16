@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-16T21:47:59.302Z",
+  "dispatched_at": "2026-11-16T21:47:29Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_liveness.py",
+      "line": 1473,
+      "severity": "non-blocking",
+      "text": "A record that names a launcher job reads unknown whenever the node's answer omits that job, so once Slurm purges the finished job from `squeue --states all` (MinJobAge, 300s by default) a run whose allocation has plainly left the queue is never freed by this reading, which is the condition the goal names. The answering-but-silent queue is already distinguished from a failed query by the `jobs_output is None` branch above, so the absence of the named job could be read as the job having left the queue rather than as unknown."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": 597,
+      "severity": "non-blocking",
+      "text": "`_allocation_job_id` re-reads the allocation job id from the environment, a capability reckon/host.py:229 already owns through `host_facts().job_id`, and does not extend that owner. It also drops the `SLURM_JOBID` alias the owner reads, so a launch environment carrying only the legacy spelling records no `launcher_job_id` and the run keeps the weaker no-field branch for good."
+    },
+    {
+      "file": "tests/test_a_foreign_run_is_freed_by_its_allocation_ending.py",
+      "line": 188,
+      "severity": "non-blocking",
+      "text": "`observed[\"relied_on\"][\"launched_at\"] == LAUNCHED_AT` compares the observation against the same constant the test wrote into the record it handed the reading, so both sides move together: `_nothing_working_the_run` may echo `record.get(\"launched_at\")` verbatim or drop it and the assertion only says which, never whether the reasoning holds."
+    }
+  ],
+  "project": "reckon",
+  "review": {
+    "assertions": [
+      "Reverting `_nothing_working_the_run` to the base empty-queue rule, or reading every state as live, reddens the freeing assertions at tests/test_a_foreign_run_is_freed_by_its_allocation_ending.py:129, :152 and :184.",
+      "Dropping the `_record_launcher_job` call at reckon/crew/dispatch_launch.py:3311 reddens the recording assertions at tests/test_a_foreign_run_is_freed_by_its_allocation_ending.py:253 and :272; the three absence tests at :290, :308 and :329 pass at base too and guard overshoot, not the defect.",
+      "Accepting a live job that started before the launch reddens tests/test_a_foreign_run_is_freed_by_its_allocation_ending.py:204, whose verdict and `relied_on.job_id` both come from the stand-in script.",
+      "The assertion at :188 has no such regression: it compares the observation against the input constant and holds either way, so it is recorded as a finding rather than counted as coverage."
+    ],
+    "verdicts": {
+      "call_sites": "reckon/crew/dispatch_launch.py:2799-2801, reckon/crew/recovery_liveness.py:1569 and :1647, reckon/crew/dispatch_sessions.py:2149 and :2300 \u2014 five production readers of the reworked function, each in the direction where a false `gone` ends a live run.",
+      "diff": "Read commit by commit: 6e60af58d3 adds `_node_job_rows`/`_nothing_working_the_run` and rewrites the reading with the `%i|%T|%S` query, 476b34d242 adds the fragment, e90d7857fa adds `_allocation_job_id`/`_record_launcher_job` with the foreign-pointer guard, and 9c1a9dafa8/ea094de8b6/a606f0345a touch only the fragment, so the code the arms measured at ea094de8b6 is the code at head.",
+      "done_when": "Read at prompt.txt:283 of the reviewed run; tests/test_a_foreign_run_is_freed_by_its_allocation_ending.py:105-263 asserts (a) CANCELLED with a peer RUNNING job and (a) BOOT_FAIL as gone, (b) RUNNING as unknown, (c) no-launcher-job with a later start as gone, (d) an earlier start as unknown, (e) a failed query as unknown, and :200-329 asserts the launch-time recording.",
+      "goal": "The reviewed run's dispatch states the goal at prompt.txt:38, 'Prove a foreign run gone once the allocation it ran inside has left the queue'; reckon/crew/recovery_liveness.py:1447 reworks `launcher_host_is_gone` to read the node's job answer for the launcher job the pointer names, and reckon/crew/dispatch_launch.py:587-651 records that job on a CLI launch inside an allocation.",
+      "manifest": "The reviewed run's manifest.md declares four changed paths, the literal gate command with 12 passed at head and 6 failed, 6 passed at the base content, both suite arms, and ruff parity; every claim it makes about a log reconciles with the log I opened.",
+      "write_paths": "Declared at prompt.txt:95-99; `git diff --name-status d72a7d9b..a606f0345a` names exactly four paths (the two modules, the new test file, the new evidence fragment), all inside the fence."
+    }
+  },
+  "review_run_id": "r-20261116T214005658459-review-of-a-foreign-run-is-freed-by-its-allocation-ending-a606f0345a96",
+  "reviewed_base_sha": "d72a7d9b251b269b49aa5f1b85528e191fbeea41",
+  "reviewed_head_sha": "a606f0345a962e260f377c78bcbde83ed55b6a3e",
+  "reviewed_run_id": "r-20261116T204314708309-a-foreign-run-is-freed-by-its-allocation-ending",
+  "rubric": "run",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T22:48:51.449766+00:00",
+  "total": 93
+}
