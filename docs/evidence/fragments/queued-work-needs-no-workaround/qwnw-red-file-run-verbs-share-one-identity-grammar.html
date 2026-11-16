@@ -1,0 +1,86 @@
+<section id="qwnw-red-file-run-verbs-share-one-identity-grammar-landing">
+  <h3>Every single-run crew verb accepts one identity grammar</h3>
+  <p>The file failed in eleven cases at the base revision, and the eleven split into six causes:
+  three in the product and three in the test. Each cause and its verdict is below. No assertion
+  was deleted or weakened.</p>
+  <table id="qwnw-red-file-run-verbs-share-one-identity-grammar-causes">
+    <thead><tr><th>Observed failure</th><th>Verdict</th><th>Rule the code now keeps</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>test_every_single_run_verb_declares_a_project_option</code>, and the matching-project arm
+        failing for <code>admit</code>, <code>declare-gate</code>, <code>hold</code>,
+        <code>record-merge</code>, <code>release</code> and <code>tell</code>, which declared no
+        <code>--project</code> at all</td>
+        <td>product wrong</td>
+        <td>Every leaf verb whose <code>--run</code> names one run accepts <code>--project</code>
+        beside it and refuses one that disagrees with the run's own project, through the shared
+        <code>_accept_a_matching_project</code> resolver</td>
+      </tr>
+      <tr>
+        <td><code>test_a_matching_project_is_accepted_and_a_disagreeing_one_refused[merge]</code>:
+        <code>merge</code> took a required <code>--project</code> and an optional <code>--run</code>
+        and never compared them</td>
+        <td>product wrong</td>
+        <td><code>merge</code> runs the same resolver before it resolves a repository</td>
+      </tr>
+      <tr>
+        <td><code>…[complete]</code>: <code>complete</code> queued its promotion request before the
+        identity check, so a disagreeing <code>--project</code> was refused with the request
+        already written</td>
+        <td>product wrong</td>
+        <td>The identity check runs before the request write, so a refusal leaves no state behind</td>
+      </tr>
+      <tr>
+        <td><code>test_the_sweep_covers_every_single_run_verb</code> and six <code>KeyError</code>
+        cases: the fixture tables had no row for the seven verbs added since the file was
+        written</td>
+        <td>test wrong</td>
+        <td>The sweep enumerates the tree, so a verb added later is swept; the fixture tables name
+        each swept verb's minimal options and the refusal it refuses the bare fixture run with</td>
+      </tr>
+      <tr>
+        <td><code>…[complete]</code> expected exit 1 with <code>cannot be promoted</code>, which is
+        the synchronous path; the verb now queues the request and answers 0 unless
+        <code>--wait</code> is named</td>
+        <td>test wrong</td>
+        <td>The arm names <code>--wait</code>, so it still asserts the promotion refusal it was
+        written for instead of the queue receipt beside it</td>
+      </tr>
+      <tr>
+        <td><code>test_a_finding_carried_by_two_covering_reviews_is_refused_naming_both</code>
+        read exit 0: a finding raised by two covering reviews was answered instead of refused</td>
+        <td>test wrong</td>
+        <td><code>83dc1b1dd8</code> replaced the blanket refusal: an answer given without
+        <code>--review-run</code> lands on the newest covering review, and only a pair the store
+        cannot order is refused naming both. The test is now those two arms — the newest review
+        wins on an ordered pair, and an unordered pair is still refused naming both ids and
+        <code>--review-run</code> — so the refusal it asserted is still asserted, of the case the
+        code still refuses</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>Arms, all as <code>all_debug</code> jobs with <code>SLURM_JOB_ID</code> unset. The gate is the
+  file itself: <code>11 failed, 23 passed in 56.92s</code> with <code>EXIT=1</code> at base
+  <code>8104f76181</code> (job <code>1319073</code>), and <code>35 passed in 145.67s</code> with
+  <code>EXIT=0</code> at head <code>6f9342e84b</code> (job <code>1319076</code>). The affected-selection arm — the file plus every test file that
+  imports <code>reckon.crew_run_commands</code> or <code>reckon.crew.resume</code>:
+  <code>69 failed, 594 passed</code> at base over 39 files and <code>59 failed, 610 passed</code>
+  at head over 40, the extra file being one another node added after the base revision. Every
+  head failure but one is a base failure: <code>tests/test_crew.py</code> alone reads 22 failed
+  at base, 21 failed at head and 22 failed at <code>origin/main</code>
+  <code>76b11902</code>, and the head's set is a subset of both. The one id the full head arm
+  carried alone,
+  <code>tests/test_crew.py::test_resumed_attempt_owns_its_stream_phase_and_manifest</code>,
+  fails with <code>Timeout (&gt;300.0s)</code> at <code>origin/main</code> as well, so it is the
+  primary branch's and is reported under <code>outside_scope</code> rather than repaired here.
+  <code>ruff check</code> and <code>ruff format --check</code> report nothing on the three changed
+  paths.</p>
+  <p id="qwnw-red-file-run-verbs-share-one-identity-grammar-mutation">Negative control for the
+  guard this change adds: in a scratch clone at head, <code>crew_hold</code>'s
+  <code>_accept_a_matching_project</code> call is removed and the file is run with
+  <code>-k hold</code>; it reads <code>1 failed, 1 passed, 33 deselected</code> with
+  <code>EXIT=1</code>, the failing assertion being
+  <code>hold accepted a --project that disagrees with the run</code> — so the disagreement guard
+  is shown to fire rather than merely to pass.</p>
+  <p><a href="/reckon/evidence/fragments/queued-work-needs-no-workaround/red-file-run-verbs-share-one-identity-grammar.html">Red-file record: base arm, head arm and their logs</a></p>
+</section>
