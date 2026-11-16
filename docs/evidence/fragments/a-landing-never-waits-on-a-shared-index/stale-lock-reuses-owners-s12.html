@@ -74,11 +74,45 @@
     </tbody>
   </table>
 
-  <p><strong>The negative control.</strong> Restoring a duplicate
+<p><strong>The negative control.</strong> Restoring a duplicate
   <code>def _processes_holding</code> in <code>reckon/crew/merge.py</code> makes
   the one-definition check fail, naming both findings:
   <code>one definition of ^def _processes_holding, found</code> both
   <code>reckon/crew/gc.py:1754</code> and
   <code>reckon/crew/merge.py:925</code>. The run ends <code>1 failed</code>,
   <code>EXIT=1</code>, and the mutation is reverted in the delivered tree.</p>
+
+  <h3 id="stale-lock-reuses-owners-s12-importers">The importers of the touched modules</h3>
+
+  <p>One arm at a time on <code>all_debug</code>, at most <code>-n 4</code>, over
+  the test files that import the touched modules — one for
+  <code>reckon/crew/merge.py</code>, <code>reckon/crew/promotion_scope.py</code>,
+  <code>reckon/crew/gc.py</code> and <code>reckon/ledger.py</code>. The base arm
+  runs at <code>622ef46</code> over that revision's own tree (162 files); the
+  head arm at the merged head over this tree's (180 files, the difference being
+  main's own new tests).</p>
+
+  <table id="stale-lock-reuses-owners-s12-importer-arms">
+    <thead>
+      <tr><th>arm</th><th>head</th><th>files</th><th>reading</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>importers, base</td><td><code>622ef46</code></td><td>162</td><td><code>104 failed, 1285 passed, 3 skipped, 9 errors</code>, <code>EXIT=1</code></td></tr>
+      <tr><td>importers, head</td><td><code>2ea89051</code></td><td>180</td><td><code>132 failed, 1408 passed, 3 skipped, 1 error</code>, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>The added ids are not this node's.</strong> Seventy-two ids fail at
+  head and not at the base revision. Fifty-five of them are one file,
+  <code>tests/test_ledger_files_and_index_agree.py</code>, and the same file at
+  the primary revision the merge brought in — <code>a3fa3d3</code> — reads
+  <code>55 failed, 50 passed</code>: the file and the store it exercises both
+  arrived with main's commits, and it is already red there. The other seventeen
+  span twelve files; run serially at head they give 16 failing ids, at
+  <code>a3fa3d3</code> 18, and every head id is among the primary's — none is
+  head-only. So the arms add no failure this node can be charged with, and the
+  two ids the first head arm did add are the ones that are fixed: it read
+  <em>TypeError: _restore_landing_writes() missing 1 required keyword-only
+  argument: 'on_stale_removed'</em> in <code>tests/test_rollback_asks_head.py</code>,
+  which now passes.</p>
 </section>
