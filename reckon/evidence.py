@@ -1260,8 +1260,11 @@ def render_sprint_page(
         '    <section id="sprint-plans">',
         "      <h2>Member plans</h2>",
         "      <table>",
-        "        <thead><tr><th>Plan</th><th>Status</th><th>Sections landed</th>"
-        "<th>Runs</th><th>Worker time</th><th>Headline result</th></tr></thead",
+        (
+            "        <thead><tr><th>Plan</th><th>Status</th>"
+            "<th>Sections landed</th><th>Runs</th>"
+            "<th>Worker time</th><th>Headline result</th></tr></thead>"
+        ),
         "        <tbody>",
         *[_sprint_row(row) for row in rows],
         "        </tbody>",
@@ -1272,7 +1275,7 @@ def render_sprint_page(
         '    <section id="sprint-totals">',
         "      <h2>Totals</h2>",
         (
-            f"      <p>{len(rows)} plan(s), {sections_landed} section(s) "
+            f"      <p>{len(rows)} plan(s), {sections_landed} section(s) landed, "
             f"{runs} run(s), {_format_seconds(worker_seconds)} of worker time.</p>"
         ),
         "    </section>",
