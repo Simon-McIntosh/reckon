@@ -268,6 +268,7 @@ def _complete_arguments(
     arguments = [
         "crew",
         "complete",
+        "--wait",
         "--run",
         run_id,
         "--gate",
@@ -298,6 +299,7 @@ def test_promoting_a_passing_gate_with_no_check_is_refused(repository: Path) -> 
         [
             "crew",
             "complete",
+            "--wait",
             "--run",
             run_id,
             "--gate",
@@ -326,6 +328,7 @@ def test_promoting_a_passing_gate_with_a_full_check_is_accepted_and_stored(
         [
             "crew",
             "complete",
+            "--wait",
             "--run",
             run_id,
             "--gate",
@@ -361,6 +364,7 @@ def test_a_log_digest_satisfies_the_check_in_place_of_a_log_path(
         [
             "crew",
             "complete",
+            "--wait",
             "--run",
             run_id,
             "--gate",
@@ -391,6 +395,7 @@ def test_a_failing_or_not_run_gate_needs_no_check_evidence(repository: Path) -> 
         [
             "crew",
             "complete",
+            "--wait",
             "--run",
             run_id,
             "--gate",
