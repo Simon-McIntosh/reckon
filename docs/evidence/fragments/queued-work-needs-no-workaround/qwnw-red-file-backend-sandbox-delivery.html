@@ -1,0 +1,40 @@
+<section id="qwnw-red-file-backend-sandbox-delivery">
+<h2>The backend sandbox-delivery file passes in full, and each cause has a verdict</h2>
+
+<p>The file <code>tests/test_backend_sandbox_delivery.py</code> reported two failing tests on the primary branch at revision <code>69fab1372f16686ce6acdb6094a357c6f6bfe18d</code> (which is also the head of <code>origin/main</code> as this worktree holds it). Both are one cause each, and both verdicts are <em>test wrong</em>: neither encodes a rule the product keeps any more. No product line changed.</p>
+
+<h3 id="qwnw-red-file-backend-sandbox-delivery-cause-1">Cause 1 — the Claude grant test measured the fence, not the dialect</h3>
+
+<p><code>test_claude_read_only_grant_excludes_the_worktree</code> composed a launch with the fence default and then asserted the repository path appears nowhere in <code>plan.argv</code>. The fence binds the worktree read-only, so its <code>bwrap</code> vector names that path by design; the assertion failed against <code>--ro-bind</code>, not against <code>--add-dir</code>. The test's own grant assertion — the writable-directory grant computed by <code>sandbox_write_roots</code> never contains the repository — held and still holds.</p>
+
+<p><strong>Verdict: test wrong.</strong> The repair passes <code>fence=False</code>, the same repair its sibling <code>test_codex_read_only_argv_is_unchanged</code> already carried, and its docstring now states why the wrapper is absent. Every assertion is unchanged: the worktree is absent from the <code>--add-dir</code> grant and absent from the whole dialect vector.</p>
+
+<h3 id="qwnw-red-file-backend-sandbox-delivery-cause-2">Cause 2 — the Codex argv pin was a literal from before two overrides existed</h3>
+
+<p><code>test_codex_read_only_argv_is_unchanged</code> compares the whole vector byte for byte. The dialect now composes three option pairs this literal did not carry: <code>-c mcp_servers=…</code>, which disables every undeclared inherited server, and the inbox hook's <code>argv</code> — <code>-c hooks.PostToolUse=…</code> plus <code>-c hooks.state=…</code>, the session-flag trust read from the harness at launch. None of the three belongs to the sandbox tier; all three are deliberate and are covered by their own tests (<code>tests/test_codex_inbox_trust.py</code>, <code>tests/test_workers_start_without_reckon_mcp.py</code>).</p>
+
+<p><strong>Verdict: test wrong.</strong> The repair keeps the byte-for-byte pin and extends the expected vector to the one the product composes. Two properties are made true of the pin that were not:</p>
+
+<ul>
+<li>the hook-trust probe is answered in the test rather than against whatever <code>codex</code> the machine carries, so the trust words are a fixed value the pin owns;</li>
+<li><code>fence_home</code> points into <code>tmp_path</code>, so the MCP override is resolved from a home the test creates rather than the operator's <code>~/.codex/config.toml</code>, which would otherwise rewrite the expected <code>mcp_servers</code> table on another machine.</li>
+</ul>
+
+<p>No assertion was deleted or narrowed; the expected vector grew, and the cwd assertion is untouched.</p>
+
+<h3 id="qwnw-red-file-backend-sandbox-delivery-negative-control">Negative control — the base run of the file, with its failing ids</h3>
+
+<p>Before any repair, at <code>69fab1372f</code>, <code>SLURM_JOB_ID</code> unset:</p>
+
+<pre># revision: 69fab1372f16686ce6acdb6094a357c6f6bfe18d
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-backend-sandbox-delivery
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_backend_sandbox_delivery.py
+..FF                                                                     [100%]
+=================================== FAILURES ===================================
+FAILED tests/test_backend_sandbox_delivery.py::test_claude_read_only_grant_excludes_the_worktree
+FAILED tests/test_backend_sandbox_delivery.py::test_codex_read_only_argv_is_unchanged
+2 failed, 2 passed in 2.59s
+EXIT=1</pre>
+
+<p>The full text of that run, with each failure's assertion output, is the file <code>docs/evidence/fragments/queued-work-needs-no-workaround/red-file-backend-sandbox-delivery.html</code>.</p>
+</section>
