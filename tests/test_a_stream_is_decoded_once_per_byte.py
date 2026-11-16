@@ -140,6 +140,14 @@ def _pass(records: list[dict[str, Any]]) -> list[tuple[Any, Any, Any]]:
     return answers
 
 
+def _full(records: list[dict[str, Any]]) -> list[tuple[Any, Any, Any]]:
+    """Answer every run with no summary at all, as a whole read would."""
+    _backends._STREAM_SUMMARIES.clear()
+    _backends._PARSED_STREAMS.clear()
+    recovery_stream._COMPLETION_STAMPS.clear()
+    return _pass(records)
+
+
 def test_a_second_pass_over_unchanged_streams_decodes_nothing(
     terminal_runs: list[dict[str, Any]], monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -176,11 +184,14 @@ def test_ten_appended_records_are_the_only_decodes(
         handle.write(_tail_text(10))
 
     recorder.calls = 0
-    _pass(terminal_runs)
+    answers = _pass(terminal_runs)
 
     assert recorder.calls == 10, (
         "a grown stream was decoded for more than its new records",
         recorder.calls,
+    )
+    assert answers == _full(terminal_runs), (
+        "a summary extended from the append disagrees with a whole read",
     )
 
 
@@ -197,9 +208,12 @@ def test_a_truncated_stream_is_decoded_whole(
     _write_stream(stream, _stream_text(0, kept))
 
     recorder.calls = 0
-    _pass(terminal_runs)
+    answers = _pass(terminal_runs)
 
     assert recorder.calls == kept, (
         "a truncated stream was not read whole",
         recorder.calls,
+    )
+    assert answers == _full(terminal_runs), (
+        "a re-read truncated stream disagrees with a whole read",
     )
