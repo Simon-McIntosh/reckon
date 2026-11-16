@@ -1,0 +1,53 @@
+<section id="qwnw-red-file-promotion-picks-the-descendant-commit-landing">
+  <h3>The descendant-commit selection test file reads green</h3>
+  <p>
+    <code>tests/test_promotion_picks_the_descendant_commit.py</code> was red on
+    the primary branch for three causes, and all three were the test's: the
+    product already keeps each rule the file now asserts. The fixtures are
+    repaired, not the product — sixteen added and nine removed lines in one test
+    file, no assertion deleted and none weakened.
+  </p>
+  <table>
+    <thead>
+      <tr><th>Cause</th><th>Verdict</th><th>Repair</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Both linear fixtures cited a passing pytest gate whose log carried
+        no pytest result line.</td>
+        <td>test wrong</td>
+        <td>the cited log now carries <code>1 passed in 0.01s</code>, the summary
+        a passing pytest run prints, so the fixture states the receipt the
+        refusal asks for</td>
+      </tr>
+      <tr>
+        <td>The remedy-line case asserted the printed <code>--commit</code>
+        citations newest first.</td>
+        <td>test wrong</td>
+        <td>the assertion follows the order the obligation keeps: the run's own
+        history, oldest first, with the head still the revision the promotion
+        asserts by descent</td>
+      </tr>
+      <tr>
+        <td>The remedy-line case ran the printed command without
+        <code>--wait</code> and expected a ledger row.</td>
+        <td>test wrong</td>
+        <td>the invocation adds <code>--wait</code>, the CLI's flag for carrying
+        the promotion out in the call; the printed commit order is untouched</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    Measured on <code>all_debug</code> as jobs of their own with
+    <code>SLURM_JOB_ID</code> unset: at base <code>f361d2bcfced</code> the file
+    read <code>3 failed, 1 passed in 1.82s</code> (<code>EXIT=1</code>, job
+    <code>1320037</code>); at the delivered head <code>f4f7cc9f623d</code> it
+    read <code>4 passed in 4.97s</code> (<code>EXIT=0</code>, job
+    <code>1320029</code>). The failing identifiers and their causes are in the
+    negative-control record beside this one. The suite arms over this node's
+    write scope read <code>58 passed</code> (<code>EXIT=0</code>) at base
+    <code>f361d2bcfced</code> and <code>58 passed</code> (<code>EXIT=0</code>)
+    at the head, so the change adds no failure. <code>ruff check</code> and
+    <code>ruff format --check</code> report nothing on the changed path.
+  </p>
+</section>
