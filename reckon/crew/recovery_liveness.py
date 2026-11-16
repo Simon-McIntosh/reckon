@@ -1109,25 +1109,45 @@ _WAIT_CANCELLED_STATES = frozenset({"cancelled", "canceled", "cancelling", "canc
 #: An elapsed time of nothing at all: the job held its allocation for no time.
 _WAIT_ZERO_ELAPSED = frozenset({"00:00:00", "0:00:00", "0-00:00:00"})
 
+#: The answers a probe gives when it reported no state at all: a missing or
+#: unreadable value is not a live one, but it is not ``absent`` either — the
+#: condition is pending on the paths or on the scheduler and nothing has said
+#: otherwise. Only a probe that reported nothing lands here, and only a state
+#: is read from what it did report.
+_WAIT_STATE_NOT_REPORTED = frozenset({"", "unavailable", "unknown", "none", "absent"})
+
 
 def _wait_probe_live_state(wait: Mapping[str, Any], observation: Any) -> str:
-    """The live state a wait's own probe reported, or "".
+    """The state a wait's own probe reported while the awaited work has not ended.
 
     A ``wait_file`` condition declares no probe of its own — this reader derives
     one from the paths, and their absence is the wait's own state rather than
     anything the awaited work said about itself — so a file condition reports no
     live state here.
+
+    What counts as "ended" is the declaration's own terminal list, not a
+    vocabulary this reader carries.
+    :data:`reckon.crew.process_liveness._JOB_LIVE_STATES` and
+    :data:`reckon.crew.recovery_wait._WAIT_LIVE_STATE_TOKENS` name the states
+    the two readers already know, and neither is complete: a scheduler prints
+    ``QUEUED``, ``REQUEUED``, ``RESIZING`` and ``SIGNALING`` as well, and a
+    vocabulary that has to grow before a reading works reintroduces the default
+    horizon exactly when a new spelling appears. So the answer decides: a state
+    the declaration does not name as terminal is a live one, whatever it is
+    called, and the name is carried through for the row.
     """
     if wait.get("files") or not _wait_probe_answered(observation):
         return ""
     if not isinstance(observation, Mapping):
         return ""
-    observed = str(observation.get("observed") or "")
-    for word in observed.replace(",", " ").split():
-        token = word.strip("\"'()[]{}:;.").casefold()
-        if token in _WAIT_LIVE_STATE_TOKENS:
-            return token
-    return "pending" if str(observation.get("state") or "") == "pending" else ""
+    observed = str(observation.get("observed") or "").strip()
+    if not observed or observed.casefold() in _WAIT_STATE_NOT_REPORTED:
+        return ""
+    terminal = {str(item).casefold() for item in (wait.get("terminal") or ())}
+    words = [word.strip("\"'()[]{}:;,.") for word in observed.replace(",", " ").split()]
+    if not words or words[0].casefold() in terminal:
+        return ""
+    return words[0].casefold()
 
 
 def _wait_probe_suspect(
@@ -1947,7 +1967,6 @@ from .recovery_vocabulary import (  # noqa: E402
 )
 from .recovery_wait import (  # noqa: E402
     _WAIT_ACCEPTED_SHAPES,
-    _WAIT_LIVE_STATE_TOKENS,
     _newest_stream_shows_work,
     _run_directory,
     _unquote_wait_declaration_scalar,

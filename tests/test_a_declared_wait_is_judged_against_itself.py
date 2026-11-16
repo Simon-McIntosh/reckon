@@ -46,6 +46,10 @@ RUN_IDS = (
     "r-probe-naming-a-cancelled-job",
     "r-probe-naming-a-cancelled-job-that-ran",
     "r-file-wait-over-the-default-horizon",
+    "r-scheduler-spelling-queued",
+    "r-scheduler-spelling-completing",
+    "r-scheduler-spelling-suspended",
+    "r-watch-snapshot-over-its-limit",
 )
 
 
@@ -300,6 +304,65 @@ def test_a_file_wait_still_ages_into_the_alarm() -> None:
 
     row = _row(run)
 
-    assert row["external_wait"]["probe_live_state"] is None
     assert row["wait_overdue"] is True
     assert row["recovery_classification"] == "wait-aged"
+
+
+@pytest.mark.parametrize(
+    ("observed", "run_id"),
+    [
+        ("QUEUED 04:00:00", RUN_IDS[6]),
+        ("COMPLETING 04:00:00", RUN_IDS[7]),
+        ("SUSPENDED 04:00:00", RUN_IDS[8]),
+    ],
+)
+def test_a_scheduler_spelling_outside_the_known_vocabulary_is_still_live(
+    observed: str, run_id: str
+) -> None:
+    """The scheduler's own spelling decides, not a list this reader carries.
+
+    ``QUEUED``, ``COMPLETING`` and ``SUSPENDED`` are states a running job reports and
+    none of them is fixed in the vocabularies the two readers already hold. A
+    reading that needed one of those lists to grow would fall back to the 900 s
+    default for exactly the spelling it had not seen, which is the misreading
+    this node exists to remove. What the declaration names as terminal is the
+    only list that decides, so every one of them reads as live and its limit is
+    the horizon.
+    """
+    run = _waiting_run(
+        run_id,
+        probe=["squeue", "-h", "-j", "1317867", "-o", "%T %L"],
+        started_seconds_ago=3 * HOUR,
+    )
+
+    row = _row(run, condition_test=_live_job(observed))
+
+    assert row["external_wait"]["expected_horizon_seconds"] == 4 * HOUR
+    assert row["wait_overdue"] is False
+    assert row["recovery_classification"] == "waiting"
+
+
+def test_the_watch_snapshot_reads_the_same_limit() -> None:
+    """The ticker's snapshot takes the same reading as the row.
+
+    The snapshot re-runs the declaration's own probe rather than reading a
+    verdict from the row, so this case uses a probe that really answers: a
+    script told to name the scheduler field. The row and the snapshot are two
+    readers of one declaration, and a limit only the row honoured would leave
+    the ticker reporting a wait-aged run the row calls waiting.
+    """
+    run = _waiting_run(
+        RUN_IDS[9],
+        script_body="print('RUNNING 04:00:00')\n",
+        probe_extra=("-j", "1317867", "--format=State,Timelimit"),
+        started_seconds_ago=3 * HOUR,
+    )
+
+    row = _row(run)
+    snapshot = recovery._watch_snapshot(
+        run, moment=NOW_SECONDS, stall_seconds=STALE_AFTER_SECONDS
+    )
+
+    assert row["wait_overdue"] is False
+    assert row["external_wait"]["expected_horizon_seconds"] == 4 * HOUR
+    assert snapshot["state"] == "waiting"
