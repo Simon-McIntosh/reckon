@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-16T10:24:31.452Z",
+  "dispatched_at": "2026-11-16T10:23:51Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-crew-cross-project-claims.html",
+      "line": "39",
+      "severity": "non-blocking",
+      "text": "non-blocking: the quoted head receipt names revision 39ddcd2bd6 and 5.38s while the log it cites, logs/head-crew-cross-project-claims.log:1, records 3f84d4c869 and 5.46s, so a reader reconciling the page against its own log finds two revisions for one run."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T064926669084-qwnw-red-file-crew-cross-project-claims-second-launch/logs/mutation-shared-claims.log",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "non-blocking: the mutation receipt's start stamp 2026-11-16T09:56Z precedes the commit its own header names (3f84d4c869, committed 10:02Z to 10:04Z), so the stamp cannot be that run's and the receipt's timing is unusable."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T064926669084-qwnw-red-file-crew-cross-project-claims-second-launch/manifest.md",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when asks for the file to pass as a job on all_debug with SLURM_JOB_ID unset, but the recorded gate command carries neither a job step nor `env -u SLURM_JOB_ID` (unlike the mutation arm), so that clause of the measure rests on no receipt."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the landed change is test fixtures and evidence fragments, so no production path reaches it; the rule the fixtures exercise is reached from reckon/crew/dispatch_claims.py, reckon/crew/promotion_scope.py and reckon/crew/admission/holds.py, none of which this node modified.",
+    "diff": "read 0e0f25b0f9..3f84d4c869 commit by commit: 39ddcd2bd6 changes only fixture path literals and the module docstring of tests/test_crew_cross_project_claims.py, 3f84d4c869 adds the landing fragment and the red-runs fragment, and no production module changed.",
+    "done_when": "the measure requires the file green as an all_debug job with SLURM_JOB_ID unset, a base run carrying its failing ids, an arm adding no failure and ruff clean; logs/base-red-crew-cross-project-claims.log holds the eight failing ids at 0e0f25b (EXIT=1), logs/head-crew-cross-project-claims.log the ten passes (EXIT=0), logs/mutation-shared-claims.log the same eight failures restored by forcing _claim_paths_share to True (EXIT=1), logs/base-arm-suite.log and logs/after-arm-suite.log 58 passed on both sides (EXIT=0), and logs/ruff.log the same single I001 before and after \u2014 but no all_debug job and no unsetting of SLURM_JOB_ID appear on the head arm.",
+    "goal": "dispatch-detail.json's goal asks that tests/test_crew_cross_project_claims.py pass in full on the primary branch; logs/head-crew-cross-project-claims.log reads 10 passed with EXIT=0 at 3f84d4c869, origin/main cb557f9711 is an ancestor of that head, and no test in the file was deleted.",
+    "manifest": "read; it names commits 39ddcd2bd6 and 3f84d4c869, the gate command, its 10-passed result, the base red log with eight ids, the mutation log, both suite arms at 58 passed, one pre-existing I001, and the single cause with verdict test-wrong.",
+    "write_paths": "dispatch-detail.json's node.write_paths declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its two named files; the three files the diff touches \u2014 tests/test_crew_cross_project_claims.py and two fragments in that evidence directory \u2014 are all inside the declaration."
+  },
+  "justifications": {
+    "durability": "the diff adds no assertion but retargets eight fixtures onto classes the code shares nothing on (reckon/crew/runs.py:1824,1826), and logs/mutation-shared-claims.log reddens exactly those eight by forcing _claim_paths_share to True at reckon/crew/runs.py:1985.",
+    "evidence": "logs/head-crew-cross-project-claims.log:3 records the pytest command run in the worktree with no srun/sbatch line and no SLURM_JOB_ID unset, so the measure's all_debug clause has no receipt, though base, head, mutation and both arm logs are readable and each ends in an EXIT= line.",
+    "fit": "the retarget keeps the file's parametrize rows and _claim/_node fixture idiom (tests/test_crew_cross_project_claims.py:186) and adds only a docstring sentence, with no name the repository rules forbid.",
+    "goal_fidelity": "tests/test_crew_cross_project_claims.py reads 10 passed at 3f84d4c869 in logs/head-crew-cross-project-claims.log, and origin/main cb557f9711 is an ancestor of that head.",
+    "reuse": "nothing is re-implemented: the fixtures now name the exclusive classes owned at reckon/crew/runs.py:1821, and the mergeable direction stays asserted by tests/test_a_source_file_is_shared_by_default.py and tests/test_only_unmergeable_paths_are_claimed.py.",
+    "scope_discipline": "the three paths changed at 0e0f25b0f9..3f84d4c869 sit under tests/ and docs/evidence/fragments/queued-work-needs-no-workaround/, all inside dispatch-detail.json's write_paths, and no production file changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json's goal asks that tests/test_crew_cross_project_claims.py pass in full on the primary branch; logs/head-crew-cross-project-claims.log reads 10 passed with EXIT=0 at 3f84d4c869, origin/main cb557f9711 is an ancestor of that head, and no test in the file was deleted.\nVERDICT done_when: the measure requires the file green as an all_debug job with SLURM_JOB_ID unset, a base run carrying its failing ids, an arm adding no failure and ruff clean; logs/base-red-crew-cross-project-claims.log holds the eight failing ids at 0e0f25b (EXIT=1), logs/head-crew-cross-project-claims.log the ten passes (EXIT=0), logs/mutation-shared-claims.log the same eight failures restored by forcing _claim_paths_share to True (EXIT=1), logs/base-arm-suite.log and logs/after-arm-suite.log 58 passed on both sides (EXIT=0), and logs/ruff.log the same single I001 before and after \u2014 but no all_debug job and no unsetting of SLURM_JOB_ID appear on the head arm.\nVERDICT write_paths: dispatch-detail.json's node.write_paths declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its two named files; the three files the diff touches \u2014 tests/test_crew_cross_project_claims.py and two fragments in that evidence directory \u2014 are all inside the declaration.\nVERDICT manifest: read; it names commits 39ddcd2bd6 and 3f84d4c869, the gate command, its 10-passed result, the base red log with eight ids, the mutation log, both suite arms at 58 passed, one pre-existing I001, and the single cause with verdict test-wrong.\nVERDICT diff: read 0e0f25b0f9..3f84d4c869 commit by commit: 39ddcd2bd6 changes only fixture path literals and the module docstring of tests/test_crew_cross_project_claims.py, 3f84d4c869 adds the landing fragment and the red-runs fragment, and no production module changed.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_crew_cross_project_claims.py reads 10 passed at 3f84d4c869 in logs/head-crew-cross-project-claims.log, and origin/main cb557f9711 is an ancestor of that head.\nSCORE evidence: 13\nJUSTIFICATION evidence: logs/head-crew-cross-project-claims.log:3 records the pytest command run in the worktree with no srun/sbatch line and no SLURM_JOB_ID unset, so the measure's all_debug clause has no receipt, though base, head, mutation and both arm logs are readable and each ends in an EXIT= line.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three paths changed at 0e0f25b0f9..3f84d4c869 sit under tests/ and docs/evidence/fragments/queued-work-needs-no-workaround/, all inside dispatch-detail.json's write_paths, and no production file changed.\nSCORE durability: 17\nJUSTIFICATION durability: the diff adds no assertion but retargets eight fixtures onto classes the code shares nothing on (reckon/crew/runs.py:1824,1826), and logs/mutation-shared-claims.log reddens exactly those eight by forcing _claim_paths_share to True at reckon/crew/runs.py:1985.\nSCORE fit: 19\nJUSTIFICATION fit: the retarget keeps the file's parametrize rows and _claim/_node fixture idiom (tests/test_crew_cross_project_claims.py:186) and adds only a docstring sentence, with no name the repository rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: nothing is re-implemented: the fixtures now name the exclusive classes owned at reckon/crew/runs.py:1821, and the mergeable direction stays asserted by tests/test_a_source_file_is_shared_by_default.py and tests/test_only_unmergeable_paths_are_claimed.py.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-crew-cross-project-claims.html:39 non-blocking: the quoted head receipt names revision 39ddcd2bd6 and 5.38s while the log it cites, logs/head-crew-cross-project-claims.log:1, records 3f84d4c869 and 5.46s, so a reader reconciling the page against its own log finds two revisions for one run.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T064926669084-qwnw-red-file-crew-cross-project-claims-second-launch/logs/mutation-shared-claims.log:5 non-blocking: the mutation receipt's start stamp 2026-11-16T09:56Z precedes the commit its own header names (3f84d4c869, committed 10:02Z to 10:04Z), so the stamp cannot be that run's and the receipt's timing is unusable.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T064926669084-qwnw-red-file-crew-cross-project-claims-second-launch/manifest.md:13 non-blocking: the done_when asks for the file to pass as a job on all_debug with SLURM_JOB_ID unset, but the recorded gate command carries neither a job step nor `env -u SLURM_JOB_ID` (unlike the mutation arm), so that clause of the measure rests on no receipt.",
+  "review_run_id": "r-20261116T102249062614-review-of-qwnw-red-file-crew-cross-project-claims-second-launch-3f84d4c869d7",
+  "reviewed_base_sha": "0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc",
+  "reviewed_head_sha": "3f84d4c869d755e464e0d72eff9436e645569448",
+  "reviewed_run_id": "r-20261116T064926669084-qwnw-red-file-crew-cross-project-claims-second-launch",
+  "scores": {
+    "durability": 17,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T12:31:05.715961+00:00",
+  "total": 108
+}
