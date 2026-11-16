@@ -89,7 +89,10 @@ def test_an_off_node_follower_reads_the_same_slow_tick_as_a_local_one(reading):
         assert remote[key] == local[key], (key, remote, local)
     assert remote["tick_stage"] == STAGE
     assert remote["tick_age_seconds"] == 3 * (snapshots.STATION_STALE_SECONDS + 1)
-    assert remote["payload"]["computed_at"] == START.isoformat()
+    assert remote["payload"] == local["payload"]
+    assert json.loads(export.read_text())["sessions"][SESSION]["computed_at"] == (
+        START.isoformat()
+    )
     assert export.read_bytes() == original, "a beat rewrote the obligation data"
 
 
@@ -145,3 +148,37 @@ def test_an_export_without_a_matching_health_record_keeps_its_own_beat(reading):
     assert answer is not None and answer["stale"] is True, answer
     rows = ProducerSnapshotNotices(PROJECT, SESSION).poll()
     assert [row["event"] for row in rows] == ["producer-lost"], rows
+
+
+@pytest.mark.parametrize(
+    "damage",
+    ["invalid-json", "non-object", "host", "job", "markers", "beat", "older-beat"],
+)
+def test_unreadable_or_unmatched_health_cannot_supply_a_live_beat(reading, damage):
+    _store, _producer, beat, clock, export = reading
+    _advance(beat, clock, snapshots.STATION_STALE_SECONDS * 3)
+    assert snapshots.read_station_answer(PROJECT, SESSION)["state"] == (
+        snapshots.STATION_SLOW
+    ), "the positive control did not see the live publication"
+    identity = json.loads(export.read_text())["station"]
+    path = snapshots.station_reading_path(identity["host"], identity["job"])
+    document = json.loads(path.read_text())
+    if damage in ("host", "job"):
+        document[damage] = "another-station"
+    elif damage == "markers":
+        document["station"] = []
+    elif damage == "beat":
+        document["station"]["heartbeat"] = "unreadable"
+    elif damage == "older-beat":
+        document["station"]["heartbeat"] = (START - timedelta(seconds=1)).isoformat()
+    path.write_text(
+        "{"
+        if damage == "invalid-json"
+        else json.dumps([] if damage == "non-object" else document)
+    )
+    answer = snapshots.read_station_answer(PROJECT, SESSION)
+    assert answer is not None and answer["stale"] is True, answer
+    assert answer["heartbeat_age_seconds"] == snapshots.STATION_STALE_SECONDS * 3
+    rows = ProducerSnapshotNotices(PROJECT, SESSION).poll()
+    assert [row["event"] for row in rows] == ["producer-lost"], rows
+    assert rows[0]["remedy"] == watcher_ensure_line(PROJECT)

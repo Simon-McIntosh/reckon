@@ -138,8 +138,13 @@ class StationBeat:
         return self._store
 
     def beat_once(self) -> None:
-        """Move the heartbeat to now."""
-        self._handle().heartbeat(now=self._clock())
+        """Move the local beat and publish its tick for off-node readers."""
+        handle = self._handle()
+        handle.heartbeat(now=self._clock())
+        markers = obligation_snapshot._station_markers(handle.connect())
+        home = handle.station_value(station_store.CREW_HOME_KEY)
+        handle.guard.check()
+        obligation_snapshot.publish_station_reading(markers, home=home)
 
     def _run(self) -> None:
         while not self._stop.is_set():
