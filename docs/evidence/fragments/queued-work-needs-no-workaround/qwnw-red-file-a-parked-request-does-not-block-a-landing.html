@@ -39,14 +39,13 @@ EXIT=1
 
 <h4 id="qwnw-red-file-a-parked-request-does-not-block-a-landing-head-gate">Head gate: an all_debug job with SLURM_JOB_ID unset</h4>
 <pre>
-# revision: 75c428c8032e67f5045e7eadcd1f7b5f16934645
-# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-parked-request-does-not-block-a-landing
-# slurm_job_id: 1319222
-# partition: all_debug
-# host: 98dci4-clu-3142.iter.org
+# revision: 5736cfb144b1708b2b3a0dcc4d66305d10624d4f
 # command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_parked_request_does_not_block_a_landing.py
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-parked-request-does-not-block-a-landing
+# slurm_job_id: 1319233
+# partition: all_debug; host: 98dci4-clu-3142.iter.org
 ......                                                                   [100%]
-6 passed in 4.29s
+6 passed in 4.36s
 EXIT=0
 </pre>
 
@@ -61,14 +60,14 @@ EXIT=0
 58 passed in 42.97s
 EXIT=0
 
-# head at 75c428c8032e67f5045e7eadcd1f7b5f16934645, in the run's own worktree
+# head at 5736cfb144b1708b2b3a0dcc4d66305d10624d4f, in the run's own worktree
 # command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
 ..........................................................               [100%]
-58 passed in 46.78s
+58 passed in 44.46s
 EXIT=0
 </pre>
 <p>The node's change is confined to <code>tests/test_a_parked_request_does_not_block_a_landing.py</code>; no product module is touched, so the arm over the files that import what it changed is the gate itself, where 5 failing ids at head-before-the-change become none after it.</p>
 
 <h4 id="qwnw-red-file-a-parked-request-does-not-block-a-landing-origin">The instruction to merge the current origin/main first</h4>
-<p><code>origin/main</code> was 12 commits ahead of the named file's failing base, so the merge the brief asks for carried work in: <code>origin/main</code> at <code>2f5dffd472</code> merged cleanly into the node's branch with no conflict and no test change of its own to this file, and the named file still read 6 passed at the merged head <code>75c428c8</code>. The fragment commit that follows touches only this evidence file.</p>
+<p><code>origin/main</code> was 12 commits ahead of the named file's failing base, so the merge the brief asks for carried work in: <code>origin/main</code> at <code>2f5dffd472</code> merged cleanly into the node's branch with no conflict and no test change of its own to this file, and the named file still read 6 passed at the merged head <code>75c428c8</code>. The head gate ran once the evidence commit was in place, at <code>5736cfb144</code>; the correction commit that follows it touches only this evidence file.</p>
 </section>
