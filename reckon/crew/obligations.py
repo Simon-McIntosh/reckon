@@ -787,10 +787,9 @@ def live_pointer_snapshot(
     The snapshot is published under :data:`_VIEW_LIVE_POINTERS`, so it lasts
     exactly as long as the block and no later read inherits it.
     """
-    if pointers is None:
-        listing = runs.list_live(project=project)
-    else:
-        listing = [dict(pointer) for pointer in pointers]
+    listing = (
+        list(pointers) if pointers is not None else runs.list_live(project=project)
+    )
     published: dict[str, list[dict[str, Any]]] = {}
     for pointer in listing:
         published.setdefault(str(pointer.get("project") or ""), []).append(pointer)
