@@ -1,0 +1,111 @@
+<section id="qwnw-red-file-a-node-is-queued-once-landing">
+  <h2>A node is queued once: the red file passes, one product cause and one instrument</h2>
+
+  <p><strong>What changed.</strong> <code>tests/test_a_node_is_queued_once.py</code>
+  was red at <code>8fdf39585f</code> with four failing cases and two causes.</p>
+
+  <p>The first is a product regression. <code>runs.queue_dispatch</code> stamps a
+  queued request with the review contract it was dispatched for, and the stamp
+  rebuilt the request's node before writing it. A stored node missing a field
+  <code>TaskNode</code> requires raised
+  <code>TypeError: TaskNode.__init__() missing 1 required positional argument:
+  'goal'</code> out of <code>queue_dispatch</code>, after the pointer had already
+  been written and against the stamp's own contract that a request it cannot
+  stamp keeps no contract and falls back to the dispatch gate.
+  <code>record_review_contract</code> now returns without a contract when the
+  stored node cannot be rebuilt, and the guard is shown firing below.</p>
+
+  <p>The second is the test's own instrument, in two shapes. It read Click's
+  <code>Result.output</code>, which since Click 8.2 interleaves stderr with
+  stdout in write order, so a queued launch the case triggers printed its own
+  <code>reckon: created run ...</code> line ahead of the dispatch's JSON answer
+  and the parse failed on that line. The file now reads
+  <code>result.stdout</code>, the channel the documented document is written to,
+  and parses the same document. Separately, one case declared
+  <code>result.json</code>, a file a merge reconciles, and expected a working
+  run's claim to refuse a second node over it. The rule the code keeps is that
+  only a path a merge cannot reconcile is fenced; worktrees isolate the edits to
+  one mergeable file and the merge reconciles them. That case now declares
+  <code>result.png</code>, which a textual merge cannot reconcile, so a working
+  run's claim is still shown to refuse a second node while the queued case is
+  still shown not to bind. No assertion was deleted or softened.</p>
+
+  <h3 id="qwnw-red-file-a-node-is-queued-once-causes">Each cause and its verdict</h3>
+
+  <table id="qwnw-red-file-a-node-is-queued-once-verdicts">
+    <caption>Failing ids read from the base arm's own summary line.</caption>
+    <thead><tr><th>cause</th><th>failing id</th><th>verdict</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>The stamp rebuilt a node the request could not supply</td>
+        <td><code>test_a_dispatch_after_a_put_back_updates_that_one_pointer</code>,
+        <code>test_a_queued_node_is_redispatched_in_place_with_no_scope_conflict</code></td>
+        <td>product wrong, repaired in reviews.py: the rebuild's TypeError reads
+        as no contract, the fallback the stamp documents</td>
+      </tr>
+      <tr>
+        <td>The answer was read from the interleaved stream</td>
+        <td><code>test_a_different_node_over_a_queued_path_launches_the_older_request</code></td>
+        <td>test instrument wrong: the file reads result.stdout now. Same
+        document parsed; a JSONDecodeError on the stderr line was the cause</td>
+      </tr>
+      <tr>
+        <td>The case declared a mergeable file as a fence</td>
+        <td><code>test_a_different_node_over_a_working_run_s_path_is_refused</code></td>
+        <td>test wrong: the case declares result.png now, an unmergeable path,
+        so the working run still refuses and the queued case still does not bind</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-a-node-is-queued-once-guard">The repaired guard firing</h3>
+
+  <p><code>record_review_contract</code> given a queued pointer whose stored
+  node carries no <code>goal</code>, at both revisions with one interpreter:</p>
+
+  <pre id="qwnw-red-file-a-node-is-queued-once-guard-probe"><code>base 8fdf39585f: raised TypeError TaskNode.__init__() missing 1 required positional argument: 'goal'
+head 879b0249b3: returned False</code></pre>
+
+  <h3 id="qwnw-red-file-a-node-is-queued-once-arms">Measured</h3>
+
+  <p>Every arm's log names its revision, tree and command in its first lines and
+  ends with a bare <code>EXIT=&lt;code&gt;</code> line. All arms run with
+  <code>SLURM_JOB_ID</code> unset; logs are in <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104642168231-qwnw-red-file-a-node-is-queued-once/logs/</code>.</p>
+
+  <table id="qwnw-red-file-a-node-is-queued-once-arms-table">
+    <caption>Each arm is one log; the importer arms are four slices over the same
+    file list and the same scratch shape.</caption>
+    <thead><tr><th>arm</th><th>revision and tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's file, base</td><td>8fdf39585f, clone</td>
+        <td>4 failed, 5 passed, EXIT=1 (base-goal.log)</td></tr>
+      <tr><td>the node's file, head</td><td>879b0249b3, working tree</td>
+        <td>9 passed, EXIT=0 (gate-head.log)</td></tr>
+      <tr><td>promotion suite, base</td><td>8fdf39585f, clone</td>
+        <td>58 passed, EXIT=0 (suite-base.log)</td></tr>
+      <tr><td>promotion suite, after</td><td>879b0249b3, working tree</td>
+        <td>58 passed, EXIT=0 (suite-after.log)</td></tr>
+      <tr><td>importers, base</td><td>8fdf39585f, clone</td>
+        <td>48 failed, 490 passed, EXIT=1 (importers-base-1..4.log)</td></tr>
+      <tr><td>importers, head</td><td>879b0249b3, working tree</td>
+        <td>30 failed, 508 passed, EXIT=1 (importers-after-1..4.log)</td></tr>
+    </tbody>
+  </table>
+
+  <p>The importer arms are the 76 test files that import
+  <code>record_review_contract</code>, <code>queue_dispatch</code> or
+  <code>reckon.crew.admission</code>. Compared by failing id, the head arm adds
+  no failure over the base arm and clears 18: this node's four and fourteen in
+  other files whose queue write or answer read failed the same way.</p>
+
+  <h3 id="qwnw-red-file-a-node-is-queued-once-control">Negative control</h3>
+
+  <p>The base arm reproduces the recorded defect in full, with the ids the plan
+  names: four failing cases, two of them
+  <code>TypeError: TaskNode.__init__() missing 1 required positional argument:
+  'goal'</code>, one <code>json.decoder.JSONDecodeError: Expecting value: line 1
+  column 1 (char 0)</code> on the launch line, and one
+  <code>AssertionError: assert 0 == 7</code> where the working run's claim had to
+  refuse and did not. The base run's own failing ids and its summary line are in
+  <code>base-goal.log</code>.</p>
+</section>
