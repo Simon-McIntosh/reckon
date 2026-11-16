@@ -88,6 +88,11 @@ def test_an_activity_read_visits_only_active_rows(
         _legacy_copy(source, run_store._archive_path(path))
         with run_store.RunStore(path) as store:
             store._attach_archive(create=True)
+            with store._conn:
+                store._conn.executemany(
+                    "INSERT INTO retired_runs (run_id, project) VALUES (?, ?)",
+                    ((row["run_id"], "example") for row in records),
+                )
     else:
         shutil.copyfile(source, path)
     if storage in ("amended", "archive"):
