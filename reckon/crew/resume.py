@@ -339,16 +339,24 @@ def _register_commands() -> None:
     @crew.command(name="hold")
     @click.option("--run", "run_id", required=True, help="The delivered run to hold.")
     @click.option(
+        "--project", default=None, help="Project owning the run; cross-checks the run."
+    )
+    @click.option(
         "--reason", required=True, help="Why the landing is deferred; recorded."
     )
     @click.option("--by", default=DEFAULT_HOLDER, help="Who took the hold.")
     @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-    def crew_hold(run_id: str, reason: str, by: str, pretty: bool) -> None:
+    def crew_hold(
+        run_id: str, project: str | None, reason: str, by: str, pretty: bool
+    ) -> None:
         """Hold a delivered run from automatic promotion and landing.
 
         The landing pass and the review-acceptance sweep both read the hold, so
         a held run waits for its coordinator however clean its evidence reads.
         """
+        from reckon.crew_dispatch_commands import _accept_a_matching_project
+
+        _accept_a_matching_project(run_id, project)
         try:
             result = hold_delivery(run_id, reason, by=by)
         except CrewError as exc:
@@ -357,15 +365,23 @@ def _register_commands() -> None:
 
     @crew.command(name="release")
     @click.option("--run", "run_id", required=True, help="The held run to release.")
+    @click.option(
+        "--project", default=None, help="Project owning the run; cross-checks the run."
+    )
     @click.option("--reason", required=True, help="Why the deferral ended; recorded.")
     @click.option("--by", default=DEFAULT_HOLDER, help="Who released the hold.")
     @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-    def crew_release(run_id: str, reason: str, by: str, pretty: bool) -> None:
+    def crew_release(
+        run_id: str, project: str | None, reason: str, by: str, pretty: bool
+    ) -> None:
         """Release a hold so the run is the lander's again.
 
         The release is recorded beside the hold, with its own reason, so the
         run's record explains the delay it carried.
         """
+        from reckon.crew_dispatch_commands import _accept_a_matching_project
+
+        _accept_a_matching_project(run_id, project)
         try:
             result = release_hold(run_id, reason, by=by)
         except CrewError as exc:
