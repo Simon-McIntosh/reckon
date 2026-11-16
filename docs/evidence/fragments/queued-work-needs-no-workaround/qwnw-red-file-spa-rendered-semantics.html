@@ -131,4 +131,28 @@
   <code>{"hold": {"newPlanVisible": false, "rows": ["rendered-contract"]}}</code>
   before the reveal repair and
   <code>{"rows": ["created-while-open", "rendered-contract"]}</code> after it.</p>
+
+  <h3 id="qwnw-red-file-spa-rendered-semantics-repair">Review repair</h3>
+
+  <p>The sprint table derived a headline state from the served
+  <code>metrics.by_effective_status</code> whenever the flat fields were absent.
+  That is a second implementation of a fact
+  <code>reckon/roadmap.py</code>'s sprint walk owns and serves as
+  <code>derived_state</code> and <code>implementation_pct</code>, and a
+  precedence list no Python reader can see. The derivation is gone: the table
+  states the served fields, and the fixture now carries the row shape the walk
+  emits.</p>
+
+  <p>The control for that removal is a probe over a sprint payload with
+  <code>derived_state</code> and <code>implementation_pct</code> stripped. With
+  the removal in place the row states
+  <code>{"state": "unknown", "implementation": "0%"}</code> — the payload's
+  answer. With the derivation temporarily restored the same payload renders
+  <code>{"state": "active", "implementation": "42%"}</code>, which is the
+  browser inventing the figure the finding named.</p>
+
+  <p>The compact-progress case now reports the hash it observed rather than
+  whether the hash matched, so a red run prints the destination a reader needs.
+  The changed test file's lint and format checks are logged beside the gates
+  (<code>ruff.log</code>, <code>EXIT=0</code>).</p>
 </section>
