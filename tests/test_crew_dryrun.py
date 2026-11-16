@@ -342,9 +342,7 @@ def test_accepted_directory_claim_admits_its_landing_fragment(
         launcher=lambda *args, **kwargs: 4242,
     )
     assert record["run_id"]
-    accepted = {
-        row["candidate_path"] for row in record["directory_claim_acceptances"]
-    }
+    accepted = {row["candidate_path"] for row in record["directory_claim_acceptances"]}
     assert path in accepted
     # The node's landing fragment is a mergeable path, so the directory claim
     # over the exclusive figure tree does not sweep it up.
