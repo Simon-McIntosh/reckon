@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="doc">
+<title>The review reflex sees a delivered run again</title>
+<style>
+  body { font: 15px/1.55 system-ui, sans-serif; max-width: 62rem; margin: 2rem auto; padding: 0 1rem; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+  th, td { text-align: left; border-bottom: 1px solid #d8dde3; padding: .4rem .6rem; vertical-align: top; }
+  pre { background: #f4f6f8; padding: .75rem; overflow-x: auto; font-size: .9em; }
+</style>
+</head>
+<body>
+
+<h1 id="qwnw-red-file-review-reflex-sweep-title">The review reflex sees a delivered run again</h1>
+
+<p id="qwnw-red-file-review-reflex-sweep-summary">tests/test_review_reflex_sweep.py failed 8 of its 9 tests at revision 75a3c9cd83. Two causes, each recorded below with its verdict. At head 08651fc96c the file passes in full, run as job 1318988 on all_debug with SLURM_JOB_ID removed from the environment.</p>
+
+<h2 id="qwnw-red-file-review-reflex-sweep-cause-1">Cause 1: product wrong</h2>
+
+<p id="qwnw-red-file-review-reflex-sweep-cause-1-detail">Seven of the eight failures came from one classification defect. <code>classify_pointer</code> reads a pointer still at its launcher's pre-spawn phase as <code>running</code>, and that arm was added without a verdict guard, so it outranked every arm below it. A run whose manifest said <code>status: complete</code> therefore never read as <code>scoring</code>, and the sweep dispatched no review for it: no launcher call, an empty <code>reviews.dispatched</code>, and <code>dispatch_review_for_run</code> refusing the run with the reason <code>the run is not awaiting review (running)</code>.</p>
+
+<p id="qwnw-red-file-review-reflex-sweep-cause-1-fix">The pre-spawn arm is now gated on the manifest carrying no verdict word, which is the precedence the deferral arm beside it already states, so a delivered run is read from what it delivered. <code>tests/test_a_starting_run_is_classified.py</code> still passes: a pre-spawn pointer with no manifest still reads as running.</p>
+
+<h2 id="qwnw-red-file-review-reflex-sweep-cause-2">Cause 2: test wrong</h2>
+
+<p id="qwnw-red-file-review-reflex-sweep-cause-2-detail">The eighth failure, <code>test_the_review_dispatch_waives_the_unreconciled_fence</code>, indexed <code>unreconciled_override</code> straight off the review run's live pointer. Since dispatch detail moved out of the live pointer (b8217ec486) that field is stored in the run's dispatch-detail file and read through <code>runs.dispatch_field</code>, which is how the sibling test in the same file already reads it. The assertion now goes through that accessor and both of its checks, <code>requested is True</code> and <code>waived_runs == ["r-work"]</code>, are kept unchanged. No assertion was deleted or weakened.</p>
+
+<h2 id="qwnw-red-file-review-reflex-sweep-arms">Base run beside head run</h2>
+
+<table id="qwnw-red-file-review-reflex-sweep-arms-table">
+<thead>
+<tr><th>arm</th><th>revision</th><th>result</th></tr>
+</thead>
+<tbody>
+<tr><td>base, the negative control</td><td>75a3c9cd83</td><td>8 failed, 1 passed; EXIT=1</td></tr>
+<tr><td>head, the gate job 1318988 on all_debug</td><td>08651fc96c</td><td>9 passed; EXIT=0</td></tr>
+</tbody>
+</table>
+
+<h3 id="qwnw-red-file-review-reflex-sweep-base-log">Base failing ids</h3>
+<pre id="qwnw-red-file-review-reflex-sweep-base-ids">
+FAILED tests/test_review_reflex_sweep.py::test_the_sweep_dispatches_the_review_a_scoring_run_composed
+FAILED tests/test_review_reflex_sweep.py::test_a_second_sweep_over_the_same_fleet_dispatches_no_second_review
+FAILED tests/test_review_reflex_sweep.py::test_a_refused_review_leaves_the_rest_of_the_wave_dispatched
+FAILED tests/test_review_reflex_sweep.py::test_the_review_dispatch_waives_the_unreconciled_fence
+FAILED tests/test_review_reflex_sweep.py::test_the_dispatch_without_the_waiver_records_the_run_it_ran_over
+FAILED tests/test_review_reflex_sweep.py::test_a_recorded_refusal_is_the_report_and_not_a_generator
+FAILED tests/test_review_reflex_sweep.py::test_a_review_run_is_never_a_source_run_by_its_node_id
+FAILED tests/test_review_reflex_sweep.py::test_the_sweep_records_its_review_outcome_per_writer
+</pre>
+
+<h3 id="qwnw-red-file-review-reflex-sweep-head-log">Head run</h3>
+<pre id="qwnw-red-file-review-reflex-sweep-head-ids">
+.........                                                                [100%]
+9 passed in 119.60s
+EXIT=0
+</pre>
+
+<p id="qwnw-red-file-review-reflex-sweep-logs">Full logs, under the run directory: negative-control-base-review-reflex-sweep.log holds the base run; gate-head-1318988.log holds the head gate run; suite-base-75a3c9cd83.log and suite-after-08651fc96c.log hold the two suite arms.</p>
+
+</body>
+</html>
