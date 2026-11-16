@@ -1,7 +1,10 @@
 <section id="qwnw-red-file-review-carries-forward-red-file">
   <h3>The red file: <code>tests/test_review_carries_forward.py</code></h3>
-  <p>The head run is a job on <code>all_debug</code> with <code>SLURM_JOB_ID</code>
-  unset inside the job (base run: <code>slurm 1319122</code>). Both arms run the
+  <p>The head run is a job on <code>all_debug</code> (<code>slurm 1319122</code>)
+  with <code>SLURM_JOB_ID</code> unset inside the job. The base run is the same
+  command over a tree of <code>44f00a3b15</code> on this allocation's node: the
+  scratch tree the base arm reads lives under <code>$TMPDIR</code>, which is
+  node-local, so it cannot be handed to a job on another node. Both arms run the
   project's own command over the whole file with no selection.</p>
   <table id="qwnw-red-file-review-carries-forward-red-file-arms">
     <thead><tr><th>Arm</th><th>Revision</th><th>Summary line</th><th>Exit</th><th>Log</th></tr></thead>
@@ -9,7 +12,7 @@
       <tr>
         <td>base</td>
         <td><code>44f00a3b150e311df5f662dcce656fe5fe766107</code></td>
-        <td><code>7 failed, 2 passed in 17.86s</code></td>
+        <td><code>7 failed, 2 passed in 20.07s</code></td>
         <td>1</td>
         <td><code>logs/base-file.log</code></td>
       </tr>
