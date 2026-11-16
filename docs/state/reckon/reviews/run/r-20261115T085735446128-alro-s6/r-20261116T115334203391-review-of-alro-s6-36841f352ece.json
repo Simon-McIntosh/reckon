@@ -4,6 +4,13 @@
   "added_failures_note": "Both arms are readable and carry their own exit line: baseline_suite is 4 failed, 172 passed, EXIT=1 at 63e6c58d (logs/base-arm-merged3-1319707.log) and after_suite is 2 failed, 183 passed, EXIT=1 at 36841f352e (logs/head-arm-final3-1319719.log). The head's two failing ids are tests/test_skill_contracts.py::test_ship_crew_views_match_the_typed_mcp_surface and tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt, both of them FAILED lines in the base log as well, so the added set is empty. The two ids the head no longer fails are tests/test_brief_prompt.py::test_a_plan_prompt_is_byte_identical_to_that_snapshot and ::test_the_manifest_template_states_the_red_logs_exit_line, both repaired by ac1fdfe6a7.",
   "completed_at": "2026-11-16T13:46:33.444Z",
   "dispatched_at": "2026-11-16T13:46:12Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the arms cover a subset of the prompt composer's importers, but none of the four reviewed commits changes the composer, as the review itself measured; the merged-head gate re-runs the recorded command",
+      "recorded_at": "2026-11-16T19:33:42.471231+00:00"
+    }
+  },
   "findings": [
     {
       "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T085735446128-alro-s6/manifest.md",
