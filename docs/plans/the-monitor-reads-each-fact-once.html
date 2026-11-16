@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="398">
+<meta name="plan-version" content="399">
 <meta name="plan-modified" content="2026-11-16">
 </head>
 <body>
@@ -1521,6 +1521,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s71" data-id="c-run-r-20261116T114432619603-review-of-a-promotion-finishes-past-a-station-resume-4136dbae083e" data-who="reckon-build" data-when="2026-11-16T11:52:22Z">
     <div class="r-comment-body"><p>Independent review of e35fd9f935225b7005482a75032eb28abeb46c63..4136dbae083e090fa75ec21a09b53e045cd2b5a1 stored with six scores, zero added failures derived from source logs, two blocking delivery findings and two non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s71" data-id="c-run-r-20261116T200753334256-review-of-a-promotion-finishes-past-a-station-resume-347c919ecfdd" data-who="reckon-build" data-when="2026-11-16T20:09:03.016Z">
+    <div class="r-comment-body"><p>§71: independent review of r-20261116T034015654210-a-promotion-finishes-past-a-station-resume over the commits gained since its prior review (base 4136dbae083e090fa75ec21a09b53e045cd2b5a1, head 347c919ecfdd7a223ea0d9b80e7cb44824fcadef) stored as a parsed record scoring goal_fidelity 19, evidence 12, scope_discipline 19, durability 16, fit 19, reuse 19 (104 of 120), added_failure_count 0, two blocking findings on the arm evidence (the all_debug job&#x27;s per-arm logs were overwritten by a fleet-node foreground rerun, and the fragment asserts a log shape no surviving file has), two non-blocking findings, record checked ok=true at both paths</p></div>
 </div>
 <div class="r-comment" data-section="s72" data-id="c-run-r-20261116T062554364829-a-held-run-is-not-resumed" data-who="reckon-build" data-when="2026-11-16T06:33:22.568Z">
     <div class="r-comment-body"><p>A coordinator's delivery hold is now read by the station's repair pass at entry and again at the launch, so no pass reserves a resume for a held run and no review follows one; a hold and its release are written to the run directory's hold.json. Measured: three station passes over a held run launch nothing (0 attempt reservations, 0 reviews dispatched), the pass after crew release reserves attempt-2.reservation and resumes, and the base pass with the guards removed reserves attempt-2.reservation for the held run.</p></div>

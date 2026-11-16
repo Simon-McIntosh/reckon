@@ -1,0 +1,118 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own baseline_suite and after_suite receipts: baseline_suite reports completed true with 58 passed, EXIT=0 and failure_ids []; after_suite reports completed true with 60 passed, EXIT=0 and failure_ids []; the head-minus-base set is empty. Separately, the partition-job requirement for those arms is a blocking evidence finding.",
+  "assertion_analysis": {
+    "175": "the exit-code assertion fails if cleanup is known to be unfinished past an ended attempt.",
+    "176": "the pointer-absence assertion fails if cleanup keeps the pointer, which negative-control.log shows is the base behaviour.",
+    "177-179": "the receipt assertion fails if cleanup deletes attempt-N-exit.json along with the pointer.",
+    "202-203": "the live-launch case fails if the pointer is removed or the refusal omits the message, the attempt number or the launcher pid.",
+    "204-205": "the launcher pid in the message must be the reservation's launcher_pid, which differs from the supervisor_pid the fixture supplies, so naming the supervisor reddens it.",
+    "206": "the pointer-presence assertion fails if a live launch's pointer is taken.",
+    "51": "promotion's pointer_path is resolved against the fixture's tmp_path, so the assertion fails if the pointer path stops honouring RECKON_HOME; it replaces the deleted REAL_LIVE machine-state fixture."
+  },
+  "assertion_independence": "No same-variable assertion found in the delta: :51 compares production's own pointer_path answer to the fixture's tmp_path, and :205 compares the command's output to a launcher pid distinct from the supervisor pid the fixture also writes, so a regression that names the supervisor reddens it.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:1846 _complete_locked (calls _remove_promoted_pointer_or_defer at :2006 and :2697)",
+    "reckon/crew/promotion.py:544 _remove_promoted_pointer_or_defer (refusals at :609 and :619 format through _launching_process_named)"
+  ],
+  "completed_at": "2026-11-16T20:09:03.016Z",
+  "dimension_dispositions": {},
+  "dispatched_at": "2026-11-16T20:08:45Z",
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-promotion-finishes-past-a-station-resume.html",
+      "line": "90",
+      "severity": "blocking",
+      "text": "blocking: the arm paragraph asserts each arm's log opens with revision, tree, literal command, module path and cwd, but the all_debug job's per-arm logs were overwritten by a fleet-node foreground rerun and sbatch-arms.log carries only two summary lines."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T034015654210-a-promotion-finishes-past-a-station-resume/manifest.md",
+      "line": "23",
+      "severity": "blocking",
+      "text": "blocking: baseline_suite and after_suite cite the fleet-node foreground rerun logs, not the all_debug job the done_when requires and never on the fleet node."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-promotion-finishes-past-a-station-resume.html",
+      "line": "80",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gate sentence cites 2 passed in 2.87s at 06c3e5b20a, a run no log on disk records; gate-head.log records 2 passed in 3.81s at 347c919ecf."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "344",
+      "severity": "non-blocking",
+      "text": "non-blocking: the _reservation_launcher fallback to the reservation's own pid changes naming for pre-split reservations and no test covers a reservation without launcher_pid."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "06c3e5b20a is the code and test repair, 3f202a80c1 and 347c919ecf edit only the evidence fragment's arm paragraph.",
+    "done_when": "s71's measure wants two integration cases, a base negative control and partition-run matched arms with per-arm logs; the cases and control are proven, the arm logs are not.",
+    "goal": "dispatch-detail.json admit_request.node.goal requires finishing cleanup past a changed pointer or naming the launch; promotion.py:593 and :609 implement both and the delta preserves them.",
+    "manifest": "manifest.md records the three commits, the literal gate command, both suites and the negative controls, with the arm receipt defect noted in the findings.",
+    "write_paths": "declared paths are the two Python files and the evidence fragment; the delta diff touches no other file."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows both cases redden at base with the removed refusal, and tests/test_a_promotion_finishes_past_a_station_resume.py:205 names a launcher pid distinct from the supervisor, but nothing covers the legacy-reservation fallback promotion.py:344 introduces.",
+    "evidence": "gate-head.log:1-7 and negative-control.log are complete, but manifest.md:23-24 receipts come from fleet-node foreground reruns.",
+    "fit": "promotion.py:317 and :342 use the repository's lazy cross-module import idiom (watch_unit.py:320, dispatching/fences.py:52).",
+    "goal_fidelity": "reckon/crew/promotion.py:593 finishes cleanup past an ended attempt and :609/:619 name the attempt and its launcher.",
+    "reuse": "promotion.py:319 and :344 now delegate to dispatch_launch._read_reservation and _reservation_launcher, whose owners exist and were extended rather than duplicated.",
+    "scope_discipline": "every path in 4136dbae..347c919ecf is one of the three declared paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal in dispatch-detail.json admit_request.node.goal (\"Finish a promotion's cleanup past a pointer changed by a launch since it began, or name that launch\"); reckon/crew/promotion.py:544-620 implements both arms - it retires a pointer whose newer attempt recorded its end at :593 and refuses naming the launch at :609 and :619.\nVERDICT done_when: done_when wants two integration cases on a temporary repository and crew home, a base-revision negative control that refuses with \"changed while promotion ran\", and matched importer arms run as an all_debug sbatch job whose per-arm logs open with revision and literal command; gate-head.log and negative-control.log prove the cases and the control, but the per-arm logs the done_when describes no longer exist on disk.\nVERDICT write_paths: the declared paths are reckon/crew/promotion.py, tests/test_a_promotion_finishes_past_a_station_resume.py and docs/evidence/fragments/the-monitor-reads-each-fact-once/a-promotion-finishes-past-a-station-resume.html; every path in the delta diff 4136dbae..347c919ecf is inside that set.\nVERDICT manifest: read manifest.md; it records commits 06c3e5b20a, 3f202a80c1 and 347c919ecf, the literal gate command with 2 passed in 3.81s EXIT=0, base negative control 2 failed EXIT=1, and baseline/after suites of 58 and 60 passed with no failing ids.\nVERDICT diff: read the three commits against 4136dbae - 06c3e5b20a routes the reservation read through dispatch_launch._read_reservation and the launcher through _reservation_launcher and drops the test's REAL_LIVE machine-state fixture for an in-temp-home pointer assertion, while 3f202a80c1 and 347c919ecf only edit the evidence fragment's arm paragraph.\nCALL_SITES: reckon/crew/promotion.py:1846 _complete_locked (calls _remove_promoted_pointer_or_defer at :2006 and :2697), reckon/crew/promotion.py:544 _remove_promoted_pointer_or_defer (refusals at :609 and :619 format through _launching_process_named)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:593 finishes cleanup past an ended attempt and :609/:619 name the attempt and its launcher, and the delta's reuse wrap leaves both behaviours intact.\nSCORE evidence: 12\nJUSTIFICATION evidence: gate-head.log:1-7 records 2 passed EXIT=0 at 347c919ecf and negative-control.log ends 2 failed EXIT=1 with \"changed while promotion ran\", but the arm receipts at manifest.md:23-24 are fleet-node foreground reruns rather than the all_debug job the done_when requires.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the delta touches only reckon/crew/promotion.py, tests/test_a_promotion_finishes_past_a_station_resume.py and the declared evidence fragment.\nSCORE durability: 16\nJUSTIFICATION durability: negative-control.log shows both cases redden at base with the removed refusal, and the test's \"pid <launcher>\" assertion at tests/test_a_promotion_finishes_past_a_station_resume.py:205 names a pid distinct from the supervisor, but nothing covers the legacy-reservation fallback promotion.py:344 introduces.\nSCORE fit: 19\nJUSTIFICATION fit: promotion.py:317 and :342 import dispatch_launch's own readers lazily inside the function, the idiom used at reckon/crew/watch_unit.py:320 and reckon/crew/dispatching/fences.py:52.\nSCORE reuse: 19\nJUSTIFICATION reuse: _attempt_reservation now delegates its parse to dispatch_launch._read_reservation (promotion.py:319) and _launching_process_named to _reservation_launcher (:344), and no owner validating a reservation's run id exists (held_launch_reservation dispatch_launch.py:2790 does not).\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/a-promotion-finishes-past-a-station-resume.html:90 blocking: the arm paragraph asserts each arm's log opens with its revision, tree, literal command, imported module path and resolved cwd and ends with EXIT=, but no such log from the all_debug job survives - suite-base.log and suite-head.log were overwritten at 20:59-21:00Z by a fleet-node foreground rerun (suite-head.log:1-2 now name revision 347c919ecf and the fleet worktree) and sbatch-arms.log carries only host, job, partition and two summary lines, so the document asserts a property of files a reader cannot find.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T034015654210-a-promotion-finishes-past-a-station-resume/manifest.md:23 blocking: baseline_suite and after_suite cite suite-base.log and suite-head.log, which are the foreground reruns on the fleet node (trees under /tmp/reckon-crew-scratch and the fleet worktree), while the done_when requires the matched arms run as an all_debug sbatch job and never on the fleet node and the job's own per-arm logs were overwritten, so the receipt pair promotion reads attests the wrong node.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/a-promotion-finishes-past-a-station-resume.html:80 non-blocking: the gate sentence cites 2 passed in 2.87s at 06c3e5b20a, but no log on disk records that run and the manifest's gate log records 2 passed in 3.81s at 347c919ecf (gate-head.log:1,7), so the figure cannot be reconciled with any retained artefact.\nFINDING reckon/crew/promotion.py:344 non-blocking: routing the launcher read through _reservation_launcher adds a fallback to the reservation's own pid for a record written before the launcher/supervisor split, changing what a refusal names for such a reservation, and no test exercises a reservation without launcher_pid - negative-control-reuse.log records that reverting the whole reuse commit leaves both cases green.\n",
+  "reuse_audit": {
+    "definitions": {
+      "_attempt_reservation": "Now wraps dispatch_launch._read_reservation and adds only a run-id check; no owner validating a reservation's run id exists (dispatch_launch.py:2790 held_launch_reservation does not).",
+      "_launching_process_named": "Wraps dispatch_launch._reservation_launcher; promotion-specific refusal formatter with no existing owner.",
+      "test the_real_pointer_directory_is_not_a_fixture_target (removed)": "The machine-state guard is replaced by an in-temp-home pointer resolution assertion."
+    },
+    "searched": "reckon/crew for reservation parsers (dispatch_launch._read_reservation, reservations_in, held_launch_reservation) and launcher readers (_reservation_launcher, _reservation_names_this_process)."
+  },
+  "review_run_id": "r-20261116T200753334256-review-of-a-promotion-finishes-past-a-station-resume-347c919ecfdd",
+  "review_text": "VERDICT goal: read the node goal in dispatch-detail.json admit_request.node.goal (\"Finish a promotion's cleanup past a pointer changed by a launch since it began, or name that launch\"); reckon/crew/promotion.py:544-620 implements both arms - it retires a pointer whose newer attempt recorded its end at :593 and refuses naming the launch at :609 and :619.\nVERDICT done_when: done_when wants two integration cases on a temporary repository and crew home, a base-revision negative control that refuses with \"changed while promotion ran\", and matched importer arms run as an all_debug sbatch job whose per-arm logs open with revision and literal command; gate-head.log and negative-control.log prove the cases and the control, but the per-arm logs the done_when describes no longer exist on disk.\nVERDICT write_paths: the declared paths are reckon/crew/promotion.py, tests/test_a_promotion_finishes_past_a_station_resume.py and docs/evidence/fragments/the-monitor-reads-each-fact-once/a-promotion-finishes-past-a-station-resume.html; every path in the delta diff 4136dbae..347c919ecf is inside that set.\nVERDICT manifest: read manifest.md; it records commits 06c3e5b20a, 3f202a80c1 and 347c919ecf, the literal gate command with 2 passed in 3.81s EXIT=0, base negative control 2 failed EXIT=1, and baseline/after suites of 58 and 60 passed with no failing ids.\nVERDICT diff: read the three commits against 4136dbae - 06c3e5b20a routes the reservation read through dispatch_launch._read_reservation and the launcher through _reservation_launcher and drops the test's REAL_LIVE machine-state fixture for an in-temp-home pointer assertion, while 3f202a80c1 and 347c919ecf only edit the evidence fragment's arm paragraph.\nCALL_SITES: reckon/crew/promotion.py:1846 _complete_locked (calls _remove_promoted_pointer_or_defer at :2006 and :2697), reckon/crew/promotion.py:544 _remove_promoted_pointer_or_defer (refusals at :609 and :619 format through _launching_process_named)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:593 finishes cleanup past an ended attempt and :609/:619 name the attempt and its launcher, and the delta's reuse wrap leaves both behaviours intact.\nSCORE evidence: 12\nJUSTIFICATION evidence: gate-head.log:1-7 records 2 passed EXIT=0 at 347c919ecf and negative-control.log ends 2 failed EXIT=1 with \"changed while promotion ran\", but the arm receipts at manifest.md:23-24 are fleet-node foreground reruns rather than the all_debug job the done_when requires.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the delta touches only reckon/crew/promotion.py, tests/test_a_promotion_finishes_past_a_station_resume.py and the declared evidence fragment.\nSCORE durability: 16\nJUSTIFICATION durability: negative-control.log shows both cases redden at base with the removed refusal, and the test's \"pid <launcher>\" assertion at tests/test_a_promotion_finishes_past_a_station_resume.py:205 names a pid distinct from the supervisor, but nothing covers the legacy-reservation fallback promotion.py:344 introduces.\nSCORE fit: 19\nJUSTIFICATION fit: promotion.py:317 and :342 import dispatch_launch's own readers lazily inside the function, the idiom used at reckon/crew/watch_unit.py:320 and reckon/crew/dispatching/fences.py:52.\nSCORE reuse: 19\nJUSTIFICATION reuse: _attempt_reservation now delegates its parse to dispatch_launch._read_reservation (promotion.py:319) and _launching_process_named to _reservation_launcher (:344), and no owner validating a reservation's run id exists (held_launch_reservation dispatch_launch.py:2790 does not).\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/a-promotion-finishes-past-a-station-resume.html:90 blocking: the arm paragraph asserts each arm's log opens with its revision, tree, literal command, imported module path and resolved cwd and ends with EXIT=, but no such log from the all_debug job survives - suite-base.log and suite-head.log were overwritten at 20:59-21:00Z by a fleet-node foreground rerun (suite-head.log:1-2 now name revision 347c919ecf and the fleet worktree) and sbatch-arms.log carries only host, job, partition and two summary lines, so the document asserts a property of files a reader cannot find.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T034015654210-a-promotion-finishes-past-a-station-resume/manifest.md:23 blocking: baseline_suite and after_suite cite suite-base.log and suite-head.log, which are the foreground reruns on the fleet node (trees under /tmp/reckon-crew-scratch and the fleet worktree), while the done_when requires the matched arms run as an all_debug sbatch job and never on the fleet node and the job's own per-arm logs were overwritten, so the receipt pair promotion reads attests the wrong node.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/a-promotion-finishes-past-a-station-resume.html:80 non-blocking: the gate sentence cites 2 passed in 2.87s at 06c3e5b20a, but no log on disk records that run and the manifest's gate log records 2 passed in 3.81s at 347c919ecf (gate-head.log:1,7), so the figure cannot be reconciled with any retained artefact.\nFINDING reckon/crew/promotion.py:344 non-blocking: routing the launcher read through _reservation_launcher adds a fallback to the reservation's own pid for a record written before the launcher/supervisor split, changing what a refusal names for such a reservation, and no test exercises a reservation without launcher_pid - negative-control-reuse.log records that reverting the whole reuse commit leaves both cases green.\n",
+  "reviewed_base_sha": "4136dbae083e090fa75ec21a09b53e045cd2b5a1",
+  "reviewed_head_sha": "347c919ecfdd7a223ea0d9b80e7cb44824fcadef",
+  "reviewed_run_id": "r-20261116T034015654210-a-promotion-finishes-past-a-station-resume",
+  "scores": {
+    "durability": 16,
+    "evidence": 12,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_promotion_finishes_past_a_station_resume.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T034015654210-a-promotion-finishes-past-a-station-resume/suite-head.log",
+      "revision": "347c919ecfdd7a223ea0d9b80e7cb44824fcadef",
+      "summary": "60 passed in 45.22s"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T034015654210-a-promotion-finishes-past-a-station-resume/suite-base.log",
+      "revision": "e35fd9f935225b7005482a75032eb28abeb46c63",
+      "summary": "58 passed in 39.36s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T20:22:22.629203+00:00",
+  "total": 104
+}
