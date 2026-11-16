@@ -158,6 +158,31 @@ def test_an_archive_that_will_not_attach_raises_rather_than_losing_retired_rows(
         run_store.stored_run_rows(PROJECT)
 
 
+def test_a_store_whose_detail_half_is_unreadable_raises_rather_than_losing_the_record(
+    store: Path, checkout: Path
+) -> None:
+    with run_store.RunStore(store) as sqlite_store:
+        sqlite_store.append(PROJECT, _record("r-1", 1))
+    # The hot half is complete and the join's other table is gone: the read
+    # fails inside the query rather than at either guard, which is the failure
+    # the swallowed query error used to turn into an empty population.
+    connection = sqlite3.connect(str(store))
+    try:
+        connection.execute('DROP TABLE "run_details"')
+        connection.commit()
+    finally:
+        connection.close()
+
+    with pytest.raises(run_store.UnreadableRunStoreError) as raised:
+        ledger.load(PROJECT, checkout)
+
+    message = str(raised.value)
+    assert str(store) in message
+    assert "run_details" in message
+    with pytest.raises(run_store.UnreadableRunStoreError):
+        run_store.stored_run_rows(PROJECT)
+
+
 def test_a_runs_table_without_a_payload_column_is_refused_naming_the_migration(
     store: Path, checkout: Path
 ) -> None:
