@@ -1,0 +1,113 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": {
+    "added": "tests/test_a_closing_sprint_gets_one_page.py adds four assertions of substance: :317 the row count is three, :323-:324 each plan's runs and landed sections equal the counts its own landed record states, :333 a plan with no landed record is listed with its status, :357 at least one figure link is present and :358-:363 every href and src resolves to a file, :371-:372 reckon.doccheck.audit_html reports no error. Each fails on a named code change: a renderer dropping a row (:317), a count taken from the wrong population (:323), a row that links a record never written (:358), a figure the reading lost (:357), a malformed page (:372). None of them compares a value against a variable the test itself handed the code: the counts are read back out of the plan's own rendered landed record.",
+    "negative_control": "logs/negative-control.log records the committed mutation \u2014 render_sprint_page trimming one member plan \u2014 with 1 failed and the row-count case naming 2 == 3, so :317 is shown to redden on the regression it guards. The done-when's own declared control, a row linking a plan with no overview, was not staged (finding at :353).",
+    "reachable": "The close-guard assertions added in tests/test_a_plan_does_not_close_over_an_unlanded_section.py do name their regressions: :321 counts calls to ledger.runs and reddens at 2 if the guard reverts to one read per section, :335 reddens if a state naming no identity is read as unlanded rather than refused. :335 compares refusal text the guard itself writes, so it constrains the message rather than an independent value; the :321 call count is independent of what the monkeypatched read returns."
+  },
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/project_state.py:_close_sprint_with_carry_forward",
+    "reckon/project_state.py:_write_sprint_closing_page",
+    "reckon/_store.py:validate_landing_patch"
+  ],
+  "completed_at": "2026-11-16T06:29:28Z",
+  "dispatched_at": "2026-11-16T06:29:09Z",
+  "failure_delta_evidence": {
+    "after": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_closing_sprint_gets_one_page.py tests/test_a_plan_does_not_close_over_an_unlanded_section.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T085733783332-alro-s5/gate-after2.log",
+      "revision": "164fa6d9c1f9c634fefb77a06f7bd942341aa8fe",
+      "summary": "73 passed in 182.45s (0:03:02)"
+    },
+    "baseline": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_plan_does_not_close_over_an_unlanded_section.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 2,
+      "failure_ids": [
+        "tests/test_staged_write_inventory.py::test_claim_move_aside_is_not_a_staged_write",
+        "tests/test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T085733783332-alro-s5/gate-base.log",
+      "revision": "c64a86671d14e4bdf2e580288fd97beeb1f29479",
+      "summary": "65 passed, 2 errors in 26.75s"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_closing_sprint_gets_one_page.py",
+      "line": "324",
+      "severity": "non-blocking",
+      "text": "non-blocking: the sections-landed count is compared only for Alpha and Beta, whose every section is declared done, so a mutation counting declared sections instead of landed ones leaves the assertion green."
+    },
+    {
+      "file": "docs/evidence/fragments/a-landing-is-recorded-once/alro-s5.html",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment says every row field is taken from read_section_landings, but runs and worker_seconds at reckon/evidence.py:1207 are summed from raw ledger records, so the record overstates the reuse."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T085733783332-alro-s5/gate-after2.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the after arm's log opens on pytest progress output with no revision, tree or command header, so its 73-passed result cannot be tied to 164fa6d9c1 from the log alone."
+    },
+    {
+      "file": "tests/test_a_closing_sprint_gets_one_page.py",
+      "line": "353",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done-when's declared negative control, a row linking a plan with no overview, is never staged; the applied mutation in logs/negative-control.log drops a table row instead, so the link case is asserted but not shown to redden."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read all three commits against c64a86671d \u2014 74703f7be7 folds the close guard onto one ledger read, c7fb0fce61 adds the page writer, its reader and four cases, 164fa6d9c1 repairs the unterminated table header \u2014 834 insertions and 62 deletions in six files.",
+    "done_when": "the done-when names a three-plan sprint, a plan with no overview, every href and src resolving, `reckon audit-doc`, and a negative control; tests/test_a_closing_sprint_gets_one_page.py:313, :327, :353 and :366 carry one case each and the manifest's gate command runs that file, recorded as 73 passed with EXIT=0 in gate-after2.log.",
+    "goal": "the node's goal is one page written when a sprint closes, and reckon/project_state.py:2438 `_write_sprint_closing_page` is reached from both close paths at reckon/project_state.py:2516 and :2610, rendering through reckon/evidence.py:1235 `render_sprint_page`.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T085733783332-alro-s5/manifest.md; it states the landing line, both suite arms as JSON with revision, command, exit status and log path, and the negative-control log path.",
+    "write_paths": "the manifest declares six paths and the diff of the three commits touches exactly those six: reckon/project_state.py, reckon/evidence.py, reckon/_store.py, tests/test_a_closing_sprint_gets_one_page.py, tests/test_a_plan_does_not_close_over_an_unlanded_section.py and docs/evidence/fragments/a-landing-is-recorded-once/alro-s5.html."
+  },
+  "justifications": {
+    "durability": "tests/test_a_plan_does_not_close_over_an_unlanded_section.py:321 reddens if the guard re-reads the ledger per section, but the gate's row-count mutation leaves the sections-landed comparison at tests/test_a_closing_sprint_gets_one_page.py:324 unable to tell landed sections from declared ones.",
+    "evidence": "the manifest's `tests:` line names the four-file gate and gate-after2.log carries 73 passed with EXIT=0, but that log has no revision, tree or command header, so the arm's revision rests on the manifest's own after_suite JSON rather than on the log.",
+    "fit": "reckon/evidence.py:1094 adds a frozen slots dataclass and private module helpers in the shape of LandedFigure at reckon/evidence.py:214, and introduces no name the naming rules forbid.",
+    "goal_fidelity": "reckon/evidence.py:1235 renders one row per member plan with status, landed sections, runs, worker time and headline result plus the readings' figures, and both close paths at reckon/project_state.py:2516 and :2610 write it.",
+    "reuse": "the page reuses read_section_landings, landings_that_landed, _figure_blocks and _format_seconds, the search over reckon/evidence.py and reckon/project_state.py found no existing sprint-page writer, and the only restated idiom is the project-absolute URL literal at reckon/figures.py:171.",
+    "scope_discipline": "every path in the diff is inside the six declared paths, though reckon/project_state.py:803 and :2400 carry ruff-format rewrites of lines the goal does not touch."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is one page written when a sprint closes, and reckon/project_state.py:2438 `_write_sprint_closing_page` is reached from both close paths at reckon/project_state.py:2516 and :2610, rendering through reckon/evidence.py:1235 `render_sprint_page`.\nVERDICT done_when: the done-when names a three-plan sprint, a plan with no overview, every href and src resolving, `reckon audit-doc`, and a negative control; tests/test_a_closing_sprint_gets_one_page.py:313, :327, :353 and :366 carry one case each and the manifest's gate command runs that file, recorded as 73 passed with EXIT=0 in gate-after2.log.\nVERDICT write_paths: the manifest declares six paths and the diff of the three commits touches exactly those six: reckon/project_state.py, reckon/evidence.py, reckon/_store.py, tests/test_a_closing_sprint_gets_one_page.py, tests/test_a_plan_does_not_close_over_an_unlanded_section.py and docs/evidence/fragments/a-landing-is-recorded-once/alro-s5.html.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T085733783332-alro-s5/manifest.md; it states the landing line, both suite arms as JSON with revision, command, exit status and log path, and the negative-control log path.\nVERDICT diff: read all three commits against c64a86671d \u2014 74703f7be7 folds the close guard onto one ledger read, c7fb0fce61 adds the page writer, its reader and four cases, 164fa6d9c1 repairs the unterminated table header \u2014 834 insertions and 62 deletions in six files.\nCALL_SITES: reckon/project_state.py:_close_sprint_with_carry_forward, reckon/project_state.py:_write_sprint_closing_page, reckon/_store.py:validate_landing_patch\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/evidence.py:1235 renders one row per member plan with status, landed sections, runs, worker time and headline result plus the readings' figures, and both close paths at reckon/project_state.py:2516 and :2610 write it.\nSCORE evidence: 15\nJUSTIFICATION evidence: the manifest's `tests:` line names the four-file gate and gate-after2.log carries 73 passed with EXIT=0, but that log has no revision, tree or command header, so the arm's revision rests on the manifest's own after_suite JSON rather than on the log.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every path in the diff is inside the six declared paths, though reckon/project_state.py:803 and :2400 carry ruff-format rewrites of lines the goal does not touch.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_plan_does_not_close_over_an_unlanded_section.py:321 reddens if the guard re-reads the ledger per section, but the gate's row-count mutation leaves the sections-landed comparison at tests/test_a_closing_sprint_gets_one_page.py:324 unable to tell landed sections from declared ones.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/evidence.py:1094 adds a frozen slots dataclass and private module helpers in the shape of LandedFigure at reckon/evidence.py:214, and introduces no name the naming rules forbid.\nSCORE reuse: 19\nJUSTIFICATION reuse: the page reuses read_section_landings, landings_that_landed, _figure_blocks and _format_seconds, the search over reckon/evidence.py and reckon/project_state.py found no existing sprint-page writer, and the only restated idiom is the project-absolute URL literal at reckon/figures.py:171.\nFINDING tests/test_a_closing_sprint_gets_one_page.py:324 non-blocking: the sections-landed count is compared only for Alpha and Beta, whose every section is declared done, so a mutation counting declared sections instead of landed ones leaves the assertion green.\nFINDING docs/evidence/fragments/a-landing-is-recorded-once/alro-s5.html:5 non-blocking: the fragment says every row field is taken from read_section_landings, but runs and worker_seconds at reckon/evidence.py:1207 are summed from raw ledger records, so the record overstates the reuse.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T085733783332-alro-s5/gate-after2.log:1 non-blocking: the after arm's log opens on pytest progress output with no revision, tree or command header, so its 73-passed result cannot be tied to 164fa6d9c1 from the log alone.\nFINDING tests/test_a_closing_sprint_gets_one_page.py:353 non-blocking: the done-when's declared negative control, a row linking a plan with no overview, is never staged; the applied mutation in logs/negative-control.log drops a table row instead, so the link case is asserted but not shown to redden.\n",
+  "reuse_audit": {
+    "search": "Searched reckon/evidence.py, reckon/project_state.py, reckon/doccheck.py and reckon/figures.py for an existing sprint-page writer or a plan-document address helper: no page writer exists, and the project-absolute address is a literal idiom (reckon/figures.py:171, reckon/crew/queue_landing.py:1598) rather than an owned function. reckon/evidence.py owns the section reading and the close guard now calls it through reckon/_store.py:5217."
+  },
+  "review_run_id": "r-20261116T062800848382-review-of-alro-s5-164fa6d9c1f9",
+  "reviewed_base_sha": "c64a86671d14e4bdf2e580288fd97beeb1f29479",
+  "reviewed_commits": [
+    "74703f7be781a5166e775e53e5dc9b52c0cb7d0f",
+    "c7fb0fce6163cc8910491db1e026887b8c709ae8",
+    "164fa6d9c1f9c634fefb77a06f7bd942341aa8fe"
+  ],
+  "reviewed_head_sha": "164fa6d9c1f9c634fefb77a06f7bd942341aa8fe",
+  "reviewed_run_id": "r-20261115T085733783332-alro-s5",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T06:47:06.355570+00:00",
+  "total": 101
+}
