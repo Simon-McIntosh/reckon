@@ -1285,9 +1285,15 @@ def _withdraw_launch_claim(run_id: str) -> None:
     A hold stores the node as a queued request and keeps its pointer, so only
     the launch is given back: the claim file says a launch is composing, and a
     waiting request carries none, exactly as a request requeued after a
-    stranded launch drops the attempt's claim.
+    stranded launch drops the attempt's claim. The directory this launch made
+    goes with it, because a queued request owns no run directory: the brief copy
+    a launch stored there is the one piece a later reader might want, and
+    ``readable_brief_source`` falls back to the source the request names when the
+    copy is gone, as it already did for a request whose earlier attempt was
+    refused.
     """
     (run_dir(run_id) / "claim.json").unlink(missing_ok=True)
+    shutil.rmtree(run_dir(run_id), ignore_errors=True)
 
 
 @contextlib.contextmanager
