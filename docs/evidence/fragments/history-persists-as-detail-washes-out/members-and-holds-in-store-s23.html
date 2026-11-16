@@ -74,4 +74,22 @@
     in the manifest; the earlier store-history comparison remains historical
     evidence of the prior integrated revision.</p>
   </section>
+  <section id="members-and-holds-in-store-s23-released-locks">
+    <h4>Mutable snapshots release their lock before decoding</h4>
+    <p>The next primary merge supplies selected store-backed history and closes
+    run-read cursors before consumption. The resolution keeps those query and
+    lock-release implementations, the revision helpers, and the independent
+    roster/hold transactions. Auxiliary readers now fetch encoded rows and the
+    version in one snapshot, close the cursor and release the read or write
+    transaction, then decode outside the lock. Stale-write refusal also decodes
+    its captured snapshot after releasing the transaction.</p>
+    <p>Two added checks issue a real zero-timeout SQLite write from each decoded
+    auxiliary row. Both failed with <code>database is locked</code> before the
+    change; all 22 focused checks pass with it. The selection checks cover the
+    current stored-history path and its uncached, indexed and stale legacy
+    fallbacks. Aggregate-held gate-update fixtures now seed their authoritative
+    run-store row as well as the legacy aggregate. The manifest carries the
+    armed head gate and the tests that directly import the run store, measured
+    on the requested debug partition.</p>
+  </section>
 </section>

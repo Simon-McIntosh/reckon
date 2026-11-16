@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-16T10:20:46.438Z",
+  "dispatched_at": "2026-11-16T10:20:04Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_promotion_scope.py",
+      "line": "159",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert stored[\"commits\"] == [commit], repeated at tests/test_crew_promotion_scope.py:224 and tests/test_crew_promotion_scope.py:708, compares the record against the same commit the test handed crew.complete, so it holds whatever the claim logic does and would survive the regression these cases guard; the independent guard is the adjacent assert not pointer_path(run_id).exists()."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read both commits against 0e0f25b0f941; 75b1857de816 rewrites five cases in tests/test_crew_promotion_scope.py (143 insertions, 36 deletions) and fac462cd95ad adds only the 114-line evidence fragment, so the gate at 75b1857de816 measures the landed test file exactly.",
+    "done_when": "the done_when names the file passing as an_debug job with SLURM_JOB_ID unset plus a base arm carrying its failing ids; the manifest records both arms with revision, command and EXIT - logs/after-gate-all_debug.log:8 reads \"28 passed in 10.14s\" and logs/after-gate-all_debug.log:9 \"EXIT=0\" against logs/baseline-crew-promotion-scope.log:278 \"EXIT=1\".",
+    "goal": "the node's goal is that tests/test_crew_promotion_scope.py passes in full; the diff updates the five cases the base arm fails and the head arm records 28 passed for that file.",
+    "manifest": "read; it declares status complete, cites commits 75b1857de816 and fac462cd95ad, states 5 failed 21 passed at base and 28 passed at head, and names all three log paths.",
+    "write_paths": "read the declared paths reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the fragment file; the diff touches only tests/test_crew_promotion_scope.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-promotion-scope.html."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_promotion_scope.py:605 reddens if _claim_paths_share admits a shared binary again (exit_code 1 becomes 0) and tests/test_crew_promotion_scope.py:922 reddens if the worktree-at-its-base guard stops running on the --no-commit path.",
+    "evidence": "logs/baseline-crew-promotion-scope.log:1 names revision 0e0f25b0f941 and the archive tree and that log's last line reads EXIT=1, while docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-promotion-scope.html:109 records the importer arm as an argument that no test imports the file rather than as a run.",
+    "fit": "tests/test_crew_promotion_scope.py:23 adds EXCLUSIVE_STRAY with a comment in the file's own idiom and the renamed cases carry docstrings stating the rule, matching the neighbours at tests/test_crew_promotion_scope.py:566 and tests/test_crew_promotion_scope.py:656.",
+    "goal_fidelity": "the five updated cases assert the rule at reckon/crew/runs.py:1985 _claim_paths_share keeps - a mergeable source path shared, an exclusive class still refused - so the tests were moved to the product's rule rather than the product repaired to the tests.",
+    "reuse": "the diff adds no definition with a capability of its own; it reuses _guarded_pointer at tests/test_crew_promotion_scope.py:99, and the capability it asserts is owned by reckon/crew/runs.py:1985, which the search over reckon/crew for claim sharing found as the sole implementation.",
+    "scope_discipline": "the whole diff of 0e0f25b0f941..fac462cd95ad is tests/test_crew_promotion_scope.py plus the one declared fragment, with no product file touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_crew_promotion_scope.py passes in full; the diff updates the five cases the base arm fails and the head arm records 28 passed for that file.\nVERDICT done_when: the done_when names the file passing as an_debug job with SLURM_JOB_ID unset plus a base arm carrying its failing ids; the manifest records both arms with revision, command and EXIT - logs/after-gate-all_debug.log:8 reads \"28 passed in 10.14s\" and logs/after-gate-all_debug.log:9 \"EXIT=0\" against logs/baseline-crew-promotion-scope.log:278 \"EXIT=1\".\nVERDICT write_paths: read the declared paths reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the fragment file; the diff touches only tests/test_crew_promotion_scope.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-promotion-scope.html.\nVERDICT manifest: read; it declares status complete, cites commits 75b1857de816 and fac462cd95ad, states 5 failed 21 passed at base and 28 passed at head, and names all three log paths.\nVERDICT diff: read both commits against 0e0f25b0f941; 75b1857de816 rewrites five cases in tests/test_crew_promotion_scope.py (143 insertions, 36 deletions) and fac462cd95ad adds only the 114-line evidence fragment, so the gate at 75b1857de816 measures the landed test file exactly.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the five updated cases assert the rule at reckon/crew/runs.py:1985 _claim_paths_share keeps - a mergeable source path shared, an exclusive class still refused - so the tests were moved to the product's rule rather than the product repaired to the tests.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/baseline-crew-promotion-scope.log:1 names revision 0e0f25b0f941 and the archive tree and that log's last line reads EXIT=1, while docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-promotion-scope.html:109 records the importer arm as an argument that no test imports the file rather than as a run.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the whole diff of 0e0f25b0f941..fac462cd95ad is tests/test_crew_promotion_scope.py plus the one declared fragment, with no product file touched.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_crew_promotion_scope.py:605 reddens if _claim_paths_share admits a shared binary again (exit_code 1 becomes 0) and tests/test_crew_promotion_scope.py:922 reddens if the worktree-at-its-base guard stops running on the --no-commit path.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_crew_promotion_scope.py:23 adds EXCLUSIVE_STRAY with a comment in the file's own idiom and the renamed cases carry docstrings stating the rule, matching the neighbours at tests/test_crew_promotion_scope.py:566 and tests/test_crew_promotion_scope.py:656.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition with a capability of its own; it reuses _guarded_pointer at tests/test_crew_promotion_scope.py:99, and the capability it asserts is owned by reckon/crew/runs.py:1985, which the search over reckon/crew for claim sharing found as the sole implementation.\nFINDING tests/test_crew_promotion_scope.py:159 non-blocking: assert stored[\"commits\"] == [commit], repeated at tests/test_crew_promotion_scope.py:224 and tests/test_crew_promotion_scope.py:708, compares the record against the same commit the test handed crew.complete, so it holds whatever the claim logic does and would survive the regression these cases guard; the independent guard is the adjacent assert not pointer_path(run_id).exists().\n",
+  "review_run_id": "r-20261116T101855297570-review-of-qwnw-red-file-crew-promotion-scope-fac462cd95ad",
+  "reviewed_base_sha": "0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc",
+  "reviewed_head_sha": "fac462cd95ad3ee6e1e99f429d1e24b81a09a07a",
+  "reviewed_run_id": "r-20261116T031949761769-qwnw-red-file-crew-promotion-scope",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T13:13:09.102499+00:00",
+  "total": 107
+}

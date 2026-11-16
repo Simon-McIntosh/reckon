@@ -273,6 +273,7 @@ def test_aggregate_gate_update_uses_its_file_version_after_roster_mutation(
     path.write_text(json.dumps(envelope))
     original_members = envelope["data"]["members"]
     original_holds = envelope["data"]["holds"]
+    run_store.append(PROJECT, envelope["data"]["runs"][0])
     if mutation == "register":
         ledger.register_member(PROJECT, "registered", harness="test", root=root)
     elif mutation == "hold":
@@ -316,8 +317,8 @@ def test_aggregate_gate_update_uses_its_file_version_after_roster_mutation(
         ledger.write(PROJECT, data, 7, root)
 
 
-@pytest.mark.parametrize("path_kind", ["uncached", "indexed", "stale"])
-def test_plan_selection_reads_files_with_the_stored_roster(
+@pytest.mark.parametrize("path_kind", ["uncached", "indexed", "stale", "stored"])
+def test_plan_selection_preserves_the_roster_on_each_history_path(
     roster, monkeypatch, path_kind
 ):
     root, path = roster
@@ -328,8 +329,17 @@ def test_plan_selection_reads_files_with_the_stored_roster(
         {"run_id": "file-other", "plan": "other"},
     ]
     path.write_text(json.dumps(envelope))
-    ledger.register_member(PROJECT, "registered", harness="test", root=root)
-    run_store.append(PROJECT, {"run_id": "store-only", "plan": "selected"})
+    if path_kind == "stored":
+        ledger.register_member(PROJECT, "registered", harness="test", root=root)
+        run_store.append(PROJECT, {"run_id": "store-selected", "plan": "selected"})
+        run_store.append(
+            PROJECT,
+            {"run_id": "store-dispatched", "node_definition": {"plan": "selected"}},
+        )
+        run_store.append(PROJECT, {"run_id": "store-other", "plan": "other"})
+        expected = ["store-dispatched", "store-selected"]
+    else:
+        expected = ["file-dispatched", "file-selected"]
     if path_kind == "stale":
         ledger.load(PROJECT, root=root, plan="selected")
 
@@ -337,26 +347,20 @@ def test_plan_selection_reads_files_with_the_stored_roster(
             raise sqlite3.OperationalError("fixture index unavailable")
 
         monkeypatch.setattr(ledger, "_indexed_data", unavailable)
-
-    class NoRunPayload:
-        def __getattr__(self, name):
-            return getattr(json, name)
-
-        def loads(self, payload, *args, **kwargs):
-            assert "store-only" not in payload, "history decoded a stored run payload"
-            return json.loads(payload, *args, **kwargs)
-
-    monkeypatch.setattr(run_store, "json", NoRunPayload())
     data, version = ledger.load(
         PROJECT, root=root, plan="selected", use_index=path_kind != "uncached"
     )
-    assert sorted(row["run_id"] for row in data["runs"]) == [
-        "file-dispatched",
-        "file-selected",
-    ]
+    assert sorted(row["run_id"] for row in data["runs"]) == expected
     assert version == 7
-    assert data["auxiliary_version"] == 8
-    assert "registered" in {member["id"] for member in data["members"]}
+    if path_kind == "stored":
+        assert data["auxiliary_version"] == 8
+        assert "registered" in {member["id"] for member in data["members"]}
+    else:
+        assert data["auxiliary_version"] == 7
+        assert {member["id"] for member in data["members"]} == {
+            "permanent",
+            "session-idle",
+        }
 
 
 def test_history_read_never_imports_or_migrates_mutable_state(roster, monkeypatch):
@@ -378,3 +382,31 @@ def test_history_read_never_imports_or_migrates_mutable_state(roster, monkeypatc
         data["auxiliary_version"],
     ) == expected
     assert version == 7
+
+
+@pytest.mark.parametrize("reader", ["read_only", "mutable"])
+def test_auxiliary_decode_releases_its_read_lock(roster, monkeypatch, reader):
+    root, _path = roster
+    expected = ledger.load_auxiliary(PROJECT, root)
+    writes = []
+
+    class WriteDuringDecode:
+        def __getattr__(self, name):
+            return getattr(json, name)
+
+        def loads(self, payload, *args, **kwargs):
+            with sqlite3.connect(run_store.store_path(), timeout=0) as connection:
+                connection.execute(
+                    "INSERT OR REPLACE INTO store_meta (key, value) VALUES (?, ?)",
+                    ("decode-probe", str(len(writes))),
+                )
+            writes.append(payload)
+            return json.loads(payload, *args, **kwargs)
+
+    monkeypatch.setattr(run_store, "json", WriteDuringDecode())
+    if reader == "read_only":
+        observed = run_store.read_auxiliary(PROJECT)
+    else:
+        observed = ledger.load_auxiliary(PROJECT, root)
+    assert observed == expected
+    assert len(writes) == len(expected[0]["members"]) + len(expected[0]["holds"])

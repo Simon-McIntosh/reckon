@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import traceback
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from contextvars import copy_context
+from pathlib import Path
 
 from . import holds as _holds
 from . import launching as _launching
@@ -13,6 +15,7 @@ from .shared import (
     Any,
     BudgetHold,
     CompetenceLimit,
+    CrewError,
     LaneHeld,
     LanePaused,
     Mapping,
@@ -27,7 +30,27 @@ from .shared import (
 #: pool trades that allowance for setup speed, and past it the kernel reclaims
 #: the allowance by killing workers, so the width is kept to what the setup
 #: memory of a pass can cost without reaching them.
-LAUNCH_POOL_WIDTH = 4
+LAUNCH_POOL_WIDTH = 8
+
+
+def _failure_with_origin(exc: BaseException) -> str:
+    """Name a launch failure, and where it was raised when nothing else says.
+
+    A refusal the crew raises on purpose carries its own account. Any other
+    exception reaches the request as a bare message, which names the symptom and
+    not the code that met it, so its innermost frame is added: the request then
+    carries enough to find the defect without the service's process.
+    """
+    text = f"{type(exc).__name__}: {exc}"
+    if isinstance(exc, CrewError):
+        return text
+    frames = traceback.extract_tb(exc.__traceback__)
+    if not frames:
+        return text
+    frame = frames[-1]
+    return (
+        f"{text} (raised in {frame.name} at {Path(frame.filename).name}:{frame.lineno})"
+    )
 
 
 class LaunchBatch:
@@ -207,7 +230,7 @@ def _attempt_launch(
         failure = f"{type(exc).__name__}: {exc}"
     except Exception as exc:  # noqa: BLE001 - every dispatch failure keeps its request
         caught = exc
-        failure = f"{type(exc).__name__}: {exc}"
+        failure = _failure_with_origin(exc)
     finally:
         _add_step(launch_steps, "dispatch", tick() - step_at)
         if record is None and not hold_only:

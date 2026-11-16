@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:4008",
+    "reckon/crew/runs.py:5678"
+  ],
+  "completed_at": "2026-11-16T11:59:45Z",
+  "dispatched_at": "2026-11-16T11:54:41Z",
+  "failure_delta_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/ensure-beside-live-producer-starts-nothing-s26 /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/ensure-beside-live-producer-starts-nothing-s26/tests/test_an_ensure_beside_a_live_producer_starts_nothing.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/ensure-beside-live-producer-starts-nothing-s26/tests/test_staged_write_inventory.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/ensure-beside-live-producer-starts-nothing-s26/tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105816545184-ensure-beside-live-producer-starts-nothing-s26/ensure-live-producer-final.log",
+      "revision": "a912426f0c988f1b96cfffd4453ba7421c6a397a"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/ensure-beside-live-producer-starts-nothing-s26 /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/ensure-beside-live-producer-starts-nothing-s26/tests/test_staged_write_inventory.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/ensure-beside-live-producer-starts-nothing-s26/tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105816545184-ensure-beside-live-producer-starts-nothing-s26/ensure-live-producer-baseline.log",
+      "revision": "3bba6b6a88f5ca95a8325ceb291c8977873f217b"
+    }
+  },
+  "failure_reader_positive_control": {
+    "failure_count": 10,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105816545184-ensure-beside-live-producer-starts-nothing-s26/ensure-live-producer-reproduction.log"
+  },
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commits 2225eedd630fccb7768e949aea1206bd22458f7f and a912426f0c988f1b96cfffd4453ba7421c6a397a against 3bba6b6a88f5ca95a8325ceb291c8977873f217b; the first adds the liveness return and 11 test cases and the second adds the 16-line evidence fragment.",
+    "done_when": "prompt.txt:277 and live plan docs/plans/the-monitor-tells-the-truth-under-load.html:213 require base-red regression tests and no added importer failures; ensure-live-producer-reproduction.log records 10 failed/1 passed, final.log records 69 passed, and importers-base/head.log carry the same four failures over 85 cases on all_debug.",
+    "goal": "prompt.txt:38 requires no startup beside a live producer, and reckon/crew/watch_unit.py:1438 returns started=false with its existing watcher before service or fallback arming.",
+    "manifest": "manifest.md records both commits, exact baseline/after arms, reproduction and mutation logs, and the four unchanged importer failures; the opened logs substantiate those results.",
+    "write_paths": "prompt.txt:84 declares watch_unit.py, the new regression test, an evidence fragment and figure directory; all three changed paths are inside those grants."
+  },
+  "justifications": {
+    "durability": "tests/test_an_ensure_beside_a_live_producer_starts_nothing.py:89 fails when the live-producer return is removed, as both base and mutation logs demonstrate for all 10 live cases, while :110 protects startup without a producer.",
+    "evidence": "ensure-live-producer-baseline.log and ensure-live-producer-final.log identify the reviewed revisions and end in EXIT=0 with 58 and 69 passes, while the reproduction, mutation and importer logs supply the plan's negative control and zero-added-failure comparison.",
+    "fit": "reckon/crew/watch_unit.py:1438 follows adjacent structured return dictionaries and existing watch_state semantics, and the added test names describe behavior without release or plan labels.",
+    "goal_fidelity": "reckon/crew/watch_unit.py:1438 checks the existing liveness owner and returns the serving producer's identity before every service startup or process fallback path.",
+    "reuse": "reckon/crew/watch_unit.py:1438 extends the existing ensure owner using watch_state at :663, while the added test service extends tests/test_crew_watch_ensure.py:55 and the lease fixture uses HostLease rather than copying its ownership mechanism.",
+    "scope_discipline": "the two commits change only reckon/crew/watch_unit.py, tests/test_an_ensure_beside_a_live_producer_starts_nothing.py and the explicitly granted evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "Reviewed base: 3bba6b6a88f5ca95a8325ceb291c8977873f217b\nReviewed head: a912426f0c988f1b96cfffd4453ba7421c6a397a\n\nVERDICT goal: prompt.txt:38 requires no startup beside a live producer, and reckon/crew/watch_unit.py:1438 returns started=false with its existing watcher before service or fallback arming.\nVERDICT done_when: prompt.txt:277 and live plan docs/plans/the-monitor-tells-the-truth-under-load.html:213 require base-red regression tests and no added importer failures; ensure-live-producer-reproduction.log records 10 failed/1 passed, final.log records 69 passed, and importers-base/head.log carry the same four failures over 85 cases on all_debug.\nVERDICT write_paths: prompt.txt:84 declares watch_unit.py, the new regression test, an evidence fragment and figure directory; all three changed paths are inside those grants.\nVERDICT manifest: manifest.md records both commits, exact baseline/after arms, reproduction and mutation logs, and the four unchanged importer failures; the opened logs substantiate those results.\nVERDICT diff: read commits 2225eedd630fccb7768e949aea1206bd22458f7f and a912426f0c988f1b96cfffd4453ba7421c6a397a against 3bba6b6a88f5ca95a8325ceb291c8977873f217b; the first adds the liveness return and 11 test cases and the second adds the 16-line evidence fragment.\nCALL_SITES: reckon/crew_follow_commands.py:4008, reckon/crew/runs.py:5678\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/watch_unit.py:1438 checks the existing liveness owner and returns the serving producer's identity before every service startup or process fallback path.\nSCORE evidence: 20\nJUSTIFICATION evidence: ensure-live-producer-baseline.log and ensure-live-producer-final.log identify the reviewed revisions and end in EXIT=0 with 58 and 69 passes, while the reproduction, mutation and importer logs supply the plan's negative control and zero-added-failure comparison.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits change only reckon/crew/watch_unit.py, tests/test_an_ensure_beside_a_live_producer_starts_nothing.py and the explicitly granted evidence fragment.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_an_ensure_beside_a_live_producer_starts_nothing.py:89 fails when the live-producer return is removed, as both base and mutation logs demonstrate for all 10 live cases, while :110 protects startup without a producer.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/watch_unit.py:1438 follows adjacent structured return dictionaries and existing watch_state semantics, and the added test names describe behavior without release or plan labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/watch_unit.py:1438 extends the existing ensure owner using watch_state at :663, while the added test service extends tests/test_crew_watch_ensure.py:55 and the lease fixture uses HostLease rather than copying its ownership mechanism.\n\nAssertion review at the reviewed head:\n\n- Test :60, lease.claim(): fails if the fixture cannot acquire its isolated producer lease; this establishes the intended live input rather than testing the new guard.\n- Test :61, watch_state(...)[watcher_live] is True: fails if the constructed lease/process is not recognized as live; the real reader is used, not a mocked return value.\n- Test :89, result[started] is False: fails on removal of the live return, restoring the unit-only startup decision; both recorded red arms show this exact failure in all 10 parameter combinations.\n- Test :90, manager.starts == []: fails if service.start is reached despite the live producer, including a change that falsely returns started=false after starting a service.\n- Test :91, linger_attempts == 0: fails if ensure attempts to enable lingering beside the live producer in the no-linger case.\n- Test :92, fallbacks == []: fails if either unreachable-bus or linger-failure handling invokes the process arming seam despite the live producer.\n- Test :93, result[watcher_live] is True: fails if the return loses or falsifies the liveness witness.\n- Test :94, result[watcher] == record: fails if ensure returns a different or altered producer identity; record was independently written into the real isolated seat by the fixture and is not an argument supplied to ensure.\n- Test :95, watch_state(...)[watcher] == record: fails if ensure mutates the real seat identity; it reads storage independently after ensure.\n- Test :104, absent watcher_live is False: fails if isolated setup accidentally carries a producer, establishing the opposite input for the startup control.\n- Test :110, result[started] is True: fails if the no-start return becomes unconditional or fails to report startup in the absent-producer case.\n- Test :111, manager.starts == [(watch_unit_name(PROJECT), False)]: fails if absent-producer arming skips service.start, selects the wrong unit, restarts instead of starting, or starts more than once; the unit-name expectation uses the existing naming owner, while occurrence and restart mode are independently fixed.\n\nNo added assertion compares an output with the same mutable value passed to the function under test in a way that survives the targeted regression.\n\nReuse search covered producer liveness, service call recording, isolated configuration homes and lease construction. Opened owners: watch_state in reckon/crew/watch_unit.py:663, FakeWatchService and service_home in tests/test_crew_watch_ensure.py:55/90, and the foreign-seat construction in tests/test_a_quiet_foreign_producer_reads_live.py:60. RecordingService adds the distinct condition matrix and linger-attempt counter to the existing fake; the new fixture and producer helper are local test setup using the established mechanisms. No production capability is forked.\n\nOutside scope: the reviewed run's importer logs retain four identical base/head failures; their ids remain in the source manifest's outside_scope field and were not investigated or repaired in this read-only review.\n",
+  "report_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T115309658164-review-of-ensure-beside-live-producer-starts-nothing-s26-a912426f0c98/report.md",
+  "review_run_id": "r-20261116T115309658164-review-of-ensure-beside-live-producer-starts-nothing-s26-a912426f0c98",
+  "reviewed_base_sha": "3bba6b6a88f5ca95a8325ceb291c8977873f217b",
+  "reviewed_head_sha": "a912426f0c988f1b96cfffd4453ba7421c6a397a",
+  "reviewed_run_id": "r-20261116T105816545184-ensure-beside-live-producer-starts-nothing-s26",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T12:58:39.352683+00:00",
+  "total": 120
+}

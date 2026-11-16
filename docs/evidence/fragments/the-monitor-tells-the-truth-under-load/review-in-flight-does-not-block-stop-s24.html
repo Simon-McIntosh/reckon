@@ -1,0 +1,79 @@
+<section id="review-in-flight-does-not-block-stop-s24-landing">
+  <h2>The stop hook blocks only on work a coordinator can shorten</h2>
+
+  <p><strong>What changed.</strong> A run whose head a review is reading carries
+  a <code>review-in-flight</code> duty. The row's own text says to read the run
+  with <code>crew observe</code>, and the reflex that dispatched the review
+  re-fires when it ends, so nothing the session runs moves the wait — yet the
+  stop path classified the kind as actionable and refused the turn. A
+  coordinator was held in a ten-minute foreground wait by a row telling it to
+  look at work already moving, instead of ending its turn with a watch armed.
+
+  <p>The kind is now declared among the duties no action shortens, in both
+  places the vocabulary is stated: <code>reckon.crew.obligations</code> gained a
+  named <code>REVIEW_IN_FLIGHT_DUTY_KIND</code>, used by the review duty's own
+  builder and added to <code>NON_BLOCKING_DUTY_KINDS</code>, and
+  <code>reckon.hooks.coordinator_obligations</code> added the string to
+  <code>_NON_BLOCKING_KINDS</code>, the set its stop path reads on a fresh
+  snapshot. A review in flight is therefore counted in the checklist's
+  <code>[N waiting, no action shortens them]</code> line and does not hold a stop
+  open. The two sets are separate statements of one rule — the hook cannot import
+  the derivation on the paths that read a fresh snapshot — so the test drives the
+  derivation's builder into the hook's predicate rather than assuming they agree.
+
+  <h3 id="review-in-flight-does-not-block-stop-s24-repro">Measured</h3>
+
+  <p>The defect was reproduced at the base revision
+  <code>c2fdfd6e</code>, driving the hook's own stop answer and predicate with
+  one duty the derivation built for a scoring run whose review stands in the
+  <code>working</code> phase:</p>
+
+  <pre><code>kind: review-in-flight
+actionable: True
+blocking: [{'kind': 'review-in-flight', 'run_id': 'run-scoring-fixture', ...}]
+stop: {"decision": "block", "reason": "reckon obligations for session
+  review-in-flight-session (project review-in-flight-fixture): 1 outstanding,
+  oldest 25m2s\n- [review-in-flight] run-scoring-fixture (scoring-fixture-node,
+  25m2s old): read the review with `crew observe run-review-in-flight`\n
+  unreconciled runs: 1; work the list to empty before ending the turn."}</code></pre>
+
+  <p>At the change's head the same snapshot produces no output at all: the stop
+  is allowed, and the prompt mode renders the row as
+  <code>- [1 waiting, no action shortens them] review-in-flight 1 (oldest
+  25m0s)</code> with no “work the list to empty” trailer. A payload carrying a
+  <code>blocked</code> run beside the in-flight review still blocks, and the
+  refusal names the blocked row in full while the review is only counted — the
+  guard still fires for the duty a coordinator can act on.</p>
+
+  <table id="review-in-flight-does-not-block-stop-s24-arms">
+    <thead>
+      <tr><th>Arm</th><th>Revision</th><th>Suite</th><th>Result</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>base</td>
+        <td><code>c2fdfd6e</code> (archived, no new test present)</td>
+        <td><code>tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code></td>
+        <td>58 passed, EXIT=0</td>
+      </tr>
+      <tr>
+        <td>head</td>
+        <td><code>396acca9</code></td>
+        <td>the base arm plus <code>tests/test_a_review_in_flight_does_not_block_a_stop.py</code></td>
+        <td>62 passed, EXIT=0</td>
+      </tr>
+      <tr>
+        <td>new test at base</td>
+        <td><code>c2fdfd6e</code></td>
+        <td><code>tests/test_a_review_in_flight_does_not_block_a_stop.py</code></td>
+        <td>4 failed (the stop blocked on the lone in-flight row)</td>
+      </tr>
+      <tr>
+        <td>negative control</td>
+        <td>head with <code>review-in-flight</code> removed from the hook's non-blocking kinds</td>
+        <td><code>tests/test_a_review_in_flight_does_not_block_a_stop.py</code></td>
+        <td>3 failed, EXIT=1 — the stop blocked on the in-flight row again</td>
+      </tr>
+    </tbody>
+  </table>
+</section>

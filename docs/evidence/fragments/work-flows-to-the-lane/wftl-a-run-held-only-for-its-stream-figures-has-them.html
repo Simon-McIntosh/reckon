@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-flows-to-the-lane">
+  <meta name="plan-title" content="A run held only for its stream figures has them recorded">
+  <meta name="plan-summary" content="The four projects' rows that carried no derived figure now carry one from their own stream. A fresh-cursor retention pass reports zero missing-derived-figure; twenty re-derived rows match exactly.">
+  <meta name="plan-evidence-for" content="reckon:work-flows-to-the-lane">
+  <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s42">
+  <meta name="plan-commits" content="b3ec33f2e4f78b58f001b01b21d1cb386fb137bc 436018562f2e7d1fdd5726c4bd9da4630a01b4de e59cdf6fff458af14ed5d7437c3706fdaa82f180">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="partial">
+  <title>A run held only for its stream figures has them recorded | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="wftl-a-run-held-only-for-its-stream-figures-has-them-record" data-node="wftl-a-run-held-only-for-its-stream-figures-has-them" data-reckon="landed">
+  <h2 id="wftl-a-run-held-only-for-its-stream-figures-has-them-outcome">A run held only for its stream figures has them recorded</h2>
+  <p>At assigned base <code>bc378cd9a3ce</code>, 2,709 ledger rows across the four projects carried
+  neither <code>tool_steps</code> nor <code>orientation_input_tokens</code>, and retention withheld
+  every one of their run directories as <code>missing-derived-figure</code>. An independent on-disk
+  census counted, per project, the rows whose run directory still holds a stream and whose run
+  directory holds none; every one of the 2,709 rows holds a stream, and none has lost it.</p>
+  <p>The backfill that derives both figures from a run's own stream — <code>scripts/derive_run_figures.py</code>
+  — had been run for reckon's own rows only. Run for these four, it filled 1,298 rows in nova,
+  1,081 in imas-codex and 326 in imas-ambix, with zero skipped for a missing stream and zero
+  unmeasurable. imas-standard-names' 4 rows were not filled by that pass: the first attempt against
+  that checkout's read-only working tree had already written them (<code>gate-fill-attempt.log</code>,
+  <code>rows_filled</code> 4), so the full pass that followed reported <code>rows_filled</code> 0 for
+  the project (<code>gate-fill.log</code>). The two passes together leave 2,709 rows carrying their
+  figures, so the recorded count equals the census's stream-present count and the recorded-absent
+  count equals its no-stream count of zero.</p>
+  <p><code>tests/test_a_held_runs_stream_figures_are_recorded.py</code> plants three old runs in a
+  temporary crew home. The first has its stream on disk and must read back on its row the two
+  figures the routing derivation computes from that stream (1,200 charged input tokens before the
+  first declared-scope edit, three completed tool items); the second has no stream and must record
+  both figures as a present null rather than a zero, which retention then treats as reapable; the
+  third is the negative control, where skipping the write leaves retention withholding the same
+  directory. Two further cases plant a ledger in a temporary repository and run the durability
+  instrument over it: one counts the rows each declared figure is recorded on and exits 1 while the
+  working tree holds a figure its <code>HEAD</code> does not, the other reports a checkout whose
+  <code>HEAD</code> is ahead of its working tree as its own count and exits 0.</p>
+  <table>
+    <thead><tr><th>Measurement on all_debug, one arm at a time</th><th>Runner summary</th></tr></thead>
+    <tbody>
+      <tr><td>Base arm at <code>bc378cd9a3ce</code>, extracted to <code>/tmp</code></td><td>53 passed, 2 errors; EXIT=1</td></tr>
+      <tr><td>Head arm: the two template files plus this node's test</td><td>60 passed; EXIT=0</td></tr>
+      <tr><td>Declared mutation: the backfill's write removed</td><td>3 failed, 2 passed; EXIT=1</td></tr>
+    </tbody>
+  </table>
+  <p>The base arm's two errors are <code>test_staged_write_inventory.py</code> requiring a git-backed
+  tree, which a <code>git archive</code> extraction is not; both files pass in the head arm and the
+  errors are identical at the base revision, so the node adds no failure. The mutation removes the
+  backfill's write and all three cases that exercise it fail, while the two durability cases, which
+  do not touch the backfill, still pass.</p>
+  <table>
+    <thead><tr><th>Project</th><th>Rows lacking a figure</th><th>Stream on disk</th><th>No stream</th><th>Filled, first pass</th><th>Filled, full pass</th><th>Recorded absent</th></tr></thead>
+    <tbody>
+      <tr><td>nova</td><td>1,298</td><td>1,298</td><td>0</td><td></td><td>1,298</td><td>0</td></tr>
+      <tr><td>imas-codex</td><td>1,081</td><td>1,081</td><td>0</td><td></td><td>1,081</td><td>0</td></tr>
+      <tr><td>imas-ambix</td><td>326</td><td>326</td><td>0</td><td></td><td>326</td><td>0</td></tr>
+      <tr><td>imas-standard-names</td><td>4</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td></tr>
+    </tbody>
+  </table>
+  <p>Five filled rows per project, drawn at random with a fixed seed from the rows whose stream is
+  still on disk, were re-derived with both figure keys removed from the row: 20 of 20 matched the
+  recorded figures exactly. One retention dry pass from a fresh cursor
+  (<code>RECKON_RETENTION_CURSOR</code> pointed at a scratch path, <code>--limit 9000</code>,
+  nothing removed) then reported <strong>zero</strong> directories withheld for
+  <code>missing-derived-figure</code> (508 withheld for a missing review result, 170 for a review
+  owed), against the base's 2,614.</p>
+  <p><strong>What remains.</strong> The ledger writes are <strong>uncommitted</strong>: they live only in
+  each project's working tree under <code>docs/state/&lt;project&gt;/</code>, and this run's git grant
+  reaches its own worktree alone, so a mutating git verb aimed at another checkout is refused. Counting
+  the rows routing's own retention rule finds each figure recorded on gives, at each checkout's
+  <code>HEAD</code> against its working tree: <code>tool_steps</code> nova 828 vs 2,126, imas-codex
+  278 vs 1,359, imas-ambix 273 vs 599, imas-standard-names 3 vs 7; and
+  <code>orientation_input_tokens</code> 418 vs 556, 150 vs 302, 124 vs 140 and 0 vs 1. The <code>tool_steps</code> pairs differ by exactly
+  the per-project fill counts above; the charged-token pairs differ by 138, 152, 16 and 1, the
+  subset of those rows whose stream carried a charge before the derivation's cut point. Those counts come
+  from <code>scripts/count_uncommitted_ledger_figures.py</code>, which reads the figure list and the
+  retention rule from <code>reckon/crew/routing.py</code> rather than declaring either, whose
+  <code>--require-durable</code> run is logged as <code>ledger-durability.log</code> and exits 1 while
+  any project still holds a figure only in its working tree, and which reports a checkout ahead of its
+  working tree as its own count rather than a negative one. The instrument is exercised by
+  <code>tests/test_a_held_runs_stream_figures_are_recorded.py</code> against a temporary repository,
+  and <code>ledger-durability-negative-control.log</code> records that test reddening both with the
+  field list emptied and with the row count forced to zero. Until those four commits land, a
+  reclaim of any of those working trees loses the fill and retention withholds the rows again.
+  Each commit stages only <code>docs/state/&lt;project&gt;/</code> with a conventional subject and a
+  body. Logs: <code>gate-{base-arm,head-arm,negative-control,census,fill,resample,retention}.log</code>,
+  <code>ledger-durability.log</code> and
+  <code>ledger-durability-negative-control.log</code> under the run directory.</p>
+</article>
+</body>
+</html>
