@@ -23,16 +23,16 @@
 
 <h4 id="qwnw-red-file-queue-depth-project-bound-negative-control">Negative control &mdash; the base run of the named file, with its failing ids</h4>
 <pre id="qwnw-red-file-queue-depth-project-bound-base-gate"># revision: 0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc
-# tree: .../scratch/base-tree (git archive of the revision)
-# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_queue_depth_project_bound.py
-# measurement_cwd: .../scratch/base-tree
+# tree: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031839166271-qwnw-red-file-queue-depth-project-bound/scratch/base-tree
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_queue_depth_project_bound.py
+# measurement_cwd: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031839166271-qwnw-red-file-queue-depth-project-bound/scratch/base-tree
 .FF.....FFF                                                              [100%]
 FAILED tests/test_queue_depth_project_bound.py::test_a_duplicate_request_returns_the_existing_id_and_stores_nothing - TypeError: TaskNode.__init__() missing 1 required positional argument: 'goal'
 FAILED tests/test_queue_depth_project_bound.py::test_another_sessions_copy_of_one_request_is_the_same_request - TypeError: TaskNode.__init__() missing 1 required positional argument: 'goal'
 FAILED tests/test_queue_depth_project_bound.py::test_a_review_of_a_delivered_run_is_never_refused_by_the_bound - TypeError: TaskNode.__init__() missing 1 required positional argument: 'goal'
 FAILED tests/test_queue_depth_project_bound.py::test_a_queued_review_does_not_shrink_the_projects_room - TypeError: TaskNode.__init__() missing 1 required positional argument: 'goal'
 FAILED tests/test_queue_depth_project_bound.py::test_the_mcp_crew_reads_answer_inside_their_deadline_on_five_hundred - AssertionError: ('live', 'cold', {'ok': False, 'error': 'crew_error', 'project': 'queue-depth-fixture', 'detail': '&lt;resolved flight&gt;: local_backend: must be set before `reckon crew dispatch --local` can route work'})
-5 failed, 6 passed in 58.05s
+5 failed, 6 passed in 84.91s
 EXIT=1</pre>
 <p>The full log, header lines and exit receipt intact, is the file <code>logs/base-gate.log</code> in the run directory; the excerpt above is its summary. The same five ids reproduce the two causes quoted in the table.</p>
 
