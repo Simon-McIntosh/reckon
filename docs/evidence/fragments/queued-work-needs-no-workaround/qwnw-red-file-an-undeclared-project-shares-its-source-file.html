@@ -26,3 +26,8 @@
 10 passed in 10.84s
 EXIT=0</pre>
 </section>
+
+<section id="qwnw-red-file-an-undeclared-project-shares-its-source-file-arms">
+<h2>The two suite arms</h2>
+<p>Both arms ran one command over their own tree: <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code>. The base arm ran at <code>d0d77f07</code> in a clone checked out at that revision; the head arm runs in this worktree. Both read <code>58 passed</code> and <code>EXIT=0</code>, so the change adds no failure.</p>
+</section>
