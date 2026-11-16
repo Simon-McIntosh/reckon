@@ -19,7 +19,7 @@
   <code>EXIT=1</code>, every one of them the gate-command refusal
   <em>records the gate command 'python -m pytest tests/test_history.py', whose
   program 'python' names no executable</em>. The fixture writes that gate
-  command literally (<code>tests/test_a_merged_primary_run_keeps_its_own_commits.py:96</code>),
+  command literally (<code>tests/test_a_merged_primary_run_keeps_its_own_commits.py:76</code>),
   so its four landing cases only proceed where <code>python</code> resolves on
   the host's <code>PATH</code>. On <code>all_debug</code> and on this node it
   does, and the file passes 7 of 7 at both the merged head and the brief's base.
@@ -36,7 +36,7 @@
     <thead><tr><th>arm</th><th>revision and tree</th><th>result</th></tr></thead>
     <tbody>
       <tr><td>the named file, head arm (the gate)</td>
-        <td><code>5c4ff3492998</code>, worktree, a job on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset in the child</td>
+        <td><code>b2c3f0aafc</code>, worktree (the merged head and this node's own commit), a job on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset in the child</td>
         <td><strong>7 passed</strong>, <code>EXIT=0</code></td></tr>
       <tr><td>the named file, base arm</td>
         <td><code>827719105952</code>, extraction of the brief's base revision</td>
@@ -48,7 +48,7 @@
         <td><code>827719105952</code>, extraction</td>
         <td><strong>58 passed</strong>, <code>EXIT=0</code></td></tr>
       <tr><td>suite arm at the head</td>
-        <td><code>5c4ff3492998</code>, worktree</td>
+        <td><code>b2c3f0aafc</code>, worktree</td>
         <td><strong>58 passed</strong>, <code>EXIT=0</code></td></tr>
     </tbody>
   </table>
