@@ -128,6 +128,16 @@ def test_normalizing_a_measured_command_keeps_its_landing_options(delivered):
     assert rows[0]["next_command"] == command
 
 
+def test_a_measured_cached_command_without_a_gate_gets_a_parseable_verdict(delivered):
+    pointer, _, _ = delivered
+    _measure(delivered)
+    command = "reckon crew complete --run r-remedy --land"
+    rows, _ = obligations._partition_acknowledged([_duty(pointer, command=command)], {})
+    parsed = _parse(rows[0]["next_command"])
+    assert parsed.params["gate"] == "passed"
+    assert parsed.params["land"] is True
+
+
 def test_normalizing_a_commitless_delivery_keeps_its_declaration(delivered):
     pointer, head, _ = delivered
     pointer["base_sha"] = head

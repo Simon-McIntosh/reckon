@@ -1903,7 +1903,15 @@ def measured_remedy_items(
             ]:
                 # Keep the caller's landing and disposition options once the
                 # shared composer has established the passing verdict.
-                item["next_command"] = re.sub(r"--gate\s+\S+", "--gate passed", command)
+                if any(
+                    argument == "--gate" or argument.startswith("--gate=")
+                    for argument in tokens
+                ):
+                    item["next_command"] = re.sub(
+                        r"--gate(?:\s+|=)\S+", "--gate passed", command
+                    )
+                else:
+                    item["next_command"] = command + " --gate passed"
             else:
                 item["next_command"] = offered
         # An action form from a cached snapshot describes its previous command.
