@@ -1,0 +1,36 @@
+<section id="scan-holds-no-store-lock-s31">
+  <h2>History selection releases the cursor before applying Python predicates</h2>
+  <p>The store buffers only the plan fallbacks and activity timestamps required
+  for selection, closes that cursor, and applies the ledger's existing rules.
+  Matching identities then fetch the requested payloads, retaining scan order
+  across identity batches and archive tables. Unselected full payloads remain
+  undecoded. Rollback journalling and the writer contention timeout remain in
+  place.</p>
+  <table>
+    <thead><tr><th>Measurement on all_debug</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Base armed gate</td><td>58 passed; exit 0</td></tr>
+      <tr><td>Base reproduction with new tests</td><td>2 failed, 9 passed; exit 1</td></tr>
+      <tr><td>Source-head armed gate</td><td>70 passed; exit 0</td></tr>
+      <tr><td>Write during activity selection, 20,000 rows</td><td>0.405 s while selection remained paused for at least 3 s</td></tr>
+      <tr><td>Write during plan selection, 20,000 rows</td><td>0.413 s while selection remained paused for at least 3 s</td></tr>
+      <tr><td>Restore base query as negative control</td><td>2 failed, 10 passed; exit 1</td></tr>
+    </tbody>
+  </table>
+  <p>Both reproducing failures report “write waiting past one second” and
+  <code>sqlite3.OperationalError: database is locked</code>. The repaired checks
+  read the separate writer's committed row before releasing the selection
+  predicate and compare the complete reader result with its uncontended result.
+  Further checks preserve all three plan locations, the last of the four
+  activity stamps, narrow projections, identity bounds and archived rows.</p>
+  <p>The tests are committed in
+  <code>ecac03514f65806eb8c64af00fd5eacefbc8a7ca</code> and the repair in
+  <code>f652f81c9e34e2f7cdc4781f1f6a3ce8027994d7</code>. Receipts under
+  <code>~/.cache/reckon-s31/</code> include <code>baseline-suite.log</code>,
+  <code>base-reproduction.log</code>, <code>after-suite.log</code>,
+  <code>head-concurrency.log</code> and <code>negative-control.log</code>.
+  Each names its revision, extracted tree, imported module, working directory
+  and literal command. The manifest carries the broader importer comparison
+  and the final-head armed receipt; merged-head verification belongs to the
+  coordinator.</p>
+</section>

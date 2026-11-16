@@ -1825,18 +1825,28 @@ def classify_pointer(
     stuck = _stuck_verdict_for(record) if phase else None
 
     # A pre-spawn launch past its bound with its holder gone is not waiting to
-    # start: the liveness arms read it as a failed launch, which the admission
-    # pass then releases or returns to the queue.
+    # start: the pre-spawn reading needs a launch that has spawned nothing, and
+    # the liveness arms read the rest — a stranded launch as a failed launch the
+    # admission pass then releases or returns to the queue, and a launch whose
+    # worker has come and gone from that worker's own liveness and output.
     #
-    # The label also stops applying once a verdict is on disk. The manifest is
-    # written by the worker, so a pointer carrying one describes a launch that
-    # happened whatever phase its label still names — a supervised launch writes
-    # the pre-spawn label and does not rewrite it, so a run keeps that label for
-    # as long as its pointer lives. Read as a run that never started, such a row
-    # owed no review, offered no promotion and reported a stop as work in
-    # progress; the reflex then dispatched nothing and said nothing.
+    # The pre-spawn phrase is the launcher's label and a stale one, so it cannot
+    # be trusted alone. A run that reached its worker carries a pid, a worker
+    # record, a stream or a launch log, and any of those outranks the label:
+    # reading them as a request that has not started held a refused, unreadable
+    # or dead run at ``running`` for as long as its pointer lived, and left
+    # ``fleet_verdict`` free to call the same row abandoned, so one row stated
+    # two outcomes and neither surface could be acted on.
+    #
+    # A verdict on disk outranks the label for the same reason. The manifest is
+    # written by the same worker, and a supervised launch writes the pre-spawn
+    # label and does not rewrite it, so a delivered run keeps that label for as
+    # long as its pointer lives. Read as a run that never started, such a row
+    # owed no review, offered no promotion and reported a stopped run as work
+    # in progress; the reflex then dispatched nothing and said nothing.
     pre_spawn_waiting = (
         phase in _PRE_SPAWN_PHASES
+        and not _spawn_evidence(record)
         and not manifest_status
         and not _stranded_launch(record, now_seconds=moment)
     )
@@ -3300,6 +3310,7 @@ from .recovery_liveness import (  # noqa: E402
     _run_exit_record,
     _run_stream_mtime,
     _run_stream_quiet_seconds,
+    _spawn_evidence,
     _stranded_launch,
     _stranded_launch_age_seconds,
     _wait_judged_against_itself,

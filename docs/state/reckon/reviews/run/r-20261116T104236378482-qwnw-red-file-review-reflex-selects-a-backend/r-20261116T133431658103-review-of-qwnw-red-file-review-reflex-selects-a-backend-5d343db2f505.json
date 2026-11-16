@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own suite pair on disk: logs/armed-baseline.log at 963de3f5 reads '58 passed in 41.14s' with EXIT=0 and no FAILED line, and logs/armed-after.log at 4f6e87b6f8 reads '58 passed in 45.11s' with EXIT=0 and no FAILED line, so reckon.crew.review.added_failures_from_gate_logs over those two texts returns (0, []). The instrument was positive-controlled by the same reader on logs/head-base-negative-control.log, which yields the four reviewed node ids.",
+  "after_gate_log_revision": "4f6e87b6f8390789e93977a0c0a4868a848cb16e",
+  "baseline_gate_log_revision": "963de3f5e0722419a4ad234f71cd7b192f228a3f",
+  "call_site_count": 12,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:2979 (the automatic review reflex refuses on the classification this change alters)",
+    "reckon/crew/recovery_review_dispatch.py:3074 (the sweep's own refusal path reads the same row)",
+    "reckon/crew/recovery_watch.py:4043 (the fleet tick classifies every live pointer)",
+    "reckon/crew/recovery_watch.py:4131 (the reflex dispatch reads the classification before composing)",
+    "reckon/crew/queue_landing.py:1704 (landing accepts or refuses on the classification)",
+    "reckon/crew/queue_landing.py:1991 (the queued row's landing read)",
+    "reckon/crew/directory.py:342 (the session directory's live view)",
+    "reckon/serve.py:902 (the served dashboard's phase column)",
+    "reckon/crew/resume.py:274 (resume decides from the classification)",
+    "reckon/crew/pending_landing.py:378 (a pending landing's row)",
+    "reckon/crew/forgotten_runs.py:94 (the forgotten-run sweep)",
+    "reckon/crew/recovery_watch.py:750 (the stale pointer sweep)"
+  ],
+  "completed_at": "2026-11-16T14:23:21.529Z",
+  "dispatched_at": "2026-11-16T14:22:51Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-reflex-selects-a-backend.html",
+      "line": "52",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gate receipt names revision 4f6e87b6f8 and states the fragment is the only difference at the reviewed head 5d343db2f505, so no log in the run directory records a gate run at the head revision itself; a reader verifying the head must infer the docs-only commit is equivalent instead of reading a run at that sha, and running the file once at 5d343db2f505 would close the gap."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Read all four commits against b911f5179e^: b911f5179e the 13-line predicate repair at recovery_classification.py:1837-1841, then 39d618a32a, 4f6e87b6f8 and 5d343db2f505 which add and amend only the 119-line evidence fragment; no test file, no assertion and no plan or index changed.",
+    "done_when": "The done_when names the file passing at head as an all_debug job with SLURM_JOB_ID unset, a per-cause verdict, an arm over the importing test files, and a base negative control; logs/gate-head-final.log names partition=all_debug job=1320050 with the command carrying 'env -u SLURM_JOB_ID' and reads 4 passed EXIT=0, and logs/head-base-negative-control.log reports the four base ids, so the gate asserts the stated measure.",
+    "goal": "The node goal is to make tests/test_review_reflex_selects_a_backend.py pass in full on the primary branch; the landed change at reckon/crew/recovery_classification.py:1837-1841 stops the pre-spawn arm from outranking a manifest verdict, and logs/gate-head-final.log at 4f6e87b6f8 records the file's four cases passing in full.",
+    "manifest": "Read the reviewed manifest; status complete, gate '4 passed in 53.58s' at 4f6e87b6f8, baseline_suite 58 passed EXIT=0 at 963de3f5, after_suite 58 passed EXIT=0 at 4f6e87b6f8, negative_control_log named as a bare path, and both logs on disk read as recorded.",
+    "write_paths": "The declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the diff touches only reckon/crew/recovery_classification.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-reflex-selects-a-backend.html, both inside the fence, and no test file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_review_reflex_selects_a_backend.py pass in full on the primary branch; the landed change at reckon/crew/recovery_classification.py:1837-1841 stops the pre-spawn arm outranking a manifest verdict, and logs/gate-head-final.log at 4f6e87b6f8 records the file's four cases passing in full.\nVERDICT done_when: the done_when names the file passing at head as an all_debug job with SLURM_JOB_ID unset plus a per-cause verdict, an importer arm and a base negative control; logs/gate-head-final.log names partition=all_debug job=1320050 with 'env -u SLURM_JOB_ID' in the command and reads 4 passed EXIT=0, and logs/head-base-negative-control.log reports the four base ids, so the gate asserts the stated measure.\nVERDICT write_paths: the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the diff touches only reckon/crew/recovery_classification.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-reflex-selects-a-backend.html, both inside the fence, and no test file.\nVERDICT manifest: read; it reports status complete, gate '4 passed in 53.58s' at 4f6e87b6f8, baseline_suite 58 passed EXIT=0 at 963de3f5 and after_suite 58 passed EXIT=0 at 4f6e87b6f8, each named by a bare log path that reads on disk as recorded.\nVERDICT diff: read all four commits against b911f5179e^; b911f5179e is the 13-line predicate repair at recovery_classification.py:1837-1841 and 39d618a32a, 4f6e87b6f8 and 5d343db2f505 add and amend only the 119-line evidence fragment, with no test, assertion, plan or index change.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:2979, reckon/crew/recovery_review_dispatch.py:3074, reckon/crew/recovery_watch.py:4043, reckon/crew/recovery_watch.py:4131, reckon/crew/queue_landing.py:1704, reckon/crew/directory.py:342, reckon/serve.py:902, reckon/crew/resume.py:274\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:1839 adds 'and not manifest_status' to pre_spawn_waiting, so a completed run whose pointer still reads 'starting' reaches the manifest arms rather than the running arm, and the node's four cases pass at head.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/gate-head-final.log carries a header naming partition=all_debug job=1320050 and a command with 'env -u SLURM_JOB_ID' plus '4 passed in 53.58s' and EXIT=0, which is the done_when's measure recorded rather than claimed.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff spans reckon/crew/recovery_classification.py and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround/, both inside the declared write paths, and no test file is touched.\nSCORE durability: 20\nJUSTIFICATION durability: no assertion is added, and the guard is the pre-existing tests/test_review_reflex_selects_a_backend.py, whose four cases redden in logs/head-base-negative-control.log where the pre-change predicate is the reinstated regression, while tests/test_a_starting_run_is_classified.py:27 fails if the pre-spawn arm is dropped instead of narrowed.\nSCORE fit: 19\nJUSTIFICATION fit: the added condition sits in the existing pre_spawn_waiting expression at reckon/crew/recovery_classification.py:1837-1841 and its comment continues the module's own 'a label cannot outrank liveness' idiom rather than introducing a name.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added; the change extends the pre_spawn_waiting predicate that already owns the capability, on the same rule the neighbouring 'launched = bool(record.get(\"pid\")) or bool(record.get(\"launched_at\"))' arm at reckon/crew/recovery_classification.py:1848-1852 applies to a parked phase.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-reflex-selects-a-backend.html:52 non-blocking: the gate receipt names revision 4f6e87b6f8 and says the fragment is the only difference at the reviewed head 5d343db2f505, so no log records a gate run at the head sha and a reader must infer the docs-only commit is equivalent.\n",
+  "review_node": "review-of-qwnw-red-file-review-reflex-selects-a-backend-5d343db2f505",
+  "review_run_id": "r-20261116T133431658103-review-of-qwnw-red-file-review-reflex-selects-a-backend-5d343db2f505",
+  "reviewed_base_choice": "37993252f8b5806204f7a097e4fb348dc2e7d24f is the parent of the node's first commit b911f5179e, so it is the commit the reviewed diff was taken from: git diff b911f5179e^ 5d343db2f505 is exactly the node's two files. The node's dispatch base was 963de3f5e0722419a4ad234f71cd7b192f228a3f and its base arm and negative-control logs ran there; the ten commits between 963de3f5 and 37993252 are other runs' landings the node merged before starting its own work.",
+  "reviewed_base_sha": "37993252f8b5806204f7a097e4fb348dc2e7d24f",
+  "reviewed_head_sha": "5d343db2f505c49a61721f0775671bb7383f552d",
+  "reviewed_run_id": "r-20261116T104236378482-qwnw-red-file-review-reflex-selects-a-backend",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T133431658103-review-of-qwnw-red-file-review-reflex-selects-a-backend-5d343db2f505"
+  },
+  "rubric": "scores",
+  "scores": {
+    "durability": 20,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T20:32:11.197715+00:00",
+  "total": 115
+}

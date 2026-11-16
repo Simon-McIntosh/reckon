@@ -1,0 +1,114 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": {
+    "106": "Fails if a second poll repeats the already-announced slow tick.",
+    "114": "Fails if tick completion is not published/consumed and producer-restored is absent, or if duplicate events are returned.",
+    "115": "Fails if a recovery advertises a remedy.",
+    "116": "Fails if the completed tick remains classified slow instead of live.",
+    "132": "Fails if a stopped station answer disappears instead of remaining observable.",
+    "134": "Fails if a frozen heartbeat is considered live or slow rather than stopped, for either storage branch.",
+    "136": "Fails if a stopped station does not yield exactly producer-lost.",
+    "137,184": "Fail if the lost row drops or changes the existing ensure command; these intentionally reuse the production command composer and do not independently validate its syntax, which this node does not change.",
+    "138": "Fails if the prescribed remedy is absent from the human-readable lost line.",
+    "148,150": "Fail if a health record belonging to a different exporting host revives the stale export.",
+    "160": "Fails unless the instrument sees the valid live publication before each damaged-record case; prevents a uniformly stale reader from passing the negative cases.",
+    "180": "Fails if malformed JSON, a non-object, mismatched host/job, invalid markers, unreadable beat, or an older beat is trusted as current health.",
+    "181": "Fails if rejecting a damaged record loses the export heartbeat instead of preserving its independently computed age.",
+    "183": "Fails if the damaged-record branch suppresses the genuine producer-lost row.",
+    "49": "Fails if the fixture export is not actually written; a setup check, not independent regression coverage.",
+    "50,74": "Fail if the follower can unexpectedly access the local store; prove the off-node branch is reached.",
+    "51,80,133": "Fail if the supposed off-node answer uses local storage or the local control uses export storage.",
+    "69": "Fails if heartbeat does not persist the advanced injected clock; a storage round-trip assertion, not the principal regression guard.",
+    "73": "Fails if the local control no longer classifies a fresh beat with an overlong running tick as slow.",
+    "77,104": "Fail with producer-lost when base modules are restored, or if publication or the exported-answer fallback is removed independently.",
+    "78": "Fails if the slow row advertises a remedy or re-arm despite the station being alive.",
+    "81": "Fails if the off-node reading retains the frozen exported heartbeat instead of the newer health publication.",
+    "89": "Each state, beat age, stage, tick age and tick-start comparison fails if local and exported readers disagree; both sides read distinct storage paths, and lines 73,90,91 separately pin expected outcomes.",
+    "90": "Fails if the published stage is dropped or substituted; it compares a read result to the stage originally persisted in the independent station store.",
+    "91": "Fails if tick age is reset or frozen; elapsed fixture time is three freshness windows plus three seconds, independent of returned age.",
+    "92": "Fails if local and exported obligation payloads diverge; this is a parity check, not proof that both payloads are correct.",
+    "93": "Fails if the beat rewrites the stored obligation computation timestamp.",
+    "96": "Fails if any heartbeat operation rewrites the original obligation export bytes."
+  },
+  "assertion_independence": "No regression guard is vacuous under restoration of the relevant defect; input-derived round-trip assertions and shared remedy-composer limits are explicitly identified in assertion_audit.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/station.py:140 StationBeat.beat_once",
+    "reckon/crew/station.py:1483 run_station",
+    "reckon/crew/watch_unit.py:1083 ProducerSnapshotNotices.poll",
+    "reckon/crew_follow_commands.py:1682",
+    "reckon/hooks/coordinator_obligations.py:1491",
+    "reckon/crew/obligations.py:1110"
+  ],
+  "completed_at": "2026-11-16T13:28:22Z",
+  "dispatched_at": "2026-11-16T13:22:49Z",
+  "evidence_caveats": [
+    "The armed head receipt ran at ca9546303d3d5f48ad099bd0d59e0ac378769595; the only later commit adds the evidence fragment.",
+    "The 38 inherited direct-import failures remain outside this node scope; no causal repair claim is inferred from the one baseline-only failure."
+  ],
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Read all four commits from c2fdfd6e4dd16628ab494ec1322e524ad75a18ae through 700d846d6cf7c50126e3553de8c10c3c3e431858; they add the regression, independent health publication and validated consumption, a required mechanism-only comment cleanup, and the scoped evidence fragment.",
+    "done_when": "Read prompt.txt:279 and receipts/reproduction.log, head.log, imports-base.log and imports-head.log; the base reports producer-lost instead of producer-slow, head records 70 passes, and importing tests add zero failure IDs on all_debug.",
+    "goal": "Read prompt.txt:38 and live docs/plans/the-monitor-tells-the-truth-under-load.html:208; station.py:140 and obligation_snapshot.py:646 keep off-node health current independently of a long obligation tick.",
+    "manifest": "Read manifest.md and its actual receipts; the 58-pass baseline, 70-pass head, 39-to-38 inherited import failures and 9-failure negative control reconcile with their logs, and the measured code revision precedes only the final evidence commit.",
+    "write_paths": "Read manifest.md:3 and prompt.txt:84; all five changed paths are declared, including the dedicated evidence fragment, with station_store.py left untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_an_off_node_follower_reads_a_slow_tick.py:77 fails when publication or exported-tick fallback is removed, while lines 134 and 180 fail if stopped or invalid health is trusted; the tests simulate time and inaccessible storage rather than scheduling the heartbeat thread across real nodes.",
+    "evidence": "receipts/reproduction.log records the original lost-versus-slow refusal, receipts/head.log records 70 passed with EXIT=0, and the direct-import receipts show zero newly failing IDs against the recorded base.",
+    "fit": "reckon/crew/station.py:140 extends the existing heartbeat owner and obligation_snapshot.py:387 uses the repository's atomic JSON writer with mechanism-based names and the existing station freshness constants.",
+    "goal_fidelity": "reckon/crew/obligation_snapshot.py:646 refreshes the exporting station's markers and reckon/crew/watch_unit.py:1086 preserves that answer when the follower cannot open the station store.",
+    "reuse": "Capability searches for heartbeat publication and station export found station_obligations.py:456 and obligation_snapshot.py:372; the addition extends the snapshot-reading owner, reuses _store.py:616 for atomic publication, and leaves session export derivation in its existing owner.",
+    "scope_discipline": "The five paths in the base-to-head diff are all listed in manifest.md:3, and station.py:953 only rewrites an existing comment to comply with the source-naming rule."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read prompt.txt:38 and live docs/plans/the-monitor-tells-the-truth-under-load.html:208; station.py:140 and obligation_snapshot.py:646 keep off-node health current independently of a long obligation tick.\nVERDICT done_when: Read prompt.txt:279 and receipts/reproduction.log, head.log, imports-base.log and imports-head.log; the base reports producer-lost instead of producer-slow, head records 70 passes, and importing tests add zero failure IDs on all_debug.\nVERDICT write_paths: Read manifest.md:3 and prompt.txt:84; all five changed paths are declared, including the dedicated evidence fragment, with station_store.py left untouched.\nVERDICT manifest: Read manifest.md and its actual receipts; the 58-pass baseline, 70-pass head, 39-to-38 inherited import failures and 9-failure negative control reconcile with their logs, and the measured code revision precedes only the final evidence commit.\nVERDICT diff: Read all four commits from c2fdfd6e4dd16628ab494ec1322e524ad75a18ae through 700d846d6cf7c50126e3553de8c10c3c3e431858; they add the regression, independent health publication and validated consumption, a required mechanism-only comment cleanup, and the scoped evidence fragment.\nCALL_SITES: reckon/crew/station.py:140 StationBeat.beat_once, reckon/crew/station.py:1483 run_station, reckon/crew/watch_unit.py:1083 ProducerSnapshotNotices.poll, reckon/crew_follow_commands.py:1682, reckon/hooks/coordinator_obligations.py:1491, reckon/crew/obligations.py:1110\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/obligation_snapshot.py:646 refreshes the exporting station's markers and reckon/crew/watch_unit.py:1086 preserves that answer when the follower cannot open the station store.\nSCORE evidence: 20\nJUSTIFICATION evidence: receipts/reproduction.log records the original lost-versus-slow refusal, receipts/head.log records 70 passed with EXIT=0, and the direct-import receipts show zero newly failing IDs against the recorded base.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The five paths in the base-to-head diff are all listed in manifest.md:3, and station.py:953 only rewrites an existing comment to comply with the source-naming rule.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_an_off_node_follower_reads_a_slow_tick.py:77 fails when publication or exported-tick fallback is removed, while lines 134 and 180 fail if stopped or invalid health is trusted; the tests simulate time and inaccessible storage rather than scheduling the heartbeat thread across real nodes.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/station.py:140 extends the existing heartbeat owner and obligation_snapshot.py:387 uses the repository's atomic JSON writer with mechanism-based names and the existing station freshness constants.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for heartbeat publication and station export found station_obligations.py:456 and obligation_snapshot.py:372; the addition extends the snapshot-reading owner, reuses _store.py:616 for atomic publication, and leaves session export derivation in its existing owner.\n",
+  "review_run_id": "r-20261116T132129769846-review-of-off-node-follower-reads-slow-tick-s25-700d846d6cf7",
+  "reviewed_base_sha": "c2fdfd6e4dd16628ab494ec1322e524ad75a18ae",
+  "reviewed_commits": [
+    "a4051fe0f34f81ba1c5b6a111a919148db79ca92",
+    "ff5e3fcd06955b53493609514d80a1dd292f0515",
+    "ca9546303d3d5f48ad099bd0d59e0ac378769595",
+    "700d846d6cf7c50126e3553de8c10c3c3e431858"
+  ],
+  "reviewed_head_sha": "700d846d6cf7c50126e3553de8c10c3c3e431858",
+  "reviewed_run_id": "r-20261116T105542293134-off-node-follower-reads-slow-tick-s25",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/off-node-follower-reads-slow-tick-s25 /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/off-node-follower-reads-slow-tick-s25/tests/test_an_off_node_follower_reads_a_slow_tick.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/off-node-follower-reads-slow-tick-s25/tests/test_staged_write_inventory.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/off-node-follower-reads-slow-tick-s25/tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105542293134-off-node-follower-reads-slow-tick-s25/receipts/head.log",
+      "revision": "ca9546303d3d5f48ad099bd0d59e0ac378769595"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/off-node-follower-reads-slow-tick-s25 /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/off-node-follower-reads-slow-tick-s25/tests/test_staged_write_inventory.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/off-node-follower-reads-slow-tick-s25/tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105542293134-off-node-follower-reads-slow-tick-s25/receipts/baseline.log",
+      "revision": "c2fdfd6e4dd16628ab494ec1322e524ad75a18ae"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T19:58:54.355909+00:00",
+  "total": 119
+}

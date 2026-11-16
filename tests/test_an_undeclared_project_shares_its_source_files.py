@@ -160,34 +160,45 @@ def test_each_exclusive_class_is_still_refused(undeclared: Path, path: str) -> N
     assert refusal.value.run_id == owner["run_id"]
 
 
-def test_an_unreadable_declaration_shares_nothing_and_names_itself(
+def test_an_unreadable_declaration_cannot_hold_a_source_file(
     undeclared: Path,
 ) -> None:
+    """Unreadable grants nothing, so it cannot hold a source file, and names itself.
+
+    The rule the sharing policy keeps: a declaration grants writes, and only
+    the artifact classes a textual merge cannot reconcile stay exclusive, so a
+    declaration nothing can be compared against cannot serialize source edits
+    in isolated worktrees. Its name survives where a path is decided by class,
+    which reads every path as exclusive and says why.
+    """
     declaration = undeclared / "docs" / "state" / PROJECT / "shared-write-paths.json"
     declaration.write_text("{ this is not json", encoding="utf-8")
     owner = _dispatch(undeclared, "owner", SOURCE)
+    joiner = _dispatch(undeclared, "joiner", SOURCE)
 
-    with pytest.raises(crew.ScopeConflict) as refusal:
-        _dispatch(undeclared, "joiner", SOURCE)
-
-    assert refusal.value.run_id == owner["run_id"]
-    assert "shared-write-paths.json" in str(refusal.value)
-    assert "unreadable declaration" in str(refusal.value)
+    assert owner["run_id"] != joiner["run_id"]
+    pattern = runs._shared_write_paths(PROJECT, undeclared).exclusive_pattern(SOURCE)
+    assert pattern.startswith("unreadable declaration")
+    assert "shared-write-paths.json" in pattern
 
 
-def test_an_empty_shared_roots_list_keeps_source_files_exclusive(
+def test_an_empty_shared_roots_list_cannot_reintroduce_a_source_hold(
     undeclared: Path,
 ) -> None:
+    """An empty roots list shares source files and leaves the classes exclusive."""
     declaration = undeclared / "docs" / "state" / PROJECT / "shared-write-paths.json"
     declaration.write_text(
         json.dumps({"shared_roots": [], "paths": []}), encoding="utf-8"
     )
     owner = _dispatch(undeclared, "owner", SOURCE)
+    joiner = _dispatch(undeclared, "joiner", SOURCE)
 
+    assert owner["run_id"] != joiner["run_id"]
+    artifact = _dispatch(undeclared, "artifact-owner", PLAN_FILE)
     with pytest.raises(crew.ScopeConflict) as refusal:
-        _dispatch(undeclared, "joiner", SOURCE)
+        _dispatch(undeclared, "artifact-joiner", PLAN_FILE)
 
-    assert refusal.value.run_id == owner["run_id"]
+    assert refusal.value.run_id == artifact["run_id"]
 
 
 def test_reckon_declares_every_default_exclusive_class() -> None:

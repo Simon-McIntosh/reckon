@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-16T15:31:50.471Z",
+  "dispatched_at": "2026-11-16T15:31:30Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-scope-counts-only-the-runs-commits.html",
+      "line": 94,
+      "severity": "non-blocking",
+      "text": "the reach paragraph states three cases of tests/test_boundary_check_reads_only_declared_roots.py and tests/test_boundary_check_reads_two_trees.py were red at the base for the same cause and green at head, but neither file imports promotion_scope or promotion_evidence so neither appears in the wide run's 40-file list (wide-files.txt), and no other log in the wide run records a red arm for them, so the claim rests on the worker's word rather than on a log a reader can open"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104805050233-qwnw-red-file-promotion-scope-counts-only-the-runs-commits/wide-head.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the wide head arm's header names revision 26190c2047 while the reviewed head is 34e9ba7d54, so the pair the fragment presents at line 78 as the head arm does not cover the final commit; that commit is the evidence fragment alone and no wide file imports it, so the added-failure conclusion holds, but the log does not name the code revision it measured"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make tests/test_promotion_scope_counts_only_the_runs_commits.py pass in full on the primary branch; docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-scope-counts-only-the-runs-commits.html:24-40 records that file at 3 failed / 8 passed for base 5c4ff3492998 and names the two causes, gate-head.log reads 11 passed EXIT=0 at head 34e9ba7d548f, and the repairs are reckon/crew/promotion_scope.py:933 and reckon/crew/promotion_evidence.py:133.\nVERDICT done_when: the done_when asks for that file green at head as a job on all_debug with SLURM_JOB_ID unset, each base failure given a product-wrong or test-wrong verdict, and an arm over the test files importing what changed adding no failure; gate-head.log:1-7 names revision 34e9ba7d548f, its tree, command, slurm_job_id unset, host 98dci4-clu-3141 and module path and closes '11 passed' EXIT=0, gate-base.log closes '3 failed, 8 passed' EXIT=1 at 5c4ff3492998 with the 8d50b0333f the done_when names as an ancestor of that base, which the fragment states, and wide-head.log's 15 failed ids are a strict subset of wide-base.log's 17.\nVERDICT write_paths: the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the three commits write only reckon/crew/promotion_scope.py, reckon/crew/promotion_evidence.py and the one fragment html, all inside that fence, and no test file changed.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104805050233-qwnw-red-file-promotion-scope-counts-only-the-runs-commits/manifest.md; status complete, three commits named, baseline_suite and after_suite each carry revision, literal command, exit_status, log_path, completed true and failure ids, negative_control_log names gate-base.log, and all six rubric lines are filled.\nVERDICT diff: read commit by commit against base 5c4ff3492998; 6756c13d28 carries both product repairs at reckon/crew/promotion_scope.py:933 ('changed not in shared_files') and reckon/crew/promotion_evidence.py:133 ('return None'), 26190c2047 adds the fragment and 34e9ba7d54 extends it by 17 lines, while the eight commits the range carries between that base and 6c58a7ea are peer work merged from origin/main, none authored by this node.\nCALL_SITES: reckon/crew/promotion_checks.py:2893, reckon/crew/promotion_checks.py:2736, reckon/crew/promotion_scope.py:989, reckon/crew/promotion_scope.py:836\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: gate-head.log closes '11 passed' EXIT=0 at 34e9ba7d548f for tests/test_promotion_scope_counts_only_the_runs_commits.py, and the two repairs at reckon/crew/promotion_scope.py:933 and reckon/crew/promotion_evidence.py:133 are the causes its three base failures named.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-base.log and gate-head.log each open with revision, tree, command, slurm_job_id and module and close with a bare EXIT line, and wide-head.log fails only ids wide-base.log also fails, though the wide head arm was measured at 26190c2047 rather than at head 34e9ba7d54.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the node's three commits touch only reckon/crew/promotion_scope.py, reckon/crew/promotion_evidence.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-scope-counts-only-the-runs-commits.html, all inside its declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_promotion_scope_counts_only_the_runs_commits.py:466 and :514 read DID NOT RAISE CrewError and :373 reads a zero row at base 5c4ff3492998 in gate-base.log while passing at head, and :373 compares the stored row against the test's own git numstat read rather than against the value it handed in.\nSCORE fit: 18\nJUSTIFICATION fit: the walk at reckon/crew/promotion_scope.py:921-934 keeps its single set comprehension and the reasoning comment the function already carries, and the decline at reckon/crew/promotion_evidence.py:133 returns the None its callers already handle at reckon/crew/promotion_checks.py:2737.\nSCORE reuse: 20\nJUSTIFICATION reuse: the membership test reuses the declaration's own reckon/crew/runs.py:1926 __contains__ rather than duplicating it, _claim_paths_share stays the owner of its own question at reckon/crew/runs.py:1985 and is still used for it at reckon/crew/promotion_scope.py:671, and searching the callers of _merge_repair_scope and _shared_write_paths found no second owner of either capability.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-scope-counts-only-the-runs-commits.html:94 non-blocking: the reach paragraph states three cases of tests/test_boundary_check_reads_only_declared_roots.py and tests/test_boundary_check_reads_two_trees.py were red at the base for the same cause and green at head, but neither file imports promotion_scope or promotion_evidence so neither is in the wide run's 40-file list (wide-files.txt) and no other log records a red arm for them, so the claim rests on the worker's word.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104805050233-qwnw-red-file-promotion-scope-counts-only-the-runs-commits/wide-head.log:1 non-blocking: the wide head arm names revision 26190c2047 while the reviewed head is 34e9ba7d54, so the pair the fragment presents at line 78 as the head arm does not cover the final commit; the remaining commit is the evidence fragment alone, so the added-failure conclusion holds.",
+  "review_run_id": "r-20261116T141624850089-review-of-qwnw-red-file-promotion-scope-counts-only-the-runs-commits-34e9ba7d548f",
+  "reviewed_base_sha": "5c4ff3492998cfcf7fe9270398943770dd2cb7b2",
+  "reviewed_head_sha": "34e9ba7d548f3abe5c9e48e757aa5bfdb9803377",
+  "reviewed_run_id": "r-20261116T104805050233-qwnw-red-file-promotion-scope-counts-only-the-runs-commits",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T21:06:59.669191+00:00",
+  "total": 112
+}

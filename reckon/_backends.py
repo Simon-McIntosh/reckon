@@ -136,6 +136,7 @@ from reckon._worker_fence import (  # noqa: F401
     seed_write_lock_namespace,
     unmergeable_seals,
     worker_mcp_selection,
+    worker_scratch_write_roots,
     worktree_git_write_roots,
     write_lock_directory,
 )
@@ -3090,7 +3091,22 @@ def launch_plan(
         lock_directory = seed_write_lock_namespace(fence_home)
         if lock_directory is not None:
             write_roots.append(lock_directory)
-        create_write_roots(write_roots)
+        # The run's own scratch directory is handed so the seal can re-bind it
+        # writable, but it is not created here: it belongs to the node that
+        # runs the worker, which is not necessarily the host composing this
+        # argv. A placed worker's step makes it before it execs the fence, and
+        # a worker launched as this process's child is on this host already and
+        # is given it by the launch. Creating it here put a scratch directory
+        # for a compute-node worker on the fleet node instead; see
+        # :func:`reckon._worker_fence.worker_scratch_write_roots`.
+        worker_scratch = worker_scratch_write_roots(write_roots)
+        create_write_roots(
+            [
+                root
+                for root in write_roots
+                if resolved_destination(root) not in worker_scratch
+            ]
+        )
     harness = (
         None
         if run_directory is None or not run_directory.is_dir()

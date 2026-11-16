@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>tests/test_build.py at head</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/_shared/foundation.css">
+<style>
+  .qwnw-red-file-build-log { white-space: pre-wrap; font-family: var(--mono); font-size: 12px; }
+  .qwnw-red-file-build-table { border-collapse: collapse; width: 100%; }
+  .qwnw-red-file-build-table th,
+  .qwnw-red-file-build-table td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+</style>
+</head>
+<body>
+<h1 id="qwnw-red-file-build-title">tests/test_build.py: the base run against the head run</h1>
+
+<p id="qwnw-red-file-build-headline">
+  Head <code>78d96a3ec6</code>: <strong>25 passed</strong>, exit 0. Base <code>d0d77f07e2</code>:
+  <strong>6 failed, 19 passed</strong>, exit 1. Both are jobs on all_debug with
+  <code>SLURM_JOB_ID</code> unset for the test process, the browser and the uv
+  cache visible through the operator's home.
+</p>
+
+<h2 id="qwnw-red-file-build-cause">Cause and verdict, per failing id</h2>
+<table id="qwnw-red-file-build-causes" class="qwnw-red-file-build-table">
+  <thead>
+    <tr><th>Failing id at base</th><th>Cause</th><th>Verdict</th><th>Repair</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>test_served_and_static_pages_request_only_their_own_origin</code></td>
+      <td rowspan="4">
+        The shell decomposition exported <code>ListCol</code> but mounted it
+        nowhere, so <code>.r-list-body</code> never existed, and the same split
+        added <code>if (route.slug) return null;</code> to the plan branch of
+        <code>TitleBar</code>, so the plan route's title bar was unreachable.
+        <code>mergeDerived</code> also dropped the project's directions, so a
+        plan's north star could not resolve to its name.
+      </td>
+      <td>product wrong</td>
+      <td rowspan="4">
+        Mount the list column as the plans view's first child, whether or not a
+        plan is selected, honouring the existing collapse class; drop the title
+        bar guard; merge <code>disc.north_stars</code> beside the milestones.
+      </td>
+    </tr>
+    <tr><td><code>test_served_component_edit_is_visible_on_the_next_load</code></td></tr>
+    <tr><td><code>test_build_carries_directions_into_the_project_surfaces</code></td></tr>
+    <tr><td><code>test_build_without_directions_preserves_the_unlabelled_shape</code></td></tr>
+    <tr>
+      <td><code>test_wheel_version_ignores_non_release_tag</code></td>
+      <td rowspan="2">
+        The base arm reads an extraction of the base revision, and an
+        extraction carries no release tags, so <code>git describe --match
+        'v[0-9]*'</code> has no name to answer with there. Both pass at head,
+        where the repository has its tags.
+      </td>
+      <td>scaffolding</td>
+      <td rowspan="2">none: the run's tree refuses, not the code</td>
+    </tr>
+    <tr><td><code>test_release_tag_match_reports_when_no_release_tags_exist</code></td></tr>
+  </tbody>
+</table>
+
+<p id="qwnw-red-file-build-test-rule">
+  Two test rules were updated to rules the code now keeps, with no assertion
+  deleted or weakened: the live-edit case edits the brand's
+  <code>title</code> on <code>shell-topbar.jsx</code>, because the wordmark it
+  used to edit is a glyph now, and the north-star cases read the rendered badge
+  after the derived payload merges, because the page paints the persisted rows
+  first and merges the derived payload one turn later.
+</p>
+
+<h2 id="qwnw-red-file-build-arms">Arms, so the change is judged by more than its own file</h2>
+<p id="qwnw-red-file-build-suite-arm">
+  <code>tests/test_staged_write_inventory.py</code> and
+  <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>:
+  <strong>58 passed</strong> at head, <strong>58 passed</strong> at base, exit 0
+  both sides.
+</p>
+<p id="qwnw-red-file-build-files-arm">
+  Seven files that read the changed surfaces
+  (<code>test_page_paints_from_the_index</code>,
+  <code>test_served_loader_reads_discovery_only</code>,
+  <code>test_served_schedule_payload</code>, <code>test_spa_blank_surface_guard</code>,
+  <code>test_spa_artifact_routes</code>, <code>test_spa_shell_container</code>,
+  <code>test_spa_state_boundary</code>): <strong>41 passed</strong> at head,
+  <strong>41 passed</strong> at base, exit 0 both sides.
+</p>
+<p id="qwnw-red-file-build-composition-note">
+  <code>tests/test_spa_composition.py::test_plans_surface_never_exceeds_its_window</code>
+  is red at the base revision — <code>composed container geometry mismatch:
+  elements past viewport: 3</code>, from a surface holding no list column at all
+  — so it is not a regression of this change, and it is outside this node.
+</p>
+
+<h2 id="qwnw-red-file-build-run">The runs</h2>
+<p id="qwnw-red-file-build-headrun" class="qwnw-red-file-build-log">head run (tests/test_build.py, 25 tests)</p>
+<pre id="qwnw-red-file-build-headlog" class="qwnw-red-file-build-log">25 passed in 39.83s
+EXIT=0</pre>
+<p id="qwnw-red-file-build-baserun" class="qwnw-red-file-build-log">base run (tests/test_build.py, 25 tests) at d0d77f07e2</p>
+<pre id="qwnw-red-file-build-baselog" class="qwnw-red-file-build-log">6 failed, 19 passed in 221.84s
+EXIT=1</pre>
+<p id="qwnw-red-file-build-logs">
+  Logs, beside the head run's, at
+  <code>~/.config/reckon/crew/runs/r-20261115T224739427254-qwnw-red-file-build/logs/</code>:
+  <code>test_build_head_gate.log</code>, <code>test_build_base.log</code>,
+  <code>suite_head.log</code>, <code>suite_base.log</code>,
+  <code>files_head.log</code>, <code>files_base.log</code>.
+</p>
+</body>
+</html>
