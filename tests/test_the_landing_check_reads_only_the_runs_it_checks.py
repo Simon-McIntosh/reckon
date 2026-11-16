@@ -235,8 +235,9 @@ def test_the_landing_check_decodes_only_the_runs_it_checks(
     assert len(run_store.stored_run_rows(PROJECT, fields=("run_id",)) or []) == ROWS
     calls = _landing_calls(decoded)
     assert len(calls) == 1, calls
+    landing_rows = _landing_rows(decoded)
+    assert landing_rows <= DONE_ROWS, f"{landing_rows} rows decoded for the plan"
     assert calls[0]["run_ids"], "the landing read must name the runs it checks"
-    assert _landing_rows(decoded) <= DONE_ROWS
 
     found = [
         finding
