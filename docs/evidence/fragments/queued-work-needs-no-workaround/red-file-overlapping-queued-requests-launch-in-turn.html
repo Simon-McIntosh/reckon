@@ -1,0 +1,113 @@
+<section id="qwnw-red-file-overlapping-queued-requests-launch-in-turn">
+<h3>The overlapping-queued-requests file passes in full</h3>
+<p>The file failed on the primary branch at revision <code>8d50b0333f</code> with
+nine ids. Merging the current <code>origin/main</code> did not cure it: the file
+is byte-identical between the assigned base <code>d0d77f07</code> and the merged
+head <code>faa84aa492</code> (no commit in between touches it), and the
+pre-repair run read five failed and six passed. Every remaining
+failure was a test asserting a rule the code no longer keeps, so the repair is a
+test repair. No product rule was broken, and no assertion was deleted or
+weakened. Every run below executed as its own <code>all_debug</code> job with
+<code>SLURM_JOB_ID</code> unset inside the gate; the header of each log records
+the revision it ran at, the tree, the command, the imported module and the
+working directory, and every log ends with a bare <code>EXIT=</code> line.</p>
+<h4>Cause, and the verdict on each</h4>
+<table>
+<thead><tr><th>Case</th><th>Verdict</th><th>Rule the file now asserts</th></tr></thead>
+<tbody>
+<tr><td><code>test_the_later_request_launches_once_the_earlier_is_promoted</code></td>
+<td>test wrong</td>
+<td>A source or test declaration is shared between isolated worktrees, so a live
+run editing one fences no peer. The case names the dependency manifest, an
+exclusive class, and the held-on-claim release it was written for is unchanged.</td></tr>
+<tr><td><code>test_a_dispatch_over_a_working_or_starting_claim_is_refused</code>
+(both phases)</td>
+<td>test wrong</td>
+<td>Same rule: a working or starting claim still refuses a dispatch over an
+exclusive path, which this case now names.</td></tr>
+<tr><td><code>test_a_new_dispatch_over_a_queued_claim_at_the_session_cap_is_refused</code></td>
+<td>test wrong</td>
+<td>Queue depth is the project's, read from <code>queue.max_requests</code>; the
+2-8 per-session clamp this case asserted was replaced by that bound, so the case
+publishes the bound and reads the refusal's held count and cap.</td></tr>
+<tr><td><code>test_a_new_dispatch_over_a_queued_claim_queues_then_launches</code></td>
+<td>test tooling wrong</td>
+<td>A dispatch that launches a queued request writes that run's
+<code>reckon: created run</code> line to stderr while its own JSON response stays
+the first line of stdout, so the payload reader reads stdout.</td></tr>
+</tbody>
+</table>
+<h4>Negative control: the base run of the file</h4>
+<p>The assigned base revision, exported to a tree of its own, still fails with
+the five ids the merged head failed with. The log is
+<code>negative-control.log</code> in the node's run directory.</p>
+<pre>
+# revision: d0d77f07e2dcc64d74713755aebe748602f9a06f (exported tree)
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_overlapping_queued_requests_launch_in_turn.py
+..F.FFFF...                                                              [100%]
+FAILED tests/test_overlapping_queued_requests_launch_in_turn.py::test_the_later_request_launches_once_the_earlier_is_promoted
+# plus test_a_new_dispatch_over_a_queued_claim_queues_then_launches,
+# test_a_new_dispatch_over_a_queued_claim_at_the_session_cap_is_refused,
+# test_a_dispatch_over_a_working_or_starting_claim_is_refused[working] and
+# test_a_dispatch_over_a_working_or_starting_claim_is_refused[starting]
+5 failed, 6 passed in 13.98s
+EXIT=1
+</pre>
+<h4>The gate at head</h4>
+<pre>
+# revision: 15f768a25210e9c63d9305611fbe8b4fb40c9c1b
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_overlapping_queued_requests_launch_in_turn.py
+# SLURM_JOB_ID inside the arm: &lt;unset&gt;
+...........                                                              [100%]
+11 passed in 13.31s
+EXIT=0
+</pre>
+<h4>The suite arms</h4>
+<p>The command the promotion fence names, resolved with this node's write scope
+and run over each arm's own tree: both arms pass 58 tests.</p>
+<pre>
+baseline (d0d77f07, exported tree)
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+..........................................................               [100%]
+58 passed in 71.45s (0:01:11)
+EXIT=0
+
+after (15f768a2, this worktree)
+..........................................................               [100%]
+58 passed in 64.83s (0:01:04)
+EXIT=0
+</pre>
+<h4>The arm over the files that import the changed module</h4>
+<p>Three test modules import this one. Against the base tree they read five
+failed and sixteen passed; at head the same command reads three failed and
+eighteen passed. Every head failure is also a base failure, so the change adds
+none, and the two it removes are the cases that could not read a dispatch payload
+through the mixed capture.</p>
+<pre>
+base (d0d77f07, exported tree): 5 failed, 16 passed
+after (15f768a2): 3 failed, 18 passed
+# head failures kept from the base run:
+# tests/test_a_held_request_holds_nothing_behind_it.py::test_a_request_held_on_a_peers_claim_holds_nothing_behind_it
+# tests/test_waiting_claims_never_block_a_launch.py::test_working_claim_still_refuses_a_dispatch
+# tests/test_waiting_claims_never_block_a_launch.py::test_ready_waiter_stays_queued_while_the_launched_claim_holds_its_path
+# base-only failures the change removes:
+# tests/test_waiting_claims_never_block_a_launch.py::test_ready_dispatch_launches_across_a_waiting_claim[awaiting-upstream]
+# tests/test_waiting_claims_never_block_a_launch.py::test_ready_dispatch_launches_across_a_waiting_claim[held]
+</pre>
+<h4>Which side was wrong, and what supports that</h4>
+<p>Each rule the repaired cases now assert is exercised by a test of its own at
+head, run as its own <code>all_debug</code> job (<code>product-rules.log</code>):
+<code>tests/test_only_unmergeable_paths_are_claimed.py</code> passes in full, so a
+source path is shared and the exclusive classes are held, and
+<code>tests/test_a_queued_dispatch_is_accepted.py</code> passes in full, including
+its project-bound refusal case and every payload it reads from stdout. The file's
+own assertions are unchanged in number and strength; the three repairs are the
+path a live claim is asserted over, the bound the refusal is attributed to, and
+the stream the payload is read from.</p>
+<p>Two sibling files still assert the old rule for a source path, and
+<code>tests/test_queue_depth_project_bound.py</code> fails five of its own cases on
+a stale <code>TaskNode</code> call and an MCP fixture with no
+<code>local_backend</code> route. Those failures are the same at the base
+revision, are not caused by this change, and are recorded as outside this node's
+scope rather than repaired here.</p>
+</section>
