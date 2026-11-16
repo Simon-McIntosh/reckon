@@ -13,69 +13,63 @@
 <article id="producer-exit-recorded-and-restarted-s25-landing"
   data-node="producer-exit-recorded-and-restarted-s25" data-reckon="landed">
   <h2>A producer leaves its outcome before giving up its seat</h2>
-  <p>Commit <code>70574ff9a4be6e37678391cfa6444da67b4d1cb8</code> records the
-  producer's exit status, reason, last stage, process identity and lease-lapse
-  time in its registration before the seat is released once the claim's
-  initial publication has completed. A replacement records
-  its acquisition time and supervisor pid beside the preceding exit. Both
-  writes compare the owner identity under the registration's shared lock, so
-  a superseded producer cannot overwrite its replacement.</p>
+  <p>The producer records its exit status, reason, last stage, identity and
+  lease-lapse time in its registration before releasing its seat. A replacement
+  carries the preceding exit into a restart receipt with its acquisition time
+  and supervisor pid. Both writes compare the owner identity under the shared
+  registration lock, so a superseded producer cannot overwrite its replacement.</p>
+  <section id="producer-exit-recorded-and-restarted-s25-initial-publication">
+    <h3>The claim owner covers initial publication</h3>
+    <p>Repair commit <code>44881ad5809b6a28a174d19803afb8ce64d78719</code>
+    answers finding <code>f8009a7865f</code>. The lifecycle guard now lives inside
+    <code>runs._project_watch_claim</code>, covering the first publication before
+    the context yields. It records <code>initial-publication</code> for that
+    stage, preserves the original exception, and records the exit before
+    <code>drop_watch_seat</code>. The outer registration no longer duplicates
+    the guard.</p>
+    <p>The two exposure cases exercise the real publication path through its
+    snapshot read, raising <code>RuntimeError</code> and <code>SystemExit(75)</code>.
+    Each inspects the receipt while the seat is still locked and confirms that
+    the outer context body never ran. At the exposed head both failed with
+    “initial publication released the seat without an exit record”.</p>
+  </section>
   <table id="producer-exit-recorded-and-restarted-s25-measures">
     <thead><tr><th>Check</th><th>Observed result</th></tr></thead>
     <tbody>
-      <tr><td>Reproduction against the base code</td><td>The first new case
-      fails with “seat released without an exit record”.</td></tr>
-      <tr><td>Initial focused lifecycle tests</td><td>9 passed in 19.30 seconds,
-      including normal exit, exception, explicit exit, interruption, placement
-      release, actual ticker stage, successor protection and process reentry.</td></tr>
-      <tr><td>Existing supervisor restart</td><td>The real fallback supervisor
-      starts a second stub producer 12.04 seconds after the recorded lapse,
-      inside the 600-second lease. Its pid matches the replacement receipt's
-      parent pid, and the replacement holds the seat.</td></tr>
-      <tr><td>Declared negative control</td><td>Removing the exit-record
-      writer gives 7 failed and 2 passed; all four exit-before-release cases
-      fail. The control changes only the temporary measurement tree.</td></tr>
+      <tr><td>Focused lifecycle checks</td><td>12 passed in 14.31 seconds,
+      including both initial-publication failures, normal exit, interruption,
+      explicit exit, ticker stages, placement release and successor protection.</td></tr>
+      <tr><td>Supervisor restart</td><td>The real fallback supervisor restarted
+      the stub producer in 8.98 seconds after its lapse, within the 600-second
+      lease. Its pid matches the replacement receipt's parent pid.</td></tr>
+      <tr><td>Answering-commit negative control</td><td>Reverting only
+      <code>44881ad5809b6a28a174d19803afb8ce64d78719</code> in a temporary tree
+      preserves the exposure tests and makes both fail: 2 failed in 0.56 seconds,
+      with <code>EXIT=1</code> in <code>negative-control.log</code>.</td></tr>
+      <tr><td>Original-base scoped arm</td><td>58 passed in 33.18 seconds on
+      <code>all_debug</code>; the final-head arm is recorded in the manifest.</td></tr>
+      <tr><td>Importer comparison</td><td>Base: 724 failed, 5616 passed, 1 skipped,
+      14 errors. Repair head: 723 failed, 5629 passed, 1 skipped, 14 errors.
+      Comparing full failure ids finds two additions and three removals. The
+      wider zero-added-failure condition is not claimed.</td></tr>
+      <tr><td>Ruff comparison</td><td>Zero added findings across all four changed
+      Python files against the original base.</td></tr>
     </tbody>
   </table>
-  <p>The existing supervisor already restarts a lapsed producer serving live
-  work; its restart policy is reused. Catchable exits are recorded by the
-  producer. A SIGKILL or a node loss cannot execute a before-release write.</p>
-  <p>The historical exit cause, restart initiator, delay cause and event-file
+  <p>The importer arms ran on <code>all_debug</code> over 921 base test files
+  and 922 head files. Their parsed failure and error counts agree with the
+  runner summaries; the parser also sees both known negative-control failures.
+  The manifest carries the comparison, its disposition and the scoped suite
+  receipts. All job scratch trees were removed after their measurements.</p>
+  <p>The existing supervisor restart policy is reused. Catchable exits can
+  write a before-release receipt; a SIGKILL or node loss cannot execute that
+  write. The historical exit cause, restart initiator, delay cause and event-file
   destination remain unknown because the incident records were not retained.
-  The run's <code>historical-records.log</code> records the retained boundaries
-  and event-reader positive controls. The current event append helper opens
-  its destination on every append, so it does not retain an unlinked stream
-  descriptor.</p>
-  <p>The wider importer comparison measured 723 failures and 14 errors at
-  base, and 730 failures and 14 errors at the implementation commit: nine
-  added failing ids and two no longer failing. Two additions exposed stage
-  annotations assuming a mutable watcher where an existing provider yields
-  an opaque handle. The ticker now annotates only a mutable record. The
-  compatibility gate passes all ten lifecycle cases and both affected
-  importer cases: 12 passed in 18.86 seconds, with a restart 8.38 seconds
-  after the lapse. Seven other added failing ids remain unadjudicated outside
-  this node's write scope and are named in the manifest. The wider
-  zero-added-failure condition is not claimed.</p>
-  <section id="producer-exit-recorded-and-restarted-s25-initial-publication">
-    <h3>Initial publication still needs the claim owner's exit guard</h3>
-    <p>Independent finding <code>f8009a7865f</code> identifies an earlier
-    failure boundary: <code>runs._project_watch_claim</code> publishes before
-    yielding, and drops its seat if that publication raises. The outer
-    registration guard is never entered. Two regression cases now exercise
-    the real publication path and fail at the reviewed head, one with
-    <code>RuntimeError</code> and one with <code>SystemExit(75)</code>.
-    Both observe the absent exit record before the lock is released.</p>
-    <p>The run directory holds <code>startup-reproduction.log</code> and a
-    proposed <code>startup-owner-proposal.patch</code> that moves the lifecycle
-    guard inside the claim owner and removes the outer duplicate. Applying
-    that patch requires adding <code>reckon/crew/runs.py</code> to the write
-    grant. The finding remains blocking until that scope extension and the
-    repair are completed.</p>
-  </section>
+  <code>historical-records.log</code> records the retained boundaries and reader
+  positive controls. The current append helper opens its destination on every
+  append, so it does not retain an unlinked stream descriptor.</p>
   <p>Run <code>r-20261115T204841537282-producer-exit-recorded-and-restarted-s25</code>
-  retains <code>focused-lapse.log</code>, <code>head-negative.log</code> and
-  the baseline and head suite receipts. Its manifest carries the completed
-  suite comparison and the final committed revision.</p>
+  retains the logs and manifest. Promotion owns the plan-section writeback.</p>
 </article>
 </body>
 </html>
