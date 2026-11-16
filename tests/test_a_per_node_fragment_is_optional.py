@@ -21,6 +21,13 @@ from reckon.crew.node import TaskNode
 from reckon.crew.prompts import compose_prompt
 from tests.helpers.git import git as _git
 
+# The plan-and-ledger checkout this module reads is the overview module's own;
+# imported rather than rebuilt so the two read one fixture shape.
+from tests.test_a_closing_plan_gets_one_sourced_overview import (  # noqa: F401
+    checkout,
+    promoted,
+)
+
 PLAN = "demo-plan"
 PROJECT = "sample"
 NODE = "s1-node"
@@ -125,25 +132,30 @@ def test_a_landing_line_with_its_own_fragment_also_passes(repo: Path) -> None:
 
 
 def test_the_landing_beat_records_a_landing_with_no_fragment(
-    checkout: Path,
+    promoted: Path,
 ) -> None:
     from reckon import _store
     from reckon.crew.queue_landing import _landing_beat
+    from tests.test_a_closing_plan_gets_one_sourced_overview import _synthesize
+
+    # The landed record a landing beat appends its anchor to is created by the
+    # synthesis a close runs, so the fixture renders it first.
+    _synthesize(promoted)
 
     pointer = {
         "node": {"id": NODE, "plan": PLAN, "section": "s1"},
         "project": PROJECT,
-        "repo": str(checkout),
+        "repo": str(promoted),
     }
 
     assert _landing_beat(pointer, "s1-attempt-1") == ""
 
-    state, _version = _store.read_plan(PROJECT, PLAN, str(checkout))
+    state, _version = _store.read_plan(PROJECT, PLAN, str(promoted))
     bodies = " ".join(
         comment.get("body", "") for comment in state["comments"].get("s1", [])
     )
     assert "s1-attempt-1" in bodies
-    assert not (checkout / "docs" / "evidence" / "fragments" / PLAN).exists()
+    assert not (promoted / "docs" / "evidence" / "fragments" / PLAN).exists()
 
 
 def test_a_section_ticked_with_a_close_comment_that_links_no_anchor(
