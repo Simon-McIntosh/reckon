@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1383 crew_check_manifest calls audit_manifest",
+    "reckon/crew/reports.py:2835 audit_manifest",
+    "reckon/crew/reports.py:3026 _write_scope_findings",
+    "reckon/crew/reports.py:3086 _merge_unsafe",
+    "reckon/crew/runs.py:1821 DEFAULT_EXCLUSIVE_PATHS (pyproject.toml, docs/state/)",
+    "reckon/crew/reports.py:1595 cited-log run-directory containment",
+    "reckon/hooks/worker_inbox.py:344 manifest_message_finding"
+  ],
+  "completed_at": "2026-11-16T09:30:41.675Z",
+  "dispatched_at": "2026-11-16T09:30:07Z",
+  "findings": [],
+  "head_log_revision": "32664e5ab597c697b1c545640047d019e0355629",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the change against the command surface it exercises: crew_check_manifest -> audit_manifest -> _write_scope_findings/_merge_unsafe, the DEFAULT_EXCLUSIVE_PATHS owner, the cited-log containment rule and the inbox receipt rule.",
+    "diff": "read both commits against 0e0f25b0f941: 32664e5ab5 moves the cited capture to check.log beside the manifest, adds messages_received: none to both fixtures and retargets the two scope cases at exclusive-class strays, and ed0d2f0bd4 adds the 105-line evidence fragment.",
+    "done_when": "the done_when asks for the file passing at head with its observed red revision, a per-cause verdict, an import arm and a negative control; the manifest records the two arms with EXIT lines and three test-wrong verdicts, the 8d50b0333f cache log lists the same five ids, and only the import arm was discharged by argument.",
+    "goal": "the goal is that tests/test_manifest_check_command.py passes in full on the primary branch; the landed diff repairs only that file's fixtures and the file reads 9 passed at ed0d2f0bd4.",
+    "manifest": "read; status complete, commits 32664e5ab5 and ed0d2f0bd4, changed_paths the two landed files, baseline_suite (0e0f25b0, 5 failures, completed true) and after_suite (32664e5ab5, 0 failures, completed true), and every rubric line answered.",
+    "write_paths": "the declared fence was reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and a figures directory; the two commits touch tests/test_manifest_check_command.py and the fragment only."
+  },
+  "justifications": {
+    "durability": "tests/test_manifest_check_command.py:294 reddens if the audit reverts to reporting every stray path, and :293 with :291 redden if _merge_unsafe stops treating pyproject.toml (reckon/crew/runs.py:1826) as unreconcilable, so the narrowing is guarded from both directions.",
+    "evidence": "logs/baseline-suite.log (rev 0e0f25b0, \"5 failed, 4 passed\", EXIT=1) and logs/after-suite.log (rev 32664e5ab5, \"9 passed\", EXIT=0) sit under the run directory with revision/command/module headers, and logs/arms.sh shows both python invocations under env -u SLURM_JOB_ID, but the done_when's import arm was reasoned away rather than run.",
+    "fit": "the added constants at tests/test_manifest_check_command.py:37-49 follow the module's existing module-constant and docstring register.",
+    "goal_fidelity": "tests/test_manifest_check_command.py runs 9 passed at head ed0d2f0bd4 (re-run by this reviewer: 9 passed in 1.15s), which is the file the goal names.",
+    "reuse": "the diff adds no function, class or module; it reuses reckon/crew/reports.py:3026 _write_scope_findings and reckon/crew/runs.py:1821 DEFAULT_EXCLUSIVE_PATHS through the CLI rather than re-implementing a scope check.",
+    "scope_discipline": "git show on 32664e5ab5 and ed0d2f0bd4 lists only tests/test_manifest_check_command.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-manifest-check-command.html, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that tests/test_manifest_check_command.py passes in full on the manifest's primary branch, and the landed diff repairs exactly that file's fixtures at tests/test_manifest_check_command.py:34-63 so it reads 9 passed at ed0d2f0bd4 (re-run by this reviewer: 9 passed in 1.15s).\nVERDICT done_when: the done_when asks for the file passing at head with its observed red revision, a per-cause verdict, an arm over importing test files and a negative control; logs/baseline-suite.log (rev 0e0f25b0, \"5 failed, 4 passed\", EXIT=1) and logs/after-suite.log (rev 32664e5ab5, \"9 passed\", EXIT=0) record the two arms, ~/.cache/reckon-suite-at-head/suite-at-8d50b0333f.log lists exactly the same five ids for this file, logs/arms.sh shows both invocations under env -u SLURM_JOB_ID, and only the import arm was reasoned away in the manifest rather than run.\nVERDICT write_paths: the fence was reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround (directory, this fragment) and a figures directory; git show 32664e5ab5 and ed0d2f0bd4 touches tests/test_manifest_check_command.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-manifest-check-command.html, both inside it.\nVERDICT manifest: read; status complete, commits 32664e5ab5 and ed0d2f0bd4, changed_paths the two landed files, baseline_suite (0e0f25b0, 5 failure ids, completed true) and after_suite (32664e5ab5, 0 failures, completed true), negative_control_log naming the base arm, and one rubric line per dimension.\nVERDICT diff: read both commits against 0e0f25b0f941 \u2014 32664e5ab5 cites a real check.log capture beside the manifest instead of /tmp/manifest-check.log, adds messages_received: none to both fixture manifests, and retargets the two scope cases at pyproject.toml and docs/state/plan.html while asserting the merge-safe neighbour is not reported; ed0d2f0bd4 adds the 105-line evidence fragment, and neither commit edits reckon/.\nCALL_SITES: reckon/crew_run_commands.py:1383 crew_check_manifest, reckon/crew/reports.py:2835 audit_manifest, reckon/crew/reports.py:3026 _write_scope_findings, reckon/crew/reports.py:3086 _merge_unsafe, reckon/crew/runs.py:1821 DEFAULT_EXCLUSIVE_PATHS, reckon/crew/reports.py:1595 cited-log containment, reckon/hooks/worker_inbox.py:344 manifest_message_finding\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_manifest_check_command.py runs 9 passed at head ed0d2f0bd4, which is the file and the outcome the goal names.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/baseline-suite.log (EXIT=1) and logs/after-suite.log (EXIT=0) carry revision, command and EXIT lines and match the 8d50b0333f cache log's five ids, while the import arm at manifest.md's evidence_inputs is argued rather than measured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both commits touch only tests/test_manifest_check_command.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-manifest-check-command.html, inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_manifest_check_command.py:294 fails if the audit again reports a merge-safe stray, and :291 with :293 fail if _merge_unsafe stops refusing pyproject.toml (reckon/crew/runs.py:1826).\nSCORE fit: 20\nJUSTIFICATION fit: the new constants at tests/test_manifest_check_command.py:37-49 and the added docstrings match the surrounding module's own register, and ruff check and ruff format --check are clean on the file.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function or module and drives the existing reckon/crew/reports.py:3026 _write_scope_findings through the CLI, so no capability is forked.\n",
+  "review_run_id": "r-20261116T092904569872-review-of-qwnw-red-file-manifest-check-command-ed0d2f0bd407",
+  "reviewed_base_sha": "0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc",
+  "reviewed_head_sha": "ed0d2f0bd407286a5881d48c61b2c132ee5a3fd4",
+  "reviewed_run_id": "r-20261116T031853895821-qwnw-red-file-manifest-check-command",
+  "reviewer_run_id": "r-20261116T092904569872-review-of-qwnw-red-file-manifest-check-command-ed0d2f0bd407",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T12:21:03.339679+00:00",
+  "total": 115
+}
