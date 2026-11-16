@@ -420,8 +420,14 @@ WORKTREE AND PARALLEL-SAFETY RULES (binding):
 4. Write your landing record to your own fragment path and never to the plan:
    your evidence anchor to your scope's fragment under
    docs/evidence/fragments/<plan>/<node-id>.html, and exactly one `landing:`
-   line in your manifest in place of a plan edit. The fragment goes into your
-   final commit; promotion lands the `landing:` line on your plan section.
+   line in your manifest in place of a plan edit. A per-node evidence fragment
+   is optional: write one only when you have a negative result or a mechanism
+   that does not fit a landing line, and a routine landing writes none, its
+   `landing:` line being then the whole prose account of the node. The fragment
+   goes into your final commit; promotion lands the `landing:` line on your
+   plan section. Nothing splices a fragment into the plan's landed record: that
+   record is synthesized once at closure and links the fragment from your
+   node's row without reproducing its text.
    Never mutate the shared project index, sprint
    state, or a plan other than the one you are landing against. Do not edit the
    plan-version or plan-modified meta lines: every worker touching them makes
@@ -509,9 +515,15 @@ freeze and may refill a free slot. Workers author their own landing record in
 the same beat, per the contract the prompt embeds verbatim: "Write your landing
 record to your own fragment path and never to the plan: your evidence anchor to
 your scope's fragment under docs/evidence/fragments/<plan>/<node-id>.html, and
-exactly one `landing:` line in your manifest in place of a plan edit. The
-fragment goes into your final commit; promotion lands the `landing:` line on
-your plan section." The shared-state ban narrows with it: "Never mutate the shared
+exactly one `landing:` line in your manifest in place of a plan edit. A
+per-node evidence fragment is optional: write one only when you have a negative
+result or a mechanism that does not fit a landing line, and a routine landing
+writes none, its `landing:` line being then the whole prose account of the
+node. The fragment goes into your final commit; promotion lands the `landing:`
+line on your plan section. Nothing splices a fragment into the plan's landed
+record: that record is synthesized once at closure and links the fragment from
+your node's row without reproducing its text." The shared-state ban narrows
+with it: "Never mutate the shared
 project index, sprint state, or a plan other than the one you are landing
 against. Do not edit the plan-version or plan-modified meta lines: every worker
 touching them makes every merge conflict there." Two limits hold even though the
