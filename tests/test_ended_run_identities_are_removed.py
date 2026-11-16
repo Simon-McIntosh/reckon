@@ -114,9 +114,9 @@ def test_one_pass_removes_every_ended_identity_and_keeps_every_live_one(
 
         report = gc.retention_sweep(apply=True)
 
+        assert [path for path in ended if path.exists()] == []
         assert report["exec_identities"]["removed"] == len(ended), report
         assert report["exec_identities"]["kept"] == len(holders), report
-        assert [path for path in ended if path.exists()] == []
         assert [path for path in live if path.is_file()] == live
     finally:
         for holder in holders:
