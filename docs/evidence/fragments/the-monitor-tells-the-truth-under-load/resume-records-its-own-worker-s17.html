@@ -35,7 +35,11 @@
   record names is still the process that wrote it, from the start tick and the
   process table recorded beside the pid, so a number the kernel has since
   recycled is not mistaken for the station and a pid from another process table
-  is not matched by number alone.</p>
+  is not matched by number alone. Renewal age is not part of that test: the lease
+  mechanism ages a lease out so a successor may claim it, which says nothing
+  about whether its holder has gone, and a busy holder's renewal waits on its
+  interpreter — so the record is read whatever its age and the process it names
+  is the only question.</p>
 
   <h3 id="resume-records-its-own-worker-s17-repro">Measured</h3>
 
@@ -67,18 +71,24 @@ B. the station survived the stop: False</code></pre>
         <td><code>af516b3a</code></td>
         <td>58 passed, <code>EXIT=0</code></td></tr>
       <tr><td>after suite (the new tests and the two guards)</td>
-        <td><code>94372aa0</code>, working tree clean</td>
-        <td>62 passed, <code>EXIT=0</code></td></tr>
+        <td><code>8d816b47</code>, working tree clean</td>
+        <td>63 passed, <code>EXIT=0</code></td></tr>
       <tr><td>the new tests at the base revision</td>
         <td><code>af516b3a</code></td>
-        <td>4 failed, <code>EXIT=1</code>: the reservation names the launcher
+        <td>5 failed, <code>EXIT=1</code>: the reservation names the launcher
         rather than the supervisor it started; a reservation naming the station
         held the attempt; the pointer read names the station's pid and the stop
         kills it; a lease written under another process table names the station
-        here</td></tr>
+        here; a station whose renewal lapsed was read as naming no station</td></tr>
       <tr><td>the new tests at the run's head</td>
-        <td><code>94372aa0</code></td>
-        <td>4 passed, <code>EXIT=0</code></td></tr>
+        <td><code>8d816b47</code></td>
+        <td>5 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control: the station read reverted to the claim-age rule</td>
+        <td><code>8d816b47</code> with <code>reckon/crew/runs.py</code> at
+        <code>954285ce</code></td>
+        <td>1 failed, 4 passed, <code>EXIT=1</code>: the failing id is
+        <code>test_a_station_whose_renewal_stalled_still_names_the_station</code>,
+        which the head arm passes</td></tr>
       <tr><td>negative control: the station read reverted to a number-only
         match</td>
         <td><code>94372aa0</code> with <code>reckon/crew/runs.py</code> at
