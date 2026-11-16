@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-after" content="work-flows-to-the-lane">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;descoped&quot;,&quot;s18&quot;:&quot;descoped&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;implementable&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s24&quot;:&quot;implementable&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;done&quot;,&quot;s28&quot;:&quot;implementable&quot;,&quot;s29&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s30&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;descoped&quot;,&quot;s18&quot;:&quot;descoped&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;implementable&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s24&quot;:&quot;implementable&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;done&quot;,&quot;s28&quot;:&quot;implementable&quot;,&quot;s29&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s30&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="135">
+<meta name="plan-version" content="138">
 <meta name="plan-modified" content="2026-11-16">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -518,6 +518,15 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261116T011314865598-review-of-qwnw-red-file-the-queue-reports-its-own-stalls-b99f11ac8fc2" data-who="reckon-build" data-when="2026-11-16T01:31:48.636Z">
     <div class="r-comment-body"><p>Read-only review of run r-20261115T224648363511-qwnw-red-file-the-queue-reports-its-own-stalls from base f6aa019d75 to head b99f11ac8f: parsed record stored, scores goal_fidelity 19, evidence 15, scope_discipline 20, durability 16, fit 19, reuse 20, three non-blocking findings, added_failure_count 0.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261116T032051010912-review-of-qwnw-red-file-crew-gate-log-agrees-0dfebb406543" data-who="reckon-build" data-when="2026-11-16T03:24:35.400Z">
+    <div class="r-comment-body"><p>review of r-20261115T224612181442-qwnw-red-file-crew-gate-log-agrees at 0dfebb406543145f4346d3d69b93aa0f4b565b9b — parsed, scores goal_fidelity 18, evidence 17, scope_discipline 20, durability 20, fit 19, reuse 20 (total 114), added_failure_count 0 derived from the run's own baseline_suite and after_suite logs, two non-blocking findings (the head gate receipt names 57ea18844c rather than the reviewed head; run-gate.sh hardcodes the slurm_job_id header)</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261115T224612181442-qwnw-red-file-crew-gate-log-agrees" data-who="reckon-build" data-when="2026-11-16T02:48:54Z">
+    <div class="r-comment-body"><p>repaired tests/test_crew_gate_log_agrees.py — all 17 of its cases drove promotion through the now asynchronous `crew complete` default and its citation helper read the run directory after promotion had archived it; the file now reads 17 passed EXIT=0 at head against 17 failed EXIT=1 at base 8104f76, with both armed suite arms at 58 passed and no assertion deleted or weakened</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261115T224559012025-qwnw-red-file-crew" data-who="reckon-build" data-when="2026-11-16T00:47:04Z">
+    <div class="r-comment-body"><p>tests/test_crew.py passes in full at head (191 passed, EXIT=0) against 24 failed, 165 passed and 3 errors at the base revision; each of the 27 base ids carries a verdict in the evidence record, one product repair and twelve test updates.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261115T005738501568-review-of-qwnw-a-declared-write-path-fences-nothing-bc0fa81931ba" data-who="reckon-build" data-when="2026-11-15T02:35:19.779Z">
     <div class="r-comment-body"><p>review record stored at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T200800793250-qwnw-a-declared-write-path-fences-nothing/review-records/r-20261114T200800793250-qwnw-a-declared-write-path-fences-nothing.at-bc0fa81931bac1c9bfc484536c8eff74b279d8e5.json ; no commit, this node writes outside the repository</p></div>
