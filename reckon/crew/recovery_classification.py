@@ -533,9 +533,7 @@ def _the_probe_did_not_answer(observation: Mapping[str, Any] | None) -> bool:
     it would break silently on that change. A probe result carrying no flag
     is one that answered, because it produced the state it reports.
     """
-    if observation is None:
-        return False
-    return observation.get("answered") is False
+    return observation is not None and not _wait_probe_answered(observation)
 
 
 def _wait_declaration_missing_keys(wait: Mapping[str, Any]) -> list[str]:
@@ -1590,12 +1588,14 @@ def classify_pointer(
                 "answered": False,
                 "detail": f"condition probe could not answer: {exc}",
             }
-        # The wait is judged against itself here, before any arm reads it: its
-        # own declared horizon or its own probe's live answer, never a default
-        # horizon borrowed from the log-staleness bound. A probe naming a job
-        # cancelled with no elapsed time is reported as suspect — not terminal —
-        # because that state names the allocation's cancellation rather than the
-        # end of what the wait is on.
+        # The wait is judged against itself here, before any arm reads it: the
+        # horizon it declared, or the limit the scheduler reports for the job
+        # its probe names when that probe asked for it. A declaration that
+        # names no such limit keeps the reader's default, so the exemption is
+        # the scheduler's own number and not a general reprieve from the clock.
+        # A probe naming a job cancelled with no elapsed time is reported as
+        # suspect — not terminal — because that state names the allocation's
+        # cancellation rather than the end of what the wait is on.
         wait = _wait_judged_against_itself(
             wait,
             wait_observation,
@@ -3240,6 +3240,7 @@ from .recovery_vocabulary import (  # noqa: E402
     WAITING_STATUS,
 )
 from .recovery_wait import (  # noqa: E402
+    _wait_probe_answered,
     _WAIT_HORIZON_FIELDS,
     _background_wait_signal,
     _newest_stream_shows_work,

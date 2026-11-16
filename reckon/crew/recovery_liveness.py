@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 import socket
 import time
 from datetime import UTC, datetime
@@ -12,6 +11,7 @@ from typing import Any, Mapping, Sequence
 
 from reckon._timestamps import parse_utc
 from reckon.crew import runs
+from reckon.crew.fleet_node import remaining_seconds
 from reckon.crew.node import (
     LOG_STALE_AFTER_SECONDS,
 )
@@ -1102,44 +1102,12 @@ def _manifest_wait(
     }
 
 
-#: The states a scheduler, or a waiter's own condition test, reports while the
-#: awaited work is still going: everything a job says about itself between the
-#: moment it is queued and the moment it ends. They are read so a wait can be
-#: judged against what its probe is still saying rather than against a horizon
-#: nobody declared for it.
-_WAIT_LIVE_PROBE_STATES = frozenset(
-    {
-        "running",
-        "pending",
-        "queued",
-        "waiting",
-        "completing",
-        "configuring",
-        "requeued",
-        "resizing",
-        "signaling",
-        "suspended",
-    }
-)
-
 #: A cancelled job's state, in the spellings a scheduler prints it. Slurm's
 #: ``CANCELLED+`` marks a batch step of the cancelled job.
 _WAIT_CANCELLED_STATES = frozenset({"cancelled", "canceled", "cancelling", "canceling"})
 
 #: An elapsed time of nothing at all: the job held its allocation for no time.
 _WAIT_ZERO_ELAPSED = frozenset({"00:00:00", "0:00:00", "0-00:00:00"})
-
-
-def _wait_probe_answered(observation: Any) -> bool:
-    """Whether a wait's probe produced an answer about the thing watched.
-
-    ``answered`` is the structured fact the observation carries; a probe that
-    could not run or failed reports it false and is the only case that says
-    nothing about the condition.
-    """
-    if not isinstance(observation, Mapping):
-        return False
-    return observation.get("answered") is not False
 
 
 def _wait_probe_live_state(wait: Mapping[str, Any], observation: Any) -> str:
@@ -1157,7 +1125,7 @@ def _wait_probe_live_state(wait: Mapping[str, Any], observation: Any) -> str:
     observed = str(observation.get("observed") or "")
     for word in observed.replace(",", " ").split():
         token = word.strip("\"'()[]{}:;.").casefold()
-        if token in _WAIT_LIVE_PROBE_STATES:
+        if token in _WAIT_LIVE_STATE_TOKENS:
             return token
     return "pending" if str(observation.get("state") or "") == "pending" else ""
 
@@ -1217,8 +1185,9 @@ def _wait_probe_reported_limit(wait: Mapping[str, Any], observation: Any) -> int
     that asks for neither is a declaration that never named a limit, so nothing
     is read here and the reader's default stays in force.
 
-    ``UNLIMITED`` is no limit at all rather than a number, and a token that is
-    not a wall clock — a state, an id — is not a limit either.
+    The parse is :func:`reckon.crew.fleet_node.remaining_seconds`, the one
+    owner of the scheduler's ``[DD-]HH:MM:SS`` wall clock and of its unbounded
+    token, so a spelling learning there reaches this reading too.
     """
     if wait.get("files") or not _wait_probe_answered(observation):
         return None
@@ -1234,16 +1203,9 @@ def _wait_probe_reported_limit(wait: Mapping[str, Any], observation: Any) -> int
         return None
     observed = str(observation.get("observed") or "")
     for word in observed.replace(",", " ").split():
-        token = word.strip("\"'()[]{}:;")
-        if token.casefold() in {"unlimited", "partition_limit", "none"}:
-            return None
-        match = re.fullmatch(r"(?:(\d+)-)?(\d{1,3}):(\d{2}):(\d{2})", token)
-        if match is None:
-            continue
-        days, hours, minutes, seconds = (int(part or 0) for part in match.groups())
-        total = ((days * 24 + hours) * 60 + minutes) * 60 + seconds
-        if total > 0:
-            return total
+        limit = remaining_seconds(word.strip("\"'()[]{}:;"))
+        if limit:
+            return limit
     return None
 
 
@@ -1985,6 +1947,7 @@ from .recovery_vocabulary import (  # noqa: E402
 )
 from .recovery_wait import (  # noqa: E402
     _WAIT_ACCEPTED_SHAPES,
+    _WAIT_LIVE_STATE_TOKENS,
     _newest_stream_shows_work,
     _run_directory,
     _unquote_wait_declaration_scalar,
@@ -1995,6 +1958,7 @@ from .recovery_wait import (  # noqa: E402
     _wait_file_probe,
     _wait_file_shape_refusal,
     _wait_probe,
+    _wait_probe_answered,
     _wait_probe_cannot_fail,
     _wait_probe_interpreter_code,
     _wait_probe_is_a_no_op,

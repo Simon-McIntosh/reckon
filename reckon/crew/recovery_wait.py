@@ -914,6 +914,19 @@ def _wait_probe_job_values(value: str) -> list[str]:
     return [value.strip()] if _wait_probe_names_a_count(value) else []
 
 
+def _wait_probe_answered(observation: Any) -> bool:
+    """Whether a wait's probe produced an answer about the thing watched.
+
+    ``answered`` is the structured fact the probe reader sets; a probe that
+    could not run or exited non-zero reports it false and is the only case that
+    says nothing about the condition. A result carrying no flag is one that
+    answered, because it produced the state it reports.
+    """
+    if not isinstance(observation, Mapping):
+        return False
+    return observation.get("answered") is not False
+
+
 def _wait_probe_job_ids(probe: Sequence[str]) -> tuple[str, ...]:
     """The scheduler jobs a probe names, in the order it names them.
 

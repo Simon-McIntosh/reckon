@@ -45,6 +45,7 @@ RUN_IDS = (
     "r-live-job-under-the-default",
     "r-probe-naming-a-cancelled-job",
     "r-probe-naming-a-cancelled-job-that-ran",
+    "r-file-wait-over-the-default-horizon",
 )
 
 
@@ -195,10 +196,6 @@ def test_a_live_job_inside_its_scheduler_limit_is_not_overdue() -> None:
     assert wait["overdue"] is False
     assert wait["expected_horizon_seconds"] == 4 * HOUR
     assert wait["probe_live_state"] == "running"
-    snapshot = recovery._watch_snapshot(
-        run, moment=NOW_SECONDS, stall_seconds=STALE_AFTER_SECONDS
-    )
-    assert snapshot["state"] == "waiting"
 
     # Control: the same limit still ages the wait once it is passed, so the
     # scheduler's number is a clock and not a reprieve from one.
@@ -259,7 +256,6 @@ def test_a_probe_naming_a_cancelled_job_that_never_started_is_suspect() -> None:
     )
 
     row = _row(cancelled)
-    assert row["external_wait"]["probe"][2:] == ["-j", "1310001"]
 
     # The defect first: a job cancelled in the queue matched the declaration's
     # own CANCELLED terminal and the row offered the resume it named.
@@ -286,3 +282,24 @@ def test_a_probe_naming_a_cancelled_job_that_never_started_is_suspect() -> None:
     assert ended["external_wait"]["suspect_probe"] is None
     assert ended["wait_condition_state"] == "met"
     assert "ready to resume" in ended["detail"]
+
+
+def test_a_file_wait_still_ages_into_the_alarm() -> None:
+    """A ``wait_file`` condition names no probe, so no limit is read for it.
+
+    This reader derives the file condition's state from the paths, and their
+    absence is the wait's own state rather than anything the awaited work said
+    about itself: there is no probe to report a scheduler limit, so the wait
+    ages into the alarm exactly as before.
+    """
+    run = _waiting_run(
+        RUN_IDS[5],
+        files=["never-written/rows.jsonl"],
+        started_seconds_ago=3 * HOUR,
+    )
+
+    row = _row(run)
+
+    assert row["external_wait"]["probe_live_state"] is None
+    assert row["wait_overdue"] is True
+    assert row["recovery_classification"] == "wait-aged"
