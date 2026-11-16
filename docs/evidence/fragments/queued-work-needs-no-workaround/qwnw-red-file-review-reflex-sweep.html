@@ -16,7 +16,7 @@
 
 <h1 id="qwnw-red-file-review-reflex-sweep-title">The review reflex sees a delivered run again</h1>
 
-<p id="qwnw-red-file-review-reflex-sweep-summary">tests/test_review_reflex_sweep.py failed 8 of its 9 tests at revision 75a3c9cd83. Two causes, each recorded below with its verdict. At head 08651fc96c the file passes in full, run as job 1318988 on all_debug with SLURM_JOB_ID removed from the environment.</p>
+<p id="qwnw-red-file-review-reflex-sweep-summary">tests/test_review_reflex_sweep.py failed 8 of its 9 tests at revision 75a3c9cd83. Two causes, each recorded below with its verdict. At head 0322d86a03 the file passes in full, run as job 1319080 on all_debug with SLURM_JOB_ID removed from the environment; the same file passed at the repair's own head 08651fc96c before the primary branch was merged in.</p>
 
 <h2 id="qwnw-red-file-review-reflex-sweep-cause-1">Cause 1: product wrong</h2>
 
@@ -36,8 +36,9 @@
 </thead>
 <tbody>
 <tr><td>base, the negative control</td><td>75a3c9cd83</td><td>8 failed, 1 passed; EXIT=1</td></tr>
-<tr><td>head, the gate job 1318988 on all_debug</td><td>08651fc96c</td><td>9 passed; EXIT=0</td></tr>
-</tbody>
+<tr><td>head, the gate job 1319080 on all_debug</td><td>0322d86a03</td><td>9 passed; EXIT=0</td></tr>
+<tr><td>base suite arm, job 1319077 on all_debug</td><td>75a3c9cd83</td><td>58 passed; EXIT=0</td></tr>
+<tr><td>after suite arm, job 1319082 on all_debug</td><td>0322d86a03</td><td>58 passed; EXIT=0</td></tr></tbody>
 </table>
 
 <h3 id="qwnw-red-file-review-reflex-sweep-base-log">Base failing ids</h3>
@@ -52,14 +53,14 @@ FAILED tests/test_review_reflex_sweep.py::test_a_review_run_is_never_a_source_ru
 FAILED tests/test_review_reflex_sweep.py::test_the_sweep_records_its_review_outcome_per_writer
 </pre>
 
-<h3 id="qwnw-red-file-review-reflex-sweep-head-log">Head run</h3>
+<h3 id="qwnw-red-file-review-reflex-sweep-note">Head run</h3>
 <pre id="qwnw-red-file-review-reflex-sweep-head-ids">
 .........                                                                [100%]
-9 passed in 119.60s
+9 passed in 120.80s
 EXIT=0
 </pre>
 
-<p id="qwnw-red-file-review-reflex-sweep-logs">Full logs, under the run directory: negative-control-base-review-reflex-sweep.log holds the base run; gate-head-1318988.log holds the head gate run; suite-base-75a3c9cd83.log and suite-after-08651fc96c.log hold the two suite arms.</p>
+<p id="qwnw-red-file-review-reflex-sweep-logs">Full logs, under the run directory: negative-control-base-review-reflex-sweep.log holds the base run; gate-head-1319080.log holds the head gate run; suite-base-75a3c9cd83.log and suite-after-0322d86a03.log hold the two suite arms, each run as a job on all_debug with SLURM_JOB_ID removed from the environment.</p>
 
 </body>
 </html>
