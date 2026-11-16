@@ -4722,6 +4722,21 @@ from reckon.run_record import (  # noqa: E402, F401
 )
 
 
+def session_rows(
+    project: str, session: str | None = None, root: str | Path | None = None
+) -> list[dict[str, Any]]:
+    """Rows one dispatched session owns, selected from the live-run index.
+
+    Promoted work leaves the live index before its section is accounted for, so
+    this answers for a session's own runs from the projection the writers keep
+    rather than by reading every finished run's document.
+    """
+    from reckon.crew import open_run_index
+
+    with open_run_index.read_scope():
+        return open_run_index.dispatched_rows(project, session, root)
+
+
 def open_runs(project: str, root: str | Path | None = None) -> list[dict[str, Any]]:
     """Operational rows selected by the live and retained-run indexes."""
     from reckon.crew import open_run_index
