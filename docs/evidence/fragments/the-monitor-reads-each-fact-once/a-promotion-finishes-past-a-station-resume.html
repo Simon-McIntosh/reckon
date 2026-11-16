@@ -77,8 +77,20 @@
   <p><strong>The gate.</strong>
   <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
   tests/test_a_promotion_finishes_past_a_station_resume.py</code> at
-  <code>dfee642b98</code> reports <strong>2 passed in 64.51s</strong>,
+  <code>06c3e5b20a</code> reports <strong>2 passed in 2.87s</strong>,
   <code>EXIT=0</code>.</p>
+
+  <p><strong>The matched importer arms.</strong> Both arms ran as one job on the
+  <code>all_debug</code> partition (job 1319785, host
+  <code>98dci4-clu-3143</code>), not on the fleet node. The baseline arm ran at
+  <code>e35fd9f9</code> in a tree extracted from that revision, with the command
+  resolved over that tree — <code>58 passed in 34.18s</code>,
+  <code>EXIT=0</code>. The after arm ran at <code>06c3e5b20a</code> in the run's
+  own worktree with the test this change adds —
+  <code>60 passed in 35.34s</code>, <code>EXIT=0</code>. Each log opens with its
+  revision, tree, literal command, the imported
+  <code>reckon/crew/promotion.py</code> path and its resolved working directory,
+  and ends with its own <code>EXIT=</code> line.</p>
 
   <p><strong>The negative control.</strong> Restoring the base
   <code>reckon/crew/promotion.py</code> over the head tree and running the same
@@ -88,6 +100,11 @@
   promotion read the pointer</code>. The head arm passes that case, so the
   refusal is the behaviour the change removes rather than a passing suite that
   never exercised the guard.</p>
+
+  <p>The reservation read a refusal quotes is the launch module's own
+  <code>_read_reservation</code> and <code>_reservation_launcher</code>, and the
+  test proves its pointer path resolves inside its temporary crew home instead
+  of reading the operator's live directory.</p>
 </section>
 </main>
 </body>
