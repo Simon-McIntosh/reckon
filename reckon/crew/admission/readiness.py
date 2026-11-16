@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextvars
+import threading
 
 from . import holds as _holds
 from . import release as _release
@@ -83,7 +84,30 @@ def _plan_tree_fingerprint(docs_dir: str | Path | None) -> tuple[int, int, str]:
     return (newest, count, head)
 
 
+class ReadinessCache(dict):
+    """Share one derivation across concurrent launches in the same pass."""
+
+    def __init__(self):
+        super().__init__()
+        self.lock = threading.RLock()
+
+
 def _readiness_rows(
+    project,
+    docs_dir,
+    cache,
+    plan="",
+    refs=(),
+    *,
+    inventory_only=False,
+):
+    with getattr(cache, "lock", contextlib.nullcontext()):
+        return _readiness_rows_unlocked(
+            project, docs_dir, cache, plan, refs, inventory_only=inventory_only
+        )
+
+
+def _readiness_rows_unlocked(
     project: str,
     docs_dir: str | Path | None,
     cache: dict[str, Any],
@@ -161,7 +185,12 @@ def _readiness_rows(
 
         if not project:
             return {}, {}
-        discovered = _discover_project(project, None)
+        from reckon.roadmap import roadmap_build_scope
+
+        # The waits a pass judges read section verdicts, never findings, so the
+        # project build skips coordinator resolution and the landing audit.
+        with roadmap_build_scope(resolve_coordinators=False, audit_landings=False):
+            discovered = _discover_project(project, None)
         items = [_inventory_row(item) for item in discovered.get("inventory", [])]
         for item in items:
             if item.get("type") != "plan" or not item.get("slug"):

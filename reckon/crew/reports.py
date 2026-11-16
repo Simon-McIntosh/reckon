@@ -1091,13 +1091,17 @@ def _coerce_commit_identifiers(value: Any) -> Any:
     list as its elements. A parenthesised path list beside the id is dropped
     first, because the comma reader would otherwise split inside it. Splitting
     several identifiers written on one line is left to the guarded-list rule
-    that every such field shares, so the commits field is split once.
+    that every such field shares, so the commits field is split once. An entry's
+    optional ``commit:`` key labels the identifier rather than being part of it.
     """
     if isinstance(value, str):
         text = value.strip()
         if text.startswith("[") and text.endswith("]"):
-            return _split_bracketed_list(text)
-    return _coerce_list_field(_without_parenthesised_path_list(value))
+            value = _split_bracketed_list(text)
+    entries = _coerce_list_field(_without_parenthesised_path_list(value))
+    if isinstance(entries, list):
+        return [re.sub(r"^commit:\s*", "", entry) for entry in entries]
+    return entries
 
 
 def _typed_suite_observation(value: Any) -> SuiteObservation | str | None:
@@ -1167,6 +1171,23 @@ def _validate_suite_observation(raw: dict[str, Any]) -> SuiteObservation:
 # promotion, after the worker's process has ended and only a coordinator can
 # restructure the record. The shape is judged here so its author sees the
 # finding while the fix is still theirs.
+
+
+def suite_observation(value: Any) -> Mapping[str, Any] | None:
+    """The suite observation an arm carries, or ``None`` when it carries none.
+
+    One reader for the manifest check and for the landing guard, so the two
+    cannot disagree about which arms state a gate result — the disagreement that
+    let a pair written as prose pass the check and be refused at landing, hours
+    after the worker that wrote it had ended.
+
+    An arm is the template's inline JSON observation only when it decodes to an
+    arm's object: the JSON form, or the same object written as nested YAML (the
+    parser hands back a mapping either way). Text states no observation at all —
+    a prose sentence about the suite and a bare command string are the same
+    shape, and neither carries a revision, an exit status or a list of failures.
+    """
+    return value if isinstance(value, Mapping) else None
 
 
 def _is_flat_suite_record(observation: Mapping[str, Any]) -> bool:
@@ -2782,6 +2803,35 @@ def _composed_record_id_findings(
     return findings
 
 
+def _run_was_armed_a_suite(manifest_path: Path | None) -> bool:
+    """Whether the run that wrote this manifest was promised a suite pair.
+
+    A manifest recording an arm as prose states no gate at all, so nothing in
+    the file says whether the flight declared a suite command — which is why the
+    check accepted the prose and the landing guard refused it. The run's own
+    manifest directory names its run, and the live pointer for that run records
+    the command dispatch resolved from the flight's declaration over this node's
+    scope, so the declaration is reachable from the file the audit already
+    reads. A resolution that is present is a command the worker was told to run
+    and to record as an observation; a nil ``suite_command_resolved`` is a
+    declaration this node's scope emptied, which owes no pair.
+
+    Anything unreadable — no manifest path, no pointer, a pointer that is not
+    JSON — answers ``False``: a check that cannot find the declaration must not
+    invent one, because the manifest in hand may be a bare re-read of a file
+    that was never dispatched.
+    """
+    if manifest_path is None:
+        return False
+    from reckon.crew.runs import read_pointer
+
+    try:
+        record = read_pointer(manifest_path.expanduser().parent.name)
+    except (CrewError, OSError, ValueError):
+        return False
+    return bool(str(record.get("suite_command_resolved") or "").strip())
+
+
 def audit_manifest(
     text: str,
     node: TaskNode | None = None,
@@ -2813,6 +2863,12 @@ def audit_manifest(
     resolved_manifest_path = manifest_path
     if resolved_manifest_path is None and node is not None and node.manifest_path:
         resolved_manifest_path = Path(node.manifest_path).expanduser()
+    if not suite_armed:
+        # The flight's declaration is not in the manifest, so it is read from the
+        # run that wrote it — see :func:`_run_was_armed_a_suite`. Without it a
+        # pair written as prose is no pair at all, and the check passes a
+        # manifest the landing guard will refuse once the worker has ended.
+        suite_armed = _run_was_armed_a_suite(resolved_manifest_path)
     status = str(manifest.get("status", "")).lower()
     if status == "waiting":
         # A parked worker's declaration is judged by the fleet's own wait
@@ -2847,9 +2903,9 @@ def audit_manifest(
     # its author can restructure the record. crew check --manifest reads this finding
     # while the worker still holds a turn.
     for name in ("baseline_suite", "after_suite"):
-        observation = manifest.get(name)
-        if isinstance(observation, dict):
-            shape = _flat_suite_record_finding(name, observation)
+        arm = suite_observation(manifest.get(name))
+        if arm is not None:
+            shape = _flat_suite_record_finding(name, arm)
             if shape:
                 findings.append(shape)
     if status == "complete" and suite_armed:
@@ -2858,7 +2914,7 @@ def audit_manifest(
             if observation is None:
                 findings.append(f"status is complete but {name} is missing")
                 continue
-            if not isinstance(observation, dict):
+            if suite_observation(observation) is None:
                 findings.append(f"{name} must be an inline JSON object")
                 continue
             if not _is_flat_suite_record(observation):

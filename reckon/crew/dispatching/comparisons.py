@@ -43,13 +43,20 @@ def shadow_source(
     repo_root = Path(repo).resolve()
     projects = repository_projects(repo_root)
     if not projects:
+        # Review history survives ledger untracking; static build metadata
+        # alone does not establish crew ownership.
+        markers = ("flight.yaml", "crew.json")
         state_root = repo_root / "docs" / "state"
         projects = (
             tuple(
                 sorted(
                     path.name
                     for path in state_root.iterdir()
-                    if path.is_dir() and (path / "crew.json").is_file()
+                    if path.is_dir()
+                    and (
+                        (path / "reviews").is_dir()
+                        or any((path / marker).is_file() for marker in markers)
+                    )
                 )
             )
             if state_root.is_dir()

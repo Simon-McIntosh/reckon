@@ -10,8 +10,26 @@
   ],
   "call_sites_note": "the landed change is one evidence-fragment HTML file. reckon/serve.py:2694 serves a cumulative evidence record with its fragments composed in, and reckon/evidence.py:697 composes fragments under docs/evidence/fragments/<plan>/; both are unchanged by this range and were read only to establish that the file has a production reader at all. No production code path reads the fragment's prose.",
   "completed_at": "2026-11-15T12:20:35.631Z",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "folded",
+      "node": "repair-of-wftl-a-run-held-only-for-its-stream-figures-has-them-5f5250b0aa25",
+      "recorded_at": "2026-11-15T13:11:47.599652+00:00"
+    }
+  },
   "dispatched_at": "2026-11-15T12:00:06Z",
-  "finding_dispositions": {},
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-wftl-a-run-held-only-for-its-stream-figures-has-them-5f5250b0aa25",
+      "recorded_at": "2026-11-15T13:11:43.007836+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "repair-of-wftl-a-run-held-only-for-its-stream-figures-has-them-5f5250b0aa25",
+      "recorded_at": "2026-11-15T13:11:45.380429+00:00"
+    }
+  },
   "findings": [
     "docs/evidence/fragments/work-flows-to-the-lane/wftl-a-run-held-only-for-its-stream-figures-has-them.html:74 non-blocking: the four HEAD-versus-working-tree counts the paragraph rests on (nova 828 vs 2,126, imas-codex 278 vs 1,359, imas-ambix 273 vs 599, imas-standard-names 3 vs 7) are recorded in no log under the run directory. Grep over the run's *.log files finds the fill counts (1,298 in gate-census.log and gate-fill.log), which is the instrument's positive control, but never 828 or 2,126, and the log list at line 78 names seven logs, none of them holding this measurement, so a reader cannot check the claim this paragraph exists to state without re-running an unlogged count. I re-derived all four from each checkout's docs/state/<project>/crew.json (nova 2,126 non-null rows in the working tree against 828 at HEAD; imas-standard-names 7 against 3) and they match, which is why this does not block.",
     "check_uncommitted_claim.sh:9 non-blocking: the instrument the node used to verify those counts cannot fail. Line 7 prints MISSING for a pair the fragment lacks, but line 9 assigns a variable (grep=0) rather than setting an exit status, so the script exits 0 with every pair absent: measured by running it against a file carrying the uncommitted statement and none of the four pairs, which printed all four MISSING lines and returned EXIT=0. negative-control-claims.log is therefore an inspection log rather than a guard, and the only branch that can redden is the statement check at line 5."

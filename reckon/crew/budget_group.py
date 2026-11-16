@@ -224,6 +224,7 @@ def effective_block(
     readings: Sequence[Mapping[str, Any]] | None = None,
     now: datetime | None = None,
     session: str | None = None,
+    project: str | None = None,
     path: str | Path | None = None,
 ) -> dict[str, Any]:
     """The budget block a declared group's reserves are judged through.
@@ -249,6 +250,7 @@ def effective_block(
         readings=readings,
         now=moment,
         session=session,
+        project=project,
         path=path,
     )
     return advisory_block_for_group(

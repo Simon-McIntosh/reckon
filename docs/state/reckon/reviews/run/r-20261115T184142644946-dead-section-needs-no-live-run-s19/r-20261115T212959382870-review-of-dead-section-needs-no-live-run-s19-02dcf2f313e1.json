@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "5624e41095b31885f1f2b67c44d847597d924a94",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/admission/release.py:561 _advance_waiting_requests -> _dead_sections",
+    "reckon/crew/admission/readiness.py:1044 _unmet_waits -> _release._dead_sections",
+    "reckon/crew/queue_admission.py:197 re-export of _dead_sections",
+    "reckon/crew/recovery_classification.py:1830 classify_pointer reads upstream_live",
+    "reckon/crew/recovery_watch.py:628 classify_pointer row the ticker paints"
+  ],
+  "completed_at": "2026-11-15T21:54:38Z",
+  "dispatched_at": "2026-11-15T21:53:45Z",
+  "findings": [
+    {
+      "file": "tests/test_a_section_with_a_live_run_can_still_land.py",
+      "line": "256",
+      "severity": "non-blocking",
+      "text": "non-blocking: `assert not waiter.get(\"upstream_live\")` holds whether the pass clears a previously recorded live run or never writes one \u2014 the waiter here is stored with no upstream_live key \u2014 so the clearing arm at release.py:586-596 is untested and a stale name left on a blocked row would keep this assertion true."
+    },
+    {
+      "file": "reckon/crew/admission/release.py",
+      "line": "134",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_live_runs_on` restates the standing rule `_dead_sections` owns at release.py:57-69 \u2014 the same landed and discarded skips and the same dead-phase-with-resume test in a second spelling \u2014 so the run a waiting request names and the set that decides its phase are two derivations of one fact and can drift."
+    },
+    {
+      "file": "base_new_test.log",
+      "line": "3",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base-arm proof's command header reads `# command: PYTHONPATH_PLACEHOLDER`, an unsubstituted template, so that log names no runnable command and the base-arm proof cannot be re-run from its own receipt, unlike gate_base.log and gate_head_final.log."
+    }
+  ],
+  "head_log_revision": "02dcf2f313e1e53ec809f822c4da1b9eba0bcca4",
+  "item_verdicts": {
+    "call_sites": "five production call sites: the admission pass in reckon/crew/admission/release.py:561, the readiness read in reckon/crew/admission/readiness.py:1044, the reckon/crew/queue_admission.py:197 re-export, classify_pointer at reckon/crew/recovery_classification.py:1830, and the watch row at reckon/crew/recovery_watch.py:628 that the ticker paints.",
+    "diff": "read both commits against base 5624e41095 \u2014 452 insertions and 19 deletions over five files: `_dead_sections` rebuilt on `_section_key` and `_resume_in_flight` as ended-minus-standing, `_live_runs_on` plus the `upstream_live` slot and its persistence in `_advance_waiting_requests`, `LANDED_RUN_PHASES` added and `DEAD_RUN_PHASES` re-documented in shared.py, the awaiting-upstream detail suffix in recovery_classification.py:1830-1835, the 259-line three-case test, and the evidence fragment.",
+    "done_when": "the done_when requires two new tests that fail at base, a third already-correct case green in both arms, and no added failure against base; base_new_test.log records \"2 failed, 1 passed\" EXIT=1 at 5624e41095, gate_head_final.log records \"61 passed in 77.54s\" EXIT=0 at 02dcf2f313, gate_base.log records \"58 passed in 78.63s\" EXIT=0, and the regression_waiters pair records an empty failing-id set difference, so the gate asserts the measure; the all_debug clause of that sentence is discussed under the evidence score.",
+    "goal": "the node's goal is to mark a section unable to land only when none of its runs is live, queued, parked or resumed; reckon/crew/admission/release.py:56-70 replaces the single dead set with `ended - standing`, and release.py:63-66 reads a resume mark on a failed pointer as a run still on its way, so the sibling, parked and resumed clauses are all answered.",
+    "manifest": "read the reviewed run's manifest.md; status complete, commits 1bf34caf0b and 02dcf2f313, baseline_suite (5624e41095, 58 passed, 0 failures, gate_base.log) and after_suite (02dcf2f313, 61 passed, 0 failures, gate_head_final.log), measurement_module and measurement_cwd on both gate headers, negative_control_log named with its 2 failed / EXIT=1 result, and both retry_failures attributed to scaffolding with their causes.",
+    "write_paths": "the fence named eight paths \u2014 reckon/crew/admission/release.py, reckon/crew/admission/shared.py, reckon/crew/recovery_classification.py, reckon/crew/recovery_vocabulary.py, reckon/crew/ticker.py, tests/test_a_section_with_a_live_run_can_still_land.py, the evidence fragment and a figures directory; git diff 5624e41095..02dcf2f313 touches five of them and nothing outside the fence, leaving ticker.py and recovery_vocabulary.py untouched."
+  },
+  "justifications": {
+    "durability": "the run's negative-control.log restores the base `_dead_sections` and reddens both new ids with EXIT=1, and tests/test_a_section_with_a_live_run_can_still_land.py:218 asserts `waiter[\"upstream_live\"] == [SIBLING]` against a literal run id, so it fails if the sibling is not named.",
+    "evidence": "the reviewed manifest records gate_base.log \"58 passed in 78.63s\" EXIT=0 at 5624e41095 and gate_head_final.log \"61 passed in 77.54s\" EXIT=0 at 02dcf2f313 with module.__file__ and cwd on both headers, and base_new_test.log records the two new clauses reddening at base; the done_when's all_debug clause was instead answered by a scratch-mirror comparison on this node.",
+    "fit": "the change follows the module's own idiom, including the lazy `from reckon.crew.promotion import discard_recorded` at reckon/crew/admission/release.py:150 and the same patterned `# noqa: BLE001` catch, with no plan or ticket identifier in any added name.",
+    "goal_fidelity": "reckon/crew/admission/release.py:56-70 returns `ended - standing`, so a section is dead only when no run naming it may still land, and release.py:63-66 puts a failed run carrying a resume mark back in the standing set.",
+    "reuse": "release.py:120 builds on `_release_section_key` and `normalize_section` rather than re-parsing a ref, and release.py:88 calls `resumption.launch_in_flight` rather than re-reading the mark, but the phase judgement is stated twice at release.py:57-69 and release.py:128-138.",
+    "scope_discipline": "git diff --stat 5624e41095..02dcf2f313 lists five files, every one inside the eight declared write paths, with reckon/crew/ticker.py and reckon/crew/recovery_vocabulary.py untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to mark a section unable to land only when none of its runs is live, queued, parked or resumed; reckon/crew/admission/release.py:56-70 replaces the single dead set with `ended - standing`, and release.py:63-66 reads a resume mark on a failed pointer as a run still on its way, so the sibling, parked and resumed clauses are all answered.\nVERDICT done_when: the done_when requires two new tests that fail at base, a third already-correct case green in both arms, and no added failure against base; base_new_test.log records \"2 failed, 1 passed\" EXIT=1 at 5624e41095, gate_head_final.log records \"61 passed in 77.54s\" EXIT=0 at 02dcf2f313, gate_base.log records \"58 passed in 78.63s\" EXIT=0, and the regression_waiters pair records an empty failing-id set difference, so the gate asserts the measure; the all_debug clause of that sentence is discussed under the evidence score.\nVERDICT write_paths: the fence named eight paths \u2014 reckon/crew/admission/release.py, reckon/crew/admission/shared.py, reckon/crew/recovery_classification.py, reckon/crew/recovery_vocabulary.py, reckon/crew/ticker.py, tests/test_a_section_with_a_live_run_can_still_land.py, the evidence fragment and a figures directory; git diff 5624e41095..02dcf2f313 touches five of them and nothing outside the fence, leaving ticker.py and recovery_vocabulary.py untouched.\nVERDICT manifest: read the reviewed run's manifest.md; status complete, commits 1bf34caf0b and 02dcf2f313, baseline_suite (5624e41095, 58 passed, 0 failures, gate_base.log) and after_suite (02dcf2f313, 61 passed, 0 failures, gate_head_final.log), measurement_module and measurement_cwd on both gate headers, negative_control_log named with its 2 failed / EXIT=1 result, and both retry_failures attributed to scaffolding with their causes.\nVERDICT diff: read both commits against base 5624e41095 \u2014 452 insertions and 19 deletions over five files: `_dead_sections` rebuilt on `_section_key` and `_resume_in_flight` as ended-minus-standing, `_live_runs_on` plus the `upstream_live` slot and its persistence in `_advance_waiting_requests`, `LANDED_RUN_PHASES` added and `DEAD_RUN_PHASES` re-documented in shared.py, the awaiting-upstream detail suffix in recovery_classification.py:1830-1835, the 259-line three-case test, and the evidence fragment.\nCALL_SITES: reckon/crew/admission/release.py:561, reckon/crew/admission/readiness.py:1044, reckon/crew/queue_admission.py:197, reckon/crew/recovery_classification.py:1830, reckon/crew/recovery_watch.py:628\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/admission/release.py:56-70 returns `ended - standing`, so a section is dead only when no run naming it may still land, and release.py:63-66 puts a failed run carrying a resume mark back in the standing set.\nSCORE evidence: 17\nJUSTIFICATION evidence: the reviewed manifest records gate_base.log \"58 passed in 78.63s\" EXIT=0 at 5624e41095 and gate_head_final.log \"61 passed in 77.54s\" EXIT=0 at 02dcf2f313 with module.__file__ and cwd on both headers, and base_new_test.log records the two new clauses reddening at base; the done_when's all_debug clause was instead answered by a scratch-mirror comparison on this node.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 5624e41095..02dcf2f313 lists five files, every one inside the eight declared write paths, with reckon/crew/ticker.py and reckon/crew/recovery_vocabulary.py untouched.\nSCORE durability: 17\nJUSTIFICATION durability: the run's negative-control.log restores the base `_dead_sections` and reddens both new ids with EXIT=1, and tests/test_a_section_with_a_live_run_can_still_land.py:218 asserts `waiter[\"upstream_live\"] == [SIBLING]` against a literal run id, so it fails if the sibling is not named.\nSCORE fit: 19\nJUSTIFICATION fit: the change follows the module's own idiom, including the lazy `from reckon.crew.promotion import discard_recorded` at reckon/crew/admission/release.py:150 and the same patterned `# noqa: BLE001` catch, with no plan or ticket identifier in any added name.\nSCORE reuse: 17\nJUSTIFICATION reuse: release.py:120 builds on `_release_section_key` and `normalize_section` rather than re-parsing a ref, and release.py:88 calls `resumption.launch_in_flight` rather than re-reading the mark, but the phase judgement is stated twice at release.py:57-69 and release.py:128-138.\nFINDING tests/test_a_section_with_a_live_run_can_still_land.py:256 non-blocking: `assert not waiter.get(\"upstream_live\")` holds whether the pass clears a previously recorded live run or never writes one \u2014 the waiter here is stored with no upstream_live key \u2014 so the clearing arm at release.py:586-596 is untested and a stale name left on a blocked row would keep this assertion true.\nFINDING reckon/crew/admission/release.py:134 non-blocking: `_live_runs_on` restates the standing rule `_dead_sections` owns at release.py:57-69 \u2014 the same landed and discarded skips and the same dead-phase-with-resume test in a second spelling \u2014 so the run a waiting request names and the set that decides its phase are two derivations of one fact and can drift.\nFINDING base_new_test.log:3 non-blocking: the base-arm proof's command header reads `# command: PYTHONPATH_PLACEHOLDER`, an unsubstituted template, so that log names no runnable command and the base-arm proof cannot be re-run from its own receipt, unlike gate_base.log and gate_head_final.log.\n",
+  "review_run_id": "r-20261115T212959382870-review-of-dead-section-needs-no-live-run-s19-02dcf2f313e1",
+  "reviewed_base_sha": "5624e41095b31885f1f2b67c44d847597d924a94",
+  "reviewed_head_sha": "02dcf2f313e1e53ec809f822c4da1b9eba0bcca4",
+  "reviewed_run_id": "r-20261115T184142644946-dead-section-needs-no-live-run-s19",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T212959382870-review-of-dead-section-needs-no-live-run-s19-02dcf2f313e1"
+  },
+  "reviewer_run_id": "r-20261115T212959382870-review-of-dead-section-needs-no-live-run-s19-02dcf2f313e1",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T22:25:35.161029+00:00",
+  "total": 109
+}

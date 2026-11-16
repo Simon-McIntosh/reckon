@@ -419,7 +419,7 @@ def crew_merge(
             "unplanned_reason": unplanned_reason,
         }
 
-        def verify_promotion(checkout, _base, merged_head, _commit):
+        def verify_promotion(checkout, _base, merged_head, _commit, _objects=None):
             merge.require_promotable_head(
                 project, checkout, merged_head, **promotion_options
             )
@@ -553,6 +553,38 @@ def crew_directory(project, run_id, node_id, pretty):
     _emit_crew_result(result, pretty)
 
 
+@crew.group(name="decision")
+def crew_decision():
+    """Record a question for the lead; read with crew view decisions."""
+
+
+@crew_decision.command(name="record")
+@click.option(
+    "--record",
+    "record_file",
+    required=True,
+    type=click.File("r"),
+    help=(
+        "JSON record: question, context, options (value/label), recommended, "
+        "project, session, plan, section, held_requests, held_sections. "
+        "Use - for stdin."
+    ),
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_decision_record(record_file, pretty):
+    """Persist an open decision with its owner and the work it holds."""
+    import json
+
+    from reckon.crew.lead_decisions import record_decision
+
+    try:
+        record = json.load(record_file)
+        _emit({"ok": True, "decision": record_decision(record)}, pretty)
+    except (OSError, ValueError, TypeError) as exc:
+        _emit({"ok": False, "error": "decision_error", "detail": str(exc)}, pretty)
+        raise click.exceptions.Exit(1) from exc
+
+
 @crew.command(name="view")
 @click.argument("name", required=False, default="summary")
 @click.option("--project", default=None, help="Project whose read view to serve.")
@@ -648,7 +680,9 @@ def crew_view(
     This is the transport for hooks and scripts, and the arrow every retired
     read verb names. It calls the one function the crew tool also calls, so the
     two surfaces cannot disagree about a view. NAME is a view name; `summary`
-    is served when none is given.
+    is served when none is given. `decisions` reads open questions for the lead
+    across every mounted project, ordered by held work, without needing
+    --project; name one to narrow the read.
     """
     _accept_a_matching_project(run_id, project)
     import json as _json
@@ -2002,7 +2036,15 @@ def crew_promotions(window_seconds, pretty):
     help="ISO-8601 instant the deferral expires; the obligation returns after it.",
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_ack(run_id, notice_id, reason, until, pretty, project=None):
+@click.option(
+    "--until-condition",
+    default=None,
+    help='End early on a named JSON condition: {"condition":"review stored","files":["/path"]} '
+    'or {"condition":"review accepted","probe":["program","argument"],"terminal":["accepted"]}.',
+)
+def crew_ack(
+    run_id, notice_id, reason, until, pretty, project=None, until_condition=None
+):
     """Defer one run's obligations until an instant, recording why.
 
     A live run's deferral is written beside its pointer; one for a run already
@@ -2012,6 +2054,8 @@ def crew_ack(run_id, notice_id, reason, until, pretty, project=None):
     if bool(run_id) == bool(notice_id):
         raise click.ClickException("exactly one of --run and --notice is required")
     if notice_id:
+        if until_condition is not None:
+            raise click.ClickException("--notice takes no --until-condition")
         if until:
             raise click.ClickException("--notice takes no --until")
         from reckon.crew.model_catalogue import acknowledge_notice
@@ -2032,7 +2076,11 @@ def crew_ack(run_id, notice_id, reason, until, pretty, project=None):
 
     try:
         updated = runs_module.record_run_acknowledgement(
-            run_id, reason, until, project=resolved_project
+            run_id,
+            reason,
+            until,
+            project=resolved_project,
+            until_condition=until_condition,
         )
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
@@ -2279,6 +2327,16 @@ def crew_retention_sweep(project, limit, apply, install_timer, pretty):
         "under refs/reckon/archive/; needs --apply to act."
     ),
 )
+@click.option(
+    "--maintain",
+    is_flag=True,
+    help=(
+        "Pack the repository's object store instead of surveying worktrees: "
+        "loose and small packs are repacked, unreachable objects are kept in a "
+        "cruft pack, a stale gc.log is cleared, and the counts before and after "
+        "are recorded. This is the pass the schedule runs."
+    ),
+)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_gc(
     repo,
@@ -2290,6 +2348,7 @@ def crew_gc(
     scratch,
     run_id,
     pin_unique_commits,
+    maintain,
     pretty,
 ):
     """Report workspaces whose integrated state makes them disposable; remove on request."""
@@ -2300,11 +2359,20 @@ def crew_gc(
             "--run names one run's worktree, which the scratch survey does "
             "not cover; drop either --run or --scratch"
         )
+    if maintain and (scratch or run_id):
+        raise click.ClickException(
+            "--maintain packs the repository's object store; it takes neither "
+            "--scratch nor --run, which survey and clear worktrees"
+        )
     try:
         repo_root = _resolved_gc_repo(
             crew_module, flight_module, repo, project, confirm_cross_repo
         )
-        if scratch:
+        if maintain:
+            from reckon.crew import repository_maintenance
+
+            report = repository_maintenance.maintenance_pass(repo_root)
+        elif scratch:
             from reckon.crew.routing import garbage_collect_scratch
 
             report = garbage_collect_scratch(
@@ -4215,9 +4283,12 @@ def _land_a_promoted_run(
         )
         return report, 1
 
-    def verify_gate(checkout, _base, _head, revision):
+    def verify_gate(checkout, _base, _head, revision, objects=None):
         from reckon.crew.review_landing import replay_candidate
 
+        merge_module.import_built_merge(
+            checkout, revision, objects, parents=[_base, _head]
+        )
         checked = replay_candidate(
             {
                 **record,
@@ -4618,6 +4689,17 @@ def _budget_reset_reach() -> dict[str, Any]:
                 unreached.discard(name)
             elif name not in reached:
                 unreached.add(name)
+    # A live coordinator that never armed a follower holds no registration, so
+    # the fold above cannot see it: it is neither reached nor listed, and the
+    # report reads as near-total reach while that session is told nothing. The
+    # harness keeps one record per live session, so every live session absent
+    # from the reached set is named here as unreached, by the name a peer
+    # message addresses.
+    names: dict[str, str] = {}
+    for session_id, name in _live_harness_sessions():
+        names[session_id] = name
+        if session_id not in reached:
+            unreached.add(session_id)
     reached_sessions = sorted(reached)
     unreached_sessions = sorted(unreached)
     total = len(reached_sessions) + len(unreached_sessions)
@@ -4634,8 +4716,52 @@ def _budget_reset_reach() -> dict[str, Any]:
     return {
         "reached": reached_sessions,
         "unreached": unreached_sessions,
+        "unreached_names": {
+            session: names[session]
+            for session in unreached_sessions
+            if session in names
+        },
         "detail": detail,
     }
+
+
+#: Where the harness keeps one record per live session; a test points it at a
+#: directory of its own so nothing reads this host's real sessions.
+HARNESS_SESSIONS_DIR_ENV = "RECKON_HARNESS_SESSIONS_DIR"
+
+
+def _live_harness_sessions() -> list[tuple[str, str]]:
+    """Every live harness session as (session id, name), from its own records.
+
+    Each record names the session's process, and a record whose process has
+    ended is a session that has gone. Records this host cannot read are
+    skipped rather than guessed at.
+    """
+    import json
+
+    directory = Path(
+        os.environ.get(HARNESS_SESSIONS_DIR_ENV) or Path.home() / ".claude" / "sessions"
+    )
+    sessions: list[tuple[str, str]] = []
+    try:
+        records = sorted(directory.glob("*.json"))
+    except OSError:
+        return sessions
+    for path in records:
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(record, dict):
+            continue
+        session_id = str(record.get("sessionId") or "")
+        pid = record.get("pid")
+        if not session_id or not isinstance(pid, int):
+            continue
+        if not Path(f"/proc/{pid}").exists():
+            continue
+        sessions.append((session_id, str(record.get("name") or session_id)))
+    return sessions
 
 
 def _budget_reset_payload(
@@ -4769,6 +4895,7 @@ def _budget_lift_payload(
     clear_flag,
     lift_id,
     credits=None,
+    for_projects=(),
 ):
     """Grant or clear a lift on a budget group's pace.
 
@@ -4780,6 +4907,42 @@ def _budget_lift_payload(
     with an optional ``--session`` or ``--id`` revokes a lift in force.
     """
     from reckon.crew import budget_lift as budget_lift_module
+
+    if sum(bool(value) for value in (global_scope, session, for_projects)) > 1:
+        raise click.ClickException(
+            "--global, --session and --for-project are mutually exclusive"
+        )
+    if any(not str(project).strip() for project in for_projects):
+        raise click.ClickException("--for-project requires a nonempty project name")
+    if for_projects and lift_id:
+        raise click.ClickException("--for-project and --id are mutually exclusive")
+    if len(for_projects) > 1:
+        results = [
+            _budget_lift_payload(
+                group=group,
+                multiple=multiple,
+                drain_by=drain_by,
+                uncapped=uncapped,
+                global_scope=False,
+                session=None,
+                starts_at=starts_at,
+                until=until,
+                clock=clock,
+                reason=reason,
+                clear_flag=clear_flag,
+                lift_id=None,
+                credits=credits,
+                for_projects=(project,),
+            )
+            for project in dict.fromkeys(for_projects)
+        ]
+        return {
+            "ok": True,
+            "action": "clear" if clear_flag else "grant",
+            "group": group,
+            "results": results,
+        }
+    project = for_projects[0] if for_projects else None
 
     form_flags = [
         multiple is not None,
@@ -4798,6 +4961,7 @@ def _budget_lift_payload(
                 group=group,
                 lift_id=lift_id,
                 session=session,
+                project=project,
                 path=None,
             )
             if cleared is None:
@@ -4822,11 +4986,6 @@ def _budget_lift_payload(
             raise click.ClickException(
                 "name exactly one lift form: --multiple, --drain-by, --uncapped "
                 "or --credits"
-            )
-        if global_scope and session:
-            raise click.ClickException(
-                "--global and --session are mutually exclusive; a session lift is "
-                "not global"
             )
         if not (isinstance(reason, str) and reason.strip()):
             raise click.ClickException("--reason is required to grant a lift")
@@ -4875,7 +5034,13 @@ def _budget_lift_payload(
             target=target,
             clock=clock,
             ends=ends,
-            scope=("session" if session else budget_lift_module.GLOBAL),
+            scope=(
+                f"{budget_lift_module.PROJECT_PREFIX}{project}"
+                if project is not None
+                else "session"
+                if session
+                else budget_lift_module.GLOBAL
+            ),
             session=session,
             starts_at=starts,
             readings=readings,
@@ -5023,6 +5188,12 @@ def _budget_lifts_payload(group):
         "With --lift, admit the group past a spent window on purchased credits "
         "until this many credits have been drawn since the grant."
     ),
+)
+@click.option(
+    "--for-project",
+    "for_projects",
+    multiple=True,
+    help="With --lift, grant or clear a project scope; repeat for several projects.",
 )
 @click.option(
     "--global",
@@ -5186,6 +5357,7 @@ def crew_budget(
     uncapped,
     credits,
     global_scope,
+    for_projects,
     session,
     starts_at,
     until,
@@ -5230,6 +5402,9 @@ def crew_budget(
         raise click.UsageError(
             "name exactly one action: --lift, --list, --reset or --check"
         )
+
+    if for_projects and not do_lift:
+        raise click.UsageError("--for-project requires --lift")
 
     if do_check:
         if project is None:
@@ -5280,6 +5455,7 @@ def crew_budget(
             clear_flag=clear_flag,
             lift_id=lift_id,
             credits=credits,
+            for_projects=for_projects,
         )
     _emit_crew_result(result, pretty)
 

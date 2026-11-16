@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import re
@@ -16,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from reckon import checkout_trust, ledger
-from reckon.crew import landing_measure, recovery, runs
+from reckon.crew import landing_measure, recovery, reports, runs
 from reckon.crew.node import CrewError
 from reckon.crew.open_run_index import operational_read
 from reckon.crew.recovery_review_acceptance import _review_accepts_promotion
@@ -882,9 +883,13 @@ def _merge_conflicts(pointer: Mapping[str, Any], head: str) -> list[str]:
     from reckon.crew import merge
 
     try:
-        _merged_tree, conflicts = merge._merge_tree(
-            repo, str(pointer.get("merge_primary_revision") or "HEAD"), head
-        )
+        with merge.scratch_object_store(repo) as objects:
+            _merged_tree, conflicts = merge._merge_tree(
+                repo,
+                str(pointer.get("merge_primary_revision") or "HEAD"),
+                head,
+                objects=objects,
+            )
     except (merge.MergeError, OSError):
         return []
     return merge.refusing_conflicts(conflicts)
@@ -1387,25 +1392,30 @@ def _after_suite_arm(after: Any) -> tuple[Mapping[str, Any] | None, str]:
     A head arm that is absent, that does not declare its run complete, or that
     records no exit status states no gate result at all, so it is no evidence
     rather than clean evidence.
+
+    Which values are observations at all is asked of the check's own reader, so
+    a pair the check accepts is a pair this guard reads: while each kept its own
+    test, the two judged the same bytes and reached opposite verdicts.
     """
-    if not isinstance(after, Mapping):
+    observation = reports.suite_observation(after)
+    if observation is None:
         return None, (
             f"{RED_SUITE_GUARD}: the manifest records no after_suite observation "
             "of the delivered head, so the run states no gate result"
         )
-    if after.get("completed") is not True:
+    if observation.get("completed") is not True:
         return None, (
             f"{RED_SUITE_GUARD}: the manifest's after_suite does not declare "
-            f"completed: true (it records {after.get('completed')!r}), so its "
+            f"completed: true (it records {observation.get('completed')!r}), so its "
             "list of failures is not the set it measured"
         )
-    exit_status = after.get("exit_status")
+    exit_status = observation.get("exit_status")
     if _plain_int(exit_status) is None:
         return None, (
             f"{RED_SUITE_GUARD}: the manifest's after_suite records no "
             "exit_status, so the run states no gate result"
         )
-    return after, ""
+    return observation, ""
 
 
 def _after_suite_exit_guard(after: Mapping[str, Any]) -> str:
@@ -1753,27 +1763,37 @@ def _verified_measurement(
     # and that is the merge the change markers are judged against: what a
     # docs-only move cannot do is change the product, and that claim is only
     # worth making if the merge onto the new primary is read.
-    if moved:
-        merged_tree, conflicts = merge._merge_tree(repo, primary, head)
-        if merge.refusing_conflicts(conflicts):
-            from reckon.crew.recovery_repair_dispatch import dispatch_merge_repair
+    with contextlib.ExitStack() as stack:
+        objects = None
+        if moved:
+            # The merge is built in a scratch store, so a head that fails this
+            # check leaves the repository untouched; the store outlives the
+            # marker read that judges the merged tree it holds.
+            objects = stack.enter_context(merge.scratch_object_store(repo))
+            merged_tree, conflicts = merge._merge_tree(
+                repo, primary, head, objects=objects
+            )
+            if merge.refusing_conflicts(conflicts):
+                from reckon.crew.recovery_repair_dispatch import dispatch_merge_repair
 
-            dispatch_merge_repair(
-                pointer,
-                head=head,
-                primary=primary,
-                paths=merge.refusing_conflicts(conflicts),
-            )
-            raise CrewError(
-                "the head no longer merges cleanly onto the primary: "
-                + ", ".join(merge.refusing_conflicts(conflicts))
-            )
-        judged_base, judged_revision = primary, merged_tree
-    else:
-        judged_base = measured_main
-        judged_revision = str(measured.population["candidate_sha"])
-    markers = merge.change_markers(repo, judged_base, head)
-    dropped = merge.surviving_change_refusals(repo, judged_revision, markers)
+                dispatch_merge_repair(
+                    pointer,
+                    head=head,
+                    primary=primary,
+                    paths=merge.refusing_conflicts(conflicts),
+                )
+                raise CrewError(
+                    "the head no longer merges cleanly onto the primary: "
+                    + ", ".join(merge.refusing_conflicts(conflicts))
+                )
+            judged_base, judged_revision = primary, merged_tree
+        else:
+            judged_base = measured_main
+            judged_revision = str(measured.population["candidate_sha"])
+        markers = merge.change_markers(repo, judged_base, head)
+        dropped = merge.surviving_change_refusals(
+            repo, judged_revision, markers, objects=objects
+        )
     if dropped:
         raise CrewError(
             "the measured merge dropped the reviewed change: " + "; ".join(dropped)
@@ -1910,6 +1930,22 @@ def land_once() -> dict[str, Any]:
     return result
 
 
+def _measurement_run_skip(pointer: Mapping[str, Any]) -> str:
+    """Why the landing pass never takes this run, or "" for a run it may land.
+
+    A measurement run replays a section that has already landed, so its head is
+    a duplicate of work the primary branch carries and its ledger row says
+    ``measured`` rather than landed. Nothing merges it, so the pass that selects
+    landing candidates skips it before anything about its evidence is read: a
+    judgement recorded against a measurement run would be an obligation on a
+    delivery no coordinator may answer.
+    """
+    marker = pointer.get("measure_only")
+    if not isinstance(marker, Mapping) and not str(marker or "").strip():
+        return ""
+    return "the run is a measurement run: it builds and gates, and it never lands"
+
+
 def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]:
     settled_landings = settled_landings or set()
     landed: list[str] = []
@@ -1932,6 +1968,16 @@ def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]
         }:
             continue
         if pointer.get("pending_landing_repair"):
+            continue
+        skipped_measurement = _measurement_run_skip(pointer)
+        if skipped_measurement:
+            skipped.append(
+                {
+                    "run_id": str(pointer.get("run_id") or ""),
+                    "status": "measurement-run",
+                    "reason": skipped_measurement,
+                }
+            )
             continue
         if (
             str(pointer.get("role") or (pointer.get("node") or {}).get("role") or "")

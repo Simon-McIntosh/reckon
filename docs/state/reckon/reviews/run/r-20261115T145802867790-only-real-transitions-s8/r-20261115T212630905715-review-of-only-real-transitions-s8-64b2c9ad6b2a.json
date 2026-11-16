@@ -1,0 +1,76 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T21:29:22.055Z",
+  "dispatched_at": "2026-11-15T21:28:49Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 3973,
+      "severity": "non-blocking",
+      "summary": "A project notice sets run_ids to the live runs its restore unblocks, so it can name an empty list; _with_action_form (obligations.py:645) omits the key when nothing is named, yet the notice stays in items and summary[\"count\"] = len(items) (obligations.py:4395) counts it, so a counted obligation can still name no run when the project has no live run. The plan's own done-when clause is absolute and its 'why' bullet is exactly a count that names no run; the shortest repair is to stop counting a row that names none, which the worker built and then reverted at c197a48eec for parity with the published slice, so the two surfaces' summary shape would have to move together."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 698,
+      "severity": "non-blocking",
+      "summary": "OBSERVED_AT_SOURCES prefers terminal_at over observed_at, which is the whole 'never the reading pass's clock' claim, but no case hands _live_item a row carrying both stamps, so the preference could be reversed (observed_at first) and every assertion in tests/test_the_pane_emits_only_real_transitions.py still passes."
+    },
+    {
+      "file": "tests/test_the_pane_emits_only_real_transitions.py",
+      "line": 115,
+      "severity": "non-blocking",
+      "summary": "assert aged[\"observed_at\"] == settled compares the row against the value the test itself supplied as terminal_at one call earlier, so it constrains only that the field is copied from the single stamp given; the independent part of the guard is the refresh_age arithmetic at :121 and :131, not this line."
+    },
+    {
+      "file": "tests/test_the_pane_emits_only_real_transitions.py",
+      "line": 174,
+      "severity": "non-blocking",
+      "summary": "assert declared[\"run_ids\"] == [\"r-a\", \"r-b\"] compares the row against the list the test handed _with_action_form, so it holds for any pass-through of the input whatever its content; it would still catch removal of the `own` branch, but it cannot fail for a wrong projection of the fields RUN_ID_FIELDS claims to name."
+    },
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": 2736,
+      "severity": "non-blocking",
+      "summary": "_emitted_moment lives only in the PaneRowPath instance, and station_subscriber.save_checkpoint (reckon/crew/station_subscriber.py:643) persists only reported and lift_groups, so the re-armed follower the commit message names as the case it fixes starts the new image with an empty memory and can still draw a row older than one the previous image showed; station_subscriber.py is outside the node's write paths, so this needs its own section rather than a repair here."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 710,
+      "severity": "non-blocking",
+      "summary": "refresh_age restates _seconds_since's arithmetic (obligations.py:649, max(0, int((now - stamp).total_seconds()))) nine lines below the owner instead of calling it after a presence check; only the None-when-absent return is new, which one guard around _seconds_since would carry."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-tells-the-truth-under-load/only-real-transitions-s8.html",
+      "line": 30,
+      "severity": "non-blocking",
+      "summary": "The measure paragraph presents the two arms and the base reproduction, but the plan's fifth clause \u2014 the tests importing ticker, recovery_watch or obligations add no failure against the base \u2014 was not measured at head: the head subset run was cut at 22 percent with EXIT=129, the substitute is a re-run of only the six files that already failed at base, and the fragment and the manifest (outside_scope) should say that in the record rather than leave the omission to a reader who compares the two."
+    }
+  ],
+  "plan_section": "s8",
+  "plan_slug": "the-monitor-tells-the-truth-under-load",
+  "project": "reckon",
+  "review_run_id": "r-20261115T212630905715-review-of-only-real-transitions-s8-64b2c9ad6b2a",
+  "review_text": "VERDICT goal: the node's goal is to emit only real transitions in observation order with a live age; the diff blanks the arrow's left word for a same-word row (reckon/crew/ticker.py:3461-3480), drops a row stamped before one already emitted for its run (ticker.py:2796-2820), re-measures an age from the row's own stamp (reckon/crew/obligations.py:710-724) and names the runs behind every duty row (obligations.py:619-646), so all four plan-why symptoms have a guard.\nVERDICT done_when: the done_when's four test clauses are each carried by a case that fails at b46256908f and passes at 64b2c9ad6b (new-tests-at-base.log: '4 failed in 3.84s'), but its fifth clause \u2014 the tests importing ticker, recovery_watch or obligations add no failure against the base on all_debug \u2014 was measured only over the six files carrying the base's seven failures because the head importer run was cut at 22 percent with EXIT=129 (regression-scratch-head.log).\nVERDICT write_paths: read the node's declared paths (ticker.py, obligations.py, tests/test_the_pane_emits_only_real_transitions.py, the evidence fragment); the four files the diff touches against b46256908f are exactly those four, and no handler for docs/figures is written even though the manifest's orientation_write_paths lists that directory.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T145802867790-only-real-transitions-s8/manifest.md; it records baseline 58 passed EXIT=0 at b46256908f and after 62 passed EXIT=0 at c197a48eec, names the new file's 4 base failures and the declared mutation (1 failed, 3 passed, EXIT=1), and lists the importer-set truncation under outside_scope.\nVERDICT diff: read commit by commit \u2014 8b57e11b30 (renderer guard, PaneRowPath state, filter, observed_at, run_ids), b32d809b12 (the evidence fragment), c197a48eec (age anchored at terminal_at, _counted_summary reverted to the three published figures, tests rewritten), 64b2c9ad6b (exit-status wording in the fragment) \u2014 4 files, +374/-10, and no dead helper survives at head (_measured_at_read, _counted_summary and _stated_age are gone).\nCALL_SITES: reckon/crew/station_subscriber.py:551, reckon/crew_follow_commands.py:1194, reckon/crew/ticker.py:Ticker.render, reckon/crew/obligation_snapshot.py:1971, reckon/mcp_views.py:4628\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: all four bullets land, but a project notice naming no live run stays counted while naming none (reckon/crew/obligations.py:3973 with obligations.py:4395), which is the one clause the plan states absolutely.\nSCORE evidence: 13\nJUSTIFICATION evidence: the arms are recorded and their counts reconcile (58+4=62, gate-base.log and gate-head-final.log), yet the done_when's importer-set clause is unmeasured at head and the recorded after arm runs at c197a48eec rather than the reviewed head (docs/evidence/fragments/the-monitor-tells-the-truth-under-load/only-real-transitions-s8.html:30).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path the diff touches is one of the node's four declared write paths and nothing else in the tree changes, though the manifest's orientation_write_paths carries a fifth path the node was not fenced to.\nSCORE durability: 15\nJUSTIFICATION durability: each of the four cases reddens at the base revision and the declared mutation reddens the equal-word guard at head (negative-control.log), but OBSERVED_AT_SOURCES precedence (reckon/crew/obligations.py:698), the flush path of ticker.py:2828-2830 and two echoing assertions (tests/test_the_pane_emits_only_real_transitions.py:115, :174) are unguarded.\nSCORE fit: 17\nJUSTIFICATION fit: the additions follow the module's dense-comment idiom and reuse the existing _stamped_moment (reckon/crew/ticker.py:1466); refresh_age is exported where every neighbouring helper in reckon/crew/obligations.py:649-708 is private.\nSCORE reuse: 12\nJUSTIFICATION reuse: refresh_age (reckon/crew/obligations.py:710) restates the age arithmetic owned by _seconds_since (obligations.py:649) rather than extending it, adding only the None-when-absent contract.\nFINDING reckon/crew/obligations.py:3973 non-blocking: a project notice with no live run names no run yet stays in summary['count'] at obligations.py:4395, so a counted obligation can still name none.\nFINDING reckon/crew/obligations.py:698 non-blocking: no case carries both terminal_at and observed_at, so the source preference that makes the age the row's own evidence rather than the pass's clock is untested.\nFINDING tests/test_the_pane_emits_only_real_transitions.py:115 non-blocking: the assertion compares observed_at against the terminal_at value the test itself passed in.\nFINDING tests/test_the_pane_emits_only_real_transitions.py:174 non-blocking: the assertion compares run_ids against the list the test itself supplied.\nFINDING reckon/crew/ticker.py:2736 non-blocking: _emitted_moment is not persisted, so a re-armed follower starts with an empty memory even though that is the case the commit names.\nFINDING reckon/crew/obligations.py:710 non-blocking: refresh_age restates _seconds_since's arithmetic at obligations.py:649 instead of calling the owner.\nFINDING docs/evidence/fragments/the-monitor-tells-the-truth-under-load/only-real-transitions-s8.html:30 non-blocking: the fragment presents the two arms as the measurement while the plan's importer-set clause was never run to completion at head.",
+  "reviewed_base_sha": "b46256908fc3eac1a5b4f4dc5f21ec0740feee34",
+  "reviewed_head_commits": [
+    "8b57e11b308562ea519e5d3e420800c3f50bb523",
+    "b32d809b12d45c99372d01b9a5efd17d180d1610",
+    "c197a48eec12d273b1d0a032dc076007ac609ac2",
+    "64b2c9ad6b2a3c75ec9beff3fb9c4f59ab464a59"
+  ],
+  "reviewed_head_sha": "64b2c9ad6b2a3c75ec9beff3fb9c4f59ab464a59",
+  "reviewed_run_id": "r-20261115T145802867790-only-real-transitions-s8",
+  "scores": {
+    "durability": 15,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "reuse": 12,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T22:02:11.234403+00:00",
+  "total": 92
+}

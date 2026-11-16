@@ -87,6 +87,8 @@ from reckon._worker_fence import (  # noqa: F401
     UNPROTECTED_PATHS_KEY,
     WORKER_MCP_SERVERS,
     BackendError,
+    WorkerMcpSetError,
+    WorkerMcpSetsError,
     _await_protected_sources,
     _bind_reckon_hook_commands,
     _copy_tree_without_overwrite,
@@ -110,10 +112,12 @@ from reckon._worker_fence import (  # noqa: F401
     _within_any,
     _write_private_json,
     claude_credential_source,
+    claude_worker_mcp_config,
     codex_auth_source,
     codex_login_record_path,
     codex_login_size,
     codex_login_truncation_detail,
+    codex_worker_mcp_flags,
     create_write_roots,
     declared_protected_paths,
     fence_argv,
@@ -131,6 +135,7 @@ from reckon._worker_fence import (  # noqa: F401
     seed_harness_home,
     seed_write_lock_namespace,
     unmergeable_seals,
+    worker_mcp_selection,
     worktree_git_write_roots,
     write_lock_directory,
 )
@@ -453,6 +458,14 @@ class LaunchPlan:
     # pattern that governs it. Empty for a node that declares write paths: its
     # fence is composed exactly as it was before these were sealed at all.
     unmergeable_seals: dict[str, str] = field(default_factory=dict)
+    # The MCP set this run connected under, and the servers in it. Resolved
+    # once, at composition, from the flight configuration and the node's own
+    # declaration: the launch seeds the harness and the record survives on the
+    # run, so a coordinator reading what a worker could reach reads the same
+    # fact the harness was handed rather than re-deriving it from a config file
+    # that may have moved since. An empty name means the node named no set.
+    mcp_set: str = ""
+    worker_mcp_servers: tuple[str, ...] = ()
 
     def as_dict(self) -> dict[str, Any]:
         """Return the plan as sorted JSON-ready data, prompt text excluded."""
@@ -467,7 +480,9 @@ class LaunchPlan:
             "dialect": self.dialect,
             "final_message_path": self.final_message_path,
             "fence_waiver": self.fence_waiver,
+            "mcp_set": self.mcp_set,
             "resumed_session": self.resumed_session,
+            "worker_mcp_servers": list(self.worker_mcp_servers),
         }
 
 
@@ -1410,6 +1425,8 @@ class _CodexDialect(Dialect):
         run_directory: str | None = None,
     ) -> list[str]:
         argv = [command, "exec", "--json", "-C", working_directory]
+        # A process override also covers resumes and explicitly unfenced runs.
+        argv += list(backend.get("worker_mcp_flags", ["-c", "mcp_servers={}"]))
         if (
             run_directory
             and Path(run_directory).is_absolute()
@@ -1566,6 +1583,8 @@ class _CodexDialect(Dialect):
             f"{server}.args=[{', '.join(json.dumps(word) for word in words)}]",
             "-c",
             f'{server}.default_tools_approval_mode="approve"',
+            "-c",
+            f"{server}.enabled=true",
         ]
 
     def _sandbox_flags(self, tier: str | None) -> list[str]:
@@ -1914,6 +1933,8 @@ _OMP_THINKING_LEVELS = frozenset({"low", "high", "max"})
 # project server is discovered and traces an error; with it disabled the same
 # server is never discovered and the run's trace log names it zero times.
 OMP_WORKER_OVERLAY = """\
+async:
+  printWake: true
 mcp:
   enableProjectConfig: false
 task:
@@ -2070,7 +2091,7 @@ class _OmpDialect(Dialect):
         argv.append(f"--tools={OMP_WORKER_TOOLS}")
         # The positional prompt goes last: this harness reads a value beginning
         # with '-' as another flag, so the brief is the final word on the line.
-        argv.append(prompt)
+        argv.append(_omp_positional_prompt(prompt, run_directory))
         return argv
 
     def _sandbox_flags(self, tier: str | None) -> list[str]:
@@ -2271,6 +2292,37 @@ def _omp_usage(usage: Mapping[str, Any]) -> dict[str, int | float]:
     return returned
 
 
+# The kernel caps one argument at MAX_ARG_STRLEN, 32 pages or 128 KiB on Linux,
+# and refuses the whole exec with E2BIG above it. A brief past this many bytes
+# therefore cannot ride on the command line. Measured on 15 November: a plan
+# review of a 464 KB plan composed a 504 KB brief, and its worker never spawned
+# ("Argument list too long"), so no large plan could be reviewed on this lane.
+OMP_ARGV_PROMPT_BYTES = 100_000
+OMP_LONG_BRIEF_NAME = "brief-for-worker.md"
+
+
+def _omp_positional_prompt(prompt: str, run_directory: str | None) -> str:
+    """The brief this harness is handed on its command line.
+
+    A brief that fits in one argument goes as it is. A longer one is written
+    into the run's own directory and the argument names it, because this
+    harness cannot take its prompt on stdin (it blocks reading the pipe) and
+    the kernel refuses an argument that long. A composition with no run of its
+    own has nowhere to keep the file, so it is handed the brief as it is.
+    """
+    if len(prompt.encode("utf-8")) <= OMP_ARGV_PROMPT_BYTES:
+        return prompt
+    if run_directory is None or not Path(run_directory).is_dir():
+        return prompt
+    path = Path(run_directory) / OMP_LONG_BRIEF_NAME
+    path.write_text(prompt, encoding="utf-8")
+    return (
+        f"Your complete brief is in {path}. Read that whole file before doing "
+        "anything else and follow it exactly: it is the full statement of your "
+        "task, and nothing in this message replaces it."
+    )
+
+
 def _omp_prompt_tokens(usage: Mapping[str, Any]) -> int:
     """Return one request's whole prompt size, cached segments included."""
     measured = [
@@ -2337,6 +2389,11 @@ class _ClaudeDialect(Dialect):
     ) -> list[str]:
         self._refuse_images(command, images)
         argv = [command, "-p", "--output-format", "stream-json", "--verbose"]
+        argv += [
+            "--strict-mcp-config",
+            "--mcp-config",
+            str(backend.get("worker_mcp_config", '{"mcpServers": {}}')),
+        ]
         if resume_session:
             argv += ["--resume", resume_session]
         model = backend.get("model")
@@ -2924,6 +2981,26 @@ def _prompt_without_figure_listing(prompt: str) -> str:
     return f"{head.rstrip()}\n\n{remainder}"
 
 
+def _resolve_worker_mcp(
+    fence_config: Mapping[str, Any] | None, worker_mcp_set: str
+) -> tuple[str, list[str] | None]:
+    """Return the MCP set a launch connects under, and the servers in that set.
+
+    ``None`` for the servers means the launch carries no flight declaration at
+    all — a bare composition or a preview — so it seeds no server and writes no
+    record, which an empty list would misreport as a flight that named none.
+    A node naming a set its flight does not declare is refused here, as a
+    backend error, because the launch cannot compose a runnable invocation for
+    work whose servers it cannot resolve.
+    """
+    if fence_config is None and not worker_mcp_set:
+        return "", None
+    try:
+        return worker_mcp_selection(fence_config, worker_mcp_set)
+    except (WorkerMcpSetError, WorkerMcpSetsError) as exc:
+        raise BackendError(str(exc)) from exc
+
+
 def launch_plan(
     *,
     backend_name: str,
@@ -2938,11 +3015,19 @@ def launch_plan(
     fence: bool = True,
     fence_home: str | Path | None = None,
     fence_config: Mapping[str, Any] | None = None,
+    worker_mcp_set: str = "",
     fence_waiver: str | None = None,
     masked_paths: Iterable[str | Path] = (),
     unmergeable_patterns: Iterable[str] = (),
 ) -> LaunchPlan:
     """Translate one backend plus one node's prompt into a runnable invocation.
+
+    ``worker_mcp_set`` is the set the node names. It is resolved here, before
+    anything is written, so a name the flight does not declare refuses the
+    launch rather than seeding a harness home with servers nobody asked for;
+    the resolved set and its servers ride the returned plan, which is where the
+    run's record reads what the worker could reach. A launch handed no flight
+    configuration resolves no set, because there is no declaration to read.
 
     Raises :class:`BackendError` for an in-harness backend: reckon cannot spawn
     the calling harness's own delegation primitive on its behalf, and silently
@@ -2955,6 +3040,9 @@ def launch_plan(
             "backend can be spawned — an in-harness backend is dispatched by "
             "the calling harness against a prepared directive"
         )
+    resolved_mcp_set, resolved_mcp_servers = _resolve_worker_mcp(
+        fence_config, worker_mcp_set
+    )
     from reckon.flight import expand_backend_environment
 
     environment = expand_backend_environment(backend_name, backend)
@@ -3008,11 +3096,13 @@ def launch_plan(
         if run_directory is None or not run_directory.is_dir()
         else harness_home(dialect.name, run_directory)
     )
-    # A run adopts its own harness home only when fenced. An unfenced run keeps
+    # Claude and Codex adopt their own harness home when fenced. Omp keeps its
+    # own home in either mode so MCP discovery cannot escape its agent store.
+    # Other unfenced runs keep
     # the operator's home, where the user hooks, user memory and every session
     # recorded before the run existed already live; a per-run home that carries
     # none of them silently drops the hooks and orphans those sessions.
-    adopts_harness_home = fence
+    adopts_harness_home = fence or dialect.name == "omp"
     anchored_edit = False
     anchored_edit_reason = "disabled"
     if backend.get("anchored_edit") is True:
@@ -3035,7 +3125,9 @@ def launch_plan(
             anchored_edit_reason = "no-harness-home"
         else:
             anchored_edit_reason = "operator-settings"
-    if harness is not None and adopts_harness_home:
+    # Omp reads its MCP deny list from the agent store, including without a
+    # filesystem fence. Keep that store run-local in either mode.
+    if harness is not None and (adopts_harness_home or dialect.name == "omp"):
         from reckon.flight import harness_home_adjacent_files, harness_home_files
 
         seeded_treatment = seed_harness_home(
@@ -3046,9 +3138,7 @@ def launch_plan(
             adjacent_declaration=harness_home_adjacent_files(dialect.name),
             resume_session=resume_session,
             anchored_edit=(
-                backend.get("anchored_edit") is True
-                and dialect.name == "claude"
-                and not resume_session
+                backend.get("anchored_edit") is True and dialect.name == "claude"
             ),
             # The fence grants the worktree separately from delivery roots.
             anchored_edit_roots=fence_writable_roots(
@@ -3057,11 +3147,10 @@ def launch_plan(
             # A resolved flight configuration states which project this run
             # belongs to and so which servers its harness should start; a bare
             # composition carries none, so it names no project and seeds no
-            # MCP record.
+            # MCP record. The node's own set, already resolved above, is what
+            # the run home is seeded with.
             worker_mcp_servers=(
-                _declared_worker_mcp_servers(fence_config)
-                if fence_config is not None
-                else None
+                resolved_mcp_servers if fence_config is not None else None
             ),
         )
         # Only the claude arm's treatment is decided by the seeding step: it
@@ -3070,7 +3159,8 @@ def launch_plan(
         # its recorded fact must not be replaced by the seeder's answer.
         if dialect.name == "claude":
             anchored_edit = seeded_treatment
-        environment[_HARNESS_HOME[dialect.name][0]] = str(harness)
+        if adopts_harness_home:
+            environment[_HARNESS_HOME[dialect.name][0]] = str(harness)
         # A harness that keeps its agent store below its home needs the store
         # variable too: the seed mirrors the operator's files relative to the
         # home the run owns, and a harness resolving its store from the
@@ -3081,7 +3171,7 @@ def launch_plan(
         # commits would carry a name and address nobody configured. Naming the
         # global config explicitly restores it through one environment variable
         # the fence already mounts read-only, so no path is made writable.
-        if _HARNESS_HOME[dialect.name][0] == "HOME":
+        if adopts_harness_home and _HARNESS_HOME[dialect.name][0] == "HOME":
             operator = Path(fence_home) if fence_home is not None else Path.home()
             operator_config = operator / ".gitconfig"
             if operator_config.is_file():
@@ -3121,6 +3211,37 @@ def launch_plan(
     if named_in_prompt:
         prompt = _prompt_naming_images(prompt, attached)
     launch_backend = dict(backend)
+    if dialect.name == "codex":
+        operator = Path(fence_home) if fence_home is not None else Path.home()
+        launch_backend["worker_mcp_flags"] = codex_worker_mcp_flags(
+            harness
+            if harness is not None and adopts_harness_home
+            else operator / ".codex",
+            Path(worktree_path).resolve(),
+            [
+                *(resolved_mcp_servers or ()),
+                *(
+                    [ANCHORED_EDIT_SERVER]
+                    if backend.get("anchored_edit") is True
+                    else []
+                ),
+            ],
+        )
+    if dialect.name == "claude":
+        operator = Path(fence_home) if fence_home is not None else Path.home()
+        mcp_config = claude_worker_mcp_config(
+            harness if harness is not None and adopts_harness_home else operator,
+            Path(worktree_path),
+            resolved_mcp_servers,
+            anchored_edit=backend.get("anchored_edit") is True,
+        )
+        # Server declarations can carry credentials: keep them off process argv.
+        if run_directory is not None and run_directory.is_dir():
+            mcp_path = run_directory / "worker-mcp.json"
+            _write_private_json(mcp_path, json.loads(mcp_config))
+            launch_backend["worker_mcp_config"] = str(mcp_path)
+        else:
+            launch_backend["worker_mcp_config"] = '{"mcpServers": {}}'
     if dialect.name in ("claude", "codex"):
         launch_backend["anchored_edit"] = anchored_edit
     # A launch that seeded the anchored server names its tools in the worker's
@@ -3206,6 +3327,8 @@ def launch_plan(
         anchored_edit=anchored_edit,
         anchored_edit_reason=anchored_edit_reason,
         unmergeable_seals=unmergeable,
+        mcp_set=resolved_mcp_set,
+        worker_mcp_servers=tuple(resolved_mcp_servers or ()),
     )
 
 

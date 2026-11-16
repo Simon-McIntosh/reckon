@@ -1,0 +1,85 @@
+<section id="suite-arm-refused-at-delivery-s14-landing">
+  <h2>A suite arm that is not an observation is refused while the worker still holds a pen</h2>
+
+  <p><strong>What changed.</strong> A worker that wrote
+  <code>baseline_suite</code> and <code>after_suite</code> as prose passed
+  <code>crew check --manifest</code> and was then refused at landing as
+  <em>red-suite: the manifest records no after_suite observation of the
+  delivered head</em> — hours later, when the only party left who could
+  restructure the record was a coordinator. The manifest audit now refuses the
+  same bytes at delivery, naming the field:
+  <em>after_suite must be an inline JSON object</em>.</p>
+
+  <p><strong>Where the declaration comes from.</strong> Nothing in a manifest
+  says whether a suite pair was owed: a prose arm states no gate at all, and the
+  arms of an armed run are indistinguishable from prose a run that owed nothing
+  wrote to <code>after_suite</code> — and that second shape is still accepted,
+  because it is a declaration rather than evidence. So the audit reads the
+  declaration from the run's own live pointer, which dispatch writes after it
+  resolves the flight's declared command over this node's scope; a manifest's
+  own directory names its run, so the pointer is reachable from the file the
+  audit already reads. <code>_run_was_armed_a_suite</code> answers armed when
+  <code>suite_command_resolved</code> is present: a nil one is a declaration this
+  node's scope emptied, which owes no pair, and a manifest whose pointer cannot
+  be read or found is judged as it was before — the check never invents a
+  declaration.</p>
+
+  <p><strong>One reader.</strong> <code>reports.suite_observation</code> answers
+  which values are observations at all, and both the check and the landing
+  guard's <code>_after_suite_arm</code> ask it. The landing guard's own refusal
+  text is unchanged: the two readers previously kept separate tests and reached
+  opposite verdicts on the same bytes, which is what let the pair travel from
+  the check to the lander.</p>
+
+  <table id="suite-arm-refused-at-delivery-s14-arms">
+    <caption>Every arm is a log whose first lines name its revision, tree and
+    literal command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision and tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base arm (node tests resolved over the base tree)</td>
+        <td><code>3bc474f926</code>, this worktree at the base revision, the
+        node's new test absent</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>after arm (the same set plus the node's new test)</td>
+        <td><code>75b7e58aee</code>, this worktree carrying the change</td>
+        <td><strong>61 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr><td>the node's new tests against the base revision</td>
+        <td><code>3bc474f926</code>, a scratch extraction of the base tree with
+        the new test file copied in</td>
+        <td><strong>2 failed</strong>, 1 passed, <code>EXIT=1</code> — the check
+        answered <code>ok: true</code> with no findings for both refusal cases,
+        which is the defect reproduced</td></tr>
+      <tr><td>negative control: a text arm accepted again</td>
+        <td><code>75b7e58aee</code>, this worktree, the armed inference forced to
+        answer false — accepting a text suite arm again makes the prose-arm case
+        pass the check</td>
+        <td><strong>2 failed</strong>, 1 passed, <code>EXIT=1</code> —
+        <code>test_a_prose_after_arm_is_refused_naming_the_field</code> and
+        <code>test_a_bare_command_after_arm_is_refused_the_same_way</code></td></tr>
+      <tr><td>importer population, base</td>
+        <td><code>3bc474f926</code>, the base tree; the 56 test files importing
+        <code>reckon.crew.reports</code> or <code>reckon.crew.queue_landing</code></td>
+        <td>56 failed, 754 passed in 2615s, <code>EXIT=1</code> &mdash; 22 of the
+        failures in <code>tests/test_crew.py</code>, the rest the sandbox's
+        socket and config-home limits</td></tr>
+      <tr><td>importer population, head</td>
+        <td><code>75b7e58aee</code>, this worktree carrying the change; the same
+        56 files</td>
+        <td>54 failed, 756 passed in 2337s, <code>EXIT=1</code> &mdash; 21 in
+        <code>tests/test_crew.py</code>; no failure id the base arm did not
+        name, and the two ids that differ between the arms are one watch test
+        each way, both threading-and-timeout cases that fail and pass
+        run-to-run at either revision, and the node's two refusal cases are
+        among the base arm's failures because the test file does not exist
+        there</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Scope of the record.</strong> The refusal is gated on the run's own
+  pointer, so a manifest audited outside a run directory is judged exactly as
+  before. The armed prose refusal keeps the message it had — the flat-record
+  finding names the keys an observation needs, and the text shape keeps the
+  shorter sentence because the test asserting it sits outside this node's write
+  scope — so a worker reading the finding is told the field and, for a decoded
+  record the keys.</p>
+</section>

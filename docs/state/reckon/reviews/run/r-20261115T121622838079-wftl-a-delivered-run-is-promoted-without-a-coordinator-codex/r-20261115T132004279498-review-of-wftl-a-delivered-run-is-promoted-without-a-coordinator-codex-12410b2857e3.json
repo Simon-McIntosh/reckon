@@ -1,0 +1,114 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "fails_if": "Station tick invokes no sweep or multiple sweeps, or the actual sweep reports a review error.",
+      "lines": "41-42"
+    },
+    {
+      "fails_if": "The dispatch branch is removed, emits zero or multiple reviews, fails to persist dispatched state, disagrees between pointer and report, skips launcher execution, or creates a non-review pointer; the report/pointer equality is between two outputs and is supplemented by the fixed cardinality and role checks.",
+      "lines": "63-69"
+    },
+    {
+      "fails_if": "Fixture isolation is broken or the delivery is already merged/promoted before the station acts; these are preconditions.",
+      "lines": "78-79"
+    },
+    {
+      "fails_if": "Promotable acceptance handoff is disabled, the queued kind is wrong, the service fails to consume the request or work remains after 90 seconds; reinstating the missing handoff fails line 82 in the recorded mutation.",
+      "lines": "82-86"
+    },
+    {
+      "fails_if": "The service writes no promoted receipt, reports no actual merge, leaves the feature commit absent, drops the introduced feature content, loses acceptance provenance or fails to commit section closure; the literal feature content independently checks more than commit ancestry.",
+      "lines": "88-98"
+    },
+    {
+      "fails_if": "The clean delivery does not queue or the fixture review is not at the required score floor; the all-20 comparison verifies setup and is not counted as regression coverage.",
+      "lines": "107-109"
+    },
+    {
+      "fails_if": "The queued request is not consumed or the service fails to finish within its bound.",
+      "lines": "121-122"
+    },
+    {
+      "fails_if": "A blocking review is ignored and acceptance proceeds, the feature lands despite the finding, ledger promotion occurs or the source pointer is retired; the literal base content and empty ledger assertions observe independent durable outcomes.",
+      "lines": "125-129"
+    }
+  ],
+  "assertion_independence": "No added assertion derives its expected behavioral result from a value it passes directly to the function under test; fixture RUN constants identify which run must undergo an independently observed transition.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "call_sites_note": "No production caller reaches the added test-only definitions; the existing runtime route exercised by them is recorded separately.",
+  "completed_at": "2026-11-15T13:26:14Z",
+  "dispatched_at": "2026-11-15T13:22:00Z",
+  "findings": [],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py tests/test_a_station_tick_delivers_and_lands_a_run.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T121622838079-wftl-a-delivered-run-is-promoted-without-a-coordinator-codex/after-suite.log",
+      "revision": "12410b2857e3c9750f12d2fc8876ac260445b312"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T121622838079-wftl-a-delivered-run-is-promoted-without-a-coordinator-codex/baseline-suite.log",
+      "revision": "01e3ef5ac36fd80a527eb2b38d5da0191d15611a"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read 4ce7ff611241b6a303b05a011f58db9baabe686d and 12410b2857e3c9750f12d2fc8876ac260445b312 individually against 01e3ef5ac36fd80a527eb2b38d5da0191d15611a; they add 129 lines of integration tests and a 16-line evidence fragment only.",
+    "done_when": "the live section s70 and dispatch-detail.json require temporary-home station and landing tests on all_debug; baseline-suite.log records 58 passed, after-suite.log records 61 passed, and base-station-probe.log disproves the requested historical base-negative premise with 2 passed.",
+    "goal": "dispatch-detail.json names automatic review dispatch and clean-review promotion; tests/test_a_station_tick_delivers_and_lands_a_run.py:48 and :73 exercise both existing production paths without coordinator commands.",
+    "manifest": "manifest.md accurately names both commits, both changed paths, completed base/head receipts, and the deliberate acceptance-handoff mutation rather than claiming a base regression.",
+    "write_paths": "dispatch-detail.json declares tests and docs/evidence/fragments/work-flows-to-the-lane; both changed paths are inside those grants and no product source changed."
+  },
+  "justifications": {
+    "durability": "tests/test_a_station_tick_delivers_and_lands_a_run.py:82 fails when the promotable acceptance handoff is disabled as negative-control.log demonstrates, and :125-129 independently detect an improperly accepted blocking review.",
+    "evidence": "baseline-suite.log and after-suite.log record completed 58-pass and 61-pass arms with EXIT=0, while negative-control.log records the acceptance-handoff failure; the historical base-negative condition is explicitly disproved rather than met.",
+    "fit": "tests/test_a_station_tick_delivers_and_lands_a_run.py:10-25 reuses existing fixtures and git helpers, and :28-45 uses the station SweepBeat injection idiom without introducing forbidden source names.",
+    "goal_fidelity": "tests/test_a_station_tick_delivers_and_lands_a_run.py:48-98 verifies dispatch, durable acceptance, merged feature content, ledger provenance and committed section state through the existing runtime owners.",
+    "reuse": "capability searches for station ticks, SweepBeat and PromotionService found and opened tests/test_a_refused_review_is_retried_only_when_it_moves.py:240-249, tests/test_cleanly_reviewed_run_lands_itself.py:26 and tests/test_a_reflex_owned_review_never_blocks_a_dispatch.py:32; the added helper wraps those owners and the tests extend coverage through Station.tick rather than duplicating runtime mechanisms.",
+    "scope_discipline": "the two commits change only tests/test_a_station_tick_delivers_and_lands_a_run.py and the assigned evidence fragment, both within dispatch-detail.json write_paths."
+  },
+  "negative_control_evidence": {
+    "failure_id": "tests/test_a_station_tick_delivers_and_lands_a_run.py::test_a_station_delivery_is_promoted_and_landed_by_the_service",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T121622838079-wftl-a-delivered-run-is-promoted-without-a-coordinator-codex/negative-control.log",
+    "mutation": "Disable the promotable acceptance handoff in recovery_review_acceptance.py; not an unmodified-base failure.",
+    "observed": "assert [] == ['r-clean-delivery']; 1 failed in 0.76s; EXIT=1"
+  },
+  "production_paths_examined": [
+    "reckon/crew/station.py:Station.tick and SweepBeat._run",
+    "reckon/crew/resumption.py:sweep",
+    "reckon/crew/recovery_review_acceptance.py:dispatch_awaiting_reviews acceptance branch",
+    "reckon/crew/promotion_requests.py:PromotionService._tick_locked and _run"
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json names automatic review dispatch and clean-review promotion; tests/test_a_station_tick_delivers_and_lands_a_run.py:48 and :73 exercise both existing production paths without coordinator commands.\nVERDICT done_when: the live section s70 and dispatch-detail.json require temporary-home station and landing tests on all_debug; baseline-suite.log records 58 passed, after-suite.log records 61 passed, and base-station-probe.log disproves the requested historical base-negative premise with 2 passed.\nVERDICT write_paths: dispatch-detail.json declares tests and docs/evidence/fragments/work-flows-to-the-lane; both changed paths are inside those grants and no product source changed.\nVERDICT manifest: manifest.md accurately names both commits, both changed paths, completed base/head receipts, and the deliberate acceptance-handoff mutation rather than claiming a base regression.\nVERDICT diff: read 4ce7ff611241b6a303b05a011f58db9baabe686d and 12410b2857e3c9750f12d2fc8876ac260445b312 individually against 01e3ef5ac36fd80a527eb2b38d5da0191d15611a; they add 129 lines of integration tests and a 16-line evidence fragment only.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_a_station_tick_delivers_and_lands_a_run.py:48-98 verifies dispatch, durable acceptance, merged feature content, ledger provenance and committed section state through the existing runtime owners.\nSCORE evidence: 19\nJUSTIFICATION evidence: baseline-suite.log and after-suite.log record completed 58-pass and 61-pass arms with EXIT=0, while negative-control.log records the acceptance-handoff failure; the historical base-negative condition is explicitly disproved rather than met.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits change only tests/test_a_station_tick_delivers_and_lands_a_run.py and the assigned evidence fragment, both within dispatch-detail.json write_paths.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_station_tick_delivers_and_lands_a_run.py:82 fails when the promotable acceptance handoff is disabled as negative-control.log demonstrates, and :125-129 independently detect an improperly accepted blocking review.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_a_station_tick_delivers_and_lands_a_run.py:10-25 reuses existing fixtures and git helpers, and :28-45 uses the station SweepBeat injection idiom without introducing forbidden source names.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability searches for station ticks, SweepBeat and PromotionService found and opened tests/test_a_refused_review_is_retried_only_when_it_moves.py:240-249, tests/test_cleanly_reviewed_run_lands_itself.py:26 and tests/test_a_reflex_owned_review_never_blocks_a_dispatch.py:32; the added helper wraps those owners and the tests extend coverage through Station.tick rather than duplicating runtime mechanisms.\n",
+  "review_run_id": "r-20261115T132004279498-review-of-wftl-a-delivered-run-is-promoted-without-a-coordinator-codex-12410b2857e3",
+  "reviewed_base_sha": "01e3ef5ac36fd80a527eb2b38d5da0191d15611a",
+  "reviewed_head_sha": "12410b2857e3c9750f12d2fc8876ac260445b312",
+  "reviewed_run_id": "r-20261115T121622838079-wftl-a-delivered-run-is-promoted-without-a-coordinator-codex",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T13:30:09.985250+00:00",
+  "total": 119
+}

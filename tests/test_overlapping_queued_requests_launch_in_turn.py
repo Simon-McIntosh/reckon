@@ -7,6 +7,12 @@ admission pass holds a later request behind an earlier-ranked one whose write
 paths overlap, for no longer than the queue's starvation age, so the order among
 overlapping requests is the queue's order rather than whichever dispatch the
 scope check happened to see first.
+
+The claim that fences a live peer is the unmergeable class alone: two runs
+editing one source file in isolated worktrees merge, so a source declaration
+is shared and only a generated, locked or binary path is held. The cases that
+carry a request past its earlier queued peer and, once that peer is live, hold
+it on the peer's claim therefore name such a path.
 """
 
 from __future__ import annotations
@@ -30,9 +36,11 @@ LANE = "clive"
 SESSION_A = "coordinator-a"
 SESSION_B = "coordinator-b"
 SHARED = "reckon/crew/shared_path.py"
-# A path a textual merge cannot reconcile: two requests naming it are held in
-# rank order, while two naming a source file are free to run at once.
-EXCLUSIVE = "docs/plans/plan-a.html"
+# A path a claim can actually fence. A source file is shared between isolated
+# worktrees, so a live run editing one does not hold a peer off it; only the
+# generated and binary classes a merge cannot reconcile are exclusive, and the
+# dependency manifest is one, absent from the fixture and still recognised.
+EXCLUSIVE = "pyproject.toml"
 START = datetime(2026, 10, 14, 12, 0, 0, tzinfo=UTC)
 
 CONFIG = {
@@ -206,11 +214,8 @@ def _launcher(recorded: list):
 
 
 def _payload(result) -> dict:
-    """The JSON document a dispatch prints, which may follow its progress lines."""
-    for line in result.output.splitlines():
-        if line.startswith("{"):
-            return json.loads(line)
-    raise AssertionError(f"no JSON document in the dispatch output: {result.output!r}")
+    """The documented JSON response, read from stdout ahead of the stderr echo."""
+    return json.loads(result.stdout.splitlines()[0])
 
 
 # --- Case 1: the earlier-ranked request launches, the later stays queued -------
@@ -227,7 +232,7 @@ def test_overlapping_queued_requests_launch_the_earlier_and_keep_the_later(
             node_id="earlier",
             run_id="r-earlier",
             session=SESSION_A,
-            write_paths=[EXCLUSIVE],
+            write_paths=[SHARED],
             queued_at="2026-10-14T11:58:00+00:00",
         )
     )
@@ -237,7 +242,7 @@ def test_overlapping_queued_requests_launch_the_earlier_and_keep_the_later(
             node_id="later",
             run_id="r-later",
             session=SESSION_B,
-            write_paths=[EXCLUSIVE],
+            write_paths=[SHARED],
             queued_at="2026-10-14T11:59:00+00:00",
         )
     )
@@ -271,7 +276,7 @@ def test_a_later_request_waits_behind_an_earlier_whose_session_has_no_slot(
             node_id="earlier",
             run_id="r-earlier",
             session=SESSION_A,
-            write_paths=[EXCLUSIVE],
+            write_paths=[SHARED],
             queued_at="2026-10-14T11:58:00+00:00",
         )
     )
@@ -281,7 +286,7 @@ def test_a_later_request_waits_behind_an_earlier_whose_session_has_no_slot(
             node_id="later",
             run_id="r-later",
             session=SESSION_B,
-            write_paths=[EXCLUSIVE],
+            write_paths=[SHARED],
             queued_at="2026-10-14T11:59:00+00:00",
         )
     )
@@ -380,7 +385,7 @@ def test_the_pre_check_releases_the_later_request_after_the_starvation_age(
             node_id="earlier",
             run_id="r-earlier",
             session=SESSION_A,
-            write_paths=[EXCLUSIVE],
+            write_paths=[SHARED],
             queued_at="2026-10-14T11:28:00+00:00",
         )
     )
@@ -390,7 +395,7 @@ def test_the_pre_check_releases_the_later_request_after_the_starvation_age(
             node_id="later",
             run_id="r-later",
             session=SESSION_B,
-            write_paths=[EXCLUSIVE],
+            write_paths=[SHARED],
             queued_at="2026-10-14T11:29:30+00:00",
         )
     )
@@ -404,11 +409,15 @@ def test_the_pre_check_releases_the_later_request_after_the_starvation_age(
     assert runs.read_pointer("r-earlier")["phase"] == "queued"
 
 
-# --- Case 5: a new dispatch over only a queued claim, and the session cap -----
+# --- Case 5: a new dispatch over only a queued claim, and the project bound ---
 
 
 def _configure(
-    repo: Path, monkeypatch: pytest.MonkeyPatch, *, session_slots: float
+    repo: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    session_slots: float,
+    max_requests: int | None = None,
 ) -> dict:
     lane = repo.parent / "lane.json"
     lane.write_text(
@@ -427,6 +436,8 @@ def _configure(
     config = json.loads(json.dumps(backend_tests.CONFIG))
     config["local_backend"] = LANE
     config["backends"][LANE]["lane_document"] = str(lane)
+    if max_requests is not None:
+        config["queue"] = {"max_requests": max_requests}
     monkeypatch.setattr(
         crew_dispatch_commands, "_resolved_flight", lambda *_a, **_k: config
     )
@@ -447,13 +458,13 @@ def test_a_new_dispatch_over_a_queued_claim_queues_then_launches(
     dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _configure(dispatch_repo, monkeypatch, session_slots=0)
-    first = _dispatch(dispatch_repo, "node-one", paths=(EXCLUSIVE,))
+    first = _dispatch(dispatch_repo, "node-one", paths=(SHARED,))
     assert first.exit_code == 0, first.output
     assert _payload(first)["queued"] is True
 
     # A second node over the queued request's path queues too: the queued claim
     # fences nothing, so neither request refuses the other.
-    second = _dispatch(dispatch_repo, "node-two", paths=(EXCLUSIVE,))
+    second = _dispatch(dispatch_repo, "node-two", paths=(SHARED,))
     assert second.exit_code == 0, second.output
     assert _payload(second)["queued"] is True
     assert _payload(second).get("error") != "scope-conflict"
@@ -462,7 +473,7 @@ def test_a_new_dispatch_over_a_queued_claim_queues_then_launches(
     # yields that slot to its session's oldest queued request, launching it,
     # and queues itself behind it.
     _configure(dispatch_repo, monkeypatch, session_slots=4)
-    third = _dispatch(dispatch_repo, "node-three", paths=(EXCLUSIVE,))
+    third = _dispatch(dispatch_repo, "node-three", paths=(SHARED,))
     assert third.exit_code == 0, third.output
     third_payload = _payload(third)
     assert third_payload.get("error") != "scope-conflict"
@@ -475,26 +486,28 @@ def test_a_new_dispatch_over_a_queued_claim_queues_then_launches(
     }
 
 
-def test_a_new_dispatch_at_the_session_cap_queues_rather_than_refusing(
+def test_a_new_dispatch_over_a_queued_claim_at_the_project_bound_is_refused(
     dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # The lane document publishes no fair share, so the session's cap is the
-    # floor of two queued requests. A full queue is a wait rather than a
-    # refusal: the request keeps its place and launches when a slot opens.
-    _configure(dispatch_repo, monkeypatch, session_slots=0)
-    first = _dispatch(dispatch_repo, "node-one", paths=(EXCLUSIVE,))
-    second = _dispatch(dispatch_repo, "node-two", paths=(EXCLUSIVE,))
+    # Depth is the project's, read from ``queue.max_requests``: a session's own
+    # share of the lane bounds nothing, so the third request is refused by the
+    # project's bound of two held requests rather than by any per-session cap.
+    _configure(dispatch_repo, monkeypatch, session_slots=0, max_requests=2)
+    first = _dispatch(dispatch_repo, "node-one", paths=(SHARED,))
+    second = _dispatch(dispatch_repo, "node-two", paths=(SHARED,))
     assert first.exit_code == 0 and second.exit_code == 0
 
-    third = _dispatch(dispatch_repo, "node-three", paths=(EXCLUSIVE,))
+    third = _dispatch(dispatch_repo, "node-three", paths=(SHARED,))
 
-    assert third.exit_code == 0, third.output
-    third_payload = _payload(third)
-    assert third_payload.get("error") != "queue-full"
-    assert third_payload.get("queued") is True
-    assert third_payload.get("phase") == "queued", third_payload
-    third_id = str(third_payload.get("run_id") or "")
-    assert third_id and runs.read_pointer(third_id)["phase"] == "queued"
+    assert third.exit_code == 75, third.output
+    payload = _payload(third)
+    assert payload["error"] == "queue-full"
+    assert payload["queued"] == 2
+    assert payload["cap"] == 2
+    assert {pointer["node"]["id"] for pointer in runs.list_live(project=PROJECT)} == {
+        "node-one",
+        "node-two",
+    }
 
 
 # --- Case 6: a working or starting claim still refuses a dispatch -------------
@@ -530,7 +543,6 @@ def test_a_dispatch_over_a_working_or_starting_claim_is_refused(
     _live(dispatch_repo, "r-holder", phase=phase, write_paths=[EXCLUSIVE])
 
     refused = _dispatch(dispatch_repo, "node-three", paths=(EXCLUSIVE,))
-
     assert refused.exit_code == 7, refused.output
     assert _payload(refused)["error"] == "scope-conflict"
 
@@ -633,12 +645,12 @@ def test_one_pass_resolves_each_requests_claims_at_most_once(
     lane = _lane_document(tmp_path, slots={SESSION_A: 6})
     config = _config(lane)
     paths = [
-        EXCLUSIVE,
+        SHARED,
         "reckon/crew/second_path.py",
         "reckon/crew/third_path.py",
         "reckon/crew/fourth_path.py",
         "reckon/crew/fifth_path.py",
-        EXCLUSIVE,
+        SHARED,
     ]
     for index, write_path in enumerate(paths, start=1):
         runs.queue_dispatch(

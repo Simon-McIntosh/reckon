@@ -1,0 +1,90 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:crew_dispatch",
+    "reckon/crew/dispatching/preparation.py:dispatch",
+    "reckon/crew/queue_landing.py:land_once",
+    "reckon/crew/recovery_review_dispatch.py:dispatch_review_for_run",
+    "reckon/crew/promotion.py:complete"
+  ],
+  "completed_at": "2026-11-15T22:58:30.274Z",
+  "dispatched_at": "2026-11-15T22:58:08Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "a dry-run preview of a review of a done section; reviews are composed by the reflex, not by a coordinator's dry run, so the gap reaches no live path",
+      "recorded_at": "2026-11-15T23:57:16.553097+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the control reddens the case through the refusal; a structural assertion would be stronger but the behaviour is proven by both negative controls",
+      "recorded_at": "2026-11-15T23:57:20.127121+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "three readers of one boolean key on the pointer; they agree on every value the dispatch writes, and consolidating them is a follow-up, not a defect in this delivery",
+      "recorded_at": "2026-11-15T23:57:23.473694+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew_dispatch_commands.py",
+      "line": 2143,
+      "severity": "non-blocking",
+      "text": "the dry-run preview calls measurement_flag_refusal without the node's role, while the launch at preparation.py:726 passes role=str(node.role or \"\") and accepts a review of a declared-done section through the carve-out at preparation.py:307, so a --dry-run --role review of a done section exits 2 although the dispatch it previews would launch; the carve-out has no test either way."
+    },
+    {
+      "file": "tests/test_a_measurement_run_never_lands.py",
+      "line": 345,
+      "severity": "non-blocking",
+      "text": "the reflex case's guard is the prose assertion on report reason at tests/test_a_measurement_run_never_lands.py:345, not the structural flag the refusal sets at recovery_review_dispatch.py:3375, so the recorded control reddens it only because the fallback liveness reason lacks the word measurement: a rewording of the measurement refusal would redden it against correct code."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": 685,
+      "severity": "non-blocking",
+      "text": "the measure_only key is parsed by three separate definitions with three tolerances: _measurement_reason here, _measurement_run_skip at queue_landing.py:1928 and _is_measurement_run at recovery_review_dispatch.py:3341, so the reflex, the lander and the promotion can disagree about one run."
+    },
+    {
+      "file": "reckon/crew/dispatching/preparation.py",
+      "line": 263,
+      "severity": "non-blocking",
+      "text": "an unreadable plan answers \"\" so the guard is skipped, which makes the one case where the declaration cannot be established the case where a declared-done section stays dispatchable without the flag, and no case drives that path."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "checked reckon/crew_dispatch_commands.py:crew_dispatch, reckon/crew/dispatching/preparation.py:dispatch, reckon/crew/queue_landing.py:_land_deliveries from land_once, reckon/crew/recovery_review_dispatch.py:dispatch_review_for_run and review_dispatch_refusal, and reckon/crew/promotion.py:complete into _complete_locked.",
+    "diff": "read commit by commit against fe5d1eab: af14a0e848 is the behaviour, d4093b9105 the two guard-removal controls, 4d306ec465 the defensive marker read and the recorded arms, 5793696b20 to 48479ac9ad the evidence fragment and its revision citations, and c607c2841d one docstring line at reckon/crew/dispatching/preparation.py:253 with no behaviour change.",
+    "done_when": "the done_when names tests/test_a_measurement_run_never_lands.py; the file carries all ten cases at tests/test_a_measurement_run_never_lands.py:320-521 and arms/head-gate-c607c284.log records 10 passed EXIT=0 at c607c2841d, while its suite half is recorded by separate arms at 58 passed each because the named gate runs the test file alone.",
+    "goal": "the goal is a run that builds and gates and then is never reviewed, merged or landed; reckon/crew/dispatching/preparation.py:282 and :1860, reckon/crew/queue_landing.py:1928, reckon/crew/recovery_review_dispatch.py:3349 and reckon/crew/promotion.py:838, :979 and :2525 carry every clause of it.",
+    "manifest": "read at the reviewed run's directory; it records status complete, the seven commits af14a0e848 to c607c2841d, the literal gate command, the measurement module and working directory, and a landing line naming each measured behaviour, and its claims resolve to arms/head-gate-c607c284.log and to the diff.",
+    "write_paths": "the manifest declares seven paths, and git diff --name-status fe5d1eab..c607c2841d lists exactly those seven files and no eighth: the five crew modules, reckon/crew_dispatch_commands.py, the new test and the evidence fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_a_measurement_run_never_lands.py:478 and :502 lift each guard on the same delivered run and show the landing judgement and the composed review that follow, while the reflex case rests on the prose assertion at :345 instead of the flag set at recovery_review_dispatch.py:3375.",
+    "evidence": "arms/head-gate-c607c284.log records 10 passed EXIT=0 at c607c2841d and arms/base-suite.log and arms/head-suite-c607c284.log each record 58 passed EXIT=0, so the added-failure count from the reviewed run's own baseline_suite and after_suite gate logs is 0 with an empty id list.",
+    "fit": "reckon/crew/dispatching/preparation.py:282 states the refusal in the same prose-docstring idiom as the module's neighbours like :225, and no added function, class or module carries a plan, stage or ticket identifier in its name.",
+    "goal_fidelity": "every clause is reachable: reckon/crew/queue_landing.py:1967 skips the run, reckon/crew/recovery_review_dispatch.py:3349 refuses it a review and reckon/crew/promotion.py:2525 removes its unmerged worktree.",
+    "reuse": "the search over reckon at c607c2841d for an existing reader of the measure_only key found none, and reckon/run_record.py:673 owns a different measurement concept, so nothing owned was forked; the score reflects that the one new capability is written three times (promotion.py:685, queue_landing.py:1928, recovery_review_dispatch.py:3341).",
+    "scope_discipline": "all seven paths in git diff --name-status fe5d1eab..c607c2841d sit inside the manifest's declared write paths, and the only commit after the prior review changes one docstring line."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a run that builds and gates and then is never reviewed, merged or landed; preparation.py:282 and :1860, queue_landing.py:1928, recovery_review_dispatch.py:3349 and promotion.py:838, :979 and :2525 carry every clause.\nVERDICT done_when: the done_when names tests/test_a_measurement_run_never_lands.py; the file carries all ten cases and arms/head-gate-c607c284.log records 10 passed EXIT=0 at c607c2841d, while its suite half is recorded by separate arms at 58 passed each.\nVERDICT write_paths: the manifest declares seven paths and git diff --name-status fe5d1eab..c607c2841d lists exactly those seven files and no eighth.\nVERDICT manifest: read at the reviewed run's directory; it states status complete, the seven commits, the literal gate command and the measurement module and directory, and each landing claim resolves to a log or a diff line.\nVERDICT diff: read commit by commit against fe5d1eab; af14a0e848 is the behaviour, d4093b9105 the two controls, 4d306ec465 the marker read and the arms, 5793696b20 to 48479ac9ad the evidence, and c607c2841d one docstring line.\nCALL_SITES: reckon/crew_dispatch_commands.py:crew_dispatch, reckon/crew/dispatching/preparation.py:dispatch, reckon/crew/queue_landing.py:land_once, reckon/crew/recovery_review_dispatch.py:dispatch_review_for_run, reckon/crew/promotion.py:complete\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: queue_landing.py:1967 skips the run, recovery_review_dispatch.py:3349 refuses it a review and promotion.py:2525 removes its unmerged worktree.\nSCORE evidence: 16\nJUSTIFICATION evidence: arms/head-gate-c607c284.log records 10 passed EXIT=0 at c607c2841d and both suite arms record 58 passed EXIT=0, though the named gate runs the test file alone.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: all seven paths of git diff --name-status fe5d1eab..c607c2841d sit inside the manifest's declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_measurement_run_never_lands.py:502 lifts the reflex guard and shows the composed review, but the reflex case rests on the prose assertion at :345 rather than recovery_review_dispatch.py:3375's flag.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/dispatching/preparation.py:282 follows the prose-docstring idiom of :225 and no added name carries a plan, stage or ticket identifier.\nSCORE reuse: 14\nJUSTIFICATION reuse: the search over reckon at c607c2841d found no existing reader of the measure_only key, and reckon/run_record.py:673 owns a different concept, so nothing owned was forked; the score reflects the one capability written three times.",
+  "review_run_id": "r-20261115T225027894590-review-of-measurement-run-never-lands-s13-c607c2841d26",
+  "reviewed_base_sha": "fe5d1eab6cee9eae2451a4309789b65a327800f2",
+  "reviewed_head_sha": "c607c2841d261ffb44f0470dbe13bd63fc0ff0f1",
+  "reviewed_run_id": "r-20261115T203203115648-measurement-run-never-lands-s13",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T23:55:57.595585+00:00",
+  "total": 101
+}

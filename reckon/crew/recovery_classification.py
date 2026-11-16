@@ -4,6 +4,7 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import json
+from reckon.crew.recovery_cut_off import cut_off_detail, omp_cut_off
 import re
 import shlex
 import subprocess
@@ -476,7 +477,11 @@ def _filed_review_record(
     record, and a run of any other role files none. The record named is the
     first store entry :func:`_review_is_complete` accepts — a stored review
     holding every measurement its rubric demands, read through the one
-    predicate that owns that question rather than a spelling of its own — keyed
+    predicate that owns that question rather than a spelling of its own, and
+    with its claim verdicts folded to the canonical key first by the same
+    :func:`reckon.crew.review.with_canonical_claims` the store's read path
+    applies, so a claims record a reviewer wrote by hand is read on the answers
+    it gave — keyed
     on the attempt the run's own marker names so a record filed by a superseded
     attempt cannot stand in for the attempt running now. Returns the receipt's
     path and the store record's path, or None when nothing eligible is filed.
@@ -491,6 +496,7 @@ def _filed_review_record(
     # Imported here rather than at module scope: the supervisor's module reaches
     # back into the recovery package, so a top-level import would close the loop.
     from reckon.crew.dispatch_launch import REVIEW_FILED_RECORD_NAME
+    from reckon.crew.review import with_canonical_claims
 
     filed_path = (
         _run_directory(record) / f"attempt-{attempt}-{REVIEW_FILED_RECORD_NAME}"
@@ -513,7 +519,9 @@ def _filed_review_record(
             stored = json.loads(stored_path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             continue
-        if isinstance(stored, Mapping) and _review_is_complete(stored):
+        if isinstance(stored, Mapping) and _review_is_complete(
+            with_canonical_claims(stored)
+        ):
             return filed_path, stored_path
     return None
 
@@ -818,6 +826,7 @@ def _review_run_in_flight(
     record: Mapping[str, Any],
     *,
     pointers: Sequence[Mapping[str, Any]] | None = None,
+    now_seconds: float | None = None,
 ) -> tuple[str, str]:
     """The dispatched review standing for this run's head, and its phase.
 
@@ -836,6 +845,16 @@ def _review_run_in_flight(
     N more times. A caller holding no snapshot passes none and the recogniser
     reads them itself, so the answer is the same either way.
 
+    A pre-spawn phase is also where a launch that never spawned sits, and that
+    pointer stands for nothing: the recogniser still finds the pointer in the
+    pre-spawn spellings, and :func:`_stranded_launch` answers that no worker was
+    ever spawned for the claim. Such a review no longer stands for its subject,
+    so the row carries the review-dispatch remedy instead of pointing at a run
+    that will never file a record. :func:`_review_in_flight` is left unchanged
+    because the release branch in ``dispatch_review_for_run`` needs it to find
+    exactly this pointer and discard it. A review inside the bound, or one whose
+    launch evidence is written, is still reported in flight.
+
     ``("", "")`` is the answer for every case the reader cannot resolve — no
     review, an unreadable pointer, or a phase that is not in flight — so a row
     never loses the dispatch it would otherwise print over a review it cannot
@@ -847,8 +866,12 @@ def _review_run_in_flight(
         return "", ""
     if not review_run_id:
         return "", ""
-    phase = _review_pointer_phase(review_run_id)
+    pointer = _review_pointer(review_run_id)
+    phase = str(pointer.get("phase") or "") if pointer is not None else ""
     if not _review_in_flight_phase(phase):
+        return "", ""
+    moment = _utc_seconds() if now_seconds is None else float(now_seconds)
+    if pointer is not None and _stranded_launch(pointer, now_seconds=moment):
         return "", ""
     return review_run_id, phase
 
@@ -872,22 +895,21 @@ def _review_pointer_delivered(pointer: Mapping[str, Any] | None) -> bool:
     return str(pointer.get("phase") or "") in DELIVERED_REVIEW_PHASES
 
 
-def _review_pointer_phase(review_run_id: str) -> str:
-    """The phase a review run's own pointer records, or "" when unreadable.
+def _review_pointer(review_run_id: str) -> Mapping[str, Any] | None:
+    """A review run's own pointer, or None when no reader can resolve it.
 
     The review's pointer is the only place its own progress is written, so the
-    subject's row reports the review's phase from here rather than inferring
-    one from the dispatch that composed it.
+    subject's row reads the phase from it rather than inferring one from the
+    dispatch that composed the review, and the stranded-launch reading is taken
+    from the same mapping: one read answers both questions about the pointer.
     """
     from reckon.crew.runs import read_pointer
 
     try:
         pointer = read_pointer(review_run_id)
     except (CrewError, OSError):
-        return ""
-    if not isinstance(pointer, Mapping):
-        return ""
-    return str(pointer.get("phase") or "")
+        return None
+    return pointer if isinstance(pointer, Mapping) else None
 
 
 def _review_in_flight_action(run_id: str, review_run_id: str, phase: str) -> str:
@@ -1805,6 +1827,13 @@ def classify_pointer(
             detail = str(record.get("reason") or "") or (
                 f"waiting for {waiting_on} to land"
             )
+            # A section owns every run that names it, so a request can wait on
+            # it while one of those runs ends failed. The pass that judged the
+            # wait recorded the runs still on their way, and naming them is
+            # what tells this row apart from one whose section is gone.
+            working = [str(run) for run in record.get("upstream_live") or () if run]
+            if working:
+                detail += f" ({', '.join(working)} live on it)"
             action = f"wait for {waiting_on} to land"
     elif phase == HELD_PHASE and not launched:
         classification = HELD_PHASE
@@ -1901,6 +1930,17 @@ def classify_pointer(
             "attempt the pointer still names"
         )
         action = f"reckon crew observe --run {run_id}"
+    elif (
+        cut_off := omp_cut_off(
+            record, manifest_status=manifest_status, exit_record=ended_exit, stream=log
+        )
+    ) is not None:
+        classification = "cut-off"
+        detail = (
+            f"the omp worker {_exit_record_end_phrase(ended_exit)} before its "
+            f"manifest reached an outcome; last tool call: {cut_off_detail(cut_off)}"
+        )
+        action = f"reckon crew resume --run {run_id} --advice 'continue the unfinished work'"
     elif interruption is not None:
         classification = INTERRUPTED_RUN_PHASE
         signal_name = interruption.get("signal_name")
@@ -2012,8 +2052,12 @@ def classify_pointer(
             # A review already dispatched stands as this run's review in
             # flight: the lane refuses a second dispatch of it naming the run
             # that holds it, so the row reads that run rather than offering a
-            # command that cannot run.
-            in_flight_review = _review_run_in_flight(record, pointers=pointers)
+            # command that cannot run. A review whose own pointer is a
+            # stranded launch stands for nothing, and the dispatch is offered
+            # again because it releases that pointer.
+            in_flight_review = _review_run_in_flight(
+                record, pointers=pointers, now_seconds=moment
+            )
             if review_error:
                 review_detail = f"the stored review could not be read: {review_error}"
             elif review is None:

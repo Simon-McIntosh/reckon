@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import json
 import logging
+import sys
 import time
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from datetime import UTC, date, datetime
@@ -54,6 +55,13 @@ HISTORY_SECONDS = 4 * 60 * 60
 # transition to draw: a place older than retention, resumed at the oldest event
 # still held.
 STATION_GAP_EVENT = "station-gap"
+
+# The marker a follower's emission record carries. A session host opens a
+# child's stderr onto ``<cache>/session-host/<owner>.log``, so this line is the
+# only record of what a follower sent its reader: when a pane is reported
+# silent, its log says whether the follower emitted the row at all, which is
+# what tells a row lost on the follower from one lost on the row's reader.
+EMISSION_PREFIX = "follower-emission "
 
 SKIPPED_DAYS_TEXT = (
     "── {days} day(s) of events are older than the station keeps; "
@@ -344,6 +352,10 @@ def live_work_populations(
     token = obligations._VIEW_LIVE_POINTERS.set(
         {project: tuple(rows) for project, rows in grouped.items()}
     )
+    # The in-flight answer the duties share is keyed on this pass's snapshot,
+    # so it is published with the snapshot and dropped with it rather than left
+    # holding the pass that produced it.
+    reviews_token = obligations._VIEW_REVIEWS_IN_FLIGHT.set(None)
     try:
         # Every terminal run's duty reads the review store, so the pass shares
         # one enumeration of each store directory across all of them, as the
@@ -390,6 +402,7 @@ def live_work_populations(
                 else:
                     unowned = True
     finally:
+        obligations._VIEW_REVIEWS_IN_FLIGHT.reset(reviews_token)
         obligations._VIEW_LIVE_POINTERS.reset(token)
     return project_live, unowned, sorted(sessions)
 
@@ -550,6 +563,10 @@ class StationSubscriber:
         # fresh subscriber still reads what was written before it attached.
         self._generation = store.event_generation()
         self._data_version = store.data_version()
+        # The stamp the store gave itself when it was first opened. A store that
+        # is replaced at this path opens with a new one, which is how a poll
+        # tells a store its place belongs to from a store that never held it.
+        self._store_identity = store.station_value(station_store.STORE_IDENTITY_KEY)
         self._first_poll = True
         # Where this subscriber has read to. It starts at the stored place and
         # always advances in memory; the stored place is written only while the
@@ -558,6 +575,9 @@ class StationSubscriber:
         # from the stored place again and redraw the same rows.
         self._read_id: int | None = None
         self._read_day: str | None = None
+        # How many rows this follower has emitted, so its log numbers them and
+        # a report of a missing row names the one that went missing.
+        self._emitted = 0
         # Whether this pane may write the session's row. The row holds one
         # session's place, and a second pane reading the same rows would move
         # the first pane's cursor and checkpoint out from under it, so only the
@@ -713,6 +733,34 @@ class StationSubscriber:
         self._generation = generation
         return True
 
+    def _adopt_replaced_store(self) -> None:
+        """Take the place the store now at this path holds, after it was replaced.
+
+        A replaced store holds none of the rows this pane read: its database and
+        its day files went with the runtime directory that held them, so the
+        place in memory names an id space that is gone. The place is re-read
+        from the new store and the gates are seeded from it, and one read is
+        taken next poll whatever the generation says -- the generation this pane
+        last saw belongs to the store that is gone, so it can say nothing about
+        this one.
+
+        The store's own name decides it. A store restored from a copy of the one this
+        pane was reading carries that name forward, and its rows are the rows this
+        pane already read, so the place in memory is kept and nothing is drawn
+        twice. A store created after the last one was lost gives itself a new
+        name, and then the place in memory names ids in a space nothing here
+        holds: it is replaced by the place the new store records for this
+        audience, and no row this pane already drew can be in it.
+        """
+        self._row = self.store.read_cursor(self.project, self.audience)
+        self._data_version = self.store.data_version()
+        self._generation = self.store.event_generation()
+        identity = self.store.station_value(station_store.STORE_IDENTITY_KEY)
+        if identity != self._store_identity:
+            self._read_id, self._read_day = self.cursor, self.cursor_day
+        self._store_identity = identity
+        self._first_poll = True
+
     def poll(self) -> list[Mapping[str, Any]]:
         """Every row this pane receives now, in the station's own order.
 
@@ -722,6 +770,8 @@ class StationSubscriber:
         moved, and the first poll of a fresh subscriber always queries: its
         place may be behind rows written before it attached.
         """
+        if self.store.reconnect_if_replaced():
+            self._adopt_replaced_store()
         if not self._first_poll and not self.generation_moved():
             return []
         self._first_poll = False
@@ -810,6 +860,7 @@ class StationSubscriber:
         interval: float = 0.1,
         sleeper=time.sleep,
         each_pass=None,
+        sink=None,
     ) -> Iterator[Mapping[str, Any]]:
         """Yield this pane's rows until ``stop`` is set.
 
@@ -822,15 +873,78 @@ class StationSubscriber:
 
         A quiet station yields nothing: a stale heartbeat is a verdict the
         obligations hook reports, not a sentence the pane repeats.
+
+        Every row yielded here is recorded on the follower's own log with the
+        sequence number this subscriber gave it, because the reader at the far
+        end of the pipe is not something a later report can interrogate. A row
+        missing from a pane can then be looked for on the follower that emitted
+        it rather than argued about.
         """
         while stop is None or not stop.is_set():
             for event in self.poll():
+                self._emitted = _record_emission(
+                    event, sequence=getattr(self, "_emitted", 0), sink=sink
+                )
                 yield event
             for event in self.flush():
+                self._emitted = _record_emission(
+                    event, sequence=getattr(self, "_emitted", 0), sink=sink
+                )
                 yield event
             if each_pass is not None and not each_pass():
                 return
             sleeper(interval)
+
+
+def _emission_record(event: Mapping[str, Any], *, sequence: int) -> str:
+    """One log line naming a row this follower emitted.
+
+    The sequence number is the follower's own count of what it emitted, so a
+    reader comparing the log against the rows a pane drew can say which row went
+    missing; the time is the row's own, which is what the pane stamps it with.
+    """
+    moment = event.get("observed_at")
+    if moment is None:
+        moment = event.get("at")
+    return EMISSION_PREFIX + json.dumps(
+        {
+            "seq": int(sequence),
+            "time": "" if moment is None else str(moment),
+            "run_id": str(event.get("run_id") or ""),
+            "from_state": str(event.get("from_state") or ""),
+            "to_state": str(event.get("to_state") or ""),
+            "event": str(event.get("event") or ""),
+            "station_event_id": event.get("station_event_id"),
+        },
+        sort_keys=True,
+    )
+
+
+def _record_emission(
+    event: Mapping[str, Any], *, sequence: int, sink: Any = None
+) -> int:
+    """Record one row this follower emitted, and return the sequence it took.
+
+    A terminal is the one place the record would be read as a second copy of the
+    pane's own output, so it is skipped there; every other stderr is the session
+    host's log file or a caller's own capture, and gets the line. A log that
+    cannot be written must never end the pane: the record is evidence about the
+    follower, not its work.
+    """
+    counted = int(sequence) + 1
+    writer = sys.stderr if sink is None else sink
+    attached = getattr(writer, "isatty", None)
+    try:
+        if attached is not None and writer.isatty():
+            return counted
+        print(
+            _emission_record(event, sequence=counted),
+            file=writer,
+        )
+        writer.flush()
+    except (OSError, ValueError):
+        return counted
+    return counted
 
 
 def _moment(*, at: float) -> datetime:

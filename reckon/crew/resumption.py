@@ -2635,12 +2635,43 @@ def sweep(
         moment = _now(now)
         wait = external_wait(pointer, now_seconds=moment.timestamp())
         refusal = _stream_refusal_block(pointer)
+        cut_off = None
         if wait is None and refusal is None:
+            row = classify_pointer(pointer)
+            if row.get("classification") == "cut-off":
+                cut_off = row
+        if wait is None and refusal is None and cut_off is None:
             continue
         considered += 1
         advice = CONTINUE_ADVICE
         observation: dict[str, Any] = {}
-        if wait is not None:
+        if cut_off is not None:
+            from reckon import flight
+
+            settings = config if config is not None else flight.resolve(project).config
+            limit = int((settings.get("fences") or {}).get("needs_help_after_failures", 2))
+            attempt = int(pointer.get("attempt") or 1)
+            entry = {
+                "run_id": run_id,
+                "backend": pointer.get("backend"),
+                "trigger": "cut-off",
+            }
+            if limit and attempt >= limit:
+                skipped.append({
+                    **entry,
+                    "reason": "cut-off-attempt-limit",
+                    "detail": f"attempt {attempt} reached the flight's failure bound {limit}",
+                })
+                continue
+            end = cut_off.get("exit_record") or {}
+            signature = f"cut-off:{attempt}:{end.get('exited_at') or ''}"
+            advice = (
+                f"{cut_off['detail']}. Continue from the work and manifest already "
+                "on disk; verify the interrupted tool's result before repeating it."
+            )
+            duplicate_reason = "already-resumed-for-this-cut-off"
+            duplicate_detail = "this attempt's cut-off has already been resumed"
+        elif wait is not None:
             entry = {
                 "run_id": run_id,
                 "backend": pointer.get("backend"),

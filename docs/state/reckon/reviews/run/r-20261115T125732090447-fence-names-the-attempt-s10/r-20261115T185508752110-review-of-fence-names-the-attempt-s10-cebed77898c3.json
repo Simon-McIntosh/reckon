@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": "reckon/crew/dispatching/launch.py:956, reckon/crew/dispatching/launch.py:995, reckon/crew/dispatching/launch.py:1059, reckon/crew/dispatch_launch.py:2721, reckon/crew/admission/launching.py:572, reckon/crew/admission/launching.py:583",
+  "completed_at": "2026-11-15T18:58:01.687Z",
+  "dispatched_at": "2026-11-15T18:57:06Z",
+  "findings": [
+    {
+      "file": "tests/test_a_requeued_request_is_not_fenced.py",
+      "line": 137,
+      "severity": "non-blocking",
+      "text": "assert reservation.kind == \"dispatch\" compares a value against the argument the test itself passed in (kind=\"dispatch\" on line 134), and reserve_launch_attempt returns LaunchReservation(kind=kind) unchanged at reckon/crew/dispatch_launch.py:2758, so the assertion holds whatever the fence decides; the guards in that test are the reservation-file assertion below it and the absence of the run-level CrewError."
+    },
+    {
+      "file": "reckon/crew/dispatch_refusals.py",
+      "line": 338,
+      "severity": "non-blocking",
+      "text": "_live_launch_claim re-resolves the run directory itself (runs.run_dir when home is None, _home(home)/\"runs\"/run_id otherwise) instead of calling the owner's dispatch_claims.read_launch_claim at reckon/crew/dispatch_claims.py:1136, and its home branch drops runs.run_dir's archive fallback (reckon/crew/runs.py:114), so a caller that hands it a home reads a live-only path."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T125732090447-fence-names-the-attempt-s10/logs/importers-head.log",
+      "line": 7,
+      "severity": "non-blocking",
+      "text": "the importer sweep cited for the delivered head stops at 44% after 7 lines, with no failure summary and no EXIT line, though its header names revision cebed77898; the done_when's clause that the importing tests add no failure is therefore measured complete only at e6f3765b31 (19 failed/335 passed base vs 19 failed/339 passed), not at the head that landed."
+    }
+  ],
+  "justifications": {
+    "durability": "logs/negative-control-run-keyed.log shows tests/test_a_requeued_request_is_not_fenced.py::test_the_requeued_request_s_next_attempt_is_admitted failing with the run-keyed mutation at e6f3765b31 while the same id passes in the head arm, so the main guard reddens on the regression it was added for; line 137 is the one echo assertion.",
+    "evidence": "logs/baseline-c3f7a61e.log (65 passed, EXIT=0) and logs/after-head.log (69 passed at cebed77898, EXIT=0) record both arms of the gate, but the done_when's importer clause rests on logs/importers-head.log, which carries no failure summary and no EXIT because the run was cut at 44%, and the sweep was never run on all_debug as the done_when names.",
+    "fit": "reckon/crew/dispatch_refusals.py:318 and :357 follow the module's existing helper-and-comment idiom and reuse record_launch_refusal and write_json_atomically rather than growing a second writer, and no added name carries a plan, section or ticket identifier.",
+    "goal_fidelity": "reckon/crew/dispatch_refusals.py:408 gates the refusal on _names_the_released_attempt, so the fence holds against the abandoned attempt and admits a re-queued request's next attempt, which is the goal verbatim.",
+    "reuse": "reckon/crew/dispatch_claims.py:1120 read_claim is the owner the fence now reads through, but reckon/crew/dispatch_refusals.py:338 re-implements the owner's run-id keyed wrapper dispatch_claims.read_launch_claim at :1136 instead of calling it, so the capability is duplicated rather than extended.",
+    "scope_discipline": "git diff c3f7a61e05..cebed77898 changes only the two declared source files, the new test file, the edited stranded-queue test and the declared evidence fragment; the declared figure directory and second fragment are simply unused."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261115T185508752110-review-of-fence-names-the-attempt-s10-cebed77898c3",
+  "reviewed_base_sha": "c3f7a61e05e8b8e3715274358970a2aeee82fbe0",
+  "reviewed_head_sha": "cebed77898c3b27152434136a2413ff80ec888b9",
+  "reviewed_run_id": "r-20261115T125732090447-fence-names-the-attempt-s10",
+  "scores": {
+    "durability": 17,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T19:13:10.131942+00:00",
+  "total": 99,
+  "verdicts": {
+    "diff": "VERDICT diff: read commit by commit against base c3f7a61e05; 363ae452ba adds attempt keying, 6a6ade3303 the fragment, e6f3765b31 the re-queue mark and the conflation guard, 3923d180f5 and cebed77898 the figures, and 54d6347f6c re-points the fence at dispatch_claims.read_claim instead of a local parse, for 5 files and +325/-5.",
+    "done_when": "VERDICT done_when: the done_when names new tests failing at base 2424ab7511, the two existing test files keeping their cases, and importing tests adding no failure against base; logs/base-2424ab7511-new-tests.log reads 3 failed, 4 passed, logs/baseline-c3f7a61e.log reads 65 passed against logs/after-head.log 69 passed at cebed77898, and the importer clause is complete only at e6f3765b31, since logs/importers-head.log stops at 44% with no summary.",
+    "goal": "VERDICT goal: the goal is to key the released-launch refusal on the abandoned attempt so a re-queued request launches on the next pass; reckon/crew/admission/launching.py:619 records the claim the release took, reckon/crew/dispatch_refusals.py:274 marks the re-queue, and reckon/crew/dispatch_refusals.py:357 admits a later claim of the same run while the abandoned attempt is still refused.",
+    "manifest": "VERDICT manifest: read; it names commits 363ae452ba through cebed77898, the five-file gate command and its 69-passed head arm against a 65-passed base arm, the 3-failed base-revision arm, the negative control, and it admits in checkpoint that the final-head importer sweep was still running when the record closed.",
+    "write_paths": "VERDICT write_paths: the declared scope is reckon/crew/dispatch_refusals.py, reckon/crew/admission/launching.py, three test files, one evidence fragment and a figure directory; git diff c3f7a61e05..cebed77898 touches exactly the two source files, tests/test_a_requeued_request_is_not_fenced.py, tests/test_a_stranded_queued_request_goes_back_to_the_queue.py and docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/stranded-launch-attempt-fence.html, all inside it."
+  }
+}

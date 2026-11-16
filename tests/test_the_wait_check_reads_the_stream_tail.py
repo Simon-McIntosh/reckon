@@ -163,3 +163,69 @@ def test_a_stream_with_no_tool_call_reads_as_no_wait(tmp_path) -> None:
         tmp_path / "stream.jsonl", [_assistant_text("thinking") for _ in range(50)]
     )
     assert _wait(log) is None
+
+
+@pytest.mark.parametrize(
+    "kind", ["tool_execution_start", "tool_execution_update", "message_end"]
+)
+def test_omp_tool_records_use_the_shared_wait_reader(tmp_path, kind) -> None:
+    event = {
+        "type": kind,
+        "toolName": "bash",
+        "args": {"command": "sleep 90"},
+    }
+    if kind == "message_end":
+        event = {
+            "type": kind,
+            "message": {
+                "content": [
+                    {
+                        "type": "toolCall",
+                        "name": "bash",
+                        "arguments": {"command": "sleep 90"},
+                    }
+                ]
+            },
+        }
+    log = _write(tmp_path / "stream.jsonl", [json.dumps(event)])
+    assert recovery_wait._last_tool_call(log) == ("bash", "sleep 90")
+    assert _wait(log) == "a 90s sleep"
+
+
+def test_an_omp_update_without_arguments_keeps_the_latest_start(tmp_path) -> None:
+    log = _write(
+        tmp_path / "stream.jsonl",
+        [
+            json.dumps(
+                {
+                    "type": "tool_execution_start",
+                    "toolName": "bash",
+                    "args": {"command": "sleep 90"},
+                }
+            ),
+            json.dumps({"type": "tool_execution_start", "toolName": "read"}),
+            json.dumps({"type": "tool_execution_update", "toolName": "read"}),
+        ],
+    )
+    assert recovery_wait._last_tool_call(log) == ("read", "")
+    assert _wait(log) is None
+
+
+def test_an_omp_call_crossing_blocks_keeps_its_command(tmp_path) -> None:
+    command = "echo " + "z" * 300_000 + "; sleep 90"
+    log = _write(
+        tmp_path / "stream.jsonl",
+        [
+            json.dumps(
+                {
+                    "type": "tool_execution_start",
+                    "toolName": "bash",
+                    "args": {"command": command},
+                }
+            ),
+            json.dumps({"type": "tool_execution_update", "toolName": "bash"}),
+            '{"type":',
+        ],
+        trailing_newline=False,
+    )
+    assert recovery_wait._last_tool_call(log) == ("bash", command)

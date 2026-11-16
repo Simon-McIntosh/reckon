@@ -1,14 +1,14 @@
 """A discarded run leaves every list it was drawn on, and the stop draws nothing.
 
 A coordinator stops an unwanted run and then discards it, and must not see the
-run again: the pane named a discarded review ``needs you`` with a killed
+run again: the pane named a discarded review ``help`` with a killed
 counter after the discard was issued, and drew a transition out of that word
 while the run it named was already gone.
 
 The guarantee is a chain rather than one filter. The stop moves the run into its
-stopped phase while the pane has already drawn it ``needs you``; the discard
+stopped phase while the pane has already drawn it ``help``; the discard
 removes the pointer and writes its own record; and the run then reads as a
-dropped departure rather than the block it left. The needs-you set, the
+dropped departure rather than the block it left. The help set, the
 obligations list and the pane all lose the run on that word.
 
 The cases drive the real ``crew stop`` (``crew.terminate``) against a child
@@ -183,8 +183,8 @@ def test_a_discarded_run_leaves_the_needs_you_set_and_the_obligations_list(home)
         # shown working before anything is dropped.
         pane = ticker.Ticker(width=200, color=False)
         halted_line = pane.render(_halt_event(before))
-        assert "→ needs you" in halted_line, halted_line
-        assert " 1n " in halted_line, halted_line
+        assert "→ help" in halted_line, halted_line
+        assert " 1h " in halted_line, halted_line
 
         # The stop ends the run's own process and records the phase. It asks
         # for nothing the coordinator has not already answered by stopping, so
@@ -220,8 +220,8 @@ def test_a_discarded_run_leaves_the_needs_you_set_and_the_obligations_list(home)
         assert previous in ticker.NEEDS_ACTION, departed
         drop_line = pane.render(_transition_event(row, previous, state, counts))
         assert "→ dropped" in drop_line, drop_line
-        assert "→ needs you" not in drop_line, drop_line
-        assert " 0n " in drop_line, drop_line
+        assert "→ help" not in drop_line, drop_line
+        assert " 0h " in drop_line, drop_line
     finally:
         if leftover.poll() is None:
             leftover.kill()

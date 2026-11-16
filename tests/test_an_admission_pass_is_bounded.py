@@ -1,12 +1,8 @@
-"""An admission pass spends one launch budget, and says what each launch cost.
+"""Selection spends one wall-clock budget and records each launch's duration.
 
-A pass that runs until its queue is empty holds every freed seat until it ends,
-so a request reaches a seat only once the whole pass is done, and a stall inside
-it hides which launch and which step was slow. The pass therefore launches
-until the tests' budget is spent — a figure deliberately away from the flight
-default, so a pass that ignores the argument it was handed is visible — ends,
-and leaves the rest of the queue untouched for the next pass; every launch it
-does make carries its own duration and its slowest step on the verdict row.
+Concurrent launches overlap in wall time. The selection-budget probe charges
+its clock at candidate validation, while the duration probe advances only the
+single launch it measures, keeping those two quantities independent.
 """
 
 from __future__ import annotations
@@ -23,8 +19,8 @@ from reckon import flight
 from reckon.crew import queue_admission, runs
 from tests import test_each_admission_pass_records_its_verdict as fixtures
 
-# Not the flight default: at 30 s a stubbed 20 s launch fits twice, so a pass
-# that fell through to the 60 s default would launch once more and be caught.
+# Two twenty-second candidate validations fit the thirty-second selection
+# budget; a pass falling through to the sixty-second default considers more.
 BUDGET = 30.0
 
 # The default the flight config supplies when the key says nothing.
@@ -93,20 +89,32 @@ def _publish_flight_budget(monkeypatch: pytest.MonkeyPatch, seconds: float) -> N
 def _run(
     resolve: Any,
     clock: _Clock,
+    monkeypatch: pytest.MonkeyPatch,
     *,
+    charge_selection: bool = True,
     budget: float | None = BUDGET,
     launcher: Any = None,
 ) -> dict[str, Any]:
-    return queue_admission.admit_once(
-        config_for=resolve,
-        launcher=launcher if launcher is not None else _timed_launcher(clock),
-        clock=clock,
-        budget_seconds=budget,
-    )
+    original = queue_admission._launch_reread_refusal
+
+    def validate(pointer):
+        refusal = original(pointer)
+        if charge_selection:
+            clock.now += LAUNCH_SECONDS
+        return refusal
+
+    with monkeypatch.context() as change:
+        change.setattr(queue_admission, "_launch_reread_refusal", validate)
+        return queue_admission.admit_once(
+            config_for=resolve,
+            launcher=launcher if launcher is not None else fixtures._launcher([]),
+            clock=clock,
+            budget_seconds=budget,
+        )
 
 
 def test_a_pass_stops_when_its_launch_budget_is_spent(
-    admit_repo: Path, tmp_path: Path
+    admit_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     lane = tmp_path / "lane.json"
     fixtures._write_lane(lane, fixtures._session_lane(10.0))
@@ -114,7 +122,7 @@ def test_a_pass_stops_when_its_launch_budget_is_spent(
     run_ids = _queue(admit_repo, 4)
     clock = _Clock()
 
-    first = _run(resolve, clock)
+    first = _run(resolve, clock, monkeypatch)
 
     assert first["launched"] == run_ids[:2]
 
@@ -131,25 +139,31 @@ def test_a_pass_stops_when_its_launch_budget_is_spent(
     assert {row["run_id"] for row in first["verdicts"]}.isdisjoint(deferred)
 
     fixtures._write_lane(lane, fixtures._session_lane(10.0))
-    second = _run(resolve, clock)
+    second = _run(resolve, clock, monkeypatch)
 
     assert second["launched"] == deferred
     assert second["launch_budget_exhausted"] is False
 
 
 def test_a_launch_row_carries_its_duration_and_slowest_step(
-    admit_repo: Path, tmp_path: Path
+    admit_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     lane = tmp_path / "lane.json"
     fixtures._write_lane(lane, fixtures._session_lane(10.0))
     _, resolve = fixtures._config_with_lane(lane)
-    _queue(admit_repo, 4)
+    _queue(admit_repo, 1)
     clock = _Clock()
 
-    result = _run(resolve, clock)
+    result = _run(
+        resolve,
+        clock,
+        monkeypatch,
+        charge_selection=False,
+        launcher=_timed_launcher(clock),
+    )
 
     launched = [row for row in result["verdicts"] if row["verdict"] == "launched"]
-    assert len(launched) == 2
+    assert len(launched) == 1
     for row in launched:
         assert row["launch_seconds"] == LAUNCH_SECONDS
         assert row["slowest_step"] == "dispatch"
@@ -165,14 +179,14 @@ def test_a_pass_with_no_budget_reads_the_flight_value(
     run_ids = _queue(admit_repo, 4)
     _publish_flight_budget(monkeypatch, BUDGET)
 
-    result = _run(resolve, _Clock(), budget=None)
+    result = _run(resolve, _Clock(), monkeypatch, budget=None)
 
     assert result["launch_budget_seconds"] == BUDGET
     assert result["launched"] == run_ids[:2]
 
 
 def test_a_pass_leaves_the_shared_config_untouched(
-    admit_repo: Path, tmp_path: Path
+    admit_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     lane = tmp_path / "lane.json"
     fixtures._write_lane(lane, fixtures._session_lane(10.0))
@@ -180,7 +194,7 @@ def test_a_pass_leaves_the_shared_config_untouched(
     _, resolve = fixtures._config_with_lane(lane)
     _queue(admit_repo, 2)
 
-    _run(resolve, _Clock())
+    _run(resolve, _Clock(), monkeypatch)
 
     assert before == fixtures.CONFIG
 

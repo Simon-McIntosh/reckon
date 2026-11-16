@@ -1,0 +1,149 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T23:05:44.559Z",
+  "dispatched_at": "2026-11-15T23:05:17Z",
+  "findings": [
+    {
+      "anchor": "plan.html:333",
+      "id": "done_when-1",
+      "reason": "a node arriving at an already-green file either omits the control or waives it, and \u00a729 also cites 24 same-day repairs across four files, exactly the interference that creates this case.",
+      "text": "\u00a729's `Done when` requires \"the base revision's run of the named file, with its failing ids\", while the deliverable defines the case of \"a file that already passes when the node starts, because another node's repair reached it\" and asks it to be \"delivered as such with the passing run\"; for that node there are no failing ids at base, so the declared negative control cannot be produced and the node cannot close on its own done-when",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:333",
+      "id": "done_when-2",
+      "reason": "the only collateral-damage measure the section names is vacuous for the test-only repairs it explicitly expects, so those nodes deliver an arm whose passing proves nothing.",
+      "text": "\"The node's own arm over the files that import what it changed adds no failure against the base\" is empty for one of \u00a729's two stated verdicts: a node that finds \"a test that encodes a rule the code no longer keeps\" changes only that test file, which nothing imports, so the arm selects nothing and cannot fail",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:333",
+      "id": "evidence_paths-1",
+      "reason": "enumerating the per-file nodes is the coordinator's first act on this section, and the plan gives it a cache path rather than a durable evidence fragment it can open later.",
+      "text": "the section's scope is \"each test file that fails on the primary branch\", but that population exists only as the file list inside `~/.cache/reckon-suite-at-head/suite-at-8d50b0333f.log`; a cache directory is swept routinely, and when it goes the 393-file population that sizes the \u00a729 fan-out goes with it, leaving only a count in the prose",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:333",
+      "id": "reasoning-1",
+      "reason": "24 effort-hours of file repairs is justified by a hiding mechanism the added-failure rule already excludes, so the author should either state the cost the sweep actually removes or re-scope the endpoint.",
+      "text": "the Why's stated mechanism, that a failure \"hidden beside\" a pre-existing one defeats the added-failure judgement, does not match the comparison the plan's own \u00a713 rests on: landing takes the set difference of failing test ids (`failure_ids_covered` in `reckon/crew/review.py`), so an id already red at base is covered by the base arm and a newly failing id is still reported; the cost of a red primary branch is that every base arm must attribute or waive those 24 ids and a full run costs 69 minutes, not that a new failure escapes",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "f0dacc7436175c6db4e799a374e3ca5a9a6414f9",
+  "plan_fingerprint": "3b3e3f8d3a40501afb93d0f1ef89226ea85ed46c73ce9a0a0c7552ff26ee2e51",
+  "plan_slug": "queued-work-needs-no-workaround",
+  "plan_version": 119,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "finding": "done_when-1",
+      "reason": "The section already states the outcome for a file green at the node's start: it is delivered as such with the passing run. The base-run clause binds only a file red at the node's base; the coordinator accepts the passing run as that node's whole evidence at landing. The done-when is left unedited so the 24 queued requests stay covered.",
+      "when": "2026-11-15T23:31:54.765701+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "finding": "done_when-2",
+      "reason": "For a test-only repair the proof is the named file's own run turning green against its recorded failing ids at base; an empty importer arm is the correct reading that nothing else can have moved. The coordinator checks the diff touches only that test file before landing.",
+      "when": "2026-11-15T23:32:00.904712+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "finding": "evidence_paths-1",
+      "reason": "Each of the 24 queued requests names its file in its own goal, so the dispatched population is held in the queue records, not the cache log. The remaining population is re-measured by a fresh suite run at the then-current head before the next batch, because the list at one revision ages with every landing.",
+      "when": "2026-11-15T23:32:08.240295+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "finding": "reasoning-1",
+      "reason": "The mechanism correction is right: the set difference of failing ids still reports a new failure. The cost the section removes is the attribution or waiver of the red ids on every base arm; the endpoint is unchanged by that correction, and the Why text is corrected at the next edit of this section rather than reopening its review now.",
+      "when": "2026-11-15T23:32:13.045870+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "declined",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "reason": "The section already states the outcome for a file green at the node's start: it is delivered as such with the passing run. The base-run clause binds only a file red at the node's base; the coordinator accepts the passing run as that node's whole evidence at landing. The done-when is left unedited so the 24 queued requests stay covered.",
+      "when": "2026-11-15T23:31:54.765701+00:00"
+    },
+    "done_when-2": {
+      "action": "declined",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "reason": "For a test-only repair the proof is the named file's own run turning green against its recorded failing ids at base; an empty importer arm is the correct reading that nothing else can have moved. The coordinator checks the diff touches only that test file before landing.",
+      "when": "2026-11-15T23:32:00.904712+00:00"
+    },
+    "evidence_paths-1": {
+      "action": "declined",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "reason": "Each of the 24 queued requests names its file in its own goal, so the dispatched population is held in the queue records, not the cache log. The remaining population is re-measured by a fresh suite run at the then-current head before the next batch, because the list at one revision ages with every landing.",
+      "when": "2026-11-15T23:32:08.240295+00:00"
+    },
+    "reasoning-1": {
+      "action": "declined",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "reason": "The mechanism correction is right: the set difference of failing ids still reports a new failure. The cost the section removes is the attribution or waiver of the red ids on every base arm; the endpoint is unchanged by that correction, and the Why text is corrected at the next edit of this section rather than reopening its review now.",
+      "when": "2026-11-15T23:32:13.045870+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-queued-work-needs-no-workaround.v119.json",
+  "review_run_id": "r-20261115T225124220756-plan-review-of-queued-work-needs-no-workaround",
+  "reviewed_blob_sha": "bac28d209d3ee970181d33110d5eb5ccda0e1e67",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 revision 8d50b0333f resolves on main (`git cat-file -t` \u2192 commit), `/home/ITER/mcintos/.cache/reckon-suite-at-head/suite-at-8d50b0333f.log` exists and its summary line reads \"1037 failed, 21127 passed, 15 skipped, 82 warnings, 41 errors\", 393 test files carry a FAILED or ERROR line, and `docs/evidence/fragments/queued-work-needs-no-workaround/` holds the cited repair fragment.",
+    "done_when": "a finding \u2014 \u00a729's negative control is unproducible for the already-green case the same section's deliverable defines, and its importers arm is vacuous for the test-only verdict it also defines.",
+    "evidence_paths": "a finding \u2014 the 393-file population the section schedules against is defined only by a log under `~/.cache`, not by a durable evidence path any later reader can open once the cache is swept.",
+    "naming": "pass \u2014 \u00a729 names no symbol, file or function, and its \"product or the test was wrong\" verdict is a mechanism stated without a tracker label.",
+    "reasoning": "a finding \u2014 \u00a729's Why asserts that an already-red primary-branch failure \"hides a new one beside it\", but the added-failure rule the plan's own \u00a713 relies on compares failing test ids (`failure_ids_covered`), so a base-red id cannot cover a newly failing id; the harm the sweep removes is cost and noise, not detection.",
+    "single_goal": "pass \u2014 \u00a729 names one deliverable (a named test file passes in full, per-cause verdict recorded), and the per-file fan-out carries that one goal to each node.",
+    "wiring": "pass \u2014 the changed declarations match every section's own `data-status` (s26 and s27 read done, s6 done, s29 implementable), s24's depends-on edge to s23 resolves, and s29 needs no dependency; the open followup's prose list still omits \u00a728/\u00a729, which the author has declined three times on the ground that coordinators queue from `plan-section-declarations`, so it is not raised again."
+  },
+  "section_digests": {
+    "_document": "1e0f4dd01cb7dbf510ef981f0ea169e3290b14755e051f491aa9834c3174e3e5",
+    "s1": "965e293bc718e24bc6e0b306c2e31f4694e8d3d1f2aafc97e86aac0ccdc0eb46",
+    "s10": "501d0d72406c2fda4dc47939b9700d2c42eb9011387b4df7abdfcc55d906d345",
+    "s11": "4dc7e37e7c9ff6d074c540a19ff75d7db784999f7b811a999a052a00fcbacb39",
+    "s12": "cf244a99091ee04721474e6caad0adad1fb1c907edc99e9fd73b86fb3251685c",
+    "s13": "8cdf1aaa77a692163d0b36bc751a206e8f6c96460d0e44b85d9feb5a76f99659",
+    "s14": "e033ab0daa427195a357d93c3b5969c3fae24f311a8dafa8b2a6bad8db0b518e",
+    "s15": "c271f7bcaa272ebd4bf87d7b1e7153251ec38aa5863fd8a3d7f12cdf1c66bd06",
+    "s16": "e958886ca859d584799d4d94514466d7e14ba4c818ac307fcb864c7eb39fa549",
+    "s17": "dd6b738e7e017fe3bc312e85841a1a6a4b4d5dc818c618040249040acf51ff19",
+    "s18": "cce913fd1fd3cd0d62df97ae997ebb6708c0f8082d5fb90425f676f105322724",
+    "s19": "eaeead248338c8d630a84c78ae20179b603aa87fc7b0a599cced40377f9d8297",
+    "s2": "872b1ec9c49f32d972d450016002b1265e846673cd1aef42c41aaccc50583998",
+    "s20": "0e0d4849ea6b6f69d5354bef8f8699320f369433778609f009cf726a6657a1ee",
+    "s21": "1ba6fbba19ed595b11f5efb9d35bd3b6620bad888924989e016324a2ad6a714e",
+    "s22": "fce0ba09ddb9ec3bc2b594b7cd00683449d9a170142add8d81af3fdd14b02100",
+    "s23": "43fe6c8d8a3118b055dc76b75bd328396172198ba8c599d5fd70be079950e6f4",
+    "s24": "04f04dd8812de5d9c7b9410b01df1ecca1b5d54a6033156ef6c0e016e94d83a8",
+    "s25": "afd11e98028c6beb77d132f656f7e433fab87c40e3e0f5257920383e880c2cd9",
+    "s26": "86ee010dedc3babeebe536a7600e36d642ff7e96b15d2ca37ba6543b3da2caa0",
+    "s27": "77553fb962d6e701c89758fbdc77af812395fd33dff4a7bb97d3449f9a7a549a",
+    "s28": "7456663a1516834f96910a588c2bfef971ac8759485a26e01d93ff834ae5b664",
+    "s29": "686297f9ec76495ef83e0a8d37508cdd135e76797ea84024eaec7dc24e571e08",
+    "s3": "2a385591edce8d1cb26d41f176fb084cd634d113eb130d2581ce97000bcb3eea",
+    "s4": "0116c3c4a34b6e607b2564cc4300d3784ba5d7596a0000d0b59c40e1801dcd1a",
+    "s5": "81cc22db14da433d65d2cbfd466e233d778e9b5d50552dc7a013e94a3b25ad15",
+    "s6": "91849d1cd49d8e783c893b01272f0e0f505aed67e379d52d354011a619270a1d",
+    "s7": "0eb7720abb0f46f8d48d47fcf646be85ae58c8a5cc37c98f7ad06ac2f9deb6ff",
+    "s8": "5dcf0f324a6b831b76a043e465731eff46456979ae084bcfc764ff0d40816359",
+    "s9": "b22a82394cfc2b7163b7fbd8be1087fdb6ec66a16524e9d194431d418894d798"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T23:19:44.064867+00:00",
+  "total": null
+}

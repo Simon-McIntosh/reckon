@@ -9,6 +9,7 @@ import os
 import signal
 import subprocess
 import sys
+import threading
 from pathlib import Path
 
 import pytest
@@ -48,6 +49,10 @@ def _interrupted_pass(stage, channel, resolve):
         signal.pause()
 
     def handover(pointer, **kwargs):
+        # Freeze other launches before their handover so the pipe names one
+        # interruption boundary; recovery must still conserve every request.
+        if pointer["run_id"] != "r-interrupted-0":
+            threading.Event().wait()
         if stage == "before-release":
             barrier()
         result = original(pointer, **kwargs)

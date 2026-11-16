@@ -306,6 +306,25 @@ def with_normalised_findings(record: Mapping[str, Any]) -> dict[str, Any]:
     return {**record, "findings": normalised_findings(record)}
 
 
+def with_canonical_claims(record: Mapping[str, Any]) -> dict[str, Any]:
+    """Return ``record`` carrying its claim verdicts under the parser's key.
+
+    A record that states them under :data:`CLAIM_VERDICT_FIELDS`'s other spelling
+    is folded to ``claims``, so every reader — the delivery check and the
+    promotion rule alike — asks one question of one field. A record already
+    carrying ``claims`` is returned unchanged, the parser's spelling wins, and a
+    record carrying neither list is left alone so the completeness rule still
+    reports the measurement missing rather than seeing an empty list.
+    """
+    if isinstance(record.get("claims"), list):
+        return dict(record)
+    for field in CLAIM_VERDICT_FIELDS:
+        candidate = record.get(field)
+        if isinstance(candidate, list):
+            return {**record, "claims": list(candidate)}
+    return dict(record)
+
+
 def claimless_findings(review: Mapping[str, Any]) -> list[tuple[int, Any]]:
     """Return each claimless entry with its index in the record's findings.
 
@@ -397,6 +416,43 @@ CLAIM_VERDICTS: tuple[str, ...] = ("reproduced", "differs", "not-runnable")
 # table states that as ``not-runnable`` on the summary as well.
 CLAIM_SUMMARY_VERDICTS: tuple[str, ...] = ("agrees", "differs", "not-runnable")
 CLAIMS_REQUIRED = 3
+# The keys a stored claims record may state its per-claim verdicts under. The
+# parser writes ``claims``; a reviewer composing a record by hand states the same
+# verdicts under ``claim_verdicts``, and one such record is stored. Both spellings
+# name the same measurement, so they are folded to one before any reader judges
+# the record: a reader that saw only one key would refuse a review that answered
+# every claim, and two readers that folded differently would disagree about
+# whether the same review is complete.
+CLAIM_VERDICT_FIELDS: tuple[str, ...] = ("claims", "claim_verdicts")
+# How a delivery refusal words each measure the completeness rule reports
+# missing. The rule itself is not restated here: a second copy of it would
+# answer differently from the one the promotion reader applies, and a record
+# admitted by one and refused by the other is a review whose fate depends on
+# which reader asks. The ``claims`` entry carries a ``{claims}`` placeholder
+# because how many verdicts are owed is not actionable on its own: the refusal
+# names the ranked claims the record left unanswered, so a reviewer re-runs
+# those rather than guessing which of the report's claims it skipped.
+CLAIMS_MISSING_MESSAGES: dict[str, str] = {
+    "claims": (
+        "review record carries no verdict for {claims}: a claims review records one "
+        "`CLAIM <n>: <verdict>: <what the re-run showed>` line for each claim it "
+        "is asked to check, ranked from 1, and the record owes "
+        f"{CLAIMS_REQUIRED} of them — re-run the claims it skipped and store the "
+        "record again"
+    ),
+    "claim verdicts": (
+        "review record carries a claim verdict outside the vocabulary: each claim "
+        f"line states one of {', '.join(CLAIM_VERDICTS)} — re-run that claim and "
+        "store the record again"
+    ),
+    "claim_summary": (
+        "review record carries no verdict for the report's summary: a claims "
+        "review records one `CLAIM_SUMMARY: <agrees|differs|not-runnable>: <the "
+        "report's summary line and how it compares to its table>` line, so the "
+        "report's head-line figures go unchecked — compare them with the table "
+        "beneath and store the record again"
+    ),
+}
 
 # A figure review judges the rendered artifact as well as its source paths. Its
 # findings are qualitative, so it records rubric verdicts rather than the
@@ -410,6 +466,131 @@ FIGURE_REVIEW_ITEMS: tuple[str, ...] = (
     "table_form",
     "label_collision",
 )
+
+# ── The rubrics that measure verdicts rather than the six dimensions ────────
+# Every rubric above records one verdict per item it asks about: the plan
+# rubric and the plan-design rubric state whether a finding would change the
+# plan, the health rubric one verdict per read target, the claims rubric one
+# verdict per re-run claim, and the figure rubric one verdict per rendering
+# check. None of them scores the landed-node dimensions, because none of them
+# reads a landed diff. The delivery contract asks a reviewed record for its six
+# text scores; the rubric the record names decides whether that is a
+# measurement it owes, so a rubric listed here is exempt and one added later is
+# exempted by being listed here rather than by a second rule beside the first.
+ITEM_VERDICT_RUBRICS: frozenset[str] = frozenset(
+    {
+        CLAIMS_RUBRIC,
+        FIGURE_REVIEW_RUBRIC,
+        HEALTH_REVIEW_RUBRIC,
+        *PLAN_REVIEW_RUBRICS,
+    }
+)
+
+# ── The figures one figure review judges ────────────────────────────────────
+# A run that changed several figures gets one figure review, whose brief
+# attaches each of them, so its record states the rubric verdicts per figure
+# rather than once for the run: a single item map cannot hold two figures'
+# ``legibility`` verdicts without one overwriting the other. The field below is
+# that per-figure map — figure path to item verdicts — and every reader that
+# asks whether the review answered its rubric reads it through
+# :func:`figure_rubric_verdicts` and :func:`with_figure_verdicts`, so a record
+# written in the per-figure shape and one written flat are answered alike. A
+# reader that read the flat map alone reported a complete per-figure record as
+# carrying no verdict at all, which is the refusal two sessions met.
+FIGURE_VERDICTS_KEY = "figures"
+
+# The figure-and-item pairs a per-figure record left unanswered, under the key
+# a refusal reads them from. The folded item map can only say that an item is
+# absent; this says which figure and which item, because a figure defect is
+# repaired by opening the figure and an item name alone does not say which one.
+FIGURE_VERDICT_SHORTFALLS_KEY = "figure_verdict_shortfalls"
+
+
+def figure_rubric_verdicts(
+    record: Mapping[str, Any],
+) -> tuple[dict[str, str], list[str]]:
+    """A figure record's item verdicts, folded from its per-figure verdicts.
+
+    Returns the item map every rubric reader asks and the ``<figure>: <item>``
+    pairs left unanswered. An item is present in the folded map only when every
+    figure the record names carries a non-blank verdict for it, because a
+    verdict for one figure says nothing about the next: a folded map that
+    counted one figure's verdict for another's would report a review nobody
+    made. A record stating its verdicts flat — one figure's record, the shape
+    written before several figures shared a review — is returned as it stands,
+    with no shortfall, so its reading does not move.
+    """
+    flat = record.get("rubric_items")
+    stated = (
+        {str(key): str(value) for key, value in flat.items()}
+        if isinstance(flat, Mapping)
+        else {}
+    )
+    figures = record.get(FIGURE_VERDICTS_KEY)
+    if not isinstance(figures, Mapping):
+        return stated, []
+    folded: dict[str, list[str]] = {item: [] for item in FIGURE_REVIEW_ITEMS}
+    shortfalls: list[str] = []
+    named = 0
+    for key, verdicts in sorted(figures.items(), key=lambda row: str(row[0])):
+        path = str(key)
+        named += 1
+        stated_items = verdicts if isinstance(verdicts, Mapping) else {}
+        for item in FIGURE_REVIEW_ITEMS:
+            verdict = str(stated_items.get(item) or "").strip()
+            if verdict:
+                folded[item].append(f"{path}: {verdict}")
+            else:
+                shortfalls.append(f"{path}: {item}")
+    return {
+        item: "; ".join(rows) for item, rows in folded.items() if len(rows) == named
+    }, shortfalls
+
+
+def with_figure_verdicts(record: Mapping[str, Any]) -> dict[str, Any]:
+    """Return ``record`` carrying a figure review's verdicts as one item map.
+
+    A per-figure record is folded to the item map the completeness rule reads,
+    and the pairs it left unanswered are carried beside it under
+    :data:`FIGURE_VERDICT_SHORTFALLS_KEY` so a refusal can name the figure. A
+    record already written flat is returned unchanged, so no reader sees a
+    field it did not ask for.
+    """
+    if not isinstance(record.get(FIGURE_VERDICTS_KEY), Mapping):
+        return dict(record)
+    folded, shortfalls = figure_rubric_verdicts(record)
+    return {
+        **record,
+        "rubric_items": folded,
+        FIGURE_VERDICT_SHORTFALLS_KEY: [str(entry) for entry in shortfalls],
+    }
+
+
+# ── The template a reviewer may still be writing ────────────────────────────
+# A review's brief hands the reviewer the line shapes its report must take, and
+# a reviewer that pastes those shapes before it has read anything leaves the
+# template's placeholders where a verdict and a finding go. Such a report parses
+# as a finished review — the placeholder is non-empty text in the verdict cell
+# and a claimless finding on the FINDING line — and storing it takes a record
+# with no verdict and no finding back to the gate, which is how three real
+# findings never reached one. The token is machine-only, so a report that still
+# carries one is a report whose reviewer had not finished writing it.
+REPORT_PLACEHOLDER_RE = re.compile(r"\b[A-Z][A-Z0-9_]*-PLACEHOLDER(?:-\d+)?\b")
+
+
+def report_placeholders(text: str) -> list[str]:
+    """The template placeholders a report still carries, each named once.
+
+    Order is the order they appear in the report, named once each: a reviewer
+    fixing its report reads the list as the places to fill, and a list that
+    repeated one token per section would be longer than the repair it asks for.
+    """
+    found: list[str] = []
+    for token in REPORT_PLACEHOLDER_RE.findall(text):
+        if token not in found:
+            found.append(token)
+    return found
+
 
 # ── The revision pair a review read ─────────────────────────────────────────
 # The store already carries these five spellings. Base spellings describe the
@@ -957,6 +1138,75 @@ def store_review_refusals(record: Mapping[str, Any]) -> list[str]:
     return refusals
 
 
+def missing_claim_ranks(record: Mapping[str, Any]) -> list[str]:
+    """The ranked claims a claims record carries no verdict for, in rank order.
+
+    A claims review answers the report's top ``CLAIMS_REQUIRED`` ranked claims,
+    so a skipped re-run is named by the rank it left out. Both spellings of a
+    claim's identity answer a rank — the ``CLAIM <n>`` line's rank and the id a
+    structured record may carry instead — because a claim that states its id is
+    still a claim the reviewer answered. The record must already carry its
+    verdicts under the canonical key; :func:`with_canonical_claims` folds them
+    first.
+    """
+    claims = record.get("claims")
+    answered: set[str] = set()
+    if isinstance(claims, list):
+        for claim in claims:
+            if not isinstance(claim, Mapping):
+                continue
+            for key in ("rank", "id"):
+                value = claim.get(key)
+                if value is not None and not isinstance(value, bool):
+                    text = str(value).strip().lstrip("#")
+                    if text:
+                        answered.add(text)
+    return [
+        str(rank) for rank in range(1, CLAIMS_REQUIRED + 1) if str(rank) not in answered
+    ]
+
+
+def _claims_owed_phrase(record: Mapping[str, Any]) -> str:
+    """How a refusal names the claims a record left unanswered."""
+    ranks = missing_claim_ranks(record)
+    label = "claim" if len(ranks) == 1 else "claims"
+    return f"{label} {', '.join(ranks)}"
+
+
+def claims_verdict_refusals(record: Mapping[str, Any]) -> list[str]:
+    """The refusals a claims record earns for a measure it left unanswered.
+
+    A claims review re-runs the claims the report ranks highest and records one
+    verdict for each, plus one for the report's own summary line. Whether a
+    stored record carries that measurement is decided in one place — the
+    promotion reader's ``_claims_missing_measures`` — because a record admitted
+    here and refused at promotion is a review whose fate depends on which reader
+    asks: it passes its delivery check and then cannot land. So this function
+    calls that rule rather than restating it, and every refusal it returns names
+    one of the measures the stored record is missing — and, for the verdicts
+    themselves, the ranks of the claims left unanswered, so the refusal says
+    which re-run is owed.
+
+    The rule is imported at call time because the module that owns it reads this
+    one, and a module-level edge would close a cycle. A measure it reports that
+    this table cannot word raises rather than being dropped, so a rule that grows
+    a measure fails loudly here instead of going unreported. The record's verdicts
+    are folded to their canonical key first, by the same
+    :func:`with_canonical_claims` the store's read path applies, so a record
+    written by hand under the other spelling is judged on the answers it gave.
+    """
+    from .recovery_review_subject import _claims_missing_measures
+
+    canonical = with_canonical_claims(record)
+    refusals: list[str] = []
+    for name in _claims_missing_measures(canonical):
+        message = CLAIMS_MISSING_MESSAGES[name]
+        if name == "claims":
+            message = message.format(claims=_claims_owed_phrase(canonical))
+        refusals.append(message)
+    return refusals
+
+
 def review_record_refusals(record: Mapping[str, Any]) -> list[str]:
     """Check the current review delivery contract and the store's refusals."""
     required = (
@@ -969,11 +1219,12 @@ def review_record_refusals(record: Mapping[str, Any]) -> list[str]:
     refusals = [
         f"missing {key}" for key in required if not str(record.get(key) or "").strip()
     ]
-    # A figure-rubric record is not scored on the six text dimensions, so it
-    # needs neither a ``scores`` mapping nor the dimensions inside one. Its
-    # reviewer records a verdict per rubric item instead, so the absence of the
-    # text scores is the rubric, not an omission.
-    if _review_record_rubric(record) != FIGURE_REVIEW_RUBRIC:
+    # A record under a verdict-per-item rubric is not scored on the six text
+    # dimensions, so it needs neither a ``scores`` mapping nor the dimensions
+    # inside one. Its reviewer records a verdict per rubric item instead, so the
+    # absence of the text scores is the rubric, not an omission.
+    rubric = _review_record_rubric(record)
+    if rubric not in ITEM_VERDICT_RUBRICS:
         scores = record.get("scores")
         if not isinstance(scores, Mapping):
             refusals.append("missing scores")
@@ -983,6 +1234,8 @@ def review_record_refusals(record: Mapping[str, Any]) -> list[str]:
                 for key in REVIEW_DIMENSIONS
                 if key not in scores
             )
+    elif rubric == CLAIMS_RUBRIC:
+        refusals.extend(claims_verdict_refusals(record))
     count = record.get("added_failure_count")
     if not isinstance(count, int) or isinstance(count, bool) or count < 0:
         refusals.append("missing or invalid added_failure_count")
@@ -1466,6 +1719,9 @@ def parse_plan_review_report(text: str, *, rubric: str) -> dict[str, Any]:
       counting the report's findings of that item in the order they appear, so
       an id is stable across a re-read of the same report and two findings of
       one type never share an id.
+    - ``placeholders`` — the template placeholders the report still carries,
+      each named once. A report carrying one was being written when it was
+      read, and the verdicts above are the template's own text.
     """
     items = _plan_report_rubric_items(rubric)
     rubric_items: dict[str, str] = {}
@@ -1496,6 +1752,11 @@ def parse_plan_review_report(text: str, *, rubric: str) -> dict[str, Any]:
         "rubric_items": rubric_items,
         "absent_items": absent_items,
         "findings": findings,
+        # A report whose lines still read the brief's placeholders has not been
+        # written yet, and the lines above read as a finished review because a
+        # placeholder is non-empty text. The tokens are returned beside them so
+        # the store refuses the report by name rather than reading it.
+        "placeholders": report_placeholders(text),
     }
 
 
@@ -3177,6 +3438,46 @@ def _stamp_finding_ids(record: dict[str, Any]) -> dict[str, Any]:
     return {**record, "findings": stamped}
 
 
+def review_brief_head_refusal(
+    record: Mapping[str, Any], *, review_run: Mapping[str, Any] | None = None
+) -> str | None:
+    """Compare a run review with the head in its reviewer's stored brief.
+
+    The dispatch snapshot belongs to this review round. The source brief and
+    the reviewed worktree can advance while that round is working, so neither
+    supplies its expected head. Records without a readable run-review brief
+    retain the store's revision checks without inventing an expected revision.
+    """
+    if not record.get("reviewed_run_id"):
+        return None
+    review_run_id = str(record.get("review_run_id") or "").strip()
+    if review_run is None:
+        if not review_run_id:
+            return None
+        review_run = _reviewed_run_pointer(review_run_id) or {}
+    review_run_id = str(review_run.get("run_id") or review_run_id).strip()
+    brief = review_run.get("brief") or {}
+    path = str(brief.get("path") or "") if isinstance(brief, Mapping) else ""
+    if not path:
+        if not review_run_id:
+            return None
+        from reckon.crew import runs
+
+        path = str(runs.run_dir(review_run_id) / "brief.md")
+    from reckon.crew.recovery_review_subject import brief_named_head, same_revision
+
+    expected = brief_named_head(Path(path))
+    if not expected:
+        return None
+    _, _, _, reviewed = carried_revision_pair(record)
+    if same_revision(reviewed or "", expected):
+        return None
+    return (
+        f"review record describes head {reviewed or '(unnamed)'} but its "
+        f"brief {path} names head {expected}; file a review of the briefed head"
+    )
+
+
 def store_review(
     record: dict[str, Any],
     *,
@@ -3231,6 +3532,9 @@ def store_review(
     status_refusal = review_status_refusal(record)
     if status_refusal:
         raise ValueError(status_refusal)
+    brief_refusal = review_brief_head_refusal(record)
+    if brief_refusal:
+        raise ValueError(brief_refusal)
     base_carried, base_sha, head_carried, head_sha = carried_revision_pair(record)
     if base_carried or head_carried:
         record = dict(record)
@@ -3431,6 +3735,10 @@ def file_delivered_run_review_report(
             continue
         if not isinstance(body, dict):
             refused.append({"record": str(source), "reason": "record is not an object"})
+            continue
+        brief_refusal = review_brief_head_refusal(body, review_run=record)
+        if brief_refusal:
+            refused.append({"record": str(source), "reason": brief_refusal})
             continue
         try:
             filed.append(store_review(body))
@@ -3911,7 +4219,9 @@ def read_review(
     )
     if record is None:
         return None
+    record = with_figure_verdicts(record)
     record = with_normalised_findings(record)
+    record = with_canonical_claims(record)
     if not _has_integer_total(record):
         record = _derive_landed_total(record)
     return annotate_review_of_run(record, reviewed_run_id)

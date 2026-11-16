@@ -157,7 +157,7 @@ def _events_from(source: object) -> tuple[list[dict[str, Any]], str]:
     if isinstance(source, (str, Path)):
         path = Path(source)
         try:
-            with path.open(encoding="utf-8") as lines:
+            with path.open(encoding="utf-8", errors="replace") as lines:
                 events, _malformed = _backends.parse_events(lines)
         except OSError:
             return [], f"the stream {path.name} could not be read"

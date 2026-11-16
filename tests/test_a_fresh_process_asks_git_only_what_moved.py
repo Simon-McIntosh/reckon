@@ -38,7 +38,6 @@ obligations_module = importlib.import_module("reckon.crew.obligations")
 PROJECT = "git-answer-store-fixture"
 SESSION = "coordinator-fixture"
 OBSERVED_AT = datetime(2026, 10, 18, 12, 0, tzinfo=UTC)
-STORE_NAME = "git-object-answers.json"
 SOURCE = "reckon/fixture_runtime.py"
 
 
@@ -180,11 +179,18 @@ class _GitSpy:
 
     @property
     def count_calls(self) -> list[list[str]]:
-        """The calls that asked git to count commits between two revisions."""
+        """The calls that asked git to count commits between two revisions.
+
+        The count's argv carries ``--first-parent`` before ``--count``, so the
+        filter looks for the verb and the option rather than for one spelling
+        of the prefix: a filter written against a prefix stops matching the
+        moment the command gains an option, and then reports that the count
+        never ran.
+        """
         return [
             command
             for command in self.commands
-            if command[:3] == ["git", "rev-list", "--count"]
+            if command[:2] == ["git", "rev-list"] and "--count" in command
         ]
 
 
@@ -226,8 +232,9 @@ def fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
     }
 
 
-def _store_path(fleet: dict[str, Any]) -> Path:
-    return fleet["home"] / "crew" / STORE_NAME
+def _store_path(worktree: Path) -> Path:
+    """The answer file holding one tree's stored git answers."""
+    return watch_module._git_answer_tree_path(worktree)
 
 
 def _derive() -> None:
@@ -248,9 +255,9 @@ def test_populated_store_answers_a_first_derivation_without_git(
     _clear_in_process_caches()
     with _GitSpy(watch_module, subject_module) as cold:
         _derive()
-    assert _store_path(fleet).is_file(), (
-        "the first derivation wrote no git-answer store, so nothing can answer"
-        " a fresh process"
+    assert _store_path(fleet["worktrees"][0]).is_file(), (
+        "the first derivation wrote no git-answer file for the run's tree, so"
+        " nothing can answer a fresh process"
     )
     assert cold.resolve_calls == [], (
         f"a derivation with a fresh cache over a populated store spawned"
@@ -313,14 +320,19 @@ def test_a_moved_head_is_counted_once_and_its_entry_updated(
     assert len(spy.count_calls) == 1, (
         f"a moved head spawned {len(spy.count_calls)} counts, not one"
     )
-    store = json.loads(_store_path(fleet).read_text(encoding="utf-8"))
-    entries = store["counts"][str(worktree)]
-    key = watch_module._count_answer_key(
-        watch_module._worktree_head_identity(worktree), record["base_sha"]
+    # The count the move resolved to is the one the store now serves: a second
+    # read of the same unmoved tree spends no subprocess on it, which is what
+    # tells a recorded answer from a rewritten entry that will not be read.
+    _clear_in_process_caches()
+    with _GitSpy(watch_module) as replay:
+        again = watch_module._commits_beyond_base(record)
+    assert again == expected, (
+        f"the store served {again} for the moved head where the count is"
+        f" {expected}, so the recorded answer is not the one next read is served"
     )
-    assert entries.get(key) == expected, (
-        "the store did not record the moved head's count, so the entry served"
-        " next time is stale"
+    assert replay.count_calls == [], (
+        f"a second read of the unmoved tree spawned {len(replay.count_calls)}"
+        " counts over a stored answer"
     )
     assert moved
 
@@ -330,10 +342,10 @@ def test_a_corrupt_store_falls_back_to_git_and_repairs_itself(
 ) -> None:
     """A corrupt store yields git's answers and is rewritten with them."""
     _derive()
-    _store_path(fleet).write_text("{not json", encoding="utf-8")
-    _clear_in_process_caches()
     record = fleet["records"]["run-00"]
     worktree = Path(record["worktree"])
+    _store_path(worktree).write_text("{not json", encoding="utf-8")
+    _clear_in_process_caches()
     head = _git(worktree, "rev-parse", "HEAD")
     with _GitSpy(watch_module, subject_module) as spy:
         count = watch_module._commits_beyond_base(record)
@@ -345,11 +357,11 @@ def test_a_corrupt_store_falls_back_to_git_and_repairs_itself(
     assert spy.count_calls and spy.resolve_calls, (
         "a corrupt store answered without asking git, so the fallback was not exercised"
     )
-    repaired = json.loads(_store_path(fleet).read_text(encoding="utf-8"))
-    assert repaired["version"] == watch_module._GIT_ANSWER_STORE_VERSION, (
+    repaired = json.loads(_store_path(worktree).read_text(encoding="utf-8"))
+    assert repaired["version"] == watch_module._GIT_ANSWER_TREE_VERSION, (
         "the corrupt store was not rewritten in the store's own shape"
     )
-    assert repaired["commits"].get(str(worktree), {}).get(head) == head, (
+    assert repaired["commits"].get(head) == head, (
         "the repaired store does not hold the revision it was asked about"
     )
 
@@ -366,8 +378,8 @@ def test_without_the_store_the_derivation_spawns_both(
     _clear_in_process_caches()
     monkeypatch.setattr(
         watch_module,
-        "_read_git_answer_store",
-        watch_module._empty_git_answer_store,
+        "_read_git_answer_tree",
+        watch_module._empty_git_answer_tree,
     )
     with _GitSpy(watch_module, subject_module) as spy:
         _derive()

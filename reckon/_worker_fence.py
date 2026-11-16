@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import sys
 import time
+import tomllib
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
@@ -86,9 +87,18 @@ PID_NAMESPACE_ARGS = ("--unshare-pid", "--proc", "/proc")
 # The flight-config key a project uses to name the MCP servers its workers may
 # start. Read from the resolved flight configuration at seed time: a project
 # naming no servers seeds the setting that disables every project ``.mcp.json``
-# server, so a worker starts only the user-scope servers — reckon among them —
-# rather than inheriting each server the checkout happens to register.
+# server, rather than inheriting each server the checkout happens to register.
+# The same allowlist governs user-scope and project-scope servers.
 WORKER_MCP_SERVERS = "worker_mcp_servers"
+
+# The flight-config key that names MCP sets: each entry a set name and the
+# servers that set holds. A node names one set and its worker connects to
+# exactly those servers, so what a worker may start is a property of the work
+# it was dispatched for rather than of the whole project. The flat key above is
+# the set a node naming none gets, which is the declaration projects carried
+# before sets existed: a flight naming no list there names nothing, so a node
+# that names no set starts no server.
+MCP_SETS = "mcp_sets"
 
 # The two harness settings the seed writes into a run home's ``settings.json``.
 # ``enableAllProjectMcpServers`` is the switch the harness reads for the
@@ -285,6 +295,9 @@ def seed_harness_home(
     # was first seeded — the same home, so the record survives the resume, and a
     # run's own state is never overwritten.
     settings_preexisting = (home / "settings.json").exists()
+    allowed_servers = set(worker_mcp_servers or ())
+    if anchored_edit:
+        allowed_servers.add("reckon-anchored-edit")
     source_home = Path(operator_home) / declared[2]
     for entry in declaration or ():
         relative = entry.get("path")
@@ -301,7 +314,10 @@ def seed_harness_home(
         source = Path(operator_home) / relative
         if not source.exists():
             continue
-        _merge_harness_entry(source, home / relative, entry.get("keys"))
+        _merge_harness_entry(
+            source, home / relative, entry.get("keys"), allowed_servers
+        )
+    _seed_worker_mcp_exclusions(home, dialect_name, allowed_servers)
     if dialect_name == "claude":
         _seed_worker_inbox_hook(home)
     if resume_session:
@@ -360,6 +376,88 @@ def _declared_worker_mcp_servers(config: Mapping[str, Any] | None) -> list[str]:
     return names
 
 
+class WorkerMcpSetsError(ValueError):
+    """A project's ``mcp_sets`` declaration is not a mapping of server lists.
+
+    Raised rather than read as an empty declaration: a value the reader cannot
+    interpret would otherwise connect every worker of a flight that declares
+    sets to nothing, while reporting that the flight asked for nothing.
+    """
+
+    constraint = "must be a mapping from set name to a list of MCP server names"
+
+    def __init__(self, name: str = "") -> None:
+        location = f"{MCP_SETS}.{name}" if name else MCP_SETS
+        super().__init__(f"{location}: {self.constraint}")
+
+
+class WorkerMcpSetError(ValueError):
+    """A node names an MCP set the resolved flight configuration does not hold.
+
+    The set a worker connects to is a fact about the node, so a name the flight
+    does not declare is refused by name rather than read as no set: a worker
+    that silently started nothing would report a node that asked for servers as
+    one that asked for none.
+    """
+
+    def __init__(self, name: str, declared: Iterable[str]) -> None:
+        self.name = name
+        self.declared = sorted(declared)
+        available = ", ".join(self.declared) or "none"
+        super().__init__(
+            f"node names {MCP_SETS} entry {name!r}, which this flight does not "
+            f"declare; declared sets: {available}"
+        )
+
+
+def _declared_mcp_sets(config: Mapping[str, Any] | None) -> dict[str, list[str]]:
+    """Return the MCP sets a resolved flight config declares, in declaration order.
+
+    Each set's value is read by :func:`_declared_worker_mcp_servers`, so a set
+    and the flat declaration refuse a malformed list the same way, and a set of
+    no servers is written as an empty list rather than as an absent one. An
+    empty set name is refused: it is the spelling a node that names no set
+    carries, so a set declared under it could never be selected and would read
+    as a declaration that vanished.
+    """
+    if not isinstance(config, Mapping):
+        return {}
+    declared = config.get(MCP_SETS)
+    if declared is None:
+        return {}
+    if not isinstance(declared, Mapping):
+        raise WorkerMcpSetsError()
+    sets: dict[str, list[str]] = {}
+    for name, servers in declared.items():
+        if not isinstance(name, str) or not name:
+            raise WorkerMcpSetsError()
+        try:
+            sets[name] = _declared_worker_mcp_servers({WORKER_MCP_SERVERS: servers})
+        except WorkerMcpServersError as exc:
+            raise WorkerMcpSetsError(name) from exc
+    return sets
+
+
+def worker_mcp_selection(
+    config: Mapping[str, Any] | None, mcp_set: str = ""
+) -> tuple[str, list[str]]:
+    """Return the set name a node connects under, and the servers in that set.
+
+    A node that names a set gets exactly that set's servers, and a name the
+    flight does not declare is refused by name. A node that names none gets the
+    flight's flat ``worker_mcp_servers`` declaration — the set projects carried
+    before sets existed — or no server at all when the flight names neither. The
+    returned name is the empty string in that case, because a run's record
+    states which set was selected and no set was.
+    """
+    declared = _declared_mcp_sets(config)
+    if mcp_set:
+        if mcp_set not in declared:
+            raise WorkerMcpSetError(mcp_set, declared)
+        return mcp_set, list(declared[mcp_set])
+    return "", _declared_worker_mcp_servers(config)
+
+
 def _seed_worker_inbox_hook(home: Path) -> None:
     """Register the inbox hook in a run home's settings, whatever it holds.
 
@@ -387,9 +485,8 @@ def _seed_worker_mcp_settings(home: Path, worker_mcp_servers: Iterable[str]) -> 
 
     The write is called only for a settings.json this seed created, so the
     hooks the operator carries are updated in place and nothing is lost; a run's
-    own settings.json is never touched. reckon is a user-scope server carried in
-    ``.claude.json`` and is not governed by this key, so it stays enabled without
-    being named here.
+    own settings.json is never touched. The same allowlist filters user-scope
+    MCP declarations when the run home is seeded.
     """
     path = home / "settings.json"
     settings = dict(_load_json_mapping(path) or {})
@@ -398,6 +495,110 @@ def _seed_worker_mcp_settings(home: Path, worker_mcp_servers: Iterable[str]) -> 
     mode = _permission_bits(path)
     path.write_text(json.dumps(settings, indent=2, sort_keys=True) + "\n")
     path.chmod(0o644 if mode is None else mode | 0o200)
+
+
+def _seed_worker_mcp_exclusions(
+    home: Path, dialect_name: str, allowed_servers: Iterable[str] = ()
+) -> None:
+    """Keep only flight-declared servers in run-owned JSON configuration."""
+    if dialect_name not in ("claude", "omp"):
+        return
+    path = home / (".claude.json" if dialect_name == "claude" else "agent/mcp.json")
+    config = _load_json_mapping(path)
+    if config is None:
+        if dialect_name == "claude":
+            return
+        config = {}
+    servers = config.get("mcpServers")
+    allowed = set(allowed_servers)
+    removed = set(servers or {}) - allowed
+    changed = bool(removed)
+    if isinstance(servers, dict):
+        config["mcpServers"] = {
+            name: server for name, server in servers.items() if name in allowed
+        }
+    if dialect_name == "omp":
+        disabled = config.get("disabledServers", [])
+        changed = changed or not path.exists()
+        config["disabledServers"] = sorted(set(disabled) | removed)
+    if changed:
+        mode = _permission_bits(path)
+        _write_private_json(path, config, 0o600 if mode is None else min(0o600, mode))
+
+
+def claude_worker_mcp_config(
+    home: Path,
+    worktree: Path,
+    project_servers: Iterable[str] | None,
+    *,
+    anchored_edit: bool = False,
+) -> str:
+    """Compose only flight-declared servers and the backend's anchored editor.
+
+    Strict MCP configuration confines discovery to this process's declarations.
+    Both user and project declarations are filtered by the same allowlist.
+    """
+    user = _load_json_mapping(home / ".claude.json") or {}
+    allowed = set(project_servers or ())
+    servers = {
+        name: server
+        for name, server in (user.get("mcpServers") or {}).items()
+        if name in allowed
+    }
+    project = _load_json_mapping(worktree / ".mcp.json") or {}
+    servers.update(
+        (name, config)
+        for name, config in (project.get("mcpServers") or {}).items()
+        if name in allowed
+    )
+    if anchored_edit and "reckon-anchored-edit" in (user.get("mcpServers") or {}):
+        servers["reckon-anchored-edit"] = user["mcpServers"]["reckon-anchored-edit"]
+    return json.dumps({"mcpServers": servers})
+
+
+def codex_worker_mcp_flags(
+    home: Path, worktree: Path, allowed_servers: Iterable[str] = ()
+) -> list[str]:
+    """Disable every undeclared inherited server while preserving transports.
+
+    Codex merges CLI tables into user and project configuration, so an empty
+    table alone cannot clear inherited entries. Override each undeclared
+    server's enabled field without inventing a transport for an absent name.
+    """
+    paths = [home / "config.toml"]
+    paths.extend(root / ".codex/config.toml" for root in (worktree, *worktree.parents))
+    configured: set[str] = set()
+    profiles: dict[str, set[str]] = {}
+    for path in paths:
+        if not path.is_file():
+            continue
+        data = tomllib.loads(path.read_text())
+        configured.update(data.get("mcp_servers") or {})
+        for name, profile in (data.get("profiles") or {}).items():
+            profiles.setdefault(name, set()).update(profile.get("mcp_servers") or {})
+    allowed = set(allowed_servers)
+
+    def disabled_table(names: Iterable[str]) -> str:
+        return (
+            "{"
+            + ",".join(
+                json.dumps(name) + "={enabled=false}"
+                for name in sorted(set(names) - allowed)
+            )
+            + "}"
+        )
+
+    flags = ["-c", "mcp_servers=" + disabled_table(configured)]
+    # A profile override stays inside that profile: creating a root entry for
+    # a profile-only name would invent an incomplete transport at bootstrap.
+    profile_overrides = ",".join(
+        json.dumps(name) + "={mcp_servers=" + disabled_table(servers) + "}"
+        for name, servers in sorted(profiles.items())
+        if servers - allowed
+    )
+    if profile_overrides:
+        flags += ["-c", "profiles={" + profile_overrides + "}"]
+    return flags
 
 
 def _seed_anchored_edit(home: Path, roots: Iterable[str | Path]) -> None:
@@ -431,7 +632,10 @@ def _seed_anchored_edit(home: Path, roots: Iterable[str | Path]) -> None:
 
 
 def _merge_harness_entry(
-    source: Path, destination: Path, keys: Iterable[str] | None
+    source: Path,
+    destination: Path,
+    keys: Iterable[str] | None,
+    allowed_mcp_servers: Iterable[str] = (),
 ) -> None:
     """Merge one declared home-root file into the run home's own copy.
 
@@ -464,6 +668,16 @@ def _merge_harness_entry(
             existing[key] = {**existing[key], **value}
         else:
             existing[key] = value
+    # Filter before publication so the run never holds a startable server.
+    if destination.name == ".claude.json" and isinstance(
+        existing.get("mcpServers"), dict
+    ):
+        allowed = set(allowed_mcp_servers)
+        existing["mcpServers"] = {
+            name: server
+            for name, server in existing["mcpServers"].items()
+            if name in allowed
+        }
     destination.parent.mkdir(parents=True, exist_ok=True)
     _write_private_json(
         destination,

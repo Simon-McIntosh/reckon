@@ -1,0 +1,141 @@
+<section id="moved-inputs-promotion-retried-s16-landing">
+  <h2>A promotion refused because its inputs moved is judged again</h2>
+
+  <p><strong>What changed.</strong> Acceptance reads a run's pointer, review and
+  gate, then re-reads them under its lease before writing. A run whose state
+  moved between the two readings was refused with <em>the run or its acceptance
+  inputs changed while it was judged</em>, and that refusal is right for the
+  state it names — which no longer exists. Three runs on 15 November reached
+  <code>promotion-refused</code> on those words, and the durable promotion queue
+  returns a terminal receipt to every later request for the same run, so nothing
+  read the run again and each one needed a coordinator to land it by hand.</p>
+
+  <p><strong>The identity is now a view as well as a digest.</strong>
+  <code>reckon.crew.recovery_review_acceptance._acceptance_input_view</code>
+  returns the judged inputs themselves, and <code>_inputs_digest</code> hashes
+  them for the refusal memo, so a judgement that finds them moved can name the
+  fields that moved rather than only that something did.
+  <code>_judge_again_on_moved_inputs</code> records the attempt in
+  <code>acceptance-inputs-moved.json</code> in the run directory, returns
+  <code>retry: True</code> while the attempt budget
+  (<code>INPUTS_MOVED_ATTEMPTS = 3</code>) has room, and after that returns the
+  refusal with what moved named in it: <em>… changed while it was judged 3
+  times, so the run is not settling; the last changes were: pointer.attempt 3
+  -&gt; 4</em>. A judgement that gets past the identity check clears the budget,
+  so a movement months apart starts a fresh count.</p>
+
+  <p><strong>The sweep takes the run up.</strong> <code>dispatch_awaiting_reviews</code>
+  reads the durable receipt for every promotion it handed over; an
+  <code>acceptance</code> refusal whose result asked to be judged again is
+  re-queued with <code>request_promotion</code> — the same queue the station
+  drains behind <code>crew complete</code> — instead of being reported as a
+  refusal. The retried judgement reads the inputs the run now has,
+  so it promotes when they pass and refuses on them when they do not.</p>
+
+  <p><strong>While a repair attempt is live, the sweep attempts no promotion.</strong>
+  <code>_live_repair_attempt</code> reads the round recorded on the run, takes
+  its dispatched repair run, and answers live while that run's pointer stands
+  the attempt has written no exit record. The accepting branch then records the
+  hold in the sweep's <code>repair_held</code> and hands nothing over. Before
+  this change the sweep promoted the reviewed head under a live repair attempt:
+  the base-revision log for the live-repair test records
+  <code>accepted: True, promoted: True</code> for a run whose repair was
+  mid-round.</p>
+
+  <h3 id="moved-inputs-promotion-retried-s16-measured">Measured</h3>
+
+  <p>Four tests in
+  <code>tests/test_a_promotion_refused_for_moved_inputs_is_judged_again.py</code>,
+  run against a temporary repository with a bare origin and a temporary crew
+  home (the acceptance fixture's own checkout), each asserting one clause
+  of the done-when:</p>
+
+  <table id="moved-inputs-promotion-retried-s16-cases">
+    <thead>
+      <tr><th>Case</th><th>What it holds</th><th>At base</th><th>At head</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>…lands_on_the_next_sweep</code></td>
+        <td>a refusal for moved inputs, then the next sweep re-queues the run and
+        the judgement against the new inputs promotes it
+        (<code>promoted_by: review-acceptance</code>)</td>
+        <td>fails: the receipt is the bare refusal, nothing re-judges, no ledger
+        row</td>
+        <td>passes: attempts <code>[1]</code>, moved
+        <code>pointer.attempt null -&gt; 2</code>, then promoted</td>
+      </tr>
+      <tr>
+        <td><code>…keep_moving_is_reported_after_its_attempts</code></td>
+        <td>a run whose pointer moves on every judgement is judged three times
+        and then reported, naming <code>pointer.attempt</code></td>
+        <td>fails: no attempt is recorded (<code>[None, …]</code>)</td>
+        <td>passes: attempts <code>[1, 2, 3, 3, 3]</code>, retries
+        <code>[True, True, None, …]</code>, one request id from the third
+        judgement on</td>
+      </tr>
+      <tr>
+        <td><code>…new_inputs_fail_is_refused_on_them</code></td>
+        <td>the retried judgement meets a merged gate that no longer passes and
+        refuses on that, not on the movement</td>
+        <td>fails: one judgement only (<code>{'judgements': 1}</code>)</td>
+        <td>passes: two judgements, the second refused for the merged gate</td>
+      </tr>
+      <tr>
+        <td><code>…live_repair_attempt_holds_the_promotion</code></td>
+        <td>no promotion is attempted while a repair round's attempt stands, and
+        the same sweep promotes once the attempt has ended</td>
+        <td>fails: <code>accepted: True, promoted: True</code> under a live
+        repair</td>
+        <td>passes: nothing accepted, <code>repair_held</code> names the repair
+        run, then promoted after the exit record</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The four tests were then run against the base revision's own module in a
+  tree whose only changed paths were restored to the base: <code>4 failed in
+  23.67s</code>, each on the behavioural assertion above rather than on a missing
+  name.</p>
+
+  <h3 id="moved-inputs-promotion-retried-s16-arms">Arms</h3>
+
+  <table id="moved-inputs-promotion-retried-s16-arm-table">
+    <thead><tr><th>Arm</th><th>Tree</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Base <code>18d133b40e</code></td>
+        <td>worktree head with every node-changed path restored to the base
+        revision; <code># has_retry_helper: False</code> in the header proves
+        the module under test was the base one</td>
+        <td><code>58 passed</code>, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>Head <code>997e33ceb3</code></td>
+        <td>the node's worktree</td>
+        <td><code>62 passed</code>, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>Negative control</td>
+        <td>head tree with <code>_judge_moved_inputs_again</code> returning
+        <code>False</code> before it can ask for a retry — the declared
+        mutation</td>
+        <td><code>1 failed</code>, <code>EXIT=1</code>, the retry test, with the
+        terminal refusal it names</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The negative control is decisive because the retried judgement is the only
+  path that turns that refusal into a landing: with the helper stood down, the
+  test's second sweep reports the refusal the base revision reports, which is
+  precisely the state the change removes.</p>
+
+  <p><strong>Scope of the record.</strong> Only the acceptance refusal for moved
+  inputs is re-judged. Refusals for a merged gate that failed, a plan reserving
+  manual landing, an unreadable remote and a coordinator's hold are unchanged:
+  each describes the run's own state and is still terminal until something
+  outside the judgement changes. The attempt budget lives in the run directory
+  and is not part of the plan's state, so no plan record is touched by this
+  node.</p>
+</section>

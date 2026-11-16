@@ -1217,6 +1217,37 @@ def _review_changed_scope(
     return _manifest_repository_paths(record), None, declares_paths
 
 
+def _with_the_runs_whole_change(
+    record: Mapping[str, Any], commit_list: Sequence[str]
+) -> list[str]:
+    """The cited commits plus every commit the run made from its base to its head.
+
+    The tier decides whether a run owes a review, so it must see everything the
+    run changed, not only the commits a manifest or a coordinator happened to
+    cite. Measured on 15 November: a run whose code commit rewrote runtime
+    source cited only its docs-only evidence commit at one reading, resolved to
+    tier none, and was offered for promotion without a review. Adding the base
+    to head commits can only widen the measured change, so the tier never reads
+    lighter than the run's whole change. A record naming no readable tree or
+    base keeps the cited commits alone, as before.
+    """
+    cited = [str(commit) for commit in commit_list if str(commit).strip()]
+    tree = _record_tree(record)
+    base = str(record.get("base_sha") or "").strip()
+    if tree is None or not base:
+        return cited
+    result = _git(tree, "rev-list", "--no-merges", f"{base}..HEAD", check=False)
+    if result.returncode:
+        return cited
+    seen = set(cited)
+    whole = list(cited)
+    for commit in result.stdout.split():
+        if commit not in seen:
+            seen.add(commit)
+            whole.append(commit)
+    return whole
+
+
 def _run_review_tier(
     run_id: str,
     record: Mapping[str, Any],
@@ -1238,7 +1269,7 @@ def _run_review_tier(
     path list as a run that touched no runtime source.
     """
     changed_paths, changed_lines, measured = _review_changed_scope(
-        run_id, record, commit_list
+        run_id, record, _with_the_runs_whole_change(record, commit_list)
     )
     if not measured:
         return review_tiers.FULL
@@ -2701,9 +2732,8 @@ def _landing_scope_products(
     from reckon.crew.promotion_evidence import _merge_repair_scope
     from reckon.crew.promotion_scope import _descendant_commit
 
-    cumulative = _merge_repair_scope(
-        record, tree=tree, head=_descendant_commit(tree, commits)
-    )
+    head = _descendant_commit(tree, commits)
+    cumulative = _merge_repair_scope(record, tree=tree, head=head)
     if cumulative is None:
         cumulative = _committed_scope(cwd=tree, commits=commits, run_id=run_id)
     acceptances: list[dict[str, str]] = []
@@ -2737,7 +2767,9 @@ def _landing_scope_products(
         # beside the declared one lands on its own.
         outside = _changed_artifacts_needing_acceptance(
             _outside_declared_scope(
-                cumulative.paths,
+                _scope_paths_at_head(
+                    record, tree=tree, head=head, paths=cumulative.paths
+                ),
                 declared,
                 record=record,
                 tree=tree,
@@ -3494,6 +3526,7 @@ from reckon.crew.promotion_evidence import (
     _presented_commits_without_a_declaration,
     _recorded_exit_status,
     _run_directory_control_log,
+    _scope_paths_at_head,
 )
 from reckon.crew.promotion_records import (
     _read_json_object,

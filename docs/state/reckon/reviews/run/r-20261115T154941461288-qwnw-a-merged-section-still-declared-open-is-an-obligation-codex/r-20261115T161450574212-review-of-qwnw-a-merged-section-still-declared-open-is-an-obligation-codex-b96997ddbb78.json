@@ -1,0 +1,217 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "fails_if": "The fixture revision is not on main; a Git observation independent of the ledger input proves the merge precondition.",
+      "lines": "98"
+    },
+    {
+      "fails_if": "Either queued request did not enter awaiting-upstream.",
+      "lines": "99-102"
+    },
+    {
+      "fails_if": "Removing the obligations integration or shared derivation returns zero duties; duplicate emission also fails.",
+      "lines": "104"
+    },
+    {
+      "fails_if": "The emitted duty names another run or omits its run identity.",
+      "lines": "106"
+    },
+    {
+      "fails_if": "The emitted plan differs from the fixture plan; the expected input identity is independent of the output.",
+      "lines": "107"
+    },
+    {
+      "fails_if": "Section normalization emits s1, another section or no section instead of the public \u00a71 identity.",
+      "lines": "108"
+    },
+    {
+      "fails_if": "The duty emits another revision or omits its head; expected revision was independently observed through git at line 98.",
+      "lines": "109"
+    },
+    {
+      "fails_if": "Waiter discovery omits, duplicates, reorders or misidentifies either held request.",
+      "lines": "110"
+    },
+    {
+      "fails_if": "The reported held count is not two.",
+      "lines": "111"
+    },
+    {
+      "fails_if": "The command omits or misidentifies the owning plan or section.",
+      "lines": "112"
+    },
+    {
+      "fails_if": "The action does not target the actual section declaration; execution is also checked at 185-188.",
+      "lines": "113"
+    },
+    {
+      "fails_if": "Session filtering leaks the upstream duty to an unrelated coordinator.",
+      "lines": "114"
+    },
+    {
+      "fails_if": "Session filtering assigns the duty to the waiting coordinator.",
+      "lines": "115"
+    },
+    {
+      "fails_if": "The positive setup for the done transition creates zero or multiple duties.",
+      "lines": "120"
+    },
+    {
+      "fails_if": "Removing the implementable-declaration guard leaves a duty after done.",
+      "lines": "122"
+    },
+    {
+      "fails_if": "Admission retains either waiter in awaiting-upstream after done; this asserts the exact requested phase transition, not eventual completion.",
+      "lines": "124-127"
+    },
+    {
+      "fails_if": "The positive setup for deferred produces zero or multiple duties.",
+      "lines": "132"
+    },
+    {
+      "fails_if": "The declaration guard treats deferred as implementable.",
+      "lines": "134"
+    },
+    {
+      "fails_if": "The positive setup for partial delivery produces zero or multiple duties.",
+      "lines": "139"
+    },
+    {
+      "fails_if": "Removing the run-specific partial-comment suppression leaves the duty present.",
+      "lines": "150"
+    },
+    {
+      "fails_if": "Recording partial delivery releases either held request.",
+      "lines": "151-154"
+    },
+    {
+      "fails_if": "Section-wide suppression incorrectly hides a later merged run, or an accounted run reappears.",
+      "lines": "156"
+    },
+    {
+      "fails_if": "The unmerged-control commit accidentally equals main, invalidating the control.",
+      "lines": "163"
+    },
+    {
+      "fails_if": "Removing the ancestry guard produces a duty for an unmerged commit; the other parametrization catches duties invented with no run.",
+      "lines": "164"
+    },
+    {
+      "fails_if": "The field projection refuses newly supported fields or produces a duty without a merged run.",
+      "lines": "168"
+    },
+    {
+      "fails_if": "An offered action is an expression that is not a call; malformed syntax also fails parsing before this assertion.",
+      "lines": "173"
+    },
+    {
+      "fails_if": "The real validated writer rejects either offered action.",
+      "lines": "176"
+    },
+    {
+      "fails_if": "Executing the offered partial action fails to suppress its run duty.",
+      "lines": "183"
+    },
+    {
+      "fails_if": "Executing the offered done action leaves a duty.",
+      "lines": "186"
+    },
+    {
+      "fails_if": "The done action clears duties for another reason without actually writing the done declaration.",
+      "lines": "188"
+    },
+    {
+      "fails_if": "Snapshot loses or alters a duty that the direct view retains; shared-helper empty output passes both sides, as recorded in the finding.",
+      "lines": "205"
+    },
+    {
+      "fails_if": "The fixture inadvertently creates a live upstream pointer, invalidating the pointer-removal control.",
+      "lines": "206"
+    },
+    {
+      "fails_if": "Departure filtering removes or alters an existing snapshot duty while the direct view retains it; common empty output remains a blind spot.",
+      "lines": "208"
+    }
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/obligations.py:_obligations_view",
+    "reckon/crew/obligation_snapshot.py:_derive_fleet_state",
+    "reckon/crew/obligation_snapshot.py:payload_for",
+    "reckon/crew/obligation_snapshot.py:sweep"
+  ],
+  "completed_at": "2026-11-15T16:24:41Z",
+  "dispatched_at": "2026-11-15T16:18:29Z",
+  "findings": [
+    {
+      "file": "tests/test_a_merged_section_owes_its_declaration.py",
+      "line": "205",
+      "severity": "non-blocking",
+      "text": "non-blocking: Snapshot parity here and at line 208 compares two consumers of merged_section_items_by_session without independently asserting a nonempty duty for this fixture; returning no duty from their shared helper lets both assertions pass, so add an explicit count and expected run/waiter identities before checking parity (the separate positive test already guards universal duty loss)."
+    }
+  ],
+  "gate_evidence": {
+    "after": {
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T154941461288-qwnw-a-merged-section-still-declared-open-is-an-obligation-codex/head.log",
+      "summary": "67 passed in 48.61s"
+    },
+    "baseline": {
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T154941461288-qwnw-a-merged-section-still-declared-open-is-an-obligation-codex/baseline.log",
+      "summary": "58 passed in 38.20s"
+    },
+    "failure_parser_positive_control": {
+      "failure_count": 1,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T154941461288-qwnw-a-merged-section-still-declared-open-is-an-obligation-codex/negative-control.log"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read all six commits from 872191237211007bbd1b060135f3ac65f12d44c3 to b96997ddbb7816881df1102f43604329a98676bb; the five-path diff adds a shared derivation, both production integrations, nine regression cases and its evidence fragment.",
+    "done_when": "Source prompt.txt:162-163 requires one duty, two waiters, declaration clearing, partial/unmerged controls and an all_debug negative control; tests/test_a_merged_section_owes_its_declaration.py:96-188 covers these cases and the recorded base run fails on the missing duty.",
+    "goal": "Source prompt.txt:38 asks for a merged implementable section duty naming its waiters; reckon/crew/section_obligations.py:140 emits that duty for the dispatching session.",
+    "manifest": "Source manifest.md names six resolvable commits and completed gate receipts; baseline.log records 58 passed with EXIT=0, head.log records 67 passed with EXIT=0, and negative-control.log records the missing-duty assertion with EXIT=1.",
+    "write_paths": "Source prompt.txt:84-89 grants reckon, tests and the node evidence fragment; all five changed paths remain inside that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_merged_section_owes_its_declaration.py:104 fails when the new duty is removed and lines 120-188 independently test clearing, waiters and offered writes, but the parity assertions at lines 205 and 208 can accept two empty views sharing the same regression.",
+    "evidence": "Source baseline.log and head.log identify the exact reviewed revisions and record 58 and 67 passes respectively, while negative-control.log reaches tests/test_a_merged_section_owes_its_declaration.py:96 in the earlier test revision and fails with AssertionError: [] after proving the merged head and two held requests.",
+    "fit": "reckon/crew/obligations.py:3922 and reckon/crew/obligation_snapshot.py:1744 extend the existing duty derivations, keep queue release under the declaration owner and introduce capability-based names without forbidden source labels.",
+    "goal_fidelity": "reckon/crew/section_obligations.py:55-162 restricts the duty to executable merged runs with implementable declarations, groups it by owning session and section, names both waiters and offers validated completion and partial actions.",
+    "reuse": "Capability searches for merged-section accounting and partial-delivery duties found no prior owner; reckon/crew/section_obligations.py:10-17 reuses ledger, plan, section, timestamp, mount and ancestry owners, and its session wrapper calls its shared derivation rather than duplicating it.",
+    "scope_discipline": "The six-commit diff changes only reckon/crew/obligations.py, reckon/crew/obligation_snapshot.py, reckon/crew/section_obligations.py, tests/test_a_merged_section_owes_its_declaration.py and the declared node evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Source prompt.txt:38 asks for a merged implementable section duty naming its waiters; reckon/crew/section_obligations.py:140 emits that duty for the dispatching session.\nVERDICT done_when: Source prompt.txt:162-163 requires one duty, two waiters, declaration clearing, partial/unmerged controls and an all_debug negative control; tests/test_a_merged_section_owes_its_declaration.py:96-188 covers these cases and the recorded base run fails on the missing duty.\nVERDICT write_paths: Source prompt.txt:84-89 grants reckon, tests and the node evidence fragment; all five changed paths remain inside that scope.\nVERDICT manifest: Source manifest.md names six resolvable commits and completed gate receipts; baseline.log records 58 passed with EXIT=0, head.log records 67 passed with EXIT=0, and negative-control.log records the missing-duty assertion with EXIT=1.\nVERDICT diff: Read all six commits from 872191237211007bbd1b060135f3ac65f12d44c3 to b96997ddbb7816881df1102f43604329a98676bb; the five-path diff adds a shared derivation, both production integrations, nine regression cases and its evidence fragment.\nCALL_SITES: reckon/crew/obligations.py:_obligations_view, reckon/crew/obligation_snapshot.py:_derive_fleet_state, reckon/crew/obligation_snapshot.py:payload_for, reckon/crew/obligation_snapshot.py:sweep\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/section_obligations.py:55-162 restricts the duty to executable merged runs with implementable declarations, groups it by owning session and section, names both waiters and offers validated completion and partial actions.\nSCORE evidence: 20\nJUSTIFICATION evidence: Source baseline.log and head.log identify the exact reviewed revisions and record 58 and 67 passes respectively, while negative-control.log reaches tests/test_a_merged_section_owes_its_declaration.py:96 in the earlier test revision and fails with AssertionError: [] after proving the merged head and two held requests.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The six-commit diff changes only reckon/crew/obligations.py, reckon/crew/obligation_snapshot.py, reckon/crew/section_obligations.py, tests/test_a_merged_section_owes_its_declaration.py and the declared node evidence fragment.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_merged_section_owes_its_declaration.py:104 fails when the new duty is removed and lines 120-188 independently test clearing, waiters and offered writes, but the parity assertions at lines 205 and 208 can accept two empty views sharing the same regression.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/obligations.py:3922 and reckon/crew/obligation_snapshot.py:1744 extend the existing duty derivations, keep queue release under the declaration owner and introduce capability-based names without forbidden source labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for merged-section accounting and partial-delivery duties found no prior owner; reckon/crew/section_obligations.py:10-17 reuses ledger, plan, section, timestamp, mount and ancestry owners, and its session wrapper calls its shared derivation rather than duplicating it.\nFINDING tests/test_a_merged_section_owes_its_declaration.py:205 non-blocking: Snapshot parity here and at line 208 compares two consumers of merged_section_items_by_session without independently asserting a nonempty duty for this fixture; returning no duty from their shared helper lets both assertions pass, so add an explicit count and expected run/waiter identities before checking parity (the separate positive test already guards universal duty loss).\n",
+  "reuse_search": "Searched crew runtime and evidence.py by merged section, section declaration, partial delivery and section accounting; opened evidence.read_section_landings (landing display, not merged-reachability duties), promotion_scope._revision_is_ancestor (reused), and obligations._sub_floor_items_by_session (existing duty aggregation idiom). Added production definitions are merged_section_items_by_session and its thin merged_section_items wrapper; test helpers reuse the existing dependency fixture, git helper and validated plan writer.",
+  "review_run_id": "r-20261115T161450574212-review-of-qwnw-a-merged-section-still-declared-open-is-an-obligation-codex-b96997ddbb78",
+  "reviewed_base_sha": "872191237211007bbd1b060135f3ac65f12d44c3",
+  "reviewed_commits": [
+    "9ecfdfac0f1d21b92127daf532ad4cb0e714ead1",
+    "bb01aa7e2bc5a481d8570ecf7a04bce5321d94b9",
+    "b217b010d6d7b330b4f7240d1caaf1cf12139274",
+    "e771843ba7250309b91e1d9a3a2e079a8d505796",
+    "9fae6421b210a9162ce356f0ec83db4743a93645",
+    "b96997ddbb7816881df1102f43604329a98676bb"
+  ],
+  "reviewed_head_sha": "b96997ddbb7816881df1102f43604329a98676bb",
+  "reviewed_run_id": "r-20261115T154941461288-qwnw-a-merged-section-still-declared-open-is-an-obligation-codex",
+  "scores": {
+    "durability": 18,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T16:27:49.536990+00:00",
+  "total": 118
+}
