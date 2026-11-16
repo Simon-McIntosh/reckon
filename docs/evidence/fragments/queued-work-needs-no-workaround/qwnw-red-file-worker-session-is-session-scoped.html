@@ -1,0 +1,22 @@
+<section id="qwnw-red-file-worker-session-is-session-scoped-landing">
+  <h3>The session-scope cases measure session selection, not the host's fence</h3>
+  <p><code>tests/test_worker_session_is_session_scoped.py</code> reported four
+  failing ids on the primary branch because its dispatch helper read the host's
+  user-namespace capability and was refused with <code>D22</code> before the
+  session selection it asserts. The cause is the test, not the product: the
+  helper's launcher is a stub, so no worker runs and the fence has nothing to
+  seal. The helper now names a fence waiver and its reason, and every assertion
+  is kept. Those four ids were reproduced at <code>cc8a94d</code> by making the
+  capability read fail as a fence-less host fails: they fail there and pass at
+  head <code>05da4553f5</code> under the same probe.</p>
+  <table id="qwnw-red-file-worker-session-is-session-scoped-landing-runs">
+    <thead><tr><th>Arm</th><th>Summary line</th><th>Exit</th></tr></thead>
+    <tbody>
+      <tr><td>base, fence-less-host probe</td><td><code>4 failed, 1 passed in 2.35s</code></td><td>1</td></tr>
+      <tr><td>head, fence-less-host probe</td><td><code>5 passed in 3.05s</code></td><td>0</td></tr>
+      <tr><td>head, job on <code>all_debug</code></td><td><code>5 passed in 2.64s</code></td><td>0</td></tr>
+    </tbody>
+  </table>
+  <p>The base and after suite arms each report <code>58 passed</code>, so the
+  change adds no failure.</p>
+</section>
