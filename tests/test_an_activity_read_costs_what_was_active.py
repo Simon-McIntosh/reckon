@@ -90,18 +90,19 @@ def test_an_activity_read_visits_only_active_rows(
             store._attach_archive(create=True)
     else:
         shutil.copyfile(source, path)
-    if storage == "amended":
+    if storage in ("amended", "archive"):
         with run_store.RunStore(path) as store:
-            stale = {**expected[0], "launched_at": "malformed"}
+            stale = {**expected.pop(0), "launched_at": "malformed"}
             assert store.sync_run("example", stale) == "updated"
-            assert store.sync_run("example", expected[0]) == "updated"
-            appended = {**expected[-1], "run_id": "appended"}
-            store.append("example", appended)
-            assert (
-                store.sync_run("example", {**appended, "completed_at": None})
-                == "updated"
-            )
-            expected.append({**appended, "completed_at": None})
+            recent = {**records[1], "completed_at": "2025-01-01T00:00:00Z"}
+            assert store.sync_run("example", recent) == "updated"
+            expected.append(recent)
+            if storage == "amended":
+                appended = {**expected[-1], "run_id": "appended"}
+                store.append("example", appended)
+                inserted = {**appended, "run_id": "inserted"}
+                assert store.sync_run("example", inserted) == "inserted"
+                expected.extend((appended, inserted))
 
     monkeypatch.setenv("RECKON_RUN_STORE", str(path))
     monkeypatch.setattr(ledger, "_aggregate_headers", lambda *_: ({"runs": []}, 0))
@@ -126,7 +127,7 @@ def test_an_activity_read_visits_only_active_rows(
     # A positive control proves both instruments see the history when read.
     with connect(path) as connection:
         assert len(connection.execute("SELECT run_id FROM runs").fetchall()) == (
-            0 if storage == "archive" else 20_000 + (storage == "amended")
+            0 if storage == "archive" else 20_000 + 2 * (storage == "amended")
         )
         if storage == "archive":
             connection.execute(
