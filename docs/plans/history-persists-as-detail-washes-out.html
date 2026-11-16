@@ -23,7 +23,7 @@
   <title>History Persists As Detail Washes Out | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="84">
+<meta name="plan-version" content="85">
 <meta name="plan-modified" content="2026-11-16">
 <meta name="plan-section-declarations" content="{&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s27&quot;:&quot;implementable&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;implementable&quot;,&quot;s30&quot;:&quot;done&quot;,&quot;s31&quot;:&quot;done&quot;}">
 <meta name="plan-section-depends-on" content="{&quot;s26&quot;:[&quot;history-persists-as-detail-washes-out#s21&quot;,&quot;history-persists-as-detail-washes-out#s22&quot;,&quot;history-persists-as-detail-washes-out#s23&quot;,&quot;history-persists-as-detail-washes-out#s24&quot;,&quot;history-persists-as-detail-washes-out#s25&quot;,&quot;history-persists-as-detail-washes-out#s28&quot;,&quot;history-persists-as-detail-washes-out#s29&quot;],&quot;s27&quot;:[&quot;history-persists-as-detail-washes-out#s26&quot;]}">
@@ -633,14 +633,17 @@
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T064635683077-store-read-releases-the-lock-s30" data-who="reckon-build" data-when="2026-11-16T08:04:57Z">
     <div class="r-comment-body"><p>The record join closes selected queries before consumption; 3 base lock failures become 3 passing writer-during-read cases. The expanded all_debug gate passes 66 tests at base and 69 at final head, zero added failures. Pace replay preserves microsecond receipt order; controlled base/head failures and repaired replay prove the fixture fix, with identical reader row order, fields and membership.</p></div>
 </div>
+<div class="r-comment" data-section="s31" data-id="c-run-r-20261116T114740438545-scan-holds-no-store-lock-s31" data-who="reckon-build" data-when="2026-11-16T12:11:09Z">
+    <div class="r-comment-body"><p>Plan and activity selection now filters a buffered narrow projection after closing its cursor; over 20000 rows separate writers completed in 0.405s and 0.413s while selection stayed paused &gt;=3s, with both tests red at base and under the base-query mutation.</p></div>
+</div>
+<div class="r-comment" data-section="s31" data-id="c-run-r-20261116T121910082613-review-of-scan-holds-no-store-lock-s31-1ff572c9252b" data-who="reckon-build" data-when="2026-11-16T12:26:46Z">
+    <div class="r-comment-body"><p>Independent review of fd7d9b486e8d4e8c2e25497eeb18c3240e75a3a7..1ff572c9252b21b513545c3a814514e5bf7c0939 is parsed; broader no-added-failure evidence remains a blocking finding for coordinator adjudication.</p></div>
+</div>
 <div class="r-comment" data-section="s7" data-id="c-20260923T1545-s7-moved" data-who="reckon-ship" data-when="2026-09-23T15:45:00Z">
     <div class="r-comment-body"><p>This section's nodes are carried by <code>the-ledger-is-one-file-per-run</code> (8637fa06). Measures are now stated for all four, including the roster node the read-back found had none. Read that plan, not this section, for the per-run ledger.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260923T141652653142-review-of-history-persists-as-detail-washes-out" data-who="reckon-ship" data-when="2026-09-23T15:39:47.829Z">
     <div class="r-comment-body"><p>read-back found 50 sentences with two readings, 43 load-bearing, and node 4 without a measure; the per-run ledger moved to its own plan</p></div>
-</div>
-<div class="r-comment" data-section="s31" data-id="c-run-r-20261116T114740438545-scan-holds-no-store-lock-s31" data-who="reckon-build" data-when="2026-11-16T12:11:09Z">
-    <div class="r-comment-body"><p>Plan and activity selection now filters a buffered narrow projection after closing its cursor; over 20000 rows separate writers completed in 0.405s and 0.413s while selection stayed paused &gt;=3s, with both tests red at base and under the base-query mutation.</p></div>
 </div>
 </section>
 </main>
