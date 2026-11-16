@@ -3608,6 +3608,23 @@ def _held_worktree_records_read(
                     key = (1, run_id)
                     index.extra.add(run_id)
                 index.replace(key, row, retained)
+            # The merged reader answers from the run store, whose identity is a
+            # run id, so a row the aggregate carries without one is not a run it
+            # can return even though the ledger still holds that row. The
+            # aggregate is read here anyway, and the ordinals still pending are
+            # the rows it kept and the read above did not deliver; one of those
+            # without a run id is filed from the aggregate's own position, so a
+            # tree only such a row names stays held rather than being lost to
+            # which reader answered. A pending row that does carry a run id is a
+            # disagreement between the aggregate and the store, which the store's
+            # own refresh settles; filing it here would answer for a row the
+            # store retired or has yet to take.
+            for (run_id, _order), ordinals in aggregate_order.items():
+                if run_id:
+                    continue
+                for ordinal in ordinals:
+                    row = aggregate_rows[ordinal]
+                    index.replace((0, ordinal), row, _retained_worktree(row))
             affected = set(inspected)
         else:
             _stamp, old_identities, index = previous
