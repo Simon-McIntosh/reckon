@@ -1,0 +1,68 @@
+<section id="held-request-names-its-failure-s21-landing">
+  <h2>A held request names the failure that holds it</h2>
+
+  <p><strong>What changed.</strong> A queued request's hold was whatever the last
+  admission pass wrote, and a pass asks the lane before it reads the request's
+  retry back-off: a request sitting in a full lane came back holding the router's
+  congestion sentence with its headroom figure, while the request's own record
+  already carried the plan-review refusal that had stopped its launch and the
+  command that clears it. The obligations row then read
+  <code>stuck: held-for-allowance</code> and offered
+  <code>escalate this stuck request</code>, measuring the wait from the queue's
+  own age rather than from the reason it showed.</p>
+
+  <p>Admission now composes a queued request's hold through one reader,
+  <code>failure_hold</code> in <code>reckon/crew/admission/verdicts.py</code>,
+  which ranks a refusal naming its remedy above the older lane hold and names
+  the refusal's detail, its command and the instant it was recorded. Three
+  surfaces read it: the request's stored hold, written by
+  <code>_record_failure_hold</code> in
+  <code>reckon/crew/admission/launching.py</code> at the three places a failed
+  launch's record is composed; the pass's own verdict row, which
+  <code>_verdict_row</code> now composes through the same reader; and the
+  obligations row, which reads <code>_queued_hold</code> in
+  <code>reckon/crew/obligations.py</code> and measures its age from the instant
+  of the reason it shows. A response to a review answer, a scope claim and every
+  waiting reading are unchanged: the refusal that names no remedy keeps the hold
+  it had, and the row for a request held only for the lane's capacity shows the
+  wait without the router's figures.</p>
+
+  <p><strong>The reproduction, at the base revision</strong>
+  (<code>1edf1b0dba794</code>), in a temporary crew home and a synthesised
+  project mount:</p>
+
+  <pre id="held-request-names-its-failure-s21-before"><code>FAILED test_a_failed_launch_leaves_its_own_hold_with_its_remedy
+  hold == {'verdict': 'held-for-allowance', 'recorded_at': '2026-11-15T22:22:56+00:00',
+           'reason': "the lane's router grants session 'coordinator-fixture' no extra
+                      worker slot (congested, admission headroom -1)"}
+FAILED test_the_obligations_row_names_the_failure_and_its_command
+  row reason  == ' escalate this stuck request; the wait cannot resolve by itself'
+  row command == (the same sentence)
+FAILED test_the_pass_verdict_names_the_failure_a_capacity_hold_would_hide
+  verdict == 'held-for-allowance'
+FAILED test_a_request_held_for_the_lane_is_a_wait_no_stop_blocks
+  'router' in 'held-for-allowance: the lane\'s router grants session ... no extra
+              worker slot (congested, admission headroom -1)'</code></pre>
+
+  <p>The first and third lines are the hold and the pass verdict the reported
+  request carried; the second is the row a coordinator read, naming neither the
+  finding that stopped the launch nor the command that clears it. The fourth is
+  the lane's own sentence repeated on a waiting row.</p>
+
+  <p><strong>The measure.</strong> Four new tests, each red at the base revision
+  and green at head; the fence's after arm
+  <code>62 passed</code> (<code>EXIT=0</code>) against the base arm's
+  <code>58 passed</code> (<code>EXIT=0</code>), the four extra being the new
+  cases. The declared mutation — <code>_record_failure_hold</code> returning
+  before it writes the failure's hold, so the stale router-congestion reason
+  stands — turns
+  <code>test_a_failed_launch_leaves_its_own_hold_with_its_remedy</code> red while
+  the other three stay green, which is the reader and the writer shown to be two
+  separate halves of the fix.</p>
+
+  <p><strong>What a reader still sees.</strong> A request held for the lane's
+  capacity is a <code>run-queued</code> row, which no stop blocks and which names
+  the wait rather than the lane's figures: a full lane is absorbed by the queue
+  and reported by no surface as a duty. A request whose refusal names no remedy
+  keeps its waiting reading, because there is nothing to publish.</p>
+</section>
