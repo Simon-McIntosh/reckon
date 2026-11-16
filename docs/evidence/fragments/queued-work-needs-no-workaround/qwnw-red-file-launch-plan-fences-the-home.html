@@ -15,7 +15,7 @@
 </ul>
 <p>Both are fixture locality, not a broken rule: the rules were verified to still hold under a node tmp placed beside the home — the overlays are composed, the redundant-overlay clause reads nothing, and the dropped overlay is load-bearing again. The repair composes the fence over a node tmp beside the home (<code>tests/test_launch_plan_fences_the_home.py::_node_tmp_beside_the_home</code>), which is what the fence's other bubblewrap tests do, and asserts the node tmp is still sealed so the fixture cannot quietly drop the seal it relies on. No assertion was deleted or weakened; one was added, and neither helper <code>_overlays_inside_another</code> nor <code>_drop_ro_bind</code> changed.</p>
 
-<details><summary>Base run at ba3443a9 — 3 failed, 4 passed; EXIT=1</summary><pre># revision: ba3443a9ae6b (ba3443a9ae6a2bc171c76560016a6ca24e055f02)
+<details><summary>Base run at ba3443a9ae6a2bc171c76560016a6ca24e055f02 — 3 failed, 4 passed; EXIT=1</summary><pre># revision: ba3443a9ae6a2bc171c76560016a6ca24e055f02
 # tree: /tmp/reckon-crew-scratch/r-20261116T104904090730-qwnw-red-file-launch-plan-fences-the-home/base-tree
 # command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_launch_plan_fences_the_home.py
 # module.__file__: /tmp/reckon-crew-scratch/r-20261116T104904090730-qwnw-red-file-launch-plan-fences-the-home/base-tree/reckon/_backends.py
@@ -46,5 +46,5 @@ FAILED ...::test_the_negative_control_rebinds_a_target_inside_a_sealed_directory
 EXIT=1</pre>
 <p>The mutation reproduces the base's three failures and fails the new seal assertion, so both the fixture and the assertion are load-bearing.</p></details>
 
-<p>Logs: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104904090730-qwnw-red-file-launch-plan-fences-the-home/logs/base-arm-test_launch_plan_fences_the_home.log</code>, <code>.../logs/gate-test_launch_plan_fences_the_home.log</code>, <code>.../logs/mutation-fixture-not-applied.log</code>, <code>.../logs/sbatch-gate-1320208.out</code>.</p>
+<p>Logs: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104904090730-qwnw-red-file-launch-plan-fences-the-home/logs/base-arm-test_launch_plan_fences_the_home.log</code>, <code>.../logs/gate-test_launch_plan_fences_the_home.log</code>, <code>.../logs/mutation-fixture-not-applied.log</code>.</p>
 </section>
