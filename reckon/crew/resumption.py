@@ -888,6 +888,39 @@ def _pointer_session(record: Mapping[str, Any]) -> str:
     return str(record.get("session_id") or "").strip()
 
 
+def _stream_reading_settings(record: Mapping[str, Any]) -> dict[str, Any] | None:
+    """The settings a run's streams are read with, or None when none can be had.
+
+    The record's own launch command names the dialect first. A run re-queued
+    after a refused launch can carry no command at all, or only the placed
+    argv whose first word is the scheduler shim rather than a harness, yet the
+    streams its earlier attempts wrote still hold the session it was
+    continuing. Its configured lane names the harness, so when the record's own
+    settings name no readable dialect the lane's settings from the project's
+    resolved configuration are used instead, rather than leaving the session
+    unreadable and the run's committed work reachable only by discarding it.
+    """
+    from reckon import _backends, flight
+
+    unreadable = (_backends.BackendError, CrewError, OSError, ValueError)
+    try:
+        settings = _backend_settings(record, None)
+        _backends.dialect_for(settings)
+        return settings
+    except unreadable:
+        pass
+    try:
+        config = flight.resolve(str(record.get("project") or "")).config
+        configured = (config.get("backends") or {}).get(record.get("backend"))
+        if not isinstance(configured, Mapping):
+            return None
+        settings = dict(configured)
+        _backends.dialect_for(settings)
+        return settings
+    except (*unreadable, flight.FlightConfigError):
+        return None
+
+
 def _stream_session(record: Mapping[str, Any]) -> str:
     """The session id the run's newest non-empty stream carries, or empty.
 
@@ -909,9 +942,11 @@ def _stream_session(record: Mapping[str, Any]) -> str:
         if run_id
         else Path(str(record.get("log_path") or ".")).parent
     )
+    backend = _stream_reading_settings(record)
+    if backend is None:
+        return ""
     for log in stream_paths_newest_first(directory, include=(record.get("log_path"),)):
         try:
-            backend = _backend_settings(record, None)
             observation = _backends.observe_log(
                 backend_name=str(record.get("backend") or ""),
                 backend=backend,
