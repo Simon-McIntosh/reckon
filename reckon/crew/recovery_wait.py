@@ -1684,12 +1684,32 @@ def _stream_holds_assistant_record(path: Path) -> bool:
             event = json.loads(text)
         except (TypeError, ValueError):
             continue
-        if (
-            isinstance(event, Mapping)
-            and event.get("type") == STREAM_ASSISTANT_RECORD_TYPE
-        ):
+        if _is_assistant_record(event):
             scan.assistant_seen = True
             return True
+    return False
+
+
+def _is_assistant_record(event: object) -> bool:
+    """Whether one stream record is the model answering, in any worker's format.
+
+    Each engine writes its stream in its own vocabulary, and the record that
+    shows the model has answered is spelled differently in each: a bare
+    ``assistant`` record, a completed item of a thread, or a settled message
+    whose role is the assistant's. Reading only the first spelling made every
+    other engine's run look as though it had never worked, however long its
+    stream, so a run whose host was gone could never be shown to have stopped.
+    """
+    if not isinstance(event, Mapping):
+        return False
+    kind = event.get("type")
+    if kind == STREAM_ASSISTANT_RECORD_TYPE:
+        return True
+    if kind == "item.completed":
+        return isinstance(event.get("item"), Mapping)
+    if kind in ("message_end", "turn_end"):
+        message = event.get("message")
+        return isinstance(message, Mapping) and message.get("role") == "assistant"
     return False
 
 
