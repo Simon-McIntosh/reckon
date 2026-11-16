@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "d0d77f07e2dcc64d74713755aebe748602f9a06f",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/evidence.py:compose_landed_record",
+    "reckon/crew/reports.py:_fragment_plan_of",
+    "reckon/crew/dispatch_claims.py:_landing_fragment_paths"
+  ],
+  "completed_at": "2026-11-16T06:34:16.792Z",
+  "dispatched_at": "2026-11-16T06:33:47Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-plan-edit-never-strands.html",
+      "line": "4",
+      "severity": "non-blocking",
+      "text": "the fragment names 0f6fb393 (lines 4, 10, 63) as the head the node delivered, but the commit that adds it is 9feecddb and its own gate receipt, logs/head-gate.log at 9feecddb, is never quoted; a reader cannot tie the evidence to the head that carries it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224751501038-qwnw-red-file-plan-edit-never-strands/manifest.md",
+      "line": "14",
+      "severity": "non-blocking",
+      "text": "the done_when asks the named file pass in full at head as a job on all_debug; the manifest's tests line runs it in place in the worktree under `env -u SLURM_JOB_ID`, so the SLURM_JOB_ID condition is met but no all_debug job was submitted for the named gate and the receipt does not show it as a job."
+    }
+  ],
+  "head_log_revision": "9feecddb7c85e48d395e425118fa6ac6ee4f54d6",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit: the attributable span is 0f6fb393ae..9feecddb, one commit adding the 70-line landing fragment and a 1176-line red capture, and I diffed that capture's text against logs/negative-control-plan-edit-8d50b0333f.log and it is that log byte-for-byte apart from one leading blank line; the wider span d0d77f07..9feecddb carries other runs' landings and nothing attributable here.",
+    "done_when": "the done_when asks the named file pass in full at head as a job on all_debug with SLURM_JOB_ID unset, each cause listed with a product-or-test verdict, an importer arm adding no failure against base, and a negative control logged beside the head run; the manifest records the named gate at 9feecddb (9 passed, EXIT=0) and both arms at 0 failures, but the gate ran in the worktree under `env -u SLURM_JOB_ID` rather than as an all_debug job, and the negative control is the red at 8d50b0333f rather than at the base, which is green \u2014 a substitution the manifest's negative_control_note states and justifies.",
+    "goal": "the goal is that tests/test_plan_edit_never_strands.py passes in full on the primary branch; the landed commit adds no code and logs/head-gate.log records 9 passed, EXIT=0 at 9feecddb for that file while logs/base-run-plan-edit.log records the same 9 passed at the primary base d0d77f07, so the green state is measured rather than claimed, and lines 6-8 of docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-plan-edit-never-strands.html carry the product-wrong cause verdict \u00a729's deliverable asks for.",
+    "manifest": "read; status complete, commit 9feecddb, the gate command with five log paths, the scratch arms' measurement module and cwd, both suite arms as JSON with 0 failures and EXIT=0, and a negative-control log whose last line reads EXIT=1 with nine failed ids; its checkpoint states plainly that no product or test change was needed because the repair landed upstream in c3933bacfb.",
+    "write_paths": "the declared fence was reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; `git diff --name-status 0f6fb393ae..9feecddb` lists exactly the two fragment documents under that directory and no other path, so the diff stays inside the declared scope."
+  },
+  "justifications": {
+    "durability": "the change adds no assertion \u2014 two documents \u2014 and the guard that reddens on regression is the pre-existing tests/test_plan_edit_never_strands.py, which logs/negative-control-plan-edit-8d50b0333f.log shows failing 9 tests at EXIT=1 pre-repair.",
+    "evidence": "logs/head-gate.log, logs/base-suite.log and logs/after-suite-final.log each carry a revision header, a summary line and a bare EXIT=0, but docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-plan-edit-never-strands.html:4 cites the parent 0f6fb393 as the head delivered and the 9feecddb gate receipt the commit lands at is never quoted.",
+    "fit": "the fragment follows the sibling convention exactly \u2014 `<section id=\"<node>-landing\">` with h2/h3 and `<pre>` blocks keeping each log's revision header and EXIT= receipt, as docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-clean-landing-releases-its-worktree.html does.",
+    "goal_fidelity": "tests/test_plan_edit_never_strands.py is green at the landed head per logs/head-gate.log's `9 passed`, EXIT=0, and \u00a729 permits a file another node already repaired upstream to be delivered with its passing run.",
+    "reuse": "the change adds no function, class or module; the fragment is data consumed by the existing composer reckon/evidence.py:compose_landed_record, so the capability it feeds is extended rather than forked.",
+    "scope_discipline": "`git diff --name-status 0f6fb393ae..9feecddb` names only the two documents under docs/evidence/fragments/queued-work-needs-no-workaround/, both inside the declared fragment directory."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that tests/test_plan_edit_never_strands.py passes in full on the primary branch; the landed commit adds no code and logs/head-gate.log records 9 passed, EXIT=0 at 9feecddb for that file while logs/base-run-plan-edit.log records the same 9 passed at the primary base d0d77f07, so the green state is measured rather than claimed, and lines 6-8 of docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-plan-edit-never-strands.html carry the product-wrong cause verdict \u00a729's deliverable asks for.\nVERDICT done_when: the done_when asks the named file pass in full at head as a job on all_debug with SLURM_JOB_ID unset, each cause listed with a product-or-test verdict, an importer arm adding no failure against base, and a negative control logged beside the head run; the manifest records the named gate at 9feecddb (9 passed, EXIT=0) and both arms at 0 failures, but the gate ran in the worktree under `env -u SLURM_JOB_ID` rather than as an all_debug job, and the negative control is the red at 8d50b0333f rather than at the base, which is green \u2014 a substitution the manifest's negative_control_note states and justifies.\nVERDICT write_paths: the declared fence was reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; `git diff --name-status 0f6fb393ae..9feecddb` lists exactly the two fragment documents under that directory and no other path, so the diff stays inside the declared scope.\nVERDICT manifest: read; status complete, commit 9feecddb, the gate command with five log paths, the scratch arms' measurement module and cwd, both suite arms as JSON with 0 failures and EXIT=0, and a negative-control log whose last line reads EXIT=1 with nine failed ids; its checkpoint states plainly that no product or test change was needed because the repair landed upstream in c3933bacfb.\nVERDICT diff: read commit by commit: the attributable span is 0f6fb393ae..9feecddb, one commit adding the 70-line landing fragment and a 1176-line red capture, and I diffed that capture's text against logs/negative-control-plan-edit-8d50b0333f.log and it is that log byte-for-byte apart from one leading blank line; the wider span d0d77f07..9feecddb carries other runs' landings and nothing attributable here.\nCALL_SITES: reckon/evidence.py:compose_landed_record, reckon/crew/reports.py:_fragment_plan_of, reckon/crew/dispatch_claims.py:_landing_fragment_paths\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: tests/test_plan_edit_never_strands.py is green at the landed head per logs/head-gate.log's `9 passed`, EXIT=0, and \u00a729 permits a file another node already repaired upstream to be delivered with its passing run.\nSCORE evidence: 13\nJUSTIFICATION evidence: logs/head-gate.log, logs/base-suite.log and logs/after-suite-final.log each carry a revision header, a summary line and a bare EXIT=0, but docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-plan-edit-never-strands.html:4 cites the parent 0f6fb393 as the head delivered and the 9feecddb gate receipt the commit lands at is never quoted.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --name-status 0f6fb393ae..9feecddb` names only the two documents under docs/evidence/fragments/queued-work-needs-no-workaround/, both inside the declared fragment directory.\nSCORE durability: 16\nJUSTIFICATION durability: the change adds no assertion \u2014 two documents \u2014 and the guard that reddens on regression is the pre-existing tests/test_plan_edit_never_strands.py, which logs/negative-control-plan-edit-8d50b0333f.log shows failing 9 tests at EXIT=1 pre-repair.\nSCORE fit: 19\nJUSTIFICATION fit: the fragment follows the sibling convention exactly \u2014 `<section id=\"<node>-landing\">` with h2/h3 and `<pre>` blocks keeping each log's revision header and EXIT= receipt, as docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-clean-landing-releases-its-worktree.html does.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no function, class or module; the fragment is data consumed by the existing composer reckon/evidence.py:compose_landed_record, so the capability it feeds is extended rather than forked.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-plan-edit-never-strands.html:4 non-blocking: the fragment names 0f6fb393 (lines 4, 10, 63) as the head the node delivered, but the commit that adds it is 9feecddb and its own gate receipt, logs/head-gate.log at 9feecddb, is never quoted; a reader cannot tie the evidence to the head that carries it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224751501038-qwnw-red-file-plan-edit-never-strands/manifest.md:14 non-blocking: the done_when asks the named file pass in full at head as a job on all_debug; the manifest's tests line runs it in place in the worktree under `env -u SLURM_JOB_ID`, so the SLURM_JOB_ID condition is met but no all_debug job was submitted for the named gate and the receipt does not show it as a job.\n",
+  "review_run_id": "r-20261116T042748571589-review-of-qwnw-red-file-plan-edit-never-strands-9feecddb7c85",
+  "reviewed_base_sha": "d0d77f07e2dcc64d74713755aebe748602f9a06f",
+  "reviewed_head_sha": "9feecddb7c85e48d395e425118fa6ac6ee4f54d6",
+  "reviewed_run_id": "r-20261115T224751501038-qwnw-red-file-plan-edit-never-strands",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T042748571589-review-of-qwnw-red-file-plan-edit-never-strands-9feecddb7c85"
+  },
+  "reviewer_run_id": "r-20261116T042748571589-review-of-qwnw-red-file-plan-edit-never-strands-9feecddb7c85",
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T07:32:38.089957+00:00",
+  "total": 105
+}
