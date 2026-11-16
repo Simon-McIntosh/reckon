@@ -77,6 +77,11 @@ def _seed_repository(home: Path, root: Path) -> None:
         ("commit", "-q", "-m", "chore: seed"),
     ):
         _git(root, *arguments)
+    # The reflex measures a review's delta against the integration branch, and
+    # that ref is a remote-tracking ref: without one the move between the
+    # reviewed head and the run's head is an unshown delta, so no review can be
+    # shown to be safe to carry and every case here re-reviews instead.
+    _git(root, "update-ref", "refs/remotes/origin/main", "HEAD")
     (home / "mounts.json").write_text(
         json.dumps({PROJECT: str(root / "docs")}), encoding="utf-8"
     )
@@ -194,7 +199,10 @@ def _scoring_run(fleet: _Fleet, run_id: str = SOURCE_RUN) -> dict:
         "backend": "alpha",
         "launch": "cli",
         "argv": ["codex"],
-        "phase": "starting",
+        # The run has launched: a pre-spawn phase reads as a claim whose worker has
+        # not started, which the classifier reports as running and never reaches
+        # the completed-manifest arm that makes this a run awaiting review.
+        "phase": "running",
         "node": {"id": "source-node", "plan": "fixture", "section": "s2"},
         "manifest_path": str(manifest),
     }
