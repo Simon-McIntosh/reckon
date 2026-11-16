@@ -89,6 +89,13 @@
       "note": "s79 rewritten at 4ffd97352b: it now says read_records has no run-id selection and gains a run_ids parameter threaded through ledger.load to stored_run_rows. That widening is deliberate and minimal; the open_run_index callers already select by run id at the store layer.",
       "reason": "",
       "when": "2026-11-16T20:39:39.544720+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "the design review of the same revision asked s78 to name its owners (process_liveness._JOB_LIVE_STATES, placement_job_alive, FLEET_JOB_ID) so the node reuses them instead of enumerating states; naming the owner is the reuse map the brief carries, and the endpoint and its five cases remain the measure.",
+      "when": "2026-11-16T20:40:11.555815+00:00"
     }
   ],
   "responses": {
@@ -112,6 +119,12 @@
       "note": "s79 rewritten at 4ffd97352b: it now says read_records has no run-id selection and gains a run_ids parameter threaded through ledger.load to stored_run_rows. That widening is deliberate and minimal; the open_run_index callers already select by run id at the store layer.",
       "reason": "",
       "when": "2026-11-16T20:39:39.544720+00:00"
+    },
+    "reasoning-2": {
+      "action": "declined",
+      "by": "",
+      "reason": "the design review of the same revision asked s78 to name its owners (process_liveness._JOB_LIVE_STATES, placement_job_alive, FLEET_JOB_ID) so the node reuses them instead of enumerating states; naming the owner is the reuse map the brief carries, and the endpoint and its five cases remain the measure.",
+      "when": "2026-11-16T20:40:11.555815+00:00"
     }
   },
   "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-monitor-reads-each-fact-once/r-20261116T201742176197-plan-review-of-the-monitor-reads-each-fact-once.json",
