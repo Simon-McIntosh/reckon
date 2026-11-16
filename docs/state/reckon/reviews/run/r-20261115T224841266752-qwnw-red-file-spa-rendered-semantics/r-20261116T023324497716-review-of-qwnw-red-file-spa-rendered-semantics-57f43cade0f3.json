@@ -1,0 +1,101 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "Derived from the reviewed run's own manifest-named gate logs: baseline_suite (suite-base.log, revision d0d77f07e2) reports '58 passed' with failure_count 0 and failure_ids [], and after_suite (suite-head.log, revision 2efb56b182) reports '58 passed' with failure_count 0 and failure_ids []; the head adds no failing test, and the count is a measured 0 read from both summary lines rather than an absence.",
+  "assertion_analysis": [
+    {
+      "failure_condition": "The case asserts order[0] === 'concurrent', overview.implementation === '42%' and stats label plans === '1' against the fixture's metrics block; restoring sprintStateRows' flat-field-only read makes the row render 'unknown' and '0%', which is what gate-base.log records failing at d0d77f07.",
+      "lines": "tests/test_spa_rendered_semantics.py:455-490"
+    },
+    {
+      "failure_condition": "The case asserts the revealed row appears in the list from which the index is drawn; dropping the inventory adoption at docs/ui/state-loader.js:903-916 returns rows to ['rendered-contract'], the value the base arm reports.",
+      "lines": "tests/test_spa_rendered_semantics.py:640-682"
+    },
+    {
+      "failure_condition": "The case clicks .r-reading-prompt and asserts 'Loaded plan version: 7' in the prompt text; without the control at docs/ui/shell-titlebar.jsx:183 the click is a no-op and the text never opens, and without the follow at docs/ui/bits.jsx:130 it states an unavailable version beside a footer naming 7.",
+      "lines": "tests/test_spa_rendered_semantics.py:700-720"
+    },
+    {
+      "failure_condition": "The receipt wait now requires a served source, a non-zero resource count and no 'legacy-index' string, so a shell that renders the index-only receipt waits out the deadline and the case reddens as the base arm did.",
+      "lines": "tests/test_spa_rendered_semantics.py:582-596"
+    },
+    {
+      "failure_condition": "No added assertion compares a value the test supplied against a call to the code under test: every ok expression is a literal or a fixture-derived figure ('42%', 'focus', ['created-while-open','rendered-contract']) checked against DOM the shell rendered. The one self-comparing line in this block, 'steadyStateWindowMs': 1200, is pre-existing context and restates the window the probe itself measured.",
+      "lines": "tests/test_spa_rendered_semantics.py:625-640"
+    }
+  ],
+  "call_site_count": 5,
+  "call_sites": [
+    "docs/index.html",
+    "docs/ui/shell.jsx:532",
+    "docs/ui/shell-plans.jsx:446",
+    "docs/ui/plan.jsx:785",
+    "docs/ui/sprint.jsx:477"
+  ],
+  "completed_at": "2026-11-16T02:36:57.254Z",
+  "dispatched_at": "2026-11-16T02:36:16Z",
+  "findings": [
+    {
+      "file": "docs/ui/sprint.jsx",
+      "line": "100",
+      "severity": "non-blocking",
+      "text": "non-blocking: dominantEffectiveStatus derives a sprint headline state in the browser from metrics.by_effective_status with a precedence list that no Python reader can see, duplicating the fact reckon/roadmap.py:3081 owns and serves as derived_state, and putting the member-status vocabulary in a column whose other values are in-progress/planned/shipped."
+    },
+    {
+      "file": "docs/ui/bits.jsx",
+      "line": "130",
+      "severity": "non-blocking",
+      "text": "non-blocking: the prompt-version follow lives in a file outside the node's declared write paths, so the fence admits no product repair the goal implies; the manifest reports it under outside_scope rather than the grants being widened."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224841266752-qwnw-red-file-spa-rendered-semantics/manifest.md",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "non-blocking: the tests line records only the pytest command, so the done_when's \"ruff check and ruff format --check report nothing new on the changed paths\" clause was never run or logged; a ruff 0.16.4 check and format --check with the repo pyproject over the head file now read clean with EXIT=0."
+    },
+    {
+      "file": "tests/test_spa_rendered_semantics.py",
+      "line": "750",
+      "severity": "non-blocking",
+      "text": "non-blocking: the compact-progress probe returns target as location.hash.includes(...) rather than the hash it observed, so a red run prints true/false where the destination of the click is the fact a reader needs to diagnose it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit; the seven node commits change 7 files, 349 insertions and 62 deletions, and the remaining files in the base-to-head range belong to commits merged from origin/main.",
+    "done_when": "measured: gate-head.log 10 passed EXIT=0 at 2efb56b182 under an all_debug sbatch with SLURM_JOB_ID unset, gate-base.log 8 failed EXIT=1 at d0d77f07, both suite arms 58 passed; not measured: the ruff clause, which no manifest line or log records.",
+    "goal": "the goal is \"Make tests/test_spa_rendered_semantics.py pass in full on the primary branch\"; the seven commits repair the sprint hook order, the discovery review merge, the arrival reveal, the sprint table's served figures, the index row's status transition and the reader's handoff prompt, and gate-head.log records 10 passed EXIT=0 at 2efb56b182.",
+    "manifest": "read; status complete, seven commits, the literal gate command, five log paths, both suite arms at 58 passed, negative_control_log gate-base.log, four attributed retry_failures and six rubric self-check lines.",
+    "write_paths": "declared are reckon, tests, the two fragment paths and docs/figures/...; the test file and the fragment are inside them, the five docs/ui files are outside them and the manifest says so under outside_scope."
+  },
+  "justifications": {
+    "durability": "gate-base.log is the reinstated defect \u2014 8 of 10 cases red at d0d77f07, including the arrival-row assertion at tests/test_spa_rendered_semantics.py:660.",
+    "evidence": "gate-head.log names revision 2efb56b182, the tree edbe6ccc and its command and ends EXIT=0 after '10 passed', while the ruff clause has no log in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224841266752-qwnw-red-file-spa-rendered-semantics.",
+    "fit": "the additions match docs/ui/sprint.jsx's comment-explains-the-trap idiom, but docs/ui/sprint.jsx:100 derives a sprint fact in JSX, which the SPA-renders rule reserves to Python.",
+    "goal_fidelity": "docs/ui/sprint.jsx:361-380 runs every hook before the guards and gate-head.log records the file at 10 passed EXIT=0.",
+    "reuse": "docs/ui/sprint.jsx:100 duplicates reckon/roadmap.py:3081's derived sprint state (served via reckon/mcp_views.py:1166 sprint_state_view) instead of extending the owner of that fact.",
+    "scope_discipline": "docs/ui/bits.jsx:130 and four sibling docs/ui files are outside the write paths prompt.txt's FENCE \u2014 SCOPE declares, which the manifest records as outside_scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is \"Make tests/test_spa_rendered_semantics.py pass in full on the primary branch\"; its seven commits repair the sprint hook order (docs/ui/sprint.jsx:361-380), the discovery review merge (docs/ui/state-loader.js:248), the arrival reveal (docs/ui/state-loader.js:903-916), the sprint table's served figures (docs/ui/sprint.jsx:109-117), the index row's status transition (docs/ui/shell-plans.jsx:547-595) and the reader's handoff prompt (docs/ui/shell-titlebar.jsx:183-195, docs/ui/bits.jsx:130-136), and gate-head.log records the file at 10 passed EXIT=0.\nVERDICT done_when: the done_when asks the file to pass in full at head as an all_debug job with SLURM_JOB_ID unset, a per-cause verdict with no assertion deleted or weakened, the base run as negative control with its failing ids in the fragment, an arm over the tests importing the change, and ruff clean on the changed paths; gate.sh:12-19 runs sbatch on partition all_debug with `unset SLURM_JOB_ID`, gate-head.log records 10 passed EXIT=0 at 2efb56b182 whose tree edbe6ccc matches the commit, gate-base.log records 8 failed EXIT=1 at d0d77f07 in a scratch base-tree, both suite arms read 58 passed, the fragment's causes table names all eight base failures \u2014 but the ruff clause has no manifest line and no log in the run directory.\nVERDICT write_paths: prompt.txt's FENCE \u2014 SCOPE declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, that directory's qwnw-red-file-spa-rendered-semantics.html and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-spa-rendered-semantics; the diff's tests/test_spa_rendered_semantics.py and the fragment are inside them and its five docs/ui files (sprint.jsx, shell-plans.jsx, state-loader.js, shell-titlebar.jsx, bits.jsx) are outside, which the manifest records under outside_scope.\nVERDICT manifest: read; it states status complete, commits dca7b3337c through 57f43cade0, the literal gate command, five log paths, both suite arms at 58 passed with empty failure_ids, negative_control_log gate-base.log, four retry_failures with product/test attributions, and one self-check line per rubric dimension.\nVERDICT diff: read commit by commit from d0d77f07 to 57f43cade0; the node's own seven commits change 7 files with 349 insertions and 62 deletions \u2014 three SPA repair commits, two test commits, and the fragment \u2014 while the rest of the range's files belong to commits merged from origin/main and not to this node.\nCALL_SITES: docs/index.html, docs/ui/shell.jsx:532, docs/ui/shell-plans.jsx:446, docs/ui/plan.jsx:785, docs/ui/sprint.jsx:477\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: docs/ui/sprint.jsx:361-380 runs every hook before the guards so the discovery merge no longer unmounts the sprint surface, and gate-head.log records tests/test_spa_rendered_semantics.py at 10 passed EXIT=0 at 2efb56b182.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-head.log header names revision 2efb56b182, its tree edbe6ccc and the command, its last line is EXIT=0 after \"10 passed\", and gate-base.log reads 8 failed EXIT=1 \u2014 but the done_when's ruff clause is recorded nowhere in the run directory, and the suite arm's two test files import nothing the node changed.\nSCORE scope_discipline: 8\nJUSTIFICATION scope_discipline: every product repair sits in docs/ui/sprint.jsx:100, shell-plans.jsx:547 and three sibling docs/ui files that prompt.txt's FENCE \u2014 SCOPE does not declare, as the manifest's outside_scope line admits.\nSCORE durability: 17\nJUSTIFICATION durability: reinstating the defects is exactly the base arm \u2014 gate-base.log shows 8 of 10 cases red at d0d77f07, among them the sprint-table figure, arrival-row and handoff-version assertions at tests/test_spa_rendered_semantics.py:455-490, 640-690 and 736-750.\nSCORE fit: 11\nJUSTIFICATION fit: the additions follow docs/ui/sprint.jsx's comment-explains-the-trap idiom, but dominantEffectiveStatus at docs/ui/sprint.jsx:100 is a derivation in JSX, which the repository's SPA-renders-not-derives rule puts in Python.\nSCORE reuse: 4\nJUSTIFICATION reuse: docs/ui/sprint.jsx:100 dominantEffectiveStatus duplicates the sprint-state derivation reckon/roadmap.py:3081 owns and serves as derived_state and reuses reckon/mcp_views.py:1141's by_effective_status counts, with its own precedence list and a member-status vocabulary where the served fact carries in-progress/planned/shipped.\nFINDING docs/ui/sprint.jsx:100 non-blocking: dominantEffectiveStatus derives a sprint headline state in the browser from metrics.by_effective_status with a precedence list that no Python reader can see, duplicating the fact reckon/roadmap.py:3081 owns and serves as derived_state, and putting the member-status vocabulary in a column whose other values are in-progress/planned/shipped.\nFINDING docs/ui/bits.jsx:130 non-blocking: the prompt-version follow lives in a file outside the node's declared write paths, so the fence admits no product repair the goal implies; the manifest reports it under outside_scope rather than the grants being widened.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224841266752-qwnw-red-file-spa-rendered-semantics/manifest.md:11 non-blocking: the tests line records only the pytest command, so the done_when's \"ruff check and ruff format --check report nothing new on the changed paths\" clause was never run or logged; a ruff 0.16.4 check and format --check with the repo pyproject over the head file now read clean with EXIT=0.\nFINDING tests/test_spa_rendered_semantics.py:750 non-blocking: the compact-progress probe returns target as location.hash.includes(...) rather than the hash it observed, so a red run prints true/false where the destination of the click is the fact a reader needs to diagnose it.\n",
+  "review_run_id": "r-20261116T023324497716-review-of-qwnw-red-file-spa-rendered-semantics-57f43cade0f3",
+  "reviewed_base_sha": "d0d77f07e2dcc64d74713755aebe748602f9a06f",
+  "reviewed_head_sha": "57f43cade0f373c84662e57b9cefb04191b43b22",
+  "reviewed_run_id": "r-20261115T224841266752-qwnw-red-file-spa-rendered-semantics",
+  "rubric": "",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 11,
+    "goal_fidelity": 19,
+    "reuse": 4,
+    "scope_discipline": 8
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T02:46:21.976358+00:00",
+  "total": 75
+}
