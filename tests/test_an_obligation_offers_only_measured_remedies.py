@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib
 import json
 import os
+import re
 import shlex
 import socket
 from datetime import UTC, datetime
@@ -258,6 +259,32 @@ def test_a_node_review_disposition_uses_the_default_cli_rubric(delivered, monkey
     for row in rows:
         assert "--rubric node" not in row["next_command"]
         _parse(row["next_command"])
+
+
+@pytest.mark.parametrize("rubric", ["node", "figure"])
+def test_blocking_finding_commands_use_cli_rubric_names(delivered, monkeypatch, rubric):
+    pointer, _, _ = delivered
+    monkeypatch.setattr(obligations, "_reflex_review_window_seconds", lambda: 0)
+    monkeypatch.setattr(
+        obligations.recovery_review_dispatch,
+        "review_dispatch_refusal",
+        lambda record: {
+            "refused": True,
+            "reason": "an open finding needs a disposition",
+            "undisposed_findings": [0],
+            "review_rubric": rubric,
+            "review_run_id": "r-review",
+        },
+    )
+    duty = obligations._reflex_open_refusal(pointer["project"], pointer, age=1)
+    commands = re.findall(r"`(reckon[^`]+)`", duty["next_command"])
+    assert len(commands) == 2
+    for command in commands:
+        assert "--rubric node" not in command, command
+        parsed = _parse(command)
+        assert parsed.params["review_rubric"] == (
+            "figure" if rubric == "figure" else None
+        )
 
 
 def test_unknown_gate_is_refused_before_it_can_be_queued(monkeypatch):

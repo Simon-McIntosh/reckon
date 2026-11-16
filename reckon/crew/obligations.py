@@ -914,6 +914,27 @@ def _refusal_speaks_for_revision(recorded: Mapping[str, Any], *, head: str) -> b
     return bool(stated) and bool(head) and recovery.same_revision(stated, head)
 
 
+def _cli_review_rubric(record: Mapping[str, Any]) -> str | None:
+    """Text review records use the CLI's default rubric selector."""
+    rubric = review_module._review_record_rubric(record)
+    return None if rubric == "node" else rubric or None
+
+
+def _finding_disposition_commands(
+    project: str,
+    run_id: str,
+    index: int,
+    *,
+    review: Mapping[str, Any] | None = None,
+) -> tuple[str, str]:
+    """Compose finding remedies with the rubric names the CLI accepts."""
+    if review is not None:
+        review = {**review, "rubric": _cli_review_rubric(review)}
+    return recovery_review_dispatch._finding_dispose_commands(
+        project, run_id, index, review=review
+    )
+
+
 def _review_dispatch_refusal(
     project: str,
     pointer: Mapping[str, Any],
@@ -994,7 +1015,7 @@ def _review_dispatch_refusal(
         if not undisposed:
             continue
         index, _finding = undisposed[0]
-        fold, exempt = recovery_review_dispatch._finding_dispose_commands(
+        fold, exempt = _finding_disposition_commands(
             project, run_id, index, review=record
         )
         return {
@@ -1007,9 +1028,7 @@ def _review_dispatch_refusal(
     for index in recorded.get("findings") or ():
         if not isinstance(index, int) or isinstance(index, bool):
             continue
-        fold, exempt = recovery_review_dispatch._finding_dispose_commands(
-            project, run_id, index
-        )
+        fold, exempt = _finding_disposition_commands(project, run_id, index)
         return {
             "reason": str(recorded.get("reason") or "")
             or "the review reflex refused this review's dispatch",
@@ -1322,7 +1341,7 @@ def _reflex_open_refusal(
             "reason": reason or "the reflex refused this review's dispatch",
             "next_command": dispatch or review_hand_dispatch_command(project, run_id),
         }
-    fold, exempt = recovery_review_dispatch._finding_dispose_commands(
+    fold, exempt = _finding_disposition_commands(
         project,
         run_id,
         indices[0],
@@ -3930,11 +3949,7 @@ def _sub_floor_items_by_session(
                 run_id,
                 f"--dimension {shlex.quote(str(finding['dimension']))}",
                 review_run_id=str(record.get("review_run_id") or "") or None,
-                rubric=(
-                    None
-                    if review_module._review_record_rubric(record) == "node"
-                    else review_module._review_record_rubric(record) or None
-                ),
+                rubric=_cli_review_rubric(record),
             )
             by_session.setdefault(session, []).append(
                 {
