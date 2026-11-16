@@ -75,9 +75,11 @@ def test_shell_redirects_are_refused_and_decoys_still_execute(decoys, capsys):
     repair_log = capsys.readouterr().out
     for index, (repo, _, target) in enumerate(decoys):
         result = redirect(repo / ".venv/bin/python")
-        print(
-            f"redirect exit={result.returncode}: before={before[index]} after={identity(target)}"
-        )
+        with capsys.disabled():
+            print(
+                f"redirect exit={result.returncode}: before={before[index]} "
+                f"after={identity(target)} stderr={result.stderr.strip()}"
+            )
         assert result.returncode != 0, "the redirect replaced the writable decoy"
         assert "Permission denied" in result.stderr
         assert identity(target) == before[index]
@@ -196,7 +198,8 @@ def test_each_health_sample_repairs_a_later_install(tmp_path):
     late_alias = first[1] / "bin/pypy"
     sleep = tmp_path / "stubbin/sleep"
     sleep.write_text(
-        '#!/bin/bash\nprintf "#!/bin/sh\\nprintf late-alive\\\\n\\n" > "$LATE_TARGET"\nchmod 755 "$LATE_TARGET"\nln -s "$LATE_TARGET" "$LATE_ALIAS"\n'
+        '#!/bin/bash\ncp "$LATE_SOURCE" "$LATE_TARGET"\n'
+        'chmod 755 "$LATE_TARGET"\nln -s "$LATE_TARGET" "$LATE_ALIAS"\n'
     )
     sleep.chmod(0o755)
     env = {
@@ -205,6 +208,7 @@ def test_each_health_sample_repairs_a_later_install(tmp_path):
         "RECKON_SHIM_PYTHON": sys.executable,
         "PYTHONPATH": str(ROOT),
         "LATE_TARGET": str(late),
+        "LATE_SOURCE": str(first[2]),
         "LATE_ALIAS": str(late_alias),
         "FLEET_SLEEP_SECONDS": "0",
     }
@@ -224,6 +228,7 @@ def test_each_health_sample_repairs_a_later_install(tmp_path):
     for target in (first[2], second[2], late):
         assert target.stat().st_mode & 0o222 == 0
         assert redirect(target).returncode != 0
+        assert subprocess.check_output([str(target)], timeout=10) == b"decoy-alive\n"
     assert result.stderr.count("interpreter made read-only:") == 2
     assert str(first[2]) in result.stderr and str(late) in result.stderr
 

@@ -83,7 +83,7 @@ fi
 last_snapshot=0
 count=0
 while :; do
-    writable_interpreters=$("${RECKON_SHIM_PYTHON:-python3}" -m reckon.crew.fleet_supervisor check-interpreters) || writable_interpreters=unknown
+    writable_interpreters=$(timeout 20 "${RECKON_SHIM_PYTHON:-python3}" -m reckon.crew.fleet_supervisor check-interpreters) || writable_interpreters=unknown
     read -r load1 load5 _ < "$procdir/loadavg"
     running=$(awk '/^procs_running/ {print $2}' "$procdir/stat")
     blocked=$(awk '/^procs_blocked/ {print $2}' "$procdir/stat")

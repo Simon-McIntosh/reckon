@@ -368,7 +368,7 @@ def check_environment_interpreters(
 
 def sample_interpreter_permissions() -> int:
     """Check the registered checkouts and emit one health-series reading."""
-    from reckon.flight import mounted_project_docs
+    from reckon.flight import FlightConfigError, mounted_project_docs
 
     def report(message: str) -> None:
         log(message, file=sys.stderr)
@@ -377,7 +377,7 @@ def sample_interpreter_permissions() -> int:
         remaining = check_environment_interpreters(
             (docs.parent for docs in mounted_project_docs().values()), report=report
         )
-    except (OSError, ValueError, RuntimeError) as exc:
+    except (OSError, ValueError, RuntimeError, FlightConfigError) as exc:
         report(f"interpreter permission check failed: {exc}")
         return 1
     print(remaining, flush=True)
