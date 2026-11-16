@@ -157,8 +157,14 @@ def _invoke(
 
 
 def _payload(result) -> dict:
-    """Read the documented JSON response ahead of Click's stderr echo."""
-    return json.loads(result.output.splitlines()[0])
+    """Read the documented JSON response from stdout, where the command puts it.
+
+    ``Result.output`` interleaves stderr, and a launching dispatch writes its
+    run identity there so stdout stays the command's JSON document. Reading
+    stdout is what a machine caller does; reading the merged stream would parse
+    that notice as the response.
+    """
+    return json.loads(result.stdout.splitlines()[0])
 
 
 def _observe_window(
