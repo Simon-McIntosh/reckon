@@ -1,0 +1,76 @@
+<section id="qwnw-red-file-held-worktrees-read-run-files-landing">
+  <h2>A held-tree fixture that held nothing</h2>
+
+  <p><strong>What changed.</strong>
+  <code>tests/test_held_worktrees_read_run_files.py</code> registered every
+  fixture tree with <code>git worktree add --detach &lt;path&gt; HEAD</code>: a
+  tree whose head is the primary branch's own tip and whose working tree is
+  clean. Commit <code>c778aaa1f6</code> made the derivation file a retained
+  tree under its record only while the tree carries work a landing has not
+  taken — an uncommitted change, or a commit the primary branch does not reach —
+  so every tree these cases registered held nothing, the derivation returned no
+  record, and all nine cases read back an empty held set.</p>
+
+  <p><strong>Verdict: the test was wrong, the product was not.</strong> The
+  rule is deliberate and guarded elsewhere:
+  <code>tests/test_a_duty_clears_when_its_run_ends.py</code> asserts
+  <code>_tree_holds_unmerged_work</code> over a landed tree (false), an
+  uncommitted change (true), a commit past the primary branch (true) and an
+  absent tree (false), and asserts the derivation withholds the row for a tree
+  that holds nothing. Nothing in <code>reckon/</code> was changed by this node.</p>
+
+  <p><strong>What was updated, and to what rule.</strong> The <code>_worktree</code>
+  helper now commits one file in the tree it registers, so each fixture tree
+  carries a commit its primary branch does not reach — the state of a dispatched
+  run whose work has not landed. The file's module docstring and the helper's
+  docstring name the rule they now rely on: a retained tree is held only while
+  it holds unmerged work, so every tree here satisfies it. No assertion was
+  deleted or weakened: the held-set assertions, the expected runs, the age and
+  kind assertions and the refusal that the merged ledger is never read for a
+  tree a file names are unchanged. The fixture now models a tree that has work
+  rather than a tree that has none, which is what each case was written to
+  measure ordering and attribution over.</p>
+
+  <h3 id="qwnw-red-file-held-worktrees-read-run-files-arms">The arms</h3>
+
+  <table id="qwnw-red-file-held-worktrees-read-run-files-table">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command, and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file, base arm (negative control)</td>
+        <td><code>d0d77f07e2</code>, extraction</td>
+        <td>9 failed, <code>EXIT=1</code></td></tr>
+      <tr><td>the named file, head arm</td>
+        <td><code>0e7f9b6b9e</code>, worktree</td>
+        <td>9 passed in 2.02s, <code>EXIT=0</code></td></tr>
+      <tr><td>suite arm before the change</td>
+        <td><code>d0d77f07e2</code>, extraction</td>
+        <td>58 passed in 52.49s, <code>EXIT=0</code></td></tr>
+      <tr><td>suite arm at head</td>
+        <td><code>0e7f9b6b9e</code>, worktree</td>
+        <td>58 passed in 32.92s, <code>EXIT=0</code></td>
+    </tbody>
+  </table>
+
+  <p>The head arm ran as a job on <code>all_debug</code> with
+  <code>SLURM_JOB_ID</code> unset in the child. The base arm of the named file
+  is the negative control: the same file at the base revision, run in a scratch
+  extraction of that revision, which fails exactly the nine ids below.</p>
+
+  <h3 id="qwnw-red-file-held-worktrees-read-run-files-ids">The nine failing ids at the base revision</h3>
+
+  <ul id="qwnw-red-file-held-worktrees-read-run-files-id-list">
+    <li><code>test_the_held_set_equals_the_whole_ledger_derivation</code></li>
+    <li><code>test_a_mixed_state_*</code>: <code>aggregate-only</code>,
+      <code>per-run-only</code>, <code>file-and-aggregate-row</code>,
+      <code>completion-reverses-dispatch</code>, <code>completed-at-tie</code>,
+      <code>node-id-differs-from-tree-name</code></li>
+    <li><code>test_inspected_runs_are_read_from_their_own_files</code></li>
+    <li><code>test_a_tree_a_live_run_occupies_is_not_held</code></li>
+  </ul>
+
+  <p>The failure text is the same at every id: the left side reads
+  <code>set()</code> where the expectation names the run that retained the tree,
+  which is the tree's emptiness rather than the naming the case tests.</p>
+</section>
