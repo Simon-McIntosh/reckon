@@ -159,12 +159,12 @@ def _changed_paths_inside_repository(
     commit that contains it. Asking the narrower question is what lets a
     finished run that has no commit to give be reconciled.
 
-    A relative path is repository-relative by the manifest's own convention, so
-    a relative path resolves against the repository root; an absolute path
-    resolves as written. A path anywhere else — a store directory, a scratch
-    path under the crew home — is outside and requires no commit here. When the
-    run records no repository to resolve against, every named path is returned,
-    which is the guard's prior behaviour.
+    An absolute path resolves as written. A relative path belongs to the
+    repository unless a commitless run has that file inside its own durable run
+    directory and neither repository nor worktree has a competing path. This
+    reads run-local log names the same way as manifest log citations, without
+    letting a missing file, an escaping symlink or a repository file stand in
+    for an external deliverable. Without a repository root every item is kept.
     """
     items = [str(item).strip() for item in (manifest.get("changed_paths") or ())]
     root = str(record.get("repo") or record.get("worktree") or "").strip()
@@ -174,6 +174,15 @@ def _changed_paths_inside_repository(
         base = Path(root).expanduser().resolve()
     except (OSError, RuntimeError):
         return tuple(items)
+    from reckon.crew.recovery import _pointer_role
+
+    run_id = str(record.get("run_id") or "").strip()
+    directory = (
+        run_dir(run_id).resolve()
+        if run_id and _pointer_role(record) in _COMMITLESS_ROLES
+        else None
+    )
+    worktree = Path(str(record.get("worktree") or base)).expanduser()
     inside: list[str] = []
     for item in items:
         raw = Path(item).expanduser()
@@ -190,6 +199,18 @@ def _changed_paths_inside_repository(
         elif ".." in raw.parts:
             continue
         else:
+            if directory is not None:
+                try:
+                    artifact = (directory / raw).resolve()
+                    if (
+                        artifact.is_relative_to(directory)
+                        and artifact.is_file()
+                        and not (base / raw).exists()
+                        and not (worktree / raw).exists()
+                    ):
+                        continue
+                except (OSError, RuntimeError):
+                    pass
             inside.append(item)
     return tuple(inside)
 

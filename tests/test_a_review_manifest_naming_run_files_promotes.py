@@ -73,3 +73,85 @@ def test_a_review_manifest_naming_a_repository_file_still_needs_a_commit(
     assert "repository paths" in str(refused.value)
     assert pointer_path(review_fixture.REVIEW_RUN_ID).is_file()
     assert ledger.runs(review_fixture.PROJECT, root=repository) == []
+
+
+DELIVERED_LOG_PATHS = [
+    ("logs/head-test.log", "logs/review-check-plain.log", "logs/review-check-at.log"),
+    (
+        "logs/review-record-check-head.txt",
+        "logs/review-record-check.txt",
+        "logs/reviewed-node-gate-rerun.txt",
+    ),
+]
+DELIVERED_COMMITS = [
+    (
+        "none — a read-only run has no commit to cite (a review writes its record "
+        "in the reviewed run's review-records/ and changes no tree)"
+    ),
+    (
+        "none (read-only review; the deliverables are two JSON records under the "
+        "reviewed run's review-records/, not worktree commits)"
+    ),
+]
+
+
+def _with_run_logs(manifest: Path, *, sample: int = 0) -> Path:
+    directory = run_dir(review_fixture.REVIEW_RUN_ID)
+    for name in DELIVERED_LOG_PATHS[sample]:
+        log = directory / name
+        log.parent.mkdir(parents=True, exist_ok=True)
+        log.write_text("# command: /usr/bin/true\nEXIT=0\n", encoding="utf-8")
+    text = manifest.read_text().replace(
+        "commits: none\n", f"commits: {DELIVERED_COMMITS[sample]}\n"
+    )
+    text = text.replace(
+        "tests: /usr/bin/true\n",
+        "".join(f"  - {name}\n" for name in DELIVERED_LOG_PATHS[sample])
+        + "tests: /usr/bin/true\n",
+    )
+    manifest.write_text(text, encoding="utf-8")
+    return directory
+
+
+@pytest.mark.parametrize("sample", [0, 1], ids=["queue-cap", "review-run"])
+@pytest.mark.parametrize("promotion", ["complete", "review-self"])
+def test_delivered_review_with_relative_run_logs_promotes(
+    repository: Path, tmp_path: Path, sample: int, promotion: str
+) -> None:
+    manifest = _delivered_review(repository, tmp_path)
+    _with_run_logs(manifest, sample=sample)
+    if promotion == "complete":
+        result = crew.complete(
+            review_fixture.REVIEW_RUN_ID, gate="not-run", root=repository
+        )
+        assert result["record"]["commits"] == []
+    else:
+        result = promote_review_run_itself(read_pointer(review_fixture.REVIEW_RUN_ID))
+        assert result["promoted"], result
+    assert not pointer_path(review_fixture.REVIEW_RUN_ID).exists()
+    [row] = ledger.runs(review_fixture.PROJECT, root=repository)
+    assert row["commits"] == []
+
+
+@pytest.mark.parametrize("location", ["repository", "missing", "escaped-symlink"])
+def test_relative_run_log_claim_still_requires_a_run_file(
+    repository: Path, tmp_path: Path, location: str
+) -> None:
+    manifest = _delivered_review(repository, tmp_path)
+    directory = _with_run_logs(manifest)
+    name = DELIVERED_LOG_PATHS[0][0]
+    log = directory / name
+    if location == "repository":
+        candidate = repository / name
+        candidate.parent.mkdir(parents=True, exist_ok=True)
+        candidate.write_text("repository work\n", encoding="utf-8")
+    else:
+        log.unlink()
+        if location == "escaped-symlink":
+            outside = tmp_path / "outside.log"
+            outside.write_text("outside the run\n", encoding="utf-8")
+            log.symlink_to(outside)
+    with pytest.raises(crew.CrewError, match="repository"):
+        crew.complete(review_fixture.REVIEW_RUN_ID, gate="not-run", root=repository)
+    assert pointer_path(review_fixture.REVIEW_RUN_ID).is_file()
+    assert ledger.runs(review_fixture.PROJECT, root=repository) == []
