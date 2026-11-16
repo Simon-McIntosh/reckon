@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s71">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-16">
+  <meta name="evidence-commit" content="dfee642b98">
+  <title>A promotion finishes past a station resume | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="a-promotion-finishes-past-a-station-resume">
+  <h2>A promotion finishes past a station resume</h2>
+
+  <p><strong>The defect.</strong> A promotion writes its ledger row and its
+  landing commit, and only then retires the live pointer. A station resume can
+  take the pointer inside that window, so the removal's compare-and-remove
+  meets the <code>attempt</code> of a launch it never read and refuses with
+  <code>changed while promotion ran</code>. The row is already written at that
+  point, so the run is promoted and its pointer is stranded: in the recorded
+  incident the coordinator stopped the run twice and discarded the new review
+  by hand.</p>
+
+  <p><strong>What landed.</strong> Cleanup asks whether the attempt now on the
+  pointer recorded its own end — its
+  <code>attempt-N-exit.json</code>, the same receipt that frees its launch
+  reservation — and, when it has, removes the pointer under the pointer lock
+  while it still names the attempt that was read and returns the promotion to
+  its remaining stages. A pointer taken by a later launch after that reading is
+  left to its own promotion.</p>
+
+  <p>When the newer attempt has not ended, the refusal now names the attempt and
+  the process that launched it: the attempt number from the pointer, and
+  <code>launcher_pid</code>, <code>launcher_host</code> and
+  <code>supervisor_pid</code> from the attempt's own
+  <code>attempt-N.reservation</code>. The pointer is kept and marked
+  <code>pending_landing_repair</code> as before, so a live worker never loses
+  the file it owns and the reviewed head still has a landing path.</p>
+
+  <h3 id="a-promotion-finishes-past-a-station-resume-cases">Two cases, one pointer that moved</h3>
+
+  <p><code>tests/test_a_promotion_finishes_past_a_station_resume.py</code>
+  builds a temporary repository with a bare origin, a temporary crew home and a
+  delivered run, then moves the pointer to attempt 4 from inside
+  <code>promotion._commit_landing_writes</code> — the stage between the ledger
+  row and the pointer cleanup, exactly where the station's resume arrived.</p>
+
+  <table>
+    <thead>
+      <tr><th>Case</th><th>Recorded beside the run</th><th>Result</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>attempt 4 ended</td>
+        <td><code>attempt-4-exit.json</code> naming the run</td>
+        <td>promotion exits 0, the pointer is removed, the exit receipt is still
+        on disk</td>
+      </tr>
+      <tr>
+        <td>attempt 4 live</td>
+        <td><code>attempt-4.reservation</code> naming a live supervisor child
+        and a live launcher child</td>
+        <td>promotion refuses, the message names <code>attempt 4</code> and
+        <code>pid &lt;launcher&gt;</code>, the pointer is preserved</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>The gate.</strong>
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_a_promotion_finishes_past_a_station_resume.py</code> at
+  <code>dfee642b98</code> reports <strong>2 passed in 64.51s</strong>,
+  <code>EXIT=0</code>.</p>
+
+  <p><strong>The negative control.</strong> Restoring the base
+  <code>reckon/crew/promotion.py</code> over the head tree and running the same
+  command reports <strong>2 failed in 50.25s</strong>, <code>EXIT=1</code>. The
+  first case fails because the promotion completes its row and then refuses:
+  <code>run ... changed while promotion ran: attempt 4 was recorded after this
+  promotion read the pointer</code>. The head arm passes that case, so the
+  refusal is the behaviour the change removes rather than a passing suite that
+  never exercised the guard.</p>
+</section>
+</main>
+</body>
+</html>
