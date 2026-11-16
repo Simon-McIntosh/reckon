@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "Derived from the reviewed run's own manifest-named gate logs: baseline_suite (logs/suite-base.log, revision d0d77f07e2) reports '58 passed' with failure_count 0 and failure_ids [], and after_suite (logs/suite-after.log, revision 000b2f60) reports '58 passed' with failure_count 0 and failure_ids []; the head therefore adds no failing test and the count is a measured 0 read from both logs' summary lines, not an absence.",
+  "assertion_analysis": [
+    {
+      "failure_condition": "The run adds no assertion; the durability guard is the file's nine pre-existing held-set assertions (lines 322 and 393 and the mixed-state case), and logs/negative-control.log shows them reddening with `assert set() == {...}` when the clean-tree fixture is put back, so the fixture change cannot be reverted without nine failures.",
+      "lines": "tests/test_held_worktrees_read_run_files.py:58-86"
+    },
+    {
+      "failure_condition": "The live-run case would pass vacuously on a clean tree; with the unmerged commit it fails if the derivation stops skipping a tree a live pointer names, which the nine-id base arm exercises.",
+      "lines": "tests/test_held_worktrees_read_run_files.py:347-393"
+    }
+  ],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/obligations.py:_obligations_view",
+    "reckon/crew/obligation_snapshot.py:_derive_fleet_state"
+  ],
+  "completed_at": "2026-11-16T01:46:55.747Z",
+  "dispatched_at": "2026-11-16T01:46:07Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224810011450-qwnw-red-file-held-worktrees-read-run-files/manifest.md",
+      "line": "2",
+      "severity": "non-blocking",
+      "text": "non-blocking: the reviewed head is 3 commits ahead of and 37 behind origin/main cbfc8346f4, and nothing records the done_when's \"First merge the current origin/main and rerun the file\" step, so the head gate measured a tree missing main's 37 commits; the outcome is unaffected because `git diff d0d77f07e2 origin/main -- tests/test_held_worktrees_read_run_files.py` is empty, so main still carried the clean-tree fixture that fails the nine ids."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224810011450-qwnw-red-file-held-worktrees-read-run-files/manifest.md",
+      "line": "9",
+      "severity": "non-blocking",
+      "text": "non-blocking: retry_failures names test_every_staged_write_reaches_the_owner and test_claim_move_aside_is_not_a_staged_write with no failure_attribution entry, so a reader cannot tell from the record whether they were the scaffolding cause the third id attributes to the incomplete scratch extraction or a failure reaching code under test."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "reviewed commit by commit from 9c53f3a468 (the parent of 0e7f9b6b) to 000b2f60; 0e7f9b6b adds three lines to `_worktree` committing a file into each registered tree plus the two docstrings that name the rule, e24e01c0 adds the 76-line evidence fragment, and 000b2f60 adds the run head to the fragment's table; no production file is touched.",
+    "done_when": "the done_when asks the file to pass in full at head as an all_debug job with SLURM_JOB_ID unset, a verdict per cause, no deleted or weakened assertion, an arm over the test files that import the changed file, and the base run as negative control; logs/gate-head.log's header names partition=all_debug and SLURM_JOB_ID_unset_in_child=1 over 9 passed EXIT=0, logs/negative-control.log shows the same nine ids failing as `assert set() == {...}` EXIT=1, and logs/suite-base.log and logs/suite-after.log both read 58 passed \u2014 but the done_when's \"First merge the current origin/main and rerun the file\" step has no receipt, and the head is 37 commits behind origin/main.",
+    "goal": "dispatch-detail.json names the deliverable \"Make tests/test_held_worktrees_read_run_files.py pass in full on the primary branch\"; commits 0e7f9b6b/e24e01c0/000b2f60 give every fixture tree a commit the primary branch does not reach, and logs/gate-head.log records 9 passed EXIT=0 at the head.",
+    "manifest": "read; it carries commits 0e7f9b6b/e24e01c0/000b2f60, the literal gate command, 9 passed at head, the nine-id negative control log, 58-passed base and after suite arms with their log paths, and one self-check line per rubric dimension.",
+    "write_paths": "dispatch-detail.json declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the three commits touch only tests/test_held_worktrees_read_run_files.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktrees-read-run-files.html, both inside those paths."
+  },
+  "justifications": {
+    "durability": "the change adds no assertion, but logs/negative-control.log reinstates the clean-tree fixture and the nine pre-existing assertions of tests/test_held_worktrees_read_run_files.py:322-393 redden on it with `assert set() == {...}`, so the regression the change fixes is caught by putting it back.",
+    "evidence": "logs/gate-head.log records 9 passed EXIT=0 under an all_debug header and logs/negative-control.log records 9 failed EXIT=1, but no log or manifest line attests the done_when's origin/main merge.",
+    "fit": "tests/test_held_worktrees_read_run_files.py:66-86 extends the file's own `_worktree` fixture through the shared tests.helpers.git.git helper, in the same docstring idiom as its neighbouring helpers.",
+    "goal_fidelity": "the fixture change at tests/test_held_worktrees_read_run_files.py:79-86 makes every registered tree carry unmerged work and logs/gate-head.log records the file at 9 passed, so only the words \"on the primary branch\" await promotion.",
+    "reuse": "the diff adds no definition at all \u2014 it extends `_worktree` at tests/test_held_worktrees_read_run_files.py:66 \u2014 and a capability search for a worktree fixture helper over tests/ and tests/helpers/ found only that helper and the shared git wrapper it already uses.",
+    "scope_discipline": "the only two paths in the diff, tests/test_held_worktrees_read_run_files.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktrees-read-run-files.html, lie inside the write_paths dispatch-detail.json declares."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json names the deliverable \"Make tests/test_held_worktrees_read_run_files.py pass in full on the primary branch\"; commits 0e7f9b6b/e24e01c0/000b2f60 give every fixture tree a commit the primary branch does not reach, and logs/gate-head.log records 9 passed EXIT=0 at the head.\nVERDICT done_when: the done_when asks the file to pass in full at head as an all_debug job with SLURM_JOB_ID unset, a verdict per cause, no deleted or weakened assertion, an arm over the test files that import the changed file, and the base run as negative control; logs/gate-head.log's header names partition=all_debug and SLURM_JOB_ID_unset_in_child=1 over 9 passed EXIT=0, logs/negative-control.log shows the same nine ids failing as `assert set() == {...}` EXIT=1, and logs/suite-base.log and logs/suite-after.log both read 58 passed \u2014 but the done_when's \"First merge the current origin/main and rerun the file\" step has no receipt, and the head is 37 commits behind origin/main.\nVERDICT write_paths: dispatch-detail.json declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the three commits touch only tests/test_held_worktrees_read_run_files.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktrees-read-run-files.html, both inside those paths.\nVERDICT manifest: read; it carries commits 0e7f9b6b/e24e01c0/000b2f60, the literal gate command, 9 passed at head, the nine-id negative control log, 58-passed base and after suite arms with their log paths, and one self-check line per rubric dimension.\nVERDICT diff: reviewed commit by commit from 9c53f3a468 (the parent of 0e7f9b6b) to 000b2f60; 0e7f9b6b adds three lines to `_worktree` committing a file into each registered tree plus the two docstrings that name the rule, e24e01c0 adds the 76-line evidence fragment, and 000b2f60 adds the run head to the fragment's table; no production file is touched.\nCALL_SITES: reckon/crew/obligations.py:_obligations_view, reckon/crew/obligation_snapshot.py:_derive_fleet_state\nreviewed_base_sha: 9c53f3a4682a239a10cad4207a140a9af9de1846\nreviewed_head_sha: 000b2f6015afa868a47cb6144aa7ab3cd6c1a426\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the fixture change at tests/test_held_worktrees_read_run_files.py:79-86 makes every registered tree carry unmerged work and logs/gate-head.log records the file at 9 passed, so only the words \"on the primary branch\" await promotion.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/gate-head.log records 9 passed EXIT=0 under an all_debug header and logs/negative-control.log records 9 failed EXIT=1, but no log or manifest line attests the done_when's origin/main merge.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only two paths in the diff, tests/test_held_worktrees_read_run_files.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktrees-read-run-files.html, lie inside the write_paths dispatch-detail.json declares.\nSCORE durability: 18\nJUSTIFICATION durability: the change adds no assertion, but logs/negative-control.log reinstates the clean-tree fixture and the nine pre-existing assertions of tests/test_held_worktrees_read_run_files.py:322-393 redden on it with `assert set() == {...}`, so the regression the change fixes is caught by putting it back.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_held_worktrees_read_run_files.py:66-86 extends the file's own `_worktree` fixture through the shared tests.helpers.git.git helper, in the same docstring idiom as its neighbouring helpers.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition at all \u2014 it extends `_worktree` at tests/test_held_worktrees_read_run_files.py:66 \u2014 and a capability search for a worktree fixture helper over tests/ and tests/helpers/ found only that helper and the shared git wrapper it already uses.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224810011450-qwnw-red-file-held-worktrees-read-run-files/manifest.md:2 non-blocking: the reviewed head is 3 commits ahead of and 37 behind origin/main cbfc8346f4, and nothing records the done_when's \"First merge the current origin/main and rerun the file\" step, so the head gate measured a tree missing main's 37 commits; the outcome is unaffected because `git diff d0d77f07e2 origin/main -- tests/test_held_worktrees_read_run_files.py` is empty, so main still carried the clean-tree fixture that fails the nine ids.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224810011450-qwnw-red-file-held-worktrees-read-run-files/manifest.md:9 non-blocking: retry_failures names test_every_staged_write_reaches_the_owner and test_claim_move_aside_is_not_a_staged_write with no failure_attribution entry, so a reader cannot tell from the record whether they were the scaffolding cause the third id attributes to the incomplete scratch extraction or a failure reaching code under test.",
+  "review_run_id": "r-20261116T012152478414-review-of-qwnw-red-file-held-worktrees-read-run-files-000b2f6015af",
+  "reviewed_base_sha": "9c53f3a4682a239a10cad4207a140a9af9de1846",
+  "reviewed_head_sha": "000b2f6015afa868a47cb6144aa7ab3cd6c1a426",
+  "reviewed_run_id": "r-20261115T224810011450-qwnw-red-file-held-worktrees-read-run-files",
+  "rubric": "",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T02:04:43.305461+00:00",
+  "total": 112
+}
