@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="364">
+<meta name="plan-version" content="365">
 <meta name="plan-modified" content="2026-11-16">
 </head>
 <body>
@@ -1503,7 +1503,10 @@ staged paths.</p>
     <div class="r-comment-body"><p>Run <code>r-20261115T223118053934-a-dispatch-loads-the-ledger-once</code> measured the premise false. One dispatch now loads the ledger once (four loads and ten stats at base, one and one at head, five focused tests passing), but a live dry run on <code>all_debug</code> took 26.5 s at base and 30.0 s at head (three samples each), missing the head-at-most-a-third bound. Its cProfile of the head put 175 of 211 s under <code>deepcopy</code> in the per-reader snapshot. The 175 s fleet-node dry run this section was argued from was node contention, not ledger reads: on a compute node the ledger is not where a dispatch spends its time. Deferred: not landed, commits pinned at <code>refs/reckon/archive/a-dispatch-loads-the-ledger-once</code> (e1284da8ab). A dispatch-latency section should start from a compute-node profile of base.</p></div>
 </div>
 <div class="r-comment" data-section="s68" data-id="c-run-r-20261116T013112736880-review-of-a-classification-reads-only-new-stream-lines-f30c8b62d863" data-who="reckon-build" data-when="2026-11-16T01:47:04.184Z">
-    <div class="r-comment-body"><p>§68 reviewed: parsed record filed at both declared paths under review-records/ for r-20261115T222819513530-a-classification-reads-only-new-stream-lines, scoring goal_fidelity 18, evidence 14, scope_discipline 19, durability 16, fit 14, reuse 10 over base 4992939f84cb5aaa5802cbbc1dd3e79e96c43117 and head f30c8b62d8632d7a5a54fca491d91ccb52be399e, with 0 added failures derived from the run&#x27;s own two gate logs and five non-blocking findings (two stale figures in the evidence fragment, one base-arm receipt that names no test path, one quiet-tick assertion with no positive half, one duplicated stream-continuation predicate); both records pass crew check --review, and the reviewed gate reproduces at 5 passed EXIT=0.</p></div>
+    <div class="r-comment-body"><p>§68 reviewed: parsed record filed at both declared paths under review-records/ for r-20261115T222819513530-a-classification-reads-only-new-stream-lines, scoring goal_fidelity 18, evidence 14, scope_discipline 19, durability 16, fit 14, reuse 10 over base 4992939f84cb5aaa5802cbbc1dd3e79e96c43117 and head f30c8b62d8632d7a5a54fca491d91ccb52be399e, with 0 added failures derived from the run's own two gate logs and five non-blocking findings (two stale figures in the evidence fragment, one base-arm receipt that names no test path, one quiet-tick assertion with no positive half, one duplicated stream-continuation predicate); both records pass crew check --review, and the reviewed gate reproduces at 5 passed EXIT=0.</p></div>
+</div>
+<div class="r-comment" data-section="s68" data-id="c-run-r-20261115T222819513530-a-classification-reads-only-new-stream-lines" data-who="reckon-build" data-when="2026-11-15T22:31:10Z">
+    <div class="r-comment-body"><p>§68: a classification now reads only the stream lines appended since its last scan (the assistant record, the last tool call and the last record type held with their byte offsets per inode, and a replaced or truncated stream rescanned from its start), and the two per-tick pointer-field passes decode a stored document only when its definition moved; a second pass over 30 runs of 2,000 lines makes 0 decodes from recovery_wait where the same pass made 60,000 before, and a second tick over an unchanged store makes 0 decodes from station and station_store where it made 4.</p></div>
 </div>
 </section>
 </main>
