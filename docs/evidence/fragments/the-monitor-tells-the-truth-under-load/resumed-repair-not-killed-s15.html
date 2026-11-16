@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-tells-the-truth-under-load">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-tells-the-truth-under-load">
+  <meta name="plan-verifies" content="reckon:the-monitor-tells-the-truth-under-load#s15">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="passed">
+  <title>A resumed repair is never killed as a terminal run | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="resumed-repair-not-killed-s15-landing"
+  data-node="resumed-repair-not-killed-s15" data-reckon="landed" data-when="2026-11-15">
+  <h2>A resumed repair is never killed as a terminal run</h2>
+  <p>A repair round is started by resuming a run that has already delivered, so
+  its pointer carries the <code>complete</code> the earlier attempt's delivery
+  wrote. Every other writer of that phase puts back what it read before the
+  resume — a promotion drain restores the phase its request recorded, a fold
+  reads the superseded attempt's stream — so the live repair's pointer reads
+  <code>complete</code> again at some point during its work.</p>
+  <p>The terminal-run guard in <code>reckon/crew/dispatch_launch.py</code> read
+  that word as the attempt's own delivery and armed its clock. Thirty seconds
+  later it ended the worker with <code>forced_exit.reason = "terminal-run"</code>
+  while the worker was mid-edit. The phase word is a summary; the attempt's own
+  exit receipt is the fact, and it belongs to exactly one attempt.</p>
+  <ul id="resumed-repair-not-killed-s15-what-changed">
+    <li><code>_terminal_attempt_phase</code> returns a delivered phase
+    (<code>complete</code>, <code>failed</code>) only when the attempt it names
+    also holds the exit receipt its own ending wrote —
+    <code>attempt-&lt;n&gt;-exit.json</code>, or the canonical
+    <code>exit.json</code> naming that attempt, which every launch clears. A
+    word another writer restored no longer satisfies it.</li>
+    <li><code>_reopen_a_live_attempt_phase</code> answers the stale word where
+    it is read: while the worker is live in that supervisor's own charge and
+    the attempt holds no exit receipt, the pointer's phase is restored to
+    <code>working</code>, so the run reads as the resume left it rather than as
+    a finished attempt with a live process. It takes the pointer lock without
+    waiting and only when the pointer has been written since the last look.
+    <code>stopped</code> and <code>interrupted</code> are untouched: they are
+    deliberate facts, not words a delivery leaves behind.</li>
+    <li>The remedy an obligation offers for a run mid-repair is §5's, and this
+    node did not touch <code>reckon/crew/obligations.py</code>.</li>
+  </ul>
+  <p>The defect's reproduction, from the field, is what the base arm of the new
+  test reports: <em>“a resumed repair was signalled on the delivered word its
+  earlier attempt left; the live attempt had no exit receipt”</em>, beside
+  <em>“the live repair reads as 'launch-failed', not working”</em> — the second
+  because the signalled worker's empty stream is then read as a launch failure.
+  Eight resumed attempts in the shared crew home carry the same shape: an exit
+  record reading <code>ended_during: "working"</code> with
+  <code>forced_exit.phase: "complete"</code> and
+  <code>forced_exit.reason: "terminal-run"</code>.</p>
+  <table id="resumed-repair-not-killed-s15-cases">
+    <thead><tr><th>Case</th><th>What it shows at the head</th><th>At the base</th></tr></thead>
+    <tbody>
+      <tr><td>resumed through <code>crew resume</code></td><td>kept; the pointer reads <code>working</code> again</td><td>fails: signalled, then read as launch-failed</td></tr>
+      <tr><td>resumed through the launcher</td><td>kept; the pointer reads <code>working</code> again</td><td>fails: signalled, then read as launch-failed</td></tr>
+      <tr><td>an attempt that delivered its own verdict</td><td>ended inside the grace, its own exit receipt recorded</td><td>passes: that direction already held</td></tr>
+      <tr><td>the reading itself, both directions</td><td><code>complete</code> with the attempt's receipt; empty without it; <code>stopped</code> without one</td><td>fails: the live attempt inherits the word</td></tr>
+      <tr><td>a receipt naming another run</td><td>absent, so the attempt is not ended by it</td><td>fails: the word alone ends the attempt</td></tr>
+    </tbody>
+  </table>
+  <p>Both doors stand for the three that exist: a folded finding, a hand resume
+  and the reflex sweep all resume through
+  <code>reckon.crew.resumption._resume</code>, and the guard sees one attempt
+  either way.</p>
+  <p>The arms, over
+  <code>tests/test_a_resumed_repair_is_not_killed_as_terminal.py</code>,
+  <code>tests/test_staged_write_inventory.py</code> and
+  <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>: the base
+  arm at <code>18d133b40e</code> reports <em>58 passed</em> (it cannot collect
+  this node's test file, which the change creates), and the after arm at the run
+  head — the revision <code>logs/after-suite.log</code> names in its own header,
+  since a document cannot carry the revision of the commit that writes it —
+  reports <em>63 passed</em> and exits zero. Measured on its own, the new file
+  reports <em>4 failed, 1 passed</em> against the base revision's
+  <code>reckon</code> bytes and <em>5 passed</em> at the head. The
+  declared negative control — answering the receipt check true without reading
+  the receipt and leaving the stale word in place — reddens the same two
+  integration cases and both reading cases: <em>4 failed, 1 passed</em>, exit 1.</p>
+  <p>Both exit files are read through the one owner of that payload,
+  <code>recovery_liveness._run_exit_record</code>, under its strict reading, so
+  the guard cannot answer on different terms from every other reader of an
+  attempt's end, and the two words a delivery writes are the delivery statuses
+  this module already owns.</p>
+</article>
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-seat-held-elsewhere-is-not-restarted">
+  <meta name="plan-evidence-for" content="reckon:a-seat-held-elsewhere-is-not-restarted">
+  <meta name="plan-verifies" content="reckon:a-seat-held-elsewhere-is-not-restarted#s25">
+  <title>Producer exit and restart receipts</title>
+</head>
+<body>
+<article id="producer-exit-recorded-and-restarted-s25-landing"
+  data-node="producer-exit-recorded-and-restarted-s25" data-reckon="landed">
+  <h2>A producer leaves its outcome before giving up its seat</h2>
+  <p>The producer records its exit status, reason, last stage, identity and
+  lease-lapse time in its registration before releasing its seat. A replacement
+  carries the preceding exit into a restart receipt with its acquisition time
+  and supervisor pid. Both writes compare the owner identity under the shared
+  registration lock, so a superseded producer cannot overwrite its replacement.</p>
+  <section id="producer-exit-recorded-and-restarted-s25-initial-publication">
+    <h3>The claim owner covers initial publication</h3>
+    <p>Repair commit <code>44881ad5809b6a28a174d19803afb8ce64d78719</code>
+    answers finding <code>f8009a7865f</code>. The lifecycle guard now lives inside
+    <code>runs._project_watch_claim</code>, covering the first publication before
+    the context yields. It records <code>initial-publication</code> for that
+    stage, preserves the original exception, and records the exit before
+    <code>drop_watch_seat</code>. The outer registration no longer duplicates
+    the guard.</p>
+    <p>Commit <code>38584b3ad9c54ed201facd604ad774f27cfc1f1a</code> also
+    writes the lifecycle metadata through the held seat handle before yielding,
+    preserving agreement between the seat file and the watcher handed to its
+    caller. Its new contract case failed before that write was restored.</p>
+    <p>The two exposure cases exercise the real publication path through its
+    snapshot read, raising <code>RuntimeError</code> and <code>SystemExit(75)</code>.
+    Each inspects the receipt while the seat is still locked and confirms that
+    the outer context body never ran. At the exposed head both failed with
+    “initial publication released the seat without an exit record”.</p>
+  </section>
+  <table id="producer-exit-recorded-and-restarted-s25-measures">
+    <thead><tr><th>Check</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Focused lifecycle checks</td><td>All 13 lifecycle cases and the
+      seat-record importer case pass: 14 passed in 8.52 seconds. This includes
+      both initial-publication failures, exit receipts, ticker stages, placement
+      release, successor protection and the persisted seat metadata.</td></tr>
+      <tr><td>Supervisor restart sample</td><td>The real fallback supervisor restarted
+      the stub producer in 8.98 seconds after its lapse, within the 600-second
+      lease in <code>owner-focused.log</code>. Its pid matches the replacement
+      receipt's parent pid; the updated lifecycle check also passes this lease
+      bound.</td></tr>
+      <tr><td>Answering-commit negative control</td><td>Reverting only
+      <code>44881ad5809b6a28a174d19803afb8ce64d78719</code> in a temporary tree
+      at source head <code>38584b3ad9</code> retains the later seat-handle write
+      and makes both exposure cases fail: 2 failed in 0.90 seconds,
+      with <code>EXIT=1</code> in <code>negative-control.log</code>.</td></tr>
+      <tr><td>Original-base scoped arm</td><td>58 passed in 33.18 seconds on
+      <code>all_debug</code>; the final-head arm is recorded in the manifest.</td></tr>
+      <tr><td>Importer comparison</td><td>Base: 724 failed, 5616 passed, 1 skipped, 63 warnings, 14 errors in 1625.79s (0:27:05). Repair head: 721 failed, 5632 passed, 1 skipped, 64 warnings, 14 errors in 1615.98s (0:26:55). Comparing full failure ids finds 4 additions and 7 removals. The wider zero-added-failure condition is not claimed.</td></tr>
+      <tr><td>Ruff comparison</td><td>Zero added findings across all four changed
+      Python files against the original base.</td></tr>
+    </tbody>
+  </table>
+  <p>The importer arms ran on <code>all_debug</code> over 921 base test files
+  and 922 head files. Their parsed failure and error counts agree with the
+  runner summaries; the parser also sees both known negative-control failures.
+  The manifest carries the comparison, its disposition and the scoped suite
+  receipts. Completed measurement jobs removed their scratch trees.</p>
+  <section id="producer-exit-recorded-and-restarted-s25-importer-attribution">
+    <h3>Importer baseline attribution awaits disposition</h3>
+    <p>Finding <code>f639fa940e6</code> correctly separates the scoped gate
+    from the importer condition. The single broad comparison above still has
+    four raw additions and is not presented as a zero-added-failure result.</p>
+    <p>A fixed diagnostic then ran those four cases five times at unchanged
+    base <code>de83f451011c33cfecc9c8ecd220e9a6cdf21bda</code> and reviewed
+    head <code>72ae697a1a5362ac250802be676e1654576a104e</code>, alternating arm
+    order on one <code>all_debug</code> allocation. All ten trial commands
+    completed: 20 case executions per arm, with 12 failures at base and nine
+    at head. Every disputed id failed at base, with the same failing assertion
+    seen at head. Three were also present in the earlier retained full-base
+    importer log.</p>
+    <p><code>importer-failure-pairs.json</code> retains every trial receipt;
+    <code>importer-baseline-attribution.json</code> binds each disputed id to
+    its positive baseline reproduction. The four affected test files are
+    byte-identical at base and head. The identity check also detects the known
+    change in <code>runs.py</code>, so equality is not an empty instrument.</p>
+    <p>This evidence supports baseline attribution. Coordinator disposition
+    is still required before landing; the worker does not waive the live
+    section's importer condition or infer approval from the scoped gate.</p>
+  </section>
+  <p>The existing supervisor restart policy is reused. Catchable exits can
+  write a before-release receipt; a SIGKILL or node loss cannot execute that
+  write. The historical exit cause, restart initiator, delay cause and event-file
+  destination remain unknown because the incident records were not retained.
+  <code>historical-records.log</code> records the retained boundaries and reader
+  positive controls. The current append helper opens its destination on every
+  append, so it does not retain an unlinked stream descriptor.</p>
+  <p>Run <code>r-20261115T204841537282-producer-exit-recorded-and-restarted-s25</code>
+  retains the logs and manifest. Promotion owns the plan-section writeback.</p>
+</article>
+</body>
+</html>

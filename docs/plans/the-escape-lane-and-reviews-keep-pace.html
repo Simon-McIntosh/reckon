@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="work-is-never-stuck-behind-the-admission-loop">
   <meta name="plan-informs" content="a-session-spends-a-priority-budget">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s5&quot;:[&quot;the-escape-lane-and-reviews-keep-pace#s2&quot;],&quot;s6&quot;:[&quot;the-escape-lane-and-reviews-keep-pace#s7&quot;],&quot;s9&quot;:[&quot;queued-work-needs-no-workaround#s13&quot;]}">
   <title>The Escape Lane And Reviews Keep Pace | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="46">
+<meta name="plan-version" content="48">
 <meta name="plan-modified" content="2026-11-16">
 </head>
 <body>
@@ -101,7 +101,7 @@
 <p><strong>Done when.</strong> A new test, failing at the base revision: a ledger holding one hand-merged row reports it under <code>not-run</code> in the suite rollup. The hand-merge record's timestamp and <code>run_paths</code>' ISO-Z text come from one formatter, so the two are identical for the same instant. <code>tests/test_a_hand_merged_run_is_recorded.py</code> still passes, and the tests importing <code>reckon.ledger</code> or <code>reckon.crew_run_commands</code> add no failure against the base on all_debug. Write paths: <code>reckon/ledger.py</code>, <code>reckon/crew_run_commands.py</code> and the new test.</p>
 
     <h2 id="s13">The seat share reuses the deficit order and names the role as runs do</h2>
-<section data-reckon="section" data-id="s13" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s13" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> §6 landed at <code>c60fd6b57d</code>. Its review scored reuse 5 of 20 and raised three defects worth repairing. Its review suggested reusing the module's deficit round-robin for the seat share, but the plan's own review measured that the two orderings diverge (at seat 8 of the nine-implementations, three-reviews slice), so the seat share keeps its own ordering. First, <code>IMPLEMENTATION_ROLE</code> is <code>"implementation"</code>, while every other surface names that role <code>implement</code>: the ticker, and the dispatch default in <code>reckon/crew/dispatch_batch.py</code>. The verdict row's role counts therefore cannot be joined to a run's role on the implementation side. Second, the verdict-row test asserts only launched plus waiting against the requests queued. A cadence that reported every request as waiting, with none launched, would pass it.</p>
 <p><strong>Deliverable.</strong> The seat share is computed through <code>weighted_project_order</code> with the role as its key, and <code>_seat_share_turns</code> is removed. The implementation role is spelled <code>implement</code> in the verdict row.</p>
 <p><strong>Done when.</strong> The verdict row's role keys equal the role values run pointers carry. A new assertion in <code>tests/test_reviews_and_implementations_share_the_seats.py</code> pins the launched count, so a cadence that launches nothing fails it. The test's nine-implementations, three-reviews case yields the same seats in the same order as at base. The tests importing the admission package add no failure against the base on all_debug. Write paths: <code>reckon/crew/admission/ordering.py</code>, <code>reckon/crew/admission/selection.py</code>, <code>reckon/crew/admission/verdicts.py</code> and that test file.</p>
@@ -131,6 +131,12 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261115T130007037608-released-review-recomposed-s11" data-who="reckon-build" data-when="2026-11-15T14:22:58.926Z">
     <div class="r-comment-body"><p>a composed review the admission pass releases as a stranded launch now writes its release onto the reviewed run's own dispatch record, so the next reflex pass composes it again for the same run and head (base 2424ab7511: the recompose case fails with "the review ... has no eligible lane (backend 'clive' already dropped it)"; after arm 60 passed, EXIT=0)</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261116T001433927866-review-of-verdict-role-matches-run-role-s13-6e5c1fd1c2b5" data-who="reckon-build" data-when="2026-11-16T00:43:04.278Z">
+    <div class="r-comment-body"><p>review of run r-20261115T224328568660-verdict-role-matches-run-role-s13 at 93e596c64faa..6e5c1fd1c2b5 scores goal_fidelity 19, evidence 15, scope_discipline 19, durability 19, fit 18, reuse 17 over 0 added failures against its 62-passed/EXIT=0 baseline arm, with 1 blocking finding (the delivered manifest records no tests:, baseline_suite, after_suite or landing line, so its own audit reports no gate) and 1 non-blocking finding (the role name has no owner, so the drift can recur).</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261115T224328568660-verdict-role-matches-run-role-s13" data-who="reckon-build" data-when="2026-11-15T23:17:07Z">
+    <div class="r-comment-body"><p>The verdict row names the implementation role as run pointers do, so its role counts join to runs, and the verdict test pins the launched count. Base 62 passed at 93e596c64f, head 62 passed at 6e5c1fd1c2; the negative control (renaming the role back) fails 1 of 4.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261115T052409546664-review-of-named-lane-requests-queue-s5-0369d0c1b740" data-who="reckon-build" data-when="2026-11-15T05:35:23.833Z">
     <div class="r-comment-body"><p>Independent review of run r-20261115T002740230181-named-lane-requests-queue-s5 at head 0369d0c1b740: scores goal_fidelity 18, evidence 18, scope_discipline 19, durability 18, fit 18, reuse 19; added failures 0 derived from its own suite-base and suite-head gate logs; two non-blocking findings (placement.py:132 project-scoped waiting population contradicts its host-wide docstring; preparation.py:1149/1343 misnames the binding bound in the queued reason).</p></div>
@@ -173,9 +179,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261115T111658222214-review-of-gate-names-its-arms-s9-795d15b44f59" data-who="reckon-build" data-when="2026-11-15T11:41:16.305Z">
     <div class="r-comment-body"><p>review of a run that has since landed</p></div>
-</div>
-<div class="r-comment" data-section="s13" data-id="c-run-r-20261116T001433927866-review-of-verdict-role-matches-run-role-s13-6e5c1fd1c2b5" data-who="reckon-build" data-when="2026-11-16T00:43:04.278Z">
-    <div class="r-comment-body"><p>review of run r-20261115T224328568660-verdict-role-matches-run-role-s13 at 93e596c64faa..6e5c1fd1c2b5 scores goal_fidelity 19, evidence 15, scope_discipline 19, durability 19, fit 18, reuse 17 over 0 added failures against its 62-passed/EXIT=0 baseline arm, with 1 blocking finding (the delivered manifest records no tests:, baseline_suite, after_suite or landing line, so its own audit reports no gate) and 1 non-blocking finding (the role name has no owner, so the drift can recur).</p></div>
 </div>
 </section>
 </main>

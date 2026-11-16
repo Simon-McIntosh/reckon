@@ -1,0 +1,89 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "Read from the reviewed run's own manifest-named arms. baseline_suite names suite-base.log, which reads '58 passed in 59.09s' and EXIT=0 at revision d0d77f07 with no FAILED/ERROR id, so the base arm's failure set is a measured empty set. after_suite names suite-head.log at revision 73dd207e56, which holds only its four header lines and a bare EXIT=143 with no pytest summary and no FAILED id, so the log's format is unrecognised and the head arm is unmeasured rather than zero. The 0 recorded here is the readable base arm's measured count; it is not a measured added-failure delta, and a reader must not take it as one. The nearest readable reading of the head is the promotion-side integrated gate over the same file, review-landing/gate-report.json: 10 passed, EXIT=0 at integrated revision 50420a276ade.",
+  "assertions": [
+    {
+      "added": "fixture fields derived_state 'active', implementation_pct 42.0 and blocked 0 on the focus sprint, and derived_state 'planned', implementation_pct 0.0 and blocked 0 on the concurrent one",
+      "fails_when": "it names no change under which it fails for the commit it accompanies: the case's ok expression reads overview.implementation === '42%' and overview.state === 'active', which the retained metrics block ({'by_effective_status': {'active': 1}, 'mean_impl': 0.42}) renders identically, so restoring dominantEffectiveStatus and both metrics fallbacks leaves the run green \u2014 the fixture's two sources agree with each other.",
+      "lines": "tests/test_spa_rendered_semantics.py:127-137"
+    },
+    {
+      "added": "target: location.hash in place of target: location.hash.includes('#plan/rendered-contract')",
+      "fails_when": "this line is a reported diagnostic, not an assertion: the ok expression still carries location.hash.includes('#plan/rendered-contract'), so nothing in the case changes its pass condition and the change only makes a red run print the destination instead of a boolean.",
+      "lines": "tests/test_spa_rendered_semantics.py:760"
+    }
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "docs/index.html:33",
+    "docs/ui/shell.jsx:532",
+    "docs/ui/sprint.jsx:372",
+    "docs/ui/sprint.jsx:484"
+  ],
+  "completed_at": "2026-11-16T03:17:36.721Z",
+  "dimension_dispositions": {},
+  "dispatched_at": "2026-11-16T03:14:26Z",
+  "findings": [
+    {
+      "file": "docs/ui/sprint.jsx",
+      "line": "99",
+      "severity": "non-blocking",
+      "summary": "the refactor rewrites a file the node's write paths do not grant",
+      "text": "non-blocking: the refactor rewrites a file the node's write paths do not grant \u2014 the run's admit_request write_paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround with no docs/ui entry, and over_fence_reason is empty \u2014 so the repair the earlier review folded in lands where the fence does not reach and the manifest reports it under outside_scope instead of the grant being widened."
+    },
+    {
+      "file": "tests/test_spa_rendered_semantics.py",
+      "line": "131",
+      "severity": "non-blocking",
+      "summary": "no committed case reddens if the browser-side derivation returns beside the served fields",
+      "text": "non-blocking: the fixture supplies derived_state 'active', implementation_pct 42.0 and blocked 0 beside a metrics block whose by_effective_status {active:1} and mean_impl 0.42 render identically, so every assertion in the sprint case holds with dominantEffectiveStatus and both metrics fallbacks restored \u2014 reverting docs/ui/sprint.jsx leaves all 10 cases green \u2014 and the change's only control is an uncommitted scratch case (nc-fixed.log and nc-fallback.log name tests/test_scratch_derivation.py, absent from 73dd207e56's tree)."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224841266752-qwnw-red-file-spa-rendered-semantics/manifest.md",
+      "line": "18",
+      "severity": "non-blocking",
+      "summary": "after_suite claims a green head arm the log it names contradicts",
+      "text": "non-blocking: after_suite records exit_status 0, completed true and failure_count 0 at revision 73dd207e56 citing suite-head.log, and the artifacts line beside it reads 'suite-head.log 58 passed EXIT=0 at 843e448388', but that log now holds only its four header lines and a bare EXIT=143 with no pytest summary, so the head arm is unreadable rather than green and the recorded 0 must not be read as a measured added-failure delta."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit from 57f43cade0 to 73dd207e56: 843e448388 changes docs/ui/sprint.jsx (-23/+6) and tests/test_spa_rendered_semantics.py (+12/-1), 73dd207e56 adds 24 lines of evidence prose to the fragment; nothing else is in the range.",
+    "done_when": "measured: gate-head.log reads 10 passed EXIT=0 at revision 843e448388 on tree 51675c69, which is that commit's tree, gate-base.log reads 8 failed EXIT=1 at d0d77f07, ruff.log reads EXIT=0 over the changed test file; not measured: the after_suite arm, whose log ends EXIT=143 with no summary.",
+    "goal": "the goal from the run's admit_request is \"Make tests/test_spa_rendered_semantics.py pass in full on the primary branch\"; the two commits this review reads, 843e448388 and 73dd207e56, remove the browser-side sprint-state derivation the earlier review's finding named (docs/ui/sprint.jsx:99-108) and make the compact-progress probe report the hash it saw (tests/test_spa_rendered_semantics.py:760).",
+    "manifest": "read; it records status complete, nine commits ending 73dd207e56, the literal gate command, seven log paths, after_suite claiming exit_status 0 and completed true at 73dd207e56 on suite-head.log, negative_control_log gate-base.log, four attributed retry_failures and six rubric self-check lines \u2014 and that after_suite claim is contradicted by the log it names.",
+    "write_paths": "admit_request declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, with the prompt's FENCE SCOPE adding the node's fragment and figure directory; tests/test_spa_rendered_semantics.py:124-161 and the fragment are inside them and docs/ui/sprint.jsx:99-108 is outside."
+  },
+  "justifications": {
+    "call_sites": "docs/index.html:33 loads the file, docs/ui/shell.jsx:532 mounts window.Sprint, and docs/ui/sprint.jsx:372 is the useMemo that turns served rows into table rows.",
+    "durability": "with the fixture at tests/test_spa_rendered_semantics.py:127-137 supplying derived_state 'active' beside by_effective_status {active:1} and implementation_pct 42.0 beside mean_impl 0.42, restoring docs/ui/sprint.jsx's removed fallbacks leaves every assertion green.",
+    "evidence": "gate-head.log's revision line names 843e448388 and its tree 51675c69 matches git rev-parse 843e448388^{tree}, but manifest.md:18's after_suite cites suite-head.log, which at 73dd207e56 holds four header lines and EXIT=143 with no pytest summary.",
+    "fit": "docs/ui/sprint.jsx:95-98 explains why the derivation is gone in the same trap-explaining comment idiom as the surrounding helpers, and the code states 0 rather than inventing a figure when the field is absent.",
+    "goal_fidelity": "docs/ui/sprint.jsx:102 states sprint.derived_state and docs/ui/sprint.jsx:108 sprint.implementation_pct with no metrics fallback, and gate-head.log records tests/test_spa_rendered_semantics.py at 10 passed EXIT=0 on tree 51675c69.",
+    "reuse": "the served fields come from reckon/roadmap.py:4964's sprint_rows, which this change makes the single owner of the fact, and no new definition is added anywhere in the diff.",
+    "scope_discipline": "tests/test_spa_rendered_semantics.py:131 and the fragment sit inside the declared paths while docs/ui/sprint.jsx:99 is outside every path admit_request's write_paths and the prompt's FENCE SCOPE name."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal from the run's admit_request is \"Make tests/test_spa_rendered_semantics.py pass in full on the primary branch\"; the two commits this review reads, 843e448388 and 73dd207e56, remove the browser-side sprint-state derivation the earlier review's finding named (docs/ui/sprint.jsx:99-108) and make the compact-progress probe report the hash it saw (tests/test_spa_rendered_semantics.py:760).\nVERDICT done_when: measured \u2014 gate-head.log reads 10 passed EXIT=0 at revision 843e448388 on tree 51675c69 (that commit's tree), gate-base.log reads 8 failed EXIT=1 at d0d77f07, ruff.log reads EXIT=0 over the changed test file; not measured \u2014 the after_suite arm, whose log ends EXIT=143 with no pytest summary.\nVERDICT write_paths: admit_request declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, with the prompt's FENCE SCOPE adding the node's fragment and figure directory; tests/test_spa_rendered_semantics.py:124-161 and the fragment are inside them and docs/ui/sprint.jsx:99-108 is outside.\nVERDICT manifest: read \u2014 status complete, nine commits ending 73dd207e56, the literal gate command, seven log paths, after_suite claiming exit_status 0 and completed true at 73dd207e56 on suite-head.log, negative_control_log gate-base.log, four attributed retry_failures and six rubric self-check lines; the after_suite claim is contradicted by the log it names.\nVERDICT diff: read commit by commit from 57f43cade0 to 73dd207e56 \u2014 843e448388 changes docs/ui/sprint.jsx (-23/+6) and tests/test_spa_rendered_semantics.py (+12/-1), and 73dd207e56 adds 24 lines of evidence prose to the fragment, with nothing else in the range.\nCALL_SITES: docs/index.html:33, docs/ui/shell.jsx:532, docs/ui/sprint.jsx:372, docs/ui/sprint.jsx:484\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/ui/sprint.jsx:102 states sprint.derived_state and docs/ui/sprint.jsx:108 sprint.implementation_pct with no metrics fallback, and gate-head.log records tests/test_spa_rendered_semantics.py at 10 passed EXIT=0 on tree 51675c69.\nSCORE evidence: 12\nJUSTIFICATION evidence: gate-head.log's revision line names 843e448388 and its tree 51675c69 matches git rev-parse 843e448388^{tree}, but manifest.md:18's after_suite cites suite-head.log, which at 73dd207e56 holds four header lines and EXIT=143 with no pytest summary.\nSCORE scope_discipline: 9\nJUSTIFICATION scope_discipline: tests/test_spa_rendered_semantics.py:131 and the fragment sit inside the declared paths while docs/ui/sprint.jsx:99 is outside every path admit_request's write_paths and the prompt's FENCE SCOPE name.\nSCORE durability: 11\nJUSTIFICATION durability: with the fixture at tests/test_spa_rendered_semantics.py:127-137 supplying derived_state 'active' beside by_effective_status {active:1} and implementation_pct 42.0 beside mean_impl 0.42, restoring docs/ui/sprint.jsx's removed fallbacks leaves every assertion green.\nSCORE fit: 17\nJUSTIFICATION fit: docs/ui/sprint.jsx:95-98 explains why the derivation is gone in the same trap-explaining comment idiom as the surrounding helpers.\nSCORE reuse: 20\nJUSTIFICATION reuse: the served fields come from reckon/roadmap.py:4964's sprint_rows, which this change makes the single owner of the fact, and no new definition is added anywhere in the diff.\nFINDING docs/ui/sprint.jsx:99 non-blocking: the refactor rewrites a file the node's write paths do not grant \u2014 the run's admit_request write_paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround with no docs/ui entry and an empty over_fence_reason \u2014 so the folded repair lands where the fence does not reach and the manifest reports it under outside_scope.\nFINDING tests/test_spa_rendered_semantics.py:131 non-blocking: the fixture supplies derived_state 'active', implementation_pct 42.0 and blocked 0 beside a metrics block whose by_effective_status {active:1} and mean_impl 0.42 render identically, so the sprint case stays green with the browser-side derivation restored \u2014 the commit's own regression is unguarded and its only control is an uncommitted scratch case (nc-fixed.log and nc-fallback.log name tests/test_scratch_derivation.py, absent from 73dd207e56's tree).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224841266752-qwnw-red-file-spa-rendered-semantics/manifest.md:18 non-blocking: after_suite records exit_status 0, completed true and failure_count 0 at revision 73dd207e56 citing suite-head.log, but that log holds only its header lines and a bare EXIT=143 with no pytest summary, so the head arm is unreadable rather than green and a reader must not take the recorded 0 as a measured added-failure delta.",
+  "review_run_id": "r-20261116T031146671069-review-of-qwnw-red-file-spa-rendered-semantics-73dd207e563b",
+  "review_scope": "commits gained since the review at 57f43cade0: 843e448388, 73dd207e56",
+  "reviewed_base_sha": "57f43cade0f373c84662e57b9cefb04191b43b22",
+  "reviewed_head_sha": "73dd207e563b81aec18ea792c2afcaadc9ecae15",
+  "reviewed_run_id": "r-20261115T224841266752-qwnw-red-file-spa-rendered-semantics",
+  "rubric": "",
+  "scores": {
+    "durability": 11,
+    "evidence": 12,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 9
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T04:40:00.000000+00:00",
+  "total": 87
+}
