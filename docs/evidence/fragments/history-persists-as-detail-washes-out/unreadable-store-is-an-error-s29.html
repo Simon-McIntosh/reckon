@@ -56,14 +56,17 @@
   is the one the measure asks for: a guard is shown firing, and it also has to
   be shown not firing where reading is sound.</p>
 
-  <p><strong>One record join.</strong> The record is split across
+<p><strong>One record join.</strong> The record is split across
   <code>runs</code> and <code>run_details</code>, with retired rows in an
   attached archive carrying both tables. The join was written twice — once in
   <code>RunStore._indexed_records</code> and once in the read-only reader — so
   the module held two descriptions of what a record is.
-  <code>run_store._record_rows</code> now owns it, and both readers call it.
-  A test holds the two readers equal over a store carrying a retired row, so a
-  drift between them fails rather than passing quietly.</p>
+  <code>run_store._record_rows</code> owns it, and both readers call it. The
+  main branch carried that consolidation by the time this node merged; the
+  refusal is applied on it rather than beside it, so the read-only reader and
+  the indexed reader meet the same query and the same failure. A test holds
+  the two readers equal over a store carrying a retired row, so a drift
+  between them fails rather than passing quietly.</p>
 
   <p><strong>Evidence.</strong> <code>tests/test_an_unreadable_store_is_an_error.py</code>
   holds seven tests. The three error arms are asserted through
