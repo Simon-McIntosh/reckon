@@ -1,0 +1,85 @@
+<section id="review-stored-from-finished-report-s6" class="evidence-fragment">
+  <h2>§6 — A review record is stored only from a finished report, in either shape</h2>
+  <p>
+    The report the store refused to read and the record it read instead were both
+    <em>finished</em> to the grammar. A report holding the brief's own template
+    lines — <code>RUBRIC wiring: RUBRIC-PLACEHOLDER-1</code> and
+    <code>FINDING wiring FINDING-PLACEHOLDER</code> — parsed as a complete review:
+    a placeholder is non-empty text in the verdict cell, so all seven items read
+    as answered, and the FINDING line carried an anchor with no claim and was
+    dropped. Stored, that is a record with no verdict and no finding, which is
+    how three real findings never reached the gate. The reproduction at the base
+    revision is the condition itself, built in the new test file: the store
+    returns no refusal and writes
+    <code>plan-review-finished-report-target.v1.json</code> with
+    <code>status: ready</code> and <code>rubric_items</code> holding
+    <code>RUBRIC-PLACEHOLDER-1..7</code>.
+  </p>
+  <p>
+    The store now tells the two states apart by the run that writes the report,
+    because only that run can say whether the placeholders are a writer mid-turn
+    or a writer who has gone. <code>review.report_placeholders</code> is the one
+    reader of the template tokens and <code>parse_plan_review_report</code>
+    returns them beside the verdicts; <code>delivered_report_record</code> raises
+    <code>UnfinishedReviewReportError</code> naming them, and
+    <code>plan_review._store_deliveries</code> decides what that means from
+    <code>_review_run_is_live</code>: the crew run the report directory's
+    <code>dispatch.json</code> names is read through the run pointer and
+    <code>process_liveness.record_process_alive</code>, the same reading every
+    other liveness decision on the host is taken from. A live reviewer holds the
+    report and clears any stale <code>store_error</code>, so a later pass reads
+    the finished file and stores its findings; a reviewer that has ended leaves a
+    delivery defect recorded on the sidecar, which the promotion's plan-review
+    outcome raises as the store's own reason, opening a repair round instead of
+    holding the review open.
+  </p>
+  <p>
+    The second shape is the figure record. One figure review judges every figure
+    its brief attached, so a record states its verdicts per figure under
+    <code>figures</code>; the completeness rule reads a single item map, so it
+    answered such a record as carrying no verdict at all and refused it as "not a
+    complete review", which is what two sessions met.
+    <code>review.figure_rubric_verdicts</code> folds the per-figure verdicts to
+    that item map — an item is present only when <em>every</em> figure answered
+    it — and <code>with_figure_verdicts</code> carries the unanswered
+    figure-and-item pairs beside it, applied by the store's <code>read_review</code>
+    and by the delivery verdict so no two readers disagree. The refusal names the
+    figure: <code>it lacks contrast, left unanswered for
+    docs/figures/.../second.svg: contrast</code>.
+  </p>
+  <p id="review-stored-from-finished-report-s6-measure">
+    Measure: the new file reports <strong>5 passed</strong> at the head and
+    <strong>5 failed</strong> at the base revision <code>af516b3</code> — the
+    head run in this worktree, the base run in a scratch
+    <code>git archive</code> of the base. The armed gate
+    <code>pytest -q tests/test_a_review_is_stored_only_from_a_finished_report.py
+    tests/test_staged_write_inventory.py
+    tests/test_every_shared_home_lock_holds_across_nodes.py</code> reports
+    <strong>63 passed</strong> with <code>EXIT=0</code>. The same three files at
+    the base revision report <strong>6 failed, 55 passed, 2 errors</strong>: the
+    five new tests above, plus <strong>3</strong> failures of
+    <code>test_staged_write_inventory.py</code> that are the scratch tree's, not
+    the code's — an extraction is not a git checkout, so its
+    <code>git ls-tree HEAD</code> exits 128, and the archive carries no
+    <code>docs/research/data</code> census corpus the other test reads. Their
+    failing ids do not appear in the head arm. The negative control makes
+    <code>report_placeholders</code> scan an empty string, so a report still
+    carrying the brief's placeholders is stored again: the file then reports
+    <strong>3 failed, 2 passed</strong> — the three placeholder cases, which the
+    head arm passes — with <code>EXIT=1</code>.
+  </p>
+
+  <p id="review-stored-from-finished-report-s6-population">
+    Population: the <strong>20</strong> test files that import either module
+    this node changed report <strong>2 failed, 191 passed, 1 error</strong> at
+    the base. Those three ids are not this node's: the two failures are
+    <code>test_skill_contracts.py</code> reporting a crew verb
+    (<code>reckon crew declare-gate</code>) its skill document never names and a
+    ship-view set that differs from the typed MCP surface, and the error is a
+    stale helper in <code>test_a_producer_tick_reads_live_pointers_once.py</code>
+    patching <code>recovery_watch.watch_lease_renewed_at</code>, which that
+    module does not carry. Re-run against the base tree
+    (<code>af516b3</code>), the same two tests fail and the same test errors, so
+    the population adds no failure.
+  </p>
+</section>

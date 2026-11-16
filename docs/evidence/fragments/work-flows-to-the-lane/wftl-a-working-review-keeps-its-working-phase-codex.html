@@ -1,0 +1,15 @@
+<section id="wftl-a-working-review-keeps-its-working-phase-codex-landing">
+  <h3>A working review keeps its phase through an early promotion request</h3>
+  <p>Commit <code>68f08e0b1aa849b9f2ae90f1cbc8d8731a3405e5</code> preserves a review pointer's working phase whenever its existing readiness verdict says to wait. Parked requests are deduplicated and reconsidered on later service ticks, so delivery promotes the original request without a coordinator re-request.</p>
+  <p>The regression uses a temporary crew home and a real subprocess that keeps writing its stream. It checks an in-progress manifest and a complete manifest with an already stored review record. Both cases require a working pointer, no promotion start, no ledger row and one stable request identity while the worker is live. An exited worker with an in-progress manifest also waits. Once the manifest reads complete and the supervisor exit is recorded, the same request must produce a promoted receipt, a retired pointer and a ledger row naming <code>review-self</code>.</p>
+  <table>
+    <thead><tr><th>Measurement on all_debug</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Declared base census arm</td><td>58 passed in 39.33s; EXIT=0</td></tr>
+      <tr><td>Delivered regression against extracted base source</td><td>2 failed in 0.60s; EXIT=1</td></tr>
+      <tr><td>Caller timing and durable promotion receipts after fixture correction</td><td>22 passed in 122.45s; EXIT=0</td></tr>
+    </tbody>
+  </table>
+  <p>The focused review-promotion check initially read 30 passed and one failed timing fixture: its promotion was stubbed successful while the readiness evidence was unfinished. Commit <code>897a1b2b6ce362041d2d82f21ae74e6fd7f1c4f9</code> gives that timing fixture an explicitly ready review verdict; the real readiness guard remains exercised by the subprocess regression.</p>
+  <p><a href="/reckon/evidence/fragments/work-flows-to-the-lane/review-phase.html">Full negative-control receipt</a>. Durable logs are under run <code>r-20261115T160818224206-wftl-a-working-review-keeps-its-working-phase-codex</code>: <code>baseline.log</code>, <code>negative-control-final.log</code>, <code>focused-head.log</code> and <code>caller-head.log</code>. The manifest carries the final committed-head census and dedicated regression receipts. Coordinator integration and merged-head verification remain the next step.</p>
+</section>

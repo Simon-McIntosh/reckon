@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T19:14:56.087Z",
+  "dispatched_at": "2026-11-15T19:12:56Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T145756401886-unlaunched-launch-reaped-s4/manifest.md",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the reviewed node's manifest declares no tests, test_logs, baseline_suite or after_suite field, so the gate pair the done_when names is readable only from files under logs/ and not from the record a reader consumes"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T145756401886-unlaunched-launch-reaped-s4/logs/importing-head.log",
+      "line": 3,
+      "severity": "non-blocking",
+      "text": "the population arm's command header carries an unsubstituted placeholder, `$(cat logs/importing-tests.txt where logs is the run log directory)`, instead of the literal command, so the measurement establishing no added failure cannot be re-run from the log; the chunked runs record the same shape, `<files in logs/chunks/chunkNN.txt>`"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal \"Release a launch stuck before its worker and draw it as unlaunched\" against the landed change; reckon/crew/recovery_review_dispatch.py:2661 adds `_standing_review_report`, which releases a stranded composed review's claim so the same pass recomposes it, and the launch arm the goal also names was already released at this node's base revision.\nVERDICT done_when: read the done_when and both gate logs; logs/base-arm.log at c00ffd3d runs the review-arm file and records `2 failed, 60 passed`, naming exactly test_the_reflex_releases_a_stranded_review_and_composes_again and test_the_reflex_leaves_a_young_review_in_flight, and logs/after-arm.log at e75cd394 records `62 passed`.\nVERDICT write_paths: read the manifest's five declared paths against `git diff --stat c00ffd3d20b5cbb1ac048c1e8f30a2e03581714d e75cd394ac7dc117804a838589f9b6a865250d36`; the diff touches only reckon/crew/recovery_review_dispatch.py and docs/evidence/fragments/the-monitor-tells-the-truth-under-load/unlaunched-launch-reaped-s4.html, both declared.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T145756401886-unlaunched-launch-reaped-s4/manifest.md; it records status complete, both commits and one scaffold attribution, but carries none of the gate keys (tests, test_logs, baseline_suite, after_suite), so the arm pair is recoverable only from files under logs/.\nVERDICT diff: read commit by commit; 4ce5cdeb1305fe66fb69393a914daca04650f06b lifts the in-flight/stranded block out of `_dispatch_text_review_for_run` into `_standing_review_report` and calls it at line 2824 ahead of `classify_pointer`, and e75cd394ac7dc117804a838589f9b6a865250d36 adds 7 measure lines to the evidence fragment.\nCALL_SITES: reckon/crew/recovery_watch.py:4006, reckon/crew/recovery_review_acceptance.py:1483, reckon/crew_dispatch_commands.py:3255, reckon/crew/plan_review.py:4565, reckon/crew/recovery_review_dispatch.py:3454\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_dispatch.py:2824 answers the standing claim before the run's own reading, so the release no longer depends on the reviewed run classifying as scoring.\nSCORE evidence: 13\nJUSTIFICATION evidence: logs/base-arm.log records `2 failed, 60 passed` naming both review-arm tests and logs/after-arm.log records `62 passed`, but both population arms ran in the node's own worktree rather than the all_debug partition the done_when names, and logs/importing-head.log:3 records the command only as a placeholder fragment.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff's two files, reckon/crew/recovery_review_dispatch.py and the evidence fragment, both sit inside the declared write paths and nothing else changed.\nSCORE durability: 17\nJUSTIFICATION durability: logs/negative-control.log reddens tests/test_stranded_launch_releases_its_claim.py:125 when the stranded claim is left in place, so the guard fails on the defect it names, though the recomposition half is asserted only by reaching past the blocking gate.\nSCORE fit: 18\nJUSTIFICATION fit: `_standing_review_report` at reckon/crew/recovery_review_dispatch.py:2661 sits beside `_standing_plan_review` and follows its keyword-only signature and rationale-docstring idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: the one added definition delegates to the owners it needs \u2014 `_stranded_launch` in reckon/crew/recovery_liveness.py, and `_discard_stranded_review` at line 508 and `_review_in_flight` at line 550 in the same module \u2014 and forks none of them.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T145756401886-unlaunched-launch-reaped-s4/manifest.md:1 non-blocking: the manifest declares no tests, test_logs, baseline_suite or after_suite field, so the gate pair the done_when names is readable only from files under logs/ and not from the record a reader consumes.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T145756401886-unlaunched-launch-reaped-s4/logs/importing-head.log:3 non-blocking: the population arm's command header carries an unsubstituted placeholder instead of the literal command, so the measurement establishing no added failure cannot be re-run from the log.\n",
+  "review_run_id": "r-20261115T190755765985-review-of-unlaunched-launch-reaped-s4-e75cd394ac7d",
+  "reviewed_base_sha": "c00ffd3d20b5cbb1ac048c1e8f30a2e03581714d",
+  "reviewed_head_sha": "e75cd394ac7dc117804a838589f9b6a865250d36",
+  "reviewed_run_id": "r-20261115T145756401886-unlaunched-launch-reaped-s4",
+  "scores": {
+    "durability": 17,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T21:17:43.164131+00:00",
+  "total": 105
+}

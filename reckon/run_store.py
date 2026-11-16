@@ -1,14 +1,9 @@
-"""A rebuildable SQLite index of the committed run records.
+"""Stored run history with indexed identity queries and rotating wide detail.
 
-Run files and remaining aggregate rows, read through ``ledger.load``, are the
-authority. A keyed reader checks membership against those sources and rebuilds
-an absent or out-of-date index before answering. A cache rebuild cannot make
-an authoritative answer depend on a successful cache write.
-
-``DETAIL_FIELDS`` names the wide fields a rotation may remove. Every other
-field is durable by default. Refusal stamps are independent durable records:
-a refused dispatch has no promoted run file, so rebuilding run rows must never
-remove those stamps.
+Ledger readers query the store directly. Explicit import and comparison read
+committed documents, allowing the store to be rebuilt without asking it for its
+own input. ``DETAIL_FIELDS`` names the wide fields rotation may remove; every
+other field is durable. Refusal stamps are independent durable records.
 """
 
 from __future__ import annotations
@@ -21,12 +16,13 @@ import random
 import sqlite3
 import subprocess
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Self
 
 from reckon import _store, run_record
+from reckon._timestamps import parse_utc
 
 # The single detail-field declaration. A field on a run record named here is
 # wide detail a later rotation stage may wash out once its derived value
@@ -254,6 +250,334 @@ def _archive_path(path: Path) -> Path:
     return path.with_name(f"{path.stem}.archive{path.suffix}")
 
 
+def _record_rows(
+    connection: sqlite3.Connection,
+    *,
+    schemas: Iterable[str] = ("main",),
+    project: str | None = None,
+    run_ids: Iterable[str] | None = None,
+    plan: str | None = None,
+    fields: tuple[str, ...] | None = None,
+    activity_since: float | None = None,
+) -> Iterator[tuple[Any, ...]]:
+    """Stream selected records through the single durable/detail join.
+
+    Projection and selection happen before SQLite returns any payload to Python.
+    Full history remains streamable without retaining a second list of encoded
+    records beside the decoded answer. Identity batches stay below driver limits.
+    """
+    selected = None if run_ids is None else sorted(set(map(str, run_ids)))
+    batches = (
+        [None]
+        if selected is None
+        else [selected[index : index + 500] for index in range(0, len(selected), 500)]
+    )
+    if plan:
+        from reckon import ledger
+
+        connection.create_function(
+            "record_plan",
+            1,
+            lambda value: ledger._row_plan(json.loads(value)),
+            deterministic=True,
+        )
+    if activity_since is not None:
+
+        def epoch(value):
+            stamp = parse_utc(value)
+            return stamp.timestamp() if stamp is not None else None
+
+        connection.create_function("record_epoch", 1, epoch, deterministic=True)
+    for schema in schemas:
+        if schema not in ("main", "archive"):
+            raise ValueError(f"unknown store schema {schema!r}")
+        for batch in batches:
+            params: list[Any] = []
+            columns = []
+            for column in ("r.payload", "d.detail"):
+                if fields == ("run_id",) or (
+                    column == "d.detail"
+                    and fields is not None
+                    and not any(field in DETAIL_FIELDS for field in fields)
+                ):
+                    columns.append("NULL")
+                elif fields is None:
+                    columns.append(column)
+                else:
+                    marks = ",".join("?" for _ in fields)
+                    columns.append(
+                        "(SELECT json_group_object(key, CASE "  # noqa: S608 - fixed columns and parameter markers
+                        "WHEN type IN ('object','array') THEN json(value) "
+                        "WHEN type IN ('true','false') THEN json(type) ELSE value END) "
+                        f"FROM json_each({column}) WHERE key IN ({marks}))"
+                    )
+                    params.extend(fields)
+            query = (
+                f'SELECT r.run_id, {columns[0]}, {columns[1]} FROM "{schema}".runs r '  # noqa: S608 - fixed schema and column names
+                f'LEFT JOIN "{schema}".run_details d ON r.run_id = d.run_id'
+            )
+            clauses = []
+            if project is not None:
+                clauses.append("r.project = ?")
+                params.append(project)
+            if batch is not None:
+                clauses.append(f"r.run_id IN ({','.join('?' for _ in batch)})")
+                params.extend(batch)
+            if plan:
+                # Resolve the same narrow record through the ledger's owner;
+                # the store query must not invent a separate fallback order.
+                clauses.append(
+                    "record_plan(json_object("
+                    "'plan', json_extract(r.payload, '$.plan'), "
+                    "'impl_move', json_object('plan', json_extract(r.payload, '$.impl_move.plan')), "
+                    "'node_definition', json_object('plan', json_extract(d.detail, '$.node_definition.plan'))"
+                    ")) = ?"
+                )
+                params.append(plan)
+            if activity_since is not None:
+                stamps = [
+                    f"coalesce(record_epoch(json_extract(r.payload, '$.{key}')), -1e300)"
+                    for key in (
+                        "launched_at",
+                        "created_at",
+                        "dispatched_at",
+                        "completed_at",
+                    )
+                ]
+                clauses.append(f"max({','.join(stamps)}) >= ?")
+                params.append(activity_since)
+            if clauses:
+                query += " WHERE " + " AND ".join(clauses)
+            yield from connection.execute(query, params)
+
+
+def record_file_additions(
+    checkout: str | Path,
+    project: str,
+    *,
+    base: str | None = None,
+    head: str | None = None,
+) -> list[tuple[str, str, int]]:
+    """Each commit that added a run's own record file, oldest first.
+
+    A run's ``docs/state/<project>/runs/<run_id>.json`` is added once, and a
+    path-limited log lists those additions without generating a patch, so this
+    is one git call for the whole question rather than one per run. The result
+    is ``(run_id, commit, epoch)`` per addition, in log order, where ``epoch``
+    is the adding commit's own timestamp: the backfill only needs the commit,
+    while a windowed reader compares the epoch against its bounds before it
+    trusts an appearance.
+
+    ``base`` and ``head`` narrow the log to ``base..head``; omitted, the whole
+    first-parent history is read. A checkout that cannot answer — no git, or no
+    history for the path — returns nothing, so a caller reports an unresolved
+    run rather than stamping a caller's guess.
+    """
+    argv = [
+        "git",
+        "-C",
+        str(checkout),
+        "log",
+        "--first-parent",
+        "--reverse",
+        "--diff-merges=first-parent",
+        "--format=%x1e%H%x09%ct",
+        "--diff-filter=A",
+        "--name-only",
+    ]
+    if base is not None and head is not None:
+        argv.append(f"{base}..{head}")
+    argv.extend(["--", f"docs/state/{project}/runs"])
+    try:
+        completed = subprocess.run(argv, capture_output=True, text=True, check=False)
+    except OSError:
+        return []
+    if completed.returncode != 0:
+        return []
+    additions: list[tuple[str, str, int]] = []
+    commit, epoch = "", 0
+    # Newlines only: ``str.splitlines`` also splits on the record separator the
+    # format string leads each commit with, which would drop the marker the
+    # commit sha sits behind.
+    for line in completed.stdout.split("\n"):
+        if line.startswith("\x1e"):
+            commit, value = line[1:].split("\t")
+            epoch = int(value)
+            continue
+        name = line.strip()
+        if commit and name.endswith(".json"):
+            additions.append((name.rsplit("/", 1)[-1][: -len(".json")], commit, epoch))
+    return additions
+
+
+def _record_file_revisions(checkout: Path, project: str) -> dict[str, str]:
+    """Map each run id to the commit its own record file entered the tree at.
+
+    The scan is :func:`record_file_additions`; this only keeps the first
+    appearance per run, which is the adding commit because the log runs
+    oldest first.
+    """
+    revisions: dict[str, str] = {}
+    for run_id, commit, _epoch in record_file_additions(checkout, project):
+        revisions.setdefault(run_id, commit)
+    return revisions
+
+
+def backfill_revisions(
+    project: str,
+    *,
+    root: str | Path | None = None,
+    path: str | Path | None = None,
+) -> dict[str, Any]:
+    """Stamp each stored run with the commit its own record file entered the tree at.
+
+    No record can name it either: a promotion's ``promoted_revision`` is the tip
+    of the run's own work, and the promotion commits the record file in its own
+    commit, so the record and the tree name different commits by design. Every
+    row therefore starts empty and this pass, because the adding commit is a
+    property of the project's history rather than of the record, is the only
+    thing that writes the column — read from the checkout and stamped on those
+    rows.
+
+    ``root`` names that checkout and falls back to the store's own routing for
+    the project. Reads are idempotent: a row that already names a revision is
+    left alone, so a repeated pass stamps nothing.
+
+    Returns counts keyed ``revision_stamped`` (rows this pass placed) and
+    ``revision_unresolved`` (rows whose file never entered the tree this
+    checkout can see).
+    """
+    with RunStore(path) as store:
+        missing = store.revisionless_rows(project)
+        if not missing:
+            return {"revision_stamped": 0, "revision_unresolved": 0}
+        checkout = (
+            Path(root) if root is not None else store._ledger_roots().get(project)
+        )
+        if checkout is None or not Path(checkout).is_dir():
+            return {"revision_stamped": 0, "revision_unresolved": len(missing)}
+        found = _record_file_revisions(Path(checkout), project)
+        stamped = store.stamp_revisions(
+            project, {run_id: found[run_id] for run_id in missing if run_id in found}
+        )
+        return {
+            "revision_stamped": stamped,
+            "revision_unresolved": len(missing) - stamped,
+        }
+
+
+def _read_attached_tables(connection: sqlite3.Connection, path: Path) -> list[str]:
+    """The tables one store's runs may answer from, hot first then retired."""
+    tables = ["main"]
+    archive = _archive_path(path)
+    if archive.is_file():
+        try:
+            connection.execute(
+                "ATTACH DATABASE ? AS archive",
+                (f"{archive.resolve().as_uri()}?mode=ro",),
+            )
+        except (OSError, sqlite3.Error):
+            return tables
+        tables.append("archive")
+    return tables
+
+
+def stored_run_revisions(
+    project: str,
+    *,
+    path: str | Path | None = None,
+) -> dict[str, str] | None:
+    """Each stored run's revision, read without writing.
+
+    ``None`` distinguishes an absent store from one holding no revision for
+    this project's runs. The connection is opened read-only, so a history read
+    never creates, migrates or rebuilds the store it reads: a caller resolving
+    a revision must not change the store that holds it.
+
+    The revision is the commit a run's own record file entered the tree at, so
+    a reader whose tree no longer carries the file can still read it from
+    history. A row that names none is absent from the answer rather than
+    answered with an empty string, so a caller can tell a run the store cannot
+    place from one it placed at the empty tree.
+    """
+    target = store_path() if path is None else Path(path)
+    if not target.is_file():
+        return None
+    connection = sqlite3.connect(f"{target.resolve().as_uri()}?mode=ro", uri=True)
+    revisions: dict[str, str] = {}
+    try:
+        for table in _read_attached_tables(connection, target):
+            try:
+                rows = connection.execute(
+                    f"SELECT run_id, revision FROM {table}.runs "  # noqa: S608 - fixed table names
+                    "WHERE project = ? AND revision IS NOT NULL",
+                    (project,),
+                ).fetchall()
+            except sqlite3.Error:
+                # A store whose runs table predates the column names no
+                # revision, and one that has no runs table holds no run.
+                continue
+            for run_id, revision in rows:
+                if revision:
+                    revisions.setdefault(str(run_id), str(revision))
+    finally:
+        connection.close()
+    return revisions
+
+
+def stored_run_rows(
+    project: str,
+    *,
+    path: str | Path | None = None,
+    run_ids: Iterable[str] | None = None,
+    plan: str | None = None,
+    fields: tuple[str, ...] | None = None,
+    activity_since: float | None = None,
+) -> list[dict[str, Any]] | None:
+    """Read selected stored history without writing or consulting run files.
+
+    None means the store is absent. An existing empty store answers an empty
+    list; an unreadable store raises rather than looking like an empty project.
+    Retired rows retain both halves of their record in the attached archive.
+
+    ``path`` names the store to read and falls back to the resolved location,
+    so a caller comparing two stores — or a probe holding its own fixture —
+    reads the one it named rather than whichever store this machine routes to.
+    """
+    target = store_path() if path is None else Path(path)
+    if not target.exists():
+        return None
+    connection = sqlite3.connect(f"{target.resolve().as_uri()}?mode=ro", uri=True)
+    try:
+        schemas = _read_attached_tables(connection, target)
+        records = []
+        for run_id, payload, detail in _record_rows(
+            connection,
+            schemas=schemas,
+            project=project,
+            run_ids=run_ids,
+            plan=plan,
+            fields=fields,
+            activity_since=activity_since,
+        ):
+            if fields == ("run_id",):
+                records.append({"run_id": str(run_id)})
+            else:
+                records.append(
+                    run_record.normalize_outside_scope_paths(
+                        {
+                            **json.loads(payload),
+                            **(json.loads(detail) if detail else {}),
+                        }
+                    )
+                )
+        return records
+    except sqlite3.Error as error:
+        raise RuntimeError(f"cannot read the run store at {target}: {error}") from error
+    finally:
+        connection.close()
+
+
 def _decoded_record(stored: str) -> dict[str, Any]:
     """Decode a stored payload, mapping a retired outside-scope key on the way in.
 
@@ -419,16 +743,16 @@ class RunStore:
                 _RUNS_SCHEMA if table == "runs" else _ARCHIVE_RUNS_SCHEMA
             )
             return
-        if columns == _RUNS_COLUMNS:
-            if table == "runs":
-                self._conn.executescript(_RUNS_INDEXES)
-            return
         names = [
             str(desc[0])
             for desc in self._conn.execute(
                 f"SELECT * FROM {table} LIMIT 0"  # noqa: S608 - a fixed table name
             ).description
         ]
+        if columns == _RUNS_COLUMNS:
+            if table == "runs":
+                self._conn.executescript(_RUNS_INDEXES)
+            return
         rows = self._conn.execute(f"SELECT * FROM {table}").fetchall()  # noqa: S608 - a fixed table name
         update = (
             _RUNS_UPDATE
@@ -707,17 +1031,10 @@ class RunStore:
     def _indexed_records(
         self, *, include_archive: bool = False
     ) -> dict[str, dict[str, Any]]:
-        rows = self._conn.execute(
-            "SELECT r.run_id, r.payload, d.detail FROM runs r "
-            "LEFT JOIN run_details d ON r.run_id = d.run_id"
-        ).fetchall()
+        schemas = ["main"]
         if include_archive and self._attach_archive():
-            rows.extend(
-                self._conn.execute(
-                    "SELECT r.run_id, r.payload, d.detail FROM archive.runs r "
-                    "LEFT JOIN archive.run_details d ON r.run_id = d.run_id"
-                ).fetchall()
-            )
+            schemas.append("archive")
+        rows = _record_rows(self._conn, schemas=schemas)
         return {
             str(run_id): run_record.normalize_outside_scope_paths(
                 {**json.loads(payload), **(json.loads(detail) if detail else {})}
@@ -746,7 +1063,7 @@ class RunStore:
                 )
             } | self._archived_ids(name)
             if indexed != ledger.run_ids(name, root):
-                data, _version = ledger.load(name, root)
+                data, _version = ledger.load(name, root, use_index=False)
                 changed[name] = data["runs"]
         if not changed:
             return None
@@ -930,6 +1247,8 @@ class RunStore:
 
     def revisionless_rows(self, project: str) -> set[str]:
         """The project's rows that name no revision."""
+        if ROW_REVISION not in self._runs_columns():
+            return set()
         return {
             str(row[0])
             for row in self._conn.execute(
@@ -1129,230 +1448,6 @@ def runs_for_node(node: str, *, project: str | None = None) -> list[dict[str, An
     return records
 
 
-def record_file_additions(
-    checkout: str | Path,
-    project: str,
-    *,
-    base: str | None = None,
-    head: str | None = None,
-) -> list[tuple[str, str, int]]:
-    """Each commit that added a run's own record file, oldest first.
-
-    A run's ``docs/state/<project>/runs/<run_id>.json`` is added once, and a
-    path-limited log lists those additions without generating a patch, so this
-    is one git call for the whole question rather than one per run. The result
-    is ``(run_id, commit, epoch)`` per addition, in log order, where ``epoch``
-    is the adding commit's own timestamp: the backfill only needs the commit,
-    while a windowed reader compares the epoch against its bounds before it
-    trusts an appearance.
-
-    ``base`` and ``head`` narrow the log to ``base..head``; omitted, the whole
-    first-parent history is read. A checkout that cannot answer — no git, or no
-    history for the path — returns nothing, so a caller reports an unresolved
-    run rather than stamping a guess.
-    """
-    argv = [
-        "git",
-        "-C",
-        str(checkout),
-        "log",
-        "--first-parent",
-        "--reverse",
-        "--diff-merges=first-parent",
-        "--format=%x1e%H%x09%ct",
-        "--diff-filter=A",
-        "--name-only",
-    ]
-    if base is not None and head is not None:
-        argv.append(f"{base}..{head}")
-    argv.extend(["--", f"docs/state/{project}/runs"])
-    completed = subprocess.run(argv, capture_output=True, text=True, check=False)
-    if completed.returncode != 0:
-        return []
-    additions: list[tuple[str, str, int]] = []
-    commit, epoch = "", 0
-    # Newlines only: ``str.splitlines`` also splits on the record separator the
-    # format string leads each commit with, which would drop the marker the
-    # commit sha sits behind.
-    for line in completed.stdout.split("\n"):
-        if line.startswith("\x1e"):
-            commit, value = line[1:].split("\t")
-            epoch = int(value)
-            continue
-        name = line.strip()
-        if commit and name.endswith(".json"):
-            additions.append((name.rsplit("/", 1)[-1][: -len(".json")], commit, epoch))
-    return additions
-
-
-def _record_file_revisions(checkout: Path, project: str) -> dict[str, str]:
-    """Map each run id to the commit its own record file entered the tree at.
-
-    The scan is :func:`record_file_additions`; this only keeps the first
-    appearance per run, which is the adding commit because the log runs
-    oldest first.
-    """
-    revisions: dict[str, str] = {}
-    for run_id, commit, _epoch in record_file_additions(checkout, project):
-        revisions.setdefault(run_id, commit)
-    return revisions
-
-
-def backfill_revisions(
-    project: str,
-    *,
-    root: str | Path | None = None,
-    path: str | Path | None = None,
-) -> dict[str, Any]:
-    """Stamp each stored run with the commit its own record file entered the tree at.
-
-    No record can name it either: a promotion's ``promoted_revision`` is the tip
-    of the run's own work, and the promotion commits the record file in its own
-    commit, so the record and the tree name different commits by design. Every
-    row therefore starts empty and this pass, because the adding commit is a
-    property of the project's history rather than of the record, is the only
-    thing that writes the column — read from the checkout and stamped on those
-    rows.
-    ``root`` names that checkout and falls back to the store's own routing for
-    the project. Reads are idempotent: a row that already names a revision is
-    left alone, so a repeated pass stamps nothing.
-
-    Returns counts keyed ``revision_stamped`` (rows this pass placed) and
-    ``revision_unresolved`` (rows whose file never entered the tree this
-    checkout can see).
-    """
-    with RunStore(path) as store:
-        missing = store.revisionless_rows(project)
-        if not missing:
-            return {"revision_stamped": 0, "revision_unresolved": 0}
-        checkout = (
-            Path(root) if root is not None else store._ledger_roots().get(project)
-        )
-        if checkout is None or not Path(checkout).is_dir():
-            return {"revision_stamped": 0, "revision_unresolved": len(missing)}
-        found = _record_file_revisions(Path(checkout), project)
-        stamped = store.stamp_revisions(
-            project, {run_id: found[run_id] for run_id in missing if run_id in found}
-        )
-        return {
-            "revision_stamped": stamped,
-            "revision_unresolved": len(missing) - stamped,
-        }
-
-
-def _read_attached_tables(connection: sqlite3.Connection, path: Path) -> list[str]:
-    """The tables one store's runs may answer from, hot first then retired."""
-    tables = ["main"]
-    archive = _archive_path(path)
-    if archive.is_file():
-        try:
-            connection.execute(
-                "ATTACH DATABASE ? AS archive",
-                (f"{archive.resolve().as_uri()}?mode=ro",),
-            )
-        except (OSError, sqlite3.Error):
-            return tables
-        tables.append("archive")
-    return tables
-
-
-def stored_run_revisions(
-    project: str, *, path: str | Path | None = None
-) -> dict[str, str] | None:
-    """Each stored run's revision, read without writing.
-
-    ``None`` distinguishes an absent store from one holding no revision for
-    this project's runs. The connection is opened read-only, so a history read
-    never creates, migrates or rebuilds the store it reads: a caller resolving
-    a revision must not change the store that holds it.
-
-    The revision is the commit a run's own record file entered the tree at, so
-    a reader whose tree no longer carries the file can still read it from
-    history. A row that names none is absent from the answer rather than
-    answered with an empty string, so a caller can tell a run the store cannot
-    place from one it placed at the empty tree.
-    """
-    target = store_path() if path is None else Path(path)
-    if not target.is_file():
-        return None
-    connection = sqlite3.connect(f"{target.resolve().as_uri()}?mode=ro", uri=True)
-    revisions: dict[str, str] = {}
-    try:
-        for table in _read_attached_tables(connection, target):
-            try:
-                rows = connection.execute(
-                    f"SELECT run_id, revision FROM {table}.runs "  # noqa: S608 - fixed table names
-                    "WHERE project = ? AND revision IS NOT NULL",
-                    (project,),
-                ).fetchall()
-            except sqlite3.Error:
-                # A store whose runs table predates the column names no
-                # revision, and one that has no runs table holds no run.
-                continue
-            for run_id, revision in rows:
-                if revision:
-                    revisions.setdefault(str(run_id), str(revision))
-    finally:
-        connection.close()
-    return revisions
-
-
-def stored_run_rows(
-    project: str, *, path: str | Path | None = None
-) -> list[dict[str, Any]] | None:
-    """One project's stored runs, retired rows included, read without writing.
-
-    ``None`` distinguishes an absent store from one holding no row of this
-    project's. The connection is opened read-only, so a history read never
-    creates the store, its directory or its schema: a read that creates is a
-    write, and the ledger's readers are called on every station tick.
-
-    The query is scoped by the project column, so only this project's payloads
-    are decoded. One config home serves every project on this machine, and a
-    read for one project must not pay for the others. A record's wide detail is
-    joined back from its own table, and retired rows are read from the attached
-    archive, so a caller sees each record whole and a retirement does not
-    shorten the history it answers.
-    """
-    target = store_path() if path is None else Path(path)
-    if not target.is_file():
-        return None
-    try:
-        connection = sqlite3.connect(f"{target.resolve().as_uri()}?mode=ro", uri=True)
-    except (OSError, sqlite3.Error):
-        return None
-    try:
-        tables = _read_attached_tables(connection, target)
-        rows: list[tuple[Any, ...]] = []
-        for table in tables:
-            try:
-                rows.extend(
-                    connection.execute(
-                        f"SELECT r.run_id, r.payload, d.detail FROM {table}.runs r "  # noqa: S608 - fixed table names
-                        f"LEFT JOIN {table}.run_details d ON r.run_id = d.run_id "
-                        "WHERE r.project = ?",
-                        (project,),
-                    )
-                )
-            except sqlite3.Error:
-                # A store that never carried the run tables holds no row.
-                continue
-    finally:
-        connection.close()
-    records: list[dict[str, Any]] = []
-    for _run_id, payload, detail in rows:
-        if payload is None:
-            continue
-        try:
-            record = json.loads(payload)
-            if detail:
-                record.update(json.loads(detail))
-        except (TypeError, ValueError):
-            continue
-        records.append(run_record.normalize_outside_scope_paths(record))
-    return records
-
-
 def indexed_run_ids(project: str) -> set[str] | None:
     """Read current index membership without creating, migrating or rebuilding it.
 
@@ -1411,7 +1506,7 @@ def import_ledger(
     """
     from reckon import ledger
 
-    data, _version = ledger.load(project, root)
+    data, _version = ledger.load(project, root, use_index=False)
     counts = {"rows_imported": 0, "rows_already_present": 0, "rows_unchanged": 0}
 
     def write(store: RunStore) -> None:
@@ -1472,7 +1567,7 @@ def compare(
     """
     from reckon import ledger
 
-    data, _version = ledger.load(project, root)
+    data, _version = ledger.load(project, root, use_index=False)
     file_durable = {
         str(record.get("run_id")): _durable_record(project, record)
         for record in data["runs"]

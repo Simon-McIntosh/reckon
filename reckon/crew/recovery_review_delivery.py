@@ -440,16 +440,24 @@ def _review_delivery_verdict(
             "remedy": "store the review record there, or pass --outcome",
         }
     body, mtime = read
+    body = review_module.with_figure_verdicts(body)
     missing = _review_missing_measures(_with_derived_total(body))
     if missing:
         listed = ", ".join(missing)
+        shortfalls = [
+            str(entry)
+            for entry in body.get(review_module.FIGURE_VERDICT_SHORTFALLS_KEY) or ()
+        ]
+        unanswered = (
+            f", left unanswered for {', '.join(shortfalls)}" if shortfalls else ""
+        )
         return {
             "delivered": False,
             "condition": "record is not a complete review",
             "path": str(path),
             "detail": (
                 f"stored a record at {path} that is not a complete review: it "
-                f"lacks {listed}"
+                f"lacks {listed}{unanswered}"
             ),
             "remedy": (
                 "pass --outcome with the verdict the review reached, or "

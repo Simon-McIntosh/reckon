@@ -1,0 +1,99 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own suite arms on disk: logs/suite_baseline.log at base cbfc8346 records '58 passed' EXIT=0 and logs/suite_after.log at the working tree over cbfc8346 records '58 passed' EXIT=0, with no FAILED line in either, so the set difference is empty (0). The reviewed manifest does not carry the baseline_suite/after_suite keys, which is itself recorded as a blocking finding.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:3076 (classify_pointer calls _watch_verdict)",
+    "reckon/crew/recovery_memo.py:903 (report fleet_verdict calls _watch_verdict)",
+    "reckon/crew/recovery_watch.py:2073 (FLEET_BLOCKED_STATES derived from NEEDS_ACTION)",
+    "reckon/crew/ticker.py:990 (pane word read from FLEET_BLOCKED_STATES)",
+    "reckon/crew/runs.py:5485 (WATCH_ATTENTION_STATES re-export)"
+  ],
+  "completed_at": "2026-11-16T03:12:02.371Z",
+  "dispatched_at": "2026-11-16T03:10:10Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224559012025-qwnw-red-file-crew/manifest.md",
+      "line": "5",
+      "severity": "blocking",
+      "text": "status complete is declared while baseline_suite and after_suite are absent although the run was armed a suite, so the write-time audit refuses the record; both arms are on disk at logs/suite_baseline.log and logs/suite_after.log."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224559012025-qwnw-red-file-crew/manifest.md",
+      "line": "28",
+      "severity": "blocking",
+      "text": "failure_attribution is a YAML list where the schema accepts a mapping or text, so the field is refused rather than carried forward."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224559012025-qwnw-red-file-crew/manifest.md",
+      "line": "14",
+      "severity": "blocking",
+      "text": "negative_control_log names a path under the worker's worktree, not the run directory, so the cited base log does not resolve for any later reader."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224559012025-qwnw-red-file-crew/manifest.md",
+      "line": "27",
+      "severity": "blocking",
+      "text": "no messages_received line, so the audit refuses the record."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew.html",
+      "line": "164",
+      "severity": "non-blocking",
+      "text": "the arms table cites *.log siblings that the repository ignores, and the record path differs from the red-file-crew.html the done_when names."
+    },
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "269",
+      "severity": "non-blocking",
+      "text": "the comment says the classification reaches the pane as blocked, which the same node's recovery_watch.py:1240 change made false."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224559012025-qwnw-red-file-crew/manifest.md",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "the gate ran in the worktree, not as the all_debug job the done_when names; no slurm job appears in the log header."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit from cbfc8346 to 76c89e4e; 5 files, 482 insertions, 58 deletions, product change confined to the three crew modules plus the test updates the evidence record pairs with the rules they now assert.",
+    "done_when": "the done_when asks for the file green at head, a verdict per base id, no weakened assertion, a clean import selection and ruff, and an all_debug job; the ids and verdicts are in the evidence record, the two runs are in logs/, but no gate log names a slurm job and the gate ran in the worktree.",
+    "goal": "the node goal is to make tests/test_crew.py pass in full on the primary branch; at 76c89e4e the diff repairs one vocabulary gap across reckon/crew/recovery_watch.py:1234 and reckon/crew/ticker.py:138,166,271,494, and logs/test_crew_at_5353ff3e1c.log records 191 passed EXIT=0 against 24 failed/165 passed/3 errors at base.",
+    "manifest": "read; status complete with 191 passed at head and 27 base ids each carrying a verdict, but the record is refused by its own write-time audit on five counts.",
+    "write_paths": "the declared fence is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its files, plus a figures directory; all five diff paths are inside it."
+  },
+  "justifications": {
+    "durability": "tests/test_fleet_counter_coverage.py:180 asserts _emitted_states() >= NEEDS_ACTION, scraping state = \"cut-off\" from recovery_watch.py:1240, so reinstating the folded branch reddens it.",
+    "evidence": "the head and base results are recorded and the 27 ids are in the evidence record, but the gate ran in the worktree rather than the all_debug job the done_when names and the manifest omits the armed suite pair.",
+    "fit": "the added words join the hyphenated vocabulary beside exited-unfinished in ticker.py:271, but the comment at ticker.py:269 still says the class reaches the pane as blocked.",
+    "goal_fidelity": "reckon/crew/ticker.py:271 and reckon/crew/watch_unit.py:1543 give the cut-off classification the state, hue, pane word, bucket and attention entries it lacked, and logs/test_crew_at_5353ff3e1c.log records 191 passed EXIT=0 for the named file at the code head 5353ff3e1c.",
+    "reuse": "the diff adds no mechanism; it appends one word to the tables ticker.py and watch_unit.py already own and one branch to the existing reducer, and a search of reckon/crew found no second fleet-vocabulary owner.",
+    "scope_discipline": "every path in the diff is inside the fence declared at the manifest's orientation_write_paths line 3."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"Make tests/test_crew.py pass in full on the primary branch\"; at cbfc8346..76c89e4e the diff repairs one vocabulary gap across reckon/crew/recovery_watch.py:1234, reckon/crew/ticker.py:138,166,271,494 and reckon/crew/watch_unit.py:1543, and the head gate log logs/test_crew_at_5353ff3e1c.log records 191 passed EXIT=0 where the base log records 24 failed, 165 passed and 3 errors.\nVERDICT done_when: the done_when asks that tests/test_crew.py pass in full at head, each of the base ids carry a product-wrong or test-wrong verdict, no assertion be deleted or weakened, an import selection add no failure, ruff report nothing new, and the gate run as a job on all_debug with SLURM_JOB_ID unset; the ids and their verdicts are in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew.html:30-116, the two pytest results are in logs/, but no log header or run record names a slurm job and the gate ran in the worktree, so the all_debug clause is unmet.\nVERDICT write_paths: the declared fence is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, its qwnw-red-file-crew.html and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-crew; the five paths in the diff (reckon/crew/recovery_watch.py, reckon/crew/ticker.py, reckon/crew/watch_unit.py, tests/test_crew.py, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew.html) are every one inside it.\nVERDICT manifest: read; it records status complete, 191 passed EXIT=0 at head, 24 failed/165 passed/3 errors at base, 27 ids each with a verdict and the base arm's cut-off lines, but its own write-time audit refuses it on five counts (baseline_suite and after_support absent while armed, failure_attribution a list, negative_control_log outside the run directory, messages_received absent) \u2014 see the findings below.\nVERDICT diff: read commit by commit from cbfc8346 to 76c89e4e \u2014 3b0633bc and 0f5c82de rewrite the test file to the rules the code keeps, 5f19cb16 reads a pointer through its detail file, 5353ff3e adds the cut-off vocabulary entries, 76c89e4e adds the 276-line evidence record; 5 files, 482 insertions and 58 deletions, and the test diff also updates six stdout reads, five fixture helpers and four scope fixtures, none of which is in the product diff and each of which the evidence record pairs with the rule it now asserts.\nCALL_SITES: reckon/crew/recovery_classification.py:3076 (_watch_verdict called by classify_pointer), reckon/crew/recovery_memo.py:903 (report fleet_verdict), reckon/crew/recovery_watch.py:2073 (FLEET_BLOCKED_STATES = NEEDS_ACTION - WAITING_STATES), reckon/crew/ticker.py:990 (pane word read from FLEET_BLOCKED_STATES), reckon/crew/runs.py:5485 (WATCH_ATTENTION_STATES re-export)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:271 and reckon/crew/watch_unit.py:1543 give the cut-off classification the state, hue, pane word, bucket and attention entries it lacked, and logs/test_crew_at_5353ff3e1c.log records 191 passed EXIT=0 for the named file at the code head 5353ff3e1c.\nSCORE evidence: 13\nJUSTIFICATION evidence: the head and base results are recorded and the 27 ids with their failure lines sit in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew.html:120-276, but the gate at logs/test_crew_at_5353ff3e1c.log ran in the worktree rather than the all_debug job the done_when names, and the manifest omits the armed baseline_suite/after_suite pair although logs/suite_baseline.log and logs/suite_after.log exist.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in `git diff --name-only cbfc8346..76c89e4e` is inside the fence declared at the manifest's orientation_write_paths line 3, and no plan or index file is touched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_fleet_counter_coverage.py:180 asserts _emitted_states() >= ticker_module.NEEDS_ACTION, and that emitted set is scraped from state = \"cut-off\" in reckon/crew/recovery_watch.py:1240, so reinstating the folded {INTERRUPTED_RUN_PHASE, \"cut-off\"} branch reddens it, while tests/test_crew.py:3510 reddens on the ticker and watch_unit entries.\nSCORE fit: 16\nJUSTIFICATION fit: the added words join the existing hyphenated vocabulary beside exited-unfinished in reckon/crew/ticker.py:271 and reckon/crew/watch_unit.py:1543 in the module's comment-per-entry idiom, but the comment at reckon/crew/ticker.py:269 still says the classification \"reaches the pane as blocked\", which this node's own change at reckon/crew/recovery_watch.py:1240 made untrue.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no mechanism \u2014 it appends one word to the four tables the repository already owns (ticker.py NEEDS_ACTION/STATE_HUE/PANE_STATES, watch_unit.py WATCH_ATTENTION_STATES) and one branch to the existing reducer at recovery_watch.py:1234; a search of reckon/crew for a second fleet-vocabulary owner found every set derived from NEEDS_ACTION at recovery_watch.py:2073, not a parallel one.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224559012025-qwnw-red-file-crew/manifest.md:5 blocking: status complete is declared while baseline_suite and after_suite are both absent although the run was armed a suite, so `crew check --manifest` refuses the record with \"status is complete but baseline_suite is missing\" and \"status is complete but after_suite is missing\" and promotion reads its suite pair from those keys; both arms are on disk at logs/suite_baseline.log and logs/suite_after.log and need only be recorded.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224559012025-qwnw-red-file-crew/manifest.md:28 blocking: failure_attribution is written as a YAML list where the manifest schema accepts a mapping or text, so the audit refuses it with \"field 'failure_attribution' carries a list\" and 'failure_attribution must be an inline JSON object', leaving the record unreadable at promotion.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224559012025-qwnw-red-file-crew/manifest.md:14 blocking: negative_control_log names docs/evidence/.../qwnw-red-file-crew-base.log, a path under the worker's worktree rather than the run directory, so the audit refuses it with \"does not resolve to a readable log file\" and the base arm the negative control rests on cannot be opened by any later reader from the manifest.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224559012025-qwnw-red-file-crew/manifest.md:27 blocking: the manifest carries no messages_received line and no delivery receipt was recorded, so the audit refuses it with \"the manifest must say `messages_received: none`\"; a one-line omission that still refuses the record.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew.html:164 non-blocking: the arms table cites qwnw-red-file-crew-head.log and qwnw-red-file-crew-base.log as siblings of the record, but the repository ignores *.log so neither file is in the landed commit and the done_when named the record as red-file-crew.html, so a reader of the landed tree finds neither the logs nor the recorded path.\nFINDING reckon/crew/ticker.py:269 non-blocking: the added comment says the cut-off classification \"reaches the pane as blocked\", which this node's own reckon/crew/recovery_watch.py:1240 change made false \u2014 the word now reaches the pane as cut-off, and a later reader reconciling the two commits is told the opposite of what they do.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224559012025-qwnw-red-file-crew/manifest.md:12 non-blocking: the gate recorded at logs/test_crew_at_5353ff3e1c.log ran as `PYTHONPATH=. .venv/bin/python -m pytest ... tests/test_crew.py` in the worktree, with no slurm job in its header, so the done_when's \"as a job on all_debug with SLURM_JOB_ID unset\" form is unmet even though the 191-passed result is recorded.\n",
+  "review_node": "review-of-qwnw-red-file-crew-76c89e4e7462",
+  "review_run_id": "r-20261116T030559593723-review-of-qwnw-red-file-crew-76c89e4e7462",
+  "reviewed_base_sha": "cbfc8346f42fb956e68a4214be78a7d7bdb79f96",
+  "reviewed_head_sha": "76c89e4e7462f53884b2c739b38665831918b450",
+  "reviewed_run_id": "r-20261115T224559012025-qwnw-red-file-crew",
+  "reviewer": {
+    "backend": "deepseek",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T030559593723-review-of-qwnw-red-file-crew-76c89e4e7462"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T03:35:09.215722+00:00",
+  "total": 104
+}

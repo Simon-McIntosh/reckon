@@ -1,0 +1,76 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "18d133b40e54057955fee45c889cde9371c8e068",
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:4961 _reap_worker_on_its_terminal_manifest -> _terminal_attempt_phase",
+    "reckon/crew/dispatch_launch.py:4970 _reap_worker_on_its_terminal_manifest -> _reopen_a_live_attempt_phase",
+    "reckon/crew/dispatch_launch.py:5239 _reap_the_launched_worker -> _terminal_attempt_phase",
+    "reckon/crew/dispatch_launch.py:5255 _reap_the_launched_worker -> _reap_worker_on_its_terminal_manifest",
+    "reckon/crew/dispatch_launch.py:5404 _run_supervisor -> _reap_worker_on_its_terminal_manifest",
+    "reckon/crew/dispatching/_imports.py:527 re-export of _reap_worker_on_its_terminal_manifest"
+  ],
+  "completed_at": "2026-11-15T22:22:50.984Z",
+  "dispatched_at": "2026-11-15T22:22:01Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "id": "f30cfa7b22e",
+      "line": "4784",
+      "severity": "blocking",
+      "text": "blocking: the reviewed head introduces a formatting finding the earlier commits do not have \u2014 ruff format --check reports 'would be reformatted' at this signature while the same file is formatted at 18d133b40e and f57ec4874b, and the repository rule is that a commit adds no findings; repair is the wrap ruff proposes."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182457561866-resumed-repair-not-killed-s15/manifest.md",
+      "id": "f545184cbe0",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "non-blocking: the recorded after_suite runs at f57ec4874b and manifest.md:7 lists no 935cedad04, so the reviewed head's own gate is unrecorded; the head is green when re-run but the record does not show it."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-tells-the-truth-under-load/resumed-repair-not-killed-s15.html",
+      "id": "ff33c50a314",
+      "line": "78",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment names efff4c70fb for the 62-passed arm while logs/after-suite.log:1 records f57ec4874b, so the landed evidence names a revision its own log does not; carried from the earlier review of this run and still present at 935cedad04."
+    }
+  ],
+  "head_log_revision": "935cedad04f033cbaa3662cafaa507652a5fc2e9",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the path from _run_supervisor:5404 through _reap_the_launched_worker:5255 into _reap_worker_on_its_terminal_manifest:4961 and :4970, the re-export at dispatching/_imports.py:527, and two changed helpers against the receipt writer at dispatch_launch.py:4247 _supervisor_exit_record, which writes run_id and attempt on every receipt.",
+    "diff": "read commit by commit against 18d133b4: efff4c70fb adds the receipt gate, the reopen and the 456-line test, f57ec4874b adds the 86-line fragment, 935cedad04 replaces the hand-read receipts with _run_exit_record.",
+    "done_when": "the done_when asks for new tests failing at the base revision and for the tests importing dispatch_launch or resumption to add no failure; logs/new-test-at-base.log reads 3 failed, 1 passed EXIT=1 and logs/after-suite.log reads 62 passed EXIT=0.",
+    "goal": "the goal is to keep a resumed repair from being killed as a terminal run; reckon/crew/dispatch_launch.py:4817-4836 requires the attempt's own exit receipt before a delivered word counts, and :4839 restores a live attempt's phase to working.",
+    "manifest": "read; status in-progress, commits efff4c70fb and f57ec4874b, baseline_suite and after_suite both completed with zero failures, two neighbour failures under outside_scope.",
+    "write_paths": "the fence was dispatch_launch.py, resumption.py, obligations.py, a new test, the evidence fragment and a figure directory; git diff --stat 18d133b4..935cedad04 names only dispatch_launch.py, the new test and the fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_a_resumed_repair_is_not_killed_as_terminal.py:355, :449 and :456 redden on the base bytes and under the declared mutation (logs/negative-control.log 3 failed, 1 passed EXIT=1), but no assertion drives the held-lock or unchanged-mtime arms of reckon/crew/dispatch_launch.py:4860-4875.",
+    "evidence": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182457561866-resumed-repair-not-killed-s15/manifest.md:19 records the after arm at f57ec4874b, one commit before the reviewed head 935cedad04, so the head's own bytes carry no recorded gate; I re-ran the named test file at the head and it passed 4 in 33.32s EXIT=0.",
+    "fit": "reckon/crew/dispatch_launch.py:4784 is left unformatted by the head commit \u2014 ruff format --check refuses that line at 935cedad04 while the same file is formatted at 18d133b40e and f57ec4874b.",
+    "goal_fidelity": "reckon/crew/dispatch_launch.py:4830 gates a delivered word on _attempt_ending_receipt and :4845-4885 restores working on a live attempt, so both halves of the plan \u00a715 measure land, though a writer outside this fence can still leave the word restored until the next supervisor poll.",
+    "reuse": "reckon/crew/dispatch_launch.py:4796-4815 now reads both receipts through reckon/crew/recovery_liveness.py:1534 _run_exit_record and :4830 reads the delivery words from _WORKER_DONE_MANIFEST_STATUSES:4496, repairing the two defects the earlier review folded; the nearest other owner, dispatch_launch.py:2144 _retired_attempt_ended, answers only for the newest retired attempt and is not duplicated.",
+    "scope_discipline": "git diff --stat 18d133b40e..935cedad04 lists only reckon/crew/dispatch_launch.py, tests/test_a_resumed_repair_is_not_killed_as_terminal.py and the evidence fragment, every one inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to keep a resumed repair from being killed as a terminal run; reckon/crew/dispatch_launch.py:4817-4836 requires the attempt's own exit receipt before a delivered word counts, and :4839 restores a live attempt's phase to working.\nVERDICT done_when: the done_when asks for new tests failing at the base revision and for the tests importing dispatch_launch or resumption to add no failure; logs/new-test-at-base.log reads \"3 failed, 1 passed\" EXIT=1 and logs/after-suite.log reads \"62 passed\" EXIT=0.\nVERDICT write_paths: the fence was dispatch_launch.py, resumption.py, obligations.py, a new test, the evidence fragment and a figure directory; git diff --stat 18d133b40e..935cedad04 names only dispatch_launch.py, the new test and the fragment.\nVERDICT manifest: read; status in-progress, commits efff4c70fb and f57ec4874b, baseline_suite and after_suite both completed with zero failures, and two neighbour failures under outside_scope.\nVERDICT diff: read commit by commit against 18d133b40e; efff4c70fb adds the receipt gate, the reopen and the 456-line test, f57ec4874b adds the 86-line fragment, 935cedad04 replaces the hand-read receipts with _run_exit_record and drops _DELIVERED_RUN_PHASES.\nCALL_SITES: reckon/crew/dispatch_launch.py:4961 _reap_worker_on_its_terminal_manifest -> _terminal_attempt_phase, reckon/crew/dispatch_launch.py:4970 _reap_worker_on_its_terminal_manifest -> _reopen_a_live_attempt_phase, reckon/crew/dispatch_launch.py:5239 _reap_the_launched_worker -> _terminal_attempt_phase, reckon/crew/dispatch_launch.py:5255 _reap_the_launched_worker -> _reap_worker_on_its_terminal_manifest, reckon/crew/dispatch_launch.py:5404 _run_supervisor -> _reap_worker_on_its_terminal_manifest, reckon/crew/dispatching/_imports.py:527 re-export of _reap_worker_on_its_terminal_manifest\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:4830 gates a delivered word on _attempt_ending_receipt and :4845-4885 restores working on a live attempt, so both halves of the plan \u00a715 measure land, though a writer outside this fence can still leave the word restored until the next supervisor poll.\nSCORE evidence: 15\nJUSTIFICATION evidence: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182457561866-resumed-repair-not-killed-s15/manifest.md:19 records the after arm at f57ec4874b, one commit before the reviewed head 935cedad04, so the head's own bytes carry no recorded gate; I re-ran the named test file at the head and it passed 4 in 33.32s EXIT=0 (head-test.log).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 18d133b40e..935cedad04 lists only reckon/crew/dispatch_launch.py, tests/test_a_resumed_repair_is_not_killed_as_terminal.py and the evidence fragment, every one inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_resumed_repair_is_not_killed_as_terminal.py:355, :449 and :456 redden on the base bytes and under the declared mutation (logs/negative-control.log \"3 failed, 1 passed\" EXIT=1), but no assertion drives the held-lock or unchanged-mtime arms of reckon/crew/dispatch_launch.py:4860-4875.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/dispatch_launch.py:4784 is left unformatted by the head commit \u2014 ruff format --check refuses that line at 935cedad04 while the same file is formatted at 18d133b40e and f57ec4874b.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/dispatch_launch.py:4796-4815 now reads both receipts through reckon/crew/recovery_liveness.py:1534 _run_exit_record and :4830 reads the delivery words from the module's own _WORKER_DONE_MANIFEST_STATUSES:4496, so the two defects the earlier review folded are repaired; the nearest other owner, dispatch_launch.py:2144 _retired_attempt_ended, answers only for the newest retired attempt and is not duplicated.\nFINDING reckon/crew/dispatch_launch.py:4784 blocking: the reviewed head introduces a formatting finding the earlier commits do not have \u2014 ruff format --check reports \"would be reformatted\" at this signature while the same file is formatted at 18d133b40e and f57ec4874b, and the repository rule is that a commit adds no findings; the repair is the wrap ruff itself proposes.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182457561866-resumed-repair-not-killed-s15/manifest.md:19 non-blocking: the recorded after_suite runs at f57ec4874b64547998a11d6ef123d5ed0985475d and manifest.md:7 lists no 935cedad04, so the reviewed head's own gate is unrecorded; the head is green when re-run but the record does not show it.\nFINDING docs/evidence/fragments/the-monitor-tells-the-truth-under-load/resumed-repair-not-killed-s15.html:78 non-blocking: the fragment names efff4c70fb for the 62-passed arm while logs/after-suite.log:1 records f57ec4874b, so the landed evidence names a revision its own log does not; carried from the earlier review of this run and still present at 935cedad04.\n",
+  "review_run_id": "r-20261115T213005462219-review-of-resumed-repair-not-killed-s15-f57ec4874b64",
+  "reviewed_at": "2026-11-15T23:40:00Z",
+  "reviewed_base_sha": "18d133b40e54057955fee45c889cde9371c8e068",
+  "reviewed_head_sha": "935cedad04f033cbaa3662cafaa507652a5fc2e9",
+  "reviewed_run_id": "r-20261115T182457561866-resumed-repair-not-killed-s15",
+  "reviewer_run_id": "r-20261115T213005462219-review-of-resumed-repair-not-killed-s15-f57ec4874b64",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T22:43:49.149699+00:00",
+  "total": 105
+}

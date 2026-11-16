@@ -185,7 +185,12 @@ def _readiness_rows_unlocked(
 
         if not project:
             return {}, {}
-        discovered = _discover_project(project, None)
+        from reckon.roadmap import roadmap_build_scope
+
+        # The waits a pass judges read section verdicts, never findings, so the
+        # project build skips coordinator resolution and the landing audit.
+        with roadmap_build_scope(resolve_coordinators=False, audit_landings=False):
+            discovered = _discover_project(project, None)
         items = [_inventory_row(item) for item in discovered.get("inventory", [])]
         for item in items:
             if item.get("type") != "plan" or not item.get("slug"):

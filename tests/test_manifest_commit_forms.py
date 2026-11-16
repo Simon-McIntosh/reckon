@@ -19,7 +19,7 @@ from tests.test_crew_promotion import (
 repository = test_crew_promotion.repository
 
 
-@pytest.mark.parametrize("form", ["list", "json", "none", "commas"])
+@pytest.mark.parametrize("form", ["list", "json", "none", "commas", "keyed", "mixed"])
 def test_each_commit_form_promotes_without_editing(
     repository: Path, tmp_path: Path, form: str
 ) -> None:
@@ -39,6 +39,8 @@ def test_each_commit_form_promotes_without_editing(
         "json": json.dumps(entries),
         "none": "\n- none — this node writes a review record outside the repository",
         "commas": f"{first_short}, {second}",
+        "keyed": f"\n  - commit: {first}\n  - commit: {second}",
+        "mixed": f"\n  - {first}\n  - commit: {second}",
     }
     run_id = f"r-manifest-commit-form-{form}"
     if form == "none":
@@ -67,8 +69,9 @@ def test_each_commit_form_promotes_without_editing(
     assert len(parse_manifest(delivered)["commits"]) == (1 if form == "none" else 2)
 
 
+@pytest.mark.parametrize("prefix", ["", "commit: "])
 def test_an_unresolvable_list_commit_refuses_promotion(
-    repository: Path, tmp_path: Path
+    repository: Path, tmp_path: Path, prefix: str
 ) -> None:
     base, commit = _repository_with_candidate(repository)
     missing = "0123456789abcdef0123456789abcdef01234567"
@@ -81,12 +84,14 @@ def test_an_unresolvable_list_commit_refuses_promotion(
         run_id,
         base=base,
         changed_paths="candidate.txt",
-        commits=f"\n  - {missing} test: missing",
+        commits=f"\n  - {prefix}{missing} test: missing",
     )
 
     with pytest.raises(crew.CrewError, match=missing) as refusal:
         crew.complete(run_id, gate="passed", root=repository)
 
     assert "does not resolve to a commit object" in str(refusal.value)
+    assert "bare commit ids" in str(refusal.value)
+    assert "commit: <id>" in str(refusal.value)
     assert ledger.runs(PROJECT, root=repository) == []
     assert pointer_path(run_id).exists()

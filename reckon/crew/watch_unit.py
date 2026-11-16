@@ -19,6 +19,7 @@ from typing import Any
 
 from reckon._store import (
     _config_home,
+    write_json_atomically,
 )
 from reckon.crew.host_lease import HostLease, LeaseHolder
 from reckon.crew.node import (
@@ -26,6 +27,92 @@ from reckon.crew.node import (
     CrewError,
     parse_duration,
 )
+from reckon.node_exclusive_lock import exclusive_lock
+
+
+def _producer_identity(record: Mapping[str, Any]) -> tuple[Any, ...]:
+    return tuple(record.get(key) for key in ("host", "pid", "pid_start_time"))
+
+
+def record_producer_start(project: str, watcher: dict[str, Any]) -> None:
+    """Link a replacement's acquisition to the preceding producer's exit."""
+    from reckon.crew import runs
+
+    watcher["started_at_epoch"] = time.time()
+    watcher["last_stage"] = "registered"
+    if not watcher.get("pid"):
+        return
+    with exclusive_lock(runs.watch_registration_lock_path(project)):
+        record = runs.read_watch_registration(project)
+        if _producer_identity(record) != _producer_identity(watcher):
+            return
+        previous = record.get("exit_record")
+        if isinstance(previous, dict) and _producer_identity(
+            previous
+        ) != _producer_identity(watcher):
+            record["restart_record"] = {
+                "pid": watcher["pid"],
+                "pid_start_time": watcher.get("pid_start_time"),
+                "host": watcher.get("host"),
+                "parent_pid": watcher.get("parent_pid"),
+                "restarted_at": watcher["started_at_epoch"],
+                "previous_exit": previous,
+            }
+        record.update(exit_record=None, last_stage=watcher["last_stage"])
+        write_json_atomically(runs.watch_registration_path(project), record)
+
+
+def record_producer_exit(
+    project: str, watcher: Mapping[str, Any], error: BaseException | None = None
+) -> None:
+    """Persist the outcome while the producer still owns its seat.
+
+    Compare the process identity under the registration's shared lock: a
+    producer superseded through a replaced seat must not amend its successor.
+    The receipt is separate from the seat inode so releasing that inode leaves
+    the last outcome readable, and a replacement can carry it into its receipt.
+    """
+    from reckon.crew import runs
+
+    if not watcher.get("pid"):
+        return
+    status = 0
+    reason = "watch stream ended"
+    if isinstance(error, SystemExit):
+        status = (
+            error.code if isinstance(error.code, int) else int(error.code is not None)
+        )
+    elif isinstance(error, KeyboardInterrupt):
+        status = 128 + signal.SIGINT
+    elif error is not None and not isinstance(error, GeneratorExit):
+        status = 1
+    if error is not None:
+        reason = type(error).__name__ + (f": {error}" if str(error) else "")
+    with exclusive_lock(runs.watch_registration_lock_path(project)):
+        record = runs.read_watch_registration(project)
+        if _producer_identity(record) != _producer_identity(watcher):
+            return
+        previous = record.get("exit_record")
+        if isinstance(previous, dict) and _producer_identity(
+            previous
+        ) == _producer_identity(watcher):
+            return
+        lease_lapsed_at = None
+        remaining = runs.watch_lease_remaining_from_record(record)
+        if remaining is not None and remaining <= 0:
+            lease_lapsed_at = record["lease_renewed_at"] + runs.producer_lease_seconds()
+            if error is None or status == runs.WATCH_SEAT_LOST_EXIT:
+                reason = "producer lease expired"
+        record["exit_record"] = {
+            **{key: watcher.get(key) for key in ("host", "pid", "pid_start_time")},
+            "exit_status": status,
+            "last_stage": watcher.get("last_stage", "registered"),
+            "reason": reason,
+            "started_at_epoch": watcher.get("started_at_epoch"),
+            "exited_at": time.time(),
+            "lease_lapsed_at": lease_lapsed_at,
+        }
+        write_json_atomically(runs.watch_registration_path(project), record)
 
 
 def watch_host_lease(project: str):
@@ -374,6 +461,11 @@ def release_watch_seat(project: str) -> bool:
     handle = runs._WATCH_SEAT_HANDLES.get(project)
     lease = runs._WATCH_HOST_LEASES.get(project)
     released = handle is not None or lease is not None
+    if handle is not None:
+        watcher = _read_watch_record(handle)
+        record_producer_exit(
+            project, {**watcher, "last_stage": "placement-check"}, SystemExit(0)
+        )
     with contextlib.suppress(OSError, ValueError):
         if handle is not None:
             _write_watch_record(handle, {})
@@ -935,6 +1027,21 @@ def _seat_is_held(project: str) -> bool:
     return False
 
 
+def _elapsed_span(seconds: int) -> str:
+    """Render an elapsed span with its seconds, for a row about one tick.
+
+    A tick is read once when it runs long and once when it ends, so the reading
+    a reader compares is the exact span rather than a rounded one: ``3m0s`` then
+    ``3m41s`` says the station moved, where ``3m`` twice says nothing. Past an
+    hour the seconds are noise and the hour is the figure.
+    """
+    minutes, secs = divmod(max(0, int(seconds)), 60)
+    if minutes >= 60:
+        hours, minutes = divmod(minutes, 60)
+        return f"{hours}h{minutes:02d}m"
+    return f"{minutes}m{secs}s" if minutes else f"{secs}s"
+
+
 @dataclass
 class ProducerSnapshotNotices:
     """Bounded loss and recovery notices from the publication a pane reads.
@@ -942,6 +1049,13 @@ class ProducerSnapshotNotices:
     Station documents stand until work changes, so their heartbeat measures
     publication health. A session without a station reads its producer snapshot
     instead. Missing timestamps cannot establish an age or prove a recovery.
+
+    A station busy in a long tick exports a beat the pane reads as stale while
+    the process is in fact alive and working, so this reports a slow tick rather
+    than a lost producer. The exported snapshot carries the beat and no tick
+    stage, which is why the station store's own row is read on that branch
+    alone: it is the only reading that says what the tick is doing. One row is
+    drawn per slow tick, and one when it ends.
     """
 
     project: str
@@ -950,6 +1064,11 @@ class ProducerSnapshotNotices:
     sampled_at: float | None = None
     reported_at: float | None = None
     lost: bool = False
+    # The start instant of the slow tick this pane already reported, so a
+    # sample inside the same tick draws nothing and a tick that ends and is
+    # replaced by a fresh long one is news again. Empty when the store named no
+    # start instant, which still reports the one tick it read.
+    slow_tick: str | None = None
 
     def poll(self) -> list[dict[str, Any]]:
         from reckon.crew import obligation_snapshot as snapshots
@@ -964,6 +1083,19 @@ class ProducerSnapshotNotices:
             return []
         self.sampled_at = moment
         station = snapshots.read_station_answer(self.project, self.session)
+        # The station's own reading of its tick: the answer's when the store
+        # answered it, and the store's own row when the export was read instead,
+        # because the export carries the beat alone. A slow tick and a stopped
+        # station are alike on that branch, which is the row this check drew
+        # wrongly: the beat is stale by export, and the process was working.
+        tick = station
+        if station is not None and station["source"] == "snapshot":
+            tick = snapshots.read_station_tick()
+        if tick is not None and not tick["stale"]:
+            # A fresh beat is a station alive now, whatever the export says, so
+            # the tick alone decides what to draw and the loss path is not
+            # reached.
+            return self._alive_tick_rows(tick)
         if station is not None:
             age = station["heartbeat_age_seconds"]
             bound = snapshots.STATION_STALE_SECONDS
@@ -1011,6 +1143,82 @@ class ProducerSnapshotNotices:
                 **details,
             }
         ]
+
+    def _alive_tick_rows(self, own: Mapping[str, Any]) -> list[dict[str, Any]]:
+        """Rows for a station whose own reading shows a fresh beat.
+
+        The tick's age and stage are the work the station is doing, so a tick
+        past the window draws one row naming both and carrying no remedy:
+        nothing is wrong with the process, and cycling it would drop the refresh
+        in flight. Once the pane has drawn a slow row or a loss, the first
+        sample that finds the station current again draws one recovery row --
+        a station that was only slow never drew a loss to restore, and draws
+        nothing here.
+        """
+        from reckon.crew import obligation_snapshot as snapshots
+
+        tick_age = own["tick_age_seconds"]
+        stage = str(own["tick_stage"] or "")
+        bound = snapshots.STATION_STALE_SECONDS
+        if tick_age is not None and tick_age > bound:
+            tick = str(own["tick_started_at"] or stage)
+            if self.slow_tick == tick:
+                return []
+            self.slow_tick = tick
+            return [
+                self._notice(
+                    {
+                        "event": "producer-slow",
+                        # A slow tick asks nothing of anyone, so the pane does
+                        # not print it; the JSON stream keeps the reading.
+                        "pane_line": False,
+                        "stage": stage,
+                        "line": (
+                            f"producer {self.project} slow: its tick has run "
+                            f"{_elapsed_span(tick_age)}"
+                            + (f" in the {stage} stage" if stage else "")
+                            + ", so no restart is needed"
+                        ),
+                    },
+                    age=tick_age,
+                    bound=bound,
+                )
+            ]
+        if self.slow_tick is None and not self.lost:
+            return []
+        recovered_from_loss = self.lost
+        self.slow_tick = None
+        self.lost = False
+        self.reported_at = None
+        return [
+            self._notice(
+                {
+                    "event": "producer-restored",
+                    # Only the end of a loss the pane printed is news; the end
+                    # of a slow tick it did not print is not.
+                    "pane_line": recovered_from_loss,
+                    "line": (
+                        f"producer {self.project} restored: snapshot age "
+                        f"{own['heartbeat_age_seconds']}s"
+                    ),
+                },
+                age=own["heartbeat_age_seconds"],
+                bound=bound,
+            )
+        ]
+
+    def _notice(
+        self, details: Mapping[str, Any], *, age: int, bound: float
+    ) -> dict[str, Any]:
+        """One producer-health row, in the shape every notice on this channel has."""
+        return {
+            "project": self.project,
+            "session": self.session,
+            "run_id": None,
+            "age_seconds": age,
+            "bound_seconds": bound,
+            **details,
+        }
 
 
 def _producer_snapshot_stale(project: str, registration: Mapping[str, Any]) -> bool:
@@ -1424,6 +1632,11 @@ WATCH_ATTENTION_STATES = (
     "unknown",
     "unreadable",
     "exited-unfinished",
+    # The classification a worker records when its own exit ended it before a
+    # manifest reached an outcome. It is read as a blocked row, so the state
+    # word belongs to the vocabulary a reader acts on rather than being
+    # classified as an unknown verdict.",
+    "cut-off",
     "wait-aged",
 )
 WATCH_PROGRESS_STATES = (

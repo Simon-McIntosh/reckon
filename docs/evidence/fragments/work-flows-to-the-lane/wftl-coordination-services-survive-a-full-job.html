@@ -1,0 +1,45 @@
+<section data-reckon="evidence" id="wftl-coordination-services-survive-a-full-job-landing">
+  <h2 id="wftl-coordination-services-survive-a-full-job">A full fleet job kills a worker before its coordinator</h2>
+
+  <p id="wftl-coordination-services-survive-a-full-job-what">The fleet job holds every process in one memory cgroup, and with no
+  declared ordering the kernel killed whichever process was largest — the station at 3.0–6.7 GiB and the admit
+  service at 2.7–6.1 GiB, each kill dropping the pass in progress. A coordination service now takes its place in
+  the kernel's OOM ordering before it becomes the service, and every dispatched worker is raised above it.</p>
+
+  <h3 id="wftl-coordination-services-survive-a-full-job-change">What changed</h3>
+  <ul>
+    <li><code>reckon/crew/oom_priority.py</code> — a service asks for <code>-900</code>, a worker for
+      <code>+500</code>; a refused lowering falls back to the value the process already held and the caller gets
+      the value the kernel actually holds, read back rather than echoed.</li>
+    <li><code>reckon/crew/fleet_supervisor.py</code> — <code>run_declared_service</code> claims the service side before <code>execvp</code>, so the adjustment
+      survives the exec, and logs the reading.</li>
+    <li><code>reckon/crew/dispatch_launch.py</code> — both worker spawn sites raise the child's adjustment after the
+      spawn, which an unprivileged parent may always do, and which the child keeps across the exec into its harness
+      and passes to its own children.</li>
+    <li><code>tests/test_coordination_services_survive_a_full_job.py</code> — reads the ordering from processes that
+      were really started: a service through the supervisor's service mode and a worker through dispatch's detached
+      spawn.</li>
+  </ul>
+
+  <h3 id="wftl-coordination-services-survive-a-full-job-reading">The reading</h3>
+  <table>
+    <thead><tr><th>Side</th><th>Base revision</th><th>This change</th></tr></thead>
+    <tbody>
+      <tr><td>declared service (admit service, station, watch producer)</td><td>0</td><td>0 (asked for −900, refused without CAP_SYS_RESOURCE)</td></tr>
+      <tr><td>dispatched worker</td><td>0</td><td>500</td></tr>
+    </tbody>
+  </table>
+
+  <p id="wftl-coordination-services-survive-a-full-job-negative">Negative control. With both
+  <code>claim_worker</code> call sites removed, the test reads service 0 and worker 0 — the base revision's state,
+  where the two are started with the same adjustment — and fails:
+  <code>2 failed, 1 passed</code>, <code>EXIT=1</code>. The log is
+  <code>logs/negative-control-claim-removed.log</code> in the run directory.</p>
+
+  <h3 id="wftl-coordination-services-survive-a-full-job-measure">The two-hour memory measure: not produced here</h3>
+  <p id="wftl-coordination-services-survive-a-full-job-measure-gap">The section's measure asks for each service's
+  resident memory every ten minutes over two hours of live passes, every reading under 1 GiB. That window cannot
+  be produced inside this node's sixty-minute dispatch, and the section's own wording places it after this section
+  and §71 land. The ordering it protects is in place and guarded by the test above; the resident-memory figure is
+  owed by the measurement node that opens the window, and this record states that rather than quoting one.</p>
+</section>

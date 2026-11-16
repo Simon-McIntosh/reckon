@@ -296,7 +296,10 @@ def _resolve_commits(*, cwd: Path, revisions: Iterable[str], run_id: str) -> lis
             )
             raise CrewError(
                 f"run {run_id!r} commit {revision!r} does not resolve to a "
-                f"commit object in the run repository ({cwd}); {remedy}"
+                f"commit object in the run repository ({cwd}); {remedy}. "
+                "Accepted forms: bare commit ids separated by spaces or commas, "
+                "list or JSON-list entries containing an id optionally followed "
+                "by its subject, or list entries written as 'commit: <id>'"
             )
         commits.append(commit)
     return commits

@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <title>A run-scoped gc touches only that run | landing fragment</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="gc-run-touches-only-its-run-s11-scope">A run-scoped gc touches only that run</h2>
+    <p><code>crew gc --run X --apply</code> swept every directory under each workspace trash root, because <code>_sweep_worktree_trash</code> was called with no notion of the run the pass was scoped to. The trash root is shared by every run releasing a tree beneath the same workspace, so a destructive command named for one run removed other runs' leftovers.</p>
+    <p id="gc-run-touches-only-its-run-s11-change">The sweep now takes the labels the named run owns and the directories this same pass moved a tree into. A release writes its copy as <code>&lt;label&gt;-&lt;stamp&gt;</code> — the releasing run's id when it had one, the tree's own directory name otherwise — so a run-scoped pass takes its id, its recorded tree's name and any copy it made itself, and leaves the rest. An unscoped pass passes no labels and still sweeps the whole root. Every removal is printed by name either way.</p>
+    <p id="gc-run-touches-only-its-run-s11-evidence">Reproduced at the base revision before the change: a scoped pass printed <code>removed worktree trash …/_trash/r-20261115T010000000001-other-20261115T020000000001Z</code> for another run's copy. After the change the same pass prints only its own two entries and both of the other run's directories are still on disk. The new test fails at the base revision (<code>1 failed, 1 passed</code>, the unscoped case already correct and now covered) and passes at the head (<code>2 passed</code>). Restoring the unscoped sweep as a negative control fails the same case again.</p>
+    <p>Reading: <code>reckon/crew/gc.py</code>. Gate: <code>tests/test_a_run_scoped_gc_touches_only_its_run.py</code>.</p>
+  </main>
+</body>
+</html>

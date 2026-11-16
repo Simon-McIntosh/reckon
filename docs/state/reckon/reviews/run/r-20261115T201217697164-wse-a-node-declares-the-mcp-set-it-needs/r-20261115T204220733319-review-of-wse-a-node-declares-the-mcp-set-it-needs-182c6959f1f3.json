@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "ece5cf0e3b5a23946e6b62e7d5d9d2b9a580b9e6",
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/crew/dispatching/launch.py:_launch_dispatch (launch_plan worker_mcp_set=node.mcp_set at :751)",
+    "reckon/crew/dispatching/launch.py:_launch_dispatch (record.update **worker_mcp_record(plan) at :801)",
+    "reckon/crew/dispatch_sessions.py:resume_plan (:1371)",
+    "reckon/crew/dispatch_sessions.py:_recorded_task_node (:1487)",
+    "reckon/crew/dispatch_sessions.py:change_lane (:1899)",
+    "reckon/crew/dispatch_batch.py:_entry_node (:643)",
+    "reckon/crew_dispatch_commands.py:crew_dispatch (:1817)",
+    "reckon/crew/node.py:TaskNode.as_dict (:845, carries mcp_set through the queue)",
+    "reckon/flight.py:validate_layer (:1655)"
+  ],
+  "completed_at": "2026-11-15T20:50:25.412Z",
+  "dispatched_at": "2026-11-15T20:49:50Z",
+  "findings": [
+    {
+      "file": "tests/test_a_node_declares_its_mcp_set.py",
+      "id": "fda8f9015ae",
+      "line": "238",
+      "severity": "non-blocking",
+      "text": "non-blocking: the run record is asserted only by calling the pure worker_mcp_record(plan), and only on a claude plan, so deleting **worker_mcp_record(plan) from the record.update at reckon/crew/dispatching/launch.py:801 leaves all 20 tests green while the done_when requires the connected set recorded on each run; the pointer write and the codex and omp runs are unguarded."
+    },
+    {
+      "file": "manifest.md",
+      "id": "f18b9c76820",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "non-blocking: the tests: gate receipt names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports reckon/_backends.py or reckon/_worker_fence.py, so promotion's gate measures nothing about this change, and the 20-passed head arm the landing line cites has no log in the run directory (I reproduced it at 20 passed EXIT=0 in a scratch extraction of 182c6959). This is the arming rather than a worker deviation, but the recorded receipt is uninformative as it stands."
+    }
+  ],
+  "head_log_revision": "182c6959f1f3691b31e22772f173e0c70f5f5305",
+  "item_verdicts": {
+    "diff": "read commit 182c6959 in full against ece5cf0e; it adds the mcp_sets reader and its two errors to reckon/_worker_fence.py, the pre-seed resolution in reckon/_backends.py:2984-3001 and its use at :3043, the flight-layer validator at reckon/flight.py:926, the node field at reckon/crew/node.py:812 with four plumbing sites, one 343-line test file and two evidence fragments, and the only deleted code is the flat-list expression the resolved list replaces at reckon/_backends.py:3152.",
+    "done_when": "the done_when asks for a temporary flight declaring two sets, read through claude, codex and omp with the connected set recorded, and tests/test_a_node_declares_its_mcp_set.py:168-217 runs exactly those nine cases against the run home's worker-mcp.json, the seeded enabledMcpjsonServers, the codex argv disable table and the omp agent store, with the base-revision red run at negative-control.log (20 failed, EXIT=1).",
+    "goal": "the node's goal is to connect a node's worker to exactly the MCP set its section or brief names, and reckon/_backends.py:3043 resolves that name against the flight before any harness home is seeded, with the resolved servers handed to codex at :3216, claude at :3232 and the home seed at :3152.",
+    "manifest": "read; it records the node test file at 20 failed at ece5cf0e against 20 passed at the head, names negative-control.log and mutation.log, and its tests: line (manifest.md:11) names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py instead of the node's own test file.",
+    "write_paths": "the manifest declares reckon, tests and docs/evidence/fragments/work-scales-to-eighty-across-nodes, and every path in the commit stat sits inside one of them, including both fragments and with no plan meta line touched."
+  },
+  "justifications": {
+    "durability": "under the declared mutation (worker_mcp_selection restored to the flat project list) mutation.log reads 8 failed with EXIT=1, reddening the connected-set cases on all three backends plus the refusal and the record, and the connection assertions at tests/test_a_node_declares_its_mcp_set.py:180,198,214 read the run home and argv rather than the value the test passed in, but the record assertion at :238 calls the pure worker_mcp_record rather than exercising the pointer write at reckon/crew/dispatching/launch.py:801.",
+    "evidence": "negative-control.log records 20 failed with EXIT=1 at ece5cf0e where every failure names the absent mcp_sets key or attribute, and after-suite.log records 58 passed with EXIT=0 at 182c6959, but the manifest's own tests: line (manifest.md:11) names two suite files that import none of the changed modules and no head-arm log of the 20-passed node run was recorded, which I reproduced myself at 20 passed EXIT=0 in a scratch extraction of 182c6959.",
+    "fit": "reckon/_worker_fence.py:379-458 adds WorkerMcpSetsError in the exact shape of the neighbouring WorkerMcpServersError at :340 (a constraint attribute and an f-string message) and reckon/flight.py:926 mirrors _validate_worker_mcp_servers at :905, while the added names mcp_set, mcp_sets, worker_mcp_selection carry no project, plan or ticket identifier.",
+    "goal_fidelity": "reckon/_backends.py:3043 resolves the node's name against the flight before anything is seeded, and the one resolved list reaches codex at :3216, claude at :3232 and the omp/claude home seed at :3152, so a worker starts exactly its set or is refused by name at reckon/_worker_fence.py:456.",
+    "reuse": "reckon/_worker_fence.py:435 reads each set's servers through the existing _declared_worker_mcp_servers at :347 rather than a second list reader, reckon/flight.py:940 validates the table with that same reader, and a search of reckon/ for a prior named-set or per-node server selector found none: this diff supplies every hit for mcp_set and mcp_sets.",
+    "scope_discipline": "git show --stat 182c6959 against ece5cf0e lists reckon/_worker_fence.py, reckon/_backends.py, reckon/flight.py, four crew plumbing files, one test file and two fragments under docs/evidence/fragments/work-scales-to-eighty-across-nodes, every one inside the write paths the manifest declares, with no plan meta line touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to connect a node's worker to exactly the MCP set its section or brief names; reckon/_backends.py:3043 resolves that name against the flight before any harness home is seeded, and the one resolved list reaches codex at reckon/_backends.py:3216, claude at :3232 and the home seed at :3152.\nVERDICT done_when: the done_when asks for a temporary flight declaring two sets read through a claude, a codex and an omp launch with the connected set recorded, and tests/test_a_node_declares_its_mcp_set.py:168-217 runs exactly those nine cases against the run home's worker-mcp.json, the seeded enabledMcpjsonServers, the codex argv disable table and the omp agent store, with the base-revision red run at negative-control.log reading 20 failed and EXIT=1.\nVERDICT write_paths: the manifest declares reckon, tests and docs/evidence/fragments/work-scales-to-eighty-across-nodes, and every path in the commit's stat sits inside one of them, including both fragments and with no plan meta line touched.\nVERDICT manifest: read; it records the node test file at 20 failed at ece5cf0e against 20 passed at the head, names negative-control.log and mutation.log, and its tests: line at manifest.md:11 names two suite files other than the node's own test.\nVERDICT diff: read commit 182c6959 in full against ece5cf0e; it adds the mcp_sets reader and its two errors to reckon/_worker_fence.py:379-458, the pre-seed resolution at reckon/_backends.py:2984-3001 and its use at :3043, the flight-layer validator at reckon/flight.py:926, the node field at reckon/crew/node.py:812 with four plumbing sites, one 343-line test file and two evidence fragments, deleting only the flat-list expression the resolved list replaces.\nCALL_SITES: reckon/crew/dispatching/launch.py:_launch_dispatch (launch_plan worker_mcp_set=node.mcp_set at :751), reckon/crew/dispatching/launch.py:_launch_dispatch (record.update **worker_mcp_record(plan) at :801), reckon/crew/dispatch_sessions.py:resume_plan (:1371), reckon/crew/dispatch_sessions.py:_recorded_task_node (:1487), reckon/crew/dispatch_sessions.py:change_lane (:1899), reckon/crew/dispatch_batch.py:_entry_node (:643), reckon/crew_dispatch_commands.py:crew_dispatch (:1817), reckon/crew/node.py:TaskNode.as_dict (:845), reckon/flight.py:validate_layer (:1655)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_backends.py:3043 resolves the node's name against the flight before anything is seeded, and the one resolved list reaches codex at :3216, claude at :3232 and the home seed at :3152, so a worker starts exactly its set or is refused by name at reckon/_worker_fence.py:456.\nSCORE evidence: 15\nJUSTIFICATION evidence: negative-control.log records 20 failed with EXIT=1 at ece5cf0e where every failure names the absent mcp_sets declaration, but the manifest's tests: line at manifest.md:11 arms two suite files that import none of the changed modules and no head log of the 20-passed node run was recorded, which I reproduced at 20 passed EXIT=0 in a scratch extraction of 182c6959.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the commit stat for 182c6959 lists only reckon/_worker_fence.py, reckon/_backends.py, reckon/flight.py, four crew plumbing files, one test file and two fragments, every one inside the write paths declared at manifest.md:2 with no plan meta line touched.\nSCORE durability: 17\nJUSTIFICATION durability: mutation.log reads 8 failed with EXIT=1 under the declared mutation, reddening the connected-set cases on all three backends and the refusal, and the assertions at tests/test_a_node_declares_its_mcp_set.py:180,198,214 read the run home and argv rather than the input the test passed, though the record assertion at :238 never exercises the pointer write at reckon/crew/dispatching/launch.py:801.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/_worker_fence.py:379-458 shapes WorkerMcpSetsError exactly like the neighbouring WorkerMcpServersError at :340, and reckon/flight.py:926 mirrors _validate_worker_mcp_servers at :905 with no identifier naming a plan, sprint or ticket.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/_worker_fence.py:435 reads each set through the existing _declared_worker_mcp_servers at :347 and reckon/flight.py:940 validates the table with that same reader, and a search of reckon/ for a prior named-set or per-node server selector found no owner to fork.\nFINDING tests/test_a_node_declares_its_mcp_set.py:238 non-blocking: the run record is asserted only by calling the pure worker_mcp_record(plan), and only on a claude plan, so deleting **worker_mcp_record(plan) from the record.update at reckon/crew/dispatching/launch.py:801 leaves all 20 tests green while the done_when requires the connected set recorded on each run.\nFINDING manifest.md:11 non-blocking: the tests: gate receipt names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import none of the changed modules, so promotion's gate measures nothing about this change and the 20-passed head arm the landing line cites has no log in the run directory; this is the arming rather than a worker deviation, but the recorded receipt is uninformative as it stands.\n",
+  "review_run_id": "r-20261115T204220733319-review-of-wse-a-node-declares-the-mcp-set-it-needs-182c6959f1f3",
+  "reviewed_base_sha": "ece5cf0e3b5a23946e6b62e7d5d9d2b9a580b9e6",
+  "reviewed_head_sha": "182c6959f1f3691b31e22772f173e0c70f5f5305",
+  "reviewed_run_id": "r-20261115T201217697164-wse-a-node-declares-the-mcp-set-it-needs",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "unspecified",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T204220733319-review-of-wse-a-node-declares-the-mcp-set-it-needs-182c6959f1f3"
+  },
+  "reviewer_run_id": "r-20261115T204220733319-review-of-wse-a-node-declares-the-mcp-set-it-needs-182c6959f1f3",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T21:04:06.011434+00:00",
+  "total": 109
+}

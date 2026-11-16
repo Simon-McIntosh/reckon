@@ -1,0 +1,93 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "18d133b40e54057955fee45c889cde9371c8e068",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/resumption.py:2894 dispatch_awaiting_reviews",
+    "reckon/crew/recovery.py:191",
+    "reckon/crew/promotion_requests.py:412 accept_clean_review"
+  ],
+  "completed_at": "2026-11-15T21:54:40.966Z",
+  "dispatched_at": "2026-11-15T21:53:48Z",
+  "findings": [
+    {
+      "file": "tests/test_a_promotion_refused_for_moved_inputs_is_judged_again.py",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "the done_when's population clause is measured nowhere; neither arm runs a test file importing reckon.crew.recovery_review_acceptance, so a regression in one of those 36 files would leave both logs green."
+    },
+    {
+      "file": "reckon/crew/recovery_review_acceptance.py",
+      "line": "506",
+      "severity": "non-blocking",
+      "text": "_record_inputs_moved wraps its write in suppress(OSError), so an unwritable run directory returns attempts=1 on every sweep and the retry never reaches INPUTS_MOVED_ATTEMPTS, turning the bounded retry into an unbounded one that still reports retry True."
+    },
+    {
+      "file": "reckon/crew/recovery_review_acceptance.py",
+      "line": "1398",
+      "severity": "non-blocking",
+      "text": "the helper name _judge_moved_inputs_again differs from _judge_again_on_moved_inputs at :537 by word order alone, which is a reading hazard in a module whose two halves this change touches."
+    },
+    {
+      "file": "reckon/crew/recovery_review_acceptance.py",
+      "line": "482",
+      "severity": "non-blocking",
+      "text": "_inputs_moved_path adds a second durable per-run refusal-attempt counter rather than extending the one reckon/crew/queue_landing.py:697 _refusal_attempts already owns, so one run's attempt bookkeeping now lives in two stores under two policies."
+    },
+    {
+      "file": "reckon/crew/recovery_review_acceptance.py",
+      "line": "1362",
+      "severity": "non-blocking",
+      "text": "_live_repair_attempt re-derives the open-repair predicate from REPAIR_DISPATCH_FIELD and REPAIR_ROUND_OPENING_STATUSES instead of extending reckon/crew/obligations.py:1891 _repair_round_in_flight, so the two predicates can drift over which statuses count as open without a test noticing."
+    },
+    {
+      "file": "tests/test_a_promotion_refused_for_moved_inputs_is_judged_again.py",
+      "line": "149",
+      "severity": "non-blocking",
+      "text": "assert seen[\"moves\"] == 1 compares the test's own counter, incremented by the test's own hook of the pointer move, against the limit the test configured, so it is a harness sanity check rather than a guard on the retry."
+    }
+  ],
+  "head_log_revision": "997e33ceb3f35c1173159fb47366149e46479009",
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read all three commits against base 18d133b40e: a7d9a37e0b adds the view/digest split, the attempt budget, _judge_again_on_moved_inputs, _live_repair_attempt, _judge_moved_inputs_again and the repair_held branch in dispatch_awaiting_reviews; 997e33ceb3 rewrites two module-constant reads in the new test as literals so the file runs at base; da06624803 adds the 141-line evidence fragment only.",
+    "done_when": "the done_when names four behavioural cases plus a population clause; tests/test_a_promotion_refused_for_moved_inputs_is_judged_again.py carries one test per behavioural case and the manifest records 4 failed at base 18d133b40e and 4 passed at head, but the clause that the tests importing reckon.crew.recovery_review_acceptance add no failure against the base is run by neither arm.",
+    "goal": "the node's goal is to judge a promotion refused for moved inputs again on the next sweep; reckon/crew/recovery_review_acceptance.py:537 returns retry True with the attempts spent and the fields that moved, and :1398 re-queues the run through request_promotion(retry=True).",
+    "manifest": "read; status complete, commits a7d9a37e0b 997e33ceb3 da06624803, baseline_suite 58 passed EXIT=0 at 18d133b40e, after_suite 62 passed EXIT=0 at 997e33ceb3, negative-control 1 failed EXIT=1, and the two superseded base attempts attributed to scaffolding with their cause.",
+    "write_paths": "the node was fenced to reckon/crew/recovery_review_acceptance.py, tests/test_a_promotion_refused_for_moved_inputs_is_judged_again.py and docs/evidence/fragments/the-monitor-tells-the-truth-under-load/moved-inputs-promotion-retried-s16.html; the diff 18d133b40e..da06624803 changes exactly those three and nothing else."
+  },
+  "justifications": {
+    "durability": "the declared mutation standing down reckon/crew/recovery_review_acceptance.py:1398 reddens tests/test_a_promotion_refused_for_moved_inputs_is_judged_again.py:158-168 at negative-control.log EXIT=1, while the harness counter assertion at :149 cannot fail while the gate hook is reached at all.",
+    "evidence": "baseline_suite and after_suite are recorded results (58 passed EXIT=0 at 18d133b40e, 62 passed EXIT=0 at 997e33ceb3) but neither arm runs any test file importing reckon.crew.recovery_review_acceptance, and the base arm runs tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py instead.",
+    "fit": "reckon/crew/recovery_review_acceptance.py:537 (_judge_again_on_moved_inputs) and :1398 (_judge_moved_inputs_again) differ by word order only, so a reader scanning the module cannot tell the judgement-side outcome from the sweep-side re-queue.",
+    "goal_fidelity": "reckon/crew/recovery_review_acceptance.py:1398-1437 re-queues an acceptance refusal whose result carries retry, so the next judgement reads the inputs the run now has instead of ending on a state that no longer exists.",
+    "reuse": "reckon/crew/recovery_review_acceptance.py:482 adds a second durable per-run repeated-refusal counter beside reckon/crew/queue_landing.py:697 _refusal_attempts and _record_attempt, and :1362 re-reads REPAIR_DISPATCH_FIELD rather than extending reckon/crew/obligations.py:1891 _repair_round_in_flight.",
+    "scope_discipline": "git diff 18d133b40e..da06624803 touches only the three declared write paths, including the evidence fragment the node was fenced to."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to judge a promotion refused for moved inputs again on the next sweep; reckon/crew/recovery_review_acceptance.py:537 returns retry True with the attempts spent and the fields that moved, and :1398 re-queues the run through request_promotion(retry=True).\nVERDICT done_when: the done_when names four behavioural cases plus a population clause; tests/test_a_promotion_refused_for_moved_inputs_is_judged_again.py carries one test per behavioural case and the manifest records 4 failed at base 18d133b40e and 4 passed at head, but the clause that the tests importing reckon.crew.recovery_review_acceptance add no failure against the base is run by neither arm.\nVERDICT write_paths: the node was fenced to reckon/crew/recovery_review_acceptance.py, tests/test_a_promotion_refused_for_moved_inputs_is_judged_again.py and docs/evidence/fragments/the-monitor-tells-the-truth-under-load/moved-inputs-promotion-retried-s16.html; the diff 18d133b40e..da06624803 changes exactly those three and nothing else.\nVERDICT manifest: read; status complete, commits a7d9a37e0b 997e33ceb3 da06624803, baseline_suite 58 passed EXIT=0 at 18d133b40e, after_suite 62 passed EXIT=0 at 997e33ceb3, negative-control 1 failed EXIT=1, and the two superseded base attempts attributed to scaffolding with their cause.\nVERDICT diff: read all three commits against base 18d133b40e: a7d9a37e0b adds the view/digest split, the attempt budget, _judge_again_on_moved_inputs, _live_repair_attempt, _judge_moved_inputs_again and the repair_held branch in dispatch_awaiting_reviews; 997e33ceb3 rewrites two module-constant reads in the new test as literals so the file runs at base; da06624803 adds the 141-line evidence fragment only.\nCALL_SITES: reckon/crew/resumption.py:2894 dispatch_awaiting_reviews, reckon/crew/recovery.py:191 re-export of dispatch_awaiting_reviews and accept_clean_review, reckon/crew/promotion_requests.py:412 accept_clean_review run for an acceptance request\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_acceptance.py:1398-1437 re-queues an acceptance refusal whose result carries retry, so the next judgement reads the inputs the run now has instead of ending on a state that no longer exists.\nSCORE evidence: 11\nJUSTIFICATION evidence: baseline_suite and after_suite are recorded results (58 passed EXIT=0 at 18d133b40e, 62 passed EXIT=0 at 997e33ceb3) but neither arm runs any test file importing reckon.crew.recovery_review_acceptance, and the base arm runs tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py instead.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 18d133b40e..da06624803 touches only the three declared write paths, including the evidence fragment the node was fenced to.\nSCORE durability: 17\nJUSTIFICATION durability: the declared mutation standing down reckon/crew/recovery_review_acceptance.py:1398 reddens tests/test_a_promotion_refused_for_moved_inputs_is_judged_again.py:158-168 at negative-control.log EXIT=1, while the harness counter assertion at :149 cannot fail while the gate hook is reached at all.\nSCORE fit: 14\nJUSTIFICATION fit: reckon/crew/recovery_review_acceptance.py:537 (_judge_again_on_moved_inputs) and :1398 (_judge_moved_inputs_again) differ by word order only, so a reader scanning the module cannot tell the judgement-side outcome from the sweep-side re-queue.\nSCORE reuse: 13\nJUSTIFICATION reuse: reckon/crew/recovery_review_acceptance.py:482 adds a second durable per-run repeated-refusal counter beside reckon/crew/queue_landing.py:697 _refusal_attempts and _record_attempt, and :1362 re-reads REPAIR_DISPATCH_FIELD rather than extending reckon/crew/obligations.py:1891 _repair_round_in_flight.\nFINDING tests/test_a_promotion_refused_for_moved_inputs_is_judged_again.py:1 non-blocking: the done_when's population clause is measured nowhere; neither arm runs a test file importing reckon.crew.recovery_review_acceptance, so a regression in one of those 36 files would leave both logs green.\nFINDING reckon/crew/recovery_review_acceptance.py:506 non-blocking: _record_inputs_moved wraps its write in suppress(OSError), so an unwritable run directory returns attempts=1 on every sweep and the retry never reaches INPUTS_MOVED_ATTEMPTS, turning the bounded retry into an unbounded one that still reports retry True.\nFINDING reckon/crew/recovery_review_acceptance.py:1398 non-blocking: the helper name _judge_moved_inputs_again differs from _judge_again_on_moved_inputs at :537 by word order alone, which is a reading hazard in a module whose two halves this change touches.\nFINDING reckon/crew/recovery_review_acceptance.py:482 non-blocking: _inputs_moved_path adds a second durable per-run refusal-attempt counter rather than extending the one reckon/crew/queue_landing.py:697 _refusal_attempts already owns, so one run's attempt bookkeeping now lives in two stores under two policies.\nFINDING reckon/crew/recovery_review_acceptance.py:1362 non-blocking: _live_repair_attempt re-derives the open-repair predicate from REPAIR_DISPATCH_FIELD and REPAIR_ROUND_OPENING_STATUSES instead of extending reckon/crew/obligations.py:1891 _repair_round_in_flight, so the two predicates can drift over which statuses count as open without a test noticing.\nFINDING tests/test_a_promotion_refused_for_moved_inputs_is_judged_again.py:149 non-blocking: assert seen[\"moves\"] == 1 compares the test's own counter, incremented by the test's own hook of the pointer move, against the limit the test configured, so it is a harness sanity check rather than a guard on the retry.\n",
+  "review_run_id": "r-20261115T213231553068-review-of-moved-inputs-promotion-retried-s16-da06624803aa",
+  "reviewed_base_sha": "18d133b40e54057955fee45c889cde9371c8e068",
+  "reviewed_head_sha": "da06624803aa6339eeb32c97713ce92baf49c213",
+  "reviewed_run_id": "r-20261115T182502558389-moved-inputs-promotion-retried-s16",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T213231553068-review-of-moved-inputs-promotion-retried-s16-da06624803aa"
+  },
+  "reviewer_run_id": "r-20261115T213231553068-review-of-moved-inputs-promotion-retried-s16-da06624803aa",
+  "scores": {
+    "durability": 17,
+    "evidence": 11,
+    "fit": 14,
+    "goal_fidelity": 19,
+    "reuse": 13,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T22:28:35.667751+00:00",
+  "total": 94
+}

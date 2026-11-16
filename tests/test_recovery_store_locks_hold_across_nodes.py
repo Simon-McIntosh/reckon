@@ -101,19 +101,19 @@ def _crew_home(tmp_path, monkeypatch):
 
 
 def test_git_answer_store_waits_for_the_record_lock(crew_home, tmp_path) -> None:
-    store_path = recovery_watch._git_answer_store_path()
+    tree = tmp_path
+    store_path = recovery_watch._git_answer_tree_path(tree)
     lock_path = store_path.with_name(store_path.name + ".lock")
-    tree = str(tmp_path)
 
     def write() -> None:
         def mutate(store) -> None:
-            store["commits"].setdefault(tree, {})["calls"] = "sha"
+            store["commits"]["calls"] = "sha"
 
-        recovery_watch._update_git_answer_store(mutate)
+        recovery_watch._update_git_answer_store(tree, mutate)
 
     waits_for_holder("the git-answer store update", lock_path, write)
     stored = json.loads(store_path.read_text(encoding="utf-8"))
-    assert stored["commits"][tree] == {"calls": "sha"}
+    assert stored["commits"]["calls"] == "sha"
 
 
 def test_lane_probe_waits_for_the_record_lock(crew_home) -> None:
