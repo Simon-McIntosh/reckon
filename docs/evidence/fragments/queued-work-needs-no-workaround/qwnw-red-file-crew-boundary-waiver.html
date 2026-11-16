@@ -1,0 +1,36 @@
+<section id="qwnw-red-file-crew-boundary-waiver-landing">
+<h2>Boundary waiver: the file passes at head</h2>
+<p>The file passes in full at head <code>c121d04c97067c124f2b3eec6a1b1f18227baab2</code>
+as a batch job on <code>all_debug</code> (node <code>98dci4-clu-3143</code>,
+<code>SLURM_JOB_ID</code> unset in the measured child): <strong>4 passed</strong>,
+exit 0. The base arm of the same file at
+<code>398015d5d5fb31e353d1e29a4d2d78324aac9d88</code> reported 3 failed and 1
+passed; the ids and the verdict for each cause are recorded in
+<code>red-file-crew-boundary-waiver.html</code> beside this fragment.</p>
+<pre># revision: c121d04c97067c124f2b3eec6a1b1f18227baab2
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-crew-boundary-waiver
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_boundary_waiver.py
+# slurm: job=&lt;unset&gt; node=98dci4-clu-3143
+....                                                                     [100%]
+4 passed in 2.30s
+EXIT=0</pre>
+<h3>The change</h3>
+<p>The fixture's declared path is now <code>docs/state/sample/record.json</code>
+instead of <code>allowed.txt</code>, so the boundary walk has a merge-unsafe
+change to charge and the refusal and its waiver are exercised again. Nothing
+else moved: the seed commit, the run's commit, the stray main-checkout write and
+the expected violation string all name the same path through one module
+constant.</p>
+<h3>Armed suite, both arms</h3>
+<p>The project's armed command names the declared census tests, resolved over
+each arm's own tree:
+<code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code>.
+The base arm at <code>398015d5d5fb31e353d1e29a4d2d78324aac9d88</code> read
+<strong>58 passed, exit 0</strong>; the after arm at head read
+<strong>58 passed, exit 0</strong>. No failure is added and no failure id is
+added to either arm.</p>
+<h3>Lint</h3>
+<p><code>ruff check</code> and <code>ruff format --check</code> on
+<code>tests/test_crew_boundary_waiver.py</code>: "All checks passed!" and
+"1 file already formatted".</p>
+</section>
