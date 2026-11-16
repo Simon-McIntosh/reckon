@@ -22,7 +22,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import station_store, ticker
+from reckon.crew import lift_watch, station_store, ticker
 from reckon.crew.station_subscriber import StationSubscriber
 from reckon.crew_follow_commands import lift_claim_dir
 
@@ -194,3 +194,33 @@ def test_the_pane_holds_one_claim_naming_its_own_session(tmp_path: Path) -> None
         path.endswith("reset-claude-sub-20261115T183000Z__limit-reset")
         for path in claims
     ), claims
+
+
+# ── the measurement of a recorded stream shares no claim ────────────────────
+
+
+def test_a_lift_end_replays_through_the_replay_path() -> None:
+    """A window opening after the grant still prints the grant's end.
+
+    A row path holding a claim withholds a lift's end unless it drew that
+    grant, because a live follower whose peer drew the grant must not draw the
+    end. A replay of a recorded stream has no peer and never drew the grant: its
+    window may open after it, so the ends inside the window are rows the pane
+    printed and the measurement must print them too.
+    """
+    lift = {
+        "group": GROUP,
+        "form": "five_hour",
+        "pace_multiple": 1.8,
+        "scope": "global",
+        "id": f"{GROUP}-lift",
+    }
+    end = lift_watch._lift_row(
+        PROJECT, lift, kind="transition", ended="the lead ended it"
+    )
+
+    printed = ticker.replay_row_policy([end], own_session=SESSION)
+
+    assert [(row.get("from_state"), row.get("to_state")) for row in printed] == [
+        (lift_watch.LIFT_IN_FORCE, lift_watch.LIFT_ENDED)
+    ], "the replay dropped a lift end the pane printed"
