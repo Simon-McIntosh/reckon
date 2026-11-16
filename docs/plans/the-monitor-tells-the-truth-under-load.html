@@ -24,7 +24,7 @@
   <title>The Monitor Tells The Truth Under Load | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="84">
+<meta name="plan-version" content="85">
 <meta name="plan-modified" content="2026-11-16">
 </head>
 <body>
@@ -322,11 +322,20 @@
 <div class="r-comment" data-section="s24" data-id="c-run-r-20261116T105223428597-review-in-flight-does-not-block-stop-s24" data-who="reckon-build" data-when="2026-11-16T10:55:34.292Z">
     <div class="r-comment-body"><p>A review in flight is now among the duties no action shortens in both the derivation's vocabulary and the hook's, so a stop is no longer held open by a lone `review-in-flight` row (it renders as `- [1 waiting, no action shortens them] review-in-flight 1 (oldest 25m0s)` and the work-the-list trailer disappears); a duty the coordinator can act on still blocks — head suite 62 passed EXIT=0, negative control 3 failed EXIT=1</p></div>
 </div>
+<div class="r-comment" data-section="s25" data-id="c-run-r-20261116T132129769846-review-of-off-node-follower-reads-slow-tick-s25-700d846d6cf7" data-who="reckon-build" data-when="2026-11-16T13:28:22Z">
+    <div class="r-comment-body"><p>Independent review at base c2fdfd6e4dd16628ab494ec1322e524ad75a18ae and head 700d846d6cf7c50126e3553de8c10c3c3e431858: scores 20/20/20/19/20/20, no findings, zero added failures; parsed records stored in the reviewed run.</p></div>
+</div>
 <div class="r-comment" data-section="s26" data-id="c-run-r-20261116T115309658164-review-of-ensure-beside-live-producer-starts-nothing-s26-a912426f0c98" data-who="reckon-build" data-when="2026-11-16T11:59:45Z">
     <div class="r-comment-body"><p>Reviewed base 3bba6b6a88f5ca95a8325ceb291c8977873f217b through head a912426f0c988f1b96cfffd4453ba7421c6a397a; six dimensions scored 20; no findings; zero added failures.</p></div>
 </div>
 <div class="r-comment" data-section="s26" data-id="c-run-r-20261116T105816545184-ensure-beside-live-producer-starts-nothing-s26" data-who="reckon-build" data-when="2026-11-16T11:10:35Z">
     <div class="r-comment-body"><p>Reuses a serving local or foreign producer with started=false and its identity; 10 defect cases fail at base and under the declared mutation, scoped gate grows from 58 to 69 passes, and 85 importer cases add zero failures.</p></div>
+</div>
+<div class="r-comment" data-section="s27" data-id="c-run-r-20261116T125449446000-review-of-one-limit-row-per-pane-s27-a874e779576b" data-who="reckon-build" data-when="2026-11-16T13:46:43.870Z">
+    <div class="r-comment-body"><p>review of r-20261116T110048425828-one-limit-row-per-pane-s27 at a874e779576b against base 8104a1af: stored a parsed record scoring goal_fidelity 18, evidence 15, scope_discipline 15, durability 18, fit 17, reuse 20 (total 103) with 5 non-blocking findings and 0 added failures across the reviewed run's two gate arms</p></div>
+</div>
+<div class="r-comment" data-section="s27" data-id="c-run-r-20261116T115458933743-review-of-one-limit-row-per-pane-s27-dbf22541435b" data-who="reckon-build" data-when="2026-11-16T12:15:28.129Z">
+    <div class="r-comment-body"><p>Review of the s27 node&#x27;s landed node at dbf22541435b against 8104a1af5f90: goal_fidelity 19, evidence 16, scope_discipline 19, durability 18, fit 18, reuse 16 (total 106), status parsed, two non-blocking findings — reports ok true at EXIT=0</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261115T212555586749-review-of-held-drawn-by-its-owner-s3-dd6df313c008" data-who="reckon-build" data-when="2026-11-15T21:33:20.827Z">
     <div class="r-comment-body"><p>review of run r-20261115T145426280351-held-drawn-by-its-owner-s3 at head dd6df313 — goal_fidelity 17, evidence 15, scope_discipline 20, durability 15, fit 17, reuse 5; added_failure_count 0 from both recorded suite arms; five non-blocking findings, none holding the node.</p></div>
@@ -393,12 +402,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261115T145806650328-hook-counts-what-is-owed-s9" data-who="reckon-build" data-when="2026-11-15T16:46:55Z">
     <div class="r-comment-body"><p>The obligations checklist counts what it prints and warns only a session holding unsettled work: the header and trailer figures come from the rendered rows, the session is read from its own pointers, and the absent-producer line is silent for a session holding none, keeping a due limit reset and the stop path's one-off reading. The hook's phase vocabulary and ended-pointer rule are compared against their owners by 8d7542b908, so a rename in either fails a test rather than drifting. Measured: 9 of the node's 19 cases red against fd2fe9c1, 77 passed at head fac68a9e, and each answering commit's check red when reverted.</p></div>
-</div>
-<div class="r-comment" data-section="s25" data-id="c-run-r-20261116T132129769846-review-of-off-node-follower-reads-slow-tick-s25-700d846d6cf7" data-who="reckon-build" data-when="2026-11-16T13:28:22Z">
-    <div class="r-comment-body"><p>Independent review at base c2fdfd6e4dd16628ab494ec1322e524ad75a18ae and head 700d846d6cf7c50126e3553de8c10c3c3e431858: scores 20/20/20/19/20/20, no findings, zero added failures; parsed records stored in the reviewed run.</p></div>
-</div>
-<div class="r-comment" data-section="s27" data-id="c-run-r-20261116T125449446000-review-of-one-limit-row-per-pane-s27-a874e779576b" data-who="reckon-build" data-when="2026-11-16T13:46:43.870Z">
-    <div class="r-comment-body"><p>review of r-20261116T110048425828-one-limit-row-per-pane-s27 at a874e779576b against base 8104a1af: stored a parsed record scoring goal_fidelity 18, evidence 15, scope_discipline 15, durability 18, fit 17, reuse 20 (total 103) with 5 non-blocking findings and 0 added failures across the reviewed run&#x27;s two gate arms</p></div>
 </div>
 </section>
 </main>
