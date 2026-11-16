@@ -35,7 +35,6 @@ import pytest
 
 from reckon import crew
 from reckon.crew.runs import list_live, pointer_path
-from tests.real_home_traces import traces_naming
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
@@ -123,16 +122,50 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path]:
     return config_home, repo
 
 
+def _real_home_claim_writes() -> list[str]:
+    """Real crew-home pointers carrying this fixture's own run identities.
+
+    A leaked write is a pointer of the fixture's project, node or session: the
+    case mints the run id its file is named for, and the record it writes names
+    the project, node or session declared below. Those fields are what is read,
+    not the file's text, because a live pointer of any dispatch quotes what its
+    worker said — and a worker summarising a run of this very case leaves the
+    fixture's node id in prose that no fixture wrote. Matching on text reports
+    that entry as this case's write, which is a peer's record read as a leak.
+    """
+    if not REAL_LIVE.is_dir():
+        return []
+    hits: list[str] = []
+    for path in sorted(REAL_LIVE.glob("*")):
+        if not path.is_file():
+            continue
+        if any(identity in path.name for identity in (PROJECT, NODE_ID, SESSION)):
+            hits.append(str(path))
+            continue
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(record, dict):
+            continue
+        node = record.get("node")
+        node_id = node.get("id") if isinstance(node, dict) else node
+        if (
+            record.get("project") == PROJECT
+            or record.get("session") == SESSION
+            or node_id == NODE_ID
+        ):
+            hits.append(str(path))
+    return hits
+
+
 @pytest.fixture(autouse=True)
 def real_live_directory_is_not_a_fixture_target() -> None:
     """No case may write this fixture's pointer into the real crew home."""
 
-    def fixture_pointers() -> list[str]:
-        return traces_naming(REAL_LIVE.parent, ("live",), (PROJECT, NODE_ID))
-
-    assert fixture_pointers() == []
+    assert _real_home_claim_writes() == []
     yield
-    assert fixture_pointers() == []
+    assert _real_home_claim_writes() == []
 
 
 def _node(config_home: Path) -> crew.TaskNode:
