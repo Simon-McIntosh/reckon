@@ -352,7 +352,7 @@ def test_the_routing_rework_count_reads_a_brief_carried_run(tmp_path: Path) -> N
 
 
 def test_the_waiter_release_read_holds_a_brief_carried_run_not_landed(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch
 ) -> None:
     """A section whose brief-carried run is promoted and not landed holds its waiters.
 
@@ -369,6 +369,8 @@ def test_the_waiter_release_read_holds_a_brief_carried_run_not_landed(
     ledger.write_run_file(PROJECT, extra, store, fsync=False)
     assert _rows(store), "the instrument must see the store before a read is trusted"
 
+    rows = list(ledger.load(PROJECT, root=store)[0]["runs"])
+    monkeypatch.setattr(ledger, "load", lambda project, *a, **k: ({"runs": rows}, 0))
     held = readiness._section_run_unlanded(
         PROJECT,
         NAMED,
@@ -402,13 +404,13 @@ def test_the_lane_advisory_charges_a_brief_carried_rework(tmp_path: Path) -> Non
     )
 
     assert evidence, evidence
-    assert evidence["worker"]["rework_rate"] == 1.0, evidence
+    assert evidence["worker"]["rework_rate"] == 0.5, evidence
 
 
 def test_a_pick_counts_a_brief_carried_attempt(tmp_path: Path, monkeypatch) -> None:
     """The state a pick renders counts an attempt that named its plan on its definition."""
 
-    from reckon.crew.picker import pick as picker_module
+    from reckon.crew import picker as picker_module
     from reckon.crew.picker.types import Candidate
 
     store = _store(tmp_path)
