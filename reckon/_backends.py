@@ -3785,21 +3785,59 @@ def _extend_stamp_bounds(
     return first, last
 
 
-def _read_stream_records(
+def _publish_summary_records(
     path: Path,
-) -> tuple[list[dict[str, Any]], int, int] | None:
-    """Parse a whole stream from its first record, with the offset after it."""
-    try:
-        with path.open("rb") as handle:
-            data = handle.read()
-    except OSError:
-        return None
-    _count_parsed_bytes(len(data))
-    cut = data.rfind(b"\n")
-    end = cut + 1 if cut >= 0 else 0
-    text = data[:end].decode("utf-8", errors="replace")
-    events, malformed = parse_events(text.splitlines())
-    return events, malformed, end
+    identity: tuple[int, int, int, int],
+    events: list[dict[str, Any]],
+    malformed: int,
+    whole: bool,
+    head: dict[str, Any],
+    ends_newline: bool,
+) -> None:
+    """Share the records a summary read with the events cache.
+
+    A stream is read once per version whichever reader asks first. A whole read
+    replaces the cache's copy, and a growth read is appended to the copy it
+    extends the summary from; a growth read of a stream whose events the cache
+    has evicted is left unpublished, because the segment alone is not the
+    stream the next events reader would need. Neither cache is then asked for
+    bytes the other has already decoded.
+    """
+    key = str(path.resolve())
+    with _PARSED_STREAM_LOCK:
+        live = _PARSED_STREAMS.get(key)
+        if live is not None and live.identity == identity:
+            return
+        if not whole:
+            if live is None or live.identity[:2] != identity[:2]:
+                return
+            combined = [*live.events, *events]
+            total = live.malformed + malformed
+            current = _ParsedStream(
+                identity=identity,
+                events=combined,
+                malformed=total,
+                head=head,
+                ends_newline=ends_newline,
+                timestamp_reader=live.timestamp_reader,
+                timestamp_bounds=live.timestamp_bounds,
+                pending_events=[*(live.pending_events or []), *events],
+                timestamp_version=live.timestamp_version,
+            )
+        else:
+            current = _ParsedStream(
+                identity=identity,
+                events=list(events),
+                malformed=malformed,
+                head=head,
+                ends_newline=ends_newline,
+            )
+        _PARSED_STREAMS[key] = current
+        _PARSED_STREAMS.move_to_end(key)
+        size = sum(entry.identity[2] for entry in _PARSED_STREAMS.values())
+        while size > _PARSED_STREAM_LIMIT and len(_PARSED_STREAMS) > 1:
+            _unused, evicted = _PARSED_STREAMS.popitem(last=False)
+            size -= evicted.identity[2]
 
 
 def _stream_summary(
@@ -3837,12 +3875,18 @@ def _stream_summary(
     if grows:
         lines, end = _stream_lines_from(path, stored.offset)
         events, malformed = parse_events(lines)
+        ends_newline = True
         whole = False
     else:
-        read = _read_stream_records(path)
-        if read is None:
+        try:
+            entry = _cached_stream_entry(path)
+        except OSError:
             return None, [], 0, False
-        events, malformed, end = read
+        events = entry.events
+        malformed = entry.malformed
+        ends_newline = entry.ends_newline
+        end = entry.identity[2] if ends_newline else _last_line_boundary(path)
+        identity = entry.identity
         whole = True
     head = stream_head_fingerprint(path, offset=end)
     with _STREAM_SUMMARY_LOCK:
@@ -3882,10 +3926,10 @@ def _stream_summary(
                 for reader, (first, last) in bounds.items()
             }
         summary = _StreamSummary(
-            dev=info.st_dev,
-            ino=info.st_ino,
-            size=info.st_size,
-            mtime_ns=info.st_mtime_ns,
+            dev=identity[0],
+            ino=identity[1],
+            size=identity[2],
+            mtime_ns=identity[3],
             offset=end,
             head=head,
             folds=folds,
@@ -3898,7 +3942,11 @@ def _stream_summary(
         _STREAM_SUMMARIES.move_to_end(key)
         while len(_STREAM_SUMMARIES) > _STREAM_SUMMARY_LIMIT:
             _STREAM_SUMMARIES.popitem(last=False)
-        return summary, events, malformed, whole
+    if not whole:
+        _publish_summary_records(
+            path, identity, events, malformed, whole, head, ends_newline
+        )
+    return summary, events, malformed, whole
 
 
 def _summarised_observation(
@@ -3929,10 +3977,12 @@ def _summarised_observation(
             whole = False
     if fold is None:
         if not whole:
-            read = _read_stream_records(path)
-            if read is None:
+            try:
+                entry = _cached_stream_entry(path)
+            except OSError:
                 return None
-            events, malformed, _end = read
+            events = entry.events
+            malformed = entry.malformed
         observation = _observe_events(
             backend_name=backend_name,
             backend=backend,
