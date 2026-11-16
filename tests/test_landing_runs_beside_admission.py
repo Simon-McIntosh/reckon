@@ -3,9 +3,9 @@
 The admission service launches and releases on its own clock whatever the
 landing pass is doing: a landing action lives in a worker thread under its own
 lock, so a slow merge or a slow suite holds only the next landing. Each pass
-records how long its stages took, and a landing step that runs past the bound
-the measure configures is stopped and refused rather than allowed to stall the
-service.
+records how long its stages took, and a landing step is recorded as a durable
+promotion request the service drains rather than run inside the pass, so a step
+that outlives any bound costs the pass one write and cannot stall it.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from pathlib import Path
 import pytest
 
 from reckon import _plan_html
-from reckon.crew import landing_measure, queue_admission, queue_landing, runs
+from reckon.crew import landing_measure, promotion_requests, queue_admission, queue_landing, runs
 from reckon.crew import review as review_module
 from tests import test_a_landed_section_releases_its_waiters as release_waits
 from tests import test_a_queued_request_waits_on_its_dependencies as waits
@@ -202,13 +202,18 @@ def test_a_landing_tick_lands_one_delivery_and_leaves_the_rest(
     assert land_calls == [RUN, "r-second", "r-third"]
 
 
-def test_a_land_step_past_its_bound_is_stopped_and_refused(
+def test_a_land_step_past_its_bound_is_queued_rather_than_run(
     delivery, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A step that outruns the landing measure's timeout is killed and named."""
+    """A step that would outlive the bound is queued, and the pass runs no step.
+
+    The step is a durable promotion request the admission service drains under
+    its own clock, so its duration is not the pass's: the pass records that
+    request, owes no obligation and returns, and the bound the measure
+    configures is never spent here.
+    """
     _delivery_accept(base=str(delivery["base"]), head=str(delivery["head"]))
     bound = 0.25
-    monkeypatch.setattr(queue_landing, "_land_command", lambda run_id: ["sleep", "5"])
     monkeypatch.setattr(queue_landing, "_measure_timeout", lambda pointer: bound)
     monkeypatch.setattr(queue_landing, "_landing_beat", lambda *a, **k: "")
     monkeypatch.setattr(
@@ -216,21 +221,30 @@ def test_a_land_step_past_its_bound_is_stopped_and_refused(
         "_RUN",
         _delivery_stub([], suite_head=(0, "1 passed\n"), isolated={}),
     )
+    ran: list[list[str]] = []
+
+    def run_step(command, **_options):
+        ran.append(list(command))
+        return subprocess.CompletedProcess(command, 0, json.dumps({"ok": True}), "")
+
+    monkeypatch.setattr(queue_landing, "_run_srun", run_step)
 
     started = time.monotonic()
     result = queue_landing.land_once()
     elapsed = time.monotonic() - started
 
     assert result["landed"] == [], result
-    assert len(result["obligations"]) == 1, result
-    guard = result["obligations"][0]["guard"]
-    assert f"{bound:g} s bound" in guard, guard
-    # The step was stopped at the bound rather than allowed to run its five
-    # seconds out.
+    assert result["promotion_requested"] == [RUN], result
+    assert result["obligations"] == [], result
+    # No step ran inside the pass, so nothing here could reach the bound a
+    # synchronous step would have been stopped at.
+    assert ran == [], ran
     assert elapsed < 4.0, elapsed
-    recorded = runs.read_pointer(RUN)["admission_landing"]
-    assert recorded["status"] == "refused"
-    assert recorded["guard"] == guard
+    request = promotion_requests.read_promotion(RUN)
+    assert request["phase"] == promotion_requests.REQUESTED, request
+    assert request["kind"] == "command", request
+    assert request["options"]["land"] is True, request
+    assert runs.read_pointer(RUN)["promotion_status"] == "promotion-requested"
 
 
 def test_each_pass_record_carries_its_stage_timings(
@@ -293,23 +307,18 @@ def test_a_raising_landing_is_restarted_and_never_stops_the_loop(
 def test_the_land_step_waives_the_impl_move_the_beat_makes(
     delivery, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A run whose section is still implementable lands, and is ticked done.
+    """A run whose section is still implementable queues a step that waives the move.
 
     ``crew complete`` refuses a passing implement run whose plan impl has not
-    moved, and the landing beat that advances the section runs only after the
-    merge, so the step must record the reason it lands ahead of that move.
+    moved, and the landing beat that advances the section runs after the merge,
+    so the step the pass records carries the reason it lands ahead of that
+    move. The options the promotion service invokes ``crew complete`` with are
+    read from that same command, so the waiver survives the queue.
     """
     _delivery_accept(base=str(delivery["base"]), head=str(delivery["head"]))
     state = _plan_html.read_state(delivery["plan"].read_text(encoding="utf-8"))
     assert state["section_declarations"]["s1"] == "implementable"
 
-    commands: list[list[str]] = []
-
-    def run_step(command, **_options):
-        commands.append(list(command))
-        return subprocess.CompletedProcess(command, 0, json.dumps({"ok": True}), "")
-
-    monkeypatch.setattr(queue_landing, "_run_srun", run_step)
     monkeypatch.setattr(
         landing_measure,
         "_RUN",
@@ -318,11 +327,19 @@ def test_the_land_step_waives_the_impl_move_the_beat_makes(
 
     result = queue_landing.land_once()
 
-    assert result["landed"] == [RUN], result
-    command = next(command for command in commands if "complete" in command)
+    assert result["landed"] == [], result
+    assert result["promotion_requested"] == [RUN], result
+    command = queue_landing._land_command(RUN)
     assert "--no-impl-change" in command, command
     reason = command[command.index("--no-impl-change") + 1]
     assert reason == queue_landing.LANDING_BEAT_REASON
     assert command[-1] == "--land", command
+    request = promotion_requests.read_promotion(RUN)
+    assert request["options"]["no_impl_change"] == queue_landing.LANDING_BEAT_REASON
+    assert request["options"]["land"] is True
+    # The declaration moves in the beat, which runs only after the merge this
+    # step queues: the step itself leaves the section where it found it.
     state = _plan_html.read_state(delivery["plan"].read_text(encoding="utf-8"))
-    assert state["section_declarations"]["s1"] == "done", state["section_declarations"]
+    assert state["section_declarations"]["s1"] == "implementable", state[
+        "section_declarations"
+    ]
