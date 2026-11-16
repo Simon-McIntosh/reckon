@@ -1,0 +1,25 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T23:08:04.442Z",
+  "dispatched_at": "2026-11-15T23:06:18Z",
+  "findings": [],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal at prompt.txt:38 is to answer velocity's revision-scoped figures and the review-cycle script from the run store; the one gained commit a3fceee5fb is docs-only in that node's landing fragment and leaves the goal's two readers, reckon/velocity.py and the figure script, untouched.\nVERDICT done_when: the done_when at prompt.txt asks a revision with no runs/ directory to answer from the store, a nonzero population equal to the ledger's at the earlier revision, and an empty store refused rather than matched; the driven gate is logs/after-suite.log, whose header names revision c2c40ab117bd000c590c1161d38655bc72d3e00b and whose tail reads 66 passed in 220.40s then a bare EXIT=0, recorded in the manifest's after_suite with completed true and failure_ids [].\nVERDICT write_paths: read prompt.txt's FENCE - SCOPE list; the gained diff changes exactly one path, docs/evidence/fragments/history-persists-as-detail-washes-out/revision-reads-on-the-store-s24.html, which is inside the declared scope.\nVERDICT manifest: read manifest.md; status complete, commits aea929edc1 84165b187d 588705d9c6 af6bcd68dc c2c40ab117 a3fceee5fb, baseline_suite 58 passed EXIT=0 at 27958ce9c4fa and after_suite 66 passed EXIT=0 at c2c40ab117, both completed true with empty failure_ids, and negative_control_log logs/negative-control.log reading 2 failed, 6 passed in 118.20s then EXIT=1.\nVERDICT diff: read c2c40ab117bd..a3fceee5fb46 commit by commit; it is one commit, a3fceee5fb naming the after arm at the revision its log records, one file and one line: the after-suite row's second cell moves from the unverified head af6bcd68dc to c2c40ab117bd, which logs/after-suite.log:1 confirms.\nCALL_SITES: reckon/serve.py:_send_evidence_record, reckon/evidence.py:1362 compose_landed_record, reckon/crew/reports.py:2703\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/history-persists-as-detail-washes-out/revision-reads-on-the-store-s24.html:99 makes the arms record true about the arm it cites, while the goal's product behaviour at reckon/velocity.py:_read_store_records is carried by earlier commits and untouched here.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/after-suite.log holds revision c2c40ab117bd000c590c1161d38655bc72d3e00b with 66 passed and EXIT=0, and line 99 now agrees with that receipt instead of naming af6bcd68dc; the arm was not re-run at the docs head, which the row states by naming the revision it read.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained diff is 1 file changed, 1 insertion and 1 deletion, all at docs/evidence/fragments/history-persists-as-detail-washes-out/revision-reads-on-the-store-s24.html:99, inside the declared fragment path.\nSCORE durability: 8\nJUSTIFICATION durability: no assertion guards docs/evidence/fragments/history-persists-as-detail-washes-out/revision-reads-on-the-store-s24.html:99 \u2014 restoring af6bcd68dc on that line leaves every recorded gate green, and no check in reckon/ or tests/ ties an arms row to its cited log, so this repair regresses silently.\nSCORE fit: 18\nJUSTIFICATION fit: the new cell keeps the table's shape at docs/evidence/fragments/history-persists-as-detail-washes-out/revision-reads-on-the-store-s24.html:97-101, a revision in code followed by a short clause, and adds no new name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module, so no capability is forked; it edits one table cell at docs/evidence/fragments/history-persists-as-detail-washes-out/revision-reads-on-the-store-s24.html:99.\n",
+  "review_run_id": "r-20261115T230531026304-review-of-revision-reads-on-the-store-s24-a3fceee5fb46",
+  "reviewed_base_sha": "c2c40ab117bd000c590c1161d38655bc72d3e00b",
+  "reviewed_head_sha": "a3fceee5fb46d9425102801422c16fb39866ce6d",
+  "reviewed_run_id": "r-20261115T102555144818-revision-reads-on-the-store-s24",
+  "scores": {
+    "durability": 8,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 14,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T23:53:39.892599+00:00",
+  "total": 96
+}

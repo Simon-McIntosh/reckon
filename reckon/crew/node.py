@@ -804,6 +804,12 @@ class TaskNode:
     over_fence_note: str = ""
     manifest_path: str = ""
     negative_control: str = ""
+    # The MCP set this node's worker connects to, named by the plan section or
+    # the brief that dispatched it and resolved against the flight's declared
+    # sets. Empty names no set, so the worker gets the flight's default list or
+    # none at all. Carried on the node rather than in the prompt because it is
+    # a fact the launch acts on: it decides which servers the harness starts.
+    mcp_set: str = ""
     estimated_hours: float | None = None
     requires_decisions: list[str] = field(default_factory=list)
     peer_scopes: dict[str, list[str]] = field(default_factory=dict)

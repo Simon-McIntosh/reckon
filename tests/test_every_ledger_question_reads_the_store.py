@@ -499,3 +499,43 @@ def test_the_store_read_delegates_both_figures_to_the_summary_owner(
     assert all(
         row["width_at_start"] == 12345 and row["wall_seconds"] == 54321 for row in rows
     )
+
+
+@pytest.mark.parametrize("figures", [False, True])
+def test_store_selection_uses_the_ledger_plan_owner(aggregate, monkeypatch, figures):
+    variants = [
+        {"plan": "selected", "impl_move": {"plan": "other"}},
+        {
+            "plan": "  ",
+            "impl_move": {"plan": " selected "},
+            "node_definition": {"plan": "other"},
+        },
+        {"plan": None, "node_definition": {"plan": "selected"}},
+        {
+            "plan": "other",
+            "impl_move": {"plan": "selected"},
+            "node_definition": {"plan": "selected"},
+        },
+        {"plan": None},
+    ]
+    rows = [
+        {**_rows()[0], **values, "run_id": f"selected-row-{index}"}
+        for index, values in enumerate(variants)
+    ]
+    fill_store(rows)
+    assert not aggregate.exists()
+    expected = [row for row in rows if ledger._row_plan(row) == "selected"]
+    assert len(expected) == 3
+    original = ledger._row_plan
+    resolved = []
+
+    def observed(row):
+        resolved.append(row)
+        assert "outcome" not in row or row in rows
+        return original(row)
+
+    monkeypatch.setattr(ledger, "_row_plan", observed)
+    actual, _ = ledger.read_records(PROJECT, plan="selected", with_figures=figures)
+    assert [row["run_id"] for row in actual] == [row["run_id"] for row in expected]
+    assert len(resolved) >= len(rows), "SQL selection bypassed the shared plan owner"
+    assert any(set(row) == {"plan", "impl_move", "node_definition"} for row in resolved)

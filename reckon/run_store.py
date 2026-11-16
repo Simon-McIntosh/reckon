@@ -239,6 +239,15 @@ def _record_rows(
         if selected is None
         else [selected[index : index + 500] for index in range(0, len(selected), 500)]
     )
+    if plan:
+        from reckon import ledger
+
+        connection.create_function(
+            "record_plan",
+            1,
+            lambda value: ledger._row_plan(json.loads(value)),
+            deterministic=True,
+        )
     if activity_since is not None:
 
         def epoch(value):
@@ -253,7 +262,11 @@ def _record_rows(
             params: list[Any] = []
             columns = []
             for column in ("r.payload", "d.detail"):
-                if fields == ("run_id",):
+                if fields == ("run_id",) or (
+                    column == "d.detail"
+                    and fields is not None
+                    and not any(field in DETAIL_FIELDS for field in fields)
+                ):
                     columns.append("NULL")
                 elif fields is None:
                     columns.append(column)
@@ -278,7 +291,15 @@ def _record_rows(
                 clauses.append(f"r.run_id IN ({','.join('?' for _ in batch)})")
                 params.extend(batch)
             if plan:
-                clauses.append("json_extract(r.payload, '$.plan') = ?")
+                # Resolve the same narrow record through the ledger's owner;
+                # the store query must not invent a separate fallback order.
+                clauses.append(
+                    "record_plan(json_object("
+                    "'plan', json_extract(r.payload, '$.plan'), "
+                    "'impl_move', json_object('plan', json_extract(r.payload, '$.impl_move.plan')), "
+                    "'node_definition', json_object('plan', json_extract(d.detail, '$.node_definition.plan'))"
+                    ")) = ?"
+                )
                 params.append(plan)
             if activity_since is not None:
                 stamps = [

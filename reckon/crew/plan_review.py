@@ -5190,9 +5190,13 @@ def delivered_report_record(sidecar: Mapping[str, Any]) -> dict[str, Any]:
     reviewed blob sha and the content fingerprint; the report named by
     ``report_path`` supplies the rubric's verdicts and findings. A parse that
     holds no rubric item and no finding was composed and never delivered — a
-    snapshot and a sidecar with no reviewer output beside them — so it is
-    refused here as not a review rather than stored as an empty one, and the
-    refusal names the grammar it read the report under. The record carries an
+    snapshot and a sidecar with none of the reviewer's output beside it — so it
+    is refused here as not a review rather than stored as an empty one, and the
+    refusal names the grammar it read the report under. A parse that holds the
+    brief's template placeholders in the place a verdict and a finding go is
+    refused as unfinished, which is the state a reviewer writes its report in
+    before it has read anything: storing it takes a record with no verdict and
+    no finding back to the gate. The record carries an
     empty ``responses``, so its findings arrive unanswered and the
     gate refuses until each is answered. ``review_run_id`` is the report
     directory's name, which is what makes a re-read of the same delivered report
@@ -5212,6 +5216,8 @@ def delivered_report_record(sidecar: Mapping[str, Any]) -> dict[str, Any]:
     text = report_path.read_text(encoding="utf-8", errors="replace")
     rubric = str(sidecar.get("rubric") or "").strip()
     parsed = parse_review_report(text, rubric=rubric)
+    if parsed["placeholders"]:
+        raise UnfinishedReviewReportError(report_path, parsed["placeholders"])
     if not parsed["rubric_items"] and not parsed["findings"]:
         raise ValueError(
             f"delivered review report {report_path} carries no RUBRIC or "
@@ -5386,6 +5392,61 @@ def store_delivered_reviews(
     return refused
 
 
+class UnfinishedReviewReportError(ValueError):
+    """A delivered report still carries the brief's template placeholders.
+
+    A reviewer writes its report into the file its dispatch granted, and the
+    brief hands it the line shapes to emit. A report read while that is still
+    being written carries the placeholders where a verdict and a finding go, and
+    the grammar reads it as a finished review — the placeholder is non-empty
+    text and the FINDING line carries a claim of nothing — so storing it takes a
+    record with no verdict and no finding back to the gate. The error is its own
+    type because the store's pass must tell the two states apart: a report held
+    by a live reviewer is read again later, while the same report once its
+    reviewer has ended is a delivery defect.
+
+    ``placeholders`` names the tokens the report still carries, in the order
+    they appear, so the refusal says which places to fill rather than that the
+    report is unfinished.
+    """
+
+    def __init__(self, path: str | Path, placeholders: Iterable[str]) -> None:
+        self.path = Path(path)
+        self.placeholders = list(placeholders)
+        super().__init__(
+            f"delivered review report {self.path} still carries the brief's "
+            f"placeholders {', '.join(self.placeholders)} where its verdicts "
+            "and findings go"
+        )
+
+
+def _review_run_is_live(sidecar: Mapping[str, Any]) -> bool:
+    """Whether the run that writes this delivery's report still has a worker.
+
+    A plan review's report directory is named for the composed review, which is
+    not a crew run, so the run that actually wrote the report is the one its
+    ``dispatch.json`` sidecar names. That run's own pointer and the process it
+    records are what every liveness decision on this host is taken from. A
+    directory naming no run, or a pointer that cannot be read, answers not live:
+    a report nothing is writing is finished however it reads, and reading an
+    unknown liveness as live would hold a review open forever.
+    """
+    project = str(sidecar.get("project") or "").strip()
+    plan_slug = str(sidecar.get("plan_slug") or "").strip()
+    composed = str(sidecar.get("review_run_id") or "").strip()
+    crew_run = _review_store._plan_review_crew_run_id(project, plan_slug, composed)
+    if not crew_run:
+        return False
+    from reckon.crew.node import CrewError
+    from reckon.crew.process_liveness import record_process_alive
+
+    try:
+        record = runs.read_pointer(crew_run)
+    except (CrewError, OSError, ValueError):
+        return False
+    return record_process_alive(record) is True
+
+
 def _store_deliveries(
     sidecars: Iterable[Mapping[str, Any]],
     *,
@@ -5395,7 +5456,14 @@ def _store_deliveries(
 
     One loop serves both delivery kinds, so a plan report and a code report are
     stored, refused and cleared the same way. An already-stored delivery is
-    skipped. The returned list names each refused delivery and its reason.
+    skipped. A report that still carries the brief's template placeholders is
+    held rather than refused while the run that writes it is live: the reviewer
+    is still reading, the file is half-written, and a refusal recorded against a
+    live reviewer would send a coordinator to repair a review that is mid-turn.
+    The same report once that reviewer has ended is a delivery defect, recorded
+    on the sidecar and returned, because nothing will finish it and the review
+    the plan owed never arrived. The returned list names each refused delivery
+    and its reason.
     """
     refused: list[dict[str, Any]] = []
     for sidecar in sidecars:
@@ -5403,6 +5471,19 @@ def _store_deliveries(
             continue
         try:
             _store_delivered_report(sidecar, base_dir=base_dir)
+        except UnfinishedReviewReportError as exc:
+            if _review_run_is_live(sidecar):
+                # The reviewer may finish the report this pass read, so a
+                # reason recorded now would name a defect that is not one yet.
+                _clear_store_error(sidecar)
+                continue
+            _record_store_error(sidecar, f"{type(exc).__name__}: {exc}")
+            refused.append(
+                {
+                    "review_run_id": sidecar.get("review_run_id"),
+                    "store_error": f"{type(exc).__name__}: {exc}",
+                }
+            )
         except (OSError, ValueError) as exc:
             reason = f"{type(exc).__name__}: {exc}"
             _record_store_error(sidecar, reason)

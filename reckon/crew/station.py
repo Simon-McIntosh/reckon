@@ -452,12 +452,31 @@ REFLEX_BEAT_SECONDS = 30.0
 # and the duties it had not yet published are the next station's to derive.
 DUTY_DRAIN_SECONDS = 10.0
 
+# How long a stopping station has to unwind before it exits where it stands.
+# Nothing a stop signal interrupts is under this process's control: a tick can
+# sit in a derivation doing storage IO, a dispatcher can sit between its claim
+# and its worker, and the drain joins workers one after another — none of which
+# reads the stop flag, so none of which the ordered shutdown can rely on
+# reaching. Measured on 15 November, two of three station restarts were still
+# running 120 s after SIGTERM and needed SIGKILL, and a killed station gives
+# back nothing: it orphaned seven launch claims at 13:00Z, six of them other
+# sessions'. So the bound is a promise the process keeps from a thread of its
+# own rather than a check the stuck path may never reach.
+STATION_STOP_BOUND_SECONDS = 15.0
+
 # How long a due reload is held for the derivations in flight to land. A reload
 # replaces the image and ends every thread, so a derivation slower than the gap
 # between two landings on the primary branch was ended on every reload and its
 # project's duties never moved. The station keeps ticking while it holds, and
 # the bound keeps one stuck derivation from pinning old code for ever.
 RELOAD_HOLD_SECONDS = 900.0
+
+# How long a deferred image waits before the proof that refused it is repeated.
+# The first retry is the next poll, because a refusal that says nothing about
+# the image -- a proof that timed out, a peer holding its lock -- can pass at
+# once; this is the spacing a repeated deferral then waits, so an image that
+# will not import is not proved again on every tick.
+RELOAD_DEFERRED_RETRY_SECONDS = 60.0
 
 
 class _CommitBarrier:
@@ -587,11 +606,22 @@ class DutyBeat:
             self._quiescing = False
 
     def drain(self, timeout: float | None = None) -> None:
-        """Wait for the derivations this station started to finish."""
+        """Wait, bounded in total, for the derivations this station started.
+
+        The bound covers the whole drain rather than each worker: a stopping
+        station joins every derivation it started, and one bound per worker
+        multiplies whatever is stuck in storage by the number of projects. A
+        derivation the bound leaves running is ended by the process exiting,
+        and the duties it had not published are the next station's to derive.
+        """
         with self._lock:
             workers = list(self._workers.values())
+        deadline = None if timeout is None else time.monotonic() + timeout
         for worker in workers:
-            worker.join(timeout)
+            remaining = (
+                None if deadline is None else max(0.0, deadline - time.monotonic())
+            )
+            worker.join(remaining)
         with self._lock:
             self._workers.clear()
 
@@ -864,7 +894,16 @@ class StationReloader:
             except (OSError, ValueError):
                 pass
         self.deferred_identity: str | None = None
+        # When the deferred image's proof may be repeated, and the spacing its
+        # next refusal waits. Zero means the next poll.
+        self._deferred_proof_at = 0.0
+        self._deferred_gap = 0.0
         self._held_since: float | None = None
+        # When this station last found no reload owed. A hold is dated from here
+        # rather than from the poll that noticed the code move, because a poll
+        # happens only at a tick's end: a tick longer than the bound used to put
+        # the deadline a whole tick past it.
+        self._clear_since: float | None = None
 
     def poll(self, duties: DutyBeat | None = None) -> None:
         """Check committed code after a tick and re-execute when it moves.
@@ -872,7 +911,10 @@ class StationReloader:
         With ``duties`` named, a due reload first lets the derivations in flight
         land: it stops new ones and returns, and the station keeps ticking until
         a later poll finds none running or :data:`RELOAD_HOLD_SECONDS` has
-        passed. A reload that does not happen starts the derivations again.
+        passed. The bound runs from the poll that last found no reload owed, so
+        a tick several minutes long cannot move the deadline: the reload fires
+        at the first poll after it expires. A reload that does not happen starts
+        the derivations again.
         """
         if self.image_pin is not None:
             checkout_trust.refresh_materialized_tree_pin(
@@ -881,11 +923,9 @@ class StationReloader:
         current = checkout_trust.source_code_identity(
             self.source_root / "reckon", source_root=self.source_root
         )
-        due = (
-            current not in (checkout_trust.IDENTITY_UNKNOWN, self.identity)
-            and current != self.deferred_identity
-            and re.fullmatch(r"[0-9a-f]{40}", current) is not None
-        )
+        due = self._reload_owed(current)
+        if not due:
+            self._clear_since = time.monotonic()
         if due and duties is not None and not self._quiet(duties):
             return
         try:
@@ -896,20 +936,52 @@ class StationReloader:
             # not import, or the exec itself failed. A hold taken for a reload
             # that is no longer due must not leave the derivations stopped.
             self._held_since = None
+            self._clear_since = time.monotonic()
             if duties is not None:
                 duties.resume()
+
+    def _reload_owed(self, current: str) -> bool:
+        """Whether committed code names an image this station has not taken.
+
+        A deferred image is owed again once its proof is due to be repeated: a
+        deferral that said nothing about the image must not stand until main
+        moves, which used to be the only thing that asked for it again.
+        """
+        if re.fullmatch(r"[0-9a-f]{40}", current) is None:
+            return False
+        if current in (checkout_trust.IDENTITY_UNKNOWN, self.identity):
+            return False
+        if current == self.deferred_identity:
+            return time.monotonic() >= self._deferred_proof_at
+        return True
 
     def _quiet(self, duties: DutyBeat) -> bool:
         """Whether the derivations have landed, or the hold has run out."""
         idle = duties.quiesce()
         now = time.monotonic()
         if self._held_since is None:
-            self._held_since = now
+            self._held_since = now if self._clear_since is None else self._clear_since
             _reload_note(
                 "holding a due reload until the derivations in flight land, "
                 f"for at most {RELOAD_HOLD_SECONDS:.0f}s"
             )
         return idle or now - self._held_since >= RELOAD_HOLD_SECONDS
+
+    def _arm_deferred_proof(self) -> None:
+        """Schedule the next proof of a deferred image.
+
+        The first retry is the next poll: a proof that timed out, or one a peer
+        held the image's lock for, refuses without saying anything about the
+        image, and the answer can change a moment later. A deferral that repeats
+        waits :data:`RELOAD_DEFERRED_RETRY_SECONDS` and then twice as long each
+        time, up to the hold bound, so an image that will not import is not
+        proved again on every tick.
+        """
+        self._deferred_proof_at = time.monotonic() + self._deferred_gap
+        self._deferred_gap = min(
+            max(RELOAD_DEFERRED_RETRY_SECONDS, self._deferred_gap * 2),
+            RELOAD_HOLD_SECONDS,
+        )
 
     def _replace(self, current: str) -> None:
         image, _removed, _kept, pin = checkout_trust.materialize_committed_tree(
@@ -921,6 +993,7 @@ class StationReloader:
         imports, reason = checkout_trust.reckon_imports(image)
         if not imports:
             self.deferred_identity = current
+            self._arm_deferred_proof()
             os.close(pin)
             _reload_note(
                 f"deferred the reload to {current}: its image does not import "
@@ -1137,8 +1210,8 @@ class Station:
         self._enter(stages[2])
         self.store.heartbeat(now=moment)
         pointers = {
-            str(row["run_id"]): json.loads(str(row["fields"]))
-            for row in self.store.pointer_rows()
+            str(record.get("run_id") or ""): record
+            for record in self.store.pointer_fields().values()
         }
         project_names = (
             set(self.projects())
@@ -1263,6 +1336,62 @@ class Station:
         return published
 
 
+class StopBound:
+    """Hold a stopping station to the bound its shutdown is promised.
+
+    The ordered shutdown waits on work this process did not start and cannot
+    interrupt — a derivation reading storage, a dispatcher between its claim
+    and its worker — so the flag a signal sets is only read by paths that are
+    running. When they are not, the shutdown never begins, which is how a
+    SIGTERM came to be ignored for 120 s and answered with SIGKILL.
+
+    The bound is therefore enforced from a thread no blocked path holds, and it
+    does the two things a killed station cannot: it hands back the claims this
+    process published and never reached a worker, and it exits. The ordered
+    shutdown keeps whatever time it has left up to the bound; one that finishes
+    first cancels the thread, so a clean stop is never cut short by it.
+    """
+
+    def __init__(
+        self,
+        bound: float = STATION_STOP_BOUND_SECONDS,
+        *,
+        exit: Callable[[int], None] = os._exit,
+        release: Callable[[], tuple[str, ...]] | None = None,
+    ) -> None:
+        self.bound = bound
+        self._exit = exit
+        self._release = release or dispatch_claims.release_unlaunched_claims
+        self._unwound = threading.Event()
+        self._timer: threading.Timer | None = None
+
+    def arm(self) -> None:
+        """Start the bound."""
+        if self._timer is not None:
+            return
+        self._timer = threading.Timer(self.bound, self._enforce)
+        self._timer.daemon = True
+        self._timer.start()
+
+    def unwound(self) -> None:
+        """Record that the ordered shutdown finished inside the bound."""
+        self._unwound.set()
+        if self._timer is not None:
+            self._timer.cancel()
+
+    def _enforce(self) -> None:
+        if self._unwound.is_set():
+            return
+        released = self._release()
+        print(
+            f"station-stop: the shutdown did not finish in {self.bound:g}s; "
+            f"exiting with {len(released)} unlaunched claim(s) handed back",
+            file=sys.stderr,
+            flush=True,
+        )
+        self._exit(0)
+
+
 def run_station(
     *,
     interval: float = 1.0,
@@ -1287,10 +1416,14 @@ def run_station(
     if store is None:
         store = station_store.StationStore.at_runtime_root()
     stopping = False
+    stop_bound = StopBound()
 
     def stop(_signum: int, _frame: Any) -> None:
         nonlocal stopping
         stopping = True
+        # The shutdown this flag asks for is only reached by a loop that is
+        # between ticks, so the bound starts here rather than in that loop.
+        stop_bound.arm()
 
     if lease is None:
         lease = station_lease(store.root)
@@ -1395,4 +1528,11 @@ def run_station(
                 beat.stop()
             for signum, handler in previous.items():
                 signal.signal(signum, handler)
+            # A dispatcher thread caught between its claim and its worker dies
+            # with this process whatever the shutdown did, so the claims it
+            # published are handed back here as well as at the bound: a claim
+            # with no worker is a run nothing can relaunch until its holder is
+            # read as dead, and nothing else in this process is left to do it.
+            dispatch_claims.release_unlaunched_claims()
             lease.release()
+            stop_bound.unwound()

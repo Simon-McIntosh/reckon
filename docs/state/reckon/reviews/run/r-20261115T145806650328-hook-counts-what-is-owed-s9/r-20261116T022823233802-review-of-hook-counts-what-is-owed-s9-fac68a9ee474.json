@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own two arms: baseline_suite (revision fd2fe9c1) records completed true, exit_status 0, failure_count 0 over 58 passed in logs/arm-base-fd2fe9c1.log, and after_suite (revision fac68a9e) records completed true, exit_status 0, failure_count 0 over 77 passed in logs/arm-after-fac68a9e.log; both logs end EXIT=0 and both sha256 digests match the records' log_digest, so the empty difference is measured, not absent.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/serve.py:_send_evidence_record",
+    "reckon/evidence.py:compose_landed_record",
+    "reckon/crew/reports.py:_fragment_plan_of"
+  ],
+  "completed_at": "2026-11-16T02:33:11.386Z",
+  "dispatched_at": "2026-11-16T02:31:36Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-tells-the-truth-under-load/hook-counts-what-is-owed-s9.html",
+      "line": "81",
+      "severity": "non-blocking",
+      "text": "non-blocking: the revision cell calls cf04a0b4 'this node's head' while the node's head is fac68a9e, and the run's after_suite records the head's own arm at fac68a9e (logs/arm-after-fac68a9e.log, 77 passed), so the row names as head a revision that is one commit behind it \u2014 the count is true at both, the label is not."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-tells-the-truth-under-load/hook-counts-what-is-owed-s9.html",
+      "line": "82",
+      "severity": "non-blocking",
+      "text": "non-blocking: nothing tests this figure against the run's arm logs, so the defect the previous review caught here (68 passed where the head arm reads 77) was detectable only by review and would silently return; a figure pinned to a log with no test holding it is a fuse on the next hand edit."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against cf04a0b48c: one commit, fac68a9ee4, rewrites two table cells at docs/evidence/fragments/the-monitor-tells-the-truth-under-load/hook-counts-what-is-owed-s9.html:81-82 from 'this node's head | 68 passed' to 'this node's head cf04a0b4, this worktree | 77 passed', and changes no other file.",
+    "done_when": "the measure at docs/plans/the-monitor-tells-the-truth-under-load.html:126 is asserted by tests/test_the_hook_counts_only_what_is_owed.py, and the reviewed run's after_suite records 77 passed EXIT=0 at fac68a9ee4 in logs/arm-after-fac68a9e.log, whose summary line and digest the manifest carries.",
+    "goal": "the node goal is 'Make the obligations hook count only what is owed'; the gained commit changes only docs/evidence/fragments/the-monitor-tells-the-truth-under-load/hook-counts-what-is-owed-s9.html:80-82, the after-suite row of the evidence record the node lands, and touches no hook code.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T145806650328-hook-counts-what-is-owed-s9/manifest.md; both suite records parse as inline JSON, their sha256 digests match the logs they name, and `reckon crew check --manifest --run r-20261115T145806650328-hook-counts-what-is-owed-s9` returns ok true with no findings, resolving the previous review's blocking finding at manifest.md:23.",
+    "write_paths": "the reviewed manifest declares reckon/hooks/coordinator_obligations.py, tests/test_the_hook_counts_only_what_is_owed.py, the fragment and the figure directory; the gained commit touches only the fragment, at lines 81-82."
+  },
+  "justifications": {
+    "durability": "no assertion in tests/test_the_hook_counts_only_what_is_owed.py or anywhere else compares the fragment's figures with the run's arm logs, so reinstating 68 passed at hook-counts-what-is-owed-s9.html:82 leaves every test green.",
+    "evidence": "logs/arm-after-fac68a9e.log reads 77 passed, EXIT=0 at fac68a9ee4 with a digest matching the manifest's after_suite record, and the corrected row at hook-counts-what-is-owed-s9.html:82 now carries that figure.",
+    "fit": "the revision cell at docs/evidence/fragments/the-monitor-tells-the-truth-under-load/hook-counts-what-is-owed-s9.html:81 follows the sibling rows' '<code>sha</code>, <tree>' idiom at :74 and :77.",
+    "goal_fidelity": "docs/evidence/fragments/the-monitor-tells-the-truth-under-load/hook-counts-what-is-owed-s9.html:81-82 now states the 77 the node's own arm measures, so the node's landing record tells the truth about its gate.",
+    "reuse": "the commit adds no definition; the fragment is read by the owners that already exist \u2014 reckon/evidence.py:compose_landed_record and reckon/crew/reports.py:_fragment_plan_of \u2014 and neither is duplicated.",
+    "scope_discipline": "the whole diff is two lines of the arms table at docs/evidence/fragments/the-monitor-tells-the-truth-under-load/hook-counts-what-is-owed-s9.html:81-82, inside the declared fragment path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is 'Make the obligations hook count only what is owed'; the gained commit changes only docs/evidence/fragments/the-monitor-tells-the-truth-under-load/hook-counts-what-is-owed-s9.html:80-82, the after-suite row of the evidence record the node lands, and touches no hook code.\nVERDICT done_when: the measure at docs/plans/the-monitor-tells-the-truth-under-load.html:126 is asserted by tests/test_the_hook_counts_only_what_is_owed.py, and the reviewed run's after_suite records 77 passed EXIT=0 at fac68a9ee4 in logs/arm-after-fac68a9e.log, whose summary line and digest the manifest carries.\nVERDICT write_paths: the reviewed manifest declares reckon/hooks/coordinator_obligations.py, tests/test_the_hook_counts_only_what_is_owed.py, the fragment and the figure directory; the gained commit touches only the fragment, at lines 81-82.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T145806650328-hook-counts-what-is-owed-s9/manifest.md; both suite records parse as inline JSON, their sha256 digests match the logs they name, and `reckon crew check --manifest --run r-20261115T145806650328-hook-counts-what-is-owed-s9` returns ok true with no findings, resolving the previous review's blocking finding at manifest.md:23.\nVERDICT diff: read commit by commit against cf04a0b48c: one commit, fac68a9ee4, rewrites two table cells at docs/evidence/fragments/the-monitor-tells-the-truth-under-load/hook-counts-what-is-owed-s9.html:81-82 from 'this node's head | 68 passed' to 'this node's head cf04a0b4, this worktree | 77 passed', and changes no other file.\nCALL_SITES: reckon/serve.py:_send_evidence_record, reckon/evidence.py:compose_landed_record, reckon/crew/reports.py:_fragment_plan_of\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/the-monitor-tells-the-truth-under-load/hook-counts-what-is-owed-s9.html:81-82 now states the 77 the node's own arm measures, so the node's landing record tells the truth about its gate.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/arm-after-fac68a9e.log reads 77 passed, EXIT=0 at fac68a9ee4 with a digest matching the manifest's after_suite record, and the corrected row at hook-counts-what-is-owed-s9.html:82 now carries that figure.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the whole diff is two lines of the arms table at docs/evidence/fragments/the-monitor-tells-the-truth-under-load/hook-counts-what-is-owed-s9.html:81-82, inside the declared fragment path.\nSCORE durability: 7\nJUSTIFICATION durability: no assertion in tests/test_the_hook_counts_only_what_is_owed.py or anywhere else compares the fragment's figures with the run's arm logs, so reinstating 68 passed at hook-counts-what-is-owed-s9.html:82 leaves every test green.\nSCORE fit: 19\nJUSTIFICATION fit: the revision cell at docs/evidence/fragments/the-monitor-tells-the-truth-under-load/hook-counts-what-is-owed-s9.html:81 follows the sibling rows' '<code>sha</code>, <tree>' idiom at :74 and :77.\nSCORE reuse: 20\nJUSTIFICATION reuse: the commit adds no definition; the fragment is read by the owners that already exist \u2014 reckon/evidence.py:compose_landed_record and reckon/crew/reports.py:_fragment_plan_of \u2014 and neither is duplicated.\nFINDING docs/evidence/fragments/the-monitor-tells-the-truth-under-load/hook-counts-what-is-owed-s9.html:81 non-blocking: the revision cell calls cf04a0b4 'this node's head' while the node's head is fac68a9e, and the run's after_suite records the head's own arm at fac68a9e (logs/arm-after-fac68a9e.log, 77 passed), so the row names as head a revision that is one commit behind it \u2014 the count is true at both, the label is not.\nFINDING docs/evidence/fragments/the-monitor-tells-the-truth-under-load/hook-counts-what-is-owed-s9.html:82 non-blocking: nothing tests this figure against the run's arm logs, so the defect the previous review caught here (68 passed where the head arm reads 77) was detectable only by review and would silently return; a figure pinned to a log with no test holding it is a fuse on the next hand edit.\nReviewed base: cf04a0b48c227f81622e455ad7dfe620e7764b76\nReviewed head: fac68a9ee4743faaaae9b12390b1b4e674686b6f",
+  "review_run_id": "r-20261116T022823233802-review-of-hook-counts-what-is-owed-s9-fac68a9ee474",
+  "reviewed_base_sha": "cf04a0b48c227f81622e455ad7dfe620e7764b76",
+  "reviewed_head_sha": "fac68a9ee4743faaaae9b12390b1b4e674686b6f",
+  "reviewed_run_id": "r-20261115T145806650328-hook-counts-what-is-owed-s9",
+  "scores": {
+    "durability": 7,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T02:40:22.949954+00:00",
+  "total": 100
+}

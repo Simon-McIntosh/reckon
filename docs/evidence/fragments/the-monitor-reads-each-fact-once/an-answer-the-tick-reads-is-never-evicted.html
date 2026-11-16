@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s66">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="passed">
+  <title>An answer the tick reads again is never evicted</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+
+<article class="r-note" id="an-answer-the-tick-reads-is-never-evicted-landing" data-node="an-answer-the-tick-reads-is-never-evicted" data-reckon="landed" data-when="2026-11-15">
+  <h2>One answer file per tree, so a steady tick neither evicts nor rewrites an answer it reads again</h2>
+
+  <p id="an-answer-the-tick-reads-is-never-evicted-what"><strong>What landed.</strong> The git answer store is now one file per tree under <code>~/.config/reckon/crew/git-object-answers/</code>, each named from a digest of the tree's path and each holding that tree's <code>commits</code>, <code>counts</code> and <code>unreachable</code> answers. <code>recovery_watch._update_git_answer_store(tree, mutate)</code> writes that one file under that file's own lock, through a pid-suffixed temporary and an atomic replace; <code>_read_git_answer_tree(tree)</code> holds that file's parse under its own stat identity through <code>file_memo</code>. The per-candidate cap is gone: an answer keyed by an abbreviation in a tree is immutable while the tree stands, so a tree's file has no per-answer bound. The bound now removes whole files, in the order that costs least — a file whose tree is gone, then the files of trees no live pointer cites, then the oldest — and it runs only past the 256-file ceiling. A legacy single-file store is read once as a migration source, split into the per-tree files, and removed.</p>
+
+  <p id="an-answer-the-tick-reads-is-never-evicted-why"><strong>What the old shape cost.</strong> One file held every tree's answers with a 512-answer cap per tree, and its write was one lock plus a whole-file rewrite of 22.5 MB. Four main checkouts and one worktree sat exactly at the cap, so a tick whose working set in one tree passed 512 made each new answer evict an answer the same tick, or the next, needed again: the eviction cost a git call and a lock, the rewrite handed the file a new stat identity, and every reader in every process parsed the whole store again. Three py-spy dumps of the station's main thread all sat in that path.</p>
+
+  <p id="an-answer-the-tick-reads-is-never-evicted-gate"><strong>Gate.</strong> <code>tests/test_an_answer_the_tick_reads_is_never_evicted.py</code> builds a temporary crew home and a temporary repository of 600 imported commits, and records every answer file as (inode, modification time, size) before and after each pass.</p>
+
+  <p id="an-answer-the-tick-reads-is-never-evicted-counts"><strong>The counts.</strong> The first pass resolves the 600 abbreviated revisions: <strong>600</strong> git calls and <strong>600</strong> answer writes. The second pass, with the in-process resolution cache cleared, returns the same 600 shas with <strong>0</strong> writes (0 bytes) and <strong>0</strong> git calls. The two-tree case resolves one new candidate in the first tree and writes exactly <strong>1</strong> file, the first tree's, while the second tree's file keeps its identity and its bytes. The legacy case serves its answer with <strong>0</strong> git calls and leaves no legacy file behind.</p>
+
+  <p id="an-answer-the-tick-reads-is-never-evicted-arms"><strong>Matched arms.</strong> Both arms ran as one <code>all_debug</code> partition job, each over a tree of its own revision, each log under the node's run directory opening with its revision, tree, literal command, imported <code>recovery_watch.__file__</code> and resolved working directory, and ending in its own <code>EXIT=</code>. The base arm (<code>e83210b</code>, a scratch extraction) ran the four files the template resolves there — <strong>3 failed, 70 passed, EXIT=1</strong>; the three failures are the three fresh-process cases this node repairs, so the arm still reproduces the defect the store layout removes. The after arm (<code>da84a8a125</code>) ran those four plus this node's case — <strong>76 passed, EXIT=0</strong>.</p>
+
+  <p id="an-answer-the-tick-reads-is-never-evicted-control"><strong>Negative control.</strong> The declared mutation — restore the base single-file store — replaces the head module with the base revision's and exits <strong>EXIT=1</strong> with three failing ids, each the symptom the section names: the first case's second pass writes the one shared file (29,916 bytes), the two-tree case reports <em>the other tree's file changed identity when this tree's answer was written</em>, and the legacy case reports <em>the legacy single-file store was not removed</em>. The head module was restored byte-for-byte from a copy taken before the run, and the restored file was compared against that copy.</p>
+
+  <p id="an-answer-the-tick-reads-is-never-evicted-repaired"><strong>Two guards whose instrument had rotted.</strong> Three cases in <code>tests/test_a_fresh_process_asks_git_only_what_moved.py</code> were already failing at the base revision, and neither the store nor the node caused it: the file's recording stand-in recognised a commit count by the argv prefix <code>git rev-list --count</code>, while the command it counts carries <code>--first-parent</code> first, so the stand-in reported that the count never ran. The stand-in now matches the verb and the option, and the moved-head case asserts that the stored count is what the next read is served rather than the shape of the store's key. That file is in this node's scope, so the rot is repaired here rather than reported: the base arm fails those three ids and the after arm does not.</p>
+</article>
+
+</body>
+</html>

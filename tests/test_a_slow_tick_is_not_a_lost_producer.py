@@ -22,12 +22,16 @@ cannot pass for the behaviour being claimed.
 from __future__ import annotations
 
 import json
+import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import pytest
+from click.testing import CliRunner
 
-from reckon.crew import obligation_snapshot, station_store
+from reckon import crew_follow_commands as follow
+from reckon.crew import obligation_snapshot, runs, station_store
 from reckon.crew.watch_unit import ProducerSnapshotNotices, watcher_ensure_line
 
 PROJECT = "slow-tick-fixture"
@@ -299,3 +303,95 @@ def test_a_station_that_answers_the_session_reports_the_same_slow_tick(
 
     clock.value += SAMPLE + 1
     assert check.poll() == []
+
+
+# The pane's check above emits the notice; these cases are the follower that
+# renders it. A notice names no run, so a renderer that hands it to the run-row
+# painter draws a row for an unknown run instead of the sentence the station
+# wrote, which is the defect a slow tick was reported as.
+
+SLOW_SENTENCE = (
+    f"producer {PROJECT} slow: its tick has run {SLOW_SPAN} in the {STAGE} stage, "
+    "so no restart is needed"
+)
+
+
+def _slow_notice(**overrides: Any) -> dict[str, Any]:
+    """One producer-slow event in the shape the pane's check emits."""
+    event: dict[str, Any] = {
+        "event": "producer-slow",
+        "project": PROJECT,
+        "session": SESSION,
+        "run_id": None,
+        "age_seconds": TICK_RUNNING_SECONDS,
+        "bound_seconds": obligation_snapshot.STATION_STALE_SECONDS,
+        "stage": STAGE,
+        "line": SLOW_SENTENCE,
+    }
+    event.update(overrides)
+    return event
+
+
+def _follow_one(
+    monkeypatch: pytest.MonkeyPatch, event: dict[str, Any], *, json_output: bool
+):
+    """Hand one event through the follower's own render path and return it."""
+    monkeypatch.setattr(runs, "renew_producer_lease", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        runs,
+        "follower_owner",
+        lambda: (os.getpid(), runs._process_start_time(os.getpid())),
+    )
+    monkeypatch.setattr(follow, "_follow_watch_lines", lambda *a, **kw: iter([event]))
+    monkeypatch.setattr(follow, "_hand_off_from_follower", lambda *a, **kw: False)
+    return CliRunner().invoke(
+        follow.crew,
+        ["follow", "--project", PROJECT, "--session", SESSION, "--no-color"]
+        + (["--json"] if json_output else []),
+    )
+
+
+def test_a_slow_notice_prints_its_sentence_once_and_draws_no_row(
+    clock: Clock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The slow sentence is the pane's whole output for the event."""
+    result = _follow_one(monkeypatch, _slow_notice(), json_output=False)
+
+    assert result.exit_code == 0, (result.output, result.exception)
+    assert [line for line in result.stdout.splitlines() if line.strip()] == [
+        SLOW_SENTENCE
+    ], result.stdout
+
+
+def test_a_slow_notice_marked_off_the_pane_prints_nothing(
+    clock: Clock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Honouring pane_line: a slow tick asks nothing of a reader, so no line."""
+    result = _follow_one(monkeypatch, _slow_notice(pane_line=False), json_output=False)
+
+    assert result.exit_code == 0, (result.output, result.exception)
+    assert result.stdout.strip() == "", result.stdout
+
+
+def test_a_slow_notice_reaches_the_json_stream_with_its_fields(
+    clock: Clock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The JSON stream keeps the reading even when the pane is silent."""
+    event = _slow_notice(pane_line=False)
+    result = _follow_one(monkeypatch, dict(event), json_output=True)
+
+    assert result.exit_code == 0, (result.output, result.exception)
+    emitted = [json.loads(line) for line in result.stdout.splitlines() if line.strip()]
+    assert len(emitted) == 1, result.stdout
+    notice = emitted[0]
+    assert notice["event"] == "producer-slow", notice
+    for field in (
+        "project",
+        "session",
+        "stage",
+        "line",
+        "age_seconds",
+        "bound_seconds",
+    ):
+        assert notice[field] == event[field], (field, notice)
+    assert notice["run_id"] is None, notice

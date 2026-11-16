@@ -46,6 +46,9 @@ from reckon.node_exclusive_lock import LockHeld, exclusive_lock
 from reckon.crew.host_lease import (
     LEASE_RENEW_SECONDS as LEASE_RENEW_SECONDS,
     HostLease as HostLease,
+    LeaseHolder as LeaseHolder,
+    local_host as local_host,
+    process_runs_here as process_runs_here,
 )
 from reckon.crew.node import (
     _TERMINAL_RUN_PHASES as _TERMINAL_RUN_PHASES,
@@ -507,7 +510,10 @@ def _mutate_pointer(
     with _pointer_lock(run_id):
         previous = read_pointer(run_id)
         previous_attempt = int(previous.get("attempt") or 1)
+        previous_state = _acknowledgement_run_state(previous)
         record = mutation(previous)
+        if _acknowledgement_run_state(record) != previous_state:
+            record.pop(ACKNOWLEDGEMENT_FIELD, None)
         current_attempt = int(record.get("attempt") or 1)
         if current_attempt > previous_attempt:
             record["attempt_budget_seconds"] = _attempt_budget_seconds(run_id, record)
@@ -1074,8 +1080,143 @@ def _pointer_text(path: Path) -> str:
     return text
 
 
+#: The lease this node's station keeps under the node-local runtime root. Its
+#: record is the repository's own lease record, read through the mechanism that
+#: writes it, so there is one reader of that format rather than two.
+_STATION_PID_LOCK = threading.Lock()
+#: The station pid last read, under the lease file's stat identity. The lease is
+#: renewed every few seconds, so an identity change — not a clock — is what
+#: makes this read again.
+_STATION_PID: dict[str, tuple[tuple[Any, ...], int | None]] = {}
+
+
+def station_lease_path() -> Path | None:
+    """The lease file this host's station writes, or None when the node has none."""
+    lease = _station_lease()
+    return None if lease is None else lease.path
+
+
+def _station_lease() -> HostLease | None:
+    """The lease this host's station keeps, named the way the station names it."""
+    from reckon.crew.dispatch_watch import session_host_runtime_root
+    from reckon.crew.station import station_lease as station_lease_of_this_root
+
+    root = session_host_runtime_root()
+    if root is None:
+        return None
+    return station_lease_of_this_root(Path(root))
+
+
+def _no_renewal_age() -> float:
+    """A clock that reads before every recorded lease, so none is aged out.
+
+    ``HostLease.holder`` applies the claim rule, and the rule ages a lease out
+    after ``LEASE_STALE_SECONDS`` so a successor may take it. That is the right
+    question for claiming one and the wrong one for naming a process that is
+    still running, so the record is read through this clock instead.
+    """
+    return 0.0
+
+
+def _station_holder(lease: HostLease) -> LeaseHolder | None:
+    """The station's recorded holder, read whatever its renewal age.
+
+    The holder a lease names is a fact about the file; whether that process is
+    still the one it wrote is a separate question, settled by
+    ``process_runs_here`` beside the caller. Reading the record through a clock
+    that ages nothing keeps the two apart, so a station whose renewal stalled
+    while its interpreter was busy is still named.
+    """
+    reader = HostLease(
+        lease.path.parent.parent,
+        lease.path.stem,
+        local_host(),
+        os.getpid(),
+        "",
+        clock=_no_renewal_age,
+    )
+    return reader.holder()
+
+
+def station_pid_on_this_host() -> int | None:
+    """The pid this host's station recorded for itself, or None.
+
+    The station is the one writer on a station's lease and it names itself
+    there, so its holder is the only record that says which process here is the
+    station. Two questions decide the answer, and both are the lease mechanism's
+    own: whether this host holds the lease at all — a lease another node wrote
+    says nothing about this node's process table — and whether the pid it names
+    is still the process that wrote it, which ``process_runs_here`` settles from
+    the start tick and the process table recorded beside the pid. Renewal age is
+    deliberately not one of them: the lease mechanism ages a lease out after
+    ``LEASE_STALE_SECONDS`` so a successor may claim it, but a busy holder's
+    renewing thread waits on its interpreter — the state the mechanism names
+    beside its own running-holder test — so a station whose renewal stalled is
+    still the station. Reading it as no station would hand its pid to ``crew
+    stop``, which would end every session's fleet.
+    """
+    lease = _station_lease()
+    if lease is None:
+        return None
+    path = lease.path
+    try:
+        info = path.stat()
+    except OSError:
+        return None
+    identity = (info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+    key = str(path)
+    with _STATION_PID_LOCK:
+        kept = _STATION_PID.get(key)
+    if kept is not None and kept[0] == identity:
+        return kept[1]
+    holder = _station_holder(lease)
+    resolved: int | None = None
+    if (
+        holder is not None
+        and holder.host == local_host()
+        and process_runs_here(
+            pid=holder.pid,
+            pid_start=holder.pid_start,
+            pid_namespace=holder.pid_namespace,
+        )
+    ):
+        resolved = holder.pid
+    with _STATION_PID_LOCK:
+        _STATION_PID[key] = (identity, resolved)
+    return resolved
+
+
+def pid_belongs_to_the_station(pid: object) -> bool:
+    """Whether this pid names the station of the host taking the reading.
+
+    The station holds every session's claims and outlives every run. It is also
+    the process a resume or a review pays for a launch without giving up, so a
+    record that names it names the door that started something rather than
+    anything of the run: signalling that pid ends the node's whole fleet of
+    worktrees instead of the run the record belongs to.
+
+    A pid is compared only inside the process table that issued it: the lease
+    records the namespace its holder ran in, and a number read from another
+    table addresses a different process, so no match there is claimed.
+    """
+    if isinstance(pid, bool) or not isinstance(pid, int):
+        return False
+    station = station_pid_on_this_host()
+    return station is not None and station == pid
+
+
 def read_pointer(run_id: str) -> dict[str, Any]:
-    """Read one run's live pointer, or say which run is unknown."""
+    """Read one run's live pointer, or say which run is unknown.
+
+    A record naming this host's station names no process of the run. Every
+    launch made from inside the station's own long-lived process is recorded
+    through a seam that may hand back the launcher, so the pointer can carry the
+    station's pid where the supervisor's belongs; read as written, that pid
+    makes ``crew stop``, ``crew discard`` and every liveness reading aim at the
+    process that holds every session's claims. The pid is therefore dropped from
+    this reading — the one reader every one of those callers takes — and the
+    record is left on disk for whatever watchdog wrote it.
+    """
     path = pointer_path(run_id)
     try:
         text = _pointer_text(path)
@@ -1089,6 +1230,17 @@ def read_pointer(run_id: str) -> dict[str, Any]:
         ) from exc
     if not isinstance(data, dict):
         raise CrewError(f"live pointer for {run_id!r} does not hold an object")
+    if pid_belongs_to_the_station(data.get("pid")):
+        # Read as naming no process of the run: the station is not one, and a
+        # reader that treats it as one signals or refuses on the node's own
+        # station. An attempt record read as naming no process, pointing at
+        # nothing the reading host issued, so the process table probe has no
+        # pid of this host's to answer for.
+        data = {
+            name: value
+            for name, value in data.items()
+            if name not in ("pid", "pid_start_time")
+        }
     return data
 
 
@@ -2112,6 +2264,52 @@ def record_run_disposition(
 ACKNOWLEDGEMENT_FIELD = "acknowledgement"
 
 
+def _acknowledgement_run_state(pointer: Mapping[str, Any]) -> dict[str, Any]:
+    """The lifecycle identity a deferral excuses, excluding observation times."""
+    return {
+        "phase": str(pointer.get("phase") or ""),
+        "attempt": int(pointer.get("attempt") or 1),
+    }
+
+
+def _acknowledgement_condition(value: Any) -> dict[str, Any] | None:
+    """Validate one named file or probe condition using the wait vocabulary."""
+    if value is None:
+        return None
+    from reckon.crew import recovery_wait
+
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except ValueError as exc:
+            raise CrewError(
+                "--until-condition must be a JSON condition object"
+            ) from exc
+    if not isinstance(value, Mapping) or not str(value.get("condition") or "").strip():
+        raise CrewError("--until-condition requires a non-empty condition name")
+    files = recovery_wait._wait_file_paths(value.get("files"))
+    probe = recovery_wait._wait_probe(value.get("probe"))
+    terminal = recovery_wait._wait_terminal_values(value.get("terminal"))
+    if bool(files) == bool(probe):
+        raise CrewError(
+            "--until-condition requires either files or a probe with terminal states"
+        )
+    if files:
+        refusal = recovery_wait._wait_file_shape_refusal(value.get("files"))
+    else:
+        refusal = recovery_wait._wait_probe_shape_refusal(value.get("probe"))
+        if not terminal:
+            refusal = "a condition probe requires terminal states"
+    if refusal:
+        raise CrewError(f"--until-condition: {refusal}")
+    return {
+        "condition": str(value["condition"]).strip(),
+        "files": files,
+        "probe": probe,
+        "terminal": terminal,
+    }
+
+
 def record_run_acknowledgement(
     run_id: str,
     reason: str,
@@ -2119,6 +2317,7 @@ def record_run_acknowledgement(
     *,
     project: str | None = None,
     session: str | None = None,
+    until_condition: Any = None,
 ) -> dict[str, Any]:
     """Record a deliberate deferral of one run's obligations.
 
@@ -2144,6 +2343,10 @@ def record_run_acknowledgement(
         "until": deadline.isoformat(),
         "recorded_at": _utc_now(),
     }
+    condition = _acknowledgement_condition(until_condition)
+    if condition is not None:
+        deferral["until_condition"] = condition
+        deferral["worktree"] = str(Path.cwd().resolve())
     if not pointer_path(run_id).exists():
         return _record_promoted_acknowledgement(run_id, deferral, project=project)
 
@@ -2160,7 +2363,11 @@ def record_run_acknowledgement(
                 f"live run {run_id!r} belongs to session {pointer_session!r}, "
                 f"not {session!r}"
             )
-        pointer[ACKNOWLEDGEMENT_FIELD] = deferral
+        pointer[ACKNOWLEDGEMENT_FIELD] = {
+            **deferral,
+            "run_state": _acknowledgement_run_state(pointer),
+            "worktree": str(pointer.get("worktree") or Path.cwd().resolve()),
+        }
         return pointer
 
     return _mutate_pointer(run_id, record)
@@ -2401,7 +2608,31 @@ def _record_promoted_acknowledgement(
 def run_acknowledgement(pointer: Mapping[str, Any]) -> dict[str, Any] | None:
     """Return one pointer's recorded deferral, or None when it has none."""
     recorded = pointer.get(ACKNOWLEDGEMENT_FIELD)
+    if (
+        isinstance(recorded, Mapping)
+        and "run_state" in recorded
+        and recorded["run_state"] != _acknowledgement_run_state(pointer)
+    ):
+        return None
     return dict(recorded) if isinstance(recorded, Mapping) else None
+
+
+def release_run_acknowledgement(
+    run_id: str, expected: Mapping[str, Any], *, promoted: bool = False
+) -> None:
+    """End only the deferral observed by the reader, preserving a concurrent ack."""
+    with _pointer_lock(run_id):
+        path = acknowledgement_path(run_id) if promoted else pointer_path(run_id)
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return
+        if promoted:
+            if payload == expected:
+                path.unlink()
+        elif payload.get(ACKNOWLEDGEMENT_FIELD) == expected:
+            payload.pop(ACKNOWLEDGEMENT_FIELD)
+            _write_json(path, payload)
 
 
 STATUS_REPAIR_RECORD_NAME = "status-repair.json"
@@ -4717,6 +4948,8 @@ def _take_watch_seat_fd() -> Any:
 @contextmanager
 def _project_watch_claim(project: str, stall_window: str):
     """Claim the local seat path, then the lease shared between hosts."""
+    from reckon.crew.watch_unit import record_producer_exit, record_producer_start
+
     path = watch_lock_path(project)
     path.parent.mkdir(parents=True, exist_ok=True)
     if project in _WATCH_HOST_LEASES:
@@ -4765,6 +4998,7 @@ def _project_watch_claim(project: str, stall_window: str):
         # is a predecessor whose seat was never erased, and a fresh arming over
         # it would otherwise report the predecessor's start -- reading as a
         # producer that has run for hours when it was armed seconds ago.
+        parent_pid = os.getppid()
         pid_start_time = _process_start_time(os.getpid())
         carried = (
             previous.get("pid"),
@@ -4775,6 +5009,8 @@ def _project_watch_claim(project: str, stall_window: str):
             "project": project,
             "pid": os.getpid(),
             "pid_start_time": pid_start_time,
+            "parent_pid": parent_pid,
+            "parent_start_time": _process_start_time(parent_pid),
             # The host that issued this pid. The seat lives on the shared home
             # every fleet node mounts, so without this a reader on another host
             # probes its own process table for a pid that belongs to someone
@@ -4828,11 +5064,22 @@ def _project_watch_claim(project: str, stall_window: str):
         _WATCH_STREAM_PRODUCERS[project] = producer
         _WATCH_SEAT_HANDLES[project] = handle
         _WATCH_HOST_LEASES[project] = lease
+        error = None
         try:
+            record_producer_start(project, record)
+            record["last_stage"] = "initial-publication"
             _publish_watch_stream(project, _list_live_records(project=project))
+            record["last_stage"] = "registered"
+            _write_watch_record(handle, record)
             yield True, record
+        except BaseException as exc:
+            error = exc
+            raise
         finally:
-            drop_watch_seat(project, handle)
+            try:
+                record_producer_exit(project, record, error)
+            finally:
+                drop_watch_seat(project, handle)
     finally:
         handle.close()
         if lease is not None:

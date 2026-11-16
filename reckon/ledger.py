@@ -1162,7 +1162,12 @@ def run_ids(project: str, root: str | Path | None = None) -> set[str]:
 
 # The index stores file-derived values only. Every access checks file metadata,
 # including ctime, so edits with a preserved mtime still invalidate the row.
-_RUN_INDEX_VERSION = 6
+# The version moves when what the index extracts from a row moves, because a
+# warm index is never re-read from its sources: a row already indexed keeps the
+# column it was built with. Version 7 extracts a row's plan through the
+# dispatch fallback :func:`_row_plan` reads, so every row written before it is
+# re-extracted from the payload it already holds.
+_RUN_INDEX_VERSION = 7
 
 # The metadata key an index uses to carry the resolved ledger path it indexes.
 # It is written when the index is built, so a sweep can identify an index whose
@@ -1670,8 +1675,31 @@ def _row_plan(record: Any) -> str:
 
     An absent plan is the empty string rather than NULL, so one equality
     answers the question a plan-filtered read asks and a row without a plan can
-    never be returned for a named plan."""
-    return str(record.get("plan") or "") if isinstance(record, Mapping) else ""
+    never be returned for a named plan.
+
+    A run dispatched with a brief records no top-level ``plan`` at all, and a
+    dispatch that carries a brief is not a run without a plan: the run still
+    names the plan and section it was dispatched for. So the row's own field is
+    read first, and two places a dispatch records the same fact answer for a row
+    that has none — the impl move the run reported, then the node definition it
+    ran. The impl move is read before the definition because the definition is
+    wide detail a later rotation may wash out, while the impl move is durable;
+    reading the durable copy first keeps one row's plan the same before and
+    after that rotation. A row naming no plan in any of the three is still the
+    empty string, so it is returned for no plan.
+    """
+    if not isinstance(record, Mapping):
+        return ""
+    own = str(record.get("plan") or "").strip()
+    if own:
+        return own
+    for key in ("impl_move", "node_definition"):
+        block = record.get(key)
+        if isinstance(block, Mapping):
+            plan = str(block.get("plan") or "").strip()
+            if plan:
+                return plan
+    return ""
 
 
 def _active_records(records: Iterable[Any], boundary: float) -> list[dict[str, Any]]:
@@ -2307,7 +2335,11 @@ def load(
     the picker fields; neither materialises full run records. No stored read
     inspects per-run documents or refreshes their disposable indexes.
 
-    With no store, the file-backed index supplies migration compatibility.
+    ``plan`` uses :func:`_row_plan`, including the durable implementation move
+    and the node definition when a brief-carried row has no top-level plan.
+
+    With no store, the file-backed index supplies migration compatibility,
+    retaining its last complete snapshot when a refresh is temporarily refused.
     ``use_index=False`` explicitly reads the committed documents for import
     and comparison, independently of the store being checked or rebuilt.
     Roster and holds retain their versioned aggregate read until migrated.
@@ -3922,11 +3954,7 @@ def read_records(
     if activity_since is not None and with_figures:
         records = _active_records(records, activity_since)
     if selected_plan:
-        records = [
-            record
-            for record in records
-            if str(record.get("plan") or "") == selected_plan
-        ]
+        records = [record for record in records if _row_plan(record) == selected_plan]
     if since is not None:
         boundary = _parse_timestamp(since, "since")
         filtered: list[dict[str, Any]] = []
@@ -3988,7 +4016,7 @@ def review_scores(
     for record in records:
         if not isinstance(record, Mapping):
             continue
-        if plan is not None and str(record.get("plan") or "") != str(plan):
+        if plan is not None and _row_plan(record) != str(plan):
             continue
         if node is not None and str(record.get("node") or "") != str(node):
             continue
@@ -4000,7 +4028,7 @@ def review_scores(
         selected.append(
             {
                 "run_id": str(record.get("run_id") or ""),
-                "plan": str(record.get("plan") or ""),
+                "plan": _row_plan(record),
                 "node": str(record.get("node") or ""),
                 "status": str(block.get("status") or "unparsed"),
                 "scores": dict(block.get("scores") or {}),
@@ -4471,7 +4499,7 @@ def effort_report(
     excluded_stalled = 0
     excluded_unusable_completion = 0
     for record in runs(project, root):
-        plan = str(record.get("plan") or "")
+        plan = _row_plan(record)
         row = by_plan.setdefault(
             plan,
             {
@@ -4642,7 +4670,7 @@ def summary(
         "gates": {kind: dict(sorted(counts.items())) for kind, counts in gates.items()},
         "worker_gate": worker_gate,
         "suite_deltas": suite_deltas,
-        "plans": sorted({str(record.get("plan") or "") for record in records}),
+        "plans": sorted({_row_plan(record) for record in records}),
         "effort": effort_report(project, root=root, declared=declared),
     }
 
