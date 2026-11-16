@@ -92,16 +92,35 @@ function derivedFlowChainHours(inventory, runs, project, now = new Date()) {
   return window.ReckonCrewSchedule.farEnd(inventory, runs, project, now);
 }
 
+// The discovery payload states a sprint's figures two ways: flat derived
+// fields on the row, and the `metrics` block it was composed from. The flat
+// fields win; when a payload carries only the block, the row states what was
+// served rather than "unknown", which reads as a missing fact to a sprint's
+// own table.
+function dominantEffectiveStatus(counts) {
+  const entries = Object.entries(counts || {}).filter(([, count]) => Number(count) > 0);
+  if (!entries.length) return null;
+  const precedence = ["active", "blocked", "pending", "shipped"];
+  entries.sort((left, right) => Number(right[1]) - Number(left[1])
+    || precedence.indexOf(left[0]) - precedence.indexOf(right[0]));
+  return entries[0][0];
+}
+
 function sprintStateRows(sprints, inventory) {
   return (sprints || []).map(sprint => {
     const members = sprintMembers(sprint, inventory);
-    const state = sprint.derived_state || "unknown";
+    const metrics = sprint.metrics || {};
+    const state = sprint.derived_state
+      || dominantEffectiveStatus(metrics.by_effective_status)
+      || "unknown";
     const drift = sprint.state_drift;
-    const heldCount = Number(sprint.blocked || 0);
+    const heldCount = Number(sprint.blocked ?? metrics.by_effective_status?.blocked ?? 0);
     const flag = drift
       ? `was ${drift.stored}`
       : (heldCount > 0 ? `${heldCount} held` : null);
-    const meanImpl = Number(sprint.implementation_pct || 0) / 100;
+    const meanImpl = Number.isFinite(Number(sprint.implementation_pct))
+      ? Number(sprint.implementation_pct) / 100
+      : Number(metrics.mean_impl || 0);
     const hours = sprintHoursSummary(members);
     const closed = state === "shipped" || CLOSED_SPRINT_AUTHORED_STATUSES.has(sprint.status);
     return { sprint, state, flag, heldCount, members, meanImpl, hours, closed };
@@ -418,7 +437,11 @@ function Sprint({ sprintId, onNav }) {
               <div><span className="r-eyebrow">Project state</span><h2 id="sprint-state-heading">Every sprint</h2></div>
               <div className="r-sprint-state-summary">
                 <span>{stateRows.length} total</span>
-                {activeConflict && <strong className="r-sprint-conflict">Active pointer conflict</strong>}
+                {activeConflict && (
+                  <strong className="r-sprint-conflict" role="alert">
+                    Active pointer conflict: {(M.active_sprints || []).map(row => typeof row === "string" ? row : row.id).filter(Boolean).join(", ") || "none"} active, pointer {M.active_sprint_id || "unset"}
+                  </strong>
+                )}
                 <label><input type="checkbox" checked={foldClosed} onChange={event => setFoldClosed(event.target.checked)} /> Fold closed</label>
               </div>
             </header>

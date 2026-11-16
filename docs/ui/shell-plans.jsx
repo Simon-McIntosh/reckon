@@ -544,6 +544,10 @@ function ArtifactIndex({ kind, onSelect, filters, setFilters, sortBy, setSortBy,
           const itemState = artifactState(item, kind);
           const percent = Math.round(Number(item.impl || 0) * 100);
           const hours = Number(item.effort_hours);
+          const authored = item.workflow_status || item.status || "pending";
+          const effective = item.effective_status || authored;
+          const openGates = openGateCount(item);
+          const gateLabel = `${openGates} open ${openGates === 1 ? "gate" : "gates"}`;
           return (
             <button type="button" key={navKey} className={`r-artifact-row r-artifact-row-${kind}${arrivingKeys.has(navKey) ? " is-arriving" : ""}`} data-artifact-slug={navKey} onClick={() => onSelect(navKey)}>
               <span className={`r-artifact-dot ${kind}-${itemState}`} aria-hidden="true"></span>
@@ -553,7 +557,7 @@ function ArtifactIndex({ kind, onSelect, filters, setFilters, sortBy, setSortBy,
                 <code>{item.slug}</code>
                 {kind === "plan" && (
                   <span className="r-artifact-plan-progress">
-                    <span className="r-artifact-progress" aria-label={`${percent} percent complete`}><i style={{ width: `${percent}%` }}></i></span>
+                    <span className="r-artifact-progress" aria-label={`${percent} percent complete`} title={`${percent} percent complete`}><i style={{ width: `${percent}%` }}></i></span>
                     <span>{Number.isFinite(hours) ? `${hours}h` : (item.effort || "—")} · {item.sprint || "unassigned"}</span>
                   </span>
                 )}
@@ -578,7 +582,15 @@ function ArtifactIndex({ kind, onSelect, filters, setFilters, sortBy, setSortBy,
                   <i aria-hidden="true">·</i>
                   <span>edited {artifactStamp(item.edited || item.last)}</span>
                 </span>
-                {kind === "plan"
+                {kind === "plan" && authored !== effective ? (
+                  <span
+                    className="r-status-transition"
+                    title={`Authored ${authored}; effective ${effective}; ${gateLabel}`}
+                    aria-label={`${item.title || item.slug}: ${authored} to ${effective}, ${gateLabel}`}
+                  >
+                    <span>{authored}</span><span aria-label="to">→</span><span>{effective}</span><span>{gateLabel}</span>
+                  </span>
+                ) : kind === "plan"
                   ? <span className={`r-artifact-status-chip ${itemState}`}>{itemState}</span>
                   : <span className={`r-artifact-verdict r-artifact-verdict-${itemState}`}>{itemState}</span>}
               </span>
