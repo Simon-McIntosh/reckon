@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="379">
+<meta name="plan-version" content="380">
 <meta name="plan-modified" content="2026-11-16">
 </head>
 <body>
@@ -1499,6 +1499,12 @@ staged paths.</p>
 <div class="r-comment" data-section="s70" data-id="c-run-r-20261115T224054286669-an-ended-attempt-holds-nothing" data-who="reckon-build" data-when="2026-11-15T23:03:04Z">
     <div class="r-comment-body"><p>`_reserved_attempt_ended` reads `attempt-N-exit.json` from the run directory it is handed and `reserve_launch_attempt: the promotion wrapper raises nothing without it)`; at base the reader answered False for the same `run_directory / f"attempt-{N}-exit.json"`, and promotion keeps only an attempt it did not read.</p></div>
 </div>
+<div class="r-comment" data-section="s72" data-id="c-run-r-20261116T062554364829-a-held-run-is-not-resumed" data-who="reckon-build" data-when="2026-11-16T06:33:22.568Z">
+    <div class="r-comment-body"><p>A coordinator's delivery hold is now read by the station's repair pass at entry and again at the launch, so no pass reserves a resume for a held run and no review follows one; a hold and its release are written to the run directory's hold.json. Measured: three station passes over a held run launch nothing (0 attempt reservations, 0 reviews dispatched), the pass after crew release reserves attempt-2.reservation and resumes, and the base pass with the guards removed reserves attempt-2.reservation for the held run.</p></div>
+</div>
+<div class="r-comment" data-section="s73" data-id="c-run-r-20261116T074412891115-review-of-a-receipt-and-a-spend-are-read-once-bcd60512ff62" data-who="reckon-build" data-when="2026-11-16T07:52:59.208Z">
+    <div class="r-comment-body"><p>reviewed run r-20261116T062634949844-a-receipt-and-a-spend-are-read-once scored 19/18/19/15/18/5 over base 6fa76c49f4..head bcd60512ff, with five non-blocking findings and no added failure; the record is stored and checked ok=true.</p></div>
+</div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261027T064548615537-review-of-a-follower-is-a-station-subscriber-3e6c0bc43826" data-who="reckon-build" data-when="2026-10-27T06:53:37.691Z">
     <div class="r-comment-body"><p>Independent review of r-20261027T042459263998-a-follower-is-a-station-subscriber at head 3e6c0bc43826 (base c30c057d4) scores goal_fidelity 18, evidence 15, scope_discipline 16, durability 16, fit 17, reuse 5, with 0 added failures and three non-blocking findings: events_for duplicates the existing events() reader, a session-less subscriber's cursors row is keyed on audience alone and collides across projects, and a figure was added that the done-when did not name.</p></div>
 </div>
@@ -1532,11 +1538,8 @@ staged paths.</p>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T042852990093-obligations-read-the-station" data-who="reckon-build" data-when="2026-10-27T13:28:42Z">
     <div class="r-comment-body"><p>The station computes each live session's obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
 </div>
-<div class="r-comment" data-section="s72" data-id="c-run-r-20261116T062554364829-a-held-run-is-not-resumed" data-who="reckon-build" data-when="2026-11-16T06:33:22.568Z">
-    <div class="r-comment-body"><p>A coordinator's delivery hold is now read by the station's repair pass at entry and again at the launch, so no pass reserves a resume for a held run and no review follows one; a hold and its release are written to the run directory's hold.json. Measured: three station passes over a held run launch nothing (0 attempt reservations, 0 reviews dispatched), the pass after crew release reserves attempt-2.reservation and resumes, and the base pass with the guards removed reserves attempt-2.reservation for the held run.</p></div>
-</div>
-<div class="r-comment" data-section="s73" data-id="c-run-r-20261116T074412891115-review-of-a-receipt-and-a-spend-are-read-once-bcd60512ff62" data-who="reckon-build" data-when="2026-11-16T07:52:59.208Z">
-    <div class="r-comment-body"><p>reviewed run r-20261116T062634949844-a-receipt-and-a-spend-are-read-once scored 19/18/19/15/18/5 over base 6fa76c49f4..head bcd60512ff, with five non-blocking findings and no added failure; the record is stored and checked ok=true.</p></div>
+<div class="r-comment" data-section="s74" data-id="c-run-r-20261116T082029523310-review-of-a-review-lookup-is-linear-03955d16a85f" data-who="reckon-build" data-when="2026-11-16T08:22:39.567Z">
+    <div class="r-comment-body"><p>74 — independent review of run r-20261116T064500174408-a-review-lookup-is-linear at base cc8a94d9 head 03955d16: six verdicts and six scores recorded (goal_fidelity 18, evidence 17, scope_discipline 19, durability 17, fit 16, reuse 12), five non-blocking findings, and added_failure_count 0 with no added failure ids derived from the reviewed run&#x27;s own baseline_suite and after_suite logs.</p></div>
 </div>
 </section>
 </main>
