@@ -1,0 +1,62 @@
+<section id="qwnw-red-file-a-review-with-no-base-is-not-carried-landing">
+  <h3>The no-base review fixture names a remote so the rule is reached</h3>
+  <p>The file failed in three cases on the primary branch, all from one cause: the
+  fixture built a checkout with no remote, and the reflex now takes a review's
+  delta from the run's own commits — those reachable from the run's head but from
+  neither the reviewed head nor the remote-tracking ref of the integration branch
+  (<code>clones.own_changed_paths</code>, called from
+  <code>review_head_move</code>). With no <code>origin/main</code> to resolve,
+  <code>_integration_ref</code> answers empty, the delta reads as uncomparable and
+  <code>review_head_move</code> returns <code>{}</code>, so
+  <code>carry_review_forward</code> reported <code>None</code> — "the head did not
+  move" — and no case ever reached the no-base rule the file exists to check. The
+  verdict is <strong>test wrong</strong>; no product rule was repaired.</p>
+  <table id="qwnw-red-file-a-review-with-no-base-is-not-carried-causes">
+    <thead><tr><th>Observed failure</th><th>Verdict</th><th>Rule the code keeps</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>carry_review_forward</code> returns <code>None</code>, so
+        <code>assert report is not None</code> fails in all three cases</td>
+        <td>test wrong</td>
+        <td>A review's delta is the paths of commits reachable from the run's head
+        but from neither the reviewed head nor the remote-tracking integration ref;
+        a checkout with no such ref is an uncomparable history, not an empty delta</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>The rule arrived with <code>beb6dfff11</code>, whose message records that the
+  delivery fixture needs a remote: "A history git cannot compare — no remote, or a
+  ref that does not resolve — reads as an unshown delta, so no review is carried
+  forward over it." The fixture now carries a bare <code>origin</code> holding
+  <code>main</code> at the reviewed head and pushes to it, the shape the sibling
+  carry-forward fixtures already use. Every assertion is unchanged: the two
+  not-carried cases still read the refusal off the pointer
+  (<code>assert "could not be read" in declined["reason"]</code>), and the third
+  still reads the carried review back at the new head.</p>
+  <p>Arms, both <code>all_debug</code> jobs with <code>SLURM_JOB_ID</code> unset,
+  both running
+  <code>env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_review_with_no_base_is_not_carried.py</code>:
+  at base <code>655a2befa979af690bab537523cd9ad97dc108c5</code> the file reads
+  <code>3 failed in 0.66s</code> with <code>EXIT=1</code>; at head
+  <code>de2297b453943cd77647b1895496ba14ab15cc61</code> it reads
+  <code>3 passed in 4.03s</code> with <code>EXIT=0</code>. The three base ids are
+  listed in the red-file record beside this one. The suite arm over
+  <code>tests/test_staged_write_inventory.py</code> and
+  <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code> reads
+  <code>58 passed in 33.21s</code> at base and <code>58 passed in 33.47s</code> at
+  head, and the arm over the three review-carry files reads
+  <code>14 failed, 2 passed</code> at base against
+  <code>11 failed, 5 passed</code> at head — no failure added, the three head
+  passes being this file's own cases. <code>ruff check</code> and
+  <code>ruff format --check</code> report no finding on the changed path.</p>
+  <p id="qwnw-red-file-a-review-with-no-base-is-not-carried-mutation">Negative
+  control for the rule the file asserts: with
+  <code>_review_delivered_paths</code> mutated to read a missing base as an empty
+  delivered diff (the pre-fix reading, <code>base_sha = ""</code>), the file reads
+  <code>2 failed, 1 passed</code> and both failures are
+  <code>assert True is False</code> on <code>report["carried"]</code> — a move over
+  the run's own deliverable, and one over an unrelated record, are carried when the
+  record names no base. So the widened fixture reaches the guard and the guard is
+  shown to fire, rather than the file passing for want of a decision.</p>
+  <p><a href="/reckon/evidence/fragments/queued-work-needs-no-workaround/red-file-a-review-with-no-base-is-not-carried.html">Red-file record: base arm and head arm</a></p>
+</section>
