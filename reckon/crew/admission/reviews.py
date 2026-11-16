@@ -160,7 +160,15 @@ def record_review_contract(pointer: Mapping[str, Any]) -> bool:
     run_id = str(pointer.get("run_id") or "")
     if not run_id:
         return False
-    node = _launching._node_from_pointer(pointer)
+    # A queued pointer whose stored node is too thin to rebuild keeps no
+    # contract: the stamp is an optimisation over the dispatch gate, so a
+    # request that cannot be stamped falls back to that gate rather than
+    # failing the queue write that stored it. A launched run still rebuilds
+    # strictly, where a node with no goal is a refusal and not a silence.
+    try:
+        node = _launching._node_from_pointer(pointer)
+    except TypeError:
+        return False
     if not node.plan.strip():
         return False
     contract = review_contract(node, repo_root=str(pointer.get("repo") or ""))
