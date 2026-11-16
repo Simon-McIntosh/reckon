@@ -1,0 +1,102 @@
+<section id="qwnw-red-file-review-reflex-selects-a-backend-landing">
+  <h3>A manifest verdict outranks a stale pre-spawn phase</h3>
+  <p><code>tests/test_review_reflex_selects_a_backend.py</code> passes in full at
+  <code>b911f5179e</code>. Every one of its four cases failed at the base
+  revision for one cause: a run whose pointer still reads the pre-spawn phase
+  <code>starting</code> was classified <code>running</code> whatever its
+  manifest said, so the reflex refused to compose a review with
+  <code>the run is not awaiting review (running)</code> — or, in the fourth
+  case, returned a refusal that carries no <code>awaiting_lane</code> key at
+  all. No assertion was changed, deleted or weakened; the test file is
+  untouched.</p>
+  <table>
+    <thead><tr><th>Observed cause</th><th>Verdict</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>All four ids — <code>test_a_first_composition_prefers_the_local_lane</code>,
+        <code>test_a_not_already_attempted_lane_is_not_reselected</code>,
+        <code>test_two_sweeps_do_not_recompose_onto_the_dropped_lane</code>,
+        <code>test_no_alternative_lane_refuses_rather_than_retrying_the_dropped_one</code>
+        — come from <code>classify_pointer</code> reporting <code>running</code>
+        for a completed run whose pointer kept the pre-spawn phase.</td>
+        <td>Product wrong. The pre-spawn arm added at
+        <code>fab923980b</code> applied to every <code>starting</code>,
+        <code>launching</code>, <code>launcher</code> or
+        <code>dispatching</code> pointer that recorded no worker, and through
+        <code>unlaunched</code> it short-circuited the manifest arms. It now
+        applies only while the manifest carries no verdict — the rule the code
+        already states for a queued request that recorded a launch clock, which
+        is read from its liveness rather than its label.</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>Both directions measured at head with one probe
+  (<code>phase: "starting"</code>, <code>process_alive: false</code>) and the
+  same probe at base:</p>
+  <table>
+    <thead><tr><th>Manifest</th><th>base 963de3f5e0</th><th>head b911f5179e</th></tr></thead>
+    <tbody>
+      <tr><td>absent (no verdict)</td><td>running — “the launcher has claimed this run”</td><td>running — unchanged</td></tr>
+      <tr><td><code>status: complete</code></td><td>running — the same sentence</td><td>scoring — “the worker manifest reports completion”</td></tr>
+      <tr><td><code>status: blocked</code></td><td>running — the same sentence</td><td>blocked — “the worker manifest reports blocked”</td></tr>
+    </tbody>
+  </table>
+  <p>The first row is the guard the arm exists for and it still holds: a
+  pre-spawn launch with no manifest is not migrated onto the manifest arms.
+  The third row is a second defect the same cause carried — a run that blocked
+  before its pointer advanced was reported as one whose worker had never
+  started — repaired by the same rule.</p>
+  <p id="qwnw-red-file-review-reflex-selects-a-backend-gate">Gate, as a job on
+  <code>all_debug</code> (job <code>1319713</code>, host
+  <code>98dci4-clu-4073</code>) with <code>SLURM_JOB_ID</code> unset inside the
+  job: <code>4 passed in 53.52s</code>, <code>EXIT=0</code>, at revision
+  <code>b911f5179e</code>.</p>
+  <p id="qwnw-red-file-review-reflex-selects-a-backend-control">Negative
+  control, the same file at base <code>963de3f5e0</code> in a scratch clone with
+  <code>SLURM_JOB_ID</code> unset: <code>4 failed in 0.90s</code>,
+  <code>EXIT=1</code>, reporting exactly the four ids the head gate runs —
+  <code>assert False is True</code> on the first three and
+  <code>KeyError: 'awaiting_lane'</code> on the fourth.</p>
+  <p id="qwnw-red-file-review-reflex-selects-a-backend-arm">Arm over the 214
+  test files that import the changed module, run twice at each revision so a
+  scheduling flake can be told from a regression, each run with its own pytest
+  basetemp on a compute node:</p>
+  <table>
+    <thead><tr><th>Arm</th><th>Summary</th></tr></thead>
+    <tbody>
+      <tr><td>base 963de3f5e0, run 1</td><td><code>101 failed, 1653 passed, 13 errors in 1076.91s</code>, <code>EXIT=1</code></td></tr>
+      <tr><td>base 963de3f5e0, run 2 (all_debug job 1319924)</td><td><code>102 failed, 1652 passed, 13 errors in 867.63s</code>, <code>EXIT=1</code></td></tr>
+      <tr><td>head b911f5179e, run 1 (all_debug job 1319780)</td><td><code>84 failed, 1670 passed, 13 errors in 960.65s</code>, <code>EXIT=1</code></td></tr>
+      <tr><td>head b911f5179e, run 2 (all_debug job 1319845)</td><td><code>85 failed, 1669 passed, 13 errors in 976.96s</code>, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+  <p>Id for id over the union of each arm's two runs: 18 ids the base arm fails
+  are cleared at head, and one id appears at head that no base run reported.
+  The cleared set is the seven <code>test_review_role_is_not_reviewed</code>
+  cases, eight <code>test_review_reflex_sweep</code> cases, two
+  <code>test_a_tier_none_run_owes_no_review</code> cases, one <code>test_crew_recovery</code> case
+  and one <code>test_producer_reads_only_what_changed</code> case; the error
+  set is identical on both sides.</p>
+  <p>The one head-only id is
+  <code>test_stall_window_respects_a_child.py::test_a_live_child_holds_the_window_for_the_ticker</code>,
+  and it is a scheduling flake rather than a regression: it fails in one of the
+  four arm runs, passes eight consecutive runs at each revision on its own, and
+  no path from <code>classify_pointer</code> reaches the ticker it drives. The
+  other id the head arms reported,
+  <code>test_crew_recover.py::test_the_follow_loop_sweeps_on_a_cadence_not_every_iteration</code>,
+  is not attributable and is not counted as added:
+  the base arm's second run reports the same id, and the loop it measures starts
+  its sweep on a background thread that the test's 25 fake one-second ticks can
+  outrun — a cadence missed while the previous sweep is alive is the loop's
+  stated behaviour.</p>
+  <p>Ruff: <code>ruff check</code> passes on the changed path at base and at
+  head. <code>ruff format --check</code> reports the same single pre-existing
+  hunk at <code>recovery_classification.py:1971</code> at base and
+  <code>:1980</code> at head — nothing new.</p>
+  <p id="qwnw-red-file-review-reflex-selects-a-backend-arm-note">Two earlier
+  arm runs are discarded rather than reported: they shared one pytest basetemp
+  on a login node whose <code>/tmp</code> was 97% full, and both filled with
+  <code>could not create numbered dir with prefix reckon-home</code> errors (629
+  and 538). They remain in the run directory as the measurement that showed the
+  instrument was broken.</p>
+</section>
