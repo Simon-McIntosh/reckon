@@ -1,0 +1,36 @@
+<section id="qwnw-red-file-admission-refusal-is-named">
+<h3>A red admission-refusal test file reads green, with two causes named</h3>
+<p><code>tests/test_admission_refusal_is_named.py</code> carried five failing tests on the primary branch. Both causes are named below, one product and one test, and neither was cleared by weakening an assertion: the five assertions and the three cases that already passed are unchanged.</p>
+
+<h4 id="qwnw-red-file-admission-refusal-is-named-causes">The two causes</h4>
+<ol id="qwnw-red-file-admission-refusal-is-named-cause-list">
+<li id="qwnw-red-file-admission-refusal-is-named-cause-product"><strong>Product wrong — the pre-spawn reading outranked the pointer's own worker record.</strong> <code>classify_pointer</code> read any pointer whose phase sits in <code>_PRE_SPAWN_PHASES</code> (<code>starting</code>, <code>launching</code>, <code>launcher</code>, <code>dispatching</code>) as a request the launcher had claimed and not yet started, whatever the pointer recorded. The commit that gave the parked phases their <code>launched</code> guard states the rule it did not apply here: a pid or a launch clock means the request launched and its liveness, not its label, decides the reading. A run refused at admission carries exactly that shape — a pre-spawn label, a recorded pid, a stream holding the refusal, a dead process — so it read <code>running</code> for as long as its pointer lived and the refusal the classifier can name was never reached. Repaired in <code>reckon/crew/recovery_classification.py</code>: <code>pre_spawn_waiting</code> now requires <code>not launched</code>, beside its existing stranded-launch term.</li>
+<li id="qwnw-red-file-admission-refusal-is-named-cause-test"><strong>Test wrong — the fixture recorded no worker.</strong> The file's <code>_pointer</code> helper wrote a stream, a dead process and a pre-spawn phase but no <code>pid</code>, so its pointer described a request that had not started rather than a run whose worker had ended. A pointer a launch writes records the process it started, so the fixture now carries <code>pid: 424242</code>. The assertions are untouched: the rule the file asserts — a refused admission is named, a genuine vanish still abandons, an in-harness run and a mark-less refusal are not refused, and every neighbouring classification is unchanged — is the rule the product now keeps.</li>
+</ol>
+
+<h4 id="qwnw-red-file-admission-refusal-is-named-negative-control">Negative control: the base run</h4>
+<p>The file is red at the assigned base revision, five failing tests and three passing, and green at the head. Both runs name their command, revision, tree and import path; the base and head arms of the same command are the two rows a landing compares.</p>
+<pre id="qwnw-red-file-admission-refusal-is-named-base-log"># revision: 6fa76c49f48e1d4fe4f104431f85f519ce92aae0 (git archive extraction)
+# tree: /tmp/reckon-crew-scratch/r-20261116T032036952503-qwnw-red-file-admission-refusal-is-named/base-tree
+# cwd: /tmp/reckon-crew-scratch/r-20261116T032036952503-qwnw-red-file-admission-refusal-is-named/base-tree
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_admission_refusal_is_named.py
+FAILED tests/test_admission_refusal_is_named.py::test_a_refused_admission_is_named
+FAILED tests/test_admission_refusal_is_named.py::test_a_genuine_vanished_run_still_abandons
+FAILED tests/test_admission_refusal_is_named.py::test_a_refusal_missing_a_mark_does_not_reach_the_arm
+FAILED tests/test_admission_refusal_is_named.py::test_an_in_harness_run_with_those_marks_is_not_refused
+FAILED tests/test_admission_refusal_is_named.py::test_every_other_classification_is_unchanged
+5 failed, 3 passed
+EXIT=1</pre>
+
+<h4 id="qwnw-red-file-admission-refusal-is-named-head-run">The head run</h4>
+<pre id="qwnw-red-file-admission-refusal-is-named-head-log"># revision: b2ec7667daf80a8aa1890e23416fdc0983b67436
+# cwd: the node worktree
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_admission_refusal_is_named.py
+# module.__file__: reckon/crew/recovery_classification.py (the worktree's own copy)
+........                                                                 [100%]
+8 passed
+EXIT=0</pre>
+
+<h4 id="qwnw-red-file-admission-refusal-is-named-ruff">ruff on the changed paths</h4>
+<p><code>ruff check</code> reports nothing on either arm. <code>ruff format --check</code> reports one unformatted line in <code>reckon/crew/recovery_classification.py</code> — the long <code>action = ...</code> line in the cut-off arm, at line 1965 in the base file and 1973 in the head file — the same finding at both revisions, so the change adds none.</p>
+</section>
