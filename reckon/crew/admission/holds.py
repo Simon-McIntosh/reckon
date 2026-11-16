@@ -831,19 +831,16 @@ def _record_pass_hold(
         # A retry timer cannot settle the named runs. A scope conflict takes
         # this path only after the claim check found no binding collision.
         chosen = previous
-    if str(
-        previous.get("verdict") or ""
-    ) == "refused-scope-conflict" and _released_claim(previous, live):
+    stored_refusal = str(previous.get("verdict") or "") == "refused-scope-conflict"
+    if stored_refusal and _released_claim(previous, live):
         # The pass re-read the run the stored refusal names and found it no
         # longer claims the path, so the refusal is retired and the request
         # reads as waiting out the ordinary back-off.
         chosen = _declined_refusal_hold(previous, moment=moment)
 
-    def without_time(row: Mapping[str, Any]) -> dict[str, Any]:
-        return {key: value for key, value in row.items() if key != "recorded_at"}
-
     chosen = _carried_hold(pointer, chosen)
-    if without_time(chosen) == without_time(previous):
+    if chosen == previous:
+        # Nothing about the reason changed, so its own instant stands.
         return
     chosen["recorded_at"] = moment.isoformat()
     run_id = str(pointer.get("run_id") or "")
