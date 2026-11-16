@@ -1,0 +1,126 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "fails_if": "Git ancestry differs from the constructed reachable/unreachable topology; expected status is independent of readiness.",
+      "lines": "70",
+      "role": "fixture sanity"
+    },
+    {
+      "fails_if": "The registered mount resolves somewhere other than the actual temporary checkout.",
+      "lines": "75",
+      "role": "fixture sanity"
+    },
+    {
+      "fails_if": "The store returns zero or multiple rows; ensures an empty instrument cannot claim success.",
+      "lines": "92",
+      "role": "fixture sanity"
+    },
+    {
+      "fails_if": "Persistence or the public resolver drops or changes the seeded revision, plan or section. These compare retrieved fixture values with supplied inputs and are not counted as repair coverage.",
+      "lines": "93-95",
+      "role": "fixture round-trip sanity"
+    },
+    {
+      "fails_if": "A live upstream pointer is present, which would bypass the promoted-only scenario.",
+      "lines": "96",
+      "role": "fixture sanity"
+    },
+    {
+      "fails_if": "Restore the flat plan fallback in _unloaded_sections: reachable brief promotions are reported unlanded; demonstrated for both carriers.",
+      "lines": "106",
+      "role": "regression guard"
+    },
+    {
+      "fails_if": "Treat an unreachable promotion as landed, e.g. ignore _revision_is_ancestor and remove its pending entry unconditionally.",
+      "lines": "117",
+      "role": "safety guard"
+    },
+    {
+      "fails_if": "Ignore ordinary flat-plan ledger identity so a reachable plan-dispatched promotion remains unloaded.",
+      "lines": "125",
+      "role": "compatibility guard"
+    },
+    {
+      "fails_if": "Restore the flat fallback: reachable cases return awaiting-upstream instead of queued; falsely treating unreachable revisions as landed fails the other two cases. Expected phase is derived from the independent git topology, not a phase supplied to resolve_waits.",
+      "lines": "146",
+      "role": "queue integration guard"
+    }
+  ],
+  "base_log_revision": "faef8aae9a2af0d6caddfd07b8510391f5063be1",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/admission/readiness.py:662 (_section_run_unlanded)",
+    "reckon/crew/admission/release.py:160 (resolve_waits through _wait_state)",
+    "reckon/crew/runs.py:3520 (drain)"
+  ],
+  "completed_at": "2026-11-16T12:29:30Z",
+  "dispatched_at": "2026-11-16T12:24:59Z",
+  "failure_measurement_positive_control": {
+    "detected_failure_count": 4,
+    "failure_ids": [
+      "tests/test_a_brief_landed_section_releases_its_waiters.py::test_a_reachable_brief_promotion_is_not_unlanded[impl_move]",
+      "tests/test_a_brief_landed_section_releases_its_waiters.py::test_a_reachable_brief_promotion_is_not_unlanded[node_definition]",
+      "tests/test_a_brief_landed_section_releases_its_waiters.py::test_the_queue_releases_a_waiter_only_after_its_brief_promotion_lands[True-impl_move]",
+      "tests/test_a_brief_landed_section_releases_its_waiters.py::test_the_queue_releases_a_waiter_only_after_its_brief_promotion_lands[True-node_definition]"
+    ],
+    "log": "negative-1319838.log"
+  },
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "non-blocking: baseline_suite and after_suite name different commands over a narrower gate that omits the required existing brief-carried tests and admission consumers; the completed matching broader diagnostic logs supply the missing evidence, so this does not hold the repair, but the canonical suite entries should point to those arms for subsequent automated readers."
+    },
+    {
+      "file": "tests/test_a_brief_landed_section_releases_its_waiters.py",
+      "line": "16",
+      "severity": "non-blocking",
+      "text": "non-blocking: _git duplicates the repository's existing checked git-command helper in tests/test_a_wait_releases_when_its_upstream_lands.py:55, substituting git -C for subprocess cwd; it wraps subprocess independently and does not extend that owner, creating another copy to maintain."
+    }
+  ],
+  "head_log_revision": "cf011d1c13da7c3442849df550a54743c101f08e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read f93a45bf8d85de517102085b8e73f1d3a461cba1 adding the regression tests, 11c31f05e2a117f86b790ba2876234ab8cd24ea6 creating the seed directory, and cf011d1c13da7c3442849df550a54743c101f08e changing only the resolver fallback at reckon/crew/runs.py:2943.",
+    "done_when": "The brief's reachable, unreachable, ordinary-plan and queue-release cases are asserted at tests/test_a_brief_landed_section_releases_its_waiters.py:106-146, and the broader diagnostic-base-1319835.log and diagnostic-head-1319837.log show four repaired failures and no added failures, although the manifest's primary suite pair is narrower and uses different commands.",
+    "goal": "The source goal in the reviewed run brief is to release waiters of sections landed by brief-dispatched runs, and reckon/crew/runs.py:2943 now resolves their durable plan identity through ledger.row_plan.",
+    "manifest": "The source manifest.md records three resolvable commits, completed Rigel gates, a four-failure negative control, and the two unchanged broader failures, but its baseline_suite and after_suite entries do not designate the brief's broader matching-command gate.",
+    "write_paths": "The source run declares reckon/crew/runs.py, reckon/crew/admission/readiness.py and tests/test_a_brief_landed_section_releases_its_waiters.py; the complete base-to-head diff changes only the first and third paths."
+  },
+  "justifications": {
+    "durability": "Restoring record.get(\"plan\") at reckon/crew/runs.py:2943 makes the independent False assertion at tests/test_a_brief_landed_section_releases_its_waiters.py:106 and queued assertion at line 146 fail for both brief carriers, as negative-1319838.log demonstrates.",
+    "evidence": "diagnostic-base-1319835.log and diagnostic-head-1319837.log record the same command with 6 versus 2 failures and negative-1319838.log records four mutation failures, but source manifest.md:19-20 points its suite fields at a narrower pair.",
+    "fit": "reckon/crew/runs.py:2943 matches readiness.py:605's resolver idiom, and the new tests use tests/conftest.py:1589's shared home fixture without introducing forbidden source names.",
+    "goal_fidelity": "reckon/crew/runs.py:2943 fixes the identity mismatch in the existing owner, and tests/test_a_brief_landed_section_releases_its_waiters.py:106-146 exercises both durable brief carriers through ancestry and release.",
+    "reuse": "Production reuses reckon/ledger.py:row_plan, but tests/test_a_brief_landed_section_releases_its_waiters.py:16 duplicates the existing git-command helper capability in tests/test_a_wait_releases_when_its_upstream_lands.py:55 rather than extending a shared test owner.",
+    "scope_discipline": "The two changed paths, reckon/crew/runs.py and tests/test_a_brief_landed_section_releases_its_waiters.py, are explicitly declared and contain only the resolver repair and its focused coverage."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source goal in the reviewed run brief is to release waiters of sections landed by brief-dispatched runs, and reckon/crew/runs.py:2943 now resolves their durable plan identity through ledger.row_plan.\nVERDICT done_when: The brief's reachable, unreachable, ordinary-plan and queue-release cases are asserted at tests/test_a_brief_landed_section_releases_its_waiters.py:106-146, and the broader diagnostic-base-1319835.log and diagnostic-head-1319837.log show four repaired failures and no added failures, although the manifest's primary suite pair is narrower and uses different commands.\nVERDICT write_paths: The source run declares reckon/crew/runs.py, reckon/crew/admission/readiness.py and tests/test_a_brief_landed_section_releases_its_waiters.py; the complete base-to-head diff changes only the first and third paths.\nVERDICT manifest: The source manifest.md records three resolvable commits, completed Rigel gates, a four-failure negative control, and the two unchanged broader failures, but its baseline_suite and after_suite entries do not designate the brief's broader matching-command gate.\nVERDICT diff: Read f93a45bf8d85de517102085b8e73f1d3a461cba1 adding the regression tests, 11c31f05e2a117f86b790ba2876234ab8cd24ea6 creating the seed directory, and cf011d1c13da7c3442849df550a54743c101f08e changing only the resolver fallback at reckon/crew/runs.py:2943.\nCALL_SITES: reckon/crew/admission/readiness.py:662 (_section_run_unlanded), reckon/crew/admission/release.py:160 (resolve_waits through _wait_state), reckon/crew/runs.py:3520 (drain)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:2943 fixes the identity mismatch in the existing owner, and tests/test_a_brief_landed_section_releases_its_waiters.py:106-146 exercises both durable brief carriers through ancestry and release.\nSCORE evidence: 17\nJUSTIFICATION evidence: diagnostic-base-1319835.log and diagnostic-head-1319837.log record the same command with 6 versus 2 failures and negative-1319838.log records four mutation failures, but source manifest.md:19-20 points its suite fields at a narrower pair.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The two changed paths, reckon/crew/runs.py and tests/test_a_brief_landed_section_releases_its_waiters.py, are explicitly declared and contain only the resolver repair and its focused coverage.\nSCORE durability: 20\nJUSTIFICATION durability: Restoring record.get(\"plan\") at reckon/crew/runs.py:2943 makes the independent False assertion at tests/test_a_brief_landed_section_releases_its_waiters.py:106 and queued assertion at line 146 fail for both brief carriers, as negative-1319838.log demonstrates.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/runs.py:2943 matches readiness.py:605's resolver idiom, and the new tests use tests/conftest.py:1589's shared home fixture without introducing forbidden source names.\nSCORE reuse: 5\nJUSTIFICATION reuse: Production reuses reckon/ledger.py:row_plan, but tests/test_a_brief_landed_section_releases_its_waiters.py:16 duplicates the existing git-command helper capability in tests/test_a_wait_releases_when_its_upstream_lands.py:55 rather than extending a shared test owner.\nFINDING manifest.md:19 non-blocking: baseline_suite and after_suite name different commands over a narrower gate that omits the required existing brief-carried tests and admission consumers; the completed matching broader diagnostic logs supply the missing evidence, so this does not hold the repair, but the canonical suite entries should point to those arms for subsequent automated readers.\nFINDING tests/test_a_brief_landed_section_releases_its_waiters.py:16 non-blocking: _git duplicates the repository's existing checked git-command helper in tests/test_a_wait_releases_when_its_upstream_lands.py:55, substituting git -C for subprocess cwd; it wraps subprocess independently and does not extend that owner, creating another copy to maintain.\n",
+  "reuse_search": {
+    "added_test_definitions": "Searched conftest and upstream landing / brief-carried tests for git, temporary repository and promotion setup; opened _git in test_a_wait_releases_when_its_upstream_lands.py:55 and home in conftest.py:1589. _promotion composes those primitives with two brief identity carriers and actual ancestry; no existing shared helper supplies that combined scenario. The generic _git wrapper duplicates an existing capability.",
+    "production": "Existing identity owner ledger.row_plan and readiness._section_run_unlanded were opened; the repair reuses them."
+  },
+  "review_run_id": "r-20261116T122324992868-review-of-alro-s3h-cf011d1c13da",
+  "reviewed_base_sha": "faef8aae9a2af0d6caddfd07b8510391f5063be1",
+  "reviewed_head_sha": "cf011d1c13da7c3442849df550a54743c101f08e",
+  "reviewed_run_id": "r-20261116T115701386930-alro-s3h",
+  "scores": {
+    "durability": 20,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T12:32:24.187797+00:00",
+  "total": 102
+}
