@@ -570,8 +570,8 @@ def test_shell_renders_snapshot_source_resource_count_load_time_and_refresh(
 ) -> None:
     result = _rendered_probe(
         tmp_path,
-        route="#cockpit",
-        wait_selector=".r-topbar .settings",
+        route="#plans",
+        wait_selector=".r-artifact-index",
         prepare_signal="""(async () => {
           document.querySelector('.r-topbar .settings > button')?.click();
           // The receipt repaints when a discovery merge lands; the read below
@@ -618,7 +618,7 @@ def test_refresh_revalidates_discovery_without_document_navigation(
     result = _rendered_probe(
         tmp_path,
         route="#plans",
-        wait_selector=".r-list",
+        wait_selector=".r-artifact-index",
         probe="undefined",
         remove_signal="undefined",
         new_plan={
@@ -699,9 +699,9 @@ def test_handoff_renders_live_source_and_loaded_plan_version(
     result = _rendered_probe(
         tmp_path,
         route="#plan/rendered-contract",
-        wait_selector=".r-titlebar .gen-prompt",
+        wait_selector=".r-reading-prompt",
         probe="""(async () => {
-          document.querySelector(".r-titlebar .gen-prompt")?.click();
+          document.querySelector(".r-reading-prompt")?.click();
           const deadline = Date.now() + 5000;
           while (Date.now() < deadline && !document.querySelector(".r-modal textarea")) {
             await new Promise(resolve => setTimeout(resolve, 50));
@@ -718,7 +718,7 @@ def test_handoff_renders_live_source_and_loaded_plan_version(
             provenance: text.split("Handoff provenance").pop()?.trim() || "",
           };
         })()""",
-        remove_signal="document.querySelector('.r-titlebar .gen-prompt')?.remove()",
+        remove_signal="document.querySelector('.r-reading-prompt')?.remove()",
     )
 
     _assert_rendered_signal(result["baseline"], "handoff provenance")
@@ -732,23 +732,25 @@ def test_compact_progress_renders_label_tooltip_and_navigation_target(
     result = _rendered_probe(
         tmp_path,
         route="#plans",
-        wait_selector=".r-compact-signal.pct",
+        wait_selector=".r-artifact-progress",
         probe="""(async () => {
-          const signal = document.querySelector(".r-compact-signal.pct");
+          // The index row states a plan's implementation as a compact signal
+          // that carries its reading and opens the plan it belongs to.
+          const signal = document.querySelector(".r-artifact-progress");
           const label = signal?.getAttribute("aria-label") || "";
           const tooltip = signal?.getAttribute("title") || "";
           signal?.click();
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise(resolve => setTimeout(resolve, 150));
           return {
             ok: label.includes("42 percent complete")
               && tooltip.includes("42 percent complete")
               && location.hash.includes("#plan/rendered-contract"),
             label,
             tooltip,
-            target: location.hash,
+            target: location.hash.includes("#plan/rendered-contract"),
           };
         })()""",
-        remove_signal="document.querySelector('.r-compact-signal.pct')?.remove()",
+        remove_signal="document.querySelector('.r-artifact-progress')?.remove()",
     )
 
     _assert_rendered_signal(result["baseline"], "compact progress navigation")
