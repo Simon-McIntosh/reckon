@@ -388,24 +388,23 @@ def test_overview_renders_every_active_sprint_and_focus_conflict(
 ) -> None:
     result = _rendered_probe(
         tmp_path,
-        route="#cockpit",
-        wait_selector=".r-overview-project-row",
+        route="#sprint/focus",
+        wait_selector=".r-sprint-table",
         probe="""(() => {
-          const row = document.querySelector(".r-overview-project-row");
-          const links = [...row.querySelectorAll(".r-overview-sprints > a")];
-          const conflict = row.querySelector(".r-overview-conflict[role='alert']");
-          const sprintNames = links.map(link => link.textContent.trim());
+          const rowNames = [...document.querySelectorAll(".r-sprint-table tbody tr")]
+            .map(row => row.querySelector("th strong")?.textContent.trim());
+          const conflict = document.querySelector(".r-sprint-conflict[role='alert']");
           return {
-            ok: sprintNames.some(name => name.includes("focus"))
-              && sprintNames.some(name => name.includes("concurrent"))
+            ok: rowNames.includes("focus")
+              && rowNames.includes("concurrent")
               && Boolean(conflict)
               && conflict.textContent.includes("focus")
               && conflict.textContent.includes("concurrent"),
-            sprintNames,
-            conflict: conflict?.textContent.trim() || null,
+            rowNames,
+            conflict: conflict?.textContent.replace(/\\s+/g, " ").trim() || null,
           };
         })()""",
-        remove_signal="document.querySelector('.r-overview-conflict')?.remove()",
+        remove_signal="document.querySelector('.r-sprint-conflict')?.remove()",
     )
 
     _assert_rendered_signal(result["baseline"], "active sprint conflict")
@@ -421,31 +420,66 @@ def test_sprint_view_renders_composed_metrics_findings_order_and_priority(
         route="#sprint/focus",
         wait_selector=".r-priority-panel",
         review=REVIEW_STATE,
-        prepare_signal="document.querySelector('.r-overview-controls input')?.click()",
-        probe="""(() => {
-          const rows = [...document.querySelectorAll(".r-timeline-row")];
+        probe=r"""(async () => {
+          const rows = [...document.querySelectorAll(".r-sprint-table tbody tr")];
+          const order = rows.map(row => row.querySelector("th strong")?.textContent.trim());
+          const focus = rows.find(row => row.querySelector("th strong")?.textContent.trim() === "focus");
           const priorities = [...document.querySelectorAll(".r-priority-panel li")];
           const reasons = [...document.querySelectorAll(".r-reason-chips span")]
             .map(chip => chip.textContent.trim());
           const findingLinks = [...document.querySelectorAll(".r-review-badge")];
-          const focus = rows.find(row => row.textContent.includes("focus"));
+          const findingTargets = [...document.querySelectorAll(".r-review-findings article")]
+            .map(article => article.id);
+          const overview = {
+            state: focus?.querySelector(".r-sprint-status")?.textContent.trim() || null,
+            implementation: focus?.querySelector(".r-sprint-implementation strong")?.textContent.trim() || null,
+            hours: focus?.querySelector(".r-sprint-hours")?.textContent.trim() || null,
+            flags: focus?.querySelector(".r-sprint-flags")?.textContent.trim() || null,
+          };
+          focus?.querySelector("th a")?.click();
+          const deadline = Date.now() + 5000;
+          while (Date.now() < deadline
+            && !document.querySelector(".r-sprint-detail .r-sprint-dag-card")) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
+          const stats = [...document.querySelectorAll(".r-sprint-detail-stats > div")]
+            .map(node => [node.querySelector("span")?.textContent.trim(), node.querySelector("strong")?.textContent.trim()]);
+          const cards = [...document.querySelectorAll(".r-sprint-dag-card")]
+            .map(node => node.textContent.replace(/\\s+/g, " ").trim());
+          const progress = document.querySelector(".r-sprint-dag-card .r-sprint-dag-progress")
+            ?.getAttribute("aria-label") || "";
+          const baseline = {
+            order: [...order],
+            overview: { ...overview },
+            priorities: priorities.map(row => row.textContent.replace(/\\s+/g, " ").trim()),
+            landed: priorities.map(row => row.classList.contains("landed")),
+            reasons: [...reasons],
+            findings: findingLinks.map(link => link.textContent.trim()),
+            hrefs: findingLinks.map(link => link.getAttribute("href")),
+            targets: findingTargets,
+            stats,
+            cards,
+            progress,
+          };
           return {
-            ok: rows[0]?.textContent.includes("concurrent")
-              && focus?.classList.contains("derived-active")
-              && focus?.textContent.includes("1 items")
-              && focus?.textContent.includes("mean 42%")
-              && focus?.textContent.includes("Rendered contract")
+            ok: order[0] === "concurrent"
+              && order[1] === "focus"
+              && overview.state === "active"
+              && overview.implementation === "42%"
+              && overview.hours === "3h \u00b7 2h left"
+              && overview.flags.includes("focus")
               && priorities.length === 2
               && !priorities[0].classList.contains("landed")
               && priorities[1].classList.contains("landed")
               && reasons.includes("critical-path")
               && reasons.includes("decision-first")
               && findingLinks.some(link => link.textContent.includes("active-sprint-mismatch"))
-              && findingLinks.every(link => link.getAttribute("href")?.startsWith("#review-finding-")),
-            order: rows.map(row => row.querySelector("strong")?.textContent),
-            priorities: priorities.map(row => row.textContent.replace(/\\s+/g, " ").trim()),
-            reasons,
-            findings: findingLinks.map(link => link.textContent.trim()),
+              && findingLinks.every(link => link.getAttribute("href")?.startsWith("#review-finding-"))
+              && stats.some(([label, value]) => label === "plans" && value === "1")
+              && cards.some(text => text.includes("Rendered contract"))
+              && progress.includes("Rendered contract: 42% complete"),
+            ...baseline,
+            baseline,
           };
         })()""",
         remove_signal="document.querySelector('.r-priority-panel')?.remove()",
@@ -540,9 +574,17 @@ def test_shell_renders_snapshot_source_resource_count_load_time_and_refresh(
         wait_selector=".r-topbar .settings",
         prepare_signal="""(async () => {
           document.querySelector('.r-topbar .settings > button')?.click();
+          // The receipt repaints when a discovery merge lands; the read below
+          // is the snapshot after that merge, so it waits for the receipt to
+          // carry the served figures rather than only to exist.
           const deadline = Date.now() + 5000;
-          while (Date.now() < deadline
-              && !document.querySelector('.settings-menu .r-snapshot-receipt')) {
+          const served = () => {
+            const node = document.querySelector('.settings-menu .r-snapshot-receipt');
+            const text = node?.textContent || '';
+            return Boolean(node) && text.includes('resources')
+              && !/\\b0 resources/.test(text) && !text.includes('legacy-index');
+          };
+          while (Date.now() < deadline && !served()) {
             await new Promise(resolve => setTimeout(resolve, 50));
           }
         })()""",
@@ -588,7 +630,7 @@ def test_refresh_revalidates_discovery_without_document_navigation(
             "effective_status": "pending",
             "path": "plans/created-while-open.html",
         },
-        refresh_probe="""(async () => {
+        refresh_probe=r"""(async () => {
           const initialDocument = document;
           const initialLocation = location.href;
           const initialNavigations = performance.getEntriesByType("navigation").length;
@@ -601,13 +643,25 @@ def test_refresh_revalidates_discovery_without_document_navigation(
             .find(button => button.textContent.trim() === "Refresh");
           refresh?.click();
 
-          const deadline = Date.now() + 5000;
-          while (Date.now() < deadline
-              && !document.body.textContent.includes("Created while open")) {
+          const bannerDeadline = Date.now() + 5000;
+          while (Date.now() < bannerDeadline && !document.querySelector(".r-arrival-show")) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
+          const hold = {
+            banner: document.querySelector(".r-arrival-banner")?.textContent.replace(/\s+/g, " ").trim() || "",
+            newPlanVisible: document.body.textContent.includes("Created while open"),
+            rows: [...document.querySelectorAll(".r-artifact-row")].map(node => node.dataset.artifactSlug).sort(),
+          };
+          document.querySelector(".r-arrival-show")?.click();
+          const revealDeadline = Date.now() + 5000;
+          while (Date.now() < revealDeadline
+            && !document.body.textContent.includes("Created while open")) {
             await new Promise(resolve => setTimeout(resolve, 50));
           }
           return {
+            hold,
             newPlanVisible: document.body.textContent.includes("Created while open"),
+            rows: [...document.querySelectorAll(".r-artifact-row")].map(node => node.dataset.artifactSlug).sort(),
             sameDocument: document === initialDocument,
             sameLocation: location.href === initialLocation,
             navigationEntriesAdded:
@@ -619,8 +673,17 @@ def test_refresh_revalidates_discovery_without_document_navigation(
         })()""",
     )["refreshed"]
 
+    # A refresh revalidates discovery in place: no document navigation, no
+    # steady-state polling, and the arriving plan is held behind the list's
+    # arrival banner until the reader opens it, then rendered in the list.
+    assert "1 new" in result["hold"].pop("banner")
     assert result == {
+        "hold": {
+            "newPlanVisible": False,
+            "rows": ["rendered-contract"],
+        },
         "newPlanVisible": True,
+        "rows": ["created-while-open", "rendered-contract"],
         "sameDocument": True,
         "sameLocation": True,
         "navigationEntriesAdded": 0,
