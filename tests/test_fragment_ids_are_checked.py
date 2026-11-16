@@ -127,14 +127,25 @@ def _git(repo: Path, *args: str) -> str:
     ).stdout.strip()
 
 
+TEST_LOG_NAME = "fragment-ids.log"
+# A gate log the audit can read: it names the command it ran behind the capture
+# label near its head and ends with the status it exited with.
+TEST_LOG_TEXT = (
+    "# command: python -m pytest tests/test_fragment_ids_are_checked.py -q\n"
+    "6 passed in 0.31s\n"
+    "EXIT=0\n"
+)
+
+
 def _manifest(head: str, *, changed: str) -> str:
     return f"""\
 node: fragment-check
 status: complete
 commits: {head}
 changed_paths: {changed}
-tests: pytest tests/test_fragment_ids_are_checked.py -q -> 6 passed
-test_logs: /tmp/fragment-ids.log
+tests: python -m pytest tests/test_fragment_ids_are_checked.py -q
+test_logs: fragment-ids.log
+messages_received: none
 artifacts: none
 evidence_inputs: none
 follow_ons: none
@@ -229,6 +240,7 @@ def run(tmp_path: Path) -> RunFixture:
         _fragment("second-node", RECORDLESS_ID), encoding="utf-8"
     )
     manifest = tmp_path / "manifest.md"
+    (tmp_path / TEST_LOG_NAME).write_text(TEST_LOG_TEXT, encoding="utf-8")
     manifest.write_text(_manifest(head, changed=CHANGED_FRAGMENT), encoding="utf-8")
     _write_json(
         pointer_path(RUN_ID),
