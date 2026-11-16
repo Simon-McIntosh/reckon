@@ -59,7 +59,7 @@ def test_a_slow_input_names_keeps_its_own_name(monkeypatch):
 
     started = time.monotonic()
     result = dispatch_picker_module.dispatch_picker_selection(
-        node=SimpleNamespace(),
+        node=_node(),
         config={},
         project="proj",
         repo=Path("/tmp"),
@@ -96,7 +96,7 @@ def test_a_completed_pick_carries_every_stage_time(monkeypatch):
     )
 
     result = dispatch_picker_module.dispatch_picker_selection(
-        node=SimpleNamespace(),
+        node=_node(),
         config={},
         project="proj",
         repo=Path("/tmp"),
@@ -133,7 +133,7 @@ def test_a_production_pick_names_the_estimate_it_ran_out_in(monkeypatch, tmp_pat
     )
     assert not errors
     result = dispatch_picker_module.dispatch_picker_selection(
-        node=SimpleNamespace(),
+        node=_node(),
         config={},
         project="proj",
         repo=tmp_path,
@@ -169,7 +169,7 @@ def test_a_normal_production_pick_carries_every_stage_time(monkeypatch, tmp_path
     )
     assert not errors
     result = dispatch_picker_module.dispatch_picker_selection(
-        node=SimpleNamespace(),
+        node=_node(),
         config={},
         project="proj",
         repo=tmp_path,
@@ -195,7 +195,7 @@ def test_a_failed_input_build_leaves_no_stale_stage_times(monkeypatch, tmp_path)
     )
     assert errors
     result = dispatch_picker_module.dispatch_picker_selection(
-        node=SimpleNamespace(),
+        node=_node(),
         config={},
         project="proj",
         repo=tmp_path,
