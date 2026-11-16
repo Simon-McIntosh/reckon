@@ -11,10 +11,11 @@ one exported predicate (:func:`is_durable`).
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
 from numbers import Real
@@ -70,6 +71,268 @@ _CODEX_CACHED_FIELDS = ("cached_input_tokens",)
 _CODEX_OUTPUT_FIELDS = ("output_tokens", "reasoning_output_tokens")
 
 
+@dataclass(slots=True)
+class _StreamFold:
+    """One run stream decoded once, extended by the bytes appended since.
+
+    A stream carries two independent measurements — its token totals and the
+    span its own records date — and both fold from the same decoded lines, so
+    one read answers both; the station's tick read each stream twice for them.
+    The fields are the state a whole-file read builds, kept between reads so a
+    terminal attempt's stream is decoded once and a grown one is decoded only
+    past its offset.
+    """
+
+    offset: int = 0
+    pending: bytes = b""
+    claude_messages: dict[str, dict[str, int]] = field(default_factory=dict)
+    claude_aggregate: tuple[dict[str, int], int | None] | None = None
+    codex_totals: dict[str, int] = field(default_factory=dict)
+    codex_turn_count: int = 0
+    thread_ids: set[str] = field(default_factory=set)
+    anonymous_message: int = 0
+    wall_ms: float | None = None
+    model_ms: float | None = None
+    first: datetime | None = None
+    last: datetime | None = None
+    unreadable: bool = False
+    revision: int = 0
+
+    def extend(self, path: Path) -> None:
+        """Decode the bytes of ``path`` past this fold's offset.
+
+        A worker writes its stream while this reads it, so a read can end
+        inside a line or inside a multibyte character; an incomplete tail is
+        held rather than decoded and read again with the bytes that finish it.
+        """
+        try:
+            with path.open("rb") as stream:
+                stream.seek(self.offset)
+                chunk = stream.read()
+        except OSError:
+            self.unreadable = True
+            return
+        if not chunk:
+            return
+        self.offset += len(chunk)
+        data = self.pending + chunk
+        self.pending = b""
+        end = data.rfind(b"\n")
+        if end < 0:
+            self.pending = data
+            return
+        self.pending = data[end + 1 :]
+        # The tail a cut write leaves behind is replaced rather than refused,
+        # so a character split across two reads cannot fail a whole tick.
+        for line in data[: end + 1].decode("utf-8", errors="replace").split("\n")[:-1]:
+            self._observe(line)
+        self.revision += 1
+
+    def _observe(self, line: str) -> None:
+        """Fold one decoded record into the stream's token and time state."""
+        try:
+            record = json.loads(line)
+        except (json.JSONDecodeError, TypeError):
+            return
+        if not isinstance(record, Mapping):
+            return
+        self._observe_time(record)
+
+        kind = record.get("type")
+        if kind == "thread.started":
+            thread_id = record.get("thread_id")
+            if isinstance(thread_id, str) and thread_id:
+                self.thread_ids.add(thread_id)
+            return
+
+        if kind == "assistant":
+            message = record.get("message")
+            if not isinstance(message, Mapping):
+                return
+            usage = _measured_fields(
+                message.get("usage"),
+                _CLAUDE_INPUT_FIELDS + _CLAUDE_OUTPUT_FIELDS,
+            )
+            if usage is None:
+                return
+            message_id = message.get("id")
+            if not isinstance(message_id, str) or not message_id:
+                self.anonymous_message += 1
+                message_id = f"anonymous-{self.anonymous_message}"
+            maxima = self.claude_messages.setdefault(message_id, {})
+            # Claude emits an assistant record for each content block.  A
+            # record carries the message's usage at that point, so the maximum
+            # for each field preserves the most complete value.
+            for field, value in usage.items():
+                maxima[field] = max(maxima.get(field, 0), value)
+            return
+
+        if kind == "result":
+            usage = _measured_fields(
+                record.get("usage"),
+                _CLAUDE_INPUT_FIELDS + _CLAUDE_OUTPUT_FIELDS,
+            )
+            if usage is not None:
+                self.claude_aggregate = (
+                    usage,
+                    _nonnegative_int(record.get("num_turns")),
+                )
+            return
+
+        if kind == "turn.completed":
+            usage = _measured_fields(
+                record.get("usage"),
+                _CODEX_INPUT_FIELDS + _CODEX_OUTPUT_FIELDS,
+            )
+            if usage is not None:
+                self.codex_turn_count += 1
+                for field, value in usage.items():
+                    self.codex_totals[field] = self.codex_totals.get(field, 0) + value
+            return
+
+    def _observe_time(self, record: Mapping[str, Any]) -> None:
+        """Fold this record's own dates and reported durations into the span."""
+        if record.get("type") == "result":
+            if _seconds_value(record.get("duration_ms")) is not None:
+                self.wall_ms = record["duration_ms"]
+            if _seconds_value(record.get("duration_api_ms")) is not None:
+                self.model_ms = record["duration_api_ms"]
+        raw = record.get("timestamp")
+        if isinstance(raw, str) and raw.strip():
+            parsed = _event_timestamp(raw)
+            if parsed is not None:
+                if self.first is None or parsed < self.first:
+                    self.first = parsed
+                if self.last is None or parsed > self.last:
+                    self.last = parsed
+
+    def token_usage(self) -> StreamTokenUsage | MeasurementState:
+        """The token measure this fold's state supports."""
+        if self.unreadable:
+            return UNMEASURED
+        has_claude = bool(self.claude_messages) or self.claude_aggregate is not None
+        has_codex = self.codex_turn_count > 0
+        if has_claude == has_codex:
+            return UNMEASURED
+        # One distinct thread id is the stream's identity; two mean the file
+        # merged conversations, which has no single identity to fold under, so
+        # it carries none and is summed with the other streams.
+        thread_id = next(iter(self.thread_ids)) if len(self.thread_ids) == 1 else None
+        if has_codex:
+            return _codex_usage(
+                self.codex_totals,
+                self.codex_turn_count,
+                thread_id=thread_id,
+            )
+        return _claude_usage(
+            self.claude_messages, self.claude_aggregate, thread_id=thread_id
+        )
+
+    def time_span(self) -> tuple[float | None, float | None]:
+        """This stream's own wall and generation span.
+
+        Wall prefers the harness-reported duration of the attempt's own
+        terminal result wholesale — the same authority a promoted throughput
+        block reads — and falls back to the interval between the stream's own
+        first and last event timestamps, so an attempt the harness did not
+        clock still has a bounded span.  Generation is only the harness's own
+        reported inference span; neither the event interval nor the wall is
+        restated as a model span, because either would invent a measurement
+        the stream did not take.
+        """
+        if self.unreadable:
+            return None, None
+        wall = _seconds_from_ms(self.wall_ms)
+        if (
+            wall is None
+            and self.first is not None
+            and self.last is not None
+            and self.last > self.first
+        ):
+            wall = round((self.last - self.first).total_seconds(), 3)
+        return wall, _seconds_from_ms(self.model_ms)
+
+
+def _stream_signature(path: Path) -> tuple[int, int, int, int] | None:
+    """One stream file's identity, length and stamp, or None if unreadable."""
+    try:
+        info = path.stat()
+    except OSError:
+        return None
+    return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns)
+
+
+@dataclass(slots=True)
+class _CachedStream:
+    """One stream's fold, with both readings already built from it."""
+
+    signature: tuple[int, int, int, int]
+    fold: _StreamFold
+    usage: StreamTokenUsage | MeasurementState | None = None
+    span: tuple[float | None, float | None] | None = None
+    built_revision: int = -1
+
+
+# A terminal attempt's stream stops growing, so its measure and its span are
+# the same on every tick.  The store is per process, keyed by path, and cleared
+# whole at its bound; a fresh process reads every byte again, which is what
+# makes a cached figure checkable.
+_STREAMS: dict[str, _CachedStream] = {}
+_STREAMS_LIMIT = 4096
+
+
+def _read_continues(entry: _CachedStream, signature: tuple[int, int, int, int]) -> bool:
+    """Whether a stored fold still describes the stream it was read from.
+
+    The same file grown is extended from its offset.  A different object (a
+    replaced stream), a shorter file (a truncated one), or one rewritten in
+    place at the same length is folded again from the start, because its
+    earlier bytes are no longer the ones the state was folded from.
+    """
+    previous = entry.signature
+    if previous[:2] != signature[:2]:
+        return False
+    if signature[2] < entry.fold.offset:
+        return False
+    return not (signature[2] == entry.fold.offset and previous != signature)
+
+
+def _stream_entry(stream_path: str | Path) -> _CachedStream | None:
+    """One stream's stored fold, extended by whatever it gained."""
+    path = Path(stream_path)
+    signature = _stream_signature(path)
+    if signature is None:
+        return None
+    key = str(path)
+    entry = _STREAMS.get(key)
+    if entry is None or not _read_continues(entry, signature):
+        if len(_STREAMS) >= _STREAMS_LIMIT:
+            _STREAMS.clear()
+        entry = _CachedStream(signature=signature, fold=_StreamFold())
+        _STREAMS[key] = entry
+    if entry.fold.offset < signature[2]:
+        entry.fold.extend(path)
+        entry.built_revision = -1
+        refreshed = _stream_signature(path)
+        if refreshed is not None and refreshed[:2] == signature[:2]:
+            signature = refreshed
+    entry.signature = signature
+    return entry
+
+
+def _settled(
+    entry: _CachedStream,
+) -> tuple[StreamTokenUsage | MeasurementState, tuple[float | None, float | None]]:
+    """Both readings of one stream, rebuilt if the fold has moved."""
+    if entry.built_revision != entry.fold.revision:
+        entry.usage = entry.fold.token_usage()
+        entry.span = entry.fold.time_span()
+        entry.built_revision = entry.fold.revision
+    usage = entry.usage if entry.usage is not None else UNMEASURED
+    span = entry.span if entry.span is not None else (None, None)
+    return usage, span
+
+
 def measure_stream_tokens(
     stream_path: str | Path,
 ) -> StreamTokenUsage | MeasurementState:
@@ -78,87 +341,17 @@ def measure_stream_tokens(
     Missing and unreadable paths, malformed streams, and streams without any
     usage counters return ``UNMEASURED``. A recognized usage record whose
     counters are all zero remains a measured zero.
+
+    A stream an earlier call already decoded is answered from that read: only
+    the bytes appended since are decoded, and an unchanged stream is not
+    decoded at all. A replaced or truncated stream is read again from the
+    start, so a rewritten file never answers with its predecessor's figures.
     """
-
-    claude_messages: dict[str, dict[str, int]] = {}
-    claude_aggregate: tuple[dict[str, int], int | None] | None = None
-    codex_turns: list[dict[str, int]] = []
-    thread_ids: set[str] = set()
-    anonymous_message = 0
-    try:
-        # A worker writes its stream while this reads it, so a read can end
-        # inside a multibyte character; the replaced tail fails to parse as
-        # JSON and is skipped like any other partial line.
-        with Path(stream_path).open(encoding="utf-8", errors="replace") as lines:
-            for line in lines:
-                try:
-                    record = json.loads(line)
-                except (json.JSONDecodeError, TypeError):
-                    continue
-                if not isinstance(record, Mapping):
-                    continue
-
-                if record.get("type") == "thread.started":
-                    thread_id = record.get("thread_id")
-                    if isinstance(thread_id, str) and thread_id:
-                        thread_ids.add(thread_id)
-                    continue
-
-                if record.get("type") == "assistant":
-                    message = record.get("message")
-                    if not isinstance(message, Mapping):
-                        continue
-                    usage = _measured_fields(
-                        message.get("usage"),
-                        _CLAUDE_INPUT_FIELDS + _CLAUDE_OUTPUT_FIELDS,
-                    )
-                    if usage is None:
-                        continue
-                    message_id = message.get("id")
-                    if not isinstance(message_id, str) or not message_id:
-                        anonymous_message += 1
-                        message_id = f"anonymous-{anonymous_message}"
-                    maxima = claude_messages.setdefault(message_id, {})
-                    # Claude emits an assistant record for each content block.
-                    # A record carries the message's usage at that point, so the
-                    # maximum for each field preserves the most complete value.
-                    for field, value in usage.items():
-                        maxima[field] = max(maxima.get(field, 0), value)
-                    continue
-
-                if record.get("type") == "result":
-                    usage = _measured_fields(
-                        record.get("usage"),
-                        _CLAUDE_INPUT_FIELDS + _CLAUDE_OUTPUT_FIELDS,
-                    )
-                    if usage is not None:
-                        claude_aggregate = (
-                            usage,
-                            _nonnegative_int(record.get("num_turns")),
-                        )
-                    continue
-
-                if record.get("type") == "turn.completed":
-                    usage = _measured_fields(
-                        record.get("usage"),
-                        _CODEX_INPUT_FIELDS + _CODEX_OUTPUT_FIELDS,
-                    )
-                    if usage is not None:
-                        codex_turns.append(usage)
-    except OSError:
+    entry = _stream_entry(stream_path)
+    if entry is None:
         return UNMEASURED
-
-    has_claude = bool(claude_messages) or claude_aggregate is not None
-    has_codex = bool(codex_turns)
-    if has_claude == has_codex:
-        return UNMEASURED
-    # One distinct thread id is the stream's identity; two mean the file
-    # merged conversations, which has no single identity to fold under, so it
-    # carries none and is summed with the other streams.
-    thread_id = next(iter(thread_ids)) if len(thread_ids) == 1 else None
-    if has_codex:
-        return _codex_usage(codex_turns, thread_id=thread_id)
-    return _claude_usage(claude_messages, claude_aggregate, thread_id=thread_id)
+    usage, _span = _settled(entry)
+    return usage
 
 
 def _claude_usage(
@@ -208,19 +401,26 @@ def _claude_usage(
 
 
 def _codex_usage(
-    turns: list[Mapping[str, int]], *, thread_id: str | None = None
+    totals: Mapping[str, int],
+    turn_count: int,
+    *,
+    thread_id: str | None = None,
 ) -> StreamTokenUsage:
-    cumulative = _sum_usage(turns)
+    """The codex measure from its folded per-field totals and turn count.
+
+    The fold sums each turn's fields as they arrive, so the totals are the same
+    sum every turn's usage would give, kept without holding a list of turns.
+    """
     # A Codex exec stream reports usage once per turn in turn.completed.usage,
     # not once per model request. Surcharge exposure is therefore unmeasurable
     # from the record rather than absent.
     return StreamTokenUsage(
-        cumulative_input_tokens=_sum_fields(cumulative, _CODEX_INPUT_FIELDS),
-        cumulative_cached_input_tokens=_sum_fields(cumulative, _CODEX_CACHED_FIELDS),
-        cumulative_output_tokens=_sum_fields(cumulative, _CODEX_OUTPUT_FIELDS),
+        cumulative_input_tokens=_sum_fields(totals, _CODEX_INPUT_FIELDS),
+        cumulative_cached_input_tokens=_sum_fields(totals, _CODEX_CACHED_FIELDS),
+        cumulative_output_tokens=_sum_fields(totals, _CODEX_OUTPUT_FIELDS),
         maximum_request_input_tokens=UNMEASURED,
         surcharged_request_count=UNMEASURED,
-        turn_count=len(turns),
+        turn_count=turn_count,
         dialect="codex",
         thread_id=thread_id,
     )
@@ -229,8 +429,8 @@ def _codex_usage(
 def _sum_usage(usages: Any) -> dict[str, int]:
     total: dict[str, int] = {}
     for usage in usages:
-        for field, value in usage.items():
-            total[field] = total.get(field, 0) + value
+        for name, value in usage.items():
+            total[name] = total.get(name, 0) + value
     return total
 
 
@@ -319,6 +519,34 @@ def _attempt_rank(path: Path) -> tuple[int, str]:
     return (int(match.group(1)), path.name) if match else (sys.maxsize, path.name)
 
 
+# A tick enumerates the same run's streams on every pass, for every row it
+# folds, so the listing itself is kept while the directory's identity, size and
+# stamp are unchanged — a new resume or lane-change file moves them.  The store
+# is cleared whole at its bound, the shape the completion-stamp store uses.
+_LISTINGS: dict[Path, tuple[tuple[int, int, int, int], tuple[str, ...]]] = {}
+_LISTINGS_LIMIT = 4096
+
+
+def _directory_entries(directory: Path) -> tuple[str, ...]:
+    """One directory's entry names, listed again only when it has changed."""
+    try:
+        info = directory.stat()
+    except OSError:
+        return ()
+    signature = (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns)
+    cached = _LISTINGS.get(directory)
+    if cached is not None and cached[0] == signature:
+        return cached[1]
+    try:
+        names = tuple(os.listdir(directory))
+    except OSError:
+        return ()
+    if len(_LISTINGS) >= _LISTINGS_LIMIT:
+        _LISTINGS.clear()
+    _LISTINGS[directory] = (signature, names)
+    return names
+
+
 def run_streams(stream_path: str | Path) -> list[Path]:
     """Every surviving stream one run wrote, in attempt then lane order.
 
@@ -338,9 +566,22 @@ def run_streams(stream_path: str | Path) -> list[Path]:
     original = (
         stream.parent / "stream.jsonl" if stream.name.startswith("resume-") else stream
     )
-    resumes = sorted(stream.parent.glob("resume-*.jsonl"), key=_resume_stream_order)
+    names = _directory_entries(stream.parent)
+    resumes = sorted(
+        (
+            stream.parent / name
+            for name in names
+            if re.fullmatch(r"resume-\d+\.jsonl", name)
+        ),
+        key=_resume_stream_order,
+    )
     lane_changes = sorted(
-        stream.parent.glob("lane-change-*.jsonl"), key=_lane_change_order
+        (
+            stream.parent / name
+            for name in names
+            if re.fullmatch(r"lane-change-\d+\.jsonl", name)
+        ),
+        key=_lane_change_order,
     )
     gathered: list[Path] = []
     seen: set[Path] = set()
@@ -496,49 +737,15 @@ def _seconds_from_ms(value: Any) -> float | None:
 def _stream_time_span(path: Path) -> tuple[float | None, float | None]:
     """One attempt's own wall and generation span, from its stream file.
 
-    Wall prefers the harness-reported duration of the attempt's own terminal
-    result wholesale — the same authority a promoted throughput block reads —
-    and falls back to the interval between the stream's own first and last
-    event timestamps, so an attempt the harness did not clock still has a
-    bounded span. Generation is only the harness's own reported inference
-    span; neither the event interval nor the wall is restated as a model
-    span, because either would invent a measurement the stream did not take.
+    The same fold the attempt's token measure comes from answers this, so the
+    two readings of one stream share a single decode; an unchanged stream
+    answers from that read.
     """
-
-    wall_ms: float | None = None
-    model_ms: float | None = None
-    first: datetime | None = None
-    last: datetime | None = None
-    try:
-        with Path(path).open(encoding="utf-8", errors="replace") as lines:
-            for line in lines:
-                try:
-                    record = json.loads(line)
-                except (json.JSONDecodeError, TypeError):
-                    continue
-                if not isinstance(record, Mapping):
-                    continue
-                if record.get("type") == "result":
-                    if _seconds_value(record.get("duration_ms")) is not None:
-                        wall_ms = record["duration_ms"]
-                    if _seconds_value(record.get("duration_api_ms")) is not None:
-                        model_ms = record["duration_api_ms"]
-                raw = record.get("timestamp")
-                if isinstance(raw, str) and raw.strip():
-                    parsed = _event_timestamp(raw)
-                    if parsed is not None:
-                        if first is None or parsed < first:
-                            first = parsed
-                        if last is None or parsed > last:
-                            last = parsed
-    except OSError:
+    entry = _stream_entry(path)
+    if entry is None:
         return None, None
-
-    wall = _seconds_from_ms(wall_ms)
-    if wall is None and first is not None and last is not None and last > first:
-        wall = round((last - first).total_seconds(), 3)
-    model = _seconds_from_ms(model_ms)
-    return wall, model
+    _usage, span = _settled(entry)
+    return span
 
 
 def _event_timestamp(value: str) -> datetime | None:
