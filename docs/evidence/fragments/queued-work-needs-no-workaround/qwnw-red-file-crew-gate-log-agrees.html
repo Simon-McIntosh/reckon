@@ -1,0 +1,85 @@
+<section id="qwnw-red-file-crew-gate-log-agrees-landing">
+<h3>A red gate-log agreement file passes, with every cause decided as the test's</h3>
+<p>The named file was red on the primary branch at <code>8104f76</code>: 17 failed, none passed. Two causes accounted for all of them, and both were the test encoding an invocation or a directory the code no longer keeps. The product rule — <code>_require_gate_log_agrees</code> refusing a passing gate whose cited log is empty, contradicts the asserted status, or shows the command never ran — was already correct and every case now exercises it. No assertion was deleted or weakened.</p>
+
+<h4 id="qwnw-red-file-crew-gate-log-agrees-causes">Causes and verdicts</h4>
+<table>
+<thead><tr><th>Cause</th><th>Cases</th><th>Verdict</th></tr></thead>
+<tbody>
+<tr>
+<td>Bare <code>crew complete</code> no longer promotes synchronously</td>
+<td>17 of 17, read as <code>assert 0 != 0</code> on a promotion that only recorded a request, or <code>KeyError: 'record'</code> on the request receipt</td>
+<td><strong>test wrong</strong> — since <code>1ff2fb47fe</code> completion queues a promotion request by default and <code>--wait</code> is the documented way to carry it out in the call; this file was never migrated with the other guard tests. The argument helper and the one case that builds its own command line now pass <code>--wait</code>.</td>
+</tr>
+<tr>
+<td>The durable-citation helper compared the stored path with the run directory after promotion archived it</td>
+<td>4, <code>AssertionError: .../crew/runs/&lt;id&gt; == .../crew/archive/runs/&lt;id&gt;</code></td>
+<td><strong>test wrong</strong> — promotion stores the live run-directory path and every reader follows the archive move through <code>resolve_run_path</code>; the helper now resolves the citation the same way before comparing the directory and the bytes.</td>
+</tr>
+</tbody>
+</table>
+
+<h4 id="qwnw-red-file-crew-gate-log-agrees-negative-control">Negative control: the base revision's own run</h4>
+<pre>
+# revision: 8104f761813f3a04825f6f012f9c1a15b42a6fd4
+# tree: /tmp/reckon-crew-scratch/r-20261115T224612181442-qwnw-red-file-crew-gate-log-agrees/base-8104f76 (git archive of the base revision)
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_gate_log_agrees.py
+# slurm_job_id: unset
+# module: /tmp/reckon-crew-scratch/r-20261115T224612181442-qwnw-red-file-crew-gate-log-agrees/base-8104f76/reckon/__init__.py
+# cwd: /tmp/reckon-crew-scratch/r-20261115T224612181442-qwnw-red-file-crew-gate-log-agrees/base-8104f76
+FAILED tests/test_crew_gate_log_agrees.py::test_promotion_refuses_a_passing_gate_whose_cited_log_is_empty
+FAILED tests/test_crew_gate_log_agrees.py::test_empty_log_of_whitespace_only_refuses_like_no_content
+FAILED tests/test_crew_gate_log_agrees.py::test_promotion_refuses_a_recorded_exit_status_that_contradicts_the_assertion
+FAILED tests/test_crew_gate_log_agrees.py::test_an_agreeing_recorded_exit_status_does_not_refuse
+FAILED tests/test_crew_gate_log_agrees.py::test_a_recorded_executed_exit_beside_a_quoted_diagnostic_is_accepted
+FAILED tests/test_crew_gate_log_agrees.py::test_a_recorded_unexecuted_exit_beside_a_quoted_diagnostic_is_refused[found-but-cannot-run]
+FAILED tests/test_crew_gate_log_agrees.py::test_a_recorded_unexecuted_exit_beside_a_quoted_diagnostic_is_refused[not-found]
+FAILED tests/test_crew_gate_log_agrees.py::test_promotion_refuses_a_log_showing_the_command_never_ran
+FAILED tests/test_crew_gate_log_agrees.py::test_recorded_pair_of_exit_zero_beside_a_command_not_found_log_is_refused
+FAILED tests/test_crew_gate_log_agrees.py::test_command_not_found_at_the_head_without_a_summary_names_the_line
+FAILED tests/test_crew_gate_log_agrees.py::test_a_capture_recording_exit_127_for_the_diagnostic_is_still_refused
+FAILED tests/test_crew_gate_log_agrees.py::test_fixture_command_not_found_beside_a_passing_summary_is_accepted
+FAILED tests/test_crew_gate_log_agrees.py::test_positive_exit_record_outranks_command_not_found_text_in_runner_output[quoted-assertion]
+FAILED tests/test_crew_gate_log_agrees.py::test_positive_exit_record_outranks_command_not_found_text_in_runner_output[fixture-content]
+FAILED tests/test_crew_gate_log_agrees.py::test_promotion_whose_log_and_command_agree_lands_unchanged
+FAILED tests/test_crew_gate_log_agrees.py::test_a_non_passing_verdict_beside_a_contradictory_log_is_unaffected
+FAILED tests/test_crew_gate_log_agrees.py::test_a_cited_log_path_that_cannot_be_read_is_left_to_the_promotion
+17 failed in 9.01s
+EXIT=1
+</pre>
+
+<h4 id="qwnw-red-file-crew-gate-log-agrees-head-gate">Head gate: an all_debug job with SLURM_JOB_ID unset</h4>
+<pre>
+# revision: abd79da00426ef113350a3f25eeef23ec2afbbc8
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-crew-gate-log-agrees
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_gate_log_agrees.py
+# slurm_job_id: unset
+# module: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-crew-gate-log-agrees/reckon/__init__.py
+# cwd: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-crew-gate-log-agrees
+.................                                                        [100%]
+17 passed in 5.00s
+EXIT=0
+</pre>
+
+<h4 id="qwnw-red-file-crew-gate-log-agrees-arms">Armed suite arms: no failure added</h4>
+<pre>
+# baseline at 8104f761813f3a04825f6f012f9c1a15b42a6fd4
+# tree: /tmp/reckon-crew-scratch/r-20261115T224612181442-qwnw-red-file-crew-gate-log-agrees/baseclone (shared clone, detached at the base revision)
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+# module: /tmp/reckon-crew-scratch/r-20261115T224612181442-qwnw-red-file-crew-gate-log-agrees/baseclone/reckon/__init__.py
+# cwd: /tmp/reckon-crew-scratch/r-20261115T224612181442-qwnw-red-file-crew-gate-log-agrees/baseclone
+..........................................................               [100%]
+58 passed in 48.85s
+EXIT=0
+
+# head at abd79da00426ef113350a3f25eeef23ec2afbbc8, in the run's own worktree
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+..........................................................               [100%]
+58 passed in 60.21s (0:01:00)
+EXIT=0
+</pre>
+<p>The node's change is confined to <code>tests/test_crew_gate_log_agrees.py</code>; no product module is touched, so the arm over the files that import what it changed is the gate itself, where 17 failing ids at base become none at head.</p>
+
+<h4 id="qwnw-red-file-crew-gate-log-agrees-origin">The instruction to merge origin/main first</h4>
+<p><code>origin/main</code> in this clone is <code>13f2c55c13</code>, an ancestor of <code>8104f76</code> (<code>git merge-base --is-ancestor origin/main HEAD</code> succeeds), so the merge the brief asks for carried nothing in; the worktree has no network access and no fetch was possible.</p>
+</section>
