@@ -1162,7 +1162,7 @@ def _remembered_word(state: Any) -> str:
     ``halted``, is read by ``_display_state`` as the word the pane draws now.
     """
     spelled = str(state or "")
-    if spelled in PANE_STATES or spelled == "stopped":
+    if spelled in PANE_STATES:
         return spelled
     return _display_state(spelled)
 

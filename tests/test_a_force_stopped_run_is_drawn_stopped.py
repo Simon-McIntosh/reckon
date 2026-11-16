@@ -156,3 +156,7 @@ def test_a_predecessor_stop_does_not_end_a_resumed_worker(run: dict) -> None:
 def test_a_row_without_a_destination_keeps_its_unknown_word() -> None:
     line = ticker.Ticker(color=False).render({})
     assert "→ help" in line, line
+
+
+def test_a_generic_stopped_state_keeps_its_remembered_help_word() -> None:
+    assert ticker._remembered_word("stopped") == "help"
