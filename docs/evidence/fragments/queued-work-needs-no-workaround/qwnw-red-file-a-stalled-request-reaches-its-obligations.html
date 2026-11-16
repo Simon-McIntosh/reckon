@@ -1,0 +1,94 @@
+<section id="qwnw-red-file-a-stalled-request-reaches-its-obligations-landing">
+  <h2>A stalled request reaches its obligations: the red file now passes in full</h2>
+
+  <p><strong>What changed.</strong> Nothing in product source or tests. The node's
+  named file, <code>tests/test_a_stalled_request_reaches_its_obligations.py</code>,
+  reported six failures at revision <code>8d50b0333f</code> and passes in full at
+  <code>ee93819a0d</code>. The repair landed on the section's line of history
+  before this node started, so the file is delivered as the passing run the
+  section allows: "A file that already passes when the node starts, because
+  another node's repair reached it, is delivered as such with the passing run."
+  The test file is byte-identical between the red revision and head
+  (<code>git diff 8d50b0333f HEAD -- tests/test_a_stalled_request_reaches_its_obligations.py</code>
+  is empty), so the six failures were repaired in product code and no assertion
+  was deleted or weakened.</p>
+
+  <h3 id="qwnw-red-file-a-stalled-request-reaches-its-obligations-cause">Cause and verdict</h3>
+
+  <table id="qwnw-red-file-a-stalled-request-reaches-its-obligations-verdicts">
+    <thead>
+      <tr><th>Cause</th><th>Failing ids</th><th>Verdict</th><th>Repair on the primary branch</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Queue-time validation judged a request before its durable manifest
+        path was assigned, so every request that did not spell a manifest path
+        out raised <code>CrewError</code> before reaching the behaviour under
+        test. One cause, six symptoms: all six cases queue through the same
+        helper, and all six raised the same refusal.</td>
+        <td>all six tests in the file</td>
+        <td>product wrong — the tests encode the rule the product keeps (a
+        request queued through the normal path carries a manifest path), and the
+        validation order broke it; the tests are unchanged</td>
+        <td><code>c3933bacfb</code> "fix(queue): assign durable manifests before
+        validating requests" assigns the durable manifest path before the node
+        contract is validated</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-a-stalled-request-reaches-its-obligations-measured">Measured</h3>
+
+  <table id="qwnw-red-file-a-stalled-request-reaches-its-obligations-arms">
+    <thead>
+      <tr><th>Arm</th><th>Revision</th><th>Where</th><th>Result</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>base — negative control</td>
+        <td><code>8d50b0333f</code></td>
+        <td>tree extracted at that revision</td>
+        <td><code>6 failed in 1.66s</code>, EXIT=1</td>
+      </tr>
+      <tr>
+        <td>head — the named gate</td>
+        <td><code>ee93819a0d</code></td>
+        <td>all_debug job 1319429, node <code>98dci4-clu-3141</code>, SLURM_JOB_ID unset</td>
+        <td><code>6 passed in 2.26s</code>, EXIT=0</td>
+      </tr>
+      <tr>
+        <td>write-scope suite, base arm</td>
+        <td><code>ee93819a0d</code></td>
+        <td>this worktree</td>
+        <td><code>58 passed in 49.00s</code>, EXIT=0</td>
+      </tr>
+      <tr>
+        <td>write-scope suite, after arm</td>
+        <td>the run's head</td>
+        <td>this worktree</td>
+        <td><code>58 passed</code>, EXIT=0 — no failure added against the base</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-a-stalled-request-reaches-its-obligations-control">Negative control</h3>
+
+  <p>The named file at <code>8d50b0333f</code>, run over a tree extracted at that
+  revision, reproduces the six failures the section records for it. The sampled
+  refusal, repeated by every case:</p>
+
+  <pre>reckon.crew.CrewError: node &#x27;n1&#x27; is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation</pre>
+
+  <p>The failing ids, exactly as the run reported them:</p>
+
+  <pre>FAILED tests/test_a_stalled_request_reaches_its_obligations.py::test_a_stalled_request_is_a_stalled_row_in_obligations
+FAILED tests/test_a_stalled_request_reaches_its_obligations.py::test_a_fresh_snapshot_build_carries_the_stalled_row
+FAILED tests/test_a_stalled_request_reaches_its_obligations.py::test_a_request_without_a_stall_verdict_keeps_its_queued_row
+FAILED tests/test_a_stalled_request_reaches_its_obligations.py::test_a_later_launch_verdict_clears_the_stalled_row
+FAILED tests/test_a_stalled_request_reaches_its_obligations.py::test_a_stalled_row_does_not_hold_the_hook_stop
+FAILED tests/test_a_stalled_request_reaches_its_obligations.py::test_one_obligations_build_reads_the_verdict_log_once</pre>
+
+  <p>Logs: <code>logs/negative-control-8d50b0333f.log</code> and
+  <code>logs/gate-head-all_debug.log</code> in this run's directory, with the two
+  suite arms beside them.</p>
+</section>
