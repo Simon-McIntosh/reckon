@@ -1303,9 +1303,6 @@ def dispatch(
             brief=brief,
             registered_at=claim_registered_at,
         )
-        # Keep the identity visible if the caller exits during launch. Stdout
-        # remains the command's final JSON document, so notices use stderr.
-        print(f"reckon: created run {run_id}", file=sys.stderr, flush=True)
     with (
         _request_claim_restored_on_refusal(run_id, request_pointer)
         if admission_launch
@@ -1559,6 +1556,13 @@ def dispatch(
                 watch_override=watch_override,
             )
             raise held from roster
+
+        # Keep the identity visible if the caller exits during launch. Stdout
+        # remains the command's final JSON document, so notices use stderr, and
+        # the notice goes out once the bound reads above have let this dispatch
+        # launch: a request held, queued or refused above prints none, so its
+        # first line stays the document a caller reads.
+        print(f"reckon: created run {run_id}", file=sys.stderr, flush=True)
 
         explicitly_named_peers = set() if shadow_lineage else set(node.peer_scopes)
         peers = (
