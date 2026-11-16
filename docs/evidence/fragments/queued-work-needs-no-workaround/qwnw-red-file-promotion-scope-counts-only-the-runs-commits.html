@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="queued-work-needs-no-workaround">
+  <meta name="plan-title" content="Queued Work Needs No Workaround">
+  <meta name="plan-evidence-for" content="reckon:queued-work-needs-no-workaround#s29">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-16">
+  <title>Promotion's scope counts only the run's commits | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="qwnw-red-file-promotion-scope-counts-only-the-runs-commits" data-reckon="landed" data-when="2026-11-16">
+  <h2 id="qwnw-red-file-promotion-scope-counts-only-the-runs-commits-title">Promotion's scope counts only the run's commits</h2>
+
+  <p id="qwnw-red-file-promotion-scope-counts-only-the-runs-commits-defect"><strong>The file, and what it reported.</strong>
+  <code>tests/test_promotion_scope_counts_only_the_runs_commits.py</code> is
+  red on the primary branch. At the base revision
+  <code>5c4ff3492998</code> run as a job on <code>all_debug</code> with
+  <code>SLURM_JOB_ID</code> unset it reports <strong>3 failed, 8
+  passed</strong>, exit 1, with these ids:
+  <code>test_a_trailing_merge_does_not_charge_the_content_it_brought</code>
+  (read <code>{added: 0, removed: 0, files: 0}</code> where the run's own
+  commit added two lines),
+  <code>test_a_peer_edit_on_a_declared_unshared_path_still_refuses_promotion</code>
+  and <code>test_an_unshared_claim_is_charged_even_beside_a_shared_one</code>
+  (both <code>DID NOT RAISE CrewError</code>).</p>
+
+  <p id="qwnw-red-file-promotion-scope-causes"><strong>Two causes, both product wrong.</strong>
+  No assertion was deleted or weakened.</p>
+
+  <table id="qwnw-red-file-promotion-scope-causes-table">
+    <thead>
+      <tr><th>Cause</th><th>Verdict</th><th>The rule the code now keeps</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Boundary check exempted every mergeable path</td>
+        <td>product wrong</td>
+        <td><code>reckon/crew/promotion_scope.py</code>’s
+        <code>_repository_tree_boundary_violations</code> asked
+        <code>_claim_paths_share</code> whether a dirty path is exempt from the
+        stray-edit check. That predicate answers a different question — whether
+        a claim on the path is one a merge can reconcile — and every mergeable
+        path counts as shared there, so the walk refused nothing. The guard now
+        tests membership in the project’s own declared shared-write set, which
+        is the exemption the list writes down.</td>
+      </tr>
+      <tr>
+        <td>Repaired-landing scope recorded a zero row</td>
+        <td>product wrong</td>
+        <td><code>_merge_repair_scope</code> measured a head that merged
+        primary from its common ancestor with primary; where the merge resolved
+        to primary’s content it named no path and returned a row of zero added,
+        zero removed, zero files — the row the cited-commit measurement refuses
+        to record as a measured run that changed nothing. It now declines that
+        empty case and the cited commits answer, so the row states what the run
+        did.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p id="qwnw-red-file-promotion-scope-negative-control"><strong>Negative control.</strong>
+  The base arm above is the control: the same three ids fail at
+  <code>5c4ff3492998</code> and none of them fails at the head. Its log is
+  <code>gate-base.log</code> beside this record, and the head arm reads
+  <strong>11 passed</strong>, exit 0, from <code>gate-head.log</code>.</p>
+
+  <p id="qwnw-red-file-promotion-scope-reach"><strong>What the same defect reached.</strong>
+  The exempt-everything reading was not private to this file: the same
+  exemption is what
+  <code>tests/test_boundary_check_reads_only_declared_roots.py</code> and
+  <code>tests/test_boundary_check_reads_two_trees.py</code> pin, and three of
+  their cases were red at the base for the same reason — a tracked change at a
+  declared path, a stray inside an untracked directory, and a fenced run that
+  wrote the main checkout. Repairing the guard greens all three, which is one
+  cause being read by four files rather than four defects.</p>
+</article>
+</body>
+</html>
