@@ -79,7 +79,7 @@ def test_a_record_write_completes_while_selection_is_paused(
     assert len(expected) == 200
     selecting = threading.Event()
     release = threading.Event()
-    original = ledger.row_plan if kind == "plan" else run_store.parse_utc
+    original = ledger.row_plan if kind == "plan" else ledger.parse_utc
 
     def paused(value):
         if not selecting.is_set():
@@ -90,7 +90,7 @@ def test_a_record_write_completes_while_selection_is_paused(
     if kind == "plan":
         monkeypatch.setattr(ledger, "row_plan", paused)
     else:
-        monkeypatch.setattr(run_store, "parse_utc", paused)
+        monkeypatch.setattr(run_store, "parse_utc", paused, raising=False)
         monkeypatch.setattr(ledger, "parse_utc", paused)
     answer, errors = [], []
 
@@ -163,4 +163,54 @@ def test_scoped_reads_keep_fallbacks_and_the_last_activity_stamp(
     assert (
         run_store.stored_run_rows("example", path=path, fields=fields, **kwargs)
         == expected
+    )
+
+
+def test_selection_keeps_scan_order_across_identity_batches_and_archives(
+    tmp_path, population
+):
+    source, _ = population
+    path = tmp_path / "runs.db"
+    shutil.copyfile(source, path)
+    with run_store.RunStore(path) as store:
+        for identity in ("z-last", "a-last"):
+            store.append(
+                "example",
+                {
+                    "run_id": identity,
+                    "plan": "plan-0",
+                    "completed_at": "2025-01-01T00:00:00Z",
+                },
+            )
+        retired = store.retire(
+            before=datetime(2026, 1, 1, tzinfo=UTC),
+            protected={"z-last", "a-last"},
+            projects={"example"},
+            limit=3,
+            apply=True,
+        )
+        assert len(retired["retired"]) == 3
+    unfiltered = run_store.stored_run_rows("example", path=path)
+    for selection in (
+        {"activity_since": datetime(2020, 1, 1, tzinfo=UTC).timestamp()},
+        {"plan": "plan-0"},
+    ):
+        expected = [
+            row
+            for row in unfiltered
+            if not selection.get("plan") or ledger.row_plan(row) == selection["plan"]
+        ]
+        assert run_store.stored_run_rows("example", path=path, **selection) == expected
+        assert [row["run_id"] for row in expected[-3:]] == retired["retired"]
+    bounded = {row["run_id"] for row in unfiltered if ledger.row_plan(row) == "plan-0"}
+    assert run_store.stored_run_rows(
+        "example", path=path, run_ids=bounded, plan="plan-0", fields=("run_id",)
+    ) == run_store.stored_run_rows(
+        "example", path=path, run_ids=bounded, fields=("run_id",)
+    )
+    assert (
+        run_store.stored_run_rows(
+            "example", path=path, plan="absent", fields=("run_id",)
+        )
+        == []
     )
