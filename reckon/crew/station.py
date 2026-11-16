@@ -950,7 +950,7 @@ class StationReloader:
 
         A deferred image is owed again once its proof is due to be repeated: a
         deferral that said nothing about the image must not stand until main
-        moves, which used to be the only thing that asked for it again.
+        moves, because the proof's retry clock can expire without a new commit.
         """
         if re.fullmatch(r"[0-9a-f]{40}", current) is None:
             return False
