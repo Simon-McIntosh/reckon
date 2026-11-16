@@ -23,7 +23,7 @@
   <title>A Landing Is Recorded Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="24">
+<meta name="plan-version" content="25">
 <meta name="plan-modified" content="2026-11-16">
 </head>
 <body>
@@ -158,7 +158,10 @@
     <div class="r-comment-body"><p>§4 landed (run <code>r-20261115T085732662020-alro-s4</code>, head <code>eee20b379f</code>): a close is refused over a section marked done that holds neither a landing comment nor a run record, naming each such section. A section whose earliest recorded activity predates the rule is exempt, so the rule applies only to sections marked done after it. The live pass refused none of the 174 open plans as the store stood. The head arm records 64 passed against 55 at the base with no added failure, and two revert controls each fail the test that guards them. Four reviews; the last raised two non-blocking findings, one folded into the §5 node (a test docstring that still says the newest record is read) and one exempted.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261116T062800848382-review-of-alro-s5-164fa6d9c1f9" data-who="reckon-build" data-when="2026-11-16T06:29:28Z">
-    <div class="r-comment-body"><p>review of r-20261115T085733783332-alro-s5 at 164fa6d9c1 — parsed record, six dimensions scored goal_fidelity 18, evidence 15, scope_discipline 16, durability 15, fit 18, reuse 19 (total 101), reviewed_base_sha c64a86671d14e4bdf2e580288fd97beeb1f29479 beside reviewed_head_sha 164fa6d9c1f9c634fefb77a06f7bd942341aa8fe; zero added failures derived from the run&#x27;s own two gate logs (base 65 passed with 2 errors, after 73 passed, no failure id present only at head); four non-blocking findings: the sections-landed assertion cannot tell landed from declared sections, the fragment overstates what read_section_landings supplies, the after-arm log names no revision, and the done-when&#x27;s declared link negative control was never staged.</p></div>
+    <div class="r-comment-body"><p>review of r-20261115T085733783332-alro-s5 at 164fa6d9c1 — parsed record, six dimensions scored goal_fidelity 18, evidence 15, scope_discipline 16, durability 15, fit 18, reuse 19 (total 101), reviewed_base_sha c64a86671d14e4bdf2e580288fd97beeb1f29479 beside reviewed_head_sha 164fa6d9c1f9c634fefb77a06f7bd942341aa8fe; zero added failures derived from the run's own two gate logs (base 65 passed with 2 errors, after 73 passed, no failure id present only at head); four non-blocking findings: the sections-landed assertion cannot tell landed from declared sections, the fragment overstates what read_section_landings supplies, the after-arm log names no revision, and the done-when's declared link negative control was never staged.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261115T085733783332-alro-s5" data-who="reckon-build" data-when="2026-11-16T03:32:09.269Z">
+    <div class="r-comment-body"><p>alro-s5 — closing a sprint writes docs/evidence/archive/&lt;sprint&gt;-closing.html with one row per member plan (status, sections landed, runs, worker time, headline result), the figures its runs named and its totals, every count read from reckon.evidence.read_section_landings and every href/src resolving to a repository file, and the page passes reckon audit-doc (4 new cases, 73 passed after arm); the landing-command guard now reads the run ledger once per close and refuses a state that names no project or slug instead of reading it as unlanded (11 guard cases).</p></div>
 </div>
 </section>
 </main>
