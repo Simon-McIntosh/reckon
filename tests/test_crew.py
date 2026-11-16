@@ -1780,8 +1780,10 @@ def test_cli_dispatch_reports_a_live_scope_conflict_on_its_own_exit_code(
         home,
         "r-cli-scope-owner",
         repo=str(repo),
-        node_id="owner-node",
-        write_paths=["reckon"],
+        node_id="docs-state-owner",
+        # Only a path whose class a merge cannot reconcile is a live conflict;
+        # a source path a peer also writes is informational.
+        write_paths=["docs/state"],
     )
     monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *args, **kwargs: CONFIG)
 
@@ -1805,7 +1807,7 @@ def test_cli_dispatch_reports_a_live_scope_conflict_on_its_own_exit_code(
             "--done-when",
             "uv run pytest tests/test_crew.py reports 0 failures",
             "--write-path",
-            "reckon/crew.py",
+            "docs/state/generated.json",
             "--session",
             "sess",
             "--repo",
@@ -1822,9 +1824,9 @@ def test_cli_dispatch_reports_a_live_scope_conflict_on_its_own_exit_code(
         "run_id": None,
         "node": "node-a",
         "conflicting_run_id": owner["run_id"],
-        "conflicting_node_id": "owner-node",
-        "candidate_path": "reckon/crew.py",
-        "claimed_path": "reckon",
+        "conflicting_node_id": "docs-state-owner",
+        "candidate_path": "docs/state/generated.json",
+        "claimed_path": "docs/state",
     }
     assert owner["run_id"] in payload["detail"]
     assert crew.list_live() == [owner]
@@ -2558,8 +2560,26 @@ def test_dispatch_launches_a_cli_backend_and_records_the_run(home, repo) -> None
     assert Path(record["prompt_path"]).is_file()
     assert record["budget"]["headroom"] == "unknown"
     assert launched["cwd"] == record["worktree"]
-    # The record is on disk, so a fresh session can pick the run up.
-    assert json.loads(crew.pointer_path(record["run_id"]).read_text()) == record
+    # The record is on disk, so a fresh session can pick the run up. The fields
+    # a dispatch composes for its own callers are kept in the run's detail file
+    # and the pointer names it, so the pointer carries the run and the accessor
+    # answers with the whole record rather than either side keeping a copy.
+    pointer = json.loads(crew.pointer_path(record["run_id"]).read_text())
+    detail_path = str(runs.dispatch_detail_path(record["run_id"]))
+    assert pointer["dispatch_detail"] == record["dispatch_detail"] == detail_path
+    assert {
+        key: value for key, value in pointer.items() if key != "dispatch_detail"
+    } == {
+        key: value
+        for key, value in record.items()
+        if key != "dispatch_detail" and key not in runs.DISPATCH_DETAIL_FIELDS
+    }
+    detail = runs.read_dispatch_detail(pointer)
+    carried = [key for key in runs.DISPATCH_DETAIL_FIELDS if key in record]
+    assert carried
+    assert {key: detail[key] for key in carried} == {
+        key: record[key] for key in carried
+    }
 
 
 def test_dispatch_pointer_persists_a_wave_without_exclusion_fields(home, repo) -> None:
