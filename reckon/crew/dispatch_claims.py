@@ -1279,17 +1279,38 @@ def _refuse_a_discarded_launch(run_id: str, *, started: bool = False) -> None:
         raise CrewError(f"run {run_id!r} was discarded {when}; the launch is refused")
 
 
+def _withdraw_launch_claim(run_id: str) -> None:
+    """Remove a launch's claim, leaving the request a hold stored beside it.
+
+    A hold stores the node as a queued request and keeps its pointer, so only
+    the launch is given back: the claim file says a launch is composing, and a
+    waiting request carries none, exactly as a request requeued after a
+    stranded launch drops the attempt's claim.
+    """
+    (run_dir(run_id) / "claim.json").unlink(missing_ok=True)
+
+
 @contextlib.contextmanager
 def _claim_released_on_refusal(run_id: str, published: bool) -> Iterator[None]:
     """Return the claim this dispatch published if the guarded work refuses.
 
-    The claim is published before the work that can refuse it — the ceiling,
-    roster, scope and watcher checks, any of which can take seconds — so a
-    refusal reached under this guard gives the claim back rather than leaving a
-    live claim behind for a launch that never happened.
+    The claim is published before the work that can refuse it — the bound read,
+    the holds, the lane gate and the watcher checks, any of which can take
+    seconds — so a refusal reached under this guard gives the claim back rather
+    than leaving a live claim behind for a launch that never happened. A
+    :class:`LaneHeld` is not a refusal: the dispatch stored the node as a queued
+    request and kept its pointer, so only the claim goes and the request waits
+    as it would have without a launch in front of it.
     """
+    from reckon.crew.dispatch_admission import LaneHeld
+
     try:
         yield
+    except LaneHeld:
+        if published:
+            _withdraw_launch_claim(run_id)
+        _leave_dispatch_in_flight(run_id)
+        raise
     except Exception:
         if published:
             _release_launch_claim(run_id)

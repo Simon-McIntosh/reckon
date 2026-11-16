@@ -44,10 +44,12 @@ NODE_ID = "node-claiming"
 SESSION = "session-launch-claim"
 REAL_LIVE = Path.home() / ".config" / "reckon" / "crew" / "live"
 
-# A dispatch grants the node its own landing fragment in its write scope, so
-# this entry is the first the two live claims overlap on, so it is the path a
-# refusal between them names.
-LANDING_FRAGMENT = f"docs/evidence/fragments/fixture/{NODE_ID}.html"
+# A dispatch grants the node its own landing fragment in its write scope, and
+# the node's figure topic. The fragment is one mergeable HTML file, so two
+# worktrees reconcile their edits to it and a claim on it shares; the figure
+# topic is an unmergeable artifact class, so it is the first entry the two live
+# claims cannot share and the path a refusal between them names.
+FIGURE_TOPIC = f"docs/figures/fixture/{NODE_ID}"
 
 # A CLI backend, so a dispatch composes a real launch and writes a live
 # pointer rather than handing back an in-harness directive. Every launcher is
@@ -268,7 +270,7 @@ def test_a_second_dispatch_meets_the_claim_of_the_launch_in_flight(
     refusal = observed.get("refusal")
     assert isinstance(refusal, crew.ScopeConflict)
     assert refusal.run_id == first_run_id
-    assert LANDING_FRAGMENT in str(refusal)
+    assert FIGURE_TOPIC in str(refusal)
     # The refusal left nothing of the refused dispatch behind, and the launch
     # that held the claim kept its own single pointer, run directory and
     # worktree. The second dispatch never reached the worktree seam at all.
@@ -327,7 +329,7 @@ def test_a_second_dispatch_meets_the_claim_made_before_the_preflight(
     refusal = observed.get("refusal")
     assert isinstance(refusal, crew.ScopeConflict)
     assert refusal.run_id == first_run_id
-    assert LANDING_FRAGMENT in str(refusal)
+    assert FIGURE_TOPIC in str(refusal)
     assert live_pointers_naming(NODE_ID) == [first_run_id]
     assert calls["worktrees"] == 1
 
@@ -354,7 +356,13 @@ def test_a_claim_appearing_during_the_launch_is_met_at_the_pointer_write(
                 "run_id": peer_run_id,
                 "project": PROJECT,
                 "repo": str(repo),
-                "node": {"id": "node-peer", "write_paths": ["src/claimed.py"]},
+                "node": {
+                    "id": "node-peer",
+                    # The peer holds the node's figure topic, an unmergeable
+                    # artifact class; a mergeable source file is shared between
+                    # worktrees and never refuses a peer.
+                    "write_paths": ["src/claimed.py", FIGURE_TOPIC],
+                },
                 "phase": "starting",
             },
         )
