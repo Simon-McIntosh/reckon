@@ -1,0 +1,74 @@
+<section id="qwnw-red-file-a-parked-request-does-not-block-a-landing-landing">
+<h3>A red parked-claim landing file passes, with both causes decided as the test's</h3>
+<p>The named file was red on the primary branch at <code>6fa76c49f48e</code>: 5 failed, 1 passed. Two causes accounted for all five, and both were the test asserting an invocation or a path class the product no longer keeps. The product rules it exists to check — that a parked request's claim is admitted and recorded on the acceptance while a running peer's claim still refuses it — were already correct, and they are now exercised. No assertion was deleted or weakened.</p>
+
+<h4 id="qwnw-red-file-a-parked-request-does-not-block-a-landing-causes">Causes and verdicts</h4>
+<table>
+<thead><tr><th>Cause</th><th>Cases</th><th>Verdict</th></tr></thead>
+<tbody>
+<tr>
+<td>Bare <code>crew complete</code> no longer promotes synchronously</td>
+<td>5 of 5 at base, read as <code>KeyError: 'record'</code> on the four parametrised phases and <code>assert 0 == 1</code> on the running-peer refusal: the call recorded a promotion request and returned its receipt, so no claim was ever judged</td>
+<td><strong>test wrong</strong> — since <code>1ff2fb47fe</code> completion queues a promotion request by default and <code>--wait</code> carries it out in the same call; every other completion-outcome guard was migrated then and this file was not. <code>complete_arguments</code> now passes <code>--wait</code>.</td>
+</tr>
+<tr>
+<td>Only a path class a merge cannot reconcile needs an acceptance</td>
+<td>4 of 5 once <code>--wait</code> is present, read as <code>assert None == [{... 'waiting_request_claims': [...]}]</code>; the fifth as <code>assert 0 == 1</code>, admitting the running peer</td>
+<td><strong>test wrong</strong> — since <code>78752b3438</code> a declared write path is a hint and a run that writes a source or plain-text companion beside it promotes with no acceptance, so the acceptance machinery this file measures was never reached. The accepted companion is now <code>declared-b.receipt</code>, an unmergeable class (<code>*.receipt</code>), where an acceptance is still required and the claim behind it is still judged.</td>
+</tr>
+</tbody>
+</table>
+<p>The split was measured rather than assumed: with <code>--wait</code> added and only the accepted path reverted to <code>declared-b.txt</code>, the same 5 ids fail again (run log <code>logs/cause-b-mergeable-path.log</code> under the run directory), so cause 2 alone accounts for the five and cause 1 gates them all.</p>
+
+<h4 id="qwnw-red-file-a-parked-request-does-not-block-a-landing-negative-control">Negative control: the base revision's own run</h4>
+<pre>
+# revision: 6fa76c49f48e1d4fe4f104431f85f519ce92aae0
+# tree: /tmp/reckon-crew-scratch/r-20261116T032124342189-qwnw-red-file-a-parked-request-does-not-block-a-landing/base-arm-6fa76c49
+# module: /tmp/reckon-crew-scratch/r-20261116T032124342189-qwnw-red-file-a-parked-request-does-not-block-a-landing/base-arm-6fa76c49/reckon/__init__.py
+# cwd: /tmp/reckon-crew-scratch/r-20261116T032124342189-qwnw-red-file-a-parked-request-does-not-block-a-landing/base-arm-6fa76c49
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_parked_request_does_not_block_a_landing.py
+FAILED tests/test_a_parked_request_does_not_block_a_landing.py::test_parked_request_claim_is_recorded_on_the_acceptance[awaiting-upstream] - KeyError: 'record'
+FAILED tests/test_a_parked_request_does_not_block_a_landing.py::test_parked_request_claim_is_recorded_on_the_acceptance[blocked-upstream] - KeyError: 'record'
+FAILED tests/test_a_parked_request_does_not_block_a_landing.py::test_parked_request_claim_is_recorded_on_the_acceptance[held] - KeyError: 'record'
+FAILED tests/test_a_parked_request_does_not_block_a_landing.py::test_parked_request_claim_is_recorded_on_the_acceptance[queued] - KeyError: 'record'
+FAILED tests/test_a_parked_request_does_not_block_a_landing.py::test_working_peer_claim_still_refuses_the_acceptance - assert 0 == 1
+ +  where 0 = &lt;Result okay&gt;.exit_code
+5 failed, 1 passed in 1.13s
+EXIT=1
+</pre>
+
+<h4 id="qwnw-red-file-a-parked-request-does-not-block-a-landing-head-gate">Head gate: an all_debug job with SLURM_JOB_ID unset</h4>
+<pre>
+# revision: 75c428c8032e67f5045e7eadcd1f7b5f16934645
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-parked-request-does-not-block-a-landing
+# slurm_job_id: 1319222
+# partition: all_debug
+# host: 98dci4-clu-3142.iter.org
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_parked_request_does_not_block_a_landing.py
+......                                                                   [100%]
+6 passed in 4.29s
+EXIT=0
+</pre>
+
+<h4 id="qwnw-red-file-a-parked-request-does-not-block-a-landing-arms">Armed suite arms: no failure added</h4>
+<pre>
+# baseline at 6fa76c49f48e1d4fe4f104431f85f519ce92aae0
+# tree: /tmp/reckon-crew-scratch/r-20261116T032124342189-qwnw-red-file-a-parked-request-does-not-block-a-landing/base-arm-6fa76c49
+# module: /tmp/reckon-crew-scratch/r-20261116T032124342189-qwnw-red-file-a-parked-request-does-not-block-a-landing/base-arm-6fa76c49/reckon/__init__.py
+# cwd: /tmp/reckon-crew-scratch/r-20261116T032124342189-qwnw-red-file-a-parked-request-does-not-block-a-landing/base-arm-6fa76c49
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+..........................................................               [100%]
+58 passed in 42.97s
+EXIT=0
+
+# head at 75c428c8032e67f5045e7eadcd1f7b5f16934645, in the run's own worktree
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+..........................................................               [100%]
+58 passed in 46.78s
+EXIT=0
+</pre>
+<p>The node's change is confined to <code>tests/test_a_parked_request_does_not_block_a_landing.py</code>; no product module is touched, so the arm over the files that import what it changed is the gate itself, where 5 failing ids at head-before-the-change become none after it.</p>
+
+<h4 id="qwnw-red-file-a-parked-request-does-not-block-a-landing-origin">The instruction to merge the current origin/main first</h4>
+<p><code>origin/main</code> was 12 commits ahead of the named file's failing base, so the merge the brief asks for carried work in: <code>origin/main</code> at <code>2f5dffd472</code> merged cleanly into the node's branch with no conflict and no test change of its own to this file, and the named file still read 6 passed at the merged head <code>75c428c8</code>. The fragment commit that follows touches only this evidence file.</p>
+</section>
