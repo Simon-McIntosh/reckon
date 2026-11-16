@@ -74,6 +74,11 @@
   (<code>assert 2 == 1</code>, with both removal lines naming the live pid).
   The mutation was reverted before the gate above was run; the red log is kept
   in the run directory.</p>
+  <p>The service entry point itself was exercised once against a temporary
+  crew home: <code>python -m reckon.crew.gc --apply --limit 1</code> reported
+  <code>exec_identities: {"removed": 1, "kept": 1}</code> and wrote
+  <code>removed identity file …</code> to the pass log, which is the same code
+  path the installed hourly timer runs.</p>
   <p>Two failures met beside this work are present at the base revision too and
   belong to no change here:
   <code>tests/test_the_retention_sweep_runs_on_its_own.py::test_the_pass_reads_each_ledger_through_its_index</code>
