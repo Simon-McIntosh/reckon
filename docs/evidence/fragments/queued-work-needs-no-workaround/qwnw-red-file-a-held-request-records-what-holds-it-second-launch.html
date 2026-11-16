@@ -1,0 +1,81 @@
+<section id="qwnw-red-file-a-held-request-records-what-holds-it-second-launch-landing">
+<h3>A held request records what holds it: the file passes in full</h3>
+<p>The named file reported <strong>3 failed, 4 passed</strong> at base revision
+<code>0e0f25b0f941</code> and <strong>7 passed</strong> at head
+<code>84fe063da8</code>, run as an <code>all_debug</code> job with
+<code>SLURM_JOB_ID</code> unset. Each cause below is stated with its verdict.</p>
+
+<h4 id="qwnw-red-file-a-held-request-records-what-holds-it-second-launch-causes">Causes and verdicts</h4>
+<table>
+<thead><tr><th>Case</th><th>Cause</th><th>Verdict</th><th>Repair</th></tr></thead>
+<tbody>
+<tr>
+<td><code>test_a_launch_refused_on_a_scope_conflict_records_the_holder</code></td>
+<td>the pass re-stamped <code>recorded_at</code> on a refusal it found by reading the request only; the restore wrote the record raw, and <code>_record_pass_hold</code>'s non-renewal rule then saw an identical record and returned without writing, leaving the renewed instant in place</td>
+<td>product wrong</td>
+<td><code>_carried_hold</code> keeps an unchanged record's own instant; both the restore and the pass now write through it</td>
+</tr>
+<tr>
+<td><code>test_a_scope_conflict_expires_when_its_holder_no_longer_claims_the_path</code></td>
+<td>a stored scope refusal was trusted for its own text alone, so a request kept a refusal naming a live run that no longer declares the claimed path</td>
+<td>product wrong</td>
+<td><code>_released_claim</code> re-judges the stored refusal against the fleet each pass; <code>_declined_refusal_hold</code> retires it onto the ordinary back-off, with no holder left on the record</td>
+</tr>
+<tr>
+<td><code>test_a_scope_conflict_replaces_a_stored_router_full_reason</code></td>
+<td>the case claimed <code>s1.txt</code>, a source path. An undeclared project shares its source files since <code>471bf98366</code>, so no pass can find a claim on one and the request launched</td>
+<td>test wrong — it encoded the rule the code no longer keeps: only the classes git cannot reconcile fence a peer</td>
+<td>the case claims <code>docs/figures/held/plot.svg</code>, a figure topic directory, and asserts the holder's path as well as its run id</td>
+</tr>
+</tbody>
+</table>
+<p>No assertion was deleted or weakened: the third case gained two assertions and
+its docstring names why a figure directory is the class a pass can find.</p>
+
+<h4 id="qwnw-red-file-a-held-request-records-what-holds-it-second-launch-head">Head gate run</h4>
+<pre># revision: 84fe063da8daa517da3b0ab522c74c272b5fa1de
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-held-request-records-what-holds-it-second-launch
+# host: 98dci4-clu-3142.iter.org
+# slurm job: 1319616
+# command: env -u SLURM_JOB_ID PYTHONPATH=&lt;worktree&gt; .venv/bin/python -m pytest -p no:cacheprovider -q &lt;worktree&gt;/tests/test_a_held_request_records_what_holds_it.py
+.......                                                                  [100%]
+7 passed in 8.91s
+EXIT=0</pre>
+
+<h4 id="qwnw-red-file-a-held-request-records-what-holds-it-second-launch-base">Negative control: the base arm</h4>
+<pre># revision: 0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc (scratch tree at ../qwnw-red-file-a-held-request-records-what-holds-it-second-launch/base-tree)
+# module.__file__: /tmp/reckon-crew-scratch/r-20261116T064934298273-qwnw-red-file-a-held-request-records-what-holds-it-second-launch/base-tree/reckon/crew/admission/holds.py
+# command: env -u SLURM_JOB_ID PYTHONPATH=&lt;base-tree&gt; .venv/bin/python -m pytest -p no:cacheprovider -q &lt;base-tree&gt;/tests/test_a_held_request_records_what_holds_it.py
+FF.F...                                                                  [100%]
+</pre>
+<p>Failing ids at the base revision, in full:</p>
+<ol id="qwnw-red-file-a-held-request-records-what-holds-it-second-launch-base-ids">
+<li><code>test_a_launch_refused_on_a_scope_conflict_records_the_holder</code></li>
+<li><code>test_a_scope_conflict_expires_when_its_holder_no_longer_claims_the_path</code></li>
+<li><code>test_a_scope_conflict_replaces_a_stored_router_full_reason</code></li>
+</ol>
+
+<h4 id="qwnw-red-file-a-held-request-records-what-holds-it-second-launch-arms">The node's own arm adds no failure</h4>
+<p>Over the four files that exercise the claim and hold paths, the same four ids
+fail at base and at head — no failure is added by this change. Those four are
+pre-existing and outside this node's file: they claim source paths, and are
+recorded under <code>outside_scope</code> in the manifest.</p>
+<pre># revision: 0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc
+4 failed, 17 passed in 5.94s
+EXIT=1
+# revision: 84fe063da8daa517da3b0ab522c74c272b5fa1de
+4 failed, 17 passed in 7.85s
+EXIT=1</pre>
+
+<h4 id="qwnw-red-file-a-held-request-records-what-holds-it-second-launch-suite">Promotion suite arms</h4>
+<pre># baseline: tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+58 passed in 40.50s
+EXIT=0
+# after: tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+58 passed in 44.18s
+EXIT=0</pre>
+<p><code>ruff check</code> and <code>ruff format --check</code> report nothing on
+<code>reckon/crew/admission/holds.py</code>,
+<code>reckon/crew/admission/launching.py</code> and
+<code>tests/test_a_held_request_records_what_holds_it.py</code>.</p>
+</section>
