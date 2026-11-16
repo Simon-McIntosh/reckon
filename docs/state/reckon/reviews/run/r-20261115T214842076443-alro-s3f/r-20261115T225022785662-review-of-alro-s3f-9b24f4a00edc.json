@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: after-1318711.log at 9b24f4a00e records '66 passed' with no FAILED line and EXIT=0, and baseline-1318718.log at 397a3c2b44 records '62 passed' with no FAILED line and EXIT=0, so the set difference is empty (0).",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/mcp_views.py:4931",
+    "reckon/mcp_views.py:4942"
+  ],
+  "completed_at": "2026-11-15T23:02:52Z",
+  "dispatched_at": "2026-11-15T23:02:13Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T214842076443-alro-s3f/manifest.md",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gate command omits tests/test_a_one_plan_ledger_read.py, which the done_when names and which imports `ledger` at tests/test_a_one_plan_ledger_read.py:29, so the promotion gate records no result for a file the measure named."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T214842076443-alro-s3f/manifest.md",
+      "line": "35",
+      "severity": "non-blocking",
+      "text": "non-blocking: the pre-repair reproductions and the red-at-base state of the three reader cases are recorded as prose values only, since the base arm at 397a3c2b44 ran the pre-change test file, so no log on disk lets a reader re-check the claim that each reader reproduced before repair."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit 9b24f4a00e against base 397a3c2b44; three files with 154 insertions and 5 deletions \u2014 four one-line reader changes in reckon/ledger.py, four cases plus two constants and one earlier-extraction helper in the test file, and the new evidence fragment.",
+    "done_when": "the done_when names one temporary-store case per reader, a stored-row case whose negative control is the index version, `tests/test_a_one_plan_ledger_read.py`, and ruff clean on the staged paths; tests/test_a_brief_carried_run_keeps_its_plan.py:203-281 carries the three reader cases and :245-281 the stored-row case, after-1318711.log records 66 passed EXIT=0 including the eight node cases, negative-control.log reddens exactly the stored-row case.",
+    "goal": "the node goal is to resolve a run's plan through the one resolver in every plan-keyed read; reckon/ledger.py:3990 selects the scored read on `_row_plan(record)`, :4002 reports it, :4473 buckets the effort rollup by it and :4644 builds the plans index from it, and the only surviving flat read of the field is inside the resolver itself at :1695.",
+    "manifest": "read; it states status complete, an after arm of 66 passed EXIT=0 at 9b24f4a00e, a base arm of 62 passed EXIT=0 at 397a3c2b44 and a negative control of 1 failed and 7 passed at EXIT=1, and all three named logs exist on disk with those summaries and their revision headers.",
+    "write_paths": "the declared paths are reckon/ledger.py, reckon/mcp_views.py, tests/test_a_brief_carried_run_keeps_its_plan.py, the \u00a73 fragment and an unused figure directory; the diff touches reckon/ledger.py, the test file and docs/evidence/fragments/a-landing-is-recorded-once/alro-s3f.html, and every changed path is inside the fence."
+  },
+  "justifications": {
+    "durability": "each reader case reddens on reinstating its own revert because a brief-carried row stores `plan` as None at reckon/run_record.py:517 and the surviving assertions compare a returned id set against a literal, and negative-control.log shows the stored-row case failing at EXIT=1 with the assertion's own message.",
+    "evidence": "the after arm recorded at manifest.md:13 runs the node file plus two interface-count files and records 66 passed, but tests/test_a_one_plan_ledger_read.py \u2014 named by the done_when \u2014 is in no arm's command and no log, and no ruff result is recorded even though `ruff check` and `ruff format --check` are clean on the staged paths.",
+    "fit": "the reader edits keep the one-line predicate shape of reckon/ledger.py:3990 and the new cases extend the existing test module beside its `_store` helper, with `ruff check` and `ruff format --check` clean on both changed source paths.",
+    "goal_fidelity": "reckon/ledger.py:3990, :4002, :4473 and :4644 all take the plan from `_row_plan`, and the flat `record.get(\"plan\")` survives only at :1695 inside the resolver that owns it.",
+    "reuse": "the diff adds no production definition \u2014 it routes three readers through the existing `_row_plan` at reckon/ledger.py:1675 \u2014 and a search of reckon/ for another plan-resolution owner found only that resolver, the out-of-scope readers the manifest names, and no second mechanism to extend.",
+    "scope_discipline": "the three paths in the diff are inside the declared write paths, and reckon/mcp_views.py, which the fence allowed, needed no edit because reckon/mcp_views.py:4931 only passes a plan to the repaired filter."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to resolve a run's plan through the one resolver in every plan-keyed read; reckon/ledger.py:3990 selects the scored read on `_row_plan(record)`, :4002 reports it, :4473 buckets the effort rollup by it and :4644 builds the plans index from it, and the only surviving flat read of the field is inside the resolver itself at :1695.\nVERDICT done_when: the done_when names one temporary-store case per reader, a stored-row case whose negative control is the index version, `tests/test_a_one_plan_ledger_read.py`, and ruff clean on the staged paths; tests/test_a_brief_carried_run_keeps_its_plan.py:203-281 carries the three reader cases and :245-281 the stored-row case, after-1318711.log records 66 passed EXIT=0 including the eight node cases, negative-control.log reddens exactly the stored-row case.\nVERDICT write_paths: the declared paths are reckon/ledger.py, reckon/mcp_views.py, tests/test_a_brief_carried_run_keeps_its_plan.py, the \u00a73 fragment and an unused figure directory; the diff touches reckon/ledger.py, the test file and docs/evidence/fragments/a-landing-is-recorded-once/alro-s3f.html, and every changed path is inside the fence.\nVERDICT manifest: read; it states status complete, an after arm of 66 passed EXIT=0 at 9b24f4a00e, a base arm of 62 passed EXIT=0 at 397a3c2b44 and a negative control of 1 failed and 7 passed at EXIT=1, and all three named logs exist on disk with those summaries and their revision headers.\nVERDICT diff: read commit 9b24f4a00e against base 397a3c2b44; three files with 154 insertions and 5 deletions \u2014 four one-line reader changes in reckon/ledger.py, four cases plus two constants and one earlier-extraction helper in the test file, and the new evidence fragment.\nCALL_SITES: reckon/mcp_views.py:4931, reckon/mcp_views.py:4942\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/ledger.py:3990, :4002, :4473 and :4644 all take the plan from `_row_plan`, and the flat `record.get(\"plan\")` survives only at :1695 inside the resolver that owns it.\nSCORE evidence: 14\nJUSTIFICATION evidence: the after arm recorded at manifest.md:13 runs the node file plus two interface-count files and records 66 passed, but tests/test_a_one_plan_ledger_read.py \u2014 named by the done_when \u2014 is in no arm's command and no log, and no ruff result is recorded even though `ruff check` and `ruff format --check` are clean on the staged paths.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three paths in the diff are inside the declared write paths, and reckon/mcp_views.py, which the fence allowed, needed no edit because reckon/mcp_views.py:4931 only passes a plan to the repaired filter.\nSCORE durability: 19\nJUSTIFICATION durability: each reader case reddens on reinstating its own revert because a brief-carried row stores `plan` as None at reckon/run_record.py:517 and the surviving assertions compare a returned id set against a literal, and negative-control.log shows the stored-row case failing at EXIT=1 with the assertion's own message.\nSCORE fit: 18\nJUSTIFICATION fit: the reader edits keep the one-line predicate shape of reckon/ledger.py:3990 and the new cases extend the existing test module beside its `_store` helper, with `ruff check` and `ruff format --check` clean on both changed source paths.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no production definition \u2014 it routes three readers through the existing `_row_plan` at reckon/ledger.py:1675 \u2014 and a search of reckon/ for another plan-resolution owner found only that resolver, the out-of-scope readers the manifest names, and no second mechanism to extend.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T214842076443-alro-s3f/manifest.md:13 non-blocking: the gate command omits tests/test_a_one_plan_ledger_read.py, which the done_when names and which imports `ledger` at tests/test_a_one_plan_ledger_read.py:29, so the promotion gate records no result for a file the measure named.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T214842076443-alro-s3f/manifest.md:35 non-blocking: the pre-repair reproductions and the red-at-base state of the three reader cases are recorded as prose values only, since the base arm at 397a3c2b44 ran the pre-change test file, so no log on disk lets a reader re-check the claim that each reader reproduced before repair.\n",
+  "review_node": "review-of-alro-s3f-9b24f4a00edc",
+  "review_run_id": "r-20261115T225022785662-review-of-alro-s3f-9b24f4a00edc",
+  "reviewed_base_sha": "397a3c2b443dbd444e585149c28b86f2851313e5",
+  "reviewed_commits": [
+    "9b24f4a00edc283f7a53936e4b0f982ec86c1f60"
+  ],
+  "reviewed_head_sha": "9b24f4a00edc283f7a53936e4b0f982ec86c1f60",
+  "reviewed_run_id": "r-20261115T214842076443-alro-s3f",
+  "reviewer": {
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T225022785662-review-of-alro-s3f-9b24f4a00edc"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T00:08:58.399951+00:00",
+  "total": 111
+}
