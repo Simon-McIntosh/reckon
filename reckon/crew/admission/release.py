@@ -15,6 +15,7 @@ from .shared import (
     BLOCKED_UPSTREAM_PHASE,
     DEAD_RUN_PHASES,
     GATE_REF_PREFIX,
+    LANDED_RUN_PHASES,
     QUEUED_PHASE,
     READINESS_REF_PREFIX,
     RELEASE_FAILURE_KEY,
@@ -38,25 +39,107 @@ from .shared import (
 def _dead_sections(live: Sequence[Mapping[str, Any]]) -> set[tuple[str, str]]:
     """The ``(plan, section)`` pairs no live request will ever deliver.
 
-    A section whose own request is blocked on its own upstream will not deliver
-    whatever waits behind it, and neither will one whose request is recorded
-    failed or deliberately discarded. The set is what makes blocking
-    transitive: the tail of a chain is blocked because the middle is, without
-    the tail's ref having to name the original failure.
+    A section ends without delivering when one of its runs is recorded failed,
+    blocked on its own upstream, or deliberately discarded. That one run does
+    not close the section: a section's refs are released by the section
+    landing, so a section's death is a question about every run that names it.
+    The section is dead only when no run it owns may still land — a sibling
+    that is queued, held or working, a pointer whose phase no pass has moved
+    on, and a failed run with a resume already in flight all keep the section
+    open and the refs waiting on it pending rather than abandoned.
+
+    A section with no run at all is not dead either: nothing has ended. The set
+    is what makes blocking transitive: the tail of a chain is blocked because
+    the middle is, without the tail's ref having to name the original failure.
     """
-    dead: set[tuple[str, str]] = set()
+    ended: set[tuple[str, str]] = set()
+    standing: set[tuple[str, str]] = set()
     for pointer in live:
-        node = dict(pointer.get("node") or {})
-        plan = str(node.get("plan") or pointer.get("plan") or "")
-        section = str(node.get("section") or pointer.get("section") or "")
-        if not plan or not section:
+        key = _section_key(pointer)
+        if key is None:
             continue
         phase = str(pointer.get("phase") or "")
-        if phase in (BLOCKED_UPSTREAM_PHASE, *DEAD_RUN_PHASES) or _discarded(
-            str(pointer.get("run_id") or "")
-        ):
-            dead.add((plan, normalize_section(section)))
-    return dead
+        discarded = _discarded(str(pointer.get("run_id") or ""))
+        if phase in (BLOCKED_UPSTREAM_PHASE, *DEAD_RUN_PHASES) or discarded:
+            if _resume_in_flight(pointer):
+                standing.add(key)
+            else:
+                ended.add(key)
+        elif phase not in LANDED_RUN_PHASES:
+            standing.add(key)
+    return ended - standing
+
+
+def _section_key(pointer: Mapping[str, Any]) -> tuple[str, str] | None:
+    """The ``(plan, section)`` one live pointer names, or ``None`` for neither."""
+    node = dict(pointer.get("node") or {})
+    plan = str(node.get("plan") or pointer.get("plan") or "")
+    section = str(node.get("section") or pointer.get("section") or "")
+    if not plan or not section:
+        return None
+    return (plan, normalize_section(section))
+
+
+def _resume_in_flight(pointer: Mapping[str, Any]) -> bool:
+    """Whether a resume of this run began and has not yet recorded its attempt.
+
+    A resume writes its mark on the pointer before the attempt it launches
+    records one of its own, so the pointer still reads ``failed`` throughout
+    that window. Reading the phase alone there would close the section under a
+    request that is on its way back, so the mark is read as the fact the later
+    phase records.
+    """
+    from reckon.crew.resumption import RESUME_LAUNCH_IN_FLIGHT
+
+    if not isinstance(pointer.get(RESUME_LAUNCH_IN_FLIGHT), Mapping):
+        return False
+    from reckon.crew.resumption import launch_in_flight
+
+    try:
+        return bool(launch_in_flight(pointer))
+    except Exception:  # noqa: BLE001 - an unreadable liveness probe is no resume
+        return False
+
+
+def _live_runs_on(
+    refs: Iterable[str],
+    live: Sequence[Mapping[str, Any]],
+    *,
+    project: str = "",
+    exclude: str = "",
+) -> list[str]:
+    """The runs still on their way to landing these section refs, by run id.
+
+    The judgement :func:`_dead_sections` makes about a section's death, read
+    for the one request waiting on it: a request that stays waiting names the
+    run whose work it waits for, so a reader sees a live sibling rather than
+    only the section's name.
+    """
+    wanted: set[tuple[str, str]] = set()
+    for ref in refs:
+        key = _release_section_key(str(ref), project)
+        if key is not None:
+            wanted.add((key[1], key[2]))
+    if not wanted:
+        return []
+    working: list[str] = []
+    for pointer in live:
+        run_id = str(pointer.get("run_id") or "")
+        if not run_id or run_id == exclude:
+            continue
+        section = _section_key(pointer)
+        if section is None or (section[0], section[1]) not in wanted:
+            continue
+        phase = str(pointer.get("phase") or "")
+        if phase in LANDED_RUN_PHASES or _discarded(run_id):
+            continue
+        if phase in (
+            BLOCKED_UPSTREAM_PHASE,
+            *DEAD_RUN_PHASES,
+        ) and not _resume_in_flight(pointer):
+            continue
+        working.append(run_id)
+    return sorted(set(working))
 
 
 def _discarded(run_id: str) -> bool:
@@ -136,6 +219,16 @@ def resolve_waits(
     ]
     if isinstance(pointer, dict):
         pointer["upstream_obligations"] = list(dict.fromkeys(issues))
+        # A request that stays waiting names the run whose work it waits for.
+        # The section it waits on can own several runs, and one of them having
+        # failed is not the section's end while another is still on its way: a
+        # reader that saw only the section's name could not tell the two apart.
+        pointer["upstream_live"] = _live_runs_on(
+            refs,
+            live,
+            project=owner_project,
+            exclude=str(pointer.get("run_id") or ""),
+        )
     if ABANDONED in states:
         return BLOCKED_UPSTREAM_PHASE
     if all(state == SATISFIED for state in states):
@@ -473,6 +566,7 @@ def _advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
                 continue
             docs_dir = Path(str(pointer.get("repo") or "") or ".") / "docs"
             previous_issues = list(pointer.get("upstream_obligations") or ())
+            previous_live = list(pointer.get("upstream_live") or ())
             run_id = str(pointer.get("run_id") or "")
             target = _resolve_and_move(
                 pointer,
@@ -484,14 +578,18 @@ def _advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
                 mount=mount,
             )
             issues = list(pointer.get("upstream_obligations") or ())
+            working = list(pointer.get("upstream_live") or ())
             if issues:
                 obligations[run_id] = issues[0]
-            if issues != previous_issues:
+            if issues != previous_issues or working != previous_live:
 
                 def record_issues(
-                    current: dict[str, Any], recorded: list[str] = issues
+                    current: dict[str, Any],
+                    recorded: list[str] = issues,
+                    live_runs: list[str] = working,
                 ) -> dict[str, Any]:
                     current["upstream_obligations"] = recorded
+                    current["upstream_live"] = live_runs
                     return current
 
                 runs._mutate_pointer(run_id, record_issues)

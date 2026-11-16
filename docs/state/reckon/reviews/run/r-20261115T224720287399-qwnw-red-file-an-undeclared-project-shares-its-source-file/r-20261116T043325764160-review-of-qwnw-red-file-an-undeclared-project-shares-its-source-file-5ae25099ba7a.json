@@ -1,0 +1,126 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived by reading the reviewed run raw baseline-suite.log and after-suite.log: 58 passed EXIT=0 in each; source manifest omits these structured arms. After arm is at b6e6153b6e; the remaining commit changes only the evidence fragment, and the named-file final gate is at reviewed head.",
+  "assertion_analysis": [
+    {
+      "fails_if": "Reintroducing source exclusivity under either declaration raises during the second dispatch; returning the same run identifier also fails the output inequality. Both operands are actual independent dispatch results, not test-supplied expected IDs.",
+      "file": "tests/test_an_undeclared_project_shares_its_source_files.py",
+      "lines": [
+        178,
+        195
+      ]
+    },
+    {
+      "fails_if": "Removing the unreadable declaration marker or its filename fails the prefix or filename assertions; mutation log records marker removal failing.",
+      "file": "tests/test_an_undeclared_project_shares_its_source_files.py",
+      "lines": [
+        180,
+        181
+      ]
+    },
+    {
+      "fails_if": "Removing plan-document exclusivity fails pytest.raises; misidentifying the blocker fails the comparison against the first actual artifact dispatch result. The owner run id is observed, not passed into the refusal code.",
+      "file": "tests/test_an_undeclared_project_shares_its_source_files.py",
+      "lines": [
+        197,
+        200
+      ]
+    }
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch_claims.py:_raise_repository_scope_conflict:2193",
+    "reckon/crew/dispatch_claims.py:_raise_repository_scope_conflict:2233",
+    "reckon/crew/runs.py:_shared_write_paths:1883",
+    "reckon/crew/runs.py:_SharedWritePaths.exclusive_pattern:1764"
+  ],
+  "commits_reviewed": [
+    "e8f10a3479c0caadc88b616d919281f49fd81400",
+    "b6e6153b6e33298e399007dfb4ec1d5f3424b879",
+    "5ae25099ba7a08b6cbbee940df6974899c65d4e7"
+  ],
+  "completed_at": "2026-11-16T04:43:02Z",
+  "dispatched_at": "2026-11-16T04:36:55Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-an-undeclared-project-shares-its-source-file-5ae25099ba7a",
+      "recorded_at": "2026-11-16T04:57:34.446458+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "12",
+      "severity": "blocking",
+      "text": "blocking: Both test_logs fields are truncated paths containing shell redirection text, and baseline_suite, after_suite and negative_control_log are absent; restore resolvable paths and the structured arm receipts from the existing raw logs so promotion can verify the delivery rather than relying on prose."
+    },
+    {
+      "file": "manifest.md",
+      "line": "2",
+      "severity": "non-blocking",
+      "text": "non-blocking: orientation_base_sha is d0d77f07e2d644d74713755aebe748602f9a06f, which does not resolve; the dispatch and base logs identify d0d77f07e2dcc64d74713755aebe748602f9a06f, so correct this transcription while repairing the manifest."
+    }
+  ],
+  "integration_base_sha": "faa84aa492992ecf3f5a550486d9dc308c00ccde",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read e8f10a3479c0caadc88b616d919281f49fd81400, b6e6153b6e33298e399007dfb4ec1d5f3424b879 and 5ae25099ba7a08b6cbbee940df6974899c65d4e7 individually; after the mandated origin/main refresh at faa84aa492992ecf3f5a550486d9dc308c00ccde their net change is 49 insertions and 10 deletions in two scoped files.",
+    "done_when": "prompt.txt:188 requires the named all_debug run and a no-added-failures arm; logs/gate-all-debug-final.log meets the former and logs/baseline-suite.log plus logs/after-suite.log each record 58 passed, but manifest.md omits their required structured receipts.",
+    "goal": "prompt.txt:38 asks for tests/test_an_undeclared_project_shares_its_source_files.py to pass; logs/gate-all-debug-final.log records 10 passed at 5ae25099ba7a08b6cbbee940df6974899c65d4e7.",
+    "manifest": "manifest.md:2 misspells the base SHA and manifest.md:12-13 contain malformed test_logs values, while baseline_suite, after_suite and negative_control_log are absent despite readable raw logs.",
+    "write_paths": "prompt.txt:84-89 grants reckon, tests and the evidence fragment directory; the three worker commits modify only the named test file and its granted fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_an_undeclared_project_shares_its_source_files.py:178-201 fails if source claims become exclusive, the unreadable marker or filename disappears, plan exclusion is removed, or the refusal names the wrong holder; logs/mutations.log records the marker-removal and plan-exclusion controls failing.",
+    "evidence": "logs/base-file-d0d77f07.log records the two DID NOT RAISE failures and the final gate records 10 passed, but manifest.md:12-13 cannot resolve its logs and provides neither required suite-arm receipt nor the negative-control path.",
+    "fit": "tests/test_an_undeclared_project_shares_its_source_files.py:163-201 retains the existing synthesized dispatch fixture, mechanism-based names and refusal idiom without introducing plan-labelled source names.",
+    "goal_fidelity": "tests/test_an_undeclared_project_shares_its_source_files.py:163-201 updates the two stale expectations to the existing claim policy and logs/gate-all-debug-final.log records all 10 passing at the reviewed head.",
+    "reuse": "the capability search found and opened tests/test_only_unmergeable_paths_are_claimed.py:366-376 and reckon/crew/runs.py:1883-1952; this change updates its existing test owner and adds no production implementation or helper duplicating those mechanisms.",
+    "scope_discipline": "e8f10a3479c0caadc88b616d919281f49fd81400 changes only the assigned test and the two subsequent commits change only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-undeclared-project-shares-its-source-file.html."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 asks for tests/test_an_undeclared_project_shares_its_source_files.py to pass; logs/gate-all-debug-final.log records 10 passed at 5ae25099ba7a08b6cbbee940df6974899c65d4e7.\nVERDICT done_when: prompt.txt:188 requires the named all_debug run and a no-added-failures arm; logs/gate-all-debug-final.log meets the former and logs/baseline-suite.log plus logs/after-suite.log each record 58 passed, but manifest.md omits their required structured receipts.\nVERDICT write_paths: prompt.txt:84-89 grants reckon, tests and the evidence fragment directory; the three worker commits modify only the named test file and its granted fragment.\nVERDICT manifest: manifest.md:2 misspells the base SHA and manifest.md:12-13 contain malformed test_logs values, while baseline_suite, after_suite and negative_control_log are absent despite readable raw logs.\nVERDICT diff: read e8f10a3479c0caadc88b616d919281f49fd81400, b6e6153b6e33298e399007dfb4ec1d5f3424b879 and 5ae25099ba7a08b6cbbee940df6974899c65d4e7 individually; after the mandated origin/main refresh at faa84aa492992ecf3f5a550486d9dc308c00ccde their net change is 49 insertions and 10 deletions in two scoped files.\nCALL_SITES: reckon/crew/dispatch_claims.py:_raise_repository_scope_conflict:2193, reckon/crew/dispatch_claims.py:_raise_repository_scope_conflict:2233, reckon/crew/runs.py:_shared_write_paths:1883, reckon/crew/runs.py:_SharedWritePaths.exclusive_pattern:1764\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_an_undeclared_project_shares_its_source_files.py:163-201 updates the two stale expectations to the existing claim policy and logs/gate-all-debug-final.log records all 10 passing at the reviewed head.\nSCORE evidence: 12\nJUSTIFICATION evidence: logs/base-file-d0d77f07.log records the two DID NOT RAISE failures and the final gate records 10 passed, but manifest.md:12-13 cannot resolve its logs and provides neither required suite-arm receipt nor the negative-control path.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: e8f10a3479c0caadc88b616d919281f49fd81400 changes only the assigned test and the two subsequent commits change only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-undeclared-project-shares-its-source-file.html.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_an_undeclared_project_shares_its_source_files.py:178-201 fails if source claims become exclusive, the unreadable marker or filename disappears, plan exclusion is removed, or the refusal names the wrong holder; logs/mutations.log records the marker-removal and plan-exclusion controls failing.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_an_undeclared_project_shares_its_source_files.py:163-201 retains the existing synthesized dispatch fixture, mechanism-based names and refusal idiom without introducing plan-labelled source names.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search found and opened tests/test_only_unmergeable_paths_are_claimed.py:366-376 and reckon/crew/runs.py:1883-1952; this change updates its existing test owner and adds no production implementation or helper duplicating those mechanisms.\nFINDING manifest.md:12 blocking: Both test_logs fields are truncated paths containing shell redirection text, and baseline_suite, after_suite and negative_control_log are absent; restore resolvable paths and the structured arm receipts from the existing raw logs so promotion can verify the delivery rather than relying on prose.\nFINDING manifest.md:2 non-blocking: orientation_base_sha is d0d77f07e2d644d74713755aebe748602f9a06f, which does not resolve; the dispatch and base logs identify d0d77f07e2dcc64d74713755aebe748602f9a06f, so correct this transcription while repairing the manifest.\n",
+  "review_checks": [],
+  "review_run_id": "r-20261116T043325764160-review-of-qwnw-red-file-an-undeclared-project-shares-its-source-file-5ae25099ba7a",
+  "review_text": "VERDICT goal: prompt.txt:38 asks for tests/test_an_undeclared_project_shares_its_source_files.py to pass; logs/gate-all-debug-final.log records 10 passed at 5ae25099ba7a08b6cbbee940df6974899c65d4e7.\nVERDICT done_when: prompt.txt:188 requires the named all_debug run and a no-added-failures arm; logs/gate-all-debug-final.log meets the former and logs/baseline-suite.log plus logs/after-suite.log each record 58 passed, but manifest.md omits their required structured receipts.\nVERDICT write_paths: prompt.txt:84-89 grants reckon, tests and the evidence fragment directory; the three worker commits modify only the named test file and its granted fragment.\nVERDICT manifest: manifest.md:2 misspells the base SHA and manifest.md:12-13 contain malformed test_logs values, while baseline_suite, after_suite and negative_control_log are absent despite readable raw logs.\nVERDICT diff: read e8f10a3479c0caadc88b616d919281f49fd81400, b6e6153b6e33298e399007dfb4ec1d5f3424b879 and 5ae25099ba7a08b6cbbee940df6974899c65d4e7 individually; after the mandated origin/main refresh at faa84aa492992ecf3f5a550486d9dc308c00ccde their net change is 49 insertions and 10 deletions in two scoped files.\nCALL_SITES: reckon/crew/dispatch_claims.py:_raise_repository_scope_conflict:2193, reckon/crew/dispatch_claims.py:_raise_repository_scope_conflict:2233, reckon/crew/runs.py:_shared_write_paths:1883, reckon/crew/runs.py:_SharedWritePaths.exclusive_pattern:1764\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_an_undeclared_project_shares_its_source_files.py:163-201 updates the two stale expectations to the existing claim policy and logs/gate-all-debug-final.log records all 10 passing at the reviewed head.\nSCORE evidence: 12\nJUSTIFICATION evidence: logs/base-file-d0d77f07.log records the two DID NOT RAISE failures and the final gate records 10 passed, but manifest.md:12-13 cannot resolve its logs and provides neither required suite-arm receipt nor the negative-control path.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: e8f10a3479c0caadc88b616d919281f49fd81400 changes only the assigned test and the two subsequent commits change only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-undeclared-project-shares-its-source-file.html.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_an_undeclared_project_shares_its_source_files.py:178-201 fails if source claims become exclusive, the unreadable marker or filename disappears, plan exclusion is removed, or the refusal names the wrong holder; logs/mutations.log records the marker-removal and plan-exclusion controls failing.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_an_undeclared_project_shares_its_source_files.py:163-201 retains the existing synthesized dispatch fixture, mechanism-based names and refusal idiom without introducing plan-labelled source names.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search found and opened tests/test_only_unmergeable_paths_are_claimed.py:366-376 and reckon/crew/runs.py:1883-1952; this change updates its existing test owner and adds no production implementation or helper duplicating those mechanisms.\nFINDING manifest.md:12 blocking: Both test_logs fields are truncated paths containing shell redirection text, and baseline_suite, after_suite and negative_control_log are absent; restore resolvable paths and the structured arm receipts from the existing raw logs so promotion can verify the delivery rather than relying on prose.\nFINDING manifest.md:2 non-blocking: orientation_base_sha is d0d77f07e2d644d74713755aebe748602f9a06f, which does not resolve; the dispatch and base logs identify d0d77f07e2dcc64d74713755aebe748602f9a06f, so correct this transcription while repairing the manifest.\n",
+  "reviewed_base_sha": "d0d77f07e2dcc64d74713755aebe748602f9a06f",
+  "reviewed_head_sha": "5ae25099ba7a08b6cbbee940df6974899c65d4e7",
+  "reviewed_run_id": "r-20261115T224720287399-qwnw-red-file-an-undeclared-project-shares-its-source-file",
+  "scores": {
+    "durability": 19,
+    "evidence": 12,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224720287399-qwnw-red-file-an-undeclared-project-shares-its-source-file/logs/after-suite.log",
+      "revision": "b6e6153b6e33298e399007dfb4ec1d5f3424b879"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224720287399-qwnw-red-file-an-undeclared-project-shares-its-source-file/logs/baseline-suite.log",
+      "revision": "d0d77f07e2dcc64d74713755aebe748602f9a06f"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T06:11:34.080923+00:00",
+  "total": 110
+}

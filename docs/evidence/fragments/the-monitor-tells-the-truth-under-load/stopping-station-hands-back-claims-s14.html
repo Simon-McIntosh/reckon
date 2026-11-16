@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-tells-the-truth-under-load">
+  <meta name="plan-evidence-for" content="the-monitor-tells-the-truth-under-load">
+  <title>A stopping station hands back its claims | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A stopping station exits within a bound and hands its claims back</h1>
+      <p class="lead">A station gave SIGTERM a flag that only the loop between ticks ever
+      read. A tick held in a derivation doing storage IO, or the shutdown's join of every
+      derivation in turn, could hold the process open for as long as that work took.
+      Measured on 15 November: two of three restarts were still running 120 s after
+      SIGTERM, were answered with SIGKILL, and every claim the killed station held was
+      orphaned &mdash; seven at 13:00Z, six of them other sessions'.</p>
+    </header>
+
+    <section id="stopping-station-hands-back-claims-s14-mechanism">
+      <h2>Two promises, each kept where it landed</h2>
+      <p>The bound is enforced from a timer thread armed by the signal handler itself,
+      because the paths the shutdown waits on are exactly the ones that never read the stop
+      flag. The ordered unwinding keeps whatever time it has left up to the bound and
+      cancels the timer when it finishes, so a clean stop is never cut short; at the bound
+      the process hands back its claims and exits where it stands.</p>
+      <p>Handing claims back is keyed on the launch step rather than on the phase, and on
+      the holder rather than on the run. <code>dispatch_claims.release_unlaunched_claims</code>
+      walks the live pointers, keeps those whose <code>claim.json</code> names this process
+      as holder, and gives back each whose step has not reached
+      <code>worker-spawned</code>:</p>
+      <ul>
+        <li>the run's launch refusal is recorded first, naming the step the span reached,
+        because releasing the claim removes the run directory that would hold it;</li>
+        <li>a claim the admission pass took from the queue goes back to the queue, with the
+        brief and steering the launch had already stored, since removing the run directory
+        would take the only copy of a request nothing else would dispatch;</li>
+        <li>every other unlaunched claim is released outright, pointer first and run
+        directory after.</li>
+      </ul>
+      <p>A claim at <code>worker-spawned</code> or <code>identity-published</code>, and any
+      claim whose pointer already names a pid, is left exactly as it stands: a worker is
+      running behind it, and handing it back would let the queue launch a second worker over
+      the first. A claim another process published is not this station's to give back.</p>
+      <p>The same handback runs on the ordered path as well as at the bound. Whatever the
+      shutdown did, a dispatcher thread caught between its claim and its worker dies with
+      the process, and nothing else in that process is left to release what it published.</p>
+    </section>
+
+    <section id="stopping-station-hands-back-claims-s14-paths">
+      <h2>Where the change lives</h2>
+      <ul>
+        <li><code>reckon/crew/station.py</code> &mdash;
+        <code>STATION_STOP_BOUND_SECONDS</code> states the bound; <code>StopBound</code>
+        arms it from the signal handler and hands the claims back at it, and is cancelled
+        when the ordered shutdown finishes; <code>run_station</code> arms it in the stop
+        handler and calls <code>dispatch_claims.release_unlaunched_claims()</code> in its
+        own <code>finally</code>; <code>DutyBeat.drain</code> now spends one bound across
+        every worker it joins rather than one per worker.</li>
+        <li><code>reckon/crew/dispatch_claims.py</code> &mdash;
+        <code>LAUNCHED_STEPS</code> names the steps a worker stands behind, and
+        <code>release_unlaunched_claims</code> is the one handback: refusal record first,
+        then the queued request back to the queue or the claim released outright.</li>
+        <li><code>tests/test_a_stopping_station_hands_back_its_claims.py</code> &mdash; the
+        step-against-phase handback, the queued request that goes back to the queue with its
+        brief, and a real station process signalled while its tick and its derivation are
+        both blocked.</li>
+      </ul>
+    </section>
+
+    <section id="stopping-station-hands-back-claims-s14-measure">
+      <h2>Measure</h2>
+      <p>Gate, at head <code>ccafc7623c</code>:
+      <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+      tests/test_a_stopping_station_hands_back_its_claims.py
+      tests/test_staged_write_inventory.py
+      tests/test_every_shared_home_lock_holds_across_nodes.py</code> &mdash;
+      <strong>61 passed</strong>, <code>EXIT=0</code>. The base arm over the two files that
+      exist at <code>18d133b40e</code>, byte-identical at head, scored
+      <strong>58 passed</strong>, <code>EXIT=0</code>: the three added passes are the three
+      cases below, and nothing else moved.</p>
+      <p>The three cases are: a claim short of its worker is handed back with its refusal
+      recorded at the step it reached, while a claim at <code>worker-spawned</code> and one
+      another process published are both left standing; a request taken from the queue goes
+      back to the queue with its stored brief rather than being deleted with its run
+      directory; and a station process signalled with SIGTERM while its tick and its
+      derivation are both blocked exits <code>0</code> after
+      <code>STATION_STOP_BOUND_SECONDS</code> and no later, with the unlaunched claim gone
+      from the fleet and the claim naming a running worker still in place.</p>
+      <p><strong>The importing population.</strong> The 18 test files that import
+      <code>reckon.crew.station</code> or <code>reckon.crew.dispatch_claims</code> were run
+      twice over one extracted tree, so the only difference between the arms is this
+      change: the base revision's code, then the node's two modules copied in.
+      <strong>14 failed, 104 passed</strong> at base and <strong>14 failed, 104 passed</strong>
+      at head, with the failing id sets identical and nothing added
+      (<code>0</code> added, <code>0</code> absent). The same 14 ids fail in this sandbox on
+      both arms, so they are the environment rather than this change; verifying them on
+      <code>all_debug</code> belongs to the separately dispatched test node.</p>
+      <p><strong>Repair.</strong> A review found the walk rebinding the holder pid to a
+      claim record inside the loop, so every claim after the first compared its holder
+      against a mapping, read as another process's, and was left standing: a probe over two
+      unlaunched claims released only <code>r-probe-first</code>, and the incident this
+      handback exists for orphaned seven at once. The pid now keeps its own name, and a case
+      publishes four unlaunched claims beside a running one and asserts all four are
+      released with the running claim kept. Reverting the repair makes that case fail
+      (<code>1 failed, 3 passed</code>, <code>EXIT=1</code>, the failing id naming the
+      four-claim case).</p>
+      <p><strong>Negative control.</strong> Declared mutation: <em>a station that ignores
+      SIGTERM in a long derivation fails the exit bound</em>. Applied by removing
+      <code>stop_bound.arm()</code> from the SIGTERM handler, the run went red:
+      <code>1 failed, 2 passed</code>, <code>EXIT=1</code>, the failing id being
+      <code>test_a_station_stopped_while_blocked_exits_inside_its_bound</code> &mdash;
+      failing on <code>subprocess.TimeoutExpired</code> because the blocked station never
+      exited. The log is <code>negative-control.log</code> in the run directory.</p>
+    </section>
+  </main>
+</body>
+</html>

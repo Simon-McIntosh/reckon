@@ -2658,6 +2658,57 @@ def _standing_plan_review(
     return ""
 
 
+def _standing_review_report(
+    record: Mapping[str, Any], *, run_id: str
+) -> dict[str, Any] | None:
+    """The report for the review already standing for this run, or None.
+
+    None means the caller carries on: either no review stands for this run, or
+    the standing one was a stranded launch and has just been released, so the
+    review can be composed again for the same pair.
+
+    A standing claim is answered before the reviewed run's own reading is
+    judged, because the claim is a fact about the pair and not about the run's
+    phase. A launch cut off between publishing its claim and spawning a worker
+    leaves the *review's* pointer in a pre-spawn phase, and the reviewed run's
+    pointer never advanced past that point either: answering the in-flight read
+    only for a run that still reads as awaiting review returned "not awaiting
+    review" forever, and nothing ever released the claim or composed the review
+    again. A claim that may still be a young launch is reported rather than
+    displaced — only one past the one stranded-launch bound is released.
+    """
+    in_flight = _review_in_flight(record)
+    if not in_flight:
+        return None
+    standing = _readable_standing_review(in_flight)
+    if standing is None or not _stranded_launch(standing, now_seconds=time.time()):
+        return {
+            "run_id": run_id,
+            "dispatched": False,
+            "reason": "a review is already in flight as a live run",
+            "review_run_id": in_flight,
+        }
+    # The standing claim is stranded: it never spawned a worker, so nothing is
+    # coming to finish it or to release it, and the run cannot be reviewed
+    # while it stands. The reflex releases it — the pointer is discarded with
+    # the reason recorded — and the caller composes the review again.
+    reason = (
+        f"the review run {in_flight} was a stranded launch: its pointer "
+        f"held the pre-spawn phase {str(standing.get('phase') or '')!r} "
+        f"for more than {STRANDED_LAUNCH_BOUND_SECONDS}s with no worker "
+        "record, stream or launch log, so its claim was released and the "
+        "review composed again"
+    )
+    release_note = _discard_stranded_review(in_flight, reason=reason)
+    _record_review_dispatch(
+        run_id,
+        status="released-stranded-launch",
+        reason=f"{reason}; {release_note}",
+        review_run_id=in_flight,
+    )
+    return None
+
+
 def _dispatch_text_review_for_run(
     record: Mapping[str, Any],
     *,
@@ -2770,6 +2821,9 @@ def _dispatch_text_review_for_run(
                 "compose a review of a review"
             ),
         }
+    standing_report = _standing_review_report(record, run_id=run_id)
+    if standing_report is not None:
+        return standing_report
     row = classify_pointer(record)
     if row["classification"] != "scoring":
         return {
@@ -2796,42 +2850,13 @@ def _dispatch_text_review_for_run(
                 "parse; repair or replace it rather than dispatching a second"
             ),
         }
-    in_flight = _review_in_flight(record)
-    if in_flight:
-        standing = _readable_standing_review(in_flight)
-        if standing is not None and _stranded_launch(standing, now_seconds=time.time()):
-            # The standing claim is stranded: it never spawned a worker, so
-            # nothing is coming to finish it or to release it, and the run
-            # cannot be reviewed while it stands. The reflex releases it — the
-            # pointer is discarded with the reason recorded — and falls through
-            # to compose the review again for the same pair.
-            reason = (
-                f"the review run {in_flight} was a stranded launch: its pointer "
-                f"held the pre-spawn phase {str(standing.get('phase') or '')!r} "
-                f"for more than {STRANDED_LAUNCH_BOUND_SECONDS}s with no worker "
-                "record, stream or launch log, so its claim was released and the "
-                "review composed again"
-            )
-            release_note = _discard_stranded_review(in_flight, reason=reason)
-            _record_review_dispatch(
-                run_id,
-                status="released-stranded-launch",
-                reason=f"{reason}; {release_note}",
-                review_run_id=in_flight,
-            )
-        else:
-            return {
-                "run_id": run_id,
-                "dispatched": False,
-                "reason": "a review is already in flight as a live run",
-                "review_run_id": in_flight,
-            }
-
-    # The run has a stored review that speaks for an earlier head, or none at
-    # all. A move the stored review no longer covers is either carried forward
-    # — data-only commits, no re-review — or re-reviewed lightly, scoped to the
-    # commits that changed runtime source. Only a run with no review at all
-    # (or a move git cannot compare) falls through to the full review below.
+    # The standing claim was answered before the run's own reading was judged
+    # (see :func:`_standing_review_report`), so a review that reaches here is
+    # one the caller may compose. A move the stored review no longer covers is
+    # either carried forward — data-only commits, no re-review — or re-reviewed
+    # lightly, scoped to the commits that changed runtime source. Only a run
+    # with no review at all (or a move git cannot compare) falls through to the
+    # full review below.
     move = carry_review_forward(record, config=config)
     if move is not None and move["carried"]:
         reason = (
@@ -3338,6 +3363,45 @@ def _settled_delivery_refusal(
     }
 
 
+def _is_measurement_run(record: Mapping[str, Any]) -> bool:
+    """Whether this run was dispatched to build and gate without landing."""
+    marker = record.get("measure_only")
+    if isinstance(marker, Mapping):
+        return True
+    return bool(str(marker or "").strip())
+
+
+def _measurement_run_refusal(
+    record: Mapping[str, Any], *, dry_run: bool
+) -> dict[str, Any] | None:
+    """Why no review is composed for a measurement run, or None for any other run.
+
+    A measurement run replays work that has already landed, so a review of it
+    would spend a reviewer on a delivery nobody merges and would leave the
+    landing pass a verdict to make about a run that must never land. The
+    dispatch records the run as one on its own pointer, and this reads that
+    record rather than inferring the kind of run from its role or its manifest.
+    """
+    if record.get("subject") == "plan" or _is_review_run(record):
+        return None
+    run_id = str(record.get("run_id") or "")
+    if not run_id or not _is_measurement_run(record):
+        return None
+    reason = (
+        "the run is a measurement run: it builds and gates, and nothing reviews "
+        "or lands it"
+    )
+    if not dry_run:
+        _record_review_dispatch(run_id, status="refused", reason=reason)
+    return {
+        "run_id": run_id,
+        "dispatched": False,
+        "refused": True,
+        "measure_only": True,
+        "reason": reason,
+    }
+
+
 def review_dispatch_refusal(record: Mapping[str, Any]) -> dict[str, Any] | None:
     """The refusal :func:`dispatch_review_for_run` would return, read without writing.
 
@@ -3347,6 +3411,9 @@ def review_dispatch_refusal(record: Mapping[str, Any]) -> dict[str, Any] | None:
     dispatch itself records a refusal on the run it acted for; a reader that
     only reports must not write, so this form leaves the record untouched.
     """
+    measured = _measurement_run_refusal(record, dry_run=True)
+    if measured is not None:
+        return measured
     settled = _settled_delivery_refusal(record, dry_run=True)
     if settled is not None:
         return settled
@@ -3414,6 +3481,9 @@ def dispatch_review_for_run(
             if runs.pointer_path(run_id).exists():
                 raise
         record = {**lifecycle, **record}
+    refusal = _measurement_run_refusal(lifecycle, dry_run=dry_run)
+    if refusal is not None:
+        return refusal
     refusal = _settled_delivery_refusal(lifecycle, dry_run=dry_run)
     if refusal is not None:
         return refusal

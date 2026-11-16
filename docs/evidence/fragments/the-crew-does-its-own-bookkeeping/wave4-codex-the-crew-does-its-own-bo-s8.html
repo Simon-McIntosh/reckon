@@ -1,0 +1,31 @@
+<section id="wave4-codex-the-crew-does-its-own-bo-s8-scope-at-head">
+  <h3>Promotion checks the cited paths whose changes survive at the head</h3>
+  <p>Scope acceptance now intersects the cited commits' path union with the
+    base-to-head diff. A temporary file renamed into scope and an undeclared
+    change restored before delivery need no acceptance. Surviving undeclared
+    edits and deletions still refuse. Cited merges retain their existing
+    exclusion of imported branch paths. An unreadable base refuses; a record
+    with no base retains the conservative union.</p>
+  <table>
+    <thead><tr><th>Measurement</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Unchanged-source reproduction</td><td>2 failed, 3 passed:
+        promotion refused the renamed temporary path and restored content.</td></tr>
+      <tr><td>Focused behavior after repair</td><td>7 passed, covering the two
+        admissions, surviving edit and deletion refusals, unreadable and absent
+        bases, and the cited merge.</td></tr>
+      <tr><td>Union-only negative control</td><td>2 failed, 5 passed: only the
+        renamed temporary path and restored-content admissions fail again.</td></tr>
+      <tr><td>Declared baseline gate</td><td>58 passed.</td></tr>
+      <tr><td>Direct importer comparison</td><td>Base: 6 failed, 289 passed.
+        Head: 6 failed, 296 passed. Identical failing IDs; zero added failures.</td></tr>
+      <tr><td>Scoped Ruff comparison</td><td>The same two existing UP017 findings
+        at base and head; zero added findings. Formatting passes in both arms.</td></tr>
+    </tbody>
+  </table>
+  <p>The baseline is <code>8fcd249a19716e15cb696c78c618035483b6370d</code>;
+    the measured source and test revision is
+    <code>99f341aca10ed7e7a13770db33e8da60773606c8</code>.
+    The manifest records the final-head declared gate, exact commands,
+    scratch-tree import identities, durable logs, and the inherited failure IDs.</p>
+</section>

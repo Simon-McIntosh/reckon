@@ -154,12 +154,29 @@ REPAIR_ROUND_DUTY_KIND = "repair-round"
 #: vocabulary read from it would refuse the duty's own ``kind``. A field whose
 #: value is empty is left off the row by the projection; a name is accepted here
 #: whether or not any duty of that kind is currently owed.
+#: The fields a duty row's evidence names its runs in, in the order a reader
+#: wants them: the duty's own run first, then the holder that fences a waiting
+#: request, then the review a delivered run awaits. A counted duty names at
+#: least one of them, and :func:`_with_action_form` projects the set onto every
+#: row as ``run_ids``.
+RUN_ID_FIELDS = ("run_id", "holder_run_id", "review_run_id")
+
 DUTY_ROW_FIELDS = (
     "kind",
     "run_id",
+    # Every run this row's evidence names: the duty's own run, the holder of a
+    # fence a waiting request is stuck behind, and the review a delivered run
+    # awaits. A counted row names at least one, which is what lets a count be
+    # read back to the runs behind it — a count of one row cannot be acted on
+    # without knowing which run it is about.
+    "run_ids",
     "node",
     "plan",
     "age_seconds",
+    # The instant the row's age was measured at. A reader holding the row later
+    # re-measures the age from here, so a stale snapshot cannot keep a duty
+    # claiming the age it had when it was written down.
+    "observed_at",
     "next_command",
     "next_action_form",
     # A queued duty's place in the lane's order, present only while it waits.
@@ -168,6 +185,9 @@ DUTY_ROW_FIELDS = (
     # A review duty's reading and the revisions it disagrees about; a refused
     # attempt's reason and record; the tier a run owes no review at all.
     "reason",
+    "until",
+    "until_condition",
+    "deferred_duty",
     "record",
     "head",
     "reviewed_head",
@@ -606,18 +626,41 @@ def action_form(command: str) -> str | None:
 
 
 def _with_action_form(item: Mapping[str, Any]) -> dict[str, Any]:
-    """Return one duty row carrying its command's action form, when it has one.
+    """Return one duty row carrying its command's action form and its run ids.
 
     The printed command is left as it stands, in ``next_command`` and in
     ``next_action`` alike — that spelling is the CLI's own, and some readers
     still run it. The rendered form travels under its own key, so no reader
     that already knows ``next_action`` as a command string has to tell the two
     apart.
+
+    The run ids are read from the fields a duty's own evidence names them in —
+    the duty's run, the holder of a fence a waiting request is stuck behind, and the
+    review a delivered run awaits — because a row that says how many duties are
+    owed and names no run leaves the reader to guess which ones. Every row this
+    view projects passes through here, in the derivation and in the slice a
+    sweep publishes, so the two surfaces cannot disagree about what a duty names.
     """
     row = dict(item)
     rendered = action_form(str(item.get("next_command") or ""))
     if rendered is not None:
         row["next_action_form"] = rendered
+    named: list[str] = []
+    # A row whose builder already knows the runs it concerns — a checkout notice
+    # names the runs whose landing its remedy unblocks — states them itself, so
+    # those are kept ahead of the single-run fields rather than replaced by them.
+    own = item.get("run_ids")
+    if isinstance(own, (list, tuple)):
+        for run_id in own:
+            text = str(run_id or "").strip()
+            if text and text not in named:
+                named.append(text)
+    for field in RUN_ID_FIELDS:
+        run_id = str(item.get(field) or "").strip()
+        if run_id and run_id not in named:
+            named.append(run_id)
+    if named:
+        row["run_ids"] = named
     return row
 
 
@@ -633,7 +676,18 @@ def _seconds_since(value: Any, *, now: datetime) -> int:
 
 
 def _row_age(row: Mapping[str, Any], *, now: datetime) -> int:
-    """Read a classifier row's best available age measurement."""
+    """Read a classifier row's best available age measurement.
+
+    A row that records the instant it was observed answers here with its age at
+    this read, measured from that instant and the stated figure it carried then
+    (:func:`refresh_age`); the stated figure alone is what a snapshot published
+    an hour ago would keep, so a duty would read as freshly observed for as long
+    as nobody rewrote the snapshot. A row recorded before this change carries no
+    such instant, and its stated figures stand.
+    """
+    refreshed = refresh_age(row, now=now)
+    if refreshed is not None:
+        return refreshed
     stated_age = row.get("age_seconds")
     if isinstance(stated_age, (int, float)) and not isinstance(stated_age, bool):
         return max(0, int(stated_age))
@@ -647,6 +701,46 @@ def _row_age(row: Mapping[str, Any], *, now: datetime) -> int:
     if isinstance(log_age, (int, float)) and not isinstance(log_age, bool):
         return max(0, int(log_age))
     return 0
+
+
+#: The field a duty row records its own observation instant in: the instant the
+#: row's own evidence was read — the moment the run reached the terminal state a
+#: duty is measured from — as an ISO-8601 stamp. A reader later than that instant
+#: measures the duty's age again from here rather than repeating the figure the
+#: classifier computed, which is why a row that states an age also carries it.
+OBSERVED_AT_FIELD = "observed_at"
+
+#: The fields a classifier row records the instant its evidence was observed at
+#: in, most specific first. A row's `terminal_at` is the instant its manifest
+#: reached its terminal status, which is the moment a duty about that run began.
+OBSERVED_AT_SOURCES = ("terminal_at", "observed_at", "exited_at")
+
+
+def _row_observed_at(row: Mapping[str, Any]) -> str:
+    """The instant the row's own evidence was observed at, or an empty string."""
+    for field in OBSERVED_AT_SOURCES:
+        value = str(row.get(field) or "").strip()
+        if value:
+            return value
+    return ""
+
+
+def refresh_age(row: Mapping[str, Any], *, now: datetime) -> int | None:
+    """One duty row's age at this read, or None where it records no instant.
+
+    A duty is observed once and read many times: the derivation measures it, a
+    published snapshot carries it to a hook an hour later, and the pane draws it
+    again after a reload. The figure the row states is the age it had when its
+    own evidence was observed, so a read must measure from that instant —
+    otherwise a stale row keeps claiming the row's publication figure, and a duty
+    standing at 720 s for an hour reads as freshly observed. Measured from the
+    row's own instant the figure grows with every read by exactly the time that
+    has passed, and two readers of one row cannot disagree about it.
+    """
+    observed = parse_utc(str(row.get(OBSERVED_AT_FIELD) or ""))
+    if observed is None:
+        return None
+    return max(0, int((now - observed).total_seconds()))
 
 
 _VIEW_LIVE_POINTERS: ContextVar[Mapping[str, tuple[dict[str, Any], ...]] | None] = (
@@ -1649,26 +1743,57 @@ def _acknowledgements_in_force(
     obligation.
     """
     in_force: dict[str, dict[str, Any]] = {}
+    live_ids: set[str] = set()
     for pointer in _live_pointers(project):
         run_id = str(pointer.get("run_id") or "")
+        live_ids.add(run_id)
         record = runs.run_acknowledgement(pointer)
         if not run_id or not record:
+            stale = pointer.get(runs.ACKNOWLEDGEMENT_FIELD)
+            if run_id and isinstance(stale, Mapping):
+                runs.release_run_acknowledgement(run_id, stale)
             continue
         until = parse_utc(record.get("until"))
-        if until is not None and until > now:
+        if (
+            until is not None
+            and until > now
+            and not _acknowledgement_condition_ended(record)
+        ):
             in_force[run_id] = record
+        else:
+            runs.release_run_acknowledgement(run_id, record)
     for record in runs.recorded_promoted_acknowledgements(project):
         run_id = str(record.get("run_id") or "")
-        if not run_id or run_id in in_force:
+        if not run_id:
+            continue
+        if run_id in live_ids:
+            runs.release_run_acknowledgement(run_id, record, promoted=True)
             continue
         until = parse_utc(record.get("until"))
-        if until is not None and until > now:
-            in_force[run_id] = {
-                "reason": record.get("reason"),
-                "until": record.get("until"),
-                "recorded_at": record.get("recorded_at"),
-            }
+        if (
+            until is not None
+            and until > now
+            and not _acknowledgement_condition_ended(record)
+        ):
+            in_force[run_id] = record
+        else:
+            runs.release_run_acknowledgement(run_id, record, promoted=True)
     return in_force
+
+
+def _acknowledgement_condition_ended(record: Mapping[str, Any]) -> bool:
+    """A met or unreadable condition no longer excuses a duty."""
+    condition = record.get("until_condition")
+    if condition is None:
+        return False
+    from reckon.crew import recovery_wait
+
+    try:
+        condition = runs._acknowledgement_condition(condition)
+    except CrewError:
+        return True
+    observation = recovery_wait._run_wait_condition_probe(record, condition)
+    return observation.get("state") == "met" or observation.get("answered") is False
 
 
 def _partition_acknowledged(
@@ -1678,7 +1803,13 @@ def _partition_acknowledged(
     """Split duties into those still owed and those deliberately deferred."""
     owed: list[dict[str, Any]] = []
     deferred: list[dict[str, Any]] = []
-    for item in measured_remedy_items(items):
+    candidates = [
+        candidate["deferred_duty"]
+        if isinstance(candidate.get("deferred_duty"), dict)
+        else candidate
+        for candidate in items
+    ]
+    for item in measured_remedy_items(candidates):
         record = acknowledgements.get(str(item.get("run_id") or ""))
         if record is None:
             owed.append(item)
@@ -1686,8 +1817,14 @@ def _partition_acknowledged(
         deferred.append(
             {
                 **item,
+                "deferred_duty": item,
                 "reason": str(record.get("reason") or ""),
                 "until": str(record.get("until") or ""),
+                **(
+                    {"until_condition": record["until_condition"]}
+                    if record.get("until_condition")
+                    else {}
+                ),
             }
         )
     return owed, deferred
@@ -1788,13 +1925,22 @@ def _live_item(
     refused.
     """
     item = {
-        "kind": kind,
+        "kind": str(kind),
         "run_id": str(row.get("run_id") or ""),
         "node": str(row.get("node") or ""),
         "plan": str(row.get("plan") or ""),
         "age_seconds": _row_age(row, now=now),
         "next_command": str(row.get("next_action") or ""),
     }
+    # The instant this row's own evidence was observed at, so a reader holding
+    # the row later measures its age again from here instead of repeating the
+    # figure the classifier computed. It is the row's own stamp — the instant the
+    # run reached its terminal state — never the moment of this pass: a batch
+    # stamp would make every duty on one read share an observation time and turn
+    # a row's age back into the batch clock's.
+    observed = _row_observed_at(row)
+    if observed:
+        item[OBSERVED_AT_FIELD] = observed
     if kind in CLASSIFIER_DETAIL_DUTY_KINDS:
         item["reason"] = str(row.get("detail") or "")
     if kind == QUEUED_RUN_DUTY_KIND and pointer is not None:
@@ -1948,16 +2094,22 @@ def _producer_gone_item(row: Mapping[str, Any], *, now: datetime) -> dict[str, A
     return item
 
 
-def _repair_round_in_flight(pointer: Mapping[str, Any]) -> Mapping[str, Any] | None:
-    """The repair round a run's pointer records as open, or ``None``.
+def _repair_round_in_flight(
+    pointer: Mapping[str, Any], *, process_alive: bool | None
+) -> Mapping[str, Any] | None:
+    """The open repair round with a live attempt, or ``None``.
 
     The record is the reflex's own account of the round it acted on. Only an
     opening status means work is under way: a round the reflex held, declined,
     refused or exhausted produced no worker answering it, so it names nothing in
     flight however recently it was written. The record's ``round_id`` is the run
     at the revision its review read, which is both the round's identity and the
-    key to the stored review that raised the finding.
+    key to the stored review that raised the finding. A round counts as in flight
+    only when its attempt process is known to be alive, so every reader asks this
+    owner for the complete verdict.
     """
+    if process_alive is not True:
+        return None
     dispatch = pointer.get(recovery_review_dispatch.REPAIR_DISPATCH_FIELD)
     if not isinstance(dispatch, Mapping):
         return None
@@ -2020,10 +2172,8 @@ def _repair_round_item(
     """
     if pointer is None:
         return None
-    dispatch = _repair_round_in_flight(pointer)
+    dispatch = _repair_round_in_flight(pointer, process_alive=row.get("process_alive"))
     if dispatch is None:
-        return None
-    if row.get("process_alive") is not True:
         return None
     item = _live_item(row, kind=REPAIR_ROUND_DUTY_KIND, now=now)
     item["next_command"] = ""
@@ -2458,11 +2608,11 @@ def _review_tier_key(
 
     The tier reads the run's changed paths and lines at its head (git objects
     beneath the tree), its declared spec level and section, the manifest it
-    cites when it cites no commit, and the plan's declared risk. So the key
-    carries the resolved head and tree, the cited commits, the manifest's stat
-    identity and the plan's change token. A run whose head, manifest or plan
-    moves gets a new key and its tier is recomputed; every other run's key is
-    the one the previous tick stored.
+    cites when it cites no commit, and the risk declared for its section. So
+    the key carries the resolved head and tree, the cited commits, the manifest's
+    stat identity and the plan-state token. A run whose head, manifest or plan
+    state moves gets a new key and its tier is recomputed; every other run's key
+    is the one the previous tick stored.
     """
     run_id = str(row.get("run_id") or "")
     if not run_id:
@@ -3988,6 +4138,16 @@ def _index_lag_notice(project: str, *, now: datetime) -> dict[str, Any] | None:
         ),
         "next_command": restore,
     }
+    # The notice belongs to the project, so it names no single run — but it is
+    # counted among a session's duties, and a contract that every counted duty
+    # names a run is met here by naming the ones whose landings the restore
+    # unblocks: a session reading a count can trace it back to work rather than
+    # to a checkout alone.
+    notice["run_ids"] = [
+        str(pointer.get("run_id") or "")
+        for pointer in _live_pointers(project)
+        if str(pointer.get("run_id") or "")
+    ]
     if key is not None:
         _INDEX_LAG_READINGS[store_key] = (key, notice)
     return dict(notice)
@@ -4412,6 +4572,10 @@ def _obligations_view(
     items = [_with_action_form(item) for item in items]
     acknowledged = [_with_action_form(item) for item in acknowledged]
     sections = run_section_index([pointers.values()])
+    # The summary is the three figures the published slice composes from the
+    # same rows — the count, the oldest age and the unreconciled runs — because
+    # the two surfaces are compared field for field. What a counted duty names
+    # travels on the row's own ``run_ids``, which both surfaces project.
     summary = {
         "count": len(items),
         "oldest_age_seconds": max(

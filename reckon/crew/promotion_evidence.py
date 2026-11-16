@@ -268,6 +268,29 @@ def _committed_scope_uncached(
     )
 
 
+def _scope_paths_at_head(
+    record: Mapping[str, Any], *, tree: Path, head: str, paths: Sequence[str]
+) -> tuple[str, ...]:
+    """Keep cited paths whose change survives between the run's base and head.
+
+    The intersection drops temporary paths and restored content without charging
+    paths imported by a merge. Deletions survive the diff too: testing existence
+    at the head would silently excuse an undeclared removal. A record with no
+    base retains the conservative cited-path union because it cannot establish
+    which changes disappeared.
+    """
+    from reckon.crew import merge
+
+    base = str(record.get("base_sha") or "").strip()
+    if not base or not paths:
+        return tuple(paths)
+    try:
+        surviving = set(merge.landed_paths(tree, base, head))
+    except merge.MergeError as exc:
+        raise CrewError(f"cannot measure scope paths at the run's head: {exc}") from exc
+    return tuple(path for path in paths if path in surviving)
+
+
 def _uncommitted_paths(tree: Path, *, roots: Iterable[Path] | None = None) -> list[str]:
     """Return the tree's own report of the paths it holds uncommitted.
 
@@ -1244,8 +1267,28 @@ _RUNNER_FAILURE_SUMMARY = re.compile(r"\b[1-9]\d*\s+(?:failed|errors?)\b")
 
 # A gate command that runs pytest is the one a pytest summary is owed by. The
 # program may be reached through an interpreter, a runner or a wrapper, so the
-# name is matched as a word anywhere in the command.
-_PYTEST_COMMAND = re.compile(r"\bpytest\b")
+# name is matched in any word of the command — but as the word naming the
+# program, never as a fragment of a longer word. A promotion whose cited
+# command is a file test over a path stored under a directory named for the
+# runner (`…/pytest-of-<user>/…`) executes no pytest and reaches no summary,
+# and reading that directory name as the program refused a defensible gate on
+# a fact about where the evidence was kept rather than about what ran.
+_PYTEST_PROGRAM = re.compile(r"pytest(?:[-.]\d[\w.]*)?")
+
+
+def _command_runs_pytest(command: str) -> bool:
+    """Whether a word of ``command`` names pytest as the program it invokes.
+
+    A word names it when the word, read as a path, ends in the program's own
+    name: ``pytest``, ``pytest-3.14``, ``/venv/bin/pytest``. A longer word that
+    merely contains the name — a directory, a log file, an assertion's text —
+    names something other than the program, so a command built out of such a
+    word is not held to a pytest summary.
+    """
+    for word in str(command or "").split():
+        if _PYTEST_PROGRAM.fullmatch(word.strip("'\"").rsplit("/", 1)[-1]):
+            return True
+    return False
 
 
 _UNEXECUTED_EXIT_CODES = frozenset({126, 127})
@@ -1587,6 +1630,81 @@ def _receipt_mismatches(
     return mismatches
 
 
+#: The name a review run's derived gate log is written under, inside that run's
+#: own directory. The check a review promotes on is a statement about the record
+#: the run delivered, so its evidence belongs with the run's other artifacts.
+_REVIEW_GATE_LOG_NAME = "review-gate.log"
+
+
+def _derived_review_gate_log(
+    run_id: str,
+    record_path: Path,
+    *,
+    command: str,
+    status: str,
+    findings: int,
+    capture: bool = True,
+) -> dict[str, Any]:
+    """Capture a review's own gate check into a log, and report where it sits.
+
+    A review run changes no code, so there is no suite for the integration
+    re-run to execute at the integrated head, and the check its promotion cites
+    is that the record it delivered still reads on disk. That check used to
+    cite the record itself as its log, and a record is JSON that carries no
+    terminal ``EXIT=<n>`` line — so a promotion derived its own check and then
+    that check refused the derivation, reading a citation of the file a check
+    opens as though it were the check's own capture.
+
+    The check is performed here: ``test -s <record>`` is evaluated, and its
+    outcome is written in the shape every reader of a cited log takes, ending
+    in the terminal ``EXIT=<n>`` line those readers read the status from. The
+    log lives in the review run's own directory and is rewritten only when its
+    content would change, so a repeated promotion, or a dry run before one,
+    leaves one log stating one outcome. It is written from the same values the
+    promotion reports, so the log and the row that cites it cannot disagree.
+
+    A run naming no id, or a directory that cannot be written, leaves the check
+    with no log path at all: the promotion then meets the ordinary refusal that
+    names the missing field, which is what an evidence path that cannot hold
+    the evidence means. The exit status is always reported, because it is the
+    check's own outcome rather than the log's. ``capture`` is false where the
+    promotion already holds a log — the caller's flag, or one the manifest
+    names — because that is the evidence the run re-executed, and reporting
+    this path there would cite a log nothing points at.
+    """
+    try:
+        passed = record_path.is_file() and record_path.stat().st_size > 0
+    except OSError:
+        passed = False
+    exit_status = 0 if passed else 1
+    result: dict[str, Any] = {"exit_status": exit_status}
+    if not str(run_id).strip():
+        return result
+    text = (
+        f"# command: {command}\n"
+        "# check: that the review record this run delivered still reads on disk\n"
+        f"review record: {record_path}\n"
+        f"status: {status or '(none)'}\n"
+        f"findings: {findings}\n"
+        f"EXIT={exit_status}\n"
+    )
+    if not capture:
+        # The promotion already holds a log the caller or the manifest named,
+        # so that is the evidence cited; reporting this path would put a log
+        # nothing points at on the record. The outcome is still the check's own.
+        return result
+    path = run_dir(run_id) / _REVIEW_GATE_LOG_NAME
+    try:
+        unchanged = path.is_file() and path.read_text(encoding="utf-8") == text
+        if not unchanged:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text, encoding="utf-8")
+    except OSError:
+        return result
+    result["log_path"] = str(path)
+    return result
+
+
 def _require_gate_log_agrees(
     run_id: str,
     gate_check: Mapping[str, Any] | None,
@@ -1718,7 +1836,7 @@ def _require_gate_log_agrees(
             "the log reports, or re-run the gate into its own log"
         )
     command = str(gate_check.get("command") or "").strip()
-    if _PYTEST_COMMAND.search(command):
+    if _command_runs_pytest(gate_check.get("command") or ""):
         last_run = review_module.last_run_text(log_text)
         if review_module.pytest_summary_failure_count(last_run) is None:
             raise CrewError(

@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T18:55:15.962Z",
+  "dispatched_at": "2026-11-15T18:54:24Z",
+  "findings": [
+    {
+      "file": "reckon/crew/merge.py",
+      "line": 271,
+      "severity": "non-blocking",
+      "text": "commits_between duplicates the range reader the repository already owns at reckon/crew/recovery_review_subject.py:504 (reviewed_commits): the same git log --reverse --format invocation and the same (sha, subject) parse loop, and this call site used that owner before the change; only the excluding flag and that owner's first_parent differ. The addition duplicates the owner instead of extending it; the repair is to add an excluding argument to reviewed_commits and delete the copy."
+    },
+    {
+      "file": "tests/test_a_run_that_merged_primary_lands.py",
+      "line": 219,
+      "severity": "non-blocking",
+      "text": "the failing-at-base leg of this assertion is not recorded in any gate log: the manifest's baseline arm log logs/baseline-suite.log runs only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, so 'failing at the base revision' rests on a quoted refusal rather than a filed run. I reproduced it at 622ef4617d with this file copied in: 1 failed, 1 passed, the refusal naming peer commit 18abc0908; the base-red log belongs in the manifest's evidence."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": 613,
+      "severity": "non-blocking",
+      "text": "_shared_branch_revision reads the shared checkout's current branch through recovery_classification._primary_branch_revision (recovery_classification.py:1067), which resolves the checked-out branch's commit rather than the primary ref itself; a shared checkout left on a feature branch therefore subtracts that branch's history and the primary commits the run merged are cited again, returning the refusal this node removes. The reader is pre-existing, but the node's new use depends on it."
+    }
+  ],
+  "project": "reckon",
+  "review": {
+    "basis": "added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own gate logs: baseline_suite completed true at 622ef4617d, exit 0, failure_ids []; after_suite completed true at 48c4b4b22d, exit 0, failure_ids []; no failure id appears in the head arm that the base arm does not carry.",
+    "call_sites": [
+      "reckon/crew/promotion.py:689 complete",
+      "reckon/crew/promotion.py:1338 complete_dry_run",
+      "reckon/crew/recovery_classification.py:3110 _promotion_command",
+      "reckon/crew/recovery_review_acceptance.py:205 _recorded_gate_and_commits"
+    ],
+    "verdict_diff": "read commit by commit: 48c4b4b22d adds commits_between at reckon/crew/merge.py:271 and rewrites _promotion_commits at reckon/crew/promotion.py:637-673 (+50/-8), eb4735ae3b adds the 39-line evidence fragment; +371/-8 across four files.",
+    "verdict_done_when": "the done_when names tests/test_a_run_that_merged_primary_lands.py; the manifest records the after arm 60 passed at 48c4b4b22d (logs/after-suite.log, EXIT=0) and the base arm 58 passed at 622ef4617d; I re-ran the named file at eb4735ae3b (2 passed) and with the file copied into a 622ef4617d tree (1 failed, 1 passed, the guard naming the peer commit), so the gate measures what the measure asserts.",
+    "verdict_goal": "the goal is that a promotion dry run's inferred citations exclude commits reachable from the primary revision; reckon/crew/promotion.py:613 _shared_branch_revision supplies that revision and promotion.py:663 passes it as excluding to the range read, so a run that merged the shared branch cites its own commit and its own merge.",
+    "verdict_manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T124006592934-merged-primary-run-lands-s16/manifest.md: status complete, commits 48c4b4b22d and eb4735ae3b, both suite arms with revision, command, log_path and exit_status 0, negative control 1 failed 1 passed EXIT=1, and four pre-existing failures under outside_scope.",
+    "verdict_write_paths": "the manifest declares promotion.py, merge.py, the new test, an evidence fragment and a figures directory; the diff 622ef4617d..eb4735ae3b touches exactly reckon/crew/promotion.py, reckon/crew/merge.py, tests/test_a_run_that_merged_primary_lands.py and docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/merged-primary-run-lands-s16.html, all inside them (the declared figures path is unused)."
+  },
+  "review_run_id": "r-20261115T184551680088-review-of-merged-primary-run-lands-s16-eb4735ae3b44",
+  "reviewed_base_sha": "622ef4617d73a4af8ecf7dc5926996910a4ca29f",
+  "reviewed_head_sha": "eb4735ae3b446954eddf79f3b2d8502bce7199f6",
+  "reviewed_run_id": "r-20261115T124006592934-merged-primary-run-lands-s16",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 4,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T19:17:46.619822+00:00",
+  "total": 94
+}

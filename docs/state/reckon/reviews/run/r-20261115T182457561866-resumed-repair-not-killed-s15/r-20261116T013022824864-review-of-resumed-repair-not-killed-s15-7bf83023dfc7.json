@@ -1,0 +1,63 @@
+{
+  "added_assertions": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_arm": {
+    "failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182457561866-resumed-repair-not-killed-s15/logs/after-suite.log",
+    "revision": "7bf83023dfc7ffc06cd904fb8bdf9c8d6912b96e",
+    "summary": "63 passed EXIT=0"
+  },
+  "base_arm": {
+    "failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182457561866-resumed-repair-not-killed-s15/logs/baseline-suite.log",
+    "revision": "18d133b40e54057955fee45c889cde9371c8e068",
+    "summary": "58 passed EXIT=0"
+  },
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:4832 _reap_worker_on_its_terminal_manifest -> _attempt_ending_receipt",
+    "reckon/crew/dispatch_launch.py:4878 _reap_worker_on_its_terminal_manifest -> _attempt_ending_receipt",
+    "reckon/crew/dispatch_launch.py:4963 _reap_worker_on_its_terminal_manifest -> _terminal_attempt_phase",
+    "reckon/crew/dispatch_launch.py:5241 _reap_the_launched_worker -> _terminal_attempt_phase"
+  ],
+  "completed_at": "2026-11-16T01:39:40.823Z",
+  "dispatched_at": "2026-11-16T01:37:13Z",
+  "findings": [],
+  "independent_assertions": "7bf83023df adds no assertion; the case its wrapped line sits in (tests/test_a_resumed_repair_is_not_killed_as_terminal.py:461-486) compares the guard's returned phase against the literals '' and 'complete' while the receipt it writes carries 'r-someone-else' and then RUN_ID, so neither side is a value the code under test returned.",
+  "item_verdicts": {
+    "diff": "read 7bf83023df against 712eeeff0d: two hunks, six insertions and two deletions, and a token-stream comparison of both files at the two revisions returns identical sequences (19143 and 2068 tokens), so the commit changes layout only.",
+    "done_when": "docs/plans/the-monitor-tells-the-truth-under-load.html s15 asks for new tests failing at base, a resumed repair reading as working and unsignalled, and no added failures; logs/new-test-at-base.log and logs/negative-control.log carry the failing-at-base and refusal directions at the reviewed head, and logs/baseline-suite.log against logs/after-suite.log carry zero added failures.",
+    "goal": "the node goal is that a resumed repair is not killed as a terminal run; the single gained commit 7bf83023df only re-wraps the signature at reckon/crew/dispatch_launch.py:4784 and one write_text call at tests/test_a_resumed_repair_is_not_killed_as_terminal.py:483, leaving the receipt guard token-identical.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182457561866-resumed-repair-not-killed-s15/manifest.md; it was refreshed at 7bf83023df, so after_suite's revision now equals the reviewed head (63 passed EXIT=0) and the earlier review's 'one commit past the reviewed head' finding no longer applies.",
+    "write_paths": "the source manifest fences dispatch_launch.py, resumption.py, the new test, the evidence fragment and a figure directory; git diff --name-only 712eeeff0d..7bf83023df lists exactly reckon/crew/dispatch_launch.py and tests/test_a_resumed_repair_is_not_killed_as_terminal.py."
+  },
+  "justifications": {
+    "durability": "tests/test_a_resumed_repair_is_not_killed_as_terminal.py:461-486 reddens under both reverts recorded in logs/negative-control.log (4 failed, EXIT=1) and logs/negative-control-reuse.log (1 failed, EXIT=1), but this commit adds no assertion and no automated gate catches a regression of the reflow.",
+    "evidence": "logs/after-suite.log's header names revision 7bf83023dfc7ffc06cd904fb8bdf9c8d6912b96e and its summary reads 63 passed followed by a bare EXIT=0, while logs/baseline-suite.log records 58 passed EXIT=0 at 18d133b40e.",
+    "fit": "ruff format --check over reckon/crew/dispatch_launch.py and tests/test_a_resumed_repair_is_not_killed_as_terminal.py at 7bf83023df reports '2 files already formatted' with exit 0, and the commit introduces no new name.",
+    "goal_fidelity": "reckon/crew/dispatch_launch.py:4784 holds the same def and same body at both revisions, so the gained commit neither extends nor disturbs the receipt guard the goal names.",
+    "reuse": "the commit adds no definition; the two defs it re-wraps were reviewed at 712eeeff0d and read the receipt through recovery_liveness._run_exit_record.",
+    "scope_discipline": "git diff --stat 712eeeff0d..7bf83023df changes only the two declared paths and nothing else in the tree."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261116T013022824864-review-of-resumed-repair-not-killed-s15-7bf83023dfc7",
+  "reviewed_base_sha": "712eeeff0dc900f00f48add21eb7c27aed4641e0",
+  "reviewed_commits": [
+    "7bf83023dfc7ffc06cd904fb8bdf9c8d6912b96e"
+  ],
+  "reviewed_head_sha": "7bf83023dfc7ffc06cd904fb8bdf9c8d6912b96e",
+  "reviewed_run_id": "r-20261115T182457561866-resumed-repair-not-killed-s15",
+  "reviewer_run_id": "r-20261116T013022824864-review-of-resumed-repair-not-killed-s15-7bf83023dfc7",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T01:52:35.188837+00:00",
+  "total": 113
+}

@@ -1,0 +1,24 @@
+<section id="red-file-rereview-keeps-its-lane-negative-control">
+  <h3>Negative control: the named file red at the base revision</h3>
+  <p>The base revision <code>d0d77f07e2dcc64d74713755aebe748602f9a06f</code>
+  of <code>tests/test_rereview_keeps_its_lane.py</code>, run as a job on
+  <code>all_debug</code> from a tree extracted at that revision:</p>
+  <pre># command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_rereview_keeps_its_lane.py
+8 failed, 4 passed in 3.59s
+EXIT=1</pre>
+  <p>The failing identifiers, as the runner reported them:</p>
+  <ul>
+    <li><code>tests/test_rereview_keeps_its_lane.py::test_a_review_at_a_new_head_keeps_the_lane_that_dropped_the_old_one</code></li>
+    <li><code>tests/test_rereview_keeps_its_lane.py::test_a_recorded_attempt_for_the_current_head_still_demotes_its_lane</code></li>
+    <li><code>tests/test_rereview_keeps_its_lane.py::test_a_reclaimed_worktree_reads_the_head_from_the_run_record</code></li>
+    <li><code>tests/test_rereview_keeps_its_lane.py::test_a_reclaimed_worktree_with_no_recorded_head_does_not_accept_the_newest</code></li>
+    <li><code>tests/test_rereview_keeps_its_lane.py::test_a_recorded_attempt_naming_no_head_does_not_demote_its_lane</code></li>
+    <li><code>tests/test_rereview_keeps_its_lane.py::test_a_withdrawn_before_launch_attempt_recomposes_onto_its_lane</code></li>
+    <li><code>tests/test_rereview_keeps_its_lane.py::test_a_refused_attempt_recomposes_onto_its_lane</code></li>
+    <li><code>tests/test_rereview_keeps_its_lane.py::test_a_launched_attempt_with_no_stored_review_steers_off_its_lane</code></li>
+  </ul>
+  <p>Every composed case was refused before a lane was read, with
+  <q>the run is not awaiting review (running)</q> as its reason, and the
+  case that asserts a missing head read the same sentence instead of
+  naming the head.</p>
+</section>

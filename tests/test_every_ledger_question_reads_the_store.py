@@ -31,6 +31,7 @@ READERS = (
     "load_version",
     "runs",
     "records",
+    "figures",
     "run_ids",
     "open_rows",
     "open_row",
@@ -122,6 +123,8 @@ def answer(reader: str):
         return ledger.runs(PROJECT)
     if reader == "records":
         return ledger.read_records(PROJECT, with_figures=False)[0]
+    if reader == "figures":
+        return ledger.read_records(PROJECT)[0]
     if reader == "run_ids":
         return sorted(ledger.run_ids(PROJECT))
     if reader == "open_rows":
@@ -138,7 +141,7 @@ def answer(reader: str):
 def assert_answered(reader: str, result) -> None:
     """The answer names the whole population, so an empty read cannot pass."""
     ids = _ids()
-    if reader in {"load", "runs", "records", "open_rows"}:
+    if reader in {"load", "runs", "records", "figures", "open_rows"}:
         assert [row["run_id"] for row in result] == ids
     elif reader == "run_ids":
         assert result == sorted(ids)
@@ -218,26 +221,12 @@ def test_run_ids_decodes_no_stored_payload(aggregate, monkeypatch):
     assert ledger.run_ids(PROJECT) == {*_ids(), extra["run_id"]}
 
 
-def test_one_document_beside_many_store_rows_answers_both(aggregate):
-    """The documents cover the store rather than replacing it, run id by run id.
-
-    A half-migrated project holds one surviving document and many stored runs.
-    Choosing a source for the whole project would answer only the document, so
-    the surviving row must not hide the store's rows — and for the run id they
-    both carry, the document is the fuller record and wins.
-    """
+def test_the_store_is_authoritative_when_a_document_disagrees(aggregate):
     rows = _rows()
-    stored = [{**row, "member": "store-member"} for row in rows]
-    surviving = {**rows[0], "member": "document-member"}
     write_aggregate()
-    write_documents([surviving])
-    fill_store(stored)
-
-    data, _version = ledger.load(PROJECT)
-    answered = {row["run_id"]: row for row in data["runs"]}
-    assert sorted(answered) == _ids()
-    assert answered[surviving["run_id"]]["member"] == "document-member"
-    assert ledger.run_ids(PROJECT) == set(_ids())
+    write_documents([{**rows[0], "member": "stale-document"}])
+    fill_store(rows)
+    assert ledger.load(PROJECT)[0]["runs"] == rows
 
 
 def test_a_retired_row_still_answers_with_its_detail(aggregate):
@@ -401,3 +390,152 @@ def test_a_store_deleted_and_rebuilt_returns_an_equal_answer_set(aggregate):
 
     fill_store(first)
     assert ledger.load(PROJECT)[0]["runs"] == first
+
+
+def test_import_and_compare_still_read_the_documents(aggregate):
+    rows = _rows()
+    write_aggregate()
+    write_documents(rows)
+    fill_store(rows[:1])
+    comparison = run_store.compare(PROJECT)
+    assert comparison["rows_in_file_absent_from_store"] == 2
+    receipt = run_store.import_ledger(PROJECT)
+    assert receipt["rows_imported"] == 2
+    assert run_store.compare(PROJECT)["rows_in_file_absent_from_store"] == 0
+    run_store.store_path().unlink()
+    assert run_store.import_ledger(PROJECT)["rows_imported"] == 3
+    shutil.rmtree(aggregate.parent / "runs")
+    assert ledger.load(PROJECT)[0]["runs"] == rows
+
+
+@pytest.mark.parametrize("selected", [[0, 2, 3, 4, 5], []])
+def test_selected_figures_use_the_summary_owner_without_reading_again(
+    monkeypatch, selected
+):
+    from reckon.crew import summary
+
+    population = [
+        {
+            "run_id": "first",
+            "dispatched_at": "2026-01-01T00:00:00Z",
+            "completed_at": "2026-01-01T00:10:00Z",
+        },
+        {
+            "run_id": "overlap",
+            "dispatched_at": "2026-01-01T00:05:00Z",
+            "completed_at": "2026-01-01T00:15:00Z",
+        },
+        {
+            "run_id": "boundary",
+            "dispatched_at": "2026-01-01T01:10:00+01:00",
+            "completed_at": "2026-01-01T00:10:00Z",
+        },
+        {
+            "run_id": "reversed",
+            "dispatched_at": "2026-01-01T00:20:00Z",
+            "completed_at": "2026-01-01T00:00:00Z",
+        },
+        {"run_id": "missing-end", "dispatched_at": "2026-01-01T00:10:00Z"},
+        {
+            "run_id": "bad-start",
+            "dispatched_at": "not-a-stamp",
+            "completed_at": "2026-01-01T00:30:00Z",
+        },
+    ]
+    population = [
+        {**row, "wall_seconds": 9999, "outcome": {"nested": [True, None]}}
+        for row in population
+    ]
+    monkeypatch.setattr(ledger, "runs", lambda *args, **kwargs: population)
+    full = summary.run_rows(PROJECT)
+    assert [row["width_at_start"] for row in full] == [1, 2, 3, 0, 3, None]
+    assert [row["wall_seconds"] for row in full] == [600, 600, 0, 0, None, None]
+
+    def refuse_read(*args, **kwargs):
+        raise AssertionError("selected figure derivation read the full ledger")
+
+    monkeypatch.setattr(ledger, "runs", refuse_read)
+    stamps = [
+        {key: row[key] for key in ("dispatched_at", "completed_at") if key in row}
+        for row in population
+    ]
+    actual = summary.run_rows(
+        PROJECT,
+        records=(population[index] for index in selected),
+        timestamp_population=iter(stamps),
+    )
+    assert actual == [full[index] for index in selected]
+    assert all(row["wall_seconds"] == 9999 for row in population), (
+        "the owner mutated its input records"
+    )
+
+
+def test_the_store_read_delegates_both_figures_to_the_summary_owner(
+    aggregate, monkeypatch
+):
+    from reckon.crew import summary
+
+    fill_store(_rows())
+    owner = summary.run_rows
+    calls = []
+
+    def observed(project, **kwargs):
+        calls.append(kwargs)
+        result = owner(project, **kwargs)
+        for row in result:
+            row["width_at_start"] = 12345
+            row["wall_seconds"] = 54321
+        return result
+
+    monkeypatch.setattr(summary, "run_rows", observed)
+    rows, _ = ledger.read_records(PROJECT, plan="a-plan")
+    assert len(rows) == 3
+    assert len(calls) == 1
+    assert calls[0]["records"] == _rows()
+    assert all(
+        set(row) == {"dispatched_at", "completed_at"}
+        for row in calls[0]["timestamp_population"]
+    )
+    assert all(
+        row["width_at_start"] == 12345 and row["wall_seconds"] == 54321 for row in rows
+    )
+
+
+@pytest.mark.parametrize("figures", [False, True])
+def test_store_selection_uses_the_ledger_plan_owner(aggregate, monkeypatch, figures):
+    variants = [
+        {"plan": "selected", "impl_move": {"plan": "other"}},
+        {
+            "plan": "  ",
+            "impl_move": {"plan": " selected "},
+            "node_definition": {"plan": "other"},
+        },
+        {"plan": None, "node_definition": {"plan": "selected"}},
+        {
+            "plan": "other",
+            "impl_move": {"plan": "selected"},
+            "node_definition": {"plan": "selected"},
+        },
+        {"plan": None},
+    ]
+    rows = [
+        {**_rows()[0], **values, "run_id": f"selected-row-{index}"}
+        for index, values in enumerate(variants)
+    ]
+    fill_store(rows)
+    assert not aggregate.exists()
+    expected = [row for row in rows if ledger._row_plan(row) == "selected"]
+    assert len(expected) == 3
+    original = ledger._row_plan
+    resolved = []
+
+    def observed(row):
+        resolved.append(row)
+        assert "outcome" not in row or row in rows
+        return original(row)
+
+    monkeypatch.setattr(ledger, "_row_plan", observed)
+    actual, _ = ledger.read_records(PROJECT, plan="selected", with_figures=figures)
+    assert [row["run_id"] for row in actual] == [row["run_id"] for row in expected]
+    assert len(resolved) >= len(rows), "SQL selection bypassed the shared plan owner"
+    assert any(set(row) == {"plan", "impl_move", "node_definition"} for row in resolved)

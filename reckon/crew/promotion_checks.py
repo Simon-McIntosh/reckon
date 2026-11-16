@@ -2736,9 +2736,8 @@ def _landing_scope_products(
     from reckon.crew.promotion_evidence import _merge_repair_scope
     from reckon.crew.promotion_scope import _descendant_commit
 
-    cumulative = _merge_repair_scope(
-        record, tree=tree, head=_descendant_commit(tree, commits)
-    )
+    head = _descendant_commit(tree, commits)
+    cumulative = _merge_repair_scope(record, tree=tree, head=head)
     if cumulative is None:
         cumulative = _committed_scope(cwd=tree, commits=commits, run_id=run_id)
     acceptances: list[dict[str, str]] = []
@@ -2772,7 +2771,9 @@ def _landing_scope_products(
         # beside the declared one lands on its own.
         outside = _changed_artifacts_needing_acceptance(
             _outside_declared_scope(
-                cumulative.paths,
+                _scope_paths_at_head(
+                    record, tree=tree, head=head, paths=cumulative.paths
+                ),
                 declared,
                 record=record,
                 tree=tree,
@@ -3529,6 +3530,7 @@ from reckon.crew.promotion_evidence import (
     _presented_commits_without_a_declaration,
     _recorded_exit_status,
     _run_directory_control_log,
+    _scope_paths_at_head,
 )
 from reckon.crew.promotion_records import (
     _read_json_object,

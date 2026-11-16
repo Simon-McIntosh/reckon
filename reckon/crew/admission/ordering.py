@@ -151,8 +151,9 @@ def _seat_share_turns(
 # guaranteed this share, and the rest of the seats are split by backlog.
 ROLE_SEAT_SHARE_FLOOR = 1 / 3
 
-# A queued request that is not a review is an implementation.
-IMPLEMENTATION_ROLE = "implementation"
+# A queued request that is not a review is an implementation. The spelling is the
+# one a run pointer carries, so a verdict row's role keys join to a run's role.
+IMPLEMENTATION_ROLE = "implement"
 
 
 def _review_role() -> str:

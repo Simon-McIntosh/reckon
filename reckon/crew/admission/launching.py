@@ -571,10 +571,18 @@ def _release_stranded_launches(
         )
         if reviewed_run:
             holder["reviewed_run_id"] = reviewed_run
-        dispatch_refusals.record_launch_refusal(run_id=run_id, step=step, holder=holder)
+        dispatch_refusals.record_launch_refusal(
+            run_id=run_id,
+            step=step,
+            holder=holder,
+            attempt=_released_attempt(claim),
+        )
         if _requeue_stranded_request(run_id, step=step):
             # A request this pass took from the queue goes back to it, with its
-            # brief and steering: nothing else would dispatch it again.
+            # brief and steering: nothing else would dispatch it again. The
+            # record says so, so its fence admits that request's next attempt
+            # while it still refuses the launch the release abandoned.
+            dispatch_refusals.mark_launch_requeued(run_id)
             released.append(run_id)
             if verdicts is not None:
                 verdicts.append(
@@ -609,6 +617,28 @@ def _release_stranded_launches(
                 )
             )
     return released
+
+
+def _released_attempt(claim: Mapping[str, Any]) -> dict[str, Any]:
+    """The launch attempt a release abandoned, as the claim it took names it.
+
+    A run id names one request across all its attempts, so a refusal keyed on
+    the run refuses the request's own next attempt too: the request the release
+    put back in the queue launches again under the same id and waits out the
+    whole fence. The claim is the attempt's own identity — its registration
+    instant and the holder that published it — so the release records that, and
+    the fence admits a later attempt of the same run while still refusing the
+    slow original. A claim that names no registration is recorded as no attempt,
+    and its fence then holds against the whole run as it did before.
+    """
+    registered = str(claim.get("claim_registered_at") or "")
+    if not registered:
+        return {}
+    return {
+        "claim_registered_at": registered,
+        "holder_pid": claim.get("holder_pid"),
+        "holder_host": str(claim.get("holder_host") or ""),
+    }
 
 
 def _owe_the_review_again(
@@ -729,6 +759,22 @@ def _requeued_request(request: Mapping[str, Any], run_id: str) -> dict[str, Any]
     return restored
 
 
+def _failed_launch_follows_work(pointer: Mapping[str, Any]) -> bool:
+    """Whether a failed launch belongs to a run that has already worked.
+
+    A run that reached its model holds a session, and one launched again after
+    that is on a later attempt or was started as a resume. Any of the three
+    says the pointer describes more than a request waiting to start.
+    """
+    if str(pointer.get("session_id") or "").strip():
+        return True
+    kind = str(pointer.get("attempt_kind") or "").strip()
+    if kind and kind != "dispatch":
+        return True
+    attempt = pointer.get("attempt")
+    return isinstance(attempt, int) and not isinstance(attempt, bool) and attempt > 1
+
+
 def _requeue_admitted_failures(
     live: list[dict[str, Any]], *, verdicts: list[dict[str, Any]] | None = None
 ) -> list[str]:
@@ -745,6 +791,13 @@ def _requeue_admitted_failures(
             continue
         request = runs.dispatch_field(pointer, "admit_request")
         if not isinstance(request, Mapping):
+            continue
+        if _failed_launch_follows_work(pointer):
+            # The request stamp is the one the run's first launch was admitted
+            # from. Writing it back would replace a run that has a worktree, a
+            # session and possibly commits with a bare request, which the next
+            # pass would launch afresh in a new worktree. The run stays
+            # launch-failed, where its coordinator can see it and resume it.
             continue
         failures = list(pointer.get("launch_failures") or ())
         failure = dict(failures[-1]) if failures else {}
