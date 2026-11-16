@@ -1947,10 +1947,17 @@ def _resolve_promotion_outcome(
     if verdict == "passed" or supplied:
         return supplied
     from reckon.crew import recovery
-    from reckon.crew.recovery_review_delivery import review_delivery_refusal
+    from reckon.crew.recovery_review_delivery import (
+        _report_review_delivery,
+        review_delivery_refusal,
+    )
 
     project = str(record.get("project") or "")
     node_id = str((record.get("node") or {}).get("id") or "")
+    if recovery._is_review_run(record):
+        report = _report_review_delivery(record)
+        if report is not None:
+            return report["outcome"]
     prefix = recovery.PLAN_REVIEW_NODE_PREFIX
     plan_slug = _plan_review_plan_slug(node_id, prefix)
     if plan_slug:
@@ -3006,6 +3013,15 @@ def _staging_review_record_by_run(
     stored here and returns no payload: a code review names neither a plan nor a
     reviewed run, so it is not committed to the staging-to-committed tree.
     """
+    if record is not None:
+        from reckon.crew.recovery_review_delivery import _report_review_delivery
+
+        report = _report_review_delivery(record)
+        if report is not None:
+            # Scope-keyed reports stay in their own store; the committed run
+            # review tree has no subject directory for a neighbourhood or portfolio.
+            plan_review._store_delivered_report(report["sidecar"])
+            return None
     found = review_module.record_for_review_run(project, run_id)
     if found is not None:
         return found[1]
