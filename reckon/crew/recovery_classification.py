@@ -1818,19 +1818,27 @@ def classify_pointer(
     # exactly as the drain view and the stop hook judge it.
     stuck = _stuck_verdict_for(record) if phase else None
 
+    # A pid or a launch clock is the pointer's own record that a worker was
+    # started for it.
+    launched = bool(record.get("pid")) or bool(record.get("launched_at"))
     # A pre-spawn launch past its bound with its holder gone is not waiting to
     # start: the liveness arms read it as a failed launch, which the admission
     # pass then releases or returns to the queue.
-    pre_spawn_waiting = phase in _PRE_SPAWN_PHASES and not _stranded_launch(
-        record, now_seconds=moment
+    pre_spawn_waiting = (
+        phase in _PRE_SPAWN_PHASES
+        and not launched
+        and not _stranded_launch(record, now_seconds=moment)
     )
     # A parked phase is the launcher's statement that the request is waiting to
     # start, and it means that only while the pointer records no worker: a pid
     # or a launch clock on a queued request is a request that has launched, and
     # its liveness rather than its old label decides the reading. Without this
     # a phase label could not be left behind, and a launched request whose
-    # label had not yet advanced read as the wait it had already passed.
-    launched = bool(record.get("pid")) or bool(record.get("launched_at"))
+    # label had not yet advanced read as the wait it had already passed. The
+    # same holds for a pre-spawn phase, and there it is the difference between
+    # reporting the end of a worker and drawing it as one that never started:
+    # a run refused at admission carries a pre-spawn label and a recorded pid,
+    # and reading it as a wait hid the refusal for as long as its pointer lived.
     if phase in WAITING_UPSTREAM_PHASES and not launched:
         classification = phase
         # A request held on a section it waits for is stored, not launched, and
