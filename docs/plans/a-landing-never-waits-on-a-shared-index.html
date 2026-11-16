@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-monitor-reads-each-fact-once">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;descoped&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;descoped&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;a-landing-never-waits-on-a-shared-index#s3&quot;,&quot;a-landing-never-waits-on-a-shared-index#s13&quot;]}">
   <title>A Landing Never Waits On A Shared Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="88">
+<meta name="plan-version" content="89">
 <meta name="plan-modified" content="2026-11-16">
 </head>
 <body>
@@ -138,12 +138,12 @@
 <p><strong>Done when.</strong> A new test, failing at the base revision: a run whose worktree merged a primary-branch commit after its base passes the dry run with no <code>--commit</code> given, citing its own commits and its merge and not the primary-branch commit. A run citing a commit from another branch is still refused. The tests importing <code>reckon.crew.merge</code> or <code>reckon.crew.promotion_evidence</code> add no failure against the base on all_debug. Write paths: the module where <code>complete_dry_run</code> infers citations, <code>reckon/crew/merge.py</code> and the new test.</p>
 
     <h2 id="s17">A refused promotion leaves its plan as committed</h2>
-<section data-reckon="section" data-id="s17" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s17" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> reckon-28 reported that on 16 November a promotion wrote its outcome comment into a plan in the main checkout and was then refused at the run store, leaving that plan file modified and uncommitted. Every dispatch on the plan was then refused with <code>PlanVisibilityError</code>, which emptied the local lane from 07:49Z until the file was committed by hand (<code>cb557f9711</code>).</p>
 <p><strong>Done when.</strong> New tests, each failing at the base revision. A promotion refused at the run store after writing to a plan leaves that plan file in the main checkout exactly as committed, and a dispatch on that plan afterwards is not refused for a dirty plan file. These still hold: a promotion that succeeds commits its plan writes. The tests importing <code>reckon.crew.promotion</code> add no failure against the base on all_debug. Write paths: <code>reckon/crew/promotion.py</code> and a new test.</p>
 
     <h2 id="s18">A locked store&#x27;s refusal names the lock</h2>
-<section data-reckon="section" data-id="s18" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s18" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> While the run store was locked on 16 November, every refused promotion told its caller to repair the store with <code>scripts/import_runs_into_store.py</code>. That script rebuilds a store; it does nothing for a lock, and three sessions asked reckon-28 whether to run it.</p>
 <p><strong>Done when.</strong> New tests, each failing at the base revision. A run-store refusal caused by a locked database says the store was locked past the wait bound and that promoting again is the remedy, and does not name the import script. These still hold: a refusal from a store that is missing or unreadable still names the import script as its repair. The tests importing <code>reckon.ledger</code> add no failure against the base on all_debug. Write paths: <code>reckon/ledger.py</code> and a new test.</p>
 
