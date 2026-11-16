@@ -1504,7 +1504,10 @@ def apply_backend_placement(
         # session instead of one per dispatcher.
         prefix = [
             os.path.abspath(found),
-            *placement_module.step_prefix(str(reservation["job_id"]), options),
+            *placement_module.step_prefix(
+                str(reservation["job_id"]),
+                [*placement_module.step_cpu_options(reservation, options), *options],
+            ),
         ]
         if run_id:
             prefix.append(f"--job-name={run_id}")
