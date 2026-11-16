@@ -56,13 +56,17 @@ Failing ids: <code>test_a_directory_and_its_live_file_are_dispatched_and_launche
 EXIT=1
 </pre>
 <h4>The gate at head</h4>
+<p>Re-run after the record-only commit <code>6a7ffbd9d4</code>, whose only
+change is this fragment: the same command read <code>25 passed in
+35.85s</code> there, as job 1319594 on <code>98dci4-clu-3142</code>. The block
+below is that run.</p>
 <pre>
-# revision: 8d5be69198fa11f46ee5fe798557f28243afb704 (head tree)
-# host: 98dci4-clu-3143.iter.org  slurm job: 1319589
-# environment: SLURM_JOB_ID unset
+# revision: 6a7ffbd9d40cc979cb9ab8d2e58ba3d198676dbf (head tree)
 # command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_only_unmergeable_paths_are_claimed.py
+# host: 98dci4-clu-3142.iter.org  slurm job: 1319594
+# environment: SLURM_JOB_ID unset
 .........................                                                [100%]
-25 passed in 35.81s
+25 passed in 35.85s
 EXIT=0
 </pre>
 <h4>The suite arms</h4>
