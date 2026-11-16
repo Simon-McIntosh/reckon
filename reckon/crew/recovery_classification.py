@@ -1797,10 +1797,22 @@ def classify_pointer(
     stuck = _stuck_verdict_for(record) if phase else None
 
     # A pre-spawn launch past its bound with its holder gone is not waiting to
-    # start: the liveness arms read it as a failed launch, which the admission
-    # pass then releases or returns to the queue.
-    pre_spawn_waiting = phase in _PRE_SPAWN_PHASES and not _stranded_launch(
-        record, now_seconds=moment
+    # start: the pre-spawn reading needs a launch that has spawned nothing, and
+    # the liveness arms read the rest — a stranded launch as a failed launch the
+    # admission pass then releases or returns to the queue, and a launch whose
+    # worker has come and gone from that worker's own liveness and output.
+    #
+    # The pre-spawn phrase is the launcher's label and a stale one, so it cannot
+    # be trusted alone. A run that reached its worker carries a pid, a worker
+    # record, a stream or a launch log, and any of those outranks the label:
+    # reading them as a request that has not started held a refused, unreadable
+    # or dead run at ``running`` for as long as its pointer lived, and left
+    # ``fleet_verdict`` free to call the same row abandoned, so one row stated
+    # two outcomes and neither surface could be acted on.
+    pre_spawn_waiting = (
+        phase in _PRE_SPAWN_PHASES
+        and not _spawn_evidence(record)
+        and not _stranded_launch(record, now_seconds=moment)
     )
     # A parked phase is the launcher's statement that the request is waiting to
     # start, and it means that only while the pointer records no worker: a pid
@@ -3180,6 +3192,7 @@ from .recovery_liveness import (  # noqa: E402
     _run_exit_record,
     _run_stream_mtime,
     _run_stream_quiet_seconds,
+    _spawn_evidence,
     _stranded_launch,
     _stranded_launch_age_seconds,
     _wait_observation_defect,
