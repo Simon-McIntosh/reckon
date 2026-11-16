@@ -421,7 +421,8 @@ def test_a_pick_counts_a_brief_carried_attempt(tmp_path: Path, monkeypatch) -> N
     real_render = picker_module.prompts.render
 
     def render(template, **kwargs):
-        seen["attempts"] = kwargs.get("attempts")
+        if template == "state.jinja":
+            seen["attempts"] = kwargs.get("attempts")
         return real_render(template, **kwargs)
 
     def snapshotter(*_args, **_kwargs):
