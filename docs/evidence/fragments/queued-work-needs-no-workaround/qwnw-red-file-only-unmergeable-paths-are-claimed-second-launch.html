@@ -2,8 +2,9 @@
 <h3>No cause reproduces: the file passes in full at head</h3>
 <p>The named file passes in full without a repair, so there was no cause to rule
 on. At the assigned base <code>0e0f25b0f941</code> it read
-<code>25 passed in 41.21s</code>; at the head of this node it read
-<code>25 passed in 35.89s</code> as its own <code>all_debug</code> job with
+<code>25 passed in 41.21s</code>; at the head of this node,
+<code>8d5be69198</code>, it read <code>25 passed in 35.81s</code> as its own
+<code>all_debug</code> job (1319589, on <code>98dci4-clu-3143</code>) with
 <code>SLURM_JOB_ID</code> unset inside the gate. Merging the current
 <code>origin/main</code> was a no-op: it is an ancestor of the assigned base, so
 the tree the gate ran against already carries it.</p>
@@ -24,7 +25,8 @@ about it.</p>
 <tbody>
 <tr><td>25 failing or erroring ids recorded at <code>8d50b0333f</code></td>
 <td>no cause to rule on: it does not reproduce at that revision</td>
-<td>the same file, extracted</td>
+<td>the same file, extracted from that revision and run alone, reads
+<code>25 passed</code></td>
 </tr>
 </tbody>
 </table>
@@ -35,7 +37,7 @@ test file. Its only change is this record.</p>
 false in place. <code>DEFAULT_EXCLUSIVE_PATHS</code> in
 <code>reckon/crew/runs.py</code> gained <code>"reckon/"</code>, which declares a
 mergeable source tree unmergeable; the file then read
-<code>14 failed, 11 passed in 33.16s</code>, a directory claim over a live source
+<code>14 failed, 11 passed in 33.16s</code>: a directory claim over a live source
 file refused as an exclusive class. The mutation was reverted before the commit
 and <code>git diff</code> against the base is empty. The log is
 <code>negative-control-reckon-exclusive.log</code> in the node's run directory.
@@ -55,12 +57,12 @@ EXIT=1
 </pre>
 <h4>The gate at head</h4>
 <pre>
-# revision: 0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc (head tree)
-# host: 98dci4-clu-3141.iter.org  slurm job: 1319576
+# revision: 8d5be69198fa11f46ee5fe798557f28243afb704 (head tree)
+# host: 98dci4-clu-3143.iter.org  slurm job: 1319589
 # environment: SLURM_JOB_ID unset
 # command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_only_unmergeable_paths_are_claimed.py
 .........................                                                [100%]
-25 passed in 35.89s
+25 passed in 35.81s
 EXIT=0
 </pre>
 <h4>The suite arms</h4>
@@ -73,10 +75,10 @@ baseline (0e0f25b0, this worktree before any change)
 58 passed in 42.08s
 EXIT=0
 
-after (0e0f25b0 plus this record)
-# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -q -p no:cacheprovider tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+after (8d5be69198, this worktree at head)
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
 ..........................................................               [100%]
-58 passed in 41.57s
+58 passed in 33.70s
 EXIT=0
 </pre>
 <p><code>ruff check</code> and <code>ruff format --check</code> report nothing new
