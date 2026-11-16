@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="384">
+<meta name="plan-version" content="386">
 <meta name="plan-modified" content="2026-11-16">
 </head>
 <body>
@@ -1502,11 +1502,17 @@ staged paths.</p>
 <div class="r-comment" data-section="s72" data-id="c-run-r-20261116T062554364829-a-held-run-is-not-resumed" data-who="reckon-build" data-when="2026-11-16T06:33:22.568Z">
     <div class="r-comment-body"><p>A coordinator's delivery hold is now read by the station's repair pass at entry and again at the launch, so no pass reserves a resume for a held run and no review follows one; a hold and its release are written to the run directory's hold.json. Measured: three station passes over a held run launch nothing (0 attempt reservations, 0 reviews dispatched), the pass after crew release reserves attempt-2.reservation and resumes, and the base pass with the guards removed reserves attempt-2.reservation for the held run.</p></div>
 </div>
+<div class="r-comment" data-section="s72" data-id="c-run-r-20261116T071713881438-review-of-a-held-run-is-not-resumed-85f4a1b0ae62" data-who="reckon-build" data-when="2026-11-16T07:42:15.773Z">
+    <div class="r-comment-body"><p>Review attached to r-20261116T062554364829-a-held-run-is-not-resumed at head 85f4a1b0ae: parsed record, six scores, base/head pair and failure delta stored at review-records/r-20261116T062554364829-a-held-run-is-not-resumed.json and accepted by crew check --review (ok: true, findings: []).</p></div>
+</div>
 <div class="r-comment" data-section="s73" data-id="c-run-r-20261116T074412891115-review-of-a-receipt-and-a-spend-are-read-once-bcd60512ff62" data-who="reckon-build" data-when="2026-11-16T07:52:59.208Z">
     <div class="r-comment-body"><p>reviewed run r-20261116T062634949844-a-receipt-and-a-spend-are-read-once scored 19/18/19/15/18/5 over base 6fa76c49f4..head bcd60512ff, with five non-blocking findings and no added failure; the record is stored and checked ok=true.</p></div>
 </div>
 <div class="r-comment" data-section="s73" data-id="c-run-r-20261116T104247336135-review-of-a-receipt-and-a-spend-are-read-once-6df3a4b4a179" data-who="reckon-build" data-when="2026-11-16T10:44:40.550Z">
-    <div class="r-comment-body"><p>Attached an independent review of run r-20261116T062634949844-a-receipt-and-a-spend-are-read-once covering bcd60512ff..6df3a4b4a1: status parsed, reviewed_base_sha bcd60512ff62795346ab3da0f0bb80d0d2084e62, reviewed_head_sha 6df3a4b4a17908458d26d9146013e33dfa58680b, scores goal_fidelity 18 evidence 14 scope_discipline 20 durability 17 fit 18 reuse 20, added_failure_count 0, four non-blocking findings; stored under the reviewed run&#x27;s review-records directory, not in the worktree.</p></div>
+    <div class="r-comment-body"><p>Attached an independent review of run r-20261116T062634949844-a-receipt-and-a-spend-are-read-once covering bcd60512ff..6df3a4b4a1: status parsed, reviewed_base_sha bcd60512ff62795346ab3da0f0bb80d0d2084e62, reviewed_head_sha 6df3a4b4a17908458d26d9146013e33dfa58680b, scores goal_fidelity 18 evidence 14 scope_discipline 20 durability 17 fit 18 reuse 20, added_failure_count 0, four non-blocking findings; stored under the reviewed run's review-records directory, not in the worktree.</p></div>
+</div>
+<div class="r-comment" data-section="s73" data-id="c-run-r-20261116T062634949844-a-receipt-and-a-spend-are-read-once" data-who="reckon-build" data-when="2026-11-16T06:33:26Z">
+    <div class="r-comment-body"><p>A rollout receipt and a stream's spend are folded once per file identity and size. Merged arm adds no failure; relative gate 14 passed.</p></div>
 </div>
 <div class="r-comment" data-section="s74" data-id="c-run-r-20261116T082029523310-review-of-a-review-lookup-is-linear-03955d16a85f" data-who="reckon-build" data-when="2026-11-16T08:22:39.567Z">
     <div class="r-comment-body"><p>74 — independent review of run r-20261116T064500174408-a-review-lookup-is-linear at base cc8a94d9 head 03955d16: six verdicts and six scores recorded (goal_fidelity 18, evidence 17, scope_discipline 19, durability 17, fit 16, reuse 12), five non-blocking findings, and added_failure_count 0 with no added failure ids derived from the reviewed run's own baseline_suite and after_suite logs.</p></div>
