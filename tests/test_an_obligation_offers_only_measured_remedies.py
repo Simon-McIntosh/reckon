@@ -8,7 +8,7 @@ import os
 import re
 import shlex
 import socket
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import click
 import pytest
@@ -159,6 +159,34 @@ def test_acknowledged_departed_request_keeps_its_safe_deferred_row():
     assert rows == []
     assert [row["run_id"] for row in deferred] == ["r-departed"]
     assert deferred[0]["next_command"] == "reckon crew observe --run r-departed"
+
+
+@pytest.mark.parametrize("delivered_by_attempt", [True, False])
+def test_a_dated_terminal_delivery_is_distinct_from_a_live_undelivered_attempt(
+    delivered, delivered_by_attempt
+):
+    pointer, head, manifest = delivered
+    _measure(delivered)
+    launch = datetime.now(UTC) - timedelta(minutes=1)
+    runs._write_json(
+        runs.run_dir(pointer["run_id"]) / "worker.json",
+        {
+            "pid": os.getpid(),
+            "host": socket.gethostname(),
+            "attempt": 2,
+            "launched_at": launch.isoformat(),
+        },
+    )
+    if not delivered_by_attempt:
+        inherited = (launch - timedelta(minutes=1)).timestamp()
+        os.utime(manifest, (inherited, inherited))
+    rows, _ = obligations._partition_acknowledged([_duty(pointer)], {})
+    if delivered_by_attempt:
+        assert len(rows) == 1
+        assert "--gate passed" in rows[0]["next_command"]
+        assert head in classification._promotion_command("r-remedy", pointer, [head])
+    else:
+        assert rows == []
 
 
 @pytest.mark.parametrize(

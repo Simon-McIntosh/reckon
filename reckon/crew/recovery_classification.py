@@ -3208,12 +3208,14 @@ def completion_offer(record: Mapping[str, Any], *, repair: bool = False) -> bool
     """Whether this attempt's evidence permits offering a completion.
 
     A repair changes a manifest verdict rather than asserting a gate result,
-    but neither form may settle work while its current attempt is alive.
+    but neither form may settle an attempt that has not delivered. A terminal
+    report must postdate the recorded worker launch to establish that delivery.
     Passing gates belong to a revision, so a manifest's completed head arm
     must name the tree's current head before a promotion can assert passed.
     """
     from .promotion import discard_recorded
     from .promotion_checks import _fresh_manifest
+    from .recovery_liveness import _worker_launch_seconds
     from .recovery_review_dispatch import _review_head_and_tree
     from .resumption import _live_attempt_number
 
@@ -3222,12 +3224,19 @@ def completion_offer(record: Mapping[str, Any], *, repair: bool = False) -> bool
         run_id and discard_recorded(run_id)
     ):
         return False
+    manifest = _fresh_manifest(record) or {}
     if _live_attempt_number(record) is not None or local_liveness(record)[0] is True:
-        return False
+        if (
+            str(manifest.get("status") or "") not in TERMINAL_MANIFEST_STATUSES
+            or _worker_launch_seconds(record) is None
+            or _manifest_predates_the_current_attempt(
+                record, Path(str(record.get("manifest_path") or ""))
+            )
+        ):
+            return False
     if repair:
         return True
     head, _tree = _review_head_and_tree(record)
-    manifest = _fresh_manifest(record) or {}
     after = manifest.get("after_suite")
     return bool(
         head
