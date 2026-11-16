@@ -256,28 +256,35 @@ def _deliver(record: dict, *, status: str = "complete") -> None:
     manifest.write_text(f"node: {record['node']['id']}\nstatus: {status}\n")
 
 
-def _commit_work(repo: Path) -> str:
-    """Commit the run's declared work and return its revision.
+def _commit_work(record: dict) -> str:
+    """Commit the run's declared work in its own worktree and return its revision.
 
     A promotion cites what the run made beyond its base and refuses a citation
     of the base itself, so a fixture that would cite the base must first make a
-    commit, as a real run does. The path is inside the dispatched node's
-    declared write scope so the promotion's boundary check sees work the run
-    was allowed to make.
+    commit, as a real run does. The commit is made in the worktree the dispatch
+    gave the run, because that is the history the promotion measures a citation
+    against: a run's work is what it committed on its own line, not what the
+    registered checkout happens to hold. The path is inside the dispatched
+    node's declared write scope so the promotion's boundary check sees work the
+    run was allowed to make.
     """
-    (repo / "reckon" / "target.py").write_text("value = 2\n", encoding="utf-8")
+    worktree = Path(record["worktree"])
+    (worktree / "reckon" / "target.py").write_text("value = 2\n", encoding="utf-8")
     subprocess.run(
-        ["git", "add", "reckon/target.py"], cwd=repo, check=True, capture_output=True
+        ["git", "add", "reckon/target.py"],
+        cwd=worktree,
+        check=True,
+        capture_output=True,
     )
     subprocess.run(
         ["git", "commit", "-q", "-m", "feat: the run's declared work"],
-        cwd=repo,
+        cwd=worktree,
         check=True,
         capture_output=True,
     )
     return subprocess.run(
         ["git", "rev-parse", "HEAD"],
-        cwd=repo,
+        cwd=worktree,
         check=True,
         capture_output=True,
         text=True,
@@ -335,10 +342,31 @@ def _timestamp_stream(
 
 
 def _kill(record: dict) -> None:
-    """Point the pointer at a pid that cannot be running."""
+    """Record the run's worker as a pid that cannot be running.
+
+    A run reads its worker's liveness from the record the supervisor writes when
+    it spawns that worker, and the pointer is not that record, so the dead pid
+    has to be published to both: an attempt with no worker record is read as one
+    still starting, which is a different state from a launched worker that has
+    ended.
+    """
+    dead = 999999999
     pointer = json.loads(crew.pointer_path(record["run_id"]).read_text())
-    pointer["pid"] = 999999999
+    launched_at = pointer.get("launch_recorded_at") or pointer.get("created_at")
+    pointer["pid"] = dead
     crew._write_json(crew.pointer_path(record["run_id"]), pointer)
+    (Path(record["manifest_path"]).parent / "worker.json").write_text(
+        json.dumps(
+            {
+                "run_id": record["run_id"],
+                "attempt": 1,
+                "pid": dead,
+                "launched_at": launched_at,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
 
 
 def _porcelain(root: Path) -> list[str]:
@@ -485,7 +513,7 @@ def test_completion_promotes_the_pointer_into_the_repositorys_ledger(
 ) -> None:
     record = _dispatch(repo, fixture="codex-turn.jsonl")
     _deliver(record)
-    work = _commit_work(repo)
+    work = _commit_work(record)
     before = sorted(path.name for path in crew.live_dir().glob("*.json"))
     assert before == [f"{record['run_id']}.json"]
     # An unnamed dispatch is disposable: it mints a per-run identity and gets
@@ -1380,6 +1408,10 @@ def test_complete_command_assumes_utc_for_a_naive_completion_stamp(home, repo) -
             "/durable/r-node-a/gate.log",
             "--waive-live-run",
             _PLUMBING_WAIVER,
+            # A promotion is queued for the fleet service unless the call is
+            # told to carry it out, and this case reads the outcome of a
+            # promotion rather than a request receipt.
+            "--wait",
         ],
     )
 
@@ -1490,7 +1522,7 @@ def test_a_killed_run_that_delivered_is_scoring_pending_review(home, repo) -> No
     promoted = crew.complete(
         record["run_id"],
         gate="passed",
-        commits=[_commit_work(repo)],
+        commits=[_commit_work(record)],
         review_waiver="this node measures the recovery classification of a "
         "killed delivery; the review lifecycle has its own coverage",
     )
@@ -1666,18 +1698,21 @@ def test_promotion_refuses_a_merge_conflicted_ledger(home, repo) -> None:
 
 
 def test_hold_check_backs_off_after_a_version_conflict(home, repo, monkeypatch) -> None:
-    real_write = ledger.write
+    # The hold path composes its write through the state writer, which is the
+    # one that raises a stale-version refusal, so the conflict is injected
+    # there rather than at the public wrapper that delegates to it.
+    real_write = ledger._write_state
     writes = 0
     backoffs: list[int] = []
 
-    def conflicting_write(project, data, expected_version, root=None):
+    def conflicting_write(project, data, expected_version, root=None, **kwargs):
         nonlocal writes
         writes += 1
         if writes == 1:
             raise ledger.LedgerError("concurrent write")
-        return real_write(project, data, expected_version, root)
+        return real_write(project, data, expected_version, root, **kwargs)
 
-    monkeypatch.setattr(ledger, "write", conflicting_write)
+    monkeypatch.setattr(ledger, "_write_state", conflicting_write)
     monkeypatch.setattr(ledger, "_retry_backoff", backoffs.append)
 
     result = ledger.record_hold_checks(
@@ -1808,7 +1843,7 @@ def test_a_promoted_record_names_the_member_and_its_session(home, repo) -> None:
     promoted = crew.complete(
         record["run_id"],
         gate="passed",
-        commits=[_commit_work(repo)],
+        commits=[_commit_work(record)],
         review_waiver=_UNREVIEWED_PROMOTION_WAIVED,
     )
 
@@ -1858,7 +1893,7 @@ def test_completing_a_record_whose_pid_is_the_releasing_process_never_signals_it
     promoted = crew.complete(
         record["run_id"],
         gate="passed",
-        commits=[_commit_work(repo)],
+        commits=[_commit_work(record)],
         review_waiver=_UNREVIEWED_PROMOTION_WAIVED,
     )
 
@@ -1902,7 +1937,7 @@ def test_completing_a_record_with_a_genuine_foreign_pid_still_signals_and_releas
         promoted = crew.complete(
             record["run_id"],
             gate="passed",
-            commits=[_commit_work(repo)],
+            commits=[_commit_work(record)],
             review_waiver=_UNREVIEWED_PROMOTION_WAIVED,
         )
 
@@ -1927,7 +1962,7 @@ def test_a_completed_record_carries_every_calibration_input(home, repo) -> None:
     stored = crew.complete(
         record["run_id"],
         gate="passed",
-        commits=[_commit_work(repo)],
+        commits=[_commit_work(record)],
         tests_added=9,
         outcome="landed the dispatch primitive",
         review_waiver=_UNREVIEWED_PROMOTION_WAIVED,
@@ -1985,7 +2020,14 @@ def test_the_scope_changed_flag_defaults_false_and_is_settable(home, repo) -> No
 
 
 def test_changed_lines_are_measured_from_the_scoped_diff(home, repo) -> None:
-    """Promotion refuses cumulative changes outside the node's write scope."""
+    """A mergeable path outside the declaration lands, and the row is measured.
+
+    A declared write path is a hint rather than a fence: only a path whose class
+    a merge cannot reconcile needs a coordinator's acceptance, so a commit
+    beside the declared one promotes on its own. What the row records is the
+    measurement of the run's own commits, never a diagnostics mapping a caller
+    happened to pass, and the pointer is settled by the promotion.
+    """
     record = _dispatch(repo)
     worktree = Path(record["worktree"])
     (worktree / "reckon" / "target.py").write_text("value = 1\nvalue2 = 2\n")
@@ -2003,17 +2045,20 @@ def test_changed_lines_are_measured_from_the_scoped_diff(home, repo) -> None:
         text=True,
     ).stdout.strip()
 
-    with pytest.raises(crew.CrewError, match=r"other\.py"):
-        crew.complete(
-            record["run_id"],
-            gate="passed",
-            commits=[commit],
-            changed_lines={"detail": "not a measurement"},
-            live_run_waiver=_PLUMBING_WAIVER,
-        )
+    stored = crew.complete(
+        record["run_id"],
+        gate="passed",
+        commits=[commit],
+        changed_lines={"detail": "not a measurement"},
+        live_run_waiver=_PLUMBING_WAIVER,
+    )["record"]
 
-    assert ledger.runs(PROJECT, root=repo) == []
-    assert crew.pointer_path(record["run_id"]).is_file()
+    # One line added to each of the two files the run committed, nothing removed.
+    assert stored["changed_lines"] == {"added": 2, "removed": 0, "files": 2}
+    assert [entry["run_id"] for entry in ledger.runs(PROJECT, root=repo)] == [
+        record["run_id"]
+    ]
+    assert not crew.pointer_path(record["run_id"]).exists()
 
 
 def test_measured_worker_time_is_reported_against_declared_effort(home, repo) -> None:
@@ -3255,9 +3300,15 @@ def test_append_run_writes_the_shadow_store_beside_the_file(home, repo) -> None:
     assert _real_store_traces("r-store-echo") == []
 
 
-def test_a_raising_store_write_is_recorded_and_never_propagated(
+def test_a_raising_store_write_refuses_and_leaves_no_row(
     home, repo, monkeypatch
 ) -> None:
+    """A store that will not take the row refuses the promotion.
+
+    The run store is the durable authority for a promoted run, so an append it
+    declines is a refusal rather than a merely unhealthy index: the run file
+    written before the store is taken back, and neither store keeps the row.
+    """
     from reckon import run_store
 
     record = ledger.build_record(run_id="r-store-fail", plan="plan-a", gate="passed")
@@ -3267,12 +3318,12 @@ def test_a_raising_store_write_is_recorded_and_never_propagated(
 
     monkeypatch.setattr(run_store, "append", broken_append)
 
-    result = ledger.append_run(PROJECT, record, root=repo)
+    with pytest.raises(ledger.LedgerError, match="injected store failure"):
+        ledger.append_run(PROJECT, record, root=repo)
 
-    assert result["store"]["status"] == "failed"
-    assert "RuntimeError" in result["store"]["error"]
-    # The committed file row landed regardless of the shadow failure.
-    assert [entry["run_id"] for entry in ledger.runs(PROJECT, repo)] == ["r-store-fail"]
+    # Neither store keeps the refused row.
+    assert ledger.runs(PROJECT, repo) == []
+    assert not ledger.run_path(PROJECT, "r-store-fail", repo).exists()
     # The real crew store carries no row for the run this test wrote.
     assert _real_store_traces("r-store-fail") == []
 
@@ -3305,9 +3356,15 @@ def test_a_successful_index_write_follows_the_file_and_is_reported(
     assert _real_store_traces("r-store-ok") == []
 
 
-def test_failed_index_writes_leave_files_and_visible_lag(
+def test_a_failed_index_write_keeps_the_rows_already_written(
     home, repo, monkeypatch
 ) -> None:
+    """A refused append disturbs neither store and leaves no lag behind.
+
+    The run store is the authority, so a failed append is a refusal rather than
+    a row left for a repair pass: the run file is taken back, the row already
+    written stays as it was, and the file and the store still agree.
+    """
     from reckon import run_store
 
     first = ledger.build_record(run_id="r-store-first", plan="plan-a", gate="passed")
@@ -3320,29 +3377,22 @@ def test_failed_index_writes_leave_files_and_visible_lag(
     attempts = []
 
     def broken_append(project: str, record_entry: dict) -> None:
-        _assert_run_file(project, repo, record_entry)
         attempts.append(record_entry["run_id"])
         raise RuntimeError("injected store failure")
 
     monkeypatch.setattr(run_store, "append", broken_append)
     second = ledger.build_record(run_id="r-store-second", plan="plan-a", gate="passed")
-    failed = ledger.append_run(PROJECT, second, root=repo)
-
-    assert failed["store"]["status"] == "failed"
-    stored = {entry["run_id"]: entry for entry in ledger.runs(PROJECT, repo)}
-    assert stored["r-store-first"] == first
-    assert stored["r-store-second"] == second
-    assert "store_write" not in stored["r-store-first"]
-    assert "store_write" not in stored["r-store-second"]
-    assert "RuntimeError" in failed["store"]["error"]
-    assert attempts == [second["run_id"]]
     index_before = run_store.store_path().read_bytes()
-    assert ledger.index_lag(PROJECT, repo) == 1
-    assert ledger.index_lag(PROJECT, repo) == 1
+    with pytest.raises(ledger.LedgerError, match="injected store failure"):
+        ledger.append_run(PROJECT, second, root=repo)
+
+    assert attempts == [second["run_id"]]
+    stored = {entry["run_id"]: entry for entry in ledger.runs(PROJECT, repo)}
+    assert stored == {"r-store-first": first}
+    assert "store_write" not in stored["r-store-first"]
+    assert not ledger.run_path(PROJECT, "r-store-second", repo).exists()
     assert run_store.store_path().read_bytes() == index_before
-    run_store.import_ledger(PROJECT, root=repo)
     assert ledger.index_lag(PROJECT, repo) == 0
-    _assert_run_file(PROJECT, repo, second)
 
 
 def test_existing_readers_are_identical_with_the_store_present_and_deleted(

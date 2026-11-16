@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_run_commands.py:crew_complete",
+    "reckon/crew/admission/service.py:admit_until_stopped",
+    "reckon/crew/obligations.py:_obligations_view",
+    "reckon/crew/recovery_review_acceptance.py:_judge_moved_inputs_again"
+  ],
+  "completed_at": "2026-11-16T22:57:13Z",
+  "dispatched_at": "2026-11-16T22:51:24Z",
+  "failure_delta_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/fe0acb0a-56ea-447a-8357-bb11f3bf471c/a-waiting-promotion-is-read-again/tests/test_a_waiting_promotion_is_read_again.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/fe0acb0a-56ea-447a-8357-bb11f3bf471c/a-waiting-promotion-is-read-again/tests/test_staged_write_inventory.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/fe0acb0a-56ea-447a-8357-bb11f3bf471c/a-waiting-promotion-is-read-again/tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T222501389181-a-waiting-promotion-is-read-again/final-after-suite.log",
+      "revision": "e44a9454d7b956d7fba5b2e5d3ad0d303eaa5090"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/waiting-promotion-gate-zmgodsbo/promotion-base-v5bg6vn8/tests/test_staged_write_inventory.py /tmp/waiting-promotion-gate-zmgodsbo/promotion-base-v5bg6vn8/tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T222501389181-a-waiting-promotion-is-read-again/final-baseline-suite.log",
+      "revision": "f9a238e45926b5e142e68414f2df42780ebc69f5"
+    }
+  },
+  "findings": [],
+  "importer_delta": {
+    "added_failure_ids": [],
+    "known_present_failure_or_error_ids": 16
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read commit e44a9454d7b956d7fba5b2e5d3ad0d303eaa5090 against f9a238e45926b5e142e68414f2df42780ebc69f5; its two-file diff refreshes waiting verdicts and adds overdue obligations without changing promotion guards.",
+    "done_when": "Read prompt.txt's evidence fence and live plan section s3; final-after-suite.log records all three behavior cases among 61 passing tests, and the final importer logs have identical failure and error IDs against the base.",
+    "goal": "Read the goal in the reviewed run's prompt.txt; reckon/crew/promotion_requests.py:750 preserves automatic rechecking and :270 refreshes repeated completion requests once their condition clears.",
+    "manifest": "Read the reviewed run's manifest.md and its cited receipts; its single commit, 58-test baseline, 61-test head, three failing negative controls, and zero importer failure delta reconcile with the artifacts.",
+    "write_paths": "Read prompt.txt's scope fence and manifest.md's orientation_write_paths; the only changed paths are reckon/crew/promotion_requests.py and tests/test_a_waiting_promotion_is_read_again.py, both declared."
+  },
+  "justifications": {
+    "durability": "tests/test_a_waiting_promotion_is_read_again.py:99 fails if the drain retains the pre-repair timestamp, :122 fails if repeated completion returns a stale check, and :146 fails if overdue waits produce no duty, matching the three recorded base failures.",
+    "evidence": "final-baseline-suite.log and final-after-suite.log identify the exact base and head and end EXIT=0 with 58 and 61 passes, while negative-control-base.log records three failures and the final importer logs have identical failure IDs.",
+    "fit": "reckon/crew/promotion_requests.py:270 uses the existing request lock, readiness owner, JSON writer and pointer marker, and :978 uses the existing age helper and obligation dictionary idiom with mechanism-based names.",
+    "goal_fidelity": "reckon/crew/promotion_requests.py:270 rechecks repeated waiting requests and :750 retains the existing automatic drain, while :978 exposes overdue conditions to the owning session.",
+    "reuse": "reckon/crew/promotion_requests.py extends the existing promotion and obligation owner without adding production definitions; capability searches found the existing review fixture in tests/test_review_promotion_waits_for_its_record.py, which the new test module imports and extends through _park rather than duplicating.",
+    "scope_discipline": "The complete commit diff changes only the two declared paths reckon/crew/promotion_requests.py and tests/test_a_waiting_promotion_is_read_again.py, and every hunk supports the waiting-request deliverable."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the goal in the reviewed run's prompt.txt; reckon/crew/promotion_requests.py:750 preserves automatic rechecking and :270 refreshes repeated completion requests once their condition clears.\nVERDICT done_when: Read prompt.txt's evidence fence and live plan section s3; final-after-suite.log records all three behavior cases among 61 passing tests, and the final importer logs have identical failure and error IDs against the base.\nVERDICT write_paths: Read prompt.txt's scope fence and manifest.md's orientation_write_paths; the only changed paths are reckon/crew/promotion_requests.py and tests/test_a_waiting_promotion_is_read_again.py, both declared.\nVERDICT manifest: Read the reviewed run's manifest.md and its cited receipts; its single commit, 58-test baseline, 61-test head, three failing negative controls, and zero importer failure delta reconcile with the artifacts.\nVERDICT diff: Read commit e44a9454d7b956d7fba5b2e5d3ad0d303eaa5090 against f9a238e45926b5e142e68414f2df42780ebc69f5; its two-file diff refreshes waiting verdicts and adds overdue obligations without changing promotion guards.\nCALL_SITES: reckon/crew_run_commands.py:crew_complete, reckon/crew/admission/service.py:admit_until_stopped, reckon/crew/obligations.py:_obligations_view, reckon/crew/recovery_review_acceptance.py:_judge_moved_inputs_again\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_requests.py:270 rechecks repeated waiting requests and :750 retains the existing automatic drain, while :978 exposes overdue conditions to the owning session.\nSCORE evidence: 20\nJUSTIFICATION evidence: final-baseline-suite.log and final-after-suite.log identify the exact base and head and end EXIT=0 with 58 and 61 passes, while negative-control-base.log records three failures and the final importer logs have identical failure IDs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The complete commit diff changes only the two declared paths reckon/crew/promotion_requests.py and tests/test_a_waiting_promotion_is_read_again.py, and every hunk supports the waiting-request deliverable.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_waiting_promotion_is_read_again.py:99 fails if the drain retains the pre-repair timestamp, :122 fails if repeated completion returns a stale check, and :146 fails if overdue waits produce no duty, matching the three recorded base failures.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/promotion_requests.py:270 uses the existing request lock, readiness owner, JSON writer and pointer marker, and :978 uses the existing age helper and obligation dictionary idiom with mechanism-based names.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/promotion_requests.py extends the existing promotion and obligation owner without adding production definitions; capability searches found the existing review fixture in tests/test_review_promotion_waits_for_its_record.py, which the new test module imports and extends through _park rather than duplicating.\n",
+  "review_run_id": "r-20261116T224727701774-review-of-a-waiting-promotion-is-read-again-e44a9454d7b9",
+  "reviewed_base_sha": "f9a238e45926b5e142e68414f2df42780ebc69f5",
+  "reviewed_head_sha": "e44a9454d7b956d7fba5b2e5d3ad0d303eaa5090",
+  "reviewed_run_id": "r-20261116T222501389181-a-waiting-promotion-is-read-again",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T22:58:14.196925+00:00",
+  "total": 120
+}

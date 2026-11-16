@@ -1651,7 +1651,9 @@ def _live_conflict_rows(
             for repository, path, absolute, _declared, _derived_from in candidates
             if repository == claim.repository
             and _scopes_overlap(absolute.as_posix(), claim.absolute_path.as_posix())
-            and not _claim_paths_share(shared_files, path, claim.path)
+            and not _claim_shares_overlap(
+                shared_files, repository, path, absolute, claim
+            )
         ]
         if not overlapping:
             continue
@@ -2191,6 +2193,48 @@ def _fragment_scope_paths(
     return tuple(sorted(paths))
 
 
+def _is_fragment_record(absolute: Path, repository: Path | None) -> bool:
+    """Whether a compared path is one plan node's own landing fragment file.
+
+    The record lives at ``docs/evidence/fragments/<plan>/<node>.html`` and is
+    cumulative for the node that wrote it, so one fragment file is one node's
+    document. Its siblings under the same plan directory are separate files
+    that merge, which is what makes the directory a composition point rather
+    than a contested file.
+    """
+    if repository is None or not absolute.is_relative_to(repository):
+        return False
+    parts = absolute.relative_to(repository).parts
+    return (
+        len(parts) >= 5
+        and parts[:3] == ("docs", "evidence", "fragments")
+        and parts[-1].endswith(".html")
+    )
+
+
+def _claim_shares_overlap(
+    shared_files: frozenset[str],
+    repository: Path | None,
+    candidate: str,
+    candidate_absolute: Path,
+    claim: _RepositoryScopeClaim,
+) -> bool:
+    """Whether the repository's sharing policy excuses one claim overlap.
+
+    A comparison that names a fragment record on either side is never excused:
+    the files a fragment directory is compared as are already narrowed to the
+    owning node's own record (``_fragment_scope_paths``), so an overlap on one
+    is that node's read and its writer's, and sharing it would let two nodes
+    write one cumulative document. Every other overlap keeps the policy the
+    declaration states.
+    """
+    if _is_fragment_record(candidate_absolute, repository) or _is_fragment_record(
+        claim.absolute_path, claim.repository
+    ):
+        return False
+    return _claim_paths_share(shared_files, candidate, claim.path)
+
+
 def _fragment_comparison_scopes(
     candidates: Iterable[tuple[Path | None, str, Path, str, str | None]],
     claims: Iterable[_RepositoryScopeClaim],
@@ -2298,8 +2342,11 @@ def _raise_repository_scope_conflict(
             # Worktrees isolate concurrent edits to one shared file, and a
             # directory claim under a shared root shares as the files beneath
             # it do, so a peer naming one of those files passes. A claim that is
-            # or contains an exclusive pattern still fences below.
-            if _claim_paths_share(shared_files, candidate, claim.path):
+            # or contains an exclusive pattern still fences below, and so does a
+            # plan fragment record, which names one node's own document.
+            if _claim_shares_overlap(
+                shared_files, _repository, candidate, absolute, claim
+            ):
                 continue
             if not claim.binding:
                 # Named on the record rather than passed over quietly: an

@@ -1,0 +1,80 @@
+<section id="qwnw-red-file-spa-project-visibility-landing">
+  <h2>The project-visibility red file passes in full</h2>
+
+  <p id="qwnw-red-file-spa-project-visibility-what-was-red"><strong>What was red.</strong>
+  At the base revision <code>cb557f97</code> the file reported 4 failing of 14
+  in 129.29 s, the same four ids the head suite recorded at
+  <code>8d50b0333f</code>: <code>test_topbar_keeps_one_ordered_row_with_tools_flush_right[1280]</code>,
+  <code>[1440]</code>, <code>[1920]</code> and
+  <code>test_first_visit_renders_live_runs_from_every_mounted_project</code>.
+  Every one of them was reported by the harness as
+  <code>navigation-never-completed</code>, which reads as a browser fault, and
+  all four failed before reaching a single assertion.</p>
+
+  <p id="qwnw-red-file-spa-project-visibility-at-head"><strong>At head.</strong>
+  14 passed in 140.98 s, <code>EXIT=0</code>, as a job on <code>all_debug</code>
+  with <code>SLURM_JOB_ID</code> unset. No assertion was
+  deleted or weakened: the one rendered case whose assertions changed now
+  asserts the arrival scope as well as the widened list. Both runs are kept
+  beside this file: <code>qwnw-red-file-spa-project-visibility-base.txt</code>
+  (four failing, the ids above) and
+  <code>qwnw-red-file-spa-project-visibility-head.txt</code>.</p>
+<table id="qwnw-red-file-spa-project-visibility-causes">
+    <caption>Each cause, its verdict, and what changed.</caption>
+    <thead><tr><th>cause</th><th>verdict</th><th>evidence and change</th></tr></thead>
+    <tbody>
+      <tr><td>the readiness wait is shorter than a cold discovery</td>
+        <td>test wrong</td>
+        <td>A served process whose <code>RECKON_HOME</code> is new pays two git
+        lookups that time out at ten seconds each plus a walk of the docs tree.
+        Measured here: <code>GET /_index/reckon</code> <strong>37.448 s
+        cold</strong> against <strong>0.0709 s warm</strong>, and the topbar
+        paints at about 46 s. The driver's fixed 45 000 ms deadline therefore
+        reded a page that renders. The deadline is now 120 000 ms (twice the
+        measured worst case) and the driver process budget 75 s to 180 s, so the
+        readiness wait is what decides. No assertion moved.</td></tr>
+      <tr><td>the case probes a tools group the topbar retired</td>
+        <td>test wrong</td>
+        <td><code>.top-r</code> survives only in
+        <code>docs/_shared/dashboard.css</code> and in historical figure JSON;
+        the authored tools group is the settings menu, so the case probes
+        <code>.settings</code>. Its four remaining assertions (one row, ordered
+        lefts, tools flush inside the padding, no snapshot receipt in the
+        header) are unchanged.</td></tr>
+      <tr><td>the row does not fit a 1280 viewport</td>
+        <td>product wrong</td>
+        <td>Measured in the live shell: the row needs 1257 px against a 1244 px
+        content box, so <code>.settings</code> sat at right 1274 where the
+        header's 18 px padding puts it at 1262 — 12.5 px over. The search field
+        is the only item whose width carries no label, so it now shrinks from
+        its 230 px basis; 1440 and 1920 keep it at its basis.</td></tr>
+      <tr><td>the first-visit fixture never installed its fetch override</td>
+        <td>test wrong</td>
+        <td>The case built its override on a twelve-space anchor while the
+        driver source indents that line by eight: the anchored replacement
+        matched <strong>0</strong> times against <strong>1</strong> occurrence of
+        the line it names, so <code>.replace</code> was a no-op and the page
+        fetched the real routes. The override is anchored on the line the driver
+        carries.</td></tr>
+      <tr><td>the first-visit case states a rule the crew surface no longer keeps</td>
+        <td>test wrong</td>
+        <td>The surface arrives scoped to the served project
+        (<code>crewScopedProjects</code>) and reaches the other mounted projects
+        through its own "All visible" control. Read on the live shell: the
+        arrival count is <code>1</code> — the fixture's one run for the served
+        project — and the widened list is <code>8</code>, with the heading
+        still reading "12 shown / 12 mounted". The case now reads the arrival
+        count, clicks that control, and reads the widened list — one card for
+        the served project on arrival, every mounted project's runs after the
+        widen.</td></tr>
+    </tbody>
+  </table>
+
+  <p id="qwnw-red-file-spa-project-visibility-arms"><strong>Arms.</strong>
+  Baseline <code>58 passed</code>, after <code>58 passed</code> (the fence's
+  two-file command, resolved over each tree). An arm over the files that import
+  the harness change adds no failure against the base. <code>ruff check</code>
+  and <code>ruff format --check</code> report nothing new on the changed paths;
+  <code>tests/test_spa_project_visibility.py</code> carries a pre-existing
+  format finding — 35 diff lines at the base revision and 35 at head.</p>
+</section>
