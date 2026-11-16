@@ -131,19 +131,6 @@ INDEX_STATE = {
                 "derived_state": "active",
                 "implementation_pct": 42.0,
                 "blocked": 0,
-                "metrics": {
-                    "item_count": 1,
-                    "by_effective_status": {"active": 1},
-                    "mean_impl": 0.42,
-                    "current_work": [
-                        {
-                            "slug": "rendered-contract",
-                            "title": "Rendered contract",
-                            "effective_status": "active",
-                            "impl": 0.42,
-                        }
-                    ],
-                },
             },
             {
                 "id": "concurrent",
@@ -155,12 +142,6 @@ INDEX_STATE = {
                 "derived_state": "planned",
                 "implementation_pct": 0.0,
                 "blocked": 0,
-                "metrics": {
-                    "item_count": 0,
-                    "by_effective_status": {},
-                    "mean_impl": 0.0,
-                    "current_work": [],
-                },
             },
         ],
         "milestones": [],
@@ -304,6 +285,7 @@ def _rendered_probe(
     review: dict[str, object] | None = None,
     refresh_probe: str | None = None,
     new_plan: dict[str, object] | None = None,
+    index_state: dict[str, object] | None = None,
 ) -> dict[str, dict[str, object]]:
     preload_expression = r"""{
       const fixtureIndex = __FIXTURE_INDEX__;
@@ -351,7 +333,7 @@ def _rendered_probe(
       };
     }"""
     replacements = {
-        "__FIXTURE_INDEX__": INDEX_STATE,
+        "__FIXTURE_INDEX__": index_state if index_state is not None else INDEX_STATE,
         "__FIXTURE_REVIEW__": review,
         "__FIXTURE_NEW_PLAN__": new_plan,
         "__FAIL_PLAN_HTML__": fail_plan_html,
@@ -768,3 +750,54 @@ def test_compact_progress_renders_label_tooltip_and_navigation_target(
         result["removed"],
         "compact progress navigation",
     )
+
+
+def test_sprint_table_states_only_the_figures_the_payload_serves(
+    tmp_path: Path,
+    rendered_browser: str,
+) -> None:
+    payload = json.loads(json.dumps(INDEX_STATE))
+    for sprint in payload["data"]["sprints"]:
+        for key in ("derived_state", "implementation_pct", "blocked"):
+            sprint.pop(key, None)
+    # The payload carries the block a browser-side derivation would read, so a
+    # table that derives the state again states a figure nothing served. The
+    # member statuses and the mean are the served aggregates, not the row's
+    # derived fields.
+    payload["data"]["sprints"][0]["metrics"] = {
+        "item_count": 1,
+        "by_effective_status": {"active": 1},
+        "mean_impl": 0.42,
+        "current_work": [],
+    }
+    payload["data"]["sprints"][1]["metrics"] = {
+        "item_count": 0,
+        "by_effective_status": {},
+        "mean_impl": 0.0,
+        "current_work": [],
+    }
+    result = _rendered_probe(
+        tmp_path,
+        route="#sprint/focus",
+        wait_selector=".r-sprint-table",
+        # A sprint row without the derived fields is a row nothing composed.
+        # The table states that, and deriving a state from the payload's other
+        # fields in the browser is the second implementation this case forbids:
+        # with the derivation restored the same row reads active and 42%.
+        probe="""(() => {
+          const rows = [...document.querySelectorAll(".r-sprint-table tbody tr")];
+          const focus = rows.find(row => row.querySelector("th strong")?.textContent.trim() === "focus");
+          const state = focus?.querySelector(".r-sprint-status")?.textContent.trim() || null;
+          const implementation = focus?.querySelector(".r-sprint-implementation strong")?.textContent.trim() || null;
+          return {
+            ok: state === "unknown" && implementation === "0%",
+            state,
+            implementation,
+          };
+        })()""",
+        remove_signal="document.querySelector('.r-sprint-table')?.remove()",
+        index_state=payload,
+    )
+
+    _assert_rendered_signal(result["baseline"], "payload-only sprint figures")
+    _assert_removal_is_detected(result["removed"], "payload-only sprint figures")
