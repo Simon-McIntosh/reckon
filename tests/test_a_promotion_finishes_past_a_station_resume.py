@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import json
 import subprocess
-from collections.abc import Callable, Iterator
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -38,14 +38,6 @@ from tests.helpers.landing_repository import (
 )
 
 RUN_ID = "r-20261112T175326514846-a-promotion-finishes-past-a-resume"
-REAL_LIVE = Path.home() / ".config" / "reckon" / "crew" / "live"
-
-
-@pytest.fixture(autouse=True)
-def the_real_pointer_directory_is_not_a_fixture_target() -> Iterator[None]:
-    assert not (REAL_LIVE / f"{RUN_ID}.json").exists()
-    yield
-    assert not (REAL_LIVE / f"{RUN_ID}.json").exists()
 
 
 @pytest.fixture()
@@ -54,6 +46,9 @@ def promoted_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, A
     config_home = tmp_path / "config"
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
+    # The crew home the run uses is the temporary one, so no pointer this test
+    # writes can reach the operator's own live directory.
+    assert pointer_path(RUN_ID).is_relative_to(tmp_path), pointer_path(RUN_ID)
     _origin, repository = _write_origin_and_checkout(tmp_path)
     (config_home / "mounts.json").write_text(
         json.dumps({PROJECT: str(repository / "docs")}), encoding="utf-8"

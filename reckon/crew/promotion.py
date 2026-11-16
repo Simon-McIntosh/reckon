@@ -305,20 +305,19 @@ def _pointer_attempt(pointer: Mapping[str, Any]) -> int | None:
 def _attempt_reservation(run_id: str, attempt: int) -> dict[str, Any]:
     """The launch reservation a later attempt left in the run directory.
 
-    The reservation is what names the process that took the attempt and the
-    door that asked for it, so it is the only record a refusal can quote for a
-    launch whose pointer carries just the supervisor's own pid. An unreadable
-    file, or one naming another run, answers no record.
-
-    ``attempt-4.reservation`` is the file naming attempt 4. A record written by an
-    older launch has no reservation at all, which reads the same as none.
+    The reservation names the process that took the attempt and the door that
+    asked for it, so it is the only record a refusal can quote for a launch
+    whose pointer carries just the supervisor's own pid. The file is parsed by
+    its owner, ``dispatch_launch._read_reservation``, so every reader of a
+    reservation agrees about what one is; this reader adds only the check that
+    the record names the run it was looked up for, because a file naming another
+    run is no record of this one. A reservation the launch never wrote reads the
+    same as an unreadable one.
     """
-    path = run_dir(run_id) / f"attempt-{attempt}.reservation"
-    try:
-        loaded = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return {}
-    if not isinstance(loaded, Mapping) or str(loaded.get("run_id") or "") != run_id:
+    from reckon.crew.dispatch_launch import _read_reservation
+
+    loaded = _read_reservation(run_dir(run_id) / f"attempt-{attempt}.reservation")
+    if loaded is None or str(loaded.get("run_id") or "") != run_id:
         return {}
     return dict(loaded)
 
@@ -340,7 +339,9 @@ def _launching_process_named(run_id: str, record: Mapping[str, Any]) -> str:
     if attempt is None or attempt == _pointer_attempt(record):
         return ""
     reservation = _attempt_reservation(run_id, attempt)
-    launcher = reservation.get("launcher_pid")
+    from reckon.crew.dispatch_launch import _reservation_launcher
+
+    launcher = _reservation_launcher(reservation).get("pid") if reservation else None
     host = str(reservation.get("launcher_host") or "").strip()
     supervisor = reservation.get("supervisor_pid") or current.get("pid")
     named = ""
