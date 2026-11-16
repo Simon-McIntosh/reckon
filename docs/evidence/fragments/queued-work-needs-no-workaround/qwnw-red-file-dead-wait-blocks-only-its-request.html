@@ -1,0 +1,146 @@
+<section id="qwnw-red-file-dead-wait-blocks-only-its-request-landing">
+  <h2>A test file red on the primary branch passes: the dead wait blocks only its request</h2>
+
+  <p><strong>What changed: nothing in product or tests.</strong> The file named by
+  this node passes in full at the worktree head, so there was nothing to repair.
+  Nothing to merge either: <code>origin/main</code> at <code>cb557f9711</code> is
+  already an ancestor of the worktree head
+  (<code>git merge-base --is-ancestor origin/main HEAD</code> returns 0, and
+  <code>git log HEAD..origin/main</code> is empty), so the head measured here is
+  the merged primary branch, three commits ahead of the revision this brief named
+  as its base.</p>
+
+  <p>The file's recorded red was real and reproduces exactly. An extraction of
+  <code>8d50b0333f</code> under the run's scratch directory, with the module
+  imported from that tree, reports the same five failing ids the suite log named,
+  in <code>5 failed in 2.88s</code>. Two fixes on the primary branch cleared
+  them, and both are recorded here because the node's measure is the file's
+  verdict rather than a change of its own:</p>
+
+  <table id="qwnw-red-file-dead-wait-blocks-only-its-request-causes">
+    <tr><th>failing id at <code>8d50b0333f</code></th><th>failure</th><th>verdict</th></tr>
+    <tr>
+      <td><code>test_foreign_broken_wait_does_not_refuse_own_ready_section</code></td>
+      <td><code>CrewError: node 'broken' is refused at queue time: no manifest path is named</code></td>
+      <td>product was wrong</td>
+    </tr>
+    <tr>
+      <td><code>test_own_missing_wait_still_refuses</code></td>
+      <td><code>CrewError: node 'broken' is refused at queue time: no manifest path is named</code></td>
+      <td>product was wrong</td>
+    </tr>
+    <tr>
+      <td><code>test_cycle_through_existing_requests_still_refuses</code></td>
+      <td><code>CrewError: node 'prior' is refused at queue time: no manifest path is named</code></td>
+      <td>product was wrong</td>
+    </tr>
+    <tr>
+      <td><code>test_blocked_request_does_not_bind_but_launched_run_does</code></td>
+      <td><code>json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)</code></td>
+      <td>test was wrong</td>
+    </tr>
+    <tr>
+      <td><code>test_queued_pointer_survives_refused_launch_and_own_launch_proceeds</code></td>
+      <td><code>Failed: DID NOT RAISE ScopeConflict</code></td>
+      <td>test was wrong</td>
+    </tr>
+  </table>
+
+  <p><strong>The product cause.</strong> A queued request was validated before it
+  was given its per-run manifest default, so every queued node without an
+  explicit manifest path was refused for want of one. Three of the five ids are
+  that refusal reached through the fixture's <code>_queue</code> helper, which
+  has nothing to do with waits. The repair assigns
+  <code>node.manifest_path</code> from the run directory before the node contract
+  is judged, in <code>reckon/crew/dispatching/requests.py</code>, giving a queued
+  request the same default direct and batch dispatch already had.
+  No assertion in this file was deleted or weakened to accommodate it — the
+  refusal tests still require <code>wait names missing request r-vanished</code> and
+  the cycle still requires <code>wait cycle.*r-cycle.*r-prior</code>.</p>
+
+  <p><strong>The test cause, and what rule it now asserts.</strong> Both remaining
+  ids encoded a rule the product no longer keeps, and both were realigned to the
+  rule it does keep.</p>
+
+  <p>The first read the dispatch answer through a fixture helper that parsed a
+  channel no longer carrying JSON, so it failed with a
+  <code>JSONDecodeError</code> before reaching its assertion. This file now reads
+  the dispatch's stdout document itself, and the case was renamed
+  <code>test_only_launched_unmergeable_paths_bind</code>.</p>
+
+  <p>The second required a <em>source</em> path to bind a second request against a
+  launched one. Source paths are mergeable, so a launched run sharing one no
+  longer refuses a peer; only unmergeable paths bind. The case now runs the
+  shared source path as its permissive arm and
+  <code>docs/figures/shared</code> as its binding arm, and its raised error is
+  matched on the holder's run id (<code>match="r-peer"</code>) rather than merely
+  on the exception type — narrower in the sense that it now fails if the refusal
+  comes from the wrong run.</p>
+
+  <h3 id="qwnw-red-file-dead-wait-blocks-only-its-request-measured">Measured</h3>
+
+  <table id="qwnw-red-file-dead-wait-anchor-measured-arms">
+    <tr><th>arm</th><th>revision</th><th>result</th><th>log</th></tr>
+    <tr>
+      <td>recorded red, the named file</td>
+      <td><code>8d50b0333f</code></td>
+      <td><code>5 failed in 2.88s</code>, <code>EXIT=1</code></td>
+      <td><code>logs/base-8d50b0333f-dead-wait.log</code></td>
+    </tr>
+    <tr>
+      <td>head, the named file, on <code>all_debug</code></td>
+      <td><code>0e0f25b0f9</code></td>
+      <td><code>6 passed in 4.23s</code>, <code>EXIT=0</code></td>
+      <td><code>logs/gate-head-all-debug.log</code></td>
+    </tr>
+    <tr>
+      <td>head, the named file, in the worktree</td>
+      <td><code>0e0f25b0f9</code></td>
+      <td><code>6 passed in 5.06s</code>, <code>EXIT=0</code></td>
+      <td><code>logs/head-dead-wait-initial.log</code></td>
+    </tr>
+    <tr>
+      <td>base, suite arm</td>
+      <td><code>0e0f25b0f941</code></td>
+      <td><code>58 passed in 37.79s</code>, <code>EXIT=0</code></td>
+      <td><code>logs/arm-base.log</code></td>
+    </tr>
+    <tr>
+      <td>head, suite arm</td>
+      <td>the run's head commit</td>
+      <td><code>58 passed</code>, <code>EXIT=0</code></td>
+      <td><code>logs/arm-after.log</code></td>
+    </tr>
+  </table>
+
+  <p>The head run of the named file was made as a job on <code>all_debug</code>
+  (job 1319564, node <code>98dci4-clu-3141</code>) with <code>SLURM_JOB_ID</code>
+  unset inside the job, and the run printed the module it imported as
+  <code>&lt;worktree&gt;/reckon/__init__.py</code> so the tree under test is not
+  guessed. It was repeated in the worktree with <code>SLURM_JOB_ID</code> unset
+  as well; both read <code>6 passed</code>. The six tests are every test the file
+  collects: the three wait-refusal cases, two parameterised arms of
+  <code>test_only_launched_unmergeable_paths_bind</code>, and the queued-pointer
+  case.</p>
+
+  <h3 id="qwnw-red-file-dead-wait-blocks-only-its-request-control">Negative control</h3>
+
+  <p>The recorded red run at <code>8d50b0333f</code>, in an extraction of that
+  revision importable on its own, is <code>5 failed</code>:</p>
+
+  <p><code>FAILED tests/test_dead_wait_blocks_only_its_request.py::test_foreign_broken_wait_does_not_refuse_own_ready_section</code><br>
+  <code>FAILED tests/test_dead_wait_blocks_only_its_request.py::test_own_missing_wait_still_refuses</code><br>
+  <code>FAILED tests/test_dead_wait_blocks_only_its_request.py::test_cycle_through_existing_requests_still_refuses</code><br>
+  <code>FAILED tests/test_dead_wait_blocks_only_its_request.py::test_blocked_request_does_not_bind_but_launched_run_does</code><br>
+  <code>FAILED tests/test_dead_wait_blocks_only_its_request.py::test_queued_pointer_survives_refused_launch_and_own_launch_proceeds</code><br>
+  <code>5 failed in 2.88s</code><br>
+  <code>EXIT=1</code></p>
+
+  <p>Those are the five ids <code>~/.cache/reckon-suite-at-head/suite-at-8d50b0333f.log</code>
+  listed, id for id, which is what makes the record a reproduction rather than a
+  retelling. No failing id is shared with the head run, whose six tests pass, so
+  the passing head run is not the red file read at a moment when it happens to be
+  green on a tree that changed only in ways this file does not observe: the
+  failing ids are gone, and the two that renamed are covered under their new
+  names as above.</p>
+</section>
