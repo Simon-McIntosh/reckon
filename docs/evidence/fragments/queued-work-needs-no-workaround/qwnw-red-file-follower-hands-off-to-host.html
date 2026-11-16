@@ -1,0 +1,9 @@
+<section id="qwnw-red-file-follower-hands-off-to-host-landing">
+<h3>A test file red on the primary branch passes</h3>
+<p><code>tests/test_follower_hands_off_to_host.py</code> reported five failing cases at base <code>0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc</code> and reports <code>8 passed</code> at head <code>2a37ab50d2cd686c18249c49111f928ec15fe0d8</code>, both as jobs on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset.</p>
+<p>Every cause was in the cases, none in the product, and the product tree carries no change. The cases armed a follower for a session name that was not the harness identity they exported, so the follow request was refused by the guard that names only the calling session's pair; their request assertions predated the <code>owner_checked</code> mark the line has carried since that guard landed; and the dispatch case expected delivery <code>host</code> without writing the census a host answers with. No assertion was deleted or weakened: the two-key request comparisons became three-key comparisons against one helper, and the handoff and delivery claims stand as they were.</p>
+</section>
+<section id="qwnw-red-file-follower-hands-off-to-host-record">
+<h3>Where the evidence is</h3>
+<p>Both arms, their revisions and their commands, the five base failing ids, each cause's verdict, and the probe that made each product rule fire are in <code>docs/evidence/fragments/queued-work-needs-no-workaround/red-file-follower-hands-off-to-host.html</code>. The logs are <code>logs/gate-head.log</code> and <code>logs/base-file-run.log</code> under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031916920770-qwnw-red-file-follower-hands-off-to-host/</code>.</p>
+</section>
