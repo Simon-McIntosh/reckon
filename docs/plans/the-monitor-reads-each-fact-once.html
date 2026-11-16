@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="366">
+<meta name="plan-version" content="367">
 <meta name="plan-modified" content="2026-11-16">
 </head>
 <body>
@@ -1509,7 +1509,10 @@ staged paths.</p>
     <div class="r-comment-body"><p>§68: a classification now reads only the stream lines appended since its last scan (the assistant record, the last tool call and the last record type held with their byte offsets per inode, and a replaced or truncated stream rescanned from its start), and the two per-tick pointer-field passes decode a stored document only when its definition moved; a second pass over 30 runs of 2,000 lines makes 0 decodes from recovery_wait where the same pass made 60,000 before, and a second tick over an unchanged store makes 0 decodes from station and station_store where it made 4.</p></div>
 </div>
 <div class="r-comment" data-section="s70" data-id="c-run-r-20261116T014724829563-review-of-an-ended-attempt-holds-nothing-27b44d36fe01" data-who="reckon-build" data-when="2026-11-16T01:55:54.196Z">
-    <div class="r-comment-body"><p>reviewed r-20261115T224054286669-an-ended-attempt-holds-nothing at 63181b9c75..27b44d36fe and stored a parsed record scoring goal_fidelity 18, evidence 16, scope_discipline 20, durability 16, fit 18, reuse 16, with three non-blocking findings; the repair&#x27;s promotion-refusal naming is asserted through the production wrapper and reddens when reverted.</p></div>
+    <div class="r-comment-body"><p>reviewed r-20261115T224054286669-an-ended-attempt-holds-nothing at 63181b9c75..27b44d36fe and stored a parsed record scoring goal_fidelity 18, evidence 16, scope_discipline 20, durability 16, fit 18, reuse 16, with three non-blocking findings; the repair's promotion-refusal naming is asserted through the production wrapper and reddens when reverted.</p></div>
+</div>
+<div class="r-comment" data-section="s70" data-id="c-run-r-20261115T224054286669-an-ended-attempt-holds-nothing" data-who="reckon-build" data-when="2026-11-15T23:03:04Z">
+    <div class="r-comment-body"><p>`_reserved_attempt_ended` reads `attempt-N-exit.json` from the run directory it is handed and `reserve_launch_attempt: the promotion wrapper raises nothing without it)`; at base the reader answered False for the same `run_directory / f&quot;attempt-{N}-exit.json&quot;`, and promotion keeps only an attempt it did not read.</p></div>
 </div>
 </section>
 </main>
