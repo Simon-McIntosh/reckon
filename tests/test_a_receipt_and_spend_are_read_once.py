@@ -251,22 +251,25 @@ class _Recorder:
         self._count(path)
         return self._scandir(path, *args, **kwargs)
 
-    def _iterdirs(self, directory: Path) -> Any:
-        self._count(directory)
-        return self._iterdir(directory)
+    def _path_wrappers(self) -> tuple[Any, Any]:
+        """Plain functions: a class attribute cannot be a bound method."""
+        recorder = self
 
-    def _globs(self, directory: Path, *args: Any, **kwargs: Any) -> Any:
-        self._count(directory)
-        return self._glob(directory, *args, **kwargs)
+        def iterdir(directory: Path) -> Any:
+            recorder._count(directory)
+            return recorder._iterdir(directory)
+
+        def glob(directory: Path, *args: Any, **kwargs: Any) -> Any:
+            recorder._count(directory)
+            return recorder._glob(directory, *args, **kwargs)
+
+        return iterdir, glob
 
     def __enter__(self) -> Self:
         json.loads = self._loads
         os.listdir = self._listdirs
         os.scandir = self._scanfiles
-        # A class attribute has to be a plain function: a bound method would
-        # take the recorder, not the path, as its first argument.
-        Path.iterdir = _Recorder._iterdirs
-        Path.glob = _Recorder._globs
+        Path.iterdir, Path.glob = self._path_wrappers()
         return self
 
     def __exit__(self, *exc_info: object) -> None:
