@@ -571,7 +571,7 @@ def run_streams(stream_path: str | Path) -> list[Path]:
         (
             stream.parent / name
             for name in names
-            if re.fullmatch(r"resume-\d+\.jsonl", name)
+            if name.startswith("resume-") and name.endswith(".jsonl")
         ),
         key=_resume_stream_order,
     )
@@ -579,7 +579,7 @@ def run_streams(stream_path: str | Path) -> list[Path]:
         (
             stream.parent / name
             for name in names
-            if re.fullmatch(r"lane-change-\d+\.jsonl", name)
+            if name.startswith("lane-change-") and name.endswith(".jsonl")
         ),
         key=_lane_change_order,
     )
