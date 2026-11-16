@@ -1,0 +1,78 @@
+<section id="one-limit-row-per-pane-s27-landing">
+  <h2>One limit reset draws one row per pane</h2>
+
+  <p><strong>What changed.</strong> A pane is served by more than one follower:
+  a session host runs one per project the session follows, a second follower
+  streams the same session read-only beside the one holding the registration,
+  and every one of them reads the station's rows. A limit reset is a row about
+  the account rather than about a run, so each follower drew it, and a session
+  read one announced reset as several rows.</p>
+
+  <p>The shared claim that exists to stop exactly this — one exclusive-create
+  file per pane, lift id and transition, so whichever follower reaches the row
+  first draws it — was wired into the producer-stream row path and not into the
+  station subscriber's path, which is the delivery path a follower takes
+  whenever the node runs a station. The claim was therefore absent precisely
+  where several followers meet.</p>
+
+  <p>The claim belongs to the pane rather than to whichever delivery path a
+  follower read through, so <code>ticker.PaneRowPath</code> now resolves the
+  pane's shared claim from its own session when it is handed none. A path that
+  names no session — the fleet-wide reader, and
+  <code>ticker.replay_row_policy</code> measuring a recorded stream — is still
+  handed none and draws on its own memory alone; the replay now passes a claim
+  that always permits, so today's claim directory can never subtract a row from
+  a recorded stream. A claim that cannot be written still leaves the row drawn
+  rather than dropped: <code>take_lift_claim</code> answers that, unchanged.</p>
+
+  <h3 id="one-limit-row-per-pane-s27-repro">Measured</h3>
+
+  <p>The reported shape was reproduced at the base revision
+  <code>8104a1af</code> before any change, with two station subscribers on one
+  session's pane and one announced reset written into the station:</p>
+
+  <pre><code>a rows: [('limit-reset', 'reset-claude-sub-20261115T183000Z')]
+b rows: [('limit-reset', 'reset-claude-sub-20261115T183000Z')]</code></pre>
+
+  <p>At the change's head the same shape draws one row between them, and the
+  new test file reports <code>4 passed</code> where it reports
+  <code>4 failed</code> at that revision. Removing the per-pane default — the
+  declared negative control — turns all four red again, the first reading
+  <code>one reset drew 3 rows</code>.</p>
+
+  <table id="one-limit-row-per-pane-s27-arms">
+    <caption>Suite arms, this node's write scope as the armed command resolves it</caption>
+    <thead>
+      <tr><th>arm</th><th>revision</th><th>command</th><th>result</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>base</td>
+        <td><code>8104a1af</code></td>
+        <td><code>pytest -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code></td>
+        <td>58 passed, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>after</td>
+        <td><code>5365077202</code></td>
+        <td><code>pytest -q tests/test_one_limit_reset_draws_one_row_per_pane.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code></td>
+        <td>62 passed, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>mutation</td>
+        <td><code>5365077202</code> + per-pane default removed</td>
+        <td><code>pytest -q tests/test_one_limit_reset_draws_one_row_per_pane.py</code></td>
+        <td>4 failed, <code>EXIT=1</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>For reference: <code>ticker</code>'s own suites, and the lift, reset,
+  pane and station tests around this one, run green at the head
+  (<code>65 passed</code> for the lift/reset/pane set). Two failures in
+  neighbouring files reproduce identically at the base revision and are not
+  this node's —
+  <code>tests/test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion</code> and
+  <code>tests/test_a_reflex_review_appears_as_working.py::test_a_sweep_review_reaches_its_session_on_the_next_publish</code> — recorded under
+  <code>outside_scope</code>.</p>
+</section>
