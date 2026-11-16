@@ -724,6 +724,35 @@ def _launch_claim_holder_is_alive(record: Mapping[str, Any]) -> bool:
     return started is not None and started <= launched.timestamp()
 
 
+def _spawn_evidence(record: Mapping[str, Any]) -> bool:
+    """Whether the launch left anything showing that a worker was started.
+
+    A pre-spawn phase is the launcher's label, and it stops describing a run the
+    moment the run's own records show a spawn: a pid, the supervisor's worker
+    record, a stream, the launch log a worker was started against, or the budget
+    an observer folded from that worker's stream. Any one of them is evidence
+    the run reached a worker, whose liveness and outputs the reading then has to
+    consult. A phase label left behind while the worker ran is a stale label,
+    not an unstarted request, so a reader asking whether a pointer is still
+    waiting to start asks this first.
+
+    This is the same evidence :func:`_stranded_launch` calls a launch somewhere
+    in flight, read on its own because the two questions are different: a launch
+    still composing and a launch whose worker has come and gone both carry it,
+    and only the age separates them.
+    """
+    if record.get("pid"):
+        return True
+    if isinstance(record.get("budget"), Mapping):
+        return True
+    if _worker_record(record) is not None:
+        return True
+    if _record_newest_stream(record) is not None:
+        return True
+    stderr_path = str(record.get("stderr_path") or "").strip()
+    return bool(stderr_path) and Path(stderr_path).exists()
+
+
 def _stranded_launch(record: Mapping[str, Any], *, now_seconds: float) -> bool:
     """Whether a launch that recorded nothing stopped happening past the bound.
 
@@ -744,14 +773,7 @@ def _stranded_launch(record: Mapping[str, Any], *, now_seconds: float) -> bool:
     """
     if str(record.get("phase") or "") not in _PRE_SPAWN_PHASES:
         return False
-    if record.get("pid"):
-        return False
-    if _worker_record(record) is not None:
-        return False
-    if _record_newest_stream(record) is not None:
-        return False
-    stderr_path = str(record.get("stderr_path") or "").strip()
-    if stderr_path and Path(stderr_path).exists():
+    if _spawn_evidence(record):
         return False
     age = _stranded_launch_age_seconds(record, now_seconds=now_seconds)
     if age is None:
