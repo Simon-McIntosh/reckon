@@ -1791,7 +1791,15 @@ def classify_pointer(
     # one that pays for recognising a dispatched review, so the pair starts
     # empty and every other row carries it empty.
     in_flight_review: tuple[str, str] = ("", "")
-    if manifest_status in TERMINAL_MANIFEST_STATUSES and not deferred_outcome:
+    # A manifest's terminal word is the run's outcome unless something on disk
+    # still contradicts it (a live process, a superseded body, or a completion
+    # whose process end cannot be proven). Named once because the pre-spawn
+    # reading below is bounded by it as well: a pointer whose phase was last
+    # written at launch must not outrank an outcome the worker wrote after.
+    terminal_verdict = (
+        manifest_status in TERMINAL_MANIFEST_STATUSES and not deferred_outcome
+    )
+    if terminal_verdict:
         terminal_seconds = manifest.stat().st_mtime
         terminal_at = (
             datetime.fromtimestamp(terminal_seconds, tz=UTC)
@@ -1826,9 +1834,14 @@ def classify_pointer(
 
     # A pre-spawn launch past its bound with its holder gone is not waiting to
     # start: the liveness arms read it as a failed launch, which the admission
-    # pass then releases or returns to the queue.
-    pre_spawn_waiting = phase in _PRE_SPAWN_PHASES and not _stranded_launch(
-        record, now_seconds=moment
+    # pass then releases or returns to the queue. A pointer whose phase was
+    # last written before its worker started must not overrule the outcome that
+    # worker wrote afterwards, so a terminal manifest's verdict ends this
+    # reading here as it ends the resumed-attempt deferral further below.
+    pre_spawn_waiting = (
+        phase in _PRE_SPAWN_PHASES
+        and not terminal_verdict
+        and not _stranded_launch(record, now_seconds=moment)
     )
     # A parked phase is the launcher's statement that the request is waiting to
     # start, and it means that only while the pointer records no worker: a pid
