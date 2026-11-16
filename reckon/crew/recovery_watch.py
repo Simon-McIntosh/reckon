@@ -2295,9 +2295,9 @@ def _fleet_counts(
         counts["reviewing"] = reviewing
     # A row's bucket is the word it is drawn with, read from the state this
     # module already decided, so the counters and the pane cannot disagree about
-    # a held run. A hold whose lifting move is the coordinator's is drawn
-    # "needs you" and counted there; one the queue or the clock lifts is drawn
-    # waiting and counted here.
+    # a held run. A hold whose lifting move is the coordinator's is drawn in the
+    # pane's help cell and counted there; one the queue or the clock lifts is
+    # drawn waiting and counted here.
     waiting = sum(
         1
         for state, bucket in zip(states, buckets, strict=True)
