@@ -237,20 +237,22 @@ def derive_within_budget(
 
 
 # The duty kinds listed but never holding a stop open. A queued review's work
-# is already owned by a reflex that retries, a queued run waits on the lane's
-# own admission pass, a stalled run is one that pass could launch and did not,
-# an unreadable record is a reading of a file caught mid-write rather than a
-# duty the coordinator can act on, an index that stages a path HEAD still
-# holds belongs to the project rather than to any run's work, and a repair
-# round is a worker the reflex resumed and will re-fire when the round ends, and
-# a route the picker defaulted is a notice about a run that is working rather
-# than a debt, so blocking would ask a coordinator to act on a condition no run
-# of this session created.
+# is already owned by a reflex that retries, a review in flight is that same
+# reflex's reviewer running and named by the row's own text as a thing to read
+# rather than to shorten, a queued run waits on the lane's own admission pass, a
+# stalled run is one that pass could launch and did not, an unreadable record is
+# a reading of a file caught mid-write rather than a duty the coordinator can
+# act on, an index that stages a path HEAD still holds belongs to the project
+# rather than to any run's work, a repair round is a worker the reflex resumed
+# and will re-fire when the round ends, and a route the picker defaulted is a
+# notice about a run that is working rather than a debt, so blocking would ask a
+# coordinator to act on a condition no run of this session created.
 # Mirrors the derivation's own vocabulary, which cannot be imported here on the
 # paths that read a fresh snapshot.
 _NON_BLOCKING_KINDS = frozenset(
     {
         "review-queued",
+        "review-in-flight",
         "run-queued",
         "run-stalled",
         "unreadable-review-record",
@@ -1112,10 +1114,7 @@ def _pointer_owes_its_session(document: Mapping[str, Any]) -> bool:
     """
     if document.get("promoted_revision"):
         return False
-    if (
-        str(document.get("phase") or "") == "complete"
-        and document.get("manifest_path")
-    ):
+    if str(document.get("phase") or "") == "complete" and document.get("manifest_path"):
         return True
     return any(
         isinstance(entry, Mapping)

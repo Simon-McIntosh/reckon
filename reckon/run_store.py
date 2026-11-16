@@ -265,6 +265,7 @@ def _record_rows(
     project: str | None = None,
     run_ids: Iterable[str] | None = None,
     plan: str | None = None,
+    node: str | None = None,
     fields: tuple[str, ...] | None = None,
     activity_since: float | None = None,
 ) -> Iterator[tuple[Any, ...]]:
@@ -332,6 +333,11 @@ def _record_rows(
             if batch is not None:
                 clauses.append(f"r.run_id IN ({','.join('?' for _ in batch)})")
                 params.extend(batch)
+            if node:
+                # The node column is indexed, so one node's rows are found
+                # without visiting any other row's payload.
+                clauses.append("r.node = ?")
+                params.append(node)
             if plan:
                 # Resolve the same narrow record through the ledger's owner;
                 # the store query must not invent a separate fallback order.
@@ -545,6 +551,7 @@ def stored_run_rows(
     path: str | Path | None = None,
     run_ids: Iterable[str] | None = None,
     plan: str | None = None,
+    node: str | None = None,
     fields: tuple[str, ...] | None = None,
     activity_since: float | None = None,
 ) -> list[dict[str, Any]] | None:
@@ -571,6 +578,7 @@ def stored_run_rows(
             project=project,
             run_ids=run_ids,
             plan=plan,
+            node=node,
             fields=fields,
             activity_since=activity_since,
         ):

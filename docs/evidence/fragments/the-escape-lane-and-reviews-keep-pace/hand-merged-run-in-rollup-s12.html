@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-escape-lane-and-reviews-keep-pace">
+  <meta name="plan-evidence-for" content="reckon:the-escape-lane-and-reviews-keep-pace">
+  <meta name="plan-verifies" content="reckon:the-escape-lane-and-reviews-keep-pace#s12">
+  <meta name="plan-recorded-at" content="2026-11-16">
+  <meta name="plan-verdict" content="passed">
+  <title>A hand-merged run is counted in the suite rollup | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="hand-merged-run-in-rollup-s12-landing" data-node="hand-merged-run-in-rollup-s12" data-reckon="landed" data-when="2026-11-16">
+  <h2>A hand-merged run is counted in the suite rollup and stamped by the shared formatter</h2>
+  <p id="hand-merged-run-in-rollup-s12-why">The hand-merge recording writes a suite delta of status <code>not-run</code>, because the branch already carries the reviewed head and there is no pair of arms left to compare. The ledger rollup tallied only <code>clean</code>, <code>refused</code>, <code>waived</code> and <code>unchanged</code>, so that row dropped out of the summary silently. The gate declaration was stamped by a second ISO-Z formatter, <code>_utc_now_text</code> in <code>reckon/crew_run_commands.py</code>, restating <code>run_paths._utc_now</code>.</p>
+  <p id="hand-merged-run-in-rollup-s12-what">The rollup counts every recorded suite-delta outcome, <code>not-run</code> included, under its own key. The declaration verb now stamps through <code>run_paths._utc_now</code> and <code>_utc_now_text</code> is removed, so a recorded instant and a pointer stamp are the same text for the same instant.</p>
+  <p id="hand-merged-run-in-rollup-s12-measure">Measured in a scratch tree at base <code>d14fff0713</code> with the new test copied in: the new file reads <code>2 failed</code> — <code>KeyError: 'not-run'</code> for the rollup case and the pointer stamp reading the second formatter's instant. The same file passes at the node's head. The gate arm and the importer sweep figures are recorded on the node's manifest.</p>
+</article>
+</body>
+</html>

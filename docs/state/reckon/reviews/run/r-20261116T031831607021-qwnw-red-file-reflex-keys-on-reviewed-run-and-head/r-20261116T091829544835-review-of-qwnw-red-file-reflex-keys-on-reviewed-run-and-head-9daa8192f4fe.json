@@ -1,0 +1,75 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "ee93819a0dfd283816a577795513c00bca2b8e19",
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:1440 dispatch_awaiting_reviews",
+    "reckon/crew/recovery_classification.py:1246 classify_pointer",
+    "reckon/crew/recovery_review_dispatch.py:1284 review_head_move",
+    "reckon/crew/recovery_review_dispatch.py:1551 carry_review_forward",
+    "reckon/clones.py:650 own_changed_paths"
+  ],
+  "completed_at": "2026-11-16T09:19:24.543Z",
+  "dispatched_at": "2026-11-16T09:19:03Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031831607021-qwnw-red-file-reflex-keys-on-reviewed-run-and-head/sibling-arm-head.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the sibling arm exists only at revision a80f82bc (the file's first line) and reports 7 failed / EXIT=1 for the head alone, so the manifest's \"7 failed at base and 7 failed at head\" and the fragment's \"seven sibling cases at base\" are asserted with no base log behind them; the claim is in fact safe because the diff touches neither sibling test file nor any product module, but the run did not measure the half it reports."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031831607021-qwnw-red-file-reflex-keys-on-reviewed-run-and-head/gate-head.log",
+      "line": "6",
+      "severity": "non-blocking",
+      "text": "non-blocking: the header labelled \"partition\" is written from SLURM_JOB_NAME (gate-head.sh), so it reads \"job reflex-gate-head\" and never records all_debug; the done_when's \"as a job on all_debug\" is only established by sacct -j 1319548 (Partition all_debug, COMPLETED 0:0), which the log itself does not name."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031831607021-qwnw-red-file-reflex-keys-on-reviewed-run-and-head/base-suite.log",
+      "line": "2",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base arm's scratch tree is /tmp/reckon-crew-scratch/... rather than a path under $TMPDIR, which the dispatch's parallel-safety rule forbids for a temporary tree; the measurement is unaffected but the tree outlives the run's scratch instead of dying with it."
+    }
+  ],
+  "head_log_revision": "9daa8192f4feb09a2326c48dea32ab3a292584aa",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the change is a test fixture and reaches no production path; the production code the reviewed file drives, and which I checked the fixture claims against, is dispatch_awaiting_reviews, classify_pointer, review_head_move, carry_review_forward and own_changed_paths.",
+    "diff": "read both commits against ee93819a0d: a80f82bc540657535e39550896dcb362b45201f9 adds tests/test_reflex_keys_on_reviewed_run_and_head.py:80-84 (update-ref refs/remotes/origin/main to HEAD with a four-line reason) and changes the seeded pointer phase at :206 from \"starting\" to \"running\"; 9daa8192f4feb09a2326c48dea32ab3a292584aa adds the 107-line evidence fragment; no product module is touched and no assertion is added, changed or deleted.",
+    "done_when": "the done_when at prompt.txt:57-70 asks for the file green at head as an all_debug job with SLURM_JOB_ID unset after merging current origin/main, no assertion deleted, a sibling arm adding no failure, and a red base arm; gate-head.log records 5 passed EXIT=0 at 9daa8192f4, gate-head.sh unsets SLURM_JOB_ID, sacct shows job 1319548 Partition all_debug COMPLETED 0:0, origin/main (cb557f9711) is an ancestor of the base ee93819a0d, base-suite.log records 5 failed EXIT=1, and the diff deletes no assertion \u2014 but the sibling arm's base half rests on no base log.",
+    "goal": "prompt.txt:38 states the goal as making tests/test_reflex_keys_on_reviewed_run_and_head.py pass in full on the primary branch; the head arm at 9daa8192f4 reports 5 passed in gate-head.log, and the diff only repairs fixture seeding, which is what the goal's file needed.",
+    "manifest": "read the run's manifest.md (status complete, commits a80f82bc540657535e39550896dcb362b45201f9 and 9daa8192f4feb09a2326c48dea32ab3a292584aa, changed_paths matching the diff, tests the single-file pytest command, test_logs naming base-suite.log/gate-head.log/sibling-arm-head.log), plus baseline_suite (ee93819a0d, exit 1, completed true, 5 failure ids) and after_suite (9daa8192f4, exit 0, completed true, 0 failures); both suite arms in the manifest match the logs on disk.",
+    "write_paths": "the fence at prompt.txt:84-89 grants tests/ and docs/evidence/fragments/queued-work-needs-no-workaround; git diff --stat ee93819a0d..9daa8192f4 lists exactly one file under tests/ and one fragment under that directory, and no path outside the fence."
+  },
+  "justifications": {
+    "durability": "reinstating the regression is what base-suite.log measures: the unmodified fixture at ee93819a0d reddens all five cases (base-suite.log:9, \"5 failed in 1.16s\", EXIT=1), so the guarded behaviour regressing is shown to fail the tests rather than inferred.",
+    "evidence": "gate-head.log:1 names revision 9daa8192f4 and ends EXIT=0, base-suite.log:1 names ee93819a0d and ends EXIT=1 with the five ids the head arm passes, so the gate measures the done_when's file-passing measure; the partition and job success were confirmed only through sacct -j 1319548 because the log's own partition line records the job name instead.",
+    "fit": "the added lines at tests/test_reflex_keys_on_reviewed_run_and_head.py:80-84 use the file's own _git helper in the same form as the seed commits above them, and \"running\" at :206 is a launched phase, disjoint from _PRE_SPAWN_PHASES at reckon/crew/recovery_liveness.py:57.",
+    "goal_fidelity": "tests/test_reflex_keys_on_reviewed_run_and_head.py passes 5 of 5 at the reviewed head (gate-head.log:12 \"5 passed in 4.84s\", EXIT=0), which is the whole of the goal stated at prompt.txt:38.",
+    "reuse": "the seeding call copies the idiom five sibling fixtures already use (tests/test_a_resumed_head_is_reviewed.py:116, tests/test_a_reuse_review_reads_what_changed.py:211, tests/test_a_review_row_knows_the_producer_is_down.py:62, tests/test_figure_review.py:89, tests/test_a_figure_review_node_names_its_reviewed_run.py:203), and tests/conftest.py holds no shared git-ref fixture for it to extend.",
+    "scope_discipline": "git diff --stat ee93819a0d..9daa8192f4 lists only tests/test_reflex_keys_on_reviewed_run_and_head.py (10 lines) and the evidence fragment, both inside the fence at prompt.txt:84-89."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read prompt.txt:38, which states the goal as making tests/test_reflex_keys_on_reviewed_run_and_head.py pass in full on the primary branch; the head arm reports 5 passed at 9daa8192f4 (gate-head.log:12), and the diff's only content is the fixture seeding that file needed.\nVERDICT done_when: read prompt.txt:57-70; gate-head.log:1 names revision 9daa8192f4 and ends EXIT=0 with \"5 passed in 4.84s\", gate-head.sh unsets SLURM_JOB_ID, sacct -j 1319548 shows Partition all_debug COMPLETED 0:0, base-suite.log:9 records \"5 failed in 1.16s\" EXIT=1 at ee93819a0d, and origin/main (cb557f9711) is an ancestor of the base \u2014 but the sibling arm's \"adds no failure against the base\" rests on a single head log at a80f82bc.\nVERDICT write_paths: read the fence at prompt.txt:84-89 (tests/, docs/evidence/fragments/queued-work-needs-no-workaround, and its figures directory); git diff --stat ee93819a0d..9daa8192f4 lists only tests/test_reflex_keys_on_reviewed_run_and_head.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-reflex-keys-on-reviewed-run-and-head.html, both inside it.\nVERDICT manifest: read the run's manifest.md \u2014 status complete, commits a80f82bc and 9daa8192, changed_paths matching the diff, tests the literal single-file pytest command, test_logs naming base-suite.log/gate-head.log/sibling-arm-head.log, baseline_suite {ee93819a0d, exit 1, completed true, 5 ids} and after_suite {9daa8192f4, exit 0, completed true, 0 ids}, both matching the logs on disk.\nVERDICT diff: read both commits against ee93819a0d \u2014 a80f82bc adds tests/test_reflex_keys_on_reviewed_run_and_head.py:80-84 seeding refs/remotes/origin/main and moves the seeded pointer's phase at :206 from \"starting\" to \"running\", 9daa8192f4 adds the 107-line evidence fragment; no product module and no assertion is touched.\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:1440 dispatch_awaiting_reviews, reckon/crew/recovery_classification.py:1246 classify_pointer, reckon/crew/recovery_review_dispatch.py:1284 review_head_move, reckon/crew/recovery_review_dispatch.py:1551 carry_review_forward, reckon/clones.py:650 own_changed_paths\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_reflex_keys_on_reviewed_run_and_head.py passes 5 of 5 at the reviewed head (gate-head.log:12), which is the whole of the goal at prompt.txt:38.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-head.log:1 names 9daa8192f4 and ends EXIT=0 while base-suite.log:1 names ee93819a0d and ends EXIT=1, but the sibling arm's base half is unlogged and the log's partition line records SLURM_JOB_NAME rather than the partition.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat ee93819a0d..9daa8192f4 lists only the one test file and its evidence fragment, both inside the fence at prompt.txt:84-89.\nSCORE durability: 19\nJUSTIFICATION durability: base-suite.log records the unmodified fixture at ee93819a0d failing all five cases at EXIT=1, so reinstating the regression is measured to redden the tests rather than inferred.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_reflex_keys_on_reviewed_run_and_head.py:80-84 uses the file's own _git helper as the seed commits above it do, and \"running\" at :206 is a launched phase disjoint from _PRE_SPAWN_PHASES at reckon/crew/recovery_liveness.py:57.\nSCORE reuse: 20\nJUSTIFICATION reuse: the seeding idiom matches five sibling fixtures (tests/test_a_resumed_head_is_reviewed.py:116 among them) and tests/conftest.py holds no shared git-ref fixture to extend.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031831607021-qwnw-red-file-reflex-keys-on-reviewed-run-and-head/sibling-arm-head.log:1 non-blocking: only a head arm at a80f82bc exists, so the manifest's and fragment's \"seven sibling cases at base\" are asserted with no base log, though the diff cannot reach those files.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031831607021-qwnw-red-file-reflex-keys-on-reviewed-run-and-head/gate-head.log:6 non-blocking: the partition header is written from SLURM_JOB_NAME and reads \"job reflex-gate-head\", so all_debug is established only by sacct -j 1319548 and not by the log the manifest cites.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031831607021-qwnw-red-file-reflex-keys-on-reviewed-run-and-head/base-suite.log:2 non-blocking: the base arm's scratch tree sits under a bare /tmp path rather than $TMPDIR, against the dispatch's temporary-tree rule, though the measurement itself is sound.",
+  "review_run_id": "r-20261116T091829544835-review-of-qwnw-red-file-reflex-keys-on-reviewed-run-and-head-9daa8192f4fe",
+  "reviewed_base_sha": "ee93819a0dfd283816a577795513c00bca2b8e19",
+  "reviewed_head_sha": "9daa8192f4feb09a2326c48dea32ab3a292584aa",
+  "reviewed_run_id": "r-20261116T031831607021-qwnw-red-file-reflex-keys-on-reviewed-run-and-head",
+  "reviewer": {
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T091829544835-review-of-qwnw-red-file-reflex-keys-on-reviewed-run-and-head-9daa8192f4fe"
+  },
+  "reviewer_run_id": "r-20261116T091829544835-review-of-qwnw-red-file-reflex-keys-on-reviewed-run-and-head-9daa8192f4fe",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T13:09:56.232893+00:00",
+  "total": 114
+}

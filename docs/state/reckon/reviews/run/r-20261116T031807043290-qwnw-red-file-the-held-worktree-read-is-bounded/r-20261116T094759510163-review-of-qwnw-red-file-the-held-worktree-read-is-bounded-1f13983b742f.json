@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own arms: logs/arm-base-git.log at ee93819a0d lists 137 FAILED ids and logs/arm-head.log at 4f04392824 lists 123, with 14 cleared and no head id absent from the base set, so the count is a measured 0 rather than an unmeasured one.",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1715",
+    "reckon/crew/promotion_release.py:665",
+    "reckon/ledger.py:2678",
+    "reckon/ledger.py:4158",
+    "scripts/derive_run_figures.py:82",
+    "scripts/backfill_run_durations.py:239",
+    "reckon/run_store.py:1528"
+  ],
+  "completed_at": "2026-11-16T10:00:51.484Z",
+  "dispatched_at": "2026-11-16T10:00:23Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-held-worktree-read-is-bounded.html",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "non-blocking: the sentence \"A row amended in its file was therefore read as the later record still names no tree\" has lost the clause that says what was read, so the cause the fragment records is ungrammatical and a reader has to reconstruct which copy the derivation answered from."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read commit by commit against ee93819a0d; 4f04392824 adds ledger._sync_amended_run and its call from write_run_file plus run_store.sync and the whole-row comparison in RunStore.sync_run, 07b1830741 adds the evidence fragment and 1f13983b74 fills its two arm figures, and the only test edit is the fixture's one added empty commit fixture commit in tests/test_the_held_worktree_read_is_bounded.py:73.",
+    "done_when": "the done_when asks for the file green at head, a verdict per cause, no added arm failure, a logged base negative control and clean ruff on the changed paths; the manifest and logs/gate-head.log, logs/red-base-node.log, logs/arm-base-git.log and logs/arm-head.log record each, and I re-derived 0 added ids from those two arm logs.",
+    "goal": "the node's goal is that tests/test_the_held_worktree_read_is_bounded.py pass in full, and at 1f13983b74 it passes 6 passed EXIT=0 as logs/gate-head.log records for the gate command named in the manifest's tests line.",
+    "manifest": "read; it records status complete, commits 4f04392824 07b1830741 1f13983b74, the gate command with 6 passed at 137 vs 123 arm failures, and baseline_suite/after_suite JSON whose 137 and 123 ids I matched field for field against logs/arm-base-git.log and logs/arm-head.log.",
+    "write_paths": "the declared write paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the diff touches reckon/ledger.py, reckon/run_store.py, tests/test_the_held_worktree_read_is_bounded.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-held-worktree-read-is-bounded.html, all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_the_held_worktree_read_is_bounded.py:417 fails when reckon/ledger.py:952's sync call is removed (logs/head-1.log, 1 failed) and again when run_store.py:876 compares payload only (logs/head-2.log, 1 failed), though both red runs are uncommitted working-tree mutations rather than a stored red gate.",
+    "evidence": "logs/arm-base-git.log reports 137 failed and logs/arm-head.log 123 failed at 4f04392824, so the 0 added ids are measured, while no log records the all_debug job form the done_when also asked for.",
+    "fit": "reckon/run_store.py:1417 mirrors the module-level reckon/run_store.py:1399 append seam and reckon/ledger.py:961 follows the ledger's existing private-helper docstring style, and ruff check and ruff format --check pass on all three changed Python paths.",
+    "goal_fidelity": "reckon/run_store.py:1417 and reckon/ledger.py:952 supply the two repairs the four base failures named, and logs/gate-head.log records the file at 6 passed over revision 1f13983b74.",
+    "reuse": "reckon/run_store.py:1417 wraps RunStore.sync_run and the existing stored_run_rows probe and _retrying rather than re-implementing them, and reckon/ledger.py:961 routes the amendment through the store's one comparison owner.",
+    "scope_discipline": "all four paths named in git diff --stat ee93819a0d 1f13983b74 lie inside the declared write paths reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_the_held_worktree_read_is_bounded.py pass in full, and at 1f13983b74 it passes 6 passed EXIT=0 as logs/gate-head.log records for the gate command named in the manifest's tests line.\nVERDICT done_when: the done_when asks for the file green at head, a verdict per cause, no added arm failure, a logged base negative control and clean ruff on the changed paths; the manifest and logs/gate-head.log, logs/red-base-node.log, logs/arm-base-git.log and logs/arm-head.log record each, and I re-derived 0 added ids from those two arm logs.\nVERDICT write_paths: the declared write paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the diff touches reckon/ledger.py, reckon/run_store.py, tests/test_the_held_worktree_read_is_bounded.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-held-worktree-read-is-bounded.html, all inside them.\nVERDICT manifest: read; it records status complete, commits 4f04392824 07b1830741 1f13983b74, the gate command with 6 passed at 137 vs 123 arm failures, and baseline_suite/after_suite JSON whose 137 and 123 ids I matched field for field against logs/arm-base-git.log and logs/arm-head.log.\nVERDICT diff: read commit by commit against ee93819a0d; 4f04392824 adds ledger._sync_amended_run and its call from write_run_file plus run_store.sync and the whole-row comparison in RunStore.sync_run, 07b1830741 adds the evidence fragment and 1f13983b74 fills its two arm figures, and the only test edit is the fixture's one added empty commit fixture commit in tests/test_the_held_worktree_read_is_bounded.py:73.\nCALL_SITES: reckon/crew_run_commands.py:1715, reckon/crew/promotion_release.py:665, reckon/ledger.py:2678, reckon/ledger.py:4158, scripts/derive_run_figures.py:82, scripts/backfill_run_durations.py:239, reckon/run_store.py:1528\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/run_store.py:1417 and reckon/ledger.py:952 supply the two repairs the four base failures named, and logs/gate-head.log records the file at 6 passed over revision 1f13983b74.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/arm-base-git.log reports 137 failed and logs/arm-head.log 123 failed at 4f04392824, so the 0 added ids are measured, while no log records the all_debug job form the done_when also asked for.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all four paths named in git diff --stat ee93819a0d 1f13983b74 lie inside the declared write paths reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_the_held_worktree_read_is_bounded.py:417 fails when reckon/ledger.py:952's sync call is removed (logs/head-1.log, 1 failed) and again when run_store.py:876 compares payload only (logs/head-2.log, 1 failed), though both red runs are uncommitted working-tree mutations rather than a stored red gate.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/run_store.py:1417 mirrors the module-level reckon/run_store.py:1399 append seam and reckon/ledger.py:961 follows the ledger's existing private-helper docstring style, and ruff check and ruff format --check pass on all three changed Python paths.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/run_store.py:1417 wraps RunStore.sync_run and the existing stored_run_rows probe and _retrying rather than re-implementing them, and reckon/ledger.py:961 routes the amendment through the store's one comparison owner.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-held-worktree-read-is-bounded.html:11 non-blocking: the sentence \"A row amended in its file was therefore read as the later record still names no tree\" has lost the clause that says what was read, so the cause the fragment records is ungrammatical and a reader has to reconstruct which copy the derivation answered from.\n",
+  "review_run_id": "r-20261116T094759510163-review-of-qwnw-red-file-the-held-worktree-read-is-bounded-1f13983b742f",
+  "reviewed_base_sha": "ee93819a0dfd283816a577795513c00bca2b8e19",
+  "reviewed_head_sha": "1f13983b742f2d49bb83d1b5497f623477d6660e",
+  "reviewed_run_id": "r-20261116T031807043290-qwnw-red-file-the-held-worktree-read-is-bounded",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T12:23:55.045363+00:00",
+  "total": 110
+}
