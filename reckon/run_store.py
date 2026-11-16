@@ -219,6 +219,51 @@ def store_path() -> Path:
     return _store._config_home() / "crew" / "run_store.db"
 
 
+#: The database header's length up to and including SQLite's file change
+#: counter (four bytes at offset 24), which every transaction that writes the
+#: file bumps. Read rather than queried, because ``PRAGMA data_version`` counts
+#: changes for one connection and a reader that opens its own connection has no
+#: answer to compare with the last read.
+_STAMPED_HEADER_BYTES = 28
+
+
+def store_stamp(path: str | Path | None = None) -> tuple[int, ...] | None:
+    """A token that moves whenever the store's contents may have changed.
+
+    A reader that keeps an answer derived from the store holds this token
+    beside it and reads the store again only when the token is not the one it
+    was built from. Two markers rather than one, because each alone leaves a
+    hole: a commit that writes into a freed page can land inside the
+    filesystem's timestamp tick with the file's size unchanged, and an inserted
+    row is that case: the header's counter moves where the stat does not. A
+    store replaced wholesale moves the stat even when the replacement's counter
+    starts where the old one left off.
+
+    ``None`` means the store is absent, so a caller caches nothing and reads
+    uncached — an absent store's answer is not a store's answer.
+    """
+    target = store_path() if path is None else Path(path)
+    try:
+        info = target.stat()
+        with target.open("rb") as handle:
+            header = handle.read(_STAMPED_HEADER_BYTES)
+    except OSError:
+        return None
+    counter = (
+        int.from_bytes(header[24:28], "big")
+        if len(header) == _STAMPED_HEADER_BYTES
+        else -1
+    )
+    return (
+        info.st_dev,
+        info.st_ino,
+        info.st_size,
+        info.st_mtime_ns,
+        info.st_ctime_ns,
+        counter,
+    )
+
+
 def enable_incremental_vacuum(path: str | Path | None = None) -> dict[str, Any]:
     """Prepare an existing store during a separate, one-time maintenance job.
 
