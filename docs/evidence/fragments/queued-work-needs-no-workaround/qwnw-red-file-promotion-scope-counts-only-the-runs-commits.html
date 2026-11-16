@@ -69,8 +69,23 @@
   <p id="qwnw-red-file-promotion-scope-negative-control"><strong>Negative control.</strong>
   The base arm above is the control: the same three ids fail at
   <code>5c4ff3492998</code> and none of them fails at the head. Its log is
-  <code>gate-base.log</code> beside this record, and the head arm reads
-  <strong>11 passed</strong>, exit 0, from <code>gate-head.log</code>.</p>
+  <code>gate-base.log</code> in this run's directory, and the head arm reads
+  <strong>11 passed</strong>, exit 0, from <code>gate-head.log</code> there.</p>
+
+  <p id="qwnw-red-file-promotion-scope-wide"><strong>The files that import what changed.</strong>
+  Both arms also run the forty test files that import
+  <code>reckon/crew/promotion_scope.py</code> or
+  <code>reckon/crew/promotion_evidence.py</code>, resolved to the same list in
+  both trees. The base arm reads <strong>17 failed, 357 passed</strong> and the
+  head arm <strong>15 failed, 359 passed</strong>, both exit 1: every id the
+  head fails, the base fails too, so the arm adds no failure, and the two the
+  head no longer fails are
+  <code>test_crew_promotion_scope.py::test_main_checkout_write_is_refused_and_pointer_is_retained</code>
+  and
+  <code>test_crew_promotion_scope.py::test_peer_worktree_write_is_refused_and_pointer_is_retained</code>
+  — the same cause read by two more files.
+  Logs are <code>wide-base.log</code> and <code>wide-head.log</code> in the
+  run directory.</p>
 
   <p id="qwnw-red-file-promotion-scope-reach"><strong>What the same defect reached.</strong>
   The exempt-everything reading was not private to this file: the same
