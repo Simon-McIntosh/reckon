@@ -348,18 +348,39 @@ def test_a_done_when_with_no_observable_fails_demonstrable() -> None:
     assert "demonstrable" in verdict.failed_properties
 
 
-def test_a_missing_write_scope_is_refused() -> None:
+def test_a_missing_write_scope_owes_its_negative_control_from_the_done_when() -> None:
+    """A node's worktree is its scope, so an empty write-path list is allowed.
+
+    The contract accepts a node that predicts no fence; what such a node still
+    owes is the negative control its done-when's test file names, because it has
+    no declared test file of its own to read the mutation from.
+    """
     verdict = crew.validate_node(_node(write_paths=[]), budget_ceiling="25m")
-    assert "scoped" in verdict.failed_properties
+    assert "scoped" not in verdict.failed_properties
+    assert "negative_control" in verdict.failed_properties
+
+    declared = crew.validate_node(
+        _node(
+            write_paths=[],
+            negative_control="none: the node writes no file at all",
+        ),
+        budget_ceiling="25m",
+    )
+    assert declared.ok, declared.findings
 
 
-def test_two_concurrent_nodes_may_not_share_a_file() -> None:
+def test_two_concurrent_nodes_may_share_a_source_file() -> None:
+    """Source declarations meet at git merge, so a shared file is no conflict.
+
+    Peer declarations are information: only a path a textual merge cannot
+    combine is fenced, so two nodes naming one source file are both admissible.
+    """
     verdict = crew.validate_node(
         _node(peer_scopes={"node-b": ["reckon/_backends.py", "reckon/cli.py"]}),
         budget_ceiling="25m",
     )
-    detail = next(f["detail"] for f in verdict.findings if f["property"] == "scoped")
-    assert "node-b" in detail and "reckon/_backends.py" in detail
+    assert verdict.ok, verdict.findings
+    assert [f for f in verdict.findings if f["property"] == "scoped"] == []
 
 
 def test_an_unlocked_decision_means_the_node_is_not_closed() -> None:
@@ -375,10 +396,12 @@ def test_an_unlocked_decision_means_the_node_is_not_closed() -> None:
     assert verdict.ok
 
 
-def test_a_budget_over_the_fence_must_be_split_not_overrun() -> None:
-    verdict = crew.validate_node(_node(time_budget="90m"), budget_ceiling="25m")
-    detail = next(f["detail"] for f in verdict.findings if f["property"] == "bounded")
-    assert "split the work" in detail
+def test_a_budget_over_the_fence_is_recorded_on_the_node() -> None:
+    """The resolved fence sizes the work rather than refusing dispatch."""
+    node = _node(time_budget="90m")
+    verdict = crew.validate_node(node, budget_ceiling="25m")
+    assert "bounded" not in verdict.failed_properties
+    assert node.over_fence_note == "budget 90m exceeds the resolved fence 25m"
 
 
 def test_a_malformed_budget_names_the_accepted_form() -> None:
@@ -422,9 +445,15 @@ def test_every_failure_is_reported_in_one_pass() -> None:
         "single-goal",
         "fully-specified",
         "demonstrable",
-        "scoped",
         "bounded",
+        "independently-verifiable",
+        "spec-level",
     } <= set(verdict.failed_properties)
+    # An empty write-path list is the run's own worktree, so no scope finding
+    # is owed: the eight properties report six failures here, one per fault the
+    # node carries and nothing more.
+    assert "scoped" not in verdict.failed_properties
+    assert "closed" not in verdict.failed_properties
 
 
 def test_the_contract_has_exactly_eight_properties() -> None:
@@ -657,7 +686,7 @@ def test_dry_run_payload_reports_the_resolved_write_paths(
         ],
     )
 
-    payload = json.loads(result.output)
+    payload = json.loads(result.stdout)
     assert result.exit_code == 0
     # The declared paths stand, and the node's own landing fragment — its
     # evidence anchor and figure topic, both keyed by the node id — is reported
@@ -709,7 +738,7 @@ def test_dispatch_cli_accepts_and_persists_a_wave(home, repo, monkeypatch) -> No
             "--no-watch",
         ],
     )
-    payload = json.loads(result.output)
+    payload = json.loads(result.stdout)
 
     assert result.exit_code == 0
     assert payload["wave"] == "wave-a"
@@ -750,7 +779,7 @@ def test_dispatch_cli_opens_a_wave_without_a_flag(home, repo, monkeypatch) -> No
             "--no-watch",
         ],
     )
-    payload = json.loads(result.output)
+    payload = json.loads(result.stdout)
 
     assert result.exit_code == 0
     assert payload["wave"]
@@ -896,7 +925,7 @@ def test_local_dry_run_selects_the_declared_backend(home, repo, monkeypatch) -> 
         ],
     )
 
-    payload = json.loads(result.output)
+    payload = json.loads(result.stdout)
     assert result.exit_code == 0
     assert payload["backend"] == "native"
     assert payload["local"] is True
@@ -938,7 +967,7 @@ def test_local_dry_run_refuses_an_unset_key(home, repo, monkeypatch) -> None:
         ],
     )
 
-    payload = json.loads(result.output)
+    payload = json.loads(result.stdout)
     assert result.exit_code == 1
     assert payload["error"] == "request-error"
     assert "local_backend" in payload["detail"]
@@ -986,7 +1015,7 @@ def test_local_dispatch_marks_the_live_pointer(home, repo, monkeypatch) -> None:
         ],
     )
 
-    payload = json.loads(result.output)
+    payload = json.loads(result.stdout)
     pointer = crew.read_pointer(payload["run_id"])
     assert result.exit_code == 0
     assert payload["backend"] == "native"
@@ -1194,7 +1223,7 @@ def test_cli_watch_exposes_the_explicit_empty_fleet_exit(home) -> None:
         ["crew", "watch", "--project", "proj", "--exit-on-empty"],
     )
 
-    payload = json.loads(result.output)
+    payload = json.loads(result.stdout)
     assert result.exit_code == 0
     assert payload["event"] == "empty"
     assert payload["classification"] == "no_live_pointers"
@@ -1504,13 +1533,20 @@ def test_write_path_outside_repository_and_delivery_directories_is_refused(
 @pytest.mark.parametrize(
     ("claimed_path", "candidate_path"),
     [
-        ("reckon", "reckon/crew.py"),
-        ("reckon/crew.py", "reckon"),
+        ("docs/state", "docs/state/generated.json"),
+        ("docs/state/generated.json", "docs/state"),
     ],
 )
 def test_dispatch_refuses_live_scope_containment_before_worktree_creation(
     home, repo, claimed_path, candidate_path
 ) -> None:
+    """A claim fences only a class a merge cannot reconcile.
+
+    Two source scopes meet at git merge in isolated worktrees, so a containment
+    between them is admitted; a generated-state directory and the file under it
+    have no merge to meet at, so a live owner of either refuses the other before
+    any worktree exists.
+    """
     owner = _write_running_pointer(
         home,
         "r-scope-owner",
@@ -1521,7 +1557,10 @@ def test_dispatch_refuses_live_scope_containment_before_worktree_creation(
 
     with pytest.raises(crew.ScopeConflict) as excinfo:
         crew.dispatch(
-            node=_node(write_paths=[candidate_path]),
+            node=_node(
+                write_paths=[candidate_path],
+                negative_control="none: the dispatch is refused before any check runs",
+            ),
             project="proj",
             repo=repo,
             config=CONFIG,
@@ -1774,7 +1813,7 @@ def test_cli_dispatch_reports_a_live_scope_conflict_on_its_own_exit_code(
         ],
     )
 
-    payload = json.loads(result.output)
+    payload = json.loads(result.stdout)
     assert result.exit_code == 7
     assert payload == {
         "ok": False,
@@ -2039,7 +2078,7 @@ def test_no_watch_dispatch_records_the_override_on_pointer_and_ledger(
     )
 
     assert result.exit_code == 0
-    record = json.loads(result.output)
+    record = json.loads(result.stdout)
     waiver = record["watch_override"]
     assert waiver["requested"] is True
     assert waiver["arming_line"] == "reckon crew watch --project proj"
@@ -2108,7 +2147,7 @@ def test_cli_dispatch_arms_a_missing_watcher(home, repo, monkeypatch) -> None:
             ],
         )
 
-    payload = json.loads(result.output)
+    payload = json.loads(result.stdout)
     assert result.exit_code == 0
     assert payload["watch"]["watcher_live"] is True
     assert payload["watch"]["session_attached"] is True
@@ -2235,7 +2274,7 @@ def test_cli_dispatch_records_unreconciled_runs_on_its_run(
         ],
     )
 
-    payload = json.loads(result.output)
+    payload = json.loads(result.stdout)
     assert result.exit_code == 0, payload
     recorded = runs.read_pointer(payload["run_id"])
     backlog = runs.dispatch_field(recorded, "unreconciled_override")
@@ -2487,7 +2526,7 @@ def test_cli_plan_visibility_refusal_has_its_own_exit_code(
         ],
     )
 
-    payload = json.loads(result.output)
+    payload = json.loads(result.stdout)
     assert result.exit_code == 4
     assert payload["error"] == "plan-unavailable"
     assert "docs/plans/plan-a.html" in payload["detail"]
@@ -2932,6 +2971,31 @@ def _set_pointer_pid(run_id: str, pid: int) -> None:
     crew._write_json(crew.pointer_path(run_id), pointer)
 
 
+def _record_attempt_worker(record: dict, pid: int) -> None:
+    """Write the current attempt's own worker record, as a supervisor does.
+
+    A run whose attempt has recorded no worker of its own is read as starting
+    until its launch bound expires, because the pid its pointer carries may
+    belong to the attempt that attempt replaced. A case studying a worker that
+    has ended therefore records the worker it ended, stamped with the attempt
+    the pointer names.
+    """
+    directory = crew.run_dir(record["run_id"])
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / recovery.WORKER_RECORD_NAME).write_text(
+        json.dumps(
+            {
+                "run_id": record["run_id"],
+                "attempt": int(record.get("attempt") or 1),
+                "pid": pid,
+                "pid_start_time": recovery._process_start_time(pid),
+                "backend": str((record.get("agent") or {}).get("backend") or "alpha"),
+                "argv": ["--test"],
+            }
+        )
+    )
+
+
 def test_dispatch_snapshots_suite_arming_command(home, repo) -> None:
     armed_config = {**CONFIG, "gates": {"suite_command": "pytest -q"}}
 
@@ -3268,6 +3332,10 @@ def test_live_view_rechecks_a_killed_worker_without_observation(home, repo) -> N
     pointer = crew.read_pointer(record["run_id"])
     pointer["process_alive"] = True
     crew._write_json(crew.pointer_path(record["run_id"]), pointer)
+    # The attempt's own worker record is the evidence a supervisor leaves, and
+    # the deferral that reads a run without one as starting would otherwise
+    # hide the death this case is about.
+    _record_attempt_worker(record, record["pid"])
     process = spawned["process"]
     process.terminate()
     process.wait(timeout=5)
@@ -3534,6 +3602,9 @@ def test_terminal_phase_without_a_manifest_is_abandoned(home, repo) -> None:
     # no process table holds. A stored terminal phase on its own is the last
     # writer's label, and a live worker must never be read as abandoned.
     _set_pointer_pid(record["run_id"], 999999999)
+    # The attempt's own worker record is what says which process the run's
+    # attempt spawned; without it the attempt reads as still starting.
+    _record_attempt_worker(record, 999999999)
     observed = crew.observe(record["run_id"])
 
     row = crew.classify_pointer(observed)
@@ -3635,7 +3706,7 @@ def test_a_complete_manifest_emits_an_authorised_review_dispatch(
     )
 
     assert result.exit_code == 0, result.output
-    assert json.loads(result.output)["ok"] is True
+    assert json.loads(result.stdout)["ok"] is True
 
 
 def test_crew_read_and_recovery_command_share_classification(home, repo) -> None:
@@ -3668,6 +3739,7 @@ def test_no_reader_promotes_a_run_without_commit_or_manifest(home, repo) -> None
     # Abandonment is only read once the process table has proved the worker
     # gone; a pid no table holds is that proof, and a live run stays running.
     _set_pointer_pid(record["run_id"], 999999999)
+    _record_attempt_worker(record, 999999999)
     observed = crew.observe(record["run_id"])
     observed["commits"] = []
     crew._write_json(crew.pointer_path(record["run_id"]), observed)
@@ -3846,6 +3918,10 @@ def test_resumed_attempt_owns_its_stream_phase_and_manifest(home, repo) -> None:
     assert resumed["attempt_kind"] == "resume"
     assert resumed["log_path"] == str(resumed_stream)
     assert resumed["phase"] == "working"
+    # The resumed attempt's supervisor records the worker it spawned; until it
+    # does, the attempt reads as starting rather than as the end its
+    # predecessor recorded.
+    _record_attempt_worker(resumed, os.getpid())
     observed = crew.observe(record["run_id"])
     assert observed["phase"] == "working"
     assert observed["process_alive"] is True
@@ -3857,9 +3933,10 @@ def test_resumed_attempt_owns_its_stream_phase_and_manifest(home, repo) -> None:
     def deliver_current_manifest(_seconds: float) -> None:
         nonlocal sleeps
         sleeps += 1
+        # The report this attempt delivers is dated by its own write, later
+        # than the attempt's start, so the classifier reads it as this
+        # attempt's rather than as the predecessor's still on disk.
         _deliver_manifest(resumed, "complete", commits="HEAD")
-        fresh = manifest_baseline + 1_000_000
-        os.utime(manifest, ns=(fresh, fresh))
 
     event = crew.watch(
         "proj",
@@ -3916,7 +3993,7 @@ def test_cli_resume_resolves_the_run_projects_budget_policy(
         cli_module.main,
         ["crew", "resume", "--run", record["run_id"], "--advice", "continue"],
     )
-    payload = json.loads(result.output)
+    payload = json.loads(result.stdout)
 
     assert result.exit_code == 3
     assert resolved_calls == [("proj", str(repo), ())]
@@ -4280,17 +4357,23 @@ def test_a_root_commit_records_an_explicit_absence_rather_than_a_count(
 def test_promotion_refuses_a_commit_touching_a_path_outside_the_declared_scope(
     home, repo
 ) -> None:
-    """Exclusive scope is the fence that lets peers run concurrently.
+    """An unmergeable class is the fence that lets peers run concurrently.
 
-    A promotion that accepts a commit reaching past it records the breach as
-    ordinary progress, and the next dispatch derives its peer scopes from a
-    ledger that already disagrees with what the worker did.
+    A declared write path is a hint for source, which meets at git merge, so a
+    companion source file lands without an acceptance. A path whose class no
+    merge can reconcile — here generated state — still needs one, because a
+    promotion that accepts it records the breach as ordinary progress and the
+    next dispatch derives its peer scopes from a ledger that already disagrees
+    with what the worker did.
     """
     record = _dispatched(home, repo)
     tree = Path(record["worktree"])
-    (tree / "unclaimed.txt").write_text("reached past the fence\n")
+    (tree / "docs" / "state").mkdir(parents=True)
+    (tree / "docs" / "state" / "unclaimed.json").write_text(
+        '{"reached": "reached past the fence"}\n'
+    )
     for args in (
-        ["add", "unclaimed.txt"],
+        ["add", "docs/state/unclaimed.json"],
         ["commit", "-q", "-m", "chore: write outside the declared scope"],
     ):
         subprocess.run(["git", *args], cwd=tree, check=True, capture_output=True)
@@ -4317,8 +4400,8 @@ status: complete
 commits: 1a2b3c4
 changed_paths: reckon/_backends.py
 tests: uv run pytest tests/test_backends.py -q -> 28 passed
-test_logs: /tmp/backends.log
-baseline_suite: {"revision":"base123","command":"uv run pytest","exit_status":1,"log_path":"/tmp/baseline.log","log_digest":"","completed":true,"failure_count":2,"failure_ids":["tests/test_a.py::test_a","tests/test_b.py::test_b"]}
+test_logs: backends.log
+baseline_suite: {"revision":"base123","command":"uv run pytest","exit_status":1,"log_path":"baseline.log","log_digest":"","completed":true,"failure_count":2,"failure_ids":["tests/test_a.py::test_a","tests/test_b.py::test_b"]}
 after_suite: {"revision":"after456","command":"uv run pytest","exit_status":1,"log_path":"","log_digest":"sha256:abc","completed":true,"failure_count":2,"failure_ids":["tests/test_a.py::test_a","tests/test_b.py::test_b"]}
 artifacts: none
 evidence_inputs: 28 new tests, all four fixtures parsed
@@ -4327,8 +4410,29 @@ blockers: none
 """
 
 
+def _manifest() -> str:
+    """The clean manifest, with the logs it cites written beside it.
+
+    The audit requires every log a delivered manifest cites to resolve to a
+    readable file inside the run directory, and a test log to carry both its
+    command and its own exit status. The manifest's log names are therefore
+    relative to itself, and this writer lays those files down in the node
+    manifest's own directory, which is the run directory the audit reads.
+    """
+    directory = Path(_node_manifest_path()).parent
+    (directory / "backends.log").write_text(
+        "# command: uv run pytest tests/test_backends.py -q\n"
+        "28 passed in 1.20s\n"
+        "EXIT=0\n"
+    )
+    (directory / "baseline.log").write_text(
+        "# revision: base123\n# command: uv run pytest\n2 failed\nEXIT=1\n"
+    )
+    return MANIFEST
+
+
 def test_a_manifest_parses_into_structured_fields() -> None:
-    manifest = crew.parse_manifest(MANIFEST)
+    manifest = crew.parse_manifest(_manifest())
     assert manifest["status"] == "complete"
     assert manifest["commits"] == ["1a2b3c4"]
     assert manifest["changed_paths"] == ["reckon/_backends.py"]
@@ -4349,7 +4453,7 @@ def test_a_manifest_parses_into_structured_fields() -> None:
 
 
 def test_an_audited_manifest_catches_out_of_scope_changes() -> None:
-    text = MANIFEST.replace(
+    text = _manifest().replace(
         "changed_paths: reckon/_backends.py",
         "changed_paths: reckon/_backends.py, reckon/cli.py",
     )
@@ -4359,19 +4463,19 @@ def test_an_audited_manifest_catches_out_of_scope_changes() -> None:
 
 
 def test_a_complete_manifest_without_a_commit_is_incomplete() -> None:
-    text = MANIFEST.replace("commits: 1a2b3c4", "commits: none")
+    text = _manifest().replace("commits: 1a2b3c4", "commits: none")
     audit = crew.audit_manifest(text, _node())
     assert any("no commit" in finding for finding in audit["findings"])
 
 
 def test_a_clean_manifest_audits_clean() -> None:
-    assert crew.audit_manifest(MANIFEST, _node())["ok"] is True
+    assert crew.audit_manifest(_manifest(), _node())["ok"] is True
 
 
 @pytest.mark.parametrize("missing", ["baseline_suite", "after_suite"])
 def test_an_armed_manifest_names_a_missing_suite_observation(missing) -> None:
     text = "\n".join(
-        line for line in MANIFEST.splitlines() if not line.startswith(f"{missing}:")
+        line for line in _manifest().splitlines() if not line.startswith(f"{missing}:")
     )
 
     audit = crew.audit_manifest(text, _node(), suite_armed=True)
@@ -4383,7 +4487,7 @@ def test_an_armed_manifest_names_a_missing_suite_observation(missing) -> None:
 def test_an_unarmed_manifest_accepts_absent_suite_observations() -> None:
     text = "\n".join(
         line
-        for line in MANIFEST.splitlines()
+        for line in _manifest().splitlines()
         if not line.startswith(("baseline_suite:", "after_suite:"))
     )
 
@@ -4391,7 +4495,7 @@ def test_an_unarmed_manifest_accepts_absent_suite_observations() -> None:
 
 
 def test_an_unfinished_suite_is_absent_evidence_not_an_empty_failure_set() -> None:
-    text = MANIFEST.replace(
+    text = _manifest().replace(
         '"completed":true,"failure_count":2,"failure_ids":["tests/test_a.py::test_a","tests/test_b.py::test_b"]',
         '"completed":false,"failure_count":0,"failure_ids":[]',
         1,
@@ -4441,14 +4545,14 @@ def test_a_manifest_carrying_an_escape_hatch_reports_it() -> None:
 
 
 def test_a_manifest_without_one_reports_no_escape_hatch() -> None:
-    assert crew.parse_manifest(MANIFEST)["needs_help"] is None
+    assert crew.parse_manifest(_manifest())["needs_help"] is None
 
 
 # ── Continuation, worker altitude ───────────────────────────────────────────
 
 
 def test_a_manifest_with_no_outside_scope_produces_no_entries() -> None:
-    text = MANIFEST.replace(
+    text = _manifest().replace(
         "outside_scope: the observe command needs a --wait flag, the fixture README needs a diagram",
         "outside_scope: none",
     )
