@@ -634,3 +634,46 @@ def test_a_host_that_cannot_name_its_session_keeps_only_marked_children(
         assert len(set(host.child_pids())) == 3, host.child_pids()
     finally:
         host.stop()
+
+
+def test_a_session_another_live_host_serves_is_not_followed_here(
+    tmp_path: Path, home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A session whose own host lives is that host's, however the request came.
+
+    A marked request for another session, the shape a hand-off once wrote to the
+    caller's host, starts nothing here when that session's own Claude process
+    runs a live host. The host's own session in the same breath is followed:
+    the positive control for the reader.
+    """
+    sessions = tmp_path / "harness-sessions"
+    sessions.mkdir()
+    other_owner = Stub()
+    foreign_host = Stub()
+    (sessions / f"{other_owner.pid}.json").write_text(
+        json.dumps({"pid": other_owner.pid, "sessionId": FOREIGN_SESSION}),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("RECKON_HARNESS_SESSIONS_DIR", str(sessions))
+    host = Host(tmp_path)
+    host.start()
+    try:
+        host.write_host_record(
+            foreign_host.pid, _start_time(foreign_host.pid), other_owner
+        )
+        host.request("alpha", FOREIGN_SESSION, owner_checked=True)
+        host.request("beta", CURRENT_SESSION, owner_checked=True)
+        _wait_for(
+            lambda: len(host.child_pids()) == 1,
+            timeout=START_BOUND,
+            description="the host's child for its own session",
+        )
+        time.sleep(1.0)
+        children = host.record()["children"]
+        assert [(entry["project"], entry["session"]) for entry in children] == [
+            ("beta", CURRENT_SESSION)
+        ], children
+    finally:
+        host.stop()
+        other_owner.end()
+        foreign_host.end()

@@ -1,0 +1,90 @@
+{
+  "added_assertions": [
+    {
+      "fails_when": "a receipt naming another run with this attempt's number is accepted as this attempt's ending, which is what the predecessor reader at dispatch_launch.py:4804 did; logs/negative-control-reuse.log shows it reddening alone on that reversion.",
+      "file": "tests/test_a_resumed_repair_is_not_killed_as_terminal.py",
+      "line": "479"
+    },
+    {
+      "fails_when": "the strict reading becomes over-strict and returns no receipt for a file naming this run, so the attempt stops reading as terminal.",
+      "file": "tests/test_a_resumed_repair_is_not_killed_as_terminal.py",
+      "line": "485"
+    }
+  ],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "18d133b40e54057955fee45c889cde9371c8e068",
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:4961 _reap_worker_on_its_terminal_manifest -> _terminal_attempt_phase",
+    "reckon/crew/dispatch_launch.py:4970 _reap_worker_on_its_terminal_manifest -> _reopen_a_live_attempt_phase",
+    "reckon/crew/dispatch_launch.py:5239 _reap_the_launched_worker -> _terminal_attempt_phase",
+    "reckon/crew/dispatch_launch.py:5255 _reap_the_launched_worker -> _reap_worker_on_its_terminal_manifest",
+    "reckon/crew/dispatch_launch.py:5404 _run_supervisor -> _reap_worker_on_its_terminal_manifest",
+    "reckon/crew/dispatch_launch.py:5417 _run_supervisor -> _reap_the_launched_worker"
+  ],
+  "completed_at": "2026-11-15T22:49:21.469Z",
+  "dispatched_at": "2026-11-15T22:48:35Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "4784",
+      "severity": "non-blocking",
+      "text": "non-blocking: at the reviewed head this signature sits on one 91-character line and tests/test_a_resumed_repair_is_not_killed_as_terminal.py:483 on another, so ruff format --check over the two paths this change stages reports a reformat at 712eeeff0d; the wrap lands in 7bf83023df, one commit past the reviewed head, so the reviewed state still adds a format finding."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182457561866-resumed-repair-not-killed-s15/manifest.md",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "non-blocking: after_suite names revision 7bf83023dfc7ffc06cd904fb8bdf9c8d6912b96e, one commit past reviewed_head_sha 712eeeff0d; the reviewed head's own arm survives only in logs/after-suite.ordered.log, so a promotion comparing the declared revision against the reviewed head sees a mismatch."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182457561866-resumed-repair-not-killed-s15/manifest.md",
+      "line": "26",
+      "severity": "non-blocking",
+      "text": "non-blocking: the artifacts line says logs/neighbours-at-base.log's two failing ids are 'the same two ids the head reports', but no head-side run of the importing population is recorded; the done_when's importing-test clause is asserted rather than measured, and the gate arm covers three files."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "4806",
+      "severity": "non-blocking",
+      "text": "non-blocking: the enumeration of an attempt's two receipts (attempt-<n>-exit.json then exit.json) restates the same pair read under the same strict reading at reckon/crew/dispatch_sessions.py:2267-2275, so the guard and crew stop remain two copies of one capability with no shared owner."
+    }
+  ],
+  "head_log_revision": "712eeeff0dc900f00f48add21eb7c27aed4641e0",
+  "independent_assertions": "both added assertions compare the guard's returned phase against a literal empty string or the word complete, while the receipt payload they write carries RUN_ID or the literal r-someone-else; neither side is a value the code under test handed back.",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read both gained commits: aec698944b moves both receipt reads onto recovery_liveness._run_exit_record under require_run_id and deletes _DELIVERED_RUN_PHASES in favour of _WORKER_DONE_MANIFEST_STATUSES; 712eeeff0d adds the run-id row and the corrected counts to the evidence fragment.",
+    "done_when": "docs/plans/the-monitor-tells-the-truth-under-load.html:158 asks for new tests failing at base, a resumed repair reading as working, no signal, and no added failures among the tests importing dispatch_launch or resumption; logs/new-test-at-base.log:296 and logs/after-suite.ordered.log measure the first two, the importing-population clause is unmeasured at the head.",
+    "goal": "the section's goal is that a resumed repair is never killed as a terminal run; the gained commits keep the receipt gate at reckon/crew/dispatch_launch.py:4832 and change only how its receipt is read at :4804-4815.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182457561866-resumed-repair-not-killed-s15/manifest.md; baseline_suite 58 passed EXIT=0 at 18d133b4 and after_suite 63 passed EXIT=0, both completed with zero failures, but the after arm it names is 7bf83023df, one commit past the reviewed head.",
+    "write_paths": "the source manifest fences dispatch_launch.py, resumption.py, the new test, the evidence fragment and a figure directory; git diff --stat f57ec4874b..712eeeff0d changes exactly dispatch_launch.py, the test and the fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_a_resumed_repair_is_not_killed_as_terminal.py:479 compares the guard's answer against a literal run id the test supplied, and logs/negative-control-reuse.log reddens it alone when the reader commit is reverted.",
+    "evidence": "logs/after-suite.ordered.log records 63 passed EXIT=0 at 712eeeff0d and logs/new-test-at-base.log:296 records the new case failing on base bytes, but the done_when's importing-test population has no head-side log.",
+    "fit": "the function-local import at reckon/crew/dispatch_launch.py:4800 matches the module's own idiom at :2639 and :2617, but the signature line at :4784 is left at 91 characters, which the format obligation reports as a newly added finding.",
+    "goal_fidelity": "reckon/crew/dispatch_launch.py:4832 still gates a delivered phase word on the attempt's own receipt, and the gained reader at :4804 answers strictly by run id, so a resumed repair cannot inherit an earlier attempt's word.",
+    "reuse": "reckon/crew/dispatch_launch.py:4807 calls recovery_liveness._run_exit_record at recovery_liveness.py:1534 instead of reading the payload by hand, though the two-receipt enumeration at :4806 restates dispatch_sessions.py:2267.",
+    "scope_discipline": "git diff --stat f57ec4874b..712eeeff0d lists only reckon/crew/dispatch_launch.py, tests/test_a_resumed_repair_is_not_killed_as_terminal.py and the evidence fragment, all inside the source manifest's fence."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261115T223718181597-review-of-resumed-repair-not-killed-s15-712eeeff0dc9",
+  "reviewed_base_sha": "f57ec4874b64547998a11d6ef123d5ed0985475d",
+  "reviewed_head_sha": "712eeeff0dc900f00f48add21eb7c27aed4641e0",
+  "reviewed_run_id": "r-20261115T182457561866-resumed-repair-not-killed-s15",
+  "reviewer_run_id": "r-20261115T223718181597-review-of-resumed-repair-not-killed-s15-712eeeff0dc9",
+  "revision_note": "the earlier review at 935cedad04f033cbaa3662cafaa507652a5fc2e9 is not an ancestor of the reviewed head (the commit was rewritten as aec698944b), so this review takes the last reviewed commit that is an ancestor, f57ec4874b64547998a11d6ef123d5ed0985475d, and covers the two commits gained since it.",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 15,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T23:07:02.304930+00:00",
+  "total": 105
+}

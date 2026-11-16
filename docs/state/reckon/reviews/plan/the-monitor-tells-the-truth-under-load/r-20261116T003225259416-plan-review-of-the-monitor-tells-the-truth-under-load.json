@@ -1,0 +1,105 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-16T00:43:04.169Z",
+  "dispatched_at": "2026-11-16T00:36:49Z",
+  "findings": [
+    {
+      "anchor": "plan.html:218",
+      "id": "wiring-1",
+      "reason": "the chain is the only instruction a coordinator follows, so those four sections need to be named in it or removed from the declarations.",
+      "text": "the open followup `f-mttu-002` carries \"Land \u00a73, \u00a75, \u00a76, \u00a77, \u00a79, \u00a710, \u00a714 to \u00a717, \u00a719 and \u00a721\" while `plan-section-declarations` at plan.html:23 declares s22, s23, s24 and s25 implementable by this same revision, so a coordinator resolving the chain as its title instructs leaves four declared sections unbuilt and the plan reads complete with them unstarted",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:208",
+      "id": "done_when-1",
+      "reason": "a fail-first gate that includes a clause which is green at base cannot be met as written, so the worker either writes a test that passes at base or reports the gate unmet; s24 and s25 each need their preservation clauses moved out of the quantifier.",
+      "text": "s24 plan.html:203 and s25 plan.html:208 both open \"New tests, each failing at the base revision\" and then state preservation clauses that already hold: a row a coordinator can act on already blocks a stop (`_blocking` returns True for every kind outside `_NON_BLOCKING_KINDS`, reckon/hooks/coordinator_obligations.py:250-260 and :820), a stale beat with no running tick already draws a loss (`tests/test_a_slow_tick_is_not_a_lost_producer.py:240`), and the slow tick already draws its one row (`tests/test_a_slow_tick_is_not_a_lost_producer.py:163,271`)",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:200",
+      "id": "single_goal-1",
+      "reason": "split into two sections, or the limit-row clause moves to a section that owns the watch's row identity.",
+      "text": "s24 delivers two independent mechanisms: the stop hook ceasing to block on a review-in-flight row (a few lines, `_NON_BLOCKING_KINDS`) and one limit row per pane whatever number of followers serve it (a dedupe across followers, a second mechanism with its own cause). The section's one heading and one gate cannot close on both, so a repair round that fixes the stop hook and leaves duplicate limit rows reports one verdict for two deliverables",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:208",
+      "id": "done_when-2",
+      "reason": "the section must state the clause that is actually red at base (the store cannot answer, so `read_station_tick()` returns None and the export's age decides) or its fail-first gate measures nothing.",
+      "text": "every clause of s25 is green at base: `ProducerSnapshotNotices.poll` returns `_alive_tick_rows(tick)` whenever the station's own reading is not stale, so the loss path is not reached and no re-arm is offered (reckon/crew/watch_unit.py:996-1008), a slow tick draws its single row and a recovery row, which existing cases in `tests/test_a_slow_tick_is_not_a_lost_producer.py` already assert (`tests/test_a_slow_tick_is_not_a_lost_producer.py:163`, :190 and :271), and a stale beat with no tick still draws a loss (:240)",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:207",
+      "id": "reasoning-1",
+      "reason": "the root cause fixes which red log the section asks for; as written the node measures behaviour already in the tree and never touches the path that drew the reported row.",
+      "text": "s25's Why says \"The pane judged the snapshot's age, while the hook judged the station's own heartbeat and tick\", but the pane already reads the station's own beat and tick, reads a slow tick as slow, and only reaches the snapshot-age sentence when `read_station_tick()` answers nothing (absent, unreadable or beatless store \u2014 `read_station_tick` returns None on each of those, reckon/crew/obligation_snapshot.py:519-552) or when the station store is not the source \u2014 a worker sent to make the pane \"read the station as alive but slow\" finds that already implemented and has no stated endpoint for the fallback that produced the reported line",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:193",
+      "id": "done_when-3",
+      "reason": "the preservation clause has to leave the quantifier, as s19's did, or s22's gate cannot be met as written.",
+      "text": "s22 states \"A worker that delivers a blocked manifest is still drawn help\" inside \"New tests, each failing at the base revision\", but the blocked-manifest sentence is composed at base (`detail = f\"the worker manifest reports blocked: {reason_text}\"`, reckon/crew/recovery_classification.py:2100-2110), so that criterion can never be red",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "0794d00e972fe3d8e250415ca6d5e93734150e98",
+  "plan_fingerprint": "58f3329f36c0ccd7ecdf9aededc3c6138234321a94ab947cbc8322a02590cab3",
+  "plan_slug": "the-monitor-tells-the-truth-under-load",
+  "plan_version": 54,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261116T003225259416-plan-review-of-the-monitor-tells-the-truth-under-load",
+  "reviewed_blob_sha": "7133a9a550a4def66ee41cef0fd48b96e3a1c28c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited record `/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T171429412588-sdbc-family-sentences/attempt-2-exit.json` exists and carries `forced_exit {phase: complete, reason: terminal-run, signalled_at: 2026-11-15T22:53:36Z}`; `reckon/crew/ticker.py`, `reckon/crew/recovery_classification.py`, `reckon/crew/obligations.py`, `reckon/hooks/coordinator_obligations.py` and `reckon.crew.watch_unit` (`reckon/crew/watch_unit.py`) all resolve.",
+    "done_when": "a finding \u2014 s24 at plan.html:203 carries a preservation clause (\"A row a coordinator can act on still blocks\") inside \"New tests, each failing at the base revision\", and s25 at plan.html:208 quantifies the same phrase over three criteria that are already green at base.",
+    "evidence_paths": "pass \u2014 the sections name no scratchpad; gate logs land in the run's own crew run directory, which is what all four sections' \"on all_debug\" arms need in order to be re-read (`test_logs` in the manifest).",
+    "naming": "pass \u2014 the new sections name no plan label, section number, ticket or version tag in a symbol; the section numbers appear only in declarations.",
+    "reasoning": "a finding \u2014 s25's Why at plan.html:207 names a cause its own base does not have: the pane already reads the station's own beat and tick before judging the snapshot's age.",
+    "single_goal": "a finding \u2014 s24 at plan.html:200 carries two deliverables: the stop hook's treatment of a review-in-flight row, and one limit row per pane.",
+    "wiring": "a finding \u2014 the open followup `f-mttu-002` at plan.html:218 names \u00a73, \u00a75\u2013\u00a77, \u00a79, \u00a710, \u00a714\u2013\u00a717, \u00a719 and \u00a721, while `plan-section-declarations` at plan.html:23 also declares s22, s23, s24 and s25 implementable and the followup's prompt names only one section."
+  },
+  "section_digests": {
+    "_document": "1145e717474d8fe902cef67b9c7b3fa5d52e124fa0b806edcde983d1c915857f",
+    "s1": "7df70e005850ec7773b3db8cdf1384c5422e6cbfac994a1cfc3bdeca2fd47ef2",
+    "s10": "b83b287b25ce35ab03c105da8c02eec999809dbdea6073436eae2dc72bb0055d",
+    "s11": "db2972ed7155bc484ac98ce58f8c119ab201e99f5a53c1af54606eb6564a66e4",
+    "s12": "93d79e3e452ecd1f5c10186fc7eb1781f5e7455324237438f574fbc699447b31",
+    "s13": "79271d44153e341633146df7233120d46939c41b1ca66de6bac074c2472ea991",
+    "s14": "c0f58bcc6da33e5ff402ec71bef199b31de1619824a04f6db8d415d9669a38d7",
+    "s15": "3d6257718e450fda1363e42a9394f2cb631579e92f2cf0dbdaca2f25c62d6537",
+    "s16": "9c67ebb9a89d3b566da303e2866877a636f868c501bf32f08ff80e2c7a7f26da",
+    "s17": "229d1aee2b054a2680acdd7883f3d6cd8216513f31305ff21ed874c51b1af3a7",
+    "s18": "4a5429fac53529c64918e90d1bc4d47480e08689bea9601336332ce330c82e49",
+    "s19": "1f9e10fa3b0ee55a46bc415cf145a732b0361a363b70930a33a7c5ccbe2189ca",
+    "s2": "a065d657377c24ca69329c265d4a0a821a0104c7df8d1140dec9c3b9d1c6edf2",
+    "s20": "2a22cb56cd43d1c837c31506853a47a9de4ea2b23c97d583934c0f47da03fad0",
+    "s21": "b07e6731435129f50c6cb46f57c3e1172601f799b7c52c4f55ea6d99f25bf88f",
+    "s22": "45e18de36e5fd44b3f9ce333ba84c31670b863849d6556c002171e60cc447105",
+    "s23": "ee414aaed9e9f5dcdb9da2c749629c72b5012385aab644da5c10a79231bd3157",
+    "s24": "faac5526525b2512a67fa4ba5050ebf3fbb4b7c64b8718517653cce6fdf995dc",
+    "s25": "0422f6e0f1554f20c90935f51a0b108509eef475f22aca1b46eddd6cef667b29",
+    "s3": "f3cf9279ee0efc6c6e7b55dede5b9ff68ee3db1e40edd78b825098ecee64d396",
+    "s4": "739bbbd316f3b5138d938c01abaac59b3f08e1231effa6dc1e416fb46b9b34b1",
+    "s5": "2806db9da94cd21c23ef92806d85a99f15d28df20b272f97173d332fba5a1587",
+    "s6": "a8a7d00ef50ab0ca240bc59bb917ff62442d6f3567da095cb913cd5860246056",
+    "s7": "9f299f30b0fda7b1f5bbc9f6d7cf6b936604181068a2c9a8363b64e58ace0fd6",
+    "s8": "30f0e740e2caee5b735cc3bdc83d5eaa23eac7eeaae780899f811d7a1c32956c",
+    "s9": "56c122a4d4057a2e12e9ebbaae0a53fb955938f47dbe9275cdf2dd5566896f78"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T01:06:02.119155+00:00",
+  "total": null
+}

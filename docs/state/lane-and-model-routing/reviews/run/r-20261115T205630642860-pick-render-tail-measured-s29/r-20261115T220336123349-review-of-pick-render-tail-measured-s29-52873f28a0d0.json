@@ -1,0 +1,32 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-15T22:21:47Z",
+  "findings": [
+    {
+      "file": "docs/research/the-pick-state-render-is-slow-because.html",
+      "line": 78,
+      "severity": "non-blocking",
+      "text": "three adjacent denominators (9,830 / 9,594 / 9,261) are easy to conflate; each is labelled, so it is a readability hazard rather than a wrong figure"
+    }
+  ],
+  "project": "lane-and-model-routing",
+  "review": "VERDICT goal: the node's goal is to record s29's measured picker timing after the published-profile change; docs/research/the-pick-state-render-is-slow-because.html:75-92 adds a \"Published-profile window\" section carrying that measurement, and docs/evidence/fragments/lane-and-model-routing/pick-render-tail-measured-s29.html:2 lands its one-line report.\nVERDICT done_when: done_when asks for >=500 post-merge picks from 2026-10-19, four figures for both windows, named log paths and windows, a per-figure movement verdict, and a control within 1%; paired-window-measurement.log records 9,830 post-merge picks (9,594 joined), the four figures for both windows, the three input paths, both windows, the movement column at :80-85, and control_p90_delta_pct=0.014328 with control_within_1pct=True, EXIT=0.\nVERDICT write_paths: the declared paths are docs/research/the-pick-state-render-is-slow-because.html, docs/evidence/fragments/lane-and-model-routing/pick-render-tail-measured-s29.html and docs/figures/lane-and-model-routing/pick-render-tail-measured-s29; the diff touches only the first two, both inside scope, and leaves the figure path unused.\nVERDICT manifest: read; it states complete, commits [42aaf27731, 52873f28a0], tests: none because the suite is unarmed by the node contract, and cites paired-window-measurement.log for the control; it records no baseline_suite or after_suite, so the added-failure count below is derived from the manifest's own declared absence of a suite pair.\nVERDICT diff: read both commits against base 8f9b0b3aa6be2443176efb8c33c596c4474fdfc2: 42aaf27731 adds the 17-line research section and 52873f28a0 adds the 3-line evidence fragment, 20 inserted lines in two files, no deletions and no code.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: docs/research/the-pick-state-render-is-slow-because.html:76-92 delivers exactly the window comparison the done_when enumerates, with no unmeasured claim presented as measurement.\nSCORE evidence: 17\nJUSTIFICATION evidence: paired-window-measurement.log:9 carries section_25_control render_p90_ms=2708.388 and over_bound_pct=15.311 against \u00a725's published 2,708 ms and 15.31% (deltas 0.014328% and 0.006563%), an independent reproduction rather than a restatement of the new window's own output.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat 8f9b0b3aa6 52873f28a0` shows only docs/research/the-pick-state-render-is-slow-because.html and docs/evidence/fragments->fragments/lane-and-model-routing/pick-render-tail-measured-s29.html, both declared, 20 insertions and no deletion.\nSCORE durability: 8\nJUSTIFICATION durability: the diff adds no executable assertion; the only guard is the \u00a725 control recorded in paired-window-measurement.log, which reddens if the attribution method drifts but cannot redden on a future re-run of the log, since the log is a one-off artefact and no test path is in scope.\nSCORE fit: 18\nJUSTIFICATION fit: the added section follows the surrounding document's table-and-caption idiom at docs/research/the-pick-state-render-is-slow-because.html:80-85 and the evidence fragment matches the landed-report article shape at docs/evidence/fragments/lane-and-model-routing/pick-render-tail-measured-s29.html:1.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module; the measurement reuses the repository's existing log inputs named at docs/research/the-pick-state-render-is-slow-because.html:88-89 rather than introducing a second attribution mechanism.\nFINDING docs/research/the-pick-state-render-is-slow-because.html:78 non-blocking: the section states the post-change window contains 9,830 picks while the joined-group denominator is 9,594 and the fallback denominator is 9,261, three populations in adjacent sentences; the text does disclose each denominator, so it is a readability hazard rather than a wrong figure.\n",
+  "review_run_id": "r-20261115T220336123349-review-of-pick-render-tail-measured-s29-52873f28a0d0",
+  "reviewed_base_sha": "8f9b0b3aa6be2443176efb8c33c596c4474fdfc2",
+  "reviewed_head_sha": "52873f28a0d078ba1745aa0e2cf4ab86c6ceaeb1",
+  "reviewed_run_id": "r-20261115T205630642860-pick-render-tail-measured-s29",
+  "scores": {
+    "durability": 8,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T22:39:22.368650+00:00",
+  "total": 102
+}

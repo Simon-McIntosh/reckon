@@ -2036,7 +2036,15 @@ def crew_promotions(window_seconds, pretty):
     help="ISO-8601 instant the deferral expires; the obligation returns after it.",
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_ack(run_id, notice_id, reason, until, pretty, project=None):
+@click.option(
+    "--until-condition",
+    default=None,
+    help='End early on a named JSON condition: {"condition":"review stored","files":["/path"]} '
+    'or {"condition":"review accepted","probe":["program","argument"],"terminal":["accepted"]}.',
+)
+def crew_ack(
+    run_id, notice_id, reason, until, pretty, project=None, until_condition=None
+):
     """Defer one run's obligations until an instant, recording why.
 
     A live run's deferral is written beside its pointer; one for a run already
@@ -2046,6 +2054,8 @@ def crew_ack(run_id, notice_id, reason, until, pretty, project=None):
     if bool(run_id) == bool(notice_id):
         raise click.ClickException("exactly one of --run and --notice is required")
     if notice_id:
+        if until_condition is not None:
+            raise click.ClickException("--notice takes no --until-condition")
         if until:
             raise click.ClickException("--notice takes no --until")
         from reckon.crew.model_catalogue import acknowledge_notice
@@ -2066,7 +2076,11 @@ def crew_ack(run_id, notice_id, reason, until, pretty, project=None):
 
     try:
         updated = runs_module.record_run_acknowledgement(
-            run_id, reason, until, project=resolved_project
+            run_id,
+            reason,
+            until,
+            project=resolved_project,
+            until_condition=until_condition,
         )
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
