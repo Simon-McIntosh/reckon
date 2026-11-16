@@ -151,3 +151,8 @@ def test_a_predecessor_stop_does_not_end_a_resumed_worker(run: dict) -> None:
     snapshot, line = _line(run)
     assert snapshot["process_alive"] is True
     assert "→ working" in line and "help" not in line and "stopped" not in line, line
+
+
+def test_a_row_without_a_destination_keeps_its_unknown_word() -> None:
+    line = ticker.Ticker(color=False).render({})
+    assert "→ help" in line, line

@@ -3444,9 +3444,9 @@ class Ticker:
         elapsed and the fleet counters, which every row carries at fixed
         widths, then the lane's rate, the model and the effort. Those three
         are added while the pane has room for them, so a narrow pane drops the
-        effort first and never wraps. Nothing follows the effort: the row
-        carries no free text, and ends on its last cell with any trailing pad
-        removed.
+        effort first and never wraps. Supervisor stops carry their recorded
+        cause before these optional cells. The row ends on its last cell with
+        any trailing pad removed.
         """
         if is_submission_row(event):
             return self._submission_line(event)
@@ -3468,7 +3468,7 @@ class Ticker:
             return self._lift_line(event)
         # The compatibility lifecycle state may group several stops as blocked.
         # The row spells the cause-specific type when the producer supplied one.
-        to_state = _pane_word(event)
+        to_state = _pane_word(event) or _display_state(raw_to_state)
         run_id = str(event.get("run_id") or node)
         stream_event = bool(str(event.get("event") or "").strip())
         # A run an admission pass launched from a queued request continues the
@@ -3574,10 +3574,9 @@ class Ticker:
         cells.extend(self._spend_cells(event, to_state))
         cells.append((" " * GAP, None))
         cells.extend(self._stats(event))
-        # A lift row carries its own naming clause after the figures, so it
-        # reads as the lift it is — form, scope and id — rather than as the
-        # run-state word its transition maps to. The clause takes the room the
-        # pane has left and is cut like any other cell, so it never wraps.
+        # A lift or supervisor stop carries its own naming clause after the
+        # figures. It takes the room the pane has left and is cut like any
+        # other cell, so it never wraps.
         if raw_to_state in LIFT_STATES or supervisor_stop_clause(event):
             clause = supervisor_stop_clause(event) or lift_clause(event)
             spare = self._grid_width() - sum(len(text) for text, _ in cells)
