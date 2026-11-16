@@ -130,6 +130,13 @@ def _merge_repair_scope(
         )
     except merge.MergeError as exc:
         raise CrewError(f"cannot measure merge-repaired run scope: {exc}") from exc
+    if not paths:
+        # A head that delivers nothing relative to primary names no path, and a
+        # repaired scope over no path reads zero. That is the zero the
+        # cited-commit measurement refuses to record, so this path declines and
+        # lets the citations answer: the run's own commits are what it did,
+        # whether the merge kept or discarded their content.
+        return None
     counts = scoped_diff_stat(cwd=tree, base=common_base, head=head, paths=paths)
     if not counts.get("available", True):
         raise CrewError("cannot measure merge-repaired run line counts")
