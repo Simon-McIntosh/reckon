@@ -594,11 +594,16 @@ def _section_run_unlanded(
 
     wanted = section_record_id(section)
 
+    from reckon import ledger
+
     def identifies(record: Mapping[str, Any]) -> bool:
         node = record.get("node")
         if not isinstance(node, Mapping):
             node = {}
-        plan = str(node.get("plan") or record.get("plan") or "")
+        # A live pointer carries its plan on the node it names; a ledger row
+        # carries it on its own field or on the dispatch detail a brief left,
+        # and the resolver is the one owner of that answer.
+        plan = str(node.get("plan") or "") or ledger.row_plan(record)
         held = section_record_id(node.get("section") or record.get("section") or "")
         return plan == slug and held == wanted
 

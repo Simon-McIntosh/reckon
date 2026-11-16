@@ -539,7 +539,7 @@ def summarize(
                 for r in rows_by_project.get(project, [])
                 if isinstance(r, Mapping)
                 and r.get("node") == hold.get("node")
-                and r.get("plan") == hold.get("plan")
+                and ledger.row_plan(r) == hold.get("plan")
                 and (run_stamp := parse_utc(r.get("dispatched_at"))) is not None
                 and run_stamp > stamp
             ]

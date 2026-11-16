@@ -524,7 +524,7 @@ def pick(
             if request.attempts is not None
             else sum(
                 row.get("node") == request.node.id
-                and row.get("plan") == request.node.plan
+                and snapshot.ledger.row_plan(row) == request.node.plan
                 for row in rows
             ),
             # The coordinator's own reading is built into the state's node block

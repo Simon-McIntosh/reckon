@@ -64,11 +64,21 @@ def _pointer_parts(pointer: Mapping[str, Any]) -> tuple[str, str, str, str, str]
 
 
 def _row_parts(row: Mapping[str, Any]) -> tuple[str, str, str, str]:
-    """The node identity, plan, section and role of one ledger row, stored flat."""
+    """The node identity, plan, section and role of one ledger row, stored flat.
+
+    The plan is the ledger's own answer rather than the row's flat field: a run
+    dispatched with a brief records no top-level ``plan`` and names it on its
+    impl move or its node definition, and the projection this reader consumes
+    drops both. :func:`reckon.ledger.row_plan` is the one owner of that fact,
+    and the projection stores its answer, so a brief-carried run holds the same
+    section an ordinary one does.
+    """
+
+    from reckon import ledger
 
     return (
         str(row.get("node") or ""),
-        str(row.get("plan") or ""),
+        ledger.row_plan(row),
         section_record_id(row.get("section") or ""),
         str(row.get("role") or "implement"),
     )

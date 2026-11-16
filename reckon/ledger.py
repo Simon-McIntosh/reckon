@@ -1165,9 +1165,14 @@ def run_ids(project: str, root: str | Path | None = None) -> set[str]:
 # The version moves when what the index extracts from a row moves, because a
 # warm index is never re-read from its sources: a row already indexed keeps the
 # column it was built with. Version 7 extracts a row's plan through the
-# dispatch fallback :func:`_row_plan` reads, so every row written before it is
-# re-extracted from the payload it already holds.
-_RUN_INDEX_VERSION = 7
+# dispatch fallback :func:`row_plan` reads, so every row written before it is
+# re-extracted from the payload it already holds. Version 8 moves the picker
+# projection onto that same answer: :func:`picker_record` now carries the plan
+# ``row_plan`` resolves, so a reader of a projected row sees a brief-carried
+# run under its plan rather than under the empty field the projection used to
+# hold. An index built before it keeps the old projection for every unchanged
+# run file, so the version must move for those rows to be re-extracted.
+_RUN_INDEX_VERSION = 8
 
 # The metadata key an index uses to carry the resolved ledger path it indexes.
 # It is written when the index is built, so a sweep can identify an index whose
@@ -1605,8 +1610,18 @@ _PICKER_FIELDS = (
 
 
 def picker_record(record: Mapping[str, Any]) -> dict[str, Any]:
-    """Project a full record onto the inputs the picker consumes."""
-    return {key: record[key] for key in _PICKER_FIELDS if key in record}
+    """Project a full record onto the inputs the picker consumes.
+
+    The plan is the answer :func:`row_plan` gives rather than the row's own
+    field, because the projection drops the two places a brief-carried dispatch
+    records the same fact — its impl move and its node definition. A reader of
+    a projected row would otherwise see a run dispatched with a brief as naming
+    no plan, which is the copy of a fact this projection exists to avoid
+    keeping.
+    """
+    projection = {key: record[key] for key in _PICKER_FIELDS if key in record}
+    projection["plan"] = row_plan(record)
+    return projection
 
 
 def picker_runs(project: str, root: str | Path | None = None) -> list[dict[str, Any]]:
@@ -1670,7 +1685,7 @@ def run_activity_seconds(record: Mapping[str, Any]) -> float | None:
     return max(stamps) if stamps else None
 
 
-def _row_plan(record: Any) -> str:
+def row_plan(record: Any) -> str:
     """The plan a row belongs to, in the form its own readers compare against.
 
     An absent plan is the empty string rather than NULL, so one equality
@@ -2131,7 +2146,7 @@ def _indexed_data(
                                 picker_record(row) if isinstance(row, Mapping) else row,
                                 separators=(",", ":"),
                             ),
-                            _row_plan(row),
+                            row_plan(row),
                         )
                         for i, row in enumerate(data["runs"])
                     ],
@@ -2182,7 +2197,7 @@ def _indexed_data(
                             run_activity_seconds(record),
                             json.dumps(record, sort_keys=True, separators=(",", ":")),
                             json.dumps(picker_record(record), separators=(",", ":")),
-                            _row_plan(record),
+                            row_plan(record),
                         ),
                     )
             if not reuse_documents:
@@ -2335,7 +2350,7 @@ def load(
     the picker fields; neither materialises full run records. No stored read
     inspects per-run documents or refreshes their disposable indexes.
 
-    ``plan`` uses :func:`_row_plan`, including the durable implementation move
+    ``plan`` uses :func:`row_plan`, including the durable implementation move
     and the node definition when a brief-carried row has no top-level plan.
 
     With no store, the file-backed index supplies migration compatibility,
@@ -2399,7 +2414,7 @@ def load(
     if activity_since is not None:
         data["runs"] = _active_records(data["runs"], activity_since)
     if plan:
-        data["runs"] = [row for row in data["runs"] if _row_plan(row) == plan]
+        data["runs"] = [row for row in data["runs"] if row_plan(row) == plan]
     if picker_only:
         data["runs"] = [
             picker_record(row) if isinstance(row, Mapping) else row
@@ -3954,7 +3969,7 @@ def read_records(
     if activity_since is not None and with_figures:
         records = _active_records(records, activity_since)
     if selected_plan:
-        records = [record for record in records if _row_plan(record) == selected_plan]
+        records = [record for record in records if row_plan(record) == selected_plan]
     if since is not None:
         boundary = _parse_timestamp(since, "since")
         filtered: list[dict[str, Any]] = []
@@ -4016,7 +4031,7 @@ def review_scores(
     for record in records:
         if not isinstance(record, Mapping):
             continue
-        if plan is not None and _row_plan(record) != str(plan):
+        if plan is not None and row_plan(record) != str(plan):
             continue
         if node is not None and str(record.get("node") or "") != str(node):
             continue
@@ -4028,7 +4043,7 @@ def review_scores(
         selected.append(
             {
                 "run_id": str(record.get("run_id") or ""),
-                "plan": _row_plan(record),
+                "plan": row_plan(record),
                 "node": str(record.get("node") or ""),
                 "status": str(block.get("status") or "unparsed"),
                 "scores": dict(block.get("scores") or {}),
@@ -4499,7 +4514,7 @@ def effort_report(
     excluded_stalled = 0
     excluded_unusable_completion = 0
     for record in runs(project, root):
-        plan = _row_plan(record)
+        plan = row_plan(record)
         row = by_plan.setdefault(
             plan,
             {
@@ -4670,7 +4685,7 @@ def summary(
         "gates": {kind: dict(sorted(counts.items())) for kind, counts in gates.items()},
         "worker_gate": worker_gate,
         "suite_deltas": suite_deltas,
-        "plans": sorted({_row_plan(record) for record in records}),
+        "plans": sorted({row_plan(record) for record in records}),
         "effort": effort_report(project, root=root, declared=declared),
     }
 

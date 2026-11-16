@@ -8,7 +8,7 @@ plan-selected read (``ledger.runs(..., plan=...)``) selects on the top-level
 field, so every brief-carried run dropped out of its own plan's history, and a
 plan whose work was all dispatched with briefs read as having none.
 
-The plan a row belongs to now has one owner, ``ledger._row_plan``, which reads
+The plan a row belongs to now has one owner, ``ledger.row_plan``, which reads
 the row's own field first and then the two places a dispatch records the same
 fact: the impl move the run reported and the node definition it ran. The index
 extracts that owner's answer into the column the plan-selected read filters on,
@@ -268,19 +268,19 @@ def test_a_row_indexed_under_the_earlier_extraction_is_read_for_its_plan(
     another writer moves.
     """
     root = _store(tmp_path)
-    current_plan = ledger._row_plan
+    current_plan = ledger.row_plan
     current_version = ledger._RUN_INDEX_VERSION
     monkeypatch.setattr(ledger, "ledger_generation", lambda project: "pinned")
     # Build the index the earlier extraction left behind: the row's own field
     # alone, under that extraction's own version.
-    monkeypatch.setattr(ledger, "_row_plan", _earlier_extraction)
+    monkeypatch.setattr(ledger, "row_plan", _earlier_extraction)
     monkeypatch.setattr(ledger, "_RUN_INDEX_VERSION", EARLIER_INDEX_VERSION)
     stale = _ids(root, NAMED)
     # The instrument sees the defect before the case reports its absence: the
     # stale entry carries no plan, so the row is missing from its plan's read.
     assert STORED_RUN not in stale, sorted(stale)
 
-    monkeypatch.setattr(ledger, "_row_plan", current_plan)
+    monkeypatch.setattr(ledger, "row_plan", current_plan)
     # The version is restored as it was found, so a tree that reverted it
     # reuses the planless entry and this case fails.
     monkeypatch.setattr(ledger, "_RUN_INDEX_VERSION", current_version)

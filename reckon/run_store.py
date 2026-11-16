@@ -287,7 +287,7 @@ def _record_rows(
         connection.create_function(
             "record_plan",
             1,
-            lambda value: ledger._row_plan(json.loads(value)),
+            lambda value: ledger.row_plan(json.loads(value)),
             deterministic=True,
         )
     if activity_since is not None:
