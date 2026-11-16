@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="413">
+<meta name="plan-version" content="414">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -1577,6 +1577,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s78" data-id="c-run-r-20261116T214005658459-review-of-a-foreign-run-is-freed-by-its-allocation-ending-a606f0345a96" data-who="reckon-build" data-when="2026-11-16T21:47:59.302Z">
     <div class="r-comment-body"><p>independent review of run r-20261116T204314708309-a-foreign-run-is-freed-by-its-allocation-ending over base d72a7d9b2 to head a606f0345a scores goal_fidelity 16, evidence 18, scope_discipline 19, durability 17, fit 18, reuse 5, carries added_failure_count 0, and files three non-blocking findings; the parsed record is stored in the reviewed run's review-records/ directory and passes `crew check --review`</p></div>
+</div>
+<div class="r-comment" data-section="s78" data-id="c-run-r-20261116T204314708309-a-foreign-run-is-freed-by-its-allocation-ending" data-who="reckon-build" data-when="2026-11-16T20:52:01Z">
+    <div class="r-comment-body"><p>recovery_liveness.launcher_host_is_gone frees a foreign run when the launcher job a CLI launch records has left the queue — a state outside process_liveness._JOB_LIVE_STATES frees it, and so does an answer that was taken and does not list it at all, which is how a job the scheduler has already purged (squeue --states all lists a finished job only for MinJobAge) is read, while a query that failed still keeps the run unknown; a record naming no launcher job is freed when every live job on the node started after its launch instant, and an empty answer frees it without one. The allocation job id is read through host.host_facts().job_id, the one owner of FLEET_JOB_ID, SLURM_JOB_ID and the SLURM_JOBID alias, which prefers the job the process&#x27;s own cgroup names and writes none at all on a pointer naming another machine. Measured by tests/test_a_foreign_run_is_freed_by_its_allocation_ending.py, 16 passed at head cc3d1a13d4 against 10 failed, 6 passed at the base content of d72a7d9b251b</p></div>
 </div>
 <div class="r-comment" data-section="s79" data-id="c-run-r-20261116T211912273793-review-of-the-landing-check-reads-only-the-runs-it-checks-1c43c31cf1d4" data-who="reckon-build" data-when="2026-11-16T21:24:19.122Z">
     <div class="r-comment-body"><p>review of r-20261116T204433617287-the-landing-check-reads-only-the-runs-it-checks at baa6e83..1c43c31cf1 stored at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T204433617287-the-landing-check-reads-only-the-runs-it-checks/review-records/r-20261116T204433617287-the-landing-check-reads-only-the-runs-it-checks.json, scored 19/16/20/15/19/20 with 0 added failures and 2 non-blocking findings</p></div>
