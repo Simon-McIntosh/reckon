@@ -1,36 +1,49 @@
 <section id="qwnw-red-file-admission-refusal-is-named">
-<h3>A red admission-refusal test file reads green, with two causes named</h3>
-<p><code>tests/test_admission_refusal_is_named.py</code> carried five failing tests on the primary branch. Both causes are named below, one product and one test, and neither was cleared by weakening an assertion: the five assertions and the three cases that already passed are unchanged.</p>
+<h3>A red admission-refusal test file reads green: the fixture, not the product</h3>
+<p><code>tests/test_admission_refusal_is_named.py</code> carried five failing tests on the primary branch. One cause explains all five, and it sits in the file rather than in the classifier, which already keeps the rule the file asserts. No assertion was deleted, weakened or added: five failing cases failed identically before and after, and the three cases that passed still do.</p>
 
-<h4 id="qwnw-red-file-admission-refusal-is-named-causes">The two causes</h4>
-<ol id="qwnw-red-file-admission-refusal-is-named-cause-list">
-<li id="qwnw-red-file-admission-refusal-is-named-cause-product"><strong>Product wrong — the pre-spawn reading outranked the pointer's own worker record.</strong> <code>classify_pointer</code> read any pointer whose phase sits in <code>_PRE_SPAWN_PHASES</code> (<code>starting</code>, <code>launching</code>, <code>launcher</code>, <code>dispatching</code>) as a request the launcher had claimed and not yet started, whatever the pointer recorded. The commit that gave the parked phases their <code>launched</code> guard states the rule it did not apply here: a pid or a launch clock means the request launched and its liveness, not its label, decides the reading. A run refused at admission carries exactly that shape — a pre-spawn label, a recorded pid, a stream holding the refusal, a dead process — so it read <code>running</code> for as long as its pointer lived and the refusal the classifier can name was never reached. Repaired in <code>reckon/crew/recovery_classification.py</code>: <code>pre_spawn_waiting</code> now requires <code>not launched</code>, beside its existing stranded-launch term.</li>
-<li id="qwnw-red-file-admission-refusal-is-named-cause-test"><strong>Test wrong — the fixture recorded no worker.</strong> The file's <code>_pointer</code> helper wrote a stream, a dead process and a pre-spawn phase but no <code>pid</code>, so its pointer described a request that had not started rather than a run whose worker had ended. A pointer a launch writes records the process it started, so the fixture now carries <code>pid: 424242</code>. The assertions are untouched: the rule the file asserts — a refused admission is named, a genuine vanish still abandons, an in-harness run and a mark-less refusal are not refused, and every neighbouring classification is unchanged — is the rule the product now keeps.</li>
-</ol>
+<h4 id="qwnw-red-file-admission-refusal-is-named-cause">The cause: test wrong — the pointer recorded no worker</h4>
+<p id="qwnw-red-file-admission-refusal-is-named-cause-detail">The file's <code>_pointer</code> helper wrote a stream, a dead process and a pre-spawn phase (<code>starting</code>), and recorded no <code>pid</code>. <code>classify_pointer</code> reads a pre-spawn phase in a pointer that records no worker as a request the launcher has claimed and not yet started — <code>pre_spawn_waiting</code>, whose comment and the commit that added its <code>launched</code> guard both state the rule: a pid or a launch clock means the request launched and its liveness decides the reading. So the fixture's pointer was the other row entirely, held at <code>running</code>, and every liveness reading the file asserts on — a refusal named, a vanish abandoned, an in-harness run and a mark-less refusal left alone — was unreachable.</p>
+<p id="qwnw-red-file-admission-refusal-is-named-cause-repair">The repair is the fixture: <code>_pointer</code> now carries <code>"pid": 424242</code>, the record a launch writes. The product is unchanged — it was verified, not reimplemented.</p>
 
 <h4 id="qwnw-red-file-admission-refusal-is-named-negative-control">Negative control: the base run</h4>
-<p>The file is red at the assigned base revision, five failing tests and three passing, and green at the head. Both runs name their command, revision, tree and import path; the base and head arms of the same command are the two rows a landing compares.</p>
 <pre id="qwnw-red-file-admission-refusal-is-named-base-log"># revision: 6fa76c49f48e1d4fe4f104431f85f519ce92aae0 (git archive extraction)
 # tree: /tmp/reckon-crew-scratch/r-20261116T032036952503-qwnw-red-file-admission-refusal-is-named/base-tree
 # cwd: /tmp/reckon-crew-scratch/r-20261116T032036952503-qwnw-red-file-admission-refusal-is-named/base-tree
 # command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_admission_refusal_is_named.py
-FAILED tests/test_admission_refusal_is_named.py::test_a_refused_admission_is_named
-FAILED tests/test_admission_refusal_is_named.py::test_a_genuine_vanished_run_still_abandons
-FAILED tests/test_admission_refusal_is_named.py::test_a_refusal_missing_a_mark_does_not_reach_the_arm
-FAILED tests/test_admission_refusal_is_named.py::test_an_in_harness_run_with_those_marks_is_not_refused
-FAILED tests/test_admission_refusal_is_named.py::test_every_other_classification_is_unchanged
+# module.__file__: /tmp/reckon-crew-scratch/r-20261116T032036952503-qwnw-red-file-admission-refusal-is-named/base-tree/reckon/crew/recovery_classification.py
+FAILED tests/test_admission_refusal_is_named.py::test_a_refused_admission_is_named - AssertionError: assert 'running' == 'refused-at-admission'
+FAILED tests/test_admission_refusal_is_named.py::test_a_genuine_vanished_run_still_abandons - AssertionError: assert 'running' == 'abandoned'
+FAILED tests/test_admission_refusal_is_named.py::test_a_refusal_missing_a_mark_does_not_reach_the_arm - AssertionError: assert 'running' == 'abandoned'
+FAILED tests/test_admission_refusal_is_named.py::test_an_in_harness_run_with_those_marks_is_not_refused - AssertionError: assert 'running' == 'abandoned'
+FAILED tests/test_admission_refusal_is_named.py::test_every_other_classification_is_unchanged - AssertionError: assert 'running' == 'abandoned'
 5 failed, 3 passed
 EXIT=1</pre>
 
-<h4 id="qwnw-red-file-admission-refusal-is-named-head-run">The head run</h4>
-<pre id="qwnw-red-file-admission-refusal-is-named-head-log"># revision: b2ec7667daf80a8aa1890e23416fdc0983b67436
-# cwd: the node worktree
-# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_admission_refusal_is_named.py
-# module.__file__: reckon/crew/recovery_classification.py (the worktree's own copy)
+<h4 id="qwnw-red-file-admission-refusal-is-named-base-product">The decisive run: the fixture repair against the base product</h4>
+<p id="qwnw-red-file-admission-refusal-is-named-base-product-note">The same base tree with only the pointer fixture repaired — no product edit anywhere — passes all eight cases, which is what makes the verdict <em>test wrong</em> rather than <em>product wrong</em>: the product already named the refusal, at the assigned base revision.</p>
+<pre id="qwnw-red-file-admission-refusal-is-named-base-product-log"># revision: 6fa76c49f48e1d4fe4f104431f85f519ce92aae0 with only the test file's fixture repaired
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q --tb=no -rf tests/test_admission_refusal_is_named.py
 ........                                                                 [100%]
 8 passed
 EXIT=0</pre>
 
-<h4 id="qwnw-red-file-admission-refusal-is-named-ruff">ruff on the changed paths</h4>
-<p><code>ruff check</code> reports nothing on either arm. <code>ruff format --check</code> reports one unformatted line in <code>reckon/crew/recovery_classification.py</code> — the long <code>action = ...</code> line in the cut-off arm, at line 1965 in the base file and 1973 in the head file — the same finding at both revisions, so the change adds none.</p>
+<h4 id="qwnw-red-file-admission-refusal-is-named-head">The head run and ruff</h4>
+<pre id="qwnw-red-file-admission-refusal-is-named-head-log"># revision: 54f2517aa369cac7a2f0b35c853e3eb0adb12b73
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_admission_refusal_is_named.py
+# module.__file__: the worktree's own reckon/crew/recovery_classification.py
+........                                                                 [100%]
+8 passed
+EXIT=0
+
+# ruff check tests/test_admission_refusal_is_named.py  -> All checks passed!  EXIT=0
+# ruff format --check tests/test_admission_refusal_is_named.py -> 1 file already formatted  EXIT=0</pre>
+
+<h4 id="qwnw-red-file-admission-refusal-is-named-discarded">A product change I wrote, measured redundant, and dropped</h4>
+<p id="qwnw-red-file-admission-refusal-is-named-discarded-note">Before measuring, I read the pre-spawn arm as the fault and guarded it with <code>not launched</code>. The mutation run below removes that guard from the fixture-repaired tree and the file still passes eight of eight, so the arm's <code>running</code> is settled by the watch verdict once the pointer records a process; the guard changed no observable behaviour. It was reverted, and the node's product diff is empty.</p>
+<pre id="qwnw-red-file-admission-refusal-is-named-mutation-log"># tree: a copy of the fixture-repaired head with `and not launched` removed from pre_spawn_waiting
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q --tb=no -rf tests/test_admission_refusal_is_named.py
+........                                                                 [100%]
+8 passed
+EXIT=0</pre>
 </section>
