@@ -2275,8 +2275,10 @@ def _launch_refused_by(record: Mapping[str, Any], reading: LivenessReading) -> b
     have ended and the launch proceeds. A retired worker receipt whose pid is
     alive or cannot be read still refuses.
 
-    A run launched on another host is freed by an exit receipt alone, because no
-    probe this host can run answers for a pid it did not issue. The canonical
+    A scheduler observation that proves the foreign compute launcher's node
+    holds no job for this user supplies a gone reading before this guard.
+    Without that proof, a foreign run is freed by an exit receipt alone: no
+    local pid probe answers for a pid issued elsewhere. The canonical
     ``exit.json`` beside a canonical worker record and a retired
     ``attempt-N-exit.json`` are read by the exit-record owner
     ``_run_exit_record``, under its strict reading: the receipt must name this
@@ -2718,8 +2720,9 @@ def _reservation_holder_running(
     matched against the start time recorded beside it. A reservation taken on
     another host names a pid this host cannot read at all — the number may
     belong to an unrelated local process — so it is judged by that host's own
-    heartbeat instead: a host still publishing is a host whose holder still
-    exists, and a host whose beat has lapsed is a host that has gone.
+    scheduler allocation first: a compute host holding no job for this user
+    cannot hold the launch. Otherwise its heartbeat supplies the existing
+    host-level reading, without probing a foreign pid on this machine.
 
     A record naming no host is the shape an older launch wrote. It keeps the
     local reading it was always given, because nothing on disk says the pid

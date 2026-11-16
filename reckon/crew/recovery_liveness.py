@@ -1512,7 +1512,10 @@ def _recorded_end_of_the_current_attempt(record: Mapping[str, Any]) -> bool:
 def local_liveness(record: Mapping[str, Any]) -> tuple[bool | None, bool]:
     """The liveness this host can stand behind for one live pointer.
 
-    Returns ``(alive, proven)``. The process table answers only when the
+    Returns ``(alive, proven)``. A foreign compute launcher is proven gone
+    when the scheduler reports no job holding its node for this user; the
+    recorded scheduler answer is independent of this host's process table.
+    Otherwise the process table answers only when the
     record's launching host is this host: a pid is meaningful only on the
     machine that issued it, and the crew home is shared across login nodes, so
     asking a foreign process table — or carrying an answer taken there —
