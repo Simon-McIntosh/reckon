@@ -1,0 +1,169 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "fails_if": "The snapshot callback is reached outside the real transition publication context.",
+      "lines": "237"
+    },
+    {
+      "fails_if": "Initial publication occurs before seat acquisition or after unlock.",
+      "lines": "238"
+    },
+    {
+      "fails_if": "The original RuntimeError/SystemExit is swallowed, converted, or replaced; comparing the injected exception identity tests propagation, and is not credited as exit-receipt coverage.",
+      "lines": "253-259"
+    },
+    {
+      "fails_if": "The snapshot publication hook is skipped or invoked repeatedly.",
+      "lines": "260"
+    },
+    {
+      "fails_if": "The context yields despite the initial publication failure.",
+      "lines": "261"
+    },
+    {
+      "fails_if": "Seat teardown is skipped, repeated, or happens after the seat is already unlocked.",
+      "lines": "262"
+    },
+    {
+      "fails_if": "The lifecycle guard is moved back outside _project_watch_claim; actual revert-control log reports this exact assertion failing twice.",
+      "lines": "264"
+    },
+    {
+      "fails_if": "RuntimeError no longer maps to 1 or SystemExit(75) loses its code; status is the independent expected mapping, never supplied to the recorder.",
+      "lines": "267"
+    },
+    {
+      "fails_if": "The publication stage marker is absent or reset before recording the exception.",
+      "lines": "268"
+    },
+    {
+      "fails_if": "The receipt uses a predecessor or wrong process identity rather than the executing process.",
+      "lines": "269"
+    },
+    {
+      "fails_if": "The recorder drops or misformats the thrown exception class/message; this expectation is derived from the injected error, but compares against a separately read durable receipt and can fail when formatting changes.",
+      "lines": "270"
+    },
+    {
+      "fails_if": "The exit receipt captured before unlock is erased or changed after release; comparing two disk observations is a persistence assertion, not an independent status-mapping assertion.",
+      "lines": "271"
+    },
+    {
+      "fails_if": "Seat release fails and leaves the lock held.",
+      "lines": "272"
+    },
+    {
+      "fails_if": "The claim is not acquired in the isolated crew home.",
+      "lines": "277"
+    },
+    {
+      "fails_if": "The added _write_watch_record(handle, record) is removed and the seat lacks the lifecycle keys present in the yielded watcher; the pre-repair reproduction reports this mismatch.",
+      "lines": "279"
+    },
+    {
+      "fails_if": "Both seat and watcher agree on a missing or wrong last_stage, closing the co-moving weakness of equality alone.",
+      "lines": "280"
+    },
+    {
+      "fails_if": "Both seat and watcher agree on missing, null or non-positive started_at_epoch.",
+      "lines": "281"
+    }
+  ],
+  "assertion_audit_file": "tests/test_a_producer_exit_is_recorded_and_restarted.py",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:688 _watch_registration",
+    "reckon/crew/recovery_watch.py:3542 watch_ticker",
+    "reckon/crew/recovery_watch.py:3883 watch_follow",
+    "reckon/crew/runs.py:5284 watch"
+  ],
+  "completed_at": "2026-11-16T01:59:26Z",
+  "dispatched_at": "2026-11-16T01:45:50Z",
+  "failure_delta_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T204841537282-producer-exit-recorded-and-restarted-s25/seat-final-scope.log",
+      "summary": "71 passed in 41.57s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T204841537282-producer-exit-recorded-and-restarted-s25/owner-base-scope.log",
+      "summary": "58 passed in 33.18s"
+    },
+    "note": "These are the manifest baseline_suite and after_suite; the broader importer comparison is separately reported below and is not collapsed into this scoped delta."
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html",
+      "line": "59",
+      "severity": "blocking",
+      "text": "blocking: The live section and source done_when require no added failures among watch_unit/runs importers, but the completed broader comparison has four added failure IDs still unadjudicated; the clean 58-to-71-test scoped pair does not establish that separate condition, so coordinator disposition or a qualifying repair and comparison is required before landing."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read the five gained commits individually from 04166ed71e7e42ebaccd16dec42167de79b5ca1c through 72ae697a1a5362ac250802be676e1654576a104e; they add the publication exposure cases, move the existing lifecycle guard into runs._project_watch_claim, restore seat metadata persistence, and update the evidence fragment across exactly four paths.",
+    "done_when": "The source prompt and live section require exit-before-release, restart within one lease, a failing control and no added importer failures; owner-base-scope.log and seat-final-scope.log record 58 and 71 passing tests, negative-control.log records both publication cases failing after the repair is reverted, and the broader importer logs still add four failure IDs.",
+    "goal": "The source prompt's goal is to deliver the live section's producer-exit and restart contract; reckon/crew/runs.py:4837-4851 now covers initial publication before yielding, while the required broader zero-added-importer-failure condition remains unresolved at docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:59.",
+    "manifest": "Read the completed source manifest and its cited logs; its final scoped arms identify de83f451011c33cfecc9c8ecd220e9a6cdf21bda and 72ae697a1a5362ac250802be676e1654576a104e, and it explicitly records four unadjudicated broader importer additions without claiming that condition passed.",
+    "write_paths": "The original manifest lists recovery_watch.py, watch_unit.py, the lifecycle test and evidence fragment, and resume-3-advice.txt explicitly widens the grant to reckon/crew/runs.py; every path changed after the prior review falls within that grant."
+  },
+  "justifications": {
+    "durability": "tests/test_a_producer_exit_is_recorded_and_restarted.py:264 fails when the exit guard returns to the outer registration, as both revert-control failures show, and lines 279-281 fail when the added seat-handle write is removed.",
+    "evidence": "tests/test_a_producer_exit_is_recorded_and_restarted.py:228 has readable before, after and answering-commit revert logs, but docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:59 and the checked importer log ID sets leave the required zero-added-failure condition unproved.",
+    "fit": "reckon/crew/runs.py:4720 and 4837-4851 use the existing context-manager cleanup and local-import idiom, and the new fixture and test definitions at tests/test_a_producer_exit_is_recorded_and_restarted.py:29,228,275 name their capabilities without forbidden labels.",
+    "goal_fidelity": "reckon/crew/runs.py:4837-4851 repairs the missing startup exit boundary and keeps release unconditional, but docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:59 records an unmet part of the source goal's done_when.",
+    "reuse": "A capability search at the reviewed head found record_producer_start and record_producer_exit owned by reckon/crew/watch_unit.py:37,65, which I opened; reckon/crew/runs.py:4838,4849 reuses those owners and recovery_watch.py:688 removes the duplicate wrapper rather than introducing another writer.",
+    "scope_discipline": "The four-path diff through 72ae697a1a5362ac250802be676e1654576a104e matches the source grant as widened explicitly for reckon/crew/runs.py in resume-3-advice.txt."
+  },
+  "negative_control_evidence": {
+    "exit_status": 1,
+    "failure_ids": [
+      "tests/test_a_producer_exit_is_recorded_and_restarted.py::test_first_publication_failure_is_recorded_before_release[error0-1]",
+      "tests/test_a_producer_exit_is_recorded_and_restarted.py::test_first_publication_failure_is_recorded_before_release[error1-75]"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T204841537282-producer-exit-recorded-and-restarted-s25/negative-control.log",
+    "mutation": "Revert only 44881ad5809b6a28a174d19803afb8ce64d78719 at source head 38584b3ad9c54ed201facd604ad774f27cfc1f1a, preserving the later seat-handle write.",
+    "summary": "2 failed in 0.90s"
+  },
+  "outside_scope": {
+    "added_importer_failure_ids": [
+      "tests/test_crew_launch_failure.py::test_a_launch_that_wrote_a_turn_is_not_a_launch_failure",
+      "tests/test_follow_sweep_cadence.py::test_pane_output_is_unchanged_by_the_sweep",
+      "tests/test_producer_loop_survives_a_config_change.py::test_the_producer_defers_a_broken_config_and_recovers",
+      "tests/test_spawn_retries_a_vanished_bind.py::test_a_spawn_refused_over_a_vanished_protected_bind_is_retried[Can't bind mount]"
+    ],
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T204841537282-producer-exit-recorded-and-restarted-s25/owner-base-imports.log",
+    "disposition": "Unadjudicated in the source manifest; review does not triage or fix those test files.",
+    "head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T204841537282-producer-exit-recorded-and-restarted-s25/seat-head-imports.log",
+    "removed_importer_failure_count": 7
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source prompt's goal is to deliver the live section's producer-exit and restart contract; reckon/crew/runs.py:4837-4851 now covers initial publication before yielding, while the required broader zero-added-importer-failure condition remains unresolved at docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:59.\nVERDICT done_when: The source prompt and live section require exit-before-release, restart within one lease, a failing control and no added importer failures; owner-base-scope.log and seat-final-scope.log record 58 and 71 passing tests, negative-control.log records both publication cases failing after the repair is reverted, and the broader importer logs still add four failure IDs.\nVERDICT write_paths: The original manifest lists recovery_watch.py, watch_unit.py, the lifecycle test and evidence fragment, and resume-3-advice.txt explicitly widens the grant to reckon/crew/runs.py; every path changed after the prior review falls within that grant.\nVERDICT manifest: Read the completed source manifest and its cited logs; its final scoped arms identify de83f451011c33cfecc9c8ecd220e9a6cdf21bda and 72ae697a1a5362ac250802be676e1654576a104e, and it explicitly records four unadjudicated broader importer additions without claiming that condition passed.\nVERDICT diff: Read the five gained commits individually from 04166ed71e7e42ebaccd16dec42167de79b5ca1c through 72ae697a1a5362ac250802be676e1654576a104e; they add the publication exposure cases, move the existing lifecycle guard into runs._project_watch_claim, restore seat metadata persistence, and update the evidence fragment across exactly four paths.\nCALL_SITES: reckon/crew/recovery_watch.py:688 _watch_registration, reckon/crew/recovery_watch.py:3542 watch_ticker, reckon/crew/recovery_watch.py:3883 watch_follow, reckon/crew/runs.py:5284 watch\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:4837-4851 repairs the missing startup exit boundary and keeps release unconditional, but docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:59 records an unmet part of the source goal's done_when.\nSCORE evidence: 14\nJUSTIFICATION evidence: tests/test_a_producer_exit_is_recorded_and_restarted.py:228 has readable before, after and answering-commit revert logs, but docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:59 and the checked importer log ID sets leave the required zero-added-failure condition unproved.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The four-path diff through 72ae697a1a5362ac250802be676e1654576a104e matches the source grant as widened explicitly for reckon/crew/runs.py in resume-3-advice.txt.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_producer_exit_is_recorded_and_restarted.py:264 fails when the exit guard returns to the outer registration, as both revert-control failures show, and lines 279-281 fail when the added seat-handle write is removed.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/runs.py:4720 and 4837-4851 use the existing context-manager cleanup and local-import idiom, and the new fixture and test definitions at tests/test_a_producer_exit_is_recorded_and_restarted.py:29,228,275 name their capabilities without forbidden labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: A capability search at the reviewed head found record_producer_start and record_producer_exit owned by reckon/crew/watch_unit.py:37,65, which I opened; reckon/crew/runs.py:4838,4849 reuses those owners and recovery_watch.py:688 removes the duplicate wrapper rather than introducing another writer.\nFINDING docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:59 blocking: The live section and source done_when require no added failures among watch_unit/runs importers, but the completed broader comparison has four added failure IDs still unadjudicated; the clean 58-to-71-test scoped pair does not establish that separate condition, so coordinator disposition or a qualifying repair and comparison is required before landing.\n",
+  "review_run_id": "r-20261116T014231032728-review-of-producer-exit-recorded-and-restarted-s25-72ae697a1a53",
+  "review_text": "VERDICT goal: The source prompt's goal is to deliver the live section's producer-exit and restart contract; reckon/crew/runs.py:4837-4851 now covers initial publication before yielding, while the required broader zero-added-importer-failure condition remains unresolved at docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:59.\nVERDICT done_when: The source prompt and live section require exit-before-release, restart within one lease, a failing control and no added importer failures; owner-base-scope.log and seat-final-scope.log record 58 and 71 passing tests, negative-control.log records both publication cases failing after the repair is reverted, and the broader importer logs still add four failure IDs.\nVERDICT write_paths: The original manifest lists recovery_watch.py, watch_unit.py, the lifecycle test and evidence fragment, and resume-3-advice.txt explicitly widens the grant to reckon/crew/runs.py; every path changed after the prior review falls within that grant.\nVERDICT manifest: Read the completed source manifest and its cited logs; its final scoped arms identify de83f451011c33cfecc9c8ecd220e9a6cdf21bda and 72ae697a1a5362ac250802be676e1654576a104e, and it explicitly records four unadjudicated broader importer additions without claiming that condition passed.\nVERDICT diff: Read the five gained commits individually from 04166ed71e7e42ebaccd16dec42167de79b5ca1c through 72ae697a1a5362ac250802be676e1654576a104e; they add the publication exposure cases, move the existing lifecycle guard into runs._project_watch_claim, restore seat metadata persistence, and update the evidence fragment across exactly four paths.\nCALL_SITES: reckon/crew/recovery_watch.py:688 _watch_registration, reckon/crew/recovery_watch.py:3542 watch_ticker, reckon/crew/recovery_watch.py:3883 watch_follow, reckon/crew/runs.py:5284 watch\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:4837-4851 repairs the missing startup exit boundary and keeps release unconditional, but docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:59 records an unmet part of the source goal's done_when.\nSCORE evidence: 14\nJUSTIFICATION evidence: tests/test_a_producer_exit_is_recorded_and_restarted.py:228 has readable before, after and answering-commit revert logs, but docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:59 and the checked importer log ID sets leave the required zero-added-failure condition unproved.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The four-path diff through 72ae697a1a5362ac250802be676e1654576a104e matches the source grant as widened explicitly for reckon/crew/runs.py in resume-3-advice.txt.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_producer_exit_is_recorded_and_restarted.py:264 fails when the exit guard returns to the outer registration, as both revert-control failures show, and lines 279-281 fail when the added seat-handle write is removed.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/runs.py:4720 and 4837-4851 use the existing context-manager cleanup and local-import idiom, and the new fixture and test definitions at tests/test_a_producer_exit_is_recorded_and_restarted.py:29,228,275 name their capabilities without forbidden labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: A capability search at the reviewed head found record_producer_start and record_producer_exit owned by reckon/crew/watch_unit.py:37,65, which I opened; reckon/crew/runs.py:4838,4849 reuses those owners and recovery_watch.py:688 removes the duplicate wrapper rather than introducing another writer.\nFINDING docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:59 blocking: The live section and source done_when require no added failures among watch_unit/runs importers, but the completed broader comparison has four added failure IDs still unadjudicated; the clean 58-to-71-test scoped pair does not establish that separate condition, so coordinator disposition or a qualifying repair and comparison is required before landing.\n",
+  "reviewed_base_sha": "04166ed71e7e42ebaccd16dec42167de79b5ca1c",
+  "reviewed_head_sha": "72ae697a1a5362ac250802be676e1654576a104e",
+  "reviewed_run_id": "r-20261115T204841537282-producer-exit-recorded-and-restarted-s25",
+  "scores": {
+    "durability": 20,
+    "evidence": 14,
+    "fit": 20,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T02:00:39.915430+00:00",
+  "total": 112
+}
