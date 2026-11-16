@@ -483,7 +483,8 @@ def _remove_promoted_pointer_or_defer(
                 return False
         if not _keep_pointer_for_pending_landing(run_id):
             raise CrewError(
-                f"run {run_id!r} changed while promotion ran and its pointer "
+                f"run {run_id!r} changed while promotion ran"
+                f"{_newer_attempt_named(run_id, record)} and its pointer "
                 "could not be marked for the landing pass: its promotion is "
                 "recorded, and the merge of its reviewed head is left to the "
                 "landing record this promotion wrote"
@@ -491,7 +492,8 @@ def _remove_promoted_pointer_or_defer(
         if finishing_another_writers_row:
             return False
         raise CrewError(
-            f"run {run_id!r} changed while promotion ran; its promotion is "
+            f"run {run_id!r} changed while promotion ran"
+            f"{_newer_attempt_named(run_id, record)}; its promotion is "
             "recorded and its pointer is kept, marked pending_landing_repair, so "
             "the next landing pass finishes the merge of its reviewed head"
         ) from exc

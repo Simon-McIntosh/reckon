@@ -292,9 +292,12 @@ def test_a_live_attempt_refuses_both_doors_by_its_own_number(
 def test_a_promotion_names_the_attempt_it_kept(home: Path, tmp_path: Path) -> None:
     """A run resumed while its promotion ran is named by the cleanup's refusal.
 
-    The cleanup either removes the attempt the promotion checked or leaves the
-    pointer to the newer one. It never removes an attempt it did not check, and
-    a refusal that leaves the pointer behind says which attempt now owns it.
+    The case goes through the cleanup every promotion reaches, not the private
+    pointer-removal step beneath it: a refusal built in the inner call and
+    dropped by the outer one names nothing a coordinator can act on. The
+    cleanup either removes the attempt the promotion checked or leaves the
+    pointer to the newer one, and a refusal that leaves the pointer behind says
+    which attempt now owns it.
     """
     record = _pointer(tmp_path)
     runs._write_json(runs.pointer_path(RUN_ID), record)
@@ -305,6 +308,6 @@ def test_a_promotion_names_the_attempt_it_kept(home: Path, tmp_path: Path) -> No
     runs._write_json(runs.pointer_path(RUN_ID), resumed)
 
     with pytest.raises(CrewError) as refused:
-        promotion._remove_promoted_pointer(RUN_ID, record)
+        promotion._remove_promoted_pointer_or_defer(RUN_ID, record)
     assert "attempt 5" in str(refused.value), str(refused.value)
     assert runs.pointer_path(RUN_ID).exists(), "the kept pointer was removed"

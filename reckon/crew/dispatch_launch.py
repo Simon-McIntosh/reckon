@@ -2221,10 +2221,7 @@ def _retired_attempt_ended(record: Mapping[str, Any]) -> bool | None:
     None answers "no attempt receipts": the caller keeps the answer it gives a
     record holding no worker record at all.
     """
-    from reckon.crew.recovery_liveness import (
-        _record_is_known_foreign,
-        _run_exit_record,
-    )
+    from reckon.crew.recovery_liveness import _record_is_known_foreign
     from reckon.crew.recovery_wait import _run_directory
 
     directory = _run_directory(record)
@@ -2234,10 +2231,9 @@ def _retired_attempt_ended(record: Mapping[str, Any]) -> bool | None:
     attempt = numbers[-1]
     # The receipt must name this run: a foreign launch is freed only by the
     # attempt's own account of its end, never by a file standing where one goes.
-    receipt = _run_exit_record(
-        record, f"attempt-{attempt}-exit.json", require_run_id=True
-    )
-    if receipt is not None:
+    # Read through the module's one strict attempt-receipt reader, so this
+    # reader and the launch guard cannot answer the same receipt differently.
+    if _reserved_attempt_ended(directory, attempt):
         return True
     try:
         data = json.loads(
