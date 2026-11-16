@@ -26,7 +26,11 @@ instruments make the measurements mean something:
 The repository is shared by the cases and its worktrees are built once, because
 registering thirty worktrees is the expensive part and every case needs the
 same slowed scan. Each case takes its own configuration home, so no case sees
-another's pointers or run directories.
+another's pointers or run directories. The whole base — repository, stub
+backends, worktrees and the marker directory the stub writes — sits under
+``/var/tmp`` rather than under pytest's basetemp, because a fenced worker's
+``/tmp`` is its own scratch: a base beneath the node tmp is absent from the
+worker's view, and its stub cannot be executed at all (:data:`GATE_BASE_ROOT`).
 
 Everything the cases start is killed afterwards, and the real (non-temporary)
 live-pointer directory is asserted untouched, so a passing run leaves the host
@@ -48,7 +52,7 @@ import sys
 import tempfile
 import time
 import uuid
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from threading import Event
@@ -82,24 +86,24 @@ REAL_LIVE_DIR = _config_home() / "crew" / "live"
 
 
 @pytest.fixture()
-def writable_marker_dir(monkeypatch: pytest.MonkeyPatch) -> Path:
-    """A directory the fence grants a run's worker to write.
+def writable_marker_dir(host: dict[str, Any]) -> Iterator[Path]:
+    """A directory the fenced worker may both read and write.
 
-    The stub writes its pid file and its marker here. A fenced worker may write
-    only its own scratch directory, its declared write paths and the runtime
-    paths its launch writes; a fresh directory under the node's ``/tmp`` is none
-    of those, because the fence overlays that whole tree read-only, so a marker
-    directory there is refused. The fleet runtime directory is one of the paths
-    the fence grants and creates for every launch, so the directory is handed to
-    the run as that, through the environment the dispatch process reads. The
-    fence exempts nothing for this: the grant is the one every lane's launch
-    already receives.
+    The stub records its pid here, waits for its release file here and writes
+    its marker here, so the directory has to survive the fence's view of the
+    filesystem. It sits under the base, which is outside the node's own ``/tmp``
+    that the fence overlays with each run's scratch: a directory beneath that
+    tree is absent from the worker, so the stub would neither find its release
+    file nor be able to leave a marker. Handing the directory to the launch as
+    the fleet runtime directory would grant it, but that directory is a
+    node-local default the harness pins rather than the case's, so a case
+    relying on it would be measuring the host.
     """
-    with tempfile.TemporaryDirectory(
-        prefix="reckon-worker-marker-", dir=os.environ.get("TMPDIR")
-    ) as directory:
-        monkeypatch.setenv("FLEET_RUNTIME_DIR", directory)
-        yield Path(directory)
+    directory = Path(tempfile.mkdtemp(prefix="reckon-worker-marker-", dir=host["base"]))
+    try:
+        yield directory
+    finally:
+        shutil.rmtree(directory, ignore_errors=True)
 
 
 PYTHON = Path(sys.executable)
@@ -170,6 +174,19 @@ HOLD_SECONDS = 120.0
 # name the pre-return status calls the shim charged and the outcome of each
 # case rather than paraphrasing them.
 REPORT_ENV = "RECKON_GATE_REPORT"
+
+# Where the gate's throwaway repository, its stub backends and their worktrees
+# live. It has to be a node-local temp root the worker fence leaves alone: the
+# fence mounts each run's own scratch over the node's own ``/tmp``
+# (:func:`reckon._worker_fence.worker_tmp_mount_source`), so inside a fenced
+# worker every ``/tmp`` path resolves into that run's scratch and the host's
+# ``/tmp`` is absent rather than merely read-only. A base beneath it therefore
+# hides the stub the worker is launched to run, and the launch dies at
+# ``execvp`` with ``.../claude: No such file or directory`` — which is what a
+# base under ``TMPDIR`` (pytest's default, and the crew harness's own choice)
+# produces. The base is created under ``/var/tmp`` rather than inherited, so the
+# cases measure the fence and not where the caller put the temp tree.
+GATE_BASE_ROOT = Path("/var/tmp")  # noqa: S108 - node-local temp, fence leaves it
 
 
 CONFIG: dict[str, Any] = {
@@ -488,9 +505,11 @@ def _build_repository(repo: Path, worktree_root: Path) -> None:
 
 
 @pytest.fixture(scope="module")
-def host(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Any]:
+def host() -> Iterator[dict[str, Any]]:
     """One repository with a slowed scan, shared by every case."""
-    base = tmp_path_factory.mktemp("dispatch-returns")
+    base = Path(
+        tempfile.mkdtemp(prefix="reckon-dispatch-gate-", dir=GATE_BASE_ROOT)
+    ).resolve()
     repo = base / "repo"
     repo.mkdir()
     outcomes: list[dict[str, Any]] = []
@@ -525,9 +544,12 @@ def host(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Any]:
     _write_report(outcomes)
     assert not leaked, (
         "these runs wrote their own pointers into the real fleet's live "
-        f"directory under {REAL_LIVE_DIR}: {leaked}. Every case ran under a "
-        "temporary RECKON_HOME, so none of them may touch the real one."
+        f"pointer directory under {REAL_LIVE_DIR}: {leaked}. Every case ran "
+        "under a temporary RECKON_HOME, so none of them may touch the real one."
     )
+    # The base is not under the basetemp, so pytest will not remove it; this
+    # module owns it and removes it here.
+    shutil.rmtree(base, ignore_errors=True)
 
 
 def _write_report(outcomes: list[dict[str, Any]]) -> None:
