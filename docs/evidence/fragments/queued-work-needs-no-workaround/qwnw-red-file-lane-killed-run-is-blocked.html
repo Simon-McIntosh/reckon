@@ -17,15 +17,27 @@
   states the rule the label broke: <em>phase is not consulted, because a
   finished or killed run can still carry a starting phase in its pointer</em>.</p>
 
-  <p><strong>The repair.</strong> One conjunct on <code>pre_spawn_waiting</code>
+<p><strong>The repair.</strong> A conjunct on <code>pre_spawn_waiting</code>
   in <code>reckon/crew/recovery_classification.py</code>: a pointer already
   recorded dead (<code>alive is False</code>) is not waiting to start, so it
   falls through to the liveness arms that read a lane kill, an exhausted
-  refusal, an unreadable manifest and a vanished worker. Nothing else moved. A
-  genuinely pre-spawn pointer records <code>process_alive: null</code> —
+  refusal, an unreadable manifest and a vanished worker. A
+  genuinely pre-spawn pointer records <code>process_alive: null</code>.
   <code>record_process_alive</code> answers <code>None</code> for a record
   naming no pid — so the launcher-claimed window still reads
-  <code>running</code> as before.</p>
+  <code>running</code> as before, and a recorded death outranks the label
+  rather than the label outranking the process.</p>
+
+  <p><strong>The merge repair.</strong> Landing this branch conflicted with the
+  primary branch at <code>9ad5e64e87</code> in that same arm, because primary
+  had repaired it independently: it requires
+  <code>not _spawn_evidence(record)</code>, which asks whether the launch left
+  a pid, a worker record, a stream or the launch log a worker was started
+  against. The two are one rule read at different depths — something recorded
+  showing that a worker existed outranks the launcher's label, and so does a
+  pointer already recorded dead — so the resolution keeps both, beside the
+  stranded-launch bound primary also kept. The gate passes at the merge head
+  with all three conjuncts.</p>
 
   <h3 id="qwnw-red-file-lane-killed-run-is-blocked-causes">Each failure and its verdict</h3>
 
@@ -95,6 +107,21 @@
       <tr><td>recovery regression arm, batches 00, 01 and 03</td>
         <td>base extraction against delivered head</td>
         <td>0 added failures in each batch (1, 1 and 14 fixed)</td></tr>
+      <tr><td>the gate, re-run at the repaired merge head</td>
+        <td><code>fbeb09e7fb</code>, clean worktree</td>
+        <td>10 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the armed suite, re-run base and after arms at the merge</td>
+        <td><code>ba3443a9ae</code> extraction, then
+        <code>fbeb09e7fb</code> worktree</td>
+        <td>58 passed <code>EXIT=0</code>, then 58 passed
+        <code>EXIT=0</code></td></tr>
+      <tr><td>recovery regression arm, batch 02b, re-run at the merge head</td>
+        <td><code>fbeb09e7fb</code>, worktree</td>
+        <td>9 failed, 381 passed — the same nine ids as the after arm,
+        0 added, 22 fixed against base</td></tr>
+      <tr><td>recovery regression arm, batch 02a, re-run at the merge head</td>
+        <td><code>fbeb09e7fb</code></td>
+        <td>12 failed, 382 passed — 0 added against the after arm's 13</td></tr>
     </tbody>
   </table>
 
