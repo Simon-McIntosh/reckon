@@ -1447,18 +1447,6 @@ def test_no_live_pointer_path_resolves_inside_a_working_tree(home, repo) -> None
 
 def test_a_run_in_flight_leaves_the_working_tree_clean(home, repo) -> None:
     ledger.register_member(PROJECT, "worker-a", harness="alpha", root=repo)
-    subprocess.run(
-        ["git", "add", f"docs/state/{PROJECT}/crew.json"],
-        cwd=repo,
-        check=True,
-        capture_output=True,
-    )
-    subprocess.run(
-        ["git", "commit", "-q", "-m", "test: seed member\n\nFixture state."],
-        cwd=repo,
-        check=True,
-        capture_output=True,
-    )
     record = _dispatch(repo, member="worker-a")
     assert _porcelain(repo) == []
     # The worker's own scoped files live in its worktree, not the main tree.
@@ -1598,20 +1586,25 @@ def test_recovery_never_removes_a_worktree(home, repo) -> None:
 
 def test_a_stale_expected_version_is_refused(home, repo) -> None:
     ledger.register_member(PROJECT, "worker-a", harness="alpha", root=repo)
-    data, version = ledger.load(PROJECT, repo)
+    data, version = ledger.load_auxiliary(PROJECT, repo)
     ledger.register_member(PROJECT, "worker-b", harness="alpha", root=repo)
 
     with pytest.raises(ledger.LedgerError) as excinfo:
-        ledger.write(PROJECT, data, version, repo)
+        ledger.write_members(PROJECT, data["members"], version, repo)
 
-    assert "re-read and retry" in str(excinfo.value)
+    assert "roster version changed" in str(excinfo.value)
+    assert {entry["id"] for entry in ledger.members(PROJECT, repo)} == {
+        "worker-a",
+        "worker-b",
+    }
 
 
 def test_two_interleaved_promotions_both_survive(home, repo, monkeypatch) -> None:
     """Interleaved appends write separate files without a shared version retry."""
     ledger.register_member(PROJECT, "worker-a", harness="alpha", root=repo)
     aggregate = ledger.ledger_path(PROJECT, repo)
-    before = aggregate.read_bytes()
+    before = ledger.load_auxiliary(PROJECT, repo)
+    assert not aggregate.exists()
     first = ledger.build_record(run_id="r-one", plan="plan-a", gate="passed")
     ledger.append_run(PROJECT, first, root=repo)
 
@@ -1639,7 +1632,8 @@ def test_two_interleaved_promotions_both_survive(home, repo, monkeypatch) -> Non
     ]
     assert calls == ["r-three.json", "r-two.json"]
     assert backoffs == []
-    assert aggregate.read_bytes() == before
+    assert ledger.load_auxiliary(PROJECT, repo) == before
+    assert not aggregate.exists()
     for row in (first, intruder, third):
         _assert_run_file(PROJECT, repo, row)
 
@@ -1711,8 +1705,7 @@ def test_a_member_with_a_null_session_captures_one_from_its_first_run(
 ) -> None:
     ledger.register_member(PROJECT, "worker-a", harness="alpha", root=repo)
     assert ledger.member(PROJECT, "worker-a", repo)["session_id"] is None
-    roster_path = repo / "docs" / "state" / PROJECT / "crew.json"
-    roster_before = roster_path.read_bytes()
+    roster_before = ledger.load_auxiliary(PROJECT, repo)
 
     record = _dispatch(repo, fixture="codex-turn.jsonl", member="worker-a")
     observed = crew.observe(record["run_id"])
@@ -1722,7 +1715,7 @@ def test_a_member_with_a_null_session_captures_one_from_its_first_run(
     assert captured["session_id"] == SESSION_ID
     assert captured["session_harness"] == "codex"
     assert captured["session_model"] == "some-model"
-    assert roster_path.read_bytes() == roster_before
+    assert ledger.load_auxiliary(PROJECT, repo) == roster_before
 
 
 def test_a_second_node_reaches_the_members_captured_session(home, repo) -> None:
@@ -1753,8 +1746,7 @@ def test_a_second_node_reaches_the_members_captured_session(home, repo) -> None:
 def test_a_later_session_is_not_written_over_the_captured_one(home, repo) -> None:
     """Each task retains its own captured session when another task runs."""
     ledger.register_member(PROJECT, "worker-a", harness="alpha", root=repo)
-    roster_path = repo / "docs" / "state" / PROJECT / "crew.json"
-    roster_before = roster_path.read_bytes()
+    roster_before = ledger.load_auxiliary(PROJECT, repo)
     # The first launch produced no worker — the stub records a pid that names
     # no process — so its session is free to be continued by the second
     # dispatch this test is about. A pid the kernel has issued would be a live
@@ -1789,7 +1781,7 @@ def test_a_later_session_is_not_written_over_the_captured_one(home, repo) -> Non
     assert later_record["session_harness"] == "codex"
     assert later_record["session_model"] == "some-model"
     assert crew.read_pointer(first["run_id"]) == first_record
-    assert roster_path.read_bytes() == roster_before
+    assert ledger.load_auxiliary(PROJECT, repo) == roster_before
 
 
 def test_dispatching_to_an_unregistered_member_is_refused(home, repo) -> None:
@@ -2867,24 +2859,7 @@ def test_a_promoted_row_carries_the_budget_fallback_its_pointer_held(
         ),
         root=repo,
     )
-    # The dispatch names a committed member rather than registering one of its
-    # own: a hold recorded into the roster is left uncommitted by the hold
-    # write, and a session-routed dispatch then cannot commit its own session
-    # registration over it. Naming the member keeps this test on the fallback
-    # row it measures.
     ledger.register_member(PROJECT, "worker-a", harness="alpha", root=repo)
-    subprocess.run(
-        ["git", "add", f"docs/state/{PROJECT}/crew.json"],
-        cwd=repo,
-        check=True,
-        capture_output=True,
-    )
-    subprocess.run(
-        ["git", "commit", "-q", "-m", "test: seed ledger\n\nFixture state."],
-        cwd=repo,
-        check=True,
-        capture_output=True,
-    )
     record = crew.dispatch(
         node=_node(),
         project=PROJECT,
@@ -3378,12 +3353,18 @@ def test_existing_readers_are_identical_with_the_store_present_and_deleted(
             "version": version,
         }
 
+    roster, _ = ledger.load_auxiliary(PROJECT, repo)
     with_store = snapshot()
     store_file = run_store.store_path()
     assert store_file.is_file()
     store_file.unlink()
     assert not store_file.exists()
 
+    # Run history can be reimported; the authoritative roster needs restoring
+    # through its own API when the entire store is deliberately deleted.
+    run_store.import_ledger(PROJECT, root=repo)
+    _, version = ledger.load_auxiliary(PROJECT, repo)
+    ledger.write_members(PROJECT, roster["members"], version, root=repo)
     assert snapshot() == with_store
 
 
