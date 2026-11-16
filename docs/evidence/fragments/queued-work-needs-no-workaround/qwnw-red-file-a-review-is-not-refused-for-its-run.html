@@ -30,4 +30,17 @@ EXIT=0</pre>
 # head    89 failed, 1691 passed, 13 errors in 1172.09s
 # ids only at head: (none)
 # ids only at base: 16 (listed above)</pre>
+<h4 id="qwnw-red-file-a-review-is-not-refused-for-its-run-merge">Merge with primary at ef83af75fa</h4>
+<p>The landing collided with primary <code>ef83af75fa</code> in one path, <code>reckon/crew/recovery_classification.py</code>. Primary had bounded the same pre-spawn arm with <code>_spawn_evidence(record)</code>, because a stale launcher label was holding refused, unreadable or dead runs at <code>running</code> while the fleet verdict called the same row abandoned. This node had bounded it with the terminal verdict. Both changes state one rule — the label written at launch cannot outrank evidence written after it — so the merge keeps both bounds, in this order: no spawn evidence, no terminal verdict, no stranded launch. Neither side was dropped and no conflict marker was committed.</p>
+<pre># merge commit 44b546bde9f33c5941a9cdbc39c22f9f87ac527e
+# parents 5e2d47e0034bb4de6fb7ca820ae73dc3bac98161 ef83af75fa7a3e8c065efcea4dcc9e63e5b26727
+# path reckon/crew/recovery_classification.py — resolved by keeping both bounds
+# gate, merged head 44b546bde9, job 1320667 on all_debug:
+4 passed in 2.92s
+EXIT=0
+# suite arm at the merged head (tests/test_staged_write_inventory.py, tests/test_every_shared_home_lock_holds_across_nodes.py):
+58 passed in 55.63s
+EXIT=0</pre>
+<p>The twenty-one pre-spawn lines are the only change either side carries in that path, so the merged file differs from primary only by the terminal-verdict bound and its comment. <code>ruff check</code> reports the same single pre-existing SIM102 finding at line 3254 that base and primary both carry, and <code>ruff format --check</code> is clean.</p>
+<p>Merging primary's bound moved one id in the importing arm: <code>tests/test_review_reflex_sweep.py::test_the_review_dispatch_waives_the_unreconciled_fence</code> is red on the primary branch itself — in a tree of <code>ef83af75fa</code> alone it reports <code>dispatched: []</code>, which is the defect this node repairs — and at this merge head it dispatches its review and then reads no <code>unreconciled_override</code> on the review run's pointer (<code>KeyError</code>). The id fails in the base arm as well, so the arm adds no failure; the remaining gap is the reflex path's own record and is reported under outside scope rather than repaired here.</p>
 </section>
