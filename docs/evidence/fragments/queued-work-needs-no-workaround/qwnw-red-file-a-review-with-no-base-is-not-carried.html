@@ -38,12 +38,12 @@
   <code>env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_review_with_no_base_is_not_carried.py</code>:
   at base <code>655a2befa979af690bab537523cd9ad97dc108c5</code> the file reads
   <code>3 failed in 0.66s</code> with <code>EXIT=1</code>; at head
-  <code>de2297b453943cd77647b1895496ba14ab15cc61</code> it reads
-  <code>3 passed in 4.03s</code> with <code>EXIT=0</code>. The three base ids are
+  <code>ba0dc1d74fd44fc1f9810482ff0d25d95bd32a3c</code> it reads
+  <code>3 passed in 1.21s</code> with <code>EXIT=0</code>. The three base ids are
   listed in the red-file record beside this one. The suite arm over
   <code>tests/test_staged_write_inventory.py</code> and
   <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code> reads
-  <code>58 passed in 33.21s</code> at base and <code>58 passed in 33.47s</code> at
+  <code>58 passed in 33.21s</code> at base and <code>58 passed in 33.45s</code> at
   head, and the arm over the three review-carry files reads
   <code>14 failed, 2 passed</code> at base against
   <code>11 failed, 5 passed</code> at head — no failure added, the three head
@@ -58,5 +58,8 @@
   the run's own deliverable, and one over an unrelated record, are carried when the
   record names no base. So the widened fixture reaches the guard and the guard is
   shown to fire, rather than the file passing for want of a decision.</p>
+  <p>The commits after the head arm above change only these evidence fragments,
+  so <code>ba0dc1d74f</code> is the last head at which product or test code
+  moved.</p>
   <p><a href="/reckon/evidence/fragments/queued-work-needs-no-workaround/red-file-a-review-with-no-base-is-not-carried.html">Red-file record: base arm and head arm</a></p>
 </section>
