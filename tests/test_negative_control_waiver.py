@@ -64,8 +64,11 @@ def _prepare(
 
 
 def _complete_cli(repository: Path, tmp_path: Path, *extra: str):
+    # The log carries the capture's own exit record, which is the fact a cited
+    # gate log is read for; the run's outcome is asserted here, so the call
+    # carries it out rather than queueing it for the fleet service.
     green_log = tmp_path / "passing.log"
-    green_log.write_text("1 passed\n", encoding="utf-8")
+    green_log.write_text("1 passed\nEXIT=0\n", encoding="utf-8")
     return CliRunner().invoke(
         cli_main,
         [
@@ -83,6 +86,7 @@ def _complete_cli(repository: Path, tmp_path: Path, *extra: str):
             "0",
             "--gate-log-path",
             str(green_log),
+            "--wait",
             *extra,
         ],
     )
