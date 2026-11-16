@@ -7,6 +7,8 @@ import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+import pytest
+
 from reckon import ledger
 from reckon.crew import promotion_requests as requests
 from tests.test_review_promotion_waits_for_its_record import (
@@ -151,13 +153,15 @@ def test_newly_ready_reviews_take_fair_session_turns(repository, tmp_path, monke
         assert requests.read_promotion(row["run_id"])["phase"] == requests.PROMOTED
 
 
+@pytest.mark.parametrize("complete", [False, True])
 def test_one_wake_rechecks_a_hundred_parked_requests_under_one_second(
-    repository, tmp_path, monkeypatch
+    repository, tmp_path, monkeypatch, capsys, complete
 ):
     monkeypatch.setattr(requests, "_now", (NOW + timedelta(minutes=5)).isoformat)
     _earlier_ready()
     parked = [
-        _park(repository, tmp_path, number, complete=False) for number in range(1, 101)
+        _park(repository, tmp_path, number, complete=complete)
+        for number in range(1, 101)
     ]
     service = requests.PromotionService(width=2)
     held = [service._claim(f"promotion-slot-{number}") for number in range(2)]
