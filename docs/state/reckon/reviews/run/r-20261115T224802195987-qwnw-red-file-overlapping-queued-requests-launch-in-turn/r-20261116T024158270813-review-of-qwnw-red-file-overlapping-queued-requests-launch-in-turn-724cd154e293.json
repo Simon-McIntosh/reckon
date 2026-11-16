@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/evidence.py:compose_landed_record",
+    "reckon/serve.py:2740",
+    "reckon/crew/reports.py:_fragment_plan_of"
+  ],
+  "completed_at": "2026-11-16T02:51:22.153Z",
+  "dispatched_at": "2026-11-16T02:50:46Z",
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-overlapping-queued-requests-launch-in-turn.html",
+      "line": "115",
+      "severity": "non-blocking",
+      "text": "non-blocking: the parenthetical (f4e4691c56c) is a review-finding id printed in a document where every other such parenthetical at lines 3, 5, 6 and 58 is a git revision, and git cat-file -t f4e4691c56c answers Not a valid object name, so a reader following the citation dead-ends."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-overlapping-queued-requests-launch-in-turn.html",
+      "line": "121",
+      "severity": "non-blocking",
+      "text": "non-blocking: the new paragraph calls the manifest's after arm the one measured at this repair's head (after-suite-repair.log at 724cd154) while the untouched suite-arm block at :75 still labels the after arm 15f768a2 with 58 passed in 64.83s, leaving two after arms in one document that a reader cannot tell apart."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/evidence.py:compose_landed_record composes the fragment body into the plan's landed record, reckon/serve.py:2740 serves that composed record, and reckon/crew/reports.py:_fragment_plan_of classifies the path as a fragment; the fragment parses as one section with the added h4 last.",
+    "diff": "read commit by commit over aa35c4de..724cd154; one commit, 13 insertions to the fragment alone, adding a Review round h4 and paragraph at lines 113-125 and touching no test, product module or manifest.",
+    "done_when": "the done_when asks for a head run with SLURM_JOB_ID unset, a verdict per cause, an arm over the importing files that adds no failure and a base-revision control; gate-head.log, negative-control.log, importers-base.log/importers-head.log and product-rules.log carry those, and the gained commit adds the manifest-check receipt negative-control-manifest.log at EXIT=1.",
+    "goal": "the node goal is that tests/test_overlapping_queued_requests_launch_in_turn.py passes in full on the primary branch, and the single gained commit 724cd154 modifies only the evidence fragment at lines 113-125, leaving that file and gate-head.log's 11 passed at 15f768a2 untouched.",
+    "manifest": "read the repaired manifest; it now carries baseline_suite (d0d77f07, 58 passed, EXIT=0), after_suite (724cd154, 58 passed, EXIT=0) and messages_received: none, and crew check --manifest returns ok true at EXIT=0 where the delivered copy's control log reads EXIT=1 on the same three findings.",
+    "write_paths": "the manifest's declared scope is reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the diff's one path lies inside it."
+  },
+  "justifications": {
+    "durability": "the gained diff adds no assertion, and nothing in the tree fails if lines 113-125 are deleted, so the only mechanism guarding this repair is the pre-existing crew check --manifest refusal its control log exercises.",
+    "evidence": "the gate the done_when names is unchanged and recorded at gate-head.log (11 passed at 15f768a2, EXIT=0), and the gained commit's own receipt is negative-control-manifest.log at EXIT=1 with the three findings, which I re-ran to ok true EXIT=0 on the repaired record.",
+    "fit": "the added block uses the same h4, p and code idiom as the neighbouring sections and introduces no plan, node or ticket identifier.",
+    "goal_fidelity": "the gained paragraph records the refusal and the repair it answers, and the repaired manifest now passes crew check --manifest at EXIT=0, so the blocking finding is answered rather than narrated.",
+    "reuse": "the diff adds no definition; the fragment-composition owner reckon/evidence.py:compose_landed_record is untouched and the new prose extends its input rather than duplicating a capability.",
+    "scope_discipline": "the diff's only path is inside the manifest's declared fragment scope and its 13 lines document the review round and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_overlapping_queued_requests_launch_in_turn.py passes in full on the primary branch, and the single gained commit 724cd154 modifies only the evidence fragment docs/evidence/fragments/queued-work-needs-no-workaround/red-file-overlapping-queued-requests-launch-in-turn.html:113-125, leaving that file and gate-head.log's 11 passed at 15f768a2 untouched.\nVERDICT done_when: the done_when asks for a head run with SLURM_JOB_ID unset, a verdict per cause, an arm over the importing files that adds no failure and a base-revision control; gate-head.log, negative-control.log, importers-base.log/importers-head.log and product-rules.log carry those, and the gained commit adds the manifest-check receipt negative-control-manifest.log at EXIT=1.\nVERDICT write_paths: the manifest's declared scope is reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the diff's one path, docs/evidence/fragments/queued-work-needs-no-workaround/red-file-overlapping-queued-requests-launch-in-turn.html, lies inside it.\nVERDICT manifest: read the repaired manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224802195987-qwnw-red-file-overlapping-queued-requests-launch-in-turn/manifest.md; it now carries baseline_suite (d0d77f07, baseline-suite.log, 58 passed, EXIT=0), after_suite (724cd154, after-suite-repair.log, 58 passed, EXIT=0) and messages_received: none, and crew check --manifest returns ok true with no findings at EXIT=0 where the delivered copy's control log reads EXIT=1 on the same three findings.\nVERDICT diff: read commit by commit over aa35c4de..724cd154; one commit, 13 insertions to the fragment alone, adding a Review round h4 and paragraph at lines 113-125 and touching no test, product module or manifest.\nCALL_SITES: reckon/evidence.py:compose_landed_record, reckon/serve.py:2740, reckon/crew/reports.py:_fragment_plan_of\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the gained paragraph at docs/evidence/fragments/queued-work-needs-no-workaround/red-file-overlapping-queued-requests-launch-in-turn.html:113-125 records the refusal and the repair it answers, and the repaired manifest now passes crew check --manifest at EXIT=0, so the blocking finding is answered rather than narrated.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate the done_when names is unchanged and recorded at gate-head.log (11 passed at 15f768a2, EXIT=0), and the gained commit's own receipt is negative-control-manifest.log at EXIT=1 with the three findings, which I re-ran to ok true EXIT=0 on the repaired record.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's only path is docs/evidence/fragments/queued-work-needs-no-workaround/red-file-overlapping-queued-requests-launch-in-turn.html, inside the manifest's declared docs/evidence/fragments/queued-work-needs-no-workaround scope, and its 13 lines document the review round and nothing else.\nSCORE durability: 13\nJUSTIFICATION durability: the gained diff adds no assertion, and nothing in the tree fails if docs/evidence/fragments/queued-work-needs-no-workaround/red-file-overlapping-queued-requests-launch-in-turn.html:113-125 is deleted, so the only mechanism that guards this repair is the pre-existing reckon crew check --manifest refusal its control log exercises at EXIT=1.\nSCORE fit: 18\nJUSTIFICATION fit: the added block at docs/evidence/fragments/queued-work-needs-no-workaround/red-file-overlapping-queued-requests-launch-in-turn.html:113 uses the same h4, p and code idiom as the neighbouring sections at :65 and :80 and introduces no plan, node or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition, so nothing can fork a capability; the fragment-composition owner I searched, reckon/evidence.py:compose_landed_record, is untouched and the new prose extends its input rather than duplicating a capability.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-overlapping-queued-requests-launch-in-turn.html:115 non-blocking: the parenthetical (f4e4691c56c) is a review-finding id printed in a document where every other such parenthetical at lines 3, 5, 6 and 58 is a git revision, and git cat-file -t f4e4691c56c answers Not a valid object name, so a reader following the citation dead-ends.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-overlapping-queued-requests-launch-in-turn.html:121 non-blocking: the new paragraph calls the manifest's after arm the one measured at this repair's head (after-suite-repair.log at 724cd154) while the untouched suite-arm block at :75 still labels the after arm 15f768a2 with 58 passed in 64.83s, leaving two after arms in one document that a reader cannot tell apart.\n",
+  "review_run_id": "r-20261116T024158270813-review-of-qwnw-red-file-overlapping-queued-requests-launch-in-turn-724cd154e293",
+  "reviewed_base_sha": "aa35c4de5243fa5d0e044434cc37dbe8337615d6",
+  "reviewed_head_sha": "724cd154e2939cce215cee02b46a5da6489fe66d",
+  "reviewed_run_id": "r-20261115T224802195987-qwnw-red-file-overlapping-queued-requests-launch-in-turn",
+  "reviewer": "omp/review",
+  "scores": {
+    "durability": 13,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T03:00:46.866446+00:00",
+  "total": 108
+}
