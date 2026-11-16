@@ -191,12 +191,13 @@ INDEX_BUSY_TIMEOUT_SECONDS = 0.2
 #: scan so the write lands once the reader is done.
 RECORD_BUSY_TIMEOUT_SECONDS = 120.0
 
-# The bound on retrying an append that lost a race for the store's write lock.
-# A lock held by a concurrent writer lasts milliseconds, so a few seconds of
-# backoff writes the row a single attempt would have lost; a store locked past
-# this bound is raised to the caller and left to the repair pass rather than
-# holding a promotion open.
-INDEX_RETRY_SECONDS = 3.0
+# The bound on retrying an append that lost a race for the store's lock. A
+# concurrent writer holds it for milliseconds, but the store keeps a rollback
+# journal, so one reader scanning it holds off every writer for as long as the
+# scan runs, and a scan of the whole store takes several seconds. A bound
+# shorter than one scan refused a promotion on every scan it met; the bound is
+# set well past the longest scan so the row is written once the reader is done.
+INDEX_RETRY_SECONDS = 120.0
 INDEX_RETRY_MAX_DELAY_SECONDS = 0.2
 
 # A scheduled pass bounds both its row transfers and its physical page moves.
