@@ -124,6 +124,13 @@ INDEX_STATE = {
                 "starts": "2026-08-25",
                 "ends": "2026-08-26",
                 "items": [{"slug": "rendered-contract"}],
+                # The row shape the roadmap walk serves: the derived state and
+                # the implementation figure are computed beside the members and
+                # travel with them, so the surface states them rather than
+                # deriving them again.
+                "derived_state": "active",
+                "implementation_pct": 42.0,
+                "blocked": 0,
                 "metrics": {
                     "item_count": 1,
                     "by_effective_status": {"active": 1},
@@ -145,6 +152,9 @@ INDEX_STATE = {
                 "starts": "2026-08-25",
                 "ends": "2026-08-27",
                 "items": [],
+                "derived_state": "planned",
+                "implementation_pct": 0.0,
+                "blocked": 0,
                 "metrics": {
                     "item_count": 0,
                     "by_effective_status": {},
@@ -747,7 +757,7 @@ def test_compact_progress_renders_label_tooltip_and_navigation_target(
               && location.hash.includes("#plan/rendered-contract"),
             label,
             tooltip,
-            target: location.hash.includes("#plan/rendered-contract"),
+            target: location.hash,
           };
         })()""",
         remove_signal="document.querySelector('.r-artifact-progress')?.remove()",

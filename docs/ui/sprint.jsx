@@ -92,35 +92,20 @@ function derivedFlowChainHours(inventory, runs, project, now = new Date()) {
   return window.ReckonCrewSchedule.farEnd(inventory, runs, project, now);
 }
 
-// The discovery payload states a sprint's figures two ways: flat derived
-// fields on the row, and the `metrics` block it was composed from. The flat
-// fields win; when a payload carries only the block, the row states what was
-// served rather than "unknown", which reads as a missing fact to a sprint's
-// own table.
-function dominantEffectiveStatus(counts) {
-  const entries = Object.entries(counts || {}).filter(([, count]) => Number(count) > 0);
-  if (!entries.length) return null;
-  const precedence = ["active", "blocked", "pending", "shipped"];
-  entries.sort((left, right) => Number(right[1]) - Number(left[1])
-    || precedence.indexOf(left[0]) - precedence.indexOf(right[0]));
-  return entries[0][0];
-}
-
+// Every figure the sprint table states is served on the sprint row by the
+// roadmap walk that owns sprint state. A payload without them is a payload
+// that has not been composed, and the table says so rather than deriving the
+// same fact a second time in the browser.
 function sprintStateRows(sprints, inventory) {
   return (sprints || []).map(sprint => {
     const members = sprintMembers(sprint, inventory);
-    const metrics = sprint.metrics || {};
-    const state = sprint.derived_state
-      || dominantEffectiveStatus(metrics.by_effective_status)
-      || "unknown";
+    const state = sprint.derived_state || "unknown";
     const drift = sprint.state_drift;
-    const heldCount = Number(sprint.blocked ?? metrics.by_effective_status?.blocked ?? 0);
+    const heldCount = Number(sprint.blocked || 0);
     const flag = drift
       ? `was ${drift.stored}`
       : (heldCount > 0 ? `${heldCount} held` : null);
-    const meanImpl = Number.isFinite(Number(sprint.implementation_pct))
-      ? Number(sprint.implementation_pct) / 100
-      : Number(metrics.mean_impl || 0);
+    const meanImpl = Number(sprint.implementation_pct || 0) / 100;
     const hours = sprintHoursSummary(members);
     const closed = state === "shipped" || CLOSED_SPRINT_AUTHORED_STATUSES.has(sprint.status);
     return { sprint, state, flag, heldCount, members, meanImpl, hours, closed };
