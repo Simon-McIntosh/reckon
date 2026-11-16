@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s75">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-16">
+  <meta name="evidence-commit" content="138b26ee40927f42a79d5e83c3a8af4d3f3a0ab4">
+  <title>A run whose host is gone can resume | reckon</title>
+</head>
+<body>
+<section id="a-run-whose-host-is-gone-can-resume">
+  <h2>A scheduler-observed end releases the foreign worker</h2>
+  <p>Commit <code>138b26ee40927f42a79d5e83c3a8af4d3f3a0ab4</code>
+  adds one scheduler observation shared by liveness, launch reservations,
+  resume and stop. The scheduler must recognise the launching host as a compute
+  node and successfully report no job of this user holding it. The observation
+  records the host, user id, attempt, timestamp, literal queries and raw answers
+  in <code>launcher-host-observation.json</code> before it licenses recovery.
+  Resume retains the worktree and session; stop records the exit with that
+  observation and sends no signal to a foreign numeric pid. Commit
+  <code>9324813e9bfcbc74fc9a2a2c8074c84ef5c9b4ad</code> aligns the guard
+  descriptions with these readings.</p>
+  <p>The temporary-home regression deliberately gives the remote worker the
+  same numeric pid as a live local process. Its vacant-host case reaches the
+  launch marker, builds a resume for the retained session and worktree, and
+  records a stop receipt. A running job, a login host outside the scheduler's
+  compute inventory, and a failed scheduler query all remain refused with
+  unknown liveness. The running-job control observes a nonempty scheduler
+  answer, so the empty answer is tested against an instrument that also sees
+  a job present.</p>
+  <p>The base reproduction refuses the first case with
+  <q>cannot read whether its worker is live</q>, naming
+  <code>compute-fixture.example.invalid</code> and asking for a launch or stop
+  there. The declared mutation restores the three product modules' base bytes
+  in a scratch copy of head. It reports <code>4 failed in 13.36s</code> and
+  <code>EXIT=1</code>, including
+  <code>test_a_vacated_compute_host_allows_resume_and_records_stop</code>;
+  the head arm does not fail that case.</p>
+  <p>Partition measurements use <code>all_debug</code> jobs submitted with
+  inherited SLURM job variables unset. The armed base gate reports
+  <code>58 passed in 33.75s</code>, <code>EXIT=0</code>; the implementation-head
+  gate reports <code>62 passed in 41.33s</code>, <code>EXIT=0</code>.
+  Matched arms over 145 importer files report
+  <code>52 failed, 1343 passed, 1 skipped, 45 warnings in 427.17s</code> at base
+  and <code>51 failed, 1344 passed, 1 skipped, 45 warnings in 399.42s</code>
+  at head, both <code>EXIT=1</code>, with zero added failure ids. The differing
+  pre-existing failure is not claimed as a repair. The existing two lint
+  findings and one unformatted source file remain unchanged; this node adds
+  no lint or formatting finding.</p>
+  <p>Receipts, literal commands, imported module paths, scratch working
+  directories, failure ids and the negative control are preserved under
+  <code>r-20261116T073032064430-a-run-whose-host-is-gone-can-resume</code>
+  in the crew run directory, with <code>importer-comparison.json</code> naming
+  the matched broad logs. This measures the isolated change; the coordinator
+  owns independent review, integration and verification of the merged result.</p>
+</section>
+</body>
+</html>

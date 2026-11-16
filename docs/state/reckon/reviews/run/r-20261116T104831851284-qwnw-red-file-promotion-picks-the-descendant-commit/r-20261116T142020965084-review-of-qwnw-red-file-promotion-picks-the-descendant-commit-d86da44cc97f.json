@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own suite arms: suite-base.txt (f361d2bcfced, scratch tree /tmp/reckon-crew-scratch/r-20261116T104831851284-qwnw-red-file-promotion-picks-the-descendant-commit/qwnw-base-tree, 58 passed, EXIT=0) and suite-after.txt (d86da44cc97f, worktree, 58 passed, EXIT=0) are both pytest-format and both list no failing id, so the head adds no failing test and the count is a measured 0. The same helper reads the three failing ids out of gate-base-all_debug.log, so the instrument was shown to see a known failure before the empty suite arms were reported. The base arm was run at f361d2bcfced while the change's real parent is 89a6b4abf79a; git diff shows no difference in tests/test_promotion_picks_the_descendant_commit.py or in reckon/crew/promotion_evidence.py, promotion.py or merge.py between those two revisions, so the base arm describes the tree the repair was made against.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-16T14:29:12.733Z",
+  "dispatched_at": "2026-11-16T14:26:18Z",
+  "findings": [
+    {
+      "file": "tests/test_promotion_picks_the_descendant_commit.py",
+      "line": "271",
+      "severity": "non-blocking",
+      "text": "test named test_the_obligation_remedy_line_runs_as_printed appends --wait to the obligation's printed line, so the line is no longer run as printed and a regression that leaves the printed line unable to carry out a promotion in the call cannot redden it; the append is otherwise sound because reckon/crew_run_commands.py:3532-3537 makes the CLI default file a durable request and --wait carry it out."
+    },
+    {
+      "file": "tests/test_promotion_picks_the_descendant_commit.py",
+      "line": "264",
+      "severity": "non-blocking",
+      "text": "the repair pins the remedy line's citation order to oldest-first, which is an incidental presentation of the traversal documented at reckon/crew/merge.py:279 rather than the section's rule of descent selection; tests (1) and (2) already prove order-independence, so a future legitimate change to print newest-first would redden this line without breaking the rule it names."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -B -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104831851284-qwnw-red-file-promotion-picks-the-descendant-commit/suite-after.txt",
+      "revision": "d86da44cc97ff2945b9ad6c0639a10ef5932f4ef"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -B -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104831851284-qwnw-red-file-promotion-picks-the-descendant-commit/suite-base.txt",
+      "revision": "f361d2bcfcedaa2068686dd3588b2907527613f2"
+    }
+  },
+  "item_verdicts": {
+    "diff": "Read the node's own four commits against base f361d2bcfced: f4f7cc9 edits only tests/test_promotion_picks_the_descendant_commit.py (a 16-added/9-removed delta: the fixture gate log body, the remedy line's expected citation order, and the --wait append), 6cdd6866be adds the two docs/evidence/fragments/queued-work-needs-no-workaround/ records, and ca4264a05a / d86da44cc9 rewrite their prose to cite gate logs instead of superseded job runs; the rest of the f361d2b..d86da44 range is other runs' promotions on main, which _promotion_commits excludes via its excluding=shared argument at reckon/crew/promotion.py:690.",
+    "done_when": "Read the done_when's clauses against gate-base-all_debug.log (revision f361d2bcfced, 3 failed 1 passed, EXIT=1, job 1320061) and gate-head-all_debug.log (revision d86da44cc97f, 4 passed, EXIT=0, job 1320066), both launched by gate-head.sbatch and gate-base.sbatch, which unset SLURM_JOB_ID before pytest at line 22 of each; the arm over the node's write scope reads 58 passed EXIT=0 at both revisions, so it adds no failure against the base.",
+    "goal": "Read the goal in dispatch-detail.json against the head: tests/test_promotion_picks_the_descendant_commit.py runs all four of its tests green at d86da44cc97f in gate-head-all_debug.log, so the deliverable the goal names holds in the run's own tree, with the landing on the primary branch still owed by promotion rather than by this node.",
+    "manifest": "Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104831851284-qwnw-red-file-promotion-picks-the-descendant-commit/manifest.md: status complete, four commits, the gate command and four test_logs paths, three causes each judged test-wrong, baseline_suite and after_suite at failure_count 0 with empty finding lists, and a landing line naming base 3 failed/1 passed against head 4 passed EXIT=0.",
+    "write_paths": "Read prompt.txt's declared write scope (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the two fragment files) and the dispatch fence's literal list at prompt.txt:312-313; every path in the four node commits lies inside it and no product file was touched."
+  },
+  "justifications": {
+    "durability": "Reinstating newest-first ordering in reckon/crew/merge.py:294 reddens tests/test_promotion_picks_the_descendant_commit.py:264, and restoring the summary-less fixture log reddens the three promotion tests through the refusal at reckon/crew/promotion_evidence.py:1842, though the appended --wait at :271 leaves the printed line's own sufficiency unexercised.",
+    "evidence": "gate-base-all_debug.log and gate-head-all_debug.log each carry their revision, tree, command, module, cwd and slurm job on header lines 1-7 and end on a bare EXIT line, and gate-base.sbatch / gate-head.sbatch unset SLURM_JOB_ID at line 22 before pytest, so the measure's job and environment clauses are files rather than claims; the suite arms' 58 passed figures come from suite-base.txt and suite-after.txt.",
+    "fit": "The repair keeps the file's fixture shape and comment idiom at tests/test_promotion_picks_the_descendant_commit.py:104-108, but appending --wait at :271 adds an argument the line under test does not print, against the test's own 'runs as printed' claim at :260-270.",
+    "goal_fidelity": "tests/test_promotion_picks_the_descendant_commit.py:264 and :271 carry the two expectations the repair changed, and gate-head-all_debug.log records all four tests passing at d86da44cc97f with EXIT=0.",
+    "reuse": "Searched reckon/crew for an existing owner of the printed promotion command and found _promotion_command at reckon/crew/recovery_classification.py:3192, which the test reaches through classify_pointer; the diff adds no function, class or module and no second composition.",
+    "scope_discipline": "All four node commits touch only tests/test_promotion_picks_the_descendant_commit.py and the two docs/evidence/fragments/queued-work-needs-no-workaround/ records, each inside prompt.txt's declared write scope, and no product file is changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the goal in dispatch-detail.json against the head; tests/test_promotion_picks_the_descendant_commit.py runs all four of its tests green at d86da44cc97f in gate-head-all_debug.log, so the named deliverable holds in the run's own tree, with the landing on the primary branch still owed by promotion.\nVERDICT done_when: read the done_when's clauses against gate-base-all_debug.log (f361d2bcfced, 3 failed 1 passed, EXIT=1, job 1320061) and gate-head-all_debug.log (d86da44cc97f, 4 passed, EXIT=0, job 1320066), both run by gate-head.sbatch and gate-base.sbatch, which unset SLURM_JOB_ID before pytest at line 22; the arm over the node's write scope reads 58 passed EXIT=0 at both revisions.\nVERDICT write_paths: read prompt.txt's declared scope (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the two fragment files); every path in the four node commits is inside it.\nVERDICT manifest: read .../manifest.md; it records status complete, four commits, the gate command with four test_logs paths, three causes each judged test-wrong, both suite arms at failure_count 0 with empty id lists, and a landing line.\nVERDICT diff: read the node's four commits against base f361d2bcfced -- f4f7cc9 (test file, 16 added/9 removed lines), 6cdd686 (two evidence fragments), ca4264a and d86da44 (fragment prose citing gate logs) -- and the remaining commits in the range are other runs' promotions on main, which _promotion_commits excludes via excluding=shared at reckon/crew/promotion.py:690.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_promotion_picks_the_descendant_commit.py:264 and :271 carry the two expectations the repair changed, and gate-head-all_debug.log records all four tests passing at d86da44cc97f with EXIT=0.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-base-all_debug.log and gate-head-all_debug.log name their revision, tree, command, module, cwd and slurm job on lines 1-7 and end on a bare EXIT line, while gate-base.sbatch and gate-head.sbatch unset SLURM_JOB_ID at line 22 before pytest.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the four commits touch only tests/test_promotion_picks_the_descendant_commit.py and the two docs/evidence/fragments/queued-work-needs-no-workaround/ records, all inside prompt.txt's declared scope, and no product file changed.\nSCORE durability: 16\nJUSTIFICATION durability: reinstating newest-first ordering in reckon/crew/merge.py:294 reddens tests/test_promotion_picks_the_descendant_commit.py:264, but the appended --wait at :271 leaves the printed line's own sufficiency unexercised.\nSCORE fit: 16\nJUSTIFICATION fit: the repair keeps the file's fixture shape and comment idiom at tests/test_promotion_picks_the_descendant_commit.py:104-108 yet appends at :271 a flag the line under test does not print.\nSCORE reuse: 20\nJUSTIFICATION reuse: the printed promotion command already has one owner, _promotion_command at reckon/crew/recovery_classification.py:3192, which the test reaches through classify_pointer, and the diff adds no definition.\nFINDING tests/test_promotion_picks_the_descendant_commit.py:271 non-blocking: the test named test_the_obligation_remedy_line_runs_as_printed appends --wait to the obligation's printed line, so a regression leaving the printed line unable to carry a promotion out in the call cannot redden it; the append is otherwise sound because reckon/crew_run_commands.py:3532-3537 makes the CLI default file a durable request.\nFINDING tests/test_promotion_picks_the_descendant_commit.py:264 non-blocking: the repair pins the remedy line's citation order to oldest-first, an incidental presentation of the traversal documented at reckon/crew/merge.py:279 rather than the section's descent rule, so a legitimate future change to print newest-first would redden this line without breaking the rule it names.\n",
+  "review_run_id": "r-20261116T142020965084-review-of-qwnw-red-file-promotion-picks-the-descendant-commit-d86da44cc97f",
+  "reviewed_base_sha": "f361d2bcfcedaa2068686dd3588b2907527613f2",
+  "reviewed_head_sha": "d86da44cc97ff2945b9ad6c0639a10ef5932f4ef",
+  "reviewed_run_id": "r-20261116T104831851284-qwnw-red-file-promotion-picks-the-descendant-commit",
+  "rubric": "review",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T21:09:09.107332+00:00",
+  "total": 106
+}

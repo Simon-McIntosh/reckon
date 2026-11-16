@@ -1,0 +1,216 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run baseline_suite and after_suite logs: both complete, EXIT=0, no FAILED ids; summaries 58 passed and 62 passed. The red base and mutation logs provide positive controls for failure-id extraction.",
+  "assertion_independence": "No added assertion compares an output to itself or to an expectation obtained from that same output; snapshots are captured before mutation, committed blobs are queried independently, and literal identity/narrative expectations specify the operation contract.",
+  "assertion_review": [
+    {
+      "fails_when": "The store hook is reached for the wrong project/run, before the landing comment differs from HEAD, or before the per-run file is written; these assertions prove the refusal is injected after the forward writes.",
+      "lines": "93-97"
+    },
+    {
+      "fails_when": "Promotion swallows the append refusal or changes its refusal type/message; restoring the base ordering leaves this expectation green, so it is a refusal-shape check rather than the restoration guard.",
+      "lines": "127-128"
+    },
+    {
+      "fails_when": "Removing the new rollback leaves the post-call plan bytes different from the bytes captured before promotion; the fixture committed those bytes before the capture, independently of rollback.",
+      "lines": "130"
+    },
+    {
+      "fails_when": "A staged or unstaged change remains at the plan path after refusal, including an index-only residue that the byte comparison alone cannot detect.",
+      "lines": "131"
+    },
+    {
+      "fails_when": "A refused promotion changes repository HEAD; the independent reference was read with git before invoking promotion.",
+      "lines": "132"
+    },
+    {
+      "fails_when": "A refused promotion deletes or rewrites the live pointer; the independent bytes were captured before promotion.",
+      "lines": "133"
+    },
+    {
+      "fails_when": "The refused append leaves its newly written run projection on disk; this pins existing ledger cleanup alongside the plan repair.",
+      "lines": "134"
+    },
+    {
+      "fails_when": "The store refusal stops being raised; this is a refusal-shape check and does not alone establish rollback.",
+      "lines": "143-144"
+    },
+    {
+      "fails_when": "Restoring base promotion code leaves the plan dirty, making the real require_plan_section_visible call raise PlanVisibilityError instead of returning the pre-call revision.",
+      "lines": "146"
+    },
+    {
+      "fails_when": "A successful promotion stops reporting a recorded plan comment; this is a success-path flag check, backed independently by the committed payload assertion.",
+      "lines": "152"
+    },
+    {
+      "fails_when": "Successful promotion omits its narrative from the committed HEAD plan; the literal expected narrative is required output and is independently read from git.",
+      "lines": "154"
+    },
+    {
+      "fails_when": "Successful promotion leaves the working plan content different from the committed HEAD blob.",
+      "lines": "155"
+    },
+    {
+      "fails_when": "Successful promotion leaves a staged or unstaged plan change.",
+      "lines": "156"
+    },
+    {
+      "fails_when": "Successful promotion leaves the plan dirty or dispatch returns a revision different from independently read git HEAD; this validates the runtime visibility reader against the repository.",
+      "lines": "157"
+    },
+    {
+      "fails_when": "Successful promotion leaves no readable run row, the wrong run row or an unexpected duplicate in the isolated fixture ledger.",
+      "lines": "158"
+    }
+  ],
+  "assertion_source": [
+    {
+      "line": 93,
+      "text": "assert project == PROJECT"
+    },
+    {
+      "line": 94,
+      "text": "assert record[\"run_id\"] == RUN_ID"
+    },
+    {
+      "line": 96,
+      "text": "assert (repository / PLAN_PATH).read_text().strip() != committed"
+    },
+    {
+      "line": 97,
+      "text": "assert ledger.run_path(PROJECT, RUN_ID, repository).is_file()"
+    },
+    {
+      "line": 127,
+      "text": "with pytest.raises(ledger.LedgerError, match=r\"injected store.*refusal\"):"
+    },
+    {
+      "line": 130,
+      "text": "assert (repository / PLAN_PATH).read_bytes() == before"
+    },
+    {
+      "line": 131,
+      "text": "assert git(repository, \"status\", \"--porcelain\", \"--\", PLAN_PATH) == \"\""
+    },
+    {
+      "line": 132,
+      "text": "assert git(repository, \"rev-parse\", \"HEAD\") == head"
+    },
+    {
+      "line": 133,
+      "text": "assert pointer_path(RUN_ID).read_bytes() == pointer"
+    },
+    {
+      "line": 134,
+      "text": "assert not ledger.run_path(PROJECT, RUN_ID, repository).exists()"
+    },
+    {
+      "line": 143,
+      "text": "with pytest.raises(ledger.LedgerError, match=\"injected store refusal\"):"
+    },
+    {
+      "line": 146,
+      "text": "assert _dispatch_visibility(repository) == head"
+    },
+    {
+      "line": 152,
+      "text": "assert result[\"plan_comment\"][\"recorded\"] is True"
+    },
+    {
+      "line": 154,
+      "text": "assert \"Delivered the change\" in committed"
+    },
+    {
+      "line": 155,
+      "text": "assert committed == (repository / PLAN_PATH).read_text().strip()"
+    },
+    {
+      "line": 156,
+      "text": "assert git(repository, \"status\", \"--porcelain\", \"--\", PLAN_PATH) == \"\""
+    },
+    {
+      "line": 157,
+      "text": "assert _dispatch_visibility(repository) == git(repository, \"rev-parse\", \"HEAD\")"
+    },
+    {
+      "line": 158,
+      "text": "assert [row[\"run_id\"] for row in ledger.runs(PROJECT, root=repository)] == [RUN_ID]"
+    }
+  ],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:complete -> _complete_locked at line 1274",
+    "reckon/ledger.py:append_run at line 3560",
+    "reckon/crew/routing.py:require_plan_section_visible at line 2779"
+  ],
+  "completed_at": "2026-11-16T16:11:18Z",
+  "dispatched_at": "2026-11-16T16:04:46Z",
+  "failure_evidence": {
+    "after_failure_ids": [],
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T115646310522-refused-promotion-keeps-plan-committed-s17/logs/after-suite.log",
+    "baseline_failure_ids": [],
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T115646310522-refused-promotion-keeps-plan-committed-s17/logs/baseline-suite.log",
+    "importer_added_failure_ids": [],
+    "importer_after_count": 76,
+    "importer_baseline_count": 77,
+    "negative_control_failure_ids": [
+      "tests/test_a_refused_promotion_leaves_its_plan_committed.py::test_a_store_refusal_restores_the_committed_plan[False]",
+      "tests/test_a_refused_promotion_leaves_its_plan_committed.py::test_a_store_refusal_restores_the_committed_plan[True]",
+      "tests/test_a_refused_promotion_leaves_its_plan_committed.py::test_dispatch_sees_a_committed_plan_after_the_store_refuses"
+    ]
+  },
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "a test-coverage gap on the refusal receipt branch, not a behaviour defect; the four new cases cover the outcome the section asks for",
+      "recorded_at": "2026-11-16T19:30:14.695207+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "2466",
+      "severity": "non-blocking",
+      "text": "non-blocking: The new run-store refusal receipt and unrestored-path error branch have no assertion in the added tests; deleting _record_landing_refusal or the conditional error suffix at lines 2473-2476 leaves all four new cases passing, so those diagnostic guarantees can regress without the new gate detecting it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read each of 039d39e5a5771497f14ee3d181a1671aca36ade2, b4a1127336d131b5da4bd07c702e2aa443f967c3 and eca11f779695d39cb1949f202dde9dbe9082b7e6 against base faef8aae9a2af0d6caddfd07b8510391f5063be1; the diff adds four regression cases, reuses rollback in the append error handler and records six evidence-fragment lines.",
+    "done_when": "Live docs/plans/a-landing-never-waits-on-a-shared-index.html section s17 and the reviewed prompt.txt:277-298 require restored plan bytes, subsequent dispatch visibility, preserved successful commits and no added importer failures; the recorded base, head, mutation and importer logs measure all four.",
+    "goal": "The goal in the reviewed run's prompt.txt:38 is to leave a plan committed after a run-store refusal, and reckon/crew/promotion.py:2451-2478 now restores its landing writes on both an absent row and a refusing confirmation lookup.",
+    "manifest": "The reviewed run's manifest.md records three resolvable commits, the complete armed suite pair and mutation logs; reading logs/baseline-suite.log and logs/after-suite.log confirms 58 and 62 passes with EXIT=0 and zero added failure ids.",
+    "write_paths": "The reviewed prompt.txt:84-88 declares promotion.py, the new regression test and the run-owned evidence fragment and figure directory; all three changed files are within that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_refused_promotion_leaves_its_plan_committed.py:130-158 independently checks bytes, index cleanliness, HEAD, pointer, run-file cleanup, dispatch visibility and committed success, but does not assert the new refusal receipt or unrestored-path reporting at promotion.py:2466-2476.",
+    "evidence": "tests/test_a_refused_promotion_leaves_its_plan_committed.py:93-158 reaches the real append boundary and its recorded logs show base 3 failed/1 passed, head 62 passed and mutation 3 failed/1 passed, with importer failure-id sets decreasing from 77 to 76 and none added.",
+    "fit": "reckon/crew/promotion.py:2456-2476 uses the surrounding promotion_scope rollback and refusal-reporting idiom and introduces no production definition or forbidden source name; the new tests use tests/helpers/git.py:12.",
+    "goal_fidelity": "reckon/crew/promotion.py:2451-2478 restores the plan before propagating a store refusal even when row_for_run raises, while leaving the successful append path intact.",
+    "reuse": "Capability searches for landing restoration, refusal reporting, dispatch visibility and promotion-test setup found promotion_scope.py:1882/1919/2206/2427, routing.py:2779 and tests/test_refused_promotion_leaves_no_trace.py:89-155; the change extends the existing promotion caller and wraps these owners rather than duplicating their capabilities.",
+    "scope_discipline": "The only changed paths are reckon/crew/promotion.py, tests/test_a_refused_promotion_leaves_its_plan_committed.py and the explicitly declared docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/refused-promotion-keeps-plan-committed-s17.html."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal in the reviewed run's prompt.txt:38 is to leave a plan committed after a run-store refusal, and reckon/crew/promotion.py:2451-2478 now restores its landing writes on both an absent row and a refusing confirmation lookup.\nVERDICT done_when: Live docs/plans/a-landing-never-waits-on-a-shared-index.html section s17 and the reviewed prompt.txt:277-298 require restored plan bytes, subsequent dispatch visibility, preserved successful commits and no added importer failures; the recorded base, head, mutation and importer logs measure all four.\nVERDICT write_paths: The reviewed prompt.txt:84-88 declares promotion.py, the new regression test and the run-owned evidence fragment and figure directory; all three changed files are within that scope.\nVERDICT manifest: The reviewed run's manifest.md records three resolvable commits, the complete armed suite pair and mutation logs; reading logs/baseline-suite.log and logs/after-suite.log confirms 58 and 62 passes with EXIT=0 and zero added failure ids.\nVERDICT diff: Read each of 039d39e5a5771497f14ee3d181a1671aca36ade2, b4a1127336d131b5da4bd07c702e2aa443f967c3 and eca11f779695d39cb1949f202dde9dbe9082b7e6 against base faef8aae9a2af0d6caddfd07b8510391f5063be1; the diff adds four regression cases, reuses rollback in the append error handler and records six evidence-fragment lines.\nCALL_SITES: reckon/crew/promotion.py:complete -> _complete_locked at line 1274, reckon/ledger.py:append_run at line 3560, reckon/crew/routing.py:require_plan_section_visible at line 2779\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:2451-2478 restores the plan before propagating a store refusal even when row_for_run raises, while leaving the successful append path intact.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_a_refused_promotion_leaves_its_plan_committed.py:93-158 reaches the real append boundary and its recorded logs show base 3 failed/1 passed, head 62 passed and mutation 3 failed/1 passed, with importer failure-id sets decreasing from 77 to 76 and none added.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The only changed paths are reckon/crew/promotion.py, tests/test_a_refused_promotion_leaves_its_plan_committed.py and the explicitly declared docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/refused-promotion-keeps-plan-committed-s17.html.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_refused_promotion_leaves_its_plan_committed.py:130-158 independently checks bytes, index cleanliness, HEAD, pointer, run-file cleanup, dispatch visibility and committed success, but does not assert the new refusal receipt or unrestored-path reporting at promotion.py:2466-2476.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/promotion.py:2456-2476 uses the surrounding promotion_scope rollback and refusal-reporting idiom and introduces no production definition or forbidden source name; the new tests use tests/helpers/git.py:12.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for landing restoration, refusal reporting, dispatch visibility and promotion-test setup found promotion_scope.py:1882/1919/2206/2427, routing.py:2779 and tests/test_refused_promotion_leaves_no_trace.py:89-155; the change extends the existing promotion caller and wraps these owners rather than duplicating their capabilities.\nFINDING reckon/crew/promotion.py:2466 non-blocking: The new run-store refusal receipt and unrestored-path error branch have no assertion in the added tests; deleting _record_landing_refusal or the conditional error suffix at lines 2473-2476 leaves all four new cases passing, so those diagnostic guarantees can regress without the new gate detecting it.\n",
+  "review_run_id": "r-20261116T160349922889-review-of-refused-promotion-keeps-plan-committed-s17-eca11f779695",
+  "reviewed_base_sha": "faef8aae9a2af0d6caddfd07b8510391f5063be1",
+  "reviewed_head_sha": "eca11f779695d39cb1949f202dde9dbe9082b7e6",
+  "reviewed_run_id": "r-20261116T115646310522-refused-promotion-keeps-plan-committed-s17",
+  "scores": {
+    "durability": 18,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T20:08:47.260350+00:00",
+  "total": 118
+}
