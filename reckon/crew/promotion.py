@@ -2443,11 +2443,37 @@ def _complete_locked(
     profile_anchor = _profile_fold_anchor(project, ledger_root)
     try:
         written = ledger.append_run(project, run, root=ledger_root)
-    except ledger.LedgerError:
+    except ledger.LedgerError as exc:
         # Another completion can land after the read above. Treat only an
         # observed matching record as success; every other ledger error is
-        # still a refusal.
-        existing = row_for_run(project, run_id, ledger_root)
+        # still a refusal. A failed lookup must also restore the plan write:
+        # a store that cannot accept a row may be unable to read it back.
+        existing = None
+        try:
+            existing = row_for_run(project, run_id, ledger_root)
+        finally:
+            if existing is None:
+                rollback = _restore_landing_writes(
+                    checkout,
+                    _plan_comment_store_path(
+                        project=project,
+                        plan=str(node.get("plan") or ""),
+                        comment=comment,
+                        root=ledger_root,
+                        checkout=checkout,
+                    ),
+                )
+                _record_landing_refusal(
+                    run_id,
+                    step="run-store",
+                    message=str(exc),
+                    checkout=checkout,
+                    rollback=rollback,
+                )
+                if not all(rollback.values()):
+                    raise ledger.LedgerError(
+                        f"{exc}{_unrestored_landing_writes(rollback)}"
+                    ) from exc
         if existing is None:
             raise
         already_promoted = True
@@ -3418,6 +3444,7 @@ from reckon.crew.promotion_scope import (
     _shadow_stream_contamination,
     _snapshot_entries,
     _strip_store_owned_content,
+    _unrestored_landing_writes,
     _wall_exceeded_budget,
     _worker_authored_landing_record,
     _write_shadow_patch,
