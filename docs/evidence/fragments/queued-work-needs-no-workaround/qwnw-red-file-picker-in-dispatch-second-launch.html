@@ -3,7 +3,7 @@
 <p>Cause and verdict: one cause, and the test was wrong. The dispatch command writes a created-run notice to stderr by design, keeping stdout as its single final JSON document; Click 8.4's <code>CliRunner</code> fills <code>result.output</code> with both streams, so the test helper decoded the notice. The helper now parses <code>result.stdout</code>, asserting the stronger rule that all of stdout is the JSON document. No assertion was deleted or weakened.</p>
 <dl>
 <dt>Base, revision 0e0f25b0f941</dt><dd>10 failed, 3 passed (all 10 in tests/test_picker_in_dispatch.py)</dd>
-<dt>Head, revision c2567688a1</dt><dd>13 passed</dd>
+<dt>Head, revision 675ea296a7</dt><dd>13 passed</dd>
 <dt>Picker importer arm, 21 files</dt><dd>11 failing at base, 1 failing at head; the survivor fails identically at base in tests/test_picker_route_keeps_availability_refusal.py and is another node's file</dd>
 <dt>Ruff on the changed path</dt><dd><code>ruff check</code> clean at base and head; <code>ruff format --check</code> reports the same single pre-existing finding at both revisions</dd>
 </dl>
