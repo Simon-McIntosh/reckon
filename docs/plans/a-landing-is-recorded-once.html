@@ -19,11 +19,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,evidence">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;a-landing-is-recorded-once#s2&quot;], &quot;s5&quot;: [&quot;a-landing-is-recorded-once#s3&quot;], &quot;s6&quot;: [&quot;a-landing-is-recorded-once#s3&quot;, &quot;a-landing-is-recorded-once#s4&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <title>A Landing Is Recorded Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="25">
+<meta name="plan-version" content="26">
 <meta name="plan-modified" content="2026-11-16">
 </head>
 <body>
@@ -50,7 +50,7 @@
     <p><strong>Done when</strong> a new test file shows: closing a plan whose done sections each have a landing comment succeeds; closing one with a done section that states a done-when and has neither a landing comment nor a run record is refused and the refusal names the section; adding the comment lets the same close succeed; and a done section that states no done-when and has no comment does not stop a close. Negative controls: with the check removed, the second close succeeds, and a check that ignores whether the section states a done-when refuses the fourth. A section that was already done when the rule landed, with a done-when and no landing, does not stop a close, and a section marked done afterwards with no landing does. The new refusal is also run against the live store of every mounted project, and it refuses no open plan as that store stands; the log is in the node's run directory. The test files that import the close operation add no failure against the base revision.</p>
 
     <h2 id="s5">§5 — A closing sprint gets one page</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> Closing a sprint writes one page with a row per member plan (status, sections landed, runs, worker hours and the plan's headline result) and the figures those plans' overviews carry. Every link on the page resolves.</p>
     <p><strong>Done when</strong> a new test file shows, over a temporary project with a three-plan sprint: the page has three rows whose counts equal those in each plan's overview; a plan with no overview is listed with its status and no broken link; every <code>href</code> and <code>src</code> on the page resolves to a file in the repository; and the page passes <code>reckon audit-doc</code>. Negative control: a row linking a plan with no overview fails the third case. The test files that import the sprint close add no failure against the base revision.</p>
 
@@ -162,6 +162,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261115T085733783332-alro-s5" data-who="reckon-build" data-when="2026-11-16T03:32:09.269Z">
     <div class="r-comment-body"><p>alro-s5 — closing a sprint writes docs/evidence/archive/&lt;sprint&gt;-closing.html with one row per member plan (status, sections landed, runs, worker time, headline result), the figures its runs named and its totals, every count read from reckon.evidence.read_section_landings and every href/src resolving to a repository file, and the page passes reckon audit-doc (4 new cases, 73 passed after arm); the landing-command guard now reads the run ledger once per close and refuses a state that names no project or slug instead of reading it as unlanded (11 guard cases).</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-11-16T07:13:54Z">
+    <div class="r-comment-body"><p>Landed by <code>alro-s5</code> (head <code>164fa6d9c1</code>), independently reviewed at 101 with no added failure. Closing a sprint now writes one closing page with a row per member plan, the figures its runs named and its totals, and the close guard reads the run ledger once per close and refuses a state that names no project or slug. Head arm 73 passed. Two review findings on the strength of the new tests (the sections-landed count is compared only where every section is done, and the declared negative control was not the one staged) are folded into node <code>alro-s5b</code>; two about a fragment's wording and a log header were exempted.</p></div>
 </div>
 </section>
 </main>
