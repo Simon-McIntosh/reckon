@@ -5,6 +5,7 @@ from __future__ import annotations
 import shlex
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -214,3 +215,68 @@ def test_partitioned_arm_preserves_the_unresolved_log_path(tmp_path, monkeypatch
         assert not target.exists()
     else:
         assert (target.read_bytes(), target.stat().st_mtime_ns) == before
+
+
+def test_repeated_armed_measurements_keep_each_attempt(tmp_path):
+    tree = tmp_path / "head"
+    base = tmp_path / "base"
+    tree.mkdir()
+    base.mkdir()
+
+    def runner(argv, **options):
+        return subprocess.CompletedProcess(argv, 0, "command-marker\n", "")
+
+    arguments = {
+        "command": "true",
+        "tree": tree,
+        "base_tree": base,
+        "base_sha": "base",
+        "head_sha": "head",
+        "logs_dir": tmp_path / "logs",
+        "run": runner,
+        "config": {},
+    }
+    first = landing_measure.armed_observations(**arguments)
+    previous = {
+        arm["log_path"]: (
+            Path(arm["log_path"]).read_bytes(),
+            Path(arm["log_path"]).stat().st_mtime_ns,
+        )
+        for arm in first.values()
+    }
+    second = landing_measure.armed_observations(**arguments)
+    assert not set(previous) & {arm["log_path"] for arm in second.values()}
+    for path, snapshot in previous.items():
+        assert (Path(path).read_bytes(), Path(path).stat().st_mtime_ns) == snapshot
+    assert all(arm["exit_status"] == 0 for arm in second.values())
+
+
+def test_a_job_retry_keeps_the_prior_receipt(tmp_path, monkeypatch):
+    replay = tmp_path / "verify.log"
+    stale = tmp_path / "verify.log.job.log"
+    stale.write_text("old-marker\nEXIT=0\n")
+    snapshot = (stale.read_bytes(), stale.stat().st_mtime_ns)
+    monkeypatch.setattr(promotion_gate, "_commit_canonical_id", lambda *args: "fixture")
+    monkeypatch.setattr(
+        promotion_gate,
+        "_replay_landing",
+        lambda root: {"measure_partition": "all_debug"},
+    )
+    calls = []
+
+    def scheduler(argv, **options):
+        calls.append(argv)
+        return subprocess.CompletedProcess(argv, 1, "", "")
+
+    report = promotion_gate.rerun_gate_at_integrated_revision(
+        repository=tmp_path,
+        gate_check={"command": "true"},
+        integrated_revision="fixture",
+        replay_log_path=replay,
+        run=scheduler,
+    )
+    assert len(calls) == 1
+    assert report["exit_status"] == 3
+    assert not report["ok"]
+    assert (stale.read_bytes(), stale.stat().st_mtime_ns) == snapshot
+    assert "old-marker" not in replay.read_text()

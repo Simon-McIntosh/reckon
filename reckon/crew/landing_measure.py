@@ -125,7 +125,9 @@ def submit_measurement(
     import sys
 
     request = json.loads(request_path.read_text(encoding="utf-8"))
-    log = request_path.parent / "job.log"
+    from reckon.crew.promotion_gate import _unused_log_path
+
+    log = _unused_log_path(request_path.parent / "job.log")
     source = Path(__file__).resolve().parents[2]
     invocation = shlex.join(
         [
@@ -1066,12 +1068,14 @@ def measure_run(
         )
         runner.partitioned = True
     _carry_missing_tests(base_tree, tree, node_tests)
+    from reckon.crew.promotion_gate import _unused_log_path
+
     logs = Path(logs_dir)
     suite_bound = bound(len(node_tests))
     suite_base = _arm(
         argv,
         base_tree,
-        logs / "suite-base.log",
+        _unused_log_path(logs / "suite-base.log"),
         runner,
         suite_bound,
         environment,
@@ -1080,7 +1084,7 @@ def measure_run(
     suite_head = _arm(
         argv,
         tree,
-        logs / "suite-head.log",
+        _unused_log_path(logs / "suite-head.log"),
         runner,
         suite_bound,
         environment,
@@ -1093,7 +1097,7 @@ def measure_run(
         population_base = _arm(
             population_command,
             base_tree,
-            logs / "population-base.log",
+            _unused_log_path(logs / "population-base.log"),
             runner,
             population_bound,
             environment,
@@ -1102,7 +1106,7 @@ def measure_run(
         population_head = _arm(
             population_command,
             tree,
-            logs / "population-head.log",
+            _unused_log_path(logs / "population-head.log"),
             runner,
             population_bound,
             environment,
@@ -1154,7 +1158,7 @@ def measure_run(
             isolated_command(argv, test_id, node_tests),
             test_id,
             arm_tree,
-            logs / "isolated" / f"{_slug(test_id)}-{arm}-{n}.log",
+            _unused_log_path(logs / "isolated" / f"{_slug(test_id)}-{arm}-{n}.log"),
             runner,
             bound(1),
             environment,
@@ -1278,11 +1282,13 @@ def armed_observations(
         )
         runner.partitioned = True
     _carry_missing_tests(base_tree, tree, node_tests)
+    from reckon.crew.promotion_gate import _unused_log_path
+
     logs = Path(logs_dir)
     base_arm = _arm(
         argv,
         base_tree,
-        logs / "armed-baseline.log",
+        _unused_log_path(logs / "armed-baseline.log"),
         runner,
         timeout,
         environment,
@@ -1291,7 +1297,7 @@ def armed_observations(
     head_arm = _arm(
         argv,
         tree,
-        logs / "armed-after.log",
+        _unused_log_path(logs / "armed-after.log"),
         runner,
         timeout,
         environment,
@@ -1373,10 +1379,12 @@ def control_mutation_observation(
         )
         runner.partitioned = True
     _carry_missing_tests(base_tree, tree, node_tests)
+    from reckon.crew.promotion_gate import _unused_log_path
+
     arm = _arm(
         argv,
         base_tree,
-        Path(logs_dir) / "control-mutation.log",
+        _unused_log_path(Path(logs_dir) / "control-mutation.log"),
         runner,
         timeout,
         environment,
