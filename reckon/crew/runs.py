@@ -46,6 +46,9 @@ from reckon.node_exclusive_lock import LockHeld, exclusive_lock
 from reckon.crew.host_lease import (
     LEASE_RENEW_SECONDS as LEASE_RENEW_SECONDS,
     HostLease as HostLease,
+    LeaseHolder as LeaseHolder,
+    local_host as local_host,
+    process_runs_here as process_runs_here,
 )
 from reckon.crew.node import (
     _TERMINAL_RUN_PHASES as _TERMINAL_RUN_PHASES,
@@ -1077,8 +1080,143 @@ def _pointer_text(path: Path) -> str:
     return text
 
 
+#: The lease this node's station keeps under the node-local runtime root. Its
+#: record is the repository's own lease record, read through the mechanism that
+#: writes it, so there is one reader of that format rather than two.
+_STATION_PID_LOCK = threading.Lock()
+#: The station pid last read, under the lease file's stat identity. The lease is
+#: renewed every few seconds, so an identity change — not a clock — is what
+#: makes this read again.
+_STATION_PID: dict[str, tuple[tuple[Any, ...], int | None]] = {}
+
+
+def station_lease_path() -> Path | None:
+    """The lease file this host's station writes, or None when the node has none."""
+    lease = _station_lease()
+    return None if lease is None else lease.path
+
+
+def _station_lease() -> HostLease | None:
+    """The lease this host's station keeps, named the way the station names it."""
+    from reckon.crew.dispatch_watch import session_host_runtime_root
+    from reckon.crew.station import station_lease as station_lease_of_this_root
+
+    root = session_host_runtime_root()
+    if root is None:
+        return None
+    return station_lease_of_this_root(Path(root))
+
+
+def _no_renewal_age() -> float:
+    """A clock that reads before every recorded lease, so none is aged out.
+
+    ``HostLease.holder`` applies the claim rule, and the rule ages a lease out
+    after ``LEASE_STALE_SECONDS`` so a successor may take it. That is the right
+    question for claiming one and the wrong one for naming a process that is
+    still running, so the record is read through this clock instead.
+    """
+    return 0.0
+
+
+def _station_holder(lease: HostLease) -> LeaseHolder | None:
+    """The station's recorded holder, read whatever its renewal age.
+
+    The holder a lease names is a fact about the file; whether that process is
+    still the one it wrote is a separate question, settled by
+    ``process_runs_here`` beside the caller. Reading the record through a clock
+    that ages nothing keeps the two apart, so a station whose renewal stalled
+    while its interpreter was busy is still named.
+    """
+    reader = HostLease(
+        lease.path.parent.parent,
+        lease.path.stem,
+        local_host(),
+        os.getpid(),
+        "",
+        clock=_no_renewal_age,
+    )
+    return reader.holder()
+
+
+def station_pid_on_this_host() -> int | None:
+    """The pid this host's station recorded for itself, or None.
+
+    The station is the one writer on a station's lease and it names itself
+    there, so its holder is the only record that says which process here is the
+    station. Two questions decide the answer, and both are the lease mechanism's
+    own: whether this host holds the lease at all — a lease another node wrote
+    says nothing about this node's process table — and whether the pid it names
+    is still the process that wrote it, which ``process_runs_here`` settles from
+    the start tick and the process table recorded beside the pid. Renewal age is
+    deliberately not one of them: the lease mechanism ages a lease out after
+    ``LEASE_STALE_SECONDS`` so a successor may claim it, but a busy holder's
+    renewing thread waits on its interpreter — the state the mechanism names
+    beside its own running-holder test — so a station whose renewal stalled is
+    still the station. Reading it as no station would hand its pid to ``crew
+    stop``, which would end every session's fleet.
+    """
+    lease = _station_lease()
+    if lease is None:
+        return None
+    path = lease.path
+    try:
+        info = path.stat()
+    except OSError:
+        return None
+    identity = (info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+    key = str(path)
+    with _STATION_PID_LOCK:
+        kept = _STATION_PID.get(key)
+    if kept is not None and kept[0] == identity:
+        return kept[1]
+    holder = _station_holder(lease)
+    resolved: int | None = None
+    if (
+        holder is not None
+        and holder.host == local_host()
+        and process_runs_here(
+            pid=holder.pid,
+            pid_start=holder.pid_start,
+            pid_namespace=holder.pid_namespace,
+        )
+    ):
+        resolved = holder.pid
+    with _STATION_PID_LOCK:
+        _STATION_PID[key] = (identity, resolved)
+    return resolved
+
+
+def pid_belongs_to_the_station(pid: object) -> bool:
+    """Whether this pid names the station of the host taking the reading.
+
+    The station holds every session's claims and outlives every run. It is also
+    the process a resume or a review pays for a launch without giving up, so a
+    record that names it names the door that started something rather than
+    anything of the run: signalling that pid ends the node's whole fleet of
+    worktrees instead of the run the record belongs to.
+
+    A pid is compared only inside the process table that issued it: the lease
+    records the namespace its holder ran in, and a number read from another
+    table addresses a different process, so no match there is claimed.
+    """
+    if isinstance(pid, bool) or not isinstance(pid, int):
+        return False
+    station = station_pid_on_this_host()
+    return station is not None and station == pid
+
+
 def read_pointer(run_id: str) -> dict[str, Any]:
-    """Read one run's live pointer, or say which run is unknown."""
+    """Read one run's live pointer, or say which run is unknown.
+
+    A record naming this host's station names no process of the run. Every
+    launch made from inside the station's own long-lived process is recorded
+    through a seam that may hand back the launcher, so the pointer can carry the
+    station's pid where the supervisor's belongs; read as written, that pid
+    makes ``crew stop``, ``crew discard`` and every liveness reading aim at the
+    process that holds every session's claims. The pid is therefore dropped from
+    this reading — the one reader every one of those callers takes — and the
+    record is left on disk for whatever watchdog wrote it.
+    """
     path = pointer_path(run_id)
     try:
         text = _pointer_text(path)
@@ -1092,6 +1230,17 @@ def read_pointer(run_id: str) -> dict[str, Any]:
         ) from exc
     if not isinstance(data, dict):
         raise CrewError(f"live pointer for {run_id!r} does not hold an object")
+    if pid_belongs_to_the_station(data.get("pid")):
+        # Read as naming no process of the run: the station is not one, and a
+        # reader that treats it as one signals or refuses on the node's own
+        # station. An attempt record read as naming no process, pointing at
+        # nothing the reading host issued, so the process table probe has no
+        # pid of this host's to answer for.
+        data = {
+            name: value
+            for name, value in data.items()
+            if name not in ("pid", "pid_start_time")
+        }
     return data
 
 
