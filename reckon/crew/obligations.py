@@ -255,6 +255,14 @@ DUTY_ROW_FIELDS = (
 # duty returns to review-missing so the coordinator sees it again.
 REVIEW_QUEUED_DUTY_KIND = "review-queued"
 
+# A review the run's record names and the fleet lists as working is work already
+# moving: the reviewer holds a live pointer, and the only reading the coordinator
+# can take is its own account. Nothing this session runs shortens the wait, so
+# the duty is listed and does not hold a turn open -- the same reading a queued
+# review gets, and the one a coordinator needs to end a turn with a watch armed
+# rather than sit in a foreground wait on it.
+REVIEW_IN_FLIGHT_DUTY_KIND = "review-in-flight"
+
 # A run whose review has been dispatched, delivered, and not yet landed reads
 # as awaiting promotion: the wait is a promotion, not a dispatch and not a
 # follower. A review holds its pointer after it delivers, so the pointer alone
@@ -395,6 +403,7 @@ _INDEX_LAG_READINGS: dict[str, tuple[tuple[Any, ...], dict[str, Any] | None]] = 
 NON_BLOCKING_DUTY_KINDS = frozenset(
     {
         REVIEW_QUEUED_DUTY_KIND,
+        REVIEW_IN_FLIGHT_DUTY_KIND,
         QUEUED_RUN_DUTY_KIND,
         STALLED_RUN_DUTY_KIND,
         INDEX_LAG_DUTY_KIND,
@@ -2776,7 +2785,7 @@ def _review_duty_item(
         and row.get("review_run_id")
         and row.get("review_run_phase") == "working"
     ):
-        item = _live_item(row, kind="review-in-flight", now=now)
+        item = _live_item(row, kind=REVIEW_IN_FLIGHT_DUTY_KIND, now=now)
         item["reason"] = str(row.get("detail") or "")
         return item
 
