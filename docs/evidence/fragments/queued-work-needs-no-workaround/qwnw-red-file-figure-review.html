@@ -79,6 +79,15 @@
 
   <h3 id="qwnw-red-file-figure-review-outside">Outside scope</h3>
 
-  <p>None. This gate measures only this node's own change; verifying the merged
-  result belongs to a separately dispatched test node.</p>
+  <p>One finding, fenced out of this node and recorded in the run manifest
+  rather than repaired here: <code>tests/test_fragment_ids_are_checked.py</code>
+  and <code>tests/test_composed_record_takes_fragment_bodies.py</code> report 4
+  failed and 5 passed at head, and an extraction of the base revision reports
+  the identical 4 failed and 5 passed, so the failures predate this change. One
+  of the two writes the absolute path <code>/tmp/fragment-ids.log</code> from a
+  test, which the manifest check then refuses as a log outside the run
+  directory.</p>
+
+  <p>This gate measures only this node's own change; verifying the merged result
+  belongs to a separately dispatched test node.</p>
 </section>
