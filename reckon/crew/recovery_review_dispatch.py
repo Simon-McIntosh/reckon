@@ -7,6 +7,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import threading
 import time
 from collections.abc import Iterator
 from contextlib import ExitStack, contextmanager
@@ -360,6 +361,161 @@ def _review_record_subject(path: Path) -> tuple[str, str]:
     return stem, ""
 
 
+class _ReviewInFlightIndex:
+    """What one read of the live pointers answers about the reviews in flight.
+
+    :func:`_review_in_flight` is asked once per classified run, and every ask
+    walks the live pointers for the review standing at that run's head. Two of
+    the answers a candidate contributes cost filesystem checks while depending
+    on the candidate or the reviewed run alone: the directory a reviewed run
+    keeps its review records in, which decides where its review's record was
+    granted to be written, and the subject a review pointer stands for. Taken
+    inside the walk they cost a couple of checks per candidate, so a pass over
+    P pointers made on the order of P² checks and never finished on a fleet a
+    restart had left full of pointers — measured 16 November, when the
+    station's first tick after it restarted sat in this walk and its resident
+    memory reached 8.5 GB. An index is built for one snapshot read and holds
+    each of those answers, so every classified run walks the pointers linearly
+    and reads the same answers the base read path reads.
+
+    The index is consulted only by a caller that passes a snapshot. A reader
+    holding none builds one for its own read, so nothing is shared between
+    calls: outside a tick every answer is derived from the pointers that call
+    held, never from an earlier reading.
+    """
+
+    def __init__(self, pointers: Sequence[Mapping[str, Any]]) -> None:
+        self._pointers = pointers
+        self._lock = threading.Lock()
+        self._run_directories: dict[str, Path] = {}
+        self._record_directories: dict[str, Path] = {}
+        self._declarations: dict[int, dict[Path, set[str]]] = {}
+        self._composed: dict[tuple[str, str], dict[str | None, str]] = {}
+        self._subjects: dict[tuple[int, str], tuple[str, str]] = {}
+
+    def run_directory(self, run_id: str) -> Path:
+        """The directory the run keeps its own files in, read once."""
+        with self._lock:
+            found = self._run_directories.get(run_id)
+        if found is not None:
+            return found
+        directory = runs.run_dir(run_id)
+        with self._lock:
+            return self._run_directories.setdefault(run_id, directory)
+
+    def record_directory(self, run_id: str) -> Path:
+        """The directory the reviewed run keeps its review records in."""
+        with self._lock:
+            found = self._record_directories.get(run_id)
+        if found is not None:
+            return found
+        directory = review_module.run_review_record_directory(
+            self.run_directory(run_id)
+        )
+        with self._lock:
+            return self._record_directories.setdefault(run_id, directory)
+
+    def declared_records(self, pointer: Mapping[str, Any]) -> dict[Path, set[str]]:
+        """The record names a pointer declares, grouped by their directory.
+
+        The declared paths are the record locations the composer granted, so
+        grouping them by directory is what lets a reviewed run ask whether this
+        pointer was told to write its record there without building the paths
+        again for every run that asks.
+        """
+        key = id(pointer)
+        with self._lock:
+            found = self._declarations.get(key)
+        if found is not None:
+            return found
+        declared: dict[Path, set[str]] = {}
+        node = pointer.get("node") or {}
+        for path in node.get("write_paths") or ():
+            record = Path(str(path))
+            declared.setdefault(record.parent, set()).add(record.name)
+        with self._lock:
+            return self._declarations.setdefault(key, declared)
+
+    def composed_record_names(
+        self, reviewed_run_id: str, reviewed_head: str
+    ) -> dict[str | None, str]:
+        """The record name each rubric composes for this reviewed head.
+
+        The last name a composition produces is the head-keyed one when a head
+        resolved and the headless one when it did not, which is the name a
+        review declares for the head it read.
+        """
+        key = (reviewed_run_id, reviewed_head)
+        with self._lock:
+            found = self._composed.get(key)
+        if found is not None:
+            return found
+        directory = self.run_directory(reviewed_run_id)
+        composed = {
+            candidate: Path(
+                review_module.run_review_record_paths(
+                    directory,
+                    reviewed_run_id,
+                    reviewed_head_sha=reviewed_head,
+                    rubric=candidate,
+                )[-1]
+            ).name
+            for candidate in (review_module.FIGURE_REVIEW_RUBRIC, None)
+        }
+        with self._lock:
+            return self._composed.setdefault(key, composed)
+
+    def subject(self, pointer: Mapping[str, Any], project: Any) -> tuple[str, str]:
+        """The run and head the review pointer stands for, read once.
+
+        :func:`_review_subject` reads the reviewed run's directory for every
+        review a run's walk passes, so a snapshot answers it once per pointer
+        instead of once per classified run.
+        """
+        key = (id(pointer), str(project))
+        with self._lock:
+            found = self._subjects.get(key)
+        if found is not None:
+            return found
+        subject = _review_subject(pointer, str(project), pointers=self._pointers)
+        with self._lock:
+            return self._subjects.setdefault(key, subject)
+
+
+#: How many live-pointer reads keep their answers at once. A tick holds one
+#: snapshot and a second reader its own; the bound keeps a long-lived process
+#: from holding every read it has classified under a key its list no longer
+#: occupies.
+_REVIEW_INDEX_LIMIT = 4
+_REVIEW_INDEX_CACHE: dict[int, tuple[Any, _ReviewInFlightIndex]] = {}
+_REVIEW_INDEX_LOCK = threading.Lock()
+
+
+def _review_index(
+    pointers: Sequence[Mapping[str, Any]] | None,
+) -> _ReviewInFlightIndex:
+    """The index for one live-pointer read, shared by the runs it classifies.
+
+    Keyed on the identity of the sequence a view hands each row it classifies,
+    and holding that sequence so a later read's list, which may reuse the
+    address, cannot answer from this one. A caller with no snapshot — every
+    reader outside a tick — is handed an index of its own for the one call that
+    asked, so no answer is carried between calls.
+    """
+    if pointers is None:
+        return _ReviewInFlightIndex(())
+    key = id(pointers)
+    with _REVIEW_INDEX_LOCK:
+        found = _REVIEW_INDEX_CACHE.get(key)
+        if found is not None and found[0] is pointers:
+            return found[1]
+        index = _ReviewInFlightIndex(pointers)
+        _REVIEW_INDEX_CACHE[key] = (pointers, index)
+        while len(_REVIEW_INDEX_CACHE) > _REVIEW_INDEX_LIMIT:
+            del _REVIEW_INDEX_CACHE[next(iter(_REVIEW_INDEX_CACHE))]
+        return index
+
+
 def _review_subject(
     pointer: Mapping[str, Any],
     project: str,
@@ -437,7 +593,11 @@ def _recorded_review_is_live(recorded: Any) -> bool:
 
 
 def _review_pointer_rubric(
-    pointer: Mapping[str, Any], reviewed_run_id: str, reviewed_head: str
+    pointer: Mapping[str, Any],
+    reviewed_run_id: str,
+    reviewed_head: str,
+    *,
+    index: _ReviewInFlightIndex,
 ) -> str | None:
     """The rubric encoded by the review record paths on a live pointer.
 
@@ -467,30 +627,21 @@ def _review_pointer_rubric(
     that pointer declares the headless path alone: no dispatch of this run
     composed it, so it must not answer as the review and silence the dispatch
     whose refusal is the point.
+
+    ``index`` is the snapshot's own reading of the pointers and of the reviewed
+    run's directory, so both are asked once for the snapshot rather than once
+    per run that walks the pointers. That is what keeps a pass over P pointers
+    from costing a directory read per candidate.
     """
-    node = pointer.get("node") or {}
-    declared = [Path(str(path)) for path in node.get("write_paths") or ()]
+    declared = index.declared_records(pointer)
     if not reviewed_run_id or not declared:
         return None
-    reviewed_directory = review_module.run_review_record_directory(
-        runs.run_dir(reviewed_run_id)
-    )
-    inside = {path.name for path in declared if path.parent == reviewed_directory}
+    inside = declared.get(index.record_directory(reviewed_run_id))
     if not inside:
         return None
+    composed = index.composed_record_names(reviewed_run_id, reviewed_head)
     for candidate in (review_module.FIGURE_REVIEW_RUBRIC, None):
-        composed = [
-            Path(path).name
-            for path in review_module.run_review_record_paths(
-                runs.run_dir(reviewed_run_id),
-                reviewed_run_id,
-                reviewed_head_sha=reviewed_head,
-                rubric=candidate,
-            )
-        ]
-        # The last name composed is the head-keyed one when a head resolved, and
-        # the headless one when it did not.
-        if composed[-1] in inside:
+        if composed[candidate] in inside:
             return candidate or ""
     return None
 
@@ -603,8 +754,9 @@ def _review_in_flight(
         return ""
     run_id = str(record.get("run_id") or "")
     candidates = list_live(project=project) if pointers is None else pointers
+    index = _review_index(candidates)
     for pointer in candidates:
-        pointer_rubric = _review_pointer_rubric(pointer, run_id, head)
+        pointer_rubric = _review_pointer_rubric(pointer, run_id, head, index=index)
         if pointer_rubric is not None:
             if pointer_rubric != (rubric or ""):
                 continue
@@ -613,7 +765,7 @@ def _review_in_flight(
             continue
         if rubric == review_module.FIGURE_REVIEW_RUBRIC:
             continue
-        reviewed, reviewed_head = _review_subject(pointer, project, pointers=candidates)
+        reviewed, reviewed_head = index.subject(pointer, project)
         if reviewed and reviewed == run_id and _review_head_covers(reviewed_head, head):
             return str(pointer.get("run_id") or "")
     return ""
