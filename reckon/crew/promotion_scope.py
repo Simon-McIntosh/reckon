@@ -1342,8 +1342,14 @@ def _declared_manifest_commits(record: Mapping[str, Any]) -> list[str]:
     The declaration parser is the one authority on whether the field declares
     an absence, and it is asked here, so one reader decides what the line says
     for the landing record, the figure twin check and the boundary check alike.
-    A role that commits keeps the entry-by-entry reading, so a citation-shaped
-    value that names nothing is still returned and still refused by value.
+    A role that commits keeps the entry-by-entry reading, which is why the
+    per-entry declaration is asked as well: ``commits: none (repository worktree
+    remained clean)`` is the record stating it has no commit, and it reached the
+    figure twin check as a citation naming no object — refused by its own
+    declaration, which is the one value in this field no store can be asked
+    about. An entry that opens with an absence word and continues with a
+    revision (``none 7892cb69``) is not that declaration, so it stays here and
+    is still refused by value.
     """
     manifest_path = str(record.get("manifest_path") or "")
     if not manifest_path:
@@ -1356,7 +1362,9 @@ def _declared_manifest_commits(record: Mapping[str, Any]) -> list[str]:
     if _commits_field_declares_absence(text, record):
         return []
     return [
-        str(sha).strip() for sha in (declared.get("commits") or []) if str(sha).strip()
+        str(sha).strip()
+        for sha in (declared.get("commits") or [])
+        if str(sha).strip() and not _declares_absent_commits(str(sha))
     ]
 
 
