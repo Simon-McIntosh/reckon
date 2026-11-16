@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="250">
+<meta name="plan-version" content="252">
 <meta name="plan-modified" content="2026-11-16">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -851,6 +851,12 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261115T224841266752-qwnw-red-file-spa-rendered-semantics" data-who="reckon-build" data-when="2026-11-16T00:05:35Z">
     <div class="r-comment-body"><p>The rendered-semantics red file passes in full again: 10 passed EXIT=0 at 2efb56b182 on all_debug, against 8 failed at the base d0d77f07; repaired the sprint surface unmounting on the hook order, the discovery merge dropping review, the reveal dropping a held row, sprint rows reading only flat fields, the artifact row not stating its transition, and the reader losing the handoff prompt and its version</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261116T031627389364-qwnw-red-file-review-carries-forward" data-who="reckon-build" data-when="2026-11-16T04:23:13.505Z">
+    <div class="r-comment-body"><p>tests/test_review_carries_forward.py passes in full at head f9f3644548 (9 passed, all_debug job 1319157, EXIT=0) against 7 failing at base 44f00a3b15 from one test-side cause — the fixture built a repository with no remote, so the head move, measured against the remote-tracking ref of the integration branch, read as an unshown delta; the fixture now seeds a bare origin and pushes the reviewed commit, no assertion touched</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261116T031635158616-qwnw-red-file-directory-claim-asks-first" data-who="reckon-build" data-when="2026-11-16T08:56:30.966Z">
+    <div class="r-comment-body"><p>tests/test_directory_claim_asks_first.py is green at ee93819a+470cdccaa9: 14 passed at head against 7 failed / 5 passed at the base revision. One cause, verdict test wrong — a directory write claim shares as the files beneath it do (the 11 November lead ruling carried by 4b70522237 and 5695689722), so the asks-first refusal fires only for a claim that is, contains or sits under an exclusive pattern; seven cases still declared a mergeable region (tests/, docs/evidence/) and were moved onto the built-in figure class with every assertion kept definite, and three cases were added for the sharing rule the code keeps. No product source changed; no assertion deleted or loosened.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
