@@ -24,7 +24,7 @@
   <title>Work Scales To Eighty Across Nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="12">
+<meta name="plan-version" content="13">
 <meta name="plan-modified" content="2026-11-16">
 </head>
 <body>
@@ -98,6 +98,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261116T065627565912-review-of-wse-workers-run-on-compute-nodes-999ddd4c6fe1" data-who="reckon-build" data-when="2026-11-16T07:04:44Z">
     <div class="r-comment-body"><p>Independent incremental review 9ca517e3bc55eb2989c7eba791d56c51e54b8314..999ddd4c6fe14cc2ee5a228c502790ebe55fd519 scored 19/12/20/17/19/20; added_failure_count 0; one blocking receipt path and one non-blocking supervisor-call coverage finding.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261115T200804650837-wse-workers-run-on-compute-nodes" data-who="reckon-build" data-when="2026-11-15T20:12:15Z">
+    <div class="r-comment-body"><p>A launch no longer creates the run&#x27;s own scratch directory on the composition (note to reviewer: see artifacts) host — the fence grants that one root by construction and the step&#x27;s own wrapper creates it before the fence is exec&#x27;d, so a compute-node worker leaves 0 run scratch directories under the composing host&#x27;s scratch root against 1 with the pre-change rule restored. reckon/crew/dispatch_launch.py:step_launch_environment composes the placed step&#x27;s environment from the fence&#x27;s argv and that run&#x27;s TMPDIR, and reckon/crew/process_signal.py:argv_uses_step is the single owner of the placement question that both the signal path and dispatch ask, so removing either turns a test red.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261115T210928954290-review-of-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs-11491f785b39" data-who="reckon-build" data-when="2026-11-15T21:18:58.824Z">
     <div class="r-comment-body"><p>Independent review of head 11491f785b against base 0f519315992f: all six dimensions scored (goal_fidelity 13, evidence 10, scope_discipline 19, durability 18, fit 18, reuse 20) with one blocking finding — the done_when's base-revision negative control did not fire (base max tick 8.997 s, over_bound 0) so the measure never demonstrates the over-30-second tick, while the evidence fragment still records verdict passed — and two non-blocking findings (the fragment's 32 KiB arrival states the secondary arm while its table's arms ran 8192; the measure arm logs carry no revision/command header).</p></div>
