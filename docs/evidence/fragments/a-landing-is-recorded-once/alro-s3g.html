@@ -19,10 +19,16 @@
     <code>schedule.derive_schedule</code> (runs bucketed by plan);
     <code>capabilities.derive_routing</code> (two buckets) and
     <code>capabilities.derive_capabilities</code> (the hours observation).
+    The merge with main (<code>082fe4564f</code> already routed the store's
+    own selection through the resolver) keeps those bounded reads as main wrote
+    them and moves <code>run_store</code>'s plan selection and the store's
+    coverage test onto <code>ledger.row_plan</code>, so no private alias
+    survives the rename, and the docstring that describes the store read names
+    the same owner.
   </p>
   <p id="alro-s3g-brief-carried-run-counts-toward-its-section-measure">
     <strong>Measure.</strong> <code>tests/test_a_brief_carried_run_counts_toward_its_section.py</code>
-    (9 cases over a temporary store) at the head against the same file over the
+    (12 cases over a temporary store) at the head against the same file over the
     base revision <code>e0efa78</code>: the outcomes hold, replay, schedule,
     capabilities measurement and capabilities routing cases fail at the base and
     pass at the head, and the section-hold case reads the section its
@@ -32,11 +38,12 @@
   <p>
     <strong>The reported symptom, measured.</strong> Two queued runs left parked
     on a section declared done is not the section-hold read's doing: the release
-    is decided by <code>admission/readiness._section_run_unlanded</code>, and on
-    a store whose only row of the section is a promoted brief-carried landing
-    that read answers <code>False</code> (released), which the test records.
-    That reader takes a ledger row's plan from the flat field alone, so a
-    brief-carried row is invisible to it; it lies outside this node's files and
-    is named under <code>outside_scope</code>.
+    is decided by <code>admission/readiness._section_run_unlanded</code>, which
+    reads the live node's plan first and a ledger row's plan through the same
+    resolver, so a promoted brief-carried landing is visible to it instead of
+    only through the flat field. The waiter-release case records the read
+    holding a section whose brief-carried run is promoted and not landed, and
+    the lane case records the rework the brief-carried attempt puts on the
+    worker lane.
   </p>
 </section>
