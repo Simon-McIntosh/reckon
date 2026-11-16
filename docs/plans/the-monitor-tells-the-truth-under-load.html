@@ -24,7 +24,7 @@
   <title>The Monitor Tells The Truth Under Load | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="63">
+<meta name="plan-version" content="64">
 <meta name="plan-modified" content="2026-11-16">
 </head>
 <body>
@@ -270,6 +270,9 @@
 <div class="r-comment" data-section="s15" data-id="c-run-r-20261116T013022824864-review-of-resumed-repair-not-killed-s15-7bf83023dfc7" data-who="reckon-build" data-when="2026-11-16T01:39:40.823Z">
     <div class="r-comment-body"><p>Independent review stored for r-20261115T182457561866-resumed-repair-not-killed-s15 at the pair 712eeeff0d..7bf83023df: the gained commit is a two-hunk reflow whose two files are token-identical at both revisions, so scores are goal_fidelity 18, evidence 19, scope_discipline 20, durability 17, fit 19, reuse 20 (total 113), 6 checklist items answered including CALL_SITES, added_failure_count 0 from the run's own arms, and no findings.</p></div>
 </div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261115T182457561866-resumed-repair-not-killed-s15" data-who="reckon-build" data-when="2026-11-15T18:47:51Z">
+    <div class="r-comment-body"><p>The terminal-run guard reads an attempt&#x27;s own exit receipt (attempt-&lt;n&gt;-exit.json, or the canonical exit.json naming that attempt) through recovery_liveness._run_exit_record under its strict reading, instead of the live pointer&#x27;s stored phase word, and a delivered word a live attempt did not earn is reopened to working by the supervisor that holds its worker (reckon/crew/dispatch_launch.py: _terminal_attempt_phase, _attempt_ending_receipt, _reopen_a_live_attempt_phase); measure: new test 4 failed/1 passed against the base revision&#x27;s bytes and 5 passed at the head, base arm 58 passed at 18d133b40e, after arm 63 passed EXIT=0 at 7bf83023df, and both controls red with their answering commit reverted.</p></div>
+</div>
 <div class="r-comment" data-section="s16" data-id="c-run-r-20261115T213231553068-review-of-moved-inputs-promotion-retried-s16-da06624803aa" data-who="reckon-build" data-when="2026-11-15T21:54:40.966Z">
     <div class="r-comment-body"><p>Independent review of run r-20261115T182502558389-moved-inputs-promotion-retried-s16 at base 18d133b40e54057955fee45c889cde9371c8e068 / head da06624803aa6339eeb32c97713ce92baf49c213. Scores goal_fidelity 19, evidence 11, scope_discipline 20, durability 17, fit 14, reuse 13 (total 94); added_failure_count 0 with no added ids, derived from baseline_suite (0 failures, 58 passed EXIT=0) and after_suite (0 failures, 62 passed EXIT=0). Six non-blocking findings: the done_when's importing-test population is measured by neither arm; _record_inputs_moved suppresses its write failure so the budget can never advance; two helper names differ by word order only; the attempt counter and the open-repair predicate each duplicate an owner in queue_landing.py and obligations.py; and one assertion reads the test's own harness counter.</p></div>
 </div>
@@ -349,7 +352,7 @@
     <div class="r-comment-body"><p>Reviewed r-20261115T145806650328-hook-counts-what-is-owed-s9 over the one commit it gained since its last review (cf04a0b48c..fac68a9ee4, the fragment's after-suite row); stored a parsed record at both declared paths scoring goal_fidelity 16, evidence 18, scope_discipline 20, durability 7, fit 19, reuse 20 (total 100), with added_failure_count 0 and two non-blocking findings — the row calls cf04a0b4 "this node's head" while the head is fac68a9e, and no test holds the fragment's figure to the run's arm logs.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261115T145806650328-hook-counts-what-is-owed-s9" data-who="reckon-build" data-when="2026-11-15T16:46:55Z">
-    <div class="r-comment-body"><p>The obligations checklist counts what it prints and warns only a session holding unsettled work: the header and trailer figures come from the rendered rows, the session is read from its own pointers, and the absent-producer line is silent for a session holding none, keeping a due limit reset and the stop path&#x27;s one-off reading. The hook&#x27;s phase vocabulary and ended-pointer rule are compared against their owners by 8d7542b908, so a rename in either fails a test rather than drifting. Measured: 9 of the node&#x27;s 19 cases red against fd2fe9c1, 77 passed at head fac68a9e, and each answering commit&#x27;s check red when reverted.</p></div>
+    <div class="r-comment-body"><p>The obligations checklist counts what it prints and warns only a session holding unsettled work: the header and trailer figures come from the rendered rows, the session is read from its own pointers, and the absent-producer line is silent for a session holding none, keeping a due limit reset and the stop path's one-off reading. The hook's phase vocabulary and ended-pointer rule are compared against their owners by 8d7542b908, so a rename in either fails a test rather than drifting. Measured: 9 of the node's 19 cases red against fd2fe9c1, 77 passed at head fac68a9e, and each answering commit's check red when reverted.</p></div>
 </div>
 </section>
 </main>
