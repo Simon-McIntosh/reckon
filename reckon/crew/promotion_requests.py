@@ -180,7 +180,7 @@ def promotion_queue_report(
     waiting: list[dict[str, Any]] = []
     running = 0
     parked = 0
-    for request in _pending_requests(now=moment, window_seconds=window_seconds):
+    for request in _pending_requests(now=moment):
         phase = request.get("phase")
         if phase == REQUESTED:
             waiting.append(request)
@@ -492,7 +492,9 @@ def _pending_requests(
     the session served least in the recent window, then its oldest request.
     Taking a higher urgency class does not consume a lower class's turn in
     this snapshot. Completed promotions persist the service count across
-    passes and process restarts; running requests reserve a turn too.
+    passes and process restarts; running requests reserve a turn too. Only
+    requested rows consume simulated future turns: running rows are already
+    charged, and parked rows take no slot.
     """
     moment = now or datetime.fromisoformat(_now())
     pending = []
@@ -556,7 +558,8 @@ def _pending_requests(
             )
             ordered.append(request)
             remaining.remove(request)
-            turns[str(request.get("session") or "")] += 1
+            if request.get("phase") == REQUESTED:
+                turns[str(request.get("session") or "")] += 1
     return ordered
 
 

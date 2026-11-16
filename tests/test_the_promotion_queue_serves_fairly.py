@@ -2,6 +2,8 @@
 
 from datetime import UTC, datetime, timedelta
 
+import pytest
+
 from reckon.crew import promotion_requests as requests
 from reckon.crew import runs
 from reckon.crew.queue_order import STARVATION_AGE_SECONDS
@@ -104,3 +106,83 @@ def test_a_queued_review_precedes_the_run_it_reviews(monkeypatch):
         requests.promotion_queue_report(now=NOW)["requests"][0]["reason"]
         == "delivered review"
     )
+
+
+@pytest.mark.parametrize("inactive_phase", [requests.RUNNING, requests.WAITING])
+def test_only_runnable_requests_consume_future_session_turns(
+    monkeypatch, inactive_phase
+):
+    monkeypatch.setattr(requests, "_now", NOW.isoformat)
+    inactive = _queue("r-inactive-A", "A", age=300)
+    inactive["phase"] = inactive_phase
+    runs._write_json(requests._request_path(inactive["run_id"]), inactive)
+    if inactive_phase == requests.RUNNING:
+        requests._record_drained(
+            {
+                "run_id": "r-promoted-B",
+                "session": "B",
+                "phase": requests.PROMOTED,
+                "requested_at": NOW.isoformat(),
+                "finished_at": NOW.isoformat(),
+            }
+        )
+    _queue("r-older-A", "A", age=200)
+    _queue("r-younger-B", "B", age=100)
+
+    report = requests.promotion_queue_report(now=NOW)
+    assert [row["run_id"] for row in report["requests"]] == [
+        "r-older-A",
+        "r-younger-B",
+    ], report
+    assert report["running"] == int(inactive_phase == requests.RUNNING)
+    assert report["parked"] == int(inactive_phase == requests.WAITING)
+    assert any(
+        row["run_id"] == inactive["run_id"] for row in requests._pending_requests()
+    )
+
+    service = requests.PromotionService(width=1, execute=lambda request: {"ok": True})
+    claim = service._claim
+    monkeypatch.setattr(
+        service,
+        "_claim",
+        lambda name: (
+            None if name == "promotion-request-owner-r-inactive-A" else claim(name)
+        ),
+    )
+    monkeypatch.setattr(
+        requests,
+        "_review_self_waits",
+        lambda request: (request.get("phase") == requests.WAITING, "review pending"),
+    )
+    try:
+        assert service.tick() == ["r-older-A"]
+    finally:
+        service.settle(timeout=10)
+
+
+def test_report_rate_window_preserves_the_drains_queue_order(monkeypatch):
+    monkeypatch.setattr(requests, "_now", NOW.isoformat)
+    _queue("r-older-A", "A", age=200)
+    _queue("r-younger-B", "B", age=100)
+    completed = (NOW - timedelta(minutes=10)).isoformat()
+    requests._record_drained(
+        {
+            "run_id": "r-promoted-A",
+            "session": "A",
+            "phase": requests.PROMOTED,
+            "requested_at": completed,
+            "finished_at": completed,
+        }
+    )
+    drain_order = [row["run_id"] for row in requests._pending_requests()]
+    assert drain_order == ["r-younger-B", "r-older-A"]
+    for window in (60, 3600, 7200):
+        report = requests.promotion_queue_report(now=NOW, window_seconds=window)
+        assert [row["run_id"] for row in report["requests"]] == drain_order, report
+        assert report["finished_last_window"] == int(window >= 600)
+
+    service = requests.PromotionService(width=1, execute=lambda request: {"ok": True})
+    try:
+        assert service.tick() == [drain_order[0]]
+    finally:
+        service.settle(timeout=10)
