@@ -34,7 +34,7 @@ function ArtifactSurface({
 
   return (
     <div className={`r-canvas-view ${kind === "plan" ? "r-plans-view" : `r-${kind}-view`} ${kind === "plan" && filtersHidden ? "filters-collapsed" : ""} ${readingMode ? "reading-mode" : ""}`} data-artifact-kind={kind} data-artifact-selection={selected || ""}>
-      {selected && kind === "plan" && !readingMode && (
+      {kind === "plan" && !readingMode && (
         <ListCol
           route={route}
           onNav={nav}
