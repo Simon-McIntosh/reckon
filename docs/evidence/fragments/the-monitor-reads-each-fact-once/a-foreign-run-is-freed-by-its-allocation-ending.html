@@ -79,17 +79,30 @@
   inherited <code>SLURM_JOB_ID</code>, and that an in-harness launch, a placed
   run and a launch made outside any allocation record none.</p>
 
+  <p><strong>Two conditions the adjacent tests added.</strong> A node answer
+  that lists no job in flight frees the run without needing a launch instant to
+  dismiss any of them &mdash; the empty queue the guard always accepted still
+  proves the allocation cannot hold the worker, and a pointer that predates
+  <code>launched_at</code> is no longer refused. And the field is written only
+  on a pointer whose <code>launcher_host</code> is this host: the job id
+  describes the allocation this attempt runs inside, so stamping this host's
+  allocation on a pointer naming another machine would name an allocation the
+  run never ran in. A record naming a job its node's answer does not carry stays
+  unknown, which is the direction a live worker is safe in.</p>
+
   <p><strong>Arms.</strong> The gate and both suite arms ran as
   <code>all_debug</code> partition jobs submitted with
   <code>env -u SLURM_JOB_ID -u SLURM_JOBID sbatch</code>, never on the fleet
-  node. The gate at head <code>6e60af58d3</code> reads
-  <code>12 passed in 1.39s</code>, <code>EXIT=0</code>; the matched suite arms
-  read <code>58 passed</code> at the base content and <code>58 passed</code> at
-  head over the two test files the base tree carries, and the head arm over all
-  three reads <code>70 passed</code>.</p>
+  node. The gate at head <code>e90d7857fa</code> (job 1320561) reads
+  <code>12 passed in 1.51s</code>, <code>EXIT=0</code>; the matched suite arms
+  read <code>58 passed</code> at the base content (job 1320567) and
+  <code>58 passed</code> at head over the two test files the base tree carries,
+  and the head arm over all three reads <code>70 passed</code> &mdash; the
+  added test accounts for the twelve-case difference.</p>
 
-  <p><strong>Negative control.</strong> The same test file against the base
-  content of <code>d72a7d9b251b</code> fails six cases, <code>EXIT=1</code>,
+<p><strong>Negative control.</strong> The same test file against the base
+  content of <code>d72a7d9b251b</code> (job 1320558) fails six cases,
+  <code>EXIT=1</code>,
   including <code>test_a_foreign_run_is_freed_by_its_allocation_ending</code>
   case (a) &mdash; <code>test_a_launcher_job_that_left_the_queue_frees_the_run</code>
   and <code>..._failed_to_boot_frees_the_run</code> &mdash; and case (c),
