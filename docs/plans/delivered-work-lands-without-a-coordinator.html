@@ -20,11 +20,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-monitor-reads-each-fact-once">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;delivered-work-lands-without-a-coordinator#s2&quot;],&quot;s6&quot;:[&quot;delivered-work-lands-without-a-coordinator#s2&quot;,&quot;delivered-work-lands-without-a-coordinator#s3&quot;,&quot;delivered-work-lands-without-a-coordinator#s5&quot;],&quot;s8&quot;:[&quot;delivered-work-lands-without-a-coordinator#s4&quot;],&quot;s10&quot;:[&quot;delivered-work-lands-without-a-coordinator#s6&quot;,&quot;delivered-work-lands-without-a-coordinator#s7&quot;,&quot;delivered-work-lands-without-a-coordinator#s8&quot;,&quot;delivered-work-lands-without-a-coordinator#s9&quot;,&quot;delivered-work-lands-without-a-coordinator#s11&quot;]}">
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-11-16">
 </head>
 <body>
   <main class="plan-doc">
@@ -114,22 +116,22 @@
     <p><strong>Deliverable.</strong> A standing service takes the code changes of a window in one reload. Between two reloads of one service at least one stated window passes, and at least one tick started after the earlier reload has finished and exported its state. A change that must be live at once has one command a coordinator can run, which reloads the named service without waiting for the window and records who asked and why. The service reports the code it runs, the newest code it has seen, and when it will next reload, so "running older code" reads as a schedule, not as a fault. The window is a flight setting with a stated default of 30 minutes.</p>
     <p><strong>Done when.</strong> A test drives a stand-in service through twelve code changes arriving five minutes apart on a controlled clock and counts two reloads in the hour, each preceded by a completed, exported tick; with the immediate-reload command issued after the third change it counts one more, recorded with its reason. A second case asserts the status report names the running code, the newest seen and the next reload time. Negative control: at the base revision the same drive reloads twelve times and no tick completes between them. On the live fleet, over the two hours after this lands, the station's log shows no more than five re-executions and the exported snapshot's age never exceeds twice the tick time, read from the station's own tick record; the same two hours of 16 November 21:00 to 23:00 UTC are the baseline. The test runs on <code>all_debug</code> with at most <code>-n 4</code>, and the importers of the touched modules add no failure against the base. Write paths: <code>reckon/crew/station.py</code>, the reload module and the flight schema with its generated JSON as the design review names them, and <code>tests/test_a_window_of_landings_is_one_reload.py</code>.</p>
 
-    <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-    </section>
+    
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-dwlwc-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-11-16" data-recommends-skill="/reckon-build delivered-work-lands-without-a-coordinator">
-        <h4 class="r-fu-title">Build the queue order and the waiting-request repair first, then the rest</h4>
-        <div class="r-fu-body"><p>§2 and §3 are established from the code and the records and unblock every session's landings. §5 is independent of them. §4 follows §2. §6 to §9 take their baselines from the research document a measurement node is writing; revise their bounds from it if its figures differ. §10 runs last.</p></div>
-        <pre class="r-fu-prompt">/reckon-build delivered-work-lands-without-a-coordinator</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-dwlwc-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-11-16" data-recommends-skill="/reckon-build delivered-work-lands-without-a-coordinator" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build the queue order and the waiting-request repair first, then the rest</h4>
+    <div class="r-fu-body"><p>§2 and §3 are established from the code and the records and unblock every session's landings. §5 is independent of them. §4 follows §2. §6 to §9 take their baselines from the research document a measurement node is writing; revise their bounds from it if its figures differ. §10 runs last.</p></div>
+    <pre class="r-fu-prompt">/reckon-build delivered-work-lands-without-a-coordinator</pre>
+    </article>
+</section>
 
     <section data-reckon="comments" id="comments" class="r-comments">
-      <h2><span class="sec">§</span> Comments</h2>
-    </section>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261116T223953944407-review-of-the-promotion-queue-serves-fairly-22a3bb307b04" data-who="reckon-build" data-when="2026-11-16T22:50:44Z">
+    <div class="r-comment-body"><p>Independent review of f9a238e45926b5e142e68414f2df42780ebc69f5..22a3bb307b048c9e9e463156fb14ce4ae8bdd13e stored in both granted records; scores 14/19/20/16/20/20, zero added failures, two blocking findings in promotion fairness and queue-report order; coordinator must return these for repair.</p></div>
+</div>
+</section>
   </main>
 </body>
 </html>

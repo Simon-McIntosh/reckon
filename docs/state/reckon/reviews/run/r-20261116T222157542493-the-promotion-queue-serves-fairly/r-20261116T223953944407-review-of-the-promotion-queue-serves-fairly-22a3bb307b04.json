@@ -1,0 +1,168 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived by comparing completed baseline_suite and after_suite logs: both failure sets empty, EXIT=0, summaries 58/61 passed.",
+  "assertion_analysis": [
+    {
+      "fails_if": "Run-name ordering, missing priority inheritance or missing fairness moves priority/B/C outside independently specified first four.",
+      "line": 36
+    },
+    {
+      "fails_if": "Session A request-age order reverses, loses or duplicates a request; expected fixture order is independent of the output.",
+      "line": 42
+    },
+    {
+      "fails_if": "Report disagrees with scheduler order; this parity assertion is backed by independent expected order at line 36.",
+      "line": 45
+    },
+    {
+      "fails_if": "Position numbers are missing, repeated, zero-based or discontinuous rather than 1 through 70.",
+      "line": 46
+    },
+    {
+      "fails_if": "Priority reason omits or misstates priority 100.",
+      "line": 47
+    },
+    {
+      "fails_if": "Ordinary request reason omits session sharing.",
+      "line": 48
+    },
+    {
+      "fails_if": "Recent ownership is ignored or expired ownership counted: independent expected B/C/A sequence changes.",
+      "line": 77
+    },
+    {
+      "fails_if": "Younger priority or run-name ordering wins over aged request.",
+      "line": 90
+    },
+    {
+      "fails_if": "Age-precedence explanation differs from ageing.",
+      "line": 94
+    },
+    {
+      "fails_if": "Review dependency precedence is removed: aged prioritised delivery wins over its review.",
+      "line": 101
+    },
+    {
+      "fails_if": "Queued review explanation differs from delivered review.",
+      "line": 105
+    }
+  ],
+  "assertion_independence": "No vacuous input-echo assertion found; concrete sequence expectations constrain outputs independently, and line 45 is intentional surface parity backed by line 36.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion_requests.py:PromotionService._tick_locked",
+    "reckon/crew/promotion_requests.py:promotion_queue_report",
+    "reckon/crew/promotion_requests.py:_finish",
+    "reckon/crew_run_commands.py:crew_promotions"
+  ],
+  "completed_at": "2026-11-16T22:50:44Z",
+  "dispatched_at": "2026-11-16T22:44:07Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_requests.py",
+      "line": "527",
+      "severity": "blocking",
+      "text": "blocking: The pending list includes RUNNING and WAITING rows; RUNNING already contributes to served at lines 521-524 but receives another turn at line 559, and WAITING receives a turn despite consuming no slot; with A running, B having one recent completion, older runnable A and younger runnable B, equal actual service counts should select A first but simulating A's running row charges A twice and selects B, so exclude non-runnable rows from future-turn simulation while preserving their separate accounting."
+    },
+    {
+      "file": "reckon/crew/promotion_requests.py",
+      "line": "183",
+      "severity": "blocking",
+      "text": "blocking: The report forwards its rate-report window_seconds into ordering while PromotionService._tick_locked uses the fixed one-hour default; with A promoted ten minutes ago and older A/newer B waiting, --window-seconds 60 reports A before B while the drain serves B before A, so published queue positions disagree with the actual drain when this supported option is used."
+    }
+  ],
+  "gate_evidence": {
+    "after_importers": {
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_code_reload_never_cuts_off_a_promotion.py::test_a_landing_in_flight_finishes_before_the_service_reexecutes",
+        "tests/test_code_reload_never_cuts_off_a_promotion.py::test_a_promotion_in_flight_finishes_before_the_service_reexecutes",
+        "tests/test_no_caller_waits_on_a_promotion.py::test_a_failure_is_durable_and_is_a_session_obligation",
+        "tests/test_refused_promotion_request_settles.py::test_a_landed_run_settles_its_refused_request_as_landed",
+        "tests/test_review_promoted_before_its_run.py::test_a_run_whose_review_is_parked_while_its_record_is_written_waits"
+      ],
+      "header": "# revision: 22a3bb307b048c9e9e463156fb14ce4ae8bdd13e; tree: /tmp/promotion-order-24zr2k9d/tree; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q -n 4 tests/test_a_refused_review_is_retried_only_when_it_moves.py tests/test_a_raced_promotion_still_lands.py tests/test_cleanly_reviewed_run_lands_itself.py tests/test_an_obligation_offers_only_measured_remedies.py tests/test_a_working_review_keeps_its_working_phase.py tests/test_a_promoted_review_is_never_promoted_again.py tests/test_an_unlaunched_review_is_not_requested.py tests/test_review_promotion_waits_for_its_record.py tests/test_no_caller_waits_on_a_promotion.py tests/test_a_landing_judges_the_head_by_its_suite.py tests/test_code_reload_never_cuts_off_a_promotion.py tests/test_a_promotion_refused_for_moved_inputs_is_judged_again.py tests/test_refused_promotion_request_settles.py tests/test_review_promoted_before_its_run.py tests/test_a_station_tick_delivers_and_lands_a_run.py tests/test_promotion_queue_drains_at_slot_speed.py",
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T222157542493-the-promotion-queue-serves-fairly/after-importers.log",
+      "summary": "5 failed, 101 passed in 129.81s (0:02:09)"
+    },
+    "after_suite": {
+      "exit_status": 0,
+      "failure_ids": [],
+      "header": "# revision: 22a3bb307b048c9e9e463156fb14ce4ae8bdd13e; tree: /tmp/promotion-order-24zr2k9d/tree; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_promotion_queue_serves_fairly.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T222157542493-the-promotion-queue-serves-fairly/after-suite.log",
+      "summary": "61 passed in 38.91s"
+    },
+    "baseline_importers": {
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_code_reload_never_cuts_off_a_promotion.py::test_a_landing_in_flight_finishes_before_the_service_reexecutes",
+        "tests/test_code_reload_never_cuts_off_a_promotion.py::test_a_promotion_in_flight_finishes_before_the_service_reexecutes",
+        "tests/test_no_caller_waits_on_a_promotion.py::test_a_failure_is_durable_and_is_a_session_obligation",
+        "tests/test_refused_promotion_request_settles.py::test_a_landed_run_settles_its_refused_request_as_landed",
+        "tests/test_review_promoted_before_its_run.py::test_a_run_whose_review_is_parked_while_its_record_is_written_waits"
+      ],
+      "header": "# revision: f9a238e45926b5e142e68414f2df42780ebc69f5; tree: /tmp/promotion-order-q7r2e9mz/tree; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q -n 4 tests/test_a_refused_review_is_retried_only_when_it_moves.py tests/test_a_raced_promotion_still_lands.py tests/test_cleanly_reviewed_run_lands_itself.py tests/test_an_obligation_offers_only_measured_remedies.py tests/test_a_working_review_keeps_its_working_phase.py tests/test_a_promoted_review_is_never_promoted_again.py tests/test_an_unlaunched_review_is_not_requested.py tests/test_review_promotion_waits_for_its_record.py tests/test_no_caller_waits_on_a_promotion.py tests/test_a_landing_judges_the_head_by_its_suite.py tests/test_code_reload_never_cuts_off_a_promotion.py tests/test_a_promotion_refused_for_moved_inputs_is_judged_again.py tests/test_refused_promotion_request_settles.py tests/test_review_promoted_before_its_run.py tests/test_a_station_tick_delivers_and_lands_a_run.py tests/test_promotion_queue_drains_at_slot_speed.py",
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T222157542493-the-promotion-queue-serves-fairly/baseline-importers-confirmed.log",
+      "summary": "5 failed, 101 passed, 2 warnings in 99.87s (0:01:39)"
+    },
+    "baseline_suite": {
+      "exit_status": 0,
+      "failure_ids": [],
+      "header": "# revision: f9a238e45926b5e142e68414f2df42780ebc69f5; tree: /tmp/promotion-order-q7r2e9mz/tree; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T222157542493-the-promotion-queue-serves-fairly/baseline-confirmed.log",
+      "summary": "58 passed in 35.23s"
+    },
+    "importer_added_failure_ids": [],
+    "negative_control": {
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_the_promotion_queue_serves_fairly.py::test_a_burst_leaves_other_sessions_in_the_first_four",
+        "tests/test_the_promotion_queue_serves_fairly.py::test_a_queued_review_precedes_the_run_it_reviews",
+        "tests/test_the_promotion_queue_serves_fairly.py::test_an_aged_request_precedes_a_younger_priority"
+      ],
+      "header": "# revision: 22a3bb307b048c9e9e463156fb14ce4ae8bdd13e; tree: /tmp/promotion-order-24zr2k9d/tree; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_promotion_queue_serves_fairly.py",
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T222157542493-the-promotion-queue-serves-fairly/negative-control.log",
+      "summary": "3 failed in 0.51s"
+    },
+    "reproduction_quote": "AssertionError: B served 68th; C served 69th"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read the sole commit 22a3bb307b048c9e9e463156fb14ce4ae8bdd13e against f9a238e45926b5e142e68414f2df42780ebc69f5; two scoped files change, with two functional defects in promotion_requests.py.",
+    "done_when": "Read node.done_when and section 2; after-suite.log records all three new cases passing, importer logs carry the same five failures, and negative-control.log records B=68/C=69 with EXIT=1.",
+    "goal": "Read node.goal on the source pointer; promotion_requests.py:486 implements priority, age and session order but double-charges running requests and simulates parked requests as served turns.",
+    "manifest": "Source manifest.md names the reviewed commit and base/head gate receipts; opened logs confirm its revisions, summaries and exit codes.",
+    "write_paths": "Read source pointer node.write_paths; both files in the committed diff are explicitly granted."
+  },
+  "justifications": {
+    "durability": "tests/test_the_promotion_queue_serves_fairly.py:36,77,90,101 assert concrete independent run sequences that redden under run-name ordering, but no test covers running/parked occupancy or non-default report windows.",
+    "evidence": "baseline-confirmed.log and after-suite.log show 58/61 passes with EXIT=0, importer logs have identical five failures, and negative-control.log demonstrates B=68/C=69 with EXIT=1.",
+    "fit": "reckon/crew/promotion_requests.py:142 uses the existing timestamp parser and drained-log owner, and added names and comments describe mechanisms without forbidden labels.",
+    "goal_fidelity": "reckon/crew/promotion_requests.py:521 charges running occupancy and lines 527-559 charge those rows again while also charging parked rows, distorting fair runnable-session turns.",
+    "reuse": "Capability search and inspection of reckon/crew/queue_order.py:242-400 found admission ordering based on live lane occupancy rather than completed-promotion history; promotion_requests.py extends existing promotion-order/history owners and reuses the priority parser and starvation constant.",
+    "scope_discipline": "The sole committed diff changes only reckon/crew/promotion_requests.py and tests/test_the_promotion_queue_serves_fairly.py within node.write_paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read node.goal on the source pointer; promotion_requests.py:486 implements priority, age and session order but double-charges running requests and simulates parked requests as served turns.\nVERDICT done_when: Read node.done_when and section 2; after-suite.log records all three new cases passing, importer logs carry the same five failures, and negative-control.log records B=68/C=69 with EXIT=1.\nVERDICT write_paths: Read source pointer node.write_paths; both files in the committed diff are explicitly granted.\nVERDICT manifest: Source manifest.md names the reviewed commit and base/head gate receipts; opened logs confirm its revisions, summaries and exit codes.\nVERDICT diff: Read the sole commit 22a3bb307b048c9e9e463156fb14ce4ae8bdd13e against f9a238e45926b5e142e68414f2df42780ebc69f5; two scoped files change, with two functional defects in promotion_requests.py.\nCALL_SITES: reckon/crew/promotion_requests.py:PromotionService._tick_locked, reckon/crew/promotion_requests.py:promotion_queue_report, reckon/crew/promotion_requests.py:_finish, reckon/crew_run_commands.py:crew_promotions\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_requests.py:521 charges running occupancy and lines 527-559 charge those rows again while also charging parked rows, distorting fair runnable-session turns.\nSCORE evidence: 19\nJUSTIFICATION evidence: baseline-confirmed.log and after-suite.log show 58/61 passes with EXIT=0, importer logs have identical five failures, and negative-control.log demonstrates B=68/C=69 with EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The sole committed diff changes only reckon/crew/promotion_requests.py and tests/test_the_promotion_queue_serves_fairly.py within node.write_paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_the_promotion_queue_serves_fairly.py:36,77,90,101 assert concrete independent run sequences that redden under run-name ordering, but no test covers running/parked occupancy or non-default report windows.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/promotion_requests.py:142 uses the existing timestamp parser and drained-log owner, and added names and comments describe mechanisms without forbidden labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability search and inspection of reckon/crew/queue_order.py:242-400 found admission ordering based on live lane occupancy rather than completed-promotion history; promotion_requests.py extends existing promotion-order/history owners and reuses the priority parser and starvation constant.\nFINDING reckon/crew/promotion_requests.py:527 blocking: The pending list includes RUNNING and WAITING rows; RUNNING already contributes to served at lines 521-524 but receives another turn at line 559, and WAITING receives a turn despite consuming no slot; with A running, B having one recent completion, older runnable A and younger runnable B, equal actual service counts should select A first but simulating A's running row charges A twice and selects B, so exclude non-runnable rows from future-turn simulation while preserving their separate accounting.\nFINDING reckon/crew/promotion_requests.py:183 blocking: The report forwards its rate-report window_seconds into ordering while PromotionService._tick_locked uses the fixed one-hour default; with A promoted ten minutes ago and older A/newer B waiting, --window-seconds 60 reports A before B while the drain serves B before A, so published queue positions disagree with the actual drain when this supported option is used.\n",
+  "review_limitations": "Static reading and recorded receipts only; no suite rerun or mutation experiment. Findings traced through production drain and report.",
+  "review_run_id": "r-20261116T223953944407-review-of-the-promotion-queue-serves-fairly-22a3bb307b04",
+  "reviewed_base_sha": "f9a238e45926b5e142e68414f2df42780ebc69f5",
+  "reviewed_head_sha": "22a3bb307b048c9e9e463156fb14ce4ae8bdd13e",
+  "reviewed_run_id": "r-20261116T222157542493-the-promotion-queue-serves-fairly",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 14,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T22:56:03.917934+00:00",
+  "total": 109
+}
