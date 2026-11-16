@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-16T14:15:55.504Z",
+  "dispatched_at": "2026-11-16T14:15:09Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-dispatch-is-queued.html",
+      "line": "3",
+      "severity": "non-blocking",
+      "text": "non-blocking: the claim \"no assertion was deleted or weakened\" is false as written, because tests/test_held_dispatch_is_queued.py:166 replaces the deleted assert result.exit_code == 75 and the deleted empty-pointer assertion, and the done_when's no-deletion clause is judged by reading exactly this line."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-dispatch-is-queued.html",
+      "line": "10",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment also states the armed arm adds no failure, but that arm runs tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, two files this node never touched, so its 58 passed EXIT=0 says nothing about the change and the done_when's arm-over-importers clause goes unmeasured."
+    },
+    {
+      "file": "tests/test_held_dispatch_is_queued.py",
+      "line": "178",
+      "severity": "non-blocking",
+      "text": "non-blocking: the case is renamed to promise the request is queued on the lane it waits for, but the only hold assertion is truthiness of reason, so a pointer queued with a reason naming another lane passes."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_held_dispatch_is_queued.py passes in full on the primary branch; the file at 2808fd56f2 is unchanged since a8d0e7f982 where logs/head-gate.log records 8 passed EXIT=0, and the manifest gives both base causes the verdict test wrong.\nVERDICT done_when: the done_when asks for a full pass at head as an all_debug job with SLURM_JOB_ID unset, a per-cause product-or-test verdict, an arm over the test files that import what changed, and a base negative control; logs/base-negative-control.log (4 failed / 4 passed, EXIT=1) and logs/head-gate.log (8 passed, EXIT=0) meet three clauses, while the arm clause is unmet because both arm logs run two files the diff does not touch.\nVERDICT write_paths: the declared scope is reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the three changed files are one test file and two fragments under that directory, so nothing lands outside it.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/r-20261116T104519296539-qwnw-red-file-held-dispatch-is-queued/manifest.md; it states 8 passed at head 6252a90d9f and 4 failed / 4 passed at base 59a79fb16c, names its four logs, and its changed_paths list matches the diff exactly.\nVERDICT diff: read commit by commit over 59a79fb16c..2808fd56f2; 6252a90d9f rewrites one stale case and completes the _queued_request fixture's node, and a8d0e7f982/ac72009344/d188eadfce/2808fd56f2 add and correct the two evidence fragments, 3 files and 65 insertions with no product module touched.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_held_dispatch_is_queued.py:146 now asserts the queued rule the product at base already keeps, and logs/head-gate.log records the file green at 8 passed EXIT=0 with no product module in the diff.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/base-negative-control.log ends 4 failed, 4 passed EXIT=1 with the four ids and logs/head-gate.log ends 8 passed EXIT=0, but the arm the done_when names is absent: logs/base-arm.log:1 and logs/after-arm.log:1 both run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import nothing the node changed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (tests/test_held_dispatch_is_queued.py and the two files under docs/evidence/fragments/queued-work-needs-no-workaround/) sits inside the declared write paths, and no product module is touched.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the refusal rule reddens tests/test_held_dispatch_is_queued.py:166 with exit_code 75 against 0, and dropping the fixture's goal reddens the _queued_request cases with the TaskNode TypeError the base log shows, though the hold's own reason text is only checked for truthiness at tests/test_held_dispatch_is_queued.py:178.\nSCORE fit: 18\nJUSTIFICATION fit: the new case follows the file's own idiom (tests/test_held_dispatch_is_queued.py:146-179 reuses _config, backend_tests._arguments and backend_tests._payload) and adds no forbidden name, though both new fragments end without a trailing newline (docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-dispatch-is-queued.html:12).\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module, and the case reads the dispatch result through the existing tests/test_dispatch_names_its_backend._payload and reckon/crew/runs.py list_live owners rather than defining a second payload reader.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-dispatch-is-queued.html:3 non-blocking: the claim \"no assertion was deleted or weakened\" is false as written, because tests/test_held_dispatch_is_queued.py:166 replaces the deleted assert result.exit_code == 75 and the deleted empty-pointer assertion, and the done_when's no-deletion clause is judged by reading exactly this line.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-dispatch-is-queued.html:10 non-blocking: the fragment also states the armed arm adds no failure, but that arm runs two files this node never touched, so its 58 passed EXIT=0 says nothing about the change and the done_when's arm-over-importers clause goes unmeasured.\nFINDING tests/test_held_dispatch_is_queued.py:178 non-blocking: the case is renamed to promise the request is queued on the lane it waits for, but the only hold assertion is truthiness of reason, so a pointer queued with a reason naming another lane passes.\n",
+  "review_run_id": "r-20261116T132820811744-review-of-qwnw-red-file-held-dispatch-is-queued-2808fd56f283",
+  "reviewed_base_sha": "59a79fb16c02dc58ca16941b2e81cc7c0ac0e419",
+  "reviewed_head_sha": "2808fd56f2836d8e3b2bbaaa83d3c758cf8ef475",
+  "reviewed_run_id": "r-20261116T104519296539-qwnw-red-file-held-dispatch-is-queued",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T20:41:03.044339+00:00",
+  "total": 111
+}
