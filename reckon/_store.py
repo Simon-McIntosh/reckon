@@ -5091,6 +5091,14 @@ def _require_every_landed_section_answered(
     the clock, so a plan edited today does not change what
     the rule owed yesterday.
 
+    The rule reads the plan's run records once per close, through the same
+    section reading the closure overview renders, rather than walking the
+    ledger once per unanswered section: every section is answered from one
+    population, so two sections cannot be judged against two reads that
+    disagree. A plan state that names no project or slug cannot be read at all
+    and is refused naming what is missing, rather than being treated as a plan
+    with no run record.
+
     The rule needs the plan's document to read that prose, and a caller without
     one gets no check rather than a refusal: the document is what distinguishes
     a section that owes an account from one that does not, and refusing every
@@ -5113,13 +5121,26 @@ def _require_every_landed_section_answered(
     if not html_text:
         return
     prose = _section_prose_by_identity(html_text)
-    unanswered = [
+    # A landing comment settles a section without touching the ledger, so the
+    # run records are read only for the sections that still owe an account.
+    owing = [
         section
         for section in landed
         if _states_a_done_when(prose, section)
-        and not _section_holds_a_landing(state, section)
-        and not _landed_before_the_rule(state, section)
+        and _plan_html._closing_comment(state, section) is None
     ]
+    if not owing:
+        return
+    records = _plan_run_records(state)
+    readings = _read_plan_landings(state, html_text, records)
+    unanswered: list[str] = []
+    for section in owing:
+        matched = _landings_for_section(readings, section)
+        if any(landing.landed for landing in matched):
+            continue
+        if _landed_before_the_rule(state, section, matched):
+            continue
+        unanswered.append(section)
     if not unanswered:
         return
     raise OpError(
@@ -5159,7 +5180,77 @@ def _states_a_done_when(prose: dict[str, str], section: str) -> bool:
     return _done_when_paragraph(text) is not None
 
 
-def _landed_before_the_rule(state: dict[str, Any], section: str) -> bool:
+def _plan_run_records(state: dict[str, Any]) -> list[Mapping[str, Any]]:
+    """The plan's committed run records, read once for one close.
+
+    The guard reads the ledger once per close rather than once per unanswered
+    section: the records are the same population for every section, so a
+    per-section read re-walks the store to answer a question the first read
+    already answered.
+
+    The read needs the plan's identity. A state that names no project or no
+    slug cannot be checked at all, and saying so is the difference between a
+    refusal a reader can repair and the silent verdict that such a plan holds
+    no run record.
+    """
+    from reckon import ledger
+
+    project = str(state.get("project") or "").strip()
+    slug = str(state.get("slug") or "").strip()
+    if not (project and slug):
+        missing = "project" if not project else "slug"
+        named = "no project and no slug" if not project and not slug else f"no {missing}"
+        raise OpError(
+            "terminal status refused: cannot read the run ledger to check a "
+            f"landed section's account — this plan state names {named}, so the "
+            "sections that landed cannot be told from those that did not"
+        )
+    try:
+        return list(ledger.runs(project, plan=slug))
+    except ledger.LedgerError as exc:
+        raise OpError(
+            f"cannot read the run ledger for project {project!r}, plan {slug!r}: "
+            f"{exc}"
+        ) from exc
+
+
+def _read_plan_landings(
+    state: dict[str, Any],
+    html_text: str,
+    records: Sequence[Mapping[str, Any]],
+) -> list[Any]:
+    """What each section landed, read through the closure overview's reader.
+
+    The sprint page and the closing plan's overview both state a section's
+    landing, so the close guard asks the same reader they do rather than
+    deciding from a second population of records.
+
+    ``root`` is left unset: the guard asks whether a section landed, and no
+    figure address or stored review bears on that answer, so the read opens no
+    directory it does not need.
+    """
+    from reckon.evidence import read_section_landings
+
+    return read_section_landings(
+        state, html_text, records, str(state.get("project") or "").strip()
+    )
+
+
+def _landings_for_section(readings: Sequence[Any], section: str) -> list[Any]:
+    """The readings whose section id names the same section as ``section``."""
+    from reckon._plan_html import section_id_candidates
+
+    wanted = section_id_candidates(section)
+    return [
+        reading
+        for reading in readings
+        if section_id_candidates(str(getattr(reading, "section", "") or "")) & wanted
+    ]
+
+
+def _landed_before_the_rule(
+    state: dict[str, Any], section: str, readings: Sequence[Any]
+) -> bool:
     """Whether a section was already done when the landing rule landed.
 
     Read from the earliest activity the store records for the section and one
@@ -5168,14 +5259,19 @@ def _landed_before_the_rule(state: dict[str, Any], section: str) -> bool:
     since it was landed cannot take its exemption away. A section the store
     records nothing about predates the record and is exempt; one whose record
     begins at or after the instant is not.
+
+    ``readings`` are the section's landing readings, so the run records are the
+    ones the close already read rather than a second ledger walk.
     """
-    recorded = _section_first_recorded_at(state, section)
+    recorded = _section_first_recorded_at(state, section, readings)
     if recorded is None:
         return True
     return recorded < LANDING_ACCOUNT_ENFORCED_FROM
 
 
-def _section_first_recorded_at(state: dict[str, Any], section: str) -> datetime | None:
+def _section_first_recorded_at(
+    state: dict[str, Any], section: str, readings: Sequence[Any] = ()
+) -> datetime | None:
     """The earliest moment the store records anything about one section, or None.
 
     Two stores carry a per-section time: the plan's comment log and the run
@@ -5188,7 +5284,6 @@ def _section_first_recorded_at(state: dict[str, Any], section: str) -> datetime 
     silent about yields None, and a record whose stamp cannot be read
     contributes nothing — an unreadable stamp is not evidence either way.
     """
-    from reckon import ledger
     from reckon._plan_html import section_id_candidates
     from reckon._timestamps import parse_utc
 
@@ -5199,47 +5294,13 @@ def _section_first_recorded_at(state: dict[str, Any], section: str) -> datetime 
         if section_id_candidates(str(identity)) & wanted
         for record in records or []
     ]
-    project = str(state.get("project") or "")
-    slug = str(state.get("slug") or "")
-    if project and slug:
-        try:
-            records = ledger.runs(project, plan=slug)
-        except ledger.LedgerError as exc:
-            raise OpError(
-                f"cannot read the run ledger for project {project!r} while checking "
-                f"section {section!r}: {exc}"
-            ) from exc
-        stamps.extend(
-            parse_utc(record.get("completed_at"))
-            for record in records
-            if section_id_candidates(record.get("section")) & wanted
-        )
+    stamps.extend(
+        parse_utc(record.get("completed_at"))
+        for reading in readings
+        for record in getattr(reading, "runs", ()) or ()
+    )
     readable = [stamp for stamp in stamps if stamp is not None]
     return min(readable) if readable else None
-
-
-def _section_holds_a_landing(state: dict[str, Any], section: str) -> bool:
-    """Whether a landing comment or a committed run record names one section."""
-    from reckon import _plan_html, ledger
-
-    if _plan_html._closing_comment(state, section) is not None:
-        return True
-    project = str(state.get("project") or "")
-    slug = str(state.get("slug") or "")
-    if not (project and slug):
-        return False
-    try:
-        records = ledger.runs(project, plan=slug)
-    except ledger.LedgerError as exc:
-        raise OpError(
-            f"cannot read the run ledger for project {project!r} while checking "
-            f"section {section!r}: {exc}"
-        ) from exc
-    wanted = _plan_html.section_id_candidates(section)
-    return any(
-        _plan_html.section_id_candidates(record.get("section")) & wanted
-        for record in records
-    )
 
 
 def _plan_html_text(state: dict[str, Any]) -> str | None:
