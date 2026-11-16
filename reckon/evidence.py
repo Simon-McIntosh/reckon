@@ -850,9 +850,7 @@ def _section_paragraph(landing: SectionLanding, plan_slug: str) -> str:
     )
 
 
-def _fragment_href(
-    node: str, plan_slug: str, project: str, root: Path | None
-) -> str:
+def _fragment_href(node: str, plan_slug: str, project: str, root: Path | None) -> str:
     """The served address of a landed node's own fragment, or ``""`` for none.
 
     A node's fragment is optional, so the overview links one only where it was

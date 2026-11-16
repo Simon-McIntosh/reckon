@@ -71,9 +71,9 @@ def _findings(text: str, *, worktree: Path, repository: Path) -> list[str]:
     node = TaskNode(
         id=NODE, goal="land", plan=PLAN, role="implement", write_paths=[FRAGMENT]
     )
-    return audit_manifest(
-        text, node, worktree=worktree, repository=repository
-    )["findings"]
+    return audit_manifest(text, node, worktree=worktree, repository=repository)[
+        "findings"
+    ]
 
 
 @pytest.fixture()
