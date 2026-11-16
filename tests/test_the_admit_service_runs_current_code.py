@@ -1,16 +1,9 @@
-"""The admission loop re-executes when the checkout's code moves under it.
+"""Admission batches code changes and preserves trust and retry guards.
 
-A queued request must never be validated or launched by code older than the
-checkout the service launches from. The loop therefore compares the code stamp
-it started with against the checkout's at the head of every pass, before the
-pass runs, and re-executes in place when the stamp has moved on a checkout the
-trusted test accepts. The admission failure guard fingerprints that same stamp,
-so a request a pass refused under the old code is retried by the first pass that
-runs the new code, rather than waiting out its back-off.
-
-The trust test and the replacement's import root are exercised for real, against
-temporary checkouts: a checkout whose code is dirty or unimportable must read
-untrusted and leave the loop on the code it is running.
+Controlled time drives the service past its configured window, and a named
+immediate request bypasses that clock. Dirty and unimportable temporary
+checkouts still refuse replacement, and the first pass after replacement
+retries work fingerprinted with an earlier code identity.
 """
 
 from __future__ import annotations
@@ -20,11 +13,14 @@ import json
 import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from click.testing import CliRunner
 
-from reckon.crew import queue_admission, runs
+from reckon import cli
+from reckon.crew import follower_reload, queue_admission, runs
 
 PROJECT = "proj"
 SESSION = "coordinator-a"
@@ -163,8 +159,10 @@ def _drive_loop(
     *,
     checkout: Path,
     config: dict[str, Any],
+    advance: float = 1800,
+    immediate: bool = False,
 ) -> dict[str, Any]:
-    """Run the loop for two passes, moving the code stamp during the wait.
+    """Run two passes, moving the code and clock during the wait.
 
     The checkout commits as the loop waits between passes -- the window a
     running service spends asleep -- so the move is only visible to a stamp
@@ -175,6 +173,10 @@ def _drive_loop(
     process.
     """
     holder = {"stamp": "old"}
+    clock = [0.0]
+    requests = []
+    monkeypatch.setattr(follower_reload, "time", SimpleNamespace(time=lambda: clock[0]))
+    monkeypatch.delenv("RECKON_SERVICE_PASS_PATH", raising=False)
     events: list[str] = []
     dispatch = _RefusingDispatch()
 
@@ -188,6 +190,14 @@ def _drive_loop(
         # The checkout moves while the service waits, after any comparison the
         # previous pass made and before the next pass begins.
         holder["stamp"] = "new"
+        clock[0] += advance
+        if immediate:
+            answer = CliRunner().invoke(
+                cli.main,
+                ["crew", "reload", "admission", "--reason", "urgent correction"],
+            )
+            assert answer.exit_code == 0, answer.output
+            requests.append(json.loads(answer.output))
 
     monkeypatch.setattr(queue_admission, "_admit_code_stamp", read_stamp)
     monkeypatch.setattr(
@@ -228,22 +238,32 @@ def _drive_loop(
         "attempts": dispatch.attempts,
         "guards": guards,
         "passes": passes,
+        "requests": requests,
     }
 
 
 def test_the_loop_reexecutes_and_retries_when_the_code_stamp_moves(
     admit_home: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    driven = _drive_loop(
-        monkeypatch,
-        checkout=_checkout(admit_home),
-        config=json.loads(json.dumps(CONFIG)),
-    )
+    with monkeypatch.context() as patch:
+        patch.setenv("RECKON_HOME", str(admit_home / "before-window-home"))
+        before = _drive_loop(
+            patch,
+            checkout=_checkout(admit_home / "before-window"),
+            config=json.loads(json.dumps(CONFIG)),
+            advance=60,
+        )
+        assert before["passes"] == [1, 2]
+        assert before["events"] == ["pass-1", "pass-2"]
+    with monkeypatch.context() as patch:
+        driven = _drive_loop(
+            patch,
+            checkout=_checkout(admit_home),
+            config=json.loads(json.dumps(CONFIG)),
+        )
 
     assert driven["passes"] == [1, 2]
-    # The checkout moves during the wait after the first pass, and the
-    # re-execution lands before the second pass runs -- never one pass later,
-    # on stale code.
+    # The window expires during the wait, so the next pass takes the new code.
     assert driven["events"][:3] == ["pass-1", "reexec", "pass-2"]
     # The request refused in the first pass is attempted again in the second,
     # rather than waiting out the back-off the first failure recorded.
@@ -253,6 +273,23 @@ def test_the_loop_reexecutes_and_retries_when_the_code_stamp_moves(
     # back-off for the second pass.
     assert driven["guards"][0]["code"] == "old"
     assert driven["guards"][1]["code"] == "new"
+
+    with monkeypatch.context() as patch:
+        patch.setenv("RECKON_HOME", str(admit_home / "immediate-home"))
+        immediate = _drive_loop(
+            patch,
+            checkout=_checkout(admit_home / "immediate"),
+            config=json.loads(json.dumps(CONFIG)),
+            advance=60,
+            immediate=True,
+        )
+        assert immediate["passes"] == [1, 2]
+        assert immediate["events"][:3] == ["pass-1", "reexec", "pass-2"]
+        assert immediate["attempts"] == ["r-current-code", "r-current-code"]
+        assert immediate["guards"][0]["code"] == "old"
+        assert immediate["guards"][1]["code"] == "new"
+        assert immediate["requests"][0]["reason"] == "urgent correction"
+        assert immediate["requests"][0]["requested_by"]
 
 
 def test_the_loop_keeps_its_current_code_when_a_tracked_file_is_edited(

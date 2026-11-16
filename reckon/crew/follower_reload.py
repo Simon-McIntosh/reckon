@@ -111,7 +111,7 @@ class ReloadWindow:
         now = self.clock()
         self.next_at = (
             previous["next_reload_at"]
-            if previous.get("process") == self.process
+            if "next_reload_at" in previous
             else now + self.seconds
         )
         self.exported_at = None
@@ -121,6 +121,37 @@ class ReloadWindow:
         self.pending_request = {}
         self._published = None
         self.publish()
+
+    @classmethod
+    def for_supervisor(cls, service: str, pid: int):
+        """Read the same schedule without starting a new tick obligation.
+
+        The pid ties an exported tick to the live service, so a record left by
+        another copy cannot authorise interrupting this one.
+        """
+        path, request_path = reload_paths(service)
+        record = _reload_record(path)
+        if record.get("process") != [socket.gethostname(), pid]:
+            return None
+        window = cls.__new__(cls)
+        window.clock = time.time
+        window.path, window.request_path = path, request_path
+        window.service = service
+        for attribute, key in (
+            ("seconds", "window_seconds"),
+            ("process", "process"),
+            ("running", "running_code"),
+            ("newest", "newest_seen"),
+            ("next_at", "next_reload_at"),
+            ("exported_at", "tick_exported_at"),
+            ("last_request", "last_request"),
+            ("last_reload_at", "last_reload_at"),
+            ("reload_count", "reload_count"),
+        ):
+            setattr(window, attribute, record[key])
+        window.pending_request = {}
+        window._published = record
+        return window
 
     def report(self) -> dict[str, Any]:
         return {
