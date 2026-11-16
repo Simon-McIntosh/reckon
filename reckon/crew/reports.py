@@ -881,6 +881,7 @@ def _normalise_manifest_fields(
         if name in _GUARDED_LIST_KEYS:
             coerced = _split_entry_tokens(coerced)
         fields[name] = coerced
+    _refuse_changed_path_redirections(fields.get("changed_paths"), path=path)
     for name in ("baseline_suite", "after_suite"):
         fields[name] = _typed_suite_observation(fields.get(name))
     fields["failure_attribution"] = _typed_failure_attribution(
@@ -893,6 +894,21 @@ def _normalise_manifest_fields(
         else None
     )
     return fields
+
+
+def _refuse_changed_path_redirections(value: Any, *, path: str | None) -> None:
+    """Keep shell redirections from being read as repository-relative paths."""
+    if not isinstance(value, list):
+        return
+    for item in value:
+        if not isinstance(item, str) or not re.match(r"^(?:\d*|&)[<>]", item):
+            continue
+        where = f" at {path}" if path else ""
+        raise ManifestParseError(
+            f"cannot read manifest{where}: changed_paths item {item!r} is a "
+            "shell redirection, not a changed file path; remove this item "
+            "from changed_paths or replace it with the actual file path"
+        )
 
 
 def _coerce_list_field(value: Any) -> Any:
