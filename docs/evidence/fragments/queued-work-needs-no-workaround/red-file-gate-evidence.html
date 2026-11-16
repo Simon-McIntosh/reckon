@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Gate evidence: the red gate-evidence test file passes at the head</title>
+</head>
+<body>
+<article class="r-evidence" data-node="qwnw-red-file-gate-evidence">
+
+<h2 id="qwnw-red-file-gate-evidence-headline">tests/test_gate_evidence.py: 15 failing at the base revision, 25 passing at the head</h2>
+
+<p id="qwnw-red-file-gate-evidence-measure">The named file held <strong>15 failures and errors</strong> at revision
+<code>d0d77f07e2</code> and reads <strong>25 passed</strong> at the head it delivered, run on the
+<code>all_debug</code> partition with <code>SLURM_JOB_ID</code> unset. The base run reproduces the 15 ids the
+whole-suite log recorded at <code>8d50b0333f</code>, so the file's defect is the one this node was cut for and not a
+reading of a different tree.</p>
+
+<table id="qwnw-red-file-gate-evidence-causes">
+<caption id="qwnw-red-file-gate-evidence-caption">Each cause, and whether the product or the test was wrong</caption>
+<thead>
+<tr><th scope="col">Cause</th><th scope="col">What the code now keeps</th><th scope="col">Verdict</th><th scope="col">Repair</th></tr>
+</thead>
+<tbody>
+<tr>
+<td id="qwnw-red-file-gate-evidence-cause-async"><code>crew complete</code> records a durable promotion request by
+default; the synchronous outcome is returned only with <code>--wait</code> (1ff2fb47fe moved the CLI outcome and guard
+tests onto the flag and missed this file).</td>
+<td>The command's own help and every other CLI-driven promotion test pass <code>--wait</code>.</td>
+<td>test wrong</td>
+<td>each of the five call sites passes <code>--wait</code>; no assertion touched.</td>
+</tr>
+<tr>
+<td id="qwnw-red-file-gate-evidence-cause-base">The fixture pointer declared <code>base_sha: base-abc</code>, a
+revision that resolves nowhere, while its worktree sat on the seed commit.</td>
+<td>Promotion measures a commitless row's worktree against its own base, and reads an arm's baseline revision against
+that same base.</td>
+<td>test wrong</td>
+<td>the fixture's base is the commit its tree sits at (<code>_seeded_head</code>).</td>
+</tr>
+<tr>
+<td id="qwnw-red-file-gate-evidence-cause-commits">The fixture manifest declared <code>commits: abc123</code>, a
+citation no store resolves, for a working role.</td>
+<td>A cited commit must resolve in the run repository, and a complete manifest for a role that owes a commit must cite
+one.</td>
+<td>test wrong</td>
+<td>the manifest cites the fixture's own commit; the attribution-only manifests, which no store is asked about, cite a
+single fixed citation-shaped value.</td>
+</tr>
+<tr>
+<td id="qwnw-red-file-gate-evidence-cause-arms">The suite arms named <code>base-abc</code> and
+<code>after-abc</code>.</td>
+<td>An arm names the revision it ran at: the baseline the run's base, the after arm the run's head.</td>
+<td>test wrong</td>
+<td>both arms name the fixture revision; the two assertions that pinned the placeholders now assert the stored arms
+carry the revisions the manifest declared.</td>
+</tr>
+<tr>
+<td id="qwnw-red-file-gate-evidence-cause-unchanged">The missing-after fixture described a run that changed nothing,
+which now carries a delta of <code>unchanged</code> and needs no pair.</td>
+<td>Only a run whose manifest and worktree both show no change escapes the pair requirement.</td>
+<td>test wrong</td>
+<td>the fixture carries the node's uncommitted work, so the pair is required and the missing arm refuses.</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="qwnw-red-file-gate-evidence-negative">Negative control: the base run of the same file</h3>
+<p id="qwnw-red-file-gate-evidence-negative-prose">Revision <code>d0d77f07e2</code>, extracted to a scratch tree under
+<code>$TMPDIR</code>, carrying the pre-repair test file:</p>
+<pre id="qwnw-red-file-gate-evidence-negative-log"><code>15 failed, 10 passed in 90.46s
+EXIT=1
+
+FAILED tests/test_gate_evidence.py::test_promoting_a_passing_gate_with_no_check_is_refused
+FAILED tests/test_gate_evidence.py::test_promoting_a_passing_gate_with_a_full_check_is_accepted_and_stored
+FAILED tests/test_gate_evidence.py::test_a_log_digest_satisfies_the_check_in_place_of_a_log_path
+FAILED tests/test_gate_evidence.py::test_a_failing_or_not_run_gate_needs_no_check_evidence
+FAILED tests/test_gate_evidence.py::test_armed_promotion_refuses_missing_observation_and_keeps_pointer
+FAILED tests/test_gate_evidence.py::test_armed_promotion_refuses_added_failures_with_ids
+FAILED tests/test_gate_evidence.py::test_reasoned_waiver_promotes_and_stores_observations
+FAILED tests/test_gate_evidence.py::test_repair_run_with_only_baseline_failures_is_clean
+FAILED tests/test_gate_evidence.py::test_real_cited_commit_and_clean_suite_delta_promote_together
+FAILED tests/test_gate_evidence.py::test_known_bad_promotion_with_twenty_added_failures_is_refused
+FAILED tests/test_gate_evidence.py::test_fifteen_repair_promotions_with_no_added_failures_are_accepted
+FAILED tests/test_gate_evidence.py::test_added_failure_ids_matches_promotions_suite_delta_arithmetic
+FAILED tests/test_gate_evidence.py::test_promoted_run_stores_failure_attribution_beside_added_ids
+FAILED tests/test_gate_evidence.py::test_added_failure_with_no_attribution_entry_still_refuses
+FAILED tests/test_gate_evidence.py::test_attribution_naming_a_pre_existing_failure_is_dropped</code></pre>
+
+<h3 id="qwnw-red-file-gate-evidence-head">Head run of the same file</h3>
+<p id="qwnw-red-file-gate-evidence-head-prose">Revision <code>53ba12eeb1</code>, in the node's own worktree, submitted
+as a job on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset:</p>
+<pre id="qwnw-red-file-gate-evidence-head-log"><code>PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -B -m pytest -p no:cacheprovider -q tests/test_gate_evidence.py
+.........................                                                [100%]
+25 passed in 7.57s
+EXIT=0</code></pre>
+
+<p id="qwnw-red-file-gate-evidence-logs">Logs on disk:
+<code>~/.config/reckon/crew/runs/r-20261115T224617007555-qwnw-red-file-gate-evidence/gate-base-test_gate_evidence.log</code>
+<code>gate-head-test_gate_evidence.log</code>, and the node's suite arms in <code>suite-base.txt</code> and
+<code>suite-after.txt</code>. The same population of 25 tests is present in both runs, so the head's pass is the file
+passing rather than a smaller selection.</p>
+
+</article>
+</body>
+</html>

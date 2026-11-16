@@ -388,7 +388,12 @@ Use `/reckon-build <project>:S1` outside the project's canonical checkout.
 The ship skill reads the sprint plans, transitive dependencies, research and
 prior evidence; assigns ready nodes to capability-appropriate workers; uses
 detached worktrees by default; integrates results; writes evidence and state;
-and cleans up worktrees before sprint closure.
+and cleans up worktrees before sprint closure. A per-node evidence fragment is
+optional and most nodes write none: a landing leaves its `landing:` line, its
+run record and its gate log, and writes a fragment only for a negative result
+or a mechanism that does not fit a landing line. Nothing splices a fragment
+into a plan's landed record, which is synthesized once at closure and links the
+fragment from the node's row without reproducing its text.
 
 ## Milestones, timeline, blockers
 

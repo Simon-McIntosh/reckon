@@ -1,0 +1,102 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-16T11:33:44.913Z",
+  "dispatched_at": "2026-11-16T11:32:18Z",
+  "findings": [
+    {
+      "anchor": "plan.html:217",
+      "id": "wiring-1",
+      "reason": "the plan's dispatch surface names the wrong work, and the two live sections are unreachable from it.",
+      "text": "`f-alnw-015`, `f-alnw-016` and `f-alnw-017` are `data-status=\"open\"` and still carry `/reckon-build a-landing-never-waits-on-a-shared-index \u00a714`, `\u00a715`, `\u00a716`, which `plan.html:23` now declares `done` \u2014 their runs' heads `c6fd7c4c9b`, `8613b20d74` and `bb256684ce` are all ancestors of HEAD \u2014 while the only two sections still `implementable`, \u00a717 (`plan.html:141`) and \u00a718 (`plan.html:146`), have no followup carrying their prompt anywhere in the file, so a coordinator reading the followup list re-dispatches three landed sections and never dispatches the two that remain",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:286",
+      "id": "evidence_paths-1",
+      "reason": "a complete review at head `bb256684ce` is recorded beside it, so filling or removing the empty one changes no decision the plan makes.",
+      "text": "the s16 review record `c-run-r-20261115T184551680088-review-of-merged-primary-run-lands-s16-eb4735ae3b44` has the body `placeholder`, so a reader who follows \u00a716's landing to its first reviewed head finds a record that carries nothing",
+      "type": "evidence_paths",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "aa086f1e29d70f7c3bf63a4bd47d8ddfac35715b",
+  "plan_fingerprint": "bd5af1ef266c41b2d9bf14c476e225bc30c0fd25b00b60c032576a635a95c86f",
+  "plan_slug": "a-landing-never-waits-on-a-shared-index",
+  "plan_version": 87,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "aa086f1e29d70f7c3bf63a4bd47d8ddfac35715b",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "f-alnw-015, 016 and 017 are resolved as landed, and one open followup now carries the s17 and s18 invocation; both sections are dispatched",
+      "reason": "",
+      "when": "2026-11-16T11:55:56.434655+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "evidence_paths-1",
+      "reason": "the review rates it would-not-change: a complete review record at head bb256684ce sits beside the empty one, and the empty comment was written by the promotion path, not authored",
+      "when": "2026-11-16T11:56:00.534357+00:00"
+    }
+  ],
+  "responses": {
+    "evidence_paths-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "the review rates it would-not-change: a complete review record at head bb256684ce sits beside the empty one, and the empty comment was written by the promotion path, not authored",
+      "when": "2026-11-16T11:56:00.534357+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "aa086f1e29d70f7c3bf63a4bd47d8ddfac35715b",
+      "commit_basis": "edit",
+      "note": "f-alnw-015, 016 and 017 are resolved as landed, and one open followup now carries the s17 and s18 invocation; both sections are dispatched",
+      "reason": "",
+      "when": "2026-11-16T11:55:56.434655+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-landing-never-waits-on-a-shared-index.v87.json",
+  "review_run_id": "r-20261116T112334058221-plan-review-of-a-landing-never-waits-on-a-shared-index",
+  "reviewed_blob_sha": "89950e1a8666a20e12c85b3b9c3271353e28868c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 for the units reviewed, `cb557f9711` resolves as a commit (`git cat-file -t cb557f9711` \u2192 commit), `scripts/import_runs_into_store.py` exists at that path, `PlanVisibilityError` resolves (`reckon/crew/routing.py:2748`), and `reckon/crew/promotion.py` and `reckon/ledger.py` both exist; the \u00a713 fragment anchor was answered by an earlier review and s13 is unchanged here, so it is not re-raised.",
+    "done_when": "pass \u2014 s17 and s18 each name new tests that fail at the base revision plus the behaviour that must not move, and both base failures are real: the landing comment is written to the plan before the store append (`reckon/crew/promotion.py:2434-2445`) with no restore path (`grep -rn \"restore_plan\\|_restore_plan\" reckon/` returns nothing), and the generic store refusal names the import script for every failure, a lock included (`reckon/ledger.py:3449-3456`).",
+    "evidence_paths": "a finding \u2014 a comment record standing in for the s16 review carries the body `placeholder` (`plan.html:286`).",
+    "naming": "pass \u2014 s17 and s18 introduce no new symbol, and their prose carries no stage name, ticket number or changelog phrasing; `reckon-28` appears only as the reporting session that raised the observation.",
+    "reasoning": "pass \u2014 on all three checks: the stated root cause matches the cited evidence (the plan write precedes the store append and is never unwound; the import-script advice is attached to every store failure, not just corruption), the endpoint is reachable and the test able to fail, and neither section prescribes a step sequence or a function to extend beyond the wording and the plan-file state it fixes.",
+    "single_goal": "pass \u2014 s17 names one endpoint (a refused promotion leaves its plan as committed) and s18 one (a locked store's refusal names the lock); neither carries a second deliverable.",
+    "wiring": "a finding \u2014 the snapshot's followup list still dispatches \u00a714, \u00a715 and \u00a716 (`plan.html:217`, `:222`, `:227`) while `plan.html:23` declares those three `done`, and neither new implementable section \u00a717 nor \u00a718 carries a `<article class=\"r-fu\">` with its invocation."
+  },
+  "section_digests": {
+    "_document": "eec7fbea92f6df1f6f90305c251deed250ea9eae140ca3c1c94e74c26aed3b0b",
+    "s1": "704da057b1e86cedb79ae983e9f7504afd9303eac87bb25b9d4aa38717913746",
+    "s10": "5d5cbb85e08c2cb299d601fc388401675ee5191128e8b85dd642cc2c27b83747",
+    "s11": "5799ddfd0b370de4655ad0bacee8fae5b8388a5711aea97614e95d4519671bff",
+    "s12": "0c789b60e5a0d2aaf0c65dc227735ef9a3133365f385da71fbc25b13534f6863",
+    "s13": "d619af298fcc65f16d08dfe593dba0aa7e64996224e620f8e5a0a5ae222f3274",
+    "s14": "d713ffdfef8a3105a40aa9acc1d863c32fa681b9d9acc4f523f93a83951993a7",
+    "s15": "6719833a38505aeab1859cdc72bf08090cb508617240c0189004c158c77e3cb0",
+    "s16": "7244fa2fd1734ba85f1378090ffc804ca166fa8311a2bf4fb25dce974a64208f",
+    "s17": "2cef3be5f2f44c52648f38ca09429cc08d5d41badc1cb38a5853076dd59434ac",
+    "s18": "f38ec51711d51f7173d72c4c0e98171da64af7db439d09c14e573fdaaa0ba07c",
+    "s2": "a72539aa82cfb965c54c35d223b2606608ed39bc8269f82d2e7427267b4636af",
+    "s3": "58b92de94f7a15cbe2a66cb37ebc307ca1d8306003ca55ca38ac6fd12e6266c8",
+    "s4": "f9e5f60efd976441ef227da76beb3f9309fccd0d2f99eee0fc98924588b241aa",
+    "s5": "41308d89a4ece7829b6313c98047025055c9c8dc56e754dc8ccf0501af52b1b3",
+    "s6": "ddc19efe3db5d3e2196ba12f1ccea29b87e0e15e0f71c68c2fc89431d6cca56b",
+    "s7": "2ebeb3cecb2ecb78b7b4d2160d5d040e80b315fd2ed14bebcd78068961e3d9e7",
+    "s8": "b02f4e8c623fc056b518109ad2e4921c5835b87308d0f448c3c0acd9590ab68f",
+    "s9": "397bff46dceb3adfac8e00e31582b6935a480117ee402da0713534c17f544501"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T11:55:54.433333+00:00",
+  "total": null
+}
