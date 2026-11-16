@@ -1210,8 +1210,8 @@ class Station:
         self._enter(stages[2])
         self.store.heartbeat(now=moment)
         pointers = {
-            str(row["run_id"]): json.loads(str(row["fields"]))
-            for row in self.store.pointer_rows()
+            str(record.get("run_id") or ""): record
+            for record in self.store.pointer_fields().values()
         }
         project_names = (
             set(self.projects())
