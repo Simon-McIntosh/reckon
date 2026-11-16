@@ -1782,9 +1782,20 @@ class RowPolicy:
         # first take it and the rest draw nothing. The pane's key is the host
         # that spawned the followers when they have one, and the follower's own
         # session otherwise, so a host following two sessions draws each lift
-        # once between them. ``None`` draws every lift row on this pane's own
+        # once between them. A path that names the pane's own session and is
+        # handed no claim takes that session's shared one, because the claim
+        # belongs to the pane rather than to the delivery path a follower
+        # happened to read through: the station subscriber builds its path
+        # without one, and a pane served by several followers drew the same
+        # limit reset once per follower. A caller that supplies no session — a
+        # measurement of a recorded stream, or a reader watching the whole
+        # fleet — is handed ``None`` and draws every lift row on this pane's own
         # memory alone, the behaviour before the claim.
-        self._lift_claim = lift_claim
+        self._lift_claim = (
+            lift_claim
+            if lift_claim is not None
+            else self._pane_lift_claim(str(own_session) if own_session else "")
+        )
         # run_id -> the launch ordinal at which this pane drew the run's
         # in-review row. A producer resweeps a delivered run whose state has not
         # changed, so the delivery it writes again is a row this pane already
@@ -1805,6 +1816,29 @@ class RowPolicy:
         # request under the id it already had, so one request's attempts and
         # re-queues share an id while two requests do not.
         self._refusals: dict[str, set[str]] = {}
+
+    @staticmethod
+    def _pane_lift_claim(session: str) -> Callable[[str, str], bool] | None:
+        """The pane's shared lift claim, keyed on its own session.
+
+        One pane is one session, and every follower serving it writes the same
+        claim directory beneath the crew home, so an exclusive create there is
+        the arbitration they share whether they run in one process, several on
+        a node, or several on nodes sharing a home. The claim is resolved at the
+        row rather than when the path is built, so a path that never draws a
+        lift opens nothing, and a claim that cannot be written leaves the row
+        drawn rather than dropped, which is :func:`take_lift_claim`'s own
+        answer.
+        """
+        if not session:
+            return None
+
+        def claim(lift_id: str, transition: str) -> bool:
+            from reckon.crew_follow_commands import take_lift_claim
+
+            return take_lift_claim(session, lift_id, transition)
+
+        return claim
 
     @property
     def lift_groups(self) -> frozenset[str]:
@@ -2912,6 +2946,11 @@ def replay_row_policy(
         show_observer=show_observer,
         own_session=own_session,
         observed_sessions=observed_sessions,
+        # The replay prints a recorded stream, so no live claim may subtract a
+        # row from it: a pane that took the claim when the stream was written
+        # is not this measurement, and consulting today's claim directory would
+        # make the count depend on which followers happen to hold it.
+        lift_claim=lambda lift_id, transition: True,
     )
     printed: list[Mapping[str, Any]] = []
     for event in events:
