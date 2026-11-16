@@ -765,24 +765,47 @@ _VIEW_REVIEWS_IN_FLIGHT: ContextVar[Mapping[str, Any] | None] = ContextVar(
 
 
 @contextmanager
-def live_pointer_snapshot(project: str) -> Iterator[list[dict[str, Any]]]:
+def live_pointer_snapshot(
+    project: str | None = None,
+    *,
+    pointers: Iterable[Mapping[str, Any]] | None = None,
+) -> Iterator[list[dict[str, Any]]]:
     """Publish one project's live pointers for the length of one derivation.
 
     Every duty kind reads the same live pointers, so a derivation over several
     of them would otherwise list and decode the directory once per reader, and
     could report duties derived from different snapshots of it. The directory
-    is listed once here, and the listing itself is yielded and published, so
-    the derivation drawing its own rows and every nested reader answer from
-    one population rather than one apiece.
+    is listed once here — or the caller's own pass's read is taken as given,
+    so a pass that already holds one population does not read a second — and
+    that population is yielded and published, so the derivation drawing its own
+    rows and every nested reader answer from one listing.
+
+    A snapshot handed in may span projects, and each reader asks for a project:
+    the listing is published under the project each pointer names, so a reader
+    gets its own project's pointers rather than another's.
 
     The snapshot is published under :data:`_VIEW_LIVE_POINTERS`, so it lasts
     exactly as long as the block and no later read inherits it.
     """
-    listing = runs.list_live(project=project)
-    token = _VIEW_LIVE_POINTERS.set({project: tuple(listing)})
+    if pointers is None:
+        listing = runs.list_live(project=project)
+    else:
+        listing = [dict(pointer) for pointer in pointers]
+    published: dict[str, list[dict[str, Any]]] = {}
+    for pointer in listing:
+        published.setdefault(str(pointer.get("project") or ""), []).append(pointer)
+    token = _VIEW_LIVE_POINTERS.set(
+        {name: tuple(rows) for name, rows in published.items()}
+    )
+    # The in-flight review answer is keyed on the snapshot that asked the
+    # question, so it is dropped with the previous snapshot rather than left
+    # holding a pass whose pointers have gone. A reader below fills it in for
+    # this listing; it outlives nothing.
+    reviews_token = _VIEW_REVIEWS_IN_FLIGHT.set(None)
     try:
         yield listing
     finally:
+        _VIEW_REVIEWS_IN_FLIGHT.reset(reviews_token)
         _VIEW_LIVE_POINTERS.reset(token)
 
 
@@ -1452,22 +1475,6 @@ def _pointer_review(
 ) -> str:
     """One pointer's standing review, at the cost a single question had."""
     return _in_flight_review(pointer, _launched_candidates(pointers))
-
-
-@contextmanager
-def _pass_reviews_in_flight() -> Iterator[None]:
-    """Scope the shared answer to the derivation that published the pointers.
-
-    The memo carries the pass's own snapshot so it can tell one pass from the
-    next, so it must not outlive the pass either. Publishing the empty answer
-    with a token and resetting it in a finally drops the memo when the
-    derivation ends, as the pointer snapshot itself is dropped.
-    """
-    token = _VIEW_REVIEWS_IN_FLIGHT.set(None)
-    try:
-        yield
-    finally:
-        _VIEW_REVIEWS_IN_FLIGHT.reset(token)
 
 
 def _reviews_in_flight(project: str) -> Mapping[str, str | None]:
@@ -4253,7 +4260,7 @@ def obligations(
     and a run in flight cannot appear in one duty and be absent from another
     read in the same view.
     """
-    with _pass_reviews_in_flight(), live_pointer_snapshot(project):
+    with live_pointer_snapshot(project):
         return _obligations_view(project, session, fields=fields)
 
 
