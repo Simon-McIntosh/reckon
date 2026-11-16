@@ -11,8 +11,8 @@ import click
 
 from reckon._store import write_json_atomically
 from reckon.cli_entry import main
-from reckon.crew.tombstones import tombstone_command
 from reckon.crew.resume import register_hold_commands
+from reckon.crew.tombstones import tombstone_command
 
 # Verbs whose stdout is one JSON document on every exit path, success and
 # refusal alike: a caller decodes the whole stream, so an exit that writes
