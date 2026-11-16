@@ -151,6 +151,14 @@ _RUN_STORE_ENV = "RECKON_RUN_STORE"
 # the driver's own patience, so a one-off writer behaves exactly as before.
 INDEX_BUSY_TIMEOUT_SECONDS = 0.2
 
+#: How long a connection that states no bound of its own waits for a lock
+#: another connection holds. The store keeps a rollback journal, so one reader
+#: scanning it holds off every writer for as long as the scan runs, and a scan
+#: of the whole store takes several seconds. A record write that gave up before
+#: such a scan ended lost a promotion; the wait is set well past the longest
+#: scan so the write lands once the reader is done.
+RECORD_BUSY_TIMEOUT_SECONDS = 120.0
+
 # The bound on retrying an append that lost a race for the store's write lock.
 # A lock held by a concurrent writer lasts milliseconds, so a few seconds of
 # backoff writes the row a single attempt would have lost; a store locked past
@@ -451,10 +459,11 @@ class RunStore:
         self._root = Path(root).expanduser().resolve() if root is not None else None
         self._path = Path(path) if path is not None else store_path()
         self._path.parent.mkdir(parents=True, exist_ok=True)
-        self._conn = (
-            sqlite3.connect(str(self._path))
+        self._conn = sqlite3.connect(
+            str(self._path),
+            timeout=RECORD_BUSY_TIMEOUT_SECONDS
             if busy_timeout is None
-            else sqlite3.connect(str(self._path), timeout=busy_timeout)
+            else busy_timeout,
         )
         if self._conn.execute("PRAGMA main.page_count").fetchone()[0] == 0:
             self._conn.execute("PRAGMA main.auto_vacuum = INCREMENTAL")
