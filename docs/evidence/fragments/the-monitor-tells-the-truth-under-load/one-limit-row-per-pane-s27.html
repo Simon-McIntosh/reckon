@@ -35,10 +35,30 @@
 b rows: [('limit-reset', 'reset-claude-sub-20261115T183000Z')]</code></pre>
 
   <p>At the change's head the same shape draws one row between them, and the
-  new test file reports <code>4 passed</code> where it reports
-  <code>4 failed</code> at that revision. Removing the per-pane default — the
-  declared negative control — turns all four red again, the first reading
-  <code>one reset drew 3 rows</code>.</p>
+  new test file's five cases pass. Removing the per-pane default — the declared
+  negative control — turns the four reset cases red again, the first reading
+  <code>one reset drew 3 rows</code>; the fifth, the replay case below, is
+  deliberately independent of that default.</p>
+
+  <h3 id="one-limit-row-per-pane-s27-replay">A replay keeps the lift ends in its window</h3>
+
+  <p>A claim is not only a filter on what draws. A row path holding one withholds
+  a lift's end unless it drew the grant, because a live follower whose peer drew
+  the grant must not draw the end — so a measurement of a recorded stream whose
+  window opens after the grant lost the ends the pane had printed. Replaying a
+  one-row stream holding only the end at the review's head printed nothing:</p>
+
+  <pre><code>base:                   replayed rows: [('lift-in-force', 'lift-ended')]
+head with an always-permitting claim: replayed rows: []</code></pre>
+
+  <p><code>replay_row_policy</code> now passes <code>NO_LIFT_CLAIM</code>, a value
+  distinct from the <code>None</code> that asks a path naming a pane's session
+  for that pane's shared claim, so the replay draws on its own memory exactly as
+  it did before the claim reached this path.</p>
+
+  <p><code>follower_row_path</code> no longer resolves a default claim of its own;
+  the row path owns that rule, so a live follower and any measurement of it
+  cannot read different claims.</p>
 
   <table id="one-limit-row-per-pane-s27-arms">
     <caption>Suite arms, this node's write scope as the armed command resolves it</caption>
@@ -54,22 +74,23 @@ b rows: [('limit-reset', 'reset-claude-sub-20261115T183000Z')]</code></pre>
       </tr>
       <tr>
         <td>after</td>
-        <td><code>5365077202</code></td>
-        <td><code>pytest -q tests/test_one_limit_reset_draws_one_row_per_pane.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code></td>
-        <td>62 passed, <code>EXIT=0</code></td>
+        <td><code>ff1d881ddc</code></td>
+        <td><code>pytest -q tests/test_one_limit_reset_draws_one_row_per_pane.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code> on <code>all_debug</code></td>
+        <td>63 passed, <code>EXIT=0</code></td>
       </tr>
       <tr>
         <td>mutation</td>
-        <td><code>5365077202</code> + per-pane default removed</td>
+        <td><code>ff1d881ddc</code> + per-pane default removed</td>
         <td><code>pytest -q tests/test_one_limit_reset_draws_one_row_per_pane.py</code></td>
-        <td>4 failed, <code>EXIT=1</code></td>
+        <td>4 failed, 1 passed, <code>EXIT=1</code></td>
       </tr>
     </tbody>
   </table>
 
   <p>For reference: <code>ticker</code>'s own suites, and the lift, reset,
   pane and station tests around this one, run green at the head
-  (<code>65 passed</code> for the lift/reset/pane set). Two failures in
+  (<code>84 passed</code> across the lift, reset, pane and station set that
+  surrounds this one). Two failures in
   neighbouring files reproduce identically at the base revision and are not
   this node's —
   <code>tests/test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion</code> and
