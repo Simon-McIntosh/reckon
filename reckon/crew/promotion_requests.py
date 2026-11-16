@@ -14,16 +14,20 @@ import os
 import re
 import threading
 import time
+from collections import Counter
 from collections.abc import Callable, Mapping
+from contextlib import suppress
 from contextvars import ContextVar
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from reckon._timestamps import parse_utc
 from reckon.crew import runs
 from reckon.crew.host_lease import HostLease, local_host
 from reckon.crew.node import CrewError
+from reckon.crew.queue_order import STARVATION_AGE_SECONDS, _override
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -122,6 +126,7 @@ def _record_drained(receipt: Mapping[str, Any]) -> None:
     row = {
         "run_id": receipt.get("run_id"),
         "phase": receipt.get("phase"),
+        "session": receipt.get("session"),
         "requested_at": receipt.get("requested_at"),
         "finished_at": receipt.get("finished_at"),
         "waited_seconds": _waited_seconds(
@@ -136,6 +141,29 @@ def _record_drained(receipt: Mapping[str, Any]) -> None:
     except OSError:
         return
     _trim_drained_log(path)
+
+
+def _recent_drained(moment: datetime, window_seconds: float) -> list[dict[str, Any]]:
+    """Read the bounded service history shared by fairness and the rate report."""
+    try:
+        lines = _drained_log_path().read_text().splitlines()
+    except OSError:
+        return []
+    recent = []
+    for line in lines:
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(row, dict):
+            continue
+        stamp = parse_utc(row.get("finished_at"))
+        if (
+            stamp is not None
+            and 0 <= (moment - stamp).total_seconds() <= window_seconds
+        ):
+            recent.append(row)
+    return recent
 
 
 def promotion_queue_report(
@@ -153,8 +181,7 @@ def promotion_queue_report(
     waiting: list[dict[str, Any]] = []
     running = 0
     parked = 0
-    for path in _requests_dir().glob("*.json"):
-        request = _read(path)
+    for request in _pending_requests(now=moment):
         phase = request.get("phase")
         if phase == REQUESTED:
             waiting.append(request)
@@ -171,19 +198,7 @@ def promotion_queue_report(
         if oldest is None or requested_at < oldest[0]:
             oldest = (requested_at, request)
     counted = {"promoted": 0, "refused": 0, "failed": 0, "deferred": 0}
-    try:
-        finished = _drained_log_path().read_text().splitlines()
-    except OSError:
-        finished = []
-    cutoff = moment.timestamp() - window_seconds
-    for line in finished:
-        try:
-            row = json.loads(line)
-            stamp = datetime.fromisoformat(str(row.get("finished_at")))
-        except (TypeError, ValueError):
-            continue
-        if stamp.timestamp() < cutoff:
-            continue
+    for row in _recent_drained(moment, window_seconds):
         key = {
             PROMOTED: "promoted",
             REFUSED: "refused",
@@ -196,6 +211,15 @@ def promotion_queue_report(
         "waiting": len(waiting),
         "running": running,
         "parked": parked,
+        "requests": [
+            {
+                "run_id": request["run_id"],
+                "session": request.get("session", ""),
+                "position": position,
+                "reason": request["ordering_reason"],
+            }
+            for position, request in enumerate(waiting, 1)
+        ],
         "oldest_wait_seconds": (
             None
             if oldest is None
@@ -292,6 +316,7 @@ def request_promotion(
             "kind": kind,
             "project": str(pointer.get("project") or ""),
             "session": str(pointer.get("session") or ""),
+            "priority_override": _override(pointer),
             "node": (pointer.get("node") or {}).get("id", ""),
             "plan": str(pointer.get("plan") or ""),
             "previous_phase": str(pointer.get("phase") or "complete"),
@@ -469,19 +494,31 @@ def _reviewed_run_id(request: Mapping[str, Any]) -> str:
         return ""
 
 
-def _pending_requests() -> list[dict[str, Any]]:
-    """Every queued request, in the order a drain takes them up.
+def _pending_requests(
+    *, now: datetime | None = None, window_seconds: float = 3600.0
+) -> list[dict[str, Any]]:
+    """Reviews, aged requests and priorities precede fair session turns.
 
-    A run whose review is queued beside it can only be refused for the absent
-    review, and that refusal sends a coordinator back to re-request work that
-    was about to become promotable. So a review's own promotion goes ahead of
-    the run it reviews whenever that run is waiting too; every other request
-    keeps the plain name order the queue has always drained in.
+    Each urgency class takes one request per session in turn, starting with
+    the session served least in the recent window, then its oldest request.
+    Taking a higher urgency class does not consume a lower class's turn in
+    this snapshot. Completed promotions persist the service count across
+    passes and process restarts; running requests reserve a turn too. Only
+    requested rows consume simulated future turns: running rows are already
+    charged, and parked rows take no slot.
     """
+    moment = now or datetime.fromisoformat(_now())
     pending = []
-    for path in sorted(_requests_dir().glob("*.json")):
+    for path in _requests_dir().glob("*.json"):
         request = _read(path)
         if request.get("phase") in QUEUED:
+            if "priority_override" not in request:
+                # Requests written without a priority snapshot still inherit
+                # the run's priority while its pointer is available.
+                with suppress(CrewError):
+                    request["priority_override"] = _override(
+                        runs.read_pointer(str(request["run_id"]))
+                    )
             pending.append(request)
     waiting = {str(request.get("run_id") or "") for request in pending}
     review_first = {
@@ -489,13 +526,52 @@ def _pending_requests() -> list[dict[str, Any]]:
         for request in pending
         if _reviewed_run_id(request) in waiting
     }
-    return sorted(
-        pending,
-        key=lambda request: (
-            str(request.get("run_id") or "") not in review_first,
-            str(request.get("run_id") or ""),
-        ),
+    served = Counter(
+        str(row["session"])
+        for row in _recent_drained(moment, window_seconds)
+        if row.get("phase") == PROMOTED and row.get("session")
     )
+    served.update(
+        str(request.get("session") or "")
+        for request in pending
+        if request.get("phase") == RUNNING
+    )
+    classes: dict[tuple[int, int], list[dict[str, Any]]] = {}
+    for request in pending:
+        stamp = parse_utc(request.get("requested_at"))
+        priority = _override(request)
+        if str(request.get("run_id") or "") in review_first:
+            rank, reason = (0, 0), "delivered review"
+        elif (
+            stamp is not None
+            and (moment - stamp).total_seconds() >= STARVATION_AGE_SECONDS
+        ):
+            rank, reason = (1, 0), "ageing"
+        elif priority is not None:
+            rank, reason = (2, -priority), f"priority override {priority}"
+        else:
+            rank, reason = (3, 0), "session fair share; oldest request"
+        classes.setdefault(rank, []).append({**request, "ordering_reason": reason})
+
+    ordered = []
+    for rank in sorted(classes):
+        remaining = classes[rank]
+        turns = served.copy()
+        while remaining:
+            request = min(
+                remaining,
+                key=lambda row: (
+                    turns[str(row.get("session") or "")],
+                    parse_utc(row.get("requested_at"))
+                    or datetime.max.replace(tzinfo=UTC),
+                    str(row.get("run_id") or ""),
+                ),
+            )
+            ordered.append(request)
+            remaining.remove(request)
+            if request.get("phase") == REQUESTED:
+                turns[str(request.get("session") or "")] += 1
+    return ordered
 
 
 def _defer_to_a_queued_review(
