@@ -84,6 +84,7 @@ def _promotion(tmp_path, home, monkeypatch, *, carrier, reachable=True):
     if carrier != "plan":
         row[carrier] = {"plan": slug, "section": section}
     row["promoted_revision"] = revision
+    ledger.run_path(project, row["run_id"]).parent.mkdir(parents=True)
     ledger.write_run_file(project, row, fsync=False)
     stored = ledger.load(project)[0]["runs"]
     assert len(stored) == 1
