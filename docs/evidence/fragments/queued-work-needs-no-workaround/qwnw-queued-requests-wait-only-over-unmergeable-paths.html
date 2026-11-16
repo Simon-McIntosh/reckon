@@ -81,6 +81,14 @@
   failing id, and the six base failures — the five listed above and the promoted-earlier case — pass
   at the head. The negative control, the node's own test over the base tree, reads
   <code>1 failed, 2 passed</code>, <code>EXIT=1</code>.</p>
+  <h3 id="qwnw-queued-requests-wait-only-over-unmergeable-paths-merge">After the merge with the primary branch</h3>
+  <p id="qwnw-queued-requests-wait-only-over-unmergeable-paths-merge-body">The primary branch had reworked
+  the admission pass into a batch that launches independent requests concurrently, and had already
+  retargeted the claim cases to the dependency manifest. The merge keeps that pass verbatim and passes
+  this section's policy into it as one argument, so the overlap check and the live-claim check judge a
+  pair with the same rule. Three queued-hold cases still named a source file and so asserted the
+  endpoint this section retires; they now name the manifest, the same class the claim cases use, and the
+  gate over the merged head reads <code>21 passed</code> with <code>EXIT=0</code>.</p>
 </article>
 </body>
 </html>
