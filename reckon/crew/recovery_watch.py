@@ -1395,7 +1395,9 @@ def _watch_verdict(
     # untouched for every row a coordinator acts on. Only the two held readings
     # below change it, because only they answer whose move lifts the hold.
     next_action = row.get("next_action")
-    if str(row.get("recovery_classification") or "") == "held":
+    written_hold = pointer.get("queue_hold")
+    held_row = str(row.get("recovery_classification") or "") == "held"
+    if held_row and isinstance(written_hold, Mapping):
         if hold_owner(pointer) == HOLD_LIFTED_BY_COORDINATOR:
             next_action = _coordinator_hold_next_action(pointer, row)
             held_clause = _coordinator_hold_clause(pointer, next_action)
@@ -1412,6 +1414,15 @@ def _watch_verdict(
             # the wait it is rather than claiming a slot it already held.
             next_action = None
             state = "queued" if stored_phase == "held" else WAITING_STATUS
+    elif held_row:
+        # A held phase with no readable hold record keeps the pane's own held
+        # word, which the vocabulary already files as a wait, and hands no
+        # command: the release the classifier names would launch over the
+        # admission pass's release path, and nothing on the row says a
+        # coordinator's move is what ends the wait.
+        next_action = None
+        if stored_phase != "held":
+            state = WAITING_STATUS
 
     # A dead worker is a row on the snapshot that observes the death, never one
     # held behind the stall window. The deferrals above read a non-terminal
