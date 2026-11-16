@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="270">
+<meta name="plan-version" content="272">
 <meta name="plan-modified" content="2026-11-16">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -908,6 +908,12 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261116T031949761769-qwnw-red-file-crew-promotion-scope" data-who="reckon-build" data-when="2026-11-16T09:42:16.923Z">
     <div class="r-comment-body"><p>five cases in tests/test_crew_promotion_scope.py encoded the pre-5695689722 whole-file claim rule and now assert the rule in force (source paths shared across worktrees, only unmergeable classes reserved, and a stated --no-commit reason still running the worktree-at-its-base guard); the file reads 5 failed 21 passed EXIT=1 at base 0e0f25b0f941 and 28 passed EXIT=0 at head 75b1857de816 as job 1319610 on all_debug with SLURM_JOB_ID unset</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261116T031958673341-qwnw-red-file-crew-dryrun" data-who="reckon-build" data-when="2026-11-16T09:42:16.822Z">
+    <div class="r-comment-body"><p>tests/test_crew_dryrun.py held five cases red on one cause — every refusal fixture claimed and requested a mergeable source path, which a live claim no longer holds — so the refusal, derivation, stopped-claim and directory-acceptance cases now name an exclusive docs/state path, the acceptance asserts the mergeable landing fragment is not swept up, and one added case states the sharing rule directly; the file passes 7 of 7 at head where the base arm reads 5 failed, 1 passed.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261116T032016815927-qwnw-red-file-check-manifest-reads-the-commitless-roles" data-who="reckon-build" data-when="2026-11-16T06:33:22.650Z">
+    <div class="r-comment-body"><p>tests/test_check_manifest_reads_the_commitless_roles.py: the fixture manifest now declares `messages_received: none` — the key `crew check --manifest` has reconciled against a run&#x27;s own delivery receipts since 78218ee3f8, after this file was written — so the node&#x27;s 5 cases went from 5 failed (EXIT=1) to 5 passed, tests/test_check_manifest_reads_the_commitless_roles.py: 5 passed on all_debug with SLURM_JOB_ID unset at dfe1673f8c.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
