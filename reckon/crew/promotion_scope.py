@@ -921,13 +921,17 @@ def _repository_tree_boundary_violations(
         # An uncommitted edit on a declared path the project publishes as
         # shareable admits a concurrent editor, so it says nothing about this
         # run's boundary; only a declared path off that list can violate it.
+        # The membership test is the project's own declaration: whether two
+        # claims on a path would share says nothing here, because every source
+        # and test path shares and a scan that asked that question would report
+        # no source edit at all.
         # A path a live peer holds under its own declaration is the peer's work,
         # not this run's, so it is exempt too; a path the peer does not declare
         # stays charged here.
         changed_paths = {
             changed
             for _, changed in _snapshot_entries(after) - _snapshot_entries(before)
-            if not _claim_paths_share(shared_files, changed, changed)
+            if changed not in shared_files
             and any(
                 Path(changed) == root or Path(changed).is_relative_to(root)
                 for root in declared_roots

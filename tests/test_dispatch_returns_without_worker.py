@@ -435,6 +435,15 @@ def _build_repository(repo: Path, worktree_root: Path) -> None:
         encoding="utf-8",
     )
     (repo / "seed.txt").write_text("seed\n", encoding="utf-8")
+    # The project publishes the paths it shares. Naming no shared root keeps
+    # every path unshared here, which is what the boundary case measures: a
+    # path the project publishes as shareable admits a concurrent editor by
+    # design, so a stray edit on one says nothing about a run's boundary.
+    state = repo / "docs" / "state" / PROJECT
+    state.mkdir(parents=True)
+    (state / "shared-write-paths.json").write_text(
+        json.dumps({"project": PROJECT, "shared_roots": []}), encoding="utf-8"
+    )
     # Dispatch reads the fleet script out of the repository it dispatches, so
     # the throwaway repository carries the same copy the real one does.
     fleet = PACKAGE_ROOT / "skills" / "reckon-build" / "scripts" / "worktree_fleet.py"
@@ -444,7 +453,12 @@ def _build_repository(repo: Path, worktree_root: Path) -> None:
         shutil.copy(fleet, destination / "worktree_fleet.py")
     for arguments in (
         ("init", "-q", "-b", "main"),
-        ("add", "seed.txt", "docs/plans/fixture.html"),
+        (
+            "add",
+            "seed.txt",
+            "docs/plans/fixture.html",
+            "docs/state/sample/shared-write-paths.json",
+        ),
         (
             "-c",
             "user.email=worker@example.invalid",
