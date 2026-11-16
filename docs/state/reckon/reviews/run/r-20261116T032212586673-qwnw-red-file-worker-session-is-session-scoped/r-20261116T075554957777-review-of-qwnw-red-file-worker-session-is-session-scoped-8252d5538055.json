@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatching/preparation.py:1391",
+    "reckon/crew/admission/launching.py:350"
+  ],
+  "completed_at": "2026-11-16T08:22:03.816Z",
+  "dispatched_at": "2026-11-16T08:21:36Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-worker-session-is-session-scoped.html",
+      "line": "16",
+      "severity": "non-blocking",
+      "text": "the head fence-less probe is recorded as 5 passed in 3.05s while the log it cites ends at 5 passed in 3.14s, and the manifest artifacts line repeats 3.05, so a figure offered as the log's own summary line does not reconcile with the log on disk"
+    },
+    {
+      "file": "tests/test_worker_session_is_session_scoped.py",
+      "line": "117",
+      "severity": "non-blocking",
+      "text": "the change is one kwarg and nothing in the repository fails if it regresses, because deleting no_fence_reason leaves all five cases green on any fence-capable host, and the only reproduction lives in logs/nsfshim.py under the run's log directory rather than in tests/"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032212586673-qwnw-red-file-worker-session-is-session-scoped/logs/all-debug-gate-final.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "the header names revision, tree and command but no SLURM job id or partition, so the done_when clause requiring an all_debug job rests on the comment in gate-final.sbatch rather than on the log the manifest cites as its receipt"
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Read commit by commit against cc8a94d; 05da4553f5 adds five lines to tests/test_worker_session_is_session_scoped.py, d2dc80466a adds the two evidence fragments, 8252d55380 revises only their revisions and summary lines, and no production code changes.",
+    "done_when": "The done_when asks the file to pass at an all_debug job with SLURM_JOB_ID unset, and the gate log matches that command with 5 passed and EXIT=0; it also asks the four ids at 8d50b0333f be reproduced, and logs/probe-fenceless-host.log carries those same four FAILED ids at cc8a94d with EXIT=1.",
+    "goal": "The source node goal is that tests/test_worker_session_is_session_scoped.py passes in full on the primary branch; commit 05da4553f5 adds the stated fence waiver at tests/test_worker_session_is_session_scoped.py:117 and logs/all-debug-gate-final.log records 5 passed with EXIT=0 at head 8252d55380.",
+    "manifest": "Read; it states the gate at 5 passed in 2.42s with EXIT=0, both suite arms at 58 passed, the base fence-less probe at 4 failed and 1 passed with EXIT=1, and records that the base tree already passed on a fence-capable host.",
+    "write_paths": "The source node declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround as its write paths, and all three changed paths in cc8a94d..8252d55380 lie inside them."
+  },
+  "justifications": {
+    "durability": "The diff adds no assertion, only the no_fence_reason kwarg and a comment at tests/test_worker_session_is_session_scoped.py:113-117, so nothing in the repository reddens if the waiver is deleted on a fence-capable host and the sole control is logs/nsfshim.py outside the test tree.",
+    "evidence": "logs/all-debug-gate-final.log carries the exact env -u SLURM_JOB_ID command with its 5 passed summary and EXIT=0, and logs/probe-fenceless-host.log reproduces the same four ids the recorded cache log lists.",
+    "fit": "The change reuses the product knob name no_fence_reason as read at reckon/crew/dispatching/preparation.py:1391 and follows the file's own comment-and-kwarg style at tests/test_worker_session_is_session_scoped.py:109-121, adding no new name.",
+    "goal_fidelity": "tests/test_worker_session_is_session_scoped.py:117 supplies the fence waiver the goal needed, and logs/all-debug-gate-final.log reports 5 passed with EXIT=0 at head 8252d55380.",
+    "reuse": "No definition is added; the waiver is consumed by the existing fence-refusal owner at reckon/crew/dispatching/preparation.py:1391-1407, and a search of reckon/crew for a second fence-capability bypass found none.",
+    "scope_discipline": "All three commits touch only tests/test_worker_session_is_session_scoped.py and two files directly under docs/evidence/fragments/queued-work-needs-no-workaround/, and reckon/ is untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node goal is that tests/test_worker_session_is_session_scoped.py passes in full on the primary branch; commit 05da4553f5 adds the stated fence waiver at tests/test_worker_session_is_session_scoped.py:117 and logs/all-debug-gate-final.log records 5 passed with EXIT=0 at head 8252d55380.\nVERDICT done_when: The done_when asks the file to pass at an all_debug job with SLURM_JOB_ID unset, and the gate log matches that command with 5 passed and EXIT=0; it also asks the four ids at 8d50b0333f be reproduced, and logs/probe-fenceless-host.log carries those same four FAILED ids at cc8a94d with EXIT=1.\nVERDICT write_paths: The source node declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround as its write paths, and all three changed paths in cc8a94d..8252d55380 lie inside them.\nVERDICT manifest: Read; it states the gate at 5 passed in 2.42s with EXIT=0, both suite arms at 58 passed, the base fence-less probe at 4 failed and 1 passed with EXIT=1, and records that the base tree already passed on a fence-capable host.\nVERDICT diff: Read commit by commit against cc8a94d; 05da4553f5 adds five lines to tests/test_worker_session_is_session_scoped.py, d2dc80466a adds the two evidence fragments, 8252d55380 revises only their revisions and summary lines, and no production code changes.\nCALL_SITES: reckon/crew/dispatching/preparation.py:1391, reckon/crew/admission/launching.py:350\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: tests/test_worker_session_is_session_scoped.py:117 supplies the fence waiver the goal needed, and logs/all-debug-gate-final.log reports 5 passed with EXIT=0 at head 8252d55380.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/all-debug-gate-final.log carries the exact env -u SLURM_JOB_ID command with its 5 passed summary and EXIT=0, and logs/probe-fenceless-host.log reproduces the same four ids the recorded cache log lists.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: All three commits touch only tests/test_worker_session_is_session_scoped.py and two files directly under docs/evidence/fragments/queued-work-needs-no-workaround/, and reckon/ is untouched.\nSCORE durability: 10\nJUSTIFICATION durability: The diff adds no assertion, only the no_fence_reason kwarg and a comment at tests/test_worker_session_is_session_scoped.py:113-117, so nothing in the repository reddens if the waiver is deleted on a fence-capable host and the sole control is logs/nsfshim.py outside the test tree.\nSCORE fit: 18\nJUSTIFICATION fit: The change reuses the product knob name no_fence_reason as read at reckon/crew/dispatching/preparation.py:1391 and follows the file's own comment-and-kwarg style at tests/test_worker_session_is_session_scoped.py:109-121, adding no new name.\nSCORE reuse: 20\nJUSTIFICATION reuse: No definition is added; the waiver is consumed by the existing fence-refusal owner at reckon/crew/dispatching/preparation.py:1391-1407, and a search of reckon/crew for a second fence-capability bypass found none.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-worker-session-is-session-scoped.html:16 non-blocking: the head fence-less probe is recorded as 5 passed in 3.05s while the log it cites ends at 5 passed in 3.14s, and the manifest artifacts line repeats 3.05, so a figure offered as the log's own summary line does not reconcile with the log on disk\nFINDING tests/test_worker_session_is_session_scoped.py:117 non-blocking: the change is one kwarg and nothing in the repository fails if it regresses, because deleting no_fence_reason leaves all five cases green on any fence-capable host, and the only reproduction lives in logs/nsfshim.py under the run's log directory rather than in tests/\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032212586673-qwnw-red-file-worker-session-is-session-scoped/logs/all-debug-gate-final.log:1 non-blocking: the header names revision, tree and command but no SLURM job id or partition, so the done_when clause requiring an all_debug job rests on the comment in gate-final.sbatch rather than on the log the manifest cites as its receipt\n",
+  "review_run_id": "r-20261116T075554957777-review-of-qwnw-red-file-worker-session-is-session-scoped-8252d5538055",
+  "reviewed_base_sha": "cc8a94d9398d801764e29c427362ebbcdf0f45dc",
+  "reviewed_head_sha": "8252d5538055d8cd8a6d48dc8cf6869c0a0efb2b",
+  "reviewed_run_id": "r-20261116T032212586673-qwnw-red-file-worker-session-is-session-scoped",
+  "scores": {
+    "durability": 10,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T11:59:25.605409+00:00",
+  "total": 101
+}
