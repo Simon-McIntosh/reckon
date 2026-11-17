@@ -85,6 +85,26 @@ def decodes(monkeypatch: pytest.MonkeyPatch) -> dict[str, int]:
 
 
 @pytest.fixture()
+def migrations(monkeypatch: pytest.MonkeyPatch) -> dict[str, int]:
+    """Count the migration passes an open takes.
+
+    A pass runs before any row is decoded, so a pass count and a decode total
+    answer different questions: the count says whether the open decided a
+    migration was owed at all, the decode total says whether that migration
+    then rewrote rows the store already held.
+    """
+    counted = {"calls": 0}
+    original = run_store.RunStore._migrate_runs
+
+    def counting(self: run_store.RunStore, table: str = "runs") -> None:
+        counted["calls"] += 1
+        original(self, table)
+
+    monkeypatch.setattr(run_store.RunStore, "_migrate_runs", counting)
+    return counted
+
+
+@pytest.fixture()
 def store_path(tmp_path: Path) -> Path:
     """A store on a temporary path, built by this code with 500 rows."""
     path = tmp_path / "run_store.db"
@@ -129,30 +149,58 @@ def _recorded_version(path: Path) -> str | None:
 
 
 def test_a_store_written_by_newer_code_is_opened_without_a_backfill(
-    store_path: Path, decodes: dict[str, int]
+    store_path: Path, decodes: dict[str, int], migrations: dict[str, int]
 ) -> None:
-    # The instrument starts at zero: nothing has migrated this store yet.
+    # Both instruments start at zero: neither has fired on this store yet.
     assert decodes["rows"] == 0
+    migrations["calls"] = 0
     _columns_before, indexes_before = _declared_shape(store_path)
     _migrated_forward(store_path)
 
     # The store is the shape newer code leaves: every column and index this
     # code declares, one column it has never heard of, an unknown record.
     columns, indexes = _declared_shape(store_path)
-    assert columns >= run_store._RUNS_COLUMNS
-    assert indexes == indexes_before
     assert "scheduled_at" in columns
+    assert indexes == indexes_before
     assert _recorded_version(store_path) == _UNKNOWN_VERSION
 
     with run_store.RunStore(store_path):
         pass
 
-    # Opening it decoded no row, added no column, dropped no index, and left
-    # the newer code's record alone.
+    # Opening it took no migration pass, decoded no row, added no column,
+    # dropped no index, and left the newer code's record alone. The pass count
+    # is what the coverage check buys: without that check every open takes a
+    # pass whether or not it has anything to do.
+    assert migrations["calls"] == 0
     assert decodes["rows"] == 0
     assert _declared_shape(store_path)[0] == columns
     assert _declared_shape(store_path)[1] == indexes
     assert _recorded_version(store_path) == _UNKNOWN_VERSION
+
+
+def test_a_newer_store_missing_an_index_is_given_it_without_a_row_rewrite(
+    store_path: Path, decodes: dict[str, int], migrations: dict[str, int]
+) -> None:
+    # A store newer code wrote that lacks one index this code declares: a
+    # migration is genuinely owed, so the pass runs — and must still decode no
+    # row, because the store holds every column that pass would fill.
+    _migrated_forward(store_path)
+    with sqlite3.connect(str(store_path)) as connection:
+        connection.execute('DROP INDEX "idx_runs_activity"')
+        connection.commit()
+    _columns, indexes = _declared_shape(store_path)
+    assert "idx_runs_activity" not in indexes
+    assert decodes["rows"] == 0
+    migrations["calls"] = 0
+
+    with run_store.RunStore(store_path):
+        pass
+
+    # One pass, no row rewritten, the index back, and this code's own record.
+    assert migrations["calls"] == 1
+    assert decodes["rows"] == 0
+    assert "idx_runs_activity" in _declared_shape(store_path)[1]
+    assert _recorded_version(store_path) == run_store._STORE_SCHEMA_VERSION
 
 
 def test_a_store_missing_a_declared_column_is_still_given_and_backfilled(
