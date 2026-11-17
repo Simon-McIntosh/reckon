@@ -1,0 +1,136 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "fails_if": "The final current-stage marker is removed or no longer names the final stage.",
+      "lines": "73"
+    },
+    {
+      "fails_if": "The current or completed start timestamp is omitted or comes from a different tick.",
+      "lines": "74,85"
+    },
+    {
+      "fails_if": "The finish timestamp is absent, stale or differs from the independent fixture clock.",
+      "lines": "75,86,98-100"
+    },
+    {
+      "fails_if": "The heartbeat disappears or becomes unparsable; this assertion alone does not prove that heartbeat time advances.",
+      "lines": "76-79"
+    },
+    {
+      "fails_if": "Timing records disappear, stage keys are omitted, stage intervals are attributed incorrectly, or durations from successive ticks are accumulated instead of replaced.",
+      "lines": "81"
+    },
+    {
+      "fails_if": "The total differs from the sum of controlled work intervals or the session-free reader omits the persisted total.",
+      "lines": "82,103"
+    },
+    {
+      "fails_if": "The reader cannot find a valid local store or reports a completed fresh tick as non-live.",
+      "lines": "101"
+    },
+    {
+      "fails_if": "The completed tick remains marked running.",
+      "lines": "102"
+    },
+    {
+      "fails_if": "Slowest-stage selection picks any stage except the fixture interval of four seconds.",
+      "lines": "104"
+    },
+    {
+      "fails_if": "The slowest interval is omitted, uses the wrong unit or differs from the independent four-second work interval.",
+      "lines": "105"
+    },
+    {
+      "fails_if": "The completed session-free station reading cannot be loaded.",
+      "lines": "111"
+    },
+    {
+      "fails_if": "Entering a subsequent tick fails to publish the new current stage or makes the local reading unavailable.",
+      "lines": "115"
+    },
+    {
+      "fails_if": "The subsequent tick start is not updated or running age is computed incorrectly from the controlled wall clock.",
+      "lines": "116"
+    },
+    {
+      "fails_if": "Starting a subsequent tick erases or overwrites the preceding completed record; both reads are separate JSON-decoded snapshots.",
+      "lines": "117"
+    }
+  ],
+  "assertion_independence": "The durations dictionary is used by fixture work stubs to advance a fake monotonic clock and by expectations; it is never supplied as a timing record to Station. Reinstating the missing-record defect raises KeyError in all three tests. No assertion compares an output to the same timing value passed into the implementation.",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/station.py:run_station:1601",
+    "reckon/crew/station.py:Station._tick:1300",
+    "reckon/crew/station.py:Station._tick:1433",
+    "reckon/crew/obligation_snapshot.py:read_station_tick:650",
+    "reckon/crew/obligation_snapshot.py:read_station_answer:732",
+    "reckon/crew/watch_unit.py:1083",
+    "reckon/crew/watch_unit.py:1086",
+    "reckon/crew/obligations.py:1138"
+  ],
+  "completed_at": "2026-11-17T01:00:50Z",
+  "dispatched_at": "2026-11-17T00:54:59Z",
+  "failure_evidence": {
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T002931414106-station-records-stage-durations-s29/after.log",
+    "after_summary": "61 passed in 46.03s",
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T002931414106-station-records-stage-durations-s29/baseline.log",
+    "baseline_summary": "58 passed in 38.64s",
+    "failure_parser_positive_control": [
+      "tests/test_the_station_records_stage_durations.py::test_each_completed_tick_persists_its_stage_durations",
+      "tests/test_the_station_records_stage_durations.py::test_running_tick_preserves_the_last_completed_measurement",
+      "tests/test_the_station_records_stage_durations.py::test_station_reading_reports_last_total_and_slowest_without_a_session"
+    ]
+  },
+  "findings": [],
+  "importer_evidence": {
+    "added_failure_count": 0,
+    "base_failure_count": 12,
+    "base_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T002931414106-station-records-stage-durations-s29/adjacent-base.log",
+    "head_failure_count": 12,
+    "head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T002931414106-station-records-stage-durations-s29/adjacent-head.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "read f506cf33ee9c619665925594fedf91a57cd9ce7f and 0a20aff058a1fba6530214bb34f35e0600e65d2d against d8f7d1bb41c85d9b5344d22c44bff81b0846ac68; the test commit adds three regressions and the implementation commit adds bounded monotonic timing and its reader projection.",
+    "done_when": "docs/plans/the-monitor-tells-the-truth-under-load.html:228 requires base-red tests, stage timings, total and slowest stage, retained progress markers and no importer regressions; reproduction.log records 3 failures, after.log records 61 passes, negative-control.log records 3 failures, and adjacent-base.log and adjacent-head.log record the same 12 failures among 368 tests.",
+    "goal": "prompt.txt for the reviewed run asks to record each station tick's per-stage durations; reckon/crew/station.py:1173 persists the completed record and obligation_snapshot.py:650 exposes it without a session.",
+    "manifest": "reviewed-run manifest.md names both commits and readable completed baseline_suite and after_suite receipts; their logs actually end in 58 passed EXIT=0 and 61 passed EXIT=0 respectively.",
+    "write_paths": "reviewed-run prompt.txt declares station.py, station_store.py, obligation_snapshot.py, one test and optional evidence/figure paths; all three changed paths in the two-commit diff fall within that declaration."
+  },
+  "justifications": {
+    "durability": "tests/test_the_station_records_stage_durations.py:81 checks independently scheduled stage durations and lines 103-105 check total and slowest stage, with the recorded mutation making all three tests red, though wall-clock discontinuities and the read_station_answer projection have no direct new assertion.",
+    "evidence": "reviewed-run reproduction.log and negative-control.log each report all three new tests failing on missing last_tick, while baseline.log and after.log show zero added gate failures and adjacent-base.log and adjacent-head.log show identical importer failure identities.",
+    "fit": "reckon/crew/station.py:1152 uses the module's existing monotonic-clock idiom and the guarded StationStore.set_station_value owner at station_store.py:718, while obligation_snapshot.py:462 extends its existing marker reader without forbidden new names.",
+    "goal_fidelity": "reckon/crew/station.py:1173 stores five stage durations, total and slowest stage in one last_tick row, exposed through the session-free reader at obligation_snapshot.py:650.",
+    "reuse": "capability searches for stage durations, slowest stage, elapsed and timing owners found admission/service.py:172 and picker/__init__.py:117 to be separate admission/picker receipt writers; the additions extend Station's own stage owner and obligation_snapshot's marker owner while reusing station_store.py:718 for persistence.",
+    "scope_discipline": "the complete d8f7d1bb41c85d9b5344d22c44bff81b0846ac68..0a20aff058a1fba6530214bb34f35e0600e65d2d diff changes only reckon/crew/station.py, reckon/crew/obligation_snapshot.py and tests/test_the_station_records_stage_durations.py, all declared paths serving the stated goal."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt for the reviewed run asks to record each station tick's per-stage durations; reckon/crew/station.py:1173 persists the completed record and obligation_snapshot.py:650 exposes it without a session.\nVERDICT done_when: docs/plans/the-monitor-tells-the-truth-under-load.html:228 requires base-red tests, stage timings, total and slowest stage, retained progress markers and no importer regressions; reproduction.log records 3 failures, after.log records 61 passes, negative-control.log records 3 failures, and adjacent-base.log and adjacent-head.log record the same 12 failures among 368 tests.\nVERDICT write_paths: reviewed-run prompt.txt declares station.py, station_store.py, obligation_snapshot.py, one test and optional evidence/figure paths; all three changed paths in the two-commit diff fall within that declaration.\nVERDICT manifest: reviewed-run manifest.md names both commits and readable completed baseline_suite and after_suite receipts; their logs actually end in 58 passed EXIT=0 and 61 passed EXIT=0 respectively.\nVERDICT diff: read f506cf33ee9c619665925594fedf91a57cd9ce7f and 0a20aff058a1fba6530214bb34f35e0600e65d2d against d8f7d1bb41c85d9b5344d22c44bff81b0846ac68; the test commit adds three regressions and the implementation commit adds bounded monotonic timing and its reader projection.\nCALL_SITES: reckon/crew/station.py:run_station:1601, reckon/crew/station.py:Station._tick:1300, reckon/crew/station.py:Station._tick:1433, reckon/crew/obligation_snapshot.py:read_station_tick:650, reckon/crew/obligation_snapshot.py:read_station_answer:732, reckon/crew/watch_unit.py:1083, reckon/crew/watch_unit.py:1086, reckon/crew/obligations.py:1138\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/station.py:1173 stores five stage durations, total and slowest stage in one last_tick row, exposed through the session-free reader at obligation_snapshot.py:650.\nSCORE evidence: 20\nJUSTIFICATION evidence: reviewed-run reproduction.log and negative-control.log each report all three new tests failing on missing last_tick, while baseline.log and after.log show zero added gate failures and adjacent-base.log and adjacent-head.log show identical importer failure identities.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the complete d8f7d1bb41c85d9b5344d22c44bff81b0846ac68..0a20aff058a1fba6530214bb34f35e0600e65d2d diff changes only reckon/crew/station.py, reckon/crew/obligation_snapshot.py and tests/test_the_station_records_stage_durations.py, all declared paths serving the stated goal.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_station_records_stage_durations.py:81 checks independently scheduled stage durations and lines 103-105 check total and slowest stage, with the recorded mutation making all three tests red, though wall-clock discontinuities and the read_station_answer projection have no direct new assertion.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/station.py:1152 uses the module's existing monotonic-clock idiom and the guarded StationStore.set_station_value owner at station_store.py:718, while obligation_snapshot.py:462 extends its existing marker reader without forbidden new names.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability searches for stage durations, slowest stage, elapsed and timing owners found admission/service.py:172 and picker/__init__.py:117 to be separate admission/picker receipt writers; the additions extend Station's own stage owner and obligation_snapshot's marker owner while reusing station_store.py:718 for persistence.\n",
+  "review_run_id": "r-20261117T005314559621-review-of-station-records-stage-durations-s29-0a20aff058a1",
+  "reviewed_base_sha": "d8f7d1bb41c85d9b5344d22c44bff81b0846ac68",
+  "reviewed_commits": [
+    "f506cf33ee9c619665925594fedf91a57cd9ce7f",
+    "0a20aff058a1fba6530214bb34f35e0600e65d2d"
+  ],
+  "reviewed_head_sha": "0a20aff058a1fba6530214bb34f35e0600e65d2d",
+  "reviewed_run_id": "r-20261117T002931414106-station-records-stage-durations-s29",
+  "scores": {
+    "durability": 18,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T05:24:02.119888+00:00",
+  "total": 118
+}

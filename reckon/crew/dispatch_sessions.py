@@ -374,36 +374,99 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
     return _mutate_pointer(run_id, fold)
 
 
-def _apply_orientation_check(record: dict[str, Any], manifest: Path | None) -> None:
-    """Block a run whose first reported orientation differs from its pointer."""
+def _orientation_substance(
+    record: Mapping[str, Any], reported: Mapping[str, Any]
+) -> list[str]:
+    """Verify the issued tree, ancestry and commit scope independently of echoes."""
+    from reckon.crew.promotion_evidence import _committed_scope
+    from reckon.crew.promotion_scope import _outside_declared_scope
+    from reckon.crew.reports import _COMMIT_IDENTIFIER_TOKEN
+
+    worktree = Path(str(record.get("worktree") or ""))
+    if not record.get("worktree") or not worktree.is_dir():
+        return [f"worktree {str(worktree)!r} is unavailable"]
+    top, error = _worktree_git_read(worktree, "rev-parse", "--show-toplevel")
+    if error or top is None or Path(top.stdout.strip()).resolve() != worktree.resolve():
+        return [
+            f"worktree {str(worktree)!r} cannot be verified: {error or 'not a git root'}"
+        ]
+    base = str(record.get("base_sha") or "")
+    ancestor, error = _worktree_git_read(
+        worktree, "merge-base", "--is-ancestor", base, "HEAD"
+    )
+    if error or ancestor is None:
+        return [
+            f"base {base!r} is not a verified ancestor of the worktree head: {error}"
+        ]
+    for commit in reported.get("commits") or ():
+        # An object identifier can establish foreign work. Free-text absence
+        # declarations and citation descriptions are validated by promotion.
+        tokens = str(commit).split(maxsplit=1)
+        candidate = tokens[0].strip("`") if tokens else ""
+        if not _COMMIT_IDENTIFIER_TOKEN.fullmatch(candidate):
+            continue
+        ancestor, error = _worktree_git_read(
+            worktree, "merge-base", "--is-ancestor", candidate, "HEAD"
+        )
+        if error or ancestor is None:
+            return [
+                f"commit {commit!r} is not in worktree {str(worktree)!r} history: {error}"
+            ]
+    # Measure every run commit, including paths a later commit deletes, with
+    # the same merge accounting promotion uses for its scope verdict.
+    revisions, error = _worktree_git_read(
+        worktree, "rev-list", "--first-parent", "--reverse", f"{base}..HEAD", "--"
+    )
+    if error or revisions is None:
+        return [f"worktree commits could not be read: {error}"]
+    commits = revisions.stdout.splitlines()
+    paths: tuple[str, ...] = ()
+    if commits:
+        try:
+            scope = _committed_scope(cwd=worktree, commits=commits)
+        except CrewError as exc:
+            return [f"worktree commit paths could not be verified: {exc}"]
+        if not scope.changed_lines.get("available", True):
+            return [f"worktree commit paths could not be read: {scope.changed_lines}"]
+        paths = scope.paths
+    outside = _outside_declared_scope(
+        paths,
+        (record.get("node") or {}).get("write_paths") or (),
+        record=record,
+        tree=worktree,
+    )
+    return [f"committed path outside declared scope: {path}" for path in outside]
+
+
+def _apply_orientation_check(
+    record: dict[str, Any],
+    manifest: Path | None,
+    *,
+    reported: Mapping[str, Any] | None = None,
+) -> None:
+    """Repair an echoed field only when the pointer and commit history agree."""
+    from reckon.crew.recovery_memo import _worktree_head_identity
     from reckon.crew.reports import parse_manifest
 
-    prior = record.get("orientation_check")
-    if isinstance(prior, Mapping):
-        if prior.get("matched") is False:
-            record["phase"] = "blocked"
-            record["detail"] = str(prior.get("detail") or "orientation mismatch")
-        return
-    if manifest is None:
-        return
-
-    reported = parse_manifest(manifest.read_text())
+    if reported is None:
+        if manifest is None:
+            return
+        reported = parse_manifest(manifest.read_text())
     names = ("orientation_worktree", "orientation_base_sha", "orientation_write_paths")
-    if any(not reported.get(name) for name in names):
+    if not any(reported.get(name) for name in names):
         return
 
-    raw_paths = reported["orientation_write_paths"]
+    raw_paths = reported.get("orientation_write_paths", [])
     try:
         decoded_paths = json.loads(str(raw_paths))
     except json.JSONDecodeError:
         decoded_paths = raw_paths
-    if isinstance(decoded_paths, list) and all(
-        isinstance(path, str) for path in decoded_paths
-    ):
-        reported_paths: Any = sorted(decoded_paths)
-    else:
-        reported_paths = raw_paths
-
+    reported_paths: Any = (
+        sorted(decoded_paths)
+        if isinstance(decoded_paths, list)
+        and all(isinstance(path, str) for path in decoded_paths)
+        else raw_paths
+    )
     expected = {
         "worktree": str(record.get("worktree") or ""),
         "base_sha": str(record.get("base_sha") or ""),
@@ -412,33 +475,64 @@ def _apply_orientation_check(record: dict[str, Any], manifest: Path | None) -> N
         ),
     }
     actual = {
-        "worktree": str(reported["orientation_worktree"]),
-        "base_sha": str(reported["orientation_base_sha"]),
+        "worktree": str(reported.get("orientation_worktree") or ""),
+        "base_sha": str(reported.get("orientation_base_sha") or ""),
         "write_paths": reported_paths,
     }
     mismatches = [name for name in expected if actual[name] != expected[name]]
-    if not mismatches:
-        record["orientation_check"] = {
-            "checked_at": _utc_now(),
-            "matched": True,
-        }
-        return
-
-    detail = "orientation mismatch: " + "; ".join(
-        f"{name} expected={json.dumps(expected[name], sort_keys=True)} "
-        f"reported={json.dumps(actual[name], sort_keys=True)}"
-        for name in mismatches
-    )
-    record["orientation_check"] = {
-        "checked_at": _utc_now(),
-        "matched": False,
-        "mismatches": mismatches,
+    status = str(reported.get("status") or "").strip().lower()
+    inputs = {
         "expected": expected,
         "reported": actual,
-        "detail": detail,
+        "status": status,
+        "commits": list(reported.get("commits") or ()),
+        "head": _worktree_head_identity(Path(expected["worktree"])),
     }
-    record["phase"] = "blocked"
-    record["detail"] = detail
+    prior = record.get("orientation_check")
+    if isinstance(prior, Mapping) and prior.get("inputs") == inputs:
+        check = dict(prior)
+    else:
+        findings = (
+            _orientation_substance(record, reported)
+            if mismatches or status == "complete"
+            else []
+        )
+        detail = "; ".join(findings)
+        if findings and mismatches:
+            detail += "; orientation mismatch: " + "; ".join(
+                f"{name} expected={json.dumps(expected[name], sort_keys=True)} "
+                f"reported={json.dumps(actual[name], sort_keys=True)}"
+                for name in mismatches
+            )
+        check = {
+            "checked_at": _utc_now(),
+            "matched": not findings,
+            "inputs": inputs,
+            "mismatches": mismatches,
+            "expected": expected,
+            "reported": actual,
+            "detail": detail,
+        }
+        if mismatches and not findings:
+            check["repaired_echo"] = {
+                name: {"expected": expected[name], "reported": actual[name]}
+                for name in mismatches
+            }
+    record["orientation_check"] = check
+    if check["matched"] is False:
+        record["phase"] = "blocked"
+        record["detail"] = check["detail"]
+    elif (
+        isinstance(prior, Mapping)
+        and prior.get("matched") is False
+        and record.get("phase") == "blocked"
+        and (
+            record.get("detail") == prior.get("detail")
+            or str(record.get("detail") or "").startswith("orientation mismatch:")
+        )
+    ):
+        record["phase"] = status
+        record.pop("detail", None)
 
 
 def _record_node_id(record: Mapping[str, Any]) -> str:

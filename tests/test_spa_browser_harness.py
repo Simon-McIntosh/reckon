@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import errno
 import os
+import re
 import socket
 import subprocess
 import sys
@@ -172,7 +173,16 @@ def test_completed_probe_run_leaves_no_profile_directory(
             self.returncode = 0
 
         def communicate(self, timeout: int) -> tuple[str, str]:
-            assert timeout == 75
+            # The process budget has to outlast the browser's own readiness
+            # wait, or a slow page is reaped as a probe fault before the wait
+            # it is supposed to lose to can decide.
+            deadline = int(
+                re.search(
+                    r"const deadline = Date\.now\(\) \+ (\d+);",
+                    harness._PROBE_DRIVER,
+                ).group(1)
+            )
+            assert timeout * 1000 > deadline
             return '{"loaded": true}', ""
 
     monkeypatch.setattr(harness, "_preflight_browser_socket", lambda: None)

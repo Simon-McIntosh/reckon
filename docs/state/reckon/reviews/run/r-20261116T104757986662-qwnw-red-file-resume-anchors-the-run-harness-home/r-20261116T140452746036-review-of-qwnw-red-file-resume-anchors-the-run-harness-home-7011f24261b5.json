@@ -1,0 +1,48 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate records: baseline_suite (manifest line 20, revision 7061ebe583fabf0a527ad78177b396fbd6940d61, logs/baseline-suite-7061ebe5-checkout.log) records '58 passed in 38.56s' with EXIT=0 and failure_ids [], and after_suite (manifest line 21, revision 13345d00f75f3d4595afdb6f32600966a47fbbab, logs/after-suite-head.log) records '58 passed in 45.26s' with EXIT=0 and failure_ids []; the set difference is empty, so added_failure_count is 0.",
+  "call_sites": [
+    "reckon/evidence.py:1618 compose_landed_record (composes docs/evidence/fragments/<plan>/ into the plan's landed record)",
+    "reckon/doccheck.py:1990 _record_fragment_dir (the fragment directory an evidence record's audit reads for duplicate ids)",
+    "reckon/compliance.py:91 _dependencies (lists the record's fragment directory and its fragments)",
+    "reckon/crew/reports.py:2722 _fragment_plan_of (resolves a changed path under docs/evidence/fragments to its plan)"
+  ],
+  "completed_at": "2026-11-16T15:22:10.380Z",
+  "dispatched_at": "2026-11-16T15:21:49Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-resume-anchors-the-run-harness-home.html",
+      "id": "f832f64e9d5",
+      "line": "3",
+      "severity": "non-blocking",
+      "text": "non-blocking: the intro states 'Every run below is an all_debug job (1319987, node 98dci4-clu-3144)', but the head gate (6 passed in 8.49s) and the after arm (58 passed in 45.26s) it quotes are the logs two direct bash runs of scripts/head-rerun.sh wrote in the interactive allocation (stream.jsonl tool calls at lines 12107 and 13541; log mtimes 14:15 and 14:16 local) after job 1319987 had already finished at 13:00:54Z, and that job's own summary (sbatch-1319987.out) records 8.71s and 34.71s at revision 1db05e24; so the provenance the fragment's sentence claims is false for two of its five blocks, and the done_when's 'as a job on all_debug' clause is carried only by a superseded commit."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104757986662-qwnw-red-file-resume-anchors-the-run-harness-home/manifest.md",
+      "id": "fdf89a1f3b3",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "non-blocking: after_suite names revision 13345d00f75f3d4595afdb6f32600966a47fbbab, which no ref reaches (git for-each-ref --contains=13345d00f is empty) and which is not the landed head 7011f24261, so a reader comparing the suite receipt against the promoted commit cannot resolve it; the code trees are identical (git diff --stat 13345d00f 7011f24261 shows only the fragment, 1 file, 5 insertions and 5 deletions), which is why the measurement still holds, but the receipt names the wrong revision."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_resume_anchors_the_run_harness_home.py pass in full on the primary branch; it passes 6 of 6 at the landed head 7011f24261 (re-run here: '...... 6 passed in 8.40s') and also at the recorded red revision 8d50b0333f, whose git show 8d50b0333f:reckon/crew/dispatch_sessions.py already carries the node-definition candidate in _recorded_manifest_path, so no product or test line needed changing and commit 7011f24261 carries the evidence fragment alone.\nVERDICT done_when: the done_when asks for the file passing in full at head as a job on all_debug with SLURM_JOB_ID unset, a per-cause verdict, an importer arm adding no failure, and the recorded base ids; the manifest records job 1319987's all_debug gate (sbatch-1319987.out, EXIT=0, 6 passed at 1db05e24), both suite arms at 58 passed, and a 4-failed mutation control, but the head gate and after arm the record quotes are two direct runs of scripts/head-rerun.sh, and the base arm at 8d50b0333f is 6 passed rather than the recorded three failures, which the worker states rather than hides.\nVERDICT write_paths: the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround (manifest line 3), and git diff --stat 5c4ff34929 7011f24261 lists exactly docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-resume-anchors-the-run-harness-home.html, inside the declared directory.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104757986662-qwnw-red-file-resume-anchors-the-run-harness-home/manifest.md; status complete, the gate command on line 14, baseline_suite on line 20 and after_suite on line 21 both at 58 passed with EXIT=0 and empty failure_ids, the negative control at 4 failed, and every cited log opened to its bare EXIT= line.\nVERDICT diff: read commit by commit against the base; the range 7061ebe583..7011f24261 holds two upstream commits the run fast-forwarded to (53caa0a3f2, 5c4ff34929) and the node's single commit 7011f24261, which adds only the 52-line fragment docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-resume-anchors-the-run-harness-home.html, and git diff --stat 13345d00f 7011f24261 shows the gate revision differs from head in that same file alone (1 file, 5 insertions, 5 deletions).\nCALL_SITES: reckon/evidence.py:1618 compose_landed_record, reckon/doccheck.py:1990 _record_fragment_dir, reckon/compliance.py:91 _dependencies, reckon/crew/reports.py:2722 _fragment_plan_of\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the file passes 6 of 6 at head 7011f24261 and the base arm at 8d50b0333f also passes 6 of 6, so the goal is met by the state the run delivered and the landed commit records it rather than changing it.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/gate-head-red-file.log and logs/after-suite-head.log carry real headers, summaries and EXIT lines at one revision, but they came from two direct runs of scripts/head-rerun.sh while the fragment at line 3 attributes every block to all_debug job 1319987, and manifest line 21 names the unreachable revision 13345d00f rather than the landed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 5c4ff34929 7011f24261 lists one file, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-resume-anchors-the-run-harness-home.html, inside the declared fragment directory, and no plan, index or product path.\nSCORE durability: 15\nJUSTIFICATION durability: the run adds no assertion of its own, so durability rests on tests/test_resume_anchors_the_run_harness_home.py:246-253 and :266-270, which logs/negative-control-top-level-only.log reddens four times under a mutation of _recorded_manifest_path, and the record's two false statements above are guarded by nothing.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment follows the sibling shape under docs/evidence/fragments/queued-work-needs-no-workaround/ (e.g. qwnw-red-file-crew-gate-log-agrees.html) with slug-prefixed ids and no head metas, and only its trailing newline is absent.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition; it lands a document in the directory reckon/evidence.py:1618 compose_landed_record and reckon/doccheck.py:1990 already own, so the capability is extended rather than forked, and no other mechanism in reckon/ composes or audits evidence fragments.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-resume-anchors-the-run-harness-home.html:3 non-blocking: the intro states every run below is an all_debug job (1319987, node 98dci4-clu-3144), but the head gate and after arm it quotes are two direct bash runs of scripts/head-rerun.sh (stream.jsonl tool calls at lines 12107 and 13541, log mtimes 14:15 and 14:16 local) after that job finished at 13:00:54Z, whose own summary records 8.71s and 34.71s at 1db05e24, so the claimed provenance is false for two of the five blocks and the done_when's all_debug clause rests on a superseded commit.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104757986662-qwnw-red-file-resume-anchors-the-run-harness-home/manifest.md:21 non-blocking: after_suite names 13345d00f75f3d4595afdb6f32600966a47fbbab, which no ref reaches and which is not the landed head 7011f24261, so a reader comparing the suite receipt against the promoted commit cannot resolve it even though the code trees are identical.",
+  "review_node": "review-of-qwnw-red-file-resume-anchors-the-run-harness-home-7011f24261b5",
+  "review_run_id": "r-20261116T140452746036-review-of-qwnw-red-file-resume-anchors-the-run-harness-home-7011f24261b5",
+  "reviewed_base_sha": "5c4ff3492998cfcf7fe9270398943770dd2cb7b2",
+  "reviewed_head_sha": "7011f24261b50df24ffce395f4524eafa0975261",
+  "reviewed_run_id": "r-20261116T104757986662-qwnw-red-file-resume-anchors-the-run-harness-home",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T23:17:03.778330+00:00",
+  "total": 105
+}

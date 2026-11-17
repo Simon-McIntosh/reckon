@@ -1,0 +1,93 @@
+<section id="qwnw-red-file-one-of-two-racing-reviews-survives-landing">
+  <h2>One of two racing reviews survives, on a path the sharing policy keeps exclusive</h2>
+
+  <p><strong>What was recorded.</strong> The file
+  <code>tests/test_one_of_two_racing_reviews_survives.py</code> failed four of
+  its eight cases on the primary branch: every case that drives a real dispatch
+  and expects <code>reckon.crew.ScopeConflict</code> failed with
+  <code>DID NOT RAISE ScopeConflict</code>. The four cases assert the
+  racing-claims rule the module exists for — a claim registered first keeps the
+  paths, a claim registered second withdraws naming the first, a launched claim
+  refuses a newcomer whatever the order, and a running owner is never outranked
+  — so a failure here looks like a lost product rule.</p>
+
+  <p><strong>Cause, and the verdict.</strong> One cause, and it is the test that
+  was wrong, not the product. Each case declares one path for both dispatches:
+  <code>src/claimed.py</code>, a mergeable source file, on a fixture project
+  that ships no sharing declaration. Since 2026-11-11 a project with no sharing
+  declaration <em>shares</em> its source files
+  (<code>_shared_write_paths</code> returns <code>default_share=True</code>), so
+  <code>_claim_paths_share</code> exempts the pair before the arbitration runs,
+  and no refusal can be produced on that path at all. The exemption is the
+  documented rule and is asserted by its own file
+  (<code>tests/test_a_source_file_is_shared_by_default.py</code>: two dispatches
+  on one source file are both admitted). The racing order the cases assert is
+  observable only where the paths are genuinely contended — a path the policy
+  keeps exclusive — so the fixture now declares
+  <code>docs/evidence/archive/race-landed.html</code>, an exclusive artifact
+  class. No assertion was deleted or weakened: the four refusals are still
+  asserted, still name the peer run id and the contended path, and still assert
+  the refused dispatch leaves no live pointer behind.</p>
+
+  <p>The probe that decided the verdict, run against the fixture's own project
+  in the delivering tree: <code>_claim_paths_share(shared, p, p)</code> reads
+  <code>True</code> for <code>src/claimed.py</code> (no exclusive class) and
+  <code>False</code> for <code>docs/evidence/archive/race-landed.html</code>
+  (class <code>docs/evidence/archive/</code>). Instrumenting the arbitration
+  showed the peer claim reaching the check as <code>binding=True,
+  unread=False, launched=True</code> and being passed over by
+  <code>_claim_paths_share</code> alone — the ordering helper was never reached,
+  which is the difference between a lost rule and a fixture that cannot exercise
+  it.</p>
+
+  <h3 id="qwnw-red-file-one-of-two-racing-revisions">Measured</h3>
+
+  <p>Both arms run the named file alone. The base arm extracts the base
+  revision's blobs into a scratch tree under <code>$TMPDIR</code> and runs the
+  file as that revision wrote it; the head arm runs as a job on
+  <code>all_debug</code> in the delivering worktree, with
+  <code>SLURM_JOB_ID</code> unset for the pytest process. Each log's first lines
+  name the revision, the tree, the imported module and the command, and its last
+  line reads <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table id="qwnw-red-file-one-of-two-racing-arms-table">
+    <caption>Arms over <code>tests/test_one_of_two_racing_reviews_survives.py</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base arm, the file as the base revision wrote it</td>
+        <td><code>24bc79d8ee</code>, scratch tree
+        <code>$TMPDIR/base_arm</code>, module
+        <code>…/base_arm/reckon/crew/dispatch_claims.py</code></td>
+        <td>4 failed, 4 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>head arm, job <code>1319776</code> on <code>all_debug</code></td>
+        <td><code>2a53ba59e5</code>, the delivering worktree</td>
+        <td>8 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the rule the fixture now respects</td>
+        <td><code>2a53ba59e5</code></td>
+        <td><code>tests/test_a_source_file_is_shared_by_default.py</code>:
+        14 passed</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-one-of-two-racing-negative-control">Negative control</h3>
+
+  <p>The four failing ids at the base revision, quoted from
+  <code>logs/base_arm_24bc79d8ee.log</code>:</p>
+
+  <ul id="qwnw-red-file-one-of-two-racing-base-ids">
+    <li><code>test_the_claim_registered_second_is_refused_naming_the_first</code>
+      — <code>DID NOT RAISE ScopeConflict</code></li>
+    <li><code>test_a_launched_claim_refuses_a_newcomer_whatever_the_order</code>
+      — <code>DID NOT RAISE ScopeConflict</code></li>
+    <li><code>test_a_running_owner_is_never_outranked_by_a_newcomer</code>
+      — <code>DID NOT RAISE ScopeConflict</code></li>
+    <li><code>test_a_running_owner_in_the_same_second_is_not_outranked</code>
+      — <code>DID NOT RAISE ScopeConflict</code></li>
+  </ul>
+
+  <p>That is the same four the whole-suite run at <code>8d50b0333f</code>
+  reported for this file, so the defect reproduces at the base revision before
+  the repair and is gone at the head. Lint on the changed path is clean:
+  <code>ruff check</code> reports <em>All checks passed</em> and
+  <code>ruff format --check</code> reports <em>1 file already formatted</em>.</p>
+</section>

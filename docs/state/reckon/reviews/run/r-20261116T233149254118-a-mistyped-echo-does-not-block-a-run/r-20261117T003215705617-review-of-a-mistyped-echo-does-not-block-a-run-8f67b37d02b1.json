@@ -1,0 +1,339 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "assertion": "assert record[\"phase\"] == \"complete\", record",
+      "failure_condition": "Restore the original mismatch refusal: phase becomes blocked rather than complete.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 94
+    },
+    {
+      "assertion": "assert record[\"orientation_check\"][\"matched\"] is True",
+      "failure_condition": "Restore the original mismatch refusal: matched becomes false.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 95
+    },
+    {
+      "assertion": "assert repair[\"reported\"] == values[field]",
+      "failure_condition": "Record the pointer value as the reported echo: the diagnostic loses the supplied incorrect value; this is input round-trip coverage, not independent proof of a repaired classification.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 97
+    },
+    {
+      "assertion": "assert repair[\"expected\"] == expected",
+      "failure_condition": "Use the incorrect manifest echo as expected: the expected value differs from the saved original pointer; pointer and incorrect echo are deliberately different.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 101
+    },
+    {
+      "assertion": "assert classified[\"classification\"] == \"promotable\", classified",
+      "failure_condition": "Restore recovery's use of an orientation refusal: classification is blocked rather than promotable.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 104
+    },
+    {
+      "assertion": "assert classified[\"orientation_check\"][\"repaired_echo\"][field] == repair",
+      "failure_condition": "Stop carrying the shared repair into recovery: the repair is absent or differs; parity alone does not independently prove correctness.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 105
+    },
+    {
+      "assertion": "assert original == before_classification, (\n        \"classification must not mutate the pointer\"\n    )",
+      "failure_condition": "Run the orientation helper on the original pointer instead of a copy: the pointer gains orientation_check and fails the saved-copy comparison.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 106
+    },
+    {
+      "assertion": "assert record[\"phase\"] == \"blocked\", record",
+      "failure_condition": "Bypass cumulative scope validation: the outside-path run remains complete.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 117
+    },
+    {
+      "assertion": "assert \"outside.txt\" in record[\"detail\"]",
+      "failure_condition": "Drop the outside path from the refusal diagnostic: outside.txt is absent.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 118
+    },
+    {
+      "assertion": "assert classified[\"classification\"] == \"blocked\", classified",
+      "failure_condition": "Ignore the orientation verdict in recovery: the scope escape becomes promotable.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 120
+    },
+    {
+      "assertion": "assert \"outside.txt\" in classified[\"detail\"]",
+      "failure_condition": "Drop the scope diagnostic when passing the verdict to recovery: outside.txt is absent.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 121
+    },
+    {
+      "assertion": "assert record[\"phase\"] == \"blocked\", record",
+      "failure_condition": "Remove the base ancestry check: the unrelated-root base is accepted.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 132
+    },
+    {
+      "assertion": "assert \"ancestor\" in record[\"detail\"]",
+      "failure_condition": "Replace the ancestry refusal with an unrelated error: the diagnostic no longer names ancestry.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 133
+    },
+    {
+      "assertion": "assert classify_pointer(original)[\"classification\"] == \"blocked\"",
+      "failure_condition": "Ignore the shared ancestry refusal in recovery: classification becomes promotable.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 134
+    },
+    {
+      "assertion": "assert record[\"phase\"] == \"blocked\", record",
+      "failure_condition": "Skip cited-commit ancestry verification: the foreign commit's in-scope path is accepted despite its foreign history.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 152
+    },
+    {
+      "assertion": "assert \"worktree\" in record[\"detail\"]",
+      "failure_condition": "Remove worktree identity from the foreign-commit diagnostic: the refusal loses its tree context.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 153
+    },
+    {
+      "assertion": "assert head in record[\"detail\"]",
+      "failure_condition": "Remove the offending foreign object identifier from the diagnostic: the diagnostic loses the independently created Git object; this checks diagnostic provenance rather than ancestry enforcement.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 154
+    },
+    {
+      "assertion": "assert classify_pointer(original)[\"classification\"] == \"blocked\"",
+      "failure_condition": "Ignore the foreign-commit refusal in recovery: classification becomes promotable.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 155
+    },
+    {
+      "assertion": "assert record[\"phase\"] == \"complete\", record",
+      "failure_condition": "Reuse the old unconditional stored-refusal return: phase stays blocked.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 169
+    },
+    {
+      "assertion": "assert \"base_sha\" in record[\"orientation_check\"][\"repaired_echo\"]",
+      "failure_condition": "Do not re-evaluate stored refusals: no repaired base field is recorded.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 170
+    },
+    {
+      "assertion": "assert record[\"orientation_check\"][\"matched\"] is True",
+      "failure_condition": "Reject a valid complete run unconditionally: matched is false, invalidating the positive control.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 176
+    },
+    {
+      "assertion": "assert record[\"phase\"] == \"blocked\", record",
+      "failure_condition": "Reuse a matching orientation result after HEAD changes: phase remains complete after outside.txt is committed.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 179
+    },
+    {
+      "assertion": "assert \"outside.txt\" in record[\"detail\"]",
+      "failure_condition": "Reuse the earlier clean diagnostic after HEAD changes: outside.txt is absent.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 180
+    },
+    {
+      "assertion": "assert record[\"phase\"] == \"blocked\", record",
+      "failure_condition": "Replace cumulative commit paths with a net base-to-head diff: the added-then-deleted outside path disappears and the run is accepted.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 190
+    },
+    {
+      "assertion": "assert \"outside.txt\" in record[\"detail\"]",
+      "failure_condition": "Use the net diff's paths: the refusal no longer names the transient outside.txt.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 191
+    },
+    {
+      "assertion": "assert record[\"phase\"] == \"complete\", record",
+      "failure_condition": "Restore the original skip on any empty orientation field: repaired_echo is never produced, so the following assertion fails even though phase can remain complete; phase alone is only a setup invariant here.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 198
+    },
+    {
+      "assertion": "assert record[\"orientation_check\"][\"repaired_echo\"][\"write_paths\"][\"reported\"] == []",
+      "failure_condition": "Skip the explicitly empty scope echo or replace it with the pointer list: the repair is missing or its reported side is not empty; the reported-side equality is diagnostic round-trip coverage.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 199
+    },
+    {
+      "assertion": "assert \"orientation_check\" not in record",
+      "failure_condition": "Restore membership-based detection of parser defaults: the status-only manifest acquires a manufactured orientation_check.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 206
+    },
+    {
+      "assertion": "assert classify_pointer(record)[\"classification\"] == \"promotable\"",
+      "failure_condition": "Restore membership-based detection of parser defaults: the synthetic mismatch blocks classification.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 207
+    },
+    {
+      "assertion": "assert classify_pointer(record)[\"classification\"] == \"promotable\"",
+      "failure_condition": "Reject a valid complete run: the cache test's positive-control classification is not promotable.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 214
+    },
+    {
+      "assertion": "assert classify_pointer(record)[\"classification\"] == \"promotable\"",
+      "failure_condition": "Remove memo reuse: unexpected_read calls pytest.fail on the second classification; the unchanged promotable literal alone does not measure caching.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 220
+    },
+    {
+      "assertion": "assert classify_pointer(record)[\"classification\"] == \"promotable\"",
+      "failure_condition": "Reject a valid complete run: the invalidation test's positive control fails.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 225
+    },
+    {
+      "assertion": "assert classified[\"classification\"] == \"blocked\", classified",
+      "failure_condition": "Omit HEAD from the memo/inputs identity: recovery reuses the clean result after the outside commit.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 228
+    },
+    {
+      "assertion": "assert \"outside.txt\" in classified[\"detail\"]",
+      "failure_condition": "Retain the earlier clean diagnostic after HEAD advances: outside.txt is absent.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 229
+    },
+    {
+      "assertion": "assert record[\"phase\"] == \"complete\", record",
+      "failure_condition": "Pass prose absence declarations or described citations directly to Git: valid delivery is blocked.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 244
+    },
+    {
+      "assertion": "assert record[\"orientation_check\"][\"matched\"] is True",
+      "failure_condition": "Pass prose declarations directly to the ancestry command: matched becomes false.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 245
+    },
+    {
+      "assertion": "assert \"base_sha\" in record[\"orientation_check\"][\"repaired_echo\"]",
+      "failure_condition": "Stop repairing the deliberately mistyped base: the repair record lacks base_sha.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 246
+    },
+    {
+      "assertion": "assert classify_pointer(original)[\"classification\"] == \"promotable\"",
+      "failure_condition": "Treat prose commit fields as foreign commits in recovery: classification becomes blocked.",
+      "file": "tests/test_a_mistyped_echo_does_not_block_a_run.py",
+      "line": 247
+    }
+  ],
+  "assertion_independence": "Lines 97 and 199 compare diagnostic reported values to test-supplied inputs, line 154 checks a diagnostic against the supplied foreign object, and line 105 is same-owner parity; these are explicitly not counted as independent behavioral proof. The phase, classification, matched, actual Git ancestry and cumulative scope assertions fail when the target regression is restored. No behavioral assertion can remain true merely by reverting the incorrect echo it was handed.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch_sessions.py:observe:346",
+    "reckon/crew/recovery_classification.py:classify_pointer:1933",
+    "reckon/crew/query.py:448",
+    "reckon/crew/queue_landing.py:1704"
+  ],
+  "completed_at": "2026-11-17T00:40:50Z",
+  "dispatched_at": "2026-11-17T00:34:55Z",
+  "failure_delta_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/fe0acb0a-56ea-447a-8357-bb11f3bf471c/a-mistyped-echo-does-not-block-a-run /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/fe0acb0a-56ea-447a-8357-bb11f3bf471c/a-mistyped-echo-does-not-block-a-run/.venv/bin/python -m pytest -p no:cacheprovider -q /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/fe0acb0a-56ea-447a-8357-bb11f3bf471c/a-mistyped-echo-does-not-block-a-run/tests/test_a_mistyped_echo_does_not_block_a_run.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/fe0acb0a-56ea-447a-8357-bb11f3bf471c/a-mistyped-echo-does-not-block-a-run/tests/test_staged_write_inventory.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/fe0acb0a-56ea-447a-8357-bb11f3bf471c/a-mistyped-echo-does-not-block-a-run/tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "failure_ids_from_log": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233149254118-a-mistyped-echo-does-not-block-a-run/after-suite.log",
+      "revision": "8f67b37d02b1ec29da5ff3364ad6e7bcf41cc9fa",
+      "summary": "75 passed in 41.20s"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=/tmp/mcintos-echo-1321090-Ksnm/echo-base-u1npyyp3 /tmp/mcintos-echo-1321090-Ksnm/echo-base-u1npyyp3/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/mcintos-echo-1321090-Ksnm/echo-base-u1npyyp3/tests/test_staged_write_inventory.py /tmp/mcintos-echo-1321090-Ksnm/echo-base-u1npyyp3/tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "failure_ids_from_log": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233149254118-a-mistyped-echo-does-not-block-a-run/baseline-suite.log",
+      "revision": "683b4a5bcd94cf2395352219bc96c0654a2dd3ea",
+      "summary": "58 passed in 33.83s"
+    }
+  },
+  "findings": [],
+  "importer_delta": {
+    "added_failure_count": 0,
+    "added_failure_ids": [],
+    "base_failure_count": 33,
+    "base_revision": "683b4a5bcd94cf2395352219bc96c0654a2dd3ea",
+    "cleared_failure_ids": [],
+    "head_failure_count": 33,
+    "head_revision": "8f67b37d02b1ec29da5ff3364ad6e7bcf41cc9fa"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read all four commits separately and the complete base-to-head diff; 08183acae5e700aa35316a132885e7ecb2c8f082 adds the shared verdict, c44c52d161070f26e77d3f8d7c946abffd3f930b reuses scope accounting and memoization, 928fc42fba2a15535462b418e9003a9b5052eb68 repairs citations and fixtures, and 8f67b37d02b1ec29da5ff3364ad6e7bcf41cc9fa preserves absent-echo compatibility.",
+    "done_when": "Read prompt.txt:251-274 and the recorded gate receipts; after-suite.log records 75 passed with EXIT=0, negative-control-resumed.log records the three echo cases failing at the base, and importer-delta.json agrees with the unchanged 33 failing IDs in both importer logs.",
+    "goal": "Read prompt.txt:40 and live docs/plans/delivered-work-lands-without-a-coordinator.html#s5; reckon/crew/dispatch_sessions.py:377-535 repairs copied fields from the pointer after checking ancestry and scope, and recovery uses that verdict.",
+    "manifest": "Read the complete source manifest.md and its cited receipts; baseline_suite and after_suite identify the actual reviewed base and head, and final-replay-results.json records 39 inputs, 28 clear orientation, 5 scope blocks, 5 incomplete and 1 unavailable tree.",
+    "write_paths": "Read prompt.txt:94-99 and manifest.md orientation_write_paths; the base-to-head diff changes only the two declared source modules and the declared test file."
+  },
+  "justifications": {
+    "durability": "tests/test_a_mistyped_echo_does_not_block_a_run.py:94-104 fails under the original echo refusal, lines 117-155 fail if substantive checks are bypassed, lines 179-229 fail under stale scope caching, and the diagnostic-copy comparisons are not the basis for those behavioral guards.",
+    "evidence": "Source baseline-suite.log and after-suite.log record 58 and 75 passes at the exact base and head, negative-control-resumed.log records three failing echo cases at the base, and final-replay-results.json records 39 pointers with an actively refused write control and unchanged source fingerprints.",
+    "fit": "reckon/crew/dispatch_sessions.py:441 extends the existing orientation owner using the surrounding bounded git reader and mechanism-based names, while recovery_classification.py:1927 preserves pointer immutability and the existing liveness ordering.",
+    "goal_fidelity": "reckon/crew/dispatch_sessions.py:385-438 verifies the pointer's tree, base ancestry, cited commits and cumulative changed paths before recording repaired_echo at line 517, and recovery_classification.py:2216 consumes the same refusal.",
+    "reuse": "Capability searches over reckon/crew located and opened promotion_evidence.py:_committed_scope, promotion_scope.py:_outside_declared_scope and recovery_memo.py:_worktree_head_identity, all reused by dispatch_sessions.py:377-489 rather than duplicated in a second classifier.",
+    "scope_discipline": "The four commit diffs touch only reckon/crew/dispatch_sessions.py, reckon/crew/recovery_classification.py and tests/test_a_mistyped_echo_does_not_block_a_run.py, all granted in prompt.txt:94-99."
+  },
+  "limitations": "Read-only review of the exact recorded revision; worker gates were inspected, not rerun; merged-head validation belongs to the separately dispatched test node.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read prompt.txt:40 and live docs/plans/delivered-work-lands-without-a-coordinator.html#s5; reckon/crew/dispatch_sessions.py:377-535 repairs copied fields from the pointer after checking ancestry and scope, and recovery uses that verdict.\nVERDICT done_when: Read prompt.txt:251-274 and the recorded gate receipts; after-suite.log records 75 passed with EXIT=0, negative-control-resumed.log records the three echo cases failing at the base, and importer-delta.json agrees with the unchanged 33 failing IDs in both importer logs.\nVERDICT write_paths: Read prompt.txt:94-99 and manifest.md orientation_write_paths; the base-to-head diff changes only the two declared source modules and the declared test file.\nVERDICT manifest: Read the complete source manifest.md and its cited receipts; baseline_suite and after_suite identify the actual reviewed base and head, and final-replay-results.json records 39 inputs, 28 clear orientation, 5 scope blocks, 5 incomplete and 1 unavailable tree.\nVERDICT diff: Read all four commits separately and the complete base-to-head diff; 08183acae5e700aa35316a132885e7ecb2c8f082 adds the shared verdict, c44c52d161070f26e77d3f8d7c946abffd3f930b reuses scope accounting and memoization, 928fc42fba2a15535462b418e9003a9b5052eb68 repairs citations and fixtures, and 8f67b37d02b1ec29da5ff3364ad6e7bcf41cc9fa preserves absent-echo compatibility.\nCALL_SITES: reckon/crew/dispatch_sessions.py:observe:346, reckon/crew/recovery_classification.py:classify_pointer:1933, reckon/crew/query.py:448, reckon/crew/queue_landing.py:1704\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_sessions.py:385-438 verifies the pointer's tree, base ancestry, cited commits and cumulative changed paths before recording repaired_echo at line 517, and recovery_classification.py:2216 consumes the same refusal.\nSCORE evidence: 20\nJUSTIFICATION evidence: Source baseline-suite.log and after-suite.log record 58 and 75 passes at the exact base and head, negative-control-resumed.log records three failing echo cases at the base, and final-replay-results.json records 39 pointers with an actively refused write control and unchanged source fingerprints.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The four commit diffs touch only reckon/crew/dispatch_sessions.py, reckon/crew/recovery_classification.py and tests/test_a_mistyped_echo_does_not_block_a_run.py, all granted in prompt.txt:94-99.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_mistyped_echo_does_not_block_a_run.py:94-104 fails under the original echo refusal, lines 117-155 fail if substantive checks are bypassed, lines 179-229 fail under stale scope caching, and the diagnostic-copy comparisons are not the basis for those behavioral guards.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/dispatch_sessions.py:441 extends the existing orientation owner using the surrounding bounded git reader and mechanism-based names, while recovery_classification.py:1927 preserves pointer immutability and the existing liveness ordering.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches over reckon/crew located and opened promotion_evidence.py:_committed_scope, promotion_scope.py:_outside_declared_scope and recovery_memo.py:_worktree_head_identity, all reused by dispatch_sessions.py:377-489 rather than duplicated in a second classifier.\n",
+  "replay_summary": {
+    "changed_real_inputs": [],
+    "counts": {
+      "deliverable_after_orientation": 28,
+      "echo_repaired": 15,
+      "other_incomplete": 5,
+      "substance_blocked": 5,
+      "unverifiable": 1
+    },
+    "input_snapshot_sha256": "2fc27071babb49b866fe972fbee60b5c8533ee8c215543c17a90fa8c7298e8ca",
+    "pointers_read": 39,
+    "read_query_count": 718,
+    "real_inputs_unchanged": true,
+    "source_write_attempts": 0,
+    "write_guard_control_refused": true
+  },
+  "reproduction_quote": "{\"case\": \"wrong-character\", \"phase\": \"blocked\", \"detail\": \"orientation mismatch: base_sha expected=\\\"683b4a5bcd94cf2395352219bc96c0654a2dd3ea\\\" reported=\\\"683b4a5bcd94cf2395352219bc96c0654a2dd3ez\\\"\"}\n{\"case\": \"omitted-path\", \"phase\": \"blocked\", \"detail\": \"orientation mismatch: write_paths expected=[\\\"allowed.txt\\\", \\\"another.txt\\\"] reported=[\\\"allowed.txt\\\"]\"}\n",
+  "review_run_id": "r-20261117T003215705617-review-of-a-mistyped-echo-does-not-block-a-run-8f67b37d02b1",
+  "reviewed_base_sha": "683b4a5bcd94cf2395352219bc96c0654a2dd3ea",
+  "reviewed_commits": [
+    "08183acae5e700aa35316a132885e7ecb2c8f082",
+    "c44c52d161070f26e77d3f8d7c946abffd3f930b",
+    "928fc42fba2a15535462b418e9003a9b5052eb68",
+    "8f67b37d02b1ec29da5ff3364ad6e7bcf41cc9fa"
+  ],
+  "reviewed_head_sha": "8f67b37d02b1ec29da5ff3364ad6e7bcf41cc9fa",
+  "reviewed_run_id": "r-20261116T233149254118-a-mistyped-echo-does-not-block-a-run",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T00:53:39.623510+00:00",
+  "total": 120
+}

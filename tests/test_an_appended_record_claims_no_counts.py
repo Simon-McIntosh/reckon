@@ -126,9 +126,22 @@ def _summary_meta(text: str) -> str:
 
 
 def _body_summary(text: str) -> str:
-    match = re.search(r"<h1>[^<]*</h1>\s*<p>([^<]*)</p>", text)
-    assert match is not None, text
-    return match.group(1)
+    """The summary sentence the record's header paragraph states.
+
+    The paragraph carries the sentence and, beside it, the ``span.source`` chip
+    naming the ledger the sentence was read from. The chip is provenance rather
+    than part of the sentence, so it is read out before the sentence is
+    compared against what the record claims.
+    """
+    soup = BeautifulSoup(text, "html.parser")
+    heading = soup.find("h1")
+    assert heading is not None, text
+    paragraph = heading.find_next("p")
+    assert paragraph is not None, text
+    source = paragraph.find(class_=evidence.SOURCE_CLASS)
+    if source is not None:
+        source.extract()
+    return paragraph.get_text(" ").strip()
 
 
 def test_an_appended_record_states_no_counts_and_no_verdict(checkout: Path) -> None:
@@ -149,6 +162,12 @@ def test_an_appended_record_states_no_counts_and_no_verdict(checkout: Path) -> N
     for sentence in _COUNT_SENTENCES:
         assert sentence not in meta, text
         assert sentence not in body, text
+    # The frame read no ledger, so it names none: a source chip beside the
+    # sentence publishes the run count that frame never read, and that count is
+    # the one thing this record must not claim.
+    header = BeautifulSoup(text, "html.parser").find("h1").find_next("p")
+    assert header.find(class_=evidence.SOURCE_CLASS) is None, header
+    assert "run(s)" not in header.get_text(" "), header
     assert 'name="plan-verdict"' not in text
     # The append's own anchor still lands in the frame it created.
     ids = [tag["id"] for tag in BeautifulSoup(text, "html.parser").find_all("section")]

@@ -34,7 +34,9 @@ PROJECT = "nova"
 
 # The reviewer's own manifest, in the shape the two refused reviews wrote: the
 # record it stored at the path its dispatch granted, marked complete, with no
-# commit to cite because a review makes none.
+# commit to cite because a review makes none. The messages statement is the
+# check's other required line: a run whose inbox holds no receipt owes that
+# statement, and these runs hold none.
 REVIEW_MANIFEST = """\
 node: review-of-{run}
 status: complete
@@ -42,6 +44,7 @@ commits: none
 changed_paths:
 {paths}
 tests: record parsed, stored and parse-checked
+messages_received: none
 """
 
 COMMIT_FINDING = "status is complete but no commit is recorded"
@@ -166,18 +169,26 @@ def test_a_review_annotating_an_empty_changed_paths_list_passes(
         "status: complete\n"
         "commits: none\n"
         "changed_paths: []  (a review writes no repository path)\n"
-        "tests: record parsed, stored and parse-checked\n",
+        "tests: record parsed, stored and parse-checked\n"
+        "messages_received: none\n",
     )
 
     assert exit_code == 0, findings
     assert findings == []
 
 
-def test_a_review_naming_a_path_outside_its_declaration_is_still_refused(
+def test_a_changed_path_the_merge_cannot_reconcile_is_still_refused(
     review_run: dict[str, Path],
 ) -> None:
-    """The store path passes because it was granted, not because it leaves the repo."""
-    undeclared = review_path(PROJECT, OTHER_RUN_ID)
+    """A declared write path is a hint; the unmergeable class still refuses.
+
+    A path outside the declaration is not a scope finding on its own, because
+    the run's worktree isolates the edit and the merge reconciles it. The class
+    git cannot reconcile is what the audit still reports, so the acceptance
+    above rests on the delivery rather than on a blanket waiver: a review that
+    delivered generated state it never declared is refused, named.
+    """
+    undeclared = f"docs/state/{OTHER_RUN_ID}.json"
     exit_code, findings = _read(
         review_run["manifest"], _manifest_body([str(undeclared)])
     )
@@ -257,7 +268,8 @@ def test_a_run_inside_its_repository_declaration_still_passes(tmp_path: Path) ->
         "status: complete\n"
         "commits: abc1234\n"
         f"changed_paths: {pointer_path_value}\n"
-        "tests: focused check passed\n",
+        "tests: focused check passed\n"
+        "messages_received: none\n",
     )
 
     assert exit_code == 0, findings

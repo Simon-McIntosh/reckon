@@ -46,6 +46,10 @@ def fleet(tmp_path, monkeypatch):
         tree = tmp_path / "trees" / SESSION / f"held-{index}"
         tree.parent.mkdir(parents=True, exist_ok=True)
         git(repository, "worktree", "add", "-q", "--detach", str(tree), "HEAD")
+        # A tree is held while it carries work a landing has not taken, so a
+        # clean checkout at the primary branch is no duty: each held tree here
+        # carries an uncommitted change, which is the state the row is about.
+        (tree / "in-progress").write_text(f"work {index}\n")
         trees.append(tree)
         ledger.write_run_file(
             PROJECT,
@@ -322,6 +326,9 @@ def test_unrelated_landing_and_registry_churn_do_only_changed_work(fleet, monkey
     counts.clear()
     registered = transient.with_name("unrelated-0")
     git(fleet.repo, "worktree", "add", "-q", "--detach", str(registered), "HEAD")
+    # The duty is for work a landing has not taken, so a newly registered tree
+    # joins the held set only while it carries some.
+    (registered / "in-progress").write_text("work\n")
     assert refresh() == expected | {"history-0"}
     assert counts["record_read"] == 0 and counts["tree_match"] == 1, counts
     assert (

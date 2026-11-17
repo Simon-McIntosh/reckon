@@ -86,7 +86,7 @@ def _record(
             script = argv[argv.index("--wrap") + 1]
             tokens = shlex.split(script)
             log = Path(tokens[-2])
-            log.parent.mkdir(parents=True, exist_ok=True)
+            assert log.is_file() and not log.is_symlink()
             with log.open("a", encoding="utf-8") as stream:
                 stream.write(job_writes)
         return subprocess.CompletedProcess(list(argv), status, output, "")
@@ -249,7 +249,8 @@ def test_a_stale_job_log_is_not_read_as_this_attempt_s_verdict(project, monkeypa
     """An earlier attempt's passing log must not answer for a job that never ran."""
     stale = project.parent / "verify-gate.log.job.log"
     stale.write_text("1 passed\nEXIT=0\n")
-    _, runner = _record(
+    previous = (stale.read_bytes(), stale.stat().st_mtime_ns)
+    calls, runner = _record(
         monkeypatch,
         _landing(),
         status=1,
@@ -261,4 +262,8 @@ def test_a_stale_job_log_is_not_read_as_this_attempt_s_verdict(project, monkeypa
     assert report["exit_status"] == 3
     assert report["integrated_verdict"] == "failed"
     assert report["ok"] is False
-    assert "EXIT=" not in stale.read_text()
+    assert (stale.read_bytes(), stale.stat().st_mtime_ns) == previous
+    submitted = Path(shlex.split(calls[0][0][-1])[-2])
+    assert submitted != stale
+    assert submitted.is_file()
+    assert "EXIT=" not in submitted.read_text()

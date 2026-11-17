@@ -1,0 +1,78 @@
+<section id="qwnw-red-file-a-racing-loser-outlives-a-withdrawn-winner-landing">
+  <h2>A racing loser outlives a withdrawn winner</h2>
+
+  <p><strong>What changed.</strong> Nothing in the product. The file's three
+  failing tests published the winner's claim on <code>src/claimed.py</code> and
+  expected the loser to refuse it, and that expectation is the part the code no
+  longer keeps. Since the overlap policy narrowed to the paths git cannot
+  reconcile, a mergeable source path is <em>shared</em> by default:
+  <code>_raise_repository_scope_conflict</code> reaches
+  <code>_claim_paths_share</code> and continues before any refusal, so a claim
+  on <code>src/claimed.py</code> cannot refuse anything, and the bounded wait
+  for an unlaunched racing winner is unreachable through it. The fixture now
+  claims <code>pyproject.toml</code> — an entry in
+  <code>DEFAULT_EXCLUSIVE_PATHS</code> that a textual merge cannot reconcile —
+  and every assertion in the first four cases is kept unchanged: the loser
+  proceeds when the winner withdraws, refuses naming a winner that launches,
+  refuses at its derived bound having actually waited, and never waits on a
+  launched peer. The fifth case is untouched.</p>
+
+  <h3 id="qwnw-red-file-a-racing-loser-outlives-a-withdrawn-winner-probe">The probe that decided the verdict</h3>
+
+  <p>A silent non-refusal is equally consistent with "the wait is broken" and
+  with "the claim never refuses", so the sharing predicate was asked directly
+  before either was repaired. It was run against the head tree; the log is
+  <code>logs/claim-path-probe.log</code> in the run directory.</p>
+
+  <table id="qwnw-red-file-a-racing-loser-outlives-a-withdrawn-winner-paths">
+    <caption><code>_claim_paths_share</code> for one peer claim, at head.</caption>
+    <thead><tr><th>claimed path</th><th>shared</th><th>refuses a later dispatch</th></tr></thead>
+    <tbody>
+      <tr><td><code>src/claimed.py</code></td><td>true</td><td>no</td></tr>
+      <tr><td><code>reckon/crew/runs.py</code></td><td>true</td><td>no</td></tr>
+      <tr><td><code>pyproject.toml</code></td><td>false</td><td>yes</td></tr>
+      <tr><td><code>uv.lock</code></td><td>false</td><td>yes</td></tr>
+      <tr><td><code>docs/state/x.json</code></td><td>false</td><td>yes</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-a-racing-loser-outlives-a-withdrawn-winner-arms">Measured</h3>
+
+  <p>Both arms ran as their own <code>all_debug</code> job with
+  <code>SLURM_JOB_ID</code> unset for the run itself. Each log's first lines
+  name the arm, revision and tree, and its last line is a bare
+  <code>EXIT=&lt;code&gt;</code>. The base arm is logged beside this record at
+  <code>qwnw-red-file-a-racing-loser-outlives-a-withdrawn-winner-base-arm.txt</code>
+  and the head arm beside it at
+  <code>qwnw-red-file-a-racing-loser-outlives-a-withdrawn-winner-head-arm.txt</code>.</p>
+
+  <table id="qwnw-red-file-a-racing-loser-outlives-a-withdrawn-winner-measure">
+    <caption>The node's own file at both revisions, plus a mutation arm.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>negative control, base</td><td><code>69fab1372f</code>, extraction</td>
+        <td>3 failed, 2 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>gate, head</td><td><code>b7485cce8d</code>, working tree</td>
+        <td>5 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>mutation: the wait disabled via
+        <code>_peer_claim_is_an_unlaunched_racing_winner</code>,</td>
+        <td><code>1574d97556</code> plus one line, reverted after the run</td>
+        <td>2 failed, 3 passed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The failing ids at the base read
+  <code>test_the_loser_refuses_naming_the_winner_that_launches</code>,
+  <code>test_the_loser_refuses_when_the_bound_expires</code> and
+  <code>test_a_launched_peer_is_never_waited_on</code>, each
+  <code>DID NOT RAISE ScopeConflict</code>. The mutation arm fails
+  <code>test_the_loser_proceeds_when_the_winner_withdraws</code> and
+  <code>test_the_loser_refuses_when_the_bound_expires</code> — the first because
+  the paths are refused on sight instead of kept, the second because its reason
+  no longer names the bound it waited. That is what proves the retargeted
+  fixture now exercises the wait rather than passing beside it. No assertion was
+  deleted or weakened.</p>
+
+  <p><code>ruff check</code> and <code>ruff format --check</code> report nothing
+  on the one changed path.</p>
+</section>

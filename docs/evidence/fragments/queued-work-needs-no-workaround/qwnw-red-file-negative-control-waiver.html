@@ -1,0 +1,137 @@
+<section id="qwnw-red-file-negative-control-waiver-landing">
+  <h2>The negative-control waiver file asserts the rules the gate keeps</h2>
+
+  <p><strong>What changed.</strong> Nothing under <code>reckon</code> changed:
+  every cause here is the test's. Three causes made fourteen of this file's
+  seventeen cases red on the primary branch; each case now asserts the rule the
+  completion path keeps today, and each is proved by the refusal or the record
+  the code produces rather than by a message's wording alone. The file's own
+  run goes from 14 failed / 3 passed to 17 passed, and the two suite files the
+  fence names read 58 passed on both arms.</p>
+
+  <h3 id="qwnw-red-file-negative-control-waiver-causes">The three causes</h3>
+
+  <table id="qwnw-red-file-negative-control-waiver-cause-table">
+    <thead>
+      <tr><th>cause</th><th>what the file asserted</th>
+        <th>the rule the code keeps</th><th>verdict</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>the completion is queued, not carried out</td>
+        <td>a bare <code>crew complete</code> promotes or refuses in the call,
+          and a refusal is written to its stdout</td>
+        <td><code>crew complete</code> records a
+          <code>promotion-requested</code> receipt naming the request id and
+          exits 0; <code>--wait</code> carries out promotion in the call and
+          returns its outcome. The helper now passes <code>--wait</code>, so
+          every case observes the outcome it asserts and not a receipt</td>
+        <td>test wrong</td>
+      </tr>
+      <tr>
+        <td>the cited gate log carries no capture record</td>
+        <td>a green log written as <code>1 passed</code> is enough to
+          promote</td>
+        <td>a cited gate log is read for the capture's own terminal
+          <code>EXIT=&lt;n&gt;</code> line, and the asserted exit status is
+          compared against it because nothing else records the command's
+          status. The helper's green log now ends <code>EXIT=0</code>, the
+          convention the tree's other promotion fixtures use</td>
+        <td>test wrong</td>
+      </tr>
+      <tr>
+        <td>a waiver is judged against a log that is gone</td>
+        <td>a reasoned waiver cannot substitute for a citation naming no log,
+          or naming a log whose file was deleted: both cases expected a
+          refusal</td>
+        <td>a recorded waiver displaces the control-log judgement.
+          <code>reckon/crew/reports.py</code> leaves a manifest carrying a
+          record of that waiver to a person rather than refusing it, and the
+          gate's own refusal names <code>--waiver REASON</code> as the way past
+          a control it cannot discharge. The two cases now assert the landing
+          and its record: verdict <code>waived</code>, the reason, the
+          declaration, and whichever log path the manifest did or did not name
+          (<code>log: ""</code> and no <code>resolved_log</code> when none was
+          named; the named path kept when its file is gone)</td>
+        <td>test wrong</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>No assertion was deleted or weakened. The two cases whose expected
+  direction inverted now assert the opposite direction, each naming the rule it
+  asserts. The mismatch case's assertion moved from the sentence the gate used
+  to refuse with to the fact it refuses on now: the log carries a bare failing
+  count and no failing test id, so the gate refuses because it names no failing
+  test id — the same missing fact, read under the facts-based rule.</p>
+
+  <h3 id="qwnw-red-file-negative-control-waiver-arms">The arms</h3>
+
+  <p>Each arm ran as a job on <code>all_debug</code> with
+  <code>SLURM_JOB_ID</code> unset in the test environment. Both base arms ran
+  over a checkout of the base revision; both head arms over the worktree.</p>
+
+  <table id="qwnw-red-file-negative-control-waiver-arm-table">
+    <caption>Each log's first lines name the revision, tree and command, and
+    its last line is a bare <code>EXIT=&lt;code&gt;</code> line.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file, base (negative control)</td>
+        <td><code>d0d77f07e2</code></td>
+        <td>14 failed, 3 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the named file, head (the gate)</td>
+        <td><code>d9155c8c5c</code></td>
+        <td>17 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the two fence files, base</td>
+        <td><code>d0d77f07e2</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the two fence files, head</td>
+        <td><code>d9155c8c5c</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The head arms ran at <code>d9155c8c5c</code>. The commit that follows adds
+  this fragment and no path the named file or the suite files import.</p>
+
+  <h3 id="qwnw-red-file-negative-control-waiver-control">Negative control</h3>
+
+  <p>The base revision's run of the named file, its failing ids quoted from the
+  log:</p>
+
+  <pre id="qwnw-red-file-negative-control-waiver-control-log"># revision: d0d77f07e2dcc64d74713755aebe748602f9a06f
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_negative_control_waiver.py
+# slurm_job_id_in_test_env: unset</pre>
+
+  <p>— and, quoted from the same log, the first failure's own assertion and the
+  fourteen ids:</p>
+
+  <pre id="qwnw-red-file-negative-control-waiver-control-ids">.FFFFFFFFFFFF.FF.                                                        [100%]
+&gt;       assert result.exit_code == 1
+E       assert 0 == 1
+FAILED tests/test_negative_control_waiver.py::test_mismatch_without_waiver_still_refuses
+FAILED tests/test_negative_control_waiver.py::test_reasoned_waiver_promotes_and_persists_control_evidence
+FAILED tests/test_negative_control_waiver.py::test_matching_control_records_matched_without_waiver
+FAILED tests/test_negative_control_waiver.py::test_waiver_without_control_match_refusal_is_refused[matched]
+FAILED tests/test_negative_control_waiver.py::test_waiver_without_control_match_refusal_is_refused[no-test]
+FAILED tests/test_negative_control_waiver.py::test_waiver_without_control_match_refusal_is_refused[no-declaration]
+FAILED tests/test_negative_control_waiver.py::test_waiver_without_control_match_refusal_is_refused[none]
+FAILED tests/test_negative_control_waiver.py::test_waiver_without_control_match_refusal_is_refused[nonpassing]
+FAILED tests/test_negative_control_waiver.py::test_empty_waiver_reason_is_refused[bypassing the guard produced the expected assertion failure-]
+FAILED tests/test_negative_control_waiver.py::test_empty_waiver_reason_is_refused[bypassing the guard produced the expected assertion failure- &#92;t&#92;n ]
+FAILED tests/test_negative_control_waiver.py::test_empty_waiver_reason_is_refused[removing the guard turns the fixture red-]
+FAILED tests/test_negative_control_waiver.py::test_empty_waiver_reason_is_refused[removing the guard turns the fixture red- \t\n ]
+FAILED tests/test_negative_control_waiver.py::test_waiver_cannot_substitute_for_missing_control_log[path]
+FAILED tests/test_negative_control_waiver.py::test_waiver_cannot_substitute_for_missing_control_log[file]
+14 failed, 3 passed in 5.07s
+EXIT=1</pre>
+
+  <p>The head run of the same file, at the run's head:</p>
+
+  <pre id="qwnw-red-file-negative-control-waiver-head-log"># revision: d9155c8c5c2686e9da80379996ecca52bec8e437
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_negative_control_waiver.py
+# slurm_job_id_in_test_env: unset
+.................                                                        [100%]
+17 passed in 5.45s
+EXIT=0</pre>
+</section>
