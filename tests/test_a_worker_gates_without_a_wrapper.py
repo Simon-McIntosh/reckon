@@ -8,7 +8,6 @@ import shlex
 import shutil
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -34,8 +33,7 @@ def _git(root, *arguments):
 
 @pytest.fixture
 def dispatched(tmp_path, monkeypatch):
-    real_root = os.environ.get("RECKON_GATE_SMOKE_ROOT")
-    parent = Path(tempfile.mkdtemp(dir=real_root)) if real_root else tmp_path
+    parent = tmp_path
     home = parent / "home"
     home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(home))
@@ -125,9 +123,6 @@ def dispatched(tmp_path, monkeypatch):
 def scheduler(tmp_path, monkeypatch):
     """Exercise the submitted shell while keeping unit tests off the scheduler."""
     calls = []
-    if os.environ.get("RECKON_GATE_SMOKE_ROOT"):
-        yield calls
-        return
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
     shim = bin_dir / "srun"
@@ -155,7 +150,7 @@ def scheduler(tmp_path, monkeypatch):
         )
 
     monkeypatch.setattr(standing_suite, "subprocess", SimpleNamespace(run=submit))
-    yield calls
+    return calls
 
 
 def _calls(record):
@@ -228,22 +223,7 @@ def test_dispatched_worker_follows_composed_calls(dispatched, scheduler):
         record["run_id"], pointer, waiver_reason="", dry_run=True
     )
     assert delta["status"] == "clean", delta
-    if real_root := os.environ.get("RECKON_GATE_SMOKE_ROOT"):
-        Path(real_root, "receipt.json").write_text(
-            json.dumps(
-                {
-                    "scoped_gate": gate,
-                    "arms": arms,
-                    "promotion_delta": delta,
-                    "manifest_path": str(delivery),
-                    "prompt_path": record["prompt_path"],
-                    "wrapper_scripts": [],
-                },
-                indent=2,
-            )
-        )
-    if not os.environ.get("RECKON_GATE_SMOKE_ROOT"):
-        assert len(scheduler) == 3
+    assert len(scheduler) == 3
 
 
 def test_suite_resolves_each_tree_without_carrying_added_tests(dispatched, scheduler):
