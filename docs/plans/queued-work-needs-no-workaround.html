@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="350">
+<meta name="plan-version" content="351">
 <meta name="plan-modified" content="2026-11-17">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -1142,6 +1142,9 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261116T105012384890-qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued" data-who="reckon-build" data-when="2026-11-16T13:48:02Z">
     <div class="r-comment-body"><p>repaired the pre-spawn arm in classify_pointer so a pointer phase label stops outranking a verdict on disk, so a delivered run under a stale starting label reads scoring and the review reflex dispatches its review instead of answering that the run is not awaiting review; the node test file goes from 3 failed and 1 passed at base to 4 passed at head, and the arm over the 110 files importing the module goes from 44 failed and 825 passed to 43 failed and 826 passed with no failing id added</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261116T105116733844-qwnw-red-file-a-review-records-shas-resolve" data-who="reckon-build" data-when="2026-11-16T15:35:58.716Z">
+    <div class="r-comment-body"><p>tests/test_a_review_records_shas_resolve.py passes in full (7 passed, EXIT=0) at head 0a6bd6b7c255b83815172743ce751b4a36be4505 against 3 failed / 4 passed at base 69fab1372f16686ce6acdb6094a357c6f6bfe18d; one cause, verdict test wrong, repaired by adding the required `messages_received: none` line to the fixture manifest with every assertion kept, and the base&#x27;s own failure text shows the revision-resolution refusals the file asserts were already correct.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
