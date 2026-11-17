@@ -428,8 +428,9 @@ def _record_rows(
                 params.append(activity_since)
             if clauses:
                 query += " WHERE " + " AND ".join(clauses)
-            if indexed_activity:
-                query += " ORDER BY r.rowid"
+            # Range indexes also compete for unbounded project reads. Keep
+            # insertion order explicit whichever index supplies the rows.
+            query += " ORDER BY r.rowid"
             cursor = connection.execute(query, params)
             try:
                 rows = cursor.fetchall()
