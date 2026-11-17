@@ -161,7 +161,11 @@ def _duties(monkeypatch: pytest.MonkeyPatch, rows: list[dict]) -> list[dict]:
 
 
 def _review_duty(duties: list[dict]) -> dict:
-    review_duties = [item for item in duties if "head" in item]
+    review_duties = [
+        item
+        for item in duties
+        if "head" in item or item["kind"] in {"review-ready", "promotable-stale"}
+    ]
     assert len(review_duties) == 1, duties
     return review_duties[0]
 
