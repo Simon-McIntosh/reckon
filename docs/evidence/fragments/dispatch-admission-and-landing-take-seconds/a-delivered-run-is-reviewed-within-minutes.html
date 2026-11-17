@@ -57,11 +57,13 @@
   session. A third case reads a recorded refusal as the reason rather than as no
   dispatch at all.</p>
 
-  <p id="a-delivered-run-is-reviewed-within-minutes-gate"><strong>Gate.</strong>
-  The node's three tests pass at the head (<strong>3 passed</strong>), and the
-  armed suite arm — the node's test file beside the two importer files — is
-  recorded in the manifest's <code>after_suite</code> field with its own command
-  and revision.</p>
+<p id="a-delivered-run-is-reviewed-within-minutes-gate"><strong>Gate.</strong>
+  The node's five tests pass at the head
+  (<strong>5 passed</strong> in 2.8 s). The armed suite arms — the node's test
+  file beside the two importer files at the head, and the two importer files
+  alone at the base revision — are recorded in the manifest's
+  <code>after_suite</code> and <code>baseline_suite</code> fields with their own
+  commands, revisions and logs; both report <strong>0 failures</strong>.</p>
 
   <p id="a-delivered-run-is-reviewed-within-minutes-negative-control"><strong>Negative control.</strong>
   With the sweep's review pass made to wait for the tick — the pass gated on a
@@ -72,7 +74,23 @@
   manifest's <code>negative_control_log</code> line.</p>
 
   <p id="a-delivered-run-is-reviewed-within-minutes-census"><strong>The live census.</strong>
-  CENSUS_FIGURE</p>
+  Read over the live crew home on 2026-11-17 at 21:45Z: <strong>39</strong> run
+  receipt files, <strong>31</strong> with a delivery recorded, <strong>23</strong>
+  of them not themselves reviews. Of those 23, <strong>5</strong> carry a review
+  request's instant and <strong>9</strong> carry a recorded dispatch with no
+  instant, because the receipts landed today and older dispatches predate them:
+  the recorded fact without the clock reading is reported apart, never as an
+  obligation. The request lag's median is <strong>96.7 s</strong>; its 90th
+  percentile is <strong>917.1 s</strong> over five samples, which is the largest
+  member of a sample too small to establish a fleet percentile — the receipt
+  population is hours old. The launch lag is reported apart from it: median
+  <strong>124.1 s</strong>, 90th <strong>147.5 s</strong> over four launches,
+  which is the split this section exists to expose — the requests that were made
+  were made inside the window, and the launches came after it.
+  <strong>9</strong> delivered runs owe an obligation, each with its reason: a
+  live pointer that is gone, an attempt whose resume has not delivered yet, and
+  a review the resume superseded. The log is
+  <code>live-census-20261117T2145Z.log</code> in the run's directory.</p>
 
   <p id="a-delivered-run-is-reviewed-within-minutes-priority"><strong>What is not here.</strong>
   The request's priority is inherited from the run it reviews by
