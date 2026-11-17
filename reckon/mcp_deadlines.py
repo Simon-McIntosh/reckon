@@ -15,6 +15,7 @@ from typing import Any, get_type_hints
 from reckon import metadata_index
 from reckon._mcp_tools import StorageSlowResult
 from reckon._store import (
+    _docs_dir_for_project,
     OpError,
     VersionConflict,
     _resolve_html_file,
@@ -794,8 +795,58 @@ def _plan_status(
     return str(data.get("status") or "").strip().lower() or None
 
 
+def _plan_readiness_report(
+    project: str, checkout_path: str | None = None
+) -> dict[str, Any]:
+    """Read the keyed snapshot before composing the plan-write projection.
+
+    Discovery can itself compose the roadmap for its ready set. Capturing that
+    build makes a cold miss cost one composition; a warm discovery supplies its
+    inventory to the ordinary roadmap reader instead. The projection has its
+    own request shape so it never replaces a full roadmap response.
+    """
+    from reckon import mcp, serve
+    from reckon.roadmap import roadmap_build_scope
+
+    mounts = dict(serve.mounts_for_snapshot())
+    docs_dir = _docs_dir_for_project(project, checkout_path)
+    if docs_dir is not None:
+        mounts[project] = docs_dir
+    shape = {"view": "plan-write-readiness"}
+
+    def current_key() -> str:
+        key, _states = serve.roadmap_snapshot_key(
+            project, mounts, mcp._SERVER_CODE_STAMP, shape=shape
+        )
+        return key
+
+    key = current_key()
+    served = serve.roadmap_snapshot_load(project, docs_dir, key, shape=shape)
+    if served is not None:
+        return served
+    with roadmap_build_scope() as scope:
+        mcp._discover_project(project, checkout_path)
+        report = (
+            scope.built
+            if scope.built is not None
+            else mcp._roadmap_scoped(project, checkout_path=checkout_path)
+        )
+    projection = {
+        "ok": report.get("ok", True),
+        "error": report.get("error"),
+        "pending_work": [
+            {name: row.get(name) for name in ("slug", "readiness", "closure_blockers")}
+            for row in report.get("pending_work") or []
+        ],
+    }
+    serve.roadmap_snapshot_store(
+        project, docs_dir, key, projection, shape=shape, held=current_key() == key
+    )
+    return projection
+
+
 def _plan_readiness_fields(
-    project: str, slug: str, checkout_path: str | None = None
+    project: str, slug: str, checkout_path: str | None = None, *, changed: bool = True
 ) -> dict[str, Any]:
     """The readiness a plan write leaves behind, with what stands before its close.
 
@@ -831,10 +882,10 @@ def _plan_readiness_fields(
     """
     if _plan_status(project, slug, checkout_path) in TERMINAL_STATUSES:
         return {"readiness": "closed", "closure_blockers": []}
+    if not changed:
+        return {}
     try:
-        from reckon.mcp import _roadmap_scoped
-
-        report = _roadmap_scoped(project, checkout_path=checkout_path)
+        report = _plan_readiness_report(project, checkout_path)
     except Exception as error:  # noqa: BLE001 — named in the response, not swallowed
         return {
             "readiness": None,

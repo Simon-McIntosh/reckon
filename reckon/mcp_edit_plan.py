@@ -2328,6 +2328,16 @@ def _edit_plan_tool(
     # The plan's coverage before the write is read here, because the write is
     # what destroys it: ``review_owed`` on the answer is the plan's whole debt,
     # and only the difference against this set is the write's own doing.
+    declaration_write = mode == "state" and _changes_section_declarations(ops)
+    declarations_before = (
+        _with_read_scopes(
+            lambda: read_plan(project, slug, checkout_path, artifact_type=doc_type)[0].get(
+                DECLARATIONS_PATH_HEAD
+            )
+        )
+        if declaration_write
+        else None
+    )
     uncovered_before = (
         _with_read_scopes(
             lambda: _uncovered_before_write(
@@ -2364,8 +2374,16 @@ def _edit_plan_tool(
             # A write that moves a section declaration can be the one that
             # leaves the plan finished, so that write also answers with the
             # plan's readiness and what still stands before its close.
-            if mode == "state" and _changes_section_declarations(ops):
-                result.update(_plan_readiness_fields(project, slug, checkout_path))
+            if declaration_write:
+                declarations_after = read_plan(
+                    project, slug, checkout_path, artifact_type=doc_type
+                )[0].get(DECLARATIONS_PATH_HEAD)
+                result.update(
+                    _plan_readiness_fields(
+                        project, slug, checkout_path,
+                        changed=declarations_before != declarations_after,
+                    )
+                )
 
         _with_read_scopes(_post_write_reads)
     return result
