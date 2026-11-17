@@ -97,6 +97,20 @@
   cursor &mdash; one sample size, the same bytes the parsed-stream cache records, in
   place of a second choice made here.</p>
 
+  <h3 id="station-cursor-counter">The scan is not the producer&#x27;s parsed traffic</h3>
+
+  <p>When the scan first took its appended read through
+  <code>_backends._stream_lines_from</code>, it also fed the producer&#x27;s
+  parsed-byte counter that reader owns. In one poll that reader then parsed the
+  growth twice &mdash; once for the producer&#x27;s own incremental parse, once for
+  this node&#x27;s scan &mdash; and the registration reported twice the bytes
+  appended. <code>tests/test_producer_reads_only_what_changed.py</code> caught it:
+  <strong>36,002,538 bytes recorded against 18,001,269 appended</strong>. The counter
+  reports the fleet traffic a poll folded, and a scan answering its own question
+  about a stream is not that fold, so the read now passes
+  <code>count=False</code>; the case passes with the bytes appended and exactly
+  those, and this node&#x27;s own gate still passes.</p>
+
   <h3 id="station-cursor-arms">Arms and control</h3>
 
   <p><code>gate-base.log</code> at base <code>73a771c</code> and
