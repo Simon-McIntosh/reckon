@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="315">
+<meta name="plan-version" content="317">
 <meta name="plan-modified" content="2026-11-17">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -1037,6 +1037,12 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261116T104511528268-qwnw-red-file-held-worktrees-are-read-once-per-change" data-who="reckon-build" data-when="2026-11-16T11:28:11.962Z">
     <div class="r-comment-body"><p>Repaired the held-tree read-once fixture. Its twenty trees were clean and reachable, so the unmerged-work rule removed them before any naming rule ran and four cases read an empty derivation; each tree now carries one commit its primary branch does not reach, the assertions are unchanged, and the file passes 4/4 at head against 4 failed at base, as all_debug job 1319739.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261116T104519296539-qwnw-red-file-held-dispatch-is-queued" data-who="reckon-build" data-when="2026-11-16T11:28:19.839Z">
+    <div class="r-comment-body"><p>tests/test_held_dispatch_is_queued.py 8 passed at head 6252a90d9f, 4 failed / 4 passed at base 59a79fb16c — both causes were tests asserting rules the product had stopped keeping (a held request on any lane is queued, not refused with 75; a queued node carries the required goal field), no assertion deleted or weakened</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261116T233236358086-review-of-qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued-ba47ab1d656e" data-who="reckon-build" data-when="2026-11-17T00:12:18.366Z">
+    <div class="r-comment-body"><p>reviewed run r-20261116T105012384890-qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued over a34e5162a2, stored a parsed record at review-records/&lt;run&gt;.at-ba47ab1d656ecc8312de8dc29ff058ec1203bb51.json scoring 6 dimensions 19/14/18/17/18/20 with two non-blocking findings, verified by crew check --review</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
