@@ -10,20 +10,25 @@ The allocation is found from the queue by the comment token this module writes
 into it, never by a remembered job id, so a resubmission, a requeue onto another
 node or a cancel-and-hold is picked up by the next reader.
 
-Nothing here runs on its own: ``cx`` holds an allocation through
+``cx`` holds an allocation through
 ``reckon fleet-node hold --submit`` when it finds none running, and the operator
-reads it with ``reckon fleet-node status``.
+reads it with ``reckon fleet-node status``. The hold starts an independent
+scheduler reader through ``fleet-health --scheduler``.
 """
 
 from __future__ import annotations
 
+import csv
+import fcntl
 import getpass
 import json
 import os
 import shlex
 import subprocess
+import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from textwrap import dedent
 from typing import Any
@@ -125,6 +130,232 @@ _SQUEUE_FORMAT = "%i|%j|%T|%M|%R|%b|%k|%L"
 # held before reckon knew about it is described by the size it was submitted
 # with.
 _SHAPE_FORMAT = "%P|%C|%m"
+
+# Terminal allocation states, rather than absence from the live queue, close a
+# scheduler series. Accounting may lag the queue and either query may fail.
+_TERMINAL_JOB_STATES = frozenset(
+    {
+        "BOOT_FAIL",
+        "CANCELLED",
+        "COMPLETED",
+        "DEADLINE",
+        "FAILED",
+        "NODE_FAIL",
+        "OUT_OF_MEMORY",
+        "PREEMPTED",
+        "REVOKED",
+        "TIMEOUT",
+    }
+)
+_ACTIVE_JOB_STATES = frozenset(
+    {
+        "CONFIGURING",
+        "COMPLETING",
+        "PENDING",
+        "RUNNING",
+        "RESIZING",
+        "REQUEUED",
+        "REQUEUE_FED",
+        "REQUEUE_HOLD",
+        "RESV_DEL_HOLD",
+        "SIGNALING",
+        "SPECIAL_EXIT",
+        "STAGE_OUT",
+        "STOPPED",
+        "SUSPENDED",
+    }
+)
+_HEALTH_COLUMNS = [
+    "utc",
+    "load1",
+    "load5",
+    "procs_running",
+    "procs_blocked",
+    "dstate",
+    "mem_avail_mb",
+    "swap_free_mb",
+    "job_mem_mb",
+    "job_mem_max_mb",
+    "home_stat_ms",
+    "slurmd_ms",
+    "ctld_ping",
+    "tasks",
+    "python_procs",
+    "top_parent",
+    "writable_interpreters",
+    "job_oom_kill",
+    "job_id",
+    "node",
+    "scheduler_state",
+    "scheduler_reason",
+    "scheduler_running",
+    "scheduler_event",
+    "source",
+]
+
+
+def scheduler_reading(
+    job_id: str, node: str, *, runner: Callable[..., Any] = subprocess.run
+) -> dict[str, str]:
+    """Read one allocation, falling back to accounting only after queue absence."""
+    row = {
+        "job_id": job_id,
+        "node": node,
+        "scheduler_state": "UNKNOWN",
+        "scheduler_reason": "scheduler unreadable",
+        "scheduler_running": "unknown",
+        "scheduler_event": "unknown",
+        "source": "scheduler",
+    }
+    queries = (
+        ["squeue", "-h", "-j", job_id, "-o", "%i|%N|%T|%r"],
+        [
+            "sacct",
+            "-X",
+            "-n",
+            "-P",
+            "-j",
+            job_id,
+            "--format=JobIDRaw,NodeList,State%80,Reason%200",
+        ],
+    )
+    for argv in queries:
+        try:
+            result = runner(
+                argv, capture_output=True, text=True, check=False, timeout=10
+            )
+        except (OSError, subprocess.SubprocessError) as exc:
+            row["scheduler_reason"] = str(exc)
+            return row
+        if result.returncode:
+            row["scheduler_reason"] = result.stderr.strip() or f"{argv[0]} failed"
+            if argv[0] == "squeue":
+                continue
+            return row
+        if not result.stdout.strip():
+            continue
+        for line in result.stdout.splitlines():
+            fields = line.strip().split("|")
+            if len(fields) < 4 or fields[0].strip() != job_id:
+                continue
+            _, reported_node, state, reason = (field.strip() for field in fields[:4])
+            state_word = state.split()[0].rstrip("+") if state else ""
+            if state_word not in _ACTIVE_JOB_STATES | _TERMINAL_JOB_STATES:
+                return row
+            # Accounting retains the cancelling uid in the state string.
+            terminal = state_word in _TERMINAL_JOB_STATES
+            row.update(
+                node=reported_node
+                if reported_node not in ("", "None", "(null)")
+                else node,
+                scheduler_state=state,
+                scheduler_reason=reason or "None",
+                scheduler_running="true" if state == "RUNNING" else "false",
+                scheduler_event="end" if terminal else "sample",
+            )
+            return row
+        return row
+    row["scheduler_reason"] = "job absent from queue and accounting"
+    return row
+
+
+def append_scheduler_reading(directory: Path, row: Mapping[str, str]) -> bool:
+    """Append to the node's TSV, serialising with its sampler and deduplicating end."""
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / f"{row['job_id']}-{row['node']}.tsv"
+    with Path(f"{path}.lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        with path.open("a+", encoding="utf-8", newline="") as stream:
+            stream.seek(0)
+            header = next(csv.reader(stream, delimiter="\t"), [])
+            if not header:
+                header = _HEALTH_COLUMNS
+                csv.writer(stream, delimiter="\t", lineterminator="\n").writerow(header)
+            if not set(_HEALTH_COLUMNS[-7:]).issubset(header):
+                raise FleetNodeError(f"health series lacks scheduler columns: {path}")
+            # Only the tail is read, keeping each tick independent of series age.
+            stream.flush()
+            with path.open("rb") as reader:
+                reader.seek(0, os.SEEK_END)
+                reader.seek(max(0, reader.tell() - 65536))
+                tail = reader.read().decode("utf-8", errors="replace").splitlines()
+            for line in reversed(tail):
+                values = line.split("\t")
+                if len(values) == len(header):
+                    prior = dict(zip(header, values, strict=True))
+                    if prior.get("source") == "scheduler":
+                        if prior.get("scheduler_event") == "end":
+                            return False
+                        break
+            stream.seek(0, os.SEEK_END)
+            csv.writer(stream, delimiter="\t", lineterminator="\n").writerow(
+                row.get(column, "-")
+                .replace("\t", " ")
+                .replace("\r", " ")
+                .replace("\n", " ")
+                for column in header
+            )
+            stream.flush()
+            os.fsync(stream.fileno())
+    return True
+
+
+def watch_scheduler(
+    job_id: str,
+    node: str,
+    *,
+    directory: Path,
+    interval: float = 60,
+    passes: int = 0,
+    runner: Callable[..., Any] = subprocess.run,
+    sleep: Callable[[float], None] = time.sleep,
+) -> None:
+    """Sample outside the watched allocation until its confirmed terminal row."""
+    if job_id in (os.environ.get("SLURM_JOB_ID"), os.environ.get("SLURM_JOBID")):
+        raise FleetNodeError("scheduler reader must run outside the watched allocation")
+    if (
+        not job_id.isdigit()
+        or not node
+        or any(
+            c not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_."
+            for c in node
+        )
+    ):
+        raise FleetNodeError("scheduler reader needs a numeric job id and a node name")
+    directory.mkdir(parents=True, exist_ok=True)
+    with (directory / f"{job_id}-scheduler.lock").open("a") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return
+        count = 0
+        while True:
+            started = time.monotonic()
+            row = scheduler_reading(job_id, node, runner=runner)
+            row["utc"] = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+            if not append_scheduler_reading(directory, row):
+                return
+            count += 1
+            if row["scheduler_event"] == "end" or (passes and count >= passes):
+                return
+            sleep(max(0, interval - (time.monotonic() - started)))
+
+
+def _scheduler_reader_launch(account: str) -> str:
+    """A separate, small scheduler job on another node survives the fleet's loss."""
+    return dedent(f"""
+        if [ -x "$HOME/.local/bin/fleet-health" ]; then
+            health_state="${{FLEET_STATE_DIR:-$HOME/.local/state/fleet}}"
+            mkdir -p "$health_state/health"
+            reader_command=$(printf '%q ' "$HOME/.local/bin/fleet-health" --scheduler "$SLURM_JOB_ID" "$(hostname -s)")
+            env -u SLURM_JOB_ID -u SLURM_JOBID sbatch --parsable \\
+                --partition=rigel --account={shlex.quote(account)} --nodes=1 \\
+                --cpus-per-task=1 --mem=512M --time=UNLIMITED \\
+                --exclude="$(hostname -s)" --job-name=fleet-scheduler \\
+                --output="$health_state/health/scheduler-%j.log" \\
+                --wrap="exec $reader_command" || echo "fleet scheduler reader submission failed" >&2
+        fi
+    """).strip()
 
 
 class FleetNodeError(RuntimeError):
@@ -294,6 +525,7 @@ def generate_hold_script(
         export TMPDIR=/tmp
         export PATH={hold_path}
         {fleet_exports}
+        {scheduler_reader}
         # Cap each compute-library thread pool at the declared width, keeping a
         # value the submitting environment already set. A heavy process
         # otherwise opens a pool as wide as the node's cores, and the thread
@@ -318,6 +550,7 @@ def generate_hold_script(
             hold_path=shlex.quote(hold_path(environ)),
             thread_caps=thread_caps,
             supervisor_lifetime=_supervisor_lifetime_script(standby=standby),
+            scheduler_reader=_scheduler_reader_launch(size.account),
             fleet_exports="".join(
                 f"export {name}={value}\n"
                 for name, value in fleet_environ(fleet).items()
@@ -675,3 +908,24 @@ def describe_allocation(
             f"remaining on {node}"
         )
     return lines
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Record a fleet job's scheduler state")
+    parser.add_argument("--scheduler", required=True, metavar="JOB")
+    parser.add_argument("node")
+    parser.add_argument("--passes", type=int, default=0)
+    parser.add_argument("--interval", type=float, default=60)
+    args = parser.parse_args()
+    try:
+        watch_scheduler(
+            args.scheduler,
+            args.node,
+            directory=state_directory() / "health",
+            interval=args.interval,
+            passes=args.passes,
+        )
+    except FleetNodeError as exc:
+        parser.exit(1, f"{exc}\n")
