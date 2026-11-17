@@ -1,11 +1,10 @@
 """A queued pointer without a readable arrival time reads no place.
 
 A queued request's place uses its arrival time even when its roadmap priority
-cannot be resolved: the ordering needs that time and refuses a pointer with none. That
-refusal belongs to the pointer, not to the read. One malformed pointer must not
-cost every other queued request its place, and it must not take down a whole
-live read, because the pointer can arrive without the field from anything that
-writes one.
+cannot be resolved: the ordering needs that time and sets aside a pointer with
+none, ranking the rest. One malformed pointer must not cost every other queued
+request its place, and it must not take down a whole live read, because the
+pointer can arrive without the field from anything that writes one.
 
 So a pointer whose arrival time cannot be read gets no place, while its run is
 still listed as queued. The ordering takes the same split from
