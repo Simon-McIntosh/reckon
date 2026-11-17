@@ -125,6 +125,39 @@ def test_changed_copied_set_is_refused(tmp_path):
         validate_dataset(data)
 
 
+def test_private_repository_copies_packs_without_changing_the_source(tmp_path):
+    from scripts.replay_promotion_drain import _repository, git
+
+    source = tmp_path / "source"
+    source.mkdir()
+    git(source, "init", "-q", "-b", "main")
+    git(source, "config", "user.name", "Fixture")
+    git(source, "config", "user.email", "fixture@example.invalid")
+    (source / "present.txt").write_text("known content\n")
+    git(source, "add", "present.txt")
+    git(source, "-c", "commit.gpgsign=false", "commit", "-qm", "Seed fixture")
+    git(source, "repack", "-ad")
+    packs = source / ".git/objects/pack"
+    before = {path.name: path.read_bytes() for path in packs.iterdir()}
+    assert any(name.endswith(".pack") for name in before)
+    revision = git(source, "rev-parse", "HEAD")
+    private = tmp_path / "private"
+    _repository(
+        private,
+        {
+            "root": str(source),
+            "objects": str(source / ".git/objects"),
+            "revision": revision,
+        },
+    )
+    assert (private / "present.txt").read_text() == "known content\n"
+    assert git(private, "rev-parse", "HEAD") == revision
+    assert {path.name: path.read_bytes() for path in packs.iterdir()} == before
+    for name, content in before.items():
+        if name.endswith((".pack", ".idx")):
+            assert (private / ".git/objects/pack" / name).read_bytes() == content
+
+
 def test_real_replay_exercises_guards_and_a_positive_control(tmp_path):
     crew = tmp_path / "source-crew"
     request = {
