@@ -7,15 +7,17 @@ import hashlib
 import json
 import os
 import shlex
+import shutil
 import subprocess
 import tempfile
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from reckon import _worker_fence as fence
 from reckon import nested_launch
-from reckon.crew import fleet_supervisor
+from reckon.crew import dispatch_launch, fleet_supervisor
 
 
 @pytest.fixture
@@ -449,3 +451,24 @@ def test_unknown_or_unfenced_task_forms_refuse_before_forwarding(
     }
     with pytest.raises(ValueError, match=r"unknown|needs a value|cannot"):
         nested_launch.fenced_scheduler_task(tool, arguments, environment)
+
+
+@pytest.mark.parametrize("tool", ["sbatch", "srun"])
+def test_fenced_launch_resolves_scheduler_shims_outside_allocation(tmp_path, tool):
+    scheduler_bin = tmp_path / "scheduler-bin"
+    scheduler_bin.mkdir()
+    scheduler = scheduler_bin / tool
+    scheduler.write_text("#!/bin/sh\nprintf 'unfenced-scheduler\\n'\n")
+    scheduler.chmod(0o755)
+    path = dispatch_launch.launch_search_path(
+        {"PATH": str(scheduler_bin) + os.pathsep + os.defpath},
+        facts=SimpleNamespace(in_allocation=False),
+        fenced=True,
+        search_directories=[],
+    )
+    resolved = shutil.which(tool, path=path)
+    expected = nested_launch.shim_directory() / tool
+    assert resolved is not None
+    assert Path(resolved).resolve() == expected.resolve(), (
+        f"fenced launch outside SLURM resolved {resolved} instead of {expected}"
+    )
