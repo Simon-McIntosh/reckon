@@ -217,10 +217,17 @@ def _unreadable(path: Path, cause: str) -> UnreadableRunStoreError:
 def _table_columns(
     connection: sqlite3.Connection, schema: str = "main"
 ) -> frozenset[str]:
-    """The columns one runs table carries, empty when the table is absent."""
+    """The columns one runs table carries, empty when the table is absent.
+
+    Only an absent table reads as no columns. Any other refusal, a store
+    another process holds locked among them, is raised: a table that could not
+    be described has not been shown to lack anything.
+    """
     try:
         described = connection.execute(f'SELECT * FROM "{schema}"."runs" LIMIT 0')  # noqa: S608 - a fixed table name
-    except sqlite3.OperationalError:
+    except sqlite3.OperationalError as exc:
+        if "no such table" not in str(exc):
+            raise
         return frozenset()
     return frozenset(str(desc[0]) for desc in described.description)
 
