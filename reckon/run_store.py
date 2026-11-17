@@ -59,21 +59,13 @@ QUERY_KEYS = ("member", "node", "project", "completed_at", "backend", "plan")
 
 
 def _query_values(
-    payload: Mapping[str, Any], detail: Mapping[str, Any], *, project: str
+    payload: Mapping[str, Any], detail: Mapping[str, Any]
 ) -> tuple[Any, ...]:
-    """Index the same identity the reader derives from the complete record.
-
-    ``project`` is the routing key the row is stored under rather than a field
-    of the record: a record says what a promotion recorded, and which project's
-    ledger holds it is the column's answer. Every other query key is read from
-    the record, exactly as a reader derives it.
-    """
+    """Index the same identity the reader derives from the complete record."""
     from reckon.ledger import row_plan
 
     return tuple(
-        project
-        if key == "project"
-        else (row_plan({**payload, **detail}) if key == "plan" else payload.get(key))
+        row_plan({**payload, **detail}) if key == "plan" else payload.get(key)
         for key in QUERY_KEYS
     )
 
@@ -877,13 +869,11 @@ def stored_run_rows(
                 records.append({"run_id": str(run_id)})
             else:
                 records.append(
-                    _without_routing_key(
-                        run_record.normalize_outside_scope_paths(
-                            {
-                                **json.loads(payload),
-                                **(json.loads(detail) if detail else {}),
-                            }
-                        )
+                    run_record.normalize_outside_scope_paths(
+                        {
+                            **json.loads(payload),
+                            **(json.loads(detail) if detail else {}),
+                        }
                     )
                 )
         return records
@@ -920,58 +910,39 @@ def _legacy_payload(row: Mapping[str, Any]) -> dict[str, Any]:
     )
 
 
-#: The runs column a row is filed under. It is the store's routing key and not
-#: a field of the record: a record says what a promotion recorded, while which
-#: project's ledger holds it is the column's answer.
-ROUTING_KEY = "project"
-
-
-def _without_routing_key(record: Mapping[str, Any]) -> dict[str, Any]:
-    """Return a stored record as the promotion wrote it.
-
-    A store written by earlier code carries the routing key inside its payload
-    as well as in the column, so a reader that answered the payload verbatim
-    handed back a field no promotion recorded and no run file holds. The key is
-    dropped here, in the one place every stored read answers through, so a
-    reader's record and the file the same promotion wrote cannot disagree.
-    """
-    row = dict(record)
-    row.pop(ROUTING_KEY, None)
-    return row
-
-
-def _durable_record(record: Mapping[str, Any]) -> dict[str, Any]:
+def _durable_record(project: str, record: Mapping[str, Any]) -> dict[str, Any]:
     """The durable content the store holds for a run record.
 
     The store never holds the promotion record: ``store_write`` is a record of
     what happened at one promotion, not a statement of current state, so it is
-    dropped here and by every store write. The routing key is the row's column
-    rather than a field of the record, so it is not added here either. The
-    declared wide detail lives in the run_details half, so it is excluded from
-    the durable row. This is the reference the equality check compares a stored
-    payload against, so it must agree field for field with what ``sync_run``
-    and ``append`` store.
+    dropped here and by every store write. ``project`` is injected when the
+    record does not carry it, matching the append. The declared wide detail
+    lives in the run_details half, so it is excluded from the durable row.
+    This is the reference the equality check compares a stored payload against,
+    so it must agree field for field with what ``sync_run`` and ``append``
+    store.
     """
     record_copy = dict(record)
     record_copy.pop("store_write", None)
+    record_copy.setdefault("project", project)
     return {
         name: value for name, value in record_copy.items() if name not in DETAIL_FIELDS
     }
 
 
-def _split_durable(record: Mapping[str, Any]) -> tuple[str, dict, dict]:
+def _split_durable(project: str, record: Mapping[str, Any]) -> tuple[str, dict, dict]:
     """Split a run record into its durable payload and its wide detail.
 
     The durable payload is the record minus the promotion-record field
-    ``store_write`` and minus the declared wide detail; the detail is exactly
-    the declared wide fields the record carries. Both the append and the
-    idempotent sync build their row from this one split so the two cannot
-    drift, and the equality check's reference derives from the same rules
-    without the split. The project the row is filed under reaches the column
-    from the writer's own argument, never from a key added to the record.
+    ``store_write``, minus the declared wide detail, with ``project`` injected;
+    the detail is exactly the declared wide fields the record carries. Both
+    the append and the idempotent sync build their row from this one split so
+    the two cannot drift, and the equality check's reference derives from the
+    same rules without the split.
     """
     payload = dict(record)
     payload.pop("store_write", None)
+    payload.setdefault("project", project)
     run_id = str(payload["run_id"])
     detail = {name: payload.pop(name) for name in DETAIL_FIELDS if name in payload}
     return run_id, payload, detail
@@ -1346,11 +1317,7 @@ class RunStore:
                     update,
                     (
                         json.dumps(record, sort_keys=True, separators=(",", ":")),
-                        *_query_values(
-                            record,
-                            json.loads(row[-1] or "{}"),
-                            project=str(record.get(ROUTING_KEY) or ""),
-                        ),
+                        *_query_values(record, json.loads(row[-1] or "{}")),
                         None,
                         record["run_id"],
                     ),
@@ -1369,14 +1336,13 @@ class RunStore:
         Every field not named in the detail declaration is durable and is
         stored in the runs payload; exactly the declared wide fields the
         record carries are stored as the washable detail hanging off the
-        durable half. The query keys are real columns beside the payload, read
-        from the record at insert so the indexed answers agree with the durable
-        row for row; the routing key is the one exception, and it comes from
-        this call's own ``project`` rather than from the record. The durable
-        payload never carries ``store_write``: that field is a record of what
-        happened at one promotion, not store content.
+        durable half. The query keys are real columns beside the payload,
+        extracted from it at insert, so the indexed answers agree with the
+        durable record row for row. The durable payload never carries
+        ``store_write``: that field is a record of what happened at one
+        promotion, not store content.
         """
-        run_id, payload, detail = _split_durable(record)
+        run_id, payload, detail = _split_durable(project, record)
         with self._conn:
             self._conn.execute("BEGIN IMMEDIATE")
             if self._is_archived(run_id):
@@ -1385,7 +1351,7 @@ class RunStore:
                 _RUNS_INSERT,
                 (
                     run_id,
-                    *_query_values(payload, detail, project=project),
+                    *_query_values(payload, detail),
                     None,
                     json.dumps(payload, sort_keys=True, separators=(",", ":")),
                 ),
@@ -1411,7 +1377,7 @@ class RunStore:
         moving. Comparing the payload alone reports that amendment as
         ``unchanged`` and leaves the store holding the revision it superseded.
         """
-        run_id, payload, detail = _split_durable(record)
+        run_id, payload, detail = _split_durable(project, record)
         encoded_payload = json.dumps(payload, sort_keys=True, separators=(",", ":"))
         encoded_detail = json.dumps(detail, sort_keys=True, separators=(",", ":"))
         with self._conn:
@@ -1433,7 +1399,7 @@ class RunStore:
                     _RUNS_INSERT,
                     (
                         run_id,
-                        *_query_values(payload, detail, project=project),
+                        *_query_values(payload, detail),
                         None,
                         encoded_payload,
                     ),
@@ -1449,7 +1415,7 @@ class RunStore:
                 _RUNS_UPDATE.replace('"runs"', table),
                 (
                     encoded_payload,
-                    *_query_values(payload, detail, project=project),
+                    *_query_values(payload, detail),
                     None,
                     run_id,
                 ),
@@ -1657,9 +1623,9 @@ class RunStore:
             for run_id, record in self._indexed_records(include_archive=True).items()
             if record.get("project") not in changed
         }
-        for rows in changed.values():
+        for name, rows in changed.items():
             for row in rows:
-                run_id, payload, detail = _split_durable(row)
+                run_id, payload, detail = _split_durable(name, row)
                 records[run_id] = {**payload, **detail}
         try:
             with self._conn:
@@ -1688,7 +1654,7 @@ class RunStore:
                             "DELETE FROM retired_runs WHERE run_id = ?", (run_id,)
                         )
                     for record in rows:
-                        run_id, payload, detail = _split_durable(record)
+                        run_id, payload, detail = _split_durable(name, record)
                         if run_id in archived:
                             self._conn.execute(
                                 _RUNS_UPDATE.replace('"runs"', "archive.runs"),
@@ -1696,7 +1662,7 @@ class RunStore:
                                     json.dumps(
                                         payload, sort_keys=True, separators=(",", ":")
                                     ),
-                                    *_query_values(payload, detail, project=name),
+                                    *_query_values(payload, detail),
                                     None,
                                     run_id,
                                 ),
@@ -1716,7 +1682,7 @@ class RunStore:
                             _RUNS_INSERT,
                             (
                                 run_id,
-                                *_query_values(payload, detail, project=name),
+                                *_query_values(payload, detail),
                                 None,
                                 json.dumps(
                                     payload, sort_keys=True, separators=(",", ":")
@@ -1759,7 +1725,7 @@ class RunStore:
         records = self._refresh()
         if records is not None:
             record = records.get(run_id)
-            return _without_routing_key(_durable_record(record)) if record else None
+            return _durable_record(str(record["project"]), record) if record else None
         row = self._conn.execute(
             'SELECT "payload" FROM "runs" WHERE "run_id" = ?', (run_id,)
         ).fetchone()
@@ -1783,7 +1749,7 @@ class RunStore:
         records = self._refresh()
         if records is not None:
             record = records.get(run_id)
-            return _split_durable(record)[2] if record else None
+            return _split_durable(str(record["project"]), record)[2] if record else None
         row = self._conn.execute(
             'SELECT "detail" FROM "run_details" WHERE "run_id" = ?', (run_id,)
         ).fetchone()
@@ -1810,7 +1776,7 @@ class RunStore:
         records = self._refresh(project) if refresh else None
         if records is not None:
             return {
-                run_id: _without_routing_key(_durable_record(record))
+                run_id: _durable_record(project, record)
                 for run_id, record in records.items()
                 if record.get("project") == project
             }
@@ -2187,7 +2153,7 @@ def compare(
 
     data, _version = ledger.load(project, root, use_index=False)
     file_durable = {
-        str(record.get("run_id")): _without_routing_key(_durable_record(record))
+        str(record.get("run_id")): _durable_record(project, record)
         for record in data["runs"]
     }
     with RunStore() as store:
