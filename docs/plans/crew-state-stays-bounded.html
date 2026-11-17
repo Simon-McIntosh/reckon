@@ -24,7 +24,7 @@
   <title>Crew State Stays Bounded | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="88">
+<meta name="plan-version" content="89">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -284,6 +284,12 @@
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261111T042124785821-run-store-retires-old-runs-after-cache" data-who="reckon-build" data-when="2026-11-11T08:24:06Z">
     <div class="r-comment-body"><p>Archived old runs in configurable batches (default 2000) and bounded incremental compaction (default 256 pages), with a separate one-time conversion command. Scoped gate: 51 base / 68 head passed; 28 matched importer files add zero failures; 24-run incremental store shrinks 166 to 20 pages. [Evidence](/reckon/evidence/fragments/crew-state-stays-bounded/run-store-retires-old-runs-after-cache.html#run-store-retires-old-runs-after-cache-bounded-operation).</p></div>
 </div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261117T001313976739-review-of-resumed-run-keeps-its-scratch-s13-baf5f883408f" data-who="reckon-build" data-when="2026-11-17T00:20:32Z">
+    <div class="r-comment-body"><p>Reviewed c6274b6a0e6698ed29f59c3027552f4e795abc10..baf5f883408f70e78dec2e5c4bbaf619a04c6e87; parsed review scores all six dimensions 20/20, no findings, zero added failures, both declared record paths pass crew check.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261116T235011983046-resumed-run-keeps-its-scratch-s13" data-who="reckon-build" data-when="2026-11-17T00:05:42Z">
+    <div class="r-comment-body"><p>settle_run_scratch protects the RECKON_RUN_ID of the step executing it even with no visible live pointer and an earlier attempt exit record; six new cases fail against the base predicate and pass at head, worker entry succeeds on two simulated node roots while ended peer scratch is removed; armed arm 58 passed at base and 64 passed at head, GC importers add zero failures (143 to 149 passed, the same two failures), declared negative control fails all six cases.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-20261023-s2-owners" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
     <div class="r-comment-body"><p>Design review on 2026-10-23: <code>supervisor.json</code>, composed at dispatch by <code>_supervisor_spec</code> in <code>reckon/crew/dispatch_launch.py</code>, already carries <code>argv</code> in the run directory, so §2 should extend it rather than add a second sidecar. The review also lists the live-pointer read sites §2 must route, among them <code>reckon/run_record.py</code>, <code>reckon/crew/promotion.py</code>, <code>reckon/crew/queue_admission.py</code>, <code>reckon/crew/recovery_watch.py</code> and <code>reckon/serve.py</code>.</p></div>
 </div>
@@ -400,9 +406,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-10-23T11:30:00Z">
     <div class="r-comment-body"><p>Section 9 landed at merge <code>d549d0066</code>: the retention-sweep verb is exempt as operator maintenance, and the skill-contract verb case passes. <a href="/reckon/evidence/archive/crew-state-stays-bounded-landed.html#s9">evidence</a></p></div>
-</div>
-<div class="r-comment" data-section="s13" data-id="c-run-r-20261117T001313976739-review-of-resumed-run-keeps-its-scratch-s13-baf5f883408f" data-who="reckon-build" data-when="2026-11-17T00:20:32Z">
-    <div class="r-comment-body"><p>Reviewed c6274b6a0e6698ed29f59c3027552f4e795abc10..baf5f883408f70e78dec2e5c4bbaf619a04c6e87; parsed review scores all six dimensions 20/20, no findings, zero added failures, both declared record paths pass crew check.</p></div>
 </div>
 </section>
 </main>
