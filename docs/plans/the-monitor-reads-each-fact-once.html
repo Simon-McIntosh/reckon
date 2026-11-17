@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="444">
+<meta name="plan-version" content="445">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -1704,6 +1704,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s86" data-id="c-run-r-20261117T150818348738-review-of-the-held-worktree-screen-reads-only-open-runs-db4228c68219" data-who="reckon-build" data-when="2026-11-17T15:12:06.533Z">
     <div class="r-comment-body"><p>Review of run r-20261117T133739961090-the-held-worktree-screen-reads-only-open-runs at db4228c6821980e870589d8bf9defadd55df9ca0 (base a290999a7dd5aaf099d00cfdf918eb1fde02a878): parsed, scores goal_fidelity 17, evidence 19, scope_discipline 20, durability 15, fit 16, reuse 14 (total 101), added_failure_count 0, three non-blocking findings (document-backed stamp arm unguarded at reckon/crew/open_run_index.py:748, the bounded-path marker at tests/test_the_held_worktree_screen_reads_only_open_runs.py:280 cannot fail on a stamp-encoding defect, and _stamp_text at reckon/crew/open_run_index.py:225 is a second stamp encoder beside reckon/capabilities.py:1355).</p></div>
+</div>
+<div class="r-comment" data-section="s86" data-id="c-run-r-20261117T133739961090-the-held-worktree-screen-reads-only-open-runs" data-who="reckon-build" data-when="2026-11-17T14:42:33.372Z">
+    <div class="r-comment-body"><p>The held-worktree screen now takes its bounded open-run path on a steady tick: open_run_index.matches_sources validates the open-run projection against the identity it is filed from — the run store&#x27;s signature where a store exists, every present run document&#x27;s stamp where documents are the authority — instead of requiring exact equality with a sources table that is stamped only by a full rebuild, and one encoder (open_run_index._stamp_text) writes and reads a stamp. Over 2,000 promoted runs, 3 open runs and 2 held trees the second fleet-state derivation decodes 3 stored rows where the base revision decodes 2,000, and both derivations report the duties the whole-population read reports.</p></div>
 </div>
 </section>
 </main>
