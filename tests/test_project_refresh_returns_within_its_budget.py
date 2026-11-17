@@ -7,6 +7,7 @@ import threading
 import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -100,6 +101,13 @@ def test_a_held_input_does_not_hold_a_finished_project(
 ):
     store = station_store.StationStore(tmp_path / "station")
     beat = station.DutyBeat(store.root)
+    node = station.Station(
+        store,
+        home=home,
+        projects=lambda: projects,
+        duties=beat,
+        sweeps=SimpleNamespace(request=lambda *args, **kwargs: False),
+    )
     entered, release = threading.Event(), threading.Event()
     original = station_obligations._ended_sweep_failures
     try:
@@ -130,14 +138,7 @@ def test_a_held_input_does_not_hold_a_finished_project(
             store, project=SLOW, home=home, changed=True, now=later, submit=beat.request
         )
         assert entered.wait(5), "the input hold never reached production pruning"
-        station_obligations.publish(
-            store,
-            project=READY,
-            home=home,
-            changed=True,
-            now=later,
-            submit=beat.request,
-        )
+        node.tick(now=later)
         stage_seconds = time.monotonic() - started
         assert stage_seconds < 10, f"refresh stage took {stage_seconds:.3f}s"
         assert _wait_until(lambda: READY not in beat.in_flight(), 10 - stage_seconds), (
@@ -167,4 +168,80 @@ def test_a_held_input_does_not_hold_a_finished_project(
         release.set()
         beat.drain(timeout=10)
         assert not beat.in_flight(), "a project worker outlived the case"
+        if release.is_set() and _document(store, SLOW) is not None:
+            assert "stale" not in _document(store, SLOW)
+        store.close()
+
+
+@pytest.mark.parametrize("has_previous", [True, False])
+@pytest.mark.timeout(30)
+def test_a_held_derivation_retains_only_a_real_last_answer(
+    home, tmp_path, projects, monkeypatch, has_previous
+):
+    store = station_store.StationStore(tmp_path / "station")
+    beat = station.DutyBeat(store.root)
+    entered, release = threading.Event(), threading.Event()
+    original = obligation_snapshot.fleet_state
+    try:
+        if has_previous:
+            station_obligations.publish(
+                store, project=SLOW, home=home, changed=True, now=MOMENT
+            )
+        previous = _document(store, SLOW)
+        previous_row = store.read_obligation(_session(SLOW))
+        if previous is not None:
+            payload = obligation_snapshot.live_payload(previous, now=MOMENT)
+            monkeypatch.setattr(obligation_snapshot, "payload_for", lambda *args: payload)
+
+        def held(project, **kwargs):
+            entered.set()
+            assert release.wait(10), "the case did not release the derivation"
+            return original(project, **kwargs)
+
+        monkeypatch.setattr(obligation_snapshot, "fleet_state", held)
+        later = MOMENT + timedelta(seconds=20)
+        station_obligations.publish(
+            store, project=SLOW, home=home, changed=True, now=later, submit=beat.request
+        )
+        assert entered.wait(5)
+        pending = _document(store, SLOW)
+        path = obligation_snapshot.station_snapshot_path(SLOW, home=home)
+        if has_previous:
+            assert pending["obligations"] == previous["obligations"]
+            assert pending["stale"]["age_seconds"] == 20
+            assert pending["stale"]["key"] == station_obligations.stored_identity(
+                store.read_obligation(_session(SLOW))
+            )
+            assert json.loads(path.read_text())["sessions"][_session(SLOW)] == pending
+        else:
+            assert pending is None
+            assert not path.exists(), (
+                "an unfinished first refresh published an empty answer"
+            )
+        release.set()
+        beat.drain(timeout=10)
+        assert not beat.in_flight()
+        completed = _document(store, SLOW)
+        assert completed["obligations"]
+        assert "stale" not in completed
+        if has_previous:
+            current_row = store.read_obligation(_session(SLOW))
+            assert station_obligations.stored_identity(
+                current_row
+            ) == station_obligations.stored_identity(previous_row)
+            assert current_row["changed_at"] == previous_row["changed_at"]
+        before = store.read_obligation(_session(SLOW))
+        export_stamp = path.stat().st_mtime_ns
+        station_obligations.publish(
+            store,
+            project=SLOW,
+            home=home,
+            changed=False,
+            now=later + timedelta(seconds=1),
+        )
+        assert store.read_obligation(_session(SLOW)) == before
+        assert path.stat().st_mtime_ns == export_stamp
+    finally:
+        release.set()
+        beat.drain(timeout=10)
         store.close()
