@@ -25,7 +25,7 @@
   <title>Dispatch, Admission And Landing Take Seconds | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="9">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -118,15 +118,6 @@
 </section>
 
     <section data-reckon="comments" id="comments" class="r-comments">
-<div class="r-comment" data-section="s6" data-id="c-close-s6" data-who="reckon-build" data-when="2026-11-17T04:36:00Z">
-    <div class="r-comment-body"><p>§6 landed by direct merge (head <code>33cb47cb81</code>), on the lead's instruction. A read of one plan&#x27;s runs from the run store visits payloads in proportion to that plan&#x27;s runs, through the store&#x27;s existing indexed query contract, and returns the exhaustive reference from the hot store and the archive. The final head, which merges the primary branch after a landing conflict in run_store.py, was reviewed after an earlier landing attempt was refused for want of that review. Merged candidate gate: 27 passed in 9.04s.</p></div>
-</div>
-<div class="r-comment" data-section="s3" data-id="c-s3-not-landed" data-who="reckon-build" data-when="2026-11-17T04:35:00Z">
-    <div class="r-comment-body"><p>§3 is delivered and not landed. Its head <code>02a7b9f525</code> is reviewed 120 of 120 and passed a merged-candidate gate (18 of 18) with the fair-queue and parked-request tests, but the merge was refused: the manifest records a gate command under a temporary directory that no longer exists, so the integration re-run cannot start. The worker is asked to record the command against its worktree. A landing record was written here before the merge was attempted and has been withdrawn.</p></div>
-</div>
-<div class="r-comment" data-section="s6" data-id="c-s6-not-landed" data-who="reckon-build" data-when="2026-11-17T04:35:00Z">
-    <div class="r-comment-body"><p>§6 is delivered and not landed. Its head <code>33cb47cb81</code> passed a merged-candidate gate (27 of 27), but the merge was refused: the stored review, 118 of 120 with no blocking finding, read <code>03617feef8</code>, and the later commit that merges the primary branch into the head has no review of its own. A review of the final head is dispatched. A landing record was written here before the merge was attempted and has been withdrawn.</p></div>
-</div>
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-11-17T00:58:00Z">
     <div class="r-comment-body"><p>§2 landed by direct merge (head <code>adcc599978</code>), on the lead's instruction. A dispatch preview's scope report reads only the claims the candidate's paths and repositories can meet: 243 git calls fall under 20 in the 240-pointer case, and three live previews took 23, 10 and 7 seconds, a median of 10 s against 86 s before. Review 120 of 120, 41 importer files with no added failure, merged candidate gate 4 of 4.</p></div>
 </div>
@@ -135,6 +126,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261116T234505013176-a-dispatch-checks-the-claims-its-paths-can-meet" data-who="reckon-build" data-when="2026-11-17T00:04:21Z">
     <div class="r-comment-body"><p>Preview scope reads now use the existing candidate-path and repository narrowing; the 240-pointer regression exceeds 20 git calls at base (243 calls) and passes the 20-call/6-second bounds at head, with unchanged exhaustive verdicts and figure refusal/release; 62 armed-scope tests pass and 41 importer files add zero failures against base. Three live fleet previews took 23.31/10.02/7.06 seconds (median 10.02 seconds), under the 30-second bound; no candidate worktree or request remains.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-s3-not-landed" data-who="reckon-build" data-when="2026-11-17T04:35:00Z">
+    <div class="r-comment-body"><p>§3 is delivered and not landed. Its head <code>02a7b9f525</code> is reviewed 120 of 120 and passed a merged-candidate gate (18 of 18) with the fair-queue and parked-request tests, but the merge was refused: the manifest records a gate command under a temporary directory that no longer exists, so the integration re-run cannot start. The worker is asked to record the command against its worktree. A landing record was written here before the merge was attempted and has been withdrawn.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261117T015044927067-review-of-promotion-order-reads-one-population-02a7b9f525d1" data-who="reckon-build" data-when="2026-11-17T02:03:45Z">
     <div class="r-comment-body"><p>Independent review of 3759d88f70ed285f007f0d86250c53058578f98f..02a7b9f525d1dfd9369661d24ce03c5b4f6ba413 stored parsed; all six dimensions scored 20/20, no findings, zero added failure IDs from recorded armed suite logs.</p></div>
@@ -151,8 +145,20 @@
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261116T234809141134-a-plan-write-returns-current-readiness" data-who="reckon-build" data-when="2026-11-17T00:33:58Z">
     <div class="r-comment-body"><p>Plan writes now check the existing keyed snapshot before discovery, reuse one cold roadmap composition, invalidate on plan/dependency/branch/live-run/store changes and skip unchanged declarations; base/head armed gates pass 70/79, both negative controls fail (2 base count checks and 1 stale-equality check), the 925-test importer arm adds zero failures, and the three-plan fixture takes 0.397171 s outside its observed landing audit against the 5 s bound.</p></div>
 </div>
+<div class="r-comment" data-section="s6" data-id="c-close-s6" data-who="reckon-build" data-when="2026-11-17T04:36:00Z">
+    <div class="r-comment-body"><p>§6 landed by direct merge (head <code>33cb47cb81</code>), on the lead's instruction. A read of one plan's runs from the run store visits payloads in proportion to that plan's runs, through the store's existing indexed query contract, and returns the exhaustive reference from the hot store and the archive. The final head, which merges the primary branch after a landing conflict in run_store.py, was reviewed after an earlier landing attempt was refused for want of that review. Merged candidate gate: 27 passed in 9.04s.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-not-landed" data-who="reckon-build" data-when="2026-11-17T04:35:00Z">
+    <div class="r-comment-body"><p>§6 is delivered and not landed. Its head <code>33cb47cb81</code> passed a merged-candidate gate (27 of 27), but the merge was refused: the stored review, 118 of 120 with no blocking finding, read <code>03617feef8</code>, and the later commit that merges the primary branch into the head has no review of its own. A review of the final head is dispatched. A landing record was written here before the merge was attempted and has been withdrawn.</p></div>
+</div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261117T011208561522-review-of-a-plan-selected-store-read-is-bounded-03617feef883" data-who="reckon-build" data-when="2026-11-17T01:28:00Z">
     <div class="r-comment-body"><p>Independently reviewed c6274b6a0e6698ed29f59c3027552f4e795abc10 through 03617feef883e4ca63307323f5316355ad6c0b93; scores are goal 20, evidence 18, scope 20, durability 20, fit 20 and reuse 20, with no blocking findings and zero added failures from the declared suite pair; the broader importer pair adds two failures under the explicit completion exception.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261116T235109254954-a-plan-selected-store-read-is-bounded" data-who="reckon-build" data-when="2026-11-17T04:23:23Z">
+    <div class="r-comment-body"><p>The primary merge preserves derived indexed plan selection, indexed activity reads, shared hot/archive index generation, insertion order and transactional migration. At merged head 33cb47cb815ba4532fe8facaf2b51313d74127bb, all 85 armed tests and all 14 primary activity/readiness preservation cases pass on all_debug. The importer arm reports 489 passed, 71 failed and one teardown error: four baseline failing ids resolve, while two known out-of-scope assertions and one further out-of-scope teardown id remain recorded under the authorized completion exception.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261117T042516340281-review-of-a-plan-selected-store-read-is-bounded-33cb47cb815b" data-who="reckon-build" data-when="2026-11-17T04:34:08Z">
+    <div class="r-comment-body"><p>Independent incremental review stored parsed for final head 33cb47cb815ba4532fe8facaf2b51313d74127bb; goal 20, evidence 18, scope 20, durability 20, fit 20, reuse 20; no blocking findings; zero added armed failures.</p></div>
 </div>
 </section>
   </main>
