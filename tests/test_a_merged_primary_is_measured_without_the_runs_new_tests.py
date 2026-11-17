@@ -11,7 +11,7 @@ import sys
 import pytest
 
 from reckon import ledger
-from reckon.crew import promotion_records
+from reckon.crew import promotion_evidence, promotion_records
 from reckon.crew.review import gate_log_failure_ids
 from tests.helpers.git import git
 
@@ -146,6 +146,15 @@ def _evaluate(state, waiver="", **options):
 def test_primary_measures_existing_file_and_records_absent_file(scenario):
     assert scenario["baseline"]["failure_ids"] == []
     assert scenario["after"]["failure_ids"] == [INHERITED]
+    gate = {
+        key: scenario["after"][key] for key in ("command", "exit_status", "log_path")
+    }
+    promotion_evidence._require_gate_log_agrees(
+        "r-present-tests", gate, scenario["record"], verdict="passed"
+    )
+    promotion_evidence._require_verdict_matches_exit_status(
+        "r-present-tests", scenario["record"], gate, verdict="passed"
+    )
     row = _evaluate(scenario)
     assert row["status"] == "clean"
     assert row["added_failure_ids"] == []
