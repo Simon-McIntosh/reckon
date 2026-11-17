@@ -452,6 +452,41 @@ def test_supervisor_records_delivery_without_waiting_for_the_monitor(
     assert receipts.receipt_path(run_id).read_bytes() == before
 
 
+@pytest.mark.parametrize(
+    "updates", [{"status": "incomplete"}, {"status": "unparsed"}, {"scores": {}}]
+)
+def test_a_stored_incomplete_review_waits_for_its_parsed_write(
+    clock, tmp_path, monkeypatch, updates
+):
+    monkeypatch.setattr(review, "unresolved_reviewed_revision", lambda _: None)
+    run_id = "r-stored-review"
+    record = {
+        "status": "parsed",
+        "project": "sample",
+        "reviewed_run_id": run_id,
+        "review_run_id": "r-stored-reviewer",
+        "reviewed_base_sha": "b" * 40,
+        "reviewed_head_sha": "a" * 40,
+        "scores": dict.fromkeys(review.REVIEW_DIMENSIONS, 20),
+    }
+    directory = tmp_path / "store"
+    partial = review.store_review({**record, **updates}, base_dir=directory)
+    assert json.loads(partial.read_text())["status"] == updates.get("status", "parsed")
+    assert receipts.read_receipts(run_id) == []
+
+    ready_at = clock.now(UTC)
+    complete = review.store_review(record, base_dir=directory)
+    assert json.loads(complete.read_text())["total"] == 120
+    rows = receipts.read_receipts(run_id)
+    assert len(rows) == 1
+    assert rows[0]["stage"] == "review_record_written"
+    assert rows[0]["attempt"] == record["review_run_id"]
+    assert datetime.fromisoformat(rows[0]["at"]) > ready_at
+    before = receipts.receipt_path(run_id).read_bytes()
+    review.store_review(record, base_dir=directory)
+    assert receipts.receipt_path(run_id).read_bytes() == before
+
+
 def test_a_direct_review_file_is_dated_before_later_filing(clock, tmp_path):
     run_id = "r-direct-delivery"
     _pointer(run_id)

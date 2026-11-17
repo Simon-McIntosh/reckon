@@ -288,6 +288,10 @@ def note_review(
 
 def note_review_record(record: Mapping[str, Any]) -> None:
     """Record a completed review write against the run it actually reviewed."""
+    from reckon.crew.recovery_review_subject import _review_is_complete
+
+    if not _review_is_complete(record):
+        return
     subject = str(record.get("reviewed_run_id") or "")
     if subject:
         record_stage(
