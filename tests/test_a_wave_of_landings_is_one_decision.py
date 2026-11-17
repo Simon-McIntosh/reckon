@@ -281,6 +281,56 @@ def test_a_single_reply_keeps_large_evidence_in_its_readable_record(
     )
 
 
+def test_a_nested_landing_refusal_keeps_its_condition_in_the_compact_reply(
+    repository, tmp_path, monkeypatch
+):
+    from reckon import crew
+
+    _deliver(repository, tmp_path, "r-refused-land")
+    monkeypatch.setattr(
+        crew,
+        "complete",
+        lambda *a, **k: {
+            "ok": False,
+            "steps": {"land": {"ok": False, "error": "merged gate added test_guard"}},
+        },
+    )
+    response = _complete("r-refused-land")
+    assert response.exit_code != 0
+    receipt = json.loads(response.output)
+    assert "test_guard" in receipt["error"]
+    assert Path(receipt["record_path"]).is_file()
+
+
+def test_the_tool_callback_returns_the_same_bounded_record_link(
+    repository, tmp_path, monkeypatch
+):
+    from reckon import crew
+    from reckon.mcp_crew_actions import crew_action
+
+    _deliver(repository, tmp_path, "r-tool-delivery")
+    monkeypatch.setattr(
+        crew,
+        "complete",
+        lambda *a, **k: {
+            "ok": True,
+            "record": {"evidence": "x" * 60000},
+        },
+    )
+    receipt = crew_action(
+        "complete",
+        project=delivery.PROJECT,
+        run_id="r-tool-delivery",
+        gate="passed",
+        no_commit="The report changes no repository files.",
+        outcome="Delivered the report.",
+    )
+    assert receipt["ok"], receipt
+    assert len(json.dumps(receipt).encode()) < 2000
+    record = json.loads(Path(receipt["record_path"]).read_text())
+    assert record["record"]["evidence"] == "x" * 60000
+
+
 def test_a_ready_report_is_left_to_its_existing_automatic_promoter(
     repository, tmp_path
 ):

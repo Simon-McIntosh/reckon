@@ -56,9 +56,20 @@ def _emit_crew_result(result, pretty: bool, **kwargs) -> None:
     payload["ok"] = _crew_result_ok(
         payload, observation=kwargs.get("observation", False)
     )
-    _emit(payload, pretty)
+    _emit_completion_reply(payload, pretty)
     if not payload["ok"]:
         raise click.exceptions.Exit(kwargs.get("failure_exit", 1))
+
+
+def _emit_completion_reply(payload, pretty: bool) -> None:
+    """Capture a member's reply before a tool adapter replaces the public sink."""
+    from reckon.crew.promotion_requests import COMMAND_REPLY
+
+    reply = _COMPLETION_REPLIES.get()
+    if reply is not None and COMMAND_REPLY.get() is None:
+        reply.append(dict(payload))
+    else:
+        _emit(payload, pretty)
 
 
 # Preserve the CLI re-export while the retired name resolves through the
@@ -3335,6 +3346,7 @@ def _complete_many(run_ids, parameters):
     import json
 
     from reckon.crew import runs
+    from reckon.crew.promotion_requests import COMMAND_REPLY
 
     run_ids = tuple(dict.fromkeys(run_ids))
     if len(run_ids) > 1 and any(
@@ -3358,6 +3370,9 @@ def _complete_many(run_ids, parameters):
     for run_id in run_ids:
         captured = []
         token = _COMPLETION_REPLIES.set(captured)
+        service_token = (
+            COMMAND_REPLY.set(captured) if COMMAND_REPLY.get() is not None else None
+        )
         code = 0
         try:
             crew_complete.callback(run_id=run_id, **parameters)
@@ -3367,6 +3382,8 @@ def _complete_many(run_ids, parameters):
         except click.exceptions.Exit as exc:
             code = exc.exit_code
         finally:
+            if service_token is not None:
+                COMMAND_REPLY.reset(service_token)
             _COMPLETION_REPLIES.reset(token)
         result = captured[-1] if captured else {"ok": False, "detail": "no receipt"}
         result = {**result, "run_id": run_id, "ok": not code and result.get("ok", True)}
@@ -3377,7 +3394,15 @@ def _complete_many(run_ids, parameters):
         runs._write_json(path, result)
         report = {
             key: result[key]
-            for key in ("ok", "run_id", "phase", "pointer_removed", "ledger_path")
+            for key in (
+                "ok",
+                "run_id",
+                "phase",
+                "pointer_removed",
+                "ledger_path",
+                "merged",
+                "worktree_released",
+            )
             if key in result
         }
         report["record_path"] = str(path)
@@ -3385,6 +3410,15 @@ def _complete_many(run_ids, parameters):
             if result.get(key):
                 report[key] = str(result[key])[:240]
                 break
+        else:
+            steps = result.get("steps")
+            if isinstance(steps, Mapping):
+                for stage, entry in steps.items():
+                    if isinstance(entry, Mapping) and entry.get("ok") is False:
+                        report["error"] = f"{stage}: {entry.get('error') or 'refused'}"[
+                            :240
+                        ]
+                        break
         reports.append(report)
     reply = (
         reports[0]
@@ -3721,9 +3755,12 @@ def crew_complete(
     Repeat --run to confirm several deliveries; each retains its own gate and
     review checks. Replies link the full record and stay below 2 kB.
     """
-    if isinstance(run_id, (tuple, list)):
-        from reckon.crew.promotion_requests import COMMAND_REPLY
+    from reckon.crew.promotion_requests import COMMAND_REPLY
 
+    public_reply = COMMAND_REPLY.get() is None and _COMPLETION_REPLIES.get() is None
+    if isinstance(run_id, (tuple, list)) or public_reply:
+        if not isinstance(run_id, (tuple, list)):
+            run_id = (run_id,)
         if COMMAND_REPLY.get() is not None and len(run_id) == 1:
             # Stored CLI options retain Click's tuple, while the drain reads
             # the full single-run receipt rather than the compact CLI reply.
@@ -3738,7 +3775,6 @@ def crew_complete(
             _complete_many(run_id, parameters)
             return
     from reckon.crew.promotion_requests import (
-        COMMAND_REPLY,
         REQUESTED,
         request_promotion,
     )
@@ -3844,7 +3880,9 @@ def crew_complete(
                 reasons = [f"unreadable JSON: {exc}"]
             delivered.append({"record": str(source), "reasons": reasons})
         if delivered and all(entry["reasons"] for entry in delivered):
-            _emit({"ok": False, "review_filed": False, "refused": delivered}, pretty)
+            _emit_completion_reply(
+                {"ok": False, "review_filed": False, "refused": delivered}, pretty
+            )
             raise click.exceptions.Exit(1)
     gate_check = {
         "command": gate_command,
@@ -3961,7 +3999,7 @@ def crew_complete(
             unplanned_reason=unplanned_reason,
         )
     except ledger_module.SuiteDeltaError as exc:
-        _emit(
+        _emit_completion_reply(
             {
                 "ok": False,
                 "error": "suite-delta-refused",
