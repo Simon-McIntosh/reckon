@@ -1,0 +1,75 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-16T23:59:45.836Z",
+  "dispatched_at": "2026-11-16T23:59:31Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/delivered-work-lands-without-a-coordinator.html:26",
+      "id": "wiring-1",
+      "reason": "with only \u00a74 declared as the wait, a dispatch may start \u00a78 after the drain work and find no auto-promoted runs and no obligations list to collapse, producing a gate that measures an empty population.",
+      "text": "`plan-section-depends-on` gives `s8` only `s4`, while \u00a78's deliverable is literally \"what is left to a coordinator after \u00a76 and \u00a77\" and its done-when counts twelve runs of which nine qualify \"under \u00a76\", so \u00a78 cannot be measured before \u00a76 and \u00a77 land",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/delivered-work-lands-without-a-coordinator.html:111",
+      "id": "done_when-1",
+      "reason": "without a control arm (the census replayed over the baseline week reproducing the recorded 19.6-minute median) and without the bounds being pass/fail, a broken census reports improvement and the plan's closing evidence is unfalsifiable.",
+      "text": "\u00a710's done-when declares no negative control and states that a measure missing its bound (median under 30 minutes, five delivered runs, 30-minute queue wait) \"is a complete result\", so the only live-fleet node cannot fail on the figures it exists to prove",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/delivered-work-lands-without-a-coordinator.html:63",
+      "id": "reasoning-1",
+      "reason": "the endpoint rule puts the reuse map in the node brief; a plan that names a module commits a layout guess that a wrong guess turns into a wrong write fence for every node it reaches.",
+      "text": "each section closes with \"Write paths:\" naming target modules and test files (`reckon/crew/promotion_requests.py`, `reckon/crew/merge.py`, `reckon/crew/station.py`, `tests/test_the_promotion_queue_serves_fairly.py`, and so on), and \u00a75/\u00a76/\u00a79/\u00a711 defer to \"the module the design review names\", so the plan fixes a guess about file layout and cannot resolve its own declared scope",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/delivered-work-lands-without-a-coordinator.html:81",
+      "id": "reasoning-2",
+      "reason": "a worker must choose between the section's first test case and its substance rule, and the result decides whether the 49 blocked runs are repaired or stay blocked.",
+      "text": "\u00a75 says classification reads the base from the run's pointer, yet lists \"a base that is not an ancestor of its head\" as a substance difference that stays blocked, which is exactly the one-mistyped-character echo case the same done-when requires to become deliverable; \"the base\" is never disambiguated as the echo or the pointer",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "7d35a9441c3d7189cfaffebef8afa7cf30edf1fd",
+  "plan_fingerprint": "6222fa719c2b97f5461ea116e62a6389da4fbe010e44989ae8b544c37591a18d",
+  "plan_slug": "delivered-work-lands-without-a-coordinator",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261116T231050003317-plan-review-of-delivered-work-lands-without-a-coordinator",
+  "reviewed_blob_sha": "cfb24755053da80277a078e33208ad7d041a1525",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `docs/research/why-delivered-work-sits-unlanded.html`, `docs/plans/the-monitor-reads-each-fact-once.html`, `history-persists-as-detail-washes-out.html`, `a-landing-never-waits-on-a-shared-index.html` all exist; `reckon/crew/{promotion_requests,queue_landing,merge,station,station_obligations}.py` all exist; sections s1\u2013s11 all resolve; `rigel` and `all_debug` are live partitions.",
+    "done_when": "a finding \u2014 \u00a710 carries no negative control and its done-when accepts a missed bound as \"a complete result\", so its gate cannot fail.",
+    "evidence_paths": "pass \u2014 \u00a710's record sits at `docs/evidence/archive/delivered-work-lands-without-a-coordinator-landed.html` with a figure under `docs/figures/`, and the other sections' evidence is produced by gate logs under the run's own report directory.",
+    "naming": "pass \u2014 test filenames follow the repository's existing phrase-per-test convention (`tests/test_a_batch_...`) and carry no ticket, sprint or version tag; \u00a75's prose phrase \"the manifest classifier module the design review names\" is an implementation-scope gap, scored under reasoning.",
+    "reasoning": "a finding \u2014 every section from \u00a72 to \u00a711 prescribes code paths in a \"Write paths:\" sentence, which is the node brief's reuse map, not the plan's endpoint.",
+    "single_goal": "pass \u2014 each section names one deliverable; \u00a74's concurrency rules and \u00a77's batch candidate are means to that section's single landing rate/clean-merge goal.",
+    "wiring": "a finding \u2014 \u00a78 needs \u00a76 and \u00a77 (its deliverable is \"what is left to a coordinator after \u00a76 and \u00a77\", its done-when asserts nine of twelve runs qualify \"under \u00a76\") but declares only `s4` in `plan-section-depends-on`."
+  },
+  "section_digests": {
+    "_document": "f14af4592404399ab38fab6f81cb6ce3f59e5b8dfb03b3e883b6e544992748bf",
+    "s1": "f76e447c13fe20c1749870bc38224edc2fea275dee0b75076c34c50d5c615f0f",
+    "s10": "67c05ba6ab7ac40c1b58813eee21c8dfc5914132b0c75d9e492fd33e01c3585a",
+    "s11": "bd1c865f0b9313090958a8d94f4c1441a01c4a70aaff341185f4bcbf27ef02f9",
+    "s2": "73fc6aa2a15187d147a01fbde87b1769c00e59eb0d5d6018b4f052da2b90f72a",
+    "s3": "39f518f94544e14da2723c109d5347c3e321e79fd378987dc84506f550b8df04",
+    "s4": "3e6be179473b5deef1a3ec3ddccbdda6c37cf557c1eff461de0435d08976f4e3",
+    "s5": "1263837c2739dacd3a6f6444535dc7df9b4d806bc0368858e5fd45e481921336",
+    "s6": "601458c147fd1be9fe784ce83e6eda0dd5eb9c5ebd1254a9f96a1406eb33c754",
+    "s7": "f744dde7bcc015b4b7ecb0582ad218fc624ac4620e667c76aa0770a65badbf1d",
+    "s8": "8d899dcc4a20f2dccf50748df09b2d83723a2354d37a191a3fd5359927cf684b",
+    "s9": "73a2f75dfcdb3e18f286fa49ef617d262091a45a21ba434af9788dcd6da0d7b1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T01:58:03.827691+00:00",
+  "total": null
+}

@@ -36,7 +36,9 @@ PEER_REGISTERED_AT = "2026-10-01T04:00:00Z"
 # Ten seconds after the peer: orderable, well clear of the one-second
 # resolution guard, and strictly the later arrival.
 OWN_REGISTERED_AT = "2026-10-01T04:00:10Z"
-CLAIMED_PATH = "src/claimed.py"
+# A path git cannot reconcile. A source file is shared by default, so a peer's
+# claim on one never refuses and the wait below is unreachable through it.
+CLAIMED_PATH = "pyproject.toml"
 
 
 class _Clock:

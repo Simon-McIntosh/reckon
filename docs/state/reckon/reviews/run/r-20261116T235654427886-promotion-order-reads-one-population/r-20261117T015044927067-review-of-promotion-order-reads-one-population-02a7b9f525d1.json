@@ -1,0 +1,111 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "fails_if": "Review precedence, priority or FIFO changes; listing count exceeds one; project filtering, first ambiguous match or complete-id resolution changes. Expected identities are constructed independently in the fixture.",
+      "lines": "114-119"
+    },
+    {
+      "fails_if": "Non-review or complete-id cohort loses rows or starts listing; the populated fixture is the positive control for no listing.",
+      "lines": "137-138"
+    },
+    {
+      "fails_if": "Population leaks across passes or retired source retains review priority; restoring per-request reads yields 42 calls rather than two.",
+      "lines": "152-154"
+    },
+    {
+      "fails_if": "An unrelated review defers the target or the deferral scan repeats listings; base yields 21 calls.",
+      "lines": "166-167"
+    },
+    {
+      "fails_if": "Empty supplied population is treated as absent and re-listed, or durable fallback is skipped. The fallback-value assertion checks a stub contract; independent calls assertion guards no relisting.",
+      "lines": "175-181"
+    },
+    {
+      "fails_if": "Empty list resets lazy initialization, causing repeated listings, or queue loses requests.",
+      "lines": "191-192"
+    },
+    {
+      "fails_if": "Listing exception aborts ordering, retries per request, or prevents five complete-id reviews from retaining priority.",
+      "lines": "204-206"
+    }
+  ],
+  "assertion_analysis_file": "tests/test_promotion_order_reads_one_population.py",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/promotion_requests.py:promotion_queue_report",
+    "reckon/crew/promotion_requests.py:PromotionService._tick_locked",
+    "reckon/crew/promotion_requests.py:PromotionService._run",
+    "reckon/crew/promotion_requests.py:_pending_requests",
+    "reckon/crew/promotion_requests.py:_defer_to_a_queued_review"
+  ],
+  "completed_at": "2026-11-17T02:03:45Z",
+  "dispatched_at": "2026-11-17T01:57:45Z",
+  "evidence_notes": [
+    "Read exact git objects: assigned tree HEAD f66f15c99323678ef5aa673480ad5f037ac85b92 differs from reviewed head.",
+    "Base negative control used an earlier six-case test file; final eight-case head file was read independently.",
+    "Importer logs independently show baseline 9 failed/383 passed/1 error and head 8 failed/384 passed/1 error, with no added IDs; added_failure_count derives from the clean armed baseline_suite and after_suite pair.",
+    "No source or tests changed; no suite rerun."
+  ],
+  "findings": [],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=/tmp/pointer-order-verify-1321420-aXax/head /tmp/pointer-order-verify-1321420-aXax/head/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/pointer-order-verify-1321420-aXax/head/tests/test_promotion_order_reads_one_population.py /tmp/pointer-order-verify-1321420-aXax/head/tests/test_staged_write_inventory.py /tmp/pointer-order-verify-1321420-aXax/head/tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "failure_ids_from_log": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T235654427886-promotion-order-reads-one-population/after-suite.log",
+      "revision": "02a7b9f525d1dfd9369661d24ce03c5b4f6ba413"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=/tmp/pointer-order-1321404-Dps1/base /tmp/pointer-order-1321404-Dps1/base/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/pointer-order-1321404-Dps1/base/tests/test_staged_write_inventory.py /tmp/pointer-order-1321404-Dps1/base/tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "failure_ids_from_log": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T235654427886-promotion-order-reads-one-population/baseline-suite-corrected.log",
+      "revision": "3759d88f70ed285f007f0d86250c53058578f98f"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read the single commit 02a7b9f525d1dfd9369661d24ce03c5b4f6ba413 against its parent 3759d88f70ed285f007f0d86250c53058578f98f; only reckon/crew/promotion_requests.py and tests/test_promotion_order_reads_one_population.py change.",
+    "done_when": "docs/plans/dispatch-admission-and-landing-take-seconds.html section s3 requires bounded listings, preserved identities/order, a base negative control and three timing trials; after-suite.log, negative-control-corrected.log and timing.log record those measures.",
+    "goal": "dispatch-detail.json names one live-pointer listing per promotion-queue pass, implemented by reckon/crew/promotion_requests.py:508 and its two callers.",
+    "manifest": "manifest.md names the exact commit, completed baseline/head receipts, three negative-control failures, timing ratios and inherited importer failures, and the inspected logs substantiate those claims.",
+    "write_paths": "dispatch-detail.json declares the two source modules, regression test and evidence paths; both changed files in the commit stay within that grant."
+  },
+  "justifications": {
+    "durability": "tests/test_promotion_order_reads_one_population.py:116 counts actual listings independently, line 117 checks identities against fixture expectations, and restoring per-request resolution makes the mixed, freshness and deferral bounds fail as negative-control-corrected.log demonstrates.",
+    "evidence": "after-suite.log records 66 passed with EXIT=0, negative-control-corrected.log records 21 listings and three base failures, and timing.log records three matching orders with ratios 0.178107, 0.078114 and 0.089393 below 0.25.",
+    "fit": "reckon/crew/promotion_requests.py:475 extends the existing resolver with keyword-only pointers, preserves its exception boundary and uses the repository's round_node_source grammar without adding forbidden names.",
+    "goal_fidelity": "reckon/crew/promotion_requests.py:508 supplies one lazy population per pass to ordering at line 564 and queued-review deferral at line 639, with no listing for complete ids or non-reviews.",
+    "reuse": "capability searches for shared review populations and queue fixtures found the resolver owner at reckon/crew/recovery_review_delivery.py:231 and its supplied-population loop at line 612; the iterator at promotion_requests.py:508 wraps that owner rather than duplicating identity resolution.",
+    "scope_discipline": "both changed paths in commit 02a7b9f525d1dfd9369661d24ce03c5b4f6ba413 are declared by dispatch-detail.json and serve the queue population goal."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json names one live-pointer listing per promotion-queue pass, implemented by reckon/crew/promotion_requests.py:508 and its two callers.\nVERDICT done_when: docs/plans/dispatch-admission-and-landing-take-seconds.html section s3 requires bounded listings, preserved identities/order, a base negative control and three timing trials; after-suite.log, negative-control-corrected.log and timing.log record those measures.\nVERDICT write_paths: dispatch-detail.json declares the two source modules, regression test and evidence paths; both changed files in the commit stay within that grant.\nVERDICT manifest: manifest.md names the exact commit, completed baseline/head receipts, three negative-control failures, timing ratios and inherited importer failures, and the inspected logs substantiate those claims.\nVERDICT diff: read the single commit 02a7b9f525d1dfd9369661d24ce03c5b4f6ba413 against its parent 3759d88f70ed285f007f0d86250c53058578f98f; only reckon/crew/promotion_requests.py and tests/test_promotion_order_reads_one_population.py change.\nCALL_SITES: reckon/crew/promotion_requests.py:promotion_queue_report, reckon/crew/promotion_requests.py:PromotionService._tick_locked, reckon/crew/promotion_requests.py:PromotionService._run, reckon/crew/promotion_requests.py:_pending_requests, reckon/crew/promotion_requests.py:_defer_to_a_queued_review\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_requests.py:508 supplies one lazy population per pass to ordering at line 564 and queued-review deferral at line 639, with no listing for complete ids or non-reviews.\nSCORE evidence: 20\nJUSTIFICATION evidence: after-suite.log records 66 passed with EXIT=0, negative-control-corrected.log records 21 listings and three base failures, and timing.log records three matching orders with ratios 0.178107, 0.078114 and 0.089393 below 0.25.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both changed paths in commit 02a7b9f525d1dfd9369661d24ce03c5b4f6ba413 are declared by dispatch-detail.json and serve the queue population goal.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_promotion_order_reads_one_population.py:116 counts actual listings independently, line 117 checks identities against fixture expectations, and restoring per-request resolution makes the mixed, freshness and deferral bounds fail as negative-control-corrected.log demonstrates.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/promotion_requests.py:475 extends the existing resolver with keyword-only pointers, preserves its exception boundary and uses the repository's round_node_source grammar without adding forbidden names.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability searches for shared review populations and queue fixtures found the resolver owner at reckon/crew/recovery_review_delivery.py:231 and its supplied-population loop at line 612; the iterator at promotion_requests.py:508 wraps that owner rather than duplicating identity resolution.\n",
+  "review_run_id": "r-20261117T015044927067-review-of-promotion-order-reads-one-population-02a7b9f525d1",
+  "reviewed_base_sha": "3759d88f70ed285f007f0d86250c53058578f98f",
+  "reviewed_head_sha": "02a7b9f525d1dfd9369661d24ce03c5b4f6ba413",
+  "reviewed_run_id": "r-20261116T235654427886-promotion-order-reads-one-population",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T02:14:21.676624+00:00",
+  "total": 120
+}

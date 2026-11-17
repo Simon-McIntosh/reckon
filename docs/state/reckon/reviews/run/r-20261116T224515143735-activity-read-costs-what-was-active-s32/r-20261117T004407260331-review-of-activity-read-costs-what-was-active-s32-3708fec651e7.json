@@ -1,0 +1,125 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite": {
+    "command": "PYTHONPATH=/tmp/activity-gate-ilalaeil/tree /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/activity-gate-ilalaeil/tree/tests/test_a_scanning_store_read_holds_no_lock.py /tmp/activity-gate-ilalaeil/tree/tests/test_an_activity_read_costs_what_was_active.py /tmp/activity-gate-ilalaeil/tree/tests/test_the_landing_check_reads_only_the_runs_it_checks.py /tmp/activity-gate-ilalaeil/tree/tests/test_staged_write_inventory.py /tmp/activity-gate-ilalaeil/tree/tests/test_every_shared_home_lock_holds_across_nodes.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T224515143735-activity-read-costs-what-was-active-s32/resumed-head.log",
+    "revision": "3708fec651e7ce9ca46fd4d8a0661d492085e9d8"
+  },
+  "assertion_analysis": [
+    {
+      "failure_condition": "The fixture insert loses rows; the independent SQL count differs from 20000. Fixture precondition, not product regression coverage.",
+      "location": "tests/test_an_activity_read_costs_what_was_active.py:51"
+    },
+    {
+      "failure_condition": "Interruption fails to propagate, occurs at another point, or leaves added columns committed so retry skips the 20000-row backfill; removing explicit BEGIN IMMEDIATE reproduces the documented retry failure.",
+      "location": "tests/test_an_activity_read_costs_what_was_active.py:89-103"
+    },
+    {
+      "failure_condition": "Recovered migration loses recent membership; the stored activity query no longer returns 50 rows.",
+      "location": "tests/test_an_activity_read_costs_what_was_active.py:104-107"
+    },
+    {
+      "failure_condition": "Fixture activity construction no longer yields 50 qualifying records or covers four timestamp positions. The STAMPS-derived assertion is fixture validation only; it does not independently protect runtime timestamp handling.",
+      "location": "tests/test_an_activity_read_costs_what_was_active.py:118-121"
+    },
+    {
+      "failure_condition": "sync_run misclassifies existing or missing records; updated/inserted literals are independent expected outcomes.",
+      "location": "tests/test_an_activity_read_costs_what_was_active.py:143-151"
+    },
+    {
+      "failure_condition": "History is missing or row_factory/progress instrumentation cannot see a known 20000-row read; positive-control assertions reject the measurement.",
+      "location": "tests/test_an_activity_read_costs_what_was_active.py:170-185"
+    },
+    {
+      "failure_condition": "The stored result loses payloads, omits completed_at-only rows, retains an amended stale run, or drops newly active/inserted runs; the independently retained fixture records disagree with the database read. Expected data shares the established ledger timestamp semantics deliberately, rather than asserting against a supplied row bound.",
+      "location": "tests/test_an_activity_read_costs_what_was_active.py:191-193"
+    },
+    {
+      "failure_condition": "Reinstating the base full-history reader materializes over three times the active count or executes over 200 VM steps per active run; negative-control.log demonstrates all four row bounds failing.",
+      "location": "tests/test_an_activity_read_costs_what_was_active.py:195-196"
+    },
+    {
+      "failure_condition": "No assertions were added, removed or weakened; batching only replaces fixture writes and existing landing-reader assertions remain unchanged.",
+      "location": "tests/test_the_landing_check_reads_only_the_runs_it_checks.py:147-191"
+    }
+  ],
+  "baseline_suite": {
+    "command": "PYTHONPATH=/tmp/activity-gate-8zxfaxtb/tree /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/activity-gate-8zxfaxtb/tree/tests/test_a_scanning_store_read_holds_no_lock.py /tmp/activity-gate-8zxfaxtb/tree/tests/test_the_landing_check_reads_only_the_runs_it_checks.py /tmp/activity-gate-8zxfaxtb/tree/tests/test_staged_write_inventory.py /tmp/activity-gate-8zxfaxtb/tree/tests/test_every_shared_home_lock_holds_across_nodes.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T224515143735-activity-read-costs-what-was-active-s32/resumed-baseline.log",
+    "revision": "05c5d148d32f887950d1539da08c8e8fdd687a48"
+  },
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/plan_review.py:plan_authoring_runs:4036",
+    "reckon/crew/plan_review.py:compose_owed_plan_reviews:4331",
+    "reckon/ledger.py:read_records:4025",
+    "reckon/run_store.py:stored_run_rows:672",
+    "reckon/run_store.py:RunStore.append:945",
+    "reckon/run_store.py:RunStore.sync_run:1009"
+  ],
+  "completed_at": "2026-11-17T00:51:23Z",
+  "dispatched_at": "2026-11-17T00:46:07Z",
+  "evidence_notes": [
+    "Read exact git objects at the reviewed head: the assigned review worktree HEAD is 859b85a0d26daf37384b5300e842a2e9215c046b and was not treated as the reviewed implementation.",
+    "The coordinator resume advice explicitly arms the expanded five-file head cohort; historical broader importer receipts were retained by the worker and were not rerun or represented as final-head coverage.",
+    "No tests rerun during review; no repository files modified."
+  ],
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "all nine commits from 05c5d148d32f887950d1539da08c8e8fdd687a48 through 3708fec651e7ce9ca46fd4d8a0661d492085e9d8 change only reckon/run_store.py and the two declared tests, adding indexed activity, recovery coverage, preserved ordering and equivalent batched fixture writes.",
+    "done_when": "docs/plans/history-persists-as-detail-washes-out.html:422 requires 20000 historical and 50 active rows; resumed-measurement.log records 100 rows and 2800 VM steps, reproduction-current.log records five base failures, and negative-control.log records four full-history row-count failures.",
+    "goal": "prompt.txt:38 requires active-bounded sweep reads; reckon/run_store.py:401 selects the activity range before materializing rows and retains the existing reader interface.",
+    "manifest": "manifest.md names nine resolvable commits and completed base/head arms whose resumed-baseline.log and resumed-head.log receipts record 72 and 77 passes with EXIT=0.",
+    "write_paths": "the source live pointer's node.write_paths and resume-1-advice.txt authorize all three changed paths, including tests/test_the_landing_check_reads_only_the_runs_it_checks.py."
+  },
+  "justifications": {
+    "durability": "tests/test_an_activity_read_costs_what_was_active.py:191-196 rejects full-history reads and stale membership, while :102 requires a complete backfill retry; recorded mutations fail four range cases and the pre-repair interruption receipt fails the retry assertion.",
+    "evidence": "resumed-baseline.log and resumed-head.log record the coordinator-authorized all_debug cohort at the exact base and head with 72 and 77 passes, while negative-control.log fails all four row-count assertions and its history-positive control sees 20000 rows.",
+    "fit": "reckon/run_store.py:765 delegates timestamp semantics to ledger.run_activity_seconds and extends the existing insert/update/schema declarations, while :433 explicitly preserves the reader's existing insertion order and the final lint/format receipts pass.",
+    "goal_fidelity": "reckon/run_store.py:401-428 bounds selection through project/activity indexes and :414 preserves indexed identity fetches, measuring 100 materialized rows for 50 active runs in resumed-measurement.log.",
+    "reuse": "capability searches found reckon/ledger.py:1718 as the existing timestamp owner, which reckon/run_store.py:765 wraps, and tests/test_a_scanning_store_read_holds_no_lock.py:19 as a separate local fixture whose different population does not supply the new four-stamp 50-active scenario or legacy-schema copy.",
+    "scope_discipline": "reckon/run_store.py and both changed test paths are authorized by the source node plus resume-1-advice.txt, and the fixture batching at tests/test_the_landing_check_reads_only_the_runs_it_checks.py:147 retains all audit assertions."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 requires active-bounded sweep reads; reckon/run_store.py:401 selects the activity range before materializing rows and retains the existing reader interface.\nVERDICT done_when: docs/plans/history-persists-as-detail-washes-out.html:422 requires 20000 historical and 50 active rows; resumed-measurement.log records 100 rows and 2800 VM steps, reproduction-current.log records five base failures, and negative-control.log records four full-history row-count failures.\nVERDICT write_paths: the source live pointer's node.write_paths and resume-1-advice.txt authorize all three changed paths, including tests/test_the_landing_check_reads_only_the_runs_it_checks.py.\nVERDICT manifest: manifest.md names nine resolvable commits and completed base/head arms whose resumed-baseline.log and resumed-head.log receipts record 72 and 77 passes with EXIT=0.\nVERDICT diff: all nine commits from 05c5d148d32f887950d1539da08c8e8fdd687a48 through 3708fec651e7ce9ca46fd4d8a0661d492085e9d8 change only reckon/run_store.py and the two declared tests, adding indexed activity, recovery coverage, preserved ordering and equivalent batched fixture writes.\nCALL_SITES: reckon/crew/plan_review.py:plan_authoring_runs:4036, reckon/crew/plan_review.py:compose_owed_plan_reviews:4331, reckon/ledger.py:read_records:4025, reckon/run_store.py:stored_run_rows:672, reckon/run_store.py:RunStore.append:945, reckon/run_store.py:RunStore.sync_run:1009\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/run_store.py:401-428 bounds selection through project/activity indexes and :414 preserves indexed identity fetches, measuring 100 materialized rows for 50 active runs in resumed-measurement.log.\nSCORE evidence: 20\nJUSTIFICATION evidence: resumed-baseline.log and resumed-head.log record the coordinator-authorized all_debug cohort at the exact base and head with 72 and 77 passes, while negative-control.log fails all four row-count assertions and its history-positive control sees 20000 rows.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: reckon/run_store.py and both changed test paths are authorized by the source node plus resume-1-advice.txt, and the fixture batching at tests/test_the_landing_check_reads_only_the_runs_it_checks.py:147 retains all audit assertions.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_an_activity_read_costs_what_was_active.py:191-196 rejects full-history reads and stale membership, while :102 requires a complete backfill retry; recorded mutations fail four range cases and the pre-repair interruption receipt fails the retry assertion.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/run_store.py:765 delegates timestamp semantics to ledger.run_activity_seconds and extends the existing insert/update/schema declarations, while :433 explicitly preserves the reader's existing insertion order and the final lint/format receipts pass.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability searches found reckon/ledger.py:1718 as the existing timestamp owner, which reckon/run_store.py:765 wraps, and tests/test_a_scanning_store_read_holds_no_lock.py:19 as a separate local fixture whose different population does not supply the new four-stamp 50-active scenario or legacy-schema copy.\n",
+  "review_run_id": "r-20261117T004407260331-review-of-activity-read-costs-what-was-active-s32-3708fec651e7",
+  "reviewed_base_sha": "05c5d148d32f887950d1539da08c8e8fdd687a48",
+  "reviewed_commits": [
+    "d763836ed65e84c62e834afb891d7123ace59849",
+    "9e7c48b6e119716d6d470e13779a7772286891aa",
+    "db45078807b408510427de78ba2d52b3f18061fb",
+    "55c8e69b082eff9ffb45bfb1ecd2ecef8b8507b8",
+    "bacf1c28e6b713f2ba9681b0c62cd1c632ca3e84",
+    "fb5af3ef42d249ed1453f50c87776b30b7698445",
+    "8e2e94859eac20a7c379ee62ee4c6c8aa6388dde",
+    "b3247871677631318f13642d58fbdf331ea25ae1",
+    "3708fec651e7ce9ca46fd4d8a0661d492085e9d8"
+  ],
+  "reviewed_head_sha": "3708fec651e7ce9ca46fd4d8a0661d492085e9d8",
+  "reviewed_run_id": "r-20261116T224515143735-activity-read-costs-what-was-active-s32",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T01:41:31.670743+00:00",
+  "total": 120
+}

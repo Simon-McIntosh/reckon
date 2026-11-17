@@ -20,20 +20,46 @@ from reckon.crew.recovery import watch_ticker
 from reckon.crew.runs import project_watch_visibility
 
 
+def _commit_id(repo: Path | None, revision: str) -> str:
+    """The commit a revision resolves to, as a promotion records one."""
+    if repo is None:
+        return revision
+    answer = subprocess.run(
+        ["git", "-C", str(repo), "rev-parse", "--verify", f"{revision}^{{commit}}"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return answer.stdout.strip()
+
+
 def _record_promotion(
-    project: str, run_id: str, *, commits: list[str] | None = None
+    project: str,
+    run_id: str,
+    *,
+    repo: Path | None = None,
+    commits: list[str] | None = None,
 ) -> None:
     """Write the ledger row a promotion leaves behind when a run lands.
 
     A departure is not a fact the pointer records: a run that was promoted and
     a pointer that vanished with nothing behind it look identical from the
     fleet. The ledger decides which one it was, so a fixture that models a
-    landing records the row a promotion would have written.
+    landing records the row a promotion would have written: the run's own
+    commits and the checkout they land in. Both are needed, because a row that
+    names no checkout leaves the landing unverified and the run reads delivered
+    rather than landed.
     """
     row = ledger.run_path(project, run_id)
     row.parent.mkdir(parents=True, exist_ok=True)
     landed = ["HEAD"] if commits is None else commits
-    record = {"run_id": run_id, "commits": landed}
+    record = {
+        "run_id": run_id,
+        "project": project,
+        "commits": [_commit_id(repo, commit) for commit in landed],
+    }
+    if repo is not None:
+        record["repo"] = str(repo)
     if not landed:
         record["no_commit"] = "the report is the deliverable"
     row.write_text(json.dumps(record), encoding="utf-8")
@@ -103,13 +129,24 @@ def repo(tmp_path: Path, home: Path) -> Path:
     (home / "mounts.json").write_text(
         json.dumps({"sample": str(root / "docs")}), encoding="utf-8"
     )
+    # The config-home state root is a link to the registered checkout's own
+    # docs/state, as a synced project carries it. A run's ledger row is then one
+    # file whether a reader resolves it through the config home — which is what
+    # enumerating the ledger does — or through the checkout the row names, where
+    # a reader asks whether its head reached the branch.
+    (root / "docs" / "state" / "sample").mkdir(parents=True, exist_ok=True)
+    (home / "state").symlink_to(root / "docs" / "state")
     return root
 
 
-def _write_stale_terminal_pointer(
-    home: Path, *, repo: Path | None = None, commits: list[str] | None = None
-) -> dict:
-    """Park one delivered pointer before the watcher is armed."""
+def _write_stale_terminal_pointer(home: Path, *, repo: Path | None = None) -> dict:
+    """Park one delivered pointer before the watcher is armed.
+
+    The pointer is not yet promoted: each case records the ledger row a
+    promotion writes at the point its own landing happens. A row left here
+    would name a landing before anything departed, and a watcher told about it
+    would rightly read the run as promoted on its first pass.
+    """
     stream = home / "streams" / "owner.jsonl"
     stream.parent.mkdir(parents=True)
     stream.write_text('{"type":"turn.completed"}\n', encoding="utf-8")
@@ -139,7 +176,6 @@ def _write_stale_terminal_pointer(
         "process_alive": False,
     }
     crew._write_json(crew.pointer_path(record["run_id"]), record)
-    _record_promotion(str(record["project"]), str(record["run_id"]), commits=commits)
     return record
 
 
@@ -208,9 +244,11 @@ def _wait_until_watcher_live(project: str, *, bound: float) -> dict:
     return visibility
 
 
-def test_cold_watch_holds_an_already_stale_terminal_pointer(home: Path) -> None:
+def test_cold_watch_holds_an_already_stale_terminal_pointer(
+    home: Path, repo: Path
+) -> None:
     """The classifier reports completed_unpromoted for an unreviewed complete run."""
-    record = _write_stale_terminal_pointer(home)
+    record = _write_stale_terminal_pointer(home, repo=repo)
     source_root = Path(__file__).parents[1]
     producer = subprocess.Popen(
         [
@@ -237,6 +275,9 @@ def test_cold_watch_holds_an_already_stale_terminal_pointer(home: Path) -> None:
         assert producer.poll() is None
         assert visibility["watcher_live"] is True
         assert visibility["pointer_count"] == 1
+        # The landing the watcher is about to see depart: a promotion row whose
+        # delivered head the branch carries, recorded before the pointer goes.
+        _record_promotion(str(record["project"]), str(record["run_id"]), repo=repo)
         crew.pointer_path(record["run_id"]).unlink()
         assert producer.stdout is not None
         promoted = json.loads(producer.stdout.readline())
@@ -286,7 +327,8 @@ def test_dispatch_is_admitted_during_the_stale_terminal_window(
         # Both runs land, so both departures carry the row a promotion writes;
         # the ledger is the whole of what separates a landing from a vanished
         # pointer, and this case asserts the promoted reading of it.
-        _record_promotion("sample", str(accepted["run_id"]))
+        _record_promotion("sample", str(record["run_id"]), repo=repo)
+        _record_promotion("sample", str(accepted["run_id"]), repo=repo)
         recorded = recovery._ledger_run_id_reader("sample")()
         assert recorded[record["run_id"]] == "promoted"
         assert recorded[accepted["run_id"]] == "promoted"
@@ -301,7 +343,7 @@ def test_dispatch_is_admitted_during_the_stale_terminal_window(
     ("commits", "word"), [(["HEAD"], "promoted"), ([], "recorded")]
 )
 def test_empty_fleet_still_waits_for_its_first_pointer(
-    home: Path, commits: list[str], word: str
+    home: Path, repo: Path, commits: list[str], word: str
 ) -> None:
     """The first pointer the seat sees is reported as completed_unpromoted."""
     poll = _ControlledPoll()
@@ -315,10 +357,14 @@ def test_empty_fleet_still_waits_for_its_first_pointer(
         assert visibility["watcher_live"] is True
         assert visibility["pointer_count"] == 0
 
-        record = _write_stale_terminal_pointer(home, commits=commits)
+        record = _write_stale_terminal_pointer(home, repo=repo)
         poll.release.set()
         baseline = waiting.result(timeout=5)
         assert baseline["to_state"] == "completed_unpromoted"
+        # The landing the departure carries: the row a promotion writes for a
+        # run reads the row's own commits, and a row with none records a
+        # completion that delivered nothing to place on a branch.
+        _record_promotion("sample", str(record["run_id"]), repo=repo, commits=commits)
         assert recovery._ledger_run_id_reader("sample")()[record["run_id"]] == word
         crew.pointer_path(record["run_id"]).unlink()
         departure = pool.submit(next, ticker).result(timeout=5)

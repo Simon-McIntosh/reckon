@@ -1,0 +1,107 @@
+<section id="qwnw-red-file-orchestrator-assessment-reaches-jev-landing">
+  <h2>A test file red on the primary branch passes: the orchestrator assessment reaches Jev</h2>
+
+  <p><strong>What changed.</strong> Three changes, all in the one test file; no
+  product module was touched. At the named revision the file read
+  <code>4 failed, 4 passed</code>, and each of the four failures had one cause,
+  all of them in the fixture or the helpers rather than in the rule the cases
+  assert. The file now reads <code>8 passed</code>.</p>
+
+  <h3 id="qwnw-red-file-orchestrator-assessment-reaches-jev-causes">Causes, each with its verdict: the test was wrong</h3>
+
+  <p><strong>1. <code>seen["state"]</code> was never set —
+  <code>test_assessment_renders_beside_the_declared_capability</code>,
+  <code>test_rendered_state_is_build_states_mapping_encoded_once</code>.</strong>
+  <code>_stub_picker</code> fed its candidate scan to the pick through
+  <code>pick(..., snapshotter=...)</code>. The dispatcher now passes its own
+  reported scan — <code>recording_snapshotter</code> in
+  <code>reckon/crew/dispatch_picker.py</code>, which keeps the scan on the result
+  for a fallback — so the keyword the stub set was shadowed, the real scan of the
+  synthetic repository offered no eligible candidate, and the pick never reached
+  the client. <code>KeyError: 'state'</code> was therefore about the stub, not
+  about the assessment. The scan is now replaced at
+  <code>snapshot.candidates</code>, the module attribute the dispatcher's own
+  scan reads, the same boundary other cases in this suite use
+  (<code>tests/test_a_dispatch_waits_for_the_router.py</code>). No assertion
+  changed.</p>
+
+  <p><strong>2. The payload's first line was not the payload —
+  <code>test_record_carries_capability_on_the_explicit_route</code>,
+  <code>test_record_carries_capability_on_the_picker_route</code>.</strong>
+  <code>_payload</code> parsed <code>result.output</code>, which is the mixed
+  terminal stream. Dispatch prints an advisory to stderr: “node explicit-node
+  names no --time-budget, so the default fence 25m from backends.beta.time_budget
+  is under a quarter of the 2h this node estimates…”, which made the first mixed
+  line prose and raised <code>JSONDecodeError</code>. The command's own channel
+  is unchanged and correct: on stdout it answers with exactly one line, a JSON
+  document (measured below). The helper now reads <code>result.stdout</code>, so
+  it reads the channel the command answers on rather than the one a reader's
+  stderr would see first. No assertion changed.</p>
+
+  <p><strong>3. The fixture read the host's temp filesystem.</strong> Dispatch
+  refuses before routing when the filesystem that will hold a run's scratch is
+  under its floor, so the case's outcome depended on the node's free space —
+  this one was below it for part of the run and the same invocation answered
+  <code>exit 75</code> with <code>tmp-headroom-refusal: 2199502848 bytes free,
+  floor 5368709120 bytes</code> instead of routing. <code>CONFIG</code> now pins
+  <code>worktree.scratch_min_free_bytes</code> and
+  <code>worktree.scratch_min_free_pct</code> to zero, which is the config key the
+  guard reads, so the case no longer depends on state outside the repository the
+  fixture synthesises. This is the repository's own rule for a test that would
+  otherwise report on the machine.</p>
+
+  <h3 id="qwnw-red-file-orchestrator-assessment-reaches-jev-measured">Measured</h3>
+
+  <table id="qwnw-red-file-orchestrator-assessment-reaches-jev-arms">
+    <tr><th>arm</th><th>revision</th><th>result</th></tr>
+    <tr><td>base (negative control)</td><td><code>24bc79d8ee</code></td><td><code>4 failed, 4 passed</code> — <code>EXIT=1</code></td></tr>
+    <tr><td>head (gate)</td><td><code>c152ea142b</code></td><td><code>8 passed in 1.74s</code> — <code>EXIT=0</code></td></tr>
+  </table>
+
+  <p>The head run was made as batch job <code>1319767</code> on
+  <code>all_debug</code> (node <code>98dci4-clu-3142</code>, sacct state
+  <code>COMPLETED 0:0</code>), with <code>SLURM_JOB_ID</code> unset for the
+  interpreter that ran pytest. The command, as run:
+  <code>PYTHONPATH=. /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-orchestrator-assessment-reaches-jev/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_orchestrator_assessment_reaches_jev.py</code>.</p>
+
+  <p>No product module was changed, so there is no importer arm: nothing imports
+  a test module, and the arm resolved over this node's own write scope is the
+  named file, measured at both revisions above. <code>ruff check</code> reports
+  <em>All checks passed</em> and <code>ruff format --check</code> reports
+  <em>1 file already formatted</em> on the changed path.</p>
+
+  <h3 id="qwnw-red-file-orchestrator-assessment-reaches-jev-control">Negative control</h3>
+
+  <p>The base revision's run of the named file, in an extraction of
+  <code>24bc79d8ee</code> with the module imported from that tree
+  (<code>4 failed, 4 passed in 2.19s</code>, <code>EXIT=1</code>):</p>
+
+  <pre id="qwnw-red-file-orchestrator-assessment-reaches-jev-red">FAILED tests/test_orchestrator_assessment_reaches_jev.py::test_assessment_renders_beside_the_declared_capability - KeyError: 'state'
+FAILED tests/test_orchestrator_assessment_reaches_jev.py::test_record_carries_capability_on_the_explicit_route - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+FAILED tests/test_orchestrator_assessment_reaches_jev.py::test_record_carries_capability_on_the_picker_route - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+FAILED tests/test_orchestrator_assessment_reaches_jev.py::test_rendered_state_is_build_states_mapping_encoded_once - KeyError: 'state'
+4 failed, 4 passed in 2.19s
+EXIT=1</pre>
+
+  <p>Beside it, the head arm's <code>8 passed in 1.74s</code> and
+  <code>EXIT=0</code>.</p>
+
+  <p>The third fix was falsified deliberately: with the pinned floor removed and
+  the host's scratch filesystem at 2.06 GB free against a 5 GiB floor, the same
+  file reads <code>5 failed, 3 passed</code>, every routing case answering
+  <code>assert 75 == 0</code> with
+  <code>tmp-headroom-refusal: 2057338880 bytes free, floor 5368709120
+  bytes</code>. The pin is what keeps that out of the result.</p>
+
+  <p>The second fix's premise was measured rather than assumed: one invoked
+  dispatch, in the same fixture, answers
+  <code>stdout_lines 1</code>, <code>stdout_first_parses True</code>, while
+  <code>stderr</code>'s first line is the time-budget advisory — so the document
+  is on stdout, one line, and the prose is on the channel a reader parses
+  around.</p>
+
+  <h3 id="qwnw-red-file-orchestrator-assessment-reaches-jev-outside">Outside scope</h3>
+
+  <p>The node's own measure reads one file. Failures elsewhere on the primary
+  branch belong to their own nodes and were not triaged here.</p>
+</section>

@@ -1,0 +1,91 @@
+<section id="qwnw-red-file-a-run-wait-names-its-project-landing">
+  <h2>A run wait names its project</h2>
+
+  <p><strong>No repair was needed at the head.</strong>
+  <code>tests/test_a_run_wait_names_its_project.py</code> failed five of nine
+  cases at revision <code>8d50b0333f</code> — the red file this node was queued
+  from — and all nine pass at the base revision this node started from,
+  <code>6fa76c49f4</code>, with <code>SLURM_JOB_ID</code> unset. The rule the
+  file asserts is carried by code that has since landed, so this node verified it
+  and changed nothing in <code>reckon/</code>: the record is the passing run plus
+  the evidence that the rules it names are still enforced.</p>
+
+  <p><strong>The base failures were collateral, not the wait rule.</strong> The
+  five cases at <code>8d50b0333f</code> died before reaching the wait code, on a
+  queue-time guard that later sections added:</p>
+
+  <pre id="qwnw-red-file-a-run-wait-names-its-project-base-refusal">reckon.crew.CrewError: node 'waiting' is refused at queue time: no manifest path
+is named, so completion could only be judged by reading the implementation</pre>
+
+  <p>The five ids are the ones the suite recorded at that revision, and the same
+  five ids fail in this node's own base run:
+  <code>test_a_pointer_naming_no_project_is_released_by_the_reader</code>,
+  <code>test_the_writer_records_the_project_of_a_ref_it_adds</code>,
+  <code>test_every_writer_leaves_every_run_ref_with_a_project</code>,
+  <code>test_a_run_no_project_holds_raises_wait_unresolvable</code>,
+  <code>test_an_open_upstream_still_reads_as_waiting</code>.</p>
+
+  <p><strong>A passing suite is not proof that a guard fires, so two mutations
+  were run against a copy of the head and each was refused.</strong> Removing the
+  reader's derivation of a project the pointer does not name, at
+  <code>readiness.py::_wait_state</code>, fails
+  <code>test_a_pointer_naming_no_project_is_released_by_the_reader</code>
+  (<code>[] == ['r-waiting']</code>) and
+  <code>test_an_unreadable_registry_leaves_the_wait_unresolved</code>. Stopping
+  <code>reckon/crew/admission/release.py</code> from recording the derived
+  projects beside the refs it rewrites fails
+  <code>test_the_writer_records_the_project_of_a_ref_it_adds</code>
+  (<code>{} == {'r-prior': 'proj'}</code>) and
+  <code>test_every_writer_leaves_every_run_ref_with_a_project</code>
+  (<code>{'r-other', 'r-prior'} &lt;= set()</code>). A third mutation — the
+  dispatch record at <code>dispatching/requests.py</code> writing no
+  <code>wait_projects</code> — left all nine passing, which is the invariant
+  holding rather than a gap: the release writer records them for the refs it
+  rewrites, so no pointer is left naming a run in no project.</p>
+
+  <h3 id="qwnw-red-file-a-run-wait-names-its-project-measured">Measured</h3>
+
+  <table id="qwnw-red-file-a-run-wait-names-its-project-arms">
+    <caption>Every arm is a log whose first line names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.
+    <code>origin/main</code> was not merged: the fetch is refused for this
+    checkout and the remote-tracking ref <code>4861be0301</code> is already an
+    ancestor of the base revision, so the merge is a no-op.</caption>
+    <thead><tr><th>arm</th><th>revision and tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>node tests, after</td>
+        <td><code>6fa76c49f4</code> working tree, <code>SLURM_JOB_ID</code>
+        unset</td>
+        <td><strong>9 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr><td>node tests, base (negative control)</td>
+        <td><code>8d50b0333f</code> extracted tree</td>
+        <td>5 failed, 4 passed, <code>EXIT=1</code>, the five ids above</td></tr>
+      <tr><td>mutation: reader derivation removed</td>
+        <td><code>6fa76c49f4</code> extracted tree</td>
+        <td>2 failed, 7 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>mutation: release writer records no projects</td>
+        <td><code>6fa76c49f4</code> extracted tree</td>
+        <td>2 failed, 7 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>suite gate, base</td>
+        <td><code>6fa76c49f4</code> working tree</td>
+        <td>58 passed, <code>EXIT=0</code></tr>
+      <tr><td>suite gate, after</td>
+        <td>head of this run</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p><code>ruff check</code> and <code>ruff format --check</code> report nothing
+  on <code>reckon/crew/runs.py</code>, <code>reckon/crew/queue_admission.py</code>
+  or the test file, none of which this node changed.</p>
+
+  <p>The logs behind this table sit in the run directory
+  <code>~/.config/reckon/crew/runs/r-20261116T032054728221-qwnw-red-file-a-run-wait-names-its-project/logs/</code>:
+  <code>gate-all-debug.log</code> is the <code>all_debug</code> job's head run,
+  <code>base-file.log</code> is the same file at <code>6fa76c49f4</code>,
+  <code>negative-control-base-8d50b0333f.log</code> is the base red,
+  <code>mutation-reader-fallback.log</code> and
+  <code>mutation-release-writer.log</code> are the two mutations, and
+  <code>baseline-arm.log</code> and <code>after-arm.log</code> are the suite
+  arms.</p>
+</section>

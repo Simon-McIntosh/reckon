@@ -1,0 +1,116 @@
+<section id="qwnw-red-file-promotion-never-amends-its-commit-landing">
+  <h2>A release replay reports no landing check, and completion is read through <code>--wait</code></h2>
+
+  <p><strong>What changed.</strong> One test file,
+  <code>tests/test_promotion_never_amends_its_commit.py</code>, was red on the
+  primary branch: four of its five cases failed with
+  <code>KeyError: 'pointer_removed'</code>. The product is right in every case
+  and the test encoded three rules the code no longer keeps, so nothing outside
+  the test file changed.</p>
+
+  <h3 id="qwnw-red-file-promotion-never-amends-its-commit-causes">Causes, each with its verdict</h3>
+
+  <table id="qwnw-red-file-promotion-never-amends-its-commit-cause-table">
+    <caption>Each cause names the commit that moved the rule and where the
+    failing ids are logged.</caption>
+    <thead><tr><th>cause</th><th>moved by</th><th>verdict</th><th>test now asserts</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>crew complete</code> answers with a recorded promotion
+        request unless it is asked to complete synchronously, so
+        <code>result.output</code> carried
+        <code>{"kind": "command", "phase": "promotion-requested", ...}</code>
+        and no <code>pointer_removed</code>.</td>
+        <td><code>1ff2fb47fe</code> — "retain synchronous completion with an
+        explicit wait option"</td>
+        <td>test wrong: the case reads a promotion outcome</td>
+        <td>the invocation passes <code>--wait</code>, which is the documented opt-in
+        to the synchronous outcome</td>
+      </tr>
+      <tr>
+        <td>The release receipt's <code>landing_check</code> also reports
+        <code>unstaged</code>, the landed paths the landing found staged in
+        reverse and cleared, so the clean-check literal was one key short.</td>
+        <td><code>7172060c40</code> — "clear a landed path the shared index
+        still stages"</td>
+        <td>test wrong: the receipt grew a field the case predates</td>
+        <td>the clean check is asserted whole, including
+        <code>"unstaged": []</code></td>
+      </tr>
+      <tr>
+        <td>A replay of a release the record already carries returns that
+        release unchanged and commits nothing, so it composes no landing check:
+        the check that once came back described a commit that was not made.</td>
+        <td><code>48d32268f0</code> — "keep the release a run's record already
+        carries"</td>
+        <td>test wrong: the replay assertion was contradicted by the durable
+        no-op it was checking</td>
+        <td>the replay receipt equals the recorded release exactly, and carries
+        no <code>landing_check</code>. This replaces a comparison that filtered
+        the key out with a full equality over both fields, so the change is
+        stronger than the assertion it replaces</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-promotion-never-amends-its-commit-measured">Measured</h3>
+
+  <p>Both runs of the named file are logs whose first lines name the edition,
+  tree and command and whose last line reads <code>EXIT=&lt;code&gt;</code>.
+  The head run is an <code>all_debug</code> job; the runner inside it reports
+  <code>SLURM_JOB_ID</code> absent.</p>
+
+  <table id="qwnw-red-file-promotion-never-amends-its-commit-arms">
+    <caption>The base arm is the write scope's own test files resolved over the
+    base revision, run against the same command the head arm runs.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th><th>log</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>the named file, head, <code>all_debug</code> job 1319790</td>
+        <td>5 passed, <code>EXIT=0</code></td>
+        <td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104435052104-qwnw-red-file-promotion-never-amends-its-commit/logs/gate-head.log</code></td>
+      </tr>
+      <tr>
+        <td>the named file, base — the negative control</td>
+        <td><code>24bc79d8ee</code>, extraction</td>
+        <td>4 failed, 1 passed, <code>EXIT=1</code></td>
+        <td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104435052104-qwnw-red-file-promotion-never-amends-its-commit/logs/negative-control.log</code></td>
+      </tr>
+      <tr>
+        <td>the write scope's test files, base arm</td>
+        <td><code>24bc79d8ee</code>, extraction</td>
+        <td>58 passed, <code>EXIT=0</code></td>
+        <td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104435052104-qwnw-red-file-promotion-never-amends-its-commit/logs/base-arm.log</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-promotion-never-amends-its-commit-control">Negative control</h3>
+
+  <p>At <code>24bc79d8ee</code> the four parametrised cases fail and the
+  observer case passes, with exactly the ids the plan records:</p>
+
+  <pre id="qwnw-red-file-promotion-never-amends-its-commit-control-ids"><code>FAILED tests/test_promotion_never_amends_its_commit.py::test_complete_preserves_the_promotion_commit_through_release[False-False] - KeyError: 'pointer_removed'
+FAILED tests/test_promotion_never_amends_its_commit.py::test_complete_preserves_the_promotion_commit_through_release[False-True] - KeyError: 'pointer_removed'
+FAILED tests/test_promotion_never_amends_its_commit.py::test_complete_preserves_the_promotion_commit_through_release[True-False] - KeyError: 'pointer_removed'
+FAILED tests/test_promotion_never_amends_its_commit.py::test_complete_preserves_the_promotion_commit_through_release[True-True] - KeyError: 'pointer_removed'
+4 failed, 1 passed</code></pre>
+
+  <p>Copied into the same extraction, the head revision's version of that one
+  file passes all five cases, so the arm distinguishes the change rather than the
+  tree it ran against:</p>
+
+  <pre id="qwnw-red-file-promotion-never-amends-its-commit-control-isolated"><code>5 passed in 3.18s
+EXIT=0</code></pre>
+
+  <p>The log is
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104435052104-qwnw-red-file-promotion-never-amends-its-commit/logs/base-tree-head-test.log</code>.</p>
+
+  <h3 id="qwnw-red-file-promotion-never-amends-its-commit-lint">Lint</h3>
+
+  <p><code>ruff check</code> reports nothing on the changed path.
+  <code>ruff format --check</code> reports one finding at line 71, which the
+  same check reports on the file at the base revision: an adjacent literals
+  join the change does not touch, left as the backlog rather than fixed in
+  passing.</p>
+</section>

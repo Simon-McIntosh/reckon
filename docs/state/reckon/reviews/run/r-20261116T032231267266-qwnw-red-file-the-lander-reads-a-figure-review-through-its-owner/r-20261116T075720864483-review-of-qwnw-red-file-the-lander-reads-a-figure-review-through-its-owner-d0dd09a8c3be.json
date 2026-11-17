@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite at 1edf1b0dba completed at 58 passed exit 0 with no failing id, and after_suite at d0dd09a8c3 completed at 58 passed exit 0 with no failing id, so neither arm adds a failure",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:3522",
+    "reckon/crew/queue_landing.py:2070",
+    "reckon/crew/review_landing.py:47"
+  ],
+  "completed_at": "2026-11-16T08:22:23.178Z",
+  "dispatched_at": "2026-11-16T08:21:56Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-lander-reads-a-figure-review-through-its-owner.html",
+      "line": 55,
+      "severity": "non-blocking",
+      "text": "the head row names revision 581dd18e5e and the prose at line 101 names 3.21s, but the log the row cites, logs/head-node-file-all-debug.log, carries a header generated in-job from git rev-parse HEAD reading d0dd09a8c3be4d29fcb0ff13af2b84f76e5eebf7 and 5 passed in 2.84s, so the record's own head arm contradicts its receipt."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-lander-reads-a-figure-review-through-its-owner.html",
+      "line": 67,
+      "severity": "non-blocking",
+      "text": "the head suite row names 581dd18e5e while logs/after-suite.log carries d0dd09a8c3be4d29fcb0ff13af2b84f76e5eebf7 and 58 passed EXIT=0, so the only receipt it points at contradicts the row."
+    },
+    {
+      "file": "manifest.md",
+      "line": 19,
+      "severity": "non-blocking",
+      "text": "the artifacts line claims one path, logs/head-node-file-all-debug.log, which the gate script rewrites with > on each run, holds 5 passed EXIT=0 for jobs 1319272, 1319288 and 1319291 at three revisions; the file holds one header at d0dd09a8c3 and slurm-1319272.out and slurm-1319288-final.out are zero bytes, so two of the claimed receipts cannot be opened."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-lander-reads-a-figure-review-through-its-owner.html",
+      "line": 106,
+      "severity": "non-blocking",
+      "text": "the record claims tests/test_the_lander_waits_for_every_owed_review.py read 2 failed at base and 3 passed after the change, but the run's logs directory holds no arm for that file, so the measurement has no receipt a reader can open."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "1edf1b0dba..d0dd09a8c3 is three commits: the two-line base-pair fallback and its docstrings at reckon/crew/recovery_review_dispatch.py:1205-1206 with the tier docstring at reckon/crew/queue_landing.py:156, the new evidence fragment, and that fragment's arms-table rewrite.",
+    "done_when": "logs/head-node-file-all-debug.log is the all_debug job's own output, its header generated in-job from git rev-parse HEAD, reading 5 passed EXIT=0 at d0dd09a8c3 beside logs/base-node-file.log's 4 failed EXIT=1 at 1edf1b0dba.",
+    "goal": "the node goal in dispatch-detail.json is to make the named test file pass in full; the diff repairs the fail-open at reckon/crew/recovery_review_dispatch.py:1205-1206 and the file reads 5 passed at d0dd09a8c3.",
+    "manifest": "manifest.md is status complete with commits 6abccc51b2, 581dd18e5e and d0dd09a8c3, a tests line naming the gate command, four test logs, both suite arms at 58 passed EXIT=0 and negative_control_log base-node-file.log; its artifacts line at :19 claims three head receipts of which only the d0dd09a8c3 one survives.",
+    "write_paths": "all three changed files lie inside the declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround paths: reckon/crew/recovery_review_dispatch.py, reckon/crew/queue_landing.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-lander-reads-a-figure-review-through-its-owner.html"
+  },
+  "justifications": {
+    "durability": "the unchanged tests/test_the_lander_reads_a_figure_review_through_its_owner.py is the guard, and logs/base-node-file.log shows four of its cases failing with held run landed at 1edf1b0dba, so restoring the deleted branch at reckon/crew/recovery_review_dispatch.py:1205 reddens those ids, though no test exercises the comparable-own-commit branch beside it.",
+    "evidence": "logs/head-node-file-all-debug.log:1 names d0dd09a8c3 and its last line is EXIT=0 over 5 passed, yet docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-lander-reads-a-figure-review-through-its-owner.html:55,67,101 states 581dd18e5e and 3.21s that the same log contradicts.",
+    "fit": "the fallback reuses the module's own spelling at reckon/crew/recovery_review_dispatch.py:1205 and the docstring at reckon/crew/queue_landing.py:156 keeps the tier rule and the reflex stating one reading.",
+    "goal_fidelity": "reckon/crew/recovery_review_dispatch.py:1205-1206 replaces the fail-open its own docstring names, and the file the goal names reads 5 passed at d0dd09a8c3.",
+    "reuse": "no definition is added; reckon/crew/recovery_review_dispatch.py:1205 calls the existing _changed_paths_between at :1155 instead of adding a second diff helper.",
+    "scope_discipline": "every path in the diff sits inside the declared write paths, and the product change is the two lines at reckon/crew/recovery_review_dispatch.py:1205-1206 the goal implies."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal in dispatch-detail.json is to make the named test file pass in full; the diff repairs the fail-open at reckon/crew/recovery_review_dispatch.py:1205-1206 and the file reads 5 passed at d0dd09a8c3.\nVERDICT done_when: logs/head-node-file-all-debug.log is the all_debug job's own output, its header generated in-job from git rev-parse HEAD, reading 5 passed EXIT=0 at d0dd09a8c3 beside logs/base-node-file.log's 4 failed EXIT=1 at 1edf1b0dba.\nVERDICT write_paths: all three changed files lie inside the declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround paths: reckon/crew/recovery_review_dispatch.py, reckon/crew/queue_landing.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-lander-reads-a-figure-review-through-its-owner.html\nVERDICT manifest: manifest.md is status complete with commits 6abccc51b2, 581dd18e5e and d0dd09a8c3, a tests line naming the gate command, four test logs, both suite arms at 58 passed EXIT=0 and negative_control_log base-node-file.log; its artifacts line at :19 claims three head receipts of which only the d0dd09a8c3 one survives.\nVERDICT diff: 1edf1b0dba..d0dd09a8c3 is three commits: the two-line base-pair fallback and its docstrings at reckon/crew/recovery_review_dispatch.py:1205-1206 with the tier docstring at reckon/crew/queue_landing.py:156, the new evidence fragment, and that fragment's arms-table rewrite.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:3522, reckon/crew/queue_landing.py:2070, reckon/crew/review_landing.py:47\nSCORE goal_fidelity: 19\nSCORE evidence: 14\nSCORE scope_discipline: 19\nSCORE durability: 18\nSCORE fit: 19\nSCORE reuse: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_dispatch.py:1205-1206 replaces the fail-open its own docstring names, and the file the goal names reads 5 passed at d0dd09a8c3.\nJUSTIFICATION evidence: logs/head-node-file-all-debug.log:1 names d0dd09a8c3 and its last line is EXIT=0 over 5 passed, yet docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-lander-reads-a-figure-review-through-its-owner.html:55,67,101 states 581dd18e5e and 3.21s that the same log contradicts.\nJUSTIFICATION scope_discipline: every path in the diff sits inside the declared write paths, and the product change is the two lines at reckon/crew/recovery_review_dispatch.py:1205-1206 the goal implies.\nJUSTIFICATION durability: the unchanged tests/test_the_lander_reads_a_figure_review_through_its_owner.py is the guard, and logs/base-node-file.log shows four of its cases failing with held run landed at 1edf1b0dba, so restoring the deleted branch at reckon/crew/recovery_review_dispatch.py:1205 reddens those ids, though no test exercises the comparable-own-commit branch beside it.\nJUSTIFICATION fit: the fallback reuses the module's own spelling at reckon/crew/recovery_review_dispatch.py:1205 and the docstring at reckon/crew/queue_landing.py:156 keeps the tier rule and the reflex stating one reading.\nJUSTIFICATION reuse: no definition is added; reckon/crew/recovery_review_dispatch.py:1205 calls the existing _changed_paths_between at :1155 instead of adding a second diff helper.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-lander-reads-a-figure-review-through-its-owner.html:55 non-blocking: the head row names revision 581dd18e5e and the prose at line 101 names 3.21s, but the log the row cites, logs/head-node-file-all-debug.log, carries a header generated in-job from git rev-parse HEAD reading d0dd09a8c3be4d29fcb0ff13af2b84f76e5eebf7 and 5 passed in 2.84s, so the record's own head arm contradicts its receipt.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-lander-reads-a-figure-review-through-its-owner.html:67 non-blocking: the head suite row names 581dd18e5e while logs/after-suite.log carries d0dd09a8c3be4d29fcb0ff13af2b84f76e5eebf7 and 58 passed EXIT=0, so the only receipt it points at contradicts the row.\nFINDING manifest.md:19 non-blocking: the artifacts line claims one path, logs/head-node-file-all-debug.log, which the gate script rewrites with > on each run, holds 5 passed EXIT=0 for jobs 1319272, 1319288 and 1319291 at three revisions; the file holds one header at d0dd09a8c3 and slurm-1319272.out and slurm-1319288-final.out are zero bytes, so two of the claimed receipts cannot be opened.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-lander-reads-a-figure-review-through-its-owner.html:106 non-blocking: the record claims tests/test_the_lander_waits_for_every_owed_review.py read 2 failed at base and 3 passed after the change, but the run's logs directory holds no arm for that file, so the measurement has no receipt a reader can open.\n",
+  "review_run_id": "r-20261116T075720864483-review-of-qwnw-red-file-the-lander-reads-a-figure-review-through-its-owner-d0dd09a8c3be",
+  "reviewed_base_sha": "1edf1b0dba79409ef5ac2b8db39965725b53c63c",
+  "reviewed_head_sha": "d0dd09a8c3be4d29fcb0ff13af2b84f76e5eebf7",
+  "reviewed_run_id": "r-20261116T032231267266-qwnw-red-file-the-lander-reads-a-figure-review-through-its-owner",
+  "rubric": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T23:15:23.329626+00:00",
+  "total": 109
+}

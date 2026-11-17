@@ -1,0 +1,94 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the source manifest baseline_suite and after_suite logs: 58 passed versus 62 passed, both EXIT=0 and no FAILED ids; this is the armed comparison only.",
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T214318584109-station-beat-survives-a-long-tick-s28/repair-exact-armed-head.log",
+  "assertion_independence": "No added assertion echoes an input supplied to the code under test: publisher identity is independently captured before stop, and thread liveness and event completion observe effects after independently controlled publication blocking.",
+  "assertion_review": [
+    {
+      "assertion": "line 123 captured owned threads are not alive",
+      "fails_if": "stop drops references while an owned thread survives; removing joins without equivalent shutdown makes this red when the thread remains running"
+    },
+    {
+      "assertion": "line 161 release.wait(10)",
+      "fails_if": "test cleanup never releases its publication fixture; this is fixture health, not product regression coverage"
+    },
+    {
+      "assertion": "line 173 entered.wait(3)",
+      "fails_if": "the publisher never reaches the positive-control callback"
+    },
+    {
+      "assertion": "line 175 not returned.wait(1.5)",
+      "fails_if": "restoring the former one-second timed publisher join returns while publication remains blocked; the recorded mutation fails here"
+    },
+    {
+      "assertion": "line 176 publisher identity retained",
+      "fails_if": "stop discards or replaces its blocked publisher reference before completion; identity is captured from the running object, not supplied to stop"
+    },
+    {
+      "assertion": "line 183 returned.is_set()",
+      "fails_if": "stop never completes after publication is released"
+    },
+    {
+      "assertion": "line 184 captured threads terminated",
+      "fails_if": "stop reports completion while either owned thread remains alive"
+    },
+    {
+      "assertion": "line 185 references cleared",
+      "fails_if": "successful stop retains a thread reference after completion"
+    }
+  ],
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T214318584109-station-beat-survives-a-long-tick-s28/baseline.log",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/station.py:1528 run_station constructs StationBeat",
+    "reckon/crew/station.py:1578 run_station finally calls beat.stop before lease release",
+    "reckon/crew/station.py:1471 signal handler arms existing StopBound for ordered shutdown"
+  ],
+  "completed_at": "2026-11-17T00:17:36Z",
+  "dispatched_at": "2026-11-17T00:12:20Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call sites at reviewed head",
+    "diff": "Read scoped changes from prior reviewed head 460c9c3faa0a39593dde24b73e1ff5541d38fd83 to b43656c9d69fa52615ac2d167bcb0641667edbfe: merge bbbc389adb8232d007f69ed0ddd874cc1a0f30f3 adds no changes to either reviewed path and the final commit replaces two timed joins and adds ownership-specific shutdown assertions.",
+    "done_when": "Live plan s28 requires contention protection, a failing base control and no added importer failures; repair-exact-armed-head.log records 62 passes and repair-shutdown-control.log records the new shutdown test failing under timed joins, while the armed pair alone does not establish the broader importer condition.",
+    "goal": "prompt.txt:38 asks to keep the station heartbeat moving through a long tick; the incremental station.py:215-224 shutdown repair closes the previously reviewed surviving-publisher edge without changing renewal.",
+    "manifest": "manifest.md records b43656c9d69fa52615ac2d167bcb0641667edbfe, readable baseline_suite and after_suite receipts, the shutdown reproduction and mutation, and explicitly preserves its unresolved broader gate caveat.",
+    "write_paths": "prompt.txt and manifest.md declare station.py and tests/test_the_station_beat_survives_a_long_tick.py among the allowed paths; the new repair commit changes only those two files."
+  },
+  "justifications": {
+    "durability": "tests/test_the_station_beat_survives_a_long_tick.py:175 fails when timed publisher joins return early, as the mutation receipt shows, while lines 183-185 require eventual return, terminated captured threads and cleared references.",
+    "evidence": "repair-exact-armed-head.log records 62 passed and EXIT=0 at the reviewed head, baseline.log records 58 passed and EXIT=0, and repair-shutdown-control.log records the precise early-return failure; the full importer requirement is not proved by this armed pair.",
+    "fit": "reckon/crew/station.py:215-224 retains the existing event-and-thread owner and tests/test_the_station_beat_survives_a_long_tick.py:123 inspects captured owned threads rather than unrelated global thread names.",
+    "goal_fidelity": "reckon/crew/station.py:220-224 now waits for the actual heartbeat and publisher threads before releasing their references, resolving the prior shutdown finding.",
+    "reuse": "Capability searches for blocked publication and stop/join ownership found StationBeat in reckon/crew/station.py:101 as the existing owner; this repair extends it and adds only local test publisher/stop callbacks, with no parallel runtime mechanism.",
+    "scope_discipline": "The scoped diff at b43656c9d69fa52615ac2d167bcb0641667edbfe changes only reckon/crew/station.py and tests/test_the_station_beat_survives_a_long_tick.py, both declared paths."
+  },
+  "limitations": [
+    "Read-only review of committed object contents, not worktree HEAD b30e0cd4f045510fec9b64c1bd4535ffd3ff46d2, which differs from target; all target source and call-site citations were read with git show.",
+    "No test rerun and no code mutation by reviewer; recorded red/green receipts inspected.",
+    "Thread completion waits for publication to return; a permanent storage stall can delay stop, with the existing signal-driven StopBound governing production signal shutdown."
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 asks to keep the station heartbeat moving through a long tick; the incremental station.py:215-224 shutdown repair closes the previously reviewed surviving-publisher edge without changing renewal.\nVERDICT done_when: Live plan s28 requires contention protection, a failing base control and no added importer failures; repair-exact-armed-head.log records 62 passes and repair-shutdown-control.log records the new shutdown test failing under timed joins, while the armed pair alone does not establish the broader importer condition.\nVERDICT write_paths: prompt.txt and manifest.md declare station.py and tests/test_the_station_beat_survives_a_long_tick.py among the allowed paths; the new repair commit changes only those two files.\nVERDICT manifest: manifest.md records b43656c9d69fa52615ac2d167bcb0641667edbfe, readable baseline_suite and after_suite receipts, the shutdown reproduction and mutation, and explicitly preserves its unresolved broader gate caveat.\nVERDICT diff: Read scoped changes from prior reviewed head 460c9c3faa0a39593dde24b73e1ff5541d38fd83 to b43656c9d69fa52615ac2d167bcb0641667edbfe: merge bbbc389adb8232d007f69ed0ddd874cc1a0f30f3 adds no changes to either reviewed path and the final commit replaces two timed joins and adds ownership-specific shutdown assertions.\nCALL_SITES: reckon/crew/station.py:1528 run_station constructs StationBeat, reckon/crew/station.py:1578 run_station finally calls beat.stop before lease release, reckon/crew/station.py:1471 signal handler arms existing StopBound for ordered shutdown\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/station.py:220-224 now waits for the actual heartbeat and publisher threads before releasing their references, resolving the prior shutdown finding.\nSCORE evidence: 16\nJUSTIFICATION evidence: repair-exact-armed-head.log records 62 passed and EXIT=0 at the reviewed head, baseline.log records 58 passed and EXIT=0, and repair-shutdown-control.log records the precise early-return failure; the full importer requirement is not proved by this armed pair.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The scoped diff at b43656c9d69fa52615ac2d167bcb0641667edbfe changes only reckon/crew/station.py and tests/test_the_station_beat_survives_a_long_tick.py, both declared paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_station_beat_survives_a_long_tick.py:175 fails when timed publisher joins return early, as the mutation receipt shows, while lines 183-185 require eventual return, terminated captured threads and cleared references.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/station.py:215-224 retains the existing event-and-thread owner and tests/test_the_station_beat_survives_a_long_tick.py:123 inspects captured owned threads rather than unrelated global thread names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for blocked publication and stop/join ownership found StationBeat in reckon/crew/station.py:101 as the existing owner; this repair extends it and adds only local test publisher/stop callbacks, with no parallel runtime mechanism.\n",
+  "reproduction_quote": "repair-shutdown-reproduction.log: AssertionError: stop returned while its publisher was blocked; 1 failed in 1.99s. repair-shutdown-control.log repeats that assertion; 1 failed in 1.31s; EXIT=1.",
+  "review_run_id": "r-20261117T001018436526-review-of-station-beat-survives-a-long-tick-s28-b43656c9d69f",
+  "reviewed_base_sha": "460c9c3faa0a39593dde24b73e1ff5541d38fd83",
+  "reviewed_head_sha": "b43656c9d69fa52615ac2d167bcb0641667edbfe",
+  "reviewed_run_id": "r-20261116T214318584109-station-beat-survives-a-long-tick-s28",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T01:58:59.282048+00:00",
+  "total": 115
+}

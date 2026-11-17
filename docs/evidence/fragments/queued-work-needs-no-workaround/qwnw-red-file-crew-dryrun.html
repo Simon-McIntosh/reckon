@@ -1,0 +1,69 @@
+<section id="qwnw-red-file-crew-dryrun-landing">
+  <h2>A dry-run claim test asserts the rule the claims now keep</h2>
+
+  <p><strong>What changed.</strong> <code>tests/test_crew_dryrun.py</code> held
+  five cases red on the primary branch, and one cause explains all five: every
+  refusal fixture claimed and requested a mergeable source path
+  (<code>package</code>, <code>package/target.py</code>,
+  <code>package/generated.py</code>, <code>docs/evidence</code>). A live claim
+  now binds only over a path a git merge cannot reconcile, so the dry run
+  admitted each of those and the real dispatch launched, which is what the
+  base run records (<code>assert 0 == 7</code>, and
+  <code>Failed: dispatch must be refused</code>). The verdict for every cause
+  is <em>test wrong</em>: the product rule was not repaired, because the
+  sharing rule is the one §23 and §24 put in place and
+  <code>tests/test_only_unmergeable_paths_are_claimed.py</code> asserts it.</p>
+
+  <p>The refusal cases now hold and request a path inside
+  <code>docs/state</code>, a built-in exclusive class, so the arbitration they
+  exercise is the one the code keeps. The derivation case keeps its
+  source-to-generated shape: <code>package/schema.yaml</code> generates
+  <code>docs/state/generated.json</code>. The directory-claim acceptance now
+  asserts the declared directory is accepted and, positively, that the node's
+  mergeable landing fragment is <em>not</em> swept up by the claim — the old
+  assertion expected the fragment among the acceptances, which is the rule that
+  changed. One case is added to state the current rule directly: a live claim
+  over <code>package</code> does not hold anything from a node naming
+  <code>package/target.py</code> inside it. No assertion was deleted or
+  weakened.</p>
+
+  <h3 id="qwnw-red-file-crew-dryrun-arms">Measured</h3>
+
+  <table id="qwnw-red-file-crew-dryrun-table">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision, tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>gate: <code>tests/test_crew_dryrun.py</code> in full, as a job on
+        <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset
+        (job 1319604)</td>
+        <td><code>079905e189</code>, worktree</td>
+        <td>7 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>same file, base arm</td>
+        <td><code>0e0f25b0f9</code>, extraction</td>
+        <td>5 failed, 1 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>neighbour arm over the claim and refusal suites that read what the
+        case exercises, base</td>
+        <td><code>0e0f25b0f9</code>, extraction</td>
+        <td>4 failed, 71 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the same neighbour arm, head</td>
+        <td><code>079905e189</code>, worktree</td>
+        <td>4 failed, 71 passed, <code>EXIT=1</code>; the same four ids, so no
+        failure is added</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-crew-dryrun-control">Negative control</h3>
+
+  <p>The base run of the node's own file is red with exactly the five ids the
+  primary branch carried at <code>8d50b0333f</code>:
+  <code>test_dry_run_refuses_a_live_claim_with_its_owner</code>,
+  <code>test_dry_run_reports_a_conflict_from_a_declared_derivation</code>,
+  <code>test_stopped_clean_claim_does_not_refuse_admission</code>,
+  <code>test_accepted_directory_claim_admits_its_landing_fragment</code> and
+  <code>test_real_dispatch_still_refuses_before_creating_a_worktree</code>.
+  The head run passes all seven cases in the file. That pair is the proof the
+  refusal assertions fire rather than merely pass: the same assertions failed
+  while the fixtures named mergeable paths and pass now that they name an
+  exclusive one, so the guard is exercised and not bypassed.</p>
+</section>
