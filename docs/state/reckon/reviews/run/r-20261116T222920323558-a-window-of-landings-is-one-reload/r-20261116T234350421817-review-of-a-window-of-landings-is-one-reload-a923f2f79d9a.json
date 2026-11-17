@@ -1,0 +1,470 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "[at for at, _ in result] == expected",
+      "fails_if": "Restore reload-on-every-code-change: the observed times become 300, 600, ... instead of the independently specified 1800/3600 schedule; ignore an immediate request and 900 is absent.",
+      "file": "tests/test_a_window_of_landings_is_one_reload.py",
+      "line": 133
+    },
+    {
+      "assertion": "all((exported for _, exported in result))",
+      "fails_if": "Allow the first reload before any export: its recorded exported flag is false; the station arm also rejects an export not later than the previous reload, while the admission arm has the finding recorded at line 73.",
+      "file": "tests/test_a_window_of_landings_is_one_reload.py",
+      "line": 134
+    },
+    {
+      "assertion": "record['last_request']['reason'] == 'urgent correction'",
+      "fails_if": "Drop or overwrite the consumed immediate request reason: last_request no longer contains the independently specified urgent correction.",
+      "file": "tests/test_a_window_of_landings_is_one_reload.py",
+      "line": 138
+    },
+    {
+      "assertion": "record['last_request']['requested_by']",
+      "fails_if": "Omit requester attribution from the request or consumed receipt: the field is absent or false.",
+      "file": "tests/test_a_window_of_landings_is_one_reload.py",
+      "line": 139
+    },
+    {
+      "assertion": "flight.service_reload_window_seconds({}) == 1800",
+      "fails_if": "Change the fallback window away from 1800 seconds: the default accessor disagrees with the declared default.",
+      "file": "tests/test_a_window_of_landings_is_one_reload.py",
+      "line": 148
+    },
+    {
+      "assertion": "flight.service_reload_window_seconds({'service_reload_window_seconds': 1200}) == 1200",
+      "fails_if": "Ignore a valid configured window: the accessor returns the default rather than the independently selected 1200 seconds.",
+      "file": "tests/test_a_window_of_landings_is_one_reload.py",
+      "line": 149
+    },
+    {
+      "assertion": "not window.due('latest')",
+      "fails_if": "Remove the exported_at precondition: a moved identity becomes due at 1800 before exported() was called.",
+      "file": "tests/test_a_window_of_landings_is_one_reload.py",
+      "line": 154
+    },
+    {
+      "assertion": "(status['running_code'], status['newest_seen'], status['next_reload_at']) == ('running', 'latest', 1800)",
+      "fails_if": "Publish the newest identity as the running one, omit observation, or compute the wrong deadline: the independently specified running/latest/1800 tuple differs.",
+      "file": "tests/test_a_window_of_landings_is_one_reload.py",
+      "line": 158
+    },
+    {
+      "assertion": "window.due('latest')",
+      "fails_if": "Never mark exported ticks or retain an export refusal after exported(): a moved identity is still not due at its deadline.",
+      "file": "tests/test_a_window_of_landings_is_one_reload.py",
+      "line": 164
+    },
+    {
+      "assertion": "window.running == 'latest'",
+      "fails_if": "Remove replacement rollback: a refused exec leaves running set to unstarted rather than latest.",
+      "file": "tests/test_a_window_of_landings_is_one_reload.py",
+      "line": 171
+    },
+    {
+      "assertion": "window.reload_count == 1",
+      "fails_if": "Remove replacement rollback: the failed exec increments reload_count a second time.",
+      "file": "tests/test_a_window_of_landings_is_one_reload.py",
+      "line": 172
+    },
+    {
+      "assertion": "follower_reload.service_reload_status('station')['running_code'] == 'latest'",
+      "fails_if": "Restore only memory on exec failure: the persisted running identity remains unstarted.",
+      "file": "tests/test_a_window_of_landings_is_one_reload.py",
+      "line": 173
+    },
+    {
+      "assertion": "replacement.next_at == 3600",
+      "fails_if": "Fail to advance the preceding reloaded() deadline from 1800 to 3600: the persisted replacement deadline remains 1800; this assertion alone does not distinguish resetting the constructor clock at the same timestamp, while the supervisor immediate-override cadence assertions separately exercise schedule preservation.",
+      "file": "tests/test_a_window_of_landings_is_one_reload.py",
+      "line": 177
+    },
+    {
+      "assertion": "replacement.exported_at is None",
+      "fails_if": "Carry an old export into the new image: constructor exported_at is non-null.",
+      "file": "tests/test_a_window_of_landings_is_one_reload.py",
+      "line": 178
+    },
+    {
+      "assertion": "report['running_code'] == 'a' * 40",
+      "fails_if": "Restore station startup identity from the source checkout rather than the imported image: running_code becomes the distinct b identity.",
+      "file": "tests/test_a_window_of_landings_is_one_reload.py",
+      "line": 198
+    },
+    {
+      "assertion": "report['newest_seen'] == 'b' * 40",
+      "fails_if": "Stop observing the source identity or overwrite it with the imported one: newest_seen is not the independently injected b identity.",
+      "file": "tests/test_a_window_of_landings_is_one_reload.py",
+      "line": 199
+    },
+    {
+      "assertion": "schedule['running_code'] == 'running-image'",
+      "fails_if": "Report checkout identity instead of the imported service identity: running_code differs from running-image.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 243
+    },
+    {
+      "assertion": "schedule['tick_exported_at'] is not None",
+      "fails_if": "Omit admission exported() after publishing its pass: the persisted tick_exported_at remains null.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 244
+    },
+    {
+      "assertion": "schedule['next_reload_at'] > time.time()",
+      "fails_if": "Lose the future window or make the service immediately due: next_reload_at is no later than the observation clock.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 245
+    },
+    {
+      "assertion": "requested.exit_code == 0",
+      "fails_if": "Fail registration or required-option handling for a valid named immediate request: the CLI returns nonzero.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 253
+    },
+    {
+      "assertion": "receipt['reason'] == 'replace after launch drain'",
+      "fails_if": "Fail to persist and return the supplied reason: the returned value differs from the independently specified string.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 255
+    },
+    {
+      "assertion": "receipt['requested_by']",
+      "fails_if": "Omit the requester: the receipt has no truthy attribution.",
+      "file": "tests/test_an_admission_pass_fills_free_slots.py",
+      "line": 256
+    },
+    {
+      "assertion": "not window.due('newest')",
+      "fails_if": "Remove the initial export/window restriction: an unexported new image is due immediately.",
+      "file": "tests/test_crew_help_names_its_state.py",
+      "line": 200
+    },
+    {
+      "assertion": "runner.invoke(cli_module.main, ['crew', 'reload']).exit_code == 2",
+      "fails_if": "Make the service argument optional or remove usage validation: the no-service invocation does not fail with usage exit 2.",
+      "file": "tests/test_crew_help_names_its_state.py",
+      "line": 202
+    },
+    {
+      "assertion": "refused.exit_code == 2",
+      "fails_if": "Allow reload requests without a reason: the invocation succeeds instead of usage exit 2.",
+      "file": "tests/test_crew_help_names_its_state.py",
+      "line": 204
+    },
+    {
+      "assertion": "'requires --reason' in refused.output",
+      "fails_if": "Remove the specific missing-reason refusal: the diagnostic no longer names the required option.",
+      "file": "tests/test_crew_help_names_its_state.py",
+      "line": 205
+    },
+    {
+      "assertion": "runner.invoke(cli_module.main, ['crew', 'reload', 'station', '--reason', reason]).exit_code == 2",
+      "fails_if": "Accept empty or whitespace-only reasons: either invocation succeeds instead of usage exit 2.",
+      "file": "tests/test_crew_help_names_its_state.py",
+      "line": 207
+    },
+    {
+      "assertion": "request.exit_code == 0",
+      "fails_if": "Refuse a valid named request or fail to register the CLI verb: invocation is nonzero.",
+      "file": "tests/test_crew_help_names_its_state.py",
+      "line": 216
+    },
+    {
+      "assertion": "receipt['reason'] == 'urgent correction'",
+      "fails_if": "Discard or alter the request reason: the receipt differs from the independently specified urgent correction.",
+      "file": "tests/test_crew_help_names_its_state.py",
+      "line": 218
+    },
+    {
+      "assertion": "receipt['requested_by'] == 'coordinator-fixture'",
+      "fails_if": "Ignore the coordinator session environment when attributing a request: requested_by differs from coordinator-fixture.",
+      "file": "tests/test_crew_help_names_its_state.py",
+      "line": 219
+    },
+    {
+      "assertion": "status.exit_code == 0",
+      "fails_if": "Refuse the status-only path: its CLI invocation is nonzero.",
+      "file": "tests/test_crew_help_names_its_state.py",
+      "line": 221
+    },
+    {
+      "assertion": "(report['running_code'], report['newest_seen'], report['next_reload_at']) == ('running', 'newest', 1800)",
+      "fails_if": "Publish wrong or missing running, observed or next-reload fields: returned status differs from the independently specified tuple.",
+      "file": "tests/test_crew_help_names_its_state.py",
+      "line": 223
+    },
+    {
+      "assertion": "service_reload_status('station')['request'] == receipt",
+      "fails_if": "Return a CLI receipt without storing the same request: a fresh store read differs; independent literal reason/requester assertions above prevent this persistence check from serving as a self-validating receipt.",
+      "file": "tests/test_crew_help_names_its_state.py",
+      "line": 228
+    },
+    {
+      "assertion": "window.exported_at is not None",
+      "fails_if": "Let the supervisor restart before an exported tick: the service window has no export at the restart decision.",
+      "file": "tests/test_fleet_supervisor_runs_declared_services.py",
+      "line": 566
+    },
+    {
+      "assertion": "exported_at[-1] > (reloads[-1] if reloads else 0)",
+      "fails_if": "Reuse an export from before the preceding reload: the independently tracked export time is not later than the previous restart.",
+      "file": "tests/test_fleet_supervisor_runs_declared_services.py",
+      "line": 567
+    },
+    {
+      "assertion": "reloads == expected",
+      "fails_if": "Bypass the shared window or ignore the immediate request: actual restart times differ from independently specified 1800/3600 or 900/1800/3600.",
+      "file": "tests/test_fleet_supervisor_runs_declared_services.py",
+      "line": 573
+    },
+    {
+      "assertion": "report['next_reload_at'] == 5400",
+      "fails_if": "Fail to advance or preserve the automatic cadence after replacement: the final deadline differs from 5400.",
+      "file": "tests/test_fleet_supervisor_runs_declared_services.py",
+      "line": 575
+    },
+    {
+      "assertion": "report['last_request']['reason'] == 'urgent correction'",
+      "fails_if": "Lose the consumed override reason on supervisor restart: persisted last_request reason differs from urgent correction.",
+      "file": "tests/test_fleet_supervisor_runs_declared_services.py",
+      "line": 577
+    },
+    {
+      "assertion": "manager._code_decision('demo', pid, state) == 'adopt'",
+      "fails_if": "Ignore the export precondition during supervisor admission: it chooses restart before exported().",
+      "file": "tests/test_fleet_supervisor_runs_declared_services.py",
+      "line": 604
+    },
+    {
+      "assertion": "follower_reload.service_reload_status('demo') == report_before",
+      "fails_if": "Publish supervisor observations into the child-owned schedule: the fresh record differs from the snapshot taken before the read-only decision.",
+      "file": "tests/test_fleet_supervisor_runs_declared_services.py",
+      "line": 605
+    },
+    {
+      "assertion": "manager._code_decision('demo', pid, state) == 'restart'",
+      "fails_if": "Ignore a due window after export: the supervisor still adopts the stale service.",
+      "file": "tests/test_fleet_supervisor_runs_declared_services.py",
+      "line": 607
+    },
+    {
+      "assertion": "stopped == []",
+      "fails_if": "Drop the final racing-self-reload recheck: the patched stop is called after the child already replaced itself.",
+      "file": "tests/test_fleet_supervisor_runs_declared_services.py",
+      "line": 611
+    },
+    {
+      "assertion": "follower_reload.service_reload_status('demo')['reload_count'] == 1",
+      "fails_if": "Count the supervisor race as a second reload: persisted reload_count exceeds one.",
+      "file": "tests/test_fleet_supervisor_runs_declared_services.py",
+      "line": 612
+    },
+    {
+      "assertion": "environment['RECKON_FOLLOWER_SOURCE_ROOT'] == str(source)",
+      "fails_if": "Stop forwarding the source root into an image child: the environment key is absent or points to the image instead of its source.",
+      "file": "tests/test_fleet_supervisor_runs_declared_services.py",
+      "line": 621
+    },
+    {
+      "assertion": "environment['RECKON_FOLLOWER_IMAGE_COMMIT'] == image.name",
+      "fails_if": "Revert the added selected-image identity environment field: the key is absent or disagrees with the selected image directory identity.",
+      "file": "tests/test_fleet_supervisor_runs_declared_services.py",
+      "line": 622
+    },
+    {
+      "assertion": "answer.exit_code == 0",
+      "fails_if": "Fail the valid immediate-reload command inside the loop driver: the invocation returns nonzero.",
+      "file": "tests/test_the_admit_service_runs_current_code.py",
+      "line": 200
+    },
+    {
+      "assertion": "before['passes'] == [1, 2]",
+      "fails_if": "Fail to execute both bounded passes while a window remains open: observed pass ordinals differ from 1 and 2.",
+      "file": "tests/test_the_admit_service_runs_current_code.py",
+      "line": 257
+    },
+    {
+      "assertion": "before['events'] == ['pass-1', 'pass-2']",
+      "fails_if": "Restore immediate reload on a changed stamp: reexec appears between the two passes at only 60 seconds.",
+      "file": "tests/test_the_admit_service_runs_current_code.py",
+      "line": 258
+    },
+    {
+      "assertion": "immediate['passes'] == [1, 2]",
+      "fails_if": "Fail to resume the bounded loop across an immediate request: it does not complete both passes.",
+      "file": "tests/test_the_admit_service_runs_current_code.py",
+      "line": 287
+    },
+    {
+      "assertion": "immediate['events'][:3] == ['pass-1', 'reexec', 'pass-2']",
+      "fails_if": "Ignore the immediate request or perform replacement after admission: the event prefix is not pass-1/reexec/pass-2.",
+      "file": "tests/test_the_admit_service_runs_current_code.py",
+      "line": 288
+    },
+    {
+      "assertion": "immediate['attempts'] == ['r-current-code', 'r-current-code']",
+      "fails_if": "Lose code-stamp retry behavior during immediate reload: the refused request is not attempted again.",
+      "file": "tests/test_the_admit_service_runs_current_code.py",
+      "line": 289
+    },
+    {
+      "assertion": "immediate['guards'][0]['code'] == 'old'",
+      "fails_if": "Fingerprint the first refusal with newer code: first guard code differs from old.",
+      "file": "tests/test_the_admit_service_runs_current_code.py",
+      "line": 290
+    },
+    {
+      "assertion": "immediate['guards'][1]['code'] == 'new'",
+      "fails_if": "Keep the stale fingerprint after replacement: second guard code differs from new.",
+      "file": "tests/test_the_admit_service_runs_current_code.py",
+      "line": 291
+    },
+    {
+      "assertion": "immediate['requests'][0]['reason'] == 'urgent correction'",
+      "fails_if": "Drop the immediate request reason: captured receipt differs from urgent correction.",
+      "file": "tests/test_the_admit_service_runs_current_code.py",
+      "line": 292
+    },
+    {
+      "assertion": "immediate['requests'][0]['requested_by']",
+      "fails_if": "Omit requester attribution in the immediate request receipt: requested_by is absent or false.",
+      "file": "tests/test_the_admit_service_runs_current_code.py",
+      "line": 293
+    },
+    {
+      "assertion": "str(replacement) in execs[0][0][2]",
+      "fails_if": "Restore exec into the currently imported old image: the launcher omits the distinct materialized replacement path.",
+      "file": "tests/test_the_admit_service_runs_current_code.py",
+      "line": 391
+    },
+    {
+      "assertion": "execs[0][1]['RECKON_FOLLOWER_IMAGE_COMMIT'] == 'b' * 40",
+      "fails_if": "Omit the carried replacement identity or keep the old one: IMAGE_COMMIT differs from the distinct b identity.",
+      "file": "tests/test_the_admit_service_runs_current_code.py",
+      "line": 392
+    },
+    {
+      "assertion": "execs[0][1]['RECKON_FOLLOWER_SOURCE_ROOT'] == str(source)",
+      "fails_if": "Omit the canonical source root during image replacement: SOURCE_ROOT is absent or names an image.",
+      "file": "tests/test_the_admit_service_runs_current_code.py",
+      "line": 393
+    },
+    {
+      "assertion": "execs == []",
+      "fails_if": "Remove the replacement import proof refusal: exec is recorded despite imports=False.",
+      "file": "tests/test_the_admit_service_runs_current_code.py",
+      "line": 399
+    },
+    {
+      "assertion": "materialized == [(source, 'b' * 40, imported)]",
+      "fails_if": "Remove materialization or call it for the wrong root, identity or active image: independently captured materialization arguments differ.",
+      "file": "tests/test_the_admit_service_runs_current_code.py",
+      "line": 400
+    }
+  ],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/station.py:run_station",
+    "reckon/crew/station.py:StationReloader.poll",
+    "reckon/crew/admission/service.py:admit_until_stopped",
+    "reckon/crew/fleet_supervisor.py:DeclaredServices._code_decision",
+    "reckon/crew/fleet_supervisor.py:DeclaredServices._restart_locked",
+    "reckon/crew_follow_commands.py:crew_reload"
+  ],
+  "completed_at": "2026-11-16T23:56:12Z",
+  "dispatched_at": "2026-11-16T23:46:47Z",
+  "exception_assertion_audit": [
+    {
+      "condition": "Removing rollback after a raising exec, accepting blank reasons or accepting a traversal service name makes the respective pytest.raises assertion fail.",
+      "file": "tests/test_a_window_of_landings_is_one_reload.py",
+      "lines": [
+        167,
+        179,
+        181
+      ]
+    },
+    {
+      "condition": "Executing a refused import rather than raising RuntimeError, or leaking the temporary image pin rather than closing it, makes the respective pytest.raises assertion fail.",
+      "file": "tests/test_the_admit_service_runs_current_code.py",
+      "lines": [
+        395,
+        401
+      ]
+    }
+  ],
+  "failure_delta_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_window_of_landings_is_one_reload.py tests/test_an_admission_pass_fills_free_slots.py tests/test_crew_help_names_its_state.py tests/test_fleet_supervisor.py tests/test_fleet_supervisor_runs_declared_services.py tests/test_fleet_supervisor_standby.py tests/test_the_admit_service_runs_current_code.py tests/test_the_fleet_supervisor_runs_current_code.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T222920323558-a-window-of-landings-is-one-reload/expanded-after-delivery.log",
+      "revision": "a923f2f79d9af655136fb9f271874d24138c3eab"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_admission_pass_fills_free_slots.py tests/test_crew_help_names_its_state.py tests/test_fleet_supervisor.py tests/test_fleet_supervisor_runs_declared_services.py tests/test_fleet_supervisor_standby.py tests/test_the_admit_service_runs_current_code.py tests/test_the_fleet_supervisor_runs_current_code.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 2,
+      "failure_ids": [
+        "tests/test_crew_help_names_its_state.py::test_every_crew_verb_help_names_its_state_or_condition",
+        "tests/test_crew_help_names_its_state.py::test_every_refusal_remedy_names_a_reachable_state_specific_verb"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T222920323558-a-window-of-landings-is-one-reload/expanded-base-delivery.log",
+      "revision": "f571435dd42e718863a5837544e620803a9ef15d"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_window_of_landings_is_one_reload.py",
+      "line": "73",
+      "severity": "non-blocking",
+      "text": "non-blocking: The admission stand-in records bool(exports), so after its first export the assertion at line 134 cannot detect a later reload with no export since the previous reload; track the last reload as the station driver does so the claimed per-replacement export guarantee has a failing assertion."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Read the four commits from f571435dd42e718863a5837544e620803a9ef15d to a923f2f79d9af655136fb9f271874d24138c3eab; the final fifteen-file change shares one scheduling owner and includes one non-blocking assertion-strength gap at tests/test_a_window_of_landings_is_one_reload.py:73.",
+    "done_when": "The source node requires its controlled-clock cases and no added importer failures; expanded-after-delivery.log records 123 passed at a923f2f79d9af655136fb9f271874d24138c3eab and importer-comparison-delivery.json records zero added failure ids.",
+    "goal": "The source pointer's goal is to batch standing-service code changes; reckon/crew/follower_reload.py:86 owns the window used by station, admission and supervision at the requested head.",
+    "manifest": "The source manifest.md names all four commits, complete baseline and head arms, exact logs and the negative control, while reserving merged-head and live-fleet observation for the coordinator.",
+    "write_paths": "The live source pointer and resume-1-advice.txt through resume-3-advice.txt grant all fifteen changed paths, including generated flight files, CLI control and importer tests."
+  },
+  "justifications": {
+    "durability": "tests/test_a_window_of_landings_is_one_reload.py:133 rejects the original twelve-reload behavior and :154 rejects replacement before any export, but the admission helper at :73 only remembers whether any earlier export exists rather than one since the previous reload.",
+    "evidence": "expanded-base-delivery.log and expanded-after-delivery.log identify the reviewed revisions and record 2 failed/111 passed versus 123 passed, while negative-delivery.log records station changes=12 reloads=12 completed_exported_ticks=0 and importer logs confirm zero added failures.",
+    "fit": "reckon/crew/follower_reload.py:36 extends the existing reload owner, reuses atomic JSON publication and image handover, and flight.py:1334 follows the neighboring validated configuration-accessor idiom without forbidden source names.",
+    "goal_fidelity": "reckon/crew/follower_reload.py:184 requires the schedule and an exported tick, while station.py:935, admission/service.py:320 and fleet_supervisor.py:1660 share that decision and crew_follow_commands.py:70 provides the reasoned override.",
+    "reuse": "Capability searches for coalescing, reload intervals, override requests and controlled-clock reload drivers found no pre-existing window owner; follower_reload.py extends the existing reload module, station.py extends StationReloader, fleet_supervisor.py extends DeclaredServices and admission/service.py reuses checkout_trust image materialization.",
+    "scope_discipline": "The fifteen paths changed by the four commits are all granted by the source pointer's node.write_paths and its three scope-extension advice files, including the narrowly adapted test_an_admission_pass_fills_free_slots.py."
+  },
+  "limitations": [
+    "No suite rerun: reviewed the recorded exact-revision results.",
+    "Live two-hour observation and merged-head verification remain coordinator-owned after landing."
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source pointer's goal is to batch standing-service code changes; reckon/crew/follower_reload.py:86 owns the window used by station, admission and supervision at the requested head.\nVERDICT done_when: The source node requires its controlled-clock cases and no added importer failures; expanded-after-delivery.log records 123 passed at a923f2f79d9af655136fb9f271874d24138c3eab and importer-comparison-delivery.json records zero added failure ids.\nVERDICT write_paths: The live source pointer and resume-1-advice.txt through resume-3-advice.txt grant all fifteen changed paths, including generated flight files, CLI control and importer tests.\nVERDICT manifest: The source manifest.md names all four commits, complete baseline and head arms, exact logs and the negative control, while reserving merged-head and live-fleet observation for the coordinator.\nVERDICT diff: Read the four commits from f571435dd42e718863a5837544e620803a9ef15d to a923f2f79d9af655136fb9f271874d24138c3eab; the final fifteen-file change shares one scheduling owner and includes one non-blocking assertion-strength gap at tests/test_a_window_of_landings_is_one_reload.py:73.\nCALL_SITES: reckon/crew/station.py:run_station, reckon/crew/station.py:StationReloader.poll, reckon/crew/admission/service.py:admit_until_stopped, reckon/crew/fleet_supervisor.py:DeclaredServices._code_decision, reckon/crew/fleet_supervisor.py:DeclaredServices._restart_locked, reckon/crew_follow_commands.py:crew_reload\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/follower_reload.py:184 requires the schedule and an exported tick, while station.py:935, admission/service.py:320 and fleet_supervisor.py:1660 share that decision and crew_follow_commands.py:70 provides the reasoned override.\nSCORE evidence: 20\nJUSTIFICATION evidence: expanded-base-delivery.log and expanded-after-delivery.log identify the reviewed revisions and record 2 failed/111 passed versus 123 passed, while negative-delivery.log records station changes=12 reloads=12 completed_exported_ticks=0 and importer logs confirm zero added failures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The fifteen paths changed by the four commits are all granted by the source pointer's node.write_paths and its three scope-extension advice files, including the narrowly adapted test_an_admission_pass_fills_free_slots.py.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_window_of_landings_is_one_reload.py:133 rejects the original twelve-reload behavior and :154 rejects replacement before any export, but the admission helper at :73 only remembers whether any earlier export exists rather than one since the previous reload.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/follower_reload.py:36 extends the existing reload owner, reuses atomic JSON publication and image handover, and flight.py:1334 follows the neighboring validated configuration-accessor idiom without forbidden source names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for coalescing, reload intervals, override requests and controlled-clock reload drivers found no pre-existing window owner; follower_reload.py extends the existing reload module, station.py extends StationReloader, fleet_supervisor.py extends DeclaredServices and admission/service.py reuses checkout_trust image materialization.\nFINDING tests/test_a_window_of_landings_is_one_reload.py:73 non-blocking: The admission stand-in records bool(exports), so after its first export the assertion at line 134 cannot detect a later reload with no export since the previous reload; track the last reload as the station driver does so the claimed per-replacement export guarantee has a failing assertion.\n",
+  "review_checks": [],
+  "review_run_id": "r-20261116T234350421817-review-of-a-window-of-landings-is-one-reload-a923f2f79d9a",
+  "reviewed_base_sha": "f571435dd42e718863a5837544e620803a9ef15d",
+  "reviewed_head_sha": "a923f2f79d9af655136fb9f271874d24138c3eab",
+  "reviewed_run_id": "r-20261116T222920323558-a-window-of-landings-is-one-reload",
+  "scores": {
+    "durability": 18,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_comparing_assertions": "None found: injected identities and request reasons are checked against independently specified expected behavior, and reverting their production propagation makes the assertions fail.",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T00:16:02.993499+00:00",
+  "total": 118
+}
