@@ -46,6 +46,7 @@ import shlex
 import sys
 import tempfile
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 
 from reckon.host import HostFacts, host_facts
@@ -66,6 +67,14 @@ MISSING_BINARY_STATUS = 127
 # The one discharge from the refusal. Set to a truthy value and the launch is
 # forwarded unchanged.
 OVERRIDE_ENV = "RECKON_ALLOW_NESTED_LAUNCH"
+
+# The only channel a fence travels to a submitted job on: the worker's own
+# composed mounts ride this variable, set by the fence's ``--setenv`` on the
+# worker argv and again on the task. Nothing recomposes a fence inside a job,
+# so a job's roots are its worker's roots by construction, and a worker with no
+# fence hands no fence down. One name, read by the shim, the task bootstrap and
+# :func:`job_fence`, so the three cannot disagree about where the fence lives.
+WORKER_FENCE_ENV = "RECKON_WORKER_FENCE"
 
 # The other route, and the partitions that show what a separate partition job
 # looks like here. The verb is part of the route: a separate partition job is
@@ -373,6 +382,103 @@ def shim_directory() -> Path:
     return Path(__file__).resolve().parent / "host_shims"
 
 
+# The bubblewrap options a composed fence is built from, grouped by what they
+# leave at their destination. Every option that consumes a *source* and a
+# *destination* is named here, so a seal and a grant are read from the argv that
+# emits them rather than from a second composition that could disagree with it.
+_SEAL_OPTIONS = ("--ro-bind", "--ro-bind-try")
+_GRANT_OPTIONS = ("--bind", "--bind-try", "--dev-bind", "--dev-bind-try")
+_MASK_OPTIONS = ("--tmpfs",)
+_TWO_PATH_OPTIONS = frozenset((*_SEAL_OPTIONS, *_GRANT_OPTIONS))
+
+
+@dataclass(frozen=True)
+class JobFence:
+    """The roots one fence argv seals, grants and masks, in composition order.
+
+    This is a reading of a composed fence, not a second model of one. The argv
+    is the whole answer: the mounts it emits are the mounts a job under it
+    holds, and nothing here recomposes them from the parameters a fence was
+    built from. Paths are reported in the order the argv mounts them, duplicate
+    destinations included, so a seal emitted before a grant that covers it still
+    reads in that order.
+    """
+
+    sealed: tuple[str, ...] = ()
+    writable: tuple[str, ...] = ()
+    masked: tuple[str, ...] = ()
+
+    def as_dict(self) -> dict[str, list[str]]:
+        """Return the report as JSON-ready lists."""
+        return {
+            "sealed": list(self.sealed),
+            "writable": list(self.writable),
+            "masked": list(self.masked),
+        }
+
+
+def fence_roots(argv: Sequence[str]) -> JobFence:
+    """Read a composed fence argv into the roots it seals, grants and masks.
+
+    A destination is reported for every mount option the fence emits, and only
+    the options named above are understood: an argument that does not start a
+    recognised option is a value and is skipped by the option that consumed it.
+    That is the whole grammar the fence emitter uses, so a fence this module did
+    not compose still reads as the mounts it names rather than as a guess.
+    """
+    sealed: list[str] = []
+    writable: list[str] = []
+    masked: list[str] = []
+    index = 0
+    while index < len(argv):
+        argument = argv[index]
+        if argument == "--":
+            break
+        if argument in _TWO_PATH_OPTIONS:
+            # source then destination; a truncated argv mounts nothing.
+            if index + 2 >= len(argv):
+                break
+            destination = argv[index + 2]
+            (sealed if argument in _SEAL_OPTIONS else writable).append(destination)
+            index += 3
+            continue
+        if argument in _MASK_OPTIONS:
+            if index + 1 >= len(argv):
+                break
+            masked.append(argv[index + 1])
+            index += 2
+            continue
+        index += 1
+    return JobFence(tuple(sealed), tuple(writable), tuple(masked))
+
+
+def job_fence(environ: Mapping[str, str]) -> JobFence | None:
+    """The fence a process in a submitted job runs under, or None if unfenced.
+
+    The recipe its worker's own fence put in the environment is the only source:
+    a job's sealed and writable roots are its worker's because they are the same
+    mounts, never because a fence was composed again here. No recipe means the
+    worker itself ran unfenced — an in-harness worker, or a dispatch launched
+    with ``--no-fence REASON`` — and its jobs run unfenced too, with the reason
+    on the run's row. A recipe that cannot be read is an error rather than an
+    absent fence: reporting "unfenced" for a fence that is present would claim
+    the opposite protection from the one the job holds.
+    """
+    encoded = str(environ.get(WORKER_FENCE_ENV) or "")
+    if not encoded:
+        return None
+    try:
+        recipe = json.loads(base64.urlsafe_b64decode(encoded))
+        argv = recipe["argv"]
+    except (ValueError, KeyError, TypeError) as exc:
+        raise ValueError(
+            f"{WORKER_FENCE_ENV} carries no readable fence recipe: {exc}"
+        ) from exc
+    if not isinstance(argv, list):
+        raise TypeError(f"{WORKER_FENCE_ENV}'s recipe names no fence argv")
+    return fence_roots([str(word) for word in argv])
+
+
 # The task bootstrap uses only the standard library, and carries its recipe in
 # argv so sbatch --export=NONE cannot discard the fence. The child gets the
 # caller's stdin unchanged, including srun's redirected input.
@@ -392,7 +498,7 @@ try:
         command = [script, *command]
     prefix = recipe["argv"]
     encoded = base64.urlsafe_b64encode(json.dumps(recipe).encode()).decode()
-    prefix += ["--setenv", "RECKON_WORKER_FENCE", encoded]
+    prefix += ["--setenv", spec["env"], encoded]
     result = subprocess.run([*prefix, "--", *command], check=False)
 finally:
     if script is not None:
@@ -405,7 +511,7 @@ def _task_command(
     recipe: Mapping, command: Sequence[str], *, script: bytes | None = None
 ) -> list[str]:
     """Carry a fence to the scheduler task without depending on exported env."""
-    spec = {"fence": recipe, "command": list(command)}
+    spec = {"fence": recipe, "command": list(command), "env": WORKER_FENCE_ENV}
     if script is not None:
         spec["script"] = base64.b64encode(script).decode()
     encoded = base64.urlsafe_b64encode(json.dumps(spec).encode()).decode()
@@ -540,7 +646,7 @@ def fenced_scheduler_task(
     A direct absolute scheduler call bypasses this PATH shim. Interpreter file
     permissions remain the independent guard on that route.
     """
-    encoded = environ.get("RECKON_WORKER_FENCE")
+    encoded = environ.get(WORKER_FENCE_ENV)
     if not encoded or tool not in {"sbatch", "srun"}:
         return list(argv)
     recipe = json.loads(base64.urlsafe_b64decode(encoded))
