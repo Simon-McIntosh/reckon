@@ -297,6 +297,50 @@ def test_replay_refuses_a_write_to_its_original_inputs(tmp_path):
         protection["active"] = False
 
 
+def test_a_replay_write_refusal_fails_the_run_even_when_execution_catches_it(
+    tmp_path, monkeypatch
+):
+    import sys
+    from contextlib import suppress
+
+    from scripts import replay_promotion_drain as harness
+
+    source = tmp_path / "source"
+    source.mkdir()
+    marker = source / "known-present.json"
+    marker.write_text("original")
+    dataset = tmp_path / "dataset.json"
+    dataset.write_text(json.dumps({"header": {"source_crew": str(source)}}))
+    assets = tmp_path / "assets"
+    assets.mkdir()
+    (assets / "sources.json").write_text(json.dumps({"projects": {}}))
+    output = tmp_path / "result.json"
+
+    def caught_write(*args, **kwargs):
+        with suppress(PermissionError):
+            marker.write_text("changed")
+        return {}
+
+    monkeypatch.setattr(harness, "replay", caught_write)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "replay",
+            "--replay",
+            str(dataset),
+            "--assets",
+            str(assets),
+            "--output",
+            str(output),
+        ],
+    )
+    with pytest.raises(RuntimeError, match="attempted writes to original sources"):
+        harness.main()
+    assert marker.read_text() == "original"
+    assert not output.exists()
+
+
 def _queue_for_repository(run_id, repository, *, role="implement"):
     runs._write_json(
         runs.pointer_path(run_id),

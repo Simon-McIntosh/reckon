@@ -943,6 +943,11 @@ def main() -> int:
             )
         finally:
             protection["active"] = False
+        if protection["refusals"]:
+            raise RuntimeError(
+                "replay attempted writes to original sources "
+                f"({protection['refusals']} refused)"
+            )
         result["original_source_write_refusals"] = protection["refusals"]
         args.output.write_text(json.dumps(result, sort_keys=True))
         print(
