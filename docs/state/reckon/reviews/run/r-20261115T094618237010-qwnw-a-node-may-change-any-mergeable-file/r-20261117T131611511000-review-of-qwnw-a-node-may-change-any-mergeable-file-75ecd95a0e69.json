@@ -1,0 +1,77 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch_claims.py:1544 _compose_dispatch_prompt -> reckon/crew/prompts.py:956 compose_prompt -> reckon/crew/prompts.py:40 _resolved_exclusive_patterns -> reckon/crew/prompts.py:69 scope_block",
+    "reckon/crew/recovery_review_subject.py:824 _review_brief_text -> _reviewed_scope_block (reformatting only in this delta)"
+  ],
+  "completed_at": "2026-11-17T13:18:01.422Z",
+  "dispatched_at": "2026-11-17T13:17:46Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "qwnw-a-node-may-change-any-mergeable-file",
+      "recorded_at": "2026-11-17T13:48:04.807220+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T094618237010-qwnw-a-node-may-change-any-mergeable-file/manifest.md",
+      "line": "1",
+      "severity": "blocking",
+      "text": "blocking: the reviewed run's live manifest is 1033 bytes and cut mid-token inside its first changed_paths entry, so it carries no tests, test_logs, baseline_suite or after_suite line; the run reports status complete while the record a promotion reads holds no gate receipt, and the green head arms survive only in baseline-suite.log and after-suite.log. The complete pre-repair copy is manifest.md.attempt-1.asdelivered, whose after_suite names revision 0432821e rather than the 75ecd95a that after-suite.log:1 now carries."
+    },
+    {
+      "file": "tests/test_a_node_may_change_any_mergeable_file.py",
+      "line": "204",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added acceptance assertion calls validate_node over a node whose write_paths is empty, a state the dispatch route never presents because reckon/crew/dispatch_plan.py:833-835 replaces an empty declaration with the role's default write paths before judging it, so the done_when's 'a dispatch with no write path is accepted' is still pinned only by the composed prompt and this verdict would pass unchanged at the base revision."
+    },
+    {
+      "file": "tests/test_a_node_may_change_any_mergeable_file.py",
+      "line": "242",
+      "severity": "non-blocking",
+      "text": "non-blocking: the new pattern assertion has no recorded red arm \u2014 negative-control.log is the attempt-1 run of the 5-test file at 4dc26dde (3 failed, 2 passed, EXIT=1) and predates this test, so nothing on disk shows it failing against the pre-fix compose_prompt even though reading reckon/crew/prompts.py:956-961 says reverting the patterns argument leaves 'deploy/*.lock' out of the brief and reddens it."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read the single gained commit 75ecd95a against 0432821e: reckon/crew/prompts.py gains _resolved_exclusive_patterns and passes its result to scope_block, reckon/crew/recovery_review_subject.py is reformatted only, and tests/test_a_node_may_change_any_mergeable_file.py gains a pattern test, a validate_node assertion and loses the '  none' assertion.",
+    "done_when": "read the done_when's four behaviours against tests/test_a_node_may_change_any_mergeable_file.py at 75ecd95a: the fragment brief (:164), the repository-scope brief (:180) and the review brief (:246) are asserted, while the third behaviour's acceptance is asserted as a validate_node verdict (:204) rather than through the dispatch route that fills default write paths first.",
+    "goal": "read the node goal (let a dispatched node change any mergeable file in its repository with declared paths as the expected scope) against the gained commit: reckon/crew/prompts.py:956-961 now hands compose_prompt the classes the launch fence is actually composed from, so the brief names the project's own sealed patterns and not the shipped defaults alone.",
+    "manifest": "read the live manifest.md: status complete and the three commits are recorded, but the file is truncated inside changed_paths and names no tests, test_logs, baseline_suite or after_suite line; the complete copy is manifest.md.attempt-1.asdelivered, whose after_suite still names 0432821e.",
+    "write_paths": "read the declared paths from the reviewed run's manifest (reckon, tests, skills, the section's evidence-fragment directory and its figure directory) and compared them with git diff --stat 0432821e 75ecd95a: all three changed paths lie inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_node_may_change_any_mergeable_file.py:242 reddens if reckon/crew/prompts.py:959 reverts to scope_block(node) because 'deploy/*.lock' then never reaches the brief, while the assertion at :204 passes unchanged at the base revision and no recorded red log covers :242.",
+    "evidence": "baseline-suite.log:1 and after-suite.log:1 name revisions 4dc26dde and 75ecd95a with 58 passed and EXIT=0 each, and node-tests.log records 6 passed at 75ecd95a, but the run's manifest carries none of those lines and the done_when's dispatch acceptance is not measured on the dispatch path.",
+    "fit": "the commit removes the format debt the prior review named \u2014 ruff format --check exits 0 at 75ecd95a on all three paths and 1 at 0432821e, and ruff check at head leaves only the pre-existing S608 at reckon/crew/prompts.py:1052.",
+    "goal_fidelity": "reckon/crew/prompts.py:956-961 resolves the fence's own pattern list through reckon/crew/runs.py:2027 unmergeable_patterns, so the brief at prompts.py:69 states the classes the launch seals rather than the shipped defaults alone.",
+    "reuse": "the added _resolved_exclusive_patterns wraps the existing owner reckon/crew/runs.py:2027 unmergeable_patterns instead of restating pattern resolution; a search of reckon/crew for exclusive-pattern resolution found no other owner.",
+    "scope_discipline": "git diff --stat 0432821e 75ecd95a touches only reckon/crew/prompts.py, reckon/crew/recovery_review_subject.py and tests/test_a_node_may_change_any_mergeable_file.py, every one inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to let a dispatched node change any mergeable file in its repository with declared paths as the expected scope; the gained commit completes that in reckon/crew/prompts.py:956-961, where compose_prompt now hands scope_block the pattern list the launch fence is composed from.\nVERDICT done_when: the done_when's fragment brief, repository-scope brief and review brief are asserted at tests/test_a_node_may_change_any_mergeable_file.py:164,180,246, but its third behaviour's acceptance is asserted as a validate_node verdict at :204 rather than through the dispatch route, which fills default write paths first at reckon/crew/dispatch_plan.py:833-835.\nVERDICT write_paths: the manifest declares reckon, tests, skills and the section's fragment and figure directories, and git diff --stat 0432821e 75ecd95a shows all three changed paths inside them.\nVERDICT manifest: read; the live manifest.md is truncated mid-token inside changed_paths and records no tests, test_logs, baseline_suite or after_suite line, while the complete pre-repair copy manifest.md.attempt-1.asdelivered names after_suite at 0432821e.\nVERDICT diff: read the single commit 75ecd95a against 0432821e \u2014 three files, 105 insertions and 18 deletions, a formatting sweep plus the patterns fix and two test additions, nothing outside the declared scope.\nCALL_SITES: reckon/crew/dispatch_claims.py:1544 _compose_dispatch_prompt -> reckon/crew/prompts.py:956 compose_prompt -> reckon/crew/prompts.py:40 _resolved_exclusive_patterns -> reckon/crew/prompts.py:69 scope_block, reckon/crew/recovery_review_subject.py:824 _review_brief_text -> _reviewed_scope_block\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/prompts.py:956-961 resolves the fence's own pattern list through reckon/crew/runs.py:2027 unmergeable_patterns, so the brief states the classes the launch seals rather than the shipped defaults alone.\nSCORE evidence: 13\nJUSTIFICATION evidence: baseline-suite.log:1 and after-suite.log:1 name revisions 4dc26dde and 75ecd95a with 58 passed and EXIT=0 each and node-tests.log records 6 passed at 75ecd95a, but the run's manifest carries none of those lines and the dispatch acceptance in done_when is not measured on the dispatch path.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 0432821e 75ecd95a touches only reckon/crew/prompts.py, reckon/crew/recovery_review_subject.py and tests/test_a_node_may_change_any_mergeable_file.py, every one inside the manifest's declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_node_may_change_any_mergeable_file.py:242 reddens if reckon/crew/prompts.py:959 reverts to scope_block(node), but the assertion at :204 passes unchanged at the base revision and no recorded red log covers :242.\nSCORE fit: 18\nJUSTIFICATION fit: ruff format --check exits 0 on all three paths at 75ecd95a and exits 1 on the same three paths at 0432821e, and ruff check at head leaves only the pre-existing S608 at reckon/crew/prompts.py:1052.\nSCORE reuse: 19\nJUSTIFICATION reuse: the added _resolved_exclusive_patterns wraps the existing owner reckon/crew/runs.py:2027 unmergeable_patterns, and a search of reckon/crew for exclusive-pattern resolution found no second owner.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T094618237010-qwnw-a-node-may-change-any-mergeable-file/manifest.md:1 blocking: the reviewed run's live manifest is 1033 bytes and cut mid-token inside its first changed_paths entry, so it carries no tests, test_logs, baseline_suite or after_suite line \u2014 the run reports status complete while the record a promotion reads holds no gate receipt.\nFINDING tests/test_a_node_may_change_any_mergeable_file.py:204 non-blocking: the added acceptance assertion judges validate_node over an empty write_paths, a state the dispatch route never presents because reckon/crew/dispatch_plan.py:833-835 replaces the empty declaration with the role's defaults first, so done_when's dispatch acceptance is still pinned only by the composed prompt.\nFINDING tests/test_a_node_may_change_any_mergeable_file.py:242 non-blocking: the new pattern assertion has no recorded red arm \u2014 negative-control.log is the attempt-1 run of the 5-test file at 4dc26dde and predates this test, so nothing on disk shows it failing against the pre-fix compose_prompt.\n",
+  "review_run_id": "r-20261117T131611511000-review-of-qwnw-a-node-may-change-any-mergeable-file-75ecd95a0e69",
+  "reviewed_base_sha": "0432821ea85a63e9894ddc869cbffc4ba6046925",
+  "reviewed_head_sha": "75ecd95a0e69b419f0786cba53decba6b93daa4c",
+  "reviewed_run_id": "r-20261115T094618237010-qwnw-a-node-may-change-any-mergeable-file",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261117T131611511000-review-of-qwnw-a-node-may-change-any-mergeable-file-75ecd95a0e69"
+  },
+  "reviewer_run_id": "r-20261117T131611511000-review-of-qwnw-a-node-may-change-any-mergeable-file-75ecd95a0e69",
+  "scores": {
+    "durability": 15,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T13:31:29.828878+00:00",
+  "total": 101
+}
