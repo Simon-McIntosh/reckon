@@ -4614,10 +4614,6 @@ def _dispatch_composed_review(
 # request nothing is going to make.
 REVIEW_REQUEST_DEADLINE_SECONDS = 600
 
-DELIVERED_PHASES = frozenset(
-    {"completed_unpromoted", "scoring", "promotable", "complete"}
-)
-
 
 def review_stage_instants(run_id: str) -> dict[str, str | None]:
     """The first instant of each handoff the receipts hold for one run.

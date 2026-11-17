@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="dispatch-admission-and-landing-take-seconds">
+  <meta name="plan-evidence-for" content="reckon:dispatch-admission-and-landing-take-seconds">
+  <meta name="plan-verifies" content="reckon:dispatch-admission-and-landing-take-seconds#s8">
+  <meta name="plan-recorded-at" content="2026-11-17">
+  <meta name="plan-verdict" content="passed">
+  <title>A delivered run's request is read apart from its launch</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+
+<article class="r-note" id="a-delivered-run-is-reviewed-within-minutes-landing"
+         data-node="a-delivered-run-is-reviewed-within-minutes"
+         data-reckon="landed" data-when="2026-11-17">
+  <h2>Two intervals, not one: the request a crew makes and the launch it waits for</h2>
+
+  <p id="a-delivered-run-is-reviewed-within-minutes-defect"><strong>The defect.</strong>
+  A delivered run cannot land until it is reviewed, and the request that starts
+  the review is made by the crew. The stage receipts already dated each handoff,
+  but nothing read them as the two intervals the measure turns on: the delivery
+  to the request, and the request to the launch. Read as one figure, a late
+  request and a slow launch are indistinguishable, and a run whose request was
+  never made at all appears only as a review that is missing.</p>
+
+  <p id="a-delivered-run-is-reviewed-within-minutes-what-landed"><strong>What landed.</strong>
+  <code>reckon/crew/recovery_review_dispatch.py</code> reads the first instant of
+  each of the four stages from the run's own receipts
+  (<code>review_stage_instants</code>) and reports them as
+  <code>review_request_census</code>: one row per delivered run with
+  <code>request_lag_seconds</code> and <code>launch_lag_seconds</code> kept
+  apart, the median and 90th percentile of each, and an
+  <code>obligations</code> list holding every delivered run with no request after
+  <code>REVIEW_REQUEST_DEADLINE_SECONDS</code> (600 s), each carrying the reason
+  its own record gives — the reflex's recorded dispatch, the refusal its dispatch
+  rule would return, or the session no armed follower serves.
+  <code>reckon/crew/resumption.py</code> runs that reading on the pass that makes
+  the requests and carries the obligations on the sweep's report, so a sweep
+  that could not request a review says which run and why.</p>
+
+  <p id="a-delivered-run-is-reviewed-within-minutes-harness"><strong>The harness.</strong>
+  <code>tests/test_a_delivered_run_is_reviewed_within_minutes.py</code> builds the
+  fixture repository and a temporary crew home, delivers a scoring run by the
+  watcher's own writer, and holds a stand-in station tick in its refresh stage
+  while the follower's sweep requests the review. It asserts the sweep's own
+  report names the run as dispatched, the review's pointer exists, and the
+  receipt's request instant is no later than <strong>120 s</strong> after the
+  delivery's — then reads the same instants back through the census. The second
+  case withholds the request's precondition — its session has no armed follower
+  — and reads no obligation at 599 s and one at 601 s whose reason names that
+  session. A third case reads a recorded refusal as the reason rather than as no
+  dispatch at all.</p>
+
+  <p id="a-delivered-run-is-reviewed-within-minutes-gate"><strong>Gate.</strong>
+  The node's three tests pass at the head (<strong>3 passed</strong>), and the
+  armed suite arm — the node's test file beside the two importer files — is
+  recorded in the manifest's <code>after_suite</code> field with its own command
+  and revision.</p>
+
+  <p id="a-delivered-run-is-reviewed-within-minutes-negative-control"><strong>Negative control.</strong>
+  With the sweep's review pass made to wait for the tick — the pass gated on a
+  marker the held tick never writes — the in-window case fails
+  (<code>FAILED tests/test_a_delivered_run_is_reviewed_within_minutes.py::test_a_delivered_run_is_requested_inside_the_window_while_a_tick_is_held</code>,
+  <strong>1 failed, 2 passed</strong>, <code>EXIT=1</code>), so the case measures
+  the request's independence rather than restating it. The log is named on the
+  manifest's <code>negative_control_log</code> line.</p>
+
+  <p id="a-delivered-run-is-reviewed-within-minutes-census"><strong>The live census.</strong>
+  CENSUS_FIGURE</p>
+
+  <p id="a-delivered-run-is-reviewed-within-minutes-priority"><strong>What is not here.</strong>
+  The request's priority is inherited from the run it reviews by
+  <code>a-session-spends-a-priority-budget</code> §3, which owns the ordering the
+  inheritance reaches; this node's census reads the receipts it will write and
+  does not restate the rule.</p>
+</article>
+
+</body>
+</html>
