@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="456">
+<meta name="plan-version" content="457">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -1738,8 +1738,11 @@ staged paths.</p>
 <div class="r-comment" data-section="s88" data-id="c-run-r-20261117T204600753463-review-of-the-parsed-stream-cache-keeps-what-the-next-pass-asks-for-faef3e5499c5" data-who="reckon-build" data-when="2026-11-17T20:49:04.119Z">
     <div class="r-comment-body"><p>Review of b3a277e1a63c181bf0deb2a7127b43e37bbc3718..faef3e5499c58173edb83dc66a5923be798430a5 recorded parsed with goal_fidelity 16, evidence 12, scope_discipline 14, durability 16, fit 18, reuse 18, zero added failures, and five non-blocking findings (whole=True returns a partial cache entry, unused _StreamCursor.covers, a dropped offset&lt;=size guard shielded by the summary path, live figures taken on a path no production caller takes, and a loosened sibling assertion).</p></div>
 </div>
+<div class="r-comment" data-section="s88" data-id="c-run-r-20261117T213442375204-review-of-the-parsed-stream-cache-keeps-what-the-next-pass-asks-for-1a015d15eb9d" data-who="reckon-build" data-when="2026-11-17T21:36:03.453Z">
+    <div class="r-comment-body"><p>Independent review of r-20261117T160042100946-the-parsed-stream-cache-keeps-what-the-next-pass-asks-for at b3a277e1a63c181bf0deb2a7127b43e37bbc3718..1a015d15eb9da963dd5fe584814ff0ee49ee8339 recorded parsed with goal_fidelity 9, evidence 11, scope_discipline 12, durability 13, fit 17, reuse 5, zero added failures, one blocking finding (a whole request at reckon/_backends.py:3776 discards the held whole entry and re-reads the stream from byte 0, so the two production callers the node edited parse whole logs on every growth) and three non-blocking findings (the carried resume suppressed by _STREAM_CURSORS membership at :4606, a second count-bounded resume store at :3743 that _STREAM_SUMMARIES already owns at :3876, and an edited sibling assertion at tests/test_watch_stream_parse_is_cached.py:240 with no recorded green run).</p></div>
+</div>
 <div class="r-comment" data-section="s89" data-id="c-run-r-20261117T211835235147-review-of-a-live-pointer-carries-no-clone-report-7ca7a5a6e8a6" data-who="reckon-build" data-when="2026-11-17T21:20:52.607Z">
-    <div class="r-comment-body"><p>Independent review of r-20261117T160244730423-a-live-pointer-carries-no-clone-report at 6686bb507f..7ca7a5a6e8: six dimensions scored goal_fidelity 19, evidence 16, scope_discipline 20, durability 16, fit 19, reuse 18, no blocking finding; three non-blocking findings recorded — a self-referential assertion at tests/test_a_live_pointer_carries_no_clone_report.py:253, and two evidence-accuracy defects in docs/evidence/fragments/the-monitor-reads-each-fact-once/a-live-pointer-carries-no-clone-report.html:41 (a named head revision no retained log carries, 5b15fe3f3a against the log&#x27;s 7ca7a5a6e8; and an imports-no-failure clause measured over two of the 935 test files that reference reckon.crew.runs).</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261117T160244730423-a-live-pointer-carries-no-clone-report at 6686bb507f..7ca7a5a6e8: six dimensions scored goal_fidelity 19, evidence 16, scope_discipline 20, durability 16, fit 19, reuse 18, no blocking finding; three non-blocking findings recorded — a self-referential assertion at tests/test_a_live_pointer_carries_no_clone_report.py:253, and two evidence-accuracy defects in docs/evidence/fragments/the-monitor-reads-each-fact-once/a-live-pointer-carries-no-clone-report.html:41 (a named head revision no retained log carries, 5b15fe3f3a against the log's 7ca7a5a6e8; and an imports-no-failure clause measured over two of the 935 test files that reference reckon.crew.runs).</p></div>
 </div>
 </section>
 </main>
