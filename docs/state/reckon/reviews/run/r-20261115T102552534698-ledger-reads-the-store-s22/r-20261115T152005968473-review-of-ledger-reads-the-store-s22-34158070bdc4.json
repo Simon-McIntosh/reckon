@@ -1,0 +1,103 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: logs/base-arm.log runs at 2bf8e6947d761394f75022925c4aa498a7db2b99 and ends '58 passed in 31.19s' with a bare EXIT=0; logs/after-suite-final.log runs at 34158070bdc412fa8853e0e97becaff894859024 and ends '79 passed in 37.01s' with a bare EXIT=0. No id fails in the after arm, so the delta is zero.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/ledger.py:2253 (_stored_run_rows delegates to run_store.stored_run_rows)",
+    "reckon/ledger.py:2301 (_stored_run_ids path)",
+    "reckon/ledger.py:2273 (_merge_stored_rows, called from load at :2400, :2412, :2423)",
+    "reckon/crew/open_run_index.py (ledger.store_answers/load over a project's stored runs)",
+    "reckon/run_store.py:501 (RunStore.archive_path now resolves through _archive_path)"
+  ],
+  "completed_at": "2026-11-15T15:30:39.963Z",
+  "dispatched_at": "2026-11-15T15:22:29Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "carried to history-persists-as-detail-washes-out s29",
+      "recorded_at": "2026-11-15T17:00:51.854386+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "carried to history-persists-as-detail-washes-out s29",
+      "recorded_at": "2026-11-15T17:00:55.399424+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "carried to history-persists-as-detail-washes-out s29",
+      "recorded_at": "2026-11-15T17:00:59.315794+00:00"
+    },
+    "3": {
+      "kind": "exempted",
+      "reason": "the run_store.py reader is granted at landing with --accept-path; the store owns the record read",
+      "recorded_at": "2026-11-15T17:01:03.673120+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/run_store.py",
+      "line": 1087,
+      "severity": "non-blocking",
+      "text": "non-blocking: stored_run_rows restates the record join that _indexed_records owns in the same module (run_store.py:651-662) - the same runs LEFT JOIN run_details, the same archive attach, the same normalize_outside_scope_paths - so the store now holds two copies of its own record read and a change to the runs/run_details shape or the archive filename must be made in both or the ledger silently drops rows. Extending _indexed_records with a project scope and a read-only path would have kept one copy."
+    },
+    {
+      "file": "reckon/run_store.py",
+      "line": 1093,
+      "severity": "non-blocking",
+      "text": "non-blocking: the per-table 'except sqlite3.Error: continue' turns any store error into an empty answer, so a damaged file, a failed ATTACH or a schema the query does not match is reported to every ledger reader as a project with no stored runs rather than as the failure it is."
+    },
+    {
+      "file": "reckon/run_store.py",
+      "line": 1100,
+      "severity": "non-blocking",
+      "text": "non-blocking: a store whose runs table still predates the payload column makes 'SELECT r.payload' raise 'no such column', which the swallow at :1093 reduces to an empty population, while indexed_run_ids at :1112 still lists those ids from the id columns - so a store that owes its migration reports membership without rows. The read-only design deliberately leaves the migration to the writer, but the disagreement between membership and rows is silent, and the previous read migrated the store before answering."
+    },
+    {
+      "file": "reckon/run_store.py",
+      "line": 1047,
+      "severity": "non-blocking",
+      "text": "non-blocking: the new reader is written into a file outside the node's declared write paths (the dispatch names reckon/ledger.py, reckon/crew/open_run_index.py, the test file and the evidence fragment), and the manifest records it in outside_scope rather than the audit trail of a granted path; the coordinator owns the accept-path decision before this lands. The figure pair is a smaller instance of the same: docs/figures/... is in the manifest's orientation paths but not in the dispatch's write_paths."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit over 3eee72acf0..34158070bd; 6 files, 539 insertions and 399 deletions, confined to the six paths this review names, and every code hunk is the store read, its ledger delegation, three new tests, or the figure/fragment label corrections.",
+    "done_when": "the done_when is 'every existing reader test passes against a project whose runs/ directory is absent and whose store holds the rows, and a store deleted and rebuilt returns an equal answer set'; the gate ran tests/test_every_ledger_question_reads_the_store.py, whose test_a_load_against_an_absent_store_creates_nothing (:343) and test_a_store_deleted_and_rebuilt_returns_an_equal_answer_set (:391) assert those two properties, and logs/after-suite-final.log records 79 passed with a bare EXIT=0 at 34158070bd.",
+    "goal": "the node goal is 'answer every ledger reader from the run store when the per-run directory is absent'; this round answers the four prior findings and I verified each in the diff at 34158070bd: reckon/run_store.py:1047 adds stored_run_rows(project) with the project filter in SQL at :1089 and a read-only connection at :1066, reckon/ledger.py:2253 delegates to it, and docs/figures/.../source-precedence.py:106-113 now labels each arm with the revision the cited log names.",
+    "manifest": "read; it records commits b1f4c666e8 / 9572b14547 / d98c5e7dab / 34158070bd, the head arm at 79 passed EXIT=0 in logs/after-suite-final.log, the red control in logs/negative-control-store.log (2 failed, 19 passed, EXIT=1), and rubric lines for all six dimensions.",
+    "write_paths": "the dispatch declares reckon/ledger.py, reckon/crew/open_run_index.py, tests/test_every_ledger_question_reads_the_store.py and the evidence fragment; the diff also writes reckon/run_store.py and the figure pair, which the manifest records under outside_scope rather than enclosing in the declared set."
+  },
+  "justifications": {
+    "durability": "tests/test_every_ledger_question_reads_the_store.py:302 and :363 both fail in logs/negative-control-store.log when the read is reverted, while :343 passes in both arms by the manifest's own account.",
+    "evidence": "logs/base-arm.log ends '58 passed' with EXIT=0 at 2bf8e6947d and logs/after-suite-final.log ends '79 passed' with EXIT=0 at 34158070bd, both with revision header lines, and logs/negative-control-store.log ends '2 failed, 19 passed' with EXIT=1.",
+    "fit": "reckon/run_store.py:1047 follows the module's own docstring-and-read-only-reader idiom beside indexed_run_ids at :1112, and no added name carries a plan, stage or version label.",
+    "goal_fidelity": "reckon/run_store.py:1089 puts the project filter in the SQL and :1066 opens the connection mode=ro, which are exactly the two properties findings 0 and 1 asked for.",
+    "reuse": "reckon/run_store.py:1087-1108 restates the join, archive attach and normalisation that _indexed_records at :649 already performs in the same module.",
+    "scope_discipline": "reckon/run_store.py is absent from the dispatch's write_paths list and the diff writes 72 lines into it, declared only as an outside_scope note in the manifest."
+  },
+  "negative_control_reading": "reproduced from logs/negative-control-store.log header '# revision: b1f4c666e8 with reckon/ledger.py and reckon/run_store.py from 3eee72acf0', tail 'FAILED tests/test_every_ledger_question_reads_the_store.py::test_a_load_decodes_no_other_project_payload', 'FAILED ...::test_a_load_answers_a_store_it_cannot_write', '2 failed, 19 passed in 75.54s', EXIT=1.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to answer every ledger reader from the run store when the per-run directory is absent; this round answers the four prior findings, and reckon/run_store.py:1047 with reckon/ledger.py:2253 delivers the project-scoped read-only read it asked for.\nVERDICT done_when: the done_when's two properties are asserted at tests/test_every_ledger_question_reads_the_store.py:343 and :391, inside the gate file logs/after-suite-final.log records as 79 passed EXIT=0 at 34158070bd.\nVERDICT write_paths: the declared set is ledger.py, crew/open_run_index.py, the test file and the fragment; the diff also lands reckon/run_store.py and the figure pair, recorded in the manifest under outside_scope.\nVERDICT manifest: read; it names the four commits, both arms with log paths, the red control, and a line for each of the six rubric dimensions.\nVERDICT diff: read commit by commit over 3eee72acf0..34158070bd; 6 files, 539 insertions, 399 deletions, all six the paths this review names, and the code hunks are the store read, its ledger delegation, three tests and the figure/fragment label corrections.\nCALL_SITES: reckon/ledger.py:2253 (_stored_run_rows delegates to run_store.stored_run_rows), reckon/ledger.py:2301 (_stored_run_ids path), reckon/ledger.py:2273 (_merge_stored_rows, called from load at :2400, :2412, :2423), reckon/crew/open_run_index.py (ledger.store_answers/load over a project's stored runs), reckon/run_store.py:501 (RunStore.archive_path now resolves through _archive_path)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/run_store.py:1089 filters by the project column in SQL and :1066 opens the connection mode=ro, the two properties findings 0 and 1 asked for.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/base-arm.log ends 58 passed EXIT=0 at 2bf8e6947d, logs/after-suite-final.log ends 79 passed EXIT=0 at 34158070bd, and logs/negative-control-store.log ends 2 failed, 19 passed EXIT=1, each with its revision header.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: reckon/run_store.py is outside the dispatch's write_paths list yet takes 72 lines of the diff, declared only as an outside_scope note at manifest.md:outside_scope.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_every_ledger_question_reads_the_store.py:302 and :363 both appear as FAILED in logs/negative-control-store.log against the reverted read, while :343 passes in both arms.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/run_store.py:1047 follows the read-only reader idiom of indexed_run_ids at :1112, and no added name carries a plan, stage or version label.\nSCORE reuse: 14\nJUSTIFICATION reuse: reckon/run_store.py:1087-1108 restates the join, archive attach and normalisation that _indexed_records at :649 already performs in the same module.\nFINDING reckon/run_store.py:1087 non-blocking: stored_run_rows restates the record join _indexed_records owns in the same module, so the store holds two copies of its own read and a schema or archive-name change must be made in both or rows drop silently.\nFINDING reckon/run_store.py:1093 non-blocking: 'except sqlite3.Error: continue' turns a damaged store, a failed ATTACH or a schema mismatch into an empty population, so a reader is told a project has no stored runs rather than that the store could not be read.\nFINDING reckon/run_store.py:1100 non-blocking: a store whose runs table predates the payload column makes the query raise 'no such column' and answer empty, while indexed_run_ids at :1112 still lists its ids, so membership and rows disagree with no signal.\nFINDING reckon/run_store.py:1047 non-blocking: the file is outside the node's declared write paths and is recorded only under outside_scope, so the coordinator owns the accept-path decision before this lands.\n",
+  "review_node": "review-of-ledger-reads-the-store-s22-34158070bdc4",
+  "review_run_id": "r-20261115T152005968473-review-of-ledger-reads-the-store-s22-34158070bdc4",
+  "reviewed_base_sha": "3eee72acf0810f999bbf3a5a70e8f95a188f421a",
+  "reviewed_head_sha": "34158070bdc412fa8853e0e97becaff894859024",
+  "reviewed_run_id": "r-20261115T102552534698-ledger-reads-the-store-s22",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T152005968473-review-of-ledger-reads-the-store-s22-34158070bdc4"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T15:36:14.296443+00:00",
+  "total": 100
+}

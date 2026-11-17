@@ -1,0 +1,41 @@
+<section id="red-file-a-control-log-is-judged-at-write-record">
+  <h3>Base arm with its failing ids, and the head arm beside it</h3>
+  <p>Both arms ran as <code>all_debug</code> jobs with <code>SLURM_JOB_ID</code>
+  unset, each running</p>
+  <pre>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_control_log_is_judged_at_write.py</pre>
+  <p>with the interpreter at
+  <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python</code>.</p>
+  <table id="red-file-a-control-log-is-judged-at-write-arms">
+    <thead><tr><th>Arm</th><th>Revision</th><th>Tree</th><th>Summary</th><th>EXIT</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>base</td>
+        <td><code>6fa76c49f48e1d4fe4f104431f85f519ce92aae0</code></td>
+        <td>a clone checked out at that revision under <code>$TMPDIR</code></td>
+        <td><code>5 failed, 19 passed in 0.56s</code></td>
+        <td><code>1</code></td>
+      </tr>
+      <tr>
+        <td>head</td>
+        <td><code>8741924baca47f542957e9dd199bb435b0550a14</code></td>
+        <td>this node's worktree</td>
+        <td><code>24 passed in 1.47s</code></td>
+        <td><code>0</code></td>
+      </tr>
+    </tbody>
+  </table>
+  <p>The base arm's five failing ids, which the head arm does not fail because
+  the head arm fails none:</p>
+  <ol id="red-file-a-control-log-is-judged-at-write-base-ids">
+    <li><code>tests/test_a_control_log_is_judged_at_write.py::test_the_command_refuses_an_empty_control_log</code> — <code>assert 3 == 1</code></li>
+    <li><code>tests/test_a_control_log_is_judged_at_write.py::test_the_command_accepts_a_log_ending_in_a_non_zero_exit</code> — <code>exit_code</code> 1 where 0 was required, on the external <code>test_logs</code> path and the missing message statement</li>
+    <li><code>tests/test_a_control_log_is_judged_at_write.py::test_the_command_accepts_a_run_that_declared_no_control</code> — same finding pair</li>
+    <li><code>tests/test_a_control_log_is_judged_at_write.py::test_the_command_accepts_a_recorded_waiver</code> — same finding pair</li>
+    <li><code>tests/test_a_control_log_is_judged_at_write.py::test_the_command_writes_no_state_beside_the_run_it_reads</code> — same finding pair</li>
+  </ol>
+  <p>Both arms are also held on disk: the base log at
+  <code>~/.config/reckon/crew/runs/r-20261116T032202967783-qwnw-red-file-a-control-log-is-judged-at-write/logs/base-negative-control.log</code>
+  and the head log at <code>.../logs/head-gate.log</code> in the same run
+  directory. Each log's first lines name its revision, tree and command, and its
+  last line is a bare <code>EXIT=</code> followed by the status.</p>
+</section>

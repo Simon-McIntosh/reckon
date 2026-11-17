@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "docs/ui/shell-topbar.jsx:95",
+    "docs/index.html:13",
+    "docs/ui/crew.jsx:444"
+  ],
+  "completed_at": "2026-11-16T09:20:42.983Z",
+  "dispatched_at": "2026-11-16T09:20:21Z",
+  "findings": [
+    {
+      "file": "docs/ui/topbar.css",
+      "id": "fe3abfa3ee1",
+      "line": 44,
+      "severity": "non-blocking",
+      "text": "The row-width repair is a write outside the node's declared write paths (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround): it is the only place the measured 12.5 px shortfall can be paid and the manifest declares it under over_fence_reason with coverage from tests/test_spa_project_visibility.py:161, but the change still lands outside the grant the node was fenced to, so the coordinator has to accept the over-fence rather than read the diff as in-scope."
+    },
+    {
+      "file": "tests/spa_browser_harness.py",
+      "id": "f6457305f31",
+      "line": 406,
+      "severity": "non-blocking",
+      "text": "The readiness deadline raised from 45000 to 120000 carries no assertion of its own: the only added guard, tests/test_spa_browser_harness.py:185, ties the process budget to the deadline by an inequality (timeout * 1000 > deadline), so reinstating `const deadline = Date.now() + 45000;` beside the 180 s budget still passes that test, and the visibility cases redden only against a cold served process, which gate-base.log shows is a 129 s run rather than a deterministic failure of the whole suite."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-spa-project-visibility.html",
+      "id": "f6772759a24",
+      "line": 15,
+      "severity": "non-blocking",
+      "text": "The fragment's 'at head' figure, `14 passed in 140.98 s`, is taken from gate-head-uncommitted-tree.log, whose own header names revision cb557f97 in a modified worktree, while the committed head run is gate-head.log at 6ce822cf with `14 passed in 136.47s` (and the -head.txt kept beside the fragment names 673960cf, 137.13 s); the quoted number therefore does not belong to the revision the fragment describes, so the citation cannot be reconciled with the run's own gate log."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "docs/ui/shell-topbar.jsx:95 renders the .r-topbar-search element the changed rule sizes, docs/index.html:13 links docs/ui/topbar.css as /_ui/topbar.css, and docs/ui/crew.jsx:444 renders the .r-crew-scope-toggle control the first-visit case clicks; tests/spa_browser_harness.py is imported by test modules only, so its budget change has no production call site.",
+    "diff": "Read all seven commits cb557f97..6ce822cf: c96ac87 one CSS flex rule in docs/ui/topbar.css; b68624c tests/spa_browser_harness.py's readiness wait and process budget; bce5be54 the visibility case's .settings selector and its arrival-scope assertion, with the two-space-deeper fetch anchor; 673960c the harness budget assertion rewritten as a relationship; e0b0aed, 0ffbf79 and 6ce822c the fragment and the two run logs beside it.",
+    "done_when": "gate-head.log's `# command:` line is the done_when's command over `tests/test_spa_project_visibility.py`, its run-gate.sh declares `#SBATCH --partition=all_debug` and passes `env -u SLURM_JOB_ID`, and the log ends `14 passed in 136.47s` / `EXIT=0`; the arm clause is met by arm-head.log (30 passed) against arm-base.log (5 failed, 25 passed), and the negative control named in the manifest is gate-base.log, where the same command at cb557f97 prints four tracebacks and EXIT=1.",
+    "goal": "The node goal is 'Make tests/test_spa_project_visibility.py pass in full on the primary branch'; gate-head.log records `14 passed in 136.47s` with EXIT=0 at 6ce822cf against gate-base.log's `4 failed, 10 passed` at cb557f97, and the four causes are repaired at tests/test_spa_project_visibility.py:118 (the tools group probed is now .settings), :242 (the fetch anchor matches the driver's eight-space indent), :284 (arrival scope asserted, then widened through docs/ui/crew.jsx:444's own .r-crew-scope-toggle), tests/spa_browser_harness.py:406 (readiness wait) and docs/ui/topbar.css:44 (the row's flex basis).",
+    "manifest": "Read in full; it names the seven commits, the gate and arm log paths with their counts (gate-head 14 passed EXIT=0, gate-base 4 failed EXIT=1, suite arms 58 passed each), the negative control at gate-base.log, and the baseline_suite/after_suite pair, both completed with failure_count 0 and no failure ids.",
+    "write_paths": "The node's declared write paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; of the seven changed paths six are inside them (three tests plus the fragment, its -base.txt and its -head.txt) and docs/ui/topbar.css:44 is outside, recorded in the manifest's over_fence_reason and in FINDING docs/ui/topbar.css:44."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is 'Make tests/test_spa_project_visibility.py pass in full on the primary branch'; gate-head.log records 14 passed in 136.47s with EXIT=0 at 6ce822cf against gate-base.log's 4 failed, 10 passed at cb557f97, with the four causes repaired at tests/test_spa_project_visibility.py:118, :242, :284, tests/spa_browser_harness.py:406 and docs/ui/topbar.css:44.\nVERDICT done_when: gate-head.log's command line is the done_when's command over tests/test_spa_project_visibility.py, run-gate.sh declares #SBATCH --partition=all_debug and passes env -u SLURM_JOB_ID, and the log ends 14 passed in 136.47s / EXIT=0, with arm-head.log 30 passed against arm-base.log 5 failed, 25 passed and the negative control at gate-base.log.\nVERDICT write_paths: of the seven changed paths, six sit inside reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround and docs/ui/topbar.css:44 sits outside, declared in the manifest's over_fence_reason.\nVERDICT manifest: read in full; it names the seven commits, the gate and arm log paths with their counts, the negative control at gate-base.log, and baseline_suite/after_suite both completed with zero failures.\nVERDICT diff: read all seven commits cb557f97..6ce822cf: one CSS flex rule, the harness readiness wait and process budget, the harness budget assertion as a relationship, the visibility case's selector, fetch anchor, widen control and arrival-scope assertion, and the fragment with its two run logs.\nCALL_SITES: docs/ui/shell-topbar.jsx:95, docs/index.html:13, docs/ui/crew.jsx:444\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_spa_project_visibility.py passes 14 of 14 at 6ce822cf per gate-head.log and the same command fails four ids at cb557f97 per gate-base.log.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-head.log:3-5 records the done_when's command, 14 passed and EXIT=0, while docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-spa-project-visibility.html:15 quotes 140.98 s from the uncommitted-tree log instead of gate-head.log's 136.47 s.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: docs/ui/topbar.css:44 is outside the declared write paths and is carried only as a manifest-declared over_fence_reason.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_spa_project_visibility.py:161 reddens if docs/ui/topbar.css:44 goes back to flex: none and :300 reddens if the crew view arrives unscoped, but tests/spa_browser_harness.py:406's 120000 ms deadline has no assertion that fails deterministically on a revert.\nSCORE fit: 18\nJUSTIFICATION fit: docs/ui/topbar.css:40-43 states the measured shortfall in the file's own comment style and tests/test_spa_project_visibility.py:284 reuses the existing prepareSignal slot in NODE_PROBE rather than adding a second driver path.\nSCORE reuse: 20\nJUSTIFICATION reuse: no new definition is added; the case clicks the surface's own .r-crew-scope-toggle at docs/ui/crew.jsx:444 and reuses tests/spa_browser_harness.py's _served_fixture and served_spa.run_probe, searched by capability over docs/ui and tests/spa_browser_harness.py.\nFINDING docs/ui/topbar.css:44 non-blocking: the row-width repair is a write outside the node's declared write paths, carried only as a manifest-declared over_fence_reason.\nFINDING tests/spa_browser_harness.py:406 non-blocking: the 120000 ms readiness deadline has no assertion, and tests/test_spa_browser_harness.py:185 only asserts an inequality, so a revert to 45000 ms passes that test and reddens the visibility cases only against a cold served process.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-spa-project-visibility.html:15 non-blocking: the quoted 140.98 s head figure comes from gate-head-uncommitted-tree.log, whose header names revision cb557f97, not from gate-head.log at 6ce822cf (136.47 s).",
+  "review_checks": [],
+  "review_run_id": "r-20261116T091924409233-review-of-qwnw-red-file-spa-project-visibility-6ce822cff636",
+  "reviewed_base_sha": "cb557f9711670ca8a00dd1d6dd22a17b42d3a51e",
+  "reviewed_head_sha": "6ce822cff636b4322529a7ef0c93c2fdfd46febe",
+  "reviewed_run_id": "r-20261116T032248093388-qwnw-red-file-spa-project-visibility",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T09:29:00.674831+00:00",
+  "total": 101
+}

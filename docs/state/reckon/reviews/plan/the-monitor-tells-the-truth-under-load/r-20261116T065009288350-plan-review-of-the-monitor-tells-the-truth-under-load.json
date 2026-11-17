@@ -1,0 +1,136 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-16T07:06:29.178Z",
+  "dispatched_at": "2026-11-16T07:06:08Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-monitor-tells-the-truth-under-load.html:208",
+      "id": "reasoning-1",
+      "reason": "the section states one cause for two defects that have different causes, so the node the clause reaches would fix the wrong read and its gate would still show `started: true`.",
+      "text": "the clause added this round reads \"A `crew watch --ensure` that finds the project's producer alive starts nothing and reports `started: false`\", but the section's Why at plan.html:207 names a different mechanism as the root cause (the pane judging snapshot age versus the hook judging the station's heartbeat and tick), while at base the ensure decision is keyed on the unit's active state and rendered content (`start_required = bool(changed or restart or not was_active)`, \"started\": start_required, reckon/crew/watch_unit.py:1453,1530): nothing in `ensure_watcher_service` reads the station's heartbeat or tick, so reading s25's Why as the cause sends the repair at the pane's age comparison and leaves the reported `started: true` untouched",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-tells-the-truth-under-load.html:208",
+      "id": "single_goal-1",
+      "reason": "a worker cannot be closed on one verdict for two mechanisms, so the clause should be a section of its own with its own done-when and negative control.",
+      "text": "s25 now names two deliverables with separate verdicts: the pane ceasing to draw a lost row when the station's heartbeat is fresh and its tick is running, and `crew watch --ensure` declining to start while the project's producer is alive and reporting `started: false`; the two are independently closable (one is row composition in the pane, the other is the arming command's idempotency verdict), so a single verdict on s25 can pass with either mechanism unbuilt, and the section's gate proves neither",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-tells-the-truth-under-load.html:208",
+      "id": "evidence_paths-1",
+      "reason": "the red case is constructible from the ensure decision path itself, so the missing citation costs the worker a hunt but does not change what the section asks to be delivered.",
+      "text": "the appended clause rests on a population count recorded nowhere openable: \"on 16 November nova-84 re-armed six times on these rows and every ensure answered `started: true`, while the one nova watcher (alive 29 hours) never changed\" cites no run id, pointer file or log, unlike the plan's other figures, which name run ids (for example plan.html:94)",
+      "type": "evidence_paths",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "2fd6e0746eaa5b3f0ba9adafa2f946ffe07a38c3",
+  "plan_fingerprint": "e4e6bd99ebb946b776b3d5d684069075e6aea951df27ef614260ddcef89ee07f",
+  "plan_slug": "the-monitor-tells-the-truth-under-load",
+  "plan_version": 69,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "87006db649abb924ab592aecfdaf066d948f5437",
+      "commit_basis": "edit",
+      "finding": "single_goal-1",
+      "note": "the ensure clause left s25 for its own section s26 (plan v71)",
+      "reason": "",
+      "when": "2026-11-16T10:48:13.853955+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "87006db649abb924ab592aecfdaf066d948f5437",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "s26's Why states the ensure's own cause: its start decision keys on unit state with no producer-liveness input",
+      "reason": "",
+      "when": "2026-11-16T10:48:19.403963+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "evidence_paths-1",
+      "reason": "the review itself rates it would-not-change; the count came from a peer session's report, and s26's red case is constructed from the ensure decision path, not from that count",
+      "when": "2026-11-16T10:48:24.621344+00:00"
+    }
+  ],
+  "responses": {
+    "evidence_paths-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "the review itself rates it would-not-change; the count came from a peer session's report, and s26's red case is constructed from the ensure decision path, not from that count",
+      "when": "2026-11-16T10:48:24.621344+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "87006db649abb924ab592aecfdaf066d948f5437",
+      "commit_basis": "edit",
+      "note": "s26's Why states the ensure's own cause: its start decision keys on unit state with no producer-liveness input",
+      "reason": "",
+      "when": "2026-11-16T10:48:19.403963+00:00"
+    },
+    "single_goal-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "87006db649abb924ab592aecfdaf066d948f5437",
+      "commit_basis": "edit",
+      "note": "the ensure clause left s25 for its own section s26 (plan v71)",
+      "reason": "",
+      "when": "2026-11-16T10:48:13.853955+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-monitor-tells-the-truth-under-load/r-20261116T065009288350-plan-review-of-the-monitor-tells-the-truth-under-load.json",
+  "review_run_id": "r-20261116T065009288350-plan-review-of-the-monitor-tells-the-truth-under-load",
+  "reviewed_blob_sha": "ebd92349152e5bafe297e9f579e87ec49b46d16b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/watch_unit.py` exists in the repository and the module `reckon.crew.watch_unit` imports; `crew watch --ensure` is the spelling the code itself prints (`watcher_ensure_line`, reckon/crew/watch_unit.py:1861).",
+    "done_when": "pass \u2014 the clause appended to s25 this round (\"a `crew watch --ensure` that finds the project's producer alive starts nothing and reports `started: false`\") is red at base: `ensure_watcher_service` computes `start_required = bool(changed or restart or not was_active)` and reports `\"started\": start_required` (reckon/crew/watch_unit.py:1453,1530), so a seated live producer with no active unit yields `started: true`; the pre-existing clauses of s25 are the subject of the unanswered done_when-2 and are not re-raised.",
+    "evidence_paths": "pass \u2014 s25's write paths are the module `reckon/crew/watch_unit.py` and a new test in the repository, durable paths inside the tree, not a scratch location.",
+    "naming": "pass \u2014 the appended clause names the endpoint field `started` as the code already names it, with no plan label, ticket or stage name reaching a symbol.",
+    "reasoning": "a finding \u2014 s25's Why attributes the defect to the pane judging the snapshot's age while the hook judges the station's heartbeat and tick, and that cause does not reach the clause appended this round: `crew watch --ensure` decides to start from the systemd unit's active state and the rendered unit's content, never from the station heartbeat, so a worker holding the Why as the cause would aim the repair at the pane's age read and leave the false `started: true` standing.",
+    "single_goal": "a finding \u2014 s25 now carries a second, independently closable deliverable: the pane's producer-loss row (plan.html:208) and `crew watch --ensure`'s start decision (the clause appended this round), whose write path is the same file but whose verdict is separate.",
+    "wiring": "pass \u2014 the plan declares `plan-informs` (plan.html:22) and no depends-on/gates edges; the unit under review, s25 at plan.html:206-208, needs no relationship it does not declare, and the appended clause adds no new upstream or downstream node."
+  },
+  "section_digests": {
+    "_document": "1145e717474d8fe902cef67b9c7b3fa5d52e124fa0b806edcde983d1c915857f",
+    "s1": "7df70e005850ec7773b3db8cdf1384c5422e6cbfac994a1cfc3bdeca2fd47ef2",
+    "s10": "b83b287b25ce35ab03c105da8c02eec999809dbdea6073436eae2dc72bb0055d",
+    "s11": "db2972ed7155bc484ac98ce58f8c119ab201e99f5a53c1af54606eb6564a66e4",
+    "s12": "93d79e3e452ecd1f5c10186fc7eb1781f5e7455324237438f574fbc699447b31",
+    "s13": "79271d44153e341633146df7233120d46939c41b1ca66de6bac074c2472ea991",
+    "s14": "c0f58bcc6da33e5ff402ec71bef199b31de1619824a04f6db8d415d9669a38d7",
+    "s15": "3d6257718e450fda1363e42a9394f2cb631579e92f2cf0dbdaca2f25c62d6537",
+    "s16": "9c67ebb9a89d3b566da303e2866877a636f868c501bf32f08ff80e2c7a7f26da",
+    "s17": "229d1aee2b054a2680acdd7883f3d6cd8216513f31305ff21ed874c51b1af3a7",
+    "s18": "4a5429fac53529c64918e90d1bc4d47480e08689bea9601336332ce330c82e49",
+    "s19": "1f9e10fa3b0ee55a46bc415cf145a732b0361a363b70930a33a7c5ccbe2189ca",
+    "s2": "a065d657377c24ca69329c265d4a0a821a0104c7df8d1140dec9c3b9d1c6edf2",
+    "s20": "2a22cb56cd43d1c837c31506853a47a9de4ea2b23c97d583934c0f47da03fad0",
+    "s21": "b07e6731435129f50c6cb46f57c3e1172601f799b7c52c4f55ea6d99f25bf88f",
+    "s22": "45e18de36e5fd44b3f9ce333ba84c31670b863849d6556c002171e60cc447105",
+    "s23": "ee414aaed9e9f5dcdb9da2c749629c72b5012385aab644da5c10a79231bd3157",
+    "s24": "faac5526525b2512a67fa4ba5050ebf3fbb4b7c64b8718517653cce6fdf995dc",
+    "s25": "ca7410b0001b529f0c0488d3bdc064dcb2331d0f5ee25d233941a1ddf4d7dfb9",
+    "s3": "f3cf9279ee0efc6c6e7b55dede5b9ff68ee3db1e40edd78b825098ecee64d396",
+    "s4": "739bbbd316f3b5138d938c01abaac59b3f08e1231effa6dc1e416fb46b9b34b1",
+    "s5": "2806db9da94cd21c23ef92806d85a99f15d28df20b272f97173d332fba5a1587",
+    "s6": "a8a7d00ef50ab0ca240bc59bb917ff62442d6f3567da095cb913cd5860246056",
+    "s7": "9f299f30b0fda7b1f5bbc9f6d7cf6b936604181068a2c9a8363b64e58ace0fd6",
+    "s8": "30f0e740e2caee5b735cc3bdc83d5eaa23eac7eeaae780899f811d7a1c32956c",
+    "s9": "56c122a4d4057a2e12e9ebbaae0a53fb955938f47dbe9275cdf2dd5566896f78"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T07:35:43.858577+00:00",
+  "total": null
+}

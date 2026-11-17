@@ -1,22 +1,25 @@
 """A worktree-held row is rechecked against the fleet when the hook reads it.
 
-A promotion deletes its run's live pointer, then releases the tree, then writes
-the release onto the run's ledger record. A sweep that runs between the pointer
-deletion and the release publishes a worktree-held row that is true at the
-instant it is taken and false by the time anyone reads it: the tree is already
-being reclaimed, and the duty's own remedy — a run-scoped ``crew gc`` — is
-refused for a run with no tree. Each stale row costs the coordinator an
-acknowledgement, so the hook re-reads the run's committed record and the tree
-where the row is offered, and drops it when the record shows the tree released
-or the tree is no longer a directory. Only the run's own per-run file is read,
-never the aggregate ledger beside it, which carries every run the project has
-promoted and would cost a hook's whole budget on a single row.
+A row is published by a sweep from a snapshot, and the fleet moves after the
+snapshot is taken: the run's tree is landed, released and left behind, so the
+row that was true when it was published is false by the time anyone reads it.
+The duty's own remedy — a run-scoped ``crew gc`` — is refused for a run with no
+tree, so each stale row costs the coordinator an acknowledgement. The hook
+therefore re-reads the run's committed record and the tree where the row is
+offered, and drops it when the record shows the tree released or the tree is no
+longer a directory. Only the run's own per-run file is read, never the
+aggregate ledger beside it, which carries every run the project has promoted
+and would cost a hook's whole budget on a single row.
 
-The released case is driven by a real ``crew complete``: the snapshot is taken
-from inside the promotion, at the moment the row is still a true reading, and
-the same promotion then releases the tree before the hook is invoked. Every
-fixture is written by the writer that writes it in production — ``crew``
-promotes, the ledger appends the record, and the snapshot module publishes.
+A retained tree is a duty only while it holds work no landing has taken, so
+every fixture tree here carries the run's own commit: a clean tree the branch
+already reaches raises no row to recheck. The released case is driven by a real
+``crew complete`` of the run's finished record: the snapshot is published while
+the row is a true reading, the run's commit is then landed, and the same
+promotion releases the tree and records the release before the hook is invoked.
+Every fixture is written by the writer that writes it in production — ``crew``
+promotes, the ledger appends the record, ``git`` lands the commit, and the
+snapshot module publishes.
 """
 
 from __future__ import annotations
@@ -33,7 +36,7 @@ from typing import Any
 import pytest
 
 from reckon import _plan_html, crew, ledger
-from reckon.crew import obligation_snapshot, promotion, runs
+from reckon.crew import obligation_snapshot, runs
 from reckon.crew.obligations import obligations as obligations_view
 from reckon.hooks.coordinator_obligations import format_checklist
 from tests.helpers.git import git as _git
@@ -105,42 +108,57 @@ def _worktree(repository: Path, tmp_path: Path) -> Path:
     """Register a tree the way a dispatched run leaves one behind.
 
     The directory's own name is the node id, which is how a run's ledger
-    record names its tree when the promotion recorded no retention.
+    record names its tree when the promotion recorded no retention. The tree
+    carries the run's own commit, because a retained tree is a duty only while
+    it holds work no landing has taken: a clean tree the branch already
+    reaches is no duty and raises no row to recheck.
     """
     tree = tmp_path / "trees" / SESSION / NODE_ID
     tree.parent.mkdir(parents=True, exist_ok=True)
     _git(repository, "worktree", "add", "-q", "--detach", str(tree), "HEAD")
+    (tree / "run-work.txt").write_text("the run's own work\n", encoding="utf-8")
+    _git(tree, "add", "run-work.txt")
+    _git(tree, "commit", "-q", "-m", "test: the run's own commit")
     return tree
 
 
-def _live_pointer(repository: Path, tmp_path: Path, tree: Path) -> None:
-    manifest = tmp_path / "manifests" / f"{RUN_ID}.md"
-    manifest.parent.mkdir(parents=True, exist_ok=True)
-    manifest.write_text(f"node: {NODE_ID}\nstatus: complete\n", encoding="utf-8")
-    record = {
-        "run_id": RUN_ID,
-        "project": PROJECT,
-        "repo": str(repository),
-        "worktree": str(tree),
-        "launch": "in-harness",
-        "role": "implement",
-        "member": "worker-a",
-        "backend": "native",
-        "created_at": "2026-10-04T06:00:00Z",
-        "base_sha": _git(repository, "rev-parse", "HEAD"),
-        "manifest_path": str(manifest),
-        "session_id": SESSION,
-        "node": {
-            "id": NODE_ID,
-            "plan": PLAN,
-            "section": "fixture-section",
-            "time_budget": "20m",
-            "write_paths": [],
-        },
-    }
-    path = runs.pointer_path(RUN_ID)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(record), encoding="utf-8")
+def _tree_head(tree: Path) -> str:
+    return _git(tree, "rev-parse", "HEAD")
+
+
+def _land(repository: Path, tree: Path) -> None:
+    """Take the tree's commit into the branch the way a landing does."""
+    _git(repository, "merge", "-q", "--ff-only", _tree_head(tree))
+
+
+def _held_record(repository: Path, tree: Path) -> dict[str, Any]:
+    """The run's committed row, naming the tree it left behind."""
+    record = ledger.build_record(
+        run_id=RUN_ID,
+        plan=PLAN,
+        gate="passed",
+        project=PROJECT,
+        node=NODE_ID,
+        completed_at=COMPLETED_AT.isoformat(),
+    )
+    record["repo"] = str(repository)
+    record["worktree"] = str(tree)
+    record["base_sha"] = _git(tree, "rev-parse", "HEAD^")
+    return record
+
+
+def _run_directory(repository: Path, tree: Path) -> None:
+    """Leave the run directory a promotion rebuilds an ended run's record from.
+
+    A run that ended before it was promoted holds no live pointer, so the
+    promotion reads what the launch left behind: the supervisor record naming
+    the repository and the tree the worker was given.
+    """
+    directory = runs.run_dir(RUN_ID)
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "supervisor.json").write_text(
+        json.dumps({"repo": str(repository), "worktree": str(tree)}), encoding="utf-8"
+    )
 
 
 def _retained_record(tree: Path) -> dict[str, Any]:
@@ -246,39 +264,36 @@ def _drive(
     return completed
 
 
-def _capture_snapshot_before_release(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
-    """Publish the session's snapshot at the instant a promotion releases.
+def _publish_a_held_row() -> dict[str, Any]:
+    """Publish the session's snapshot while the row it carries is a true one.
 
-    The pointer is already gone and the run's row is committed, while the tree
-    is still registered and on disk: the sweep window this row exists in, taken
-    deterministically rather than raced.
+    The run has ended and its row is committed, while the tree it left behind
+    is registered, on disk and still holding the run's work: the sweep window
+    this row exists in. A later landing takes that work, and the run's own
+    promotion of the finished record then releases the tree, which is what
+    makes the published row stale without the snapshot changing.
     """
-    original = promotion._release_after_promotion
-    captured: dict[str, Any] = {}
-
-    def _observe(run_id, record, retention=None, **kwargs):
-        payload = obligations_view(PROJECT, SESSION)
-        captured["payload"] = payload
-        _publish(payload)
-        return original(run_id, record, retention, **kwargs)
-
-    monkeypatch.setattr(promotion, "_release_after_promotion", _observe)
-    return captured
+    payload = obligations_view(PROJECT, SESSION)
+    _publish(payload)
+    return payload
 
 
 def test_a_tree_the_promotion_released_is_not_offered(
-    fleet: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    fleet: Path, tmp_path: Path
 ) -> None:
     """The stale row is dropped where it is offered, and its run is named once."""
     tree = _worktree(fleet, tmp_path)
-    _live_pointer(fleet, tmp_path, tree)
-    captured = _capture_snapshot_before_release(monkeypatch)
+    _run_directory(fleet, tree)
+    ledger.append_run(PROJECT, _held_record(fleet, tree), root=fleet, allow_create=True)
+    captured = {"payload": _publish_a_held_row()}
 
+    # The landing takes the tree's work, so the same run's promotion of its
+    # finished record releases the tree and records the release.
+    _land(fleet, tree)
     promoted = crew.complete(
         RUN_ID,
         gate="passed",
-        outcome="the synthesized run lands nothing and releases its tree",
-        review_waiver="the synthesized fixture has no code review",
+        outcome="the synthesized run landed its work and releases its tree",
         root=fleet,
     )
 
@@ -353,22 +368,23 @@ def test_a_row_without_a_per_run_file_is_kept(fleet: Path, tmp_path: Path) -> No
 
 
 def test_a_recorded_release_is_not_offered_while_the_path_exists(
-    fleet: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    fleet: Path, tmp_path: Path
 ) -> None:
     """The record's own release verdict is read as well as the tree's absence."""
     tree = _worktree(fleet, tmp_path)
-    _live_pointer(fleet, tmp_path, tree)
-    captured = _capture_snapshot_before_release(monkeypatch)
+    _run_directory(fleet, tree)
+    ledger.append_run(PROJECT, _held_record(fleet, tree), root=fleet, allow_create=True)
+    captured = {"payload": _publish_a_held_row()}
+    _land(fleet, tree)
     crew.complete(
         RUN_ID,
         gate="passed",
-        outcome="the synthesized run lands nothing and releases its tree",
-        review_waiver="the synthesized fixture has no code review",
+        outcome="the synthesized run landed its work and releases its tree",
         root=fleet,
     )
     assert not tree.exists()
-    # A directory reappears at the released path. The record still decides, so
-    # the row stays dropped however the path now reads.
+    # A directory reappears at the release's own recorded path. The record still
+    # decides, so the row stays dropped however the path now reads.
     tree.mkdir(parents=True)
     _publish(captured["payload"])
 

@@ -86,11 +86,17 @@ def fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
         _git(root, *arguments)
 
     # A plan document the review tier reads its declared risk from, so the
-    # tier's plan input is a real file whose stat identity keys the memo.
+    # tier's plan input is a real file whose stat identity keys the memo. The
+    # record sits beside its heading because that adjacency is what the typed
+    # section read requires of a plan document.
     (root / "docs" / "plans" / "fixture-plan.html").write_text(
         '<html><head><meta name="plan-version" content="1"></head><body>'
+        '<h2 id="fixture-section">Fixture section</h2>'
         '<section data-reckon="section" data-id="fixture-section" '
-        'data-capability-risk="light"></section></body></html>',
+        'data-effort-hours="0.25" data-capability-class="general" '
+        'data-capability-reasoning="standard" data-capability-verification="strict" '
+        'data-capability-risk="low" data-status="implementable"></section>'
+        "</body></html>",
         encoding="utf-8",
     )
 
@@ -324,7 +330,7 @@ def test_a_steady_answer_store_read_parses_once_and_a_write_re_reads(
     tree = fleet["worktrees"]["run-00"]
     file_memo.clear()
     recovery_watch._remember_commit_answer(tree, "first-candidate", "1" * 40)
-    path = recovery_watch._git_answer_store_path()
+    path = recovery_watch._git_answer_tree_path(tree)
 
     reads: list[str] = []
     real_open = io.open
@@ -342,10 +348,10 @@ def test_a_steady_answer_store_read_parses_once_and_a_write_re_reads(
         "with nothing written between them"
     )
 
-    # Another process rewrites the shared file through its own rename, which
+    # Another process rewrites this tree's file through its own rename, which
     # changes the identity the held copy was keyed on.
     payload = json.loads(real_open(path, encoding="utf-8").read())
-    payload["commits"].setdefault(str(tree), {})["second-candidate"] = "2" * 40
+    payload["commits"]["second-candidate"] = "2" * 40
     temporary = path.with_name(f".{path.name}.external.tmp")
     temporary.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
     os.replace(temporary, path)

@@ -333,7 +333,12 @@ def test_the_review_dispatch_waives_the_unreconciled_fence(
         )
     assert report["reviews"]["dispatched"], report["reviews"]
     review_run_id = str(runs.read_pointer("r-work")["review_dispatch"]["run_id"])
-    waiver = runs.read_pointer(review_run_id)["unreconciled_override"]
+    # The waiver is dispatch-time detail, so it is read through the accessor
+    # that answers for a pointer written either side of the split rather than
+    # indexed off the pointer itself.
+    waiver = runs.dispatch_field(
+        runs.read_pointer(review_run_id), "unreconciled_override"
+    )
     assert waiver["requested"] is True
     assert [row["run_id"] for row in waiver["waived_runs"]] == ["r-work"]
 

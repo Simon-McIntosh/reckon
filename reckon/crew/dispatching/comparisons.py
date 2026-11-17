@@ -43,10 +43,9 @@ def shadow_source(
     repo_root = Path(repo).resolve()
     projects = repository_projects(repo_root)
     if not projects:
-        # A project's state directory carries its own configuration, which
-        # survives the run ledger's departure from git; the ledger file is not
-        # the marker.
-        markers = ("index.json", "flight.yaml", "crew.json")
+        # Review history survives ledger untracking; static build metadata
+        # alone does not establish crew ownership.
+        markers = ("flight.yaml", "crew.json")
         state_root = repo_root / "docs" / "state"
         projects = (
             tuple(
@@ -54,7 +53,10 @@ def shadow_source(
                     path.name
                     for path in state_root.iterdir()
                     if path.is_dir()
-                    and any((path / marker).is_file() for marker in markers)
+                    and (
+                        (path / "reviews").is_dir()
+                        or any((path / marker).is_file() for marker in markers)
+                    )
                 )
             )
             if state_root.is_dir()

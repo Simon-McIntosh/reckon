@@ -1,0 +1,106 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T17:03:21.838Z",
+  "dispatched_at": "2026-11-15T17:02:54Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/history-persists-as-detail-washes-out/r-20261115T165518886501-plan-review-of-history-persists-as-detail-washes-out/plan.html:402",
+      "id": "done_when-1",
+      "reason": "the endpoint must require the crew marker to be a path \u00a726 leaves tracked (or must make \u00a726 re-assert recognition), otherwise the node's verdict is true only until its declared successor lands.",
+      "text": "s28's crew fixture holds `reviews/` and `runs/` together and its done-when fixes no criterion for which one a worker keys on, while \u00a726 removes `docs/state/<project>/runs/` from index and working tree and s26's gate never re-asserts guard recognition, so a runs-keyed repair passes s28 and then disables both guards and the CLI entry in every post-merge checkout \u2014 the silent-off failure \u00a725 and \u00a728 exist to prevent, moved one node later",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/history-persists-as-detail-washes-out/r-20261115T165518886501-plan-review-of-history-persists-as-detail-washes-out/plan.html:401",
+      "id": "wiring-1",
+      "reason": "the write-path list and the recognised/not-recognised arm must name the fourth surface, or the repair lands three copies of a fact that has four.",
+      "text": "s28's Why scopes the defect to \"the two guards and the CLI entry\", but `reckon/crew/dispatching/comparisons.py:49` carries the identical `(\"index.json\", \"flight.yaml\", \"crew.json\")` tuple in `shadow_source`'s project-discovery fallback, so the same static-site-only fixture still resolves as a project on that path after s28 and the section's own claim (\"a docs-only repository is not read as crew-managed\") stays false there; `comparisons.py` is in no write path of s28, so the worker is fenced out of the copy it would have to change",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "fd2fe9c17f80e5901236fb399cb7ac4831d2bcce",
+  "plan_fingerprint": "00b7c059d5f149e5b52129c46aebdad15948715529bc82c1ec9058460e681be9",
+  "plan_slug": "history-persists-as-detail-washes-out",
+  "plan_version": 46,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "990d51f153ef829b7d011ea7b976d99324cf09a5",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "s28's crew fixture now holds reviews/ and no runs/, naming why: s26 removes runs/ (edit at v51)",
+      "reason": "",
+      "when": "2026-11-15T18:24:37.118308+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "990d51f153ef829b7d011ea7b976d99324cf09a5",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "s28's Why, its not-recognised arm and its write paths now name reckon/crew/dispatching/comparisons.py, the fourth copy of the marker tuple",
+      "reason": "",
+      "when": "2026-11-15T18:24:45.251375+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "990d51f153ef829b7d011ea7b976d99324cf09a5",
+      "commit_basis": "edit",
+      "note": "s28's crew fixture now holds reviews/ and no runs/, naming why: s26 removes runs/ (edit at v51)",
+      "reason": "",
+      "when": "2026-11-15T18:24:37.118308+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "990d51f153ef829b7d011ea7b976d99324cf09a5",
+      "commit_basis": "edit",
+      "note": "s28's Why, its not-recognised arm and its write paths now name reckon/crew/dispatching/comparisons.py, the fourth copy of the marker tuple",
+      "reason": "",
+      "when": "2026-11-15T18:24:45.251375+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/history-persists-as-detail-washes-out/r-20261115T165518886501-plan-review-of-history-persists-as-detail-washes-out.json",
+  "review_run_id": "r-20261115T165518886501-plan-review-of-history-persists-as-detail-washes-out",
+  "reviewed_blob_sha": "08c9558891f73d3e6d286016c3d39fe0a431eab6",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `docs/figures/plan-review-cycles/measure_review_cycles.py:333-336` holds the working-tree `crew.json` read and the silent `continue`, `reckon/velocity.py:723,731` reads the ledger blob and the `runs` tree at the revision, `0d421c7f75` is the s25 landing commit, and the five named projects resolve to exactly the shapes claimed (`tessera`, `norma`, `helix`, `vv` hold `index.json`, `project.json`, `timeline.html`; `hanney` holds those plus `reviews/` and `runs/`, no `crew.json`, no `flight.yaml`).",
+    "done_when": "a finding \u2014 s28's crew fixture admits `runs/` as the distinguishing marker, and `runs/` is what \u00a726 removes, so a runs-keyed repair passes s28's gate and turns both guards off in every checkout after \u00a726.",
+    "evidence_paths": "pass \u2014 neither section routes evidence to a session path; each states its measure as a test that fails at base, so the record is the node's own gate log and no scratchpad path is named.",
+    "naming": "pass \u2014 no plan label, section number, ticket number or version tag reaches a symbol or comment; `0d421c7f75` appears only in s28's Why as evidence.",
+    "reasoning": "pass \u2014 s24's root cause matches the code (at a revision with no `crew.json` `_read_ledger` returns `{}` and `_read_run_rows` returns no rows, so velocity reports zero rather than refusing; the figure script skips the project) and s28's does too (`index.json` is in all three marker tuples and `reckon build` writes it unconditionally at `reckon/project_maintenance_commands.py:645-682`); both endpoints are obtainable from a temporary repository with a redirected config home, and each names a control that fails.",
+    "single_goal": "pass \u2014 s24 carries one deliverable (the revision-scoped readers restated on the store, the rebuilt-export arm explicitly deferred to \u00a727) and s28 carries one (a docs-only repository not read as crew-managed), each closeable on a single verdict.",
+    "wiring": "a finding \u2014 s28 repairs the marker list in the two guards and the CLI entry but the same list lives a fourth time at `reckon/crew/dispatching/comparisons.py:49`, outside s28's endpoint and write paths."
+  },
+  "section_digests": {
+    "_document": "6a43111590c490cb96fbdbd1efbc232ec22261c8c21397d2d76e96d30f35b73d",
+    "s1": "16a4b0ff613308f968af13a86453cdda7611fbb4a0b662f0998319199f08c1f2",
+    "s2": "81ea5591beea9f0bfe0621b90127946f5c732b8471e2c5373404a592fa5daefe",
+    "s20": "469126d7a8d70994107c002b967dbf9da3c5237e4a3d05823281a9885c92731d",
+    "s21": "b2ec3716b6dd37a6a203c9b9d7c0be1209c9fa8d48d83ddcdf537eb47428cd4c",
+    "s22": "44eee72b2eb1fba73278d19280640ae85ab4fef9d1625113ca2a3cba0ae32c22",
+    "s23": "5f979f2ac2c694c8465c9b3b76743b70a3df967a1496488ebe45e96a41451c59",
+    "s24": "fe6d65f7674dbe3a7d52dc9a0bcc1b2baf68d75d47ddff9e615c69253e2dcef4",
+    "s25": "6e50b703cae5c188d1fb24250a943eb5f654fc5c26334335a3a7288120690168",
+    "s26": "37c27b0d54e7bf1a99e322e08776a72ffa748c2b88388aaa51f267a1db5c358a",
+    "s27": "9d55fe84f9ee617248a7eec57379797bd44bc1cb050fc378d20ac1b3da8152b2",
+    "s28": "93bb2a9cff538746df7d044a3e2c5676f02d15c8312121daae7e53b79b8b98f6",
+    "s3": "3422a7a0a23c318e54716e2fbbaf99599e0142f7bbc74d9eb45f924541cd8ccf",
+    "s4": "6beff7af8378d0a3be80a490fb73cc8c5e6a8ee94449c98de40a252d2f57fcd5",
+    "s5": "0cd70cc30708f232bf564bff0e7825d783d5f5ab455747bfac40ebe742ea0ed3",
+    "s6": "5181e894e8b3823f366d0b459a48ecc8e236e645ca5b1f02071dfc0fdae47681",
+    "s7": "6173f16d89316af11f74c75b5bec44f90742582abf47efd7e72af7af3bb31b50"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T17:10:56.399935+00:00",
+  "total": null
+}

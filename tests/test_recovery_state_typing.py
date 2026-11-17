@@ -443,4 +443,4 @@ def test_ticker_carries_the_recovery_verb_in_an_actionable_row() -> None:
     assert recovery.RECOVERY_VERBS["blocked"]  # the row's own remedy
     assert "decide:" not in line
     assert "a storage policy is required" not in line
-    assert "needs you" in line
+    assert "help" in line

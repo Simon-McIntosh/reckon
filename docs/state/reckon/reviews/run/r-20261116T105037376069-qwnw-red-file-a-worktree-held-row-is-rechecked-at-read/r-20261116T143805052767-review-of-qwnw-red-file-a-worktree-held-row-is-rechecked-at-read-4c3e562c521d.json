@@ -1,0 +1,123 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "failure_condition": "crew.complete stops releasing a landed tree, or the fixture's landing leaves the tree unreleasable; the assertion reads the promotion's own report, not the fixture's expectation.",
+      "file": "tests/test_a_worktree_held_row_is_rechecked_at_read.py",
+      "line": 300
+    },
+    {
+      "failure_condition": "The published snapshot loses the row, which would make the empty stdout below a statement about the snapshot instead of about the hook.",
+      "file": "tests/test_a_worktree_held_row_is_rechecked_at_read.py",
+      "line": 310
+    },
+    {
+      "failure_condition": "The hook's recheck stops dropping a released row; mutation-recheck-disabled.log reproduces exactly this red with the recheck returning early.",
+      "file": "tests/test_a_worktree_held_row_is_rechecked_at_read.py",
+      "line": 314
+    },
+    {
+      "failure_condition": "The derivation stops holding a tree that still carries the run's own unlanded commit.",
+      "file": "tests/test_a_worktree_held_row_is_rechecked_at_read.py",
+      "line": 328
+    },
+    {
+      "failure_condition": "The tree-absence half of the recheck stops dropping the row; it is red in mutation-recheck-disabled.log alongside :314.",
+      "file": "tests/test_a_worktree_held_row_is_rechecked_at_read.py",
+      "line": 342
+    },
+    {
+      "failure_condition": "An absent per-run file stops keeping the duty, or the aggregate ledger is consulted instead of the per-run file.",
+      "file": "tests/test_a_worktree_held_row_is_rechecked_at_read.py",
+      "line": 366
+    },
+    {
+      "failure_condition": "A recorded release stops deciding, so a row survives where the ledger record says the tree was released.",
+      "file": "tests/test_a_worktree_held_row_is_rechecked_at_read.py",
+      "line": 393
+    }
+  ],
+  "assertion_independence": "No added assertion compares a value against the same variable the test handed in: tests/test_a_worktree_held_row_is_rechecked_at_read.py:300 reads crew.complete's own report, :307 and :310 read a payload derived by the production obligations view from the fixture ledger, :338 compares the fixture tree path against git's own `worktree list` output, and :357 asserts against ledger.run_path's own resolution. The fixtures were handed in, but every guard is the product's reading of them, which is why the mutation log reddens three of these lines.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:recheck_worktree_held_rows",
+    "reckon/hooks/coordinator_obligations.py:_worktree_row_is_stale",
+    "reckon/crew/obligations.py:obligations",
+    "reckon/crew/obligation_snapshot.py:write_snapshot",
+    "reckon/crew/ledger.py:append_run",
+    "reckon/crew/promotion.py:complete"
+  ],
+  "commits_read": [
+    "3ae78c854beba4e668b4bc9f28f84970b7576197",
+    "4c3e562c521d4ebf969583fee45626b34f582abe"
+  ],
+  "completed_at": "2026-11-16T15:34:46.991Z",
+  "dispatched_at": "2026-11-16T15:34:20Z",
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105037376069-qwnw-red-file-a-worktree-held-row-is-rechecked-at-read/manifest.md",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "the baseline_suite and after_suite arm names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import only reckon.interface_counts and touch nothing this change touched (no test module imports the changed file), so both arms read 58 passed whatever the fixtures do and the arm cannot fail on a regression here."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "Read both commits against 655a2befa9: 3ae78c854b rewrites the fixture helpers while comparing the `assert` lines of base and head shows identical text, and 4c3e562c521d adds the 62-line evidence fragment.",
+    "done_when": "The done_when asks that the named file pass in full at head as an all_debug job with SLURM_JOB_ID unset; gate-all_debug.log records that command, `# SLURM_JOB_ID as the run reads it: 'unset'`, `5 passed` and `EXIT=0` at 3ae78c854b, and `sacct -j 1320135` shows gate.sh on all_debug COMPLETED with ExitCode 0:0.",
+    "goal": "Read \u00a729 of queued-work-needs-no-workaround and the landed diff 655a2befa9..4c3e562c52; `git diff --name-only` lists only tests/test_a_worktree_held_row_is_rechecked_at_read.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-worktree-held-row-is-rechecked-at-read.html, and the file reports 5 passed at 3ae78c854b.",
+    "manifest": "Read manifest.md; it records status complete, the green all_debug gate with EXIT=0, the base-red log at 655a2befa9 with 3 failed and EXIT=1, both suite arms at 58 passed with EXIT=0, and a rubric line for each of the six dimensions.",
+    "write_paths": "The declared write paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; every path in the landed diff is inside them and no reckon/ source file changed."
+  },
+  "justifications": {
+    "durability": "With the hook's recheck disabled mutation-recheck-disabled.log reports 3 failed and EXIT=1, with tests/test_a_worktree_held_row_is_rechecked_at_read.py:314 and :342 the assertions that redden, so the guard fires rather than merely passing.",
+    "evidence": "gate-all_debug.log ends `5 passed` / `EXIT=0` at 3ae78c854b and sacct confirms job 1320135 on all_debug, but the baseline/after arm named in the manifest covers two files that import only reckon.interface_counts and so cannot measure this repair.",
+    "fit": "The helpers added at tests/test_a_worktree_held_row_is_rechecked_at_read.py:120-165 follow the module's existing fixture idiom and `python -m ruff check` on the file reports no finding.",
+    "goal_fidelity": "tests/test_a_worktree_held_row_is_rechecked_at_read.py passes 5 of 5 at 3ae78c854b, the revision the fragment qwnw-red-file-a-worktree-held-row-is-rechecked-at-read.html cites.",
+    "reuse": "`ledger.build_record` at tests/test_a_worktree_held_row_is_rechecked_at_read.py:141 and `runs.run_dir` at :159 extend their owners, and a search over tests/helpers found no shared owner for a run-directory or land helper; tests/helpers/landing_repository.py:_complete_land drives `crew complete --land` against an origin, a different capability.",
+    "scope_discipline": "`git diff --name-only 655a2befa9..4c3e562c521d` lists only tests/test_a_worktree_held_row_is_rechecked_at_read.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-worktree-held-row-is-rechecked-at-read.html, both inside the declared paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a729 of queued-work-needs-no-workaround asks that a test file red on the primary branch pass in full; git diff --name-only 655a2befa9..4c3e562c521d lists only tests/test_a_worktree_held_row_is_rechecked_at_read.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-worktree-held-row-is-rechecked-at-read.html, and the file reports 5 passed at 3ae78c854b.\nVERDICT done_when: the done_when asks for the file to pass in full at head as an all_debug job with SLURM_JOB_ID unset; gate-all_debug.log records that command, the unset job id, 5 passed and EXIT=0 at 3ae78c854b, and sacct -j 1320135 shows gate.sh on all_debug COMPLETED with ExitCode 0:0.\nVERDICT write_paths: the declared write paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; every path in the landed diff lies inside them and no reckon/ source file changed.\nVERDICT manifest: read manifest.md; it records status complete, the green all_debug gate with EXIT=0, the base-red log at 655a2befa9 with 3 failed and EXIT=1, both suite arms at 58 passed with EXIT=0, and a rubric line per dimension.\nVERDICT diff: read both commits against 655a2befa9: 3ae78c854b rewrites the fixture helpers and keeps every assertion (the assert lines of base and head are identical, only line numbers move), and 4c3e562c521d adds the 62-line evidence fragment.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:recheck_worktree_held_rows, reckon/hooks/coordinator_obligations.py:_worktree_row_is_stale, reckon/crew/obligations.py:obligations, reckon/crew/obligation_snapshot.py:write_snapshot, reckon/crew/ledger.py:append_run, reckon/crew/promotion.py:complete\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_worktree_held_row_is_rechecked_at_read.py passes 5 of 5 at 3ae78c854b, the revision the fragment qwnw-red-file-a-worktree-held-row-is-rechecked-at-read.html cites.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-all_debug.log ends 5 passed / EXIT=0 at 3ae78c854b and sacct confirms job 1320135 on all_debug, but the baseline/after arm named in the manifest covers two files that import only reckon.interface_counts and so cannot measure this repair.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 655a2befa9..4c3e562c521d lists only tests/test_a_worktree_held_row_is_rechecked_at_read.py and the landing fragment, both inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: with the hook's recheck disabled mutation-recheck-disabled.log reports 3 failed and EXIT=1, with tests/test_a_worktree_held_row_is_rechecked_at_read.py:314 and :342 the assertions that redden.\nSCORE fit: 18\nJUSTIFICATION fit: the helpers added at tests/test_a_worktree_held_row_is_rechecked_at_read.py:120-165 follow the module's fixture idiom and python -m ruff check on the file reports no finding.\nSCORE reuse: 20\nJUSTIFICATION reuse: ledger.build_record at tests/test_a_worktree_held_row_is_rechecked_at_read.py:141 and runs.run_dir at :159 extend their owners, and a search over tests/helpers found no shared owner for a run-directory or land helper.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105037376069-qwnw-red-file-a-worktree-held-row-is-rechecked-at-read/manifest.md:17 non-blocking: the baseline_suite and after_suite arm names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import only reckon.interface_counts and touch nothing this change touched, so both arms read 58 passed whatever the fixtures do and the arm cannot fail on a regression here.",
+  "reuse_search": {
+    "assessment": "No shared helper owns any of the three capabilities: 18 test modules write supervisor.json inline and none factors it out, tests/helpers/landing_repository.py only drives the CLI's --land path against a bare origin, and the additions call the production owners ledger.build_record and runs.run_dir rather than restating them.",
+    "capabilities": [
+      "a run directory holding the launch's supervisor record, for a promotion to rebuild an ended run from",
+      "a fast-forward landing of a fixture tree's commit into the fixture branch",
+      "a committed ledger record naming a run's tree"
+    ],
+    "owners_opened": [
+      "tests/helpers/git.py",
+      "tests/helpers/landing_repository.py:_write_origin_and_checkout",
+      "tests/helpers/landing_repository.py:_complete_land",
+      "reckon/crew/ledger.py:build_record",
+      "reckon/crew/runs.py:run_dir"
+    ]
+  },
+  "review_limitations": [
+    "Read-only review: no mutation and no re-run of the file; the base-red, head-green and mutation results are read from the run's recorded logs.",
+    "The job partition and exit status were read from `sacct -j 1320135` rather than from the log alone, and that read is the only out-of-log check made.",
+    "The verdict that the base red was test-wrong rests on the product rule the fragment cites at commit c778aaa1f6, read once from `git show`, not re-derived from reckon/crew/obligations.py."
+  ],
+  "review_run_id": "r-20261116T143805052767-review-of-qwnw-red-file-a-worktree-held-row-is-rechecked-at-read-4c3e562c521d",
+  "reviewed_base_sha": "655a2befa979af690bab537523cd9ad97dc108c5",
+  "reviewed_commit": "4c3e562c521d4ebf969583fee45626b34f582abe",
+  "reviewed_head_sha": "4c3e562c521d4ebf969583fee45626b34f582abe",
+  "reviewed_run_id": "r-20261116T105037376069-qwnw-red-file-a-worktree-held-row-is-rechecked-at-read",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T16:55:00.000000+00:00",
+  "total": 113
+}

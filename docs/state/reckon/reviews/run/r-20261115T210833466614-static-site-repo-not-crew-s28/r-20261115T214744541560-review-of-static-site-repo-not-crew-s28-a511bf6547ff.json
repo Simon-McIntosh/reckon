@@ -1,0 +1,108 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "fails_if": "Fixture accidentally carries crew.json, flight.yaml or runs; setup invariant, not runtime coverage.",
+      "path": "tests/test_a_static_site_repo_is_not_crew_managed.py:31"
+    },
+    {
+      "fails_if": "Either guard recognises static-only output or fails to recognise review history; restoring index.json breaks the static branch.",
+      "path": "tests/test_a_static_site_repo_is_not_crew_managed.py:41"
+    },
+    {
+      "fails_if": "Native spawn is refused for the static fixture, allowed for review history, omits refusal/project text or emits a message for static-only output.",
+      "path": "tests/test_a_static_site_repo_is_not_crew_managed.py:55-60"
+    },
+    {
+      "fails_if": "Peer send to a verified live worker has the wrong permission for either population, omits refusal/recipient text or emits a message for static-only output.",
+      "path": "tests/test_a_static_site_repo_is_not_crew_managed.py:84-89"
+    },
+    {
+      "fails_if": "CLI recognition accepts static-only output or ignores reviews.",
+      "path": "tests/test_a_static_site_repo_is_not_crew_managed.py:95"
+    },
+    {
+      "fails_if": "Fallback fails to resolve sample for review history, succeeds for static-only output, raises a different refusal, or reads a ledger for the excluded population; restoring index.json triggers a forbidden ledger read and successful lookup.",
+      "path": "tests/test_a_static_site_repo_is_not_crew_managed.py:122-128"
+    }
+  ],
+  "assertion_independence": "No added assertion compares a production echo with the same supplied value: has_reviews configures files but is not passed to production, sample is an independently fixed expected project, and reads observes side effects.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/hooks/native_agent_guard.py:116 repository_root",
+    "reckon/hooks/native_agent_guard.py:187 decide",
+    "reckon/hooks/worker_message_guard.py:209 decide",
+    "reckon/project_maintenance_commands.py:501 sync guard installation",
+    "reckon/crew/dispatching/comparisons.py:297 shadow"
+  ],
+  "completed_at": "2026-11-15T22:03:45Z",
+  "dispatched_at": "2026-11-15T21:57:41Z",
+  "findings": [],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/static-site-repo-not-crew-s28/tests/test_a_static_site_repo_is_not_crew_managed.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/static-site-repo-not-crew-s28/tests/test_guards_hold_without_a_tracked_ledger.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/static-site-repo-not-crew-s28/tests/test_staged_write_inventory.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/static-site-repo-not-crew-s28/tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T210833466614-static-site-repo-not-crew-s28/after-final.log",
+      "revision": "a511bf6547ffbb7cf1f5e65560e32a9c29909aa7"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/static-site-repo-not-crew-s28/tests/test_guards_hold_without_a_tracked_ledger.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/static-site-repo-not-crew-s28/tests/test_staged_write_inventory.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/static-site-repo-not-crew-s28/tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T210833466614-static-site-repo-not-crew-s28/baseline.log",
+      "revision": "a70244fcaf771a224d819576cb40162689c62cd4"
+    },
+    "importer_delta": {
+      "added_failure_count": 0,
+      "added_failure_ids": [],
+      "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T210833466614-static-site-repo-not-crew-s28/importer-after.log",
+      "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T210833466614-static-site-repo-not-crew-s28/importer-baseline.log",
+      "note": "Both logs completed with identical seven FAILED ids; importer head is the production repair commit, followed only by an evidence fragment."
+    },
+    "negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T210833466614-static-site-repo-not-crew-s28/negative-control.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read 955b58db05afd6dd982fcd43716b2a54648a5e10, 7edfd7adf63c93a211ba5ca2e96cfc9844ad060e and a511bf6547ffbb7cf1f5e65560e32a9c29909aa7 against a70244fcaf771a224d819576cb40162689c62cd4; the diff adds twelve regression cases, repairs the four existing marker predicates, updates the retained-history fixture and records evidence.",
+    "done_when": "prompt.txt:173-174 requires two fixture populations, retained ledger-removal coverage and no added importer failures on all_debug; baseline.log and after-final.log record 63 and 75 passes, while importer-baseline.log and importer-after.log each record the same seven failures and 102 passes.",
+    "goal": "prompt.txt:38 of the reviewed run requires static-only repositories to be excluded while review-history repositories remain managed; the four discovery paths in commit 7edfd7adf63c93a211ba5ca2e96cfc9844ad060e implement that distinction.",
+    "manifest": "the reviewed run's manifest.md names all three commits and readable baseline, delivered-head, importer and mutation receipts; their summaries and failure identities agree with the logs.",
+    "write_paths": "prompt.txt:84-92 grants the four production files, two test files and evidence fragment; all seven changed files in the base-to-head diff fall inside those paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_static_site_repo_is_not_crew_managed.py:41,55,84,95,123-128 fail on restoring index.json recognition, as negative-control.log records with six failures, while review-history cases and the updated ledger-removal tests protect the positive direction.",
+    "evidence": "tests/test_a_static_site_repo_is_not_crew_managed.py:38-128 covers both required populations across four consumers, and reproduction.log, after-final.log and both importer logs record the requested failures, passes and zero added failures.",
+    "fit": "reckon/hooks/native_agent_guard.py:52-101 and reckon/hooks/worker_message_guard.py:49-103 preserve the standalone stdlib guard idiom, and the added test names describe behavior without transient identifiers.",
+    "goal_fidelity": "reckon/hooks/native_agent_guard.py:96, reckon/hooks/worker_message_guard.py:98, reckon/cli_entry.py:385 and reckon/crew/dispatching/comparisons.py:56 all retain review-directory recognition while excluding static build metadata.",
+    "reuse": "capability searches located and opened the existing crew_managed_projects, _crew_state_exists and shadow_source owners plus tests/test_guards_hold_without_a_tracked_ledger.py:20; the change extends those production owners and its local parametrized fixture adds the missing static-versus-review population rather than a parallel production mechanism.",
+    "scope_discipline": "the seven paths changed by the three reviewed commits are explicitly granted in the reviewed run's prompt.txt:84-92 and contain only recognition, regression coverage and its evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 of the reviewed run requires static-only repositories to be excluded while review-history repositories remain managed; the four discovery paths in commit 7edfd7adf63c93a211ba5ca2e96cfc9844ad060e implement that distinction.\nVERDICT done_when: prompt.txt:173-174 requires two fixture populations, retained ledger-removal coverage and no added importer failures on all_debug; baseline.log and after-final.log record 63 and 75 passes, while importer-baseline.log and importer-after.log each record the same seven failures and 102 passes.\nVERDICT write_paths: prompt.txt:84-92 grants the four production files, two test files and evidence fragment; all seven changed files in the base-to-head diff fall inside those paths.\nVERDICT manifest: the reviewed run's manifest.md names all three commits and readable baseline, delivered-head, importer and mutation receipts; their summaries and failure identities agree with the logs.\nVERDICT diff: read 955b58db05afd6dd982fcd43716b2a54648a5e10, 7edfd7adf63c93a211ba5ca2e96cfc9844ad060e and a511bf6547ffbb7cf1f5e65560e32a9c29909aa7 against a70244fcaf771a224d819576cb40162689c62cd4; the diff adds twelve regression cases, repairs the four existing marker predicates, updates the retained-history fixture and records evidence.\nCALL_SITES: reckon/hooks/native_agent_guard.py:116 repository_root, reckon/hooks/native_agent_guard.py:187 decide, reckon/hooks/worker_message_guard.py:209 decide, reckon/project_maintenance_commands.py:501 sync guard installation, reckon/crew/dispatching/comparisons.py:297 shadow\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/hooks/native_agent_guard.py:96, reckon/hooks/worker_message_guard.py:98, reckon/cli_entry.py:385 and reckon/crew/dispatching/comparisons.py:56 all retain review-directory recognition while excluding static build metadata.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_a_static_site_repo_is_not_crew_managed.py:38-128 covers both required populations across four consumers, and reproduction.log, after-final.log and both importer logs record the requested failures, passes and zero added failures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the seven paths changed by the three reviewed commits are explicitly granted in the reviewed run's prompt.txt:84-92 and contain only recognition, regression coverage and its evidence fragment.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_static_site_repo_is_not_crew_managed.py:41,55,84,95,123-128 fail on restoring index.json recognition, as negative-control.log records with six failures, while review-history cases and the updated ledger-removal tests protect the positive direction.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/hooks/native_agent_guard.py:52-101 and reckon/hooks/worker_message_guard.py:49-103 preserve the standalone stdlib guard idiom, and the added test names describe behavior without transient identifiers.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability searches located and opened the existing crew_managed_projects, _crew_state_exists and shadow_source owners plus tests/test_guards_hold_without_a_tracked_ledger.py:20; the change extends those production owners and its local parametrized fixture adds the missing static-versus-review population rather than a parallel production mechanism.\n",
+  "reuse_search": "Searched committed production and guard tests by crew ownership, review history and project fixture capability; opened existing owners in both standalone guards, cli_entry.py, comparisons.py and tests/test_guards_hold_without_a_tracked_ledger.py, plus the crew.json-only test_native_agent_guard fixture. New definitions are fixture/test functions and a local ledger spy; existing helpers lack the two-population fixture and call observation.",
+  "review_run_id": "r-20261115T214744541560-review-of-static-site-repo-not-crew-s28-a511bf6547ff",
+  "reviewed_base_sha": "a70244fcaf771a224d819576cb40162689c62cd4",
+  "reviewed_head_sha": "a511bf6547ffbb7cf1f5e65560e32a9c29909aa7",
+  "reviewed_run_id": "r-20261115T210833466614-static-site-repo-not-crew-s28",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T22:07:10.959671+00:00",
+  "total": 120
+}

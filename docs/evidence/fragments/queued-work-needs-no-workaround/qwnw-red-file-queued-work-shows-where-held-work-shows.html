@@ -1,0 +1,39 @@
+<section id="qwnw-red-file-queued-work-shows-where-held-work-shows">
+<h3>A queued run reads where held work is shown: repaired</h3>
+<p>The named file reproduces at the base revision and passes at the head. Two causes, both product faults, both repaired without touching the test file. The raw logs are named in the manifest; the figures below are their summary and exit lines.</p>
+
+<h4>Cause 1: the live view resolved a row's configuration the way a dispatch does</h4>
+<p><strong>Product wrong.</strong> The live view composes each row's lane reading through <code>reckon.crew.query._lane_config_for</code>, which resolved the row's project configuration with the admission path's <code>_resolve_lane_config(record)</code>, whose local-lane selection defaults to on. Selecting the local backend raises when the host declares none, so a read view answered with a dispatch's refusal, naming <code>local_backend</code> and the route a local dispatch needs. Three of the four failing cases came from this one cause.</p>
+<p><strong>Repair.</strong> The read resolves the row's configuration with <code>select_local=False</code>: a row's lane document is named by the backend the row records, so the read never needed this host's local lane. A configuration that cannot be resolved is caught as a row with no reading, which is what the helper's own contract already promised.</p>
+
+<h4>Cause 2: the stop hook's copy of the non-blocking vocabulary was short one kind</h4>
+<p><strong>Product wrong.</strong> The hook keeps its own copy of the derivation's non-blocking duty kinds because the paths that read a fresh snapshot cannot import the derivation. The derivation carries <code>route-defaulted</code>, documented there as a notice about a run that is working and as never holding a stop open; the hook's copy did not carry it, so that notice held a coordinator's stop open. The case asserts that the derivation's non-blocking set is a subset of the hook's, which is exactly that drift, and the copy now carries the kind.</p>
+
+<h4>Landing</h4>
+<p><strong>Two merges, both sides kept.</strong> The primary branch added <code>review-in-flight</code> to the same hook vocabulary while this run added <code>route-defaulted</code>; that merge conflicted on the comment above the set, not on the set, because git had already taken both.</p>
+<p>It then repaired the live view's read the other way: catch the dispatch refusal instead of skipping the local-lane selection. Both intents survive — the read still resolves the row's configuration without selecting a local lane, and the primary branch's note that an absent <code>local_backend</code> is a valid configuration and the refusal is a dispatch refusal rather than a read failure now sits above the handler. The branch's own comment is kept verbatim; the selection is skipped as this run's repair had it.</p>
+<p>Driven at the merge head: both a <code>route-defaulted</code> and a <code>review-in-flight</code> duty return no blocking item, the derivation's non-blocking set is a subset of the hook's, and the live view resolves a row on a host with no local backend instead of raising.</p>
+
+<h4>Runs</h4>
+<p>Each arm ran on the allocation's node with <code>SLURM_JOB_ID</code> unset for the pytest process. <code>/tmp</code> was full on the node, so every arm ran with a home-backed temporary directory.</p>
+<pre># command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_queued_work_shows_where_held_work_shows.py</pre>
+<ul>
+<li id="qwnw-red-file-queued-work-shows-where-held-work-shows-base">base <code>24bc79d8ee</code>: <strong>4 failed, 1 passed</strong>, <code>EXIT=1</code></li>
+<li id="qwnw-red-file-queued-work-shows-where-held-work-shows-head">head <code>d6665d49d3</code>: <strong>5 passed</strong>, <code>EXIT=0</code></li>
+<li id="qwnw-red-file-queued-work-shows-where-held-work-shows-merged">merge head <code>2f0daec852</code>, which the primary branch's <code>655a2befa9</code> merged into: <strong>5 passed</strong>, <code>EXIT=0</code>, and its suite arm <strong>58 passed</strong></li>
+</ul>
+<p>The base arm's four failing ids are test_one_queued_run_reads_as_queued_on_every_surface, test_the_live_view_names_the_queued_runs_place, test_a_queued_run_never_holds_a_coordinator_stop_open and test_two_queued_runs_follow_the_admission_order. The first of them failed on the live view's refusal; the third failed on the missing <code>route-defaulted</code> kind.</p>
+
+<h4>Guards, shown firing</h4>
+<p>A passing suite does not show a guard firing, so each repair was also driven directly at both revisions, with the base revision's own tree imported beside the head's:</p>
+<pre># query._lane_config_for(pointer, {}) for a queued local pointer on a host declaring no local lane
+base: raised: FlightConfigError resolved flight local_backend must be set before `crew dispatch --local` can route work
+head: backends: ['native'] local_backend: None lane_document: ''</pre>
+<p>The head reading is a resolved configuration, not a swallowed failure: the row keeps its backend set and has no lane document to read, so the view serves the row and reports no lane reading for it.</p>
+<pre># coordinator_obligations._blocking_items([{"kind": "route-defaulted"}])
+base: blocking: [{'kind': 'route-defaulted', 'run_id': 'r-1'}]
+head: blocking: []</pre>
+
+<h4>Lint</h4>
+<p><code>ruff check</code> and <code>ruff format --check</code> over the two changed files report the same two S105 findings and the same one reformat candidate that the base revision's copies of those files report: nothing new on the changed paths.</p>
+</section>

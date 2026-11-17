@@ -178,18 +178,34 @@ def _artifact_allowance(done_when: str) -> str:
 # the fragment reads the run-record carrier instead. The record goes to the
 # node's own fragment and its landing to a single manifest line rather than to
 # the plan, so two nodes on one plan never edit the same file and their merged
-# records need no manual union. Figure placement and the meta-line ban are stated
+# records need no manual union. The fragment itself is optional — a routine
+# landing leaves only its `landing:` line, its run record and its gate log —
+# and the clause names the two cases it is written for, a negative result and a
+# mechanism that does not fit a landing line. Nothing splices a fragment into a
+# plan's landed record: the landed record is synthesized once at closure, which
+# links the fragment from the node's row and reproduces none of its text.
+# Figure placement and the meta-line ban are stated
 # because a worker still edits the plan in its tree when it must. Kept as a
 # standalone constant so a test can compose with it masked out and diff against
 # the live prompt, which proves the addition is removable and scoped.
 PLAN_LANDING_CONTRACT = (
     "CONTRACT — LANDING YOUR RECORD\n"
-    "  Write your landing record to your own fragment path and never to the plan:\n"
-    "  your evidence anchor to your scope's fragment under\n"
-    "  docs/evidence/fragments/<plan>/<node-id>.html, and exactly one `landing:`\n"
-    "  line in your manifest in place of a plan edit. The fragment goes into your\n"
-    "  final commit; promotion lands the `landing:` line on your plan section.\n"
+    "  Exactly one `landing:` line in your manifest is the record of this node,\n"
+    "  stating what changed and its measure's figure, and promotion lands it on\n"
+    "  your plan section. A per-node evidence fragment is optional: it is not the\n"
+    "  record and a routine landing writes none, so the landing line is the whole\n"
+    "  prose account of the node. Write a fragment only in one of the two cases\n"
+    "  it is for — you have a negative result, or a mechanism that does not fit a\n"
+    "  landing line — and when you write one, place it as follows. Write your\n"
+    "  landing record to your own fragment path and never to the plan: your\n"
+    "  evidence anchor to your scope's fragment under\n"
+    "  docs/evidence/fragments/<plan>/<node-id>.html, and\n"
+    "  exactly one `landing:` line in your manifest in place of a plan edit. The\n"
+    "  fragment goes into your final commit; promotion lands the `landing:` line on your plan section.\n"
     + SMALL_NODE_RULE
+    + "  Nothing splices a fragment into the plan's landed record: that record is\n"
+    "  synthesized once at closure and links the fragment from your node's row\n"
+    "  without reproducing its text.\n"
     + "  Every element id in the fragment begins with the node id, so sibling\n"
     "  fragments composed into one record cannot claim the same anchor.\n"
     + "  Use a figure wherever a spatial, plotted or sequential relationship is clearer\n"
@@ -231,7 +247,11 @@ BRIEF_LANDING_CONTRACT = (
     "  the repository files your node changes, and name the record's absolute path\n"
     "  in your manifest so a later reader can open it without the run id.\n"
     "  The `landing:` line lands on this run's own record, because a brief names\n"
-    "  no plan section for a promotion to land it on.\n"
+    "  no plan section for a promotion to land it on. A per-node evidence\n"
+    "  fragment is optional: write one only when you have a negative result or a\n"
+    "  mechanism that does not fit a landing line, and a routine landing writes\n"
+    "  none, its `landing:` line being then the whole prose account of the node.\n"
+    "  Nothing splices a fragment into a plan's landed record.\n"
     + SMALL_NODE_RULE
     + "  Use a figure wherever a spatial, plotted or sequential relationship is clearer\n"
     "  shown than described, under docs/figures/<topic>/ with the project-absolute\n"

@@ -1,0 +1,131 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [],
+  "assertion_audit_note": "No assertions were added in this delta; previous implementation assertions remain covered by the prior review, not rescored here.",
+  "attribution_evidence": {
+    "baseline_binding": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T204841537282-producer-exit-recorded-and-restarted-s25/importer-baseline-attribution.json",
+    "coordinator_disposition": {
+      "0": {
+        "kind": "exempted",
+        "reason": "coordinator disposition: the four disputed importer ids are pre-existing flakes, not added failures; across five base/head trial pairs they failed 12 times at base de83f451 and 9 at head 72ae697a, every one also failing at base (importer-baseline-attribution.json)",
+        "recorded_at": "2026-11-16T03:12:09.785220+00:00"
+      }
+    },
+    "executions_per_arm": 20,
+    "failures_per_arm": {
+      "base": 12,
+      "head": 9
+    },
+    "frequency": {
+      "tests/test_crew_launch_failure.py::test_a_launch_that_wrote_a_turn_is_not_a_launch_failure": {
+        "base": 5,
+        "head": 5
+      },
+      "tests/test_follow_sweep_cadence.py::test_pane_output_is_unchanged_by_the_sweep": {
+        "base": 3,
+        "head": 2
+      },
+      "tests/test_producer_loop_survives_a_config_change.py::test_the_producer_defers_a_broken_config_and_recovers": {
+        "base": 3,
+        "head": 2
+      },
+      "tests/test_spawn_retries_a_vanished_bind.py::test_a_spawn_refused_over_a_vanished_protected_bind_is_retried[Can't bind mount]": {
+        "base": 1,
+        "head": 0
+      }
+    },
+    "identity_positive_control": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T204841537282-producer-exit-recorded-and-restarted-s25/importer-path-identity.json",
+    "note": "Scoped suite delta is zero; broader four raw additions remain recorded, with the previous blocking finding exempted by the coordinator. This review does not infer zero broad raw additions.",
+    "receipts": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T204841537282-producer-exit-recorded-and-restarted-s25/importer-failure-pairs.json",
+    "trials_per_arm": 5
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/evidence.py:1362 compose_landed_record",
+    "reckon/evidence.py:1315 _fragment_body_bytes"
+  ],
+  "completed_at": "2026-11-16T03:27:57Z",
+  "dispatched_at": "2026-11-16T03:22:03Z",
+  "failure_delta_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_producer_exit_is_recorded_and_restarted.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "error_count": 0,
+      "error_ids": [],
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T204841537282-producer-exit-recorded-and-restarted-s25/importer-review-scope.log",
+      "measurement_cwd": "/tmp/producer-gate-hgpuuokxzgduntra/tree",
+      "measurement_module": "/tmp/producer-gate-hgpuuokxzgduntra/tree/reckon/crew/runs.py",
+      "revision": "b124aabc2fb0a2487db367b334fcf2122eb54b8f",
+      "summary": "71 passed in 41.86s",
+      "test_files": 3
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "error_count": 0,
+      "error_ids": [],
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T204841537282-producer-exit-recorded-and-restarted-s25/owner-base-scope.log",
+      "measurement_cwd": "/tmp/producer-gate-ixhqpktbkwytaizf/tree",
+      "measurement_module": "/tmp/producer-gate-ixhqpktbkwytaizf/tree/reckon/crew/watch_unit.py",
+      "revision": "de83f451011c33cfecc9c8ecd220e9a6cdf21bda",
+      "summary": "58 passed in 33.18s",
+      "test_files": 2
+    }
+  },
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/evidence.py:1362 compose_landed_record, reckon/evidence.py:1315 _fragment_body_bytes",
+    "diff": "Read the sole gained commit b124aabc2fb0a2487db367b334fcf2122eb54b8f against parent 72ae697a1a5362ac250802be676e1654576a104e; docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html adds 23 lines and removes one, with no production definitions or test assertions.",
+    "done_when": "Read the live section and source manifest suite arms; owner-base-scope.log records 58 passed and importer-review-scope.log records 71 passed with EXIT=0, while docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:73-91 preserves the separate broader importer condition and requires coordinator disposition.",
+    "goal": "Read r-20261115T204841537282-producer-exit-recorded-and-restarted-s25/prompt.txt:43 and live docs/plans/a-seat-held-elsewhere-is-not-restarted.html#s25; the gained evidence at docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:70-91 records baseline attribution without claiming the raw importer comparison passed.",
+    "manifest": "Read r-20261115T204841537282-producer-exit-recorded-and-restarted-s25/manifest.md and its cited trial logs; its current blockers line records coordinator exemption of f639fa940e6, corroborated by the previous review record disposition dated 2026-11-16T03:12:09.785220+00:00, while its older rubric and declined lines retain their earlier pending state.",
+    "write_paths": "Read the source prompt FENCE scope and manifest; the only gained path, docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html, is the expressly permitted landing fragment."
+  },
+  "justifications": {
+    "durability": "docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:84-87 points to durable trial receipts that allow its counts to be rechecked, but this documentation-only commit adds no automated assertion that fails if those prose counts or bindings regress.",
+    "evidence": "docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:75-87 agrees with all ten importer-pair logs: 20 executions per arm, 12 base failures, nine head failures, and every disputed identifier reproduced at unchanged base.",
+    "fit": "docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:70 extends the existing semantic HTML with a node-prefixed section anchor and keeps its finding and revision identifiers in evidence data rather than introducing source names.",
+    "goal_fidelity": "docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:70-91 supplies the missing baseline attribution while preserving the raw additions and coordinator authority required by the live section.",
+    "reuse": "docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:70-91 adds no function, class or module, and the existing owner reckon/evidence.py:1362 compose_landed_record already composes this fragment without a second implementation.",
+    "scope_discipline": "The sole changed file docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html is the landing-fragment path expressly granted in the source prompt, and git shows no additional gained paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read r-20261115T204841537282-producer-exit-recorded-and-restarted-s25/prompt.txt:43 and live docs/plans/a-seat-held-elsewhere-is-not-restarted.html#s25; the gained evidence at docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:70-91 records baseline attribution without claiming the raw importer comparison passed.\nVERDICT done_when: Read the live section and source manifest suite arms; owner-base-scope.log records 58 passed and importer-review-scope.log records 71 passed with EXIT=0, while docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:73-91 preserves the separate broader importer condition and requires coordinator disposition.\nVERDICT write_paths: Read the source prompt FENCE scope and manifest; the only gained path, docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html, is the expressly permitted landing fragment.\nVERDICT manifest: Read r-20261115T204841537282-producer-exit-recorded-and-restarted-s25/manifest.md and its cited trial logs; its current blockers line records coordinator exemption of f639fa940e6, corroborated by the previous review record disposition dated 2026-11-16T03:12:09.785220+00:00, while its older rubric and declined lines retain their earlier pending state.\nVERDICT diff: Read the sole gained commit b124aabc2fb0a2487db367b334fcf2122eb54b8f against parent 72ae697a1a5362ac250802be676e1654576a104e; docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html adds 23 lines and removes one, with no production definitions or test assertions.\nCALL_SITES: reckon/evidence.py:1362 compose_landed_record, reckon/evidence.py:1315 _fragment_body_bytes\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:70-91 supplies the missing baseline attribution while preserving the raw additions and coordinator authority required by the live section.\nSCORE evidence: 20\nJUSTIFICATION evidence: docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:75-87 agrees with all ten importer-pair logs: 20 executions per arm, 12 base failures, nine head failures, and every disputed identifier reproduced at unchanged base.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The sole changed file docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html is the landing-fragment path expressly granted in the source prompt, and git shows no additional gained paths.\nSCORE durability: 16\nJUSTIFICATION durability: docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:84-87 points to durable trial receipts that allow its counts to be rechecked, but this documentation-only commit adds no automated assertion that fails if those prose counts or bindings regress.\nSCORE fit: 20\nJUSTIFICATION fit: docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:70 extends the existing semantic HTML with a node-prefixed section anchor and keeps its finding and revision identifiers in evidence data rather than introducing source names.\nSCORE reuse: 20\nJUSTIFICATION reuse: docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:70-91 adds no function, class or module, and the existing owner reckon/evidence.py:1362 compose_landed_record already composes this fragment without a second implementation.\n",
+  "review_run_id": "r-20261116T031419651375-review-of-producer-exit-recorded-and-restarted-s25-b124aabc2fb0",
+  "review_scope": {
+    "changed_paths": [
+      "docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html"
+    ],
+    "commit_ids": [
+      "b124aabc2fb0a2487db367b334fcf2122eb54b8f"
+    ],
+    "previous_review_head": "72ae697a1a5362ac250802be676e1654576a104e",
+    "previous_review_record": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T204841537282-producer-exit-recorded-and-restarted-s25/review-records/r-20261115T204841537282-producer-exit-recorded-and-restarted-s25.at-72ae697a1a5362ac250802be676e1654576a104e.json"
+  },
+  "review_text": "VERDICT goal: Read r-20261115T204841537282-producer-exit-recorded-and-restarted-s25/prompt.txt:43 and live docs/plans/a-seat-held-elsewhere-is-not-restarted.html#s25; the gained evidence at docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:70-91 records baseline attribution without claiming the raw importer comparison passed.\nVERDICT done_when: Read the live section and source manifest suite arms; owner-base-scope.log records 58 passed and importer-review-scope.log records 71 passed with EXIT=0, while docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:73-91 preserves the separate broader importer condition and requires coordinator disposition.\nVERDICT write_paths: Read the source prompt FENCE scope and manifest; the only gained path, docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html, is the expressly permitted landing fragment.\nVERDICT manifest: Read r-20261115T204841537282-producer-exit-recorded-and-restarted-s25/manifest.md and its cited trial logs; its current blockers line records coordinator exemption of f639fa940e6, corroborated by the previous review record disposition dated 2026-11-16T03:12:09.785220+00:00, while its older rubric and declined lines retain their earlier pending state.\nVERDICT diff: Read the sole gained commit b124aabc2fb0a2487db367b334fcf2122eb54b8f against parent 72ae697a1a5362ac250802be676e1654576a104e; docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html adds 23 lines and removes one, with no production definitions or test assertions.\nCALL_SITES: reckon/evidence.py:1362 compose_landed_record, reckon/evidence.py:1315 _fragment_body_bytes\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:70-91 supplies the missing baseline attribution while preserving the raw additions and coordinator authority required by the live section.\nSCORE evidence: 20\nJUSTIFICATION evidence: docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:75-87 agrees with all ten importer-pair logs: 20 executions per arm, 12 base failures, nine head failures, and every disputed identifier reproduced at unchanged base.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The sole changed file docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html is the landing-fragment path expressly granted in the source prompt, and git shows no additional gained paths.\nSCORE durability: 16\nJUSTIFICATION durability: docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:84-87 points to durable trial receipts that allow its counts to be rechecked, but this documentation-only commit adds no automated assertion that fails if those prose counts or bindings regress.\nSCORE fit: 20\nJUSTIFICATION fit: docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:70 extends the existing semantic HTML with a node-prefixed section anchor and keeps its finding and revision identifiers in evidence data rather than introducing source names.\nSCORE reuse: 20\nJUSTIFICATION reuse: docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/producer-exit-recorded-and-restarted-s25.html:70-91 adds no function, class or module, and the existing owner reckon/evidence.py:1362 compose_landed_record already composes this fragment without a second implementation.\n",
+  "reviewed_base_sha": "72ae697a1a5362ac250802be676e1654576a104e",
+  "reviewed_head_sha": "b124aabc2fb0a2487db367b334fcf2122eb54b8f",
+  "reviewed_run_id": "r-20261115T204841537282-producer-exit-recorded-and-restarted-s25",
+  "scores": {
+    "durability": 16,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T03:28:52.125564+00:00",
+  "total": 116
+}

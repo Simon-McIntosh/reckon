@@ -851,8 +851,10 @@ def test_import_never_rewrites_the_historical_store_write(config_home: Path) -> 
     run_store.import_ledger("reckon")
 
     # The committed rows still carry the historical failure record: the import
-    # only reads the file, and it never writes store_write into the store.
-    data, _version = ledger.load("reckon")
+    # only reads the file, and it never writes store_write into the store. A
+    # load with the store present answers from the store, so the committed
+    # documents are read on their own.
+    data, _version = ledger.load("reckon", use_index=False)
     statuses = {
         entry["run_id"]: entry["store_write"]["status"] for entry in data["runs"]
     }

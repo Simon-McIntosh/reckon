@@ -101,8 +101,11 @@ def _manifest(tmp_path: Path, run_id: str, commits: list[str]) -> Path:
     manifest = tmp_path / "manifests" / f"{run_id}.md"
     manifest.parent.mkdir(parents=True, exist_ok=True)
     log_name = f"{run_id}-focus.log"
+    # The command below runs pytest, so the cited log is read for the result
+    # count a pytest run prints: a log with no summary describes a run that
+    # stopped before its own result, which a passing gate is refused against.
     (manifest.parent / log_name).write_text(
-        "focused check passed\nEXIT=0\n", encoding="utf-8"
+        "1 passed in 0.01s\nEXIT=0\n", encoding="utf-8"
     )
     manifest.write_text(
         f"node: {PROJECT}-node\n"
@@ -241,8 +244,8 @@ def test_the_obligation_remedy_line_runs_as_printed(
 ) -> None:
     run_id = "r-remedy-line"
     tree, base, parent, head = _linear_run(repository, tmp_path, run_id)
-    # The worker's manifest writes its commits newest first, which is the order
-    # the obligation prints them in.
+    # The worker's manifest writes its commits newest first, the reverse of the
+    # order the obligation cites the run's history in.
     manifest = _manifest(tmp_path, run_id, [head, parent])
     _pointer(repository, tree, run_id, base, manifest)
     _store_review(run_id, base=base, head=head)
@@ -254,14 +257,18 @@ def test_the_obligation_remedy_line_runs_as_printed(
     tokens = shlex.split(action)
     assert tokens[:3] == ["reckon", "crew", "complete"]
     cited = [tokens[i + 1] for i, part in enumerate(tokens) if part == "--commit"]
-    # The line prints the commits newest first, the order the promotion read a
-    # position out of and asserted the wrong revision for.
-    assert cited == [head, parent]
+    # The line cites the run's own history in the order that history is read,
+    # oldest first. The promotion resolves the head by descent from the
+    # presented commits, so the order the line prints them in does not decide
+    # which revision it asserts.
+    assert cited == [parent, head]
 
     # Run it as printed: the leading program name is dropped because the
-    # operator already ran it, and the documented <verdict> placeholder is the
-    # one value the operator supplies. The commit order is not touched.
-    argv = tokens[1:]
+    # operator already ran it, the documented <verdict> placeholder is the one
+    # value the operator supplies, and --wait is the CLI's own flag for carrying
+    # the promotion out in this call, the default having filed a request for the
+    # fleet service to pick up. The commit order is not touched.
+    argv = [*tokens[1:], "--wait"]
     argv[argv.index("--gate") + 1] = "passed"
     result = CliRunner().invoke(cli_main, argv)
 

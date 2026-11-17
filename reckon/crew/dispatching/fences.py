@@ -282,8 +282,12 @@ def plan_dispatch(**kwargs: Any) -> DispatchPlan:
     lookup the preview makes, rather than one per resolution it asks.
     """
     from reckon.crew.queue_admission import plan_read_scopes
+    from reckon.serve import discovery_without_git_dates
 
-    with plan_read_scopes():
+    # A preview ranks and places one node; the document ages it reads are
+    # display values there, so it takes no git history query and never waits
+    # on one.
+    with plan_read_scopes(), discovery_without_git_dates():
         return _plan_dispatch_reads(**kwargs)
 
 

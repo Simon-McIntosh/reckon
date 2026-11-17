@@ -80,7 +80,13 @@ Silent bypasses hide drift.
 1. **HTML is the source of truth.** Frozen plan/research snapshots in a
    type-local `archive/` are immutable. A plan's cumulative execution record at
    `docs/evidence/archive/<slug>-landed.html` remains appendable until that plan
-   closes; keep one coherent record rather than spawning section fragments.
+   closes; keep one coherent record rather than spawning section fragments. A
+   per-node evidence fragment is optional: a landing leaves its `landing:`
+   line, its run record and its gate log, and writes a fragment only for a
+   negative result or a mechanism that does not fit a landing line. Nothing
+   splices a fragment into a plan's landed record, which is synthesized once at
+   closure and links the fragment from your node's row without reproducing its
+   text.
 2. **Decide evergreen-edit vs phase-transition before touching the page.**
 3. **Content parity.** Add text in new blocks; do not reflow or paraphrase existing content.
 4. **All plan state lives in semantic HTML elements.** Edits to decisions, followups, status,

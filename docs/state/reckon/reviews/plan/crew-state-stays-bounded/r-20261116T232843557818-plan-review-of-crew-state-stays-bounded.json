@@ -1,0 +1,116 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "digests": {
+        "s13": "64c9b6b96cc11c35a42dd3a94c3e6eb794d328a0444a0343a40e17bf47cbfe7d"
+      },
+      "reason": "the s13 heading, Why and done-when edits are exactly what findings naming-1 and reasoning-1 of r-20261116T232843557818 asked for",
+      "units": [
+        "s13"
+      ],
+      "when": "2026-11-16T23:49:58.146539+00:00"
+    }
+  ],
+  "completed_at": "2026-11-16T23:31:08.143Z",
+  "dispatched_at": "2026-11-16T23:30:40Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/crew-state-stays-bounded/r-20261116T232843557818-plan-review-of-crew-state-stays-bounded/plan.html:222",
+      "id": "naming-1",
+      "reason": "the worker is bound by the done-when, which names the actual endpoint, so the heading misleads a scanning reader but sends no node down a wrong path.",
+      "text": "the heading \"Run scratch cannot fill the reservation node\" states a capacity endpoint (the node never fills) while the done-when delivers only \"a resumed run keeps the scratch its new step creates\"; a reader of the plan index reading headings concludes the volume-filling defect of the old text is addressed, which no clause of \u00a713 now measures",
+      "type": "naming",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/crew-state-stays-bounded/r-20261116T232843557818-plan-review-of-crew-state-stays-bounded/plan.html:223",
+      "id": "reasoning-1",
+      "reason": "a repair aimed at the end-record reading leaves the incident intact when the pointer is the absent fact, and the plan's negative control (\"restore the base settle predicate, and the resumed-step test finds its scratch removed\") is satisfiable only by a fixture that withholds the resume's live pointer, i.e. a race, so the section must name which of the two facts the endpoint rests on before dispatch.",
+      "text": "the Why states that a resumed run \"still carries the end record its earlier attempt wrote, so the settle its own new step runs can judge it over and remove the directory just made for it\", but the predicate the same sentence cites puts the live-pointer test first and only the end record second: in `settle_run_scratch` (`reckon/crew/gc.py:1737-1748`) a run id present in `live_ids` is state RUN_SCRATCH_LIVE and is never removed, so the carried end record decides nothing while the resume's pointer is visible; the plan's own evidence says as much \u2014 a second resume at 19:38Z worked, and the preserved evidence directory holds `live-pointer-at-copy.json` \u2014 which means the deciding fact is whether the resumed run's live pointer is visible on the node at the instant its step settles, not that an end record survives",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "4b3e7100a644004fb0d2c5faaf9fa6ace18b7dad",
+  "plan_fingerprint": "624d1d3e9b7ce0da9f6e0aa4bed746b9a80ce255bd30d67497e107d116412b19",
+  "plan_slug": "crew-state-stays-bounded",
+  "plan_version": 85,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "4b3e7100a644004fb0d2c5faaf9fa6ace18b7dad",
+      "commit_basis": "edit",
+      "finding": "naming-1",
+      "note": "s13's heading becomes 'A resumed run keeps its new step's scratch', matching its endpoint",
+      "reason": "",
+      "when": "2026-11-16T23:48:59.910693+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "4b3e7100a644004fb0d2c5faaf9fa6ace18b7dad",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "s13 now names the deciding fact: the settle keeps scratch for a run whose live pointer it can see, so the failure is a resumed step settling while its pointer is not yet visible on that node; the endpoint and negative control rest on that state",
+      "reason": "",
+      "when": "2026-11-16T23:49:04.046418+00:00"
+    }
+  ],
+  "responses": {
+    "naming-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "4b3e7100a644004fb0d2c5faaf9fa6ace18b7dad",
+      "commit_basis": "edit",
+      "note": "s13's heading becomes 'A resumed run keeps its new step's scratch', matching its endpoint",
+      "reason": "",
+      "when": "2026-11-16T23:48:59.910693+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "4b3e7100a644004fb0d2c5faaf9fa6ace18b7dad",
+      "commit_basis": "edit",
+      "note": "s13 now names the deciding fact: the settle keeps scratch for a run whose live pointer it can see, so the failure is a resumed step settling while its pointer is not yet visible on that node; the endpoint and negative control rest on that state",
+      "reason": "",
+      "when": "2026-11-16T23:49:04.046418+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-crew-state-stays-bounded.v85.json",
+  "review_run_id": "r-20261116T232843557818-plan-review-of-crew-state-stays-bounded",
+  "reviewed_blob_sha": "576ef45ea9a3566d7613bb59eceb2a6d14647728",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `settle_run_scratch` resolves in `reckon/crew/gc.py` (:1672), the cited run directory `~/.config/reckon/crew/runs/r-20261115T123334274900-vofd-design-report/` exists with its attempt-1..10 exit records, and the cited evidence directory resolves to real files.",
+    "done_when": "pass \u2014 \u00a713's done-when states a measurable endpoint (a resumed run keeps the scratch its new step creates through that step's own settle, on any node) and declares its negative control (restore the base settle predicate; the resumed-step test must then find its scratch removed), plus the invariant arm that a finished run's unheld scratch is still removed.",
+    "evidence_paths": "pass \u2014 every gate log of \u00a713 is under the run directory, matching \u00a76 and \u00a78, and the incident evidence it cites at `~/.cache/power_convertor-filter-review/resume-scratch-bug/` exists on disk (attempt-2-exit.json, attempt-2.reservation, resume-1.stderr.log, live-pointer-at-copy.json, supervisor.json, tree-snapshot.json).",
+    "naming": "a finding \u2014 \u00a713's heading still names a node-capacity outcome (\"Run scratch cannot fill the reservation node\") that the section no longer delivers.",
+    "reasoning": "a finding \u2014 \u00a713's stated root cause (a resumed run's earlier end record is enough for its own step's settle to judge it over) does not match the predicate the plan itself cites, and the plan's own evidence points at the live pointer instead.",
+    "single_goal": "pass \u2014 \u00a713 now carries one deliverable, the resumed-run scratch surviving its own step's settle; the admission-margin clause that made the old done-when two independent deliverables is gone.",
+    "wiring": "pass \u2014 \u00a713 declares no depends-on, and the landed \u00a78 whose settle predicate it changes is done, so nothing it needs is pending and no relationship points at a wrong node; its write paths name only `reckon/crew/gc.py` and a new test, which no other implementable section (\u00a74, watch/events archive) shares."
+  },
+  "section_digests": {
+    "_document": "f64656d730f671c0e52b0a36a381e35a3627651a859b227c1b670c25a785445f",
+    "s1": "61be6bb6df8b986fbb68c3273e136fcef1b9fa13e7bcadb4fb62eab2fa4145ff",
+    "s10": "12c6b13006e1e29ba78ff8b4b1433daf63861ae2082f24a27887d4203a3903fa",
+    "s11": "8847ba87c7fb173087784a7ef2a3f06b409c3330469aa9bdcbfe4cf05d2c307e",
+    "s12": "f032475b303144a0f62f2838bd9a0efa3292acd1f43de5fabc7c4feb6c484d42",
+    "s13": "6bf4074244ce8b36943156bc1762a570d552a1b921acd2a9ce42d979c5495987",
+    "s2": "0809becc839b3ed5586cc9018606732a929379de88ab524968574e8429943a9b",
+    "s3": "9aa4d5f5a6287b698b7d6011ac8fcc295589c20484d8892a3c86d88d629b8793",
+    "s4": "2681ac58d6ae7457bc800678db433ce359be271248b74a429b44ee4d817769b4",
+    "s5": "bba37241ec93e13e0fb1eb173abfd49db0b6e77d788aa2dbec1608d164852542",
+    "s6": "c491229cedc576a79a4628da53168b317ce14fef88d78739c48e86b16aaff17a",
+    "s7": "1f6a99e4b8834c4a8bea5559a1507e6da85988f873d5547c7804930237104694",
+    "s8": "bc03fa54cdefe8b48312fabda86a4fca8277e025db66430978900e888a969066",
+    "s9": "94c64e9a52c50d223769478a5aa73517f29bc51fd5a6b123d7978de2b35c4317"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T23:48:57.970923+00:00",
+  "total": null
+}

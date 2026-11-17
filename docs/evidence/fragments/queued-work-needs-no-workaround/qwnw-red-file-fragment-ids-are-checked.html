@@ -1,0 +1,116 @@
+<section id="qwnw-red-file-fragment-ids-are-checked-landing">
+  <h2>A fragment id collision is charged to the run that wrote it</h2>
+
+  <p><strong>What changed.</strong> <code>tests/test_fragment_ids_are_checked.py</code>
+  drove <code>crew check --manifest</code> with a fixture manifest written before two
+  rules landed, so four of its six cases read a manifest the audit refuses for reasons
+  that have nothing to do with the element id under test. The fixture's
+  <code>test_logs:</code> named <code>/tmp/fragment-ids.log</code>, which no run
+  directory contains, and its manifest said nothing about messages_received. Both are
+  fixture faults, not product faults: each rule is what the product keeps deliberately,
+  and each was reached again from the product's own reader
+  (<code>reckon/crew/reports.py::_log_location_findings</code> for the log's
+  containment, <code>reckon/hooks/worker_inbox.py::manifest_message_finding</code> for
+  the receipt). The fixture now writes a gate log beside its manifest inside the run
+  directory — naming its command near the head, ending with its exit status — and
+  declares <code>messages_received: none</code>. Every assertion is unchanged: no
+  assertion was deleted, reordered or weakened, and the four cases still assert
+  <code>exit_code == 0</code> with <code>findings == []</code>.</p>
+
+  <h3 id="qwnw-red-file-fragment-ids-are-checked-causes">Each cause, with its verdict</h3>
+
+  <table id="qwnw-red-file-fragment-ids-are-checked-cause-table">
+    <caption>Both causes read as one finding each, at base <code>24bc79d8ee</code>.</caption>
+    <thead><tr><th>finding the audit raised</th><th>verdict</th><th>what was done</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>test_logs log '/tmp/fragment-ids.log' resolves outside the run
+        directory: every cited log must exist under the run directory ...</code></td>
+        <td>test wrong — the fixture predates the rule that a cited log lives in the
+        run directory; the product's refusal is the behaviour it keeps</td>
+        <td>the fixture writes <code>fragment-ids.log</code> beside its manifest and
+        cites it relatively</td>
+      </tr>
+      <tr>
+        <td><code>messages_received: no delivery receipt was recorded, so the manifest
+        must say `messages_received: none`</code></td>
+        <td>test wrong — the fixture predates the rule that a run with no receipt says
+        so</td>
+        <td>the fixture manifest declares <code>messages_received: none</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>No product rule was repaired, because no product rule was broken. The fixture's
+  <code>test_logs:</code> also had to satisfy the log-content rule once it resolved
+  at all — the log names its command near the head and ends with
+  <code>EXIT=0</code> — which is what a gate log a coordinator can reconstruct looks
+  like.</p>
+
+  <h3 id="qwnw-red-file-fragment-ids-are-checked-arms">Measured</h3>
+
+  <table id="qwnw-red-file-fragment-ids-are-checked-runs">
+    <caption>Each arm is a log whose head names the revision, tree, command and, for a
+    scratch-tree arm, the module as imported and the resolved working directory; its
+    last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>this file, base arm</td><td><code>24bc79d8ee</code>, working tree</td>
+        <td>4 failed, 2 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>this file, head gate</td><td><code>d779fdb778</code>, working tree</td>
+        <td><strong>6 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr><td>suite arms over the node's tests,
+        <code>tests/test_staged_write_inventory.py</code> and
+        <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code></td>
+        <td><code>24bc79d8ee</code>, scratch clone</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the same command at head</td><td><code>d779fdb778</code>, working tree</td>
+        <td>58 passed, <code>EXIT=0</code> — no failure added against the base</td></tr>
+    </tbody>
+  </table>
+
+  <p>The base run's failing ids, quoted from its log:</p>
+
+  <ul id="qwnw-red-file-fragment-ids-are-checked-base-ids">
+    <li><code>FAILED tests/test_fragment_ids_are_checked.py::test_a_clean_new_fragment_passes_beside_committed_collisions</code></li>
+    <li><code>FAILED tests/test_fragment_ids_are_checked.py::test_a_run_that_changes_no_fragment_is_not_audited</code></li>
+    <li><code>FAILED tests/test_fragment_ids_are_checked.py::test_a_plan_with_no_record_yet_has_nothing_to_collide_with</code></li>
+    <li><code>FAILED tests/test_fragment_ids_are_checked.py::test_a_recordless_plan_passes_a_clean_new_fragment</code></li>
+  </ul>
+
+  <p>Each of the four asserted <code>result.exit_code == 0</code> and read
+  <code>1</code>, because the two findings above were appended to
+  <code>findings</code> and the payload's <code>ok</code> was
+  <code>false</code>. The two cases that assert a refusal
+  (<code>test_a_new_fragment_repeating_a_committed_id_is_refused_by_name</code> and
+  <code>test_a_plan_with_no_record_yet_has_its_fragments_audited_together</code>)
+  passed at base because a non-zero exit was already what they expected.</p>
+
+  <h3 id="qwnw-red-file-fragment-ids-are-checked-control">The fixture corrections are load-bearing</h3>
+
+  <p>Both were falsified against the corrected file, so the passing run is not a
+  fixture the audit skips. Dropping the <code>messages_received: none</code> line from
+  the corrected fixture returns 4 failed, 2 passed, with
+  <code>"findings": ["messages_received: no delivery receipt was recorded, so the
+  manifest must say `messages_received: none`"]</code>. Citing
+  <code>/tmp/fragment-ids.log</code> again from the corrected fixture returns the same
+  4 failed, 2 passed with
+  <code>test_logs log '/tmp/fragment-ids.log' resolves outside the run directory</code>.
+  Both mutations ran from <code>$TMPDIR</code> copies, so the delivered file is the
+  corrected one.</p>
+
+  <h3 id="qwnw-red-file-fragment-ids-are-checked-lint">Lint</h3>
+
+  <p><code>ruff check tests/test_fragment_ids_are_checked.py</code> → <em>All checks
+  passed!</em> and <code>ruff format --check</code> on the same path → <em>1 file
+  already formatted</em>. The diff is 14 added and 2 deleted lines, in the test file
+  alone; no product source is touched.</p>
+
+  <h3 id="qwnw-red-file-fragment-ids-are-checked-logs">Logs</h3>
+
+  <ul id="qwnw-red-file-fragment-ids-are-checked-log-paths">
+    <li><code>base-red-file.log</code>, <code>head-red-file.log</code>,
+      <code>base-suite-arm.log</code> and <code>after-suite-arm.log</code>, in the run
+      directory <code>~/.config/reckon/crew/runs/r-20261116T104527321362-qwnw-red-file-fragment-ids-are-checked/</code>.</li>
+  </ul>
+</section>

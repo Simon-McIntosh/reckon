@@ -87,6 +87,12 @@ def _launch_order(queued: list[dict[str, Any]]) -> list[dict[str, Any]]:
     )
 
 
+def _carried_role(pointer: dict[str, Any]) -> str:
+    """The role a run pointer carries, read as the recovery surfaces read it."""
+    node = pointer.get("node") or {}
+    return str(pointer.get("role") or node.get("role") or "")
+
+
 def _roles(ordered: list[dict[str, Any]], seats: int | None = None) -> list[str]:
     rows = ordered if seats is None else ordered[:seats]
     return [
@@ -120,8 +126,21 @@ def test_a_pass_row_names_each_role_it_launched_and_left_waiting(
     queued = _queue(implementations=IMPLEMENTATION_COUNT, reviews=REVIEW_COUNT)
     for pointer in queued:
         base = copy.deepcopy(fixtures._queue(admit_repo))
-        base.update({key: value for key, value in pointer.items() if key != "node"})
-        base["session"] = fixtures.SESSION
+        # The fixture pointer carries the backend, repo and dispatch options the
+        # shared config admits; only the identity and the place in the queue
+        # change. A pointer naming a backend no config declares is refused, so
+        # overriding it here let a cadence reporting zero launches pass.
+        base.update(
+            {
+                "run_id": pointer["run_id"],
+                "project": pointer["project"],
+                "session": fixtures.SESSION,
+                "queued_at": pointer["queued_at"],
+                "created_at": pointer["queued_at"],
+            }
+        )
+        if pointer.get("role") == "review":
+            base["role"] = "review"
         base["node"]["id"] = (
             f"review-of-{pointer['project']}-impl-{pointer['run_id'].rsplit('-', 1)[-1]}"
             if pointer.get("role") == "review"
@@ -146,11 +165,16 @@ def test_a_pass_row_names_each_role_it_launched_and_left_waiting(
     assert len(rows) == 1, rows
     roles = rows[0]["roles"]
 
-    assert set(roles) == {"review", "implementation"}
-    implement = roles["implementation"]
+    carried = {
+        _carried_role(runs.read_pointer(pointer["run_id"])) for pointer in queued
+    }
+    assert carried == {"review", "implement"}, carried
+    assert set(roles) == carried, roles
+    implement = roles["implement"]
     review = roles["review"]
     assert implement["launched"] + implement["waiting"] == IMPLEMENTATION_COUNT
     assert review["launched"] + review["waiting"] == REVIEW_COUNT
+    assert sum(row["launched"] for row in roles.values()) == SEATS, roles
     assert implement["waiting"] == 0 or implement["oldest_waiting_seconds"] > 0
     assert review["waiting"] == 0 or review["oldest_waiting_seconds"] > 0
 

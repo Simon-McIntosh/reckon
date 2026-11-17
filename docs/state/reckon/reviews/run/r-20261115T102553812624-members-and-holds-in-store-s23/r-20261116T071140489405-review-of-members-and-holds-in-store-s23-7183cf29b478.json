@@ -1,0 +1,523 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "assertion": "data['members'] == auxiliary['members']",
+      "fails_if": "Restoring a history reader without the stored-member overlay yields a different member collection from the separately queried store.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 55
+    },
+    {
+      "assertion": "data['holds'] == auxiliary['holds']",
+      "fails_if": "Dropping the holds overlay makes history disagree with the independent auxiliary read.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 56
+    },
+    {
+      "assertion": "data['auxiliary_version'] == version",
+      "fails_if": "Returning the aggregate version for the auxiliary projection disagrees after any mutable write.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 57
+    },
+    {
+      "assertion": "_tracked(root) == before",
+      "fails_if": "Routing registration through ledger.write changes the independently captured tracked bytes; the recorded negative control demonstrates this failure.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 77
+    },
+    {
+      "assertion": "entry['id'] == 'registered'",
+      "fails_if": "Returning an incorrect registered identity violates the literal fixture id.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 78
+    },
+    {
+      "assertion": "ledger.member(PROJECT, 'registered', root=root) == entry",
+      "fails_if": "Skipping registration persistence or reading the obsolete aggregate loses the independently retrieved member; entry is a returned object, not a stubbed read result.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 79
+    },
+    {
+      "assertion": "result['reaped'] == ['session-idle']",
+      "fails_if": "Removing idle reaping returns the wrong literal removal list.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 82
+    },
+    {
+      "assertion": "[row['id'] for row in ledger.members(PROJECT, root)] == ['permanent']",
+      "fails_if": "Failing to persist the reap leaves the idle member in a fresh roster read.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 83
+    },
+    {
+      "assertion": "result['outcomes'][0]['action'] == 'opened'",
+      "fails_if": "Failing to open a newly held backend returns an action other than the literal opened.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 91
+    },
+    {
+      "assertion": "ledger.holds(PROJECT, root)[-1]['reason'] == 'fixture limit'",
+      "fails_if": "Dropping the hold reason during persistence makes the fresh hold read differ from the literal fixture reason.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 92
+    },
+    {
+      "assertion": "_tracked(root) == before",
+      "fails_if": "Restoring any committed-ledger mutation changes the byte snapshot read from git-listed files.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 93
+    },
+    {
+      "assertion": "subprocess.check_output(['git', '-C', str(root), 'rev-parse', 'HEAD']) == head",
+      "fails_if": "Restoring a mutation-time git commit changes HEAD from its independent pre-operation observation.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 96
+    },
+    {
+      "assertion": "expected[1] == 8",
+      "fails_if": "Failing to advance mutable version once after seed version 7 violates the literal 8.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 100
+    },
+    {
+      "assertion": "_snapshot(root) == expected",
+      "fails_if": "Reading mutable collections from the deleted aggregate or failing to preserve a value changes the pre-removal snapshot.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 102
+    },
+    {
+      "assertion": "expected[0] and expected[2] and (expected[1] == 7)",
+      "fails_if": "Losing both seeded collection content or seed version fails the nonempty/7 positive control; this is weaker than a full independent fixture oracle and is not counted alone as preservation coverage.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 108
+    },
+    {
+      "assertion": "_snapshot(root) == expected",
+      "fails_if": "Dropping the import marker or mutable values loses the previously read collections/version after removing the aggregate.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 110
+    },
+    {
+      "assertion": "unchanged['version'] == opened['version'] == 8",
+      "fails_if": "Advancing on a repeated held check or failing to advance on opening violates the literal version 8.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 123
+    },
+    {
+      "assertion": "unchanged['outcomes'][0]['action'] == 'unchanged'",
+      "fails_if": "Opening a second hold instead of deduplicating returns the wrong action.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 124
+    },
+    {
+      "assertion": "closed['version'] == 9",
+      "fails_if": "Failing to increment on close violates literal version 9.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 131
+    },
+    {
+      "assertion": "closed['outcomes'][0]['hold']['held_seconds'] == 90",
+      "fails_if": "Computing the wrong duration differs from the independent 90-second interval between fixture timestamps.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 132
+    },
+    {
+      "assertion": "closed['outcomes'][0]['hold']['resumption_fired'] is True",
+      "fails_if": "Dropping the resumption flag during close violates the literal true.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 133
+    },
+    {
+      "assertion": "_tracked(root) == before",
+      "fails_if": "Writing hold lifecycle changes into a tracked file changes the independent bytes.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 134
+    },
+    {
+      "assertion": "_snapshot(root) == expected",
+      "fails_if": "Falling back to the removed aggregate changes the captured closed-hold snapshot.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 137
+    },
+    {
+      "assertion": "other['harness'] == 'different'",
+      "fails_if": "Discarding the requested harness in registration violates the literal different; this checks input preservation, not an independent harness choice.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 145
+    },
+    {
+      "assertion": "_snapshot(root) == first",
+      "fails_if": "Removing project predicates lets second-project registration corrupt the first project snapshot.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 146
+    },
+    {
+      "assertion": "left['hold_id'] == right['hold_id']",
+      "fails_if": "Unexpectedly making the hold identity project-dependent violates the deliberately colliding fixture identity precondition.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 161
+    },
+    {
+      "assertion": "left['reason'] == ''",
+      "fails_if": "Removing project isolation replaces the first project reason with the second project reason.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 162
+    },
+    {
+      "assertion": "right['reason'] == 'different'",
+      "fails_if": "Removing project isolation or dropping the supplied reason changes the second project persisted reason.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 163
+    },
+    {
+      "assertion": "ledger.load_auxiliary(PROJECT, stale_root) == ({'members': [], 'holds': data['holds']}, new_version)",
+      "fails_if": "Reimporting empty mutable collections from a stale checkout resurrects members or changes their stored version; expected holds came from a separate pre-write read.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 176
+    },
+    {
+      "assertion": "ledger.members(PROJECT, root) == []",
+      "fails_if": "Reading the old aggregate or reimporting an empty roster resurrects members after removal.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 181
+    },
+    {
+      "assertion": "ledger.load_auxiliary(PROJECT, root) == (data, version)",
+      "fails_if": "Mutating rows or version before refusing undeclared removal changes the independent pre-operation snapshot.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 189
+    },
+    {
+      "assertion": "ledger.member(PROJECT, 'another', root=root)",
+      "fails_if": "Accepting the stale replacement drops the concurrently registered member.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 195
+    },
+    {
+      "assertion": "ledger.holds(PROJECT, root) == data['holds']",
+      "fails_if": "Accepting stale hold replacement removes the independently seeded historical hold.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 196
+    },
+    {
+      "assertion": "ledger.load_auxiliary(PROJECT, root) == (data, version)",
+      "fails_if": "Committing deletion before a duplicate-key insertion error loses rows or advances version instead of rolling both back.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 208
+    },
+    {
+      "assertion": "receipt == {'identity_retired': True, 'identity_member': member_id}",
+      "fails_if": "Failing retirement or reporting the wrong identity violates the expected receipt; persistence is checked separately.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 220
+    },
+    {
+      "assertion": "ledger.member(PROJECT, member_id, root=root) is None",
+      "fails_if": "Skipping the store deletion leaves the retired identity readable.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 221
+    },
+    {
+      "assertion": "_tracked(root) == before",
+      "fails_if": "Restoring committed-ledger retirement changes tracked bytes.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 222
+    },
+    {
+      "assertion": "ledger.member(PROJECT, 'registered', root=root) is None",
+      "fails_if": "Falling back to any successful registration after injected store failure leaves a member.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 237
+    },
+    {
+      "assertion": "_tracked(root) == before",
+      "fails_if": "Falling back to the committed ledger on store failure changes tracked bytes.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 238
+    },
+    {
+      "assertion": "store._auxiliary_rows('') == {'members': [{'id': 'member'}], 'holds': [{'hold_id': 'hold'}]}",
+      "fails_if": "Dropping payloads while migrating the unscoped schema violates literal members and holds.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 254
+    },
+    {
+      "assertion": "store._auxiliary_rows('scoped')['members'] == [{'id': 'member', 'harness': 'test'}]",
+      "fails_if": "Dropping scoped insertion or failing to persist across close/reopen violates the literal persisted payload.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 260
+    },
+    {
+      "assertion": "store._auxiliary_rows('')['members'] == [{'id': 'member'}]",
+      "fails_if": "Using identity alone overwrites the preserved unscoped member.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 263
+    },
+    {
+      "assertion": "routing.reap_idle_session_members(PROJECT, root=root, now=NOW)['reaped'] == ['session-idle']",
+      "fails_if": "Skipping the reap operation violates the literal idle-member list.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 283
+    },
+    {
+      "assertion": "auxiliary_version == 8",
+      "fails_if": "Failing to advance the mutable store once violates literal version 8.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 287
+    },
+    {
+      "assertion": "receipt['ok'] is True",
+      "fails_if": "Breaking the real production gate-update path returns a failed receipt.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 299
+    },
+    {
+      "assertion": "receipt['ledger_version'] == expected_file_version",
+      "fails_if": "Mixing aggregate and mutable version domains violates the independently expected file sequence 8 then 9.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 300
+    },
+    {
+      "assertion": "version == expected_file_version",
+      "fails_if": "Failing to persist aggregate increments violates the independent file-version sequence.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 302
+    },
+    {
+      "assertion": "aggregate['runs'][0]['integrated_gate_check'] == report",
+      "fails_if": "Omitting or corrupting report persistence makes the separately reopened aggregate differ from the supplied report; this is a round-trip check, not evidence that the mocked gate verdict is correct.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 303
+    },
+    {
+      "assertion": "aggregate['members'] == original_members",
+      "fails_if": "Copying the live mutable roster into the aggregate changes its independently seeded member list.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 304
+    },
+    {
+      "assertion": "aggregate['holds'] == original_holds",
+      "fails_if": "Copying live mutable holds into the aggregate changes its independently seeded hold list.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 305
+    },
+    {
+      "assertion": "ledger.load_auxiliary(PROJECT, root) == (auxiliary, auxiliary_version)",
+      "fails_if": "Routing an aggregate update through the mutable writer changes the independently read store snapshot or version.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 306
+    },
+    {
+      "assertion": "file_version == 9",
+      "fails_if": "Returning mutable version 8 as the file version violates the expected aggregate version 9.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 308
+    },
+    {
+      "assertion": "data['auxiliary_version'] == auxiliary_version == 8",
+      "fails_if": "Returning file version 9 as auxiliary_version violates the expected store version 8.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 309
+    },
+    {
+      "assertion": "routing.reap_idle_session_members(PROJECT, root=root, now=NOW)['reaped'] == ['session-idle']",
+      "fails_if": "Pairing reap with the aggregate version makes a later removal refuse or miss its literal identity.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 312
+    },
+    {
+      "assertion": "'store-only' not in payload",
+      "fails_if": "Reintroducing a store-history payload scan decodes the deliberately seeded store-only marker and raises.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 346
+    },
+    {
+      "assertion": "sorted((row['run_id'] for row in data['runs'])) == ['file-dispatched', 'file-selected']",
+      "fails_if": "Dropping plan propagation, including unselected rows, reading store history or losing dispatch-defined selection violates literal selected file identities.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 353
+    },
+    {
+      "assertion": "version == 7",
+      "fails_if": "Returning mutable version instead of the aggregate version violates literal 7.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 357
+    },
+    {
+      "assertion": "data['auxiliary_version'] == 8",
+      "fails_if": "Dropping the auxiliary version overlay violates literal 8.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 358
+    },
+    {
+      "assertion": "'registered' in {member['id'] for member in data['members']}",
+      "fails_if": "Dropping the imported roster overlay loses the independently expected registered identity.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 359
+    },
+    {
+      "assertion": "not store_path.exists()",
+      "fails_if": "Unexpected fixture contamination creates a store before any read; a setup precondition, not product regression coverage.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 365
+    },
+    {
+      "assertion": "data['members'] and data['holds'] and (version == 7)",
+      "fails_if": "Losing seeded collections or returning the wrong aggregate version fails the positive presence control.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 367
+    },
+    {
+      "assertion": "not store_path.exists()",
+      "fails_if": "Restoring load_auxiliary inside history reading creates a store, violating the independent filesystem observation.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 368
+    },
+    {
+      "assertion": "({'members': data['members'], 'holds': data['holds']}, data['auxiliary_version']) == expected",
+      "fails_if": "Restoring a writable RunStore construction fires the injected refusal, or a read-only projection drops stored values captured by the independent auxiliary reader.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 376
+    },
+    {
+      "assertion": "version == 7",
+      "fails_if": "Returning an incorrect aggregate version violates literal 7.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 380
+    }
+  ],
+  "assertion_independence": "Returned-input preservation assertions and the persisted mocked report round trip are identified explicitly; neither is used as proof that the chosen input or mocked gate verdict was correct. Physical bytes, literal versions, fresh reads, refusals and deletion parity supply the regression oracles.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/budget.py:record_checks:1939",
+    "reckon/crew_run_commands.py:crew_member_add:4621",
+    "reckon/crew/dispatching/preparation.py:1566",
+    "reckon/crew/routing.py:_register_session_member:3418",
+    "reckon/crew/promotion_records.py:_retire_disposable_identity:1793",
+    "reckon/crew/promotion_gate.py:record_gate_rerun_at_integrated_revision:1231"
+  ],
+  "completed_at": "2026-11-16T07:21:21Z",
+  "dispatched_at": "2026-11-16T07:13:49Z",
+  "evidence_limit": "No suite rerun by this read-only review. The baseline has two existing test files, while the head adds the new regression file; zero added failures refers to those recorded focused gates, not an identical full-suite population or a future integrated head.",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Read the source commits from a7f049093c62b22bd5f69246c292b6bbd27de6b4 through 7183cf29b4782dbdf76c25b05c1a59e6925f3e0f with authorised primary merges separated from authored changes; reckon/ledger.py:2379-2398 preserves file history and overlays only stored mutable collections.",
+    "done_when": "The live plan at docs/plans/history-persists-as-detail-washes-out.html:376 requires no committed writes and value parity after aggregate removal, which tests/test_members_and_holds_live_in_the_store.py:68-111 asserts for registration, reaping, holds and import.",
+    "goal": "The source dispatch-detail.json names store-backed roster and holds, and reckon/ledger.py:3489 and :4453 route both mutation types to the store while reckon/crew/routing.py:3524 migrates reaping.",
+    "manifest": "The source manifest.md names completed baseline.log and landing-after.log, whose actual summaries are 58 passed and 77 passed with EXIT=0, and landing-negative-control.log records the registration refusal with EXIT=1.",
+    "write_paths": "The source dispatch-detail.json declares the six changed deliverable paths, and the authored delta against merged primary 8bc099a3f0a41b34083b36c6003d1c7aaecc7dc3 contains exactly those six paths."
+  },
+  "justifications": {
+    "durability": "tests/test_members_and_holds_live_in_the_store.py:68-380 checks real tracked bytes, literal identities and versions, removal parity, explicit refusals, rollback and independent aggregate updates; the recorded registration mutation fails its tracked-byte assertion.",
+    "evidence": "baseline.log and landing-after.log record completed 58-pass and 77-pass gates at the stated revisions, and landing-negative-control.log proves tests/test_members_and_holds_live_in_the_store.py:77 rejects a restored committed-ledger registration.",
+    "fit": "reckon/run_store.py:384-489 follows the existing SQLite transaction and migration owner, and reckon/ledger.py:2298-2398 preserves the public version-pair convention with descriptive names.",
+    "goal_fidelity": "reckon/run_store.py:437-489 imports project-scoped collections once and atomically replaces them with their version, while reckon/ledger.py:3489 and :4453 avoid committed writes.",
+    "reuse": "Capability searches located run_store.py's existing schema and retry owners and ledger.py:2683's removal guard, which the additions extend or call, while run_store.py:289 is the shared decoder used by both auxiliary read paths.",
+    "scope_discipline": "The six-path authored delta at 7183cf29b478 contains only the four declared production files, tests/test_members_and_holds_live_in_the_store.py and the declared evidence fragment, with primary integration authorised by the source manifest scope_note."
+  },
+  "negative_control": {
+    "exit_status": 1,
+    "failure_id": "tests/test_members_and_holds_live_in_the_store.py::test_mutation_writes_no_committed_path[register]",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T102553812624-members-and-holds-in-store-s23/landing-negative-control.log",
+    "observed": "AssertionError: registration rewrote a committed path"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source dispatch-detail.json names store-backed roster and holds, and reckon/ledger.py:3489 and :4453 route both mutation types to the store while reckon/crew/routing.py:3524 migrates reaping.\nVERDICT done_when: The live plan at docs/plans/history-persists-as-detail-washes-out.html:376 requires no committed writes and value parity after aggregate removal, which tests/test_members_and_holds_live_in_the_store.py:68-111 asserts for registration, reaping, holds and import.\nVERDICT write_paths: The source dispatch-detail.json declares the six changed deliverable paths, and the authored delta against merged primary 8bc099a3f0a41b34083b36c6003d1c7aaecc7dc3 contains exactly those six paths.\nVERDICT manifest: The source manifest.md names completed baseline.log and landing-after.log, whose actual summaries are 58 passed and 77 passed with EXIT=0, and landing-negative-control.log records the registration refusal with EXIT=1.\nVERDICT diff: Read the source commits from a7f049093c62b22bd5f69246c292b6bbd27de6b4 through 7183cf29b4782dbdf76c25b05c1a59e6925f3e0f with authorised primary merges separated from authored changes; reckon/ledger.py:2379-2398 preserves file history and overlays only stored mutable collections.\nCALL_SITES: reckon/budget.py:record_checks:1939, reckon/crew_run_commands.py:crew_member_add:4621, reckon/crew/dispatching/preparation.py:1566, reckon/crew/routing.py:_register_session_member:3418, reckon/crew/promotion_records.py:_retire_disposable_identity:1793, reckon/crew/promotion_gate.py:record_gate_rerun_at_integrated_revision:1231\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/run_store.py:437-489 imports project-scoped collections once and atomically replaces them with their version, while reckon/ledger.py:3489 and :4453 avoid committed writes.\nSCORE evidence: 20\nJUSTIFICATION evidence: baseline.log and landing-after.log record completed 58-pass and 77-pass gates at the stated revisions, and landing-negative-control.log proves tests/test_members_and_holds_live_in_the_store.py:77 rejects a restored committed-ledger registration.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The six-path authored delta at 7183cf29b478 contains only the four declared production files, tests/test_members_and_holds_live_in_the_store.py and the declared evidence fragment, with primary integration authorised by the source manifest scope_note.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_members_and_holds_live_in_the_store.py:68-380 checks real tracked bytes, literal identities and versions, removal parity, explicit refusals, rollback and independent aggregate updates; the recorded registration mutation fails its tracked-byte assertion.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/run_store.py:384-489 follows the existing SQLite transaction and migration owner, and reckon/ledger.py:2298-2398 preserves the public version-pair convention with descriptive names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches located run_store.py's existing schema and retry owners and ledger.py:2683's removal guard, which the additions extend or call, while run_store.py:289 is the shared decoder used by both auxiliary read paths.\n",
+  "refusal_analysis": [
+    {
+      "fails_if": "Removing the undeclared-member-removal guard makes the raises assertion fail; the following independent snapshot detects any partial mutation.",
+      "line": 187
+    },
+    {
+      "fails_if": "Accepting a stale roster version after registration makes the raises assertion fail.",
+      "line": 191
+    },
+    {
+      "fails_if": "Removing the transactional store version comparison admits a stale hold replacement and fails the VersionConflict expectation.",
+      "line": 193
+    },
+    {
+      "fails_if": "Removing composite-key uniqueness or suppressing a duplicate insertion error defeats the expected IntegrityError; missing transaction rollback fails the subsequent unchanged snapshot.",
+      "line": 202
+    },
+    {
+      "fails_if": "Swallowing the injected DatabaseError or falling back to a committed write fails the expected exception and the independent no-member/no-tracked-write observations.",
+      "line": 233
+    },
+    {
+      "fails_if": "Disabling stale aggregate-write rejection admits version 7 after two file updates and fails the expected LedgerError.",
+      "line": 315
+    }
+  ],
+  "reuse_analysis": [
+    {
+      "definitions": "ledger.load_auxiliary, ledger._write_auxiliary, ledger.write_members",
+      "owner": "reckon/run_store.py:RunStore and _retrying; reckon/ledger.py:dropped_member_ids; reckon/_store.py:VersionConflict",
+      "relation": "wraps existing store owner and reuses retry, removal and version-error mechanisms"
+    },
+    {
+      "definitions": "ledger._load_file_history",
+      "owner": "reckon/ledger.py:load at base",
+      "relation": "extracts the existing history reader, without a parallel history implementation"
+    },
+    {
+      "definitions": "run_store._migrate_auxiliary and needs_migration",
+      "owner": "reckon/run_store.py:_AUX_SCHEMA, RunStore._create and _migrate_runs",
+      "relation": "extends the existing schema owner for project-scoped keys; run migration cannot migrate auxiliary primary keys"
+    },
+    {
+      "definitions": "run_store._auxiliary_rows, read_auxiliary, RunStore._auxiliary_rows, _replace_auxiliary, auxiliary, write_auxiliary",
+      "owner": "reckon/run_store.py:RunStore, _AUX_SCHEMA and append_member",
+      "relation": "extends existing auxiliary table ownership; both readers reuse one decoder and collection writes share one replacement helper"
+    },
+    {
+      "definitions": "roster fixture, _snapshot, _tracked, failure callbacks, NoRunPayload",
+      "owner": "tests/test_members_and_holds_live_in_the_store.py",
+      "relation": "test-local fixture, independent storage observations and refusal probes; production persistence and git enumeration are exercised through their existing owners"
+    }
+  ],
+  "review_run_id": "r-20261116T071140489405-review-of-members-and-holds-in-store-s23-7183cf29b478",
+  "reviewed_base_sha": "a7f049093c62b22bd5f69246c292b6bbd27de6b4",
+  "reviewed_head_sha": "7183cf29b4782dbdf76c25b05c1a59e6925f3e0f",
+  "reviewed_run_id": "r-20261115T102553812624-members-and-holds-in-store-s23",
+  "scope": "Cumulative authored change from the original dispatch base; authorised primary merges are integration context. The final second-parent delta against 8bc099a3f0a41b34083b36c6003d1c7aaecc7dc3 contains six declared paths.",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_members_and_holds_live_in_the_store.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T102553812624-members-and-holds-in-store-s23/landing-after.log",
+      "revision": "7183cf29b4782dbdf76c25b05c1a59e6925f3e0f",
+      "summary": "77 passed in 41.77s"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/members-and-holds-in-store-s23 /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/members-and-holds-in-store-s23/.venv/bin/python -m pytest -p no:cacheprovider -q /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/members-and-holds-in-store-s23/tests/test_staged_write_inventory.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/members-and-holds-in-store-s23/tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T102553812624-members-and-holds-in-store-s23/baseline.log",
+      "revision": "a7f049093c62b22bd5f69246c292b6bbd27de6b4",
+      "summary": "58 passed in 36.21s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T07:35:01.598492+00:00",
+  "total": 120
+}

@@ -1,0 +1,84 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:743",
+    "reckon/crew/recovery_review_acceptance.py:759",
+    "reckon/crew/review_landing.py:94",
+    "reckon/crew/landing_measure.py:823"
+  ],
+  "completed_at": "2026-11-16T02:15:36.169Z",
+  "dispatched_at": "2026-11-16T02:14:49Z",
+  "evidence_basis": "the reviewed run's own baseline_suite and after_suite in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224654947250-qwnw-red-file-an-acceptance-check-holds-no-lease/manifest.md report failure_count 0 with empty failure_ids on both arms (logs/suite-base.log and logs/suite-after.log both EXIT=0), so the after failure set minus the baseline failure set is empty: added_failure_count 0, added_failure_ids [].",
+  "findings": [
+    {
+      "file": "tests/test_an_acceptance_check_holds_no_lease.py",
+      "line": 466,
+      "severity": "non-blocking",
+      "text": "two print(\"DIAG ...\") calls are committed inside test_a_changed_run_is_not_promoted_on_an_earlier_judgement; they are leftover debugging that writes run internals into every test report of this file."
+    },
+    {
+      "file": "tests/test_an_acceptance_check_holds_no_lease.py",
+      "line": 32,
+      "severity": "non-blocking",
+      "text": "_local_scheduler re-implements, line for line, the inline scheduler stub already at tests/test_cleanly_reviewed_run_lands_itself.py:119-133 (pop check, split --wrap, bash -c the inner script, write the redirect destination, return the 12345 job id) rather than extending a shared helper in tests/helpers/; two copies of the measure transport stub can drift."
+    },
+    {
+      "file": "tests/test_an_acceptance_check_holds_no_lease.py",
+      "line": 237,
+      "severity": "non-blocking",
+      "text": "test_a_commit_the_primary_branch_carries_is_promoted_without_a_measure claims in its name and docstring that no measure ran, yet it records no submissions and asserts nothing about the transport, so the claim is only enforced indirectly by conftest's autouse scheduler guard rather than by an assertion in the test."
+    },
+    {
+      "file": "tests/test_an_acceptance_check_holds_no_lease.py",
+      "line": 332,
+      "severity": "non-blocking",
+      "text": "test_missing_commits_reaching_primary_rejudges_the_same_head had its promotion assertions (accepted == [RUN_ID], pointer gone, one ledger row) replaced by refusal assertions, so this file no longer demonstrates a refused run being released and promoted once the remote carries its commits; the release-and-promote path survives only for an already-carried commit at :237 and, for the measure-passing arm, at tests/test_cleanly_reviewed_run_lands_itself.py:176."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224654947250-qwnw-red-file-an-acceptance-check-holds-no-lease/logs/head-arm.log",
+      "line": 2,
+      "severity": "non-blocking",
+      "text": "the head arm's header records revision faa84aa492992ecf3f5a550486d9dc308c00ccde, the unmodified base, for a run that measured the change in the working tree, so a reader taking the header at face value reads the arm as measured at the base; the fragment discloses the working tree but the log alone does not."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224654947250-qwnw-red-file-an-acceptance-check-holds-no-lease/manifest.md",
+      "line": 14,
+      "severity": "non-blocking",
+      "text": "the tests: field is a prose bulleted list of results rather than the literal gate command, so promotion's gate receipt has to fall back to the '# command:' header in logs/head-arm.log instead of reading the command from the manifest."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_an_acceptance_check_holds_no_lease.py:341 fails if acceptance stops measuring an unmerged implementation (the recorded sbatch at :368 would be missing), and :231 fails if the retired unmerged_commits refusal returns; no added assertion compares a value with the variable the test itself supplied.",
+    "evidence": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224654947250-qwnw-red-file-an-acceptance-check-holds-no-lease/logs/head-arm.log records 13 passed and EXIT=0 with the base arm at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224654947250-qwnw-red-file-an-acceptance-check-holds-no-lease/logs/base-arm.log red at the same 11 ids, but the head arm ran in the worker's allocation rather than as an imported all_debug job and its header names the base revision.",
+    "fit": "the file follows the pytest fixture and helper idiom of tests/test_cleanly_reviewed_run_lands_itself.py, but tests/test_an_acceptance_check_holds_no_lease.py:466 leaves two DIAG print calls in the committed deliverable.",
+    "goal_fidelity": "tests/test_an_acceptance_check_holds_no_lease.py passes 13 of 13 at the reviewed tree, the file the goal names, with no product rule relaxed to get there.",
+    "reuse": "tests/test_cleanly_reviewed_run_lands_itself.py:119-133 already owns a local scheduler transport for landing_measure's partition wrap, and tests/test_an_acceptance_check_holds_no_lease.py:32 adds a second copy of the same body instead of extracting it into tests/helpers/.",
+    "scope_discipline": "the commit touches only tests/test_an_acceptance_check_holds_no_lease.py and its landing fragment under docs/evidence/fragments/queued-work-needs-no-workaround/, both inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261116T021044215778-review-of-qwnw-red-file-an-acceptance-check-holds-no-lease-0fe411a9f458",
+  "review_text": "VERDICT goal: the node goal is that tests/test_an_acceptance_check_holds_no_lease.py passes in full on the primary branch; /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224654947250-qwnw-red-file-an-acceptance-check-holds-no-lease/logs/head-arm.log records 13 passed with EXIT=0 over that file at the reviewed tree, and the single commit 0fe411a9f458134b17f662b28285adc3de7889ec changes it.\nVERDICT done_when: the done_when asks for the file green at head as an all_debug job with SLURM_JOB_ID unset, plus a base arm and a test-file arm; /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224654947250-qwnw-red-file-an-acceptance-check-holds-no-lease/logs/head-arm.log:2 names revision faa84aa492992ecf3f5a550486d9dc308c00ccde (the unmodified base, not 0fe411a9f4) for a head arm run in the worker's own allocation, the base arm reproduces exactly the 11 ids the done_when names, and the import arm is two files that do not import the changed file.\nVERDICT write_paths: the node declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the commit touches tests/test_an_acceptance_check_holds_no_lease.py and docs/evidence/fragments/queued-work-needs-no-workaround/red-file-an-acceptance-check-holds-no-lease.html, both inside that scope.\nVERDICT manifest: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224654947250-qwnw-red-file-an-acceptance-check-holds-no-lease/manifest.md records the head arm (13 passed, EXIT=0), the base arm (3 failed, 9 passed, 8 errors, EXIT=1), the suite pair (51 and 7 passed, EXIT=0 on both arms) and states both causes are test-side with no product file changed.\nVERDICT diff: read 0fe411a9f458134b17f662b28285adc3de7889ec against faa84aa492992ecf3f5a550486d9dc308c00ccde commit by commit (one commit): 2 files, +289/-36 \u2014 the candidate/refusing_candidate fixture split, the _local_scheduler transport stub, one new merge-candidate test and five re-expressed assertions, with two debug prints left in at tests/test_an_acceptance_check_holds_no_lease.py:466-467.\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:743, reckon/crew/recovery_review_acceptance.py:759, reckon/crew/review_landing.py:94, reckon/crew/landing_measure.py:823\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_an_acceptance_check_holds_no_lease.py passes 13 of 13 at the reviewed tree, the file the goal names, with no product rule relaxed to get there.\nSCORE evidence: 13\nJUSTIFICATION evidence: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224654947250-qwnw-red-file-an-acceptance-check-holds-no-lease/logs/head-arm.log records 13 passed and EXIT=0 with the base arm at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224654947250-qwnw-red-file-an-acceptance-check-holds-no-lease/logs/base-arm.log red at the same 11 ids, but the head arm ran in the worker's allocation rather than as an imported all_debug job and its header names the base revision.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_an_acceptance_check_holds_no_lease.py:341 fails if acceptance stops measuring an unmerged implementation (the recorded sbatch at :368 would be missing), and :231 fails if the retired unmerged_commits refusal returns; no added assertion compares a value with the variable the test itself supplied.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the commit touches only tests/test_an_acceptance_check_holds_no_lease.py and its landing fragment under docs/evidence/fragments/queued-work-needs-no-workaround/, both inside the node's declared write paths.\nSCORE fit: 14\nJUSTIFICATION fit: the file follows the pytest fixture and helper idiom of tests/test_cleanly_reviewed_run_lands_itself.py, but tests/test_an_acceptance_check_holds_no_lease.py:466 leaves two DIAG print calls in the committed deliverable.\nSCORE reuse: 10\nJUSTIFICATION reuse: tests/test_cleanly_reviewed_run_lands_itself.py:119-133 already owns a local scheduler transport for landing_measure's partition wrap, and tests/test_an_acceptance_check_holds_no_lease.py:32 adds a second copy of the same body instead of extracting it into tests/helpers/.\nFINDING tests/test_an_acceptance_check_holds_no_lease.py:466 non-blocking: two print(\"DIAG ...\") calls are committed inside test_a_changed_run_is_not_promoted_on_an_earlier_judgement; they are leftover debugging that writes run internals into every test report of this file.\nFINDING tests/test_an_acceptance_check_holds_no_lease.py:32 non-blocking: _local_scheduler re-implements, line for line, the inline scheduler stub already at tests/test_cleanly_reviewed_run_lands_itself.py:119-133 (pop check, split --wrap, bash -c the inner script, write the redirect destination, return the 12345 job id) rather than extending a shared helper in tests/helpers/; two copies of the measure transport stub can drift.\nFINDING tests/test_an_acceptance_check_holds_no_lease.py:237 non-blocking: test_a_commit_the_primary_branch_carries_is_promoted_without_a_measure claims in its name and docstring that no measure ran, yet it records no submissions and asserts nothing about the transport, so the claim is only enforced indirectly by conftest's autouse scheduler guard rather than by an assertion in the test.\nFINDING tests/test_an_acceptance_check_holds_no_lease.py:332 non-blocking: test_missing_commits_reaching_primary_rejudges_the_same_head had its promotion assertions (accepted == [RUN_ID], pointer gone, one ledger row) replaced by refusal assertions, so this file no longer demonstrates a refused run being released and promoted once the remote carries its commits; the release-and-promote path survives only for an already-carried commit at :237 and, for the measure-passing arm, at tests/test_cleanly_reviewed_run_lands_itself.py:176.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224654947250-qwnw-red-file-an-acceptance-check-holds-no-lease/logs/head-arm.log:2 non-blocking: the head arm's header records revision faa84aa492992ecf3f5a550486d9dc308c00ccde, the unmodified base, for a run that measured the change in the working tree, so a reader taking the header at face value reads the arm as measured at the base; the fragment discloses the working tree but the log alone does not.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224654947250-qwnw-red-file-an-acceptance-check-holds-no-lease/manifest.md:14 non-blocking: the tests: field is a prose bulleted list of results rather than the literal gate command, so promotion's gate receipt has to fall back to the '# command:' header in logs/head-arm.log instead of reading the command from the manifest.",
+  "reviewed_base_sha": "faa84aa492992ecf3f5a550486d9dc308c00ccde",
+  "reviewed_head_sha": "0fe411a9f458134b17f662b28285adc3de7889ec",
+  "reviewed_run_id": "r-20261115T224654947250-qwnw-red-file-an-acceptance-check-holds-no-lease",
+  "scores": {
+    "durability": 17,
+    "evidence": 13,
+    "fit": 14,
+    "goal_fidelity": 18,
+    "reuse": 10,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T02:29:34.420059+00:00",
+  "total": 92,
+  "verdicts": {
+    "diff": "read 0fe411a9f458134b17f662b28285adc3de7889ec against faa84aa492992ecf3f5a550486d9dc308c00ccde commit by commit (one commit): 2 files, +289/-36 \u2014 the candidate/refusing_candidate fixture split, the _local_scheduler transport stub, one new merge-candidate test and five re-expressed assertions, with two debug prints left in at tests/test_an_acceptance_check_holds_no_lease.py:466-467.",
+    "done_when": "the done_when asks for the file green at head as an all_debug job with SLURM_JOB_ID unset, plus a base arm and a test-file arm; /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224654947250-qwnw-red-file-an-acceptance-check-holds-no-lease/logs/head-arm.log:2 names revision faa84aa492992ecf3f5a550486d9dc308c00ccde (the unmodified base, not 0fe411a9f4) for a head arm run in the worker's own allocation, the base arm reproduces exactly the 11 ids the done_when names, and the import arm is two files that do not import the changed file.",
+    "goal": "the node goal is that tests/test_an_acceptance_check_holds_no_lease.py passes in full on the primary branch; /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224654947250-qwnw-red-file-an-acceptance-check-holds-no-lease/logs/head-arm.log records 13 passed with EXIT=0 over that file at the reviewed tree, and the single commit 0fe411a9f458134b17f662b28285adc3de7889ec changes it.",
+    "manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224654947250-qwnw-red-file-an-acceptance-check-holds-no-lease/manifest.md records the head arm (13 passed, EXIT=0), the base arm (3 failed, 9 passed, 8 errors, EXIT=1), the suite pair (51 and 7 passed, EXIT=0 on both arms) and states both causes are test-side with no product file changed.",
+    "write_paths": "the node declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the commit touches tests/test_an_acceptance_check_holds_no_lease.py and docs/evidence/fragments/queued-work-needs-no-workaround/red-file-an-acceptance-check-holds-no-lease.html, both inside that scope."
+  }
+}

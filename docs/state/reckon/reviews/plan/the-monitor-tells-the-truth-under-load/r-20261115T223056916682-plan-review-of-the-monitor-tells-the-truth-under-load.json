@@ -1,0 +1,77 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T22:49:14.100Z",
+  "dispatched_at": "2026-11-15T22:48:11Z",
+  "findings": [
+    {
+      "anchor": "plan.html:188",
+      "id": "done_when-1",
+      "reason": "as written, a worker must either drop a clause the lead's complaint needs kept or exclude it from the fail-first list; the plan should mark that clause as preservation and state what a congestion-only hold must show that base does not, or the section fails its own gate.",
+      "text": "s21 opens with \"New tests, each failing at the base revision\" and ends its list with \"A request held only by router congestion still shows that reason\", a preservation clause: at base `_retry_backoff_hold` is not consulted while a lane hold is in force, so a request held by router congestion does show that reason, and a test for this clause passes at base \u2014 the fail-first gate the section declares cannot be met for it",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:187",
+      "id": "reasoning-1",
+      "reason": "a repair aimed at composing a message that already exists leaves the mechanism that showed the stale congestion reason in place, and s21's first clause (\"carries that failure and its remedy command on its hold\") is at least partly satisfied at base, so its test cannot fail first.",
+      "text": "s21's Why says the lead \"suspected reckon, because neither surface named the failure or the command that clears it\", but the cited run's own attempt record (`crew/live/r-20261115T123258219001-vofd-crossing-curves.json`, `admission_history` entry at 22:31:01, failure stamped 22:26:16) already holds \"PlanReviewMissingError: the review of plan 'vs1-output-filter-design' leaves 1 finding(s) unanswered: reasoning-2; \u2026 Resolve with `reckon crew review` for the plan \u2026 then `reckon crew dispatch`; or `reckon crew dispatch --allow-unreviewed-plan` to waive the review\", and `_retry_backoff_hold` already composes that text into the held-on-retry-backoff reason, so the missing thing at 22:25 was not the message but an earlier router-congestion hold still occupying the pointer hold \u2014 a stale-reason precedence defect, not a missing-remedy defect",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:23",
+      "id": "wiring-1",
+      "reason": "the coordinator that follows the followup's own prompt will close the chain with s21 and five other sections unbuilt; the declarations and the chain must name the same remaining set.",
+      "text": "`plan-section-declarations` gained `s21: implementable` while the only open followup still reads \"Land \u00a72, then build \u00a73 to \u00a711\" and no followup, prompt or table row names s21 or the other declared-implementable sections beyond \u00a711 (s14\u2013s17, s19, s21), so resolving the chain as instructed ends the plan with six declared sections unbuilt",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "b7af23533d045a889972a7e4c8a974078219b533",
+  "plan_fingerprint": "c783f1d606a31d57fe6622c2c4d953c303a752ef7879bcf91976f65061f57c53",
+  "plan_slug": "the-monitor-tells-the-truth-under-load",
+  "plan_version": 33,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261115T223056916682-plan-review-of-the-monitor-tells-the-truth-under-load",
+  "reviewed_blob_sha": "d4414f96f12fc42733f8c84eb9b2ce8166264f10",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the run id s21 cites (`r-20261115T123258219001-vofd-crossing-curves`) resolves (live pointer, run directory, lock), and s21's three write paths (`reckon/crew/admission/verdicts.py`, `reckon/crew/admission/launching.py`, `reckon/crew/obligations.py`) all exist at the reviewed revision.",
+    "done_when": "a finding \u2014 s21's fourth clause (\"A request held only by router congestion still shows that reason\") already holds at base and so can never fail first under the section's own \"each failing at the base revision\" gate.",
+    "evidence_paths": "pass \u2014 no section in this round writes evidence to a node-local or scratch path; the only path s21 adds is the report of a reviewer, and the gate it relies on is the repository suite.",
+    "naming": "pass \u2014 s21's prose carries no plan label, stage name, ticket number or version tag into a symbol; the session names it quotes are evidence, not naming \u2014 every surface the deliverable touches is named by its mechanism.",
+    "reasoning": "a finding \u2014 s21's stated root cause (neither surface names the failure or its remedy) is contradicted by the same run's stored admission record, which already carries the failure text and both remedy commands.",
+    "single_goal": "pass \u2014 s21 names one deliverable (what a hold reports about the thing holding it); the other sections are unchanged this round.",
+    "wiring": "a finding \u2014 the only open followup (plan.html:193, \"Land \u00a72, then build \u00a73 to \u00a711\") no followup names s21 or the other declared-implementable sections outside \u00a73\u2013\u00a711, per the declarations at plan.html:23."
+  },
+  "section_digests": {
+    "_document": "950b8d28cd05787b254d306f8b87b014a5c05ba23c0cf817b5782b8f722029fe",
+    "s1": "7df70e005850ec7773b3db8cdf1384c5422e6cbfac994a1cfc3bdeca2fd47ef2",
+    "s10": "b83b287b25ce35ab03c105da8c02eec999809dbdea6073436eae2dc72bb0055d",
+    "s11": "db2972ed7155bc484ac98ce58f8c119ab201e99f5a53c1af54606eb6564a66e4",
+    "s12": "93d79e3e452ecd1f5c10186fc7eb1781f5e7455324237438f574fbc699447b31",
+    "s13": "79271d44153e341633146df7233120d46939c41b1ca66de6bac074c2472ea991",
+    "s14": "c0f58bcc6da33e5ff402ec71bef199b31de1619824a04f6db8d415d9669a38d7",
+    "s15": "3d6257718e450fda1363e42a9394f2cb631579e92f2cf0dbdaca2f25c62d6537",
+    "s16": "9c67ebb9a89d3b566da303e2866877a636f868c501bf32f08ff80e2c7a7f26da",
+    "s17": "229d1aee2b054a2680acdd7883f3d6cd8216513f31305ff21ed874c51b1af3a7",
+    "s18": "4a5429fac53529c64918e90d1bc4d47480e08689bea9601336332ce330c82e49",
+    "s19": "1f9e10fa3b0ee55a46bc415cf145a732b0361a363b70930a33a7c5ccbe2189ca",
+    "s2": "a065d657377c24ca69329c265d4a0a821a0104c7df8d1140dec9c3b9d1c6edf2",
+    "s20": "2a22cb56cd43d1c837c31506853a47a9de4ea2b23c97d583934c0f47da03fad0",
+    "s21": "257fd5d16d2fe6c1dbc3c0b4f47798c39b681adaaedadbbd7f61ea015c794eb0",
+    "s3": "f3cf9279ee0efc6c6e7b55dede5b9ff68ee3db1e40edd78b825098ecee64d396",
+    "s4": "739bbbd316f3b5138d938c01abaac59b3f08e1231effa6dc1e416fb46b9b34b1",
+    "s5": "2806db9da94cd21c23ef92806d85a99f15d28df20b272f97173d332fba5a1587",
+    "s6": "a8a7d00ef50ab0ca240bc59bb917ff62442d6f3567da095cb913cd5860246056",
+    "s7": "9f299f30b0fda7b1f5bbc9f6d7cf6b936604181068a2c9a8363b64e58ace0fd6",
+    "s8": "30f0e740e2caee5b735cc3bdc83d5eaa23eac7eeaae780899f811d7a1c32956c",
+    "s9": "56c122a4d4057a2e12e9ebbaae0a53fb955938f47dbe9275cdf2dd5566896f78"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T23:00:05.932259+00:00",
+  "total": null
+}

@@ -1,0 +1,95 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/obligations.py:1385 _in_flight_review",
+    "reckon/crew/obligations.py:1422 _reviews_in_flight",
+    "reckon/crew/obligations.py:1495 _current_review_in_flight",
+    "reckon/crew/recovery_classification.py:868 classify_pointer",
+    "reckon/crew/live_worker_census.py:419 _reflex_review_in_flight"
+  ],
+  "completed_at": "2026-11-16T14:57:32.728Z",
+  "dispatched_at": "2026-11-16T14:55:23Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "deferred",
+      "recorded_at": "2026-11-16T15:33:56.540251+00:00",
+      "rule": "landing-defers-non-blocking-findings",
+      "run": "r-20261116T124343194850-the-obligation-sweep-shares-the-review-index"
+    },
+    "1": {
+      "kind": "deferred",
+      "recorded_at": "2026-11-16T15:33:56.540251+00:00",
+      "rule": "landing-defers-non-blocking-findings",
+      "run": "r-20261116T124343194850-the-obligation-sweep-shares-the-review-index"
+    },
+    "2": {
+      "kind": "deferred",
+      "recorded_at": "2026-11-16T15:33:56.540251+00:00",
+      "rule": "landing-defers-non-blocking-findings",
+      "run": "r-20261116T124343194850-the-obligation-sweep-shares-the-review-index"
+    },
+    "3": {
+      "kind": "deferred",
+      "recorded_at": "2026-11-16T15:33:56.540251+00:00",
+      "rule": "landing-defers-non-blocking-findings",
+      "run": "r-20261116T124343194850-the-obligation-sweep-shares-the-review-index"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "id": "f2f062ade00",
+      "line": "928",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_review_query_fields` answers an empty head for a record whose subject is plan, and its docstring says the composed dispatch for a plan names no head and that the rule keyed on that empty head, but `_review_dispatch_fields` returns a blob head for a plan record at reckon/crew/recovery_review_subject.py:1179; the plan branch therefore changes the head the rule keys on, is covered by no case, and its equivalence rests on _review_head_covers treating an empty side as covering rather than on anything the diff asserts."
+    },
+    {
+      "file": "tests/test_the_obligation_sweep_shares_the_review_index.py",
+      "id": "ff4d200de92",
+      "line": "101",
+      "severity": "non-blocking",
+      "text": "non-blocking: every fixture reviewer built at line 101 declares the head-keyed record path inside the reviewed run's own record directory, so all 40 matches are reached through _ReviewCandidateMap.by_directory alone; no case files a reviewer under by_subject or by_unresolved only, so dropping those filings (the fallback the added docstring at reckon/crew/recovery_review_dispatch.py:593 says keeps the answer set unchanged) would leave lines 324, 328 and 334 green."
+    },
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "id": "f0e7daa0e91",
+      "line": "2978",
+      "severity": "non-blocking",
+      "text": "non-blocking: the commit re-indents the whole docstring of _standing_plan_review, about 39 of the 688 added lines, with its body unchanged under `git diff -w`; the goal does not imply it and it buries the two methods the goal is about."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T124343194850-the-obligation-sweep-shares-the-review-index/manifest.md",
+      "id": "f9d55bf145b",
+      "line": "24",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when asks that the test files importing the changed modules add no failure against base in matched arms, while logs/baseline-suite.log and logs/after-suite.log carry two guard files plus the node's own case; the wider comparison stated at manifest.md:24 (five obligation/review test files, 13 pre-existing failures, an empty base-vs-head failure id diff) names no log a reader can open."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_the_obligation_sweep_shares_the_review_index.py:329 reddens at 21,160 checks when the walk is restored (logs/negative-control.log), yet the by_subject and by_unresolved filings added at reckon/crew/recovery_review_dispatch.py:593 have no case at tests/test_the_obligation_sweep_shares_the_review_index.py:101 that would fail if they were dropped.",
+    "evidence": "logs/gate-head.log and logs/negative-control.log are readable receipts at the two revisions, but the all_debug arms recorded in manifest.md:21-22 cover two guard files rather than the importer population the done_when names.",
+    "fit": "the filing class at reckon/crew/recovery_review_dispatch.py:364 keeps _ReviewInFlightIndex's lock-and-memo idiom and adds no name the repository naming rules forbid.",
+    "goal_fidelity": "reckon/crew/recovery_review_dispatch.py:1016 routes the rule through the per-tick index that obligations._in_flight_review (reckon/crew/obligations.py:1385) reaches, and logs/gate-head.log records 3.6 checks per live pointer against the budget of 5.",
+    "reuse": "the addition extends _ReviewInFlightIndex with candidate_map and standing_review rather than forking it, and the search of reckon/crew found no other live-pointer index to reuse.",
+    "scope_discipline": "every path in the diff is inside the declared write paths, but reckon/crew/recovery_review_dispatch.py:2978 re-indents an unrelated function's docstring with no change of wording."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to route the obligation sweep's review lookup through the per-tick review index; reckon/crew/recovery_review_dispatch.py:1016 now answers through _ReviewInFlightIndex.standing_review, which obligations._in_flight_review reaches at reckon/crew/obligations.py:1385, and logs/gate-head.log records 720 checks over a 200-pointer fleet against a budget of 1000.\nVERDICT done_when: it names tests/test_the_obligation_sweep_shares_the_review_index.py over 160 delivered runs and 40 reviews with at most 5 checks per pointer, a pairing equal to the base revision's, and a negative control paying at least 20,000 calls; logs/gate-head.log records '1 passed in 9.80s' with EXIT=0 and logs/negative-control.log records '1 failed' with 'the lookup made 21160 existence checks over 200 pointers' and EXIT=1, so both halves have receipts, while the all_debug importer-arm clause is recorded over two guard files rather than the importer population it names.\nVERDICT write_paths: the node's dispatch declares reckon/crew/obligations.py, reckon/crew/recovery_review_dispatch.py, tests/test_the_obligation_sweep_shares_the_review_index.py and its fragment; the diff from 915acff37f to 98fccdc87d names exactly the last three, and obligations.py needed no change.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T124343194850-the-obligation-sweep-shares-the-review-index/manifest.md; it records commit 98fccdc87d, the literal gate command on line 16, four logs on line 17, 'added failure ids none', both suite arms EXIT=0 with 58 and 59 passed, and a negative_control_log path.\nVERDICT diff: read commit by commit against base 915acff37f4d535f44f39ebf0cc21827bbfc5827, one commit 98fccdc87d2229 with three files, 688 insertions and 76 deletions: the inverted candidate filing at reckon/crew/recovery_review_dispatch.py:364, the record-directory shortcut at :483, the head and project read at :928, the case at tests/test_the_obligation_sweep_shares_the_review_index.py, a 40-line landing fragment, and a whitespace-only re-indent of _standing_plan_review's docstring at :2978.\nCALL_SITES: reckon/crew/obligations.py:1385 _in_flight_review, reckon/crew/obligations.py:1422 _reviews_in_flight, reckon/crew/obligations.py:1495 _current_review_in_flight, reckon/crew/recovery_classification.py:868 classify_pointer, reckon/crew/live_worker_census.py:419 _reflex_review_in_flight\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_dispatch.py:1016 routes the rule through the per-tick index that obligations._in_flight_review (reckon/crew/obligations.py:1385) reaches, and logs/gate-head.log records 3.6 checks per live pointer against the budget of 5.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-head.log and logs/negative-control.log are readable receipts at the two revisions, but the all_debug arms recorded in manifest.md:21-22 cover two guard files rather than the importer population the done_when names.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths, but reckon/crew/recovery_review_dispatch.py:2978 re-indents an unrelated function's docstring with no change of wording.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_the_obligation_sweep_shares_the_review_index.py:329 reddens at 21,160 checks when the walk is restored (logs/negative-control.log), yet the by_subject and by_unresolved filings added at reckon/crew/recovery_review_dispatch.py:593 have no case at tests/test_the_obligation_sweep_shares_the_review_index.py:101 that would fail if they were dropped.\nSCORE fit: 18\nJUSTIFICATION fit: the filing class at reckon/crew/recovery_review_dispatch.py:364 keeps _ReviewInFlightIndex's lock-and-memo idiom and adds no name the repository naming rules forbid.\nSCORE reuse: 18\nJUSTIFICATION reuse: the addition extends _ReviewInFlightIndex with candidate_map and standing_review rather than forking it, and the search of reckon/crew found no other live-pointer index to reuse.\nFINDING reckon/crew/recovery_review_dispatch.py:928 non-blocking: the plan branch of _review_query_fields returns an empty head where reckon/crew/recovery_review_subject.py:1179 returns a blob head, so the docstring's claim that no head was read is false and the branch is uncovered.\nFINDING tests/test_the_obligation_sweep_shares_the_review_index.py:101 non-blocking: every fixture reviewer declares a head-keyed path inside the reviewed run's record directory, so the by_subject and by_unresolved filings have no assertion that would fail if they were dropped.\nFINDING reckon/crew/recovery_review_dispatch.py:2978 non-blocking: the commit re-indents _standing_plan_review's docstring, an unrelated function, with its body unchanged under git diff -w.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T124343194850-the-obligation-sweep-shares-the-review-index/manifest.md:24 non-blocking: the importer-arm comparison the done_when names is stated with no log a reader can open.\n",
+  "review_run_id": "r-20261116T144953843693-review-of-the-obligation-sweep-shares-the-review-index-98fccdc87d22",
+  "reviewed_base_sha": "915acff37f4d535f44f39ebf0cc21827bbfc5827",
+  "reviewed_head_sha": "98fccdc87d22229dfecf95e7af14f5e52b0ab611",
+  "reviewed_run_id": "r-20261116T124343194850-the-obligation-sweep-shares-the-review-index",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T15:22:01.533995+00:00",
+  "total": 100
+}

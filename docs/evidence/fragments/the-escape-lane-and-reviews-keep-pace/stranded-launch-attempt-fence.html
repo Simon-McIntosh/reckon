@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-escape-lane-and-reviews-keep-pace">
+  <meta name="plan-evidence-for" content="reckon:the-escape-lane-and-reviews-keep-pace">
+  <meta name="plan-verifies" content="reckon:the-escape-lane-and-reviews-keep-pace#s10">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="passed">
+  <title>A released launch is fenced by the attempt it abandoned | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="fence-names-the-attempt-s10-landing" data-node="fence-names-the-attempt-s10" data-reckon="landed" data-when="2026-11-15">
+  <h2>A released launch is fenced by the attempt it abandoned, not by its run</h2>
+  <p>The admission pass already writes a stranded launch of a queued request back as that request under the same run id, and records a release the launch reads before it reserves. That record named the run alone, so the request's own next attempt was refused at its reservation for the whole fence, an hour, for a launch it never made. The record now carries the attempt the release took — <code>claim_registered_at</code>, <code>holder_pid</code> and <code>holder_host</code> from the claim it removed (<code>_released_attempt</code>, <code>reckon/crew/admission/launching.py</code>) — and <code>refuse_a_released_launch</code> compares that name with the run's live claim (<code>_names_the_released_attempt</code>, <code>reckon/crew/dispatch_refusals.py</code>). A launch of the same run presenting a different claim is a later attempt and is admitted, but only for a release that recorded the re-queue (<code>mark_launch_requeued</code>): a launch the release gave back authorises no second attempt, so a fresh dispatch of that run id still waits out the whole fence. No claim at all is the released attempt's own run, so a slow original resuming before any later attempt is still refused, and a record that names no attempt holds for the whole fence too.</p>
+  <p>The new tests read <code>3 failed, 4 passed</code> at base revision <code>2424ab7511</code> with only this node's test files copied in, among them <code>test_the_requeued_request_s_next_attempt_is_admitted</code> failing with <code>CrewError: … was released as a stranded launch at step claim-published … the launch is refused</code>. At the worktree head <code>54d6347f6c</code> the node's gate reads <code>69 passed</code> across the five test files it names, against <code>65 passed</code> at base <code>c3f7a61e05</code>, where the new file does not exist. The 40 test files that import the admission package, <code>reckon.crew.dispatch_claims</code> or <code>dispatch_refusals</code> report the same 19 failures at base <code>c3f7a61e05</code> (<code>19 failed, 335 passed</code>) and at head <code>e6f3765b31</code> (<code>19 failed, 339 passed</code>), so the change adds none. The declared mutation — keying the refusal on the run id again — fails the admitted case, and the red run is recorded beside the manifest.</p>
+</article>
+</body>
+</html>

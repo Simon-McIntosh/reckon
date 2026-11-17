@@ -1,0 +1,227 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "digests": {
+        "_document": "31cc978b2a65a39fa03369db7055fa988487113eeb81c95f2f712e34a9d10542",
+        "s68": "ffb1bfdff6d1b0d3d5ac34a659e0dbe002ee91de837165b1fdb638fe4b77c142"
+      },
+      "reason": "s67 and s68 revised exactly as the four acted answers state: durable profile path, function anchor, station-module decode count, unterminated-line case",
+      "units": [
+        "_document",
+        "s68"
+      ],
+      "when": "2026-11-15T22:24:19.419601+00:00"
+    }
+  ],
+  "completed_at": "2026-11-15T20:41:37.424Z",
+  "dispatched_at": "2026-11-15T20:41:05Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-reads-each-fact-once/r-20261115T203421276025-plan-review-of-the-monitor-reads-each-fact-once/plan.html:751",
+      "id": "evidence_paths-1",
+      "reason": "the section's root cause and its 96-sample, five-caller breakdown have no durable artifact behind them, so either the record is copied under the run directory (as s65's census was) or the Why has nothing a later node can check.",
+      "text": "s67's entire Why rests on the py-spy record at /dev/shm/39486-fleet-1313886/claude-39486/.../scratchpad/dispatch.prof, which is fleet-job node-local scratch that dies with job 1313886, while the sibling section s68 cites its census under the run directory; a later reader cannot reopen the sample counts this section is argued from",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-reads-each-fact-once/r-20261115T203421276025-plan-review-of-the-monitor-reads-each-fact-once/plan.html:755",
+      "id": "done_when-1",
+      "reason": "the second deliverable half has no instrument, so a worker can land a store that decodes every pointer every tick and the test stays green.",
+      "text": "s68's second case ends \"asserts the second decodes no pointer fields\", but the only counting instrument the done-when names is a recording stand-in over json.loads \"made from recovery_wait\", and the pointer-field decodes it is meant to bound happen in the station tick and StationStore.classify_tick, which that stand-in does not count; the clause can pass without measuring anything",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-reads-each-fact-once/r-20261115T203421276025-plan-review-of-the-monitor-reads-each-fact-once/plan.html:755",
+      "id": "anchors_resolve-1",
+      "reason": "a line number in plan text is a fuse, and the worker following it lands on the wrong site; naming the pass rather than the line keeps the anchor resolving.",
+      "text": "s68 anchors one of its two 5.2 MB passes to `reckon/crew/station.py` \"at line 1088\", the census revision's line (33f28354, `[tick] str(row[\"run_id\"]): json.loads(str(row[\"fields\"]))`); at the repository head this review read (74b57a8b0b) line 1088 is the follower-prune sweep, so the anchor now points at a pass the section does not describe",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-reads-each-fact-once/r-20261115T203421276025-plan-review-of-the-monitor-reads-each-fact-once/plan.html:755",
+      "id": "done_when-2",
+      "reason": "the endpoint is \"reads only lines appended\", and without a partial-tail case a worker can land an offset that silently skips the completing half of a record while every named case stays green.",
+      "text": "s68's first case pins appended and truncated streams but no case covers a stream whose last line is partial when the pass scans it, which is the ordinary live state of a stream an agent is still writing; an offset advanced past an unterminated tail would drop that record and no case would fail",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "a03fe6e773caf54913b62d7abbe3711861221254",
+  "plan_fingerprint": "193ba2fdd912db2de145b5e39d4d53456b22763c0fd196565c7e27a021ab247e",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 356,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "07c36e592e9da6b1806a09addbc002ea892f84ab",
+      "commit_basis": "edit",
+      "finding": "evidence_paths-1",
+      "note": "s67 now cites the profile at ~/.cache/reckon-landing/dispatch-dry-run-1115.prof on GPFS, copied from the node-local scratch.",
+      "reason": "",
+      "when": "2026-11-15T22:20:15.870968+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "07c36e592e9da6b1806a09addbc002ea892f84ab",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "s68's second case now counts json.loads calls made from reckon.crew.station and reckon.crew.station_store, the modules the pointer-field passes live in, and asserts 0 on the second tick.",
+      "reason": "",
+      "when": "2026-11-15T22:20:51.158715+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "07c36e592e9da6b1806a09addbc002ea892f84ab",
+      "commit_basis": "edit",
+      "finding": "anchors_resolve-1",
+      "note": "s68 now anchors the pass by function, Station._tick in reckon/crew/station.py, rather than a line number.",
+      "reason": "",
+      "when": "2026-11-15T22:21:16.383456+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "07c36e592e9da6b1806a09addbc002ea892f84ab",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "s68's first case adds a stream whose last line is unterminated when the pass scans it: the offset stops at the last newline, and completing the line makes the next pass decode exactly that record.",
+      "reason": "",
+      "when": "2026-11-15T22:22:02.069129+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "07c36e592e9da6b1806a09addbc002ea892f84ab",
+      "commit_basis": "edit",
+      "note": "s68 now anchors the pass by function, Station._tick in reckon/crew/station.py, rather than a line number.",
+      "reason": "",
+      "when": "2026-11-15T22:21:16.383456+00:00"
+    },
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "07c36e592e9da6b1806a09addbc002ea892f84ab",
+      "commit_basis": "edit",
+      "note": "s68's second case now counts json.loads calls made from reckon.crew.station and reckon.crew.station_store, the modules the pointer-field passes live in, and asserts 0 on the second tick.",
+      "reason": "",
+      "when": "2026-11-15T22:20:51.158715+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "07c36e592e9da6b1806a09addbc002ea892f84ab",
+      "commit_basis": "edit",
+      "note": "s68's first case adds a stream whose last line is unterminated when the pass scans it: the offset stops at the last newline, and completing the line makes the next pass decode exactly that record.",
+      "reason": "",
+      "when": "2026-11-15T22:22:02.069129+00:00"
+    },
+    "evidence_paths-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "07c36e592e9da6b1806a09addbc002ea892f84ab",
+      "commit_basis": "edit",
+      "note": "s67 now cites the profile at ~/.cache/reckon-landing/dispatch-dry-run-1115.prof on GPFS, copied from the node-local scratch.",
+      "reason": "",
+      "when": "2026-11-15T22:20:15.870968+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-monitor-reads-each-fact-once/r-20261115T203421276025-plan-review-of-the-monitor-reads-each-fact-once.json",
+  "review_run_id": "r-20261115T203421276025-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "f9ba651c789d09f169640c4d6320b0830c6058dd",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 s68 cites `reckon/crew/station.py` at line 1088, a line number pinned to the census revision that no longer holds that decode at head, and s67's scratchpad profile path is the anchor this review also reports under evidence_paths.",
+    "done_when": "a finding \u2014 s68's second case asserts \"the second decodes no pointer fields\" while the only instrument it names (a json.loads stand-in scoped to recovery_wait) cannot see the station.py and StationStore.classify_tick passes that clause is about.",
+    "evidence_paths": "a finding \u2014 s67's only evidence for its Why is a py-spy record under a /dev/shm fleet-job scratchpad directory.",
+    "naming": "pass \u2014 no plan labels, section numbers, ticket ids or version tags appear in the two new test file names or in the deliverables' vocabulary.",
+    "reasoning": "pass \u2014 s68's figures check out against the log it cites (decode-census-head.log tick 1: 71,621,282 + 21,869,019 bytes = 93.5 MB over 124 pointers, and both pointer-field passes at 5.2 MB), and s67's sample counts check out against its record (292 samples total, 57 in picker.pick \u2192 read_records, 7 in capabilities.project_cache_status, 6 in dispatch_picker._picker_ledger_rows); neither deliverable prescribes a code path, step sequence or formula.",
+    "single_goal": "pass \u2014 s67 delivers one endpoint (one ledger load and stat per dispatch) and s68 one (a classification decodes only appended lines), each with one test file.",
+    "wiring": "pass \u2014 s67 and s68 declare no depends-on, and neither needs one: s67's only coupling to s66 (node._claim_commit_answer) is explicitly left to s66, and s68's evidence input s65 is already done, so no gate is missing."
+  },
+  "section_digests": {
+    "_document": "164bb1e30e17356cfcfb9737e7772db599dc911f71cfb82272bd6f372bb0b8a5",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s13": "3b11fe0cd53015121e6d566c554c6c77b13236b3700a90279e77a6bc755ea0a3",
+    "s14": "5f6675ba84aab4ad594b121e888aace2d69e497390559d38f0c220e5894ac588",
+    "s15": "efa38c205c7332a7867b6d87358cd9f89fe1568beaa9f9e5eee96862dd70b6f0",
+    "s16": "65cd8e559a7a5ebf018bc9fe50a07bb0954f67405ab6f17c7377c38ccd363aa7",
+    "s17": "1dee50822a308fa4eeea0a45fd3cdaf6de52d9a1d74a91c2b9c7605d179da2ad",
+    "s18": "ba63c0b1b83ec93cc99d92a3c1f67dcf92d700e20f4f9acd88362705d6b4d123",
+    "s19": "16239e5fae49e56b170433557a77981816880756e3ae545a741ca9ec70feae63",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s20": "d14d2b70bb40dd552f306726f24f5e3c79bc5efcd7f9b74bcb7d3de8f16f5e8e",
+    "s21": "9ff7b29b83f9c8ab95a0a469c997950ef226fc3d99d8dcffdbf0683df7a1f26c",
+    "s22": "1bdc9ac90396c56bcbcc8c3c4f44aa6b30cbd59c4da001825159a7b8245e054c",
+    "s23": "a810ffe181d2787722d8f9538a4348592269fe163ba23cc59939376cb13edcbb",
+    "s24": "e861dcc5044a0a1fb36c4a374ca71717aeb97054e5a3ff1aef57c9779c7147f5",
+    "s25": "a0939bd3d8ab0fa4b5c0c88de3cb9cdab3531338fe35d0c12b4338fc3c4d1563",
+    "s26": "a8fb9d8585830b87ed826347ff724ddecc8fb9a43ad9ac1540d6499e3689d03e",
+    "s27": "3c9e47dc777eeadabbe3898d4b8f69d91defbaff009d050f2906732cb87e50c8",
+    "s28": "982b473728d61b81a3d37050384bee85f3f1fb5366aad0668c5370a51367e82c",
+    "s29": "159b45ee319dc13bffea961474eb544e5a26d161bf686ebe5b7fabf95f5266c7",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s30": "2d8c9efccd4f8eeede43f5fabe6f6b9cacc2207ce97ca700584bfedd0e512dd2",
+    "s31": "27817d420beefc15258f2f52ea8c616f3e04b4035773fe437f6cfe7f31506100",
+    "s32": "836f1473b1691ab0150f1e32791c295f7511abd66cb29f93b48dc0d347998d51",
+    "s33": "39a7d7a43bc6e97cd0c11235cfbe6c06a5b6968dab69e8147978bd164bbfef4e",
+    "s34": "16da5de7a5c4ee31ac2d9a43b888bed8fb1ec1138a2194a35c9b8eacbf03a2b1",
+    "s35": "4a0acdec0fa4d9eaa1066ee46c8a4aec8079db0452d014a442005e104c03c2cc",
+    "s36": "2a4a0d6ab4a994e2d7542482f7b44d106ab0920143bf39d14b292c7c2ec02e8a",
+    "s37": "4d92cdfe9ba1661dc549241d07f5134250aedec9d46757600f427fc52c4741dd",
+    "s38": "2cd435157dcdf14e39d4dbcd90e98b171feba9df13c5e142e0edf0d8fd4a3bf5",
+    "s39": "8808ed4531ebe4589c1b5bb7c7b0e5644b141d532a6dcc3fef92ae640e08d57c",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s40": "444368fd31b2649852412e7533de8628a94071d7942154f1a75921b923006779",
+    "s41": "b1092da2f507a79ce2706ec4aa2660d53c3b5250d4790b92d2dcd190f4387e17",
+    "s42": "ef98f2534552feb3a2ebf8768c6fcb43355940cef2804ddc7c77c6917785de19",
+    "s43": "0ca81d067129f3af34ec2d359c605e716be1488a1545039d936cdb1c7bbee2ec",
+    "s44": "2f0b0e686cace2db876cf00fcfaf9bb695e130bf88094a901ff7e7808b059cfc",
+    "s45": "d69c6ab4c51eb99b6262547a934d3cadb8896d272251707771027d8dacb77bcb",
+    "s46": "15bf3fae7afcff6c9b316fb4d28bd070c2190192e9b9b5c3711b26f9dbc4895f",
+    "s47": "de3c85d7297232abbe6767af5f61b6546c68c206440469f03779df09dfe9c21f",
+    "s48": "c0407ba2af0106d21163a3e1ba1bcd7ea34373211a81f3c100d623def503ec70",
+    "s49": "244b3877f19c81d81c7fda520bf6bbf2ff2d74a6a23a463bc92b50fe0b2043e0",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s50": "1c953bda33cda6d81de9479ed929ef63b0796d3c593d23de08c5f4568449f544",
+    "s51": "dbea6dee91f6029d698f151362338fc42e7401db7c931fc9d87fada7c147fcbb",
+    "s52": "b35a6850269241b61ee3a2475ddb65e655481cf4051d580fb5402d19c1987d7a",
+    "s53": "d111daeb509976a72469123f1120b1d17d21c31ad0191760a8a3985623cb5d2c",
+    "s54": "00b9abf2130abb2999241ac6fd7315689fb0e33781634dd2dcc8a999e79a14cf",
+    "s55": "7c24db1096ad617ece378da333eb9b5e0ad8683c0dcf50f8834799b84ae1678a",
+    "s56": "60d073a3c86cef44d7cfdd7668cdab4ef60b8a9294237d2a8c26a7eb67f133cb",
+    "s57": "15a5aef3aac1c6e45bcbd001839d877449601748d48d6db3e47cfeb95e11d5f8",
+    "s58": "28953bb14404136c2573a3fdda96ed6a09cbb9317247c6999a20a2f6c474fda3",
+    "s59": "9994e27964e5588275320f6f6a965720e2c81d5ddf8a4e4f7fc08b5b4302961b",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s60": "4ac84162bc4236319ae405ae0c32937368b1339bcdee0178933b853401835a8e",
+    "s61": "36791e828ea3dd92554e24d83bef4d15f4eedbf54747aeb392f00d692b248a5f",
+    "s62": "de4be6e1dcda58963d4b6bcc718b61639a4e3824bc5bb398f37aa7393b796acf",
+    "s63": "a54d6f625d7423d77159f8077ad258832d2749da70ff77a69d13a69518ace496",
+    "s64": "9d881c2700f0ec618274645bc8918c8686d5424eb918c1c9e330a4f0a9fa5faf",
+    "s65": "a5176fbdb84822caa27c8d903a1d05f028a6d3e1cb41445ac305110711f32453",
+    "s66": "0dda301eaea993588a07325a8d82b67dcb0ff1510885e4cdd42ec92c2c819243",
+    "s67": "5ddef2b378d85f328ad436f9018b794fc6da20597e094b3fd236af7ad54fc757",
+    "s68": "4a64cd3d34d274d8d03773a4f35dfc830c97d3c2ff0ef1b2863ce1bb90500d6e",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T20:48:36.288161+00:00",
+  "total": null
+}

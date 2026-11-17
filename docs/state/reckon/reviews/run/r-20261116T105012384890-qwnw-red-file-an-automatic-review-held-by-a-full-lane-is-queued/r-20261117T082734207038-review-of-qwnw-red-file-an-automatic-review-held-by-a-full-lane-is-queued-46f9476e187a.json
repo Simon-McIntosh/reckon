@@ -1,0 +1,84 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:3216",
+    "reckon/crew/recovery_review_dispatch.py:3311",
+    "reckon/crew/recovery_watch.py:757",
+    "reckon/crew/recovery_watch.py:4208",
+    "reckon/crew/queue_landing.py:1704",
+    "reckon/serve.py:902"
+  ],
+  "call_sites_note": "six production readers of the changed classification were opened at the landed head; the review reflex at reckon/crew/recovery_review_dispatch.py:3216 composes the review the delivered pointer now owes, which is the arm the recorded defect silenced.",
+  "completed_at": "2026-11-17T08:29:07.256Z",
+  "dispatched_at": "2026-11-17T08:28:50Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "1990",
+      "severity": "non-blocking",
+      "text": "non-blocking: the `not manifest_status` term this run adds is not exercised at the landed head \u2014 the fixture's manifest reads `status: complete` (tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py:178), which primary's `pre_spawn_reads_as_claim` at :2001-2003 already excludes from the claim, so deleting :1990 at 46f9476e187a leaves the four target cases green; the term's only unique effect, a pre-spawn label over a manifest with a non-terminal status, has no test."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued.html",
+      "line": "89",
+      "severity": "non-blocking",
+      "text": "non-blocking: the node's only evidence artifact names `4dea651bd9fe507129c078e0d04275e18351c3d7` as `the final head` and records the importer arm at `43 failed, 826 passed` (:74 and :117) while the landed head's own log logs/head-importers.log reports `20 failed, 883 passed, 10 errors`, so a reader of the fragment is told about a superseded revision and figures the run's own record contradicts."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105012384890-qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued/logs/head-target-file.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when requires the gate `as a job on all_debug`, but the head log records only revision, tree and command under `env -u SLURM_JOB_ID` run in place in the reviewed worktree, and no submission or job id anywhere in the run directory names that partition."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105012384890-qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued/manifest.md",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when also asks that `ruff check and ruff format --check report nothing new on the changed paths`, and the manifest asserts that state in rubric.evidence without recording a ruff command or a log, so the lint clause of the measure has no receipt a reader can open."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "six production readers of the changed classification were opened at the landed head, chiefly the review reflex at reckon/crew/recovery_review_dispatch.py:3216 that composes the review the delivered pointer now owes.",
+    "diff": "read commit by commit: 4a8a6c2d adds the `not manifest_status` term and its comment at reckon/crew/recovery_classification.py:1990, 4dea651b adds the 129-line fragment, a34e5162 edits only that fragment's arm rows, and ba47ab1d and 46f9476e are merges whose authored content is that one hunk (git diff 5e91cc32430f..46f9476e187a is 9 added lines in one file plus the fragment).",
+    "done_when": "the done_when asks for that file green as an all_debug job with SLURM_JOB_ID unset, a base negative control logged beside the head run, no added failure over the importing test files, and ruff clean on the changed paths; the pass, the base control (3 failing ids quoted in the fragment) and the no-added-failure clause are met (logs/head-importers.log fails 20 against 44 at base with `comm -13` empty), but no all_debug submission and no ruff command or log exist.",
+    "goal": "the node's goal is that tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py pass in full; logs/head-target-file.log:1 shows `4 passed in 18.30s` and `EXIT=0` at 46f9476e187a for that exact command, against `3 failed, 1 passed` in logs/base-target-file.log:6.",
+    "manifest": "read; it records status complete, commits 4a8a6c2d 4dea651b a34e5162 ba47ab1d 46f9476e, the gate command and its log paths, both armed suite arms at 58 passed EXIT=0, the importer pair, negative_control_log logs/base-target-file.log at 3 failed EXIT=1, and the merge note that both pre-spawn guards were kept.",
+    "write_paths": "the fence in prompt.txt:84-89 is `reckon`, `tests`, docs/evidence/fragments/queued-work-needs-no-workaround and its figure directory; the authored change touches only reckon/crew/recovery_classification.py:1979-1997 and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued.html."
+  },
+  "justifications": {
+    "durability": "deleting the `not manifest_status` term at reckon/crew/recovery_classification.py:1990 at the landed head leaves all four target cases green, because the fixture's manifest status `complete` (tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py:178) is already excluded from the claim by `pre_spawn_reads_as_claim at :2001-2003.",
+    "evidence": "the gate is real and ran at the landed head, but the done_when's all_debug job is unrecorded (logs/head-target-file.log:1 runs in place under job 1319168), its ruff clause has no command or log anywhere in the run directory, and the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued.html:89 names 4dea651b as the final head rather than the landed revision.",
+    "fit": "the term joins the existing `pre_spawn_waiting` conjunction at reckon/crew/recovery_classification.py:1987-1993 in the neighbouring parenthesised shape and comment style, and introduces no new name.",
+    "goal_fidelity": "logs/head-target-file.log:1 records the goal's file at 4 passed in 18.30s EXIT=0 at 46f9476e187a where logs/base-target-file.log:6 records 3 failed, 1 passed, and the term carrying it is reckon/crew/recovery_classification.py:1990.",
+    "reuse": "the hunk adds no definition and reads the existing `manifest_status` local beside `_spawn_evidence`, which is imported from its owner reckon/crew/recovery_liveness.py rather than re-implemented.",
+    "scope_discipline": "every authored line is in reckon/crew/recovery_classification.py:1979-1997 or the declared fragment path, and the remaining files 46f9476e187a carries are primary's second-parent content rather than this run's writing."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py pass in full; logs/head-target-file.log:1 records that file at 46f9476e187a as `4 passed in 18.30s` and `EXIT=0` against `3 failed, 1 passed` in logs/base-target-file.log:6, and the term that makes it pass is `not manifest_status` at reckon/crew/recovery_classification.py:1990.\nVERDICT done_when: the done_when asks for the file green as an all_debug job with SLURM_JOB_ID unset, a base negative control logged beside the head run in the fragment, no added failure over the importing test files, and ruff clean on the changed paths; logs/head-target-file.log:1, logs/base-target-file.log:6 and the importer pair meet the pass, the control and the no-added-failure clauses (head fails 20 against 44 at base with no head-only id), but no all_debug submission is recorded and no ruff command or log exists in the run directory.\nVERDICT write_paths: prompt.txt:84-89 fences the node to `reckon`, `tests` and docs/evidence/fragments/queued-work-needs-no-workaround; the authored change is reckon/crew/recovery_classification.py:1979-1997 plus docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued.html, both inside the fence, with no test file touched.\nVERDICT manifest: read; it records status complete, five commits (4a8a6c2d, 4dea651b, a34e5162, ba47ab1d, 46f9476e), the gate command and its log paths, both armed suite arms at 58 passed EXIT=0, the importer pair at 44/825/10 and 20/883/10, negative_control_log logs/base-target-file.log, and a merge note that both pre-spawn guards were kept.\nVERDICT diff: read commit by commit \u2014 4a8a6c2d adds the term and its comment at :1990, 4dea651b adds the 129-line fragment, a34e5162 edits only the fragment's arm rows, and ba47ab1d and 46f9476e are merges whose authored content is that single hunk (git diff 5e91cc32430f..46f9476e187a shows 9 added lines in one file plus the fragment).\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:3216, reckon/crew/recovery_review_dispatch.py:3311, reckon/crew/recovery_watch.py:757, reckon/crew/recovery_watch.py:4208, reckon/crew/queue_landing.py:1704, reckon/serve.py:902\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: logs/head-target-file.log:1 records the goal's file at 4 passed EXIT=0 at 46f9476e187a where logs/base-target-file.log:6 records 3 failed, 1 passed, and the term carrying it is reckon/crew/recovery_classification.py:1990.\nSCORE evidence: 12\nJUSTIFICATION evidence: the gate ran at the landed head, but the done_when's all_debug job is unrecorded (logs/head-target-file.log:1 runs in place under job 1319168), its ruff clause has no command or log in the run directory, and the fragment at :89 names 4dea651b as the final head.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every authored line sits in reckon/crew/recovery_classification.py:1979-1997 or the declared fragment path, and the other files 46f9476e187a carries are primary's second-parent content.\nSCORE durability: 12\nJUSTIFICATION durability: deleting the term at reckon/crew/recovery_classification.py:1990 at the landed head leaves all four target cases green, because the fixture's `status: complete` (tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py:178) is already excluded by `pre_spawn_reads_as_claim` at :2001-2003.\nSCORE fit: 18\nJUSTIFICATION fit: the term joins the existing `pre_spawn_waiting` conjunction at reckon/crew/recovery_classification.py:1987-1993 in the neighbouring shape and comment style and introduces no new name.\nSCORE reuse: 19\nJUSTIFICATION reuse: the hunk adds no definition and reads the existing `manifest_status` local beside `_spawn_evidence`, which is imported from its owner reckon/crew/recovery_liveness.py, so nothing is forked.\nFINDING reckon/crew/recovery_classification.py:1990 non-blocking: the `not manifest_status` term is not exercised at the landed head \u2014 the fixture's manifest reads `status: complete` (tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py:178), which primary's `pre_spawn_reads_as_claim` at :2001-2003 already excludes from the claim, so deleting :1990 at 46f9476e187a leaves the four target cases green and only the term's untested effect remains.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued.html:89 non-blocking: the fragment names `4dea651bd9fe507129c078e0d04275e18351c3d7` as `the final head` and records the importer arm at `43 failed, 826 passed` (:74, :117) while the landed head's log reports `20 failed, 883 passed, 10 errors`, so the node's evidence artifact describes a superseded revision.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105012384890-qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued/logs/head-target-file.log:1 non-blocking: the done_when requires the gate `as a job on all_debug`, but the head log records an in-place run under `env -u SLURM_JOB_ID` and no submission naming that partition.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105012384890-qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued/manifest.md:25 non-blocking: the done_when's ruff clause is asserted in rubric.evidence with no ruff command and no log in the run directory, so that part of the measure has no receipt.",
+  "review_run_id": "r-20261117T082734207038-review-of-qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued-46f9476e187a",
+  "reviewed_base_sha": "655a2befa979af690bab537523cd9ad97dc108c5",
+  "reviewed_head_sha": "46f9476e187a2b2d208502d747ff7fba689bb889",
+  "reviewed_run_id": "r-20261116T105012384890-qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewed_run_id": "r-20261116T105012384890-qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued",
+    "reviewer_run_id": "r-20261117T082734207038-review-of-qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued-46f9476e187a"
+  },
+  "reviewer_run_id": "r-20261117T082734207038-review-of-qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued-46f9476e187a",
+  "scores": {
+    "durability": 12,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T08:42:36.714931+00:00",
+  "total": 97
+}

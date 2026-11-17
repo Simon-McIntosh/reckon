@@ -1,0 +1,346 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_independence_note": "Round-trip state comparisons use independent pre-removal reads and positive controls, not a variable passed as the expected persisted state; receipt and input-field propagation checks at 75,129,141,172,216 are not counted as independent version/semantic oracles. The persistence, no-committed-write and exact version guards have independent snapshots or fixture literals.",
+  "assertion_review": [
+    {
+      "assertion": "_tracked(root) == before",
+      "failure_condition_and_regression": "Reinstating ledger.write in registration changes the independently captured tracked bytes; the recorded negative control demonstrates this exact failure.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 73
+    },
+    {
+      "assertion": "entry['id'] == 'registered'",
+      "failure_condition_and_regression": "Registering the wrong identity makes the literal registered expectation fail.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 74
+    },
+    {
+      "assertion": "ledger.member(PROJECT, 'registered', root=root) == entry",
+      "failure_condition_and_regression": "Returning an entry without persisting it makes the subsequent member read differ; the expectation is a return value, so this alone does not independently validate its fields.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 75
+    },
+    {
+      "assertion": "result['reaped'] == ['session-idle']",
+      "failure_condition_and_regression": "Skipping removal or selecting the permanent member changes the literal reaped identity.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 78
+    },
+    {
+      "assertion": "[row['id'] for row in ledger.members(PROJECT, root)] == ['permanent']",
+      "failure_condition_and_regression": "Reporting a reap without deleting session-idle leaves an extra persisted member.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 79
+    },
+    {
+      "assertion": "result['outcomes'][0]['action'] == 'opened'",
+      "failure_condition_and_regression": "Skipping the hold creation or misclassifying it does not return opened.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 87
+    },
+    {
+      "assertion": "ledger.holds(PROJECT, root)[-1]['reason'] == 'fixture limit'",
+      "failure_condition_and_regression": "Dropping or changing the persisted reason fails the fixture-literal expectation.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 88
+    },
+    {
+      "assertion": "_tracked(root) == before",
+      "failure_condition_and_regression": "Routing any mutation back through a tracked writer changes the pre-operation byte snapshot.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 89
+    },
+    {
+      "assertion": "subprocess.check_output(['git', '-C', str(root), 'rev-parse', 'HEAD']) == head",
+      "failure_condition_and_regression": "Restoring automatic roster/hold commits changes the independently sampled git HEAD.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 92
+    },
+    {
+      "assertion": "expected[1] == 8",
+      "failure_condition_and_regression": "Not advancing the imported version exactly once gives a value other than fixture version 7 plus one.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 96
+    },
+    {
+      "assertion": "_snapshot(root) == expected",
+      "failure_condition_and_regression": "Reading the aggregate after deleting crew.json loses persisted roster, holds or version compared with the prior nonempty read.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 98
+    },
+    {
+      "assertion": "expected[0] and expected[2] and (expected[1] == 7)",
+      "failure_condition_and_regression": "Dropping imported members or holds, or resetting import version to zero, fails the nonempty positive control and fixture version 7.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 104
+    },
+    {
+      "assertion": "_snapshot(root) == expected",
+      "failure_condition_and_regression": "Removing store-backed reads loses the seeded positive-control tuple when the aggregate is removed.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 106
+    },
+    {
+      "assertion": "unchanged['version'] == opened['version'] == 8",
+      "failure_condition_and_regression": "Incrementing on a repeated hold check or failing the first increment differs from literal version 8.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 119
+    },
+    {
+      "assertion": "unchanged['outcomes'][0]['action'] == 'unchanged'",
+      "failure_condition_and_regression": "Opening a duplicate hold changes unchanged to opened.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 120
+    },
+    {
+      "assertion": "closed['version'] == 9",
+      "failure_condition_and_regression": "Omitting the close increment differs from literal version 9.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 127
+    },
+    {
+      "assertion": "closed['outcomes'][0]['hold']['held_seconds'] == 90",
+      "failure_condition_and_regression": "Wrong elapsed-time computation differs from the independent 90-second fixture interval.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 128
+    },
+    {
+      "assertion": "closed['outcomes'][0]['hold']['resumption_fired'] is True",
+      "failure_condition_and_regression": "Losing the resumption_fired field on closure differs from the requested True; this is propagation coverage, not an independent check that a scheduler fired.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 129
+    },
+    {
+      "assertion": "_tracked(root) == before",
+      "failure_condition_and_regression": "Restoring a file hold writer changes tracked fixture bytes.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 130
+    },
+    {
+      "assertion": "_snapshot(root) == expected",
+      "failure_condition_and_regression": "Reading file state rather than stored closed holds fails after aggregate deletion.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 133
+    },
+    {
+      "assertion": "other['harness'] == 'different'",
+      "failure_condition_and_regression": "Returning a different harness fails the supplied fixture literal; persistence is separately checked by cross-project reads.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 141
+    },
+    {
+      "assertion": "_snapshot(root) == first",
+      "failure_condition_and_regression": "Keying members by id without project overwrites the first project and changes its independent earlier snapshot.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 142
+    },
+    {
+      "assertion": "left['hold_id'] == right['hold_id']",
+      "failure_condition_and_regression": "Changing hold identity derivation to include project makes the deliberate collision fixture produce different IDs; this checks fixture collision, not persistence by itself.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 157
+    },
+    {
+      "assertion": "left['reason'] == ''",
+      "failure_condition_and_regression": "Keying holds without project causes the second project to replace the first reason.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 158
+    },
+    {
+      "assertion": "right['reason'] == 'different'",
+      "failure_condition_and_regression": "Losing the second project hold reason differs from its fixture literal.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 159
+    },
+    {
+      "assertion": "ledger.load_auxiliary(PROJECT, stale_root) == ({'members': [], 'holds': data['holds']}, new_version)",
+      "failure_condition_and_regression": "Reimporting a deliberately emptied roster from the stale checkout returns seeded members; version equality here uses the writer return and does not independently guard version increments (literal guards are at 96,119,127).",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 172
+    },
+    {
+      "assertion": "ledger.members(PROJECT, root) == []",
+      "failure_condition_and_regression": "Resurrecting the roster after aggregate removal returns members instead of an empty list.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 177
+    },
+    {
+      "assertion": "ledger.load_auxiliary(PROJECT, root) == (data, version)",
+      "failure_condition_and_regression": "Applying a removal before refusing changes the earlier captured rows or version.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 185
+    },
+    {
+      "assertion": "ledger.member(PROJECT, 'another', root=root)",
+      "failure_condition_and_regression": "Accepting a stale collection replacement removes the newly registered another identity.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 191
+    },
+    {
+      "assertion": "ledger.holds(PROJECT, root) == data['holds']",
+      "failure_condition_and_regression": "Replacing holds while refusing the stale write changes the captured historic hold rows.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 192
+    },
+    {
+      "assertion": "ledger.load_auxiliary(PROJECT, root) == (data, version)",
+      "failure_condition_and_regression": "Committing the DELETE or first duplicate INSERT before an IntegrityError changes rows or version after rollback.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 204
+    },
+    {
+      "assertion": "receipt == {'identity_retired': True, 'identity_member': member_id}",
+      "failure_condition_and_regression": "Skipping retirement or returning a different identity changes the receipt; the member_id is caller-supplied and this is receipt propagation, while 217 separately asserts removal.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 216
+    },
+    {
+      "assertion": "ledger.member(PROJECT, member_id, root=root) is None",
+      "failure_condition_and_regression": "Restoring a file-only retirement leaves the store member present.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 217
+    },
+    {
+      "assertion": "_tracked(root) == before",
+      "failure_condition_and_regression": "Retiring through the tracked ledger changes the independent byte snapshot.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 218
+    },
+    {
+      "assertion": "ledger.member(PROJECT, 'registered', root=root) is None",
+      "failure_condition_and_regression": "Falling back to persisting a registration when the store raises leaves a registered member.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 233
+    },
+    {
+      "assertion": "_tracked(root) == before",
+      "failure_condition_and_regression": "Falling back to ledger.write when the store raises changes the independent byte snapshot.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 234
+    },
+    {
+      "assertion": "store._auxiliary_rows('') == {'members': [{'id': 'member'}], 'holds': [{'hold_id': 'hold'}]}",
+      "failure_condition_and_regression": "Dropping or miscopying unscoped payloads during schema migration fails the independently seeded SQLite payload literals.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 250
+    },
+    {
+      "assertion": "store._auxiliary_rows('scoped')['members'] == [{'id': 'member', 'harness': 'test'}]",
+      "failure_condition_and_regression": "Failing to persist the scoped append or reopening without project isolation loses the expected scoped payload.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 256
+    },
+    {
+      "assertion": "store._auxiliary_rows('')['members'] == [{'id': 'member'}]",
+      "failure_condition_and_regression": "Scoped appends that overwrite the unscoped member alter its independently seeded payload.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 259
+    }
+  ],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/budget.py:record_checks:1939",
+    "reckon/crew/routing.py:_register_session_member:3418",
+    "reckon/crew/dispatching/preparation.py:1454",
+    "reckon/crew/promotion_records.py:_retire_disposable_identity:1787",
+    "reckon/crew/promotion.py:1745",
+    "reckon/crew/promotion_gate.py:1186-1232"
+  ],
+  "completed_at": "2026-11-15T15:07:50Z",
+  "dispatched_at": "2026-11-15T15:01:19Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-members-and-holds-in-store-s23-2527b74492c2",
+      "recorded_at": "2026-11-15T15:32:07.667037+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": "2304",
+      "severity": "blocking",
+      "text": "blocking: load now returns the auxiliary store version, whereas _write_state at :2845 and :2851 checks the unchanged file version; after registration or a hold changes version 7 to 8 only in the store, the existing production load/write pair in reckon/crew/promotion_gate.py:1186 and :1231 refuses an aggregate-held run's integrated-gate update as stale, even after rereading, so the version domains and their callers must be reconciled before landing."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Read 0c0f42d351daada30f15fafd0a85781907895baa and 2527b74492c2c5f1fdac51f46f7f04b9336cdd79 against a7f049093c62b22bd5f69246c292b6bbd27de6b4; the second adds evidence and an immediate tracked-path assertion, while the first introduces the incompatible version handoff at reckon/ledger.py:2304.",
+    "done_when": "The source prompt and live section require three mutations to change zero committed paths and preserve roster/version/holds after aggregate removal; tests/test_members_and_holds_live_in_the_store.py:63-106 asserts those values and reproduction.log records four base failures.",
+    "goal": "The goal in the source prompt is to write roster members and holds through store tables; reckon/ledger.py:3375 and :4337 implement that, but its load/write version contract is broken.",
+    "manifest": "The source manifest names both commits and the baseline, after and negative-control logs; baseline.log records 58 passed and after.log records 70 passed, both EXIT=0.",
+    "write_paths": "The source prompt declares eight paths including the evidence fragment; both commits change six files, all within those declared paths."
+  },
+  "justifications": {
+    "durability": "tests/test_members_and_holds_live_in_the_store.py:73 reddens when registration calls ledger.write again and :98 reddens when reads revert to the aggregate, but no added test covers the existing load/write caller at reckon/crew/promotion_gate.py:1231.",
+    "evidence": "tests/test_members_and_holds_live_in_the_store.py:63-106 measures the stated gate, and the recorded base reproduction, 58/70-pass suite logs and negative-control.log show both green operation and the intended red tracked-path assertion.",
+    "fit": "reckon/ledger.py:2222 and reckon/run_store.py:344 follow the existing ownership and naming idioms, but returning an auxiliary version at ledger.py:2304 breaks the surrounding version-paired public API.",
+    "goal_fidelity": "reckon/ledger.py:2254 and reckon/run_store.py:436 implement store-only versioned mutations, but reckon/ledger.py:2304 exposes a different version to an existing file writer.",
+    "reuse": "Capability searches for collection persistence, schema migration, retry and version-conflict handling found the existing owners in reckon/run_store.py and reckon/_store.py:446; the new methods extend RunStore and reuse its retry helper, LedgerError and _store.VersionConflict rather than cloning the file-envelope implementation.",
+    "scope_discipline": "The six changed files in the two source commits are contained in the source prompt's eight declared paths, including docs/evidence/fragments/history-persists-as-detail-washes-out/members-and-holds-in-store-s23.html."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal in the source prompt is to write roster members and holds through store tables; reckon/ledger.py:3375 and :4337 implement that, but its load/write version contract is broken.\nVERDICT done_when: The source prompt and live section require three mutations to change zero committed paths and preserve roster/version/holds after aggregate removal; tests/test_members_and_holds_live_in_the_store.py:63-106 asserts those values and reproduction.log records four base failures.\nVERDICT write_paths: The source prompt declares eight paths including the evidence fragment; both commits change six files, all within those declared paths.\nVERDICT manifest: The source manifest names both commits and the baseline, after and negative-control logs; baseline.log records 58 passed and after.log records 70 passed, both EXIT=0.\nVERDICT diff: Read 0c0f42d351daada30f15fafd0a85781907895baa and 2527b74492c2c5f1fdac51f46f7f04b9336cdd79 against a7f049093c62b22bd5f69246c292b6bbd27de6b4; the second adds evidence and an immediate tracked-path assertion, while the first introduces the incompatible version handoff at reckon/ledger.py:2304.\nCALL_SITES: reckon/budget.py:record_checks:1939, reckon/crew/routing.py:_register_session_member:3418, reckon/crew/dispatching/preparation.py:1454, reckon/crew/promotion_records.py:_retire_disposable_identity:1787, reckon/crew/promotion.py:1745, reckon/crew/promotion_gate.py:1186-1232\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/ledger.py:2254 and reckon/run_store.py:436 implement store-only versioned mutations, but reckon/ledger.py:2304 exposes a different version to an existing file writer.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_members_and_holds_live_in_the_store.py:63-106 measures the stated gate, and the recorded base reproduction, 58/70-pass suite logs and negative-control.log show both green operation and the intended red tracked-path assertion.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The six changed files in the two source commits are contained in the source prompt's eight declared paths, including docs/evidence/fragments/history-persists-as-detail-washes-out/members-and-holds-in-store-s23.html.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_members_and_holds_live_in_the_store.py:73 reddens when registration calls ledger.write again and :98 reddens when reads revert to the aggregate, but no added test covers the existing load/write caller at reckon/crew/promotion_gate.py:1231.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/ledger.py:2222 and reckon/run_store.py:344 follow the existing ownership and naming idioms, but returning an auxiliary version at ledger.py:2304 breaks the surrounding version-paired public API.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for collection persistence, schema migration, retry and version-conflict handling found the existing owners in reckon/run_store.py and reckon/_store.py:446; the new methods extend RunStore and reuse its retry helper, LedgerError and _store.VersionConflict rather than cloning the file-envelope implementation.\nFINDING reckon/ledger.py:2304 blocking: load now returns the auxiliary store version, whereas _write_state at :2845 and :2851 checks the unchanged file version; after registration or a hold changes version 7 to 8 only in the store, the existing production load/write pair in reckon/crew/promotion_gate.py:1186 and :1231 refuses an aggregate-held run's integrated-gate update as stale, even after rereading, so the version domains and their callers must be reconciled before landing.\n",
+  "refusal_assertions": [
+    {
+      "line": 183,
+      "regression": "Removing declared-removal guard avoids the required LedgerError."
+    },
+    {
+      "line": 188,
+      "regression": "Removing stale roster version guard avoids required LedgerError."
+    },
+    {
+      "line": 190,
+      "regression": "Removing transaction version comparison avoids required VersionConflict."
+    },
+    {
+      "line": 198,
+      "regression": "Silently accepting duplicate IDs avoids required IntegrityError."
+    },
+    {
+      "line": 229,
+      "regression": "Swallowing store unavailability avoids required DatabaseError."
+    }
+  ],
+  "review_run_id": "r-20261115T145940333281-review-of-members-and-holds-in-store-s23-2527b74492c2",
+  "reviewed_base_sha": "a7f049093c62b22bd5f69246c292b6bbd27de6b4",
+  "reviewed_head_sha": "2527b74492c2c5f1fdac51f46f7f04b9336cdd79",
+  "reviewed_run_id": "r-20261115T102553812624-members-and-holds-in-store-s23",
+  "scores": {
+    "durability": 18,
+    "evidence": 20,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T102553812624-members-and-holds-in-store-s23/after.log",
+      "revision": "2527b74492c2c5f1fdac51f46f7f04b9336cdd79",
+      "summary": "70 passed in 41.24s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T102553812624-members-and-holds-in-store-s23/baseline.log",
+      "revision": "a7f049093c62b22bd5f69246c292b6bbd27de6b4",
+      "summary": "58 passed in 36.21s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T15:11:34.459575+00:00",
+  "total": 112
+}

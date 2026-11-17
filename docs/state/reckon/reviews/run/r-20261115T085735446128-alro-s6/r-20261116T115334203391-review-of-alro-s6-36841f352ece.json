@@ -1,0 +1,49 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Both arms are readable and carry their own exit line: baseline_suite is 4 failed, 172 passed, EXIT=1 at 63e6c58d (logs/base-arm-merged3-1319707.log) and after_suite is 2 failed, 183 passed, EXIT=1 at 36841f352e (logs/head-arm-final3-1319719.log). The head's two failing ids are tests/test_skill_contracts.py::test_ship_crew_views_match_the_typed_mcp_surface and tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt, both of them FAILED lines in the base log as well, so the added set is empty. The two ids the head no longer fails are tests/test_brief_prompt.py::test_a_plan_prompt_is_byte_identical_to_that_snapshot and ::test_the_manifest_template_states_the_red_logs_exit_line, both repaired by ac1fdfe6a7.",
+  "completed_at": "2026-11-16T13:46:33.444Z",
+  "dispatched_at": "2026-11-16T13:46:12Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the arms cover a subset of the prompt composer's importers, but none of the four reviewed commits changes the composer, as the review itself measured; the merged-head gate re-runs the recorded command",
+      "recorded_at": "2026-11-16T19:33:42.471231+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T085735446128-alro-s6/manifest.md",
+      "line": 13,
+      "severity": "non-blocking",
+      "summary": "the recorded arm command runs tests/test_brief_prompt.py and tests/test_skill_contract_parity.py but none of tests/test_crew_prompts.py, tests/test_small_node_prompt.py or the other test files that import reckon.crew.prompts, so the done-when's clause that the test files importing the prompt composer add no failure against the base revision is measured over a subset; the risk is bounded because none of the four reviewed commits changes reckon/crew/prompts.py, but neither arm as recorded shows those files passing at the head."
+    }
+  ],
+  "plan_section": "s6",
+  "plan_slug": "a-landing-is-recorded-once",
+  "project": "reckon",
+  "review_checks": [],
+  "review_run_id": "r-20261116T115334203391-review-of-alro-s6-36841f352ece",
+  "review_text": "VERDICT goal: the node goal is that a per-node fragment is optional and no landing splices one into a plan record; the reviewed range repairs the pinned snapshot so tests/test_brief_prompt.py:241-345 carries the wording reckon/crew/prompts.py:191-215 composes, and both skill passages now state the two sentences tests/test_skill_contract_parity.py:84-94 slices from that constant.\nVERDICT done_when: the done-when requires the composed prompt to present the fragment as optional and the composer-importing test files to add no failure against base; manifest.md records 183 passed and 2 failed at the head against 172 passed and 4 failed at base with the same two inherited skill-contract ids, but the arm command runs only two of the composer-importing test files.\nVERDICT write_paths: the source node declares fourteen paths; all four reviewed commits touch only the four paths named in this dispatch, each of them inside that list.\nVERDICT manifest: read; it names both arms with absolute log paths and their own EXIT lines, the two snapshot controls, and 183 passed against 2 failed at 36841f352e.\nVERDICT diff: read commit by commit from a7fc52f256 to 36841f352e; ac1fdfe6a7 rewrites the snapshot literal, 626ddf761b and 36841f352e correct the fragment's pins paragraph, and e1d8ae0c79 drops the verbatim claim and the stray quotation marks from both skill passages.\nCALL_SITES: reckon/crew/prompts.py:_compose, reckon/crew/prompts.py:PLAN_LANDING_CONTRACT\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_brief_prompt.py:241 asserts _compose() == PLAN_PROMPT_SNAPSHOT over a literal that carries the optional clause, and reckon/crew/prompts.py:195 and :206 emit the two sentences the literal now holds.\nSCORE evidence: 16\nJUSTIFICATION evidence: manifest.md records both arms with their own EXIT lines and derives zero added failure ids, but its gate line at manifest.md:13 omits most of the test files that import the composer.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the four commits is inside the fourteen declared write paths, its only margin being the main-branch prompt wording the regenerated snapshot at tests/test_brief_prompt.py:320 necessarily mirrors.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_brief_prompt.py:241 compares the composer's output against an independent literal, and logs/control-snapshot-word-change.log shows it red on a one-word change to the landing clause in reckon/crew/prompts.py:195 while logs/control-snapshot-forward.log shows the unmodified copy green.\nSCORE fit: 18\nJUSTIFICATION fit: the reflowed paragraph at skills/reckon-build/references/sprint-orchestration.md:513 keeps that file's shape, adds no symbol, and the parity slice at tests/test_skill_contract_parity.py:84 still finds the prompt's own sentences in it.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function or module, and a search for a prompt-snapshot generator over reckon/ and scripts/ found none, so the regenerated literal extends the test module that already owned it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T085735446128-alro-s6/manifest.md:13 non-blocking: the recorded arm command runs tests/test_brief_prompt.py and tests/test_skill_contract_parity.py but none of tests/test_crew_prompts.py, tests/test_small_node_prompt.py or tests/test_landing_contract_follows_the_grant.py, so the done-when's composer-importer clause is measured over a subset; the risk is bounded because no reviewed commit changes reckon/crew/prompts.py.\n",
+  "reviewed_base_sha": "a7fc52f2569cb2bd9cbb3d74d07355a07aca95af",
+  "reviewed_head_commits": [
+    "ac1fdfe6a72cb0389908e9b014c74ef8cc3d731d",
+    "626ddf761bdb8c74e0152d5ea71b984bcddc6be6",
+    "e1d8ae0c79aafb5d9568b3f159f98810f96789cd",
+    "36841f352ecedde59c748fc0a19b0f94bc711560"
+  ],
+  "reviewed_head_sha": "36841f352ecedde59c748fc0a19b0f94bc711560",
+  "reviewed_run_id": "r-20261115T085735446128-alro-s6",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T19:33:04.939820+00:00",
+  "total": 108
+}

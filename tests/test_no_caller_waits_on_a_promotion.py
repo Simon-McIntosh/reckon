@@ -139,6 +139,11 @@ def test_complete_requests_and_returns_before_the_promotion_finishes(
 def test_the_sweep_requests_without_waiting(repository, slow_promotion, monkeypatch):
     run_id = "r-sweep-request"
     pointer = repository.plant(run_id, role="review")
+    monkeypatch.setattr(
+        acceptance,
+        "review_self_state",
+        lambda p: (acceptance.REVIEW_SELF_READY, "", None),
+    )
     monkeypatch.setattr(resumption, "external_wait", lambda *a, **k: None)
     monkeypatch.setattr(resumption, "_stream_refusal_block", lambda *a, **k: None)
     monkeypatch.setattr(

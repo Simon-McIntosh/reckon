@@ -1,0 +1,95 @@
+<section id="qwnw-red-file-held-worktree-fallback-resolves-each-row-once-landing">
+  <h2>A held tree named only by a run-less row stays held</h2>
+
+  <p><strong>What changed.</strong> The file was red in five cases at
+  <code>0e0f25b0f941</code> for two causes, both judged here.</p>
+
+  <p><strong>Cause 1 — test wrong.</strong> The fixture registered its retained
+  trees clean, at the primary branch's own head. On 15 November
+  <code>c778aaa1f6</code> changed the derivation to hold a retained tree only
+  while it carries work no landing has taken, so a clean tree is not a duty and
+  every fixture tree was dropped before the naming rule was applied: the
+  derivation answered <code>{}</code> where the reference expected twenty-one
+  trees. The fixture now writes one uncommitted file into every tree it
+  registers, which is the rule the code keeps; the reference is unchanged.</p>
+
+  <p><strong>Cause 2 — product wrong.</strong> The derivation read its rows from
+  the merged ledger reader, which now answers from the run store whose identity
+  is a run id. A row the aggregate carries without a run id is therefore never a
+  run that reader returns, even though the ledger still holds it and the
+  document reader the same derivation falls back to does
+  (<code>merged_reader_carries_run_less_row False</code>,
+  <code>document_reader_carries_run_less_row True</code>). The tree such a row
+  names was not held. The aggregate is read by the derivation anyway and the
+  ordinals its ordering map still holds after the rows are filed are exactly the
+  rows the read did not deliver; a pending row without a run id is now filed from
+  the aggregate's own position, so the tree it names stays held. A pending row
+  that does carry a run id is a disagreement between the aggregate and the store
+  and is left to the store's own refresh, so a retired row cannot return as a
+  duty.</p>
+
+  <p>The test's per-case reset now drops the derivation's own index beside the
+  shared memo. Without it the derivation answered from the answer a previous case
+  had computed and the bounded case counted zero resolutions — a measure of
+  nothing rather than a small count. With it the case counts the resolutions it
+  claims to.</p>
+
+  <p>No assertion was deleted or weakened: the fixture gained a working-tree
+  change, three reference calls read the reader that keeps the aggregate's rows,
+  one assertion compares against that reader, and one reset line was added.</p>
+
+  <h3 id="qwnw-red-file-held-worktree-fallback-resolves-each-row-once-measured">Measured</h3>
+  <table id="qwnw-red-file-held-worktree-fallback-resolves-each-row-once-arms">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's file, base</td>
+        <td><code>0e0f25b0f941</code>, scratch tree</td>
+        <td>4 failed, 1 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the node's file, head gate on all_debug with
+        <code>SLURM_JOB_ID</code> unset</td>
+        <td><code>e2ea5a4f40</code></td>
+        <td>5 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>suite arm, base</td>
+        <td><code>0e0f25b0f941</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>suite arm, head</td>
+        <td><code>e2ea5a4f40</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>files importing the changed module</td>
+        <td>base and head</td>
+        <td>identical failure sets, 9 failed, 10 passed each</td></tr>
+    </tbody>
+  </table>
+
+  <p>The base run of the node's file fails these ids, which the head arm
+  passes: <code>test_the_held_map_is_the_naming_rule_applied_to_every_row</code>,
+  <code>test_the_tree_only_a_run_less_row_names_is_held</code>,
+  <code>test_the_fallback_resolves_each_row_a_bounded_number_of_times</code>,
+  <code>test_a_refused_namings_reader_keeps_the_same_answer</code>.</p>
+
+  <h3 id="qwnw-red-file-held-worktree-fallback-resolves-each-row-once-resolutions">Resolutions</h3>
+  <p>The bounded case prints its own count:
+  <code>held-worktree fallback: 501 path resolutions over 500 records and 20
+  trees no record names</code>, against a bound of two resolutions per row
+  (1000). The extra resolution is the run-less row itself, resolved once.</p>
+
+  <h3 id="qwnw-red-file-held-worktree-fallback-resolves-each-row-once-receipt">Receipt</h3>
+  <table id="qwnw-red-file-held-worktree-fallback-resolves-each-row-once-probe">
+    <caption>One synthesised checkout, one named tree and the run-less row
+    <code>node-orphan-named</code>; the probe reads both the ledger readers and
+    the derivation.</caption>
+    <thead><tr><th>reading</th><th>base <code>0e0f25b0f941</code></th>
+      <th>head <code>e2ea5a4f40</code></th></tr></thead>
+    <tbody>
+      <tr><td>merged reader carries the run-less row</td><td>False</td><td>False</td></tr>
+      <tr><td>document reader carries the run-less row</td><td>True</td><td>True</td></tr>
+      <tr><td>derivation holds the tree only that row names</td>
+        <td>False</td><td>True</td></tr>
+    </tbody>
+  </table>
+
+  <p>Ruff reports nothing on the changed paths: <code>ruff check</code> passes
+  and <code>ruff format --check</code> reports both files already formatted.</p>
+</section>

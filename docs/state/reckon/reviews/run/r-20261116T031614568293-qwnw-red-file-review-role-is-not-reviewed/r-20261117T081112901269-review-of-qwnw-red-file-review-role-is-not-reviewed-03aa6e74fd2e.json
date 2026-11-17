@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "read from the reviewed run's own arms: logs/baseline-arm-e35fd9f935.log and logs/after-arm-head.log each record 58 passed, carry no FAILED line, and end EXIT=0, so the delta between baseline_suite and after_suite is zero ids over zero failures, and the instrument is shown to have run to its summary line rather than returning an empty result.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:3229",
+    "reckon/crew/recovery_review_dispatch.py:3324",
+    "reckon/crew/recovery_watch.py:1809",
+    "reckon/crew/promotion.py:1129",
+    "reckon/crew/query.py:448",
+    "reckon/serve.py:902"
+  ],
+  "completed_at": "2026-11-17T08:12:58.305Z",
+  "dispatched_at": "2026-11-17T08:12:39Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031614568293-qwnw-red-file-review-role-is-not-reviewed/manifest.md",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when's importer-arm clause is unmeasured because baseline_suite and after_suite name tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import reckon.interface_counts and ast rather than the changed module, while logs/importer-arm-base.log aborted at EXIT=139 at 26% with no FAILED id, so no arm compares an importer set against its base."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-role-is-not-reviewed.html",
+      "line": "77",
+      "severity": "non-blocking",
+      "text": "non-blocking: the quoted importer-arm command is a placeholder rather than the literal command that ran, so the fragment names no re-runnable arm for the clause the manifest leaves unmeasured."
+    },
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "2004",
+      "severity": "non-blocking",
+      "text": "non-blocking: the terminal-manifest precedence is restated inline at 2004-2006 while the same rule is owned by _observed_phase, called from the same module at 3162 and defined at reckon/crew/recovery_liveness.py:118-119; the duplication is primary's and arrived through the merge a9639df36e, not from this node, whose own copy was dropped at that merge."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit from e35fd9f935: 875ecf7150 adds a 13-line conjunction plus comment to the pre-spawn arm, 88ddf7c4ff adds a 64-line evidence fragment, a9639df36e is the merge whose resolution of reckon/crew/recovery_classification.py is byte-identical to its second parent eda5ffcfff, and 03aa6e74fd adds 21 fragment lines.",
+    "done_when": "the gate clause is met as written, from gate-head.sh:1 on all_debug with SLURM_JOB_ID unset at gate-head.sh:13, and logs/gate-head.log ends EXIT=0, but the clause requiring an arm over the test files that import the change to add no failure against the base is unmeasured: the recorded pair at manifest.md:15-16 is two tests importing reckon.interface_counts and ast, and logs/importer-arm-base.log ends EXIT=139 at 26% with no FAILED id.",
+    "goal": "the goal is that tests/test_review_role_is_not_reviewed.py pass in full; reckon/crew/recovery_classification.py:2004-2006 gates the pre-spawn claim on a terminal manifest status and logs/gate-head.log records `7 passed` at a9639df36e, whose only successor 03aa6e74fd changes the evidence fragment and no code.",
+    "manifest": "read; it records the repaired-head gate at a9639df36e as `7 passed in 37.00s` EXIT=0, the base control as `7 failed` EXIT=1, a 58-passed and 0-failure baseline and after pair, one cause with the verdict product wrong, and states the importer arm as an unmeasured instrument rather than a clean arm.",
+    "write_paths": "the node was fenced to reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git show confirms 875ecf7150 changes only reckon/crew/recovery_classification.py and 88ddf7c4ff plus 03aa6e74fd change only the fragment under that directory."
+  },
+  "justifications": {
+    "durability": "the target test file is byte-identical across the range, since `git diff --stat e35fd9f935..03aa6e74fd -- tests/test_review_role_is_not_reviewed.py` is empty, and logs/negative-control-base.log runs it at e35fd9f935 to `7 failed` with all seven ids, so reinstating the reverted precedence reddens the same assertions.",
+    "evidence": "the primary clause is measured by gate-head.sh (--partition=all_debug) and logs/gate-head.log, but the done_when's importer-arm clause is unrecorded: baseline_suite and after_suite at manifest.md:15-16 name tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import reckon.interface_counts and ast rather than the changed module, and logs/importer-arm-base.log ends EXIT=139 at 26% with no summary line.",
+    "fit": "the landed reading follows the comment-first idiom of reckon/crew/recovery_classification.py:1991-2023 and introduces no forbidden name; the file at head is byte-identical to the merge's primary-side parent eda5ffcfff, so the style is the owner's own.",
+    "goal_fidelity": "the node goal is tests/test_review_role_is_not_reviewed.py passing in full, and reckon/crew/recovery_classification.py:2004-2006 carries the terminal-manifest precedence at head while logs/gate-head.log records the file at `7 passed in 37.00s` with `# slurm_job_id: unset`.",
+    "reuse": "the node adds no definition of its own at head, its inline conjunction having been dropped at a9639df36e; the one surviving restatement of _observed_phase's terminal rule at reckon/crew/recovery_classification.py:2004 is primary's code, so no capability is forked by this node.",
+    "scope_discipline": "each of the node's authored commits is inside the fence the manifest records: 875ecf7150 touches only reckon/crew/recovery_classification.py, and 88ddf7c4ff plus 03aa6e74fd touch only the fragment under docs/evidence/fragments/queued-work-needs-no-workaround, while the docs/plans/ paths in the base-to-head range arrive as origin/main ancestors through the merge commit a9639df36e."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that tests/test_review_role_is_not_reviewed.py pass in full; reckon/crew/recovery_classification.py:2004-2006 gates the pre-spawn claim on a terminal manifest status and logs/gate-head.log records 7 passed.\nVERDICT done_when: the gate clause is met by gate-head.sh:1 and logs/gate-head.log on all_debug with SLURM_JOB_ID unset, but the importer-arm clause is unmeasured: the recorded pair at manifest.md:15-16 is two tests importing reckon.interface_counts and ast, and logs/importer-arm-base.log ends EXIT=139 at 26% with no FAILED id.\nVERDICT write_paths: the fence was reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; 875ecf7150 changes only reckon/crew/recovery_classification.py and 88ddf7c4ff and 03aa6e74fd change only the fragment under that directory.\nVERDICT manifest: read; it records the repaired-head gate at a9639df36e as 7 passed with EXIT=0, the base control as 7 failed with EXIT=1, a 58-passed and 0-failure baseline and after pair, one cause with the verdict product wrong, and the importer arm as an unmeasured instrument.\nVERDICT diff: read commit by commit from e35fd9f935; 875ecf7150 adds a 13-line conjunction plus comment, 88ddf7c4ff adds a 64-line fragment, a9639df36e is the merge whose classifier resolution is byte-identical to its second parent eda5ffcfff, and 03aa6e74fd adds 21 fragment lines.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:3229, reckon/crew/recovery_review_dispatch.py:3324, reckon/crew/recovery_watch.py:1809, reckon/crew/promotion.py:1129, reckon/crew/query.py:448, reckon/serve.py:902\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:2004-2006 carries the terminal-manifest precedence at head and logs/gate-head.log records the target file at 7 passed with slurm_job_id unset.\nSCORE evidence: 14\nJUSTIFICATION evidence: the gate at logs/gate-head.log measures the primary clause, but the manifest's baseline_suite and after_suite at manifest.md:15-16 name two census tests that import neither the module nor its package.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the two authored commits stay inside the fence at reckon/crew/recovery_classification.py and the fragment directory, and the docs/plans/ paths in the range are origin/main ancestors brought by the merge.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_review_role_is_not_reviewed.py:170 is untouched across the range and logs/negative-control-base.log shows the file red at e35fd9f935 with all seven ids, so reinstating the reverted precedence reddens it.\nSCORE fit: 19\nJUSTIFICATION fit: the landed block at reckon/crew/recovery_classification.py:1991-2023 follows the module's comment-first idiom and the file at head is byte-identical to the merge's primary-side parent.\nSCORE reuse: 19\nJUSTIFICATION reuse: the node adds no definition at head, its inline conjunction having been dropped at a9639df36e, and the surviving terminal-rule restatement at reckon/crew/recovery_classification.py:2004 is primary's code; the search for an owner found _observed_phase at reckon/crew/recovery_liveness.py:118-119, named in the finding rather than attributed to this node.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031614568293-qwnw-red-file-review-role-is-not-reviewed/manifest.md:15 non-blocking: the importer-arm clause is unmeasured, the recorded pair names tests importing reckon.interface_counts and ast, and logs/importer-arm-base.log ends EXIT=139 with no FAILED id.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-role-is-not-reviewed.html:77 non-blocking: the quoted importer-arm command is a placeholder rather than the literal command, so no arm can be re-run from the record.\nFINDING reckon/crew/recovery_classification.py:2004 non-blocking: the terminal-manifest rule is restated inline while _observed_phase at reckon/crew/recovery_liveness.py:118-119 owns it; the duplication is primary's and arrived through the merge, this node's own copy having been dropped.",
+  "review_run_id": "r-20261117T081112901269-review-of-qwnw-red-file-review-role-is-not-reviewed-03aa6e74fd2e",
+  "reviewed_base_sha": "e35fd9f935225b7005482a75032eb28abeb46c63",
+  "reviewed_head_sha": "03aa6e74fd2eaa90296dcec42521d47372dec4f9",
+  "reviewed_run_id": "r-20261116T031614568293-qwnw-red-file-review-role-is-not-reviewed",
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T08:55:00Z",
+  "total": 109
+}

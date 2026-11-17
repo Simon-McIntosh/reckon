@@ -185,7 +185,12 @@ def _readiness_rows_unlocked(
 
         if not project:
             return {}, {}
-        discovered = _discover_project(project, None)
+        from reckon.roadmap import roadmap_build_scope
+
+        # The waits a pass judges read section verdicts, never findings, so the
+        # project build skips coordinator resolution and the landing audit.
+        with roadmap_build_scope(resolve_coordinators=False, audit_landings=False):
+            discovered = _discover_project(project, None)
         items = [_inventory_row(item) for item in discovered.get("inventory", [])]
         for item in items:
             if item.get("type") != "plan" or not item.get("slug"):
@@ -589,11 +594,16 @@ def _section_run_unlanded(
 
     wanted = section_record_id(section)
 
+    from reckon import ledger
+
     def identifies(record: Mapping[str, Any]) -> bool:
         node = record.get("node")
         if not isinstance(node, Mapping):
             node = {}
-        plan = str(node.get("plan") or record.get("plan") or "")
+        # A live pointer carries its plan on the node it names; a ledger row
+        # carries it on its own field or on the dispatch detail a brief left,
+        # and the resolver is the one owner of that answer.
+        plan = str(node.get("plan") or "") or ledger.row_plan(record)
         held = section_record_id(node.get("section") or record.get("section") or "")
         return plan == slug and held == wanted
 

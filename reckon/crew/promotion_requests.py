@@ -8,22 +8,27 @@ existing guards, lease and idempotent ledger/release path.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
 import re
 import threading
 import time
-from collections.abc import Callable, Mapping
+from collections import Counter
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+from contextlib import suppress
 from contextvars import ContextVar
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from reckon._timestamps import parse_utc
 from reckon.crew import runs
 from reckon.crew.host_lease import HostLease, local_host
 from reckon.crew.node import CrewError
+from reckon.crew.queue_order import STARVATION_AGE_SECONDS, _override
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,9 +44,8 @@ DEFERRED = "promotion-deferred"
 # and so a coordinator reading it is not told a promotion failed.
 WAITING = "promotion-waiting"
 PENDING = frozenset({REQUESTED, RUNNING})
-# A review parked while its record is written is not drained, but it is still a
-# promotion this queue owes, so a run waiting on that review waits rather than
-# being refused for a review that is about to be stored.
+# Parked reviews are rechecked without a slot. A run waiting on one waits
+# rather than being refused for a review that is about to be stored.
 QUEUED = PENDING | {WAITING}
 ERRORS = frozenset({FAILED, REFUSED})
 # A refusal whose run has since been promoted, landed, discarded or has no live
@@ -53,6 +57,8 @@ SETTLED = "promotion-settled"
 # process queued. A freed slot wakes it immediately, so this only bounds the
 # latency of a request nobody told it about.
 REFILL_POLL_SECONDS = 2.0
+# A parked request older than half an hour is owed to its owning session.
+WAITING_OBLIGATION_SECONDS = 1800.0
 DRAINED_LOG_NAME = "promotion-drained.jsonl"
 _DRAINED_LOG_MAX_BYTES = 256_000
 _DRAINED_LOG_KEEP_LINES = 500
@@ -121,6 +127,7 @@ def _record_drained(receipt: Mapping[str, Any]) -> None:
     row = {
         "run_id": receipt.get("run_id"),
         "phase": receipt.get("phase"),
+        "session": receipt.get("session"),
         "requested_at": receipt.get("requested_at"),
         "finished_at": receipt.get("finished_at"),
         "waited_seconds": _waited_seconds(
@@ -135,6 +142,29 @@ def _record_drained(receipt: Mapping[str, Any]) -> None:
     except OSError:
         return
     _trim_drained_log(path)
+
+
+def _recent_drained(moment: datetime, window_seconds: float) -> list[dict[str, Any]]:
+    """Read the bounded service history shared by fairness and the rate report."""
+    try:
+        lines = _drained_log_path().read_text().splitlines()
+    except OSError:
+        return []
+    recent = []
+    for line in lines:
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(row, dict):
+            continue
+        stamp = parse_utc(row.get("finished_at"))
+        if (
+            stamp is not None
+            and 0 <= (moment - stamp).total_seconds() <= window_seconds
+        ):
+            recent.append(row)
+    return recent
 
 
 def promotion_queue_report(
@@ -152,8 +182,7 @@ def promotion_queue_report(
     waiting: list[dict[str, Any]] = []
     running = 0
     parked = 0
-    for path in _requests_dir().glob("*.json"):
-        request = _read(path)
+    for request in _pending_requests(now=moment):
         phase = request.get("phase")
         if phase == REQUESTED:
             waiting.append(request)
@@ -170,19 +199,7 @@ def promotion_queue_report(
         if oldest is None or requested_at < oldest[0]:
             oldest = (requested_at, request)
     counted = {"promoted": 0, "refused": 0, "failed": 0, "deferred": 0}
-    try:
-        finished = _drained_log_path().read_text().splitlines()
-    except OSError:
-        finished = []
-    cutoff = moment.timestamp() - window_seconds
-    for line in finished:
-        try:
-            row = json.loads(line)
-            stamp = datetime.fromisoformat(str(row.get("finished_at")))
-        except (TypeError, ValueError):
-            continue
-        if stamp.timestamp() < cutoff:
-            continue
+    for row in _recent_drained(moment, window_seconds):
         key = {
             PROMOTED: "promoted",
             REFUSED: "refused",
@@ -195,6 +212,15 @@ def promotion_queue_report(
         "waiting": len(waiting),
         "running": running,
         "parked": parked,
+        "requests": [
+            {
+                "run_id": request["run_id"],
+                "session": request.get("session", ""),
+                "position": position,
+                "reason": request["ordering_reason"],
+            }
+            for position, request in enumerate(waiting, 1)
+        ],
         "oldest_wait_seconds": (
             None
             if oldest is None
@@ -222,18 +248,30 @@ def _read(path: Path) -> dict[str, Any]:
 
 def read_promotion(run_id: str) -> dict[str, Any]:
     """Read a pending request or its durable terminal outcome."""
-    return _read(_request_path(run_id)) or _read(_receipt_path(run_id))
+    record = _read(_request_path(run_id)) or _read(_receipt_path(run_id))
+    if not record and runs.pointer_path(run_id).exists():
+        pointer = runs.read_pointer(run_id)
+        leader = str(pointer.get("landing_group") or "")
+        if leader and leader != run_id:
+            return _read(_request_path(leader)) or _read(_receipt_path(leader))
+    return record
 
 
-def _mark_pointer(request: Mapping[str, Any], phase: str) -> None:
+def _mark_pointer(
+    request: Mapping[str, Any], phase: str, *, readiness_checked: bool = False
+) -> None:
     run_id = str(request["run_id"])
+    if phase == REQUESTED and not readiness_checked and _review_self_waits(request)[0]:
+        phase = WAITING
     try:
         with runs._pointer_lock(run_id, blocking=False):
             if not runs.pointer_path(run_id).exists():
                 return
             pointer = runs.read_pointer(run_id)
             pointer["promotion_status"] = phase
-            pointer["promotion_request"] = str(_request_path(run_id))
+            pointer["promotion_request"] = str(
+                _request_path(str(request.get("group_run_id") or run_id))
+            )
             pointer["phase"] = (
                 phase
                 if phase in {REQUESTED, PROMOTED}
@@ -259,13 +297,29 @@ def request_promotion(
     one arriving through a different caller. Retrying a terminal refusal is an
     explicit coordinator action; automatic sweeps leave its obligation visible.
     """
-    if kind not in {"command", "complete", "acceptance", "review-self"}:
+    if kind not in {
+        "command",
+        "complete",
+        "acceptance",
+        "review-self",
+        "landing-group",
+    }:
         raise CrewError(f"unknown promotion request kind {kind!r}")
     path = _request_path(run_id)
     with runs._pointer_lock(f"promotion-request-{run_id}"):
         existing = read_promotion(run_id)
+        if existing.get("phase") == WAITING:
+            waiting, reason = _review_self_waits(existing)
+            existing = {
+                **existing,
+                "phase": WAITING if waiting else REQUESTED,
+                "checked_at": _now(),
+                "waiting_reason": reason,
+            }
+            runs._write_json(path, existing)
+            _mark_pointer(existing, existing["phase"])
         if existing and (
-            existing.get("phase") in PENDING
+            existing.get("phase") in QUEUED
             or existing.get("phase") == PROMOTED
             or (existing.get("phase") in ERRORS and not retry)
         ):
@@ -279,12 +333,22 @@ def request_promotion(
             "kind": kind,
             "project": str(pointer.get("project") or ""),
             "session": str(pointer.get("session") or ""),
+            "priority_override": _override(pointer),
             "node": (pointer.get("node") or {}).get("id", ""),
             "plan": str(pointer.get("plan") or ""),
             "previous_phase": str(pointer.get("phase") or "complete"),
             "requested_at": _now(),
             "options": json.loads(json.dumps(dict(options or {}), default=str)),
         }
+        if kind == "landing-group":
+            priorities = [
+                _override(member["pointer"])
+                for member in request["options"].get("members") or ()
+            ]
+            request["priority_override"] = max(
+                (priority for priority in priorities if priority is not None),
+                default=request["priority_override"],
+            )
         runs._write_json(path, request)
         _mark_pointer(request, REQUESTED)
         return request
@@ -308,42 +372,37 @@ def _review_self_waits(request: Mapping[str, Any]) -> tuple[bool, str]:
         # vanished run the way every other request kind does.
         return False, ""
     state, reason, _record = acceptance.review_self_state(pointer)
-    if state != acceptance.REVIEW_SELF_WAITING:
-        return False, ""
-    # Only a reviewer that is still running holds the queue. One that is not
-    # running is drained, so a run that ended without its record leaves the
-    # refusal its coordinator has to see rather than a request that never
-    # moves.
-    if runs.record_process_alive(pointer) is True:
-        return True, reason
-    return False, ""
+    # Readiness includes the manifest, worker liveness and supervisor exit.
+    # An ended review with no record is refused by that same verdict.
+    return state == acceptance.REVIEW_SELF_WAITING, reason
 
 
-def _mark_waiting(request: Mapping[str, Any], reason: str) -> dict[str, Any]:
-    """Park a request on the record its reviewer still owes.
+def _mark_readiness(
+    request: Mapping[str, Any], *, waiting: bool, reason: str
+) -> dict[str, Any]:
+    """Date a readiness verdict without claiming a promotion slot.
 
-    The pointer keeps the working phase its reviewer is in: a request waiting
-    for a record must not read as a promotion the coordinator has to answer.
-    The request is written outside ``PENDING`` so the next tick starts the
-    requests behind it instead of spending a slot on this one.
+    A parked request keeps its reviewer's working phase. A ready one joins the
+    requested population so queue ordering charges its session a future turn.
+    The request identity and phase must still match the judged snapshot.
     """
     run_id = str(request["run_id"])
-    waiting = {
+    refreshed = {
         **dict(request),
-        "phase": WAITING,
+        "phase": WAITING if waiting else REQUESTED,
         "waiting_reason": reason,
         "checked_at": _now(),
     }
     with runs._pointer_lock(f"promotion-request-{run_id}"):
         current = _read(_request_path(run_id))
-        if current.get("request_id") != waiting["request_id"] or current.get(
+        if current.get("request_id") != refreshed["request_id"] or current.get(
             "phase"
         ) != request.get("phase"):
             # Another drain moved this request on while it was being judged.
             return {}
-        runs._write_json(_request_path(run_id), waiting)
-        _mark_pointer(waiting, WAITING)
-    return waiting
+        runs._write_json(_request_path(run_id), refreshed)
+        _mark_pointer(refreshed, refreshed["phase"], readiness_checked=True)
+    return refreshed
 
 
 class PromotionRequests:
@@ -381,6 +440,10 @@ def _execute_command(options: Mapping[str, Any]) -> dict[str, Any]:
 def _execute(request: Mapping[str, Any]) -> dict[str, Any] | None:
     run_id = str(request["run_id"])
     options = request.get("options") or {}
+    if request["kind"] == "landing-group":
+        from reckon.crew_run_commands import _complete_landing_group
+
+        return _complete_landing_group(request)
     if request["kind"] == "command":
         return _execute_command(options)
     if request["kind"] == "complete":
@@ -435,10 +498,27 @@ def _finish(request: Mapping[str, Any], phase: str, **result: Any) -> dict[str, 
         else:
             path.unlink(missing_ok=True)
     _record_drained(receipt)
+    for member in (request.get("options") or {}).get("members") or ():
+        member_id = str(member["pointer"]["run_id"])
+        if member_id != run_id:
+            member_receipt = {
+                **receipt,
+                "run_id": member_id,
+                "group_run_id": run_id,
+                "session": str(member["pointer"].get("session") or ""),
+                "priority_override": _override(member["pointer"]),
+                "node": (member["pointer"].get("node") or {}).get("id", ""),
+                "plan": str(member["pointer"].get("plan") or ""),
+            }
+            runs._write_json(_receipt_path(member_id), member_receipt)
+            _mark_pointer(member_receipt, phase)
+            _record_drained(member_receipt)
     return receipt
 
 
-def _reviewed_run_id(request: Mapping[str, Any]) -> str:
+def _reviewed_run_id(
+    request: Mapping[str, Any], *, pointers: Sequence[Mapping[str, Any]] | None = None
+) -> str:
     """The run a queued review promotion reviews, or empty for any other request.
 
     A review run's node id carries the run it scored, so the queue can tell a
@@ -453,42 +533,126 @@ def _reviewed_run_id(request: Mapping[str, Any]) -> str:
         return ""
     from reckon.crew.recovery_review_delivery import _resolved_reviewed_run_id
 
+    project = str(request.get("project") or "")
     try:
         return _resolved_reviewed_run_id(
-            {"node": {"id": node_id}, "project": str(request.get("project") or "")},
-            str(request.get("project") or ""),
+            {"node": {"id": node_id}, "project": project},
+            project,
+            pointers=(
+                None
+                if pointers is None
+                else [p for p in pointers if str(p.get("project") or "") == project]
+            ),
         )
     except Exception:  # noqa: BLE001 — ordering must never stop the drain
         return ""
 
 
-def _pending_requests() -> list[dict[str, Any]]:
-    """Every queued request, in the order a drain takes them up.
+def _reviewed_request_runs(
+    requests: Iterable[Mapping[str, Any]],
+) -> Iterator[tuple[Mapping[str, Any], str]]:
+    """Resolve a pass lazily, sharing one listing across source-node reviews."""
+    from reckon.crew.recovery_vocabulary import REVIEW_NODE_PREFIX
+    from reckon.crew.repair import round_node_source
 
-    A run whose review is queued beside it can only be refused for the absent
-    review, and that refusal sends a coordinator back to re-request work that
-    was about to become promotable. So a review's own promotion goes ahead of
-    the run it reviews whenever that run is waiting too; every other request
-    keeps the plain name order the queue has always drained in.
+    pointers = None
+    listing_failed = False
+    for request in requests:
+        source = round_node_source(str(request.get("node") or ""), REVIEW_NODE_PREFIX)
+        needs_population = bool(source and not source.startswith("r-"))
+        if needs_population and pointers is None:
+            try:
+                pointers = runs.list_live()
+            except Exception:  # noqa: BLE001 — ordering must never stop the drain
+                pointers, listing_failed = [], True
+        yield (
+            request,
+            (
+                ""
+                if needs_population and listing_failed
+                else _reviewed_run_id(request, pointers=pointers)
+            ),
+        )
+
+
+def _pending_requests(
+    *, now: datetime | None = None, window_seconds: float = 3600.0
+) -> list[dict[str, Any]]:
+    """Reviews, aged requests and priorities precede fair session turns.
+
+    Each urgency class takes one request per session in turn, starting with
+    the session served least in the recent window, then its oldest request.
+    Taking a higher urgency class does not consume a lower class's turn in
+    this snapshot. Completed promotions persist the service count across
+    passes and process restarts; running requests reserve a turn too. Only
+    requested rows consume simulated future turns: running rows are already
+    charged, and parked rows take no slot.
     """
+    moment = now or datetime.fromisoformat(_now())
     pending = []
-    for path in sorted(_requests_dir().glob("*.json")):
+    for path in _requests_dir().glob("*.json"):
         request = _read(path)
-        if request.get("phase") in PENDING:
+        if request.get("phase") in QUEUED:
+            if "priority_override" not in request:
+                # Requests written without a priority snapshot still inherit
+                # the run's priority while its pointer is available.
+                with suppress(CrewError):
+                    request["priority_override"] = _override(
+                        runs.read_pointer(str(request["run_id"]))
+                    )
             pending.append(request)
     waiting = {str(request.get("run_id") or "") for request in pending}
     review_first = {
         str(request.get("run_id") or "")
-        for request in pending
-        if _reviewed_run_id(request) in waiting
+        for request, reviewed in _reviewed_request_runs(pending)
+        if reviewed in waiting
     }
-    return sorted(
-        pending,
-        key=lambda request: (
-            str(request.get("run_id") or "") not in review_first,
-            str(request.get("run_id") or ""),
-        ),
+    served = Counter(
+        str(row["session"])
+        for row in _recent_drained(moment, window_seconds)
+        if row.get("phase") == PROMOTED and row.get("session")
     )
+    served.update(
+        str(request.get("session") or "")
+        for request in pending
+        if request.get("phase") == RUNNING
+    )
+    classes: dict[tuple[int, int], list[dict[str, Any]]] = {}
+    for request in pending:
+        stamp = parse_utc(request.get("requested_at"))
+        priority = _override(request)
+        if str(request.get("run_id") or "") in review_first:
+            rank, reason = (0, 0), "delivered review"
+        elif (
+            stamp is not None
+            and (moment - stamp).total_seconds() >= STARVATION_AGE_SECONDS
+        ):
+            rank, reason = (1, 0), "ageing"
+        elif priority is not None:
+            rank, reason = (2, -priority), f"priority override {priority}"
+        else:
+            rank, reason = (3, 0), "session fair share; oldest request"
+        classes.setdefault(rank, []).append({**request, "ordering_reason": reason})
+
+    ordered = []
+    for rank in sorted(classes):
+        remaining = classes[rank]
+        turns = served.copy()
+        while remaining:
+            request = min(
+                remaining,
+                key=lambda row: (
+                    turns[str(row.get("session") or "")],
+                    parse_utc(row.get("requested_at"))
+                    or datetime.max.replace(tzinfo=UTC),
+                    str(row.get("run_id") or ""),
+                ),
+            )
+            ordered.append(request)
+            remaining.remove(request)
+            if request.get("phase") == REQUESTED:
+                turns[str(request.get("session") or "")] += 1
+    return ordered
 
 
 def _defer_to_a_queued_review(
@@ -514,8 +678,12 @@ def _defer_to_a_queued_review(
         return False
     run_id = str(request["run_id"])
     if not any(
-        other.get("phase") in QUEUED and _reviewed_run_id(other) == run_id
-        for other in (_read(path) for path in _requests_dir().glob("*.json"))
+        reviewed == run_id
+        for _other, reviewed in _reviewed_request_runs(
+            request
+            for request in map(_read, _requests_dir().glob("*.json"))
+            if request.get("phase") in QUEUED
+        )
     ):
         return False
     with runs._pointer_lock(f"promotion-request-{run_id}"):
@@ -739,13 +907,23 @@ class PromotionService:
         self._threads = [thread for thread in self._threads if thread.is_alive()]
         if self._draining:
             return []
+        pending = _pending_requests()
+        parked = [request for request in pending if request.get("phase") == WAITING]
+        for request in parked:
+            waiting, reason = _review_self_waits(request)
+            _mark_readiness(request, waiting=waiting, reason=reason)
+        if parked:
+            # Newly ready requests consume fair session turns before admission.
+            pending = _pending_requests()
         launched: list[str] = []
-        for request in _pending_requests():
+        for request in pending:
+            if request.get("phase") == WAITING:
+                continue
             waiting, reason = _review_self_waits(request)
             if waiting:
                 # Nothing is owed here yet, so this request takes no slot and
                 # the loop carries on to the ones behind it.
-                _mark_waiting(request, reason)
+                _mark_readiness(request, waiting=True, reason=reason)
                 continue
             slot = next(
                 (
@@ -761,9 +939,26 @@ class PromotionService:
             if owner is None:
                 self._release(slot)
                 continue
+            branch = None
+            members = (request.get("options") or {}).get("members") or ()
+            repository = ""
+            if request.get("kind") == "landing-group" and members:
+                repository = str(members[0]["pointer"]["repo"])
+            elif (request.get("options") or {}).get("land"):
+                with suppress(CrewError):
+                    repository = str(
+                        runs.read_pointer(str(request["run_id"])).get("repo") or ""
+                    )
+            if repository:
+                identity = hashlib.sha256(repository.encode()).hexdigest()
+                branch = self._claim(f"promotion-branch-{identity}")
+                if branch is None:
+                    self._release(owner)
+                    self._release(slot)
+                    continue
             thread = threading.Thread(
                 target=self._run,
-                args=(request, owner, slot),
+                args=(request, owner, slot, *([branch] if branch else [])),
                 name=f"promotion-request-{request['run_id']}",
                 daemon=True,
             )
@@ -791,10 +986,16 @@ class PromotionService:
                     return
                 if (
                     current.get("request_id") != request["request_id"]
-                    or current.get("phase") not in PENDING
+                    or current.get("phase") not in QUEUED
                 ):
                     return
-                request = {**current, "phase": RUNNING, "started_at": _now()}
+                request = {
+                    **current,
+                    "phase": RUNNING,
+                    "started_at": _now(),
+                    "checked_at": _now(),
+                    "waiting_reason": "",
+                }
                 runs._write_json(_request_path(run_id), request)
                 _mark_pointer(request, RUNNING)
             result = self.execute(request)
@@ -804,7 +1005,9 @@ class PromotionService:
             if result.get("waiting"):
                 # The reviewer is still writing the record: park the request
                 # rather than refusing a run that is not finished.
-                _mark_waiting(request, str(result.get("reason") or ""))
+                _mark_readiness(
+                    request, waiting=True, reason=str(result.get("reason") or "")
+                )
                 return
             if (
                 result.get("accepted") is False
@@ -941,11 +1144,17 @@ def settle_requests_for(run_id: str, *, settled_as: str = "promoted") -> list[st
 def failure_obligations(
     project: str, session: str, *, now: datetime | None = None
 ) -> list[dict[str, Any]]:
-    """Project the service's durable failures into the owning session's duties."""
+    """Project failures and overdue waits into the owning session's duties.
+
+    A waiting request takes no promotion slot, but after half an hour its
+    owner needs its condition and last observation. Rechecking never resets
+    the age, which is measured from the original request.
+    """
     items: list[dict[str, Any]] = []
     for path in _requests_dir().glob("*.json"):
         request = _read(path)
-        if request.get("phase") not in ERRORS:
+        waiting = request.get("phase") == WAITING
+        if request.get("phase") not in ERRORS and not waiting:
             continue
         if request.get("project") != project or request.get("session") != session:
             continue
@@ -955,6 +1164,26 @@ def failure_obligations(
             # longer go anywhere: the request is settled here rather than
             # raising a duty whose next command cannot apply.
             _settle(request, settled)
+            continue
+        if waiting:
+            age = _waited_seconds(
+                request.get("requested_at"), (now or datetime.now(UTC)).isoformat()
+            )
+            if age is None or age <= WAITING_OBLIGATION_SECONDS:
+                continue
+            checked_at = str(request.get("checked_at") or "unknown")
+            items.append(
+                {
+                    "kind": WAITING,
+                    "run_id": request["run_id"],
+                    "node": request.get("node", ""),
+                    "plan": request.get("plan", ""),
+                    "age_seconds": int(age),
+                    "checked_at": checked_at,
+                    "reason": f"{request.get('waiting_reason') or 'promotion is waiting'}; last checked {checked_at}",
+                    "next_command": f"reckon crew complete --run {request['run_id']} --gate {((request.get('options') or {}).get('gate') or 'not-run')}",
+                }
+            )
             continue
         items.append(
             {

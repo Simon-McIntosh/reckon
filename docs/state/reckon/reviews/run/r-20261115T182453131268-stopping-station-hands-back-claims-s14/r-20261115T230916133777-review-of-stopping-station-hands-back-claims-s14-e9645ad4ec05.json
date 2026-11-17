@@ -1,0 +1,87 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": {
+    "note": "the expected ids are the test's own inputs to _publish, but the values under test come from the module reading the files those inputs wrote, so the two sides do not move together: the repair reverted changes one side alone.",
+    "tests/test_a_stopping_station_hands_back_its_claims.py:140": "assert sorted(released) == sorted(unlaunched) compares the module's return against the four ids the test published to disk; reinstating the rebinding makes the call return only the first id and reddens it, which negative-control-holder.log records.",
+    "tests/test_a_stopping_station_hands_back_its_claims.py:141-143": "the pointer and run-directory absences fail if the walk leaves any of the four claims standing, and the running-claim assertions at :144-145 fail if the walk releases a claim that reached its worker."
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/station.py:1262",
+    "reckon/crew/station.py:1434"
+  ],
+  "completed_at": "2026-11-15T23:11:40.200Z",
+  "dispatched_at": "2026-11-15T23:10:33Z",
+  "failure_delta_evidence": {
+    "after": {
+      "exit_status": 0,
+      "failure_ids": [],
+      "log": "after-arm.log",
+      "revision": "e9645ad4ec05d65b941f33e280dab7d401f889c7",
+      "summary": "62 passed in 91.94s"
+    },
+    "baseline": {
+      "exit_status": 0,
+      "failure_ids": [],
+      "log": "base-arm.log",
+      "revision": "18d133b40e54057955fee45c889cde9371c8e068",
+      "summary": "58 passed in 56.57s"
+    },
+    "derivation": "both armed arms carry no FAILED line and EXIT=0, so after minus baseline is empty; the population arms' FAILED id sets diff to nothing and were counted as non-empty first",
+    "population": {
+      "added_ids": [],
+      "after": "importers-head-armscope.log",
+      "after_summary": "14 failed, 104 passed",
+      "baseline": "importers-base.log",
+      "baseline_summary": "14 failed, 104 passed",
+      "instrument_check": "both population logs carry 14 FAILED lines, so the empty difference is measured over a non-empty set",
+      "removed_ids": []
+    }
+  },
+  "finding_dispositions": {},
+  "findings": [],
+  "item_verdicts": {
+    "diff": "read 39308f9313 and e9645ad4ec individually against ed6a641411; the production hunk renames the loop's holder to holder_pid and the record to holder_record in reckon/crew/dispatch_claims.py:1213-1236, the test adds test_every_unlaunched_claim_is_handed_back_in_one_pass at tests/test_a_stopping_station_hands_back_its_claims.py:126, and the fragment adds the repair paragraph.",
+    "done_when": "the measure at prompt.txt:165 requires a SIGTERM'd station to exit inside a stated bound, every unlaunched claim released and every running claim left, the new tests failing at base, and the importing population adding no failure against base on all_debug; tests/test_a_stopping_station_hands_back_its_claims.py:267 now measures the multi-claim half, while the population arm is measured locally rather than on all_debug.",
+    "goal": "the node goal at prompt.txt:38 is to make a stopping station exit within a bound and hand its claims back; the commits gained since the last review (ed6a641411..e9645ad4ec) leave the bound at reckon/crew/station.py:464 untouched and make the handback at reckon/crew/dispatch_claims.py:1213 hand back every claim whose holder is this process, not only the first.",
+    "manifest": "manifest.md records base arm 58 passed EXIT=0, after arm 62 passed EXIT=0, the population arms 14 failed and 104 passed at each with no added ids, and the repair's negative control red at 1 failed 3 passed EXIT=1 in negative-control-holder.log.",
+    "write_paths": "the fence grants reckon/crew/station.py, reckon/crew/dispatch_claims.py, tests/test_a_stopping_station_hands_back_its_claims.py and the evidence fragment; the three paths in the diff ed6a6414112e25..e9645ad4ec05 are all inside that set."
+  },
+  "justifications": {
+    "durability": "reinstating the rebinding reverted in tests/test_a_stopping_station_hands_back_its_claims.py:134-143 reddens the sorted(released) assertion at :140, as negative-control-holder.log records with the id test_every_unlaunched_claim_is_handed_back_in_one_pass.",
+    "evidence": "after-arm.log records 62 passed EXIT=0 at e9645ad4ec and negative-control-holder.log records the four-claim case red at EXIT=1, but the all_debug population arm the done_when names is measured with -n 8 in this sandbox and the new test is never shown failing at the 18d133b40e54 base arm.",
+    "fit": "the two names at reckon/crew/dispatch_claims.py:1213 and :1226 follow the module's distinguishing-name idiom and the docstring at :1188 already promised the walk it now performs.",
+    "goal_fidelity": "reckon/crew/dispatch_claims.py:1216 keeps the holder pid under its own name so the comparison at :1220 cannot be rebound by the loop body, which is the goal's every-claim clause.",
+    "reuse": "the delta adds no definition; it calls the existing record_launch_refusal, _requeue_stranded_request and _release_launch_claim, and the five-key holder mapping it renames still duplicates reckon/crew/admission/launching.py:567, which predates this revision and was reported at ed6a641411.",
+    "scope_discipline": "the diff ed6a6414112e2518d8ef2586fabd14645ba92d91..e9645ad4ec05d65b941f33e280dab7d401f889c7 touches only reckon/crew/dispatch_claims.py, tests/test_a_stopping_station_hands_back_its_claims.py and the fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal at prompt.txt:38 is to make a stopping station exit within a bound and hand its claims back; the commits gained since the last review (ed6a641411..e9645ad4ec) leave the bound at reckon/crew/station.py:464 untouched and make the handback at reckon/crew/dispatch_claims.py:1213 hand back every claim whose holder is this process, not only the first.\nVERDICT done_when: the measure at prompt.txt:165 requires a SIGTERM'd station to exit inside a stated bound, every unlaunched claim released and every running claim left, the new tests failing at base, and the importing population adding no failure against base on all_debug; tests/test_a_stopping_station_hands_back_its_claims.py:267 now measures the multi-claim half, while the population arm is measured locally rather than on all_debug.\nVERDICT write_paths: read the fence in prompt.txt: the granted set is reckon/crew/station.py, reckon/crew/dispatch_claims.py, tests/test_a_stopping_station_hands_back_its_claims.py and the fragment; all three paths in the diff ed6a6414112e25..e9645ad4ec05 sit inside it.\nVERDICT manifest: manifest.md records base arm 58 passed EXIT=0, after arm 62 passed EXIT=0, population arms 14 failed and 104 passed at each with no added ids, and the repair's negative control red at 1 failed 3 passed EXIT=1 in negative-control-holder.log.\nVERDICT diff: read 39308f9313 and e9645ad4ec individually against ed6a641411; the production hunk renames the loop's holder to holder_pid and the record to holder_record at reckon/crew/dispatch_claims.py:1213-1236, the test adds test_every_unlaunched_claim_is_handed_back_in_one_pass at tests/test_a_stopping_station_hands_back_its_claims.py:126, and the fragment adds the repair paragraph.\nCALL_SITES: reckon/crew/station.py:1262, reckon/crew/station.py:1434\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_claims.py:1216 keeps the holder pid under its own name so the comparison at :1220 cannot be rebound by the loop body, which is the goal's every-claim clause.\nSCORE evidence: 15\nJUSTIFICATION evidence: after-arm.log records 62 passed EXIT=0 at e9645ad4ec and negative-control-holder.log records the four-claim case red at EXIT=1, but the all_debug population arm the done_when names is measured with -n 8 in this sandbox and the new test is never shown failing at the 18d133b40e54 base arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff ed6a6414112e2518d8ef2586fabd14645ba92d91..e9645ad4ec05d65b941f33e280dab7d401f889c7 touches only reckon/crew/dispatch_claims.py, tests/test_a_stopping_station_hands_back_its_claims.py and the fragment, all inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the rebinding reverted in tests/test_a_stopping_station_hands_back_its_claims.py:134-143 reddens the sorted(released) assertion at :140, as negative-control-holder.log records with the id test_every_unlaunched_claim_is_handed_back_in_one_pass.\nSCORE fit: 18\nJUSTIFICATION fit: the two names at reckon/crew/dispatch_claims.py:1213 and :1226 follow the module's distinguishing-name idiom and the docstring at :1188 already promised the walk it now performs.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no definition; it calls the existing record_launch_refusal, _requeue_stranded_request and _release_launch_claim, and the five-key holder mapping it renames still duplicates reckon/crew/admission/launching.py:567, which predates this revision and was reported at ed6a641411.\n",
+  "reuse_audit": {
+    "owner": "reckon/crew/admission/launching.py:_release_stranded_launches",
+    "searched": "reckon/crew for a capability that releases claim files and requeues stranded requests",
+    "verdict": "no added definition in this delta; the pre-existing holder-mapping duplication between dispatch_claims.py:1226 and launching.py:567 is unchanged by the repair"
+  },
+  "review_run_id": "r-20261115T230916133777-review-of-stopping-station-hands-back-claims-s14-e9645ad4ec05",
+  "reviewed_base_sha": "ed6a6414112e2518d8ef2586fabd14645ba92d91",
+  "reviewed_head_sha": "e9645ad4ec05d65b941f33e280dab7d401f889c7",
+  "reviewed_run_id": "r-20261115T182453131268-stopping-station-hands-back-claims-s14",
+  "revision_pair": {
+    "note": "the base is the head the earlier review read, so this record covers only 39308f9313 and e9645ad4ec",
+    "reviewed_base_sha": "ed6a6414112e2518d8ef2586fabd14645ba92d91",
+    "reviewed_head_sha": "e9645ad4ec05d65b941f33e280dab7d401f889c7"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T00:08:54.181473+00:00",
+  "total": 111
+}

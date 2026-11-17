@@ -1,0 +1,93 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "condition_for_failure": "Fixture lacks 44 commits beyond base, forty primary imports, or primary content 39; these establish the challenge input rather than production coverage.",
+      "lines": "tests/test_a_merged_primary_run_keeps_its_own_commits.py:65-67"
+    },
+    {
+      "condition_for_failure": "Restoring full-history traversal refuses an imported primary commit (negative.log demonstrates it), or records/offers 44 rather than four commits; a wrong promoted endpoint, wrong ledger cardinality or recorded imported commit also fails.",
+      "lines": "tests/test_a_merged_primary_run_keeps_its_own_commits.py:128-134"
+    },
+    {
+      "condition_for_failure": "Full-history inference adds imports to the offer; the old counter returns 44 instead of four.",
+      "lines": "tests/test_a_merged_primary_run_keeps_its_own_commits.py:141-142"
+    },
+    {
+      "condition_for_failure": "A manifest-echo implementation records the injected primary citation in the extra_primary=True arm, and the old ancestry guard refuses the predecessor-base case; the expected own list excludes that injected input.",
+      "lines": "tests/test_a_merged_primary_run_keeps_its_own_commits.py:154-155"
+    },
+    {
+      "condition_for_failure": "Removing the manifest-citation union allows the foreign citation and fails to raise; dropping abbreviation normalization misses the subject-bearing citation; a wrong refusal message, ledger write or removed pointer fails the remaining assertions.",
+      "lines": "tests/test_a_merged_primary_run_keeps_its_own_commits.py:169-174"
+    }
+  ],
+  "assertion_independence": "The matching-input scenario supplies own in its manifest, so its equality alone would pass a manifest-echo implementation; durability relies also on extra_primary=True, which deliberately supplies a different list while retaining own as expectation. The combined assertions do not move with the supplied input and fail that regression.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/promotion.py:complete",
+    "reckon/crew/promotion.py:_default_gate_evidence_from_manifest",
+    "reckon/crew/recovery_classification.py:_promotion_command",
+    "reckon/crew/recovery_classification.py:classify_pointer",
+    "reckon/crew/recovery_review_subject.py:_re_review_block"
+  ],
+  "completed_at": "2026-11-15T15:38:10Z",
+  "dispatched_at": "2026-11-15T15:32:32Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read commits 0a27d4b7501f4e71d62bf3dc54c4a546870ecf7f, 135007798e969aa3ec83f732bf9ae38be359263c and 001c0c2b24c9dc033af7ffbd0484feb17f185611 individually and the combined diff; four existing production modules, one contract test and two evidence fragments implement the stated behavior.",
+    "done_when": "Read live docs/plans/queued-work-needs-no-workaround.html section s26 and the source prompt's quantitative measure; tests/test_a_merged_primary_run_keeps_its_own_commits.py:121-174 covers forty imported commits, four owned commits including the merge, both manifest variants and unmerged-branch refusal, with the negative control recorded in negative.log.",
+    "goal": "Read the source prompt's goal to land a run that merged primary without hand-written commits; reckon/crew/promotion.py:631 infers its first-parent history and the completion tests exercise that call without commit arguments.",
+    "manifest": "Read the source run's manifest.md and opened its baseline.log, after.log, negative.log and compatibility/regression logs; the armed receipts report 58 baseline passes and 65 head passes with EXIT=0, and the supplemental three failures match at both revisions.",
+    "write_paths": "Read the source prompt's declared reckon, tests and evidence-fragment roots; all seven paths changed between de9cb49abfab034cdbadafcec9f46c3fc6b4fbaf and 001c0c2b24c9dc033af7ffbd0484feb17f185611 fall within them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_merged_primary_run_keeps_its_own_commits.py:128-155 fails if full merged history or manifest-only citations replace owned-history inference, and lines 169-174 fail if unmerged citations are accepted or refusal writes the ledger or removes the pointer.",
+    "evidence": "The source run's baseline.log and after.log record completed 58-pass and 65-pass arms at the exact reviewed revisions, and negative.log records the imported-primary refusal with EXIT=1 and a matching forty-commit fixture inventory preserved in docs/evidence/fragments/queued-work-needs-no-workaround/s26.html:4-5.",
+    "fit": "reckon/crew/recovery_review_subject.py:504 extends the existing git-history reader with an optional keyword retaining default behavior, and reckon/crew/promotion_evidence.py:394-404 uses existing manifest and delivered-revision parsers with mechanism-based names.",
+    "goal_fidelity": "reckon/crew/promotion.py:631 excludes merged side history from inferred citations while reckon/crew/promotion_evidence.py:400-436 independently validates manifest citations against the delivered head and refuses an unmerged branch.",
+    "reuse": "Capability searches for history traversal, citation parsing and test git helpers found the existing owners in reckon/crew/recovery_review_subject.py:504, reckon/crew/promotion_scope.py:1329, reckon/crew/queue_landing.py:86 and tests/helpers/git.py:12; the production diff extends or calls them, while the new fixture and command extractor only arrange this contract's inputs and observations.",
+    "scope_discipline": "The seven paths in the reviewed diff are inside the source prompt's declared roots, and the changes to reckon/crew/recovery_watch.py:402-420 keep the count and its persistent cache consistent with the same owned-history goal."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the source prompt's goal to land a run that merged primary without hand-written commits; reckon/crew/promotion.py:631 infers its first-parent history and the completion tests exercise that call without commit arguments.\nVERDICT done_when: Read live docs/plans/queued-work-needs-no-workaround.html section s26 and the source prompt's quantitative measure; tests/test_a_merged_primary_run_keeps_its_own_commits.py:121-174 covers forty imported commits, four owned commits including the merge, both manifest variants and unmerged-branch refusal, with the negative control recorded in negative.log.\nVERDICT write_paths: Read the source prompt's declared reckon, tests and evidence-fragment roots; all seven paths changed between de9cb49abfab034cdbadafcec9f46c3fc6b4fbaf and 001c0c2b24c9dc033af7ffbd0484feb17f185611 fall within them.\nVERDICT manifest: Read the source run's manifest.md and opened its baseline.log, after.log, negative.log and compatibility/regression logs; the armed receipts report 58 baseline passes and 65 head passes with EXIT=0, and the supplemental three failures match at both revisions.\nVERDICT diff: Read commits 0a27d4b7501f4e71d62bf3dc54c4a546870ecf7f, 135007798e969aa3ec83f732bf9ae38be359263c and 001c0c2b24c9dc033af7ffbd0484feb17f185611 individually and the combined diff; four existing production modules, one contract test and two evidence fragments implement the stated behavior.\nCALL_SITES: reckon/crew/promotion.py:complete, reckon/crew/promotion.py:_default_gate_evidence_from_manifest, reckon/crew/recovery_classification.py:_promotion_command, reckon/crew/recovery_classification.py:classify_pointer, reckon/crew/recovery_review_subject.py:_re_review_block\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:631 excludes merged side history from inferred citations while reckon/crew/promotion_evidence.py:400-436 independently validates manifest citations against the delivered head and refuses an unmerged branch.\nSCORE evidence: 20\nJUSTIFICATION evidence: The source run's baseline.log and after.log record completed 58-pass and 65-pass arms at the exact reviewed revisions, and negative.log records the imported-primary refusal with EXIT=1 and a matching forty-commit fixture inventory preserved in docs/evidence/fragments/queued-work-needs-no-workaround/s26.html:4-5.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The seven paths in the reviewed diff are inside the source prompt's declared roots, and the changes to reckon/crew/recovery_watch.py:402-420 keep the count and its persistent cache consistent with the same owned-history goal.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_merged_primary_run_keeps_its_own_commits.py:128-155 fails if full merged history or manifest-only citations replace owned-history inference, and lines 169-174 fail if unmerged citations are accepted or refusal writes the ledger or removes the pointer.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/recovery_review_subject.py:504 extends the existing git-history reader with an optional keyword retaining default behavior, and reckon/crew/promotion_evidence.py:394-404 uses existing manifest and delivered-revision parsers with mechanism-based names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for history traversal, citation parsing and test git helpers found the existing owners in reckon/crew/recovery_review_subject.py:504, reckon/crew/promotion_scope.py:1329, reckon/crew/queue_landing.py:86 and tests/helpers/git.py:12; the production diff extends or calls them, while the new fixture and command extractor only arrange this contract's inputs and observations.\n",
+  "review_run_id": "r-20261115T153037319479-review-of-qwnw-a-run-that-merged-the-primary-branch-lands-codex-001c0c2b24c9",
+  "reviewed_base_sha": "de9cb49abfab034cdbadafcec9f46c3fc6b4fbaf",
+  "reviewed_head_sha": "001c0c2b24c9dc033af7ffbd0484feb17f185611",
+  "reviewed_run_id": "r-20261115T151107926805-qwnw-a-run-that-merged-the-primary-branch-lands-codex",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T151107926805-qwnw-a-run-that-merged-the-primary-branch-lands-codex/after.log",
+      "revision": "001c0c2b24c9dc033af7ffbd0484feb17f185611",
+      "summary": "65 passed in 39.80s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T151107926805-qwnw-a-run-that-merged-the-primary-branch-lands-codex/baseline.log",
+      "revision": "de9cb49abfab034cdbadafcec9f46c3fc6b4fbaf",
+      "summary": "58 passed in 33.24s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T15:39:08.963470+00:00",
+  "total": 120
+}

@@ -216,7 +216,12 @@ def _scoring_pointer(config_home: Path, repo: Path, run_id: str) -> dict:
         "backend": "alpha",
         "launch": "cli",
         "argv": ["codex"],
-        "phase": "starting",
+        # The phase a spawned run carries once its worker has delivered. A
+        # pointer left in a pre-spawn phase (``starting`` and its siblings)
+        # with no pid and no launch clock is a request the launcher has not
+        # started, which the classifier reports as running rather than
+        # scoring, so it would never reach the reflex these tests drive.
+        "phase": "working",
         "process_alive": False,
         "session": "session-orchestrating",
         "manifest_path": str(manifest),

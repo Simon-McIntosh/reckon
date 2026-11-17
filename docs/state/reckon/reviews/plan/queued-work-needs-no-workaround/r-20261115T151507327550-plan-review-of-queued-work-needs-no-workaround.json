@@ -1,0 +1,83 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T15:30:31.099Z",
+  "dispatched_at": "2026-11-15T15:30:07Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/queued-work-needs-no-workaround/r-20261115T151507327550-plan-review-of-queued-work-needs-no-workaround/plan.html:327",
+      "id": "wiring-1",
+      "reason": "a coordinator obeying the followup dispatches nothing for \u00a726, so the newest section is never queued and the plan cannot close.",
+      "text": "the driving followup reads \"\u00a72\u2013\u00a716 and \u00a719\u2013\u00a725 are independent ... queue them all in one batch\", but `plan-section-declarations` (plan.html:23) now declares s26 implementable and it is the only implementable section the followup does not name; its priority list also still names \u00a721 and the batch range still covers \u00a725, both declared done",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "9f449a606c3b9a238a996a8bf1629d07619827b7",
+  "plan_fingerprint": "40793639369f275fbf47d2d62604a18fba7d06b303982d3cc33eb8a62bd7374b",
+  "plan_slug": "queued-work-needs-no-workaround",
+  "plan_version": 102,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "the coordinator queues from the section declarations, which admission and the obligations view read and which name every implementable section; the followup's list is prose that those readers do not use, and sections 26 and 27 were dispatched and have landed",
+      "when": "2026-11-15T20:43:22.109853+00:00"
+    }
+  ],
+  "responses": {
+    "wiring-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "the coordinator queues from the section declarations, which admission and the obligations view read and which name every implementable section; the followup's list is prose that those readers do not use, and sections 26 and 27 were dispatched and have landed",
+      "when": "2026-11-15T20:43:22.109853+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/queued-work-needs-no-workaround/r-20261115T151507327550-plan-review-of-queued-work-needs-no-workaround.json",
+  "review_run_id": "r-20261115T151507327550-plan-review-of-queued-work-needs-no-workaround",
+  "reviewed_blob_sha": "45a7f9090d94b91daad50f7635bd38ff307b9fe2",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a724 and \u00a726 cite no source path, and the snapshot's plan links resolve (`a-read-answers-inside-its-deadline`, `the-monitor-reads-each-fact-once`, `a-landing-never-waits-on-a-shared-index` all exist under `docs/plans/`).",
+    "done_when": "pass \u2014 \u00a724's three cases each name a base-reasoned arm and its control covers the candidate refusal, the empty batch brief and the exclusive-scope brief; \u00a726's control names the base refusal of an uncited landing, which `promotion._promotion_commits` \u2192 `reviewed_commits` (`git log base..HEAD`) fills with the merged primary commits and `_require_commits_beyond_base` then refuses.",
+    "evidence_paths": "pass \u2014 both controls log to `docs/evidence/fragments/queued-work-needs-no-workaround/s24.html` and `s26.html`, beside the existing `s19.html`, `s20.html`, `s25.html`.",
+    "naming": "pass \u2014 neither changed unit carries a defect id, run id or stage label into a named mechanism; \u00a726's `work-flows \u00a765` and `queued-work \u00a711` are incident counts in the Why, not names.",
+    "reasoning": "pass \u2014 \u00a726's refusal quote matches `promotion_evidence.py`'s \"*which is not a commit this run made beyond its base*\", and the 450-commit reading follows from the uncited derivation `git log base..HEAD`; \u00a724's three base behaviours are real (a lane-planning candidate with no paths is refused by `runs.py`'s candidate validator), and neither unit prescribes a code path.",
+    "single_goal": "pass \u2014 \u00a724 is one endpoint (a declared path gates nothing but an unmergeable class) and \u00a726 is one endpoint (a merged run lands without a hand-written commit list).",
+    "wiring": "a finding \u2014 the driving followup at plan.html:327 names \u00a72\u2013\u00a716 and \u00a719\u2013\u00a725 while `plan-section-declarations` (plan.html:23) declares s26 implementable, so the section this review's change added is dispatched by nothing."
+  },
+  "section_digests": {
+    "_document": "f96ee3d056eb4728c7eb2fbb95bc7e9bae0666076d0fe494e93dc8c5c02b2a1c",
+    "s1": "965e293bc718e24bc6e0b306c2e31f4694e8d3d1f2aafc97e86aac0ccdc0eb46",
+    "s10": "501d0d72406c2fda4dc47939b9700d2c42eb9011387b4df7abdfcc55d906d345",
+    "s11": "4dc7e37e7c9ff6d074c540a19ff75d7db784999f7b811a999a052a00fcbacb39",
+    "s12": "cf244a99091ee04721474e6caad0adad1fb1c907edc99e9fd73b86fb3251685c",
+    "s13": "8cdf1aaa77a692163d0b36bc751a206e8f6c96460d0e44b85d9feb5a76f99659",
+    "s14": "e033ab0daa427195a357d93c3b5969c3fae24f311a8dafa8b2a6bad8db0b518e",
+    "s15": "c271f7bcaa272ebd4bf87d7b1e7153251ec38aa5863fd8a3d7f12cdf1c66bd06",
+    "s16": "e958886ca859d584799d4d94514466d7e14ba4c818ac307fcb864c7eb39fa549",
+    "s17": "dd6b738e7e017fe3bc312e85841a1a6a4b4d5dc818c618040249040acf51ff19",
+    "s18": "cce913fd1fd3cd0d62df97ae997ebb6708c0f8082d5fb90425f676f105322724",
+    "s19": "eaeead248338c8d630a84c78ae20179b603aa87fc7b0a599cced40377f9d8297",
+    "s2": "872b1ec9c49f32d972d450016002b1265e846673cd1aef42c41aaccc50583998",
+    "s20": "0e0d4849ea6b6f69d5354bef8f8699320f369433778609f009cf726a6657a1ee",
+    "s21": "1ba6fbba19ed595b11f5efb9d35bd3b6620bad888924989e016324a2ad6a714e",
+    "s22": "fce0ba09ddb9ec3bc2b594b7cd00683449d9a170142add8d81af3fdd14b02100",
+    "s23": "43fe6c8d8a3118b055dc76b75bd328396172198ba8c599d5fd70be079950e6f4",
+    "s24": "04f04dd8812de5d9c7b9410b01df1ecca1b5d54a6033156ef6c0e016e94d83a8",
+    "s25": "afd11e98028c6beb77d132f656f7e433fab87c40e3e0f5257920383e880c2cd9",
+    "s26": "86ee010dedc3babeebe536a7600e36d642ff7e96b15d2ca37ba6543b3da2caa0",
+    "s3": "2a385591edce8d1cb26d41f176fb084cd634d113eb130d2581ce97000bcb3eea",
+    "s4": "0116c3c4a34b6e607b2564cc4300d3784ba5d7596a0000d0b59c40e1801dcd1a",
+    "s5": "81cc22db14da433d65d2cbfd466e233d778e9b5d50552dc7a013e94a3b25ad15",
+    "s6": "91849d1cd49d8e783c893b01272f0e0f505aed67e379d52d354011a619270a1d",
+    "s7": "0eb7720abb0f46f8d48d47fcf646be85ae58c8a5cc37c98f7ad06ac2f9deb6ff",
+    "s8": "5dcf0f324a6b831b76a043e465731eff46456979ae084bcfc764ff0d40816359",
+    "s9": "b22a82394cfc2b7163b7fbd8be1087fdb6ec66a16524e9d194431d418894d798"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T15:43:55.244431+00:00",
+  "total": null
+}

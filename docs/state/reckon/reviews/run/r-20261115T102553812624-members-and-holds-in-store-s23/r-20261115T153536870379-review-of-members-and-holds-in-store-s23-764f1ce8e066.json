@@ -1,0 +1,167 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "assertion": "Reap returns session-idle",
+      "failure_condition_and_regression": "Leaving the member live, selecting the permanent identity, or failing the mutable write prevents this literal identity result.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 279
+    },
+    {
+      "assertion": "auxiliary_version == 8",
+      "failure_condition_and_regression": "Removing the mutable increment fails fixture version 7 plus one.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 283
+    },
+    {
+      "assertion": "receipt ok is True",
+      "failure_condition_and_regression": "Returning a refused or unsuccessful production gate receipt fails this literal success check.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 295
+    },
+    {
+      "assertion": "receipt ledger_version in 8,9",
+      "failure_condition_and_regression": "Returning the auxiliary version instead of the incremented aggregate version fails the second independent literal expectation.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 296
+    },
+    {
+      "assertion": "aggregate version in 8,9",
+      "failure_condition_and_regression": "Not persisting either aggregate update fails the independently read file-envelope version.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 298
+    },
+    {
+      "assertion": "persisted integrated_gate_check == report",
+      "failure_condition_and_regression": "Dropping or corrupting the mocked gate result when persisting the run fails the fresh aggregate read; report is supplied fixture data, but the observed side is independently read persistence, not the mock return compared with itself.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 299
+    },
+    {
+      "assertion": "aggregate members == original_members",
+      "failure_condition_and_regression": "Copying projected store membership into the aggregate fails registration and reap cases against the pre-mutation file snapshot.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 300
+    },
+    {
+      "assertion": "aggregate holds == original_holds",
+      "failure_condition_and_regression": "Copying projected store holds into the aggregate fails the hold case against the pre-mutation file snapshot.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 301
+    },
+    {
+      "assertion": "load_auxiliary == prior auxiliary tuple",
+      "failure_condition_and_regression": "Reimporting stale aggregate collections or changing the mutable version during aggregate updates fails the independently captured pre-update store snapshot.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 302
+    },
+    {
+      "assertion": "file_version == 9",
+      "failure_condition_and_regression": "Returning the store version from load restores the prior defect and fails this literal expectation.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 304
+    },
+    {
+      "assertion": "auxiliary_version == prior auxiliary_version == 8",
+      "failure_condition_and_regression": "Omitting the projection marker or returning the aggregate version for it fails the literal store-version expectation.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 305
+    },
+    {
+      "assertion": "subsequent reap returns session-idle",
+      "failure_condition_and_regression": "Restoring ledger.load as the roster version source at routing.py:3476 supplies file version 9 to store version 8 and refuses instead of returning the literal reaped identity.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 308
+    },
+    {
+      "assertion": "LedgerError moved from version",
+      "failure_condition_and_regression": "Removing the stale aggregate version guard accepts version 7 after file version 9 and fails pytest.raises.",
+      "file": "tests/test_members_and_holds_live_in_the_store.py",
+      "line": 311
+    }
+  ],
+  "assertion_independence": "Supplied gate report is checked through an independent aggregate read; captured aggregate/store snapshots test preservation. No added assertion compares a mock return directly with its own supplied value. Version expectations are fixture-derived literals, not writer-return values.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/promotion_gate.py:record_gate_rerun_at_integrated_revision:1186-1232",
+    "reckon/crew/dispatching/preparation.py:1454",
+    "reckon/crew/routing.py:reap_idle_session_members:3475-3529",
+    "reckon/ledger.py:register_member:3360-3394",
+    "reckon/crew/promotion_records.py:1776-1792"
+  ],
+  "completed_at": "2026-11-15T15:43:35Z",
+  "dispatched_at": "2026-11-15T15:38:14Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read the sole incremental commit 764f1ce8e066cf291b448af42f0b8e5e508db0e9 against 2527b74492c2c5f1fdac51f46f7f04b9336cdd79; its four-file diff repairs the previously reviewed blocking version handoff and adds three regression cases and evidence.",
+    "done_when": "The source prompt:159 requires zero committed writes for registration, reaping and holds plus equal mutable state after aggregate removal; the incremental tests at tests/test_members_and_holds_live_in_the_store.py:262-312 add production gate-update compatibility and preserve those existing checks.",
+    "goal": "The source prompt's goal and live plan section require store-backed roster and holds; reckon/ledger.py:2309-2314 and :2853-2863 repair the version-domain regression while preserving that separation.",
+    "manifest": "The source manifest names the repair commit and logs; baseline.log records 58 passed, repair-baseline.log records 70 passed and repair-after.log records 73 passed, each completed with EXIT=0.",
+    "write_paths": "The source prompt and manifest declare the ledger, routing, test and evidence fragment; the incremental diff changes exactly those four permitted paths."
+  },
+  "justifications": {
+    "durability": "tests/test_members_and_holds_live_in_the_store.py:296-305 independently asserts aggregate versions 8 and 9 against store version 8, :300-302 detects collection pollution, :308 detects reaping with the file version, and :311 requires actual stale-write refusal.",
+    "evidence": "repair-reproduction.log records three failures with \u201cmoved from version 8 to 7\u201d, repair-after.log records 73 passed with EXIT=0, and repair-negative-control.log records the same three failures after reversing the product repair.",
+    "fit": "reckon/ledger.py:2293-2299 documents the two existing version-paired APIs, :2853-2863 retains the surrounding locked aggregate-write idiom, and reckon/crew/routing.py:3477 uses the existing mutable-state reader with descriptive names.",
+    "goal_fidelity": "reckon/ledger.py:2309-2314 returns the aggregate's version while projecting store state, :2853-2863 preserves aggregate collections during run updates, and reckon/crew/routing.py:3477 pairs reaping with the store version.",
+    "reuse": "Capability searches for version-paired collection reads and writes found the existing owners reckon/ledger.py:2222-2282 and :989-1040, which this repair reuses; its only added definition is a regression test extending the existing roster fixture at tests/test_members_and_holds_live_in_the_store.py:18.",
+    "scope_discipline": "The sole incremental commit modifies only reckon/ledger.py, reckon/crew/routing.py, tests/test_members_and_holds_live_in_the_store.py and the declared evidence fragment, with every change supporting the version-domain repair."
+  },
+  "prior_blocking_finding": "The blocking ledger.load/version-domain finding in the previous revision-specific review is answered by the incremental repair and three production-caller regression cases.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source prompt's goal and live plan section require store-backed roster and holds; reckon/ledger.py:2309-2314 and :2853-2863 repair the version-domain regression while preserving that separation.\nVERDICT done_when: The source prompt:159 requires zero committed writes for registration, reaping and holds plus equal mutable state after aggregate removal; the incremental tests at tests/test_members_and_holds_live_in_the_store.py:262-312 add production gate-update compatibility and preserve those existing checks.\nVERDICT write_paths: The source prompt and manifest declare the ledger, routing, test and evidence fragment; the incremental diff changes exactly those four permitted paths.\nVERDICT manifest: The source manifest names the repair commit and logs; baseline.log records 58 passed, repair-baseline.log records 70 passed and repair-after.log records 73 passed, each completed with EXIT=0.\nVERDICT diff: Read the sole incremental commit 764f1ce8e066cf291b448af42f0b8e5e508db0e9 against 2527b74492c2c5f1fdac51f46f7f04b9336cdd79; its four-file diff repairs the previously reviewed blocking version handoff and adds three regression cases and evidence.\nCALL_SITES: reckon/crew/promotion_gate.py:record_gate_rerun_at_integrated_revision:1186-1232, reckon/crew/dispatching/preparation.py:1454, reckon/crew/routing.py:reap_idle_session_members:3475-3529, reckon/ledger.py:register_member:3360-3394, reckon/crew/promotion_records.py:1776-1792\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/ledger.py:2309-2314 returns the aggregate's version while projecting store state, :2853-2863 preserves aggregate collections during run updates, and reckon/crew/routing.py:3477 pairs reaping with the store version.\nSCORE evidence: 20\nJUSTIFICATION evidence: repair-reproduction.log records three failures with \u201cmoved from version 8 to 7\u201d, repair-after.log records 73 passed with EXIT=0, and repair-negative-control.log records the same three failures after reversing the product repair.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The sole incremental commit modifies only reckon/ledger.py, reckon/crew/routing.py, tests/test_members_and_holds_live_in_the_store.py and the declared evidence fragment, with every change supporting the version-domain repair.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_members_and_holds_live_in_the_store.py:296-305 independently asserts aggregate versions 8 and 9 against store version 8, :300-302 detects collection pollution, :308 detects reaping with the file version, and :311 requires actual stale-write refusal.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/ledger.py:2293-2299 documents the two existing version-paired APIs, :2853-2863 retains the surrounding locked aggregate-write idiom, and reckon/crew/routing.py:3477 uses the existing mutable-state reader with descriptive names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for version-paired collection reads and writes found the existing owners reckon/ledger.py:2222-2282 and :989-1040, which this repair reuses; its only added definition is a regression test extending the existing roster fixture at tests/test_members_and_holds_live_in_the_store.py:18.\n",
+  "review_run_id": "r-20261115T153536870379-review-of-members-and-holds-in-store-s23-764f1ce8e066",
+  "reviewed_base_sha": "2527b74492c2c5f1fdac51f46f7f04b9336cdd79",
+  "reviewed_head_sha": "764f1ce8e066cf291b448af42f0b8e5e508db0e9",
+  "reviewed_run_id": "r-20261115T102553812624-members-and-holds-in-store-s23",
+  "scope": "Incremental review only; no rescoring of unchanged original implementation.",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_members_and_holds_live_in_the_store.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T102553812624-members-and-holds-in-store-s23/repair-after.log",
+      "revision": "764f1ce8e066cf291b448af42f0b8e5e508db0e9",
+      "summary": "73 passed in 36.45s"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/members-and-holds-in-store-s23 /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/members-and-holds-in-store-s23/.venv/bin/python -m pytest -p no:cacheprovider -q /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/members-and-holds-in-store-s23/tests/test_staged_write_inventory.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/members-and-holds-in-store-s23/tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T102553812624-members-and-holds-in-store-s23/baseline.log",
+      "revision": "a7f049093c62b22bd5f69246c292b6bbd27de6b4",
+      "summary": "58 passed in 36.21s"
+    },
+    "repair_baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_members_and_holds_live_in_the_store.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T102553812624-members-and-holds-in-store-s23/repair-baseline.log",
+      "revision": "2527b74492c2c5f1fdac51f46f7f04b9336cdd79",
+      "summary": "70 passed in 38.92s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T15:45:26.753618+00:00",
+  "total": 120
+}
