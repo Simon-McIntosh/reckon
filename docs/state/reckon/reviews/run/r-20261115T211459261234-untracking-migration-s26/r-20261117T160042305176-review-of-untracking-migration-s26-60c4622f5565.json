@@ -1,0 +1,98 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from both completed source-run gate logs and reconciled against their receipts; 58 base tests and 64 head tests passed, with no FAILED ids in either log.",
+  "after_suite": {
+    "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_ledger_leaves_git.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T211459261234-untracking-migration-s26/after-suite.log",
+    "measurement_cwd": "/tmp/ledger-gate-s8ts09am/tree",
+    "measurement_module": "/tmp/ledger-gate-s8ts09am/tree/reckon/ledger.py",
+    "partition": "all_debug",
+    "revision": "60c4622f5565bdbf8ae62da10d855fc0a3fe697a"
+  },
+  "assertion_audit_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T160042305176-review-of-untracking-migration-s26-60c4622f5565/assertion-audit.md",
+  "baseline_suite": {
+    "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T211459261234-untracking-migration-s26/baseline-suite.log",
+    "measurement_cwd": "/tmp/ledger-gate-_y2if1qz/tree",
+    "measurement_module": "/tmp/ledger-gate-_y2if1qz/tree/reckon/ledger.py",
+    "partition": "all_debug",
+    "revision": "e76577d9450dd76d22e4782b4a882b7eb997a0d3"
+  },
+  "call_site_count": 4,
+  "call_sites": [
+    "scripts/import_runs_into_store.py:main and __main__",
+    "reckon/ledger.py:load and _load_file_history",
+    "reckon/ledger.py:append_run",
+    "reckon/crew/promotion.py:complete at ledger.append_run"
+  ],
+  "completed_at": "2026-11-17T16:11:18Z",
+  "dispatched_at": "2026-11-17T16:04:17Z",
+  "evidence_inputs": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T211459261234-untracking-migration-s26/dispatch-detail.json",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T211459261234-untracking-migration-s26/manifest.md",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T211459261234-untracking-migration-s26/baseline-suite.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T211459261234-untracking-migration-s26/after-suite.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T211459261234-untracking-migration-s26/scoped-gate.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T211459261234-untracking-migration-s26/negative-control.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T211459261234-untracking-migration-s26/preservation-before.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T211459261234-untracking-migration-s26/preservation-after.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T211459261234-untracking-migration-s26/retired-document-ids.log"
+  ],
+  "findings": [
+    {
+      "file": "tests/test_the_ledger_leaves_git.py",
+      "line": "16",
+      "severity": "non-blocking",
+      "text": "non-blocking: _git duplicates tests/helpers/git.py:12 git, which already runs checked git subprocesses with captured stripped output and additionally removes the worker run identity for temporary repositories; using the existing owner avoids a second helper that can drift from this worker isolation rule."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read the exact base e76577d9450dd76d22e4782b4a882b7eb997a0d3 and head 60c4622f5565bdbf8ae62da10d855fc0a3fe697a, separated prerequisite ancestry through parent 924dbcf611b74147c5d7091f0970ac3fc2e03d2e, and reviewed the worker's single commit, whose only non-deletion edits are two ignore rules, importer verification and six regression tests.",
+    "done_when": "Read dispatch-detail.json admit_request.node.done_when and the live section measure; preservation-after.log records 18 projects and 25266 matching canonical rows, scoped-gate.log records a successful post-retirement promotion test, and baseline-suite.log/after-suite.log record 58/64 passes with zero added failures.",
+    "goal": "Read dispatch-detail.json admit_request.node.goal and live docs/plans/history-persists-as-detail-washes-out.html:389-392; commit 60c4622f5565 removes the tracked ledger projections while retaining store-backed history and promotion.",
+    "manifest": "Read the source manifest including its commit, baseline_suite, after_suite, negative control and preservation receipts; its complete status is supported by readable logs ending EXIT=0 and a negative control ending EXIT=1.",
+    "write_paths": "Read manifest.md:3 and the dispatch node's declared paths; the migration commit changes .gitignore, scripts/import_runs_into_store.py, tests/test_the_ledger_leaves_git.py and deletes 9891 ledger paths under docs/state, with no unexpected path."
+  },
+  "justifications": {
+    "durability": "tests/test_the_ledger_leaves_git.py:25-197 independently checks the index, ignore rules, source parity receipts, committed-removal invariants and explicit refusals, with negative-control.log proving the index assertion fails when retirement is reversed; assertion-audit.md states the failure condition for each added assertion.",
+    "evidence": "preservation-after.log records 25266 matching canonical rows over 18 mounts, scoped-gate.log records 13 passed, baseline-suite.log/after-suite.log record zero failure ids, and negative-control.log names the index mutation and the resulting failing migration assertion at tests/test_the_ledger_leaves_git.py:31.",
+    "fit": "scripts/import_runs_into_store.py:40-85 extends the existing argparse main entry and uses existing ledger/run_store APIs, while tests/test_the_ledger_leaves_git.py uses isolated repositories and descriptive mechanism names without forbidden plan labels.",
+    "goal_fidelity": ".gitignore:11-12 and the 9891 ledger deletions implement retirement, while preservation-after.log and tests/test_a_promotion_lands_after_the_ledger_leaves_git.py:135 verify store-backed history and an actual promotion after committed removal.",
+    "reuse": "scripts/import_runs_into_store.py:50-52 wraps the existing import, auxiliary and parity owners in reckon/run_store.py and reckon/ledger.py, but tests/test_the_ledger_leaves_git.py:16 duplicates the checked git helper already owned by tests/helpers/git.py:12 instead of extending or wrapping it, so the rubric caps this dimension at 5.",
+    "scope_discipline": "Commit 60c4622f5565 changes only the declared .gitignore, scripts/import_runs_into_store.py, tests/test_the_ledger_leaves_git.py and docs/state ledger paths, preserving all 7204 other tracked state files; other base-to-head edits are prerequisite ancestry already present in its parent."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read dispatch-detail.json admit_request.node.goal and live docs/plans/history-persists-as-detail-washes-out.html:389-392; commit 60c4622f5565 removes the tracked ledger projections while retaining store-backed history and promotion.\nVERDICT done_when: Read dispatch-detail.json admit_request.node.done_when and the live section measure; preservation-after.log records 18 projects and 25266 matching canonical rows, scoped-gate.log records a successful post-retirement promotion test, and baseline-suite.log/after-suite.log record 58/64 passes with zero added failures.\nVERDICT write_paths: Read manifest.md:3 and the dispatch node's declared paths; the migration commit changes .gitignore, scripts/import_runs_into_store.py, tests/test_the_ledger_leaves_git.py and deletes 9891 ledger paths under docs/state, with no unexpected path.\nVERDICT manifest: Read the source manifest including its commit, baseline_suite, after_suite, negative control and preservation receipts; its complete status is supported by readable logs ending EXIT=0 and a negative control ending EXIT=1.\nVERDICT diff: Read the exact base e76577d9450dd76d22e4782b4a882b7eb997a0d3 and head 60c4622f5565bdbf8ae62da10d855fc0a3fe697a, separated prerequisite ancestry through parent 924dbcf611b74147c5d7091f0970ac3fc2e03d2e, and reviewed the worker's single commit, whose only non-deletion edits are two ignore rules, importer verification and six regression tests.\nCALL_SITES: scripts/import_runs_into_store.py:main and __main__, reckon/ledger.py:load and _load_file_history, reckon/ledger.py:append_run, reckon/crew/promotion.py:complete at ledger.append_run\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: .gitignore:11-12 and the 9891 ledger deletions implement retirement, while preservation-after.log and tests/test_a_promotion_lands_after_the_ledger_leaves_git.py:135 verify store-backed history and an actual promotion after committed removal.\nSCORE evidence: 20\nJUSTIFICATION evidence: preservation-after.log records 25266 matching canonical rows over 18 mounts, scoped-gate.log records 13 passed, baseline-suite.log/after-suite.log record zero failure ids, and negative-control.log names the index mutation and the resulting failing migration assertion at tests/test_the_ledger_leaves_git.py:31.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Commit 60c4622f5565 changes only the declared .gitignore, scripts/import_runs_into_store.py, tests/test_the_ledger_leaves_git.py and docs/state ledger paths, preserving all 7204 other tracked state files; other base-to-head edits are prerequisite ancestry already present in its parent.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_the_ledger_leaves_git.py:25-197 independently checks the index, ignore rules, source parity receipts, committed-removal invariants and explicit refusals, with negative-control.log proving the index assertion fails when retirement is reversed; assertion-audit.md states the failure condition for each added assertion.\nSCORE fit: 20\nJUSTIFICATION fit: scripts/import_runs_into_store.py:40-85 extends the existing argparse main entry and uses existing ledger/run_store APIs, while tests/test_the_ledger_leaves_git.py uses isolated repositories and descriptive mechanism names without forbidden plan labels.\nSCORE reuse: 5\nJUSTIFICATION reuse: scripts/import_runs_into_store.py:50-52 wraps the existing import, auxiliary and parity owners in reckon/run_store.py and reckon/ledger.py, but tests/test_the_ledger_leaves_git.py:16 duplicates the checked git helper already owned by tests/helpers/git.py:12 instead of extending or wrapping it, so the rubric caps this dimension at 5.\nFINDING tests/test_the_ledger_leaves_git.py:16 non-blocking: _git duplicates tests/helpers/git.py:12 git, which already runs checked git subprocesses with captured stripped output and additionally removes the worker run identity for temporary repositories; using the existing owner avoids a second helper that can drift from this worker isolation rule.\n",
+  "recommendation": "No blocking findings; coordinator must fold or exempt the non-blocking helper duplication.",
+  "review_run_id": "r-20261117T160042305176-review-of-untracking-migration-s26-60c4622f5565",
+  "reviewed_base_sha": "e76577d9450dd76d22e4782b4a882b7eb997a0d3",
+  "reviewed_head_sha": "60c4622f5565bdbf8ae62da10d855fc0a3fe697a",
+  "reviewed_run_id": "r-20261115T211459261234-untracking-migration-s26",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T16:09:22.547801+00:00",
+  "total": 105,
+  "worker_commit_parent_sha": "924dbcf611b74147c5d7091f0970ac3fc2e03d2e",
+  "worker_commit_sha": "60c4622f5565bdbf8ae62da10d855fc0a3fe697a"
+}
