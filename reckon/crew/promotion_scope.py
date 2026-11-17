@@ -1413,6 +1413,39 @@ def _worker_authored_landing_record(
     return shown.returncode == 0 and f'data-id="{comment_id}"' in shown.stdout
 
 
+def _landing_comment_update(
+    state: Mapping[str, Any],
+    *,
+    section: str,
+    run_id: str,
+    narrative: str,
+    author: str,
+    when: str,
+) -> tuple[dict[str, Any], str, dict[str, str], dict[str, Any] | None]:
+    """Prepare one idempotent comment append without changing the input state."""
+    anchor = section_anchor(section)
+    comment = {
+        "id": f"{RUN_COMMENT_PREFIX}{re.sub(r'[^A-Za-z0-9._-]+', '-', run_id)}",
+        "who": author,
+        "when": when,
+        "body": f"<p>{html.escape(narrative)}</p>",
+    }
+    comments = {
+        key: list(items) for key, items in (state.get("comments") or {}).items()
+    }
+    items = comments.setdefault(anchor, [])
+    existing = next(
+        (item for item in items if str(item.get("id") or "") == comment["id"]),
+        None,
+    )
+    if existing is None:
+        items.append(comment)
+    payload = {**state, "comments": comments}
+    if str(state.get("status") or "").strip().lower() in {"draft", "pending"}:
+        payload["status"] = "in-progress"
+    return payload, anchor, comment, existing
+
+
 def _record_landing_comment(
     *,
     project: str,
@@ -1426,6 +1459,7 @@ def _record_landing_comment(
     worker_tree: Path | None = None,
     worker_commits: Iterable[str] = (),
     landing: str = "",
+    plan_locked: bool = False,
 ) -> dict[str, Any]:
     """Append one idempotent section comment for a promoted run.
 
@@ -1452,40 +1486,34 @@ def _record_landing_comment(
     body_text = landing or narrative
     if not body_text or not plan:
         return {"recorded": False, "reason": "empty_narrative"}
-    comment_id = f"{RUN_COMMENT_PREFIX}{re.sub(r'[^A-Za-z0-9._-]+', '-', run_id)}"
-    anchor = section_anchor(section)
-    desired_body = f"<p>{html.escape(body_text)}</p>"
-    worker_recorded = bool(
-        not landing
-        and worker_tree
-        and _worker_authored_landing_record(
-            tree=worker_tree,
-            commits=worker_commits,
-            project=project,
-            plan=plan,
-            comment_id=comment_id,
-        )
-    )
-    # A plan's status is set by hand, so nothing moves it when work starts. The
-    # first landing is the moment work has demonstrably begun, and this append
-    # is already a versioned read-modify-write of the plan, so the flip rides in
-    # the same write rather than costing a second one. Only a plan that still
-    # reads ``draft`` or ``pending`` moves; every other status — ``active``,
-    # ``blocked``, the terminal states — is authored and left alone.
-    in_progress_states = frozenset({"draft", "pending"})
+    worker_recorded: bool | None = None
     for _attempt in range(4):
         state, version = _store.read_plan(project, plan, root, artifact_type="plan")
         if not state or state.get("type") != "plan":
             return {"recorded": False, "reason": "plan_unavailable"}
-        started = str(state.get("status") or "").strip().lower() in in_progress_states
-        comments = {
-            key: list(items) for key, items in (state.get("comments") or {}).items()
-        }
-        items = comments.setdefault(anchor, [])
-        existing = next(
-            (item for item in items if str(item.get("id") or "") == comment_id),
-            None,
+        payload, anchor, comment, existing = _landing_comment_update(
+            state,
+            section=section,
+            run_id=run_id,
+            narrative=body_text,
+            author=author,
+            when=when,
         )
+        comment_id = comment["id"]
+        desired_body = comment["body"]
+        started = payload.get("status") != state.get("status")
+        if worker_recorded is None:
+            worker_recorded = bool(
+                not landing
+                and worker_tree
+                and _worker_authored_landing_record(
+                    tree=worker_tree,
+                    commits=worker_commits,
+                    project=project,
+                    plan=plan,
+                    comment_id=comment_id,
+                )
+            )
         if existing is not None:
             if worker_recorded:
                 return {
@@ -1563,26 +1591,18 @@ def _record_landing_comment(
                 "section": anchor,
                 "reason": "worker_authored_landing_record",
             }
-        items.append(
-            {
-                "id": comment_id,
-                "who": author,
-                "when": when,
-                "body": desired_body,
-            }
-        )
-        payload: dict[str, Any] = {**state, "comments": comments}
-        if started:
-            payload["status"] = "in-progress"
         try:
-            _store.write_plan(
-                project,
-                plan,
-                payload,
-                version,
-                root,
-                artifact_type="plan",
-            )
+            if plan_locked:
+                # Promotion owns the plan lock through its commit or rollback.
+                # Reuse the store's locked writer without reacquiring that lock.
+                _store._write_state_locked(
+                    project, plan, payload, version, root, artifact_type="plan"
+                )
+                _store.advance_write_generation(project)
+            else:
+                _store.write_plan(
+                    project, plan, payload, version, root, artifact_type="plan"
+                )
         except _store.VersionConflict:
             continue
         # The status is reported only when this write flipped it, so a landing

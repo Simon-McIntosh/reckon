@@ -2008,34 +2008,28 @@ def _record_comment_with_snapshot(
             state = _store._state_from_text(
                 kwargs["project"], snapshot.content.decode("utf-8"), kwargs.get("root")
             )
-            comments = {
-                key: list(entries)
-                for key, entries in (state.get("comments") or {}).items()
-            }
-            entries = comments.setdefault(section_anchor(kwargs["section"]), [])
-            comment_id = f"{RUN_COMMENT_PREFIX}{re.sub(r'[^A-Za-z0-9._-]+', '-', snapshot.run_id)}"
-            if not any(entry.get("id") == comment_id for entry in entries):
-                entries.append(
-                    {
-                        "id": comment_id,
-                        "who": kwargs["author"],
-                        "when": kwargs["when"],
-                        "body": f"<p>{html.escape(narrative)}</p>",
-                    }
-                )
+            from reckon.crew.promotion_scope import _landing_comment_update
+
+            payload, _anchor, _comment, existing = _landing_comment_update(
+                state,
+                section=kwargs["section"],
+                run_id=snapshot.run_id,
+                narrative=narrative,
+                author=kwargs["author"],
+                when=kwargs["when"],
+            )
+            if existing is None:
                 payload = {
-                    **state,
-                    "comments": comments,
+                    **payload,
                     "version": int(state.get("version") or 0) + 1,
                     "modified": _store.date.today().isoformat(),
                 }
-                if state.get("status") in {"draft", "pending"}:
-                    payload["status"] = "in-progress"
                 snapshot.expected_content = _plan_html.write_state(
                     snapshot.content.decode("utf-8"),
                     payload,
                     drop_authored_impl_meta=True,
                 ).encode("utf-8")
+        kwargs["plan_locked"] = True
     return _record_landing_comment(**kwargs)
 
 
@@ -2044,61 +2038,59 @@ def _commit_with_plan_snapshot(
 ) -> dict:
     if snapshot is None:
         return _commit_landing_writes(**kwargs)
-    # The commit helper may roll back its staging. Keep an editor out of that
-    # interval too, so that rollback cannot erase a concurrent plan write.
-    with _store._serialized_path_lock(snapshot.path, "plans"):
-        current = snapshot.path.read_bytes()
-        checkpoint = snapshot
-        try:
-            snapshot.require_owned_content(current)
-        except CrewError:
-            from bs4 import BeautifulSoup
+    # The outer snapshot guard holds the plan lock through commit and rollback.
+    current = snapshot.path.read_bytes()
+    checkpoint = snapshot
+    try:
+        snapshot.require_owned_content(current)
+    except CrewError:
+        from bs4 import BeautifulSoup
 
-            from reckon import _plan_html
+        from reckon import _plan_html
 
-            if snapshot.expected_content is None:
-                raise
-            intended = _plan_html.read_state(snapshot.expected_content.decode("utf-8"))
-            actual = _plan_html.read_state(current.decode("utf-8"))
-            merged = _store._comment_append_onto_current(actual, intended)
-            held_comments = actual.get("comments") or {}
-            kept = all(
-                entry in held_comments.get(section, [])
-                for section, entries in (intended.get("comments") or {}).items()
-                for entry in entries
-            )
-            rendered = _plan_html.write_state(
-                snapshot.expected_content.decode("utf-8"),
-                actual,
-                drop_authored_impl_meta=True,
-            ).encode("utf-8")
-            same_document = BeautifulSoup(
-                rendered.decode("utf-8"), "html.parser"
-            ) == BeautifulSoup(current.decode("utf-8"), "html.parser")
-            if merged is None or not kept or not same_document:
-                raise
-            # A commutative peer append may land with this run. Its full bytes
-            # and staging become the commit's rollback target, never the older
-            # snapshot that predates the peer's comment.
-            checkpoint = replace(
-                snapshot,
-                content=current,
-                mode=snapshot.path.stat().st_mode,
-                index=snapshot.index_entry(),
-                expected_content=current,
-                rollback_content=None,
-                commit_attempted=False,
-            )
-        checkpoint.require_owned_index(current)
-        checkpoint.commit_attempted = True
-        try:
-            return _commit_landing_writes(**kwargs)
-        except BaseException:
-            if checkpoint.path.read_bytes() == checkpoint.head_content:
-                checkpoint.rollback_content = checkpoint.head_content
-            if checkpoint is not snapshot:
-                checkpoint.restore(plan_locked=True)
+        if snapshot.expected_content is None:
             raise
+        intended = _plan_html.read_state(snapshot.expected_content.decode("utf-8"))
+        actual = _plan_html.read_state(current.decode("utf-8"))
+        merged = _store._comment_append_onto_current(actual, intended)
+        held_comments = actual.get("comments") or {}
+        kept = all(
+            entry in held_comments.get(section, [])
+            for section, entries in (intended.get("comments") or {}).items()
+            for entry in entries
+        )
+        rendered = _plan_html.write_state(
+            snapshot.expected_content.decode("utf-8"),
+            actual,
+            drop_authored_impl_meta=True,
+        ).encode("utf-8")
+        same_document = BeautifulSoup(
+            rendered.decode("utf-8"), "html.parser"
+        ) == BeautifulSoup(current.decode("utf-8"), "html.parser")
+        if merged is None or not kept or not same_document:
+            raise
+        # A commutative peer append may land with this run. Its full bytes
+        # and staging become the commit's rollback target, never the older
+        # snapshot that predates the peer's comment.
+        checkpoint = replace(
+            snapshot,
+            content=current,
+            mode=snapshot.path.stat().st_mode,
+            index=snapshot.index_entry(),
+            expected_content=current,
+            rollback_content=None,
+            commit_attempted=False,
+        )
+    checkpoint.require_owned_index(current)
+    checkpoint.commit_attempted = True
+    try:
+        return _commit_landing_writes(**kwargs)
+    except BaseException:
+        if checkpoint.path.read_bytes() == checkpoint.head_content:
+            checkpoint.rollback_content = checkpoint.head_content
+        if checkpoint is not snapshot:
+            checkpoint.restore(plan_locked=True)
+        raise
 
 
 def _preserve_plan_on_refusal(promote: Callable[..., dict[str, Any]]) -> Callable:
@@ -2141,22 +2133,22 @@ def _preserve_plan_on_refusal(promote: Callable[..., dict[str, Any]]) -> Callabl
                     checkout, "show", f"HEAD:{path.relative_to(checkout).as_posix()}"
                 ).stdout.encode("utf-8"),
             )
-        kwargs["_plan_snapshot"] = snapshot
-        try:
-            return promote(run_id, **kwargs)
-        except BaseException as exc:
-            # A committed landing survives a cleanup failure. Rewinding its
-            # plan here would stage a reversal of a commit that already landed.
-            if snapshot.committed_entry() != snapshot.head_entry:
-                raise
+            kwargs["_plan_snapshot"] = snapshot
             try:
-                snapshot.restore()
-            except (CrewError, OSError) as restore_error:
-                message = f"{exc}; could not restore plan document and index entry {path}: {restore_error}"
-            else:
-                message = f"{exc}; restored plan document, version and index entry {path} to their pre-promotion state"
-            exc.args = (message,)
-            raise
+                return promote(run_id, **kwargs)
+            except BaseException as exc:
+                # A committed landing survives a cleanup failure. Rewinding its
+                # plan here would stage a reversal of a commit that already landed.
+                if snapshot.committed_entry() != snapshot.head_entry:
+                    raise
+                try:
+                    snapshot.restore(plan_locked=True)
+                except (CrewError, OSError) as restore_error:
+                    message = f"{exc}; could not restore plan document and index entry {path}: {restore_error}"
+                else:
+                    message = f"{exc}; restored plan document, version and index entry {path} to their pre-promotion state"
+                exc.args = (message,)
+                raise
 
     return guarded
 
