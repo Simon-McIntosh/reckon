@@ -1,0 +1,141 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_independence": "No added assertion compares a value against the variable the test handed in: the byte allowance is the done-when's own fixture constant, the record counters assert only that the instrument saw something, and both summary comparisons take their other side from a fresh read of the file (tests/test_the_parsed_stream_cache_keeps_what_the_next_pass_asks_for.py:122 and :265) rather than from the cache's own report. The one input taken from the code under test is the truncated-stream case's `state`, read from observe_log at :237 and passed back as `resume`; the compared outputs still come from the file's own lines, so a broken state carry would not make that assertion hold.",
+  "assertion_reviews": [
+    {
+      "assertion": "assert population > _backends._PARSED_STREAM_LIMIT",
+      "failure_condition": "Shrinking STREAM_COUNT or STREAM_BYTES below the 32 MB bound reddens it, so the case cannot pass vacuously over a population the bound already holds.",
+      "file": "tests/test_the_parsed_stream_cache_keeps_what_the_next_pass_asks_for.py",
+      "line": 151
+    },
+    {
+      "assertion": "assert recorder.bytes <= SECOND_PASS_ALLOWANCE",
+      "failure_condition": "Any second pass that re-parses a stream from its first byte reddens it; negative-control-base.log records 125,562,900 B against the 36,000 B allowance with `1 failed` and EXIT=1 at b3a277e1, and the counter is taken at the parse boundary rather than read back from the cache.",
+      "file": "tests/test_the_parsed_stream_cache_keeps_what_the_next_pass_asks_for.py",
+      "line": 178
+    },
+    {
+      "assertion": "assert recorder.records >= STREAM_COUNT",
+      "failure_condition": "A cache that answers the second pass with no parse at all reddens it, which stops the byte allowance passing by answering nothing.",
+      "file": "tests/test_the_parsed_stream_cache_keeps_what_the_next_pass_asks_for.py",
+      "line": 184
+    },
+    {
+      "assertion": "assert summary == _whole_reading(path)",
+      "failure_condition": "A resumed summary that drops the records before its cursor, or folds the append twice, disagrees with observe_stream over lines the test read from the file itself (line 136), so the other side of the comparison is not produced by the code under test.",
+      "file": "tests/test_the_parsed_stream_cache_keeps_what_the_next_pass_asks_for.py",
+      "line": 190
+    },
+    {
+      "assertion": "assert [event['message']['id'] for event in whole] == [f'msg_{index:06d}' for index in range(43)]",
+      "failure_condition": "A whole request answered from a tail entry reddens it; negative-control-repairs.log records exactly that answer (msg_000040..msg_000042) at the mutation that removes the whole flag from both early returns.",
+      "file": "tests/test_the_parsed_stream_cache_keeps_what_the_next_pass_asks_for.py",
+      "line": 221
+    },
+    {
+      "assertion": "assert resumed.as_dict() == fresh.as_dict()",
+      "failure_condition": "A resume that seeks past a truncated stream's end and returns the carried state reddens it; the cited log shows that failure, but against an earlier revision's test text (see the finding at line 265).",
+      "file": "tests/test_the_parsed_stream_cache_keeps_what_the_next_pass_asks_for.py",
+      "line": 267
+    },
+    {
+      "assertion": "assert recorder.bytes == len(appended.encode('utf-8'))",
+      "failure_condition": "Re-reading the held stream on a whole request reddens it; negative-control-join.log records 17,673 B against the 1,236 B it gained.",
+      "file": "tests/test_the_parsed_stream_cache_keeps_what_the_next_pass_asks_for.py",
+      "line": 295
+    },
+    {
+      "assertion": "assert (events, malformed) == (whole, whole_malformed) or any((events, malformed) == (gained[start:], 0) for start in range(len(gained)))",
+      "failure_condition": "An answer carrying a record the worker did not append, repeating one, or answering with no records reddens it; a suffix starting past the read's true boundary, including one missing the earliest appended record, passes (see the finding at tests/test_watch_stream_parse_is_cached.py:240).",
+      "file": "tests/test_watch_stream_parse_is_cached.py",
+      "line": 240
+    }
+  ],
+  "call_sites": [
+    "reckon/_backends.py:4658",
+    "reckon/crew/dispatch_sessions.py:1197",
+    "reckon/crew/recovery_stream.py:837",
+    "reckon/_backends.py:4072",
+    "reckon/_backends.py:4153",
+    "reckon/_backends.py:4187"
+  ],
+  "completed_at": "2026-11-17T22:33:46.323Z",
+  "dispatched_at": "2026-11-17T22:33:12Z",
+  "evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_parsed_stream_cache_keeps_what_the_next_pass_asks_for.py tests/test_watch_stream_parse_is_cached.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T160042100946-the-parsed-stream-cache-keeps-what-the-next-pass-asks-for/after-suite-local.log",
+      "revision": "1b6e22535796ffa9388db0f099e9a803a4591973"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T160042100946-the-parsed-stream-cache-keeps-what-the-next-pass-asks-for/baseline-suite-local.log",
+      "revision": "b3a277e1a63c181bf0deb2a7127b43e37bbc3718"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/_backends.py",
+      "line": "3816",
+      "severity": "non-blocking",
+      "text": "non-blocking: `resume = grows and (joined or not whole)` is the only place the summary cursor answers a read, and it needs whole=False, which no production caller passes - reckon/_backends.py:4658, reckon/crew/dispatch_sessions.py:1197 and reckon/crew/recovery_stream.py:837 all pass whole=True - so the delivery s88 names (a steady tick re-parses only streams that grew) is unchanged at this head: the run's own RCA records the tick row at 12,084 B at both revisions and the unfolded-reader row at 126.8 MB at head, so closing s88 on this head would record the 42.7% census row as addressed when it is not. This repeats a non-blocking finding of the reviews at faef3e5499 and 1a015d15eb, now measurable: the first-ranked reader gains only the whole-entry join."
+    },
+    {
+      "file": "reckon/_backends.py",
+      "line": "3698",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_StreamCursor.as_resume` has no caller - a search for the name over the head tree returns one occurrence, its own definition - so an accessor added beside the resume work is dead code in the module the census ranks first."
+    },
+    {
+      "file": "docs/research/monitor-storage-load-rca.html",
+      "line": "550",
+      "severity": "non-blocking",
+      "text": "non-blocking: line 550 names `cached_stream_events` \"the census's first-ranked reader: it is entered for a reader the summary has not folded yet, and by observe_log's own fallback\", and the table under it credits that reader with 126,806,578 B -> 12,296 B; at this head the fallback at reckon/_backends.py:4658 passes whole=True, so the production entry lands on the 126.8 MB row rather than the 12,296 B row the paragraph attributes to it."
+    },
+    {
+      "file": "tests/test_watch_stream_parse_is_cached.py",
+      "line": "240",
+      "severity": "non-blocking",
+      "text": "non-blocking: the widened disjunction accepts `(events, malformed) == (gained[start:], 0)` for any start, so a resumed answer that drops the earliest records a worker appended still passes; the exact comparison against the whole read that this replaces was the guard, and negative-control-dropped-record.log reddens only because that instance answered with no records at all."
+    },
+    {
+      "file": "tests/test_the_parsed_stream_cache_keeps_what_the_next_pass_asks_for.py",
+      "line": "267",
+      "severity": "non-blocking",
+      "text": "non-blocking: the truncated-stream case's cited negative control (negative-control-resume-bound.log, named on the reviewed manifest's negative_control_note line 26) was captured against test text calling `_backends._STREAM_CURSORS.clear()` and `_backends._PARSED_STREAM_LOCK`, a store this head does not carry (a search for `_STREAM_CURSORS` over reckon/_backends.py at 1b6e2253 returns nothing), so that red is not this head's guard; the guard it names is present at reckon/_backends.py:4643 (`cursor.offset <= info.st_size`) but no head-revision log shows it refusing."
+    },
+    {
+      "file": "manifest.md",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "non-blocking: the reviewed run's manifest `tests:` line omits tests/test_watch_stream_parse_is_cached.py while its own `after_suite` command and after-suite-local.log's `# command:` header both carry it and the log's summary reads `65 passed`; promotion fills its gate receipt from the `tests:` line, so the receipt would cite a command that was not the head arm this run measured."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed goal is \"Keep every live stream's resume state in the parsed-stream cache so a steady tick re-parses only grown streams\"; reckon/_backends.py:3736 keeps one _StreamCursor per path in the count-bounded _STREAM_SUMMARIES and :3816 resumes a read from it, but every production entry passes whole=True (reckon/_backends.py:4658, reckon/crew/dispatch_sessions.py:1197, reckon/crew/recovery_stream.py:837), so the tick cost the RCA tables at 12,084 B reads the same at both revisions.\nVERDICT done_when: the done-when's sixty-stream fixture is tests/test_the_parsed_stream_cache_keeps_what_the_next_pass_asks_for.py:151-190, which asserts the 60 x 600 B second-pass allowance at :178 and every summary against a fresh whole read at :190, with :184 preventing the allowance passing by parsing nothing; negative-control-base.log runs the same file at b3a277e1 and reddens it with 125,562,900 B parsed and EXIT=1.\nVERDICT write_paths: the reviewed run declares reckon/_backends.py, its new test, the RCA and two evidence paths; the diff carries six paths, of which reckon/crew/dispatch_sessions.py:1197, reckon/crew/recovery_stream.py:837 and tests/test_watch_stream_parse_is_cached.py:193-243 are outside the declared set, the first two because a whole reader must now ask for the whole stream.\nVERDICT manifest: read; it records the base arm 58 passed EXIT=0 at b3a277e1 and the head arm 65 passed EXIT=0 at 1b6e2253, matching baseline-suite-local.log and after-suite-local.log, and its `tests:` line at manifest.md:12 omits tests/test_watch_stream_parse_is_cached.py, which its after_suite command and the log's header both carry.\nVERDICT diff: read commit by commit over b3a277e1..1b6e2253 (0b2bab93, faef3e54, 1a015d15, c49591ff, d2b53953, 1b6e2253); reckon/_backends.py +271/-104 extracts _StreamCursor, resumes an evicted stream from the summary cursor, joins a held whole entry on growth and publishes summary records with that cursor, the new test adds 300 lines, the sibling test 23, the RCA 69, and two one-line whole=True additions carry no other change.\nCALL_SITES: reckon/_backends.py:4658, reckon/crew/dispatch_sessions.py:1197, reckon/crew/recovery_stream.py:837, reckon/_backends.py:4072, reckon/_backends.py:4153, reckon/_backends.py:4187\nSCORE goal_fidelity: 12\nJUSTIFICATION goal_fidelity: reckon/_backends.py:3816 gates the resume on whole=False, which no production caller passes, so the steady tick's parse cost is unchanged at this head.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_the_parsed_stream_cache_keeps_what_the_next_pass_asks_for.py:178 counts parsed bytes at the parse boundary and its base arm reds in negative-control-base.log, while manifest.md:12 names a head command that differs from the one after-suite-local.log ran.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: reckon/crew/dispatch_sessions.py:1197 and reckon/crew/recovery_stream.py:837 sit outside the declared write paths, though both edits are forced by the new tail answer.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_the_parsed_stream_cache_keeps_what_the_next_pass_asks_for.py:190 reddens on a resumed summary that forgets its earlier records, but tests/test_watch_stream_parse_is_cached.py:240 was widened to accept any suffix of the appended records and the truncated-resume control was captured against a revision this head does not carry.\nSCORE fit: 17\nJUSTIFICATION fit: the frozen _StreamCursor at reckon/_backends.py:3636 and the _resume_cursor/_remember_summary_cursor helpers follow the module's existing private-dataclass and helper idiom, at the cost of the uncalled as_resume at :3698.\nSCORE reuse: 20\nJUSTIFICATION reuse: the cursor is added to _StreamSummary at reckon/_backends.py:3931, the count-bounded per-path store the plan review at docs/state/reckon/reviews/plan/the-monitor-reads-each-fact-once/r-20261117T155747863512-plan-review-of-the-monitor-reads-each-fact-once.json:9-10 names as the owner, rather than a second resume store.\nFINDING reckon/_backends.py:3816 non-blocking: `resume = grows and (joined or not whole)` is the only place the summary cursor answers a read, and it needs whole=False, which no production caller passes - reckon/_backends.py:4658, reckon/crew/dispatch_sessions.py:1197 and reckon/crew/recovery_stream.py:837 all pass whole=True - so the delivery s88 names (a steady tick re-parses only streams that grew) is unchanged at this head: the run's own RCA records the tick row at 12,084 B at both revisions and the unfolded-reader row at 126.8 MB at head, so closing s88 on this head would record the 42.7% census row as addressed when it is not. This repeats a non-blocking finding of the reviews at faef3e5499 and 1a015d15eb, now measurable: the first-ranked reader gains only the whole-entry join.\nFINDING reckon/_backends.py:3698 non-blocking: `_StreamCursor.as_resume` has no caller - a search for the name over the head tree returns one occurrence, its own definition - so an accessor added beside the resume work is dead code in the module the census ranks first.\nFINDING docs/research/monitor-storage-load-rca.html:550 non-blocking: line 550 names `cached_stream_events` \"the census's first-ranked reader: it is entered for a reader the summary has not folded yet, and by observe_log's own fallback\", and the table under it credits that reader with 126,806,578 B -> 12,296 B; at this head the fallback at reckon/_backends.py:4658 passes whole=True, so the production entry lands on the 126.8 MB row rather than the 12,296 B row the paragraph attributes to it.\nFINDING tests/test_watch_stream_parse_is_cached.py:240 non-blocking: the widened disjunction accepts `(events, malformed) == (gained[start:], 0)` for any start, so a resumed answer that drops the earliest records a worker appended still passes; the exact comparison against the whole read that this replaces was the guard, and negative-control-dropped-record.log reddens only because that instance answered with no records at all.\nFINDING tests/test_the_parsed_stream_cache_keeps_what_the_next_pass_asks_for.py:267 non-blocking: the truncated-stream case's cited negative control (negative-control-resume-bound.log, named on the reviewed manifest's negative_control_note line 26) was captured against test text calling `_backends._STREAM_CURSORS.clear()` and `_backends._PARSED_STREAM_LOCK`, a store this head does not carry (a search for `_STREAM_CURSORS` over reckon/_backends.py at 1b6e2253 returns nothing), so that red is not this head's guard; the guard it names is present at reckon/_backends.py:4643 (`cursor.offset <= info.st_size`) but no head-revision log shows it refusing.\nFINDING manifest.md:12 non-blocking: the reviewed run's manifest `tests:` line omits tests/test_watch_stream_parse_is_cached.py while its own `after_suite` command and after-suite-local.log's `# command:` header both carry it and the log's summary reads `65 passed`; promotion fills its gate receipt from the `tests:` line, so the receipt would cite a command that was not the head arm this run measured.\n",
+  "review_run_id": "r-20261117T223103226936-review-of-the-parsed-stream-cache-keeps-what-the-next-pass-asks-for-1b6e22535796",
+  "reviewed_base_sha": "b3a277e1a63c181bf0deb2a7127b43e37bbc3718",
+  "reviewed_head_sha": "1b6e22535796ffa9388db0f099e9a803a4591973",
+  "reviewed_run_id": "r-20261117T160042100946-the-parsed-stream-cache-keeps-what-the-next-pass-asks-for",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 12,
+    "reuse": 20,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T23:08:29.475670+00:00",
+  "total": 93
+}
