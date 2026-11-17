@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="369">
+<meta name="plan-version" content="370">
 <meta name="plan-modified" content="2026-11-17">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -1192,7 +1192,10 @@
     <div class="r-comment-body"><p>§29 file tests/test_the_lander_reads_a_figure_review_through_its_owner.py passes in full: 4 failed, 1 passed at 1edf1b0dba against 5 passed at 6abccc51b2 as all_debug job 1319272; verdict product wrong, `_changed_figure_paths` read an uncomparable own-commit range as an empty delta so no figure tier was ever owed, and it now reads the base-to-head pair; both suite arms read 58 passed.</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261116T031815153386-qwnw-red-file-the-consequence-gate-runs-the-nodes-tests" data-who="reckon-build" data-when="2026-11-16T08:23:21.200Z">
-    <div class="r-comment-body"><p>repaired tests/test_the_consequence_gate_runs_the_nodes_tests.py&#x27;s fixture into a run the product can promote — real base and head commits, the node&#x27;s own test files present in the tree, and the head cited — so the file goes from 5 failed / 9 passed at base ee93819a to 14 passed at head</p></div>
+    <div class="r-comment-body"><p>repaired tests/test_the_consequence_gate_runs_the_nodes_tests.py's fixture into a run the product can promote — real base and head commits, the node's own test files present in the tree, and the head cited — so the file goes from 5 failed / 9 passed at base ee93819a to 14 passed at head</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261116T104414994203-qwnw-red-file-reserved-lane-window-reading" data-who="reckon-build" data-when="2026-11-16T11:25:02.491Z">
+    <div class="r-comment-body"><p>The reserved-lane window file&#x27;s four red expectations were stale, not a product defect: at the 60% reserved-lane ceiling, on an unknown window reading, and on a routine pick below the tier floor, the Claude CLI reservation still withholds the lane (snapshot.py&#x27;s `enforce_reservation = policy_family == &quot;claude&quot;`, five passing cases in tests/test_picker_reserved_lanes.py), so the four expectations were restored to withheld and the routine pick also asserts the policy&#x27;s own reason; tests/test_reserved_lane_window_reading.py goes from 4 failed to 14 passed in 1.6s on all_debug.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
