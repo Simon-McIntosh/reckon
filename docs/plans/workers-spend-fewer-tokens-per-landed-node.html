@@ -24,8 +24,8 @@
   <title>Workers Spend Fewer Tokens Per Landed Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="82">
-<meta name="plan-modified" content="2026-11-16">
+<meta name="plan-version" content="83">
+<meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
   <main class="plan-doc">
@@ -289,6 +289,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-11-11T06:45:00Z">
     <div class="r-comment-body"><p>§9 landed at <code>fcec1e7f5b06</code>: a node writing a data fixture under <code>tests/</code> can now be promoted. <a href="/reckon/evidence/archive/workers-spend-fewer-tokens-per-landed-node-landed.html#s9-armed-suite-collectible-tests">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261117T082623623266-replay-omp-local-ab-s9" data-who="reckon-build" data-when="2026-11-17T08:28:05.416Z">
+    <div class="r-comment-body"><p>§9 landed: the armed suite command now names only files pytest collects — a one-place predicate `is_collectible_test_path` in `reckon/crew/node.py` (pytest&#x27;s defaults `test_*.py` / `*_test.py`, since this project declares no `python_files`) beside the dispatcher&#x27;s `is_test_path`, used by `_node_test_files` and by `_landing_test_files`&#x27;s changed-path fallback, with `_suite_gate_prompt_body` stating the narrowed rule. At b80df254 a scope holding `tests/fixtures/omp-stream.jsonl` resolved to `pytest -q tests/fixtures/omp-stream.jsonl tests/test_x.py` and pytest exited 4 on the fixture; at head the same shape resolves to `pytest -q tests/test_x.py`, and a fixture-bearing scope plus the census runs 51 passed, EXIT=0, naming no fixture. Five tests in `tests/test_armed_suite_collectible_tests.py`: a mixed scope names only `tests/test_x.py`; a fixture-only scope names no node test file and still carries the census; a fixture-only delivery names nothing at landing; `is_test_path` still returns true for the fixture; and the armed command and the compared command agree.</p></div>
 </div>
 </section>
 </main>
