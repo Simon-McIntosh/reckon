@@ -218,6 +218,8 @@ capability_raise:
 
 worktree:
   cleanup: conservative
+  node_tmp_reserve_bytes: 8589934592
+  node_tmp_sample_max_age_seconds: 180
   scratch_min_free_bytes: 5368709120
   scratch_min_free_pct: 10
 
@@ -231,3 +233,8 @@ summary:
 ticker:
   history_rows: 100
   history_window: 4h
+
+# Session files use local disk; excess use names the session and its largest directory.
+session_scratch:
+  max_bytes: 2147483648
+  disk_share: 0.5

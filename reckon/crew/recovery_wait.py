@@ -6,9 +6,11 @@ import json
 import os
 import re
 import subprocess
+import threading
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
+from reckon import file_memo
 from reckon.capabilities import _charged_input_from_usage
 from reckon.crew import runs
 from reckon.crew.node import (
@@ -92,6 +94,7 @@ class _StreamScan:
     """
 
     __slots__ = (
+        "append_offset",
         "assistant_offset",
         "assistant_seen",
         "inode",
@@ -105,6 +108,7 @@ class _StreamScan:
 
     def __init__(self, inode: int) -> None:
         self.inode = inode
+        self.append_offset = 0
         self.assistant_offset = 0
         self.assistant_seen = False
         self.tool_offset = 0
@@ -116,7 +120,12 @@ class _StreamScan:
 
     def covered(self) -> int:
         """The end of the stream this scan has read through."""
-        return max(self.assistant_offset, self.tool_offset, self.record_offset)
+        return max(
+            self.append_offset,
+            self.assistant_offset,
+            self.tool_offset,
+            self.record_offset,
+        )
 
 
 # What each scanned stream taught the readers of its own bytes, keyed by the
@@ -126,6 +135,10 @@ class _StreamScan:
 # whole at its bound, as the stream listing beside it is.
 _STREAM_SCANS: dict[str, _StreamScan] = {}
 _STREAM_SCANS_LIMIT = 4096
+# A scan record's offsets are advanced by whichever reader last read its path,
+# and a sweep and a classification can do that at once; the record store is
+# small enough that one lock for both is the whole of the synchronization.
+_STREAM_SCANS_LOCK = threading.Lock()
 
 
 def _stream_scan(path: Path) -> _StreamScan | None:
@@ -140,18 +153,43 @@ def _stream_scan(path: Path) -> _StreamScan | None:
     except OSError:
         return None
     key = str(path)
-    scan = _STREAM_SCANS.get(key)
-    if (
-        scan is not None
-        and scan.inode == info.st_ino
-        and info.st_size >= scan.covered()
-    ):
+    with _STREAM_SCANS_LOCK:
+        scan = _STREAM_SCANS.get(key)
+        if (
+            scan is not None
+            and scan.inode == info.st_ino
+            and info.st_size >= scan.covered()
+        ):
+            return scan
+        scan = _StreamScan(int(info.st_ino))
+        if len(_STREAM_SCANS) >= _STREAM_SCANS_LIMIT:
+            _STREAM_SCANS.clear()
+        _STREAM_SCANS[key] = scan
         return scan
-    scan = _StreamScan(int(info.st_ino))
-    if len(_STREAM_SCANS) >= _STREAM_SCANS_LIMIT:
-        _STREAM_SCANS.clear()
-    _STREAM_SCANS[key] = scan
-    return scan
+
+
+def appended_lines(path: Path) -> tuple[list[bytes], int, int]:
+    """The complete lines ``path`` appended since it was last read, and offsets.
+
+    Both an agent stream and a project's recovery record are append-only files
+    whose readers ask the same three things: what landed since their last read,
+    the offset those lines end at, and the offset this read began at. The last
+    of the three is what a caller compares with the offset it recorded to learn
+    that the file was replaced or shortened under it and its own accumulated
+    answer no longer stands.
+
+    A writer's unterminated last line is not consumed, so it is decoded once,
+    by the read that follows the bytes completing it.
+    """
+    scan = _stream_scan(path)
+    if scan is None:
+        return [], 0, 0
+    with _STREAM_SCANS_LOCK:
+        start = scan.append_offset
+    lines, offset = _appended_lines(path, start)
+    with _STREAM_SCANS_LOCK:
+        scan.append_offset = offset
+    return lines, offset, start
 
 
 def _appended_lines(path: Path, offset: int) -> tuple[list[bytes], int]:
@@ -261,6 +299,21 @@ def _last_tool_call(log: Path) -> tuple[str, str] | None:
 
 def _tail_tool_call(log: Path) -> tuple[tuple[str, str] | None, int]:
     """The last tool call in a stream, and the offset that read reached.
+
+    The answer is reused while the stream's bytes are unchanged. A tick asks
+    this of every live run, and the scan walks backwards until it finds a tool
+    call — the whole stream when there is none — so an unmemoised read makes
+    each tick's cost the fleet's stream volume rather than the bytes that
+    arrived since the last one. A stream that grew is a different file identity
+    and is read again.
+    """
+    return file_memo.memoized(
+        "stream_last_tool_call", log, lambda: _read_last_tool_call(log)
+    )
+
+
+def _read_last_tool_call(log: Path) -> tuple[str, str] | None:
+    """The tool call a stream most recently started, read from its end.
 
     Lines are taken newest first, and the first one that starts a tool call
     answers. A line that begins in an earlier block is carried back until its
@@ -1668,7 +1721,18 @@ def _stream_holds_assistant_record(path: Path) -> bool:
     has answered keeps that answer without reading at all. A line that does not
     parse is passed over, exactly as the tail read passes over one, so a
     trailing partial write is never read as a record that completed.
+
+    The answer is also memoized against the stream's identity, so a tick over a
+    quiet fleet opens no stream at all: the assistant record a run holds does
+    not stop existing between one tick and the next.
     """
+    return file_memo.memoized(
+        "stream_assistant_record", path, lambda: _scan_stream_assistant_record(path)
+    )
+
+
+def _scan_stream_assistant_record(path: Path) -> bool:
+    """Whether a stream holds at least one complete assistant record, scanned."""
     scan = _stream_scan(path)
     if scan is None:
         return False

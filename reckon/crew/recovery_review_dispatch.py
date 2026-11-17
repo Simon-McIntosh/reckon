@@ -1114,7 +1114,7 @@ def _queue_router_held_review(
         ((config.get("backends") or {}).get(backend) or {}).get("launch") or "cli"
     )
     queued_record = dispatch_module._queued_request_record(
-        run_id=_runs.new_run_id(node.id),
+        run_id=str(fields.get("receipt_run_id") or _runs.new_run_id(node.id)),
         project=str(fields["project"]),
         node=node,
         repo_root=Path(str(record.get("repo") or "")),
@@ -1178,7 +1178,7 @@ def _queue_review_without_producer(
         ),
     }
     queued_record = dispatch_module._queued_request_record(
-        run_id=_runs.new_run_id(node.id),
+        run_id=str(fields.get("receipt_run_id") or _runs.new_run_id(node.id)),
         project=project,
         node=node,
         repo_root=Path(str(record.get("repo") or "")),
@@ -1571,7 +1571,18 @@ _FIGURE_IMAGE_SUFFIXES = frozenset({".svg", ".png", ".jpg", ".jpeg", ".gif", ".w
 
 
 def _changed_figure_paths(record: Mapping[str, Any]) -> list[str]:
-    """Images below a figures directory that this run added or changed."""
+    """Images below a figures directory that this run added or changed.
+
+    An uncomparable own-commit range is not an empty one. The own-commit reader
+    answers ``None`` when there is no remote-tracking ref to exclude — a
+    repository with no remote at all — and reading that as an empty delta
+    reports no figure path for a run that changed one, so a lander owing a
+    figure review lands on evidence nobody read. The base-to-head pair is the
+    only comparison left then, so it is read instead. It can name a figure the
+    integration branch brought in as the run's own, which asks for a review of
+    a figure the run did not draw — the safe direction for a guard. The
+    reverse, no figure review owed for a changed figure, is a fail-open.
+    """
     tree = _review_tree(record)
     if tree is None:
         return []
@@ -1580,6 +1591,8 @@ def _changed_figure_paths(record: Mapping[str, Any]) -> list[str]:
     changed = clones.own_changed_paths(
         tree, base, head, integration_ref=_integration_ref(tree)
     )
+    if changed is None:
+        changed = _changed_paths_between(tree, base, head)
     if changed is None:
         return []
     images: list[str] = []
@@ -3214,7 +3227,10 @@ def _dispatch_text_review_for_run(
     if standing_report is not None:
         return standing_report
     row = classify_pointer(record)
-    if row["classification"] != "scoring":
+    from reckon.crew.pending_landing import pending_repair_head
+
+    repair_head = pending_repair_head(record)
+    if row["classification"] != "scoring" and not repair_head:
         return {
             "run_id": run_id,
             "dispatched": False,
@@ -3246,7 +3262,9 @@ def _dispatch_text_review_for_run(
     # lightly, scoped to the commits that changed runtime source. Only a run
     # with no review at all (or a move git cannot compare) falls through to the
     # full review below.
-    move = carry_review_forward(record, config=config)
+    # A merge resolution owes a review of the delivered resolution itself;
+    # carrying the parent's review would leave that resolution unread.
+    move = None if repair_head else carry_review_forward(record, config=config)
     if move is not None and move["carried"]:
         reason = (
             "the run gained only commits that change no runtime source, so its "
@@ -3309,7 +3327,9 @@ def _dispatch_figure_review_for_run(
     if not run_id or _is_review_node(record):
         return {"run_id": run_id, "dispatched": False, "reason": "not a scoring run"}
     row = classify_pointer(record)
-    if row["classification"] != "scoring":
+    from reckon.crew.pending_landing import pending_repair_head
+
+    if row["classification"] != "scoring" and not pending_repair_head(record):
         return {
             "run_id": run_id,
             "dispatched": False,
@@ -4062,6 +4082,14 @@ def _dispatch_composed_review(
     """Launch either review subject from the shared fields and dispatch path."""
     run_id = str(record.get("run_id") or "")
     dispatch_subject = record if record.get("subject") == "plan" else run_id
+    if not dry_run and record.get("subject") != "plan":
+        from reckon.crew.stage_receipts import record_stage
+
+        reviewer_id = runs.new_run_id(
+            str(fields.get("node_id") or f"review-of-{run_id}")
+        )
+        fields = {**fields, "receipt_run_id": reviewer_id}
+        record_stage(run_id, "review_requested", attempt=reviewer_id)
     if record.get("subject") != "plan":
         _list_write_grants_in_brief(record, fields)
     rubric = str(fields.get("rubric") or "")
@@ -4322,6 +4350,7 @@ def _dispatch_composed_review(
         }
     try:
         launched = dispatch_module.dispatch(
+            run_id=str(fields.get("receipt_run_id") or "") or None,
             node=node,
             project=project,
             repo=repo,

@@ -1,0 +1,100 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": {
+    "tautology_check": "No added assertion compares an API input directly to its unchanged echo and claims measurement coverage; fixture 73 is credited only for shell-to-persisted-column transport. Assertions inherited unchanged from the prior reviewed revision are not re-counted.",
+    "tests/test_fleet_health.py:224": "The extended literal header asserts source, session_scratch_bytes, then the four disk names; reverting the scratch column or placing it after disk makes the independently written literal differ from the emitted header.",
+    "tests/test_fleet_health_records_node_tmp.py:519": "The fixture emitter supplies 73 and the assertion reads the persisted CSV field by literal name; reverting the shell scratch argument or column placement yields 0, unknown, or a disk metric instead. This protects transport and schema alignment, not discovery of physical scratch usage.",
+    "tests/test_fleet_health_records_node_tmp.py:520": "Existing disk oracle 40 comes from a separate disk emitter; moving scratch into disk positions breaks it, so the scratch and disk values cannot silently shift together."
+  },
+  "call_site_count": 12,
+  "call_sites": [
+    "bin/fleet-health:93",
+    "bin/fleet-health:122",
+    "bin/fleet-health:129",
+    "reckon/crew/fleet_supervisor.py:3116",
+    "reckon/crew/fleet_supervisor.py:3762",
+    "reckon/crew/fleet_node.py:966",
+    "reckon/crew/admission/selection.py:128",
+    "reckon/crew/admission/selection.py:165",
+    "reckon/crew/admission/service.py:463",
+    "reckon/crew/admission/service.py:531",
+    "reckon/crew/obligations.py:4852",
+    "reckon/crew/obligation_snapshot.py:2154"
+  ],
+  "completed_at": "2026-11-17T16:20:56Z",
+  "dispatched_at": "2026-11-17T16:15:49Z",
+  "evidence_limits": "No reviewer suite rerun or mutation; scoped delta 0 is derived from the source baseline_suite/after_suite logs and is not a claim that all importer requirements or the live-hour observation passed.",
+  "failure_delta_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_health.py tests/test_fleet_health_records_node_tmp.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "cwd": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/fe0acb0a-56ea-447a-8357-bb11f3bf471c/node-disk-is-in-the-health-series",
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110445940804-node-disk-is-in-the-health-series/authorized-direct-after.log",
+      "measured_by": "worker",
+      "module": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/fe0acb0a-56ea-447a-8357-bb11f3bf471c/node-disk-is-in-the-health-series/reckon/crew/fleet_node.py",
+      "partition": "all_debug",
+      "revision": "e9c999bf21a4db0918a05db01f1075faf9cb6bd0",
+      "summary": "118 passed in 111.48s (0:01:51)"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_health.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "cwd": "/tmp/scratch-merge-baseline-6ipjl410/baseline",
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110445940804-node-disk-is-in-the-health-series/authorized-census-baseline.log",
+      "measured_by": "worker",
+      "module": "/tmp/scratch-merge-baseline-6ipjl410/baseline/reckon/crew/fleet_node.py",
+      "partition": "all_debug",
+      "revision": "45967c6c6399a70306ce0cd5cb106e6ed54e0c21",
+      "summary": "73 passed in 58.07s"
+    }
+  },
+  "findings": [],
+  "item_verdicts": {
+    "call_sites": "bin/fleet-health:93, bin/fleet-health:122, bin/fleet-health:129, reckon/crew/fleet_supervisor.py:3116, reckon/crew/fleet_supervisor.py:3762, reckon/crew/fleet_node.py:966, reckon/crew/admission/selection.py:128, reckon/crew/admission/selection.py:165, reckon/crew/admission/service.py:463, reckon/crew/admission/service.py:531, reckon/crew/obligations.py:4852, reckon/crew/obligation_snapshot.py:2154",
+    "diff": "Read f47e3df0cfc1f7a07caaef7798b74c3154c07ac7 and e9c999bf21a4db0918a05db01f1075faf9cb6bd0 against the previous reviewed head; first merge retains scratch and admission instrumentation from primary and reconciles disk columns, while the second adds no change in the 13 reviewed paths.",
+    "done_when": "Read source live node.done_when and the actual all_debug gate logs: baseline 73 passed and head 118 passed, but the broader importer no-added-failure requirement and live one-hour observation remain unmet.",
+    "goal": "Read source live node.goal and live plan section 5; bin/fleet-health:125 and fleet_node.py:195 keep disk metrics distinct after the scratch-column merge.",
+    "manifest": "Read source manifest.md, authorized-census-baseline.log, authorized-direct-after.log, the three authorized negative-control logs and authorized-refusals.log; their revision, module, completed summary and EXIT receipts support the scoped results.",
+    "write_paths": "Read the live node.write_paths and manifest orientation_write_paths; the delivered delta against named primary e3fd7bd3b2f6476652a67f9067e264b36b9d99e0 contains exactly the 13 granted source/schema/test paths."
+  },
+  "justifications": {
+    "durability": "tests/test_fleet_health_records_node_tmp.py:519 fails if scratch is omitted, shifted or mapped into disk fields, :520 independently catches disk displacement, and test_fleet_health.py:224 fails if the literal header loses or reorders either set.",
+    "evidence": "Source authorized-direct-after.log records 118 passing scoped tests and the authorized negative controls fail as intended, but source manifest.md discloses the unmet importer delta and the unrecorded live-hour measure.",
+    "fit": "fleet_node.py:195 extends the existing shared column owner and bin/fleet-health:125 extends its existing locked append path without adding plan-labelled source names.",
+    "goal_fidelity": "bin/fleet-health:125-129 emits scratch then four disk fields in the canonical fleet_node.py:195-199 order, while selection.py:165 retains the disk-reserve launch hold.",
+    "reuse": "Capability searches opened dispatch_admission.py:1769, fleet_supervisor.py:812, obligations.py:4412, admission/service.py:251 and picker/lane_context.py:120; merges retain those primary-owned mechanisms and add no parallel implementation.",
+    "scope_discipline": "The two merge commits reconcile granted files only relative to named primary, and the 220-path ancestral diff includes other primary work rather than node-authored scope expansion."
+  },
+  "prior_review_head": "09023f48c86c0aba2494a87476bb7975a6f0c95e",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read source live node.goal and live plan section 5; bin/fleet-health:125 and fleet_node.py:195 keep disk metrics distinct after the scratch-column merge.\nVERDICT done_when: Read source live node.done_when and the actual all_debug gate logs: baseline 73 passed and head 118 passed, but the broader importer no-added-failure requirement and live one-hour observation remain unmet.\nVERDICT write_paths: Read the live node.write_paths and manifest orientation_write_paths; the delivered delta against named primary e3fd7bd3b2f6476652a67f9067e264b36b9d99e0 contains exactly the 13 granted source/schema/test paths.\nVERDICT manifest: Read source manifest.md, authorized-census-baseline.log, authorized-direct-after.log, the three authorized negative-control logs and authorized-refusals.log; their revision, module, completed summary and EXIT receipts support the scoped results.\nVERDICT diff: Read f47e3df0cfc1f7a07caaef7798b74c3154c07ac7 and e9c999bf21a4db0918a05db01f1075faf9cb6bd0 against the previous reviewed head; first merge retains scratch and admission instrumentation from primary and reconciles disk columns, while the second adds no change in the 13 reviewed paths.\nCALL_SITES: bin/fleet-health:93, bin/fleet-health:122, bin/fleet-health:129, reckon/crew/fleet_supervisor.py:3116, reckon/crew/fleet_supervisor.py:3762, reckon/crew/fleet_node.py:966, reckon/crew/admission/selection.py:128, reckon/crew/admission/selection.py:165, reckon/crew/admission/service.py:463, reckon/crew/admission/service.py:531, reckon/crew/obligations.py:4852, reckon/crew/obligation_snapshot.py:2154\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: bin/fleet-health:125-129 emits scratch then four disk fields in the canonical fleet_node.py:195-199 order, while selection.py:165 retains the disk-reserve launch hold.\nSCORE evidence: 10\nJUSTIFICATION evidence: Source authorized-direct-after.log records 118 passing scoped tests and the authorized negative controls fail as intended, but source manifest.md discloses the unmet importer delta and the unrecorded live-hour measure.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The two merge commits reconcile granted files only relative to named primary, and the 220-path ancestral diff includes other primary work rather than node-authored scope expansion.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_fleet_health_records_node_tmp.py:519 fails if scratch is omitted, shifted or mapped into disk fields, :520 independently catches disk displacement, and test_fleet_health.py:224 fails if the literal header loses or reorders either set.\nSCORE fit: 20\nJUSTIFICATION fit: fleet_node.py:195 extends the existing shared column owner and bin/fleet-health:125 extends its existing locked append path without adding plan-labelled source names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches opened dispatch_admission.py:1769, fleet_supervisor.py:812, obligations.py:4412, admission/service.py:251 and picker/lane_context.py:120; merges retain those primary-owned mechanisms and add no parallel implementation.\n",
+  "reuse_analysis": "Scratch placement, filesystem classification, sampling, obligation routing, schema config and admission timing definitions enter through already-landed primary commits; the worker reconciles their owners with disk telemetry rather than inventing new definitions. Picker timing is an existing context-variable recorder; primary admission timing has stage-specific nested exclusive counts, and this review does not re-adjudicate that inherited implementation.",
+  "review_run_id": "r-20261117T161329319940-review-of-node-disk-is-in-the-health-series-e9c999bf21a4",
+  "review_scope": "Incremental first-parent merge review from the previous reviewed head, restricted to the 13 explicitly requested paths; reads pinned to the reviewed head, not the review worktree HEAD.",
+  "reviewed_base_sha": "09023f48c86c0aba2494a87476bb7975a6f0c95e",
+  "reviewed_commits": [
+    "f47e3df0cfc1f7a07caaef7798b74c3154c07ac7",
+    "e9c999bf21a4db0918a05db01f1075faf9cb6bd0"
+  ],
+  "reviewed_head_sha": "e9c999bf21a4db0918a05db01f1075faf9cb6bd0",
+  "reviewed_run_id": "r-20261117T110445940804-node-disk-is-in-the-health-series",
+  "scores": {
+    "durability": 20,
+    "evidence": 10,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T16:22:39.741554+00:00",
+  "total": 110
+}

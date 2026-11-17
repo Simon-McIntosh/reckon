@@ -1,0 +1,39 @@
+<section id="qwnw-red-file-crew-boundary-waiver-negative-control">
+<h2>Base revision: the boundary-waiver file runs red</h2>
+<p><code>tests/test_crew_boundary_waiver.py</code> at base revision
+<code>398015d5d5fb31e353d1e29a4d2d78324aac9d88</code> in a scratch clone of that
+revision: <strong>3 failed, 1 passed</strong>, exit 1. The three failing ids are
+<code>test_boundary_refusal_promotes_under_waiver_with_reason_and_paths</code>,
+<code>test_boundary_waiver_past_the_age_bound_names_no_referent</code> and
+<code>test_boundary_refusal_without_waiver_is_still_refused</code>. The fourth
+case, a waiver offered on a clean run, already passed because it is refused
+before the boundary walk is reached.</p>
+<pre># revision: 398015d5d5fb31e353d1e29a4d2d78324aac9d88
+# tree: /tmp/reckon-crew-scratch/r-20261116T104952278328-qwnw-red-file-crew-boundary-waiver/base-398015d5
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_boundary_waiver.py
+FFF.                                                                     [100%]
+FAILED tests/test_crew_boundary_waiver.py::test_boundary_refusal_promotes_under_waiver_with_reason_and_paths - reckon.crew.CrewError: run &#x27;r-main-tree-waived&#x27; has no repository-tree boundary violation for --waive-boundary-refusal &#x27;known-wrong verdict, fix incoming&#x27; to waive
+FAILED tests/test_crew_boundary_waiver.py::test_boundary_waiver_past_the_age_bound_names_no_referent - reckon.crew.CrewError: run &#x27;r-main-tree-stale&#x27; has no repository-tree boundary violation for --waive-boundary-refusal &#x27;accepting the boundary could not be checked&#x27; to waive
+FAILED tests/test_crew_boundary_waiver.py::test_boundary_refusal_without_waiver_is_still_refused - Failed: DID NOT RAISE CrewError
+3 failed, 1 passed in 2.45s
+EXIT=1</pre>
+<p>Raw log:
+<code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104952278328-qwnw-red-file-crew-boundary-waiver/logs/negative-control-base-gate.log</code>.</p>
+<h3>Cause and verdict</h3>
+<p>All three failures are one cause: the fixture declared and dirtied
+<code>allowed.txt</code>, an ordinary source file. Since a declared write path
+became advisory, a source path is shared by default, so the boundary walk reads
+a working-tree edit there as another session's concurrent work and charges
+nothing. With nothing charged, the refusal the third case expects never fires
+and the waiver the first two exercise; the walk reports "no repository-tree
+boundary violation".</p>
+<p><strong>Verdict: the test was wrong.</strong> The code keeps the rule the
+project declares: a declared write path fences nothing, and only the exclusive
+artifact classes — plan documents, generated state, cumulative evidence
+records, figure topic directories, dependency locks and binary receipts — still
+charge. The fixture now dirties generated state,
+<code>docs/state/sample/record.json</code>, one of those classes, and every
+assertion stands as it was written: the same violation string, the same
+recorded waiver, the same refusal when nothing was waived. No assertion was
+deleted or weakened.</p>
+</section>

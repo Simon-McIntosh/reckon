@@ -11,7 +11,7 @@ The state directory ``<config-home>/state/<project>`` is a symlink into
 ``<repo>/docs/state/<project>``. Each completed run owns a file under ``runs/``;
 exclusive creation keeps concurrent promotions independent and refuses a
 duplicate without rewriting history. Roster and hold edits use version-paired
-writes to their aggregate ledger.
+transactions in the run store, independently of the committed aggregate.
 
 Two rules shape everything here.
 
@@ -2352,6 +2352,69 @@ def indexed_headers(
     return load(project, root, headers_only=True)
 
 
+def load_auxiliary(
+    project: str, root: str | Path | None = None
+) -> tuple[dict[str, Any], int]:
+    """Read mutable state from its store, importing the aggregate only once."""
+    from reckon import run_store
+
+    result = []
+    run_store._retrying(
+        lambda store: result.append(
+            store.auxiliary(project, lambda: _load_aggregate(project, root))
+        )
+    )
+    return result[0]
+
+
+def _write_auxiliary(
+    project: str, data: Mapping[str, Any], expected_version: int
+) -> int:
+    from reckon import run_store
+
+    result = []
+    try:
+        run_store._retrying(
+            lambda store: result.append(
+                store.write_auxiliary(project, data, expected_version)
+            )
+        )
+    except _store.VersionConflict as exc:
+        raise LedgerError(str(exc)) from exc
+    return result[0]
+
+
+def write_members(
+    project: str,
+    entries: Sequence[Mapping[str, Any]],
+    expected_version: int,
+    root: str | Path | None = None,
+    *,
+    allow_member_removal: bool = False,
+) -> int:
+    """Replace a version-paired roster without writing a committed path."""
+    data, version = load_auxiliary(project, root)
+    if version != expected_version:
+        raise LedgerError(
+            f"roster version changed: expected {expected_version}, found {version}"
+        )
+    dropped = dropped_member_ids(data["members"], entries)
+    if dropped and not allow_member_removal:
+        raise LedgerError(
+            f"refusing to drop roster members {', '.join(dropped)}; pass allow_member_removal=True"
+        )
+    return _write_auxiliary(
+        project,
+        {
+            "members": sorted(
+                (dict(entry) for entry in entries),
+                key=lambda entry: str(entry.get("id", "")),
+            )
+        },
+        version,
+    )
+
+
 def _aggregate_headers(project: str, root: str | Path | None) -> tuple[dict, int]:
     """Read mutable collections without refreshing any run-file index.
 
@@ -2407,6 +2470,48 @@ def load(
     plan: str | None = None,
     run_ids: Iterable[str] | None = None,
 ) -> tuple[dict[str, Any], int]:
+    """Read history paired with its aggregate version and mutable projections.
+
+    The returned version belongs to the committed aggregate and pairs with
+    :func:`write`. ``auxiliary_version`` belongs to the projected roster and
+    holds; mutations pair the state and version from :func:`load_auxiliary`
+    with :func:`write_members` or the hold writer instead.
+    """
+    data, aggregate_version = _load_file_history(
+        project,
+        root,
+        picker_only,
+        use_index=use_index,
+        headers_only=headers_only,
+        activity_since=activity_since,
+        plan=plan,
+        run_ids=run_ids,
+    )
+    from reckon import run_store
+
+    stored_auxiliary = run_store.read_auxiliary(project)
+    auxiliary, auxiliary_version = stored_auxiliary or (
+        {"members": data["members"], "holds": data["holds"]},
+        aggregate_version,
+    )
+    return {
+        **data,
+        **auxiliary,
+        "auxiliary_version": auxiliary_version,
+    }, aggregate_version
+
+
+def _load_file_history(
+    project: str,
+    root: str | Path | None = None,
+    picker_only: bool = False,
+    *,
+    use_index: bool = True,
+    headers_only: bool = False,
+    activity_since: float | None = None,
+    plan: str | None = None,
+    run_ids: Iterable[str] | None = None,
+) -> tuple[dict[str, Any], int]:
     """Read authoritative stored runs with selection and projection in SQL.
 
     ``plan`` and ``activity_since`` narrow the returned payloads before they
@@ -2425,7 +2530,7 @@ def load(
     retaining its last complete snapshot when a refresh is temporarily refused.
     ``use_index=False`` explicitly reads the committed documents for import
     and comparison, independently of the store being checked or rebuilt.
-    Roster and holds retain their versioned aggregate read until migrated.
+    The public reader overlays the imported roster and holds separately.
     """
     selected = None if run_ids is None else {str(run_id) for run_id in run_ids}
     if use_index:
@@ -2943,14 +3048,23 @@ def _write_state(
     # it performs can only put back a file it wrote itself. Held across the
     # roster commit too, because that commit is the last step of the same write.
     with _ledger_write_lock(project):
-        incoming_members = list(data.get("members", []))
+        aggregate, _aggregate_version = _load_aggregate(project, root)
+        # A history read projects the live mutable collections for consumers.
+        # A run update preserves the aggregate's own copies instead of copying
+        # that projection back into the file or judging it as a roster removal.
+        projected_auxiliary = "auxiliary_version" in data
+        incoming_members = list(
+            aggregate["members"] if projected_auxiliary else data.get("members", [])
+        )
+        incoming_holds = list(
+            aggregate["holds"] if projected_auxiliary else data.get("holds", [])
+        )
         incoming_runs = list(data.get("runs", []))
-        stored, stored_version = load(project, root)
+        stored, stored_version = _load_file_history(project, root)
         # The guard below measures the incoming rows against the aggregate's own
         # rows, never against the union load() returns: the union is the reader's
         # view, and the per-run files it folds in are rows this write must leave
         # where they are.
-        aggregate, _aggregate_version = _load_aggregate(project, root)
         current_view = expected_version == stored_version
         dropped = (
             dropped_member_ids(stored["members"], incoming_members)
@@ -3017,7 +3131,7 @@ def _write_state(
                 key=lambda member: str(member.get("id", "")),
             ),
             "runs": list(data.get("runs", [])),
-            "holds": list(data.get("holds", [])),
+            "holds": incoming_holds,
         }
         # The per-run files are made consistent with the rows they copy before
         # the aggregate envelope advances, never after. If one of them cannot
@@ -3071,7 +3185,7 @@ def _write_state(
 
 def members(project: str, root: str | Path | None = None) -> list[dict[str, Any]]:
     """Return the project's team roster."""
-    return load(project, root)[0]["members"]
+    return load_auxiliary(project, root)[0]["members"]
 
 
 def member(
@@ -3437,24 +3551,15 @@ def register_member(
 
     A member registered with a null session is the normal case: the id it will
     reuse does not exist until its first run reports one, and observation
-    persists it under the run's resolved agent configuration then.
+    persists it under the run's resolved agent configuration then. The
+    ``commit`` argument is retained for callers; registration is a store-only
+    transaction regardless of its value.
     """
     if not _SAFE_ID.fullmatch(str(member_id)):
         raise LedgerError(f"member id {member_id!r} must match {_SAFE_ID.pattern}")
     if not str(harness).strip():
         raise LedgerError("a member must name the harness it dispatches to")
-    # The roster write carries the aggregate's own collections: the union
-    # :func:`load` merges adds every run that owns a file, and writing those
-    # rows back would copy each of them into the tracked aggregate beside its
-    # own file, which :func:`write` refuses.
-    data, version = _load_aggregate(project, root)
-    if commit:
-        _refuse_dirty_roster_commit(
-            project,
-            member_id,
-            ledger_path(project, root),
-            data["members"],
-        )
+    data, version = load_auxiliary(project, root)
     existing = next(
         (
             dict(item)
@@ -3488,18 +3593,7 @@ def register_member(
         for existing in data["members"]
         if str(existing.get("id")) != str(member_id)
     ] + [entry]
-    write(project, data, version, root)
-    if commit:
-        _commit_state_write(
-            project,
-            f"chore(roster): register {member_id}",
-            (
-                "Commit the project roster immediately so this roster change "
-                "cannot ride an unrelated later change."
-            ),
-            ledger_path(project, root),
-            "roster",
-        )
+    write_members(project, data["members"], version, root)
     return entry
 
 
@@ -3589,19 +3683,13 @@ def _history_is_truncated(checkout: Path) -> bool:
     return bool(partial and partial.strip())
 
 
-def _ledger_ever_tracked(path: Path) -> bool | None:
-    """Ask git whether this checkout ever recorded the ledger path.
+def _ledger_git_state(path: Path) -> str | None:
+    """Distinguish a tracked, retired or never-recorded ledger path.
 
-    A committed ledger removed from the working tree and a project that never
-    had one present identically — an absent file — so the file alone cannot
-    say which write is safe. Git can: ``True`` means the path appears somewhere
-    in the repository's history, so its absence is a deletion to recover;
-    ``False`` means git has never recorded it, so the project is genuinely new.
-    ``None`` is returned when the question cannot be answered here — the path
-    is outside any checkout, the checkout carries no commits, or its history is
-    shallow, grafted or partial, so an empty log would report a truncation as
-    an absence — and a caller keeps its conservative refusal rather than
-    reading silence as a fresh start.
+    HEAD and the index protect uncommitted deletions, including staged ones.
+    A deletion committed on this branch retires the file; appends then write
+    only the run store. An empty complete history permits a new project.
+    Unavailable or truncated history answers ``None`` and keeps the refusal.
     """
     resolved = path.expanduser().resolve()
     discovery_root = resolved.parent
@@ -3620,6 +3708,7 @@ def _ledger_ever_tracked(path: Path) -> bool | None:
         relative_path = resolved.relative_to(checkout)
     except ValueError:
         return None
+    relative = relative_path.as_posix()
     if _history_is_truncated(checkout):
         return None
     logged = subprocess.run(
@@ -3629,6 +3718,7 @@ def _ledger_ever_tracked(path: Path) -> bool | None:
             str(checkout),
             "log",
             "--all",
+            "-1",
             "--format=%H",
             "--",
             relative_path.as_posix(),
@@ -3639,7 +3729,20 @@ def _ledger_ever_tracked(path: Path) -> bool | None:
     )
     if logged.returncode != 0:
         return None
-    return bool(logged.stdout.strip())
+    if not logged.stdout.strip():
+        return "new"
+    # A repository with no commits has no HEAD to query. Its complete empty
+    # history already proves this path was never committed.
+    head = _git_stdout(checkout, "ls-tree", "--name-only", "HEAD", "--", relative)
+    index = _git_stdout(checkout, "ls-files", "--", relative)
+    if head is None or index is None:
+        return None
+    if head.strip() or index.strip():
+        return "tracked"
+    removed = _git_stdout(
+        checkout, "log", "-1", "--diff-filter=D", "--format=%H", "HEAD", "--", relative
+    )
+    return "retired" if removed and removed.strip() else None
 
 
 def append_run(
@@ -3649,7 +3752,7 @@ def append_run(
     root: str | Path | None = None,
     allow_create: bool = False,
 ) -> dict[str, Any]:
-    """Create one run file exclusively, then attempt one index update.
+    """Append one durable row, retaining run files until committed retirement.
 
     Existing target paths and top-level aggregate rows refuse duplicate ids.
     A byte scan avoids parsing the aggregate unless it contains this id; other
@@ -3662,9 +3765,11 @@ def append_run(
     leaves neither store holding the row.
 
     An absent aggregate still needs the history guard: a tracked file missing
-    from the working tree can hold unsplit history that needs recovery. A path
-    never tracked can accept a run without creating an aggregate; where git
-    cannot answer, ``allow_create=True`` explicitly permits initialisation.
+    from the working tree can hold unsplit history that needs recovery. A
+    committed removal writes only the store and returns no ``commit_paths``;
+    its ``path`` names the store. A path never tracked can accept a run without
+    creating an aggregate; where git cannot answer, ``allow_create=True``
+    explicitly permits initialisation.
     """
     run_id = str(record.get("run_id") or "")
     if not run_id:
@@ -3678,11 +3783,8 @@ def append_run(
     )
     if target.exists() or target.is_symlink():
         raise LedgerError(refusal)
-    if (
-        not path.exists()
-        and not allow_create
-        and _ledger_ever_tracked(path) is not False
-    ):
+    git_state = _ledger_git_state(path) if not path.exists() else "tracked"
+    if not path.exists() and not allow_create and git_state not in {"new", "retired"}:
         raise LedgerError(
             f"refusing to promote run {run_id!r} for {project!r}: ledger file "
             f"{path} does not exist. The run store at {_run_store_location()} "
@@ -3721,6 +3823,19 @@ def append_run(
 
     stored_record = dict(record)
     stored_record.pop("store_write", None)
+    if git_state == "retired":
+        store_outcome = _index_append(project, stored_record)
+        from reckon.crew import open_run_index
+
+        _bump_generation(project)
+        open_run_index.record_written(project, stored_record, ledger_root)
+        return {
+            "path": _run_store_location(),
+            "commit_paths": [],
+            "version": None,
+            "run": stored_record,
+            "store": store_outcome,
+        }
     encoded = serialize_run(stored_record)
     target.parent.mkdir(parents=True, exist_ok=True)
     try:
@@ -4441,25 +4556,14 @@ def record_hold_checks(
     elapsed time; the reported reset remains separate because a scheduled
     resumption can fire early or late.
 
-    A check that changes a hold commits the aggregate it rewrote at once, under
-    a subject naming the transition, so the shared file is not left dirty for
-    whichever session next notices it. The commit is skipped, with the write
-    left in the tree and the skip stated on stderr, while a merge is in
-    progress. A checkout that cannot answer for the write is skipped the same
-    way, so a hold check against a state directory outside git still records
-    the transition.
+    Mutations replace only the store's hold rows and advance its version in
+    the same transaction; no committed file or git index is touched.
     """
     moment = _parse_utc(checked_at)
     prepared = [dict(check) for check in checks]
     last: LedgerError | None = None
     for _attempt in range(max(1, attempts)):
-        # The aggregate's own rows, never :func:`load`'s union: a hold is a fact
-        # about the aggregate alone, and writing the union back would carry every
-        # per-run file's row into it. The writer refuses that fold. A row the
-        # aggregate holds whose file still spells a retired key is re-encoded
-        # into that file by the write, so the paths it returns are committed
-        # with the transition rather than left rewritten in the tree.
-        data, version = _load_aggregate(project, root)
+        data, version = load_auxiliary(project, root)
         history = [dict(item) for item in data["holds"]]
         changed = False
         outcomes: list[dict[str, Any]] = []
@@ -4511,52 +4615,31 @@ def record_hold_checks(
 
         if not changed:
             return {
-                "path": str(ledger_path(project, root)),
+                "path": str(_run_store_location()),
                 "version": version,
                 "outcomes": outcomes,
             }
-        data["holds"] = history
         try:
-            new_version, rewritten = _write_state(project, data, version, root)
+            new_version = _write_auxiliary(project, {"holds": history}, version)
         except LedgerError as exc:
             last = exc
             _retry_backoff(_attempt)
             continue
-        path = ledger_path(project, root)
-        transitions = ", ".join(
-            f"{'close' if item['action'] == 'closed' else 'open'} "
-            f"{item['hold'].get('hold_id')}"
-            for item in outcomes
-            if item["action"] in {"opened", "closed"}
-        )
-        try:
-            _commit_state_write(
-                project,
-                f"chore(holds): {transitions}",
-                (
-                    "Commit the hold transition immediately so this hold record "
-                    "cannot ride an unrelated later change."
-                ),
-                rewritten,
-                "hold",
-            )
-        except LedgerError as exc:
-            print(f"could not commit hold write {path}: {exc}", file=sys.stderr)
         return {
-            "path": str(path),
+            "path": str(_run_store_location()),
             "version": new_version,
             "outcomes": outcomes,
         }
     raise LedgerError(
-        f"ledger for {project!r} was rewritten on every hold-check attempt — {last}"
+        f"store for {project!r} changed on every hold-check attempt — {last}"
         if last
-        else f"ledger for {project!r} could not record its hold check"
+        else f"store for {project!r} could not record its hold check"
     )
 
 
 def holds(project: str, root: str | Path | None = None) -> list[dict[str, Any]]:
     """Return every budget hold, in opening order."""
-    return load(project, root)[0]["holds"]
+    return load_auxiliary(project, root)[0]["holds"]
 
 
 # ── Measured effort ─────────────────────────────────────────────────────────

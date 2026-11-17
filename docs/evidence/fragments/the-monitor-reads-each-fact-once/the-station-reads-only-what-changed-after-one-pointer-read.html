@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s13">
+  <title>The station reads only what changed after one pointer read | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="the-station-reads-only-what-changed-after-one-pointer-read">
+  <h2>The station reads only what changed after one pointer read</h2>
+
+  <p><strong>The defect.</strong> The terminal-lane scan asked each run's stream for
+  its newest <code>result</code> record by parsing the stream, and it kept the answer
+  only for the stat identity it was reached at. A live worker appends to its stream
+  continuously, so the identity moved on every pass and the whole stream was parsed
+  again, per run, per pass. On a census of one station over 147 live pointers that
+  read was <strong>19.5&nbsp;% of every byte the process read</strong> and grew with
+  each stream.</p>
+
+  <p><strong>What landed.</strong> <code>recovery_memo._newest_result_event</code>
+  holds a per-stream cursor in an <code>OrderedDict</code> bounded per process and
+  evicted oldest-first: the identity it was reached at, the offset after the last
+  complete record, and the stream opening's fingerprint. A stream whose identity is
+  unchanged is answered without opening. One that grew at the same inode and still
+  opens with the recorded bytes is read from its offset through
+  <code>_backends._stream_lines_from</code>, and the answer is folded with the
+  result the cursor already held. One that was replaced or rewritten is read from
+  its first record, because an offset into a predecessor's bytes means nothing in
+  a file that never held them. The rewrite check is
+  <code>_backends.stream_head_fingerprint</code> and
+  <code>_backends._stream_head_intact</code> &mdash; the same 8&nbsp;KiB sample the
+  parsed-stream cache records &mdash; so one sample size governs every rewrite
+  check in the tree rather than a second, smaller one chosen here.</p>
+
+  <h3 id="the-station-reads-only-what-changed-after-one-pointer-read-census">What the census named</h3>
+
+  <p>One station ran alone at <code>--interval 1</code> over a copy of the fleet
+  node's live crew home &mdash; 147 live pointers, 152 streams, with
+  <code>srun</code>, <code>sbatch</code> and <code>salloc</code> replaced by
+  refusals so no pass could launch anything &mdash; with an <code>io.open</code>
+  wrapper counting the bytes each path handed back and the frames that read them.
+  Over 40&nbsp;s it read <strong>832,032,759 bytes</strong>. By reading function:</p>
+
+  <table>
+    <thead><tr><th>share</th><th>bytes</th><th>reading function</th></tr></thead>
+    <tbody>
+      <tr><td>42.7&nbsp;%</td><td>355,393,471</td><td><code>_backends._cached_stream_entry</code></td></tr>
+      <tr><td>19.5&nbsp;%</td><td>162,494,384</td><td><code>recovery_memo._newest_result_event</code></td></tr>
+      <tr><td>12.4&nbsp;%</td><td>102,760,170</td><td><code>file_memo.content_digest</code></td></tr>
+      <tr><td>5.9&nbsp;%</td><td>49,169,358</td><td><code>_read_record</code></td></tr>
+      <tr><td>4.1&nbsp;%</td><td>33,938,243</td><td><code>recovery_wait._appended_lines</code></td></tr>
+      <tr><td>4.1&nbsp;%</td><td>33,682,379</td><td><code>runs._pointer_text</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>Ninety-five per cent of the bytes are run streams, <code>docs/state</code> run documents and
+  plan or evidence documents: whole-file reads of files that had not changed between the
+  two passes that paid for them. The full per-path log is
+  <code>logs/station-read-census-40s.txt</code> in the run directory.</p>
+
+  <h3 id="the-station-reads-only-what-changed-after-one-pointer-read-fixture">The fixture: one appended record, one read</h3>
+
+  <p><code>tests/test_the_station_reads_only_what_changed.py</code> builds its own crew
+  home of five runs whose streams total 11,004,305 bytes, runs a tick, appends 510
+  bytes to every stream, and counts the bytes the second tick reads through the
+  same wrapper. The two size checks it makes are <strong>preconditions of the
+  fixture, not guards on the measurement</strong>: that the five streams total at
+  least 10&nbsp;MB, so a whole-stream read is distinguishable from a cursor read at
+  all, and that every run of the fixture reached the tick, so the comparison covers
+  all of them. Both hold equally on a tree with no cursor.</p>
+
+  <p>The comparison is against a classification computed with
+  <code>recovery_memo._NEWEST_RESULTS</code> cleared, so the reference answers from the
+  streams themselves rather than from the cursor the tick under test just advanced;
+  a reference sharing that cursor would agree with it by construction.</p>
+
+  <table>
+    <thead><tr><th>Five-run fixture (11,004,305 bytes of stream)</th><th>base <code>73a771c</code></th><th>with the cursor</th></tr></thead>
+    <tbody>
+      <tr><td>Bytes read from the streams on the tick after each worker appended 510</td>
+        <td>11,009,290</td><td>86,905</td></tr>
+      <tr><td>Every verdict equals a classification with the cursor cleared</td>
+        <td colspan="2">yes</td></tr>
+    </tbody>
+  </table>
+
+  <p>The head figure is larger than the appended bytes alone because each of the five
+  streams pays one 8&nbsp;KiB opening read to prove its head did not move under the
+  cursor &mdash; one sample size, the same bytes the parsed-stream cache records, in
+  place of a second choice made here.</p>
+
+  <p>A second case holds the branch a replaced or truncated stream does not
+  reach: a stream rewritten <em>in place</em> at its own length or longer, which
+  keeps its inode and so passes the stat identity that catches a rename or a
+  truncation. The case rewrites a 200&nbsp;KB stream to its own length with its
+  newest result sitting before the offset the cursor holds, then asserts both
+  that the answer is that newer result and that the read took at least the
+  stream&#x27;s whole length &mdash; so a resume into the old offset fails twice
+  over. Removing the <code>_stream_head_intact</code> conjunct from the
+  resumable test reddens it: <strong>1 failed, EXIT=1</strong>
+  (<code>head-check-reversed.log</code>), against <strong>1 passed</strong> with
+  the conjunct in place.</p>
+
+  <h3 id="the-station-reads-only-what-changed-after-one-pointer-read-counter">The scan is not the producer&#x27;s parsed traffic</h3>
+
+  <p>When the scan first took its appended read through
+  <code>_backends._stream_lines_from</code>, it also fed the producer&#x27;s
+  parsed-byte counter that reader owns. In one poll that reader then parsed the
+  growth twice &mdash; once for the producer&#x27;s own incremental parse, once for
+  this node&#x27;s scan &mdash; and the registration reported twice the bytes
+  appended. <code>tests/test_producer_reads_only_what_changed.py</code> caught it:
+  <strong>36,002,538 bytes recorded against 18,001,269 appended</strong>. The counter
+  reports the fleet traffic a poll folded, and a scan answering its own question
+  about a stream is not that fold, so the read now passes
+  <code>count=False</code>; the case passes with the bytes appended and exactly
+  those, and this node&#x27;s own gate still passes.</p>
+
+  <h3 id="the-station-reads-only-what-changed-after-one-pointer-read-arms">Arms and control</h3>
+
+  <p><code>gate-base.log</code> at base <code>73a771c</code> and
+  <code>gate-after.log</code> at head, each with the command resolved over its own
+  tree, and <code>negative-control.log</code> for the base tree carrying this node's
+  test file alone. <code>matched-importers-base.log</code> and
+  <code>matched-importers-head.log</code> run every test file that imports the
+  changed module in both trees; their failure sets are identical id for id, so the
+  added-failure set is empty. Ruff check and format over the staged paths are
+  recorded in <code>ruff-check.log</code> and <code>ruff-format-check.log</code> and
+  add no finding against base.</p>
+
+  <h3 id="the-station-reads-only-what-changed-after-one-pointer-read-remaining">What this node did not change</h3>
+
+  <p>The live 20&nbsp;MB/min and 5&nbsp;% of one core bound is <strong>not met</strong>
+  by this change: the station alone over 147 live pointers read 1,131&nbsp;MB/min at
+  base <code>73a771c</code> and 1,376&nbsp;MB/min with the cursor, both far above the
+  bound. The dominant residual is <code>_backends._cached_stream_entry</code>: its
+  parsed-stream cache is bounded at 32&nbsp;MB while the fleet's streams are several
+  hundred, so a pass that touches every stream evicts what the next pass asks for and
+  the whole population is re-parsed. That eviction, the per-document
+  <code>content_digest</code>, the review store's whole-file read and
+  <code>runs._pointer_text</code> are the remaining readers and none is reachable
+  from this node's write scope. The section's live bound stays open.</p>
+</section>
+</main>
+</body>
+</html>

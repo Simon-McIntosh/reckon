@@ -42,6 +42,10 @@ from reckon._store import (
 )
 from reckon._timestamps import parse_utc as parse_utc
 from reckon.env_duration import read_duration_override
+from reckon.crew.manifest_faults import (
+    SUITE_ARMS as SUITE_ARMS,
+    is_full_revision as is_full_revision,
+)
 from reckon.node_exclusive_lock import LockHeld, exclusive_lock
 from reckon.crew.host_lease import (
     LEASE_RENEW_SECONDS as LEASE_RENEW_SECONDS,
@@ -221,6 +225,35 @@ def _split_dispatch_detail(path: Path, payload: Mapping[str, Any]) -> Mapping[st
     }
     slim["dispatch_detail"] = str(detail_path)
     return slim
+
+
+#: Run-record fields no live pointer carries. The promotion's clone report is
+#: evidence of the run — every function a run added or modified whose normalised
+#: window duplicates one already in the tree — and it belongs on the committed
+#: ledger row, where ``velocity`` and every other history reader take it. A live
+#: pointer is read by every fleet-state derivation on every pass, and none of
+#: them asks for the report: 12 live pointers carried it, 14.2 MB of a 23.5 MB
+#: directory, one of them 10.3 MB on its own.
+POINTER_OMITTED_FIELDS = ("clone_matches",)
+
+
+def _without_pointer_omitted_fields(
+    payload: Mapping[str, Any],
+) -> Mapping[str, Any]:
+    """``payload`` as a live pointer may hold it: no run-record-only field.
+
+    Applied on the write, so a caller that hands the pointer a row-shaped record
+    — a landing that marks an already-promoted run for repair, a promotion that
+    keeps a pointer it could not retire — cannot put a report no pointer reader
+    asks for on the file the whole node lists.
+    """
+    if not any(name in payload for name in POINTER_OMITTED_FIELDS):
+        return payload
+    return {
+        name: value
+        for name, value in payload.items()
+        if name not in POINTER_OMITTED_FIELDS
+    }
 
 
 def read_dispatch_detail(record: Mapping[str, Any]) -> dict[str, Any]:
@@ -463,6 +496,7 @@ def _write_json(path: Path, payload: Mapping[str, Any]) -> None:
     """Write JSON atomically, so a reader never sees a half-written record."""
     payload = _stamp_pointer_launch_host(path, payload)
     if path.parent == live_dir() and path.suffix == ".json":
+        payload = _without_pointer_omitted_fields(payload)
         payload = _split_dispatch_detail(path, payload)
     write_json_atomically(
         path,
@@ -886,11 +920,19 @@ def queue_dispatch(
     is otherwise in flight, writes nothing: the existing run is returned with
     its phase and ``None`` for the position, because a run that is not queued is
     ordered nowhere in the admission queue.
+
+    A node's own launch claim is not such a run. A dispatch publishes its claim
+    from the moment it has a run id — before the bound read that sends it here
+    when the lane has no room — so the pointer naming this very run id is the
+    dispatch's own pending launch, and answering it would return the request to
+    itself instead of storing it. That pointer is skipped; every other run of
+    the node still answers as before.
     """
     lock = crew_home() / "locks" / "queued-dispatch.lock"
     with ExitStack() as stack:
         stack.enter_context(exclusive_lock(lock))
         project = str(record["project"])
+        own_run_id = str(record.get("run_id") or "")
         identity = _node_identity(record)
         live = _list_live_records(project=project)
         existing = next(
@@ -904,19 +946,15 @@ def queue_dispatch(
         )
         if existing is None:
             # No queued copy of the request. A run of the same node still in
-            # flight is answered as it is, with no second pointer: the
-            # request is already somewhere between the queue and a worker.
-            # The gap where no live pointer names the node — an admission
-            # handing the request to a launch — is covered by the dispatch
-            # path's own check against the handover record, not here: this
-            # primitive is also how the admission pass itself re-queues, and
-            # that write must not be answered by its own handover.
+            # flight is answered as it is, and the caller's own claim is not
+            # one: this dispatch is the run it names.
             current = next(
                 (
                     pointer
                     for pointer in live
                     if _node_identity(pointer) == identity
                     and str(pointer.get("phase") or "") not in _TERMINAL_RUN_PHASES
+                    and str(pointer.get("run_id") or "") != own_run_id
                 ),
                 None,
             )
@@ -1056,8 +1094,128 @@ _POINTER_TEXT: dict[str, tuple[tuple[int, int, int, int], str]] = {}
 _POINTER_TEXT_LOCK = threading.Lock()
 
 
+_JSON_WHITESPACE = " \t\r\n"
+
+
+def _json_string_end(text: str, start: int) -> int:
+    """The index just past the JSON string literal opening at ``start``."""
+    index = start + 1
+    while index < len(text):
+        char = text[index]
+        if char == "\\":
+            index += 2
+            continue
+        if char == '"':
+            return index + 1
+        index += 1
+    return len(text)
+
+
+def _json_value_end(text: str, start: int) -> int:
+    """The index just past the JSON value beginning at ``start``."""
+    if start >= len(text):
+        return start
+    if text[start] == '"':
+        return _json_string_end(text, start)
+    if text[start] in "{[":
+        depth = 0
+        index = start
+        while index < len(text):
+            char = text[index]
+            if char == '"':
+                index = _json_string_end(text, index)
+                continue
+            if char in "{[":
+                depth += 1
+            elif char in "}]":
+                depth -= 1
+                if depth == 0:
+                    return index + 1
+            index += 1
+        return len(text)
+    index = start
+    while index < len(text) and text[index] not in ",}]":
+        index += 1
+    return index
+
+
+def _pointer_text_without_omitted_members(text: str) -> str:
+    """``text`` with every top-level omitted member cut out of its object.
+
+    A pointer written before this reader existed still holds the field on disk,
+    and every fleet-state derivation re-reads the directory: reading it back to
+    hand it to a decoder that has no reader for it is the whole cost. The bytes
+    are read either way; what this saves is the decode.
+
+    Only the object's own top level is walked, and strings, escapes and nesting
+    are tracked, so a key spelled inside some value is not mistaken for a
+    member. A text this cannot reduce — not one object, a scanner surprise — is
+    returned exactly as it arrived, and the caller parses the reduction before
+    it is offered, so an unexpected shape costs a decode rather than a pointer.
+    """
+    if not any(f'"{name}"' in text for name in POINTER_OMITTED_FIELDS):
+        return text
+    opening = text.find("{")
+    if opening < 0:
+        return text
+    spans: list[tuple[int, int]] = []
+    depth = 1
+    index = opening + 1
+    while index < len(text):
+        char = text[index]
+        if char == '"':
+            end = _json_string_end(text, index)
+            if depth == 1:
+                try:
+                    name = json.loads(text[index:end])
+                except ValueError:
+                    name = None
+                probe = end
+                while probe < len(text) and text[probe] in _JSON_WHITESPACE:
+                    probe += 1
+                if (
+                    name in POINTER_OMITTED_FIELDS
+                    and probe < len(text)
+                    and text[probe] == ":"
+                ):
+                    value = probe + 1
+                    while value < len(text) and text[value] in _JSON_WHITESPACE:
+                        value += 1
+                    spans.append((index, _json_value_end(text, value)))
+            index = end
+            continue
+        if char in "{[":
+            depth += 1
+        elif char in "}]":
+            depth -= 1
+            if depth == 0:
+                break
+        index += 1
+    for begin, end in reversed(spans):
+        after = end
+        while after < len(text) and text[after] in _JSON_WHITESPACE:
+            after += 1
+        before = begin - 1
+        while before >= 0 and text[before] in _JSON_WHITESPACE:
+            before -= 1
+        if after < len(text) and text[after] == ",":
+            cut_from, cut_to = begin, after + 1
+        elif before >= 0 and text[before] == ",":
+            cut_from, cut_to = before, end
+        else:
+            cut_from, cut_to = begin, end
+        text = text[:cut_from] + text[cut_to:]
+    return text
+
+
 def _pointer_text(path: Path) -> str:
     """A pointer's text, re-read only when its stat identity has moved.
+
+    The text is kept without the fields no live pointer reader asks for, so a
+    pointer left on disk by an older writer costs its decoder no more than a
+    current one. The reduction is parsed here before it is kept: a text this
+    reader cannot reduce is parsed as it is, rather than one pointer dropped
+    from every listing by a scanner that misjudged it.
 
     Raises ``FileNotFoundError`` for a pointer that is gone, as a direct read
     would, and forgets whatever was kept for it.
@@ -1075,9 +1233,15 @@ def _pointer_text(path: Path) -> str:
     if kept is not None and kept[0] == identity:
         return kept[1]
     text = path.read_text()
+    reduced = _pointer_text_without_omitted_members(text)
+    if reduced is not text:
+        try:
+            json.loads(reduced)
+        except ValueError:
+            reduced = text
     with _POINTER_TEXT_LOCK:
-        _POINTER_TEXT[key] = (identity, text)
-    return text
+        _POINTER_TEXT[key] = (identity, reduced)
+    return reduced
 
 
 #: The lease this node's station keeps under the node-local runtime root. Its
@@ -2636,6 +2800,7 @@ def release_run_acknowledgement(
 
 
 STATUS_REPAIR_RECORD_NAME = "status-repair.json"
+ARM_REPAIR_RECORD_NAME = "arm-repair.json"
 AS_DELIVERED_SUFFIX = ".asdelivered"
 DEFAULT_MANIFEST_NAME = "manifest.md"
 # The statuses a repaired manifest may carry: exactly the terminal vocabulary
@@ -2762,6 +2927,131 @@ def repair_manifest_status(run_id: str, status: str, reason: str) -> dict[str, A
         "repaired_at": _utc_now(),
     }
     _write_json(run_dir(run_id) / STATUS_REPAIR_RECORD_NAME, record)
+    return record
+
+
+def _arm_line_replaced(
+    text: str, arm: str, revision: str, *, command: str = "", log_path: str = ""
+) -> tuple[str | None, str]:
+    """Rewrite the first top-level arm line's revision, or None when absent.
+
+    Only a line starting at column zero counts, so an arm nested under some
+    other field is never the manifest's own. The arm's other fields are carried
+    over as the worker recorded them: re-pointing a ``numstat`` at the revision
+    the command actually ran against says nothing about the exit status, the
+    failure ids or the log that arm reported.
+    """
+    prefix = f"{arm}:"
+    lines = text.splitlines()
+    for index, line in enumerate(lines):
+        if not line.startswith(prefix):
+            continue
+        previous = line.split(":", 1)[1].strip()
+        record = _recorded_arm(previous)
+        record["revision"] = revision
+        if command.strip():
+            record["command"] = command.strip()
+        if log_path.strip():
+            record["log_path"] = log_path.strip()
+        lines[index] = f"{arm}: {json.dumps(record)}"
+        replaced = "\n".join(lines)
+        if text.endswith("\n"):
+            replaced += "\n"
+        return replaced, previous
+    return None, ""
+
+
+def _recorded_arm(value: str) -> dict[str, Any]:
+    """The arm a manifest line records, as a record a repair can amend.
+
+    ``none`` and an empty value both read as an arm that recorded nothing, and
+    the repair then writes a record carrying only what it was told. Anything
+    else is read as the JSON a worker writes and, failing that, as the YAML the
+    reader itself accepts.
+    """
+    import yaml
+
+    try:
+        parsed = json.loads(value)
+    except ValueError:
+        try:
+            parsed = yaml.safe_load(value)
+        except yaml.YAMLError:
+            parsed = None
+    return dict(parsed) if isinstance(parsed, Mapping) else {}
+
+
+def repair_manifest_arm(
+    run_id: str,
+    arm: str,
+    *,
+    revision: str,
+    reason: str,
+    command: str = "",
+    log_path: str = "",
+) -> dict[str, Any]:
+    """Re-point a suite arm at the revision its command ran against.
+
+    A worker that records an arm's revision as prose — the base beside a
+    description of it, or an arm the run had no time to measure — delivers a
+    pair promotion cannot compare with the base it must match, and by the time
+    a coordinator reads it the worker's own turn has ended. The manifest is the
+    worker's file, so a hand edit would lose the delivered text and leave
+    nothing a later reader can compare against. The arm line is rewritten in
+    place, the delivered file is kept beside it under
+    ``manifest.md.asdelivered``, and the reason is recorded in the run
+    directory.
+
+    Only the arm's revision is required, and it must be the commit object id
+    itself: a repair that wrote another spelling would leave the arm at
+    something the gate still cannot compare. The command and the log path are
+    optional, because a re-pointed arm commonly ran at a revision the worker
+    recorded no log for, and re-pointing says nothing about the exit status or
+    the failure ids that arm already carried. A manifest with no top-level line
+    for that arm is refused rather than half-repaired.
+    """
+    name = str(arm).strip()
+    if name not in SUITE_ARMS:
+        raise CrewError(
+            f"an arm repair names one of {', '.join(SUITE_ARMS)}, not {arm!r}"
+        )
+    target = str(revision).strip()
+    if not is_full_revision(target):
+        raise CrewError(
+            "an arm repair names the commit object id the command ran "
+            f"against, not {revision!r}"
+        )
+    recorded_reason = str(reason).strip()
+    if not recorded_reason:
+        raise CrewError("an arm repair requires a non-empty --reason")
+
+    manifest = _manifest_for_repair(run_id)
+    try:
+        original = manifest.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise CrewError(f"the manifest at {manifest} could not be read: {exc}") from exc
+    rewritten, previous = _arm_line_replaced(
+        original, name, target, command=command, log_path=log_path
+    )
+    if rewritten is None:
+        raise CrewError(
+            f"the manifest at {manifest} carries no top-level {name} line to re-point"
+        )
+    as_delivered = manifest.with_name(manifest.name + AS_DELIVERED_SUFFIX)
+    if not as_delivered.exists():
+        as_delivered.write_text(original, encoding="utf-8")
+    write_atomically(manifest, lambda handle: handle.write(rewritten), fsync=False)
+    record = {
+        "run_id": run_id,
+        "arm": name,
+        "revision": target,
+        "reason": recorded_reason,
+        "previous_arm": previous,
+        "previous_manifest": str(as_delivered),
+        "manifest": str(manifest),
+        "repaired_at": _utc_now(),
+    }
+    _write_json(run_dir(run_id) / ARM_REPAIR_RECORD_NAME, record)
     return record
 
 

@@ -1,0 +1,170 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [
+    {
+      "fails_if": "The scheduler call omits or changes its independent ten-second timeout.",
+      "lines": "25"
+    },
+    {
+      "fails_if": "Either scheduler row is missing or the known-present pre-existing memory value 37 is lost.",
+      "lines": "75,76"
+    },
+    {
+      "fails_if": "Running/end classification, cancelling uid or reason differs from independently specified literal values.",
+      "lines": "78,79,80,81,82"
+    },
+    {
+      "fails_if": "Output identity differs from JOB/NODE; these also parameterize input, so this checks preservation rather than independent identity discovery.",
+      "lines": "83"
+    },
+    {
+      "fails_if": "Timestamp does not follow seed or post-mortem memory is invented.",
+      "lines": "84,85"
+    },
+    {
+      "fails_if": "Minute delay count/length changes or accounting fallback is not called.",
+      "lines": "86,87"
+    },
+    {
+      "fails_if": "Removing terminal deduplication appends a fourth row.",
+      "lines": "97"
+    },
+    {
+      "fails_if": "Errors, absence, malformed answers or batch-step accounting produce no row or anything other than the three unknown literals.",
+      "lines": "120,121,122,123"
+    },
+    {
+      "fails_if": "An unreadable observation stops the reader or is misclassified instead of yielding unknown then sample.",
+      "lines": "140"
+    },
+    {
+      "fails_if": "Reason or node is lost; NODE appears in input too, so this is preservation coverage.",
+      "lines": "149,150"
+    },
+    {
+      "fails_if": "Removing the same-allocation guard loses the expected exception, or writing before refusal creates the directory.",
+      "lines": "157-161"
+    },
+    {
+      "fails_if": "Ignoring reader lock reaches a live scheduler query or creates a TSV.",
+      "lines": "168"
+    },
+    {
+      "fails_if": "Generated launch omits env unsetting, excluded node, target arguments or rigel; this inspects script generation and does not execute sbatch.",
+      "lines": "176,177,178,179"
+    },
+    {
+      "fails_if": "Written header differs from implementation constant; changing the shared constant moves both sides together and does not fail, as recorded in the finding.",
+      "lines": "196"
+    },
+    {
+      "fails_if": "Node append is missing, duplicated or misplaces source; input width comes from the implementation constant, so this alone does not pin the schema.",
+      "lines": "215"
+    },
+    {
+      "fails_if": "Either writer bypasses its resource lock or scheduler ownership lock is omitted.",
+      "lines": "239,240"
+    },
+    {
+      "fails_if": "A stopped reader leaves one row, demonstrably failing len==2 in negative-control.log, or the new row is not an end.",
+      "lines": "249,252"
+    },
+    {
+      "fails_if": "Any required emitted scheduler column is removed/renamed, differing from this independent exact-header literal.",
+      "file": "tests/test_fleet_health.py",
+      "lines": "223-227"
+    }
+  ],
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/fleet_node.py:generate_hold_script",
+    "reckon/crew/fleet_migrate.py:1075",
+    "reckon/crew/fleet_supervisor.py:start_health_sampler",
+    "reckon/crew/fleet_supervisor.py:3080",
+    "bin/fleet-health:39-40",
+    "bin/fleet-health:88",
+    "bin/fleet-health:125",
+    "reckon/crew/fleet_node.py:__main__"
+  ],
+  "completed_at": "2026-11-17T12:05:47Z",
+  "dispatched_at": "2026-11-17T11:59:04Z",
+  "findings": [
+    {
+      "file": "tests/test_a_sampler_outlives_the_fleet_job.py",
+      "id": "f4493de653b",
+      "line": "196",
+      "severity": "non-blocking",
+      "text": "non-blocking: The schema assertion compares a header emitted from _HEALTH_COLUMNS with that same implementation constant, so deleting or renaming a required column on both sides leaves it green; tests/test_fleet_health.py:223 supplies an independent literal contract, so this weakness does not block delivery."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "Read commits 4470e771e55b29696b71fac9abb0f467dff937b0, 6c9c0062670789561577da7a02a20c4bc2efc6af and 31096e1a5a5749b98b793d22003dc26bdc7d001d against base 5cba94a80e4e5dc68fa488816af4c1e0e0f21e57; four files implement scheduler sampling, shared-lock serialization and regression coverage with one non-blocking assertion weakness.",
+    "done_when": "Read prompt.txt:212-213 and plan section s6; negative-control.log records the stopped-reader failure, rehearsal-final-results.json records a terminal row 59.839306 seconds after cancellation, and importer logs show zero added failures.",
+    "goal": "Read prompt.txt:38 and plan section s6; reckon/crew/fleet_node.py:309-359 and bin/fleet-health:39-40 add an outside scheduler reader continuing the durable series through one confirmed terminal row.",
+    "manifest": "Read manifest.md with complete status, three full commit ids and baseline_suite/after_suite receipts; the cited logs reconcile to 73 baseline passes, 88 head passes and no failing ids.",
+    "write_paths": "Read prompt.txt:124-129 and resume-1-advice.txt:1; all four changed files lie inside the original scope plus the explicitly granted exact tests/test_fleet_health.py header repair."
+  },
+  "justifications": {
+    "durability": "tests/test_a_sampler_outlives_the_fleet_job.py:249 demonstrably fails with watch_scheduler replaced by a no-op and tests/test_fleet_health.py:223 independently pins the columns, while tests/test_a_sampler_outlives_the_fleet_job.py:196 derives its expected schema from the implementation constant.",
+    "evidence": "rehearsal-final-results.json records 59.839306 seconds to the terminal row, negative-control.log ends EXIT=1 for the stopped-reader assertion, and the recorded base/head and importer logs end EXIT=0 with no added failures.",
+    "fit": "reckon/crew/fleet_node.py:201-359 extends the fleet allocation owner using runner injection, shell generation, descriptive names and reckon/node_exclusive_lock.py:79 for shared-home exclusion.",
+    "goal_fidelity": "reckon/crew/fleet_node.py:309-359 launches a separately allocated reader, records scheduler identity/state/reason each minute and exits after the deduplicated terminal row.",
+    "reuse": "Searches for scheduler state/accounting, health TSV writing and shared locks found fleet_supervisor.py:634, process_liveness.py:90 and landing_measure.py:254 supplying narrower state-only queries, while the new multi-field fleet snapshots extend fleet_node.py and reuse node_exclusive_lock.py:79.",
+    "scope_discipline": "The diff contains only bin/fleet-health, reckon/crew/fleet_node.py, tests/test_a_sampler_outlives_the_fleet_job.py and the exact tests/test_fleet_health.py:223 header assertion granted by resume-1-advice.txt:1."
+  },
+  "limitations": [
+    "Rehearsal directly invokes watch_scheduler from its own all_debug allocation; generated production sbatch launch is inspected rather than exercised end to end.",
+    "No suite rerun by the reviewer; recorded source gate logs were read."
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read prompt.txt:38 and plan section s6; reckon/crew/fleet_node.py:309-359 and bin/fleet-health:39-40 add an outside scheduler reader continuing the durable series through one confirmed terminal row.\nVERDICT done_when: Read prompt.txt:212-213 and plan section s6; negative-control.log records the stopped-reader failure, rehearsal-final-results.json records a terminal row 59.839306 seconds after cancellation, and importer logs show zero added failures.\nVERDICT write_paths: Read prompt.txt:124-129 and resume-1-advice.txt:1; all four changed files lie inside the original scope plus the explicitly granted exact tests/test_fleet_health.py header repair.\nVERDICT manifest: Read manifest.md with complete status, three full commit ids and baseline_suite/after_suite receipts; the cited logs reconcile to 73 baseline passes, 88 head passes and no failing ids.\nVERDICT diff: Read commits 4470e771e55b29696b71fac9abb0f467dff937b0, 6c9c0062670789561577da7a02a20c4bc2efc6af and 31096e1a5a5749b98b793d22003dc26bdc7d001d against base 5cba94a80e4e5dc68fa488816af4c1e0e0f21e57; four files implement scheduler sampling, shared-lock serialization and regression coverage with one non-blocking assertion weakness.\nCALL_SITES: reckon/crew/fleet_node.py:generate_hold_script, reckon/crew/fleet_migrate.py:1075, reckon/crew/fleet_supervisor.py:start_health_sampler, reckon/crew/fleet_supervisor.py:3080, bin/fleet-health:39-40, bin/fleet-health:88, bin/fleet-health:125, reckon/crew/fleet_node.py:__main__\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_node.py:309-359 launches a separately allocated reader, records scheduler identity/state/reason each minute and exits after the deduplicated terminal row.\nSCORE evidence: 20\nJUSTIFICATION evidence: rehearsal-final-results.json records 59.839306 seconds to the terminal row, negative-control.log ends EXIT=1 for the stopped-reader assertion, and the recorded base/head and importer logs end EXIT=0 with no added failures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The diff contains only bin/fleet-health, reckon/crew/fleet_node.py, tests/test_a_sampler_outlives_the_fleet_job.py and the exact tests/test_fleet_health.py:223 header assertion granted by resume-1-advice.txt:1.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_sampler_outlives_the_fleet_job.py:249 demonstrably fails with watch_scheduler replaced by a no-op and tests/test_fleet_health.py:223 independently pins the columns, while tests/test_a_sampler_outlives_the_fleet_job.py:196 derives its expected schema from the implementation constant.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/fleet_node.py:201-359 extends the fleet allocation owner using runner injection, shell generation, descriptive names and reckon/node_exclusive_lock.py:79 for shared-home exclusion.\nSCORE reuse: 20\nJUSTIFICATION reuse: Searches for scheduler state/accounting, health TSV writing and shared locks found fleet_supervisor.py:634, process_liveness.py:90 and landing_measure.py:254 supplying narrower state-only queries, while the new multi-field fleet snapshots extend fleet_node.py and reuse node_exclusive_lock.py:79.\nFINDING tests/test_a_sampler_outlives_the_fleet_job.py:196 non-blocking: The schema assertion compares a header emitted from _HEALTH_COLUMNS with that same implementation constant, so deleting or renaming a required column on both sides leaves it green; tests/test_fleet_health.py:223 supplies an independent literal contract, so this weakness does not block delivery.\n",
+  "reuse_review": {
+    "_scheduler_reader_launch": "Extends generate_hold_script owner.",
+    "append_node_reading": "Replaces shell header/append mechanism with the shared Python schema writer.",
+    "append_scheduler_reading": "Extends bin/fleet-health series capability and uses existing exclusive_lock.",
+    "scheduler_reading": "Extends fleet_node, existing owner of fleet allocation queries; narrower scheduler readers do not return node/state/reason/accounting snapshots.",
+    "test_helpers": "scheduler, nested run, rows, seed and observe are local fixtures, not a duplicated production capability.",
+    "watch_scheduler": "No existing independent fleet scheduler health loop found in scheduler/health searches."
+  },
+  "review_run_id": "r-20261117T115716792975-review-of-a-sampler-outlives-the-fleet-job-31096e1a5a57",
+  "reviewed_base_sha": "5cba94a80e4e5dc68fa488816af4c1e0e0f21e57",
+  "reviewed_head_sha": "31096e1a5a5749b98b793d22003dc26bdc7d001d",
+  "reviewed_run_id": "r-20261117T110917738170-a-sampler-outlives-the-fleet-job",
+  "scores": {
+    "durability": 18,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110917738170-a-sampler-outlives-the-fleet-job/after_suite-1794915650861626109.log",
+      "revision": "31096e1a5a5749b98b793d22003dc26bdc7d001d",
+      "summary": "88 passed in 66.42s (0:01:06)"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110917738170-a-sampler-outlives-the-fleet-job/baseline_suite-1794915858530264096.log",
+      "revision": "5cba94a80e4e5dc68fa488816af4c1e0e0f21e57",
+      "summary": "73 passed in 43.39s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T12:05:56.412391+00:00",
+  "total": 118
+}

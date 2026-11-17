@@ -3600,6 +3600,9 @@ def crew_follow(
             state = str(row.get("to_state") or "")
             if not run_id or not state or delivered_states.get(run_id) == state:
                 return
+            if not json_output and session == str(row.get("session") or ""):
+                from reckon.crew.stage_receipts import note_delivery
+                note_delivery(row, shown=True)
             delivered_states[run_id] = state
             if subscriber is not None:
                 subscriber.note_delivered(row)

@@ -1,0 +1,265 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "assertion": "set(fleet.requests) == expected",
+      "failure_condition": "Fails if review dispatch is omitted, targets the superseded revision, dispatches the still-conflicting case, or duplicates either clean request.",
+      "file": "tests/test_a_repaired_head_is_reviewed_and_landed.py",
+      "line": 152
+    },
+    {
+      "assertion": "record['head'] == item['head']",
+      "failure_condition": "Fails if the persisted pending landing retains the original head instead of the independently read Git repair head.",
+      "file": "tests/test_a_repaired_head_is_reviewed_and_landed.py",
+      "line": 157
+    },
+    {
+      "assertion": "not merge._is_ancestor(fleet.repo, clean['head'], 'main')",
+      "failure_condition": "Fails if a repair is published before any fresh review is stored; removing the new review wait restores this regression.",
+      "file": "tests/test_a_repaired_head_is_reviewed_and_landed.py",
+      "line": 158
+    },
+    {
+      "assertion": "merge._is_ancestor(fleet.repo, clean['head'], 'main')",
+      "failure_condition": "Fails if a clean exact-head review never releases the pending repair to main.",
+      "file": "tests/test_a_repaired_head_is_reviewed_and_landed.py",
+      "line": 166
+    },
+    {
+      "assertion": "git(fleet.origin, 'show', 'main:clean.py') == \"INTENT = 'clean'\"",
+      "failure_condition": "Fails if remote publication omits or changes the clean.py content committed before landing; this independently verifies content rather than ancestry alone.",
+      "file": "tests/test_a_repaired_head_is_reviewed_and_landed.py",
+      "line": 167
+    },
+    {
+      "assertion": "not pending_landing._record_path(clean['pointer']['run_id']).exists()",
+      "failure_condition": "Fails if successful publication leaves its pending-landing journal behind.",
+      "file": "tests/test_a_repaired_head_is_reviewed_and_landed.py",
+      "line": 168
+    },
+    {
+      "assertion": "not runs.pointer_path(clean['pointer']['run_id']).exists()",
+      "failure_condition": "Fails if publication leaves the delivered repair attempt live.",
+      "file": "tests/test_a_repaired_head_is_reviewed_and_landed.py",
+      "line": 169
+    },
+    {
+      "assertion": "any((row['status'] == 'finished' and row['head'] == clean['head'] for row in result['interrupted_landings']))",
+      "failure_condition": "Fails if the completion receipt omits finished status or cites the original revision rather than the independently created repair head.",
+      "file": "tests/test_a_repaired_head_is_reviewed_and_landed.py",
+      "line": 170
+    },
+    {
+      "assertion": "len(obligations) == 2",
+      "failure_condition": "Fails if either refusal is omitted or duplicated in the returned obligations.",
+      "file": "tests/test_a_repaired_head_is_reviewed_and_landed.py",
+      "line": 175
+    },
+    {
+      "assertion": "'review' in by_run[blocked['pointer']['run_id']]",
+      "failure_condition": "Fails if the blocked-review obligation omits the review cause.",
+      "file": "tests/test_a_repaired_head_is_reviewed_and_landed.py",
+      "line": 177
+    },
+    {
+      "assertion": "'repaired result is incorrect' in by_run[blocked['pointer']['run_id']]",
+      "failure_condition": "Fails if the obligation loses the concrete stored blocking finding.",
+      "file": "tests/test_a_repaired_head_is_reviewed_and_landed.py",
+      "line": 178
+    },
+    {
+      "assertion": "'conflict' in by_run[conflicting['pointer']['run_id']]",
+      "failure_condition": "Fails if the still-conflicting obligation omits its conflict cause.",
+      "file": "tests/test_a_repaired_head_is_reviewed_and_landed.py",
+      "line": 179
+    },
+    {
+      "assertion": "landing['status'] == 'refused'",
+      "failure_condition": "Fails if either refused repair pointer does not persist a refused landing status.",
+      "file": "tests/test_a_repaired_head_is_reviewed_and_landed.py",
+      "line": 182
+    },
+    {
+      "assertion": "landing['head'] == item['head']",
+      "failure_condition": "Fails if either persisted refusal cites the original revision instead of the Git-derived repair head.",
+      "file": "tests/test_a_repaired_head_is_reviewed_and_landed.py",
+      "line": 183
+    },
+    {
+      "assertion": "landing['guard']",
+      "failure_condition": "Fails if a persisted refusal has no actionable guard text.",
+      "file": "tests/test_a_repaired_head_is_reviewed_and_landed.py",
+      "line": 184
+    },
+    {
+      "assertion": "not merge._is_ancestor(fleet.repo, blocked['head'], 'main')",
+      "failure_condition": "Fails if the repaired head with a blocking exact-head review is nevertheless merged.",
+      "file": "tests/test_a_repaired_head_is_reviewed_and_landed.py",
+      "line": 185
+    },
+    {
+      "assertion": "not merge._is_ancestor(fleet.repo, conflicting['head'], 'main')",
+      "failure_condition": "Fails if the still-conflicting repaired head is treated as published.",
+      "file": "tests/test_a_repaired_head_is_reviewed_and_landed.py",
+      "line": 186
+    },
+    {
+      "assertion": "len(fleet.requests) == 2",
+      "failure_condition": "Fails if consuming stored review results launches extra duplicate reviews.",
+      "file": "tests/test_a_repaired_head_is_reviewed_and_landed.py",
+      "line": 187
+    },
+    {
+      "assertion": "report['dispatched']",
+      "failure_condition": "Fails if the existing classifier rejects promoted repair review dispatch as not scoring, as observed at base.",
+      "file": "tests/test_a_repaired_head_is_reviewed_and_landed.py",
+      "line": 193
+    },
+    {
+      "assertion": "repaired_fleet.requests == [(item['pointer']['run_id'], item['head'])]",
+      "failure_condition": "Fails if direct dispatch composes the wrong run or original head; the expected head is read from git before dispatch, not supplied as a dispatch head argument.",
+      "file": "tests/test_a_repaired_head_is_reviewed_and_landed.py",
+      "line": 194
+    },
+    {
+      "assertion": "result[0]['status'] == 'awaiting-review'",
+      "failure_condition": "Fails if a review of the original revision authorizes repair publication rather than an exact-head review wait.",
+      "file": "tests/test_a_repaired_head_is_reviewed_and_landed.py",
+      "line": 201
+    },
+    {
+      "assertion": "repaired_fleet.requests == [(item['pointer']['run_id'], item['head'])]",
+      "failure_condition": "Fails if a superseded review prevents requesting the current Git head or causes a wrong-head composition.",
+      "file": "tests/test_a_repaired_head_is_reviewed_and_landed.py",
+      "line": 202
+    },
+    {
+      "assertion": "not merge._is_ancestor(repaired_fleet.repo, item['head'], 'main')",
+      "failure_condition": "Fails if the repaired head is published with only a superseded-head review.",
+      "file": "tests/test_a_repaired_head_is_reviewed_and_landed.py",
+      "line": 203
+    },
+    {
+      "assertion": "result[0]['status'] == 'repair-gate-refused'",
+      "failure_condition": "Fails if a gate log lacking terminal EXIT is accepted instead of producing repair-gate-refused; this guard already worked at base.",
+      "file": "tests/test_a_repaired_head_is_reviewed_and_landed.py",
+      "line": 212
+    },
+    {
+      "assertion": "not repaired_fleet.requests",
+      "failure_condition": "Fails if an incomplete repair gate nevertheless launches a review.",
+      "file": "tests/test_a_repaired_head_is_reviewed_and_landed.py",
+      "line": 213
+    },
+    {
+      "assertion": "not merge._is_ancestor(repaired_fleet.repo, item['head'], 'main')",
+      "failure_condition": "Fails if an incomplete repair gate nevertheless publishes the repaired head.",
+      "file": "tests/test_a_repaired_head_is_reviewed_and_landed.py",
+      "line": 214
+    }
+  ],
+  "assertion_independence": "All 26 assertions have a named falsifying condition; no added assertion merely echoes a head supplied to the operation under test: the expected repairs come from git rev-parse and differ from the original head initially written into pending records.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/admission/landing.py:52 _LandingWorker._land -> queue_landing.land_once",
+    "reckon/crew/queue_landing.py:1935 land_once -> finish_pending_landings",
+    "reckon/crew/pending_landing.py:1067 finish_pending_landings -> _repair_review_wait",
+    "reckon/crew/pending_landing.py:526 _repair_review_wait -> dispatch_review_for_run",
+    "reckon/crew/recovery_review_dispatch.py:3232 _dispatch_text_review_for_run -> pending_repair_head",
+    "reckon/crew/recovery_review_dispatch.py:3332 _dispatch_figure_review_for_run -> pending_repair_head"
+  ],
+  "completed_at": "2026-11-17T12:39:48Z",
+  "definition_reuse": {
+    "_repair_review_wait": "Extends the pending-landing recovery path using queue_landing tier selection, completeness and added-failure guards and the existing review dispatcher.",
+    "mark_delivery": "Extends existing pending-landing marking with compare-under-lock attempt identity through runs._mutate_pointer.",
+    "pending_repair_head": "Wraps _delivered_repair in its owning pending_landing module; no separate head derivation.",
+    "test helpers": "_commit wraps tests.helpers.git.git; _review wraps review.parse_review/store_review; repaired_fleet extends tests.helpers.landing_repository._write_origin_and_checkout; compose records the process-boundary subject without reproducing dispatch."
+  },
+  "dispatched_at": "2026-11-17T12:32:19Z",
+  "evidence_limit": "The canonical added_failure_count is derived only from the named baseline_suite/after_suite pair; the separate importer pair adds six failures, so the source done_when is not fully satisfied.",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Read sole commit 9fc6cd8715774ed8bf84edced7c9bd876530bc26 against parent 500db8eb16c5b6cff2aaf03abab3abd7e196376b; pending_landing.py adds repaired-head review gating, recovery_review_dispatch.py admits those reviews and queue_landing.py exposes their refusals, with four focused behavior tests.",
+    "done_when": "The source pointer done_when and live plan require the three-run case, a failing base control and no added importer failure; tests/test_a_repaired_head_is_reviewed_and_landed.py:142 covers the behavior and negative-control-ledger.log records three failures, but importer-head-1794917412043261601.log adds six failures, leaving that final condition unmet.",
+    "goal": "The source pointer goal is unattended landing after a clean review of the repaired head; reckon/crew/pending_landing.py:1034 persists that head and :1067 requires its reviews before publication.",
+    "manifest": "The source manifest.md names the actual commit and complete all_debug logs; baseline_suite and after_suite reconcile to 58 and 62 passes with zero failures, while its separate importer evidence explicitly records six added failures outside its grant.",
+    "write_paths": "The source pointer and manifest declare three product modules, the new test and optional evidence paths; the sole commit changes only reckon/crew/pending_landing.py, reckon/crew/queue_landing.py, reckon/crew/recovery_review_dispatch.py and tests/test_a_repaired_head_is_reviewed_and_landed.py, all granted."
+  },
+  "justifications": {
+    "durability": "Removing pending_landing.py:1067 restores premature publication and stale-review acceptance, disabling recovery_review_dispatch.py:3233 prevents the observed review requests, and removing queue_landing.py:1946 loses the two named obligations asserted by tests/test_a_repaired_head_is_reviewed_and_landed.py:175.",
+    "evidence": "The source baseline_suite-1794917013402964914.log and after_suite-1794917088381025118.log prove 58 and 62 passes and negative-control-ledger.log proves three base failures, but importer-head-1794917412043261601.log adds six failures against the plan's no-added-failure requirement.",
+    "fit": "reckon/crew/pending_landing.py:498 uses the existing tier readers and pointer mutation idiom, and its added names and test names describe behavior without prohibited transient labels.",
+    "goal_fidelity": "reckon/crew/pending_landing.py:1034 refreshes the cited head before review and tests/test_a_repaired_head_is_reviewed_and_landed.py:166 verifies clean publication while :175 and :185 verify two named refusals remain unlanded.",
+    "reuse": "Capability searches for repair-head discovery, review-tier acceptance, pointer marking and test repository construction found pending_landing.py:_delivered_repair, queue_landing.py:_owed_review_tiers/_review_for_tier/_review_tier_is_complete, runs.py:_mutate_pointer and tests/helpers/landing_repository.py, which the additions wrap or extend rather than replace.",
+    "scope_discipline": "The four paths in commit 9fc6cd8715774ed8bf84edced7c9bd876530bc26 all appear in the source manifest.md orientation_write_paths and implement the repaired-head landing contract."
+  },
+  "negative_control": {
+    "already_correct_guard": "An incomplete gate already refused at the base; retained as a test without reimplementing that guard.",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T114924247084-a-repaired-head-is-reviewed-and-landed/negative-control-ledger.log",
+    "observed_quote": "the run is not awaiting review (complete)",
+    "summary": "3 failed, 1 passed in 3.82s; EXIT=1"
+  },
+  "outside_scope": {
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T114924247084-a-repaired-head-is-reviewed-and-landed/importer-head-1794917412043261601.log",
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T114924247084-a-repaired-head-is-reviewed-and-landed/importer-base-1794917081242650425.log",
+    "importer_added_failure_count": 6,
+    "importer_added_failure_ids": [
+      "tests/test_a_conflicting_landing_is_repaired.py::test_conflicting_delivery_opens_repair_then_lands[automatic]",
+      "tests/test_a_conflicting_landing_is_repaired.py::test_conflicting_delivery_opens_repair_then_lands[manual]",
+      "tests/test_a_finished_pending_landing_retires_its_run.py::test_a_finished_pending_landing_retires_its_run",
+      "tests/test_a_finished_pending_landing_retires_its_run.py::test_a_newer_attempt_keeps_its_pointer_and_worktree",
+      "tests/test_a_finished_pending_landing_retires_its_run.py::test_a_refused_push_keeps_the_run_and_its_recovery_state",
+      "tests/test_concurrent_edits_land_unattended.py::test_conflict_repair_names_the_peer_commit_and_reuses_the_repair_gate"
+    ],
+    "next_action": "Coordinator grants the three fixture files for one repair round, then remeasures their importer delta before integration; source brief explicitly requires reporting these rather than editing outside the grant."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source pointer goal is unattended landing after a clean review of the repaired head; reckon/crew/pending_landing.py:1034 persists that head and :1067 requires its reviews before publication.\nVERDICT done_when: The source pointer done_when and live plan require the three-run case, a failing base control and no added importer failure; tests/test_a_repaired_head_is_reviewed_and_landed.py:142 covers the behavior and negative-control-ledger.log records three failures, but importer-head-1794917412043261601.log adds six failures, leaving that final condition unmet.\nVERDICT write_paths: The source pointer and manifest declare three product modules, the new test and optional evidence paths; the sole commit changes only reckon/crew/pending_landing.py, reckon/crew/queue_landing.py, reckon/crew/recovery_review_dispatch.py and tests/test_a_repaired_head_is_reviewed_and_landed.py, all granted.\nVERDICT manifest: The source manifest.md names the actual commit and complete all_debug logs; baseline_suite and after_suite reconcile to 58 and 62 passes with zero failures, while its separate importer evidence explicitly records six added failures outside its grant.\nVERDICT diff: Read sole commit 9fc6cd8715774ed8bf84edced7c9bd876530bc26 against parent 500db8eb16c5b6cff2aaf03abab3abd7e196376b; pending_landing.py adds repaired-head review gating, recovery_review_dispatch.py admits those reviews and queue_landing.py exposes their refusals, with four focused behavior tests.\nCALL_SITES: reckon/crew/admission/landing.py:52 _LandingWorker._land -> queue_landing.land_once, reckon/crew/queue_landing.py:1935 land_once -> finish_pending_landings, reckon/crew/pending_landing.py:1067 finish_pending_landings -> _repair_review_wait, reckon/crew/pending_landing.py:526 _repair_review_wait -> dispatch_review_for_run, reckon/crew/recovery_review_dispatch.py:3232 _dispatch_text_review_for_run -> pending_repair_head, reckon/crew/recovery_review_dispatch.py:3332 _dispatch_figure_review_for_run -> pending_repair_head\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/pending_landing.py:1034 refreshes the cited head before review and tests/test_a_repaired_head_is_reviewed_and_landed.py:166 verifies clean publication while :175 and :185 verify two named refusals remain unlanded.\nSCORE evidence: 15\nJUSTIFICATION evidence: The source baseline_suite-1794917013402964914.log and after_suite-1794917088381025118.log prove 58 and 62 passes and negative-control-ledger.log proves three base failures, but importer-head-1794917412043261601.log adds six failures against the plan's no-added-failure requirement.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The four paths in commit 9fc6cd8715774ed8bf84edced7c9bd876530bc26 all appear in the source manifest.md orientation_write_paths and implement the repaired-head landing contract.\nSCORE durability: 20\nJUSTIFICATION durability: Removing pending_landing.py:1067 restores premature publication and stale-review acceptance, disabling recovery_review_dispatch.py:3233 prevents the observed review requests, and removing queue_landing.py:1946 loses the two named obligations asserted by tests/test_a_repaired_head_is_reviewed_and_landed.py:175.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/pending_landing.py:498 uses the existing tier readers and pointer mutation idiom, and its added names and test names describe behavior without prohibited transient labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for repair-head discovery, review-tier acceptance, pointer marking and test repository construction found pending_landing.py:_delivered_repair, queue_landing.py:_owed_review_tiers/_review_for_tier/_review_tier_is_complete, runs.py:_mutate_pointer and tests/helpers/landing_repository.py, which the additions wrap or extend rather than replace.\n",
+  "review_run_id": "r-20261117T122840487491-review-of-a-repaired-head-is-reviewed-and-landed-9fc6cd871577",
+  "reviewed_base_sha": "500db8eb16c5b6cff2aaf03abab3abd7e196376b",
+  "reviewed_head_sha": "9fc6cd8715774ed8bf84edced7c9bd876530bc26",
+  "reviewed_run_id": "r-20261117T114924247084-a-repaired-head-is-reviewed-and-landed",
+  "scores": {
+    "durability": 20,
+    "evidence": 15,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_repaired_head_is_reviewed_and_landed.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T114924247084-a-repaired-head-is-reviewed-and-landed/after_suite-1794917088381025118.log",
+      "measured_by": "worker",
+      "partition": "all_debug",
+      "reason": "",
+      "revision": "9fc6cd8715774ed8bf84edced7c9bd876530bc26"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T114924247084-a-repaired-head-is-reviewed-and-landed/baseline_suite-1794917013402964914.log",
+      "measured_by": "worker",
+      "partition": "all_debug",
+      "reason": "",
+      "revision": "500db8eb16c5b6cff2aaf03abab3abd7e196376b"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T12:44:43.326816+00:00",
+  "total": 115
+}

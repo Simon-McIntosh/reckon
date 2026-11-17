@@ -24,7 +24,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
-from reckon import ledger
+from reckon import crew, ledger, run_store
 from reckon.crew.runs import _write_json, pointer_path
 from tests.helpers.git import git as _git
 from tests.helpers.landing_repository import (
@@ -44,7 +44,7 @@ def _promoted_run(
     commit_beyond_the_head: bool = False,
     retention_session: str = "",
 ) -> dict:
-    """A run promoted with ``crew complete`` whose tree is left held.
+    """A run promoted on its own whose tree is left held.
 
     The tree lives at ``<root>/<session>/<node id>``, which is the path the
     ledger row names it by once the live pointer is gone.
@@ -107,32 +107,20 @@ def _promoted_run(
         "run_id": run_id,
         "head": head,
     }
-    result = CliRunner().invoke(
-        cli_module.main,
-        [
-            "crew",
-            "complete",
-            "--run",
-            run_id,
-            "--gate",
-            "passed",
-            "--commit",
-            head,
-            "--outcome",
-            "one call promoted the run; the merge lands it separately",
-            "--checkout-path",
-            str(repository),
-            "--no-impl-change",
-            "the fixture lands one file and moves no plan",
-            "--gate-command",
-            "true",
-            "--gate-exit-status",
-            "0",
-            "--gate-log-path",
-            str(gate_log),
-        ],
+    crew.complete(
+        run_id,
+        gate="passed",
+        commits=[head],
+        outcome="one call promoted the run; the merge lands it separately",
+        root=repository,
+        require_gate_check=True,
+        gate_check={
+            "command": "true",
+            "exit_status": 0,
+            "log_path": str(gate_log),
+        },
+        no_impl_change="the fixture lands one file and moves no plan",
     )
-    assert result.exit_code == 0, result.output
     if retention_session:
         # A tree kept as the working directory of a single recoverable session
         # is named by the row's retention as well as by its node id, and it is
@@ -142,6 +130,11 @@ def _promoted_run(
             "worktree": str(worktree),
             "session_id": retention_session,
         }
+        # The run store holds a promoted row and is the authority every reader
+        # unions against, so the retention is recorded there as well: the
+        # per-run file is a projection the store's copy wins against.
+        with run_store.RunStore() as store:
+            store.sync_run(PROJECT, row)
         ledger.write_run_file(PROJECT, row, repository)
     return run
 

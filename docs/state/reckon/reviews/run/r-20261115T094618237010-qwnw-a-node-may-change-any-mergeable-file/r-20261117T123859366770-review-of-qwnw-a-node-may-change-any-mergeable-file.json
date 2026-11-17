@@ -1,0 +1,123 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_claims.py:1544 _compose_dispatch_prompt -> reckon/crew/prompts.py:930 scope_block",
+    "reckon/crew/recovery_review_subject.py:1132 _review_brief_text (brief written for a run) -> _reviewed_scope_block",
+    "reckon/crew/recovery_review_subject.py:1363 _review_brief_text (review prompt composed) -> _reviewed_scope_block"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "fit": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-a-node-may-change-any-mergeable-file-0432821ea85a",
+      "recorded_at": "2026-11-17T13:17:48.516453+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-17T12:06:35Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "qwnw-a-node-may-change-any-mergeable-file",
+      "recorded_at": "2026-11-17T13:15:35.516763+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "qwnw-a-node-may-change-any-mergeable-file",
+      "recorded_at": "2026-11-17T13:15:37.798352+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "qwnw-a-node-may-change-any-mergeable-file",
+      "recorded_at": "2026-11-17T13:15:40.245592+00:00"
+    },
+    "3": {
+      "kind": "folded",
+      "node": "qwnw-a-node-may-change-any-mergeable-file",
+      "recorded_at": "2026-11-17T13:15:43.046916+00:00"
+    },
+    "4": {
+      "kind": "exempted",
+      "reason": "Non-blocking and correct as stated: the block adds a third git-diff path listing beside _changed_paths_between and clones.changed_paths. It is not consolidated in this node, whose scope is the write-scope default; folding the three listings into one is a separate change to the review-dispatch family.",
+      "recorded_at": "2026-11-17T13:15:45.073267+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/prompts.py",
+      "id": "f69414d3b4e",
+      "line": "46",
+      "severity": "blocking",
+      "text": "blocking: the commit leaves three previously format-clean files unformatted \u2014 'ruff format --check' fails on reckon/crew/prompts.py:46,93, reckon/crew/recovery_review_subject.py:690,692 and tests/test_a_node_may_change_any_mergeable_file.py:114,165,179,206, while the same command over the base 4dc26dde versions of those paths exits 0, and AGENTS.md requires a commit to add no findings on the paths it stages."
+    },
+    {
+      "file": "tests/test_a_node_may_change_any_mergeable_file.py",
+      "id": "f57a63530d5",
+      "line": "201",
+      "severity": "blocking",
+      "text": "blocking: the new test file ends without a trailing newline, so 'ruff check' reports W292 no-newline-at-end-of-file at tests/test_a_node_may_change_any_mergeable_file.py:201 \u2014 a finding the commit adds on a path the base was clean for."
+    },
+    {
+      "file": "reckon/crew/prompts.py",
+      "id": "fbb2dc122e3",
+      "line": "930",
+      "severity": "non-blocking",
+      "text": "non-blocking: scope_block is called with neither 'paths' nor 'patterns', so the patterns parameter is dead and a project's own exclusive patterns never reach a brief even though the fence seals them (reckon/crew/runs.py:2027 unmergeable_patterns merged at reckon/crew/dispatching/launch.py:760); the docstring at reckon/crew/prompts.py:57-61 asserts the dispatcher passes the resolved list, which no caller does, so a project declaring an extra pattern still gets a brief that misdescribes its fence."
+    },
+    {
+      "file": "tests/test_a_node_may_change_any_mergeable_file.py",
+      "id": "f225b74fc87",
+      "line": "178",
+      "severity": "non-blocking",
+      "text": "non-blocking: the test named for a dispatch declaring no write path composes a prompt directly and never dispatches, so done_when's 'A dispatch with no write path is accepted' is asserted at no level, although reckon/crew/dispatch_admission.py:2215 accepts it by looping over an empty write_paths and refusing nothing."
+    },
+    {
+      "file": "reckon/crew/recovery_review_subject.py",
+      "id": "fbb994b8a5c",
+      "line": "736",
+      "severity": "non-blocking",
+      "text": "non-blocking: the block adds a second git-diff listing in the review-dispatch family beside reckon/crew/recovery_review_dispatch.py:1547 _changed_paths_between (and reckon/clones.py:629 changed_paths) instead of extending one of them to carry per-path counts; the invocation, failure handling and line filtering are the same."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read both commits against 4dc26dde: 9c009164 adds scope_block and the review-brief scope block with two test files (442 insertions), 0432821 adds the 50-line evidence fragment, and nothing outside the declared scope changes.",
+    "done_when": "read the done_when's four behaviours and its negative control against tests/test_a_node_may_change_any_mergeable_file.py and the recorded logs: three behaviours are asserted, the fourth (a dispatch with no write path being accepted) is not, and the recorded red log is brief-text failures at base rather than the dispatch refusal the done_when names.",
+    "goal": "read the node goal (let a dispatched node change any mergeable file in its repository with declared paths as the expected scope) against reckon/crew/prompts.py:46-103 and reckon/crew/recovery_review_subject.py:695-770: both brief surfaces now state the rule, and the enforcement was already in the fence at reckon/crew/dispatching/launch.py:755-762.",
+    "manifest": "read the reviewed run's manifest: status complete, commits 9c009164 and 0432821e, node-tests.log 5 passed, both suite arms 58 passed EXIT=0, negative-control.log 3 failed at 4dc26dde, and outside_scope disclosing that no dispatch-level refusal for an empty write path exists.",
+    "write_paths": "read the declared paths from the reviewed run's manifest (reckon, tests, skills, the section's evidence-fragment directory and its figure directory) and compared them with 'git diff --stat 4dc26dde 0432821e': all five changed paths lie inside them."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows tests/test_a_node_may_change_any_mergeable_file.py:167,179,198 reddening at base 4dc26dde when the new brief text and review block are absent, so those three guard the change, while :134 and :150 pass at base and the range assertion at :196 echoes the base and head the test itself passed in.",
+    "evidence": "the gate logs are on disk and readable (node-tests.log 5 passed, both suite arms 58 passed EXIT=0, negative-control.log 3 failed at 4dc26dde), but done_when's 'a dispatch with no write path is accepted' is asserted by no test and its stated negative control (a base dispatch refusal) does not match the red log, which fails on brief text instead.",
+    "fit": "the commit adds ruff debt to paths the base was clean on \u2014 W292 at tests/test_a_node_may_change_any_mergeable_file.py:201, and 'ruff format --check' fails at reckon/crew/prompts.py:46 and the other two staged modules while exiting 0 over the same paths at base.",
+    "goal_fidelity": "reckon/crew/prompts.py:46-103 replaces the heading that read 'nothing outside them' with the writable-worktree-plus-expected-paths statement and reckon/crew/recovery_review_subject.py:695-770 adds the declared-paths and delivered-diff block to the review brief, so both surfaces the goal names exist and are composed into production briefs, while the fence itself (reckon/crew/dispatching/launch.py:755-762) is unchanged.",
+    "reuse": "the containment decision delegates correctly to reckon/crew/reports.py:3198 path_within_declared_scope through reckon/crew/recovery_review_subject.py:690, but the diff listing at reckon/crew/recovery_review_subject.py:736 is a second git-diff lister beside reckon/crew/recovery_review_dispatch.py:1547 _changed_paths_between over the same range.",
+    "scope_discipline": "all five paths in 4dc26dde..0432821e lie inside the declared write paths recorded in the reviewed run's manifest, and the second commit is the 50-line evidence fragment alone."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to let a dispatched node change any mergeable file in its repository with declared paths as its expected scope; reckon/crew/prompts.py:46-103 states that in the composed brief and reckon/crew/recovery_review_subject.py:695-770 adds the declared-versus-delivered block to the review brief, and the enforcement it describes was already the fence at reckon/crew/dispatching/launch.py:755-762, so what the diff changes is the text that misdescribed it.\nVERDICT done_when: the done_when asks for temporary-repository tests of four behaviours plus a negative control; tests/test_a_node_may_change_any_mergeable_file.py holds five tests and negative-control.log shows 3 failed / 2 passed at 4dc26dde, but 'a dispatch with no write path is accepted' is asserted by no test \u2014 tests/test_a_node_may_change_any_mergeable_file.py:178 composes a prompt and never dispatches.\nVERDICT write_paths: the node declared reckon, tests, skills, docs/evidence/fragments/queued-work-needs-no-workaround and its figure directory; all five paths in 4dc26dde..0432821e lie inside them \u2014 reckon/crew/prompts.py, reckon/crew/recovery_review_subject.py, tests/test_a_node_may_change_any_mergeable_file.py, tests/test_brief_prompt.py, docs/evidence/fragments/queued-work-needs-no-workaround/s24.html.\nVERDICT manifest: read; it records status complete, commits 9c009164 and 0432821e, node-tests.log at 5 passed, baseline-suite.log and after-suite.log at 58 passed EXIT=0 each, negative-control.log red at 4dc26dde with 3 failed, and discloses under outside_scope that no dispatch-level refusal for an empty write path was found.\nVERDICT diff: read both commits against base 4dc26dde \u2014 9c009164 adds scope_block, the review-brief scope block and two test files (442 insertions), 0432821e adds the 50-line evidence fragment alone; no path outside the declared scope changed, and the fence itself is untouched.\nCALL_SITES: reckon/crew/dispatch_claims.py:1544 _compose_dispatch_prompt -> reckon/crew/prompts.py:930 scope_block, reckon/crew/recovery_review_subject.py:1132 _review_brief_text (brief written for a run), reckon/crew/recovery_review_subject.py:1363 _review_brief_text (review prompt composed)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/prompts.py:93-99 names the shipped exclusive classes as the only mergeable-hostile paths while a project's own patterns (reckon/crew/runs.py:2027) never reach the brief, so one class of misstatement survives the change.\nSCORE evidence: 14\nJUSTIFICATION evidence: the logs are recorded (negative-control.log: 3 failed at 4dc26dde; after-suite.log: 58 passed EXIT=0) but done_when's dispatch-acceptance item has no assertion and its stated negative control does not match the run performed.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every changed path in 4dc26dde..0432821e is inside the declared write paths, and commit 0432821e touches only docs/evidence/fragments/queued-work-needs-no-workaround/s24.html.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_node_may_change_any_mergeable_file.py:167,179,198 redden at base while :134 and :150 pass at base, so only three assertions guard this change and the range assertion at :196 compares values the test itself passed in.\nSCORE fit: 9\nJUSTIFICATION fit: 'ruff format --check' fails at reckon/crew/prompts.py:46 and two further staged modules that were clean at base, and 'ruff check' adds W292 at tests/test_a_node_may_change_any_mergeable_file.py:201.\nSCORE reuse: 13\nJUSTIFICATION reuse: containment delegates to reckon/crew/reports.py:3198 via reckon/crew/recovery_review_subject.py:690, but the diff listing at reckon/crew/recovery_review_subject.py:736 duplicates the range listing reckon/crew/recovery_review_dispatch.py:1547 already owns.\nFINDING reckon/crew/prompts.py:46 blocking: the commit leaves three previously format-clean files unformatted \u2014 'ruff format --check' fails on reckon/crew/prompts.py:46,93, reckon/crew/recovery_review_subject.py:690,692 and tests/test_a_node_may_change_any_mergeable_file.py:114,165,179,206, while the same command over the base 4dc26dde versions of those paths exits 0, and AGENTS.md requires a commit to add no findings on the paths it stages.\nFINDING tests/test_a_node_may_change_any_mergeable_file.py:201 blocking: the new test file ends without a trailing newline, so 'ruff check' reports W292 no-newline-at-end-of-file at tests/test_a_node_may_change_any_mergeable_file.py:201 \u2014 a finding the commit adds on a path the base was clean for.\nFINDING reckon/crew/prompts.py:930 non-blocking: scope_block is called with neither 'paths' nor 'patterns', so the patterns parameter is dead and a project's own exclusive patterns never reach a brief even though the fence seals them (reckon/crew/runs.py:2027 merged at reckon/crew/dispatching/launch.py:760); the docstring at reckon/crew/prompts.py:57-61 asserts the dispatcher passes the resolved list, which no caller does.\nFINDING tests/test_a_node_may_change_any_mergeable_file.py:178 non-blocking: the test named for a dispatch declaring no write path composes a prompt directly and never dispatches, so done_when's 'A dispatch with no write path is accepted' is asserted at no level, although reckon/crew/dispatch_admission.py:2215 accepts it.\nFINDING reckon/crew/recovery_review_subject.py:736 non-blocking: the block adds a second git-diff listing in the review-dispatch family beside reckon/crew/recovery_review_dispatch.py:1547 _changed_paths_between instead of extending it to carry per-path counts; the invocation, failure handling and line filtering are the same.\n",
+  "review_run_id": "r-20261117T123859366770-review-of-qwnw-a-node-may-change-any-mergeable-file",
+  "reviewed_base_sha": "4dc26dde5ce40643f7135a6c01dfad19a952d240",
+  "reviewed_head_sha": "0432821ea85a63e9894ddc869cbffc4ba6046925",
+  "reviewed_run_id": "r-20261115T094618237010-qwnw-a-node-may-change-any-mergeable-file",
+  "reviewer": {
+    "backend": "deepseek-v4.1-flash",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261117T123859366770-review-of-qwnw-a-node-may-change-any-mergeable-file"
+  },
+  "reviewer_run_id": "r-20261117T123859366770-review-of-qwnw-a-node-may-change-any-mergeable-file",
+  "scores": {
+    "durability": 14,
+    "evidence": 14,
+    "fit": 9,
+    "goal_fidelity": 17,
+    "reuse": 13,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T13:18:22.005799+00:00",
+  "total": 86
+}

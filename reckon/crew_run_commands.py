@@ -1,7 +1,8 @@
 import inspect
 import os
 import time
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
+from contextvars import ContextVar
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -29,11 +30,15 @@ from reckon.crew_dispatch_commands import (
     _emit_crew_result as _publish_crew_result,
 )
 
+_COMPLETION_REPLIES = ContextVar("completion_replies", default=None)
+
 
 def _emit(payload, pretty: bool) -> None:
     from reckon.crew.promotion_requests import COMMAND_REPLY
 
     reply = COMMAND_REPLY.get()
+    if reply is None:
+        reply = _COMPLETION_REPLIES.get()
     if reply is not None:
         reply.append(dict(payload))
         return
@@ -44,16 +49,27 @@ def _emit_crew_result(result, pretty: bool, **kwargs) -> None:
     from reckon.crew.promotion_requests import COMMAND_REPLY
     from reckon.crew_dispatch_commands import _crew_result_ok
 
-    if COMMAND_REPLY.get() is None:
+    if COMMAND_REPLY.get() is None and _COMPLETION_REPLIES.get() is None:
         _publish_crew_result(result, pretty, **kwargs)
         return
     payload = dict(result)
     payload["ok"] = _crew_result_ok(
         payload, observation=kwargs.get("observation", False)
     )
-    _emit(payload, pretty)
+    _emit_completion_reply(payload, pretty)
     if not payload["ok"]:
         raise click.exceptions.Exit(kwargs.get("failure_exit", 1))
+
+
+def _emit_completion_reply(payload, pretty: bool) -> None:
+    """Capture a member's reply before a tool adapter replaces the public sink."""
+    from reckon.crew.promotion_requests import COMMAND_REPLY
+
+    reply = _COMPLETION_REPLIES.get()
+    if reply is not None and COMMAND_REPLY.get() is None:
+        reply.append(dict(payload))
+    else:
+        _emit(payload, pretty)
 
 
 # Preserve the CLI re-export while the retired name resolves through the
@@ -1545,6 +1561,29 @@ def crew_check(manifest, review, run_id, record_path, pretty, project=None):
     help="Repair a review's status or missing subject.",
 )
 @click.option(
+    "--arm",
+    type=click.Choice(["baseline_suite", "after_suite"]),
+    default=None,
+    help="Re-point a suite arm's revision.",
+)
+@click.option(
+    "--revision",
+    default=None,
+    help="The commit object id the re-pointed arm's command ran against.",
+)
+@click.option(
+    "--command",
+    "arm_command",
+    default="",
+    help="The command the re-pointed arm ran, when it differs from the recorded one.",
+)
+@click.option(
+    "--log-path",
+    "arm_log_path",
+    default="",
+    help="The log the re-pointed arm wrote, when the recorded one is wrong; a run keeps the files it was armed with otherwise.",
+)
+@click.option(
     "--run", "run_id", required=True, help="Run whose manifest or review is repaired."
 )
 @click.option(
@@ -1560,16 +1599,35 @@ def crew_check(manifest, review, run_id, record_path, pretty, project=None):
 @click.option("--reason", required=True, help="Why the recorded repair is justified.")
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_repair(
-    status, repair_review, run_id, record_path, change, reason, pretty, project=None
+    status,
+    repair_review,
+    arm,
+    revision,
+    arm_command,
+    arm_log_path,
+    run_id,
+    record_path,
+    change,
+    reason,
+    pretty,
+    project=None,
 ):
-    """Repair a manifest's status word or a review's status or subject identity."""
+    """Repair a manifest's status word, a suite arm's revision, or a review's fields."""
     resolved_project = _accept_a_matching_project(run_id, project)
-    if bool(status) == repair_review:
-        raise click.UsageError("choose exactly one of --status or --review")
+    if sum((bool(status), repair_review, bool(arm))) != 1:
+        raise click.UsageError("choose exactly one of --status, --review or --arm")
     if status:
         if record_path or change:
             raise click.UsageError("--status does not accept --record or --set")
         return crew_repair_status(run_id, status, reason, pretty)
+    if arm:
+        if record_path or change:
+            raise click.UsageError("--arm does not accept --record or --set")
+        if not revision:
+            raise click.UsageError("--arm needs --revision")
+        return crew_repair_arm(
+            run_id, arm, revision, reason, arm_command, arm_log_path, pretty
+        )
     if not record_path or not change:
         raise click.UsageError("--review needs --record and --set")
     return crew_repair_review(
@@ -2125,14 +2183,33 @@ def _suite_project_root(project: str, checkout_path: Path | None) -> Path:
 @crew_suite.command(name="run")
 @click.option("--project", required=True, help="Project whose declared suite to run.")
 @click.option(
+    "--run",
+    "run_id",
+    default=None,
+    help="Live run whose base and head arms to measure.",
+)
+@click.option("--partition", default=None, help="Compute partition for the run's arms.")
+@click.option(
+    "--timeout-seconds",
+    type=click.FloatRange(min=0, min_open=True),
+    default=600,
+    help="Bound for each run arm.",
+)
+@click.option(
     "--checkout-path",
     default=None,
     type=click.Path(path_type=Path),
     help="Repo root whose suite is run (default: the registered mount).",
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_suite_run(project, checkout_path, pretty):
-    """Run the project's declared suite and every declared population.
+def crew_suite_run(project, run_id, partition, timeout_seconds, checkout_path, pretty):
+    """Run the project's declared suite, or one live run's base and head arms.
+
+    With --run, resolve the run's armed command separately at its base and
+    committed HEAD, submit each arm to --partition, and return baseline_suite
+    and after_suite fields ready for the worker's manifest. Every arm creates
+    its own log beside the recorded manifest and keeps its revision, command
+    and exit receipt there.
 
     Each runs under its own declared budget and is recorded as its own row, so a
     slow or browser-driven population keeps its time and its failure ids
@@ -2142,6 +2219,27 @@ def crew_suite_run(project, checkout_path, pretty):
     standing suite's own row is written and reported.
     """
     from reckon.crew import standing_suite
+
+    if run_id:
+        root = _suite_project_root(project, checkout_path)
+        try:
+            pointer = standing_suite.worker_context(run_id, project, root)
+            result = standing_suite.run_node_arms(
+                pointer=pointer,
+                repository=root,
+                run_id=run_id,
+                partition=partition
+                or standing_suite.node_gate_partition(
+                    (pointer.get("node") or {}).get("done_when", "")
+                ),
+                timeout_seconds=timeout_seconds,
+            )
+        except (standing_suite.StandingSuiteError, OSError, ValueError) as exc:
+            raise click.ClickException(str(exc)) from exc
+        _emit_crew_result(result, pretty)
+        return
+    if partition:
+        raise click.UsageError("--partition requires --run")
 
     _, flight_module = _crew_modules()
     root = _suite_project_root(project, checkout_path)
@@ -3160,6 +3258,25 @@ def crew_repair_status(run_id, status, reason, pretty):
     _emit_crew_result(result, pretty)
 
 
+def crew_repair_arm(run_id, arm, revision, reason, command, log_path, pretty):
+    """Re-point a suite arm at a revision, keeping the manifest as delivered."""
+    crew_module, _ = _crew_modules()
+    from reckon.crew import runs as runs_module
+
+    try:
+        result = runs_module.repair_manifest_arm(
+            run_id,
+            arm,
+            revision=revision,
+            reason=reason,
+            command=command,
+            log_path=log_path,
+        )
+    except crew_module.CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit_crew_result(result, pretty)
+
+
 def _ledger_module():
     """Import the ledger helpers on demand."""
     from reckon import ledger as ledger_module
@@ -3285,8 +3402,187 @@ def _refuse_a_flag_as_a_reason(
     return value
 
 
+def _complete_many(run_ids, parameters):
+    """Apply the same confirmation to each run and retain every full outcome."""
+    import json
+
+    from reckon.crew import runs
+    from reckon.crew.promotion_requests import COMMAND_REPLY
+
+    run_ids = tuple(dict.fromkeys(run_ids))
+    if len(run_ids) > 1 and any(
+        parameters.get(name)
+        for name in (
+            "commits",
+            "candidate",
+            "gate_command",
+            "gate_log_path",
+            "gate_log_digest",
+            "accepted_paths",
+        )
+    ):
+        raise click.UsageError(
+            "per-run commits, candidates, gate evidence and accepted paths require "
+            "one --run; omit them to use each run's recorded evidence"
+        )
+    for run_id in run_ids:
+        _accept_a_matching_project(run_id, parameters.get("project"))
+    reports = []
+    for run_id in run_ids:
+        captured = []
+        token = _COMPLETION_REPLIES.set(captured)
+        service_token = (
+            COMMAND_REPLY.set(captured) if COMMAND_REPLY.get() is not None else None
+        )
+        code = 0
+        try:
+            crew_complete.callback(run_id=run_id, **parameters)
+        except click.ClickException as exc:
+            code = exc.exit_code
+            captured.append({"ok": False, "detail": exc.format_message()})
+        except click.exceptions.Exit as exc:
+            code = exc.exit_code
+        finally:
+            if service_token is not None:
+                COMMAND_REPLY.reset(service_token)
+            _COMPLETION_REPLIES.reset(token)
+        result = captured[-1] if captured else {"ok": False, "detail": "no receipt"}
+        result = {**result, "run_id": run_id, "ok": not code and result.get("ok", True)}
+        if parameters.get("dry_run"):
+            reports.append(result)
+            continue
+        directory = runs.reports_dir()
+        if run_id not in {"", ".", ".."} and Path(run_id).name == run_id:
+            existing = runs.run_dir(run_id)
+            if existing.is_dir():
+                directory = existing
+        # A refusal must not create a run directory: its existence is evidence
+        # the recovery reader uses to distinguish a missing run from a delivery.
+        path = directory / f"completion-{time.time_ns()}.json"
+        runs._write_json(path, result)
+        report = {
+            key: result[key]
+            for key in (
+                "ok",
+                "run_id",
+                "phase",
+                "pointer_removed",
+                "ledger_path",
+                "merged",
+                "worktree_released",
+                "review_filed",
+                "refused",
+            )
+            if key in result
+        }
+        report["record_path"] = str(path)
+        for key in ("error", "detail", "reason"):
+            if result.get(key):
+                report[key] = str(result[key])[:240]
+                break
+        else:
+            steps = result.get("steps")
+            if isinstance(steps, Mapping):
+                for stage, entry in steps.items():
+                    if isinstance(entry, Mapping) and entry.get("ok") is False:
+                        report["error"] = f"{stage}: {entry.get('error') or 'refused'}"[
+                            :240
+                        ]
+                        break
+        reports.append(report)
+    reply = (
+        reports[0]
+        if len(reports) == 1
+        else {
+            "ok": all(row["ok"] for row in reports),
+            "runs": reports,
+        }
+    )
+    if (
+        not parameters.get("dry_run")
+        and len(
+            json.dumps(
+                reply,
+                indent=2 if parameters.get("pretty") else None,
+            ).encode()
+        )
+        >= 1900
+    ):
+        path = (
+            Path(reports[0]["record_path"]).parent
+            / f"completion-batch-{time.time_ns()}.json"
+        )
+        runs._write_json(path, reply)
+        reply = {
+            "ok": all(row["ok"] for row in reports),
+            "count": len(reports),
+            "failed": sum(not row["ok"] for row in reports),
+            "record_path": str(path),
+        }
+    _emit_crew_result(reply, parameters.get("pretty", False))
+
+
+def _refuse_an_unfileable_review_record(
+    run_id: str, *, accepted: "Iterable[str]" = (), pretty: bool = False
+) -> None:
+    """Refuse a review run whose every delivered record the store would reject.
+
+    A review writes its record into its own run directory rather than into the
+    store, so the file a promotion files is the one on a path the run declared.
+    Reading it before the promotion is requested is what keeps the refusal on
+    the command that would have queued the work: the queued path answers with
+    its request receipt immediately, so a guard placed behind it reports a
+    review claims files that the reviewer is never told about until a drain
+    refuses them. A path this call accepts is read beside the declaration
+    because a widen lands it on the pointer only after this point.
+    """
+    import json
+
+    from reckon.crew import review as review_module
+    from reckon.crew import runs as runs_module
+    from reckon.crew.node import CrewError
+
+    try:
+        pointer = runs_module.read_pointer(run_id)
+    except CrewError:
+        return
+    node = pointer.get("node") or {}
+    if str(pointer.get("role") or node.get("role") or "") != "review":
+        return
+    declared = [*(node.get("write_paths") or ()), *accepted]
+    delivered = []
+    for name in dict.fromkeys(str(path) for path in declared):
+        source = Path(name)
+        if (
+            source.parent.name != review_module.RUN_REVIEW_RECORD_DIRNAME
+            or not source.is_file()
+        ):
+            continue
+        try:
+            body = json.loads(source.read_text(encoding="utf-8"))
+            reasons = (
+                review_module.store_review_refusals(body)
+                if isinstance(body, dict)
+                else ["record is not an object"]
+            )
+        except (OSError, ValueError) as exc:
+            reasons = [f"unreadable JSON: {exc}"]
+        delivered.append({"record": str(source), "reasons": reasons})
+    if delivered and all(entry["reasons"] for entry in delivered):
+        _emit_completion_reply(
+            {"ok": False, "review_filed": False, "refused": delivered}, pretty
+        )
+        raise click.exceptions.Exit(1)
+
+
 @crew.command(name="complete")
-@click.option("--run", "run_id", required=True, help="Run id to promote.")
+@click.option(
+    "--run",
+    "run_id",
+    required=True,
+    multiple=True,
+    help="Run id to promote; repeat to confirm several runs with their recorded evidence.",
+)
 @click.option(
     "--project", default=None, help="Project owning the run; cross-checks the run."
 )
@@ -3582,9 +3878,29 @@ def crew_complete(
     --wait carries out promotion in this call and returns its outcome.
     --dry-run reports the current guards without recording a request. Internal
     callback callers retain synchronous execution unless they request otherwise.
+    Repeat --run to confirm several deliveries; each retains its own gate and
+    review checks. Replies link the full record and stay below 2 kB.
     """
+    from reckon.crew.promotion_requests import COMMAND_REPLY
+
+    public_reply = COMMAND_REPLY.get() is None and _COMPLETION_REPLIES.get() is None
+    if isinstance(run_id, (tuple, list)) or public_reply:
+        if not isinstance(run_id, (tuple, list)):
+            run_id = (run_id,)
+        if COMMAND_REPLY.get() is not None and len(run_id) == 1:
+            # Stored CLI options retain Click's tuple, while the drain reads
+            # the full single-run receipt rather than the compact CLI reply.
+            run_id = run_id[0]
+        else:
+            accepted = set(inspect.signature(crew_complete.callback).parameters)
+            parameters = {
+                name: value
+                for name, value in locals().items()
+                if name in accepted and name != "run_id"
+            }
+            _complete_many(run_id, parameters)
+            return
     from reckon.crew.promotion_requests import (
-        COMMAND_REPLY,
         REQUESTED,
         request_promotion,
     )
@@ -3599,6 +3915,11 @@ def crew_complete(
     # a promotion request, and a caller whose --project disagrees with the run
     # must be refused without a request left queued for a run it did not name.
     _accept_a_matching_project(run_id, project)
+    # Judged here, ahead of the queued request, so a review learns its record
+    # is unfileable from the command that would have queued the promotion.
+    _refuse_an_unfileable_review_record(
+        run_id, accepted=[path for path, _ in accepted_paths], pretty=pretty
+    )
     driven = False
     if not wait and not dry_run and COMMAND_REPLY.get() is None:
         # The drain forwards every stored option as a keyword, so the snapshot
@@ -3636,7 +3957,6 @@ def crew_complete(
         )
     crew_module, _ = _crew_modules()
     ledger_module = _ledger_module()
-    from reckon.crew import review as review_module
     from reckon.crew import runs as runs_module
 
     try:
@@ -3664,34 +3984,6 @@ def crew_complete(
             pointer = runs_module.read_pointer(run_id)
         except crew_module.CrewError as exc:
             raise click.ClickException(str(exc)) from exc
-    if (
-        pointer
-        and str(pointer.get("role") or (pointer.get("node") or {}).get("role") or "")
-        == "review"
-    ):
-        delivered = []
-        for declared in (pointer.get("node") or {}).get("write_paths") or ():
-            source = Path(str(declared))
-            if (
-                source.parent.name != review_module.RUN_REVIEW_RECORD_DIRNAME
-                or not source.is_file()
-            ):
-                continue
-            try:
-                import json
-
-                body = json.loads(source.read_text(encoding="utf-8"))
-                reasons = (
-                    review_module.store_review_refusals(body)
-                    if isinstance(body, dict)
-                    else ["record is not an object"]
-                )
-            except (OSError, ValueError) as exc:
-                reasons = [f"unreadable JSON: {exc}"]
-            delivered.append({"record": str(source), "reasons": reasons})
-        if delivered and all(entry["reasons"] for entry in delivered):
-            _emit({"ok": False, "review_filed": False, "refused": delivered}, pretty)
-            raise click.exceptions.Exit(1)
     gate_check = {
         "command": gate_command,
         "exit_status": gate_exit_status,
@@ -3807,7 +4099,7 @@ def crew_complete(
             unplanned_reason=unplanned_reason,
         )
     except ledger_module.SuiteDeltaError as exc:
-        _emit(
+        _emit_completion_reply(
             {
                 "ok": False,
                 "error": "suite-delta-refused",
@@ -4176,6 +4468,147 @@ def _refuse_a_plain_complete_off_the_branch(
     )
 
 
+def _complete_landing_group(request: Mapping[str, Any]) -> dict[str, Any]:
+    """Complete every member, then use the ordinary publication callback once.
+
+    The group record precedes promotion. Recovery can therefore finish missing
+    promotions before publishing, even if a process ends after a ledger write
+    and before the callback records that write on the group.
+    """
+    from reckon.crew import pending_landing, queue_landing, runs
+    from reckon.crew.promotion_requests import _execute_command
+    from reckon.node_exclusive_lock import LockHeld, exclusive_lock
+
+    leader = str(request["run_id"])
+    path = pending_landing.group_path(leader)
+    try:
+        lock = exclusive_lock(path.with_suffix(".lock"), blocking=False)
+        lock.__enter__()
+    except LockHeld as exc:
+        raise runs.CrewError("the landing group is already being completed") from exc
+    try:
+        group = pending_landing._read(path)
+        if group is None:
+            members = request["options"]["members"]
+            group = {
+                "run_id": leader,
+                "request": dict(request),
+                "members": {
+                    str(member["pointer"]["run_id"]): dict(member) for member in members
+                },
+            }
+            pending_landing.save_group(group)
+        pending_landing.refresh_group_repairs(group)
+        # Preflight all still-unpromoted members before the first write. This
+        # is the same guard as each real completion, never a group exemption.
+        for run_id, member in group["members"].items():
+            project = str(member["pointer"]["project"])
+            row = pending_landing._promoted_row(project, run_id)
+            if row is not None:
+                if _reviewed_head_of(row) != member.get(
+                    "promoted_head", member["head"]
+                ):
+                    raise runs.CrewError(
+                        f"group member {run_id} was promoted at a different head"
+                    )
+                if row.get("gate") != "passed":
+                    raise runs.CrewError(
+                        f"group member {run_id} has no passing promotion"
+                    )
+                member["promotion"] = {"project": project, "record": dict(row)}
+                continue
+            current, _tree = queue_landing.recovery._review_head_and_tree(
+                member["pointer"]
+            )
+            if current != member["head"]:
+                raise runs.CrewError(f"group member {run_id} changed its reviewed head")
+            dry = _execute_command(
+                {**member["options"], "dry_run": True, "land": False, "candidate": ""}
+            )
+            if not dry.get("would_promote"):
+                raise runs.CrewError(f"group member {run_id} refused: {dry}")
+        pending_landing.save_group(group)
+        # A finished measurement is reusable only for this complete set and
+        # the current product; publication records alone leave it unchanged.
+        pointer = group["members"][leader]["pointer"]
+        primary = queue_landing._primary_revision(pointer)
+        if not group.get(
+            "head"
+        ) or not queue_landing._moved_primary_keeps_the_measurement(
+            pointer, str(group.get("primary") or ""), primary
+        ):
+            from reckon.crew import merge
+
+            if not group.get("head") or not merge._is_ancestor(
+                Path(str(pointer["repo"])), str(group["head"]), primary
+            ):
+                queue_landing.measure_landing_group(group)
+        group.pop("publishing", None)
+        token = pending_landing.LANDING_GROUP.set(group)
+        try:
+            for member in group["members"].values():
+                if member.get("promotion"):
+                    continue
+                _execute_command({**member["options"], "candidate": ""})
+            primary = queue_landing._primary_revision(pointer)
+            if not queue_landing._moved_primary_keeps_the_measurement(
+                pointer, str(group["primary"]), primary
+            ):
+                from reckon.crew import merge
+
+                if not merge._is_ancestor(
+                    Path(str(pointer["repo"])), str(group["head"]), primary
+                ):
+                    queue_landing.measure_landing_group(group)
+            group["publishing"] = True
+            pending_landing.save_group(group)
+            first = group["members"][leader]
+            report, code = _land_a_promoted_run(
+                first["promotion"],
+                run_id=leader,
+                gate="passed",
+                checkout_path=None,
+                pointer=first["pointer"],
+                candidate=str(group["head"]),
+            )
+            if code:
+                raise runs.CrewError(str(report.get("error") or report))
+        finally:
+            group.pop("publishing", None)
+            pending_landing.LANDING_GROUP.reset(token)
+        # Every other head is now on primary. Their ordinary callback performs
+        # its idempotent push/release path without another merge or gate.
+        for run_id, member in group["members"].items():
+            if run_id == leader:
+                continue
+            # A promoted member's repaired worktree is ahead of its ledger head.
+            # Release it against the combined head whose ancestry proved both.
+            token = pending_landing.LANDING_GROUP.set({**group, "publishing": True})
+            try:
+                released, code = _land_a_promoted_run(
+                    member["promotion"],
+                    run_id=run_id,
+                    gate="passed",
+                    checkout_path=None,
+                    pointer=member["pointer"],
+                )
+            finally:
+                pending_landing.LANDING_GROUP.reset(token)
+            if code:
+                raise runs.CrewError(str(released.get("error") or released))
+        path.unlink()
+        return {
+            "ok": True,
+            "run_id": leader,
+            "members": list(group["members"]),
+            "candidate": group["head"],
+            "commits": [member["head"] for member in group["members"].values()],
+            "landing": report,
+        }
+    finally:
+        lock.__exit__(None, None, None)
+
+
 def _land_a_promoted_run(
     promoted: Mapping[str, Any],
     *,
@@ -4224,7 +4657,12 @@ def _land_a_promoted_run(
         "steps": {"promote": {"ok": True}},
         "promotion": promoted,
     }
-    head = _reviewed_head_of(record)
+    group = pending_landing.LANDING_GROUP.get()
+    head = (
+        str(group["head"])
+        if group and group.get("publishing")
+        else _reviewed_head_of(record)
+    )
     if not head:
         report["steps"]["land"] = {
             "ok": False,
@@ -4302,6 +4740,11 @@ def _land_a_promoted_run(
         )
         return report, 1
 
+    if group and not group.get("publishing"):
+        group["members"][run_id]["promotion"] = dict(promoted)
+        pending_landing.save_group(group)
+        return {"ok": True, "run_id": run_id, "group_pending": group["run_id"]}, 0
+
     def verify_gate(checkout, _base, _head, revision, objects=None):
         from reckon.crew.review_landing import replay_candidate
 
@@ -4324,7 +4767,7 @@ def _land_a_promoted_run(
             raise merge_module.MergeError(checked["reason"])
 
     try:
-        if candidate:
+        if candidate and not merge_module._is_ancestor(repository, head, "HEAD"):
             from reckon.crew import queue_landing
 
             # Promotion writes records onto primary. Measure the resulting
@@ -4335,6 +4778,8 @@ def _land_a_promoted_run(
                 head,
                 str(worktree or repository),
             )
+        elif candidate:
+            candidate = ""
         landed = merge_module.land(
             repository,
             head=head,
@@ -4495,6 +4940,14 @@ def _reviewed_head_of(record: Mapping[str, Any]) -> str:
 @click.option("--project", required=True, help="Project owning the run ledger.")
 @click.option("--run", "run_id", required=True, help="Run id whose gate is re-run.")
 @click.option(
+    "--worker",
+    is_flag=True,
+    help="Measure the live worker's scoped command without a ledger write.",
+)
+@click.option(
+    "--partition", default=None, help="Compute partition for a live worker gate."
+)
+@click.option(
     "--checkout-path",
     required=True,
     type=click.Path(path_type=Path),
@@ -4528,9 +4981,17 @@ def _reviewed_head_of(record: Mapping[str, Any]) -> str:
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_verify_gate(
-    project, run_id, checkout_path, revision, timeout_seconds, command, pretty
+    project,
+    run_id,
+    worker,
+    partition,
+    checkout_path,
+    revision,
+    timeout_seconds,
+    command,
+    pretty,
 ):
-    """Re-run one run's gate at the integrated revision, recording the report on the run.
+    """Re-run one run's gate at the integrated revision, or its live worker's scoped gate.
 
     Reads the run's stored gate command and base verdict from its committed
     ledger row, re-runs that command against the tree at --checkout-path — the
@@ -4548,7 +5009,40 @@ def crew_verify_gate(
     The re-run's bound is derived from the duration the run's recorded gate
     log carries unless --timeout-seconds names one explicitly; the report
     records which bound applied and its value either way.
+
+    With --worker, measure the live run's committed HEAD on --partition and
+    return tests, test_logs and the gate observation for its manifest. The
+    run's scoped suite supplies the command unless --command names one. The
+    worker bound defaults to 600 seconds, and each call creates its own log
+    beside the run's recorded manifest.
     """
+    if worker:
+        from reckon.crew import promotion_gate, standing_suite
+
+        if revision != "HEAD":
+            raise click.UsageError(
+                "--worker measures the committed HEAD; omit --revision"
+            )
+        root = checkout_path.expanduser().resolve()
+        try:
+            pointer = standing_suite.worker_context(run_id, project, root)
+            result = promotion_gate.run_worker_gate(
+                project=project,
+                run_id=run_id,
+                repository=root,
+                command=command,
+                partition=partition
+                or standing_suite.node_gate_partition(
+                    (pointer.get("node") or {}).get("done_when", "")
+                ),
+                timeout_seconds=timeout_seconds if timeout_seconds is not None else 600,
+            )
+        except (standing_suite.StandingSuiteError, OSError, ValueError) as exc:
+            raise click.ClickException(str(exc)) from exc
+        _emit_crew_result(result, pretty)
+        return
+    if partition:
+        raise click.UsageError("--partition requires --worker")
     _accept_a_matching_project(run_id, project)
     crew_module, _ = _crew_modules()
     record = _gate_opened(

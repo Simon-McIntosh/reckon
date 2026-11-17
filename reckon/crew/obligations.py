@@ -29,6 +29,7 @@ from collections import OrderedDict, defaultdict, deque
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -50,6 +51,7 @@ from reckon.crew import (
     repair as repair_module,
 )
 from reckon.crew import review as review_module
+from reckon.crew.admission import verdicts as _verdicts
 from reckon.crew.node import (
     INTERRUPTED_RUN_PHASE,
     CrewError,
@@ -189,6 +191,7 @@ DUTY_ROW_FIELDS = (
     "until_condition",
     "deferred_duty",
     "record",
+    "record_action",
     "head",
     "reviewed_head",
     "review_tier",
@@ -563,7 +566,8 @@ def action_form(command: str) -> str | None:
     quotation mark — likewise has no form, so a stored command that cannot be
     parsed leaves the read it belongs to intact rather than failing it.
 
-    Every option on the command is rendered, and an option this form cannot
+    Complete already waits on the tool surface, so its CLI --wait flag adds
+    no argument. Every other option on the command is rendered, and one this form cannot
     carry — one with no tool parameter, one whose value is missing — makes the
     whole command unrenderable. Half a command is worse than a printed one: it
     reads as callable and is refused, or is silently called without the
@@ -590,10 +594,15 @@ def action_form(command: str) -> str | None:
     order: list[tuple[str, bool]] = []
     index = 3
     while index < len(tokens):
-        token = tokens[index]
-        if not token.startswith("-"):
+        word = tokens[index]
+        if not word.startswith("-"):
             return None
-        option, _, inline = token.partition("=")
+        # The complete action invokes crew_complete synchronously by default,
+        # so its CLI --wait flag requires no additional tool parameter.
+        if verb == "complete" and word == "--wait":
+            index += 1
+            continue
+        option, _, inline = word.partition("=")
         parameter = _action_parameter(option)
         if parameter is None:
             return None
@@ -650,7 +659,40 @@ def _with_action_form(item: Mapping[str, Any]) -> dict[str, Any]:
     view projects passes through here, in the derivation and in the slice a
     sweep publishes, so the two surfaces cannot disagree about what a duty names.
     """
+    if item.get("_delivery_decision") and not item.get("deferred_duty"):
+        row = {
+            key: item[key]
+            for key in (
+                "kind",
+                "run_id",
+                "age_seconds",
+                "reason",
+                "next_command",
+            )
+            if key in item
+        }
+        # The run id is the key of the full read, so the bounded row need not
+        # repeat the manifest, pointer, worktree and review paths.
+        row["record_action"] = "observe"
+        row = project_run_rows(
+            [row],
+            view="obligations",
+            sections={str(row["run_id"]): str(item["_delivery_decision"])},
+        )[0]
+        available = max(0, 400 - len(json.dumps({**row, "reason": ""})))
+        reason = str(row.get("reason") or "")
+        if len(reason) > available and available < 25 and "gate" in reason.lower():
+            reason = "gate failed"
+        if len(json.dumps(reason)) - 2 > available:
+            suffix = "..." if available >= 3 else ""
+            reason = reason[:available]
+            while reason and len(json.dumps(reason + suffix)) - 2 > available:
+                reason = reason[:-1]
+            reason += suffix
+        row["reason"] = reason
+        return row
     row = dict(item)
+    row.pop("_delivery_decision", None)
     rendered = action_form(str(item.get("next_command") or ""))
     if rendered is not None:
         row["next_action_form"] = rendered
@@ -682,6 +724,22 @@ def _seconds_since(value: Any, *, now: datetime) -> int:
     if stamp is None:
         return 0
     return max(0, int((now - stamp).total_seconds()))
+
+
+def _queued_hold(pointer: Mapping[str, Any]) -> Mapping[str, Any]:
+    """The hold a queued request is under, composed by the admission package.
+
+    A request whose last attempt failed on a refusal that names its remedy is
+    held by that refusal, whatever hold the last pass wrote: the pass asks the
+    lane before it reads the request's back-off, and a lane with no slot answers
+    first. The composition lives with the admission records so this view, the
+    pass's own verdict row and the request's stored hold cannot disagree about
+    what holds one request.
+    """
+    named = _verdicts.failure_hold(pointer)
+    if named is not None:
+        return named
+    return queue_admission.recorded_pass_hold(pointer)
 
 
 def _row_age(row: Mapping[str, Any], *, now: datetime) -> int:
@@ -2017,12 +2075,16 @@ def _live_item(
     if kind in CLASSIFIER_DETAIL_DUTY_KINDS:
         item["reason"] = str(row.get("detail") or "")
     if kind == QUEUED_RUN_DUTY_KIND and pointer is not None:
-        hold = queue_admission.recorded_pass_hold(pointer)
+        hold = _queued_hold(pointer)
         verdict = str(hold.get("verdict") or "")
         if verdict:
-            reason = str(hold.get("reason") or "")
+            reason = _verdicts.hold_reason(hold)
             item["reason"] = f"{verdict}: {reason}" if reason else verdict
-            item["next_command"] = f"wait: {item['reason']}"
+            stamped = str(hold.get("recorded_at") or "").strip()
+            if stamped:
+                item["age_seconds"] = _seconds_since(stamped, now=now)
+            remedy = str(hold.get("remedy") or "")
+            item["next_command"] = remedy or f"wait: {item['reason']}"
     return item
 
 
@@ -2439,7 +2501,23 @@ def _queued_row_item(
         refusal = row.get("session_refusal")
         if isinstance(refusal, Mapping) and str(refusal.get("holder_run_id") or ""):
             return _scope_held_item(row, refusal=refusal, now=now)
-        return _live_item(row, kind=QUEUED_AWAITING_SESSION_DUTY_KIND, now=now)
+        item = _live_item(row, kind=QUEUED_AWAITING_SESSION_DUTY_KIND, now=now)
+        if isinstance(refusal, Mapping):
+            # The classification detail is replaced by a stuck sentence whenever
+            # the pass's last recorded verdict is old enough to read as stuck,
+            # and that sentence is about the phase rather than about the refusal
+            # that stops the launch. The refusal is the later answer to the same
+            # question — the session's own condition, with the command that
+            # clears it — so it is what the row says, with its age measured from
+            # the instant that refusal was recorded.
+            detail = str(refusal.get("detail") or "")
+            if detail:
+                item["reason"] = detail
+                item["next_command"] = str(refusal.get("next_command") or "")
+                stamped = str(refusal.get("recorded_at") or "").strip()
+                if stamped:
+                    item["age_seconds"] = _seconds_since(stamped, now=now)
+        return item
     ordered = placements() if callable(placements) else placements
     return _queued_item(
         row, placements=ordered, now=now, verdicts=verdicts, pointer=pointer
@@ -2813,6 +2891,112 @@ def _review_duty_item(
     live_pointers: Sequence[Mapping[str, Any]] | None = None,
     placements: Mapping[str, Mapping[str, int]] | None = None,
 ) -> dict[str, Any] | None:
+    """Leave automatic deliveries to their promoter and show its refusals."""
+    resolution: dict[str, Any] = {}
+    item = _review_duty_detail(
+        project,
+        row,
+        pointer,
+        now=now,
+        grace=grace,
+        live_pointers=live_pointers,
+        placements=placements,
+        resolution=resolution,
+    )
+    if item is None or pointer is None:
+        return item
+    from reckon.crew import recovery_review_acceptance as acceptance
+    from reckon.crew import review_landing
+    from reckon.crew.resume import hold_reason, station_hold_reason
+
+    held = (
+        hold_reason(pointer, str(resolution["head"]))
+        if "head" in resolution
+        else station_hold_reason(pointer)
+    )
+    if held:
+        item["kind"] = "run-held"
+        item["reason"] = held
+        item["next_command"] = (
+            f"reckon crew release --run {shlex.quote(str(row['run_id']))} "
+            "--reason 'The delivery is ready to land.'"
+        )
+    elif recovery._is_review_run(pointer):
+        state, reason, _record = acceptance.review_self_state(pointer)
+        if state != acceptance.REVIEW_SELF_REFUSED:
+            return None
+        item["reason"] = reason
+    elif item["kind"] in {"review-ready", "promotable-stale"}:
+        head, tree = str(resolution["head"]), resolution["tree"]
+        try:
+            reason = review_landing.manual_landing_reason(pointer)
+        except (OSError, ValueError, _store.CorruptEnvelopeError) as exc:
+            reason = f"the landing decision could not be read: {exc}"
+        if not reason:
+            gate, commits = acceptance._recorded_gate_passed(pointer)
+            if gate is None:
+                reason = "the run records no passing gate to re-run at the merged head"
+            else:
+                review, _ = _selected_review(
+                    project, str(row["run_id"]), head, tree=tree
+                )
+                try:
+                    memo = json.loads(
+                        (
+                            runs.run_dir(str(row["run_id"])) / "acceptance-refusal.json"
+                        ).read_text()
+                    )
+                except (OSError, ValueError):
+                    memo = None
+                inputs = acceptance._acceptance_input_view(
+                    pointer, head, tree, review, gate, commits
+                )
+                key = memo.get("inputs") if isinstance(memo, Mapping) else None
+                if (
+                    isinstance(key, (tuple, list))
+                    and key
+                    and key[0] == acceptance._inputs_digest(inputs)
+                ):
+                    reason = str((memo.get("refusal") or {}).get("reason") or "")
+                if not reason and (
+                    acceptance._review_accepts_promotion(review)
+                    or item.get("review_tier") == review_tiers.NONE
+                ):
+                    return None
+        if reason:
+            item["reason"] = reason
+    elif item["kind"] == "landing-refused":
+        item["reason"] = str(
+            (pointer.get("admission_landing") or {}).get("guard")
+            or item.get("reason")
+            or ""
+        )
+    else:
+        return item
+    if (
+        not held
+        and str(pointer.get("role") or (pointer.get("node") or {}).get("role"))
+        == "implement"
+    ):
+        item["next_command"] = (
+            f"reckon crew complete --run {shlex.quote(str(row['run_id']))} "
+            "--gate passed --land --wait"
+        )
+    item["_delivery_decision"] = str((pointer.get("node") or {}).get("section") or " ")
+    return item
+
+
+def _review_duty_detail(
+    project: str,
+    row: Mapping[str, Any],
+    pointer: Mapping[str, Any] | None,
+    *,
+    now: datetime,
+    grace: int,
+    live_pointers: Sequence[Mapping[str, Any]] | None = None,
+    placements: Mapping[str, Mapping[str, int]] | None = None,
+    resolution: dict[str, Any] | None = None,
+) -> dict[str, Any] | None:
     """One review duty, keyed to the review of the run's current worktree head.
 
     The kind is decided by the selection promotion uses
@@ -2881,6 +3065,8 @@ def _review_duty_item(
     may leave them out, and the queued reading reads the pointers and the
     ordering for itself when it needs them.
     """
+    if (row.get("delivery") or {}).get("status") == "promotion-queued":
+        return None
     age = _row_age(row, now=now)
     classification = str(row.get("classification") or "")
     if pointer is not None and not recovery_classification.completion_offer(
@@ -2922,6 +3108,8 @@ def _review_duty_item(
         return item
 
     resumed_head, _tree = recovery._review_head_and_tree(pointer)
+    if resolution is not None:
+        resolution.update(head=resumed_head, tree=_tree)
     if supersedes_head(pointer, resumed_head):
         return None
     landing = pointer.get("admission_landing")
@@ -3142,6 +3330,12 @@ def _review_duty_item(
                     item["overdue_remedy"] = overdue_remedy
                 item["review_owner"] = "reflex"
                 item["reflex_window_seconds"] = _reflex_review_window_seconds()
+    if item["kind"] in {"review-ready", "promotable-stale"} and pointer is not None:
+        item["next_command"] = recovery_classification._promotion_command(
+            str(row.get("run_id") or ""),
+            pointer,
+            list(row.get("manifest_commits") or []),
+        )
     return item
 
 
@@ -3382,8 +3576,38 @@ def _tree_holds_unmerged_work(tree: Path) -> bool:
     return _unmerged_commit_answer(tree) is not False
 
 
-def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
-    """Return the record holding each registered, present and unoccupied tree.
+@dataclass(frozen=True)
+class _RecordedPass:
+    """One record pass's answer: the trees still owed, every tree a row names,
+    and the rows it filed.
+
+    All three travel together because they are one read. A caller that needs the
+    history this pass read takes it from here instead of opening the ledger
+    again, which is what keeps two derivations of the same tick to one read; a
+    caller that needs every tree a row still names takes the same answer instead
+    of running a second pass for it.
+
+    ``rows`` is ``None`` when this pass filed nothing because a project with no
+    retained tree owes the hot path no history read at all. A caller that needs
+    the rows then keeps its own narrow read instead of answering with an empty
+    history.
+    """
+
+    held: dict[Path, Mapping[str, Any]]
+    named: dict[Path, Mapping[str, Any]]
+    rows: tuple[Mapping[str, Any], ...] | None
+
+    def trees(self, *, include_landed: bool = False) -> dict[Path, Mapping[str, Any]]:
+        """The trees owed, or every tree a row still names, as a fresh dict."""
+        return dict(self.named if include_landed else self.held)
+
+
+_EMPTY_PASS = _RecordedPass({}, {}, None)
+
+
+def _held_records_pass(project: str) -> _RecordedPass:
+    """Return held trees, every named tree, and the rows every record was filed
+    from.
 
     Source identities validate per-run files, live claims, the common Git
     registry and registered-tree presence. Unchanged inputs reuse the answer;
@@ -3393,10 +3617,14 @@ def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
     An aggregate rewrite rebuilds the index because its envelope has no per-row
     identity. Reader failures retain the unrefused document-reader fallback.
     The read-only region shares parsed document views without copying them.
+    One pass answers both views a caller can want, so the trees a landing frees
+    and the history a duty needs cost one read between them. A project that owes
+    no tree duty answers the empty pass instead, whose rows are unknown, so the
+    hot path never reads a history it has no tree to justify.
     """
     docs_dir = _store._docs_dir_for_project(project)
     if docs_dir is None:
-        return {}
+        return _EMPTY_PASS
     repository = docs_dir.parent.resolve()
     with file_memo.read_only_region():
         key = (project, str(repository), _held_records_signature(project, repository))
@@ -3411,9 +3639,61 @@ def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
         )
 
 
+def _held_worktree_records(
+    project: str, *, include_landed: bool = False
+) -> dict[Path, Mapping[str, Any]]:
+    """Return the record holding each registered, present and unoccupied tree.
+
+    ``include_landed`` answers with every tree a row still names rather than
+    only the trees owed as duties. A landing empties a tree of work the primary
+    branch lacks, so the duty view drops exactly the trees a merge is about to
+    free; a caller deciding what may be released reads them through here.
+    """
+    return _held_records_pass(project).trees(include_landed=include_landed)
+
+
+def _named_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
+    """Every present, unoccupied tree a ledger row names, landed work or not.
+
+    A landing moves the branch the duty view judges a tree against, so the tree
+    the landing emptied stops being a duty at the very moment the landing is
+    the thing that could free it. The release reads this view instead.
+    """
+    return _held_worktree_records(project, include_landed=True)
+
+
+def recorded_run_rows(
+    project: str, repository: Path | None = None
+) -> list[Mapping[str, Any]] | None:
+    """The history rows this process already read for ``project``, or ``None``.
+
+    The held-record pass reads every run record once and then decodes only a
+    document whose identity moved, keeping the union it filed. A second
+    derivation of the same tick that needs the same history takes that union
+    here rather than opening the ledger again: the per-document identities
+    validate the answer on every read, so a row handed out is as fresh as the
+    held answer derived beside it.
+
+    ``None`` means this process holds no history for the project to hand out: its
+    mount is unknown, the caller names a different repository, or no tree is
+    held and no earlier tick read the ledger, which the hot path must not do for
+    a project that owes no tree duty. The caller keeps its own read in every
+    such case rather than answering with nothing. The rows are the reader's own
+    records in promotion order and are read, never written, by a caller.
+    """
+    docs_dir = _store._docs_dir_for_project(project)
+    if docs_dir is None:
+        return None
+    root = docs_dir.parent.resolve()
+    if repository is not None and root != repository.resolve():
+        return None
+    rows = _held_records_pass(project).rows
+    return None if rows is None else list(rows)
+
+
 def _held_records_read_uncached(
     project: str, repository: Path, signature: tuple[Any, ...]
-) -> dict[Path, Mapping[str, Any]]:
+) -> _RecordedPass:
     """Read the held-tree records once, inside the region a fresh read opens."""
     token = _HELD_SOURCE_SIGNATURE.set(signature)
     try:
@@ -3630,6 +3910,7 @@ class _HeldWorktreeState:
         self.extra: set[str] = set()
         self.trees: dict[Any, set[Path]] = {}
         self.inspected: set[Path] = set()
+        self.matched: dict[Path, Mapping[str, Any]] = {}
         self.held: dict[Path, Mapping[str, Any]] = {}
 
     def replace(
@@ -3653,9 +3934,16 @@ class _HeldWorktreeState:
         have taken: a tree that survived its run but holds nothing unmerged
         only costs someone a look, while a row claiming otherwise costs a
         reader their trust in every row beside it.
+
+        ``matched`` keeps the record of every inspected tree a row still names,
+        judged by nothing else. The duty view is the wrong answer for a caller
+        deciding which trees it may free: a landing empties the tree of exactly
+        the work the duty view judges against, so the tree the landing could
+        release stops being a duty as the landing completes.
         """
         for tree in self.inspected - inspected:
             self.held.pop(tree, None)
+            self.matched.pop(tree, None)
             for name in self.records.worktree_keys(tree):
                 self.trees[name].discard(tree)
                 if not self.trees[name]:
@@ -3667,23 +3955,35 @@ class _HeldWorktreeState:
         self.inspected = inspected
         for tree in affected & inspected:
             record = _holding_record(tree, self.records)
-            release = record.get("release") if record is not None else None
+            if record is None:
+                self.matched.pop(tree, None)
+                self.held.pop(tree, None)
+                continue
+            self.matched[tree] = record
+            release = record.get("release")
             if (
-                record is None
-                or (
-                    isinstance(release, Mapping)
-                    and release.get("worktree_released") is True
-                )
-                or not _tree_holds_unmerged_work(tree)
-            ):
+                isinstance(release, Mapping)
+                and release.get("worktree_released") is True
+            ) or not _tree_holds_unmerged_work(tree):
                 self.held.pop(tree, None)
             else:
                 self.held[tree] = record
 
 
+def _filed_rows(index: _HeldWorktreeState) -> tuple[Mapping[str, Any], ...]:
+    """The records an index was filed from, in promotion order.
+
+    A reader of the history wants the rows the ledger's own reader would have
+    returned, so they are ordered by the key :func:`reckon.ledger.load` sorts
+    its store rows by rather than by the order an incremental pass happened to
+    update them in.
+    """
+    return tuple(sorted(index.records.rows(), key=ledger.promotion_order_key))
+
+
 def _held_worktree_records_read(
     project: str, repository: Path, *, signature: tuple[Any, ...] | None = None
-) -> dict[Path, Mapping[str, Any]]:
+) -> _RecordedPass:
     """Apply changed run documents and tree registrations to the previous answer.
 
     File identities are still validated, including in-place document edits.
@@ -3692,6 +3992,8 @@ def _held_worktree_records_read(
     An aggregate rewrite rebuilds the index because its JSON envelope carries
     no per-row change identities; a refused merged read keeps the unrefused
     document-reader fallback rather than losing duties from healthy records.
+    The rows the index was filed from travel with the answer, so a second
+    derivation of the same tick reads the history this one already read.
     """
     signature = (
         signature
@@ -3715,7 +4017,12 @@ def _held_worktree_records_read(
     with _HELD_READ_LOCK:
         previous = _HELD_RECORD_READS.get(cache_key) if reusable else None
         if previous is None and not inspected:
-            return {}
+            # Nothing is held and no answer stands from an earlier tick, so this
+            # read owes no history: a project with no retained tree answers no
+            # tree duty, and the one caller that wants the rows (the section-
+            # accounting duty) is told so by ``rows`` being None and asks the
+            # writers' own session projection instead.
+            return _EMPTY_PASS
         if previous is None or previous[0] != aggregate_stamp:
             fresh = _run_namings(project, repository)
             rows = (
@@ -3806,7 +4113,7 @@ def _held_worktree_records_read(
             _held_remember(
                 _HELD_RECORD_READS, cache_key, (aggregate_stamp, identities, index)
             )
-        return dict(index.held)
+        return _RecordedPass(dict(index.held), dict(index.matched), _filed_rows(index))
 
 
 def _held_worktrees_by_session(
@@ -4239,6 +4546,60 @@ def _index_lag_notice(project: str, *, now: datetime) -> dict[str, Any] | None:
     return dict(notice)
 
 
+def _node_disk_notice(project: str) -> dict[str, Any] | None:
+    """The project's fleet disk pressure, from the sampler on that node."""
+    from reckon.crew.fleet_supervisor import node_disk_obligation
+
+    return node_disk_obligation(project)
+
+
+def session_scratch_items(
+    project: str, session: str, *, now: datetime
+) -> list[dict[str, Any]]:
+    """Route the latest sampled scratch duties to their owning conversation.
+
+    The fleet records pane-to-conversation bindings in sessions.tsv. A direct
+    session-name match also supports sessions that publish their own identity.
+    Reading the current atomic sample avoids replaying historical excess after
+    cleanup; both the direct view and published payload call this reader.
+    """
+    from reckon.crew import fleet_supervisor
+
+    name = fleet_supervisor.fleet_for_project(project)
+    path = fleet_supervisor.session_scratch_snapshot_path({"FLEET_NAME": name})
+    try:
+        sample = json.loads(path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+    if not isinstance(sample, Mapping):
+        return []
+    names = {session}
+    bindings = sample.get("session_bindings") or {}
+    if session in bindings:
+        names.add(bindings[session])
+    observed = parse_utc(sample.get("utc")) or now
+    items = []
+    for duty in sample.get("obligations", []):
+        if not isinstance(duty, Mapping) or duty.get("session") not in names:
+            continue
+        largest = str(duty.get("largest_directory") or duty.get("path") or "")
+        items.append(
+            {
+                "kind": "session-scratch-over-bound",
+                "run_id": "",
+                "age_seconds": max(0, int((now - observed).total_seconds())),
+                "observed_at": observed.isoformat(),
+                "record": str(path),
+                "reason": str(
+                    duty.get("reason") or "session scratch exceeds its bound"
+                ),
+                "paths": [largest],
+                "next_command": "du -sh -- " + shlex.quote(largest),
+            }
+        )
+    return items
+
+
 @operational_read
 def obligations(
     project: str, session: str, *, fields: Iterable[str] | None = None
@@ -4275,6 +4636,9 @@ def _obligations_view(
     )
     reviews_in_flight = _live_review_runs(project, session)
     items: list[dict[str, Any]] = []
+    from reckon.crew.fleet_supervisor import fleet_test_obligations
+
+    items.extend(fleet_test_obligations(project, session, now=now))
     pointers = {
         str(pointer.get("run_id") or ""): pointer for pointer in _live_pointers(project)
     }
@@ -4543,6 +4907,13 @@ def _obligations_view(
             if item is not None:
                 items.append(item)
             continue
+        if recovery_reading == "stopped" and str(row.get("detail") or "").startswith(
+            recovery_classification.SUPERVISOR_STOP_PREFIX
+        ):
+            item = _live_item(row, kind="force-stopped", now=now)
+            item["reason"] = str(row["detail"])
+            items.append(item)
+            continue
         if recovery_reading in RECOVERY_CLASSIFICATION_DUTY_KINDS:
             kind = RECOVERY_CLASSIFICATION_DUTY_KINDS[recovery_reading]
         else:
@@ -4625,10 +4996,14 @@ def _obligations_view(
     from reckon.crew.promotion_requests import failure_obligations
 
     items.extend(failure_obligations(project, session, now=now))
+    items.extend(session_scratch_items(project, session, now=now))
     # A main checkout's index can stage a path as deleted while HEAD and the
     # working tree both hold the file, and the next plain commit there records
     # the deletion. The condition belongs to the project rather than to a run,
     # so every session working it is shown the same notice.
+    disk_notice = _node_disk_notice(project)
+    if disk_notice is not None:
+        items.append(disk_notice)
     index_lag = _index_lag_notice(project, now=now)
     if index_lag is not None:
         items.append(index_lag)
@@ -4663,6 +5038,10 @@ def _obligations_view(
         ),
         "unreconciled_runs": int(unreconciled),
     }
+    delivery = recovery_classification.delivery_summary(classified, session=session)
+    summary.update(
+        {key: value for key, value in delivery.items() if key != "remove_pointers"}
+    )
     view = {
         "project": project,
         "session": session,
@@ -4680,6 +5059,7 @@ def _obligations_view(
             vocabulary=DUTY_ROW_FIELDS,
             sections=sections,
         ),
+        "remove_pointers": delivery["remove_pointers"],
         "summary": summary,
     }
     # Carried only when the session has one. The published snapshot is sliced

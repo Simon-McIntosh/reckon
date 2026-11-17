@@ -9,6 +9,7 @@ import sys
 import threading
 import time
 from datetime import UTC, datetime
+from types import SimpleNamespace
 
 import pytest
 
@@ -47,7 +48,7 @@ def population(tmp_path_factory):
                     run_store._RUNS_INSERT,
                     (
                         identity,
-                        *(durable.get(key) for key in run_store.QUERY_KEYS),
+                        *run_store._query_values(durable, detail),
                         None,
                         json.dumps(durable),
                     ),
@@ -79,7 +80,7 @@ def test_a_record_write_completes_while_selection_is_paused(
     assert len(expected) == 200
     selecting = threading.Event()
     release = threading.Event()
-    original = ledger.row_plan if kind == "plan" else ledger.parse_utc
+    original = json.loads if kind == "plan" else ledger.parse_utc
 
     def paused(value):
         if not selecting.is_set():
@@ -88,7 +89,9 @@ def test_a_record_write_completes_while_selection_is_paused(
         return original(value)
 
     if kind == "plan":
-        monkeypatch.setattr(ledger, "row_plan", paused)
+        # The indexed read decodes after buffering and closing its cursor.
+        # Pausing that work must leave the separate writer free to commit.
+        monkeypatch.setattr(run_store, "json", SimpleNamespace(loads=paused))
     else:
         monkeypatch.setattr(run_store, "parse_utc", paused, raising=False)
         monkeypatch.setattr(ledger, "parse_utc", paused)

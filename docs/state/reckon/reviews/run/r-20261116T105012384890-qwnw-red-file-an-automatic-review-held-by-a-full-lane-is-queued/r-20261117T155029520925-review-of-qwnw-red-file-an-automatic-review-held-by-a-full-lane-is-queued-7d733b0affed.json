@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:_dispatch_text_review_for_run",
+    "reckon/crew/recovery_review_dispatch.py:_dispatch_figure_review_for_run"
+  ],
+  "call_sites_note": "both production readers of the changed classification were opened at the reviewed head; grep also names reckon/crew/recovery_watch.py:757, reckon/crew/queue_landing.py:1704, reckon/crew/directory.py:342, reckon/serve.py:902 and reckon/crew/resumption.py:2705 as callers, which were not opened.",
+  "completed_at": "2026-11-17T15:52:26.032Z",
+  "dispatched_at": "2026-11-17T15:52:05Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "2014",
+      "severity": "non-blocking",
+      "text": "non-blocking: the term this run authored is absent at the reviewed head \u2014 `git diff 7d733b0affed c0b58099d84b -- reckon/crew/recovery_classification.py` is empty and the pre-spawn arm there stops on `not manifest_present` and `not terminal_verdict` (:2014-2021) plus `pre_spawn_reads_as_claim` (:2029-2031), so the node's unique case, a pre-spawn label over a manifest with a non-terminal status, has neither code nor test at the reviewed head and the landed product delta against primary is nil."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued.html",
+      "line": "89",
+      "severity": "non-blocking",
+      "text": "non-blocking: the record names 4dea651bd9fe507129c078e0d04275e18351c3d7 as `the final head` and reports the importer arm as `43 failed, 826 passed, 10 errors` (:74 and :117), while the landed head's own log logs/head-importers.log:1 runs at 46f9476e and reports `20 failed, 883 passed, 10 errors`, and no row of the table names 7d733b0a, the revision at which logs/head-target-file.log and logs/after-suite.log actually ran."
+    },
+    {
+      "file": "manifest.md",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when's `ruff check and ruff format --check report nothing new on the changed paths` clause is asserted in rubric.evidence with no ruff command and no log anywhere in the retained run directory, so that clause of the measure has no receipt a reader can open."
+    },
+    {
+      "file": "logs/slurm-gate-all-debug.out",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the all_debug arm's own output carries no revision header and no EXIT line, and its wrapper at logs/head-target-all-debug.log:1 records sbatch's exit 0 beside the guard warning `sbatch: task re-enters the worker fence`, so the job's exit is readable while the revision it ran at, 7d733b0a, is named only by the harness-written header line rather than by the job's output."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "the change is reached by the review reflex that classified the delivered pointer: reckon/crew/recovery_review_dispatch.py:_dispatch_text_review_for_run composes the review the delivered pointer owed, and _dispatch_figure_review_for_run gates the figure review behind the same classification.",
+    "diff": "read commit by commit: 4a8a6c2d adds the `not manifest_status` term and its comment at recovery_classification.py:1827-1841 of its own revision, 4dea651b adds the 129-line fragment, a34e5162 edits that fragment's arm rows, and ba47ab1d, 46f9476e and 7d733b0a are merges whose resolution leaves the head file byte-identical to primary's c0b58099.",
+    "done_when": "the done_when asks for the file green as an all_debug job with SLURM_JOB_ID unset, a base control logged beside the head run, no added failure over the importing test files, and ruff clean on the changed paths; the all_debug arm is met (logs/slurm-gate-all-debug.out:1 with gate_all_debug.sh:6), the base control is met, but the importer head arm runs at 46f9476e rather than the reviewed head and no ruff command or log exists in the run directory.",
+    "goal": "the node's goal is that tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py pass in full on primary; logs/head-target-file.log:1 records that file at 7d733b0a as `4 passed in 17.45s` with EXIT=0, and logs/base-target-file.log:6 records `3 failed, 1 passed` at the base revision.",
+    "manifest": "read; it records status complete, six commits, the target-file pass `4 passed` EXIT=0 at 7d733b0a, both suite arms at `58 passed` EXIT=0, the base negative control at `3 failed` EXIT=1, added_failure_count 0 over the importer pair, and a merge note stating the resolved head file is identical to primary's c0b58099.",
+    "write_paths": "prompt.txt:85-89 fences `reckon`, `tests`, docs/evidence/fragments/queued-work-needs-no-workaround and its figure directory; the authored change touches only reckon/crew/recovery_classification.py:1827-1841 of commit 4a8a6c2d and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued.html, both inside it, and every other path in the delivered diff is primary content entering through merges."
+  },
+  "justifications": {
+    "durability": "reinstating the base defect by dropping `not manifest_present` and `not terminal_verdict` at reckon/crew/recovery_classification.py:2014-2021 returns the reading to the pre-spawn claim at :2082, and the three assertions that failed at base (tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py:258, :313, :362) redden again as logs/base-target-file.log:6 shows; the node's own `not manifest_status` term is absent at the reviewed head and has no test of its own.",
+    "evidence": "logs/slurm-gate-all-debug.out:1 carries `4 passed in 17.56s` from job 1323061 and gate_all_debug.sh:6 unsets SLURM_JOB_ID, logs/base-target-file.log:6 carries `3 failed, 1 passed`, but the done_when's ruff clause has no command or log in the run directory and the importer arm at logs/head-importers.log:1 is measured at 46f9476e rather than the reviewed head.",
+    "fit": "the authored hunk kept the parenthesised conjunction and comment style of reckon/crew/recovery_classification.py:2014-2021 and introduced no new name, and the merge commits carry the subject shape already used across the same branch.",
+    "goal_fidelity": "logs/head-target-file.log:1 records tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py at `4 passed in 17.45s` EXIT=0 at 7d733b0a, but `git diff 7d733b0a c0b58099 -- reckon/crew/recovery_classification.py` is empty, so the goal is met by primary's conditions at reckon/crew/recovery_classification.py:2014-2031 rather than by this run's own condition.",
+    "reuse": "no definition is added; the hunk changed the condition of the existing `pre_spawn_waiting` inside the owner classify_pointer (reckon/crew/recovery_classification.py:2014), and the neighbouring `_spawn_evidence` is imported from reckon/crew/recovery_liveness.py rather than copied.",
+    "scope_discipline": "the two authored paths \u2014 reckon/crew/recovery_classification.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued.html \u2014 sit inside the fence at prompt.txt:85-89, and the rest of the 1118-path diff arrives through the three merge commits rather than this run's writing."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py pass in full on primary, and logs/head-target-file.log:1 records that file at 7d733b0a as `4 passed in 17.45s` EXIT=0 against `3 failed, 1 passed` in logs/base-target-file.log:6.\nVERDICT done_when: the done_when asks for that file green as an all_debug job with SLURM_JOB_ID unset, a base control logged beside the head run, no added failure over the importing test files, and ruff clean on the changed paths; logs/slurm-gate-all-debug.out:1 and gate_all_debug.sh:6 meet the partition arm and logs/base-target-file.log:6 the control, while the importer head arm runs at 46f9476e rather than this head and no ruff command or log exists in the run directory.\nVERDICT write_paths: prompt.txt:85-89 fences `reckon`, `tests`, docs/evidence/fragments/queued-work-needs-no-workaround and its figure directory, and the two paths this run authored \u2014 reckon/crew/recovery_classification.py:1827-1841 of 4a8a6c2d and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued.html \u2014 are inside them.\nVERDICT manifest: read; it reports status complete, six commits, the target file at `4 passed` EXIT=0 at 7d733b0a against `3 failed` EXIT=1 at base, both suite arms at `58 passed` EXIT=0, the importer pair, and the merge note that the resolved head file equals primary's c0b58099.\nVERDICT diff: read commit by commit \u2014 4a8a6c2d adds the `not manifest_status` term at reckon/crew/recovery_classification.py:1827-1841 of its own revision, 4dea651b and a34e5162 write and revise the fragment, ba47ab1d and 46f9476e resolve the same pre-spawn hunk against primary twice, and 7d733b0a takes primary's resolution, leaving the head file byte-identical to c0b58099 (git diff empty).\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:_dispatch_text_review_for_run, reckon/crew/recovery_review_dispatch.py:_dispatch_figure_review_for_run\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: logs/head-target-file.log:1 records tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py at `4 passed in 17.45s` EXIT=0 at 7d733b0a, but `git diff 7d733b0a c0b58099 -- reckon/crew/recovery_classification.py` is empty, so primary's conditions at reckon/crew/recovery_classification.py:2014-2031 meet the goal rather than this run's own term.\nSCORE evidence: 13\nJUSTIFICATION evidence: logs/slurm-gate-all-debug.out:1 records `4 passed in 17.56s` under gate_all_debug.sh:6 which unsets SLURM_JOB_ID, but no ruff command or log exists in the run directory for the done_when's lint clause and the importer arm at logs/head-importers.log:1 measures 46f9476e rather than the reviewed head.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the authored paths reckon/crew/recovery_classification.py:1827-1841 and the fragment both sit inside the prompt.txt:85-89 fence, and the remaining 1116 paths in 655a2be..7d733b0 carry primary's content through the merge commits.\nSCORE durability: 14\nJUSTIFICATION durability: dropping `not manifest_present` and `not terminal_verdict` at reckon/crew/recovery_classification.py:2014-2021 reinstates the base reading and reddens tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py:258, :313 and :362.\nSCORE fit: 17\nJUSTIFICATION fit: the hunk kept the conjunction and comment shape of reckon/crew/recovery_classification.py:2014-2021 and introduced no new name.\nSCORE reuse: 19\nJUSTIFICATION reuse: no definition is added and the condition of the existing `pre_spawn_waiting` in classify_pointer at reckon/crew/recovery_classification.py:2014 was changed, with `_spawn_evidence` imported rather than copied.\nFINDING reckon/crew/recovery_classification.py:2014 non-blocking: the term this run authored is absent at the reviewed head, the file being byte-identical to primary's c0b58099, so the node's unique case has no code or test at head.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued.html:89 non-blocking: the record names 4dea651b as the final head and reports the importer arm at `43 failed, 826 passed` while logs/head-importers.log:1 runs at 46f9476e with `20 failed, 883 passed`, and no row names 7d733b0a.\nFINDING manifest.md:25 non-blocking: the done_when's ruff clause is asserted with no command and no log in the run directory.\nFINDING logs/slurm-gate-all-debug.out:1 non-blocking: the all_debug output names no revision and no EXIT line, so its revision is named only by the harness-written header at logs/head-target-all-debug.log:1.\n",
+  "review_run_id": "r-20261117T155029520925-review-of-qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued-7d733b0affed",
+  "reviewed_base_sha": "655a2befa979af690bab537523cd9ad97dc108c5",
+  "reviewed_head_sha": "7d733b0affed516e401b506a851d96420a71ce0d",
+  "reviewed_run_id": "r-20261116T105012384890-qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewed_run_id": "r-20261116T105012384890-qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued",
+    "reviewer_run_id": "r-20261117T155029520925-review-of-qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued-7d733b0affed"
+  },
+  "reviewer_run_id": "r-20261117T155029520925-review-of-qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued-7d733b0affed",
+  "scores": {
+    "durability": 14,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T16:14:02.839886+00:00",
+  "total": 97
+}

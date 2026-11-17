@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s89">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-17">
+  <title>A live pointer carries no clone report | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+
+<article class="r-note" id="a-live-pointer-carries-no-clone-report-landing" data-node="a-live-pointer-carries-no-clone-report" data-reckon="landed" data-when="2026-11-17">
+  <h2>A live pointer carries no clone report</h2>
+
+  <p id="a-live-pointer-carries-no-clone-report-what"><strong>What landed.</strong> The promotion's clone report stays on the committed ledger row, where <code>velocity</code> and the other history readers take it, and no live pointer carries it. Two writes were reaching a pointer with a row-shaped record — the promotion that keeps a pointer it could not retire, and the landing that marks an already-promoted run for merge repair off <code>promoted["record"]</code> — so the field is dropped in <code>reckon.crew.runs._write_json</code>'s live-pointer branch, the one write every pointer write goes through, rather than at either caller. On the read side <code>_pointer_text</code> reduces a pointer's text before it is cached and decoded: the bytes are read either way, and what the listing saves is the decode of a value none of its readers asks for. The reduction is parsed before it is kept, and a text it cannot reduce is parsed as it arrived, so a scanner surprise costs a decode instead of one pointer dropped from every listing.</p>
+
+  <p id="a-live-pointer-carries-no-clone-report-population"><strong>What the live directory held.</strong> Read at the base revision on this host: 97 live pointers, 12 of them carrying <code>clone_matches</code>, the largest 13,969,442 bytes — the 14.2 MB of a 23.5 MB directory the section's profile named.</p>
+
+  <h3 id="a-live-pointer-carries-no-clone-report-cases">Three cases on a temporary crew home</h3>
+
+  <p id="a-live-pointer-carries-no-clone-report-case-a">A run promoted with a 5 MB clone report keeps it on its ledger row, and the live pointer a landing writes from that row has <code>pending_landing_repair</code> set and no <code>clone_matches</code> key. The row is then read back from the ledger and its report re-measured, so the guard is shown on the pointer write and not on the evidence.</p>
+
+  <p id="a-live-pointer-carries-no-clone-report-case-b">A pointer file written before this change, carrying a 5 MB report, is returned by <code>list_live</code> without the key. The bytes the listing hands its decoder are counted by a recording stand-in on <code>runs.json</code>; the stand-in is first shown decoding the whole file, at 8,320,157 bytes, before the listing's own figure is read. After the change the same listing parses <strong>201 bytes</strong> in 9 calls where the change reads <strong>8,320,157</strong> for that one pointer; a second measurement on a fresh fixture states the same pair, 5,620,085 bytes on disk against 201 parsed.</p>
+
+  <p id="a-live-pointer-carries-no-clone-report-case-c">The row's clone report still states the run's figures: <code>velocity._clone_week_cells</code> over the promoted row reports <code>runs_with_match</code> 1 and <code>matches</code> equal to the report's own length, with no run counted as a no-match or as unmeasured. That case passes at the base revision as well, which is what makes the figures equal there and here.</p>
+
+  <h3 id="a-live-pointer-carries-no-clone-report-negative">The negative control</h3>
+
+  <p id="a-live-pointer-carries-no-clone-report-negative-line">At base <code>6686bb507f</code> the same test file fails 2 of 3 cases: the live pointer carries the report (<em>the live pointer carries the promotion's clone report</em>) and the listing parses 8,320,157 bytes for the pointer. The log is <code>logs/negative-control-base.log</code> under the run directory, ending <code>EXIT=1</code>.</p>
+
+  <h3 id="a-live-pointer-carries-no-clone-report-arms">Matched arms</h3>
+
+  <p id="a-live-pointer-carries-no-clone-report-arms-line">Two arms ran on the <code>all_debug</code> partition, each in a scratch extraction of its own revision that is a git checkout at that revision, and each log opens with its revision, tree, imported module and literal command and ends in its own <code>EXIT=</code> line. The base arm (<code>6686bb507f</code>) runs <code>tests/test_staged_write_inventory.py</code> and <code>tests/test_every_shared_home_lock_*</code>: <strong>58 passed</strong>, <code>EXIT=0</code>. The head arm (<code>5b15fe3f3a</code>) runs those two plus this node's three cases: <strong>61 passed</strong>, <code>EXIT=0</code> — the difference is exactly the added file, so the change adds no failure against base.</p>
+
+  <p id="a-live-pointer-carries-no-clone-report-arms-note">The composed <code>crew verify-gate</code> / <code>crew suite run</code> calls were made first and both failed before reaching code under test: each submitted job re-entered this worker's fence and its <code>bwrap</code> could not bind the fence's mounted-over node tmp (<code>Can't bind mount /oldroot/tmp/auto2I1S9T on /newroot/tmp/auto2I1S9T</code>), leaving a log with no <code>EXIT=</code> receipt (<code>scoped-gate-1794949244737807583.log</code>, <code>after_suite-1794949336842661968.log</code>, <code>baseline_suite-1794949333967392533.log</code>). The arms above are the same two commands resolved over each arm's own tree, submitted with <code>env -u SLURM_JOB_ID -u SLURM_JOBID sbatch</code> and carrying no inherited fence recipe, which is what let the job start.</p>
+</article>
+
+</body>
+</html>

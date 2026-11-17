@@ -1,0 +1,75 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/promotion.py:1307",
+    "reckon/crew/promotion_checks.py:607",
+    "reckon/crew/reports.py:2949",
+    "reckon/crew_run_commands.py:1384",
+    "reckon/crew/runs.py:2828",
+    "reckon/crew_run_commands.py:3211",
+    "reckon/crew/promotion_records.py:1412",
+    "reckon/crew/promotion_scope.py:344"
+  ],
+  "completed_at": "2026-11-17T11:49:50.207Z",
+  "dispatched_at": "2026-11-17T11:23:45Z",
+  "findings": [
+    {
+      "file": "reckon/crew/manifest_faults.py",
+      "line": 152,
+      "severity": "non-blocking",
+      "text": "_gate_command_fault refuses any single word of the tests: line that resolves under the temp root, so an honest command that only sets a scratch location there (UV_CACHE_DIR=/tmp/uv-cache, TMPDIR=/tmp, pytest --basetemp=/tmp/x) is refused at delivery and again at promotion, while the repair verb this delivery adds re-points suite arms only and leaves the tests line with no remedy once the worker's turn has ended."
+    },
+    {
+      "file": "reckon/crew/manifest_faults.py",
+      "line": 111,
+      "severity": "non-blocking",
+      "text": "resolves_under re-implements the path containment reckon/crew/reports.py:3340 owns and reports.py:3291 uses, differing only in expanduser, and _command_words at manifest_faults.py:163 is a weaker second implementation of the command scan reckon/shadow_reads.py:270 owns, with no variable expansion."
+    },
+    {
+      "file": "reckon/crew/promotion_records.py",
+      "line": 668,
+      "severity": "non-blocking",
+      "text": "_ARM_FIELDS restates the suite-arm field vocabulary reckon/ledger.py:513 owns, so a field added to one list will silently fail to reach the other rule."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": 2825,
+      "severity": "non-blocking",
+      "text": "an arm recorded as none parses to an empty record, so re-pointing it writes only revision and both readers then refuse the arm for missing exit_status, completed, failure_count and log; it also loses the empty-base-arm acceptance promotion_records._arm_declares_no_measurement grants that same delivery."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit: b3737ed97e adds the rules module, both wirings, the arm verb and the empty-base-arm acceptance; 41bbcbc687 narrows the arm rule to prose or abbreviation and resolves a cited entry through the pre-existing reports._citation_tokens at promotion_scope.py:344; 95047fc36e and 875c0cc2d5 are the evidence fragment; 105a6b668d brings primary under the delivery and keeps both citation reads, with the token read first and the admission read as a second attempt.",
+    "done_when": "The done_when asks for a table-driven test over both readers with one shared reason, a test promoting a run whose only new test file has no base arm, a test re-pointing an arm through the verb keeping the as-delivered file, and a base-revision negative control; the first is tests/test_a_manifest_is_refused_for_what_promotion_refuses.py:212, the second at :296 and :327, the third tests/test_a_suite_arm_is_repointed_keeping_the_delivered_file.py:86, and the control is negative-control-base-revision.log, which shows the base revision's check reporting ok=True for the prose row its promotion refuses.",
+    "goal": "The node goal is that a manifest is refused while its worker is live for anything promotion would refuse; reckon/crew/manifest_faults.py:75 states each rule once and both readers ask it, at reckon/crew/reports.py:2949 in the pre-delivery check and at reckon/crew/promotion_checks.py:607 at the gate, so one defect yields one sentence on both sides.",
+    "manifest": "Read; status complete, commits b3737ed97e 41bbcbc687 95047fc36e 875c0cc2d5 plus three integration commits ending at 105a6b668d, node gate 122 passed EXIT=0 at 105a6b668d, base arm 55 passed at a346fba4, after arm 58 passed at 105a6b668d, and negative_control_log named and readable.",
+    "write_paths": "The brief declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and skills; every path in the node's own four commits lies inside them, being 8 modules under reckon, 3 test files and 1 evidence fragment, and no skills path was touched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_manifest_is_refused_for_what_promotion_refuses.py:256 withdraws manifest_faults.manifest_faults and shows the same prose delivery reading clean, so the row's finding is the rule's rather than an unrelated refusal.",
+    "evidence": "node-gate.log records 122 passed with EXIT=0 at 105a6b668d over the two new test files and tests/test_manifest_parse_format.py, and negative-control-base-revision.log shows the base revision's check passing the prose row its promotion refuses, though the four table rows omit the citation fault that converged.",
+    "fit": "reckon/crew/manifest_faults.py:1-35 follows the prose idiom of its neighbours and names every symbol by what it judges, with no plan, defect or stage label in the diff.",
+    "goal_fidelity": "reckon/crew/promotion.py:1307 registers the new guard beside the status guard in the same refusal chain, and reckon/crew/reports.py:2949 appends the same module's reasons to the worker's findings, so the check and the gate state one reason for one fault.",
+    "reuse": "promotion_scope.py:344 reuses the pre-existing reports._citation_tokens, but manifest_faults.py:111 duplicates reports._resolves_under, manifest_faults.py:163 duplicates the command scan at reckon/shadow_reads.py:270, and promotion_records.py:668 restates the arm vocabulary at reckon/ledger.py:513.",
+    "scope_discipline": "every added or changed path lies inside the declared write paths, and tests/test_manifest_parse_format.py:63 changes only the fixture revision to a full object id the narrowed arm rule now requires."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that a manifest is refused while its worker is live for anything promotion would refuse; reckon/crew/manifest_faults.py:75 states each rule once and both readers ask it, at reckon/crew/reports.py:2949 in the pre-delivery check and at reckon/crew/promotion_checks.py:607 at the gate, so one defect yields one sentence on both sides.\nVERDICT done_when: The done_when asks for a table-driven test over both readers with one shared reason, a test promoting a run whose only new test file has no base arm, a test re-pointing an arm through the verb keeping the as-delivered file, and a base-revision negative control; the first is tests/test_a_manifest_is_refused_for_what_promotion_refuses.py:212, the second at :296 and :327, the third tests/test_a_suite_arm_is_repointed_keeping_the_delivered_file.py:86, and the control is negative-control-base-revision.log, which shows the base revision's check reporting ok=True for the prose row its promotion refuses.\nVERDICT write_paths: The brief declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and skills; every path in the node's own four commits lies inside them, being 8 modules under reckon, 3 test files and 1 evidence fragment, and no skills path was touched.\nVERDICT manifest: Read; status complete, commits b3737ed97e 41bbcbc687 95047fc36e 875c0cc2d5 plus three integration commits ending at 105a6b668d, node gate 122 passed EXIT=0 at 105a6b668d, base arm 55 passed at a346fba4, after arm 58 passed at 105a6b668d, and negative_control_log named and readable.\nVERDICT diff: Read commit by commit: b3737ed97e adds the rules module, both wirings, the arm verb and the empty-base-arm acceptance; 41bbcbc687 narrows the arm rule to prose or abbreviation and resolves a cited entry through the pre-existing reports._citation_tokens at promotion_scope.py:344; 95047fc36e and 875c0cc2d5 are the evidence fragment; 105a6b668d brings primary under the delivery and keeps both citation reads, with the token read first and the admission read as a second attempt.\nCALL_SITES: reckon/crew/promotion.py:1307, reckon/crew/promotion_checks.py:607, reckon/crew/reports.py:2949, reckon/crew_run_commands.py:1384, reckon/crew/runs.py:2828, reckon/crew_run_commands.py:3211, reckon/crew/promotion_records.py:1412, reckon/crew/promotion_scope.py:344\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:1307 registers the new guard beside the status guard in the same refusal chain, and reckon/crew/reports.py:2949 appends the same module's reasons to the worker's findings, so the check and the gate state one reason for one fault.\nSCORE evidence: 17\nJUSTIFICATION evidence: node-gate.log records 122 passed with EXIT=0 at 105a6b668d over the two new test files and tests/test_manifest_parse_format.py, and negative-control-base-revision.log shows the base revision's check passing the prose row its promotion refuses, though the four table rows omit the citation fault that converged.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every added or changed path lies inside the declared write paths, and tests/test_manifest_parse_format.py:63 changes only the fixture revision to a full object id the narrowed arm rule now requires.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_manifest_is_refused_for_what_promotion_refuses.py:256 withdraws manifest_faults.manifest_faults and shows the same prose delivery reading clean, so the row's finding is the rule's rather than an unrelated refusal.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/manifest_faults.py:1-35 follows the prose idiom of its neighbours and names every symbol by what it judges, with no plan, defect or stage label in the diff.\nSCORE reuse: 8\nJUSTIFICATION reuse: promotion_scope.py:344 reuses the pre-existing reports._citation_tokens, but manifest_faults.py:111 duplicates reports._resolves_under, manifest_faults.py:163 duplicates the command scan at reckon/shadow_reads.py:270, and promotion_records.py:668 restates the arm vocabulary at reckon/ledger.py:513.\nFINDING reckon/crew/manifest_faults.py:152 non-blocking: _gate_command_fault refuses any single word of the tests: line that resolves under the temp root, so an honest command that only sets a scratch location there (UV_CACHE_DIR=/tmp/uv-cache, TMPDIR=/tmp, pytest --basetemp=/tmp/x) is refused at delivery and again at promotion, while the repair verb this delivery adds re-points suite arms only and leaves the tests line with no remedy once the worker's turn has ended.\nFINDING reckon/crew/manifest_faults.py:111 non-blocking: resolves_under re-implements the path containment reckon/crew/reports.py:3340 owns and reports.py:3291 uses, differing only in expanduser, and _command_words at manifest_faults.py:163 is a weaker second implementation of the command scan reckon/shadow_reads.py:270 owns, with no variable expansion.\nFINDING reckon/crew/promotion_records.py:668 non-blocking: _ARM_FIELDS restates the suite-arm field vocabulary reckon/ledger.py:513 owns, so a field added to one list will silently fail to reach the other rule.\nFINDING reckon/crew/runs.py:2825 non-blocking: an arm recorded as none parses to an empty record, so re-pointing it writes only revision and both readers then refuse the arm for missing exit_status, completed, failure_count and log; it also loses the empty-base-arm acceptance promotion_records._arm_declares_no_measurement grants that same delivery.",
+  "review_run_id": "r-20261117T112237659068-review-of-qwnw-a-manifest-is-refused-while-its-worker-is-live-f-105a6b668df7",
+  "reviewed_base_sha": "a346fba4aa0e53481a816fc06d92e48db899d60a",
+  "reviewed_head_sha": "105a6b668df7108dde6d5790c3ad452a2e07f946",
+  "reviewed_run_id": "r-20261114T201401429252-qwnw-a-manifest-is-refused-while-its-worker-is-live-f",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 8,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T11:56:32.553570+00:00",
+  "total": 95
+}

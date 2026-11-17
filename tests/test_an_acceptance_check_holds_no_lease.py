@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 
 from reckon import ledger
-from reckon.crew import landing_measure, promotion, review, runs
+from reckon.crew import landing_measure, merge, promotion, review, runs
 from reckon.crew import recovery_review_acceptance as acceptance
 from tests.helpers.git import git
 from tests.test_reflex_acceptance_reads_the_remote_primary import (
@@ -42,9 +42,11 @@ def _local_scheduler(argv, **options):
         return subprocess.run(argv, check=False, **options)
     step = shlex.split(argv[argv.index("--wrap") + 1])
     script = step[step.index("-c") + 1]
-    destination = Path(step[step.index(">") + 1])
+    destination = Path(step[step.index(">>") + 1])
+    assert destination.is_file() and not destination.is_symlink()
     completed = subprocess.run(["bash", "-c", script], check=False, **options)
-    destination.write_text((completed.stdout or "") + (completed.stderr or ""))
+    with destination.open("a", encoding="utf-8") as stream:
+        stream.write((completed.stdout or "") + (completed.stderr or ""))
     return subprocess.CompletedProcess(argv, completed.returncode, "12345\n", "")
 
 
@@ -276,6 +278,13 @@ def test_a_changed_stored_review_rejudges_the_same_head(
         assert _merged_gate_refused(report)
     assert len(calls) == 1
 
+    gate = _refusal(report)["gate_report"]
+    candidate = gate["integrated_revision"]
+    previous_log = Path(gate["log_path"])
+    previous = (previous_log.read_bytes(), previous_log.stat().st_mtime_ns)
+    # Identical parents must be rechecked independently of the merge commit's clock.
+    monkeypatch.setattr(merge, "build_merge_commit", lambda *args, **options: candidate)
+
     path = review.review_path(PROJECT, RUN_ID, reviewed_head_sha=head)
     record = json.loads(path.read_text())
     record["scores"]["fit"] -= 1
@@ -291,6 +300,10 @@ def test_a_changed_stored_review_rejudges_the_same_head(
     assert _merged_gate_refused(report)
     assert len(calls) == 2
     assert git(repository, "rev-parse", "HEAD") == head
+    current_gate = _refusal(report)["gate_report"]
+    assert current_gate["integrated_revision"] == candidate
+    assert Path(current_gate["log_path"]) != previous_log
+    assert (previous_log.read_bytes(), previous_log.stat().st_mtime_ns) == previous
 
 
 def test_missing_commits_reaching_primary_rejudges_the_same_head(

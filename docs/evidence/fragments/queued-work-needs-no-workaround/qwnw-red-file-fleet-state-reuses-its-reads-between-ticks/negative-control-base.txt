@@ -1,0 +1,195 @@
+# revision: ba3443a9ae6a2bc171c76560016a6ca24e055f02
+# tree: 7b9b1321f5afd840b9a339033dbef9d0a1b1e51e
+# command: env -u SLURM_JOB_ID PYTHONPATH=. /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-fleet-state-reuses-its-reads-between-ticks/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_state_reuses_its_reads_between_ticks.py
+# module: /tmp/reckon-crew-scratch/r-20261116T104928709587-qwnw-red-file-fleet-state-reuses-its-reads-between-ticks/qwnw-base-clone/reckon/crew/obligations.py
+# cwd: /tmp/reckon-crew-scratch/r-20261116T104928709587-qwnw-red-file-fleet-state-reuses-its-reads-between-ticks/qwnw-base-clone
+FFF.                                                                     [100%]
+=================================== FAILURES ===================================
+______ test_stream_growth_reuses_both_reads_and_source_changes_invalidate ______
+
+fleet = namespace(repo=PosixPath('/tmp/reckon-crew-scratch/r-20261116T104928709587-qwnw-red-file-fleet-state-reuses-its-reads-...-reads-between-ticks/pytest-of-mcintos/pytest-21/test_stream_growth_reuses_both0/home/crew/runs/live-5/stdout.jsonl')])
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f5a4f317950>
+
+    def test_stream_growth_reuses_both_reads_and_source_changes_invalidate(
+        fleet, monkeypatch
+    ):
+        counts = Counter()
+        active = False
+        held_read = obligations._held_worktree_records
+    
+        def held(*args, **kwargs):
+            nonlocal active
+            active = True
+            try:
+                return held_read(*args, **kwargs)
+            finally:
+                active = False
+    
+        patch_bindings(monkeypatch, held_read, held)
+        scandir = os.scandir
+    
+        def listing(*args, **kwargs):
+            if active:
+                counts["held_listing"] += 1
+            return scandir(*args, **kwargs)
+    
+        monkeypatch.setattr(os, "scandir", listing)
+        bindings = {}
+        for label, original in (
+            ("held_records", obligations._held_worktree_records_read),
+            ("registry_listing", routing._registered_worktrees),
+            ("ledger_load", ledger.load),
+        ):
+    
+            def counted(*args, _label=label, _original=original, **kwargs):
+                counts[_label] += 1
+                return _original(*args, **kwargs)
+    
+            bindings[label] = patch_bindings(monkeypatch, original, counted)
+    
+        def refresh():
+            state = obligation_snapshot.fleet_state(PROJECT)
+            assert len(state.pointers) == 60
+            return {row["run_id"] for row in state.held_worktrees.get(SESSION, [])}
+    
+        expected = {f"held-run-{index}" for index in range(4)}
+>       assert refresh() == expected
+E       AssertionError: assert set() == {'held-run-0'... 'held-run-3'}
+E         
+E         Extra items in the right set:
+E         'held-run-3'
+E         'held-run-1'
+E         'held-run-0'
+E         'held-run-2'
+E         
+E         Full diff:
+E         + set()
+E         - {
+E         -     'held-run-0',
+E         -     'held-run-1',
+E         -     'held-run-2',
+E         -     'held-run-3',
+E         - }
+
+tests/test_fleet_state_reuses_its_reads_between_ticks.py:184: AssertionError
+________ test_unrelated_landing_and_registry_churn_do_only_changed_work ________
+
+fleet = namespace(repo=PosixPath('/tmp/reckon-crew-scratch/r-20261116T104928709587-qwnw-red-file-fleet-state-reuses-its-reads-...-reads-between-ticks/pytest-of-mcintos/pytest-21/test_unrelated_landing_and_reg0/home/crew/runs/live-5/stdout.jsonl')])
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f5a4f317a80>
+
+    def test_unrelated_landing_and_registry_churn_do_only_changed_work(fleet, monkeypatch):
+        transient = fleet.trees[0].parent / "transient"
+        git(fleet.repo, "worktree", "add", "-q", "--detach", str(transient), "HEAD")
+        for index in range(200):
+            ledger.write_run_file(
+                PROJECT,
+                ledger.build_record(
+                    plan="fixture",
+                    run_id=f"history-{index}",
+                    node=f"unrelated-{index}",
+                    session=SESSION,
+                    completed_at="2026-09-01T12:00:00Z",
+                    gate="passed",
+                ),
+                fleet.repo,
+            )
+        counts = Counter()
+        bindings = {}
+        for method in ("replace", "remove"):
+            original_method = getattr(routing.WorktreeRecordIndex, method)
+    
+            def counted_method(
+                self, *args, _method=method, _original=original_method, **kwargs
+            ):
+                counts["owner_" + _method] += 1
+                return _original(self, *args, **kwargs)
+    
+            monkeypatch.setattr(routing.WorktreeRecordIndex, method, counted_method)
+        for label, original in (
+            ("ledger_load", ledger.load),
+            ("whole_ledger", obligations._run_namings),
+            ("registry_listing", routing._registered_worktrees),
+            ("record_read", ledger.read_document),
+            ("tree_match", obligations._holding_record),
+        ):
+    
+            def counted(*args, _label=label, _original=original, **kwargs):
+                counts[_label] += 1
+                return _original(*args, **kwargs)
+    
+            bindings[label] = patch_bindings(monkeypatch, original, counted)
+    
+        def refresh():
+            state = obligation_snapshot.fleet_state(PROJECT)
+            assert len(state.pointers) == 60
+            return {row["run_id"] for row in state.held_worktrees.get(SESSION, [])}
+    
+        expected = {f"held-run-{index}" for index in range(4)}
+>       assert refresh() == expected
+E       AssertionError: assert set() == {'held-run-0'... 'held-run-3'}
+E         
+E         Extra items in the right set:
+E         'held-run-3'
+E         'held-run-1'
+E         'held-run-0'
+E         'held-run-2'
+E         
+E         Full diff:
+E         + set()
+E         - {
+E         -     'held-run-0',
+E         -     'held-run-1',
+E         -     'held-run-2',
+E         -     'held-run-3',
+E         - }
+
+tests/test_fleet_state_reuses_its_reads_between_ticks.py:279: AssertionError
+__________ test_an_aggregate_rewrite_rebuilds_from_the_current_union ___________
+
+fleet = namespace(repo=PosixPath('/tmp/reckon-crew-scratch/r-20261116T104928709587-qwnw-red-file-fleet-state-reuses-its-reads-...-reads-between-ticks/pytest-of-mcintos/pytest-21/test_an_aggregate_rewrite_rebu0/home/crew/runs/live-5/stdout.jsonl')])
+
+    def test_an_aggregate_rewrite_rebuilds_from_the_current_union(fleet):
+        before = obligation_snapshot.fleet_state(PROJECT)
+>       assert {row["run_id"] for row in before.held_worktrees[SESSION]} == {
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            f"held-run-{index}" for index in range(4)
+        }
+E       KeyError: 'coordinator'
+
+tests/test_fleet_state_reuses_its_reads_between_ticks.py:337: KeyError
+=========================== short test summary info ============================
+FAILED tests/test_fleet_state_reuses_its_reads_between_ticks.py::test_stream_growth_reuses_both_reads_and_source_changes_invalidate - AssertionError: assert set() == {'held-run-0'... 'held-run-3'}
+  
+  Extra items in the right set:
+  'held-run-3'
+  'held-run-1'
+  'held-run-0'
+  'held-run-2'
+  
+  Full diff:
+  + set()
+  - {
+  -     'held-run-0',
+  -     'held-run-1',
+  -     'held-run-2',
+  -     'held-run-3',
+  - }
+FAILED tests/test_fleet_state_reuses_its_reads_between_ticks.py::test_unrelated_landing_and_registry_churn_do_only_changed_work - AssertionError: assert set() == {'held-run-0'... 'held-run-3'}
+  
+  Extra items in the right set:
+  'held-run-3'
+  'held-run-1'
+  'held-run-0'
+  'held-run-2'
+  
+  Full diff:
+  + set()
+  - {
+  -     'held-run-0',
+  -     'held-run-1',
+  -     'held-run-2',
+  -     'held-run-3',
+  - }
+FAILED tests/test_fleet_state_reuses_its_reads_between_ticks.py::test_an_aggregate_rewrite_rebuilds_from_the_current_union - KeyError: 'coordinator'
+3 failed, 1 passed in 4.51s
+EXIT=1
