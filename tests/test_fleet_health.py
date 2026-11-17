@@ -17,6 +17,7 @@ the real ``/proc``; none writes under the real state directory.
 
 from __future__ import annotations
 
+import csv
 import os
 import subprocess
 from pathlib import Path
@@ -214,7 +215,7 @@ def test_dstate_trigger_writes_a_snapshot_with_thread_and_wait_columns(
 
     # The sample line reports the same count that fired the trigger.
     line = box.samples()[0].read_text().splitlines()
-    assert line[0] == _SAMPLE_HEADER + "\twritable_interpreters"
+    assert line[0] == _SAMPLE_HEADER + "\twritable_interpreters\tjob_oom_kill"
     assert line[-1].split("\t")[5] == "60"
 
     alert = box.alerts()
@@ -305,3 +306,70 @@ def test_a_pass_after_the_bound_writes_a_second_snapshot(tmp_path: Path) -> None
     assert result.returncode == 0, result.stderr
     assert len(box.snapshots()) == 2
     assert len(box.alerts().splitlines()) == 2
+
+
+def sample_rows(box: Sandbox) -> list[dict[str, str]]:
+    with box.samples()[0].open() as stream:
+        return list(csv.DictReader(stream, delimiter="\t"))
+
+
+def test_memory_kill_rise_is_dated_and_keeps_the_process_table(tmp_path: Path) -> None:
+    box = sandbox(tmp_path, extra_env=BASE)
+    cg = Path(box.env["FLEET_CGROUP_DIR"])
+    (cg / "memory.max").write_text("10485760\n")
+    (cg / "memory.events").write_text("oom 8\noom_kill 3\noom_group_kill 0\n")
+    first = run_pass(box.env)
+    assert first.returncode == 0, first.stderr
+    assert box.alerts() == "", "a first observation establishes the count"
+    (cg / "memory.current").write_text("3145728\n")
+    (cg / "memory.events").write_text("oom 10\noom_kill 5\noom_group_kill 0\n")
+    second = run_pass(box.env)
+    assert second.returncode == 0, second.stderr
+    rows = sample_rows(box)
+    assert [row["job_oom_kill"] for row in rows] == ["3", "5"]
+    assert rows[-1]["job_mem_mb"] == "3"
+    assert rows[-1]["job_mem_max_mb"] == "10"
+    assert len(box.snapshots()) == 1
+    assert "systemd" in box.snapshots()[0].read_text()
+    alert = box.alerts()
+    assert alert.startswith(rows[-1]["utc"])
+    assert "2 memory kills (3 -> 5)" in alert
+    assert "10240 KiB systemd (pid 1)" in alert
+    assert str(box.snapshots()[0]) in alert
+    assert (box.state / "notice").read_text() == alert
+    third = run_pass(box.env)
+    assert third.returncode == 0, third.stderr
+    assert len(box.alerts().splitlines()) == 1, "an unchanged count raises nothing"
+
+
+def test_memory_kills_bypass_the_pressure_snapshot_interval(tmp_path: Path) -> None:
+    box = sandbox(tmp_path, dstate_procs=60, extra_env=BASE)
+    cg = Path(box.env["FLEET_CGROUP_DIR"])
+    (cg / "memory.events").write_text("oom_kill 3\n")
+    sleeper = box.root / "stubbin" / "sleep"
+    sleeper.write_text(
+        '#!/bin/bash\nprintf "oom_kill 5\\n" > "$FLEET_CGROUP_DIR/memory.events"\n'
+    )
+    sleeper.chmod(0o755)
+    result = run_passes(box.env, 2)
+    assert result.returncode == 0, result.stderr
+    assert [row["job_oom_kill"] for row in sample_rows(box)] == ["3", "5"]
+    assert len(box.snapshots()) == 2, (
+        "the kill retains its own table inside the cooldown"
+    )
+    assert len(box.alerts().splitlines()) == 2
+    assert "2 memory kills (3 -> 5)" in box.alerts()
+
+
+@pytest.mark.parametrize("events", [None, "oom 7\n", "oom_kill unreadable\n"])
+def test_unreadable_kill_count_is_unknown_and_raises_no_event(
+    tmp_path: Path, events: str | None
+) -> None:
+    box = sandbox(tmp_path, extra_env=BASE)
+    if events is not None:
+        (Path(box.env["FLEET_CGROUP_DIR"]) / "memory.events").write_text(events)
+    result = run_pass(box.env)
+    assert result.returncode == 0, result.stderr
+    assert sample_rows(box)[0]["job_oom_kill"] == "-"
+    assert box.alerts() == ""
+    assert box.snapshots() == []
