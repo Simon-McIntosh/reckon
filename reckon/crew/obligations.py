@@ -3792,7 +3792,7 @@ def _filed_rows(index: _HeldWorktreeState) -> tuple[Mapping[str, Any], ...]:
 
 
 def _held_worktree_records_read(
-project: str, repository: Path, *, signature: tuple[Any, ...] | None = None
+    project: str, repository: Path, *, signature: tuple[Any, ...] | None = None
 ) -> _RecordedPass:
     """Apply changed run documents and tree registrations to the previous answer.
 
