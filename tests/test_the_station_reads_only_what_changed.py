@@ -16,6 +16,7 @@ the memos cleared.
 
 from __future__ import annotations
 
+import builtins
 import importlib
 import io
 import json
@@ -766,3 +767,248 @@ def test_recent_rows_keep_the_unfiltered_promotion_order(home):
     )
     assert [row["run_id"] for row in recent] == ["r-a", "r-z"]
     assert recent == [row for row in whole if row["run_id"] != "r-expired"]
+
+
+# ── the dominant input a 60 s per-path census names: the run streams ─────────
+#
+# A 60 s window of one station over 147 live pointers, counted per path through
+# an open-wrapper census, put every byte the station reads in a few kinds of
+# file: the run streams made up most of it, and the largest single reader of
+# them was the terminal-lane scan, which parsed a whole stream from its first
+# record on every pass because a live worker appends to it continuously. The
+# two tests below hold the station to reading only what a stream appended.
+
+STREAM_RUNS = 5
+STREAM_BYTES_EACH = 2_200_000
+STREAM_MOMENT = datetime(2026, 10, 24, 12, tzinfo=UTC).timestamp()
+
+
+class _PerPathReads:
+    """Count the bytes every opened file hands back, keyed by its path.
+
+    This is the census's own instrument: ``io.open`` is wrapped and the value it
+    returns counts what its reads hand back, so a reader that opens a file and
+    iterates it is counted as surely as one that reads it whole. Bytes are
+    attributed to the path the caller asked for, resolved against the current
+    directory, so a stream is named by the file the station opened.
+    """
+
+    def __init__(self) -> None:
+        self.bytes: dict[str, int] = {}
+
+    def __enter__(self) -> Self:
+        self._real = io.open
+        counter = self
+
+        class _Counted:
+            def __init__(self, handle: Any, path: str) -> None:
+                self._handle = handle
+                self._path = path
+
+            def __getattr__(self, name: str) -> Any:
+                return getattr(self._handle, name)
+
+            def _note(self, data: Any) -> Any:
+                try:
+                    size = len(data)
+                except TypeError:
+                    return data
+                if size:
+                    counter.bytes[self._path] = counter.bytes.get(self._path, 0) + size
+                return data
+
+            def read(self, *args: Any) -> Any:
+                return self._note(self._handle.read(*args))
+
+            def readline(self, *args: Any) -> Any:
+                return self._note(self._handle.readline(*args))
+
+            def readlines(self, *args: Any) -> Any:
+                lines = self._handle.readlines(*args)
+                self._note(b"".join(lines))
+                return lines
+
+            def readinto(self, buffer: Any) -> Any:
+                count = self._handle.readinto(buffer) or 0
+                self._note(b"x" * count)
+                return count
+
+            def __iter__(self) -> Any:
+                return self
+
+            def __next__(self) -> Any:
+                return self._note(next(self._handle))
+
+            def __enter__(self) -> Any:
+                self._handle.__enter__()
+                return self
+
+            def __exit__(self, *exc: object) -> Any:
+                return self._handle.__exit__(*exc)
+
+        def counting_open(file: Any, *args: Any, **kwargs: Any) -> Any:
+            handle = counter._real(file, *args, **kwargs)
+            try:
+                path = os.fspath(file)
+            except TypeError:
+                return handle
+            if isinstance(path, bytes):
+                return handle
+            return _Counted(handle, os.path.abspath(path))
+
+        io.open = counting_open
+        builtins.open = counting_open
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        io.open = self._real
+        builtins.open = self._real
+
+    def total_for(self, paths: Any) -> int:
+        return sum(self.bytes.get(os.path.abspath(str(path)), 0) for path in paths)
+
+
+def _stream_body(index: int) -> str:
+    """One run's stream: whole records that fill it to its declared size."""
+    lines = []
+    size = 0
+    number = 0
+    while size < STREAM_BYTES_EACH:
+        line = json.dumps(
+            {
+                "type": "assistant",
+                "index": number,
+                "run": index,
+                "pad": "charge " * 120,
+            }
+        )
+        lines.append(line + "\n")
+        size += len(line) + 1
+        number += 1
+    lines.append(
+        json.dumps(
+            json.loads(
+                json.dumps(
+                    {
+                        "type": "result",
+                        "is_error": False,
+                        "timestamp": "2026-10-24T11:00:00Z",
+                    }
+                )
+            )
+        )
+        + "\n"
+    )
+    return "".join(lines)
+
+
+@pytest.fixture()
+def stream_fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
+    """Five live runs whose only large input is the run stream beside each."""
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "cache"))
+
+    monkeypatch.delenv("RECKON_MOUNTS_PATH", raising=False)
+    root = tmp_path / "repo"
+    state = root / "docs" / "state" / PROJECT
+    state.mkdir(parents=True)
+    (root / "seed.txt").write_text("seed\n", encoding="utf-8")
+    for arguments in (
+        ("init", "-q", "-b", "main"),
+        ("config", "user.email", "worker@example.invalid"),
+        ("config", "user.name", "Worker"),
+        ("add", "seed.txt"),
+        ("commit", "-q", "-m", "test: seed the stream fixture"),
+    ):
+        _git(root, *arguments)
+    (config_home / "mounts.json").write_text(
+        json.dumps({PROJECT: str(root / "docs")}), encoding="utf-8"
+    )
+    (state / "crew.json").write_text(
+        json.dumps({"data": {"_version": 1, "members": [], "runs": [], "holds": []}}),
+        encoding="utf-8",
+    )
+    streams = []
+    for index in range(STREAM_RUNS):
+        run_id = f"stream-run-{index:02d}"
+        stream = runs.run_dir(run_id) / "stream.jsonl"
+        stream.parent.mkdir(parents=True, exist_ok=True)
+        stream.write_text(_stream_body(index), encoding="utf-8")
+        streams.append(stream)
+        runs._write_json(
+            runs.pointer_path(run_id),
+            {
+                "run_id": run_id,
+                "project": PROJECT,
+                "session": SESSION,
+                "repo": str(root),
+                "worktree": str(root),
+                "base_sha": _git(root, "rev-parse", "HEAD"),
+                "launch": "in-harness",
+                "role": "implement",
+                "phase": "working",
+                # The worker is gone, which is the row whose terminal lane
+                # signal reads the stream: a live run's classification reads
+                # its stream through the observe fold instead.
+                "process_alive": False,
+                "launcher_host": socket.gethostname(),
+                "node": {"id": run_id, "plan": "fixture-plan", "section": "fixture"},
+            },
+        )
+    return {"streams": streams, "runtime": tmp_path / "runtime"}
+
+
+def test_a_moved_stream_is_read_only_where_it_changed(
+    stream_fleet: dict[str, Any],
+) -> None:
+    """A tick after workers appended reads the appended bytes, not the streams."""
+    streams = stream_fleet["streams"]
+    total = sum(stream.stat().st_size for stream in streams)
+    assert total >= 10_000_000, f"the dominant input totals only {total} bytes"
+    with station_store.StationStore(stream_fleet["runtime"]) as store:
+        for stream in streams:
+            store.ingest_pointer(runs.pointer_path(stream.parent.name))
+        store.classify_tick(now_seconds=STREAM_MOMENT)
+        # Every worker writes one more record: the input moves, as a live run's
+        # stream does on every pass, and the station's own answer must not.
+        appended = 0
+        for stream in streams:
+            record = json.dumps(
+                {
+                    "type": "result",
+                    "is_error": False,
+                    "timestamp": "2026-10-24T11:30:00Z",
+                    "detail": "still working",
+                }
+            )
+            with stream.open("a", encoding="utf-8") as handle:
+                handle.write(record + "\n")
+            appended += len(record) + 1
+        with _PerPathReads() as reads:
+            verdicts = store.classify_tick(now_seconds=STREAM_MOMENT)
+        over = reads.total_for(streams)
+        records = [json.loads(row["fields"]) for row in store.pointer_rows()]
+        fresh = {
+            record["run_id"]: recovery_watch._watch_snapshot(
+                record,
+                moment=STREAM_MOMENT,
+                stall_seconds=900,
+                cache={},
+                pointers=records,
+            )
+            for record in records
+        }
+        assert verdicts == fresh, (
+            "the tick's verdicts diverge from a fresh classification"
+        )
+    assert len(records) >= STREAM_RUNS, f"only {len(records)} runs were classified"
+    print(
+        f"moved_input_bytes={total} appended_bytes={appended} "
+        f"second_tick_stream_bytes={over}"
+    )
+    assert 0 < over < 1_000_000, (
+        f"the second tick read {over} bytes of the moved streams, whose whole is "
+        f"{total} and whose appended part is {appended}"
+    )
