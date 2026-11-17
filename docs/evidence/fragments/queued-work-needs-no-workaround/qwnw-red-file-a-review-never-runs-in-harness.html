@@ -48,22 +48,22 @@ FAILED tests/test_a_review_never_runs_in_harness.py::test_a_spawnable_lane_is_st
   58 passed, <code>EXIT=0</code>.</p>
 
   <h3 id="qwnw-red-file-a-review-never-runs-in-harness-merge">Merge rounds</h3>
-  <p>Two rounds, both in <code>reckon/crew/recovery_classification.py</code>, both over the same
-  pre-spawn gate. First against <code>50b1f03078</code> (merge commit
-  <code>efdc002727</code>), then against <code>1f07f8e7</code> (merge commit
-  <code>3580a09ef0</code>).</p>
-  <p>The primary branch now reads the launcher's label against three witnesses of its own: the
-  launch's spawn evidence (<code>_spawn_evidence</code>: a pid, a worker record, a stream, a
-  launch log, a folded budget), a process already recorded dead, and — below the gate — a manifest
-  carrying a verdict word (<code>pre_spawn_reads_as_claim</code>). This branch's work is that last
-  witness. The resolved gate keeps all of them: a pointer waits to start only while the process is
-  not recorded dead, the launch left no spawn evidence, and it is not stranded; the claim then
-  stands only while the manifest carries no verdict word.</p>
-  <p>No rule is duplicated. The delivered-manifest rule lives where main puts it, and the
-  paragraph that explains it stays beside the gate because <code>_spawn_evidence</code> counts no
-  manifest, so a run whose only remaining record is the verdict it was delivered on would
-  otherwise still read as a request that never started — the shape three tests in
-  <code>tests/test_a_review_never_runs_in_harness.py</code> build.</p>
+  <p>Three rounds, all in <code>reckon/crew/recovery_classification.py</code>, all over the same
+  pre-spawn gate: against <code>50b1f03078</code> (merge commit <code>efdc002727</code>), against
+  <code>1f07f8e7</code> (<code>3580a09ef0</code>), and against <code>dfa56e38</code>
+  (<code>ac4c22f2</code>).</p>
+  <p>Each round the primary branch converged on this change's reading from its own side, and it has
+  now arrived at it in full: the gate reads the label against the launch's spawn evidence
+  (<code>_spawn_evidence</code>: a pid, a worker record, a stream, a launch log, a folded
+  budget), a process recorded dead, a manifest present, a terminal verdict already recorded, and a
+  stranded launch. A pointer waits to start only while none of those hold. This change's first
+  commit added the manifest clause; the primary branch's own work now states the same rule more
+  generally, so the resolved gate takes its version and no rule is stated twice.</p>
+  <p>The comment beside the gate is the primary branch's, and it gives the reason this change
+  wrote: a manifest is the worker's own record, written only by a worker that was spawned, so a
+  pointer carrying one is not a request awaiting a worker however its label reads. The tests in
+  <code>tests/test_a_review_never_runs_in_harness.py</code> build exactly that record, and pass at
+  every merged head.</p>
   <p>Two ids fail at the merged heads that pass at the base <code>69fab1372f</code>:
   <code>test_a_classification_read_creates_no_run_directory.py</code>'s two tests. They fail
   identically in scratch trees holding only <code>50b1f03078</code> and only
@@ -75,8 +75,9 @@ FAILED tests/test_a_review_never_runs_in_harness.py::test_a_spawnable_lane_is_st
 
   <h3 id="qwnw-red-file-a-review-never-runs-in-harness-lint">Lint</h3>
   <p><code>ruff format --check</code> reports the changed file already formatted.
-  <code>ruff check</code> reports one <code>SIM102</code>, which the same file carries at both
-  <code>69fab1372f</code> and <code>1f07f8e7</code>; the change adds none.</p>
+  <p><code>ruff check</code> reports one <code>SIM102</code>, which the same file carries at
+  <code>69fab1372f</code>, <code>1f07f8e7</code> and <code>dfa56e38</code>; the change adds
+  none.</p>
 </section>
 </body>
 </html>
