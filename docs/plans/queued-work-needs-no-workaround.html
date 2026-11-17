@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="310">
+<meta name="plan-version" content="311">
 <meta name="plan-modified" content="2026-11-17">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -1021,7 +1021,10 @@
     <div class="r-comment-body"><p>tests/test_only_unmergeable_paths_are_claimed.py needed no repair: 25 passed at base 0e0f25b0f941 and 25 passed at head 6a7ffbd9d4 as its own all_debug job with SLURM_JOB_ID unset; the 25 failures recorded at 8d50b0333f do not reproduce at that revision (25 passed), and a negative control that declares reckon/ nonmergeable makes 14 of the 25 cases fail; both suite arms read 58 passed, and no assertion was deleted or weakened.</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261116T104423987171-qwnw-red-file-queued-work-shows-where-held-work-shows" data-who="reckon-build" data-when="2026-11-16T11:37:35Z">
-    <div class="r-comment-body"><p>repaired two product causes behind tests/test_queued_work_shows_where_held_work_shows.py — the live view no longer resolves a row&#x27;s configuration for a local lane it never needed, and the stop hook&#x27;s non-blocking vocabulary now carries route-defaulted beside the primary branch&#x27;s review-in-flight — taking the file from 4 failed and 1 passed at 24bc79d8ee to 5 passed at the merge head</p></div>
+    <div class="r-comment-body"><p>repaired two product causes behind tests/test_queued_work_shows_where_held_work_shows.py — the live view no longer resolves a row's configuration for a local lane it never needed, and the stop hook's non-blocking vocabulary now carries route-defaulted beside the primary branch's review-in-flight — taking the file from 4 failed and 1 passed at 24bc79d8ee to 5 passed at the merge head</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261116T104406455270-qwnw-red-file-review-lane-follows-its-run" data-who="reckon-build" data-when="2026-11-16T11:37:25.661Z">
+    <div class="r-comment-body"><p>a delivered run whose pointer still read a pre-spawn phase was classified running, so the review reflex refused composition with &#x27;the run is not awaiting review (running)&#x27; and four cases stopped before the lane they measure; classify_pointer now lets a terminal manifest status outrank the stale label, and tests/test_review_lane_follows_its_run.py went from 4 failed and 2 passed at 24bc79d8 to 6 passed at 55e48f3bd8, measured as all_debug job 1319800</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
