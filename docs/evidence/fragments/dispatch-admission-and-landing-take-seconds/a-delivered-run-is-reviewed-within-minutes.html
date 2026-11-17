@@ -58,7 +58,10 @@
   while the follower's sweep requests the review. It asserts the sweep's own
   report names the run as dispatched, the review's pointer exists, and the
   receipt's request instant is no later than <strong>120 s</strong> after the
-  delivery's — then reads the same instants back through the census. The second
+  delivery's — then reads the same instants back through the census, records the
+  review's admission and start the way the fleet's own writer does, and asserts
+  the request-to-launch interval against those receipts, so a stage the census
+  stops mapping leaves that interval unknown and reddens the case. The second
   case withholds the request's precondition — its session has no armed follower
   — and reads no obligation at 599 s and one at 601 s whose reason names that
   session. A third case reads a recorded refusal as the reason rather than as no
@@ -70,7 +73,9 @@
 
 <p id="a-delivered-run-is-reviewed-within-minutes-gate"><strong>Gate.</strong>
   The node's ten tests pass at the head
-  (<strong>10 passed</strong> in 8.3 s). The armed suite arms — the node's test
+  (the head arm's log reads <strong>68 passed</strong> in 47.3 s at
+  <code>f4a8ef887b</code>, its command named on the manifest's
+  <code>after_suite</code> line). The armed suite arms — the node's test
   file beside the two importer files at the head, and the two importer files
   alone at the base revision — are recorded in the manifest's
   <code>after_suite</code> and <code>baseline_suite</code> fields with their own
