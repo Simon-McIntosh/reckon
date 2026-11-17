@@ -510,16 +510,21 @@ def test_plan_row_renders_authored_to_effective_transition_and_open_gate_count(
         route="#plans",
         wait_selector=".r-status-transition",
         probe="""(() => {
-          const transition = document.querySelector(".r-status-transition");
-          const text = transition?.textContent.replace(/\\s+/g, " ").trim() || "";
+          // The plans surface states a plan's transition in every list it
+          // shows: the index rows and the plan list column. The reading is any
+          // of them, so the probe also reports how many nodes carried it — a
+          // removal control that takes out one of two has not removed the
+          // signal.
+          const transitions = [...document.querySelectorAll(".r-status-transition")];
+          const texts = transitions.map(node => node.textContent.replace(/\\s+/g, " ").trim());
           return {
-            ok: text.includes("active")
+            ok: texts.some(text => text.includes("active")
               && text.includes("blocked")
-              && text.includes("1 open gate"),
-            text,
+              && text.includes("1 open gate")),
+            present: transitions.length,
           };
         })()""",
-        remove_signal="document.querySelector('.r-status-transition')?.remove()",
+        remove_signal="document.querySelectorAll('.r-status-transition').forEach(node => node.remove())",
     )
 
     _assert_rendered_signal(result["baseline"], "status transition")
