@@ -265,11 +265,15 @@ def test_fixture_work_outside_landing_audit_is_under_budget(project, monkeypatch
     answer = _edit("target", [_set("section_declarations.s1", "done")])
     profile.disable()
     wall = time.monotonic() - start
-    audit = sum(
-        values[3]
+    audit_samples = [
+        values
         for key, values in pstats.Stats(profile).stats.items()
-        if key[2] == "_done_sections_unlanded_findings"
+        if key[2] == "_unlanded_run_findings"
+    ]
+    assert audit_samples, (
+        "the profile must observe the landing audit before subtracting it"
     )
+    audit = sum(values[3] for values in audit_samples)
     assert wall - audit <= 5, f"outside landing audit: {wall - audit:.3f}s"
     print(
         f"READINESS_FIXTURE wall={wall:.6f}s landing_audit={audit:.6f}s outside={wall - audit:.6f}s"
