@@ -384,6 +384,158 @@ def sample_interpreter_permissions() -> int:
     return 0
 
 
+NODE_DISK_RECORD = "node-disk.json"
+NODE_DISK_ROOT_ENV = "FLEET_NODE_TMP_ROOT"
+DEFAULT_NODE_DISK_RESERVE_BYTES = 8 * 1024**3
+
+
+def node_disk_reserve_bytes(config: Mapping[str, Any] | None = None) -> int:
+    """The fleet's local disk reserve, resolved from flight settings."""
+    if config is None:
+        from reckon import flight
+
+        config = flight.resolve().config
+    return int(
+        config.get("worktree", {}).get(
+            "node_tmp_reserve_bytes", DEFAULT_NODE_DISK_RESERVE_BYTES
+        )
+    )
+
+
+def node_disk_largest_entries(mount: Path) -> tuple[list[dict[str, Any]], bool]:
+    """Bound a same-filesystem census and retain its largest entries by owner.
+
+    A partial or refused census stays labelled incomplete; it never becomes a
+    claim that a directory contains zero bytes. Symlinks are not followed.
+    """
+    import pwd
+
+    complete = False
+    try:
+        result = subprocess.run(
+            ["du", "-a", "-x", "-B1", "--max-depth=1", "--", str(mount)],
+            capture_output=True,
+            timeout=5,
+            check=False,
+        )
+        output = result.stdout
+        complete = result.returncode == 0
+    except subprocess.TimeoutExpired as exc:
+        output = exc.stdout or b""
+    except OSError:
+        return [], False
+    entries = []
+    for line in os.fsdecode(output).splitlines():
+        size, separator, name = line.partition("\t")
+        path = Path(name)
+        if not separator or not size.isdigit() or path == mount or path.parent != mount:
+            continue
+        try:
+            uid = path.lstat().st_uid
+            try:
+                owner = pwd.getpwuid(uid).pw_name
+            except KeyError:
+                owner = str(uid)
+        except OSError:
+            complete = False
+            continue
+        entries.append({"path": name, "bytes": int(size), "uid": uid, "owner": owner})
+    return sorted(entries, key=lambda entry: (-entry["bytes"], entry["path"]))[
+        :5
+    ], complete
+
+
+def node_disk_snapshot(mount: Path, *, reserve_bytes: int) -> dict[str, Any]:
+    """Read this mount's usable bytes and inodes, including reserved blocks."""
+    mount = mount.resolve()
+    stats = os.statvfs(mount)
+    block = stats.f_frsize or stats.f_bsize
+    free = stats.f_bavail * block
+    under_reserve = free < reserve_bytes
+    entries, complete = (
+        node_disk_largest_entries(mount) if under_reserve else ([], True)
+    )
+    return {
+        "utc": datetime.now(UTC).isoformat(),
+        "mount": str(mount),
+        "total_bytes": stats.f_blocks * block,
+        "used_bytes": (stats.f_blocks - stats.f_bfree) * block,
+        "free_bytes": free,
+        "free_inodes": stats.f_favail,
+        "reserve_bytes": reserve_bytes,
+        "under_reserve": under_reserve,
+        "largest_entries": entries,
+        "entries_complete": complete,
+        "node": socket.gethostname().split(".")[0],
+        "job_id": os.environ.get("SLURM_JOB_ID", ""),
+    }
+
+
+def node_disk_pressure(sample: Mapping[str, Any]) -> dict[str, Any] | None:
+    """One pressure obligation shared by admission and both obligation readers."""
+    if not sample.get("under_reserve"):
+        return None
+    largest = (
+        "; ".join(
+            f"{entry['path']} ({entry['owner']}, {entry['bytes']} bytes)"
+            for entry in sample.get("largest_entries", [])
+        )
+        or "unavailable"
+    )
+    qualifier = "" if sample.get("entries_complete") else " (census incomplete)"
+    return {
+        "kind": "node-disk-reserve",
+        "run_id": "",
+        "age_seconds": 0,
+        "reason": (
+            f"Fleet node {sample['node']} mount {sample['mount']} has "
+            f"{sample['free_bytes']} free bytes below its {sample['reserve_bytes']} "
+            f"byte reserve. Largest entries by owner{qualifier}: {largest}"
+        ),
+        "next_command": "Review the named entries with their owners and free local disk space",
+        "disk": dict(sample),
+    }
+
+
+def sample_node_disk(environ: Mapping[str, str] | None = None) -> int:
+    """Publish one local disk reading and emit the health series' four fields."""
+    environ = os.environ if environ is None else environ
+    mount = Path(environ.get(NODE_DISK_ROOT_ENV) or "/tmp")  # noqa: S108 - node-local
+    try:
+        sample = node_disk_snapshot(mount, reserve_bytes=node_disk_reserve_bytes())
+        sample["job_id"] = environ.get("SLURM_JOB_ID", "")
+        write_json_atomically(state_directory(environ) / NODE_DISK_RECORD, sample)
+    except OSError as exc:
+        log(f"local disk reading unavailable for {mount}: {exc}", file=sys.stderr)
+        return 1
+    print(
+        *(
+            sample[key]
+            for key in ("total_bytes", "used_bytes", "free_bytes", "free_inodes")
+        )
+    )
+    return 0
+
+
+def node_disk_obligation(project: str) -> dict[str, Any] | None:
+    """Read the owning fleet's published sample, never the reader's own disk."""
+    environ = dict(os.environ)
+    environ[FLEET_NAME_ENV] = fleet_for_project(project)
+    directory = state_directory(environ)
+    try:
+        sample = json.loads((directory / NODE_DISK_RECORD).read_text())
+        fleet = json.loads((directory / RECORD_NAME).read_text())
+    except (OSError, ValueError):
+        return None
+    if (
+        str(sample.get("job_id") or "") != str(fleet.get("job_id") or "")
+        or str(sample.get("node") or "").split(".")[0]
+        != str(fleet.get("node") or "").split(".")[0]
+    ):
+        return None
+    return node_disk_pressure(sample)
+
+
 def stripped_variables(environ: Mapping[str, str]) -> list[str]:
     """Name the inherited variables the fleet must not pass on."""
     return [
@@ -3241,6 +3393,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Enter either the one-shot session start or the request loop."""
     arguments = list(sys.argv[1:] if argv is None else argv)
     environ = os.environ
+    if arguments == ["sample-node-disk"]:
+        return sample_node_disk(environ)
     if arguments == ["check-interpreters"]:
         return sample_interpreter_permissions()
     if arguments and arguments[0] == START_MODE:

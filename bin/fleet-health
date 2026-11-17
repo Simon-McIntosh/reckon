@@ -75,7 +75,7 @@ fi
 ms_since() { echo $(( ($(date +%s%N) - $1) / 1000000 )); }
 over_load() { awk -v l="$1" -v t="$2" 'BEGIN { exit !(l > t) }'; }
 
-header=$'utc\tload1\tload5\tprocs_running\tprocs_blocked\tdstate\tmem_avail_mb\tswap_free_mb\tjob_mem_mb\tjob_mem_max_mb\thome_stat_ms\tslurmd_ms\tctld_ping\ttasks\tpython_procs\ttop_parent\twritable_interpreters\tjob_oom_kill'
+header=$'utc\tload1\tload5\tprocs_running\tprocs_blocked\tdstate\tmem_avail_mb\tswap_free_mb\tjob_mem_mb\tjob_mem_max_mb\thome_stat_ms\tslurmd_ms\tctld_ping\ttasks\tpython_procs\ttop_parent\twritable_interpreters\tjob_oom_kill\tnode_tmp_total_bytes\tnode_tmp_used_bytes\tnode_tmp_free_bytes\tnode_tmp_free_inodes'
 if [ -s "$out" ] && [ "$(head -1 "$out")" != "$header" ]; then
     mv -f "$out" "${out%.tsv}.$(date -u +%Y%m%dT%H%M%SZ).tsv"
 fi
@@ -112,10 +112,12 @@ while :; do
     read -r top_n top_pid < <(awk '{print $2}' <<<"$table" | sort | uniq -c | sort -rn | head -1)
     top_args=$(ps -o args= -p "${top_pid:-0}" 2>/dev/null | tr -d '\t\n' | cut -c1-80)
     top="${top_n:-0}:${top_pid:--}:${top_args:--}"
+    disk=$(timeout 15 "${FLEET_DISK_PYTHON:-${RECKON_SHIM_PYTHON:-python3}}" -m reckon.crew.fleet_supervisor sample-node-disk) || disk="unknown unknown unknown unknown"
+    read -r disk_total disk_used disk_free disk_inodes <<<"$disk"
     now=$(date -u +%FT%TZ)
-    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$now" \
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$now" \
         "$load1" "$load5" "$running" "$blocked" "$dstate" "$avail" "$swap" \
-        "$jobmem" "$jobmax" "$home" "$slurmd" "${ping:-none}" "$tasks" "$python" "$top" "$writable_interpreters" "$kills" >> "$out"
+        "$jobmem" "$jobmax" "$home" "$slurmd" "${ping:-none}" "$tasks" "$python" "$top" "$writable_interpreters" "$kills" "${disk_total:-unknown}" "${disk_used:-unknown}" "${disk_free:-unknown}" "${disk_inodes:-unknown}" >> "$out"
 
     reason=""
     [ "$tasks" -gt "$TASKS_ALERT" ] && reason="$tasks tasks"

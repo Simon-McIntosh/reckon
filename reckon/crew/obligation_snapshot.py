@@ -2156,6 +2156,9 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
     # session's published payload carries the index-lag notice its stop hook
     # would otherwise never see: the hook reads the snapshot and cannot import
     # the derivation on that path.
+    disk_notice = module._node_disk_notice(state.project)
+    if disk_notice is not None:
+        items.append(disk_notice)
     index_lag = module._index_lag_notice(state.project, now=state.now)
     if index_lag is not None:
         items.append(index_lag)

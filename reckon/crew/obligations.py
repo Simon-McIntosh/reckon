@@ -4402,6 +4402,13 @@ def _index_lag_notice(project: str, *, now: datetime) -> dict[str, Any] | None:
     return dict(notice)
 
 
+def _node_disk_notice(project: str) -> dict[str, Any] | None:
+    """The project's fleet disk pressure, from the sampler on that node."""
+    from reckon.crew.fleet_supervisor import node_disk_obligation
+
+    return node_disk_obligation(project)
+
+
 @operational_read
 def obligations(
     project: str, session: str, *, fields: Iterable[str] | None = None
@@ -4799,6 +4806,9 @@ def _obligations_view(
     # working tree both hold the file, and the next plain commit there records
     # the deletion. The condition belongs to the project rather than to a run,
     # so every session working it is shown the same notice.
+    disk_notice = _node_disk_notice(project)
+    if disk_notice is not None:
+        items.append(disk_notice)
     index_lag = _index_lag_notice(project, now=now)
     if index_lag is not None:
         items.append(index_lag)

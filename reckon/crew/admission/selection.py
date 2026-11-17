@@ -158,6 +158,23 @@ def admit_once(
             queued = [pointer for pointer in queued if included(pointer)]
         else:
             excluded_by_lane = []
+        disk_hold = _service.node_disk_admission_hold() if queued else None
+        if disk_hold is not None:
+            reason = str(disk_hold["reason"])
+            result["obligations"].append(disk_hold)
+            for pointer in queued:
+                identifier = str(pointer.get("run_id") or "")
+                result["held"].append(identifier)
+                _holds._record_pass_hold(
+                    pointer, {"verdict": "held-by-gate", "reason": reason},
+                    live=live, moment=moment,
+                )
+                result["verdicts"].append(_verdicts._verdict_row(
+                    pointer, allowance=0, allowance_source="node disk reserve",
+                    verdict="held-by-gate", detail=reason,
+                ))
+            result["action"] = "gated"
+            return result
         if local_gated and run_id and queued:
             pointer = queued[0]
             config = (
