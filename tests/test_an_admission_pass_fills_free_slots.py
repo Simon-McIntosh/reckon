@@ -173,8 +173,9 @@ def test_the_admit_service_stops_after_its_launches_finish(
         """
 import json, os, signal, sys, time
 from pathlib import Path
-from reckon.crew import queue_admission, runs
+from reckon.crew import fleet_supervisor, queue_admission, runs
 root = Path(sys.argv[1])
+(root / "fleet-state.txt").write_text(str(fleet_supervisor.state_directory()))
 config = json.loads(sys.argv[2])
 def stop(*args):
     (root / "stopped.json").write_text(json.dumps({
@@ -203,7 +204,6 @@ queue_admission.admit_until_stopped(
         **os.environ,
         "PYTHONPATH": str(Path(fleet.__file__).resolve().parents[2]),
         "FLEET_RUNTIME_DIR": str(runtime),
-        "FLEET_STATE_DIR": str(tmp_path / "fleet-state"),
         "XDG_CONFIG_HOME": str(config_home),
     }
     from types import SimpleNamespace
@@ -229,6 +229,9 @@ queue_admission.admit_until_stopped(
         manager.reload()
         pid = fleet.recorded_service_pid(runtime, "admit")
         wait_for(lambda: bool(list(tmp_path.glob("began-*"))))
+        assert (
+            Path((tmp_path / "fleet-state.txt").read_text()) == fleet.state_directory()
+        )
         manager.supervise_once()
         assert fleet.recorded_service_pid(runtime, "admit") == pid
         assert not (tmp_path / "stopped.json").exists()
