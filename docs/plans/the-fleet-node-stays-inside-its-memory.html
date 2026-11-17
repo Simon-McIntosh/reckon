@@ -25,7 +25,7 @@
   <title>The Fleet Node Stays Inside Its Memory | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="5">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -136,6 +136,12 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261117T114158604983-review-of-fleet-test-processes-are-counted-3bc970691ad5" data-who="reckon-build" data-when="2026-11-17T11:49:15Z">
     <div class="r-comment-body"><p>Independent review stored for base 421f01042a982737973e1d9d65121120ddaf7bd5 and head 3bc970691ad589154df018c51494ece4a16bd1aa; all six dimensions scored, one blocking header-contract finding, armed suite added failures 0, broader importer added failures 1.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261117T114358834620-review-of-a-service-over-its-limit-restarts-alone-d8e0a90d9400" data-who="reckon-build" data-when="2026-11-17T11:50:17Z">
+    <div class="r-comment-body"><p>Exact-revision independent review stored at both granted paths; all six dimensions 20/20, zero findings, zero added failure IDs; record checks passed.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261117T110917738170-a-sampler-outlives-the-fleet-job" data-who="reckon-build" data-when="2026-11-17T11:47:41Z">
+    <div class="r-comment-body"><p>Added an independent once-per-minute scheduler reader with GPFS locking for the shared TSV; the cancellation rehearsal writes one terminal row 59.839 seconds after cancellation, and the stopped-reader control fails. The exact health-header assertion now covers all seven scheduler columns: expanded scoped/head gates pass 88 tests, the baseline arm passes 73, and both 17-file importer arms pass 162 tests with 1 skip and zero added failures.</p></div>
 </div>
 </section>
 </main>
