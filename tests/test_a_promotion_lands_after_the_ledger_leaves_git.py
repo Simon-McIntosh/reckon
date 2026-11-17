@@ -98,6 +98,8 @@ def test_an_append_after_committed_removal_writes_only_the_store(
     _remove_ledger(repository)
     result = ledger.append_run(PROJECT, {"run_id": "r-next"}, root=repository)
     assert result["store"] == {"status": "written"}
+    assert result["path"] == str(run_store.store_path())
+    assert result["commit_paths"] == []
     assert set(_rows()) == {PRIOR["run_id"], "r-next"}
     assert _rows()[PRIOR["run_id"]] == PRIOR
     _assert_no_ledger_files(repository)
@@ -129,7 +131,8 @@ def test_a_promotion_after_committed_removal_lands_its_comment(
     )
     assert result["pointer_removed"]
     assert result["store"] == {"status": "written"}
-    assert result["landing_check"]["committed"]
+    assert result["landing_check"]["ok"]
+    assert result["ledger_path"] == str(run_store.store_path())
     assert set(_rows()) == {PRIOR["run_id"], "r-next"}
     assert _rows()[PRIOR["run_id"]] == PRIOR
     assert _rows()["r-next"]["gate"] == "passed"

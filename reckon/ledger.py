@@ -3683,19 +3683,13 @@ def _history_is_truncated(checkout: Path) -> bool:
     return bool(partial and partial.strip())
 
 
-def _ledger_ever_tracked(path: Path) -> bool | None:
-    """Ask git whether this checkout ever recorded the ledger path.
+def _ledger_git_state(path: Path) -> str | None:
+    """Distinguish a tracked, retired or never-recorded ledger path.
 
-    A committed ledger removed from the working tree and a project that never
-    had one present identically — an absent file — so the file alone cannot
-    say which write is safe. Git can: ``True`` means the path appears somewhere
-    in the repository's history, so its absence is a deletion to recover;
-    ``False`` means git has never recorded it, so the project is genuinely new.
-    ``None`` is returned when the question cannot be answered here — the path
-    is outside any checkout, the checkout carries no commits, or its history is
-    shallow, grafted or partial, so an empty log would report a truncation as
-    an absence — and a caller keeps its conservative refusal rather than
-    reading silence as a fresh start.
+    HEAD and the index protect uncommitted deletions, including staged ones.
+    A deletion committed on this branch retires the file; appends then write
+    only the run store. An empty complete history permits a new project.
+    Unavailable or truncated history answers ``None`` and keeps the refusal.
     """
     resolved = path.expanduser().resolve()
     discovery_root = resolved.parent
@@ -3714,6 +3708,13 @@ def _ledger_ever_tracked(path: Path) -> bool | None:
         relative_path = resolved.relative_to(checkout)
     except ValueError:
         return None
+    relative = relative_path.as_posix()
+    head = _git_stdout(checkout, "ls-tree", "--name-only", "HEAD", "--", relative)
+    index = _git_stdout(checkout, "ls-files", "--", relative)
+    if head is None or index is None:
+        return None
+    if head.strip() or index.strip():
+        return "tracked"
     if _history_is_truncated(checkout):
         return None
     logged = subprocess.run(
@@ -3723,6 +3724,7 @@ def _ledger_ever_tracked(path: Path) -> bool | None:
             str(checkout),
             "log",
             "--all",
+            "-1",
             "--format=%H",
             "--",
             relative_path.as_posix(),
@@ -3733,7 +3735,12 @@ def _ledger_ever_tracked(path: Path) -> bool | None:
     )
     if logged.returncode != 0:
         return None
-    return bool(logged.stdout.strip())
+    if not logged.stdout.strip():
+        return "new"
+    removed = _git_stdout(
+        checkout, "log", "-1", "--diff-filter=D", "--format=%H", "HEAD", "--", relative
+    )
+    return "retired" if removed and removed.strip() else None
 
 
 def append_run(
@@ -3743,7 +3750,7 @@ def append_run(
     root: str | Path | None = None,
     allow_create: bool = False,
 ) -> dict[str, Any]:
-    """Create one run file exclusively, then attempt one index update.
+    """Append one durable row, retaining run files until committed retirement.
 
     Existing target paths and top-level aggregate rows refuse duplicate ids.
     A byte scan avoids parsing the aggregate unless it contains this id; other
@@ -3756,9 +3763,11 @@ def append_run(
     leaves neither store holding the row.
 
     An absent aggregate still needs the history guard: a tracked file missing
-    from the working tree can hold unsplit history that needs recovery. A path
-    never tracked can accept a run without creating an aggregate; where git
-    cannot answer, ``allow_create=True`` explicitly permits initialisation.
+    from the working tree can hold unsplit history that needs recovery. A
+    committed removal writes only the store and returns no ``commit_paths``;
+    its ``path`` names the store. A path never tracked can accept a run without
+    creating an aggregate; where git cannot answer, ``allow_create=True``
+    explicitly permits initialisation.
     """
     run_id = str(record.get("run_id") or "")
     if not run_id:
@@ -3772,11 +3781,8 @@ def append_run(
     )
     if target.exists() or target.is_symlink():
         raise LedgerError(refusal)
-    if (
-        not path.exists()
-        and not allow_create
-        and _ledger_ever_tracked(path) is not False
-    ):
+    git_state = _ledger_git_state(path) if not path.exists() else "tracked"
+    if not path.exists() and not allow_create and git_state not in {"new", "retired"}:
         raise LedgerError(
             f"refusing to promote run {run_id!r} for {project!r}: ledger file "
             f"{path} does not exist. The run store at {_run_store_location()} "
@@ -3815,6 +3821,19 @@ def append_run(
 
     stored_record = dict(record)
     stored_record.pop("store_write", None)
+    if git_state == "retired":
+        store_outcome = _index_append(project, stored_record)
+        from reckon.crew import open_run_index
+
+        _bump_generation(project)
+        open_run_index.record_written(project, stored_record, ledger_root)
+        return {
+            "path": _run_store_location(),
+            "commit_paths": [],
+            "version": None,
+            "run": stored_record,
+            "store": store_outcome,
+        }
     encoded = serialize_run(stored_record)
     target.parent.mkdir(parents=True, exist_ok=True)
     try:
