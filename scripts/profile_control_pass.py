@@ -398,7 +398,7 @@ def decision_digest(result: dict) -> str:
 def _admission_passes(count: int) -> dict:
     """Run ``count`` admission passes in this process, sampling after each.
 
-    Each pass is the one §7's single-pass profile runs: the launch boundary
+    Each pass is the one the single-pass profile runs: the launch boundary
     returns a receipt, so admission still chooses, claims, writes handovers and
     records its verdicts while no worker starts. The resident size is read
     after every pass, so the tenth and the hundredth are compared on the same
