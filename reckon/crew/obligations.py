@@ -563,7 +563,8 @@ def action_form(command: str) -> str | None:
     quotation mark — likewise has no form, so a stored command that cannot be
     parsed leaves the read it belongs to intact rather than failing it.
 
-    Every option on the command is rendered, and an option this form cannot
+    Complete already waits on the tool surface, so its CLI --wait flag adds
+    no argument. Every other option on the command is rendered, and one this form cannot
     carry — one with no tool parameter, one whose value is missing — makes the
     whole command unrenderable. Half a command is worse than a printed one: it
     reads as callable and is refused, or is silently called without the
@@ -590,10 +591,15 @@ def action_form(command: str) -> str | None:
     order: list[tuple[str, bool]] = []
     index = 3
     while index < len(tokens):
-        token = tokens[index]
-        if not token.startswith("-"):
+        word = tokens[index]
+        if not word.startswith("-"):
             return None
-        option, _, inline = token.partition("=")
+        # The complete action invokes crew_complete synchronously by default,
+        # so its CLI --wait flag requires no additional tool parameter.
+        if verb == "complete" and word == "--wait":
+            index += 1
+            continue
+        option, _, inline = word.partition("=")
         parameter = _action_parameter(option)
         if parameter is None:
             return None

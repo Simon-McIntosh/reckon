@@ -3470,6 +3470,7 @@ def _promotion_command(
     """
     from .promotion import _promotion_commits
     from .promotion_checks import _fresh_manifest
+    from .promotion_evidence import _run_changed_nothing
     from .recovery_review_delivery import _is_review_run
 
     if not completion_offer(record, repair=True):
@@ -3483,7 +3484,9 @@ def _promotion_command(
         _review_tree(record), _promotion_commits(record, manifest_commits)
     )
     base = str(record.get("base_sha") or "").strip()
-    if not commits or (len(commits) == 1 and base and same_revision(commits[0], base)):
+    if (
+        not commits or (len(commits) == 1 and base and same_revision(commits[0], base))
+    ) and _run_changed_nothing(record):
         outcome = str(
             manifest.get("landing")
             or manifest.get("checkpoint")
@@ -3500,6 +3503,7 @@ def _promotion_command(
     for commit in commits:
         action += f" --commit {commit}"
     return action
+
 
 def completion_offer(record: Mapping[str, Any], *, repair: bool = False) -> bool:
     """Whether this attempt's evidence permits offering a completion.

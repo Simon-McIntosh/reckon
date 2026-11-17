@@ -253,6 +253,8 @@ def test_the_owed_command_promotes_the_run_verbatim(repository, tmp_path, role):
     ]
     command = row["next_command"]
     print("owed command:", command)
+    assert "<" not in command
+    assert row["next_action_form"] is not None
     argv = shlex.split(command)
     assert argv.pop(0) == "reckon"
     result = CliRunner().invoke(cli.main, argv)
@@ -359,3 +361,41 @@ def test_a_session_pane_carries_the_oldest_request_across_projects(monkeypatch):
     assert event["unpromoted"] == 3
     assert event["promotion_queued"] == 3
     assert event["oldest_promotion_position"] == 5
+
+
+def test_an_owed_command_never_invents_a_waiver_for_uncommitted_work(
+    repository, tmp_path
+):
+    pointer = _seed(repository, tmp_path, "delivered", role="investigate")
+    (repository / "uncommitted.py").write_text("answer = 42\n")
+    manifest = Path(pointer["manifest_path"])
+    manifest.write_text(
+        manifest.read_text().replace(f"commits: [{pointer['base_sha']}]", "commits: []")
+    )
+    from reckon.crew.recovery_classification import _promotion_command
+
+    command = _promotion_command(pointer["run_id"], pointer, [])
+    result = CliRunner().invoke(cli.main, shlex.split(command)[1:])
+    print("uncommitted-work receipt:", result.output)
+    assert result.exit_code != 0, result.output
+    assert "uncommitted.py" in result.output
+    assert "--no-commit" not in command
+    assert runs.pointer_path(pointer["run_id"]).exists()
+    assert not ledger.runs(PROJECT, root=repository)
+
+
+def test_the_owed_action_form_promotes_on_the_tool_surface(repository, tmp_path):
+    import ast
+
+    from reckon import mcp
+
+    pointer = _seed(repository, tmp_path, "mcp-delivered", role="investigate")
+    [row] = obligations.obligations(PROJECT, SESSION)["obligations"]
+    form = row["next_action_form"]
+    parsed = ast.parse(form, mode="eval").body
+    arguments = {
+        keyword.arg: ast.literal_eval(keyword.value) for keyword in parsed.keywords
+    }
+    result = mcp._crew(PROJECT, **arguments)
+    assert result["ok"], result
+    assert not runs.pointer_path(pointer["run_id"]).exists()
