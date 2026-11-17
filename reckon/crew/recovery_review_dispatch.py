@@ -4654,6 +4654,22 @@ def _lag_seconds(left: str | None, right: str | None) -> float | None:
     return max(0.0, (end - start).total_seconds())
 
 
+def _request_evidenced(record: Mapping[str, Any] | None) -> bool:
+    """Whether the run's own record says a review was already asked for.
+
+    The receipt is the instant of the request; the pointer's recorded dispatch is
+    the fact of it. A run dispatched before the receipts existed has a request
+    with no instant for it, so the census reports that gap apart from the
+    obligation, which claims no request was made at all.
+    """
+    if not isinstance(record, Mapping):
+        return False
+    recorded = record.get(REVIEW_DISPATCH_FIELD)
+    if not isinstance(recorded, Mapping):
+        return False
+    return str(recorded.get("status") or "") in {"dispatched", "withdrawn"}
+
+
 def _is_review_subject(
     run_id: str, record: Mapping[str, Any] | None
 ) -> bool:
@@ -4756,6 +4772,7 @@ def review_request_census(
     obligations: list[dict[str, Any]] = []
     request_lags: list[float] = []
     launch_lags: list[float] = []
+    unrecorded: list[dict[str, Any]] = []
     for run_id in run_ids:
         # A review is never asked for a review of itself, so a review run is not
         # a delivered run that owes a request. Without this a census of the fleet
@@ -4783,6 +4800,22 @@ def review_request_census(
             age = _lag_seconds(delivered_at, moment.isoformat())
             age = int(age) if age is not None else 0
             record = live.get(run_id)
+            if _request_evidenced(record):
+                # The receipt is the instant, and the pointer's own record is the
+                # evidence. A run dispatched before the receipts existed has a
+                # request and no instant for it, which is a gap in the clock and
+                # not an absence of the request: it is reported apart rather than
+                # as an obligation nothing could ever clear.
+                dispatched = dict((record or {}).get(REVIEW_DISPATCH_FIELD) or {})
+                unrecorded.append(
+                    {
+                        "run_id": run_id,
+                        "delivered_at": delivered_at,
+                        "status": str(dispatched.get("status") or ""),
+                        "review_run_id": dispatched.get("run_id"),
+                    }
+                )
+                continue
             if age >= int(deadline_seconds):
                 obligations.append(
                     {
@@ -4805,7 +4838,8 @@ def review_request_census(
             "delivered": len(rows),
             "requested": len(request_lags),
             "launched": len(launch_lags),
-            "unrequested": len(rows) - len(request_lags),
+            "unrequested": len(rows) - len(request_lags) - len(unrecorded),
+            "request_unrecorded": len(unrecorded),
         },
         "request_lag_seconds": {
             "p50": _nearest_rank(request_lags, 0.50),
@@ -4817,6 +4851,7 @@ def review_request_census(
             "p90": _nearest_rank(launch_lags, 0.90),
             "max": max(launch_lags) if launch_lags else None,
         },
+        "request_unrecorded": unrecorded,
         "deadline_seconds": int(deadline_seconds),
         "obligations": obligations,
     }

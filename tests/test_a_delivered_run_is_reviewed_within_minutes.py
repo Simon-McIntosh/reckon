@@ -217,6 +217,32 @@ def test_a_review_run_owes_no_review_of_itself(
     assert census["counts"]["delivered"] == 0
 
 
+def test_a_recorded_dispatch_without_a_receipt_is_not_an_obligation(
+    isolated_project: tuple[Path, Path], controlled_clock: dict
+) -> None:
+    """A missing instant is a gap in the clock, not an absence of the request."""
+    config_home, repo = isolated_project
+    run_id = "r-dispatched-before-receipts"
+    record = _scoring_pointer(config_home, repo, run_id)
+    record["review_dispatch"] = {
+        "status": "dispatched",
+        "run_id": "r-20260101T000000000000-review-of-r-dispatched-before-receipts",
+    }
+    runs._write_json(runs.pointer_path(run_id), record)
+    delivered_at = _delivered(run_id)
+    moment = datetime.fromisoformat(delivered_at)
+
+    census = recovery_review_dispatch.review_request_census(
+        [run_id],
+        now=moment + timedelta(seconds=601),
+        pointers=[record],
+    )
+    assert census["obligations"] == [], census
+    assert census["counts"]["request_unrecorded"] == 1
+    assert census["counts"]["unrequested"] == 0
+    assert census["request_unrecorded"][0]["status"] == "dispatched"
+
+
 def test_a_recorded_refusal_is_the_obligations_reason(
     isolated_project: tuple[Path, Path],
 ) -> None:
