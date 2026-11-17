@@ -1,0 +1,89 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own arms: base-main2-1319180.log carries four FAILED ids (tests/test_capabilities.py::test_a_recorded_figure_key_is_authoritative_by_presence_not_truthiness, tests/test_capabilities.py::test_a_recorded_null_with_a_live_stream_is_not_re_walked_by_the_derive, tests/test_capabilities.py::test_ledgered_figures_let_the_derive_close_the_streams, tests/test_routing_surface.py::test_routing_counts_tool_steps_from_a_durable_stream) and ends '4 failed, 142 passed' EXIT=1; head-merged3-1319188.log carries exactly the same four ids and ends '4 failed, 154 passed' EXIT=1. The set difference is empty and the 12-test gap is the new file, absent at the base revision.",
+  "assertion_analysis": [
+    {
+      "failure_condition": "Restoring str(node.get('plan') or record.get('plan') or '') at reckon/crew/admission/readiness.py:606 leaves promoted and candidates empty because the record's node field is a string, so the read returns False and 'held is True' reddens; the expected value is an independent boolean, not a value the case handed in.",
+      "lines": "tests/test_a_brief_carried_run_counts_toward_its_section.py:382"
+    },
+    {
+      "failure_condition": "Restoring str(run.get('plan') or '').strip() at reckon/crew/dispatch_admission.py:560 and :571 makes both rows' plans empty so no run is charged as reworked and rework_rate reads 0.0 instead of the independent 0.5 that two observations with one rework produce.",
+      "lines": "tests/test_a_brief_carried_run_counts_toward_its_section.py:407"
+    },
+    {
+      "failure_condition": "Restoring row.get('plan') at reckon/crew/picker/__init__.py:527 makes the tally sum zero because the brief-carried row carries its plan only on its node definition, so the independent literal 1 reddens.",
+      "lines": "tests/test_a_brief_carried_run_counts_toward_its_section.py:479"
+    },
+    {
+      "failure_condition": "Instrument guards rather than regression guards: assert _rows(store) and assert rows fail only when the temporary store came back empty, which shows the measurement sees a dependency that could be absent rather than reporting its own absence.",
+      "lines": "tests/test_a_brief_carried_run_counts_toward_its_section.py:370,418"
+    }
+  ],
+  "base_log_revision": "ce38ea68f0b2faac1e37d37e3608b595513ccdc6",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/admission/readiness.py:867,942,955,1342 (_section_run_unlanded callers) and reckon/crew/queue_admission.py:179 (re-export)",
+    "reckon/crew/dispatch_admission.py:631 (_lane_advisory_costs caller) and reckon/crew/dispatching/_imports.py:352 (re-export)",
+    "reckon/mcp_views.py:4931 (ledger.review_scores)",
+    "reckon/mcp_views.py:4942 (ledger.summary)",
+    "reckon/run_store.py:289 (record_plan SQL function reached by ledger.load)",
+    "reckon/ledger.py:2417 (load plan selection)"
+  ],
+  "completed_at": "2026-11-16T07:10:12.671Z",
+  "dispatched_at": "2026-11-16T07:09:47Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "a gap in the record only: the review ran both ruff commands on the seven changed paths and found them clean",
+      "recorded_at": "2026-11-16T10:42:09.754164+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T223943448341-alro-s3g/manifest.md",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "the done_when at prompt.txt:217 requires ruff check and ruff format --check clean on the staged paths and the run records no ruff arm in its tests, test_logs or artifacts, so a promotion reader cannot see the requirement was met; measured here, both ruff commands are clean on the seven changed Python paths, so the gap is in the record rather than in the code."
+    }
+  ],
+  "head_log_revision": "1d6ac2b7ccf51357663539817e0c629f35ca8892",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "examined the production readers that reach the changed code: readiness._section_run_unlanded's four in-module callers and its queue_admission re-export, _lane_advisory_costs's caller at dispatch_admission.py:631, ledger.review_scores and ledger.summary behind mcp_views, and run_store.py:289's record_plan SQL function behind ledger.load.",
+    "diff": "read commit by commit from 1abdeaa632 to 1d6ac2b7cc; four worker commits and two main merges whose only resolution over these paths is the _row_plan to row_plan rename, plus the fragment that records the merged head.",
+    "done_when": "the done_when at prompt.txt:217 asks for a temporary-store case per repaired reader, the section-hold negative control, no added failure against the base revision, and ruff check plus ruff format --check clean on the staged paths; the manifest records arms of 142 and 154 passed with four shared failure ids, but records no ruff arm.",
+    "goal": "the node's goal is that a brief-carried run counts toward the section it names in every reader outside the ledger; reckon/crew/admission/readiness.py:606 and reckon/crew/dispatch_admission.py:560,571 now resolve through ledger.row_plan, while untouched run-row readers such as reckon/mcp_views.py:1957 lie outside this increment and are not repaired.",
+    "manifest": "read in full; status complete, eight commit shas, a single-line tests command at manifest.md:12, three log paths, a baseline_suite at ce38ea68 and an after_suite at 1d6ac2b7 both completed and readable, and negative_control_log a bare path.",
+    "write_paths": "manifest.md:3 declares fifteen paths; the gained commits touch readiness.py, dispatch_admission.py, ledger.py, run_store.py:289, the three test files and the fragment, all inside that list."
+  },
+  "justifications": {
+    "durability": "reverting reckon/crew/admission/readiness.py:606 to the flat field reddens tests/test_a_brief_carried_run_counts_toward_its_section.py:382, but negative-control.log only exercises the section-hold reader, so none of the three added guards is shown firing.",
+    "evidence": "baseline_suite and after_suite are both complete with the same four failure ids at manifest.md:16-17, yet the ruff arm at prompt.txt:217 has no receipt.",
+    "fit": "the change follows the function-local-import idiom but places `from reckon import ledger` at reckon/crew/admission/readiness.py:597 away from the import block at 589-593.",
+    "goal_fidelity": "both readers the resume advice named now resolve through ledger.row_plan at reckon/crew/admission/readiness.py:606 and reckon/crew/dispatch_admission.py:560, but the goal's every-reader scope is not reached by these commits.",
+    "reuse": "no definition is added and every new call reaches the existing owner ledger.row_plan at reckon/ledger.py:1688, with the only other owner-shaped helpers being reckon/crew/dispatch_sessions.py:457 and reckon/crew/plan_coordinator.py:104, neither extended nor copied.",
+    "scope_discipline": "every path in git diff 1abdeaa632..1d6ac2b7cc is inside the declared list at manifest.md:3."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a brief-carried run counts toward the section it names in every reader outside the ledger, and the gained commits move reckon/crew/admission/readiness.py:606 (_section_run_unlanded) and reckon/crew/dispatch_admission.py:560,571 (_lane_advisory_costs) onto ledger.row_plan, the two readers the resume advice named as still reading the flat field; untouched run-row readers such as reckon/mcp_views.py:1957 lie outside this increment's commits and are not repaired here.\nVERDICT done_when: the done_when at prompt.txt:217 asks for a temporary-store case per repaired reader, the section-hold negative control, no added failure against the base revision and ruff check plus ruff format --check clean on the staged paths; the manifest records two complete arms adding 12 cases with the same four failure ids either side, but records no ruff arm.\nVERDICT write_paths: manifest.md:3 declares fifteen paths and the gained commits touch only reckon/crew/admission/readiness.py, reckon/crew/dispatch_admission.py, reckon/ledger.py, reckon/run_store.py:289, the three test files and the fragment, every one of them inside that list.\nVERDICT manifest: read in full; status complete, eight commit shas, a single-line tests command at manifest.md:12, test_logs naming head-merged3-1319188.log, base-main2-1319180.log and negative-control.log, baseline_suite (ce38ea68, 4 failed 142 passed, completed true) and after_suite (1d6ac2b7, 4 failed 154 passed, completed true), and negative_control_log as a bare path.\nVERDICT diff: read commit by commit from 1abdeaa632 to 1d6ac2b7cc: 314c9899de moves readiness.py:606 and dispatch_admission.py:560,571 onto ledger.row_plan and renames the four remaining _row_plan uses in ledger.py, adding three cases to the new test file; 24dd7b381c and 6306c5610c correct those cases' seams; a14a48e2a0 and 16af536116 merge main, whose only resolution over these paths is the _row_plan to row_plan rename at reckon/run_store.py:289 and the four ledger.py read sites; 1d6ac2b7cc records the increment in docs/evidence/fragments/a-landing-is-recorded-once/alro-s3g.html.\nCALL_SITES: reckon/crew/admission/readiness.py:867,942,955,1342 (_section_run_unlanded callers), reckon/crew/queue_admission.py:179 (re-export of that read), reckon/crew/dispatch_admission.py:631 (_lane_advisory_costs caller), reckon/crew/dispatching/_imports.py:352 (re-export), reckon/mcp_views.py:4931 (ledger.review_scores), reckon/mcp_views.py:4942 (ledger.summary), reckon/run_store.py:289 (record_plan SQL function reached by ledger.load), reckon/ledger.py:2417 (load plan selection)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: both readers the resume advice named now resolve through ledger.row_plan at reckon/crew/admission/readiness.py:606 and reckon/crew/dispatch_admission.py:560 and no private alias survives, but the goal's every-reader scope is not reached by these commits.\nSCORE evidence: 15\nJUSTIFICATION evidence: baseline_suite and after_suite at manifest.md:16-17 are both complete ('4 failed, 142 passed' at ce38ea68 against '4 failed, 154 passed' at 1d6ac2b7) with the same four ids, but the ruff arm the done_when at prompt.txt:217 names has no receipt in the record.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff 1abdeaa632..1d6ac2b7cc is inside the declared list at manifest.md:3, including the two paths the resume advice newly granted.\nSCORE durability: 17\nJUSTIFICATION durability: reverting reckon/crew/admission/readiness.py:606 to the flat field makes identifies reject the promoted row so tests/test_a_brief_carried_run_counts_toward_its_section.py:382 reads False, but negative-control.log only reverts the section-hold reader (1 failed, 11 deselected), so none of the three added guards is shown firing.\nSCORE fit: 18\nJUSTIFICATION fit: the change follows the module's function-local-import idiom but puts `from reckon import ledger` at reckon/crew/admission/readiness.py:597 after the `wanted = section_record_id(section)` statement rather than with the import block at 589-593.\nSCORE reuse: 20\nJUSTIFICATION reuse: no function or module is added and every new call reaches the existing owner ledger.row_plan at reckon/ledger.py:1688, while the search for a competing owner found only reckon/crew/dispatch_sessions.py:457 _record_plan and reckon/crew/plan_coordinator.py:104 _plan_of_run, neither extended nor copied.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T223943448341-alro-s3g/manifest.md:12 non-blocking: the done_when at prompt.txt:217 requires ruff check and ruff format --check clean on the staged paths and the run's tests, test_logs and artifacts carry no ruff arm, so a promotion reader cannot see that requirement was met; measured separately for this review, both commands are clean on the seven changed Python paths, so the gap is in the record rather than in the code.\n",
+  "review_run_id": "r-20261116T064854148531-review-of-alro-s3g-1d6ac2b7ccf5",
+  "reviewed_base_sha": "1abdeaa632e261318e69588add9ae1dd555ec340",
+  "reviewed_head_sha": "1d6ac2b7ccf51357663539817e0c629f35ca8892",
+  "reviewed_run_id": "r-20261115T223943448341-alro-s3g",
+  "reviewer_run_id": "r-20261116T064854148531-review-of-alro-s3g-1d6ac2b7ccf5",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T07:41:18.733636+00:00",
+  "total": 108
+}

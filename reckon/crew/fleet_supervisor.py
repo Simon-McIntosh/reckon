@@ -41,7 +41,10 @@ so a harness can drive this reader against a temporary tree instead of the
 machine's own state.
 
 A user config file, ``<config home>/fleet/services.json``, may declare standing
-services as service names mapped to argv lists. Each declared service is started
+services as service names mapped to argv lists, or mappings with ``argv``,
+``fleet`` and optional positive integer ``memory_limit_bytes``. The limit is
+RLIMIT_AS on each process, inherited across exec and fork; it is not an
+aggregate child-tree memory bound. Each declared service is started
 as this batch step's own-session child behind a lock in the runtime directory,
 restarted with backoff when it exits, and stopped on reload by the pid recorded
 for it; each one's output is appended to a bounded log under the state
@@ -69,8 +72,15 @@ import tempfile
 import termios
 import threading
 import time
-from collections.abc import Callable, Iterator, Mapping, MutableMapping, Sequence
-from contextlib import contextmanager, suppress
+from collections.abc import (
+    Callable,
+    Iterable,
+    Iterator,
+    Mapping,
+    MutableMapping,
+    Sequence,
+)
+from contextlib import contextmanager, redirect_stdout, suppress
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -81,7 +91,7 @@ if TYPE_CHECKING:
 
 from reckon import service
 from reckon._store import write_json_atomically
-from reckon.crew import oom_priority
+from reckon.crew import follower_reload, oom_priority
 from reckon.crew.host_lease import LEASE_RENEW_SECONDS, HostLease, local_host
 from reckon.crew.routing import signal_worker
 
@@ -100,11 +110,9 @@ CATCH_ALL_FLEET = "fleet"
 FLEETS_DIRECTORY_NAME = "fleets"
 FLEETS_FILE_NAME = "fleets.json"
 
-# The sessions' temporary files live in the node's RAM-backed /dev/shm rather
-# than on the shared filesystem, in one directory per allocation so a later
-# fleet on the same node can tell its own from a dead one's. Worker scratch is
-# not here: it can run to gigabytes and stays on the node's /tmp disk.
-SESSION_TMP_ROOT = Path("/dev/shm")  # noqa: S108 - node-local, never shared
+# Session scratch is disk-backed and private to its allocation and session.
+# Memory-backed temporary files count against the allocation's memory limit.
+SESSION_TMP_ROOT = Path("/tmp")  # noqa: S108 - node-local, never shared
 SESSION_TMP_ROOT_ENV = "FLEET_SESSION_TMP_ROOT"
 SESSION_TMP_INFIX = "-fleet-"
 
@@ -296,8 +304,85 @@ def _short_hostname(name: str | None = None) -> str:
     return (socket.gethostname() if name is None else str(name)).split(".")[0]
 
 
-def log(message: str) -> None:
-    print(f"[{_utc_now()}] {message}", flush=True)
+def log(message: str, *, file: Any = None) -> None:
+    print(f"[{_utc_now()}] {message}", file=file, flush=True)
+
+
+def resolved_environment(repository: Path) -> Path:
+    """The shared environment a checkout or provisioned tree resolves to."""
+    return (repository / ".venv").resolve()
+
+
+def environment_interpreters(repository: Path) -> tuple[Path, ...]:
+    """Resolve interpreter aliases to their regular files, including external ones.
+
+    Resolve afresh on every call: an environment manager can install another
+    interpreter or replace an alias between health samples. Configuration
+    helpers such as python-config are not interpreter entry points.
+    """
+    binaries = resolved_environment(repository) / "bin"
+    targets = set()
+    try:
+        aliases = list(binaries.iterdir())
+    except FileNotFoundError:
+        return ()
+    for alias in aliases:
+        if not re.fullmatch(r"(?:pythonw?|pypy)(?:\d+(?:\.\d+)*)?[dt]?", alias.name):
+            continue
+        try:
+            target = alias.resolve(strict=True)
+            if stat.S_ISREG(target.stat().st_mode):
+                targets.add(target)
+        except FileNotFoundError:
+            continue
+    return tuple(sorted(targets))
+
+
+def check_environment_interpreters(
+    repositories: Iterable[Path], *, report: Callable[[str], None] | None = None
+) -> int:
+    """Remove every write bit and return the count still writable after repair.
+
+    A refused repair stays in the count and is logged, so zero means the check
+    observed read-only files. Resolution errors propagate rather than reporting
+    an unchecked environment as healthy.
+    """
+    report = log if report is None else report
+    writable = 0
+    targets = {
+        target for repo in repositories for target in environment_interpreters(repo)
+    }
+    for target in sorted(targets):
+        mode = target.stat().st_mode
+        if not mode & 0o222:
+            continue
+        try:
+            target.chmod(stat.S_IMODE(mode) & ~0o222)
+        except OSError as exc:
+            report(f"interpreter permission repair failed: {target}: {exc}")
+        if target.stat().st_mode & 0o222:
+            writable += 1
+        else:
+            report(f"interpreter made read-only: {target}")
+    return writable
+
+
+def sample_interpreter_permissions() -> int:
+    """Check the registered checkouts and emit one health-series reading."""
+    from reckon.flight import FlightConfigError, mounted_project_docs
+
+    def report(message: str) -> None:
+        log(message, file=sys.stderr)
+
+    try:
+        remaining = check_environment_interpreters(
+            (docs.parent for docs in mounted_project_docs().values()), report=report
+        )
+    except (OSError, ValueError, RuntimeError, FlightConfigError) as exc:
+        report(f"interpreter permission check failed: {exc}")
+        return 1
+    print(remaining, flush=True)
+    return 0
 
 
 def stripped_variables(environ: Mapping[str, str]) -> list[str]:
@@ -411,28 +496,188 @@ def session_tmp_root(environ: Mapping[str, str] | None = None) -> Path:
     return Path(environ.get(SESSION_TMP_ROOT_ENV) or SESSION_TMP_ROOT)
 
 
-def session_tmp_directory(environ: Mapping[str, str] | None = None) -> Path:
-    """The allocation's own directory for session temporary files on /dev/shm."""
+def session_tmp_directory(
+    environ: Mapping[str, str] | None = None, session: str | None = None
+) -> Path:
+    """The allocation's disk directory, optionally narrowed to one session."""
     environ = os.environ if environ is None else environ
     job = (environ.get("SLURM_JOB_ID") or "").strip() or "nojob"
-    return session_tmp_root(environ) / f"{os.getuid()}{SESSION_TMP_INFIX}{job}"
-
-
-def prepare_session_tmp(environ: Mapping[str, str] | None = None) -> Path:
-    """Create the session temp directory, or fall back to the node's /tmp.
-
-    Both are node-local. /dev/shm is preferred because it keeps the sessions'
-    small, frequent temporary writes off every disk; a node without a writable
-    /dev/shm uses /tmp instead rather than failing the fleet.
-    """
-    directory = session_tmp_directory(environ)
-    try:
-        directory.mkdir(parents=True, exist_ok=True)
-        os.chmod(directory, 0o700)
-    except OSError as exc:
-        log(f"session temp {directory} unavailable ({exc}); using /tmp")
-        return Path("/tmp")  # noqa: S108 - the node's own tmp, never shared
+    if not SAFE_NAME.fullmatch(job):
+        raise ValueError("unsafe allocation name")
+    directory = session_tmp_root(environ) / f"{os.getuid()}{SESSION_TMP_INFIX}{job}"
+    if session is not None:
+        if not SAFE_NAME.fullmatch(session):
+            raise ValueError("unsafe session name")
+        directory /= session
     return directory
+
+
+def _scratch_disk(directory: Path) -> Path:
+    """Reject memory-backed mounts, including paths reached through symlinks."""
+    from reckon.crew.dispatch_admission import path_filesystem_type
+
+    resolved = directory.resolve()
+    mount_type = path_filesystem_type(resolved)
+    if mount_type not in {"ext4", "xfs", "btrfs", "zfs", "overlay"}:
+        raise ValueError(
+            f"session scratch requires local disk: {resolved} ({mount_type})"
+        )
+    return resolved
+
+
+def prepare_session_tmp(
+    environ: Mapping[str, str] | None = None, session: str | None = None
+) -> Path:
+    """Create private scratch on local disk; never fall back to untracked scratch."""
+    directory = session_tmp_directory(environ, session)
+    _scratch_disk(directory)
+    if directory.is_symlink():
+        raise ValueError(f"session scratch directory is a symlink: {directory}")
+    directory.mkdir(parents=True, exist_ok=True)
+    if directory.stat().st_uid != os.getuid():
+        raise ValueError(f"session scratch directory has another owner: {directory}")
+    os.chmod(directory, 0o700)
+    return directory
+
+
+def session_scratch_limits() -> tuple[int, float]:
+    """The per-session bytes and aggregate disk share from host flight layers."""
+    from reckon import flight
+
+    config = flight.resolve().config["session_scratch"]
+    return int(config["max_bytes"]), float(config["disk_share"])
+
+
+def session_scratch_sample(
+    environ: Mapping[str, str] | None = None,
+    *,
+    limits: tuple[int, float] | None = None,
+) -> dict[str, Any]:
+    """Sample allocated file bytes without following links or treating errors as zero.
+
+    The largest immediate directory names a subtree the session can act on.
+    Files directly in the session directory are attributed to that directory.
+    A bounded walk refuses an incomplete reading rather than publishing a zero.
+    """
+    directory = prepare_session_tmp(environ)
+    max_bytes, share = session_scratch_limits() if limits is None else limits
+    disk = shutil.disk_usage(directory)
+    deadline = time.monotonic() + 15
+    sessions = []
+    for child in sorted(directory.iterdir()):
+        if child.is_symlink() or not child.is_dir():
+            continue
+        groups: dict[str, int] = {}
+        for root, dirs, files in os.walk(
+            child, followlinks=False, onerror=_scratch_walk_error
+        ):
+            if time.monotonic() > deadline:
+                raise TimeoutError("session scratch sample exceeded 15 seconds")
+            dirs[:] = [name for name in dirs if not (Path(root) / name).is_symlink()]
+            relative = Path(root).relative_to(child)
+            group = child if not relative.parts else child / relative.parts[0]
+            for name in files:
+                if time.monotonic() > deadline:
+                    raise TimeoutError("session scratch sample exceeded 15 seconds")
+                path = Path(root) / name
+                try:
+                    info = path.lstat()
+                except FileNotFoundError:
+                    continue
+                if stat.S_ISREG(info.st_mode):
+                    groups[str(group)] = (
+                        groups.get(str(group), 0) + info.st_blocks * 512
+                    )
+        used = sum(groups.values())
+        largest = max(groups, key=groups.get) if groups else None
+        sessions.append(
+            {
+                "session": child.name,
+                "path": str(child),
+                "bytes": used,
+                "largest_directory": largest,
+                "largest_bytes": groups.get(largest, 0),
+            }
+        )
+    total = sum(row["bytes"] for row in sessions)
+    cap = int(disk.total * share)
+    obligations = [
+        {
+            "kind": "session-scratch-over-bound",
+            **row,
+            "bound_bytes": max_bytes,
+            "total_bytes": total,
+            "disk_share_bytes": cap,
+            "reason": f"session {row['session']} scratch {row['bytes']} bytes; "
+            f"bound {max_bytes}; total {total}/{cap}; "
+            f"reduce largest directory {row['largest_directory']}",
+        }
+        for row in sessions
+        if row["bytes"] > max_bytes or (total >= cap and row["bytes"])
+    ]
+    return {
+        "utc": _utc_now(),
+        "job_id": (environ or os.environ).get("SLURM_JOB_ID", ""),
+        "sessions": sessions,
+        "total_bytes": total,
+        "bound_bytes": max_bytes,
+        "disk_share_bytes": cap,
+        "obligations": obligations,
+    }
+
+
+def _scratch_walk_error(error: OSError) -> None:
+    raise error
+
+
+def session_scratch_snapshot_path(environ: Mapping[str, str] | None = None) -> Path:
+    """The fleet's atomic scratch reading shared with obligation readers."""
+    from reckon.crew.run_paths import crew_home
+
+    name = fleet_name(environ)
+    if not SAFE_NAME.fullmatch(name):
+        raise ValueError("unsafe fleet name")
+    return crew_home() / "fleet-health" / f"{name}-session-scratch.json"
+
+
+def sample_session_scratch(environ: Mapping[str, str] | None = None) -> int:
+    """Persist the session readings and surface current duties in the fleet notice."""
+    environ = os.environ if environ is None else environ
+    try:
+        sample = session_scratch_sample(environ)
+    except (OSError, ValueError, TimeoutError) as exc:
+        with redirect_stdout(sys.stderr):
+            alert(f"session scratch sample unknown: {exc}", environ)
+        print("unknown")
+        return 1
+    state = state_directory(environ)
+    health = state / "health"
+    health.mkdir(parents=True, exist_ok=True)
+    path = health / f"{sample['job_id']}-{_short_hostname()}-session-scratch.jsonl"
+    with path.open("a", encoding="utf-8") as output:
+        output.write(json.dumps(sample) + "\n")
+    bindings: dict[str, str] = {}
+    try:
+        rows = (state / "sessions.tsv").read_text(encoding="utf-8").splitlines()
+    except FileNotFoundError:
+        rows = []
+    for row in rows:
+        fields = row.split("\t")
+        if len(fields) == 5:
+            bindings[fields[4]] = fields[1]
+    sample["session_bindings"] = bindings
+    snapshot = session_scratch_snapshot_path(environ)
+    snapshot.parent.mkdir(parents=True, exist_ok=True)
+    _write_json(snapshot, sample)
+    with redirect_stdout(sys.stderr):
+        for item in sample["obligations"]:
+            alert(f"{sample['utc']} obligation: {item['reason']}", environ)
+    if sample["obligations"]:
+        (state / NOTICE_NAME).write_text(
+            "\n".join(item["reason"] for item in sample["obligations"]) + "\n"
+        )
+    print(sample["total_bytes"])
+    return 0
 
 
 def remove_stale_session_tmp(environ: Mapping[str, str] | None = None) -> list[Path]:
@@ -505,8 +750,8 @@ def prepare_runtime(environ: MutableMapping[str, str] | None = None) -> Path:
     environ["ZELLIJ_SOCKET_DIR"] = str(socket_dir)
     # Node-local scratch is pinned rather than taken from TMPDIR: the allocator
     # may point TMPDIR at shared storage, and the fleet's runtime sockets must
-    # live on the node that holds them. The sessions inherit it, so their
-    # temporary files stay on the node, in /dev/shm where it is writable.
+    # live on the node that holds them. Session starts narrow scratch to their
+    # own child directory; the supervisor uses the allocation directory.
     environ["TMPDIR"] = str(prepare_session_tmp(environ))
     environ["FLEET_JOB_ID"] = environ.get("SLURM_JOB_ID", "")
     return runtime
@@ -720,12 +965,13 @@ def start_health_sampler(environ: Mapping[str, str] | None = None) -> int | None
     if sampler is None:
         log(f"no node sampler: {name} is not on PATH")
         return None
+    sampler_environment = {**environ, "RECKON_SHIM_PYTHON": sys.executable}
     process = subprocess.Popen(
         [sampler],
-        env=dict(environ),
+        env=sampler_environment,
         stdin=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        stderr=None,
         start_new_session=True,
     )
     log(f"node sampler {sampler} started as pid {process.pid}")
@@ -773,9 +1019,25 @@ def service_log_directory(environ: Mapping[str, str] | None = None) -> Path:
     return state_directory(environ) / SERVICE_LOG_DIRECTORY_NAME
 
 
+@dataclass
+class _ServiceDeclaration:
+    argv: list[str]
+    memory_limit_bytes: int | None = None
+
+
 def declared_services(
     environ: Mapping[str, str] | None = None,
 ) -> dict[str, list[str]] | None:
+    """The declared service commands, preserving the argv-only interface."""
+    declarations = _service_declarations(environ)
+    if declarations is None:
+        return None
+    return {name: entry.argv for name, entry in declarations.items()}
+
+
+def _service_declarations(
+    environ: Mapping[str, str] | None = None,
+) -> dict[str, _ServiceDeclaration] | None:
     """The services the user's config declares, or None if it cannot be read.
 
     A file that is absent declares nothing. A file that is present but cannot
@@ -800,7 +1062,7 @@ def declared_services(
     if not isinstance(raw, Mapping):
         log(f"services config {path} is {type(raw).__name__}, not a mapping")
         return None
-    services: dict[str, list[str]] = {}
+    services: dict[str, _ServiceDeclaration] = {}
     own_fleet = fleet_name(environ)
     for name, entry in raw.items():
         if not isinstance(name, str) or not SAFE_NAME.fullmatch(name):
@@ -823,7 +1085,15 @@ def declared_services(
             continue
         if owner != own_fleet:
             continue
-        services[name] = list(argv)
+        limit = entry.get("memory_limit_bytes") if isinstance(entry, Mapping) else None
+        if limit is not None and (
+            type(limit) is not int or limit <= 0 or limit > sys.maxsize
+        ):
+            log(
+                f"refused service {name}: memory_limit_bytes must be a positive integer"
+            )
+            return None
+        services[name] = _ServiceDeclaration(list(argv), limit)
     return services
 
 
@@ -1043,6 +1313,36 @@ def next_backoff(delay: float, ran_seconds: float) -> tuple[float, float]:
     if ran_seconds >= STEADY_RUN_SECONDS:
         delay = FIRST_BACKOFF_SECONDS
     return delay, min(delay * 2, BACKOFF_CAP_SECONDS)
+
+
+def shell_backoff_transition() -> tuple[str, str]:
+    """Compile the service policy's reachable transitions for a shell holder.
+
+    Short and steady lifetimes are the policy's two input classes. Resolve both
+    through next_backoff at submission time; the shell only selects a table row
+    and can continue using it while no Python interpreter works.
+    """
+    states = [FIRST_BACKOFF_SECONDS]
+    rows: list[str] = []
+    for state in states:
+        if len(states) > 64:
+            raise ValueError("backoff policy has no bounded transition graph")
+        for name, runtime in (("short", 0.0), ("steady", STEADY_RUN_SECONDS)):
+            wait, following = next_backoff(state, runtime)
+            if following not in states:
+                states.append(following)
+            rows.append(
+                f"{state:g}:{name}) delay={wait:g}; backoff_state={following:g} ;;"
+            )
+    transition = "\n".join(
+        [
+            f"if (( ran >= {STEADY_RUN_SECONDS:g} )); then run_class=steady; else run_class=short; fi",
+            'case "$backoff_state:$run_class" in',
+            *rows,
+            "esac",
+        ]
+    )
+    return f"backoff_state={FIRST_BACKOFF_SECONDS:g}", transition
 
 
 def trim_file_ends(
@@ -1477,6 +1777,7 @@ class _ServiceState:
     """
 
     argv: list[str]
+    memory_limit_bytes: int | None = None
     pid: int | None = None
     owned: bool = False
     delay: float = FIRST_BACKOFF_SECONDS
@@ -1503,6 +1804,7 @@ class _ServiceState:
     # outlive SIGKILL for a long time; retrying at once would hold the
     # service guard through another full stop grace on every pass.
     restart_after: float | None = None
+    reload_window: follower_reload.ReloadWindow | None = None
 
 
 def _checkout_trust_verdict() -> Any:
@@ -1656,6 +1958,15 @@ class DeclaredServices:
             state.code_stamp = recorded
         else:
             recorded = state.code_stamp
+        state.reload_window = follower_reload.ReloadWindow.for_supervisor(name, pid)
+        if state.reload_window is not None and not state.reload_window.due(
+            current, publish=False
+        ):
+            # No replacement follows a window that is not due, so a boundary
+            # requested earlier would hold the copy before its next pass with
+            # nothing left to release it.
+            (self._runtime / f"{name}.pass.reload").unlink(missing_ok=True)
+            return "adopt"
         if not recorded or recorded == _unknown_code_stamp():
             if not self._pass_allows_restart(name, pid):
                 return "adopt"
@@ -1753,12 +2064,26 @@ class DeclaredServices:
     def _restart_locked(self, name: str, state: _ServiceState) -> None:
         """Stop the stale copy before starting its replacement on selected code."""
         argv, image = list(state.argv), state.start_image
+        memory_limit_bytes = state.memory_limit_bytes
+        window = state.reload_window
+        if window is not None:
+            window = follower_reload.ReloadWindow.for_supervisor(name, state.pid)
+            if window is None or not window.due(
+                self._code_stamp_value(), publish=False
+            ):
+                # The copy replaced itself between the decision and this stop,
+                # so the boundary this restart requested is withdrawn with it.
+                (self._runtime / f"{name}.pass.reload").unlink(missing_ok=True)
+                return
         if not self._stop_locked(name):
             # The stale copy is still alive, so it still holds the lock and
             # whatever the service owns. A replacement started beside it
             # would run two copies of a service meant to run once.
             return
+        if window is not None:
+            window.reloaded(self._code_stamp_value())
         replacement = self._states.setdefault(name, _ServiceState(argv=argv))
+        replacement.memory_limit_bytes = memory_limit_bytes
         replacement.start_image = image
         replacement.image_pin = _pin_image(image)
         self._start_or_backoff_locked(name, argv)
@@ -1797,17 +2122,28 @@ class DeclaredServices:
         not disturb what it runs. A config that cannot be read changes nothing,
         so a half-read file never stops every service.
         """
-        declared = declared_services(self._environ)
+        declared = _service_declarations(self._environ)
         if declared is None:
             return
         with self._guard:
             for name in list(self._states):
                 if name not in declared:
                     self._stop_locked(name)
-            for name, argv in declared.items():
+            for name, declaration in declared.items():
+                argv = declaration.argv
                 state = self._states.get(name)
+                if (
+                    state is not None
+                    and state.memory_limit_bytes != declaration.memory_limit_bytes
+                ):
+                    if not self._stop_locked(name):
+                        continue
+                    state = None
                 if state is None:
-                    state = _ServiceState(argv=list(argv))
+                    state = _ServiceState(
+                        argv=list(argv),
+                        memory_limit_bytes=declaration.memory_limit_bytes,
+                    )
                     self._states[name] = state
                 else:
                     state.argv = list(argv)
@@ -1828,6 +2164,21 @@ class DeclaredServices:
                     lock_held(name, self._runtime)
                     or process_runs_service(pid, name, state.argv)
                 ):
+                    limit = state.memory_limit_bytes
+                    if limit is not None:
+                        try:
+                            _soft, hard = resource.prlimit(pid, resource.RLIMIT_AS)
+                            limit_matches = (
+                                hard != resource.RLIM_INFINITY and hard <= limit
+                            )
+                        except (OSError, ValueError):
+                            limit_matches = False
+                        if not limit_matches:
+                            log(
+                                f"declared service {name} needs memory_limit_bytes={limit}; restarting"
+                            )
+                            self._restart_locked(name, state)
+                            continue
                     decision = self._code_decision(name, pid, state)
                     if decision == "restart":
                         self._restart_locked(name, state)
@@ -1863,6 +2214,7 @@ class DeclaredServices:
         existing = child.get("PYTHONPATH", "")
         child["PYTHONPATH"] = str(image) + (os.pathsep + existing if existing else "")
         child["RECKON_FOLLOWER_SOURCE_ROOT"] = str(_checkout_root())
+        child["RECKON_FOLLOWER_IMAGE_COMMIT"] = image.name
         return child
 
     def _release_image_pin(self, state: _ServiceState | None) -> None:
@@ -1897,6 +2249,11 @@ class DeclaredServices:
             pass_path.with_suffix(".pass.reload").unlink(missing_ok=True)
         child_environ = self._child_environ(image)
         child_environ[SERVICE_PASS_PATH_ENV] = str(pass_path)
+        child_environ.pop("RECKON_SERVICE_MEMORY_LIMIT_BYTES", None)
+        if state is not None and state.memory_limit_bytes is not None:
+            child_environ["RECKON_SERVICE_MEMORY_LIMIT_BYTES"] = str(
+                state.memory_limit_bytes
+            )
         try:
             with open(log_path, "ab") as sink:
                 process = subprocess.Popen(
@@ -2097,7 +2454,15 @@ class DeclaredServices:
                     if lease is not None:
                         lease.release()
                     state.next_attempt = now + delay
-                    log(f"declared service {name} exited; restart in {delay:.0f}s")
+                    bound = (
+                        f"; memory_limit_bytes={state.memory_limit_bytes} "
+                        "(per-process address space, not an aggregate child-tree limit)"
+                        if state.memory_limit_bytes is not None
+                        else ""
+                    )
+                    log(
+                        f"declared service {name} exited; restart in {delay:.0f}s{bound}"
+                    )
                 if state.next_attempt is not None and now >= state.next_attempt:
                     state.next_attempt = None
                     if self._start_locked(name, state.argv) is None:
@@ -2262,6 +2627,25 @@ def run_declared_service(
         os.fstat(descriptor).st_ino,
         _stamp_or_unknown(_source_code_stamp),
     )
+    requested_limit = environ.get("RECKON_SERVICE_MEMORY_LIMIT_BYTES")
+    if requested_limit is not None:
+        try:
+            limit = int(requested_limit)
+            if limit <= 0 or limit > sys.maxsize:
+                raise ValueError("memory limit must be a positive integer")  # noqa: TRY301 - reject before applying a process limit
+            _soft, hard = resource.getrlimit(resource.RLIMIT_AS)
+            applied = limit if hard == resource.RLIM_INFINITY else min(limit, hard)
+            resource.setrlimit(resource.RLIMIT_AS, (applied, applied))
+        except (OSError, ValueError, OverflowError) as exc:
+            log(
+                f"refused service {name}: cannot apply memory_limit_bytes={requested_limit}: {exc}"
+            )
+            os.close(descriptor)
+            return 2
+        log(
+            f"declared service {name} memory_limit_bytes={applied} "
+            "(per-process address space, not an aggregate child-tree limit)"
+        )
     os.execvp(argv[0], list(argv))  # noqa: S606 - replaces this image, no shell
     raise AssertionError("execvp returned")
 
@@ -2466,6 +2850,16 @@ def start_session(
     if session_running(name, environ):
         log(f"session {name} already running")
         return 0
+    child_environ = dict(os.environ if environ is None else environ)
+    try:
+        scratch = session_scratch_sample(child_environ)
+        if scratch["total_bytes"] >= scratch["disk_share_bytes"]:
+            log(f"refused session {name}: scratch reached its configured disk share")
+            return 1
+        child_environ["TMPDIR"] = str(prepare_session_tmp(child_environ, name))
+    except (OSError, ValueError, TimeoutError) as exc:
+        log(f"refused session {name}: {exc}")
+        return 1
     suffix = f" with layout {layout}" if layout else ""
     log(f"starting zellij session {name}{suffix}")
     argv = ["zellij"]
@@ -2483,7 +2877,7 @@ def start_session(
                 stdout=started,
                 stderr=started,
                 check=False,
-                env=None if environ is None else dict(environ),
+                env=child_environ,
                 timeout=ZELLIJ_CREATE_SECONDS,
             )
         except subprocess.TimeoutExpired:
@@ -2494,7 +2888,7 @@ def start_session(
     if result.returncode != 0:
         log(f"zellij start failed for {name}")
         return 1
-    size_tabs_with_a_client(name, environ)
+    size_tabs_with_a_client(name, child_environ)
     return 0
 
 
@@ -2769,6 +3163,13 @@ class StationProcess:
             self.process.wait()
 
 
+def _mark_allocation_lifetime(environ: Mapping[str, str], name: str) -> None:
+    """Tell the shell holder about explicit retirement or standby promotion."""
+    directory = environ.get("FLEET_LIFETIME_DIRECTORY")
+    if directory:
+        (Path(directory) / name).touch()
+
+
 def handle_line(
     line: str,
     runtime: Path,
@@ -2824,6 +3225,7 @@ def handle_line(
         except (OSError, ValueError, KeyError, TypeError) as exc:
             log(f"spawn failed for {run_id}: {type(exc).__name__}: {exc}")
     elif request.verb == "stop":
+        _mark_allocation_lifetime(os.environ if environ is None else environ, "stop")
         log("stopping")
         return False
     elif request.verb == "":
@@ -2919,6 +3321,7 @@ def serve(
         is_standby = True
     if not is_standby:
         publish_record(runtime, environ)
+        _mark_allocation_lifetime(environ, "active")
         reserve_fleet_projects(environ)
     fifo = runtime / REQUEST_FIFO_NAME
     with suppress(FileNotFoundError):
@@ -2955,6 +3358,7 @@ def serve(
         if not is_standby:
             return
         publish_record(runtime, environ)
+        _mark_allocation_lifetime(environ, "active")
         reserve_fleet_projects(environ)
         is_standby = False
         services.reload()
@@ -3093,6 +3497,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Enter either the one-shot session start or the request loop."""
     arguments = list(sys.argv[1:] if argv is None else argv)
     environ = os.environ
+    if arguments == ["sample-session-scratch"]:
+        return sample_session_scratch(environ)
+    if arguments == ["check-interpreters"]:
+        return sample_interpreter_permissions()
     if arguments and arguments[0] == START_MODE:
         # A stop from the request loop ends the copy as an exit rather than a
         # kill, so the sizing client's detach in its finally block still runs.

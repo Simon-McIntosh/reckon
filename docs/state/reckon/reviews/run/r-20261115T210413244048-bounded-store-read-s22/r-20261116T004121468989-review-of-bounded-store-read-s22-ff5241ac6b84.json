@@ -1,0 +1,88 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": {
+    "451": "Independent expected widths [1,2,3,0,3,None] fail on exclusive endpoint handling, counting malformed/reversed spans or using stored widths.",
+    "452": "Independent durations [600,600,0,0,None,None] fail on forwarding stored 9999, changing clamping of reversed spans or fabricating missing durations.",
+    "455": "The rejecting ledger.runs instrument raises if explicitly supplied records (including empty ones) cause a second ledger read.",
+    "467": "Selected-versus-full equality fails when selection loses rows, fails to preserve empty inputs or counts width from selected records instead of the separate fleet population; the full-path figures are independently anchored at 451-452, so shared figure errors cannot hide solely behind parity.",
+    "468": "The literal 9999 input check fails if deriving duration mutates the caller-owned records.",
+    "492": "The literal three-row cardinality fails on lost or added selected rows and makes the following all() sentinel check non-vacuous.",
+    "493": "The single-call expectation fails if the stored reader bypasses the owner or invokes it repeatedly; the recorded prior-head reproduction fails here.",
+    "494": "Equality against the independently constructed fixture _rows() fails if delegation drops or alters selected payload fields.",
+    "495-498": "Timestamp projection keys fail if unrelated full record fields are passed to the owner; this is a shape guard, not by itself proof of a nonempty fleet population, which 451/467 and the retained width bound check establish.",
+    "499-501": "Owner-injected width 12345 and duration 54321 fail to reach the caller if the ledger independently recomputes either value; this intentionally tests delegation, and restoring the prior duplicate computation fails 493 before these assertions, rather than creating a tautological numerical oracle."
+  },
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/ledger.py:3909",
+    "reckon/ledger.py:3919",
+    "reckon/mcp_views.py:4887",
+    "reckon/mcp_views.py:4918"
+  ],
+  "completed_at": "2026-11-16T00:56:52Z",
+  "dispatched_at": "2026-11-16T00:45:27Z",
+  "failure_delta_evidence": {
+    "after": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T210413244048-bounded-store-read-s22/repair-after.log",
+      "revision": "2f102604b8bbb78fc67651c1b6f9d2e83fc2b4a6",
+      "summary": "88 passed in 43.13s"
+    },
+    "baseline": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T210413244048-bounded-store-read-s22/repair-baseline.log",
+      "revision": "a4085603a2cabb227db10167e8a0305ab84599e5",
+      "summary": "58 passed in 26.63s"
+    }
+  },
+  "findings": [],
+  "item_verdicts": {
+    "call_sites": "Verified the summary owner calls and both runtime MCP views that reach the default with_figures path.",
+    "diff": "Read commit 2f102604b8bbb78fc67651c1b6f9d2e83fc2b4a6 and evidence-only ff5241ac6b84e938066dccc567e005f61ea9bfe6 individually against prior reviewed head e1037006e08323ff8d595c878ae17a23deb05341; the diff closes the previously reported figure-ownership duplication with three regression cases.",
+    "done_when": "docs/plans/history-persists-as-detail-washes-out.html section s22 requires absent-document reads, rebuild equality, zero per-file stats and three live reads below 300 MB and 10 s; repair-after.log records 88 passed and live-read-repair.log records 156.053504 MB and 7.646544456481934 s.",
+    "goal": "The source live pointer node.goal requests a bounded store-backed ledger load; reckon/ledger.py:3909 now delegates figures to the existing summary owner while retaining selected records and a narrow timestamp projection.",
+    "manifest": "The source manifest.md records five commits and completed baseline_suite/after_suite receipts; repair-baseline.log and repair-after.log confirm 58 and 88 passes with EXIT=0 and no FAILED ids.",
+    "write_paths": "The source node write_paths and resume-1-advice.txt grant the ledger, test and evidence paths and explicitly extend summary.py; all four paths in the gained-commit diff are authorized."
+  },
+  "justifications": {
+    "durability": "tests/test_every_ledger_question_reads_the_store.py:451-500 anchors both figures to independent literals and owner sentinels, and owner-reproduction.log shows all three new cases fail when the prior implementation is reinstated.",
+    "evidence": "repair-after.log records 88 passed, owner-reproduction.log records three failed ownership cases at e1037006e083, and live-read-repair.log records 7.646544456481934 s and 156.053504 MB below both bounds.",
+    "fit": "reckon/crew/summary.py:536 extends its existing keyword-only API with optional iterable inputs, preserves empty collections and shallow-copy behavior, and uses the established timestamp and duration owners.",
+    "goal_fidelity": "reckon/ledger.py:3909 passes selected records and a two-field fleet population to summary.run_rows, satisfying the requested ownership repair without restoring full-payload decoding.",
+    "reuse": "Capability searches for figure derivation, timestamp parsing and selected row retrieval resolve to summary.run_rows, summary._row_moment, ledger._worker_seconds and run_store.stored_run_rows; reckon/ledger.py:3909 wraps those owners and the added test helpers are local instrumentation.",
+    "scope_discipline": "The e1037006e083..ff5241ac6b84 diff changes exactly the four declared review targets, and resume-1-advice.txt expressly authorizes extending reckon/crew/summary.py."
+  },
+  "prior_review_context": "This is only the gained-commit review. The prior non-blocking rebuild-oracle finding is retained in the immutable review at e1037006e083; these commits do not change that assertion.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source live pointer node.goal requests a bounded store-backed ledger load; reckon/ledger.py:3909 now delegates figures to the existing summary owner while retaining selected records and a narrow timestamp projection.\nVERDICT done_when: docs/plans/history-persists-as-detail-washes-out.html section s22 requires absent-document reads, rebuild equality, zero per-file stats and three live reads below 300 MB and 10 s; repair-after.log records 88 passed and live-read-repair.log records 156.053504 MB and 7.646544456481934 s.\nVERDICT write_paths: The source node write_paths and resume-1-advice.txt grant the ledger, test and evidence paths and explicitly extend summary.py; all four paths in the gained-commit diff are authorized.\nVERDICT manifest: The source manifest.md records five commits and completed baseline_suite/after_suite receipts; repair-baseline.log and repair-after.log confirm 58 and 88 passes with EXIT=0 and no FAILED ids.\nVERDICT diff: Read commit 2f102604b8bbb78fc67651c1b6f9d2e83fc2b4a6 and evidence-only ff5241ac6b84e938066dccc567e005f61ea9bfe6 individually against prior reviewed head e1037006e08323ff8d595c878ae17a23deb05341; the diff closes the previously reported figure-ownership duplication with three regression cases.\nCALL_SITES: reckon/ledger.py:3909, reckon/ledger.py:3919, reckon/mcp_views.py:4887, reckon/mcp_views.py:4918\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/ledger.py:3909 passes selected records and a two-field fleet population to summary.run_rows, satisfying the requested ownership repair without restoring full-payload decoding.\nSCORE evidence: 20\nJUSTIFICATION evidence: repair-after.log records 88 passed, owner-reproduction.log records three failed ownership cases at e1037006e083, and live-read-repair.log records 7.646544456481934 s and 156.053504 MB below both bounds.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The e1037006e083..ff5241ac6b84 diff changes exactly the four declared review targets, and resume-1-advice.txt expressly authorizes extending reckon/crew/summary.py.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_every_ledger_question_reads_the_store.py:451-500 anchors both figures to independent literals and owner sentinels, and owner-reproduction.log shows all three new cases fail when the prior implementation is reinstated.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/summary.py:536 extends its existing keyword-only API with optional iterable inputs, preserves empty collections and shallow-copy behavior, and uses the established timestamp and duration owners.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for figure derivation, timestamp parsing and selected row retrieval resolve to summary.run_rows, summary._row_moment, ledger._worker_seconds and run_store.stored_run_rows; reckon/ledger.py:3909 wraps those owners and the added test helpers are local instrumentation.\n",
+  "reuse_audit": {
+    "production": "No new production definitions; existing summary owner is extended and ledger delegates to it.",
+    "search": "Searched production figure derivation, width calculation, timestamp parsing and stored row retrieval; opened summary.run_rows and ledger.read_records at the reviewed head.",
+    "tests": "Two new test definitions and nested refuse_read/observed helpers instrument the owner; neither introduces a parallel runtime capability."
+  },
+  "review_run_id": "r-20261116T004121468989-review-of-bounded-store-read-s22-ff5241ac6b84",
+  "reviewed_base_sha": "e1037006e08323ff8d595c878ae17a23deb05341",
+  "reviewed_commits": [
+    "2f102604b8bbb78fc67651c1b6f9d2e83fc2b4a6",
+    "ff5241ac6b84e938066dccc567e005f61ea9bfe6"
+  ],
+  "reviewed_head_sha": "ff5241ac6b84e938066dccc567e005f61ea9bfe6",
+  "reviewed_run_id": "r-20261115T210413244048-bounded-store-read-s22",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T01:16:18.272885+00:00",
+  "total": 120
+}

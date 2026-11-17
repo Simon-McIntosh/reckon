@@ -1,0 +1,127 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_source": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T111352964502-the-admission-service-holds-steady-memory/after-arm.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T111352964502-the-admission-service-holds-steady-memory/baseline-arm.log"
+  },
+  "assertion_independence": "No assertion compares a value against the same variable the test passed in without reddening on a code change: the three added tests redden when the plan argument is dropped (negative-control.log records exactly those three TypeError failures at the base revision). Their limit is elsewhere, named in the finding at tests/test_the_admission_service_holds_steady_memory.py:33: the stubbed ledger.load returns {\"runs\": []} whatever it is passed, so none of them fails if the store stops narrowing.",
+  "assertion_review": {
+    "bound itself": "No added assertion fails if ledger.load is handed the plan and returns the project's whole history, so the memory claim is carried by the recorded measurement rather than by a test.",
+    "per-plan cache key": "Reverting the cache key to (key, project) serves plan-b from plan-a's entry and fails the recorded-call list at tests/test_the_admission_service_holds_steady_memory.py:43.",
+    "per-plan failure caching": "Reverting the failure cache key to the project fails the two key lookups at tests/test_the_admission_service_holds_steady_memory.py:54-55.",
+    "plan argument forwarding": "Reverting ledger.load(project, plan=plan) to ledger.load(project) leaves kwargs empty and fails the equality at tests/test_the_admission_service_holds_steady_memory.py:35."
+  },
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/admission/readiness.py:_section_run_unlanded called at :875",
+    ":950",
+    ":963",
+    ":1350",
+    "reckon/crew/queue_admission.py:165 name reference",
+    "scripts/profile_control_pass.py:main at :740 wiring --passes into profile"
+  ],
+  "completed_at": "2026-11-17T14:43:49.014Z",
+  "dispatched_at": "2026-11-17T14:43:25Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "deferred",
+      "recorded_at": "2026-11-17T15:07:58.145633+00:00",
+      "rule": "landing-defers-non-blocking-findings",
+      "run": "r-20261117T111352964502-the-admission-service-holds-steady-memory"
+    },
+    "1": {
+      "kind": "deferred",
+      "recorded_at": "2026-11-17T15:07:58.145633+00:00",
+      "rule": "landing-defers-non-blocking-findings",
+      "run": "r-20261117T111352964502-the-admission-service-holds-steady-memory"
+    },
+    "2": {
+      "kind": "deferred",
+      "recorded_at": "2026-11-17T15:07:58.145633+00:00",
+      "rule": "landing-defers-non-blocking-findings",
+      "run": "r-20261117T111352964502-the-admission-service-holds-steady-memory"
+    },
+    "3": {
+      "kind": "deferred",
+      "recorded_at": "2026-11-17T15:07:58.145633+00:00",
+      "rule": "landing-defers-non-blocking-findings",
+      "run": "r-20261117T111352964502-the-admission-service-holds-steady-memory"
+    },
+    "4": {
+      "kind": "deferred",
+      "recorded_at": "2026-11-17T15:07:58.145633+00:00",
+      "rule": "landing-defers-non-blocking-findings",
+      "run": "r-20261117T111352964502-the-admission-service-holds-steady-memory"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/admission/readiness.py",
+      "line": 618,
+      "severity": "non-blocking",
+      "summary": "the read narrows on ledger.row_plan's answer while the match at :614 prefers node.plan, so a ledger row whose node names the plan and whose row_plan names another or none matched before and is invisible now, and no test covers that equivalence."
+    },
+    {
+      "file": "tests/test_the_admission_service_holds_steady_memory.py",
+      "line": 33,
+      "severity": "non-blocking",
+      "summary": "the fixture stubs ledger.load to return {\"runs\": []} whatever it is passed, so the three added tests redden on removing the plan argument but stay green if the store stops narrowing its read, leaving the bound the goal names without a failing test."
+    },
+    {
+      "file": "scripts/profile_control_pass.py",
+      "line": 443,
+      "severity": "non-blocking",
+      "summary": "decisions_steady is false on every home carrying history (profile-admission-livehome-100p.json has 13 digests, and cmp-3-head and cmp-3-base differ), so the done_when's equal-decisions half is demonstrated only on a fixture home."
+    },
+    {
+      "file": "scripts/profile_control_pass.py",
+      "line": 440,
+      "severity": "non-blocking",
+      "summary": "the declared negative control is not reproduced because multipass-100-base.json gives growth_ratio 1.0173 against the required >1.2, and the substitute base arm is a three-pass peak comparison (cmp-3-base 4619415552 B against cmp-3-head 2009300992 B)."
+    },
+    {
+      "file": "scripts/profile_control_pass.py",
+      "line": 620,
+      "severity": "non-blocking",
+      "summary": "_Untraced reports peak, current and high as 0, so the multi-pass record's traced_peak_bytes 0 and empty largest_allocation_sites read the same as a single-pass run that traced no allocations."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/admission/readiness.py:_section_run_unlanded called at :875, :950, :963, :1350, reckon/crew/queue_admission.py:165 name reference, scripts/profile_control_pass.py:main at :740 wiring --passes into profile",
+    "diff": "Read all six commits 4b7aa8a071ed..13b1d2bdc870 commit by commit; 3 files, 224 insertions, being the plan-named ledger read and per-plan cache key (readiness.py:557,618), a multi-pass profiler mode with a decision digest (scripts/profile_control_pass.py:347-470,548,568,710), and 55 lines of test.",
+    "done_when": "The done_when asks for 100 passes on the harness within 20 percent and under 4 GB with every pass's decisions equal to the base's and a base arm exceeding the tenth pass by more than 20 percent; the recorded gate (after-arm.log, 61 passed, EXIT=0) asserts none of those figures, the memory half is read from slurm-100p-1323393.log EXIT=0, the decisions half only from multipass-100-head.json and multipass-100-base.json on a fixture home whose base growth_ratio is 1.0173, and the base figure never exceeds 1.2.",
+    "goal": "The node's goal is resident memory after one hundred passes within 20 percent of the tenth-pass figure and under 4 GB with unchanged decisions; reckon/crew/admission/readiness.py:557 now names the plan in ledger.load and profile-admission-livehome-100p.json at 13b1d2bdc8 records tenth and hundredth both at 1304825856 B, growth_ratio 1.0, under_four_gib true.",
+    "manifest": "Read; it records six commits, the literal gate command, both arms (baseline-arm.log 58 passed EXIT=0, after-arm.log 61 passed EXIT=0), the rigel job 1323393 EXIT=0, and its own note that the memory half of the declared mutation does not fire on a fixture home.",
+    "write_paths": "The node's declared paths are reckon/crew/admission/service.py, reckon/crew/admission/selection.py, tests/test_the_admission_service_holds_steady_memory.py plus the dispatch-widened readiness.py, ledger.py and scripts/profile_control_pass.py; the diff touches readiness.py, scripts/profile_control_pass.py and the test file and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_the_admission_service_holds_steady_memory.py:43 reddens if the per-plan cache key is reverted and :35 reddens if the plan argument stops being forwarded, but the fixture's ledger.load stub returns {\"runs\": []} regardless, so no test reddens if the store's narrowing is removed.",
+    "evidence": "the gate at after-arm.log asserts the plan-named read rather than the done_when's figures, the memory figure is a separate rigel log with its own EXIT=0 line, and the declared negative control does not reproduce (multipass-100-base.json growth_ratio 1.0173).",
+    "fit": "the change keeps the module's private-helper and cache-dict idiom at reckon/crew/admission/readiness.py:557 and the profiler's record shape at scripts/profile_control_pass.py:568, with conventional commit subjects and bodies.",
+    "goal_fidelity": "reckon/crew/admission/readiness.py:618 passes the section's plan into the read so the store narrows before decoding, and profile-admission-livehome-100p.json shows a flat 100-pass series at 1304825856 B, while the unchanged-decisions half rests on a home with no run stores.",
+    "reuse": "the change extends the existing owners ledger.load(plan=...) at reckon/ledger.py:2462 and the run_store plan column at reckon/run_store.py:521; a search for an existing per-process resident reader across reckon/ and scripts/ (statm, SC_PAGE_SIZE, /proc/self/status, _rss, psutil) found only the high-water resource.getrusage read at scripts/profile_control_pass.py:618, which measures a different quantity.",
+    "scope_discipline": "every path in the diff (readiness.py, scripts/profile_control_pass.py, tests/test_the_admission_service_holds_steady_memory.py) lies inside the declared write paths, and the commits carry no plan identifiers."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is resident memory after one hundred passes within 20 percent of the tenth-pass figure and under 4 GB with unchanged decisions; reckon/crew/admission/readiness.py:557 now names the plan in ledger.load and profile-admission-livehome-100p.json at 13b1d2bdc8 records tenth and hundredth both at 1304825856 B, growth_ratio 1.0, under_four_gib true.\nVERDICT done_when: The done_when asks for 100 passes on the harness within 20 percent and under 4 GB with every pass's decisions equal to the base's and a base arm exceeding the tenth pass by more than 20 percent; the recorded gate (after-arm.log, 61 passed, EXIT=0) asserts none of those figures, the memory half is read from slurm-100p-1323393.log EXIT=0, the decisions half only from multipass-100-head.json and multipass-100-base.json on a fixture home whose base growth_ratio is 1.0173, and the base figure never exceeds 1.2.\nVERDICT write_paths: The node's declared paths are reckon/crew/admission/service.py, reckon/crew/admission/selection.py, tests/test_the_admission_service_holds_steady_memory.py plus the dispatch-widened readiness.py, ledger.py and scripts/profile_control_pass.py; the diff touches readiness.py, scripts/profile_control_pass.py and the test file and nothing else.\nVERDICT manifest: Read; it records six commits, the literal gate command, both arms (baseline-arm.log 58 passed EXIT=0, after-arm.log 61 passed EXIT=0), the rigel job 1323393 EXIT=0, and its own note that the memory half of the declared mutation does not fire on a fixture home.\nVERDICT diff: Read all six commits 4b7aa8a071ed..13b1d2bdc870 commit by commit; 3 files, 224 insertions, being the plan-named ledger read and per-plan cache key (readiness.py:557,618), a multi-pass profiler mode with a decision digest (scripts/profile_control_pass.py:347-470,548,568,710), and 55 lines of test.\nCALL_SITES: reckon/crew/admission/readiness.py:_section_run_unlanded called at :875, :950, :963, :1350, reckon/crew/queue_admission.py:165 name reference, scripts/profile_control_pass.py:main at :740 wiring --passes into profile\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/admission/readiness.py:618 passes the section's plan into the read so the store narrows before decoding, and profile-admission-livehome-100p.json shows a flat 100-pass series at 1304825856 B, while the unchanged-decisions half rests on a home with no run stores.\nSCORE evidence: 12\nJUSTIFICATION evidence: the gate at after-arm.log asserts the plan-named read rather than the done_when's figures, the memory figure is a separate rigel log with its own EXIT=0 line, and the declared negative control does not reproduce (multipass-100-base.json growth_ratio 1.0173).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff (readiness.py, scripts/profile_control_pass.py, tests/test_the_admission_service_holds_steady_memory.py) lies inside the declared write paths, and the commits carry no plan identifiers.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_the_admission_service_holds_steady_memory.py:43 reddens if the per-plan cache key is reverted and :35 reddens if the plan argument stops being forwarded, but the fixture's ledger.load stub returns {\"runs\": []} regardless, so no test reddens if the store's narrowing is removed.\nSCORE fit: 18\nJUSTIFICATION fit: the change keeps the module's private-helper and cache-dict idiom at reckon/crew/admission/readiness.py:557 and the profiler's record shape at scripts/profile_control_pass.py:568, with conventional commit subjects and bodies.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change extends the existing owners ledger.load(plan=...) at reckon/ledger.py:2462 and the run_store plan column at reckon/run_store.py:521; a search for an existing per-process resident reader across reckon/ and scripts/ (statm, SC_PAGE_SIZE, /proc/self/status, _rss, psutil) found only the high-water resource.getrusage read at scripts/profile_control_pass.py:618, which measures a different quantity.\nFINDING reckon/crew/admission/readiness.py:618 non-blocking: the read narrows on ledger.row_plan's answer while the match at :614 prefers node.plan, so a ledger row whose node names the plan and whose row_plan names another or none matched before and is invisible now, and no test covers that equivalence.\nFINDING tests/test_the_admission_service_holds_steady_memory.py:33 non-blocking: the fixture stubs ledger.load to return {\"runs\": []} whatever it is passed, so the three added tests redden on removing the plan argument but stay green if the store stops narrowing its read, leaving the bound the goal names without a failing test.\nFINDING scripts/profile_control_pass.py:443 non-blocking: decisions_steady is false on every home carrying history (profile-admission-livehome-100p.json has 13 digests, and cmp-3-head and cmp-3-base differ), so the done_when's equal-decisions half is demonstrated only on a fixture home.\nFINDING scripts/profile_control_pass.py:440 non-blocking: the declared negative control is not reproduced because multipass-100-base.json gives growth_ratio 1.0173 against the required >1.2, and the substitute base arm is a three-pass peak comparison (cmp-3-base 4619415552 B against cmp-3-head 2009300992 B).\nFINDING scripts/profile_control_pass.py:620 non-blocking: _Untraced reports peak, current and high as 0, so the multi-pass record's traced_peak_bytes 0 and empty largest_allocation_sites read the same as a single-pass run that traced no allocations.",
+  "review_run_id": "r-20261117T144144618510-review-of-the-admission-service-holds-steady-memory-13b1d2bdc870",
+  "reviewed_base_sha": "4b7aa8a071ed10e619d95fdacdaa5e644d04b548",
+  "reviewed_head_sha": "13b1d2bdc87083af946fc9aa1fbd9fa31484cdfa",
+  "reviewed_run_id": "r-20261117T111352964502-the-admission-service-holds-steady-memory",
+  "scores": {
+    "durability": 14,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T14:55:47.085813+00:00",
+  "total": 98
+}

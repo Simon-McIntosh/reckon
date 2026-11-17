@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own gate logs (logs/baseline-suite.log at 655a2befa979 and logs/after-suite.log at 39a196718bf4): each reports 58 passed with no FAILED id, so the added-failure set is empty and the reviewed change adds none.",
+  "assertion_analysis": [
+    {
+      "assertion": "no executable assertion is added or weakened; the diff is two HTML fragments",
+      "defect_it_guards": "the admission-pass budget rule in reckon/crew/queue_admission.py and reckon/flight.py",
+      "fails_when": "the guard tests/tests/test_an_admission_pass_is_bounded.py is untouched (blob d73368972426 at 8d50b0333f and 39a196718bf4), and it reddens when the product rule is reverted to 1d16388a31: TypeError admit_once() got an unexpected keyword argument 'clock' on four cases and AttributeError reckon.flight.admission_pass_budget_seconds on the fifth",
+      "tautological": false
+    }
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/serve.py:2751",
+    "reckon/mcp.py:1344",
+    "reckon/doccheck.py:1970",
+    "reckon/crew/reports.py:2722"
+  ],
+  "completed_at": "2026-11-16T15:31:45.183Z",
+  "dispatched_at": "2026-11-16T15:31:25Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-admission-pass-is-bounded.html",
+      "line": "14",
+      "severity": "non-blocking",
+      "text": "non-blocking: the landing fragment states that ruff check and ruff format --check report no finding on the test file, yet none of the six logs manifest.md cites is such a run, so a measurement is asserted in a shipped evidence record with no receipt a reader can open; re-run here both read clean at EXIT=0, so the claim is true but unevidenced."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105028662701-qwnw-red-file-an-admission-pass-is-bounded/manifest.md",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "non-blocking: the tests line records the plain pytest command while the cited logs/head-all_debug.log command header runs it under env -u SLURM_JOB_ID, so the gate receipt promotion re-runs loses the SLURM_JOB_ID-unset condition the done_when makes part of the measure."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read the single commit 39a196718bf4e15cea0d013e1c2377d987b09954 against base 655a2befa979af690bab537523cd9ad97dc108c5; it inserts 96 lines as two new evidence fragments, qwnw-red-file-an-admission-pass-is-bounded.html and red-file-an-admission-pass-is-bounded.html, and changes no product or test file.",
+    "done_when": "Read its clauses against the cited logs and each is asserted: the named file run in full under env -u SLURM_JOB_ID gives 5 passed in 7.92s at EXIT=0 in logs/head-all_debug.log, the suite arm adds no failure (baseline-suite.log 58 passed in 43.59s EXIT=0, after-suite.log 58 passed in 41.24s EXIT=0), and the negative control in logs/negative-control-pre-landing.log reads 5 failed in 1.10s at EXIT=1 with five FAILED ids; the single gap is that the gate ran at 655a2befa979 rather than at the delivered head 39a196718bf4, so the head-side receipt is the after-suite arm.",
+    "goal": "Read admit_request.node.goal in dispatch-detail.json, \"Make tests/test_an_admission_pass_is_bounded.py pass in full on the primary branch\", against logs/head-all_debug.log: 5 passed in 7.92s at EXIT=0 on revision 655a2befa979 as an all_debug job with SLURM_JOB_ID unset, and expected every clause of that file to be green with main merged, which it is.",
+    "manifest": "Read the run manifest.md in full; it is complete, carrying status complete, commit 39a196718bf4e15cea0d013e1c2377d987b09954, six test_logs and both suite arms with failure_count 0, and its tests line is manifest.md:11.",
+    "write_paths": "Read the dispatch write paths reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround against the diff; the commit adds two new files directly under docs/evidence/fragments/queued-work-needs-no-workaround/, both inside that granted directory, and git diff 655a2befa979 39a196718bf4 -- tests reckon is empty, so the diff writes nothing else."
+  },
+  "justifications": {
+    "durability": "The guard is tests/test_an_admission_pass_is_bounded.py (blob d73368972426, unchanged at 8d50b0333f and 39a196718bf4, introduced at 239f5365ab), shown reddening at 1d16388a31 in logs/negative-control-pre-landing.log with five FAILED ids, so the green arm is a pass and not a run that collected nothing.",
+    "evidence": "logs/head-all_debug.log and its bare EXIT=0 carry the revision, tree, command and the SLURM_JOB_ID-unset condition, but manifest.md:11 records that command without the SLURM_JOB_ID-unset prefix the log carries, and the gate predates the delivered head.",
+    "fit": "Both fragments follow the sibling shape in docs/evidence/fragments/queued-work-needs-no-workaround/ (a section, an arm table and a sized bullet list, ids prefixed by the node id) and the cross-fragment href precedent already exists in that directory.",
+    "goal_fidelity": "The goal file is green at logs/head-all_debug.log (5 passed, EXIT=0, revision 655a2befa979, a tree carrying main) and the fragments under docs/evidence/fragments/queued-work-needs-no-workaround/ record that run rather than a repair.",
+    "reuse": "The diff adds no definition at all; the fragment is consumed by the existing owner reckon/evidence.py:1618 compose_landed_record, whose unledgered-fragment branch already composes a second file in the plan fragment directory, so no capability is duplicated.",
+    "scope_discipline": "Both added files sit directly under the granted directory docs/evidence/fragments/queued-work-needs-no-workaround/ and git diff 655a2befa979 39a196718bf4 -- tests reckon is empty."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read admit_request.node.goal in dispatch-detail.json, \"Make tests/test_an_admission_pass_is_bounded.py pass in full on the primary branch\", against logs/head-all_debug.log: 5 passed in 7.92s at EXIT=0 on revision 655a2befa979 as an all_debug job with SLURM_JOB_ID unset, and expected every clause of that file to be green with main merged, which it is.\nVERDICT done_when: Read its clauses against the cited logs and each is asserted: the named file run in full under env -u SLURM_JOB_ID gives 5 passed in 7.92s at EXIT=0 in logs/head-all_debug.log, the suite arm adds no failure (baseline-suite.log 58 passed in 43.59s EXIT=0, after-suite.log 58 passed in 41.24s EXIT=0), and the negative control in logs/negative-control-pre-landing.log reads 5 failed in 1.10s at EXIT=1 with five FAILED ids; the single gap is that the gate ran at 655a2befa979 rather than at the delivered head 39a196718bf4, so the head-side receipt is the after-suite arm.\nVERDICT write_paths: Read the dispatch write paths reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround against the diff; the commit adds two new files directly under docs/evidence/fragments/queued-work-needs-no-workaround/, both inside that granted directory, and git diff 655a2befa979 39a196718bf4 -- tests reckon is empty, so the diff writes nothing else.\nVERDICT manifest: Read the run manifest.md in full; it is complete, carrying status complete, commit 39a196718bf4e15cea0d013e1c2377d987b09954, six test_logs and both suite arms with failure_count 0, and its tests line is manifest.md:11.\nVERDICT diff: Read the single commit 39a196718bf4e15cea0d013e1c2377d987b09954 against base 655a2befa979af690bab537523cd9ad97dc108c5; it inserts 96 lines as two new evidence fragments, qwnw-red-file-an-admission-pass-is-bounded.html and red-file-an-admission-pass-is-bounded.html, and changes no product or test file.\nCALL_SITES: reckon/serve.py:2751, reckon/mcp.py:1344, reckon/doccheck.py:1970, reckon/crew/reports.py:2722\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: The goal file is green at logs/head-all_debug.log (5 passed, EXIT=0, revision 655a2befa979, a tree carrying main) and the fragments under docs/evidence/fragments/queued-work-needs-no-workaround/ record that run rather than a repair.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/head-all_debug.log and its bare EXIT=0 carry the revision, tree, command and the SLURM_JOB_ID-unset condition, but manifest.md:11 records that command without the SLURM_JOB_ID-unset prefix the log carries, and the gate predates the delivered head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Both added files sit directly under the granted directory docs/evidence/fragments/queued-work-needs-no-workaround/ and git diff 655a2befa979 39a196718bf4 -- tests reckon is empty.\nSCORE durability: 18\nJUSTIFICATION durability: The guard is tests/test_an_admission_pass_is_bounded.py (blob d73368972426, unchanged at 8d50b0333f and 39a196718bf4, introduced at 239f5365ab), shown reddening at 1d16388a31 in logs/negative-control-pre-landing.log with five FAILED ids, so the green arm is a pass and not a run that collected nothing.\nSCORE fit: 18\nJUSTIFICATION fit: Both fragments follow the sibling shape in docs/evidence/fragments/queued-work-needs-no-workaround/ (a section, an arm table and a sized bullet list, ids prefixed by the node id) and the cross-fragment href precedent already exists in that directory.\nSCORE reuse: 20\nJUSTIFICATION reuse: The diff adds no definition at all; the fragment is consumed by the existing owner reckon/evidence.py:1618 compose_landed_record, whose unledgered-fragment branch already composes a second file in the plan fragment directory, so no capability is duplicated.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-admission-pass-is-bounded.html:14 non-blocking: the landing fragment states that ruff check and ruff format --check report no finding on the test file, yet none of the six logs manifest.md cites is such a run, so a measurement is asserted in a shipped evidence record with no receipt a reader can open; re-run here both read clean at EXIT=0, so the claim is true but unevidenced.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105028662701-qwnw-red-file-an-admission-pass-is-bounded/manifest.md:11 non-blocking: the tests line records the plain pytest command while the cited logs/head-all_debug.log command header runs it under env -u SLURM_JOB_ID, so the gate receipt promotion re-runs loses the SLURM_JOB_ID-unset condition the done_when makes part of the measure.\n",
+  "review_run_id": "r-20261116T142916142036-review-of-qwnw-red-file-an-admission-pass-is-bounded-39a196718bf4",
+  "reviewed_base_sha": "655a2befa979af690bab537523cd9ad97dc108c5",
+  "reviewed_head_sha": "39a196718bf4e15cea0d013e1c2377d987b09954",
+  "reviewed_run_id": "r-20261116T105028662701-qwnw-red-file-an-admission-pass-is-bounded",
+  "reviewer_rerun": [
+    "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m ruff check tests/test_an_admission_pass_is_bounded.py -> All checks passed!, EXIT=0",
+    "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m ruff format --check tests/test_an_admission_pass_is_bounded.py -> 1 file already formatted, EXIT=0",
+    "git rev-parse 8d50b0333f:tests/test_an_admission_pass_is_bounded.py and 39a196718bf4:tests/test_an_admission_pass_is_bounded.py -> d73368972426fff7604173829d2f5de7e17861e8 both",
+    "git merge-base --is-ancestor 915acff37f 655a2befa979 -> exit 0"
+  ],
+  "rubric": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T21:10:16.419731+00:00",
+  "total": 110
+}

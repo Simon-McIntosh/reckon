@@ -9,7 +9,11 @@ whole-ledger readers raise.
 
 Every record here is built by the producer's own constructor and published
 through the producer's own writers, so no case asserts against keys this test
-invented.
+invented. Every fixture tree carries a commit its primary branch does not
+reach, which is the rule the derivation holds a retained tree by: a tree that
+is clean and merged holds nothing unmerged and is filed under no record, so a
+fixture that left one clean would measure that rule rather than the naming
+this file is about.
 """
 
 from __future__ import annotations
@@ -58,10 +62,21 @@ def fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 def _worktree(root: Path, node: str) -> Path:
-    """Register a tree the way a dispatched run leaves one behind."""
+    """Register a tree the way a dispatched run leaves one behind.
+
+    The tree carries a commit its primary branch does not reach, because the
+    derivation holds a retained tree only while it holds unmerged work: a tree
+    that is clean and merged holds nothing a landing has not taken, so the row
+    naming it goes whatever record names it. Ordering and attribution are this
+    file's subject, and because every tree here holds work the held-work rule
+    never withholds one.
+    """
     path = root.parent / "managed-worktrees" / SESSION / node
     path.parent.mkdir(parents=True, exist_ok=True)
     _git(root, "worktree", "add", "-q", "--detach", str(path), "HEAD")
+    (path / f"{node}.txt").write_text(f"{node}\n", encoding="utf-8")
+    _git(path, "add", "--", f"{node}.txt")
+    _git(path, "commit", "-q", "-m", f"test: leave unmerged work in {node}")
     return path
 
 

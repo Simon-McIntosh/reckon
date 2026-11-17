@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="the-fleet-node-stays-inside-its-memory">
+  <meta name="plan-title" content="The Fleet Node Stays Inside Its Memory">
+  <meta name="plan-summary" content="The fleet job was killed for memory 125 times in three days; date each kill, move tests and scratch off the node&#x27;s memory, and bound the control services.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="18.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint" content="S27">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-after" content="the-fleet-node-stays-in-service">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-worker-or-its-job-cannot-overwrite-shared-files#s7&quot;],&quot;s8&quot;:[&quot;the-fleet-node-stays-inside-its-memory#s7&quot;],&quot;s9&quot;:[&quot;the-fleet-node-stays-inside-its-memory#s7&quot;],&quot;s11&quot;:[&quot;the-fleet-node-stays-inside-its-memory#s2&quot;,&quot;the-fleet-node-stays-inside-its-memory#s3&quot;,&quot;the-fleet-node-stays-inside-its-memory#s4&quot;,&quot;the-fleet-node-stays-inside-its-memory#s5&quot;,&quot;the-fleet-node-stays-inside-its-memory#s6&quot;,&quot;the-fleet-node-stays-inside-its-memory#s8&quot;,&quot;the-fleet-node-stays-inside-its-memory#s9&quot;,&quot;the-fleet-node-stays-inside-its-memory#s10&quot;]}">
+  <title>The Fleet Node Stays Inside Its Memory | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="20">
+<meta name="plan-modified" content="2026-11-17">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: 125 kills nobody can date</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>Fleet job 1313886 ran for 2.7 days under a 96 GiB limit and the scheduler recorded 125 out-of-memory kills against it. It was not memory that ended it: a gate log overwrote the shared interpreter (<code>imas-ambix:a-gate-log-overwrote-the-shared-interpreter</code>). But a node that sits at its limit and loses a process every half hour is a defect of its own, and its successor held 57 GB of 144 GB after fifteen hours. The measurements are in <a href="/reckon/research/what-fills-the-fleet-nodes-memory.html">what fills the fleet node's memory</a>.</p>
+    <figure>
+      <img src="/reckon/figures/fleet-node-memory/job-memory-against-limit.svg" alt="Job memory of fleet job 1313886 against its 96 GiB limit over 2.7 days, sampled each minute">
+      <figcaption>Job memory against its limit, one sample a minute over the job's life. 102 samples sat at the limit; the job spent 23 hours at or above 90 % of it.</figcaption>
+    </figure>
+    <table>
+      <thead><tr><th>Reading</th><th>Value</th><th>Section</th></tr></thead>
+      <tbody>
+        <tr><td>Hours at or above 80 %, 90 %, 99 % of the limit</td><td>37.8 h, 23.2 h, 4.3 h of 64.4 h</td><td>§2</td></tr>
+        <tr><td>Kill times in the health series</td><td>none: the 125 kills cannot be dated or matched to a cause</td><td>§2</td></tr>
+        <tr><td>Test processes on the fleet node, one sample</td><td>12.4 GB over 12 worker gates verified; 23.1 GB over 163 processes in the incident's count</td><td>§3</td></tr>
+        <tr><td>Session scratch in memory-backed <code>/dev/shm</code></td><td>1.60 GB over 32 sessions, 1.59 GB of it in one</td><td>§4</td></tr>
+        <tr><td>Node-local <code>/tmp</code></td><td>14 GB of 23 GB used; not in the health series at all</td><td>§5</td></tr>
+        <tr><td>Largest single processes seen</td><td>dispatch 47.4 GB, admission 35.3 GB, station 15.8 GB</td><td>§7 to §9</td></tr>
+        <tr><td>Admission service growth</td><td>0.07 GB to 6.1 GB in its first hour; 11.4 GB at 25 minutes on 17 November</td><td>§9</td></tr>
+        <tr><td>A memory limit on one service's process tree</td><td>not available: the job's cgroup is root-owned and the account cannot create a child</td><td>§10</td></tr>
+      </tbody>
+    </table>
+    <figure>
+      <img src="/reckon/figures/fleet-node-memory/service-memory-by-age.svg" alt="Resident memory against process age for station, admission and dispatch processes from 116 saved process tables">
+      <figcaption>Resident memory against process age for the three control processes, one point per process per saved table. The station and the admission service both grow with age; dispatch peaks within minutes.</figcaption>
+    </figure>
+    <p>What is already owned and left alone: <code>the-fleet-node-stays-in-service</code> bounds a worker step at 24 GB; <code>the-monitor-reads-each-fact-once</code> owns the station's retained memory and the admission pass's read of the job's memory against a worker's reservation; <code>a-worker-or-its-job-cannot-overwrite-shared-files</code> §7 gives a worker the composed gate command that §3 here relies on. Resident sizes count shared pages more than once, so no figure above is a promise of memory returned; each section that claims a reduction measures it on the same input before and after.</p>
+
+    <h2 id="s2">§2 — Every memory kill is dated and the series outlives the job</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p><strong>Why.</strong> 125 kills happened and not one can be placed in time, so none can be tied to what was running. Every other section here is steered by what kills what.</p>
+    <p><strong>Deliverable.</strong> Each one-minute health sample carries the job's memory in use, its limit and its cumulative kill count, so a kill is dated to the minute it happened, and the process table saved nearest to a kill is kept with it. A change in the count becomes an obligation naming the minute and the largest processes at that sample.</p>
+    <p><strong>Done when.</strong> A test feeds the sampler a stand-in cgroup whose kill count rises from 3 to 5 between two samples and finds the second row carrying 5, an event dated to that sample, and a retained process table for it; an unchanged count raises nothing. Negative control: with the count field absent the event is not raised and the test fails. In a rehearsal allocation of 2 GiB on <code>all_debug</code>, a stand-in that allocates past the limit produces a dated event within two minutes. The test runs on <code>all_debug</code> with at most <code>-n 4</code>; importers add no failure against the base. Write paths: <code>bin/fleet-health</code>, <code>reckon/crew/fleet_supervisor.py</code>, <code>tests/test_fleet_health.py</code> and <code>tests/test_a_memory_kill_is_dated.py</code>.</p>
+
+    <h2 id="s3">§3 — Test processes on the fleet node are counted, and the count is zero</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> Worker gates are the largest verified user of the node's memory that should not be there at all. A worker that runs its test command directly runs it in the fleet allocation; nothing places it elsewhere and nothing sees it. This section waits on the composed gate command of <code>a-worker-or-its-job-cannot-overwrite-shared-files</code> §7, which gives a worker a gate that runs on a partition; this section measures that it does.</p>
+    <p><strong>Deliverable.</strong> Each health sample counts the test-runner processes inside the fleet allocation and their resident memory, by the run that started them, apart from a focused run within the stated light bound. A count above zero is an obligation for the owning run's coordinator naming the run and the command.</p>
+    <p><strong>Done when.</strong> A test gives the sampler a process table holding two test-runner trees under two runs, one focused run inside the light bound and one non-test service whose command line contains the word pytest as an argument: it counts two trees with their bytes, attributes each to its run, and counts neither the focused run nor the service. Negative control: a matcher on command text alone counts the service and fails. Over 24 hours on the live fleet after the composed gate command has landed, the count is zero in at least 99 % of samples, against 12 trees and 12.4 GB in the reference sample. Runs on <code>all_debug</code>; importers add no failure against the base. Write paths: <code>bin/fleet-health</code>, <code>reckon/crew/fleet_supervisor.py</code> and <code>tests/test_fleet_test_processes_are_counted.py</code>.</p>
+
+    <h2 id="s4">§4 — Session scratch is not charged to the job's memory</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
+    <p><strong>Why.</strong> The supervisor points each session's scratch at <code>/dev/shm</code>, which is memory. Every file a session writes there is charged to the job as if it were a process, and one session held 1.59 GB of it. A coordinator that extracts a few source trees into its scratchpad can push the job over its limit and kill a peer's dispatch.</p>
+    <p><strong>Deliverable.</strong> A session's scratch lives on the node's local disk. Each session's use is sampled, a session over the configured bound is an obligation for that session naming its largest directory, and the total is kept below a stated share of the disk. The bound and the share are flight settings with stated defaults of 2 GiB a session and half the disk.</p>
+    <p><strong>Done when.</strong> A test starts two session stand-ins under the supervisor's scratch preparation: both scratch paths resolve on the local disk and none under <code>/dev/shm</code>; one writes past its bound and is reported with its largest directory while the other, which writes nothing, reads zero and is not reported. Negative control: with the path left on <code>/dev/shm</code> the first assertion fails. On the fleet node after landing, the sessions' bytes under <code>/dev/shm</code> read zero for every session started since, against 1.60 GB before. Runs on <code>all_debug</code>; importers add no failure against the base. Write paths: <code>reckon/crew/fleet_supervisor.py</code>, <code>bin/fleet-health</code>, the flight schema files with their generated JSON, and <code>tests/test_session_scratch_uses_bounded_node_tmp.py</code>.</p>
+
+    <h2 id="s5">§5 — The node's local disk is in the health series</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> A full local disk drained the previous node's allocation of new work, and §4 moves more onto that disk. The series samples memory every minute and the disk never.</p>
+    <p><strong>Deliverable.</strong> Each health sample carries the local disk's total, used and free bytes and its free inodes. Free space under a stated reserve is an obligation naming the largest entries by owner, and admission holds new launches while it lasts. The reserve is a flight setting with a stated default of 8 GiB.</p>
+    <p><strong>Done when.</strong> A test samples two temporary mounts of different known sizes and finds each row carrying its own mount's figures, equal to an independent reading within one block; a mount under the reserve raises the obligation and one above it does not. Negative control: a sampler that reads one mount for both rows fails the per-mount equality. On the fleet node the series carries the four fields for an hour with no gap. Runs on <code>all_debug</code>; importers add no failure against the base. Write paths: <code>bin/fleet-health</code>, <code>reckon/crew/fleet_supervisor.py</code>, <code>reckon/crew/admission/service.py</code>, the flight schema files with their generated JSON, and <code>tests/test_fleet_health_records_node_tmp.py</code>.</p>
+
+    <h2 id="s6">§6 — A sampler outside the allocation keeps writing when the job ends</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p><strong>Why.</strong> The sampler runs inside the allocation it watches, so its last row is written before the event that matters most. The series for job 1313886 ends a minute before the job did, and a second analysis of the same failure read that as a blind hour.</p>
+    <p><strong>Deliverable.</strong> A reader that runs outside the fleet allocation records, each minute, whether the fleet job is running, on which node, and its state as the scheduler reports it, in the same durable series, and writes one row naming the end state and reason when the job ends.</p>
+    <p><strong>Done when.</strong> In a rehearsal on <code>all_debug</code>, a stand-in fleet job is cancelled and the outside reader writes a row within two minutes naming the job, its node, its end state and the scheduler's reason, after the in-job sampler's last row. A test drives the reader against recorded scheduler answers for a running job, an ended job and an unreadable scheduler: the first two produce their rows and the third writes a row marked unknown, never an end. Negative control: with the outside reader stopped, no row follows the in-job sampler's last. Importers add no failure against the base. Write paths: <code>bin/fleet-health</code>, <code>reckon/crew/fleet_node.py</code> and <code>tests/test_a_sampler_outlives_the_fleet_job.py</code>.</p>
+
+    <h2 id="s7">§7 — Dispatch, admission and the station can be profiled without writing live state</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p><strong>Why.</strong> The three largest processes on the node have never been profiled to completion. A read-only admission pass stopped at its lease write, a read-only station pass retried a refused write until it was cancelled, and a one-entry dispatch control ran into its job's time limit. What allocates 47 GB in a dispatch is still not known; the one completed profile, an eight-entry batch, peaked at 4.3 GB resident and 1.9 GB traced with the store read four times for 24,212 rows.</p>
+    <p><strong>Deliverable.</strong> Each of the three commands completes one pass against a copy of the crew home in a temporary directory, writing nothing outside it, and reports its peak resident memory, its traced peak, its ten largest allocation sites, and the bytes read and rows decoded from each store. The report is one record per command, kept with the revision and the input's digest.</p>
+    <p><strong>Done when.</strong> On <code>rigel</code>, each of the three passes exits zero inside 30 minutes against the same copied home and writes its record; the listing and digests of the real crew home are identical before and after. A one-entry and an eight-entry dispatch are both recorded, so the cost of a batch is told from the cost of a process. Negative control: a pass pointed at the real crew home is refused before its first write. The records are the baseline for §8 and §9. Importers add no failure against the base, on <code>all_debug</code>. Write paths: <code>scripts/profile_control_pass.py</code>, <code>reckon/crew/admission/service.py</code>, <code>reckon/crew/station.py</code> and <code>tests/test_a_control_pass_profiles_without_live_writes.py</code>.</p>
+
+    <h2 id="s8">§8 — A batch dispatch holds a bounded amount of memory</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> A single <code>crew dispatch --batch</code> was seen at 47 GB, half the old job's limit, and a coordinator queueing a plan can run several. Queueing work should not be what kills the node.</p>
+    <p><strong>Deliverable.</strong> Peak resident memory of a batch dispatch does not grow with the number of entries beyond a stated amount per entry, and stays under 4 GB for a batch of forty entries on this workstation's stores. The requests it stores are the same as before.</p>
+    <p><strong>Done when.</strong> On §7's harness and input, an eight-entry and a forty-entry batch are profiled before and after: the forty-entry peak is under 4 GB and within 1 GB of the eight-entry peak, and each run's stored requests equal the base's. Negative control: at the base revision the forty-entry peak exceeds the eight-entry peak by more than 1 GB, or the section records that it does not and closes on the absolute bound alone. Runs on <code>rigel</code>; importers add no failure against the base, on <code>all_debug</code>. Write paths: <code>reckon/crew/dispatch_batch.py</code>, <code>reckon/crew/dispatch_plan.py</code> and <code>tests/test_dispatch_batch_memory_profile.py</code>.</p>
+
+    <h2 id="s9">§9 — The admission service does not grow with its age</h2>
+<section data-reckon="section" data-id="s9" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
+    <p><strong>Why.</strong> The admission service went from 0.07 GB to 6.1 GB in its first hour in the saved tables, was seen at 35 GB, and stood at 11.4 GB twenty-five minutes after a start on 17 November. Until that night it was restarted by every landing, which hid the growth; with one reload a window it now lives long enough to matter. The station's retained memory is owned by <code>the-monitor-reads-each-fact-once</code> and is not part of this section.</p>
+    <p><strong>Deliverable.</strong> The admission service's resident memory after two hours of passes is within 20 % of its memory after fifteen minutes, and under 4 GB at this workstation's population. Its launch and release decisions are unchanged.</p>
+    <p><strong>Done when.</strong> On §7's harness, the service runs 100 consecutive passes against the copied home: resident memory after the hundredth pass is within 20 % of that after the tenth and under 4 GB, and every pass's decisions equal the base's. Negative control: at the base revision the hundredth-pass figure exceeds the tenth by more than 20 %. On the live fleet, the process tables saved over the six hours after landing show the service under 4 GB at every sample. Runs on <code>rigel</code>; importers add no failure against the base, on <code>all_debug</code>. Write paths: <code>reckon/crew/admission/service.py</code>, <code>reckon/crew/admission/selection.py</code> and <code>tests/test_the_admission_service_holds_steady_memory.py</code>.</p>
+
+    <h2 id="s10">§10 — A declared service that outgrows its limit restarts alone</h2>
+<section data-reckon="section" data-id="s10" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
+    <p><strong>Why.</strong> When any process pushes the job past its limit the kernel chooses the victim, and it has chosen peers' dispatches and the station. A limit on a service's whole process tree is not available to this account: the job's cgroup is root-owned and creating a child is refused. What is available was shown in a rehearsal: with an address-space limit on each of two stand-ins, the one that outgrew it failed its own allocation and was restarted while its peer kept its pid; with no limit, both were killed at the job's limit.</p>
+    <p><strong>Deliverable.</strong> Each service the supervisor runs may declare a memory limit, applied to the service's own process as an address-space limit when the supervisor starts it. A service that reaches it fails and is restarted under the supervisor's existing backoff, the event is recorded with the service and its limit, and no other service is affected. A service that declares none is started as today. What this does not bound, the service's child processes, is stated on the record. A limit on the whole tree needs SDCC to delegate a memory cgroup to the job, and is not planned here.</p>
+    <p><strong>Done when.</strong> In a 2 GiB rehearsal allocation on <code>all_debug</code>, the supervisor runs two stand-in services, one declaring a 768 MiB limit and allocating past it: that one is restarted and its event recorded, the other's pid is unchanged, and the job's kill count does not move. Negative control: with no limit declared both are killed and the count rises by two. A test asserts a service with no declared limit is started with none. The existing supervisor suites add no failure against the base. Write paths: <code>reckon/crew/fleet_supervisor.py</code>, the fleet service configuration schema the supervisor reads, and <code>tests/test_fleet_supervisor_service_memory_bound.py</code>.</p>
+
+    <h2 id="s11">§11 — Shown on the fleet: three days without a kill</h2>
+<section data-reckon="section" data-id="s11" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> Each section is proved in a rehearsal or on a copy. The claim is about the fleet job.</p>
+    <p><strong>Deliverable.</strong> The health series of one fleet job over 72 hours after the other sections have landed, beside the series of job 1313886.</p>
+    <p><strong>Done when.</strong> The evidence record holds, for the 72 hours and beside the baseline: the kill count, with each kill dated; hours at or above 80 % and 90 % of the limit; the count of samples with a test process on the node; sessions' bytes under <code>/dev/shm</code>; the local disk's lowest free space; and the largest resident size of dispatch, admission and station. The section closes only when the kill count is zero and the job spends under one hour at or above 90 % of its limit; a miss leaves it open, recorded with the dated kills and the processes at each. A series with fewer than 4,000 samples fails as unread. The first figure of §1 is redrawn with both jobs on one axis. Write paths: <code>docs/evidence/archive/the-fleet-node-stays-inside-its-memory-landed.html</code> and <code>docs/figures/fleet-node-memory-after</code>.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-tfnsiim-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-11-17" data-recommends-skill="/reckon-build the-fleet-node-stays-inside-its-memory" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Date the kills first, then move scratch and bound the services</h4>
+    <div class="r-fu-body"><p>§2 comes first: every later section is judged by which kills remain. §4, §5, §6, §7 and §10 are independent of one another; §5 follows §4 at the merge, since both extend the health sample. §3 waits on the composed gate command in the write-safety plan. §8 and §9 wait on §7's profiles. §11 runs last.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-fleet-node-stays-inside-its-memory</pre>
+    </article>
+</section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-11-17T15:44:00Z">
+    <div class="r-comment-body"><p>§9 landed through the crew's own promotion after its review (landing commit <code>cda8859a2c</code>). The per-pass ledger read is bounded: resident memory held at 82 MB after the hundredth pass against 80 MB after the tenth on a copied home, with one decision digest across all passes equal to the base&#x27;s; on a copy of the live stores the peak fell from 4.6 GB to 2.0 GB. The six-hour live-fleet reading the section asks for is still to be recorded.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-close-s10" data-who="reckon-build" data-when="2026-11-17T12:12:00Z">
+    <div class="r-comment-body"><p>§10 landed by direct merge (head <code>d8e0a90d94</code>), on the lead's instruction. Each service the supervisor runs may declare a memory limit, applied as an address-space limit on its own process; one that reaches it is restarted under the existing backoff with the event recorded and no other service affected. Review 120 of 120 with no finding. Merged candidate gate: 12 passed, 1 skipped in 13.38s.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-s10-not-landed-1211" data-who="reckon-build" data-when="2026-11-17T12:11:00Z">
+    <div class="r-comment-body"><p>§10 is delivered and not landed: head <code>d8e0a90d94</code> passed its merged-candidate gate and the merge was refused at the promotion dry run. The landing record written before the merge attempt is withdrawn.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261117T114358834620-review-of-a-service-over-its-limit-restarts-alone-d8e0a90d9400" data-who="reckon-build" data-when="2026-11-17T11:50:17Z">
+    <div class="r-comment-body"><p>Exact-revision independent review stored at both granted paths; all six dimensions 20/20, zero findings, zero added failure IDs; record checks passed.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261117T111120978029-a-service-over-its-limit-restarts-alone" data-who="reckon-build" data-when="2026-11-17T11:36:33Z">
+    <div class="r-comment-body"><p>Optional memory_limit_bytes now applies per-process RLIMIT_AS before service exec with fail-closed refusal and existing isolated restart backoff; 70 scoped checks passed (1 dedicated-allocation check skipped), a 768 MiB service restarted in a 2 GiB all_debug job with peer PID unchanged and oom_kill 0→0, while the unbounded control killed both stand-ins and raised oom_kill 0→2; importer comparison added zero failure IDs. Aggregate child-tree memory is not bounded.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-11-17T10:53:00Z">
+    <div class="r-comment-body"><p>§2 landed through the crew's own promotion after its review (landing commit <code>859a28b2a1</code>). A memory kill in the fleet job is recorded with its time and victim; reviewed 120 of 120.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261117T083906163283-review-of-a-memory-kill-is-dated-23f77ae28886" data-who="reckon-build" data-when="2026-11-17T08:54:08Z">
+    <div class="r-comment-body"><p>Independent exact-revision review complete: all six dimensions 20/20; zero findings; added_failure_count=0 derived from completed base/head logs; ready for coordinator consumption.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261117T081806617499-a-memory-kill-is-dated" data-who="reckon-build" data-when="2026-11-17T08:37:00Z">
+    <div class="r-comment-body"><p>Each health row now records job memory use, limit and cumulative oom_kill; rises bypass snapshot throttling and retain a dated RSS-sorted table and alert naming the largest processes. The 3 -&gt; 5 fixture raises one event and unchanged counts none; the absent-count mutation fails. A real 2 GiB all_debug OOM raised 0 -&gt; 1 with an event/table in 60.75 seconds at the production sixty-second cadence. Final gate: 73 passed versus base 68 passed, zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261117T114158604983-review-of-fleet-test-processes-are-counted-3bc970691ad5" data-who="reckon-build" data-when="2026-11-17T11:49:15Z">
+    <div class="r-comment-body"><p>Independent review stored for base 421f01042a982737973e1d9d65121120ddaf7bd5 and head 3bc970691ad589154df018c51494ece4a16bd1aa; all six dimensions scored, one blocking header-contract finding, armed suite added failures 0, broader importer added failures 1.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261117T140901466477-review-of-fleet-test-processes-are-counted-3932d3049f1c" data-who="reckon-build" data-when="2026-11-17T14:16:55Z">
+    <div class="r-comment-body"><p>Independent incremental review stored as parsed; two blocking importer regressions remain; canonical gate delta 0, broader importer delta 2 added IDs and 1 removed.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-11-17T14:01:00Z">
+    <div class="r-comment-body"><p>§4 landed by direct merge (head <code>9f6b2f3a0e</code>), on the lead's instruction. Each session's scratch is placed on the node's local disk, its use is sampled into the shared health schema, and a session over the configured bound is an obligation naming its largest directory; the filesystem check reuses the dispatch admission mount-table owner. Merged candidate gate: 12 passed in 5.67s.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261117T120947306571-review-of-session-scratch-uses-node-disk-25368adf78fe" data-who="reckon-build" data-when="2026-11-17T12:18:49Z">
+    <div class="r-comment-body"><p>Independent review stored for base 45967c6c6399a70306ce0cd5cb106e6ed54e0c21 and head 25368adf78fe0dd00b105e183ddd5b25af8f0f23; six scores 20/19/20/19/20/5, one blocking reuse finding, declared suite added failures 0 and separate importer added failures 1.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261117T125136570130-review-of-session-scratch-uses-node-disk-e3aee6dea5db" data-who="reckon-build" data-when="2026-11-17T12:57:25Z">
+    <div class="r-comment-body"><p>One added commit reviewed against prior reviewed head; all six dimensions scored 20/20, no findings, required suite-pair added failure count 0; prior blocking duplicate-parser finding resolved.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261117T110726691330-session-scratch-uses-node-disk" data-who="reckon-build" data-when="2026-11-17T13:48:05Z">
+    <div class="r-comment-body"><p>Private local-disk session scratch retains sampled 2 GiB/session and half-disk defaults, largest-directory obligations, and the shared cached mount classifier. Merge 9f6b2f3a0eb9afceee70ed1600df18109b6841eb preserves 25 landed health columns and appends scratch bytes as column 26; scoped suite 85 passed in 70.10s (0:01:10); 213-file importer delta adds 2 out-of-scope failures and zero in-scope failures. Both final-head negative controls fail as intended.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261117T134941960383-review-of-session-scratch-uses-node-disk-9f6b2f3a0eb9" data-who="reckon-build" data-when="2026-11-17T13:56:36Z">
+    <div class="r-comment-body"><p>Incremental review e3aee6dea5db92d0e58f574077c84f1b0105f098 to 9f6b2f3a0eb9afceee70ed1600df18109b6841eb stored parsed; scores 20/18/20/20/20/20; no in-scope finding; scoped baseline/head delta 0.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261117T121741631122-review-of-node-disk-is-in-the-health-series-23a656b40b88" data-who="reckon-build" data-when="2026-11-17T12:26:44Z">
+    <div class="r-comment-body"><p>Independent review of base 45967c6c6399a70306ce0cd5cb106e6ed54e0c21 through head 23a656b40b8863c6f95cf95a8349e16a688f30ba is parsed with six scores (16,12,20,17,20,20), one blocking remote disk-reading finding, and official suite added-failure delta 0; four supplementary importer additions and the live observation remain for the coordinator.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261117T130837675694-review-of-node-disk-is-in-the-health-series-ab7332f266d8" data-who="reckon-build" data-when="2026-11-17T13:14:30Z">
+    <div class="r-comment-body"><p>Incremental independent review of 23a656b40b8863c6f95cf95a8349e16a688f30ba..ab7332f266d8a43e2f0a7bcfd58ca40c53d1e64e stored parsed with all six scores; prior blocking freshness finding answered.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261117T134346847930-review-of-node-disk-is-in-the-health-series-c80531412e01" data-who="reckon-build" data-when="2026-11-17T13:50:28Z">
+    <div class="r-comment-body"><p>Independent review of ab7332f266d8a43e2f0a7bcfd58ca40c53d1e64e..c80531412e01f6c0eb939ac6c5e7779d845d5462 stored; six dimensions scored; one blocking finding; declared source suite adds zero failures.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261117T142548702485-review-of-node-disk-is-in-the-health-series-09023f48c86c" data-who="reckon-build" data-when="2026-11-17T14:32:16Z">
+    <div class="r-comment-body"><p>Reviewed c80531412e01f6c0eb939ac6c5e7779d845d5462..09023f48c86c0aba2494a87476bb7975a6f0c95e; previous blocking scheduler-header defect repaired; no new findings; six dimensions scored; declared suite adds zero failures.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-close-s6" data-who="reckon-build" data-when="2026-11-17T12:14:00Z">
+    <div class="r-comment-body"><p>§6 landed through the crew's own promotion after its review (landing commit <code>7c327b389b</code>). A reader outside the fleet allocation records the job's scheduler state each minute in the same series and writes one row naming the end state and reason when the job ends; reviewed 118 of 120.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261117T110917738170-a-sampler-outlives-the-fleet-job" data-who="reckon-build" data-when="2026-11-17T11:47:41Z">
+    <div class="r-comment-body"><p>Added an independent once-per-minute scheduler reader with GPFS locking for the shared TSV; the cancellation rehearsal writes one terminal row 59.839 seconds after cancellation, and the stopped-reader control fails. The exact health-header assertion now covers all seven scheduler columns: expanded scoped/head gates pass 88 tests, the baseline arm passes 73, and both 17-file importer arms pass 162 tests with 1 skip and zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261117T115716792975-review-of-a-sampler-outlives-the-fleet-job-31096e1a5a57" data-who="reckon-build" data-when="2026-11-17T12:05:47Z">
+    <div class="r-comment-body"><p>Independently reviewed 5cba94a80e4e5dc68fa488816af4c1e0e0f21e57..31096e1a5a5749b98b793d22003dc26bdc7d001d; no blocking findings, one non-blocking schema-assertion finding; zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-close-s7" data-who="reckon-build" data-when="2026-11-17T12:42:00Z">
+    <div class="r-comment-body"><p>§7 landed through the crew's own promotion after its review (landing commit <code>6f743a4fc5</code>). Dispatch at one and eight entries and one admission pass were profiled against a copied crew home at peaks of 5.9, 6.7 and 15.8 GB resident, with JSON decoding the largest allocation site; the station replay took 2,512 s, past the section's timing measure, which stays recorded as unmet. Review 110 of 120 with two non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261117T121522141015-review-of-control-passes-profile-without-live-writes-bf3c02cf0770" data-who="reckon-build" data-when="2026-11-17T12:24:04Z">
+    <div class="r-comment-body"><p>Independent revision-bound review stored; no blocking findings, two non-blocking findings, zero added suite failures; original station timing remains unmet after an authorized extended replay.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261117T081959314526-control-passes-profile-without-live-writes" data-who="reckon-build" data-when="2026-11-17T11:58:09Z">
+    <div class="r-comment-body"><p>Added a copied-home profiler and repaired refused single-tick propagation while testing the existing positive finished marker. Four passes exit 0: one/eight-entry dispatch, admission and station peak at RSS 5.891/6.712/15.846/31.649 GB and traced 1.861/1.851/3.348/6.648 GB; JSON decoding is the largest sampled allocation site. Station completes in 2512.22s with its finished marker and equal copied-source inventory, exceeding the original 1800s target under the authorised longer replay. Repair gate passes 80 tests, importer delta adds zero failing IDs, and bypassing the real-home guard fails five controls; original-live-home equality is not required while peers write.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261117T144144618510-review-of-the-admission-service-holds-steady-memory-13b1d2bdc870" data-who="reckon-build" data-when="2026-11-17T14:43:49.014Z">
+    <div class="r-comment-body"><p>Reviewed r-20261117T111352964502-the-admission-service-holds-steady-memory at base 4b7aa8a071ed and head 13b1d2bdc870: goal_fidelity 16, evidence 12, scope_discipline 19, durability 14, fit 18, reuse 19, no blocking finding, five non-blocking findings and zero added failures against the reviewed run's own arms.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261117T111352964502-the-admission-service-holds-steady-memory" data-who="reckon-build" data-when="2026-11-17T13:01:27Z">
+    <div class="r-comment-body"><p>Each section verdict now reads only its own plan&#x27;s runs: readiness._ledger_run_rows calls ledger.load(project, plan=slug) and caches under (project, plan), so the store narrows in SQL before any row is decoded. On a copy of the live crew home, 100 consecutive admission passes at 13b1d2bdc8 held resident at 1304825856 B after the hundredth against 1304825856 B after the tenth (growth_ratio 1.0, within_twenty_percent true, under_four_gib true, peak_resident_bytes 2045972480 in 656.0 s), decoding 441.9 run_store rows per pass where the base revision decoded 21148.7 on the same input over three passes, at a resident peak of 4619415552 B against the head&#x27;s 2009300992 B.</p></div>
+</div>
+</section>
+</main>
+</body>
+</html>

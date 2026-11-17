@@ -1294,13 +1294,13 @@ def test_a_clear_preflight_summary_reports_that_the_wave_can_open(home, repo) ->
 
 def test_recording_a_held_preflight_increments_the_ledger(home, repo) -> None:
     _record("proj", repo, backend="alpha", budget_block=_known(100.0), run_id="r-1")
-    _data, version_before = ledger.load("proj", repo)
+    _data, version_before = ledger.load_auxiliary("proj", repo)
 
     report = budget.preflight("proj", CONFIG, root=repo, backends=["alpha"])
     budget.record_checks("proj", report["backends"], root=repo)
 
     history = ledger.holds("proj", repo)
-    _data, version_after = ledger.load("proj", repo)
+    _data, version_after = ledger.load_auxiliary("proj", repo)
     assert version_after == version_before + 1
     assert len(history) == 1
     assert history[0]["backend"] == "alpha"

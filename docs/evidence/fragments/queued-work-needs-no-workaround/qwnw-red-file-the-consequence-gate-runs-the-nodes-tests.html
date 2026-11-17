@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="queued-work-needs-no-workaround">
+  <meta name="plan-evidence-for" content="reckon:queued-work-needs-no-workaround">
+  <meta name="plan-verifies" content="reckon:queued-work-needs-no-workaround#s29">
+  <meta name="plan-recorded-at" content="2026-11-16">
+  <meta name="plan-verdict" content="passed">
+  <title>The consequence gate runs the node's tests | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="qwnw-red-file-the-consequence-gate-runs-the-nodes-tests-landing" data-node="qwnw-red-file-the-consequence-gate-runs-the-nodes-tests" data-reckon="landed" data-when="2026-11-16">
+  <h2>The repaired file passes in full; every cause was the fixture, not the product</h2>
+  <p><strong>Reproduction at base ee93819a.</strong> <code>tests/test_the_consequence_gate_runs_the_nodes_tests.py</code> reported <strong>5 failed, 9 passed</strong> with these ids: <code>test_the_declared_command_measures_the_nodes_fenced_test_files</code>, <code>test_a_scoped_pair_over_the_nodes_test_files_promotes</code>, <code>test_a_scoped_pair_over_the_whole_suite_is_refused</code>, <code>test_a_scoped_pair_over_another_nodes_files_is_refused</code>, <code>test_a_project_with_no_declaration_records_no_suite_observation</code>.</p>
+  <p><strong>Cause 1 — the fixture's run was not a run the product can promote. Verdict: test wrong.</strong> The pointer recorded <code>base_sha: "base-abc"</code> while the seeded worktree sat on a real commit, and the manifest cited <code>commits: abc123</code>, which resolves in no store. The promotion rules landed since the test was written refuse a passing gate whose worktree has moved past its base with nothing on the record citing the commit (<code>_require_gate_evidence</code> / <code>_require_worktree_at_its_base</code>), and refuse citations that resolve to no object. The repair makes the fixture a coherent run: the seed commit is the recorded base, a second commit changes one of the node's own test files, and the manifest cites that head commit.</p>
+  <p><strong>Cause 2 — the armed scope resolved to no file in the fixture tree. Verdict: test wrong.</strong> The node's fenced scope names <code>tests/test_one.py</code> and <code>tests/test_two.py</code>, but the seeded repository contained neither, so the per-tree resolution dropped both and the armed run read as unarmed or unchanged: the two promotion cases exited 0 with no suite delta, and the two refusal cases failed on <code>json.loads</code> of a non-refusal payload. The repair seeds both files in the base commit, so the resolved command is the same in both arms.</p>
+  <p><strong>Cause 3 — <code>--no-commit 'report-only fixture'</code> contradicted the tree. Verdict: test wrong.</strong> Once the fixture carries a real commit past its base, a commitless declaration is refused by the guard it now exercises, so the flag is removed and promotion reads the run's own commit.</p>
+  <p><strong>Measure.</strong> Head: <strong>14 passed</strong> (log below). No assertion was deleted or weakened; the assertions and their docstrings are unchanged, and only the fixture's repository and commit facts were made real.</p>
+  <p><strong>Gate.</strong> <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_consequence_gate_runs_the_nodes_tests.py</code> with SLURM_JOB_ID unset on <code>all_debug</code>: <strong>14 passed</strong>. Log: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031815153386-qwnw-red-file-the-consequence-gate-runs-the-nodes-tests/node-tests-head.log</code>. Negative control, the same file at base ee93819a in a scratch checkout: <strong>5 failed, 9 passed</strong>, the five ids above; log <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031815153386-qwnw-red-file-the-consequence-gate-runs-the-nodes-tests/node-tests-base.log</code>.</p>
+  <p><strong>Population.</strong> The resolved command's two files, <code>tests/test_staged_write_inventory.py</code> and <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>, at both revisions, one arm at a time on <code>all_debug</code>. Base ee93819a in a scratch checkout: <strong>58 passed</strong>; head in the run worktree: <strong>58 passed</strong>. The change adds no failure to the population it was armed with. Logs: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031815153386-qwnw-red-file-the-consequence-gate-runs-the-nodes-tests/suite-baseline.log</code> and <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031815153386-qwnw-red-file-the-consequence-gate-runs-the-nodes-tests/suite-after.log</code>.</p>
+  <p><code>ruff check</code> reports no finding on the changed path and <code>ruff format --check</code> reports it formatted.</p>
+</article>
+</body>
+</html>

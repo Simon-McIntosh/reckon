@@ -610,6 +610,7 @@ window.revalidateProjectState = async function () {
         // sprint surface's ranked priority and open findings are a served fact,
         // and an omitted key means the server had nothing new to say about it.
         review: disc.review ?? state.review,
+        north_stars: Array.isArray(disc.north_stars) ? disc.north_stars : state.north_stars,
         projects: projectRows(
           state.inventory,
           Array.isArray(disc.milestones) ? disc.milestones : state.milestones,

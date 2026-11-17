@@ -1,0 +1,37 @@
+<section id="qwnw-red-file-rereview-keeps-its-lane-landing">
+  <h3>A rereview fixture models a launched run</h3>
+  <p>The file was red for one cause, and the cause was the test. Its fixture
+  wrote a pointer in the phase a launch carries before its worker exists, while
+  the same record carried a manifest saying the node was complete and a process
+  that was not alive. Since <code>fab923980b</code> a pre-spawn phase with no
+  worker on it is classified as a launch that has not started, and
+  <code>4d90e4cbd4</code> refined it for a stranded launch. Every composed case
+  was therefore refused as <q>the run is not awaiting review (running)</q>
+  before the lane rules under test were reached. The fixture now names the
+  post-launch phase a delivered run carries, and says so in a comment.</p>
+  <table>
+    <thead><tr><th>Cause</th><th>Verdict</th><th>What shows it</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>8 failing cases refused at the composition gate</td>
+        <td>test wrong: the fixture modelled a delivered run in a pre-spawn phase</td>
+        <td>the classifier's arm for a pre-spawn phase with no worker, added six
+        weeks after the fixture was written; the pointer phase is the only
+        difference between the two arms</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>No product module changed: the two trees differ in one test file, by six
+  changed lines, and no assertion was removed or weakened.</p>
+  <p>Measured on <code>all_debug</code>. At base <code>d0d77f07e2</code> the
+  file read <code>8 failed, 4 passed in 3.59s</code>; the failing identifiers
+  are in the negative-control record beside this one. At head
+  <code>9fe2fefad8</code> it read <code>12 passed in 118.20s</code>. Two
+  in-place runs of the head before the gate read <code>12 passed in
+  276.32s</code> and <code>12 passed in 239.26s</code>. The sibling file over
+  the same review modules,
+  <code>tests/test_a_rereview_gates_only_the_units_it_covers.py</code>, read
+  <code>4 passed in 16.76s</code> in the base tree and <code>4 passed in
+  12.32s</code> at head: no failure added. <code>ruff check</code> and
+  <code>ruff format --check</code> report nothing on the changed path.</p>
+</section>

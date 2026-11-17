@@ -1,0 +1,276 @@
+<section id="qwnw-red-file-crew-landing">
+  <h2>A test file red on the primary branch passes</h2>
+
+  <p><strong>What changed.</strong> <code>tests/test_crew.py</code> passes in
+  full at head: 191 passed, <code>EXIT=0</code>, against 24 failed, 165 passed
+  and 3 errors at the base revision. Twenty-four of the base ids came from rules
+  the code replaced and the file still asserted; each case now asserts the rule
+  the code keeps, and names it. One cause was the product wrong: a worker whose
+  own exit record ends the turn before its manifest reaches a verdict classifies
+  as <code>cut-off</code>, and that word had been added to the classification
+  vocabulary without a state beside it, so the run fell out of the fleet counts
+  the classification feeds. The reducer now renders that class as its own state,
+  the state draws the <code>help</code> pane word, and the colour, attention,
+  action and bucket sets name it, so the four buckets partition every
+  classification the classifier can emit.</p>
+
+  <p>The remaining causes were tests encoding a rule the code no longer keeps.
+  Each was rewritten to the rule the code now asserts. No assertion was deleted
+  or weakened, and the pointer case is stricter than the equality it replaced.
+  The 27 base ids group into thirteen causes:</p>
+
+  <table id="qwnw-red-file-crew-causes">
+    <caption>Each row is one cause of the base revision's failures, the verdict
+    this node records, and the ids it cleared.</caption>
+    <thead><tr><th>cause</th><th>verdict</th><th>ids</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>A dispatch command prints its JSON answer on stdout and the
+        <code>created run</code> line on stderr, so a caller parses
+        <code>result.stdout</code>; <code>Result.output</code> mixes the two
+        streams and the answer is then not JSON.</td>
+        <td>test wrong, updated: the CLI's answer is its stdout</td>
+        <td><code>test_dispatch_cli_accepts_and_persists_a_wave</code>,
+        <code>test_dispatch_cli_opens_a_wave_without_a_flag</code>,
+        <code>test_local_dispatch_marks_the_live_pointer</code>,
+        <code>test_no_watch_dispatch_records_the_override_on_pointer_and_ledger</code>,
+        <code>test_cli_dispatch_arms_a_missing_watcher</code>,
+        <code>test_cli_dispatch_records_unreconciled_runs_on_its_run</code></td>
+      </tr>
+      <tr>
+        <td>A node's declared write paths are a declaration on the request, not
+        a fence: a node that declares none is admitted, and the negative control
+        is owed from the done-when.</td>
+        <td>test wrong, updated: a missing write scope owes its negative
+        control from the done-when</td>
+        <td><code>test_a_missing_write_scope_is_refused</code>, renamed to
+        assert the owed negative control</td>
+      </tr>
+      <tr>
+        <td>Two concurrent nodes may edit one source file; only a path whose
+        class a merge cannot reconcile is a conflict.</td>
+        <td>test wrong, updated: peer scopes are informational</td>
+        <td><code>test_two_concurrent_nodes_may_not_share_a_file</code>, renamed
+        to assert two nodes may share a source file</td>
+      </tr>
+      <tr>
+        <td>A budget over the resolved fence is recorded on the node as a note
+        rather than refused.</td>
+        <td>test wrong, updated: the note is what the node carries</td>
+        <td><code>test_a_budget_over_the_fence_must_be_split_not_overrun</code>,
+        renamed to assert the over-fence note</td>
+      </tr>
+      <tr>
+        <td>The one-pass failure report names the six properties the check
+        raises, and no longer <code>scoped</code> or <code>closed</code>.</td>
+        <td>test wrong, updated: the report lists the properties the check
+        raises</td>
+        <td><code>test_every_failure_is_reported_in_one_pass</code></td>
+      </tr>
+      <tr>
+        <td>A live scope conflict exists only over a path class a merge cannot
+        reconcile, and it is raised before any worktree exists.</td>
+        <td>test wrong, updated: the fixture declares
+        <code>docs/state</code> against <code>docs/state/generated.json</code></td>
+        <td><code>test_dispatch_refuses_live_scope_containment_before_worktree_creation</code>
+        on both parametrisations,
+        <code>test_cli_dispatch_reports_a_live_scope_conflict_on_its_own_exit_code</code></td>
+      </tr>
+      <tr>
+        <td>Promotion refuses a commit touching a path outside the declared
+        scope only for a class a merge cannot reconcile.</td>
+        <td>test wrong, updated: the unclaimed path is
+        <code>docs/state/unclaimed.json</code>, whose class is fenced</td>
+        <td><code>test_promotion_refuses_a_commit_touching_a_path_outside_the_declared_scope</code></td>
+      </tr>
+      <tr>
+        <td>A run whose current attempt has recorded no process and no end of
+        its own reads as starting until the stranded-launch bound, so a fixture
+        that wants a dead or terminal reading records the attempt's own
+        worker.</td>
+        <td>test wrong, updated: the fixtures write the attempt's worker
+        record</td>
+        <td><code>test_live_view_rechecks_a_killed_worker_without_observation</code>,
+        <code>test_terminal_phase_without_a_manifest_is_abandoned</code>,
+        <code>test_no_reader_promotes_a_run_without_commit_or_manifest</code></td>
+      </tr>
+      <tr>
+        <td>A resumed attempt's report is dated by that attempt's own write: a
+        manifest older than the attempt is its predecessor's report and is not
+        read as this attempt's verdict.</td>
+        <td>test wrong, updated: the delivered manifest is dated by its own
+        write rather than by the dispatch baseline</td>
+        <td><code>test_resumed_attempt_owns_its_stream_phase_and_manifest</code></td>
+      </tr>
+      <tr>
+        <td>A log this audit reads must live inside the run's own tree, so a
+        fixture citing a system temp path is refused for the citation rather
+        than for the suite it describes.</td>
+        <td>test wrong, updated: the fixture writes its logs inside the run's
+        directory</td>
+        <td><code>test_a_clean_manifest_audits_clean</code>,
+        <code>test_an_unarmed_manifest_accepts_absent_suite_observations</code></td>
+      </tr>
+      <tr>
+        <td>A dispatch moves the fields it composes for its own callers into the
+        run's detail file and records that file's path on the pointer.</td>
+        <td>test wrong, updated: the pointer, its detail file and the returned
+        record are compared field by field, which is stricter than the equality
+        it replaces</td>
+        <td><code>test_dispatch_launches_a_cli_backend_and_records_the_run</code></td>
+      </tr>
+      <tr>
+        <td>A classification the reducer renders as <code>blocked</code> held no
+        fleet state, so the emitted-state count and the bucket partition could
+        not both hold.</td>
+        <td>product wrong, repaired: the class has its own state, hue, pane
+        word, bucket and attention route</td>
+        <td><code>test_every_live_state_has_one_fleet_bucket_and_an_attention_route</code>,
+        and in the import selection below
+        <code>test_every_emitted_state_lands_in_exactly_one_fleet_bucket</code>
+        and <code>test_every_state_the_fleet_calls_blocked_draws_help</code></td>
+      </tr>
+      <tr>
+        <td>Five ids from the sandbox's resources:
+        <code>BlockingIOError: [Errno 11]</code> from an exhausted process
+        table, obligation-sweep threads joining past their bound, and an
+        interleaved attach that never reached its lock inside five seconds.</td>
+        <td>scaffolding: the sandbox's process budget, not the code; every id
+        passes at head</td>
+<td><code>test_closed_default_wave_is_replaced_for_the_next_dispatch</code>,
+        <code>test_explicit_wave_overrides_the_default_wave</code>,
+        <code>test_project_watch_exits_when_a_stream_exceeds_the_stall_window</code>,
+        <code>test_interleaved_attach_and_observe_preserve_the_task_binding</code>,
+        <code>test_scopes_view_reads_claim_owners_without_mutating_the_pointer</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-crew-measured">Measured</h3>
+
+  <p>Every arm below is a log whose first lines name the revision, the tree and
+  the command, and whose last line reads <code>EXIT=&lt;code&gt;</code>. The base
+  arms run from an extraction of <code>cbfc8346f42f</code> under the session's
+  scratch root, driven by the worktree's interpreter, because a detached
+  <code>uv</code> cache is read-only here.</p>
+
+  <table id="qwnw-red-file-crew-arms">
+    <caption>The named file is green at head and red at base, and the selection
+    over the files that read the fleet vocabulary adds no failure.</caption>
+    <thead><tr><th>arm</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file, head <code>5353ff3e1c</code></td>
+        <td>191 passed, <code>EXIT=0</code>,
+        <code>qwnw-red-file-crew-head.log</code></td></tr>
+      <tr><td>the named file, base <code>cbfc8346f42f</code></td>
+        <td>24 failed, 165 passed, 3 errors, <code>EXIT=1</code>,
+        <code>qwnw-red-file-crew-base.log</code></td></tr>
+      <tr><td>the two files in this node's suite, head</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the two files in this node's suite, base</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the 64 test files that read the fleet vocabulary, head</td>
+        <td>39 failed, 669 passed, 3 errors, <code>EXIT=1</code></td></tr>
+      <tr><td>the same 64 files, base</td>
+        <td>59 failed, 649 passed, 3 errors, <code>EXIT=1</code></td></tr>
+      <tr><td>ruff over the four changed paths, base and head</td>
+        <td>17 findings and 2 files that would be reformatted on both arms,
+        with the same finding set and the same two files on each</td></tr>
+    </tbody>
+  </table>
+
+  <p>The selection's head arm holds one id the base arm does not:
+  <code>test_every_state_the_fleet_calls_blocked_draws_help</code>, raised by
+  this node's own new state before the pane word named it. With the mapping in
+  place that file passes, and every other head failure is one the base arm
+  already carries: a dispatch refused because its fixture flight declares no
+  <code>local_backend</code>, a test reading
+  <code>recovery_watch.watch_lease_renewed_at</code> which the module does not
+  expose, and the promotion transition asserted in
+  <code>tests/test_crew_ticker.py</code>. None is in this node's file or its
+  changes. One file was left out of both arms: the layout suite aborts the
+  interpreter with a SIGHUP partway through at base and at head alike, for an
+  ancestor-terminal case the sandbox cannot serve. The pane-word suite, which
+  carries the vocabulary this node changed, was run with the bucket, counter,
+  monitor and cut-off suites: 50 passed, and its only failure is the promotion
+  transition in <code>tests/test_crew_ticker.py</code> that fails at base
+  too.</p>
+
+  <h3 id="qwnw-red-file-crew-control">Negative control</h3>
+
+  <p>The base revision's run of the named file is
+  <code>qwnw-red-file-crew-base.log</code>, beside this record, with its 27
+  failing and erroring ids. Each rewritten case fails there for the reason its
+  row gives: a dispatch answer read off a mixed stream is not JSON, a node that
+  declares no write path is refused, a peer's source scope is a conflict, an
+  over-fence budget is refused, the property report names two properties the
+  check no longer raises, a source path is a live scope conflict, a promotion
+  refuses a mergeable path, an attempt with no worker record reads as starting,
+  a cited log outside the run tree is refused, and the pointer equals the
+  record. The product repair is proven the same way: at the base revision the
+  emitted-state arm reports
+  <code>uncounted states: ['cut-off']</code> and the bucket arm reports
+  <code>unbucketed recovery states: ['cut-off']</code>, and both pass at head.</p>
+
+  <h3 id="qwnw-red-file-crew-base-ids">The base arm's ids</h3>
+
+  <p>The two runs sit beside this record as
+  <code>qwnw-red-file-crew-base.log</code> and
+  <code>qwnw-red-file-crew-head.log</code>. The repository ignores
+  <code>*.log</code>, so the base run's failing and erroring ids are also
+  listed here:</p>
+
+  <ul id="qwnw-red-file-crew-base-id-list">
+    <li><code>test_a_missing_write_scope_is_refused</code> —
+    <code>assert 'scoped' in ['negative_control']</code></li>
+    <li><code>test_two_concurrent_nodes_may_not_share_a_file</code> —
+    <code>StopIteration</code>, no refusal to read</li>
+    <li><code>test_a_budget_over_the_fence_must_be_split_not_overrun</code> —
+    <code>StopIteration</code>, no refusal to read</li>
+    <li><code>test_every_failure_is_reported_in_one_pass</code> —
+    <code>AssertionError</code> on the reported property set</li>
+    <li><code>test_dispatch_cli_accepts_and_persists_a_wave</code> —
+    <code>JSONDecodeError: Expecting value: line 1 column 1</code></li>
+    <li><code>test_dispatch_cli_opens_a_wave_without_a_flag</code> — same</li>
+    <li><code>test_local_dispatch_marks_the_live_pointer</code> — same</li>
+    <li><code>test_no_watch_dispatch_records_the_override_on_pointer_and_ledger</code>
+    — same</li>
+    <li><code>test_cli_dispatch_arms_a_missing_watcher</code> — same</li>
+    <li><code>test_cli_dispatch_records_unreconciled_runs_on_its_run</code> —
+    same</li>
+    <li><code>test_cli_dispatch_reports_a_live_scope_conflict_on_its_own_exit_code</code>
+    — <code>JSONDecodeError</code>; exit code 8 rather than 7</li>
+    <li><code>test_dispatch_refuses_live_scope_containment_before_worktree_creation</code>
+    on both parametrisations — <code>Failed: a conflicting node must not</code>
+    reach a worktree</li>
+    <li><code>test_promotion_refuses_a_commit_touching_a_path_outside_the_declared_scope</code>
+    — <code>Failed: DID NOT RAISE CrewError</code></li>
+    <li><code>test_a_clean_manifest_audits_clean</code> —
+    <code>assert False is True</code></li>
+    <li><code>test_an_unarmed_manifest_accepts_absent_suite_observations</code>
+    — <code>assert False is True</code></li>
+    <li><code>test_dispatch_launches_a_cli_backend_and_records_the_run</code> —
+    the pointer and the record differ by five fields</li>
+    <li><code>test_live_view_rechecks_a_killed_worker_without_observation</code>
+    — <code>assert 'running' == 'abandoned'</code></li>
+    <li><code>test_terminal_phase_without_a_manifest_is_abandoned</code> —
+    <code>assert 'running' == 'abandoned'</code></li>
+    <li><code>test_no_reader_promotes_a_run_without_commit_or_manifest</code> —
+    <code>{'abandoned'...}</code> read as <code>{'abandoned', 'running'}</code></li>
+    <li><code>test_resumed_attempt_owns_its_stream_phase_and_manifest</code> —
+    <code>Failed: Timeout (&gt;300.0s)</code>, the watcher never reaching a
+    terminal event</li>
+    <li><code>test_every_live_state_has_one_fleet_bucket_and_an_attention_route</code>
+    — <code>unbucketed recovery states: ['cut-off']</code></li>
+    <li><code>test_interleaved_attach_and_observe_preserve_the_task_binding</code>
+    — <code>assert False</code> after five seconds</li>
+    <li><code>test_closed_default_wave_is_replaced_for_the_next_dispatch</code>
+    — <code>BlockingIOError: [Errno 11]</code></li>
+    <li><code>test_explicit_wave_overrides_the_default_wave</code> —
+    <code>BlockingIOError: [Errno 11]</code></li>
+    <li><code>test_project_watch_exits_when_a_stream_exceeds_the_stall_window</code>
+    — obligation-sweep threads left running past their join bound</li>
+    <li><code>test_scopes_view_reads_claim_owners_without_mutating_the_pointer</code>
+    — <code>BlockingIOError: [Errno 11]</code></li>
+  </ul>
+</section>

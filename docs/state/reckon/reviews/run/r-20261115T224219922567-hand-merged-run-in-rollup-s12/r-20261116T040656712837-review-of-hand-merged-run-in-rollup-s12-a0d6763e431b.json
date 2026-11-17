@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "d14fff07134b4f72b8639cc00e59a18112c0acd2",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp_views.py:4942",
+    "reckon/crew_run_commands.py:3904",
+    "reckon/crew/promotion_records.py:1279",
+    "reckon/crew/run_paths.py:36"
+  ],
+  "completed_at": "2026-11-16T04:21:03.664Z",
+  "dispatched_at": "2026-11-16T04:19:22Z",
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": "4605",
+      "severity": "non-blocking",
+      "text": "non-blocking: the rollup's key set is now data-dependent \u2014 the four promotion keys are initialised at reckon/ledger.py:4589 and reckon/ledger.py:4605 materialises \"not-run\" only when a row carries it \u2014 so a reader of the MCP-view summary (reckon/mcp_views.py:4942) cannot distinguish zero hand-merged rows from the four-outcome counter and must use `.get`."
+    }
+  ],
+  "head_log_revision": "a0d6763e431b27cd471dfa9dde34edaa67d5bca3",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read both commits against base d14fff0713 \u2014 ca1d279612 changes reckon/ledger.py:99,4605 and reckon/crew_run_commands.py:3890,3904 and deletes _utc_now_text, a0d6763e43 adds only the 25-line evidence fragment; four files, 151 insertions, 9 deletions, all inside scope.",
+    "done_when": "the done_when's rollup clause and its one-formatter clause are asserted by tests/test_a_hand_merged_run_is_in_the_rollup.py:88 and :114 and both fail at base d14fff0713 in logs/new-test-at-base.log (2 failed: KeyError 'not-run' and a real-clock stamp), but its third clause (tests/test_a_hand_merged_run_is_recorded.py still passes) is contradicted at base and head and the importer population clause is declared unmeasured by the run and was measured afterwards by a coordinator sweep (323 failed at both arms, ids byte-identical).",
+    "goal": "the node goal is two halves \u2014 count a hand-merged run under `reckon/ledger.py:99` SUITE_DELTA_OUTCOMES so reckon/ledger.py:4605 tallies it, and stamp the declaration through reckon/crew/run_paths.py:36 _utc_now from reckon/crew_run_commands.py:3904 \u2014 and the diff at a0d6763e43 delivers both, with the private `_utc_now_text` deleted.",
+    "manifest": "read the reviewed manifest; it records the gate at 60 passed with EXIT=0 (logs/after-suite.log), the base arm at 58 passed with EXIT=0 (logs/baseline-suite.log), the negative control at 1 failed with EXIT=1 (logs/negative-control.log) and names its unmeasured importer sweep under blockers rather than claiming it.",
+    "write_paths": "read the declared write paths (reckon/ledger.py, reckon/crew_run_commands.py, tests/test_a_hand_merged_run_is_in_the_rollup.py, docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/hand-merged-run-in-rollup-s12.html) and every changed path in `git diff --stat d14fff0713 a0d6763e43` lies inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_hand_merged_run_is_in_the_rollup.py:88 reddens at base with KeyError 'not-run' and again under the declared mutation (logs/negative-control.log), so reinstating the four-outcome counter is caught.",
+    "evidence": "reckon/crew_run_commands.py:3904's change is proven by the base arm failing at the second formatter and by 60 passed/EXIT=0 at head, but the run's own gate arms never measured the done_when's importer-population clause and its test_a_hand_merged_run_is_recorded.py clause is red at base and head, recorded only under outside_scope.",
+    "fit": "reckon/ledger.py:99 places SUITE_DELTA_OUTCOMES beside the existing GATE_VERDICTS tuple in the same comment-and-constant idiom, and reckon/crew_run_commands.py:3890 takes the module's existing lazy import form.",
+    "goal_fidelity": "reckon/ledger.py:4605 counts every recorded status in SUITE_DELTA_OUTCOMES under its own key and reckon/crew_run_commands.py:3904 stamps declared_at through reckon/crew/run_paths.py:36 _utc_now, exactly the two halves the goal states.",
+    "reuse": "the formatter half extends the owner reckon/crew/run_paths.py:36 rather than restating it and deletes the duplicate, and a search of reckon/ledger.py, reckon/crew/promotion_records.py and reckon/clones.py found no prior owner for the suite-delta outcome vocabulary.",
+    "scope_discipline": "every path in `git diff --stat d14fff0713 a0d6763e43` (the two product files, the new test, the evidence fragment) is one of the four declared write paths, with no out-of-scope edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is two halves \u2014 count a hand-merged run under `reckon/ledger.py:99` SUITE_DELTA_OUTCOMES so reckon/ledger.py:4605 tallies it, and stamp the declaration through reckon/crew/run_paths.py:36 _utc_now from reckon/crew_run_commands.py:3904 \u2014 and the diff at a0d6763e43 delivers both, with the private `_utc_now_text` deleted.\nVERDICT done_when: the done_when's rollup clause and its one-formatter clause are asserted by tests/test_a_hand_merged_run_is_in_the_rollup.py:88 and :114 and both fail at base d14fff0713 in logs/new-test-at-base.log (2 failed: KeyError 'not-run' and a real-clock stamp), but its third clause (tests/test_a_hand_merged_run_is_recorded.py still passes) is contradicted at base and head and the importer population clause is declared unmeasured by the run and was measured afterwards by a coordinator sweep (323 failed at both arms, ids byte-identical).\nVERDICT write_paths: read the declared write paths (reckon/ledger.py, reckon/crew_run_commands.py, tests/test_a_hand_merged_run_is_in_the_rollup.py, docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/hand-merged-run-in-rollup-s12.html) and every changed path in `git diff --stat d14fff0713 a0d6763e43` lies inside them.\nVERDICT manifest: read the reviewed manifest; it records the gate at 60 passed with EXIT=0 (logs/after-suite.log), the base arm at 58 passed with EXIT=0 (logs/baseline-suite.log), the negative control at 1 failed with EXIT=1 (logs/negative-control.log) and names its unmeasured importer sweep under blockers rather than claiming it.\nVERDICT diff: read both commits against base d14fff0713 \u2014 ca1d279612 changes reckon/ledger.py:99,4605 and reckon/crew_run_commands.py:3890,3904 and deletes _utc_now_text, a0d6763e43 adds only the 25-line evidence fragment; four files, 151 insertions, 9 deletions, all inside scope.\nCALL_SITES: reckon/mcp_views.py:4942, reckon/crew_run_commands.py:3904, reckon/crew/promotion_records.py:1279, reckon/crew/run_paths.py:36\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/ledger.py:4605 counts every recorded status in SUITE_DELTA_OUTCOMES under its own key and reckon/crew_run_commands.py:3904 stamps declared_at through reckon/crew/run_paths.py:36 _utc_now, exactly the two halves the goal states.\nSCORE evidence: 14\nJUSTIFICATION evidence: reckon/crew_run_commands.py:3904's change is proven by the base arm failing at the second formatter and by 60 passed/EXIT=0 at head, but the run's own gate arms never measured the done_when's importer-population clause and its test_a_hand_merged_run_is_recorded.py clause is red at base and head, recorded only under outside_scope.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in `git diff --stat d14fff0713 a0d6763e43` (the two product files, the new test, the evidence fragment) is one of the four declared write paths, with no out-of-scope edit.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_hand_merged_run_is_in_the_rollup.py:88 reddens at base with KeyError 'not-run' and again under the declared mutation (logs/negative-control.log), so reinstating the four-outcome counter is caught.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/ledger.py:99 places SUITE_DELTA_OUTCOMES beside the existing GATE_VERDICTS tuple in the same comment-and-constant idiom, and reckon/crew_run_commands.py:3890 takes the module's existing lazy import form.\nSCORE reuse: 18\nJUSTIFICATION reuse: the formatter half extends the owner reckon/crew/run_paths.py:36 rather than restating it and deletes the duplicate, and a search of reckon/ledger.py, reckon/crew/promotion_records.py and reckon/clones.py found no prior owner for the suite-delta outcome vocabulary.\nFINDING reckon/ledger.py:4605 non-blocking: the rollup's key set is now data-dependent \u2014 the four promotion keys are initialised at reckon/ledger.py:4589 and reckon/ledger.py:4605 materialises \"not-run\" only when a row carries it \u2014 so a reader of the MCP-view summary (reckon/mcp_views.py:4942) cannot distinguish zero hand-merged rows from the four-outcome counter and must use `.get`.\nreviewed_base_sha: d14fff07134b4f72b8639cc00e59a18112c0acd2\nreviewed_head_sha: a0d6763e431b27cd471dfa9dde34edaa67d5bca3",
+  "review_run_id": "r-20261116T040656712837-review-of-hand-merged-run-in-rollup-s12-a0d6763e431b",
+  "reviewed_base_sha": "d14fff07134b4f72b8639cc00e59a18112c0acd2",
+  "reviewed_head_sha": "a0d6763e431b27cd471dfa9dde34edaa67d5bca3",
+  "reviewed_run_id": "r-20261115T224219922567-hand-merged-run-in-rollup-s12",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T11:42:28.532555+00:00",
+  "total": 108
+}

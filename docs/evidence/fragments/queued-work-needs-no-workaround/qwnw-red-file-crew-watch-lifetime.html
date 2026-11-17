@@ -1,0 +1,125 @@
+<section id="qwnw-red-file-crew-watch-lifetime-landing">
+  <h2>A test file red on the primary branch passes</h2>
+
+  <p><strong>What changed.</strong> <code>tests/test_crew_watch_lifetime.py</code>
+  passes in full at head: <code>4 passed</code>, <code>EXIT=0</code>, run as a
+  job on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset, against
+  <code>4 failed</code> at revision 24bc79d8ee. No product module changed: every
+  failing id came from the fixture that models a landed run.</p>
+
+  <p>The cause is one rule and its fixture. A promoted run reads landed only
+  once the head its ledger row names is reachable from the primary branch
+  (<code>_promoted_awaiting_merge</code>; commit 5f81f71e4c, whose own case is
+  <code>tests/test_a_promoted_run_is_not_landed_until_merged.py</code>). The
+  fixture wrote a row as <code>{"run_id", "commits": ["HEAD"]}</code> at the
+  config-home ledger path, with the run's pointer. It named no checkout, the
+  repository it did name did not exist, and <code>HEAD</code> is a revision
+  rather than a recorded commit, so the fixture's landing was unverifiable and
+  the reader — correctly — answered <code>complete</code> where the case expected
+  <code>promoted</code>. It also wrote the row at setup, before the watcher's
+  first pass, so a delivered pointer read <code>promoted</code> at once
+  (<code>"unpromoted": 0</code> in place of <code>_write_stale_terminal_pointer</code>'s
+  pointer arriving as <code>completed_unpromoted</code>, count 1).</p>
+
+  <p>Each case now records the promotion the way promotion writes it, at the
+  point its landing happens: the row carries <code>project</code> and the
+  <code>repo</code> its head lands in, the cited revision resolves to a recorded
+  commit, and the config-home state root is linked to the registered checkout's
+  own <code>docs/state</code>, as a synced project carries it, so enumerating the
+  ledger and the head's ancestry resolve one file. No assertion was deleted or
+  weakened: the promoted word, the unpromoted baseline, the seat's
+  <code>watcher_live</code>/<code>pointer_count</code> facts and both reader
+  assertions stand unchanged; the fixture supplies the facts the rule asks for
+  rather than the assertion relaxing to whatever the code returns.</p>
+
+  <table id="qwnw-red-file-crew-watch-lifetime-causes">
+    <caption>Each row is one cause of the base revision's failures, this node's
+    verdict, and the base ids it cleared.</caption>
+    <thead><tr><th>cause</th><th>verdict</th><th>base ids</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>The fixture modelled a promotion with no checkout named and a
+        revision where the row was asked whether the head reached the branch, so
+        the landed word became <code>complete</code> (promoted, awaiting merge)
+        and the promoted cases asserted a word the product no longer says for
+        that row.</td>
+        <td>test wrong — the rule is deliberate, fails closed, and has its own
+        case; the fixture now records the checkout and a resolved commit.</td>
+        <td><code>test_cold_watch_holds_an_already_stale_terminal_pointer</code>,
+        <code>test_dispatch_is_admitted_during_the_stale_terminal_window</code>,
+        <code>test_empty_fleet_still_waits_for_its_first_pointer[commits0-promoted]</code></td>
+      </tr>
+      <tr>
+        <td>Running after the promoted case: that case raised inside the
+        <code>ThreadPoolExecutor</code> while the ticker was mid-tick, and the
+        next case's ticker never reached its first poll within five seconds.
+        The case passes alone (<code>1 passed in 1.04s</code>), which is how the
+        ordering dependence was read rather than guessed.</td>
+        <td>test wrong — a case whose ordering depends on the failure of another
+        case clears once that failure clears.</td>
+        <td><code>test_empty_fleet_still_waits_for_its_first_pointer[commits1-recorded]</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-crew-watch-lifetime-measured">Measured</h3>
+
+  <table id="qwnw-red-file-crew-watch-lifetime-arms">
+    <caption>Logs whose header names the revision, the tree and the literal
+    command; the gate log's last line is <code>EXIT=0</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>node gate, <code>all_debug</code> job 1319844</td>
+        <td>6d3e173788</td>
+        <td><code>4 passed in 4.18s</code>, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>negative control, same file at the base revision</td>
+        <td>24bc79d8ee</td>
+        <td><code>4 failed in 37.90s</code>, <code>EXIT=0</code> not reached
+        (<code>EXIT=1</code>)</td>
+      </tr>
+      <tr>
+        <td>declared suite, before the change</td>
+        <td>24bc79d8ee</td>
+        <td><code>58 passed in 43.04s</code>, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>declared suite, after the change</td>
+        <td>6d3e173788</td>
+        <td><code>58 passed in 47.20s</code>, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>the file that carries the merge rule, both revisions</td>
+        <td>24bc79d8ee and 6d3e173788</td>
+        <td><code>7 passed</code> each, <code>EXIT=0</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Every arm above ran at the head the code stood at, 6d3e173788. The two
+  commits after it change only this record, which is why the receipts name that
+  head and no later one.</p>
+
+  <h3 id="qwnw-red-file-crew-watch-lifetime-control">Negative control</h3>
+
+  <p>The base revision's run of the same file is logged beside the head run at
+  logs/base-arm-watch-lifetime.log under the run directory. Its ids, all four of
+  which the head run does not fail:</p>
+
+  <ul id="qwnw-red-file-crew-watch-lifetime-base-ids">
+    <li><code>test_cold_watch_holds_an_already_stale_terminal_pointer</code> —
+    <code>('completed_u...', 'complete') == ('completed_u...', 'promoted')</code></li>
+    <li><code>test_dispatch_is_admitted_during_the_stale_terminal_window</code> —
+    <code>assert 'complete' == 'promoted'</code></li>
+    <li><code>test_empty_fleet_still_waits_for_its_first_pointer[commits0-promoted]</code>
+    — <code>assert 'complete' == 'promoted'</code></li>
+    <li><code>test_empty_fleet_still_waits_for_its_first_pointer[commits1-recorded]</code>
+    — <code>assert False</code> on <code>poll.reached.wait(timeout=5)</code></li>
+  </ul>
+
+  <p>Lint on the changed path reports nothing new:
+  <code>ruff check</code> and <code>ruff format --check</code> both clean on
+  <code>tests/test_crew_watch_lifetime.py</code>.</p>
+</section>

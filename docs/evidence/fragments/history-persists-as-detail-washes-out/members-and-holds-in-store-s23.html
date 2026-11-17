@@ -1,0 +1,95 @@
+<section id="members-and-holds-in-store-s23-landing">
+  <h3>Roster members and holds persist in the run store</h3>
+  <p>Roster registration, idle-member reaping and budget hold transitions now
+  replace project-scoped rows in the run store without changing committed paths.
+  Disposable-member retirement uses the same roster writer. A one-time import
+  preserves the aggregate's members, holds and version; subsequent reads use the
+  store, including when the roster is deliberately emptied or the aggregate is
+  removed. Compare-and-replace transactions refuse stale versions and roll back
+  both rows and version when a replacement fails.</p>
+  <table>
+    <thead><tr><th>Measurement</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>New tests against the base implementation</td><td>4 failed: all three mutations rewrite tracked state, and aggregate removal loses the roster, version and holds.</td></tr>
+      <tr><td>Focused implementation checks</td><td>12 passed, including equal roster/version/holds tuples before and after aggregate removal.</td></tr>
+      <tr><td>Tracked writes from registration, reaping and a hold check</td><td>0 paths changed; repository HEAD also stays equal.</td></tr>
+      <tr><td>Hold lifecycle</td><td>Repeated hold checks preserve the version; closing the fixture's hold records 90 seconds.</td></tr>
+      <tr><td>Declared negative control</td><td>Routing registration back through ledger.write fails the registration case with “registration rewrote a committed path”.</td></tr>
+      <tr><td>Existing armed baseline</td><td>58 passed; no failing baseline IDs.</td></tr>
+    </tbody>
+  </table>
+  <p>The new checks also cover colliding member and hold IDs in separate projects,
+  stale-write refusal, undeclared member-removal refusal, failed-write rollback,
+  store failure without a file fallback, disposable retirement, and migration of
+  unscoped auxiliary tables. The separately captured armed after gate is the
+  delivery receipt; merged-head verification remains with the coordinator.</p>
+  <section id="members-and-holds-in-store-s23-version-pairs">
+    <h4>Aggregate updates and mutable updates keep separate version pairs</h4>
+    <p>The production integrated-gate update was reproduced after registration,
+    a hold check and reaping: all three cases refused with “moved from version
+    8 to 7” because the mutable store had advanced while the file had not.
+    History reads now return the file version for aggregate writes and expose
+    the mutable projection's version as <code>auxiliary_version</code>.
+    Roster writes read their own state/version pair through
+    <code>load_auxiliary</code>, including idle-member reaping.</p>
+    <p>Three regression cases drive the real production gate-recording caller
+    twice, advancing the aggregate from version 7 to 8 to 9 while the store's
+    version remains 8. They assert that both stores keep their own roster and
+    hold values, that a subsequent reap uses the store version and that an
+    actually stale aggregate write is still refused. These three cases failed
+    before repair and pass with the repair; the repair-base armed gate passed
+    70 checks. The manifest carries the final armed result and a negative
+    control that reverses the answering product change while retaining these
+    assertions.</p>
+  </section>
+  <section id="members-and-holds-in-store-s23-selected-history">
+    <h4>Selected history stays selected after integration</h4>
+    <p>The merge with the primary branch reproduced the missing selection
+    argument: the requested two-file gate reported 28 failures and 8 passes,
+    with <code>NameError: name 'plan' is not defined</code> on the history-reader
+    path. The public reader now passes <code>plan</code> to its history helper,
+    whose indexed, last-good-index and store-merge paths receive the same
+    selection and root, including the uncached fallback.</p>
+    <p>Three checks cover selected file and store rows through indexed, stale
+    and uncached reads. A fourth check forbids constructing a writable store
+    during a history read. Imported mutable rows and their version are read in
+    a read-only transaction; when no import exists, a history read projects the
+    aggregate without creating a database. Explicit roster access still imports
+    the mutable state before a mutation and preserves it after aggregate
+    removal. The manifest records both requested reader files and the armed
+    gate at the repaired merged head.</p>
+  </section>
+  <section id="members-and-holds-in-store-s23-primary-conflict">
+    <h4>Primary conflict preserves file-backed history and stored mutable state</h4>
+    <p>The primary branch deliberately removed store-backed run history after
+    unbounded decoding and directory scans caused resource failures. The merge
+    keeps that removal: indexed, stale and uncached history reads select from
+    the committed files, including plans recorded in dispatch definitions.
+    The read-only overlay still loads only the project's imported roster and
+    holds, with their separate mutable version.</p>
+    <p>The three selection cases now seed a store-only run and refuse any
+    attempt to decode its payload. They assert both selected file-backed rows,
+    the registered roster member and the separate file/store versions on all
+    three paths. The current armed gate is recorded at the repaired merge head
+    in the manifest; the earlier store-history comparison remains historical
+    evidence of the prior integrated revision.</p>
+  </section>
+  <section id="members-and-holds-in-store-s23-released-locks">
+    <h4>Mutable snapshots release their lock before decoding</h4>
+    <p>The next primary merge supplies selected store-backed history and closes
+    run-read cursors before consumption. The resolution keeps those query and
+    lock-release implementations, the revision helpers, and the independent
+    roster/hold transactions. Auxiliary readers now fetch encoded rows and the
+    version in one snapshot, close the cursor and release the read or write
+    transaction, then decode outside the lock. Stale-write refusal also decodes
+    its captured snapshot after releasing the transaction.</p>
+    <p>Two added checks issue a real zero-timeout SQLite write from each decoded
+    auxiliary row. Both failed with <code>database is locked</code> before the
+    change; all 22 focused checks pass with it. The selection checks cover the
+    current stored-history path and its uncached, indexed and stale legacy
+    fallbacks. Aggregate-held gate-update fixtures now seed their authoritative
+    run-store row as well as the legacy aggregate. The manifest carries the
+    armed head gate and the tests that directly import the run store, measured
+    on the requested debug partition.</p>
+  </section>
+</section>

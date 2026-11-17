@@ -663,6 +663,21 @@ def _arm_command_matches(
 
 SCOPED_SUITE_PLACEHOLDER = "{node_test_files}"
 
+#: The fields a suite arm's record states, in the flat shape a reader accepts.
+#: An arm carrying none of them declares no measurement rather than a record.
+_ARM_FIELDS = frozenset(
+    {
+        "revision",
+        "command",
+        "exit_status",
+        "completed",
+        "failure_count",
+        "failure_ids",
+        "log_path",
+        "log_digest",
+    }
+)
+
 
 def _scope_tree(record: Mapping[str, Any]) -> Path | None:
     """The tree whose object store answers what a revision holds, or None."""
@@ -1025,6 +1040,74 @@ def _arm_measured_nothing(
     return bool(_named_paths_absent_from_tree(record, observation))
 
 
+def _arm_declares_no_measurement(observation: Any) -> bool:
+    """Whether a suite arm states no measurement at all.
+
+    ``baseline_suite: none`` parses to an empty record, and a mapping carrying
+    no arm field is the same declaration. Anything stating a revision, a command
+    or a count is a measurement to be judged on its own terms rather than a
+    declaration that there is none.
+    """
+    if not isinstance(observation, Mapping):
+        return True
+    return not (set(observation) & _ARM_FIELDS)
+
+
+def _base_tree_holds_no_test_file(record: Mapping[str, Any]) -> bool:
+    """Whether the run's base revision holds none of the node's test files.
+
+    Read from the base revision's own tree through the object store rather than
+    from a working directory, which holds the head's content whichever arm is
+    being asked about. An unanswered probe answers False, because an unprobed
+    base is not a licence to accept an absent arm.
+    """
+    files = _node_test_files(record)
+    base = str(record.get("base_sha") or "").strip()
+    if not files or not base:
+        return False
+    present = _paths_present_in_tree(_scope_tree(record), base, files)
+    return present is not None and not present
+
+
+def _base_arm_measured_an_empty_suite(
+    record: Mapping[str, Any], observation: Any
+) -> bool:
+    """Whether an absent base arm is the complete measurement of an empty scope.
+
+    The pair is accepted only when all three hold: the declaration is scoped, so
+    the base command is resolved per tree and can legitimately have named no
+    file; the arm states no measurement of its own; and the base revision holds
+    none of the tests the node is fenced to. A base tree that does hold them has
+    a suite to run, and an arm declaring none there is missing evidence.
+    """
+    declared = " ".join(str(record.get("suite_command") or "").split())
+    if SCOPED_SUITE_PLACEHOLDER not in declared:
+        return False
+    if not _arm_declares_no_measurement(observation):
+        return False
+    return _base_tree_holds_no_test_file(record)
+
+
+def _empty_base_arm(command: str, revision: str) -> dict[str, Any]:
+    """The base arm of a directly scoped suite whose tests the change creates.
+
+    ``exit_status`` is pytest's exit for a collection that found nothing to run,
+    which is what the command would have returned over the base tree: it names
+    the measurement as empty rather than as a pass. There are zero failures
+    because no test existed that could fail, and no log because no test ran.
+    """
+    return {
+        "revision": revision,
+        "command": command,
+        "exit_status": 5,
+        "completed": True,
+        "failure_count": 0,
+        "failure_ids": [],
+        "log_path": None,
+        "log_digest": None,
+    }
+
+
 def _arm_missing_fields(
     record: Mapping[str, Any],
     arm_name: str,
@@ -1241,6 +1324,79 @@ def _record_measured_arms(run_id: str, head: str, measured: Mapping[str, Any]) -
         _mutate_pointer(run_id, amend)
 
 
+def _merged_primary_baseline(
+    run_id: str,
+    record: Mapping[str, Any],
+    *,
+    head: str,
+    command: str,
+    dry_run: bool,
+) -> dict[str, Any] | None:
+    """Measure the same suite at the primary revision this run actually merged.
+
+    Keep the dispatch baseline intact. This additional observation explains
+    inherited failures without claiming they failed before the run started.
+    Reuse a receipt only for its immutable revision and command, checking its
+    log before trusting its IDs. An interrupted reading excuses no failure.
+    """
+    import hashlib
+
+    from reckon.crew import promotion_evidence
+
+    primary = promotion_evidence._merged_primary_revision(record, head)
+    if not primary:
+        return None
+    primary_record = {**record, "base_sha": primary}
+    command = _scoped_suite_command(primary_record, revision=primary)
+    if not command:
+        return None
+    key = hashlib.sha256(json.dumps([primary, command]).encode()).hexdigest()
+    receipt = run_dir(run_id) / "landing-measure" / f"primary-{key}.json"
+
+    def usable(arm: Mapping[str, Any]) -> bool:
+        if ledger.suite_observation_missing_fields(arm, name="primary_suite"):
+            return False
+        if arm.get("revision") != primary or arm.get("command") != command:
+            return False
+        try:
+            text = Path(str(arm.get("log_path") or "")).read_text(encoding="utf-8")
+        except OSError:
+            return False
+        described = promotion_evidence._text_the_receipt_describes(text)
+        return (
+            promotion_evidence._log_failure_count(described) is not None
+            and not promotion_evidence._receipt_mismatches(
+                arm, str(arm["log_path"]), text
+            )
+            and _recorded_exit_status(text) == arm["exit_status"]
+        )
+
+    cached = _read_json_object(receipt)
+    if usable(cached):
+        return cached
+    if dry_run:
+        return {"status": "would-measure", "revision": primary, "command": command}
+    declaration = gate_declaration(record)
+    measured = _measure_missing_arms(
+        run_id,
+        primary_record,
+        head,
+        command,
+        partition=declaration.get("partition") or "all_debug",
+        long_partition=declaration.get("long_partition") or "rigel",
+    )
+    arm = measured.get("baseline_suite") if isinstance(measured, Mapping) else None
+    if not isinstance(arm, Mapping) or not usable(arm):
+        raise ledger.SuiteDeltaError(
+            f"cannot read completed primary suite evidence at merged revision {primary}",
+            missing_fields=["primary_suite"],
+        )
+    normalized = ledger.normalized_suite_observation(arm)
+    receipt.parent.mkdir(parents=True, exist_ok=True)
+    receipt.write_text(json.dumps(normalized, sort_keys=True), encoding="utf-8")
+    return normalized
+
+
 def _evaluate_suite_delta(
     run_id: str,
     record: Mapping[str, Any],
@@ -1318,9 +1474,20 @@ def _evaluate_suite_delta(
         missing.append("manifest")
     elif not fresh:
         missing.append("fresh_manifest")
-    missing.extend(
-        ledger.suite_observation_missing_fields(baseline, name="baseline_suite")
-    )
+    # A scope whose tests the change creates has nothing to measure against: the
+    # base tree holds none of the node's test files, so the base arm measured an
+    # empty suite. That is a complete measurement of nothing rather than an
+    # absent one, and an arm declaring it as ``none`` is accepted once the base
+    # tree confirms it. It is recorded as pytest's own exit for a collection
+    # that found nothing to run, with no log, because no test ran and no result
+    # beyond that is being claimed.
+    base_sha = str(record.get("base_sha") or "").strip()
+    if _base_arm_measured_an_empty_suite(record, baseline):
+        baseline = _empty_base_arm(suite_command, base_sha)
+    else:
+        missing.extend(
+            ledger.suite_observation_missing_fields(baseline, name="baseline_suite")
+        )
     missing.extend(ledger.suite_observation_missing_fields(after, name="after_suite"))
     for arm_name, observation in (
         ("baseline_suite", baseline),
@@ -1331,7 +1498,6 @@ def _evaluate_suite_delta(
         for field in _arm_missing_fields(record, arm_name, observation, head=head):
             if field not in missing:
                 missing.append(field)
-    base_sha = str(record.get("base_sha") or "").strip()
     if (
         isinstance(baseline, Mapping)
         and str(baseline.get("revision") or "").strip()
@@ -1484,11 +1650,39 @@ def _evaluate_suite_delta(
     # share one notion of a newly added failure rather than a second expression
     # that could drift from it.
     added = ledger.added_failure_ids(normalized_baseline, normalized_after)
+    primary_suite = None
+    inherited: dict[str, str] = {}
+    effective_baseline = normalized_baseline
+    if added:
+        primary_suite = _merged_primary_baseline(
+            run_id, record, head=head, command=suite_command, dry_run=dry_run
+        )
+        if primary_suite and primary_suite.get("status") == "would-measure":
+            return {
+                "status": "would-measure",
+                "suite_command": suite_command,
+                "baseline_suite": normalized_baseline,
+                "after_suite": normalized_after,
+                "primary_suite": primary_suite,
+                "added_failure_ids": added,
+            }
+        if primary_suite:
+            uncovered = ledger.added_failure_ids(primary_suite, {"failure_ids": added})
+            inherited = {
+                failure_id: primary_suite["revision"]
+                for failure_id in added
+                if failure_id not in uncovered
+            }
+            effective_baseline = {
+                **normalized_baseline,
+                "failure_ids": [*normalized_baseline["failure_ids"], *inherited],
+            }
+            added = ledger.added_failure_ids(effective_baseline, normalized_after)
     # Surface the worker's attribution on the stored record: each added
     # failure id beside the candidate merged commit that introduced it.
     # An entry naming a pre-existing failure is dropped rather than stored.
     attribution = ledger.new_failure_attribution(
-        baseline, after, manifest.get("failure_attribution")
+        effective_baseline, after, manifest.get("failure_attribution")
     )
     if str(record.get("role") or "").strip() == "test":
         unattributed = sorted(set(added) - set(attribution))
@@ -1504,6 +1698,8 @@ def _evaluate_suite_delta(
                 "missing_fields": missing_attribution,
                 "added_failure_ids": added,
                 "failure_attribution": attribution,
+                "inherited_failure_ids": inherited,
+                "primary_suite": primary_suite,
             }
             _record_refusal(refusal)
             raise ledger.SuiteDeltaError(
@@ -1528,6 +1724,8 @@ def _evaluate_suite_delta(
             "missing_fields": [],
             "added_failure_ids": added,
             "failure_attribution": attribution,
+            "inherited_failure_ids": inherited,
+            "primary_suite": primary_suite,
         }
         _record_refusal(refusal)
         detail = "armed promotion added suite failures: " + ", ".join(added)
@@ -1547,6 +1745,8 @@ def _evaluate_suite_delta(
         "after_suite": normalized_after,
         "added_failure_ids": added,
         "failure_attribution": attribution,
+        "inherited_failure_ids": inherited,
+        "primary_suite": primary_suite,
         "waiver_reason": waiver or None,
         # Which arm fields a waiver covered. Empty for a measured pair, so a
         # reader can tell an arm set that was waived from one that matched.
@@ -1769,11 +1969,8 @@ def _retire_disposable_identity(record: Mapping[str, Any]) -> dict[str, Any]:
     that was considered. A blocked run is kept: it may still be resumed, and its
     identity is part of what a resume finds.
 
-    The removal runs after the release receipt is committed, so no later write
-    amends a run file and leaves the aggregate behind. The roster read is the
-    aggregate's own (:func:`ledger.load_aggregate`), never :func:`ledger.load`'s
-    union: a roster holds no run rows, so the union's run rows could only be
-    copied into the tracked aggregate beside the files that already carry them.
+    The removal runs after the release receipt is committed and changes only
+    the run store's roster, leaving promoted history intact.
     """
     run_id = str(record.get("run_id") or "")
     member_id = str(record.get("member") or "").strip()
@@ -1793,7 +1990,7 @@ def _retire_disposable_identity(record: Mapping[str, Any]) -> dict[str, Any]:
         }
     try:
         for _attempt in range(8):
-            data, version = ledger.load_aggregate(project, root)
+            data, version = ledger.load_auxiliary(project, root)
             if not any(str(entry.get("id")) == member_id for entry in data["members"]):
                 return {
                     "identity_retired": False,
@@ -1804,13 +2001,12 @@ def _retire_disposable_identity(record: Mapping[str, Any]) -> dict[str, Any]:
                 entry for entry in data["members"] if str(entry.get("id")) != member_id
             ]
             try:
-                ledger.write(
+                ledger.write_members(
                     project,
-                    data,
+                    data["members"],
                     version,
                     root=root,
                     allow_member_removal=True,
-                    commit=True,
                 )
             except ledger.LedgerError:
                 continue

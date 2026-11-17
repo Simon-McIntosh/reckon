@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: the after arm gate-all_debug.log at 47550115 records '10 passed in 5.56s' EXIT=0 with no FAILED line, and the base arm negative-control-base-0e0f25b.log at 0e0f25b records '7 failed, 3 passed in 4.63s' EXIT=1 with seven FAILED ids, so the set difference is empty (0).",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:1191",
+    "reckon/crew/promotion_evidence.py:1037",
+    "reckon/crew/promotion_evidence.py:1213"
+  ],
+  "completed_at": "2026-11-16T10:15:21.031Z",
+  "dispatched_at": "2026-11-16T10:14:57Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-plain-complete-refuses-an-unmerged-head-second-launch.html",
+      "line": "44",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment records '10 passed in 6.16s' for the head arm at e2eb7358, but gate-head-committed.log at that revision reads '10 passed in 6.00s' and the final gate at 47550115 reads '10 passed in 5.56s', so the quoted duration reconciles with no log on disk and a later reader comparing record against log finds a figure the run cannot show."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-plain-complete-refuses-an-unmerged-head-second-launch.html",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when names the negative-control record at docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-plain-complete-refuses-an-unmerged-head.html while the run wrote it under the node-id fragment path; the required content is present, so only the reviewed artifact's name deviates."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Verified three production call sites: reckon/crew/promotion.py:1191 schedules _require_gate_evidence on every promotion, and reckon/crew/promotion_evidence.py:1037 and :1213 are the two calls into the changed guard.",
+    "diff": "Read commit by commit from 0e0f25b: e2eb7358 adds eleven lines to reckon/crew/promotion_evidence.py (one docstring paragraph and an early return past _is_review_run) and one --wait argument at tests/test_a_plain_complete_refuses_an_unmerged_head.py:157, 47550115f adds the 66-line fragment, and no assertion is deleted, reworded or weakened.",
+    "done_when": "The done_when is that file passing in full at head as an all_debug job with SLURM_JOB_ID unset, each cause carrying a verdict, an importer arm adding no failure, the base run's failing ids logged beside the head run, and ruff clean; gate-all_debug.log line 3 reads 'partition: all_debug; SLURM_JOB_ID is unset inside this job' and line 6 reads '10 passed in 5.56s' EXIT=0 at 47550115, importer-arm-head.log reads 7 failed 137 passed against importer-arm-base-0e0f25b.log 7 failed 134 passed 3 errors with the same seven ids, negative-control-base-0e0f25b.log carries those seven ids, and I re-ran ruff check and ruff format --check over both changed paths at head, both exit 0.",
+    "goal": "The node goal is to make tests/test_a_plain_complete_refuses_an_unmerged_head.py pass in full on the primary branch, and at 47550115 the file collects ten tests whose gate reads 10 passed EXIT=0 (gate-all_debug.log:6), reached by the early return at reckon/crew/promotion_evidence.py:1249 and the --wait argument at tests/test_a_plain_complete_refuses_an_unmerged_head.py:157.",
+    "manifest": "Read the 28-line manifest: status complete, commits e2eb7358 and 47550115f, baseline_suite 7 failed at 0e0f25b, after_suite 0 failed at 47550115, five logs named; each arm I opened reconciled with the claims except the fragment's head timing cited in the first finding.",
+    "write_paths": "The declared scope is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround plus the node fragment there and a figures directory, and the two commits touch exactly reckon/crew/promotion_evidence.py, tests/test_a_plain_complete_refuses_an_unmerged_head.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-plain-complete-refuses-an-unmerged-head-second-launch.html, every one inside that fence."
+  },
+  "justifications": {
+    "durability": "gate-head-2.log is the reinstated-regression arm: with only the --wait flag added, test_a_review_run_promotes_without_reading_the_remote fails on the commitless refusal, so the existing assert result.exit_code == 0 at tests/test_a_plain_complete_refuses_an_unmerged_head.py:396 reddens on exactly the removal of reckon/crew/promotion_evidence.py:1249 and the run added no assertion of its own to be non-independent.",
+    "evidence": "gate-all_debug.log records 10 passed EXIT=0 at revision 47550115 on partition all_debug with SLURM_JOB_ID unset, and negative-control-base-0e0f25b.log records the base arm's 7 failed EXIT=1 over the named file.",
+    "fit": "reckon/crew/promotion_evidence.py:1248 imports _is_review_run inside the function, the idiom already used at reckon/crew/promotion.py:462 and reckon/crew/gc.py:509, and the change introduces no new name.",
+    "goal_fidelity": "reckon/crew/promotion_evidence.py:1249 returns before the base comparison for a review run, which is the one product cause gate-head-2.log shows standing between the file and green.",
+    "reuse": "the change adds no definition and reuses reckon/crew/recovery_review_delivery.py:45 _is_review_run, the predicate the plain-complete head guard already carries; a search by capability over reckon/ for a separate review-role test found only that owner.",
+    "scope_discipline": "the two commits change three files, and every one of them sits under the declare scope reckon, tests or docs/evidence/fragments/queued-work-needs-no-workaround."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to make tests/test_a_plain_complete_refuses_an_unmerged_head.py pass in full on the primary branch, and at 47550115 the file collects ten tests whose gate reads 10 passed EXIT=0 (gate-all_debug.log:6), reached by the early return at reckon/crew/promotion_evidence.py:1249 and the --wait argument at tests/test_a_plain_complete_refuses_an_unmerged_head.py:157.\nVERDICT done_when: The done_when is that file passing in full at head as an all_debug job with SLURM_JOB_ID unset, each cause carrying a verdict, an importer arm adding no failure, the base run's failing ids logged beside the head run, and ruff clean; gate-all_debug.log line 3 reads 'partition: all_debug; SLURM_JOB_ID is unset inside this job' and line 6 reads '10 passed in 5.56s' EXIT=0 at 47550115, importer-arm-head.log reads 7 failed 137 passed against importer-arm-base-0e0f25b.log 7 failed 134 passed 3 errors with the same seven ids, negative-control-base-0e0f25b.log carries those seven ids, and I re-ran ruff check and ruff format --check over both changed paths at head, both exit 0.\nVERDICT write_paths: The declared scope is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround plus the node fragment there and a figures directory, and the two commits touch exactly reckon/crew/promotion_evidence.py, tests/test_a_plain_complete_refuses_an_unmerged_head.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-plain-complete-refuses-an-unmerged-head-second-launch.html, every one inside that fence.\nVERDICT manifest: Read the 28-line manifest: status complete, commits e2eb7358 and 47550115f, baseline_suite 7 failed at 0e0f25b, after_suite 0 failed at 47550115, five logs named; each arm I opened reconciled with the claims except the fragment's head timing cited in the first finding.\nVERDICT diff: Read commit by commit from 0e0f25b: e2eb7358 adds eleven lines to reckon/crew/promotion_evidence.py (one docstring paragraph and an early return past _is_review_run) and one --wait argument at tests/test_a_plain_complete_refuses_an_unmerged_head.py:157, 47550115f adds the 66-line fragment, and no assertion is deleted, reworded or weakened.\nCALL_SITES: reckon/crew/promotion.py:1191, reckon/crew/promotion_evidence.py:1037, reckon/crew/promotion_evidence.py:1213\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_evidence.py:1249 returns before the base comparison for a review run, which is the one product cause gate-head-2.log shows standing between the file and green.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-all_debug.log records 10 passed EXIT=0 at revision 47550115 on partition all_debug with SLURM_JOB_ID unset, and negative-control-base-0e0f25b.log records the base arm's 7 failed EXIT=1 over the named file.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits change three files, and every one of them sits under the declare scope reckon, tests or docs/evidence/fragments/queued-work-needs-no-workaround.\nSCORE durability: 19\nJUSTIFICATION durability: gate-head-2.log is the reinstated-regression arm: with only the --wait flag added, test_a_review_run_promotes_without_reading_the_remote fails on the commitless refusal, so the existing assert result.exit_code == 0 at tests/test_a_plain_complete_refuses_an_unmerged_head.py:396 reddens on exactly the removal of reckon/crew/promotion_evidence.py:1249 and the run added no assertion of its own to be non-independent.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/promotion_evidence.py:1248 imports _is_review_run inside the function, the idiom already used at reckon/crew/promotion.py:462 and reckon/crew/gc.py:509, and the change introduces no new name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition and reuses reckon/crew/recovery_review_delivery.py:45 _is_review_run, the predicate the plain-complete head guard already carries; a search by capability over reckon/ for a separate review-role test found only that owner.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-plain-complete-refuses-an-unmerged-head-second-launch.html:44 non-blocking: the fragment records '10 passed in 6.16s' for the head arm at e2eb7358, but gate-head-committed.log at that revision reads '10 passed in 6.00s' and the final gate at 47550115 reads '10 passed in 5.56s', so the quoted duration reconciles with no log on disk and a later reader comparing record against log finds a figure the run cannot show.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-plain-complete-refuses-an-unmerged-head-second-launch.html:1 non-blocking: the done_when names the negative-control record at docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-plain-complete-refuses-an-unmerged-head.html while the run wrote it under the node-id fragment path; the required content is present, so only the reviewed artifact's name deviates.\n",
+  "review_node": "review-of-qwnw-red-file-a-plain-complete-refuses-an-unmerged-head-second-launch-47550115f749",
+  "review_run_id": "r-20261116T101343337700-review-of-qwnw-red-file-a-plain-complete-refuses-an-unmerged-head-second-launch-47550115f749",
+  "reviewed_base_sha": "0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc",
+  "reviewed_head_sha": "47550115f749ceb8def1c8073bb2cdabd1ac3a5e",
+  "reviewed_run_id": "r-20261116T064942819784-qwnw-red-file-a-plain-complete-refuses-an-unmerged-head-second-launch",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T101343337700-review-of-qwnw-red-file-a-plain-complete-refuses-an-unmerged-head-second-launch-47550115f749"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T20:13:01.607736+00:00",
+  "total": 116
+}

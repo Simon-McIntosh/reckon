@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:1398 crew check --manifest calls worker_inbox.manifest_message_finding",
+    "reckon/crew_run_commands.py:1471 crew_check dispatches the manifest arm"
+  ],
+  "completed_at": "2026-11-16T07:53:14.841Z",
+  "dispatched_at": "2026-11-16T07:52:49Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-check-manifest-reads-the-commitless-roles.html",
+      "line": "60",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment's last byte is `>` rather than a newline, unlike the sibling fragments checked in the same directory (commit-key-form.html and queue-tests-red-on-main.html both end 0x0a)."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032016815927-qwnw-red-file-check-manifest-reads-the-commitless-roles/manifest.md",
+      "line": "22",
+      "severity": "non-blocking",
+      "text": "non-blocking: outside_scope states ~/.cache/reckon-suite-at-head/suite-at-8d50b0333f.log is not present on this node, but it exists at /home/ITER/mcintos/.cache/reckon-suite-at-head/suite-at-8d50b0333f.log and carries the same five failing cases for this file; the absence was read through the run's redirected HOME (omp-home holds no .cache), so an absence of the sandbox's view is recorded as an absence of the artefact."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032016815927-qwnw-red-file-check-manifest-reads-the-commitless-roles/manifest.md",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "non-blocking: artifacts reports the ruff check and format results with no log path, unlike every other metric on that line, so the ruff half of the claim cannot be re-read by a later reader."
+    }
+  ],
+  "justifications": {
+    "durability": "logs/negative-control.txt removes the fixture's `messages_received: none` line at 6fa76c49f4 and all five cases redden with the exact finding text, so the guard is shown to fire rather than merely to pass.",
+    "evidence": "logs/all-debug-gate.txt records `5 passed in 1.33s` with EXIT=0 at dfe1673f8c and logs/negative-control.txt records the same five ids failing with EXIT=1, but the done_when's named revision 8d50b0333f was never run by this worker and manifest.md:22's claim that its log is absent is false on this host.",
+    "fit": "the added comment at tests/test_check_manifest_reads_the_commitless_roles.py:32 states why the fixture owes the key in the surrounding docstring voice, though the new fragment omits the trailing newline its siblings carry.",
+    "goal_fidelity": "tests/test_check_manifest_reads_the_commitless_roles.py:39 carries `messages_received: none` at 7c35f6e743, which is the key reckon/crew_run_commands.py:1398 demands, and logs/all-debug-gate.txt reads `5 passed in 1.33s`.",
+    "reuse": "the diff adds no function, class or module, and the fixture uses the owner's own constant and value spellings at reckon/hooks/worker_inbox.py:57 (MANIFEST_MESSAGES_KEY, NO_MESSAGES_VALUE) rather than forking a second reconciliation.",
+    "scope_discipline": "both entries in `git diff --stat 6fa76c49f4 7c35f6e743` (tests/test_check_manifest_reads_the_commitless_roles.py and the evidence fragment) lie inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal (`Make tests/test_check_manifest_reads_the_commitless_roles.py pass in full on the primary branch`) against the file at 7c35f6e743, whose fixture now declares `messages_received: none` (tests/test_check_manifest_reads_the_commitless_roles.py:39), the only key reckon/crew_run_commands.py:1398 demands and the fixture lacked.\nVERDICT done_when: read the done_when's three owed results; logs/all-debug-gate.txt satisfies the named in-full run (`5 passed in 1.33s`, EXIT=0) as slurm job 1319198 on all_debug, the job's own command line unsetting SLURM_JOB_ID, and logs/negative-control.txt supplies the red run, but at the node's own base 6fa76c49f4 rather than at the done_when's revision 8d50b0333f.\nVERDICT write_paths: read the declared write paths reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround against the diff, and both changed files (tests/test_check_manifest_reads_the_commitless_roles.py and the fragment under that directory) lie inside them.\nVERDICT manifest: read the reviewed manifest, which records EXIT=0 with `5 passed in 1.33s` in logs/all-debug-gate.txt at dfe1673f8c, the five-case red in logs/negative-control.txt, both armed suite arms at 58 passed, and `commits: dfe1673f8c, 7c35f6e743`.\nVERDICT diff: read both commits against 6fa76c49f4: dfe1673f8c adds a three-line comment and the `messages_received: none` line to the fixture at tests/test_check_manifest_reads_the_commitless_roles.py:32-39, 7c35f6e743 adds the 60-line evidence fragment, and no assert line is touched.\nCALL_SITES: reckon/crew_run_commands.py:1398 crew check --manifest calls worker_inbox.manifest_message_finding, reckon/crew_run_commands.py:1471 crew_check dispatches the manifest arm\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_check_manifest_reads_the_commitless_roles.py:39 carries `messages_received: none` at 7c35f6e743, which is the key reckon/crew_run_commands.py:1398 demands, and logs/all-debug-gate.txt reads `5 passed in 1.33s`.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/all-debug-gate.txt records `5 passed in 1.33s` with EXIT=0 at dfe1673f8c and logs/negative-control.txt records the same five ids failing with EXIT=1, but the done_when's named revision 8d50b0333f was never run by this worker and manifest.md:22's claim that its log is absent is false on this host.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both entries in `git diff --stat 6fa76c49f4 7c35f6e743` (tests/test_check_manifest_reads_the_commitless_roles.py and the evidence fragment) lie inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: logs/negative-control.txt removes the fixture's `messages_received: none` line at 6fa76c49f4 and all five cases redden with the exact finding text, so the guard is shown to fire rather than merely to pass.\nSCORE fit: 17\nJUSTIFICATION fit: the added comment at tests/test_check_manifest_reads_the_commitless_roles.py:32 states why the fixture owes the key in the surrounding docstring voice, though the new fragment omits the trailing newline its siblings carry.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module, and the fixture uses the owner's own constant and value spellings at reckon/hooks/worker_inbox.py:57 (MANIFEST_MESSAGES_KEY, NO_MESSAGES_VALUE) and adds no second definition.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-check-manifest-reads-the-commitless-roles.html:60 non-blocking: the fragment's last byte is `>` rather than a newline, unlike the sibling fragments checked in the same directory (commit-key-form.html and queue-tests-red-on-main.html both end 0x0a).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032016815927-qwnw-red-file-check-manifest-reads-the-commitless-roles/manifest.md:22 non-blocking: outside_scope states ~/.cache/reckon-suite-at-head/suite-at-8d50b0333f.log is not present on this node, but it exists at /home/ITER/mcintos/.cache/reckon-suite-at-head/suite-at-8d50b0333f.log and carries the same five failing cases for this file; the absence was read through the run's redirected HOME (omp-home holds no .cache), so an absence of the sandbox's view is recorded as an absence of the artefact.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032016815927-qwnw-red-file-check-manifest-reads-the-commitless-roles/manifest.md:20 non-blocking: artifacts reports the ruff check and format results with no log path, unlike every other metric on that line, so the ruff half of the claim cannot be re-read by a later reader.\n",
+  "review_run_id": "r-20261116T071033370558-review-of-qwnw-red-file-check-manifest-reads-the-commitless-roles-7c35f6e743dd",
+  "reviewed_base_sha": "6fa76c49f48e1d4fe4f104431f85f519ce92aae0",
+  "reviewed_head_sha": "7c35f6e743dd30d33ccfa1882b85eaa247969f7a",
+  "reviewed_run_id": "r-20261116T032016815927-qwnw-red-file-check-manifest-reads-the-commitless-roles",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T12:14:24.369859+00:00",
+  "total": 112
+}

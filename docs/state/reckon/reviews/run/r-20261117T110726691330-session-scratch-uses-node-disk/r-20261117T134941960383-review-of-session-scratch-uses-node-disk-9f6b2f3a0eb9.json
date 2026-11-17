@@ -1,0 +1,174 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "fails_if": "Restore the pre-merge header, omit session_scratch_bytes or reorder any scheduler column; the expected header is a literal independent of the production schema.",
+      "file": "tests/test_fleet_health.py",
+      "lines": "223-227"
+    },
+    {
+      "fails_if": "The scheduler append refuses a fresh valid row; this success predicate is setup evidence, not persistence coverage.",
+      "file": "tests/test_session_scratch_uses_bounded_node_tmp.py",
+      "lines": "201"
+    },
+    {
+      "fails_if": "The real shell sampler exits nonzero on initialization, sampling or row validation; this existing assertion still tests process success only.",
+      "file": "tests/test_session_scratch_uses_bounded_node_tmp.py",
+      "lines": "222"
+    },
+    {
+      "fails_if": "The terminal append incorrectly refuses a valid end after a running row and node sample; persistence is checked separately below.",
+      "file": "tests/test_session_scratch_uses_bounded_node_tmp.py",
+      "lines": "223-232"
+    },
+    {
+      "fails_if": "Restore incompatible schema initialization so the initial scheduler file is archived; the sandbox enumerates both resulting TSVs.",
+      "file": "tests/test_session_scratch_uses_bounded_node_tmp.py",
+      "lines": "233"
+    },
+    {
+      "fails_if": "Restore the old scratch-only header or rotate/lose an existing scheduler row: the persisted independent CSV read no longer has scheduler,node,scheduler in order.",
+      "file": "tests/test_session_scratch_uses_bounded_node_tmp.py",
+      "lines": "236"
+    },
+    {
+      "fails_if": "Restore the shell printf without the scratch field, omit its value or misalign fields: the independently executed stub emits 12345 but the persisted node column differs; this checks serialization, not actual disk byte accounting.",
+      "file": "tests/test_session_scratch_uses_bounded_node_tmp.py",
+      "lines": "237"
+    },
+    {
+      "fails_if": "Drop or overwrite the terminal event when serializing it; the assertion reads the stored file independently of the append return value.",
+      "file": "tests/test_session_scratch_uses_bounded_node_tmp.py",
+      "lines": "238"
+    }
+  ],
+  "assertion_independence": "No new assertion merely echoes an argument through the same accessor; the supplied scheduler rows and stub value are checked through an independent on-disk CSV read after the production shell sampler runs.",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/fleet_supervisor.py:start_health_sampler:952",
+    "bin/fleet-health:88",
+    "bin/fleet-health:95",
+    "bin/fleet-health:123-126",
+    "reckon/crew/fleet_node.py:watch_scheduler:306",
+    "reckon/crew/fleet_node.py:generate_hold_script:530",
+    "reckon/crew/fleet_node.py:954-958",
+    "reckon/crew/fleet_supervisor.py:start_session:2855-2859"
+  ],
+  "completed_at": "2026-11-17T13:56:36Z",
+  "controls_read": [
+    {
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110726691330-session-scratch-uses-node-disk/final-memory-root.log",
+      "result": "EXIT=1; 1 failed, 11 passed in 1.85s; reverting scratch root to /dev/shm fails the independent /tmp expectation."
+    },
+    {
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110726691330-session-scratch-uses-node-disk/final-answer-reverted.log",
+      "result": "EXIT=1; 1 failed in 0.39s; reverting the shared classifier produces assert 4 == 1 mount reads."
+    }
+  ],
+  "dispatched_at": "2026-11-17T13:51:18Z",
+  "failure_delta_source": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_health.py tests/test_session_scratch_uses_bounded_node_tmp.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110726691330-session-scratch-uses-node-disk/primary-scoped-head.log",
+      "measurement_cwd": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/fe0acb0a-56ea-447a-8357-bb11f3bf471c/session-scratch-uses-node-disk",
+      "measurement_module": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/fe0acb0a-56ea-447a-8357-bb11f3bf471c/session-scratch-uses-node-disk/reckon/crew/fleet_supervisor.py",
+      "observed_failure_ids": [],
+      "observed_summary": "85 passed in 70.10s (0:01:10)",
+      "partition": "all_debug",
+      "revision": "9f6b2f3a0eb9afceee70ed1600df18109b6841eb",
+      "summary": "85 passed in 70.10s (0:01:10)"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_health.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110726691330-session-scratch-uses-node-disk/final-fence-base.log",
+      "measurement_cwd": "/tmp/reckon-health-merge-tbulrxq3/original-base",
+      "measurement_module": "/tmp/reckon-health-merge-tbulrxq3/original-base/reckon/crew/fleet_supervisor.py",
+      "observed_failure_ids": [],
+      "observed_summary": "73 passed in 47.66s",
+      "partition": "all_debug",
+      "revision": "45967c6c6399a70306ce0cd5cb106e6ed54e0c21",
+      "summary": "73 passed in 47.66s"
+    }
+  },
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "read the sole first-parent commit 9f6b2f3a0eb9afceee70ed1600df18109b6841eb against e3aee6dea5db92d0e58f574077c84f1b0105f098 and both merge parents; its health resolution appends scratch as column 26 and adds an interleaved scheduler/node persistence test without changing the already-reviewed scratch policy.",
+    "done_when": "prompt.txt:216 requires the section tests, a failing memory-root control and importer comparison; primary-scoped-head.log records 85 passing tests and final-memory-root.log records the expected failure, while the broader importer caveat is recorded under outside_scope.",
+    "goal": "prompt.txt:38 requires disk-backed bounded session scratch, and bin/fleet-health:123-126 plus fleet_node.py:195 preserve its measurement alongside the scheduler observations brought in by the merge.",
+    "manifest": "manifest.md:15-16 names completed baseline/head arms at the original base and reviewed head, whose logs end with 73 passed and 85 passed respectively and EXIT=0, and it separately preserves the nonzero broader gate.",
+    "write_paths": "manifest.md:3 authorizes all five requested files, and the merge commit's changed-file list contains exactly bin/fleet-health, fleet_node.py, fleet_supervisor.py and the two named tests."
+  },
+  "justifications": {
+    "durability": "tests/test_session_scratch_uses_bounded_node_tmp.py:233-238 fails if header initialization archives the scheduler row, scratch bytes disappear or writers disagree on field order, while test_fleet_health.py:223-227 independently fixes the expected schema.",
+    "evidence": "primary-scoped-head.log records 85 passed at the reviewed head and both final negative controls fail, but manifest.md:18-19 records two added broader importer failures and leaves the live post-landing observation to the coordinator.",
+    "fit": "fleet_node.py:195 appends the descriptive session_scratch_bytes column to its existing schema and bin/fleet-health:126 uses the existing append command and file-server locking idiom without new forbidden names.",
+    "goal_fidelity": "bin/fleet-health:123-126 writes scratch bytes after the preserved scheduler columns and fleet_node.py:195 names that column without undoing the local-disk session policy at fleet_supervisor.py:515-540.",
+    "reuse": "fleet_node.py:268-269 and 915-918 use the existing node_exclusive_lock.py:79 owner, the merge extends the existing schema owner, and the retained scratch classifier delegates to dispatch_admission.py:1769 rather than adding another mount parser.",
+    "scope_discipline": "the five paths changed by merge 9f6b2f3a0eb9afceee70ed1600df18109b6841eb are authorized by manifest.md:3, with scheduler and service-limit changes inherited from its primary-side parent rather than new scratch features."
+  },
+  "orientation_note": "Assigned read-only checkout HEAD is c3c7524d24b465056c1fc815625cda45575897a3; all reviewed source and diff references were explicitly read from the requested git objects, not assumed from checkout contents.",
+  "outside_scope": {
+    "added_importer_failure_ids": [
+      "tests/test_a_sampler_outlives_the_fleet_job.py::test_shell_and_reader_share_one_schema",
+      "tests/test_delivered_rows_say_what_is_owed.py::test_delivered_counts_and_owed_rows_share_the_classified_population"
+    ],
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110726691330-session-scratch-uses-node-disk/final-primary-importers-base.log",
+    "head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110726691330-session-scratch-uses-node-disk/final-primary-importers-head.log",
+    "next_action": "Coordinator grants a separate repair/verification node; coordinator also owns the plan-required live post-landing /dev/shm observation.",
+    "reason": "Both are outside the five review targets and source write grants; source brief explicitly assigns their disposition to the coordinator. The former fixture treats the final field as source after scratch bytes is appended. No causal claim is made for the latter beyond its observed added ID. Neither is silently treated as a passing importer arm.",
+    "summaries": [
+      "57 failed, 1718 passed, 7 skipped, 1 warning in 338.23s (0:05:38)",
+      "58 failed, 1729 passed, 7 skipped in 332.67s (0:05:32)"
+    ]
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 requires disk-backed bounded session scratch, and bin/fleet-health:123-126 plus fleet_node.py:195 preserve its measurement alongside the scheduler observations brought in by the merge.\nVERDICT done_when: prompt.txt:216 requires the section tests, a failing memory-root control and importer comparison; primary-scoped-head.log records 85 passing tests and final-memory-root.log records the expected failure, while the broader importer caveat is recorded under outside_scope.\nVERDICT write_paths: manifest.md:3 authorizes all five requested files, and the merge commit's changed-file list contains exactly bin/fleet-health, fleet_node.py, fleet_supervisor.py and the two named tests.\nVERDICT manifest: manifest.md:15-16 names completed baseline/head arms at the original base and reviewed head, whose logs end with 73 passed and 85 passed respectively and EXIT=0, and it separately preserves the nonzero broader gate.\nVERDICT diff: read the sole first-parent commit 9f6b2f3a0eb9afceee70ed1600df18109b6841eb against e3aee6dea5db92d0e58f574077c84f1b0105f098 and both merge parents; its health resolution appends scratch as column 26 and adds an interleaved scheduler/node persistence test without changing the already-reviewed scratch policy.\nCALL_SITES: reckon/crew/fleet_supervisor.py:start_health_sampler:952, bin/fleet-health:88, bin/fleet-health:95, bin/fleet-health:123-126, reckon/crew/fleet_node.py:watch_scheduler:306, reckon/crew/fleet_node.py:generate_hold_script:530, reckon/crew/fleet_node.py:954-958, reckon/crew/fleet_supervisor.py:start_session:2855-2859\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: bin/fleet-health:123-126 writes scratch bytes after the preserved scheduler columns and fleet_node.py:195 names that column without undoing the local-disk session policy at fleet_supervisor.py:515-540.\nSCORE evidence: 18\nJUSTIFICATION evidence: primary-scoped-head.log records 85 passed at the reviewed head and both final negative controls fail, but manifest.md:18-19 records two added broader importer failures and leaves the live post-landing observation to the coordinator.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the five paths changed by merge 9f6b2f3a0eb9afceee70ed1600df18109b6841eb are authorized by manifest.md:3, with scheduler and service-limit changes inherited from its primary-side parent rather than new scratch features.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_session_scratch_uses_bounded_node_tmp.py:233-238 fails if header initialization archives the scheduler row, scratch bytes disappear or writers disagree on field order, while test_fleet_health.py:223-227 independently fixes the expected schema.\nSCORE fit: 20\nJUSTIFICATION fit: fleet_node.py:195 appends the descriptive session_scratch_bytes column to its existing schema and bin/fleet-health:126 uses the existing append command and file-server locking idiom without new forbidden names.\nSCORE reuse: 20\nJUSTIFICATION reuse: fleet_node.py:268-269 and 915-918 use the existing node_exclusive_lock.py:79 owner, the merge extends the existing schema owner, and the retained scratch classifier delegates to dispatch_admission.py:1769 rather than adding another mount parser.\n",
+  "reuse_search": {
+    "judgment": "Schema and writer integration extends fleet_node; shared lock wraps existing exclusive_lock; inherited service declarations extend their supervisor owner. The pre-existing supervisor queue-only state probe lacks accounting, terminal reason and node data and is not a replacement for the richer fleet allocation reader. No new production definitions were authored by the merge resolution.",
+    "owners_opened": [
+      "reckon/crew/fleet_node.py:199-367,915-937",
+      "reckon/node_exclusive_lock.py:1-25,79-122",
+      "reckon/crew/fleet_supervisor.py:795-810,1022-1045",
+      "reckon/crew/dispatch_admission.py:1741-1787"
+    ],
+    "terms": [
+      "scheduler reading and accounting fallback",
+      "health TSV append and shared locking",
+      "service declarations and memory limit",
+      "mount filesystem classification"
+    ]
+  },
+  "review_run_id": "r-20261117T134941960383-review-of-session-scratch-uses-node-disk-9f6b2f3a0eb9",
+  "review_scope": "Incremental five-file review since the prior reviewed head; inherited scheduler and service code distinguished using both merge parents.",
+  "reviewed_base_sha": "e3aee6dea5db92d0e58f574077c84f1b0105f098",
+  "reviewed_commits": [
+    "9f6b2f3a0eb9afceee70ed1600df18109b6841eb"
+  ],
+  "reviewed_head_sha": "9f6b2f3a0eb9afceee70ed1600df18109b6841eb",
+  "reviewed_run_id": "r-20261117T110726691330-session-scratch-uses-node-disk",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T13:56:37.971363+00:00",
+  "total": 118
+}

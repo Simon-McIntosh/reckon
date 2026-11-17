@@ -282,7 +282,9 @@ def test_obligation_names_a_delivered_refusal_and_its_repair(
 ) -> None:
     delivery.write_text(json.dumps(_record(**change)), encoding="utf-8")
     monkeypatch.setattr(
-        obligations_module.recovery, "_review_in_flight", lambda _pointer: REVIEW_RUN
+        obligations_module.recovery,
+        "_review_in_flight",
+        lambda _pointer, **_kwargs: REVIEW_RUN,
     )
     monkeypatch.setattr(
         obligations_module.recovery, "_is_review_run", lambda _pointer: False

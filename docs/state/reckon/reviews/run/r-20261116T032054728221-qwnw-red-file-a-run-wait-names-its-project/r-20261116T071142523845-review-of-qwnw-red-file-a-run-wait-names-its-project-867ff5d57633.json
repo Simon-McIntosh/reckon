@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "6fa76c49f48e1d4fe4f104431f85f519ce92aae0",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/evidence.py:1628 compose_landed_record"
+  ],
+  "completed_at": "2026-11-16T07:52:48.653Z",
+  "dispatched_at": "2026-11-16T07:52:31Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-run-wait-names-its-project.html",
+      "line": "58",
+      "severity": "non-blocking",
+      "text": "the 'node tests, after' row states the 6fa76c49f4 arm ran with SLURM_JOB_ID unset, but the log it cites, logs/base-file.log, carries the command `PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_run_wait_names_its_project.py` with no `env -u SLURM_JOB_ID`, and the worker ran inside a slurm allocation, so the record claims a condition its own log does not show; the test reads no SLURM variable, so the 9-passed result stands but the stated condition is unsupported."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-run-wait-names-its-project.html",
+      "line": "56",
+      "severity": "non-blocking",
+      "text": "the row is labelled 'node tests, after' yet names revision 6fa76c49f4, the base, so the measured table omits the head's own nine-passed arm that the done_when names; a reader has to take it from the prose at line 84, where gate-all-debug.log is described as the all_debug job's head run, rather than from the table the caption presents as the record of every arm."
+    }
+  ],
+  "head_log_revision": "867ff5d57633ab3c4aeb46894de74bb1cb79ebf0",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the only production reader that can reach the landed file is reckon/evidence.py:1628 compose_landed_record, which appends a fragment's body after the record's own bytes; the diff does not modify it, so the change reaches no other runtime path.",
+    "diff": "read the single commit 867ff5d576 against base 6fa76c49f4: one new 91-line evidence fragment with no product or test change, and no assertion added, deleted or weakened.",
+    "done_when": "the done_when names the file passing at head as an all_debug job with SLURM_JOB_ID unset, a per-cause verdict, a no-added-failure arm and a base negative control; logs/gate-all-debug.log is slurm job 1319221 (sacct: partition all_debug, COMPLETED 0:0) at 867ff5d576 with `env -u SLURM_JOB_ID` reading \"9 passed\" EXIT=0, the manifest's rubric.completeness carries the cause verdict, both suite arms read 58 passed EXIT=0, and logs/negative-control-base-8d50b0333f.log reads \"5 failed, 4 passed\" EXIT=1 with the same five ids the cached suite log records at 8d50b0333f.",
+    "goal": "the goal is that tests/test_a_run_wait_names_its_project.py passes in full on the primary branch; it passes 9 of 9 at 6fa76c49f4, which is on main's line, and at the landed head 867ff5d576 (logs/gate-all-debug.log, EXIT=0), so the goal is met by the state the node inherited and the diff adds the passing-run record plan \u00a729 asks for.",
+    "manifest": "read; status complete, commits 867ff5d576, changed_paths the fragment, tests the all_debug nine-case gate, test_logs naming the gate, base-file and negative-control logs, baseline_suite 6fa76c49f4 with 0 failures and after_suite 867ff5d576 with 0 failures, both completed true and both logs ending EXIT=0.",
+    "write_paths": "the declared write paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff --numstat 6fa76c49f4 867ff5d576 lists only the fragment under the third, so the change stays inside the fence."
+  },
+  "justifications": {
+    "durability": "the five guards the fragment cites are pre-existing cases at tests/test_a_run_wait_names_its_project.py:90 and :118 that redden when the reader derivation or the release writer's project recording is removed (logs/mutation-reader-fallback.log and logs/mutation-release-writer.log, both 2 failed EXIT=1), but no test reads the landed fragment, so its own statements are unguarded.",
+    "evidence": "logs/gate-all-debug.log names revision 867ff5d576, slurm job 1319221 and the command `env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest ... tests/test_a_run_wait_names_its_project.py`, reading \"9 passed ... EXIT=0\"; sacct reports job 1319221 on partition all_debug COMPLETED 0:0, so the done_when's gate condition is measured rather than claimed.",
+    "fit": "the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-run-wait-names-its-project.html:1 uses the `<section id=\"<node>-landing\">` form and h2/h3 headings that siblings such as qwnw-red-file-a-successful-launch-is-recorded.html:1-2 use, and introduces no name the naming rules forbid.",
+    "goal_fidelity": "tests/test_a_run_wait_names_its_project.py passes 9 of 9 at 867ff5d576 (logs/gate-all-debug.log, EXIT=0) and at 6fa76c49f4 (logs/base-file.log, EXIT=0), which is the goal, and the diff adds only the record the plan's already-passing clause asks for at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-run-wait-names-its-project.html:1-13.",
+    "reuse": "the diff adds no function, class or module; reckon/evidence.py:1628 compose_landed_record is the repository's owner of composing a plan's landed record from fragments and is left to read the fragment unchanged.",
+    "scope_discipline": "git diff --numstat 6fa76c49f48e 867ff5d576 lists exactly one path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-run-wait-names-its-project.html, 91 added lines and no deletions, inside the declared docs/evidence/fragments/queued-work-needs-no-workaround write path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that tests/test_a_run_wait_names_its_project.py passes in full on the primary branch; it passes 9 of 9 at 6fa76c49f4, which is on main's line, and at the landed head 867ff5d576 (logs/gate-all-debug.log, EXIT=0), so the goal is met by the state the node inherited and the diff adds the passing-run record plan \u00a729 asks for.\nVERDICT done_when: the done_when names the file passing at head as an all_debug job with SLURM_JOB_ID unset, a per-cause verdict, a no-added-failure arm and a base negative control; logs/gate-all-debug.log is slurm job 1319221 (sacct: partition all_debug, COMPLETED 0:0) at 867ff5d576 with `env -u SLURM_JOB_ID` reading \"9 passed\" EXIT=0, the manifest's rubric.completeness carries the cause verdict, both suite arms read 58 passed EXIT=0, and logs/negative-control-base-8d50b0333f.log reads \"5 failed, 4 passed\" EXIT=1 with the same five ids the cached suite log records at 8d50b0333f.\nVERDICT write_paths: the declared write paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff --numstat 6fa76c49f4 867ff5d576 lists only the fragment under the third, so the change stays inside the fence.\nVERDICT manifest: read; status complete, commits 867ff5d576, changed_paths the fragment, tests the all_debug nine-case gate, test_logs naming the gate, base-file and negative-control logs, baseline_suite 6fa76c49f4 with 0 failures and after_suite 867ff5d576 with 0 failures, both completed true and both logs ending EXIT=0.\nVERDICT diff: read the single commit 867ff5d576 against base 6fa76c49f4: one new 91-line evidence fragment with no product or test change, and no assertion added, deleted or weakened.\nCALL_SITES: reckon/evidence.py:1628 compose_landed_record\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: tests/test_a_run_wait_names_its_project.py passes 9 of 9 at 867ff5d576 (logs/gate-all-debug.log, EXIT=0) and at 6fa76c49f4 (logs/base-file.log, EXIT=0), and the diff adds only the record the plan's already-passing clause asks for at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-run-wait-names-its-project.html:1-13.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/gate-all-debug.log names revision 867ff5d576, slurm job 1319221 and the command `env -u SLURM_JOB_ID ... tests/test_a_run_wait_names_its_project.py`, reading \"9 passed\" EXIT=0, and sacct reports job 1319221 on partition all_debug COMPLETED 0:0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat 6fa76c49f48e 867ff5d576 lists exactly one path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-run-wait-names-its-project.html, 91 added lines and no deletions, inside the declared fragment directory.\nSCORE durability: 12\nJUSTIFICATION durability: the cited guards are pre-existing cases at tests/test_a_run_wait_names_its_project.py:90 and :118 that redden under the two recorded mutations (logs/mutation-reader-fallback.log and logs/mutation-release-writer.log, both \"2 failed\" EXIT=1), but no test reads the landed fragment, so its own statements are unguarded.\nSCORE fit: 18\nJUSTIFICATION fit: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-run-wait-names-its-project.html:1 uses the `<section id=\"<node>-landing\">` form and heading levels siblings such as qwnw-red-file-a-successful-launch-is-recorded.html:1-2 use, and introduces no forbidden name.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/evidence.py:1628 compose_landed_record is the repository's owner of composing a landed record from fragments, and the diff adds no second mechanism for it.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-run-wait-names-its-project.html:58 non-blocking: the 'node tests, after' row states the 6fa76c49f4 arm ran with SLURM_JOB_ID unset, but logs/base-file.log's only command line carries no `env -u SLURM_JOB_ID` and the worker ran inside a slurm allocation, so the record claims a condition its own log does not show; the test reads no SLURM variable, so the result stands but the stated condition is unsupported.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-run-wait-names-its-project.html:56 non-blocking: the row is labelled 'node tests, after' yet names revision 6fa76c49f4, the base, so the measured table omits the head's own nine-passed arm and the done_when's head condition has to be taken from the prose at line 84 rather than from the table the caption presents as the record of every arm.\n",
+  "review_run_id": "r-20261116T071142523845-review-of-qwnw-red-file-a-run-wait-names-its-project-867ff5d57633",
+  "reviewed_base_sha": "6fa76c49f48e1d4fe4f104431f85f519ce92aae0",
+  "reviewed_head_sha": "867ff5d57633ab3c4aeb46894de74bb1cb79ebf0",
+  "reviewed_run_id": "r-20261116T032054728221-qwnw-red-file-a-run-wait-names-its-project",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T071142523845-review-of-qwnw-red-file-a-run-wait-names-its-project-867ff5d57633"
+  },
+  "reviewer_run_id": "r-20261116T071142523845-review-of-qwnw-red-file-a-run-wait-names-its-project-867ff5d57633",
+  "scores": {
+    "durability": 12,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T11:56:39.480115+00:00",
+  "total": 104
+}

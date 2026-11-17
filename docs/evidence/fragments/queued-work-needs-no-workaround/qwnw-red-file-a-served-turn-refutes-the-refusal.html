@@ -1,0 +1,97 @@
+<section id="qwnw-red-file-a-served-turn-refutes-the-refusal-landing">
+  <h2>A test file red on the primary branch passes</h2>
+
+  <p><strong>What changed.</strong> <code>tests/test_a_served_turn_refutes_the_refusal.py</code>
+  passes in full at head: 8 passed, <code>EXIT=0</code>, as a job on
+  <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset. At the base
+  revision <code>cb557f97</code> the same command read 7 failed / 1 passed,
+  <code>EXIT=1</code> — the same seven ids the whole-suite run at
+  <code>8d50b0333f</code> reported. One cause, and it is the test that is
+  wrong.</p>
+
+  <table id="qwnw-red-file-a-served-turn-refutes-the-refusal-causes">
+    <caption>One row per cause of the base revision's failures, its verdict,
+    and the ids it cleared.</caption>
+    <thead><tr><th>cause</th><th>verdict</th><th>ids</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>The file stubs the ledger read with
+        <code>lambda _project, _root: (...)</code>, while
+        <code>budget.preflight</code> reaches the ledger through
+        <code>ledger.runs</code> → <code>ledger.read_records</code>, which calls
+        <code>load</code> with the selection keyword <code>headers_only</code>.
+        The stub intercepted that call and raised
+        <code>TypeError: ... unexpected keyword argument 'headers_only'</code>
+        before any refusal rule ran, so all seven assertions on the served-turn
+        rules were left unexercised.</td>
+        <td>test wrong, updated: a stand-in for
+        <code>reckon.ledger.load</code> carries that function's declared
+        signature — the positional project and root, plus the keyword-only
+        <code>picker_only</code>, <code>use_index</code>,
+        <code>headers_only</code>, <code>activity_since</code> and
+        <code>plan</code>. The stub is named <code>_empty_ledger</code> and
+        documents that its answers are unused. No assertion was deleted or
+        weakened; the file's assertions are untouched.</td>
+        <td>all seven:
+        <code>test_a_later_served_turn_refutes_the_newest_rejection</code>,
+        <code>test_each_served_status_refutes_the_rejection[allowed]</code>,
+        <code>test_each_served_status_refutes_the_rejection[allowed_warning]</code>,
+        <code>test_a_rejection_followed_by_nothing_still_holds</code>,
+        <code>test_a_retry_storm_is_not_recovery</code>,
+        <code>test_a_future_reset_without_service_keeps_its_reason</code>,
+        <code>test_a_past_reset_remains_clear</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>The product rule is already correct, and the file's
+  <code>test_prose_that_mentions_a_rejection_is_not_a_rejection</code> passed at
+  base.</strong> Nothing in <code>reckon/</code> was reimplemented. The rule the
+  repaired stub preserves is the one
+  <code>reckon/budget.py</code> keeps: a provider
+  <code>rate_limit_event</code> whose status is <code>allowed</code> or
+  <code>allowed_warning</code> arrives later in the same stream and refutes the
+  newest rejection, while a rejected retry, silence, or prose that mentions a
+  rejection does not.</p>
+
+  <p><strong>Guard fires.</strong> A passing run does not show the file bites.
+  With the served-turn branch of
+  <code>reckon/budget.py</code> temporarily disabled
+  (<code>if served_status is not None and False:</code>) the file reads 3
+  failed / 5 passed, <code>EXIT=1</code>: the three served-turn refutation cases
+  fail as <code>assert True is False</code>. The mutation was reverted and the
+  tree carries only the test change. <code>ruff check</code> and
+  <code>ruff format --check</code> report nothing on the changed path.</p>
+
+  <h3>Logs</h3>
+  <table id="qwnw-red-file-a-served-turn-refutes-the-refusal-logs">
+    <caption>Runs recorded for this node, all with the command
+    <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+    tests/test_a_served_turn_refutes_the_refusal.py</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>probe of the named file, tree otherwise clean — the failing run,
+        logged as the negative control</td>
+        <td><code>cb557f97</code></td>
+        <td>7 failed, 1 passed; <code>EXIT=1</code></td>
+      </tr>
+      <tr>
+        <td>gate, as a job on <code>all_debug</code> with
+        <code>SLURM_JOB_ID</code> unset</td>
+        <td>head of this node</td>
+        <td>8 passed; <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>guard-fires mutation of the served-turn branch</td>
+        <td><code>cb557f97</code> plus the mutation</td>
+        <td>3 failed, 5 passed; <code>EXIT=1</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The origin remote is at the base revision — <code>origin/main</code> reads
+  <code>cb557f97</code>, equal to the worktree head as this node started, so
+  merging it was a no-op; <code>git fetch</code> itself is refused on this host
+  by the ownership of <code>/etc/ssh/ssh_config.d/50-redhat.conf</code>.</p>
+</section>

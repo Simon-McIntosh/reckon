@@ -1,0 +1,98 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "artifacts": {
+    "entry_point": "reckon/crew/gc.py:2183-2186",
+    "evidence_fragment": "docs/evidence/fragments/work-flows-to-the-lane/wftl-ended-run-identities-are-removed.html",
+    "gate_logs": [
+      "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T040255665307-wftl-ended-run-identities-are-removed/s68-head.log",
+      "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T040255665307-wftl-ended-run-identities-are-removed/s68-negative-control.log",
+      "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T040255665307-wftl-ended-run-identities-are-removed/s68-mutation.log"
+    ],
+    "phases_declared": "reckon/crew/gc.py:1970-1981",
+    "report_key": "reckon/crew/gc.py:2351-2355",
+    "test_file": "tests/test_ended_run_identities_are_removed.py"
+  },
+  "call_sites": [
+    "reckon/crew/gc.py:2185 retention_sweep",
+    "reckon/crew_run_commands.py:2261 crew_retention_sweep",
+    "reckon/crew/gc.py:2522 main",
+    "reckon/crew/gc.py:2510 --sweep-exec-identities flag path"
+  ],
+  "completed_at": "2026-11-16T08:52:37.312Z",
+  "dispatched_at": "2026-11-16T08:52:16Z",
+  "findings": [
+    {
+      "file": "tests/test_ended_run_identities_are_removed.py",
+      "line": 167,
+      "severity": "non-blocking",
+      "text": "assert live.is_file() cannot fail on the regression it appears to guard: the sweep runs inside the writer's loop, the writer is stopped in the finally block after the pass, and an os.replace after a removal recreates the path, so a pass that removed the live identity would still leave this assertion true; the guard that actually reddens is the report count at :165, as s68-mutation.log shows."
+    },
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/wftl-ended-run-identities-are-removed.html",
+      "line": 89,
+      "severity": "non-blocking",
+      "text": "the fragment states the bounded-pass suite passes at head (6 passed) but the manifest's test_logs carry no log for that suite; the run exists only in the reviewed run's stream.jsonl, so a later reader holding just the manifest and its logs cannot check the claim."
+    },
+    {
+      "file": "reckon/crew/gc.py",
+      "line": 2185,
+      "severity": "non-blocking",
+      "text": "this source change and the test file it relies on sit outside the only write paths the run declared (the evidence fragment and the figure directory); the node's write_paths is empty and the manifest explains the narrow grant, but the record read alone says the landed code was fenced to documentation."
+    }
+  ],
+  "gate_after": {
+    "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-ended-run-identities-are-removed /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_ended_run_identities_are_removed.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "source": "s68-head.log (the reviewed run's head arm, revision 213e1a1ae45722547bfdd85e90969cccbf3a4b66)"
+  },
+  "gate_baseline": {
+    "command": "PYTHONPATH=/tmp/reckon-crew-scratch/r-20261116T040255665307-wftl-ended-run-identities-are-removed/s68-base.pJzKHv/base /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_ended_run_identities_are_removed.py",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 2,
+    "failure_ids": [
+      "tests/test_ended_run_identities_are_removed.py::test_one_pass_removes_every_ended_identity_and_keeps_every_live_one",
+      "tests/test_ended_run_identities_are_removed.py::test_the_pass_removes_nothing_while_a_live_identity_is_being_written"
+    ],
+    "source": "s68-negative-control.log (the reviewed run's base arm, revision c6f9f10f23da2cf7def2808528252eaffa0ea4dd)"
+  },
+  "item_verdicts": {
+    "call_sites": "Verified the change against reckon/crew/gc.py:2185 in retention_sweep, its two callers reckon/crew_run_commands.py:2261 and reckon/crew/gc.py:2522, and the unchanged flag path reckon/crew/gc.py:2510.",
+    "diff": "Read the six commits c6f9f10f..739a9f3a0f one by one; they touch three paths with 286 insertions and 1 deletion \u2014 the sweep call, the phase declaration, a 167-line test file and a 92-line evidence fragment \u2014 and the last three are evidence commits only.",
+    "done_when": "Read the done_when's two required cases against tests/test_ended_run_identities_are_removed.py:98 and :128 \u2014 three ended identities removed while two live ones kept, and a live identity rewritten through os.replace kept while one ended file is removed \u2014 and the run's s68-head.log records 2 passed EXIT=0.",
+    "goal": "Read the node goal 'Remove an ended run identity file in the crew maintenance pass' against reckon/crew/gc.py:2183-2186; retention_sweep now calls sweep_exec_identities(apply=apply) as its first phase, so the goal's noun lands on the pass that runs hourly.",
+    "manifest": "Read the reviewed run's manifest.md; it records the head arm 2 passed EXIT=0 at 213e1a1ae4 and the base arm 2 failed EXIT=1 at c6f9f10f in s68-head.log and s68-negative-control.log, the liveness mutation in s68-mutation.log, an entry-point smoke, and two pre-existing failures under outside_scope.",
+    "write_paths": "Read the node's write_paths in dispatch-detail.json, which is empty, and the manifest's orientation_write_paths, which names only docs/evidence/fragments/work-flows-to-the-lane/wftl-ended-run-identities-are-removed.html and docs/figures/work-flows-to-the-lane/wftl-ended-run-identities-are-removed/; the diff also changes reckon/crew/gc.py and tests/test_ended_run_identities_are_removed.py, outside that declaration."
+  },
+  "justifications": {
+    "durability": "tests/test_ended_run_identities_are_removed.py:117-120 fails if the sweep stops removing or starts removing a live file, and s68-mutation.log records the second case reddening alone under a liveness mutation, but :167 cannot fail on that regression because the writer loop rewrites the path after the pass removes it.",
+    "evidence": "tests/test_ended_run_identities_are_removed.py is the gate the done_when names and s68-head.log records 2 passed EXIT=0 at 213e1a1ae4 with s68-negative-control.log recording 2 failed EXIT=1 at c6f9f10f, though the fragment's bounded-pass figure at :89 has no log among the manifest's test_logs.",
+    "fit": "reckon/crew/gc.py:2185 follows the phase idiom around it \u2014 a timed phase, a counter-group report key, and a line in the pass log beside the trash and cache rows.",
+    "goal_fidelity": "reckon/crew/gc.py:2183-2186 makes sweep_exec_identities(apply=apply) the first phase of retention_sweep, so the pass the hourly timer already runs now removes an ended execution's identity file.",
+    "reuse": "sweep_exec_identities at reckon/crew/gc.py:843 already owned this capability and is called rather than reimplemented; the only other identity remover, _retire_exec_identity at reckon/crew/dispatch_claims.py:679, retires the running execution's own file and is not the dead-file sweep.",
+    "scope_discipline": "the diff changes reckon/crew/gc.py and tests/test_ended_run_identities_are_removed.py, both outside the two docs paths dispatch-detail.json's node carries as its declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal 'Remove an ended run identity file in the crew maintenance pass' against reckon/crew/gc.py:2183-2186, where retention_sweep now calls sweep_exec_identities(apply=apply) as its first phase.\nVERDICT done_when: the done_when's two cases are asserted at tests/test_ended_run_identities_are_removed.py:98 and :128 and the run's s68-head.log records 2 passed EXIT=0.\nVERDICT write_paths: dispatch-detail.json carries an empty write_paths and the manifest's orientation_write_paths names only the evidence fragment and its figure directory, while the diff also changes reckon/crew/gc.py and tests/test_ended_run_identities_are_removed.py.\nVERDICT manifest: read; it records the head arm 2 passed EXIT=0 at 213e1a1ae4, the base arm 2 failed EXIT=1 at c6f9f10f, s68-mutation.log, an entry-point smoke, and two pre-existing failures under outside_scope.\nVERDICT diff: read the six commits c6f9f10f..739a9f3a0f commit by commit; three paths, 286 insertions and 1 deletion, the last three commits evidence only.\nCALL_SITES: reckon/crew/gc.py:2185 retention_sweep, reckon/crew_run_commands.py:2261 crew_retention_sweep, reckon/crew/gc.py:2522 main, reckon/crew/gc.py:2510 --sweep-exec-identities flag path\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/gc.py:2185 makes the identity sweep a phase of the pass the installed hourly timer already runs.\nSCORE evidence: 17\nJUSTIFICATION evidence: s68-head.log records 2 passed EXIT=0 and s68-negative-control.log 2 failed EXIT=1 as the done_when's negative control, but the fragment's bounded-pass figure at :89 has no log among the manifest's test_logs.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: reckon/crew/gc.py and tests/test_ended_run_identities_are_removed.py are outside the two docs paths the run declared as its write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_ended_run_identities_are_removed.py:117-120 fails if the sweep stops removing or starts removing a live file, but the assertion at :167 cannot fail on the regression it sits beside.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/gc.py:2185 follows the timed-phase idiom and counter-key report shape of the phases around it.\nSCORE reuse: 20\nJUSTIFICATION reuse: gc.sweep_exec_identities at reckon/crew/gc.py:843 already owned the capability and is called, not reimplemented; no second dead-file sweep exists in the repository.\nFINDING tests/test_ended_run_identities_are_removed.py:167 non-blocking: assert live.is_file() holds whatever the pass does, because the writer loop recreates the path after a removal and stops only after the pass; the report count at :165 is the guard that reddens.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/wftl-ended-run-identities-are-removed.html:89 non-blocking: the bounded-pass suite's 6 passed is recorded only in the run's stream.jsonl, not in a log the manifest's test_logs names.\nFINDING reckon/crew/gc.py:2185 non-blocking: the landed source and test sit outside the only write paths the run declared, so the record read alone reads as documentation-scoped work that changed code.",
+  "review_run_id": "r-20261116T081152488558-review-of-wftl-ended-run-identities-are-removed-739a9f3a0fbf",
+  "reviewed_base_sha": "c6f9f10f23da2cf7def2808528252eaffa0ea4dd",
+  "reviewed_head_sha": "739a9f3a0fbfe1e877aa4faa2f2b20b7ce637bdf",
+  "reviewed_run_id": "r-20261116T040255665307-wftl-ended-run-identities-are-removed",
+  "reviewer": "independent review node review-of-wftl-ended-run-identities-are-removed-739a9f3a0fbf",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T12:00:28.302558+00:00",
+  "total": 104
+}

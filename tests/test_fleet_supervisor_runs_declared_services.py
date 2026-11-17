@@ -519,3 +519,104 @@ def test_the_backoff_doubles_to_its_cap_and_resets_after_steady_running():
     assert fleet_supervisor.next_backoff(
         80.0, fleet_supervisor.STEADY_RUN_SECONDS - 1.0
     ) == (80.0, 160.0)
+
+
+@pytest.mark.parametrize(
+    "immediate,expected", [(False, [1800, 3600]), (True, [900, 1800, 3600])]
+)
+def test_a_supervised_service_keeps_its_shared_reload_window(
+    tmp_path, monkeypatch, immediate, expected
+):
+    from reckon.crew import follower_reload
+
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    now = [0.0]
+    newest = ["running"]
+    running = ["running"]
+    pid = os.getpid()
+    monkeypatch.setattr(follower_reload, "time", SimpleNamespace(time=lambda: now[0]))
+    window = follower_reload.ReloadWindow("demo", running[0])
+    manager = fleet_supervisor.DeclaredServices(
+        tmp_path,
+        code_stamp=lambda: newest[0],
+        checkout_trust=lambda: SimpleNamespace(trusted=True),
+    )
+    state = fleet_supervisor._ServiceState(argv=["demo"], pid=pid)
+    manager._states["demo"] = state
+    monkeypatch.setattr(
+        fleet_supervisor, "recorded_service_stamp", lambda *a: running[0]
+    )
+    monkeypatch.setattr(manager, "_pass_allows_restart", lambda *a: True)
+    monkeypatch.setattr(manager, "_stop_locked", lambda *a: True)
+    monkeypatch.setattr(manager, "_start_or_backoff_locked", lambda *a: None)
+    reloads = []
+    exported_at = []
+    tick_started = 0
+    for minute in range(1, 61):
+        now[0] = minute * 60
+        if minute % 5 == 0:
+            newest[0] = f"code-{minute}"
+        if minute == 15 and immediate:
+            follower_reload.request_service_reload("demo", "urgent correction")
+        if now[0] - tick_started >= 420:
+            window.exported()
+            tick_started = now[0]
+            exported_at.append(now[0])
+        if manager._code_decision("demo", pid, state) == "restart":
+            assert window.exported_at is not None
+            assert exported_at[-1] > (reloads[-1] if reloads else 0)
+            manager._restart_locked("demo", state)
+            reloads.append(now[0])
+            running[0] = newest[0]
+            window = follower_reload.ReloadWindow("demo", running[0])
+            tick_started = now[0]
+    assert reloads == expected
+    report = follower_reload.service_reload_status("demo")
+    assert report["next_reload_at"] == 5400
+    if immediate:
+        assert report["last_request"]["reason"] == "urgent correction"
+
+
+def test_supervision_waits_for_an_export_and_rechecks_a_racing_self_reload(
+    tmp_path, monkeypatch
+):
+    from reckon.crew import follower_reload
+
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    now = [0.0]
+    monkeypatch.setattr(follower_reload, "time", SimpleNamespace(time=lambda: now[0]))
+    window = follower_reload.ReloadWindow("demo", "running")
+    pid = os.getpid()
+    manager = fleet_supervisor.DeclaredServices(
+        tmp_path,
+        code_stamp=lambda: "newest",
+        checkout_trust=lambda: SimpleNamespace(trusted=True),
+    )
+    state = fleet_supervisor._ServiceState(argv=["demo"], pid=pid)
+    monkeypatch.setattr(
+        fleet_supervisor, "recorded_service_stamp", lambda *a: "running"
+    )
+    monkeypatch.setattr(manager, "_pass_allows_restart", lambda *a: True)
+    stopped = []
+    monkeypatch.setattr(manager, "_stop_locked", lambda *a: stopped.append(a))
+    now[0] = 1800
+    report_before = follower_reload.service_reload_status("demo")
+    assert manager._code_decision("demo", pid, state) == "adopt"
+    assert follower_reload.service_reload_status("demo") == report_before
+    window.exported()
+    assert manager._code_decision("demo", pid, state) == "restart"
+    # The service replaces itself between the decision and the supervisor's stop.
+    window.reloaded("newest")
+    manager._restart_locked("demo", state)
+    assert stopped == []
+    assert follower_reload.service_reload_status("demo")["reload_count"] == 1
+
+
+def test_the_supervisor_passes_the_selected_image_identity(tmp_path, monkeypatch):
+    source = tmp_path / "source"
+    monkeypatch.setattr(fleet_supervisor, "_checkout_root", lambda: source)
+    manager = fleet_supervisor.DeclaredServices(tmp_path, {})
+    image = tmp_path / "images" / ("a" * 40)
+    environment = manager._child_environ(image)
+    assert environment["RECKON_FOLLOWER_SOURCE_ROOT"] == str(source)
+    assert environment["RECKON_FOLLOWER_IMAGE_COMMIT"] == image.name

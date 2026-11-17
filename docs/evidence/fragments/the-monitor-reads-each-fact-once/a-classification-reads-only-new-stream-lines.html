@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s68">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-15">
+  <meta name="evidence-commit" content="825335b101">
+  <title>A classification reads only new stream lines | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="a-classification-reads-only-new-stream-lines">
+  <h2>A classification reads only new stream lines</h2>
+
+  <p><strong>The defect.</strong> Every classification of a live run decoded
+  that run's newest stream from its first byte, although a stream only grows by
+  appending. The decode census at s65's head put 71.6 MB of a 93.5 MB tick in
+  <code>_stream_holds_assistant_record</code> and 21.9 MB in
+  <code>_tool_call_in_line</code>, and two smaller passes decoded every live
+  pointer's fields once a tick, 5.2 MB each, in
+  <code>Station._tick</code> and <code>StationStore.classify_tick</code>.</p>
+
+  <p><strong>What landed.</strong> A scan record per stream holds what a scan
+  learned &mdash; whether an assistant record appeared, the last tool call, the
+  last record type &mdash; beside the byte offset each answer stands at, keyed
+  by the stream's inode. A later pass decodes only the bytes appended past that
+  offset; a stream whose inode moved or that is now shorter than the bytes a
+  scan read through is scanned again from its start. A scan stops at the last
+  newline, so a record still being written is decoded once the bytes that
+  complete it land.</p>
+
+  <p>The store now keeps each stored document decoded beside the text it was
+  decoded from &mdash; a pointer's fields, a run's stored verdict, a project's
+  fleet image &mdash; and compares the text before decoding, so a tick decodes
+  only what it or another writer moved. A document the tick itself wrote is
+  recorded already decoded, so a pass never decodes its own output back.</p>
+
+  <h3 id="a-classification-reads-only-new-stream-lines-first-case">Thirty runs, classified twice</h3>
+
+  <p><code>tests/test_a_classification_reads_only_new_stream_lines.py</code>
+  builds 30 runs with 2,000 lines each on a temporary crew home and classifies
+  every one twice, counting <code>json.loads</code> calls made from
+  <code>recovery_wait</code>. The first pass makes
+  <strong>60,000 decodes</strong>; the second makes <strong>0</strong> and
+  returns the same verdicts. The first pass's count is asserted before the
+  second pass's zero is reported, so the instrument is shown seeing something
+  known present before an absence is claimed.</p>
+
+  <p>Appending one assistant line to one stream makes the next pass decode
+  exactly that record &mdash; the decoded-text set equals the appended record
+  line &mdash; and flips that run's reading from <code>resume</code> to
+  <code>observe</code>, with the other 29 runs' verdicts unchanged. Truncating a
+  stream to 25 lines makes the next pass decode the whole of the new content,
+  first line included, which is the rescan from the start. A stream whose last
+  line is unterminated keeps the scan's offset at its last newline; completing
+  that record makes the next pass decode exactly it and flips the run.</p>
+
+  <h3 id="a-classification-reads-only-new-stream-lines-store-case">The store's own columns and a quiet tick</h3>
+
+  <p>The same file ingests a codex pointer through the store's ingest path and
+  asserts the stored <code>backend</code> and <code>dialect</code> columns
+  &mdash; a row the backfill path covered and no test did.</p>
+
+  <p>Two station ticks at one moment over an unchanged store: the second makes
+  <strong>0</strong> <code>json.loads</code> calls from
+  <code>reckon.crew.station</code> and <code>reckon.crew.station_store</code>.
+  Before the store kept a document decoded, <code>Station._tick</code> decoded
+  every pointer's fields (<code>reckon.crew.station</code>: 1) and
+  <code>classify_tick</code>'s pointer pass, the stored verdict and the fleet
+  image decoded theirs (<code>reckon.crew.station_store</code>: 2 on the first
+  tick, 4 on the second, as the row and the image the first tick wrote were read
+  back and decoded).</p>
+
+  <h3 id="a-classification-reads-only-new-stream-lines-negative">The negative control</h3>
+
+  <p>With <code>_stream_scan</code> made never to reuse a record &mdash;
+  whole-stream scans restored &mdash; the same file fails 3 of 5 cases and the
+  first reports <strong>60,000 decodes on the second pass</strong>. The log is
+  <code>logs/negative-control-restore-whole-stream-scans.log</code> under the
+  run directory, ending <code>EXIT=1</code>.</p>
+
+  <h3 id="a-classification-reads-only-new-stream-lines-arms">Matched arms</h3>
+
+  <p>The node's suite template resolves to 58 passed at base
+  <code>4992939f84cb</code> (<code>EXIT=0</code>) and 63 passed at head
+  <code>825335b101</code> (<code>EXIT=0</code>); the new test file is absent
+  from the base tree, so the two commands differ by exactly that path. The 69
+  test files importing <code>recovery_wait</code>, <code>station</code> or
+  <code>station_store</code> were run as matched arms on
+  <code>all_debug</code>, submitted with
+  <code>env -u SLURM_JOB_ID -u SLURM_JOBID sbatch</code>.</p>
+</section>
+</main>
+</body>
+</html>

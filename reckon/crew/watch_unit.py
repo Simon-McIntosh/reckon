@@ -19,6 +19,7 @@ from typing import Any
 
 from reckon._store import (
     _config_home,
+    write_json_atomically,
 )
 from reckon.crew.host_lease import HostLease, LeaseHolder
 from reckon.crew.node import (
@@ -26,6 +27,92 @@ from reckon.crew.node import (
     CrewError,
     parse_duration,
 )
+from reckon.node_exclusive_lock import exclusive_lock
+
+
+def _producer_identity(record: Mapping[str, Any]) -> tuple[Any, ...]:
+    return tuple(record.get(key) for key in ("host", "pid", "pid_start_time"))
+
+
+def record_producer_start(project: str, watcher: dict[str, Any]) -> None:
+    """Link a replacement's acquisition to the preceding producer's exit."""
+    from reckon.crew import runs
+
+    watcher["started_at_epoch"] = time.time()
+    watcher["last_stage"] = "registered"
+    if not watcher.get("pid"):
+        return
+    with exclusive_lock(runs.watch_registration_lock_path(project)):
+        record = runs.read_watch_registration(project)
+        if _producer_identity(record) != _producer_identity(watcher):
+            return
+        previous = record.get("exit_record")
+        if isinstance(previous, dict) and _producer_identity(
+            previous
+        ) != _producer_identity(watcher):
+            record["restart_record"] = {
+                "pid": watcher["pid"],
+                "pid_start_time": watcher.get("pid_start_time"),
+                "host": watcher.get("host"),
+                "parent_pid": watcher.get("parent_pid"),
+                "restarted_at": watcher["started_at_epoch"],
+                "previous_exit": previous,
+            }
+        record.update(exit_record=None, last_stage=watcher["last_stage"])
+        write_json_atomically(runs.watch_registration_path(project), record)
+
+
+def record_producer_exit(
+    project: str, watcher: Mapping[str, Any], error: BaseException | None = None
+) -> None:
+    """Persist the outcome while the producer still owns its seat.
+
+    Compare the process identity under the registration's shared lock: a
+    producer superseded through a replaced seat must not amend its successor.
+    The receipt is separate from the seat inode so releasing that inode leaves
+    the last outcome readable, and a replacement can carry it into its receipt.
+    """
+    from reckon.crew import runs
+
+    if not watcher.get("pid"):
+        return
+    status = 0
+    reason = "watch stream ended"
+    if isinstance(error, SystemExit):
+        status = (
+            error.code if isinstance(error.code, int) else int(error.code is not None)
+        )
+    elif isinstance(error, KeyboardInterrupt):
+        status = 128 + signal.SIGINT
+    elif error is not None and not isinstance(error, GeneratorExit):
+        status = 1
+    if error is not None:
+        reason = type(error).__name__ + (f": {error}" if str(error) else "")
+    with exclusive_lock(runs.watch_registration_lock_path(project)):
+        record = runs.read_watch_registration(project)
+        if _producer_identity(record) != _producer_identity(watcher):
+            return
+        previous = record.get("exit_record")
+        if isinstance(previous, dict) and _producer_identity(
+            previous
+        ) == _producer_identity(watcher):
+            return
+        lease_lapsed_at = None
+        remaining = runs.watch_lease_remaining_from_record(record)
+        if remaining is not None and remaining <= 0:
+            lease_lapsed_at = record["lease_renewed_at"] + runs.producer_lease_seconds()
+            if error is None or status == runs.WATCH_SEAT_LOST_EXIT:
+                reason = "producer lease expired"
+        record["exit_record"] = {
+            **{key: watcher.get(key) for key in ("host", "pid", "pid_start_time")},
+            "exit_status": status,
+            "last_stage": watcher.get("last_stage", "registered"),
+            "reason": reason,
+            "started_at_epoch": watcher.get("started_at_epoch"),
+            "exited_at": time.time(),
+            "lease_lapsed_at": lease_lapsed_at,
+        }
+        write_json_atomically(runs.watch_registration_path(project), record)
 
 
 def watch_host_lease(project: str):
@@ -374,6 +461,11 @@ def release_watch_seat(project: str) -> bool:
     handle = runs._WATCH_SEAT_HANDLES.get(project)
     lease = runs._WATCH_HOST_LEASES.get(project)
     released = handle is not None or lease is not None
+    if handle is not None:
+        watcher = _read_watch_record(handle)
+        record_producer_exit(
+            project, {**watcher, "last_stage": "placement-check"}, SystemExit(0)
+        )
     with contextlib.suppress(OSError, ValueError):
         if handle is not None:
             _write_watch_record(handle, {})
@@ -958,12 +1050,10 @@ class ProducerSnapshotNotices:
     publication health. A session without a station reads its producer snapshot
     instead. Missing timestamps cannot establish an age or prove a recovery.
 
-    A station busy in a long tick exports a beat the pane reads as stale while
-    the process is in fact alive and working, so this reports a slow tick rather
-    than a lost producer. The exported snapshot carries the beat and no tick
-    stage, which is why the station store's own row is read on that branch
-    alone: it is the only reading that says what the tick is doing. One row is
-    drawn per slow tick, and one when it ends.
+    The station's independent health publication keeps its beat and tick
+    visible while a long derivation holds the obligation export. A local
+    station can also answer without a session document. One row is drawn per
+    slow tick, and one when it ends.
     """
 
     project: str
@@ -991,14 +1081,9 @@ class ProducerSnapshotNotices:
             return []
         self.sampled_at = moment
         station = snapshots.read_station_answer(self.project, self.session)
-        # The station's own reading of its tick: the answer's when the store
-        # answered it, and the store's own row when the export was read instead,
-        # because the export carries the beat alone. A slow tick and a stopped
-        # station are alike on that branch, which is the row this check drew
-        # wrongly: the beat is stale by export, and the process was working.
         tick = station
         if station is not None and station["source"] == "snapshot":
-            tick = snapshots.read_station_tick()
+            tick = snapshots.read_station_tick() or station
         if tick is not None and not tick["stale"]:
             # A fresh beat is a station alive now, whatever the export says, so
             # the tick alone decides what to draw and the loss path is not
@@ -1249,12 +1334,10 @@ def ensure_watcher_service(
 ) -> dict[str, Any]:
     """Start or restart a project's watcher as an idempotent user service.
 
-    Idempotent in the sense that decides whether a second call disturbs a live
-    watcher: the unit is rewritten only when its rendered content changed, and a
-    unit already active on an unchanged definition is reported rather than
-    restarted. Restarting unconditionally would drop the seat and re-take it,
-    so the command a refusal tells a person to run would interrupt the watcher
-    it exists to guarantee.
+    A serving producer is reported without starting anything, even when the
+    local unit is inactive or its definition changed. A producer may be running
+    outside this host's service manager. Cycling one deliberately requires
+    releasing its seat before ensuring it again.
 
     Arming also survives a manager that cannot be reached. The user manager is a
     single point of failure for a command whose whole job is to leave a watcher
@@ -1343,6 +1426,32 @@ def ensure_watcher_service(
             "fallback_reason": None,
             "seat": seat,
             "ensure_line": watcher_ensure_line(project),
+        }
+
+    state = watch_state(project)
+    if state["watcher_live"]:
+        watcher = state["watcher"]
+        return {
+            **state,
+            "project": project,
+            "unit": watch_unit_name(project),
+            "unit_path": str(path),
+            "unit_changed": bool(changed),
+            "service_active": None,
+            "started": False,
+            "cycling": False,
+            "restart_count_before": None,
+            "restart_count_after": None,
+            "detail": (
+                f"producer for {project} is already live: pid {watcher.get('pid')} "
+                f"on {watcher.get('host') or 'this host'}; started nothing"
+            ),
+            "environment": environment,
+            "lingering": None,
+            "registration": {"registered": False, "reason": "seat-held"},
+            "path": "existing",
+            "fallback_reason": None,
+            "seat": seat,
         }
 
     try:
@@ -1540,6 +1649,11 @@ WATCH_ATTENTION_STATES = (
     "unknown",
     "unreadable",
     "exited-unfinished",
+    # The classification a worker records when its own exit ended it before a
+    # manifest reached an outcome. It is read as a blocked row, so the state
+    # word belongs to the vocabulary a reader acts on rather than being
+    # classified as an unknown verdict.",
+    "cut-off",
     "wait-aged",
 )
 WATCH_PROGRESS_STATES = (

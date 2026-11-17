@@ -111,6 +111,13 @@ def _history_row(project, run_id, root=None):
     )
 
 
+def _history_dispatched_rows(project, session=None, root=None):
+    rows = _history_rows(project, root)
+    if session is None:
+        return rows
+    return [row for row in rows if str(row.get("session") or "") == str(session)]
+
+
 def _history_session(project, session, root=None):
     rows = [
         row for row in _history_rows(project, root) if row.get("session_id") == session
@@ -215,6 +222,15 @@ def record_written(project: str, row: Mapping[str, Any], root=None) -> None:
         )
 
 
+def _stamp_text(identity: Any) -> str:
+    """The text a source stamp is recorded as, and the one it is read back as.
+
+    One encoder for both sides. A writer and a comparison that spelled the same
+    identity two ways would refuse every stamp the writer left.
+    """
+    return json.dumps(identity)
+
+
 def _source_written(connection, path: Path) -> None:
     from reckon import file_memo
 
@@ -224,7 +240,7 @@ def _source_written(connection, path: Path) -> None:
         return
     connection.execute(
         "INSERT OR REPLACE INTO sources VALUES (?, ?)",
-        (str(path.resolve()), json.dumps(stamp)),
+        (str(path.resolve()), _stamp_text(stamp)),
     )
 
 
@@ -266,17 +282,48 @@ def aggregate_written(
                 )
 
 
+def _store_signature() -> str | None:
+    from reckon import file_memo, run_store
+
+    path = run_store.store_path()
+    if not path.exists():
+        return None
+    return json.dumps(
+        [
+            file_memo.file_signature(path),
+            *[
+                file_memo.file_signature(extra) if extra.exists() else None
+                for extra in (
+                    run_store._archive_path(path),
+                    Path(str(path) + "-wal"),
+                )
+            ],
+        ]
+    )
+
+
+def _hydrate(project: str, rows: list[dict]) -> list[dict]:
+    """Fetch full records only for identities the operational projection selected."""
+    from reckon import run_store
+
+    stored = run_store.stored_run_rows(project, run_ids=[row["run_id"] for row in rows])
+    return rows if stored is None else stored
+
+
 def _current(connection: sqlite3.Connection, project: str, root) -> bool:
     """Validate the complete projection using only reads."""
     from reckon import file_memo, ledger
 
     metadata = dict(connection.execute("SELECT key, value FROM metadata"))
+    signature = _store_signature()
+    if signature is not None:
+        return metadata.get("ready") == "1" and metadata.get("store") == signature
     aggregate = ledger.ledger_path(project, root).resolve()
     recorded = connection.execute(
         "SELECT stamp FROM sources WHERE name=?", (str(aggregate),)
     ).fetchone()
     try:
-        actual = json.dumps(file_memo.file_signature(aggregate))
+        actual = _stamp_text(file_memo.file_signature(aggregate))
     except FileNotFoundError:
         actual = None
     generation = ledger.ledger_generation(project)
@@ -330,7 +377,28 @@ def _ensure(project: str, root=None) -> Path:
                 if not _current(connection, project, root):
                     generation = ledger.ledger_generation(project)
                     aggregate = ledger.ledger_path(project, root)
-                    if not aggregate.exists() and not any(
+                    from reckon import run_store
+
+                    signature = _store_signature()
+                    if signature is not None:
+                        rows = run_store.stored_run_rows(
+                            project,
+                            fields=(
+                                "run_id",
+                                "node",
+                                "session_id",
+                                "completed_at",
+                                "worktree_retention",
+                                "release",
+                                "commits",
+                                "base_sha",
+                                "no_commit",
+                                "session",
+                            ),
+                        )
+                        data = {"runs": rows or []}
+                        _version = ledger._aggregate_headers(project, root)[1]
+                    elif not aggregate.exists() and not any(
                         (aggregate.parent / "runs").glob("*.json")
                     ):
                         data, _version = {"runs": []}, 0
@@ -360,10 +428,15 @@ def _ensure(project: str, root=None) -> Path:
                         (str(_version),),
                     )
                     _source_written(connection, ledger.ledger_path(project, root))
-                    for source in (
-                        ledger.ledger_path(project, root).parent / "runs"
-                    ).glob("*.json"):
-                        _source_written(connection, source)
+                    if signature is None:
+                        for source in (
+                            ledger.ledger_path(project, root).parent / "runs"
+                        ).glob("*.json"):
+                            _source_written(connection, source)
+                    connection.execute(
+                        "INSERT OR REPLACE INTO metadata VALUES ('store', ?)",
+                        (signature,),
+                    )
                     connection.execute(
                         "INSERT OR REPLACE INTO metadata VALUES ('generation', ?)",
                         (json.dumps(generation),),
@@ -454,6 +527,11 @@ def read_rows(
                     if row:
                         parsed = json.loads(row[0])
                         found[parsed["run_id"]] = parsed
+    if _store_signature() is not None:
+        return sorted(
+            _hydrate(project, list(found.values())),
+            key=lambda row: str(row.get("completed_at") or ""),
+        )
     # The projection locates rows; the open run's own document remains the
     # authority for in-place edits and a writer interrupted before indexing.
     from reckon import ledger
@@ -518,8 +596,11 @@ def ledger_version(project: str, root=None) -> int:
 @_read_fallback(_history_row)
 def row_for_run(project: str, run_id: str, root=None) -> dict[str, Any] | None:
     """Lookup one promoted identity without decoding unrelated history."""
-    from reckon import ledger
+    from reckon import ledger, run_store
 
+    stored = run_store.stored_run_rows(project, run_ids=[run_id])
+    if stored is not None:
+        return stored[0] if stored else None
     source = ledger.run_path(project, run_id, root)
     if source.exists():
         return ledger._read_run(source)
@@ -558,7 +639,35 @@ def rows_naming_trees(
             if row:
                 parsed = json.loads(row[0])
                 result[parsed["run_id"]] = parsed
-    return list(result.values())
+    return _hydrate(project, list(result.values()))
+
+
+@_read_fallback(_history_dispatched_rows)
+def dispatched_rows(
+    project: str, session: str | None = None, root=None
+) -> list[dict[str, Any]]:
+    """The rows one dispatched session owns, read without opening a run's file.
+
+    The projection's ``session`` column holds the worker's own harness session,
+    which is a different key from the crew session that dispatched the run, so
+    the filter reads the field the stored record carries. Rows are ordered by
+    completion, then identity, so two reads of one projection agree.
+    """
+    with contextlib.closing(sqlite3.connect(_ensure(project, root))) as connection:
+        if session is None:
+            query, arguments = "SELECT payload FROM records", ()
+        else:
+            query = (
+                "SELECT payload FROM records WHERE json_extract(payload, '$.session')=?"
+            )
+            arguments = (str(session),)
+        rows = [
+            json.loads(payload)
+            for (payload,) in connection.execute(
+                f"{query} ORDER BY completed, run_id", arguments
+            )
+        ]
+    return _hydrate(project, rows) if _store_signature() is not None else rows
 
 
 @_read_fallback(_history_session)
@@ -571,7 +680,8 @@ def latest_session_row(project: str, session: str, root=None) -> dict[str, Any] 
             "SELECT payload FROM records WHERE session=? ORDER BY completed DESC, run_id DESC LIMIT 1",
             (session,),
         ).fetchone()
-        return json.loads(row[0]) if row else None
+        rows = _hydrate(project, [json.loads(row[0])]) if row else []
+        return rows[0] if rows else None
 
 
 @_read_fallback(_history_membership)
@@ -579,6 +689,8 @@ def has_row(project: str, run_id: str, root=None) -> bool:
     """Test one promoted identity without enumerating historical membership."""
     from reckon import ledger
 
+    if _store_signature() is not None:
+        return row_for_run(project, run_id, root) is not None
     if ledger.run_path(project, run_id, root).is_file():
         return True
     with contextlib.closing(sqlite3.connect(_ensure(project, root))) as connection:
@@ -596,20 +708,45 @@ def has_row(project: str, run_id: str, root=None) -> bool:
 
 
 def matches_sources(project: str, root, signature: tuple) -> bool:
-    """Use the held reader's existing stat snapshot to validate the fast path."""
+    """Use the held reader's existing stat snapshot to validate the fast path.
+
+    The projection is filed from one of two authorities, and each is validated
+    against the identity its own answer depends on.
+
+    Where a run store exists the projection's rows are the store's rows, so the
+    store's signature is the identity that says whether the projection still
+    describes it, and :func:`_ensure` is asked to bring the projection current
+    first. The per-run documents are copies the store already holds, so
+    requiring a stamp per document would refuse on every tick of an
+    installation whose documents predate the index — a stamp names a source for
+    a read that never makes it, and the answer the read would give comes from
+    the store.
+
+    Where no store exists the documents are the authority, so every document
+    the held listing holds now must be stamped at the identity it holds now. A
+    stamp left behind by a document that has since been removed is not
+    consulted: nothing prunes the table but a full rebuild, and the read files
+    rows from the population it lists, not from the one the table once listed.
+    """
     path = index_path(project, root)
     if not path.exists():
         return False
     try:
-        with contextlib.closing(sqlite3.connect(path)) as connection:
-            if not connection.execute(
-                "SELECT 1 FROM metadata WHERE key='ready'"
-            ).fetchone():
+        store_backed = _store_signature() is not None
+        _ensure(project, root)
+        if store_backed:
+            with contextlib.closing(_connect(path, read_only=True)) as current:
+                return _current(current, project, root)
+        with contextlib.closing(_connect(path)) as connection:
+            metadata = dict(connection.execute("SELECT key, value FROM metadata"))
+            if metadata.get("ready") != "1":
                 return False
             stored = dict(connection.execute("SELECT name, stamp FROM sources"))
         aggregate, stamp, documents = signature[:3]
-        actual = {aggregate: json.dumps(stamp)} if stamp is not None else {}
-        actual.update((name, json.dumps(identity)) for name, identity in documents[1])
-        return stored == actual
+        if stamp is not None and stored.get(aggregate) != _stamp_text(stamp):
+            return False
+        return all(
+            stored.get(name) == _stamp_text(identity) for name, identity in documents[1]
+        )
     except (OSError, sqlite3.Error):
         return False

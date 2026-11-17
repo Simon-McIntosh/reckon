@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion_records.py:1028 _arm_missing_fields",
+    "reckon/crew/promotion_records.py:1331 per-arm caller",
+    "reckon/crew_run_commands.py:3805 crew-complete suite-delta-refused emitter"
+  ],
+  "completed_at": "2026-11-16T14:54:24.170Z",
+  "dispatched_at": "2026-11-16T14:53:49Z",
+  "findings": [
+    {
+      "file": "tests/test_suite_arms_use_the_armed_command.py",
+      "line": "264",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert suite_delta[\"added_failure_ids\"] == [] compares the delta against the empty failure_ids the fixture hands both arms at :151, so it holds even if the delta were produced without reading an arm; the exit-code and status assertions at :261-263 are what actually guard the arming rule."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-suite-arms-use-the-armed-command.html",
+      "line": "73",
+      "severity": "non-blocking",
+      "text": "non-blocking: the mutation control reading 2 failed, 1 passed in 2.54s is reported in prose and the fragment's log list at :81-84 omits it, with no such log present in the run's logs/ directory, so the control cannot be opened by anyone but the worker."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-suite-arms-use-the-armed-command.html",
+      "line": "28",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head gate is cited at a80adf413a, four commits behind the reviewed head fb95124216, so the done_when's at-head wording rests on the argument that the later commits touch evidence alone rather than on a gate run at the reviewed head."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read 66f30b3ea17c141abf748f198ded121a3dd46475..fb951242162e06e45719e730e3e347035e54b80f commit by commit \u2014 8231d14518 changes only the test fixture (56+/12-), 729e3ce7bc adds the two evidence fragments, and a80adf413a, 219e7af06b and fb95124216 edit only those fragments, with no added, removed or renamed assert statement anywhere in the diff.",
+    "done_when": "the done_when asks for the whole file at head as an all_debug job with SLURM_JOB_ID unset plus an arm over the importing test files adding no failure; logs/gate-all-debug.log reads 3 passed in 3.24s EXIT=0 and logs/baseline-suite-before.log and logs/after-suite-before.log read 58 passed EXIT=0 each with the same interpreter path, PYTHONPATH spelling and module under test recorded by the measurement header.",
+    "goal": "the node's goal is that tests/test_suite_arms_use_the_armed_command.py passes in full; the landed fixture at tests/test_suite_arms_use_the_armed_command.py:45-46 seeds a real base commit and a real run commit and at :197-199 passes --commit with the head sha and --wait, and logs/gate-all-debug.log reads 3 passed in 3.24s with EXIT=0.",
+    "manifest": "read; it states status complete, the five commits 8231d14518 729e3ce7bc a80adf413a 219e7af06b fb95124216, two causes each carrying a verdict (both test wrong), the gate command, baseline_suite and after_suite each at 0 failures, and the base negative control at 3 failed EXIT=1 with its three ids.",
+    "write_paths": "the declared fence is reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround/red-file-suite-arms-use-the-armed-command.html; the node's own commits diff 66f30b3ea17c141abf748f198ded121a3dd46475..fb951242162e06e45719e730e3e347035e54b80f lists only tests/test_suite_arms_use_the_armed_command.py and the two evidence fragments under that directory, and the five commits separating the run's declared base 827719105952d26737ec2c5da31433132664e0b6 from that parent belong to other runs."
+  },
+  "justifications": {
+    "durability": "logs/negative-control-base-named-file.log reads 3 failed EXIT=1 at 8277191059 and tests/test_suite_arms_use_the_armed_command.py:231-235 and :261-263 redden if the arming comparison or its whitespace normalisation regresses, while :264 compares the delta against the empty failure_ids the fixture supplies.",
+    "evidence": "logs/gate-all-debug.log:1 and the baseline and after arm logs at :1 record summary lines and EXIT=0 for the three runs the done_when names, but the head gate ran at a80adf413a rather than the reviewed head fb95124216 and the fragment's mutation control retains no log.",
+    "fit": "the added helpers at tests/test_suite_arms_use_the_armed_command.py:91-106 follow the repository's per-file git-helper idiom, though three one-line wrappers stand where the single _git(root, *args) form used by 259 files under tests/ would match that majority.",
+    "goal_fidelity": "tests/test_suite_arms_use_the_armed_command.py:197-199 now drives promotion synchronously and :143-152 builds the record the guards read, so the file reads 3 passed at the gated revision and only its merge to the primary branch is outstanding.",
+    "reuse": "the search over tests/ and tests/conftest.py found no shared git-revision helper to extend \u2014 conftest.py defines no git runner and 259 test files each define their own _git \u2014 so the addition duplicates no owner.",
+    "scope_discipline": "every path in the node's own diff 66f30b3..fb95124216 lies inside the declared fence, and the run-base span 8277191059..66f30b3 carries only other runs' ledger and review files, which this node neither wrote nor touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_suite_arms_use_the_armed_command.py passes in full; the landed fixture at tests/test_suite_arms_use_the_armed_command.py:45-46 seeds a real base commit and a real run commit and at :197-199 passes --commit with the head sha and --wait, and logs/gate-all-debug.log reads 3 passed in 3.24s with EXIT=0.\nVERDICT done_when: the done_when asks for the whole file at head as an all_debug job with SLURM_JOB_ID unset plus an arm over the importing test files adding no failure; logs/gate-all-debug.log reads 3 passed in 3.24s EXIT=0 and logs/baseline-suite-before.log and logs/after-suite-before.log read 58 passed EXIT=0 each with the same interpreter path, PYTHONPATH spelling and module under test recorded by the measurement header.\nVERDICT write_paths: the declared fence is reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround/red-file-suite-arms-use-the-armed-command.html; the node's own commits diff 66f30b3ea17c141abf748f198ded121a3dd46475..fb951242162e06e45719e730e3e347035e54b80f lists only tests/test_suite_arms_use_the_armed_command.py and the two evidence fragments under that directory, and the five commits separating the run's declared base 827719105952d26737ec2c5da31433132664e0b6 from that parent belong to other runs.\nVERDICT manifest: read; it states status complete, the five commits 8231d14518 729e3ce7bc a80adf413a 219e7af06b fb95124216, two causes each carrying a verdict (both test wrong), the gate command, baseline_suite and after_suite each at 0 failures, and the base negative control at 3 failed EXIT=1 with its three ids.\nVERDICT diff: read 66f30b3ea17c141abf748f198ded121a3dd46475..fb951242162e06e45719e730e3e347035e54b80f commit by commit \u2014 8231d14518 changes only the test fixture (56+/12-), 729e3ce7bc adds the two evidence fragments, and a80adf413a, 219e7af06b and fb95124216 edit only those fragments, with no added, removed or renamed assert statement anywhere in the diff.\nCALL_SITES: reckon/crew/promotion_records.py:1028 _arm_missing_fields, reckon/crew/promotion_records.py:1331 per-arm caller, reckon/crew_run_commands.py:3805 crew-complete suite-delta-refused emitter\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_suite_arms_use_the_armed_command.py:197-199 now drives promotion synchronously and :143-152 builds the record the guards read, so the file reads 3 passed at the gated revision and only its merge to the primary branch is outstanding.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/gate-all-debug.log:1 and the baseline and after arm logs at :1 record summary lines and EXIT=0 for the three runs the done_when names, but the head gate ran at a80adf413a rather than the reviewed head fb95124216 and the fragment's mutation control retains no log.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the node's own diff 66f30b3..fb95124216 lies inside the declared fence, and the run-base span 8277191059..66f30b3 carries only other runs' ledger and review files, which this node neither wrote nor touched.\nSCORE durability: 17\nJUSTIFICATION durability: logs/negative-control-base-named-file.log reads 3 failed EXIT=1 at 8277191059 and tests/test_suite_arms_use_the_armed_command.py:231-235 and :261-263 redden if the arming comparison or its whitespace normalisation regresses, while :264 compares the delta against the empty failure_ids the fixture supplies.\nSCORE fit: 18\nJUSTIFICATION fit: the added helpers at tests/test_suite_arms_use_the_armed_command.py:91-106 follow the repository's per-file git-helper idiom, though three one-line wrappers stand where the single _git(root, *args) form used by 259 files under tests/ would match that majority.\nSCORE reuse: 20\nJUSTIFICATION reuse: the search over tests/ and tests/conftest.py found no shared git-revision helper to extend \u2014 conftest.py defines no git runner and 259 test files each define their own _git \u2014 so the addition duplicates no owner.\nFINDING tests/test_suite_arms_use_the_armed_command.py:264 non-blocking: assert suite_delta[\"added_failure_ids\"] == [] compares the delta against the empty failure_ids the fixture hands both arms at :151, so it holds even if the delta were produced without reading an arm; the exit-code and status assertions at :261-263 are what actually guard the arming rule.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-suite-arms-use-the-armed-command.html:73 non-blocking: the mutation control reading 2 failed, 1 passed in 2.54s is reported in prose and the fragment's log list at :81-84 omits it, with no such log present in the run's logs/ directory, so the control cannot be opened by anyone but the worker.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-suite-arms-use-the-armed-command.html:28 non-blocking: the head gate is cited at a80adf413a, four commits behind the reviewed head fb95124216, so the done_when's at-head wording rests on the argument that the later commits touch evidence alone rather than on a gate run at the reviewed head.\n",
+  "review_run_id": "r-20261116T135846510636-review-of-qwnw-red-file-suite-arms-use-the-armed-command-fb951242162e",
+  "reviewed_base_sha": "66f30b3ea17c141abf748f198ded121a3dd46475",
+  "reviewed_head_sha": "fb951242162e06e45719e730e3e347035e54b80f",
+  "reviewed_run_id": "r-20261116T104725926834-qwnw-red-file-suite-arms-use-the-armed-command",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewed_run_id": "r-20261116T104725926834-qwnw-red-file-suite-arms-use-the-armed-command",
+    "reviewer_run_id": "r-20261116T135846510636-review-of-qwnw-red-file-suite-arms-use-the-armed-command-fb951242162e"
+  },
+  "reviewer_run_id": "r-20261116T135846510636-review-of-qwnw-red-file-suite-arms-use-the-armed-command-fb951242162e",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T20:59:34.450626+00:00",
+  "total": 109
+}

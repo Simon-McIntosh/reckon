@@ -237,25 +237,29 @@ def derive_within_budget(
 
 
 # The duty kinds listed but never holding a stop open. A queued review's work
-# is already owned by a reflex that retries, a queued run waits on the lane's
-# own admission pass, a stalled run is one that pass could launch and did not,
-# an unreadable record is a reading of a file caught mid-write rather than a
-# duty the coordinator can act on, an index that stages a path HEAD still
-# holds belongs to the project rather than to any run's work, and a repair
-# round is a worker the reflex resumed and will re-fire when the round ends, so
-# blocking would ask a coordinator to act on a condition no run of this session
-# created.
+# is already owned by a reflex that retries, a review in flight is that same
+# reflex's reviewer running and named by the row's own text as a thing to read
+# rather than to shorten, a queued run waits on the lane's own admission pass, a
+# stalled run is one that pass could launch and did not, an unreadable record is
+# a reading of a file caught mid-write rather than a duty the coordinator can
+# act on, an index that stages a path HEAD still holds belongs to the project
+# rather than to any run's work, a repair round is a worker the reflex resumed
+# and will re-fire when the round ends, and a route the picker defaulted is a
+# notice about a run that is working rather than a debt, so blocking would ask a
+# coordinator to act on a condition no run of this session created.
 # Mirrors the derivation's own vocabulary, which cannot be imported here on the
 # paths that read a fresh snapshot.
 _NON_BLOCKING_KINDS = frozenset(
     {
         "review-queued",
+        "review-in-flight",
         "run-queued",
         "run-stalled",
         "unreadable-review-record",
         "index-lags-head",
         "repair-round",
         "scope-held",
+        "route-defaulted",
     }
 )
 
@@ -909,7 +913,21 @@ def format_checklist(
     summary = payload.get("summary") or {}
     project = str(payload.get("project") or "")
     session = str(payload.get("session") or "")
-    count = summary.get("count", len(items))
+    retained = payload.get("stale")
+    if isinstance(retained, Mapping):
+        age = retained.get("age_seconds")
+        age_note = (
+            f"{_format_age(int(age))} old"
+            if isinstance(age, (int, float)) and age >= 0
+            else "age unavailable"
+        )
+        retained_note = f"retained answer, stale {age_note}"
+        note = f"{note}; {retained_note}" if note else retained_note
+    # The header counts the rows this render is about to print. The payload's
+    # own summary figure is a derivation's count for a list a recheck may have
+    # cut down since, and a figure that disagrees with the rows beneath it
+    # tells a coordinator that work is missing from a list that is complete.
+    count = len(items)
     header = (
         f"reckon obligations for session {session} (project {project}): "
         f"{note + '; ' if note else ''}"
@@ -942,8 +960,21 @@ def format_checklist(
         lines.append(model_notice_line(pending))
     resets = limit_reset_events(session) if limit_resets is None else list(limit_resets)
     lines.extend(limit_reset_line(event) for event in resets)
-    unreconciled = f"unreconciled runs: {summary.get('unreconciled_runs', 0)}"
-    lines.append(unreconciled + "; work the list to empty before ending the turn.")
+    # The trailer is the instruction to work the list, so it is printed only
+    # when the list holds a duty a coordinator can act on, and its figure is
+    # the number of obligations the render lists. A session read "unreconciled
+    # runs: 3; work the list to empty before ending the turn" beside an empty
+    # list because the figure counted runs the closure calls unreconciled --
+    # two in-flight workers and one request awaiting an upstream section --
+    # none of which is a duty: a run in flight is work already moving, and a
+    # request waiting upstream starts by itself when its last ref lands. The
+    # same trailer over a waiting-only list asks for work nobody at this
+    # session can do.
+    if actionable:
+        lines.append(
+            f"unreconciled runs: {count}; work the list to empty "
+            "before ending the turn."
+        )
     lines.append(AUTHORITY_LINE)
     return "\n".join(lines)
 
@@ -1064,6 +1095,76 @@ def producer_seat_holder(project: str) -> tuple[int | None, str]:
         pid if not isinstance(pid, bool) and isinstance(pid, int) and pid > 0 else None
     )
     return named_pid, str(host) if isinstance(host, str) else ""
+
+
+# A pointer in one of these phases records a run that has ended; a pointer in
+# the launch-failed phase records a run that never reached a worker. Neither is
+# work a session still holds, and the fleet's population rule excludes both
+# (``live_work_populations`` in ``reckon/crew/station_subscriber.py``, the one
+# statement of which pointers a pane must be shown). That rule cannot be
+# imported on this path: the module costs about a second and loads 525 modules,
+# ``reckon.ledger`` and ``reckon._plan_html`` among them, which is the
+# derivation cost the prompt hook exists to avoid and what
+# ``tests/test_obligations_hook_reads_the_snapshot.py`` forbids. So the two
+# exclusions are stated here for the one question this hook asks -- does this
+# session hold unsettled work -- and that question is narrower than the pane
+# population: a settled run is not a session's outstanding work, whether or not
+# a pane would still draw its row.
+_ENDED_POINTER_PHASES = frozenset({"complete", "failed", "stopped", "interrupted"})
+_NEVER_LAUNCHED_POINTER_PHASE = "launch-failed"
+
+
+def _pointer_owes_its_session(document: Mapping[str, Any]) -> bool:
+    """Whether an ended pointer still records work nobody has settled.
+
+    The same two facts the population rule reads from a terminal pointer: a
+    completed run carrying its delivery manifest still owes a promotion, and a
+    review dispatch that was not withdrawn still owes a review. A pointer with
+    neither is settled.
+    """
+    if document.get("promoted_revision"):
+        return False
+    if str(document.get("phase") or "") == "complete" and document.get("manifest_path"):
+        return True
+    return any(
+        isinstance(entry, Mapping)
+        and str(entry.get("status") or "") not in ("", "withdrawn")
+        for entry in (
+            document.get("review_dispatch"),
+            document.get("figure_review_dispatch"),
+        )
+    )
+
+
+def session_holds_live_work(project: str, session: str) -> bool:
+    """Whether a pointer records unsettled work this session is answerable for.
+
+    Read from the pointers themselves rather than from a derivation: the cost is
+    one directory walk and one small JSON read per pointer, on the path where no
+    snapshot answers the turn. A pointer whose owner cannot be read is not
+    evidence that the session is idle, so an unreadable or malformed document
+    counts as work and the reading is kept.
+    """
+    directory = snapshot_module().crew_home() / "live"
+    if not directory.is_dir():
+        return False
+    for path in directory.glob("*.json"):
+        try:
+            document = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return True
+        if not isinstance(document, Mapping):
+            return True
+        phase = str(document.get("phase") or "")
+        if phase == _NEVER_LAUNCHED_POINTER_PHASE:
+            continue
+        if phase in _ENDED_POINTER_PHASES and not _pointer_owes_its_session(document):
+            continue
+        if str(document.get("project") or "") != project:
+            continue
+        if str(document.get("session") or "") == session:
+            return True
+    return False
 
 
 def not_fresh_line(
@@ -1288,40 +1389,61 @@ def _inject_list(
             )
     items = obligations.get("obligations") or ()
     acknowledged = obligations.get("acknowledged") or ()
+    retained = obligations.get("stale")
+    retained = retained if isinstance(retained, Mapping) else None
     digest_file = digest_path(project, session)
     notices = pending_model_notices()
     resets = limit_reset_events(session)
-    if not items and not acknowledged and not reloading and not notices and not resets:
+    if (
+        not items
+        and not acknowledged
+        and not reloading
+        and not notices
+        and not resets
+        and retained is None
+    ):
         _clear_digest(digest_file)
         return
+    reading = (
+        json.dumps(
+            [
+                {
+                    key: item.get(key)
+                    for key in (
+                        "run_id",
+                        "kind",
+                        "reason",
+                        "until",
+                        "until_condition",
+                    )
+                }
+                for item in sorted(
+                    acknowledged,
+                    key=lambda row: (str(row.get("run_id")), str(row.get("kind"))),
+                )
+            ],
+            sort_keys=True,
+        )
+        if acknowledged
+        else ""
+    )
+    if retained is not None:
+        # The answer's identity changes on entering/leaving retention, not as
+        # its age grows between reads of the same still-pending refresh.
+        reading += json.dumps(
+            {
+                "retained": {
+                    key: retained.get(key) for key in ("key", "stored_at", "reason")
+                }
+            },
+            sort_keys=True,
+        )
     digest = duty_digest(
         [*items, *acknowledged],
         reloading=reloading,
         model_notices=notices,
         limit_resets=[str(event.get("id") or "") for event in resets],
-        reading=(
-            json.dumps(
-                [
-                    {
-                        key: item.get(key)
-                        for key in (
-                            "run_id",
-                            "kind",
-                            "reason",
-                            "until",
-                            "until_condition",
-                        )
-                    }
-                    for item in sorted(
-                        acknowledged,
-                        key=lambda row: (str(row.get("run_id")), str(row.get("kind"))),
-                    )
-                ],
-                sort_keys=True,
-            )
-            if acknowledged
-            else ""
-        ),
+        reading=reading,
     )
     if _read_digest(digest_file) == digest:
         return
@@ -1498,6 +1620,20 @@ def _prompt(payload: dict[str, Any]) -> int:
             reloading=True,
             note=f"producer reloading, last snapshot {_format_age(age)} old",
         )
+        return 0
+    if (
+        state == module.NO_PRODUCER
+        and not session_holds_live_work(project, session)
+        and not limit_reset_events(session)
+    ):
+        # An absent producer publishes nothing for a session that holds no
+        # live work, so the line would ask a coordinator that dispatched
+        # nothing to arm a seat nothing is owed to -- the reading a session
+        # with no runs read on every prompt for days. A limit reset is still
+        # news for such a session, so the reading is kept when one is due. The
+        # record is cleared so work that arrives later is spoken for the first
+        # time rather than read as a repeat of a reading already given.
+        _clear_digest(digest_path(project, session))
         return 0
     _inject_reading(
         payload,

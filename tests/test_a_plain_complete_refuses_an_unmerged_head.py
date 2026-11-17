@@ -154,6 +154,7 @@ def _complete_plain(
         [
             "crew",
             "complete",
+            "--wait",
             "--run",
             run["run_id"],
             "--gate",
@@ -228,7 +229,7 @@ def test_a_land_complete_on_an_unmerged_head_is_unaffected(
     result = _complete_land(run)
 
     assert result.exit_code == 0, result.output
-    report = json.loads(result.output)
+    report = json.loads(Path(json.loads(result.output)["record_path"]).read_text())
     assert report["steps"]["land"]["pushed"] is True, report
     assert MARKER.strip() in _git(run["origin"], "show", "main:reviewed-1.txt")
 

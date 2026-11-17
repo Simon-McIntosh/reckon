@@ -21,6 +21,7 @@ import math
 from datetime import UTC, datetime
 from typing import Any
 
+from reckon import ledger
 from reckon._timestamps import parse_utc
 from reckon.resources import nav_key
 from reckon.sprint_liveness import HELD_CLASSIFICATIONS, LIVE_STATES
@@ -187,7 +188,7 @@ def derive_schedule(
     ]
     runs_by_slug: dict[str, list[dict[str, Any]]] = {}
     for run in matching_runs:
-        plan_slug = str(run.get("plan") or "")
+        plan_slug = ledger.row_plan(run)
         if plan_slug:
             runs_by_slug.setdefault(plan_slug, []).append(run)
 

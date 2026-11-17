@@ -9,6 +9,7 @@
 # host or project layer adds external backends as its own data.
 
 version: 1
+service_reload_window_seconds: 1800
 default_backend: native
 
 routing:
@@ -230,3 +231,8 @@ summary:
 ticker:
   history_rows: 100
   history_window: 4h
+
+# Session files use local disk; excess use names the session and its largest directory.
+session_scratch:
+  max_bytes: 2147483648
+  disk_share: 0.5

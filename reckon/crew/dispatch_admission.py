@@ -557,7 +557,7 @@ def _lane_advisory_costs(
     ]
     later_paths: dict[str, list[tuple[int, tuple[str, ...]]]] = defaultdict(list)
     for index, run in enumerate(usable):
-        plan = str(run.get("plan") or "").strip()
+        plan = ledger.row_plan(run).strip()
         paths = capabilities_module._write_paths(run)
         if plan and paths:
             later_paths[plan].append((index, paths))
@@ -568,7 +568,7 @@ def _lane_advisory_costs(
         if not lane:
             continue
         paths = capabilities_module._write_paths(run)
-        plan = str(run.get("plan") or "").strip()
+        plan = ledger.row_plan(run).strip()
         reworked = bool(paths and plan) and any(
             later > index and capabilities_module._paths_overlap(paths, other)
             for later, other in later_paths.get(plan, ())
@@ -935,15 +935,17 @@ def _dispatch_health_review(
 
     from reckon.crew import plan_review as _plan_review
 
-    def _open_findings() -> int:
+    def _open_findings() -> int | None:
         """The open findings stored against the node's write paths.
 
         The count comes from :func:`reckon.crew.plan_review._open_findings_for`,
-        which reads the findings store by path and keeps the open rows for the
-        named paths, so the block counts nothing a second time. The store's own
-        reader swallows an unreadable findings tree as no rows; the resolved
-        checkout it needs is the dispatch's, or the project's own when the
-        dispatch named none.
+        which reads the findings store by path and keeps the open rows at or
+        beneath the named paths, so the block counts nothing a second time and a
+        named directory carries the findings stored on the files under it. That
+        reader answers ``None`` for a store that exists and could not be read,
+        which is no count at all rather than zero, so the block reports the
+        absence as unmeasured. The resolved checkout it needs is the dispatch's,
+        or the project's own when the dispatch named none.
         """
         try:
             repo_root = (
@@ -951,17 +953,16 @@ def _dispatch_health_review(
                 if root is not None
                 else _plan_review._project_repository(project)
             )
-            return len(
-                _plan_review._open_findings_for(
-                    {
-                        "project": project,
-                        "repo": repo_root,
-                        "named_paths": sorted(product_paths),
-                    }
-                )
+            rows = _plan_review._open_findings_for(
+                {
+                    "project": project,
+                    "repo": repo_root,
+                    "named_paths": sorted(product_paths),
+                }
             )
         except (CrewError, OSError, ValueError):
-            return 0
+            return None
+        return None if rows is None else len(rows)
 
     def _remedy_paths() -> list[str]:
         """The paths the remedy names: the dispatch's own, unless the plan has some.
@@ -987,7 +988,7 @@ def _dispatch_health_review(
             "state": state,
             "review": review,
             "age_days": age_days,
-            "open_findings": 0 if state == "unknown" else _open_findings(),
+            "open_findings": None if state == "unknown" else _open_findings(),
             "compose_command": (
                 None
                 if fresh
@@ -1765,8 +1766,12 @@ def _mount_table() -> tuple[tuple[Path, str], ...]:
     return table
 
 
-def _path_is_tmpfs(path: str | Path) -> bool:
-    """Return whether a path resolves beneath a tmpfs or ramfs mount."""
+def path_filesystem_type(path: str | Path) -> str | None:
+    """The filesystem of the nearest enclosing mount, following path aliases.
+
+    All path classification shares the cached mount table and longest-prefix
+    selection; callers own their policies for the returned filesystem type.
+    """
     target = Path(path).expanduser().resolve()
     best: tuple[int, str] | None = None
     for mount, kind in _mount_table():
@@ -1774,7 +1779,12 @@ def _path_is_tmpfs(path: str | Path) -> bool:
             candidate = (len(mount.parts), kind)
             if best is None or candidate[0] > best[0]:
                 best = candidate
-    return bool(best and best[1] in {"tmpfs", "ramfs"})
+    return best[1] if best else None
+
+
+def _path_is_tmpfs(path: str | Path) -> bool:
+    """Return whether a path resolves beneath a tmpfs or ramfs mount."""
+    return path_filesystem_type(path) in {"tmpfs", "ramfs"}
 
 
 # A declared endpoint is probed before launch, so the probe is bounded: a slow
