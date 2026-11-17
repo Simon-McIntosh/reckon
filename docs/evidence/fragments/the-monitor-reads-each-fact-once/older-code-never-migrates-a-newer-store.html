@@ -10,7 +10,7 @@
   <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s84">
   <meta name="evidence-verdict" content="pass">
   <meta name="evidence-date" content="2026-11-17">
-  <meta name="evidence-commit" content="f6b4fd0358">
+  <meta name="evidence-commit" content="dcb1bfc356">
   <title>Older code never migrates a newer store | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -35,7 +35,10 @@ FAILED ...::test_reads_and_appends_on_a_store_written_by_newer_code_still_work -
   <p>500 row decodes on a store that was missing nothing, and the newer code's
   record replaced by the older code's hash. That is the whole-store write lock
   the plan's <em>Why</em> records, held by a process that had nothing to add,
-  and the claim on the store that let it keep doing so.</p>
+  and the claim on the store that let it keep doing so. The two lines are two
+  runs, each that case alone over the base tree with this node's test file laid
+  over it: <code>logs/negative-control.log</code> for the row count and
+  <code>logs/base-reads-and-appends-base-case.log</code> for the record.</p>
 
   <p><strong>What landed. Members and holds remain as they were; the open
   changed.</strong></p>
@@ -60,21 +63,25 @@ FAILED ...::test_reads_and_appends_on_a_store_written_by_newer_code_still_work -
   The test counts the rows the migration decodes through a stand-in on
   <code>_legacy_payload</code>, the one per-row decode the backfill performs.
   Matched arms, both running the same file and interpreter over different trees,
-  as an <code>all_debug</code> partition job:</p>
+  the base tree an export of <code>d5694fa4</code> committed into its own
+  repository:</p>
 
   <table>
     <tr><th>arm</th><th>tree</th><th>result</th></tr>
     <tr><td>base</td><td><code>d5694fa4</code>, its own three test files</td><td>62 passed</td></tr>
-    <tr><td>head</td><td><code>f6b4fd03</code>, node test plus those three</td><td>67 passed</td></tr>
+    <tr><td>head</td><td><code>dcb1bfc3</code>, node test plus those three</td><td>67 passed</td></tr>
     <tr><td>negative control</td><td><code>d5694fa4</code>, node test overlaid, newer-store case only</td><td>1 failed — <code>assert 500 == 0</code></td></tr>
+    <tr><td>missing-column case</td><td><code>d5694fa4</code>, node test overlaid, that one case</td><td>1 passed</td></tr>
   </table>
 
   <p>The same recorder reads 500 on a store that really lacks
   <code>activity_seconds</code> and 0 on the newer store, in the same run: the
   zero is the store reporting it did no work, not an instrument that never
-  fired. That missing-column case still adds the column, backfills every row,
-  builds the index on it, and passes at both revisions — the guard fires where
-  it should and only there.</p>
+  fired. That missing-column case still adds the column, backfills every row
+  and builds the index on it — proved at the base revision by running it alone
+  over the base tree (<code>1 passed</code>), and at the head by the node file's
+  own run (<code>4 passed</code>). The guard fires where it should and only
+  there.</p>
 
   <p><strong>The contradiction, and its repair.</strong>
   <code>tests/test_a_promotion_does_not_migrate_the_run_store_every_call.py</code>
@@ -90,15 +97,17 @@ FAILED ...::test_reads_and_appends_on_a_store_written_by_newer_code_still_work -
   <p><strong>Two assertions that had to be shown to bite.</strong> Review found
   one assertion comparing the fixture store against the constant that built it,
   which holds whatever the code does; it is replaced by a count of migration
-  passes. Removing the coverage check from <code>_create</code> now fails the
-  newer-store case with <code>assert 500 == 0</code> on the row count and
-  <code>assert 1 == 0</code> on the pass count. The second gap was the backfill
-  gate in <code>_migrate_runs</code>, which no case reached because a complete
-  store returns before the migration: a store missing one declared index now
-  takes the pass, gets the index back, keeps this code's record, and still
-  decodes no row, so reverting that gate to column equality fails it with
-  <code>assert 500 == 0</code>. Both mutations were applied and their logs
-  kept beside the arms.</p>
+  passes. Removing the coverage check from <code>_create</code> fails the
+  newer-store case on the pass count, <code>assert 1 == 0</code>, and fails the
+  reads-and-appends case on the record this code's hash replaced; no case
+  decodes a row under that mutation, because the backfill gate returns early
+  once every declared column is present. The second gap was the backfill gate in
+  <code>_migrate_runs</code>, which no case reached because a complete store
+  returns before the migration: a store missing one declared index now takes the
+  pass, gets the index back, keeps this code's record, and still decodes no row.
+  Reverting that gate to column equality is what produces the 500-row reading,
+  <code>assert 500 == 0</code>, on that missing-index case. Both mutations were
+  applied to the head tree and their logs kept beside the arms.</p>
 </section>
 </main>
 </body>
