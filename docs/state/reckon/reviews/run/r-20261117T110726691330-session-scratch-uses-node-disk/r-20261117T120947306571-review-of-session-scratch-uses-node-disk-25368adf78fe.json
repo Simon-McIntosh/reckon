@@ -1,0 +1,257 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "fails_if": "Restore SESSION_TMP_ROOT=/dev/shm; the independent /tmp expectation reddens, as final-negative-control.log demonstrates.",
+      "lines": "32-33"
+    },
+    {
+      "fails_if": "Ignore the configured scratch root, choose a memory path, share an allocation directory between sessions, change private mode, or fail valid starts.",
+      "lines": "38-41,50-54"
+    },
+    {
+      "fails_if": "Report nonzero empty-session use, omit busy allocated blocks, report the empty session, choose the smaller directory or misaggregate totals; total-versus-row is a consistency assertion supported by the independent 20480-byte lower bound, not independent size evidence alone.",
+      "lines": "61-67"
+    },
+    {
+      "fails_if": "Allow /dev/shm directly or through a symlink instead of raising.",
+      "lines": "74-77"
+    },
+    {
+      "fails_if": "Fail the sample, undercount the known nonempty file, disagree between stdout and persisted data, omit either session path, misattribute the duty or omit its directory/alert; stdout-versus-file is transport consistency, supported independently by >=16384.",
+      "lines": "86-97"
+    },
+    {
+      "fails_if": "Launch or create scratch at the configured half-disk cap, omit the busy duty, or retain the refusal after deleting the measured file; the cap is derived from independent file stat blocks.",
+      "lines": "119-128"
+    },
+    {
+      "fails_if": "Follow either symlink, swallow walk PermissionError, emit numeric zero rather than unknown, return success on unreadability, omit alert or publish a false health reading.",
+      "lines": "140,147-151"
+    },
+    {
+      "fails_if": "Remove the elapsed-time bound or stop raising TimeoutError after the controlled clock crosses 15 seconds.",
+      "lines": "160-161"
+    },
+    {
+      "fails_if": "Change stated defaults, ignore host overrides, or accept a zero disk share.",
+      "lines": "170,173-179"
+    },
+    {
+      "fails_if": "Break the health command or omit/alter the scratch subprocess value in the TSV; injected 12345 checks transport, not disk measurement, and reverting the real sampler alone would survive this transport-only assertion.",
+      "lines": "208-211"
+    },
+    {
+      "fails_if": "Fail publication, omit the busy duty, lose the independent largest-directory path, diverge direct/published reason or command, or leak a duty to empty/unrelated conversations; parity checks are consistency checks rather than proof of reason semantics on their own.",
+      "lines": "236,263-274"
+    },
+    {
+      "fails_if": "Fail resampling or retain the busy duty in either production view after deleting the file.",
+      "lines": "278-287"
+    }
+  ],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/fleet_supervisor.py:main",
+    "reckon/crew/fleet_supervisor.py:prepare_runtime",
+    "reckon/crew/fleet_supervisor.py:start_session",
+    "bin/fleet-health:89",
+    "reckon/crew/obligations.py:_obligations_view",
+    "reckon/crew/obligation_snapshot.py:payload_for"
+  ],
+  "completed_at": "2026-11-17T12:18:49Z",
+  "dispatched_at": "2026-11-17T12:13:26Z",
+  "failure_delta_source": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110726691330-session-scratch-uses-node-disk/after_suite-1794914414066962255.log",
+      "revision": "3c0573107c4e097a228d5010247c8e81ea5bbdd9",
+      "summary": "66 passed in 36.26s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110726691330-session-scratch-uses-node-disk/baseline_suite-1794914339033945891.log",
+      "revision": "45967c6c6399a70306ce0cd5cb106e6ed54e0c21",
+      "summary": "58 passed in 34.35s"
+    }
+  },
+  "final_head_gate": {
+    "completed": true,
+    "exit_status": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110726691330-session-scratch-uses-node-disk/scoped-gate-1794915837171466816.log",
+    "revision": "25368adf78fe0dd00b105e183ddd5b25af8f0f23",
+    "summary": "67 passed in 37.49s"
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/fleet_supervisor.py",
+      "line": "512",
+      "severity": "blocking",
+      "text": "blocking: _scratch_disk duplicates the mount-table parsing and longest-prefix filesystem classification owned by reckon/crew/dispatch_admission.py:1741 (_mount_table) and :1769 (_path_is_tmpfs); it neither wraps nor extends that owner, so mount parsing and filesystem policy can drift independently; expose or extend the existing owner and keep the session-specific allowed-filesystem policy on that shared mechanism."
+    }
+  ],
+  "importer_delta": {
+    "added_failure_ids": [
+      "tests/test_fleet_health.py::test_dstate_trigger_writes_a_snapshot_with_thread_and_wait_columns"
+    ],
+    "after": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_a_crashed_producer_is_restarted.py::test_a_lapsed_lease_is_restarted",
+        "tests/test_a_derivation_builds_the_ledger_index_once.py::test_a_changed_run_file_is_reflected_in_the_next_derivation",
+        "tests/test_a_derivation_builds_the_ledger_index_once.py::test_one_derivation_builds_the_index_once",
+        "tests/test_a_derivation_builds_the_ledger_index_once.py::test_the_shared_index_answers_as_the_explicit_root",
+        "tests/test_a_missing_snapshot_names_a_live_seat.py::test_a_missing_snapshot_beside_a_stalled_seat_reads_no_producer",
+        "tests/test_a_missing_snapshot_names_a_live_seat.py::test_a_missing_snapshot_with_no_seat_reads_no_producer",
+        "tests/test_a_pane_counts_its_session_across_projects.py::test_a_scoped_pane_sums_the_session_across_every_project",
+        "tests/test_a_quiet_foreign_producer_reads_live.py::test_stale_or_mismatched_lease_does_not_revive_quiet_seat[different-holder.invalid-0]",
+        "tests/test_a_quiet_foreign_producer_reads_live.py::test_stale_or_mismatched_lease_does_not_revive_quiet_seat[producer-elsewhere.invalid-31]",
+        "tests/test_a_slow_station_still_reads_as_alive.py::test_a_blocked_tick_keeps_a_fresh_beat_and_reads_slow",
+        "tests/test_a_station_refresh_walks_the_process_table_once.py::test_one_refresh_walks_the_table_once",
+        "tests/test_a_sweep_failure_is_an_obligation.py::test_failed_run_is_published_until_a_successful_sweep[False]",
+        "tests/test_a_sweep_failure_is_an_obligation.py::test_failed_run_is_published_until_a_successful_sweep[True]",
+        "tests/test_a_sweep_resolves_review_heads_once.py::test_one_derivation_resolves_each_reviewed_head_once",
+        "tests/test_a_tier_none_run_owes_no_review.py::test_a_tier_none_run_citing_only_its_base_offers_the_no_commit_form",
+        "tests/test_a_tier_none_run_owes_no_review.py::test_a_tier_none_run_reads_a_promotable_kind_and_a_source_run_stays_missing",
+        "tests/test_a_vanished_review_pointer_does_not_stop_the_station.py::test_a_lost_lease_still_ends_the_station",
+        "tests/test_a_vanished_review_pointer_does_not_stop_the_station.py::test_a_tick_that_raises_costs_one_tick_and_the_station_goes_on",
+        "tests/test_an_installed_interpreter_refuses_a_write.py::test_each_health_sample_repairs_a_later_install",
+        "tests/test_an_installed_interpreter_refuses_a_write.py::test_unreadable_registry_is_unknown_in_the_health_series",
+        "tests/test_an_unreadable_review_duty_names_its_fault.py::test_the_duty_is_the_same_row_read_back_from_the_snapshot",
+        "tests/test_coordinator_obligations_hook.py::test_each_held_worktree_keeps_its_own_run_scoped_line",
+        "tests/test_coordinator_obligations_hook.py::test_two_review_ready_items_carry_their_own_run_command",
+        "tests/test_crew_tool_carries_the_write_verbs.py::test_a_commitless_promotion_keeps_its_waiver_and_outcome",
+        "tests/test_crew_tool_carries_the_write_verbs.py::test_each_action_matches_its_cli_verb[land]",
+        "tests/test_crew_tool_carries_the_write_verbs.py::test_the_negative_control_breaks_one_action_only",
+        "tests/test_each_admission_pass_records_its_verdict.py::test_the_log_is_trimmed_within_its_size_bound",
+        "tests/test_fleet_health.py::test_dstate_trigger_writes_a_snapshot_with_thread_and_wait_columns",
+        "tests/test_fleet_state_reads_the_live_pointers_once.py::test_one_derivation_lists_the_live_directory_once",
+        "tests/test_gc_bounds_a_run_file.py::test_gc_skips_files_the_run_directory_does_not_own",
+        "tests/test_held_worktrees_are_read_once_per_change.py::test_a_vanished_directory_invalidates_the_answer",
+        "tests/test_held_worktrees_are_read_once_per_change.py::test_an_unchanged_refresh_does_no_held_tree_discovery",
+        "tests/test_held_worktrees_are_read_once_per_change.py::test_changed_pointer_and_record_invalidate_the_answer",
+        "tests/test_held_worktrees_are_read_once_per_change.py::test_churn_without_a_registered_claim_reuses_held_records",
+        "tests/test_no_caller_waits_on_a_promotion.py::test_a_failure_is_durable_and_is_a_session_obligation",
+        "tests/test_obligations_hook_reads_the_snapshot.py::test_each_not_fresh_reason_speaks_once_and_leaves_the_snapshot_alone",
+        "tests/test_obligations_hook_reads_the_snapshot.py::test_the_prompt_path_loads_no_derivation_module",
+        "tests/test_queue_landing.py::test_accepted_delivery_uses_the_real_crew_land_path",
+        "tests/test_queue_landing.py::test_land_invokes_the_shared_path_through_the_scheduler_shim",
+        "tests/test_refused_promotion_request_settles.py::test_a_landed_run_settles_its_refused_request_as_landed",
+        "tests/test_skipped_record_reaches_the_checklist.py::test_a_skipped_record_is_named_in_the_prompt_checklist",
+        "tests/test_skipped_record_reaches_the_checklist.py::test_the_reader_reproduces_the_findings_the_writer_carried",
+        "tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py::test_a_finding_with_no_disposition_is_not_promoted",
+        "tests/test_the_read_only_region_refuses_a_mutation.py::test_a_fleet_state_derivation_inside_the_region_completes",
+        "tests/test_the_station_starts_where_workers_run.py::test_station_reloads_from_a_node_local_image"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110726691330-session-scratch-uses-node-disk/isolated-importers-head.log",
+      "revision": "25368adf78fe0dd00b105e183ddd5b25af8f0f23",
+      "summary": "45 failed, 1305 passed, 1 skipped in 297.22s (0:04:57)"
+    },
+    "baseline": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_a_crashed_producer_is_restarted.py::test_a_lapsed_lease_is_restarted",
+        "tests/test_a_derivation_builds_the_ledger_index_once.py::test_a_changed_run_file_is_reflected_in_the_next_derivation",
+        "tests/test_a_derivation_builds_the_ledger_index_once.py::test_one_derivation_builds_the_index_once",
+        "tests/test_a_derivation_builds_the_ledger_index_once.py::test_the_shared_index_answers_as_the_explicit_root",
+        "tests/test_a_missing_snapshot_names_a_live_seat.py::test_a_missing_snapshot_beside_a_stalled_seat_reads_no_producer",
+        "tests/test_a_missing_snapshot_names_a_live_seat.py::test_a_missing_snapshot_with_no_seat_reads_no_producer",
+        "tests/test_a_pane_counts_its_session_across_projects.py::test_a_scoped_pane_sums_the_session_across_every_project",
+        "tests/test_a_quiet_foreign_producer_reads_live.py::test_stale_or_mismatched_lease_does_not_revive_quiet_seat[different-holder.invalid-0]",
+        "tests/test_a_quiet_foreign_producer_reads_live.py::test_stale_or_mismatched_lease_does_not_revive_quiet_seat[producer-elsewhere.invalid-31]",
+        "tests/test_a_slow_station_still_reads_as_alive.py::test_a_blocked_tick_keeps_a_fresh_beat_and_reads_slow",
+        "tests/test_a_station_refresh_walks_the_process_table_once.py::test_one_refresh_walks_the_table_once",
+        "tests/test_a_sweep_failure_is_an_obligation.py::test_failed_run_is_published_until_a_successful_sweep[False]",
+        "tests/test_a_sweep_failure_is_an_obligation.py::test_failed_run_is_published_until_a_successful_sweep[True]",
+        "tests/test_a_sweep_resolves_review_heads_once.py::test_one_derivation_resolves_each_reviewed_head_once",
+        "tests/test_a_tier_none_run_owes_no_review.py::test_a_tier_none_run_citing_only_its_base_offers_the_no_commit_form",
+        "tests/test_a_tier_none_run_owes_no_review.py::test_a_tier_none_run_reads_a_promotable_kind_and_a_source_run_stays_missing",
+        "tests/test_a_vanished_review_pointer_does_not_stop_the_station.py::test_a_lost_lease_still_ends_the_station",
+        "tests/test_a_vanished_review_pointer_does_not_stop_the_station.py::test_a_tick_that_raises_costs_one_tick_and_the_station_goes_on",
+        "tests/test_an_installed_interpreter_refuses_a_write.py::test_each_health_sample_repairs_a_later_install",
+        "tests/test_an_installed_interpreter_refuses_a_write.py::test_unreadable_registry_is_unknown_in_the_health_series",
+        "tests/test_an_unreadable_review_duty_names_its_fault.py::test_the_duty_is_the_same_row_read_back_from_the_snapshot",
+        "tests/test_coordinator_obligations_hook.py::test_each_held_worktree_keeps_its_own_run_scoped_line",
+        "tests/test_coordinator_obligations_hook.py::test_two_review_ready_items_carry_their_own_run_command",
+        "tests/test_crew_tool_carries_the_write_verbs.py::test_a_commitless_promotion_keeps_its_waiver_and_outcome",
+        "tests/test_crew_tool_carries_the_write_verbs.py::test_each_action_matches_its_cli_verb[land]",
+        "tests/test_crew_tool_carries_the_write_verbs.py::test_the_negative_control_breaks_one_action_only",
+        "tests/test_each_admission_pass_records_its_verdict.py::test_the_log_is_trimmed_within_its_size_bound",
+        "tests/test_fleet_state_reads_the_live_pointers_once.py::test_one_derivation_lists_the_live_directory_once",
+        "tests/test_gc_bounds_a_run_file.py::test_gc_skips_files_the_run_directory_does_not_own",
+        "tests/test_held_worktrees_are_read_once_per_change.py::test_a_vanished_directory_invalidates_the_answer",
+        "tests/test_held_worktrees_are_read_once_per_change.py::test_an_unchanged_refresh_does_no_held_tree_discovery",
+        "tests/test_held_worktrees_are_read_once_per_change.py::test_changed_pointer_and_record_invalidate_the_answer",
+        "tests/test_held_worktrees_are_read_once_per_change.py::test_churn_without_a_registered_claim_reuses_held_records",
+        "tests/test_no_caller_waits_on_a_promotion.py::test_a_failure_is_durable_and_is_a_session_obligation",
+        "tests/test_obligations_hook_reads_the_snapshot.py::test_each_not_fresh_reason_speaks_once_and_leaves_the_snapshot_alone",
+        "tests/test_obligations_hook_reads_the_snapshot.py::test_the_prompt_path_loads_no_derivation_module",
+        "tests/test_queue_landing.py::test_accepted_delivery_uses_the_real_crew_land_path",
+        "tests/test_queue_landing.py::test_land_invokes_the_shared_path_through_the_scheduler_shim",
+        "tests/test_refused_promotion_request_settles.py::test_a_landed_run_settles_its_refused_request_as_landed",
+        "tests/test_skipped_record_reaches_the_checklist.py::test_a_skipped_record_is_named_in_the_prompt_checklist",
+        "tests/test_skipped_record_reaches_the_checklist.py::test_the_reader_reproduces_the_findings_the_writer_carried",
+        "tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py::test_a_finding_with_no_disposition_is_not_promoted",
+        "tests/test_the_read_only_region_refuses_a_mutation.py::test_a_fleet_state_derivation_inside_the_region_completes",
+        "tests/test_the_station_starts_where_workers_run.py::test_station_reloads_from_a_node_local_image"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110726691330-session-scratch-uses-node-disk/isolated-importers-base.log",
+      "revision": "45967c6c6399a70306ce0cd5cb106e6ed54e0c21",
+      "summary": "44 failed, 1297 passed, 1 skipped in 317.53s (0:05:17)"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read 0419fc829eb914a5149829a245fd6ad72297d0af, 3c0573107c4e097a228d5010247c8e81ea5bbdd9 and 25368adf78fe0dd00b105e183ddd5b25af8f0f23 against 45967c6c6399a70306ce0cd5cb106e6ed54e0c21; nine scoped files add disk placement, sampling, flight schema and routed duties, with duplicated mount classification in fleet_supervisor.py:512.",
+    "done_when": "prompt.txt:215 and resume-1-advice.txt require the focused tests, final-head negative control and importer delta on all_debug; final scoped log records 67 passed, final-negative-control.log records the required failure, and isolated importer logs disclose one added out-of-scope header assertion as permitted by brief.md.",
+    "goal": "prompt.txt:38 requires local disk, sampled bounds and a largest-directory obligation; reckon/crew/fleet_supervisor.py:529,552,644 and reckon/crew/obligations.py:4405 implement those behaviours.",
+    "manifest": "manifest.md names three real commits, readable final-head gate and mutation receipts, the original suite pair and separate isolated importer delta, while explicitly deferring live post-landing observation.",
+    "write_paths": "prompt.txt:124 plus resume-1-advice.txt explicitly grant all nine changed paths, including the two obligation modules added on resume."
+  },
+  "justifications": {
+    "durability": "tests/test_session_scratch_uses_bounded_node_tmp.py:32 independently requires /tmp and demonstrably fails on the original root, while lines 61-67,119-128,147-160 and 263-287 guard accounting, refusal, unknown readings and duty routing with the specific regression conditions recorded in assertion_analysis.",
+    "evidence": "scoped-gate-1794915837171466816.log records 67 passed at the reviewed head and final-negative-control.log records the /dev/shm regression failing tests/test_session_scratch_uses_bounded_node_tmp.py:32, with the one importer header failure and missing live observation disclosed in manifest.md.",
+    "fit": "reckon/crew/fleet_supervisor.py:529 extends the existing scratch preparation interface, the flight model and JSON schema are regenerated together, and the added names describe their mechanisms without forbidden labels.",
+    "goal_fidelity": "reckon/crew/fleet_supervisor.py:2770 samples the share before launch, assigns private disk scratch and publishes the excess duty consumed at reckon/crew/obligations.py:4845.",
+    "reuse": "reckon/crew/fleet_supervisor.py:512 duplicates longest-matching-mount parsing and classification already owned by reckon/crew/dispatch_admission.py:1741-1778 rather than extending that owner, although the allocated-block sampler has distinct semantics from dispatch_launch.py:951.",
+    "scope_discipline": "all nine paths in the three-commit diff are granted by prompt.txt:124 or resume-1-advice.txt:1 and each serves scratch placement, sampling, configuration or obligation delivery."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 requires local disk, sampled bounds and a largest-directory obligation; reckon/crew/fleet_supervisor.py:529,552,644 and reckon/crew/obligations.py:4405 implement those behaviours.\nVERDICT done_when: prompt.txt:215 and resume-1-advice.txt require the focused tests, final-head negative control and importer delta on all_debug; final scoped log records 67 passed, final-negative-control.log records the required failure, and isolated importer logs disclose one added out-of-scope header assertion as permitted by brief.md.\nVERDICT write_paths: prompt.txt:124 plus resume-1-advice.txt explicitly grant all nine changed paths, including the two obligation modules added on resume.\nVERDICT manifest: manifest.md names three real commits, readable final-head gate and mutation receipts, the original suite pair and separate isolated importer delta, while explicitly deferring live post-landing observation.\nVERDICT diff: read 0419fc829eb914a5149829a245fd6ad72297d0af, 3c0573107c4e097a228d5010247c8e81ea5bbdd9 and 25368adf78fe0dd00b105e183ddd5b25af8f0f23 against 45967c6c6399a70306ce0cd5cb106e6ed54e0c21; nine scoped files add disk placement, sampling, flight schema and routed duties, with duplicated mount classification in fleet_supervisor.py:512.\nCALL_SITES: reckon/crew/fleet_supervisor.py:main, reckon/crew/fleet_supervisor.py:prepare_runtime, reckon/crew/fleet_supervisor.py:start_session, bin/fleet-health:89, reckon/crew/obligations.py:_obligations_view, reckon/crew/obligation_snapshot.py:payload_for\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_supervisor.py:2770 samples the share before launch, assigns private disk scratch and publishes the excess duty consumed at reckon/crew/obligations.py:4845.\nSCORE evidence: 19\nJUSTIFICATION evidence: scoped-gate-1794915837171466816.log records 67 passed at the reviewed head and final-negative-control.log records the /dev/shm regression failing tests/test_session_scratch_uses_bounded_node_tmp.py:32, with the one importer header failure and missing live observation disclosed in manifest.md.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all nine paths in the three-commit diff are granted by prompt.txt:124 or resume-1-advice.txt:1 and each serves scratch placement, sampling, configuration or obligation delivery.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_session_scratch_uses_bounded_node_tmp.py:32 independently requires /tmp and demonstrably fails on the original root, while lines 61-67,119-128,147-160 and 263-287 guard accounting, refusal, unknown readings and duty routing with the specific regression conditions recorded in assertion_analysis.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/fleet_supervisor.py:529 extends the existing scratch preparation interface, the flight model and JSON schema are regenerated together, and the added names describe their mechanisms without forbidden labels.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/fleet_supervisor.py:512 duplicates longest-matching-mount parsing and classification already owned by reckon/crew/dispatch_admission.py:1741-1778 rather than extending that owner, although the allocated-block sampler has distinct semantics from dispatch_launch.py:951.\nFINDING reckon/crew/fleet_supervisor.py:512 blocking: _scratch_disk duplicates the mount-table parsing and longest-prefix filesystem classification owned by reckon/crew/dispatch_admission.py:1741 (_mount_table) and :1769 (_path_is_tmpfs); it neither wraps nor extends that owner, so mount parsing and filesystem policy can drift independently; expose or extend the existing owner and keep the session-specific allowed-filesystem policy on that shared mechanism.\n",
+  "reproduction_quote": "default root: /dev/shm; first: /dev/shm/39486-fleet-decoy; second: /dev/shm/39486-fleet-decoy (reproduction.log)",
+  "reuse_search": {
+    "judgement": "Scratch directory preparation extends fleet_supervisor; limits extend flight; JSON persistence reuses _write_json; routed duties extend obligations and payload_for; no pre-existing owner supplies allocated-block per-session/largest-subtree sampling with fail-unknown semantics, unlike tree_size_bytes which sums logical bytes and skips errors; mount inspection is duplicated and blocking.",
+    "owners_opened": [
+      "reckon/crew/dispatch_admission.py:1741-1778",
+      "reckon/crew/dispatch_launch.py:909-976"
+    ],
+    "searched": "mountinfo, statvfs, st_blocks, os.walk, scratch and disk capabilities in reckon/crew/dispatch*.py, fleet*.py, gc.py and run_paths.py at the reviewed revision"
+  },
+  "review_run_id": "r-20261117T120947306571-review-of-session-scratch-uses-node-disk-25368adf78fe",
+  "reviewed_base_sha": "45967c6c6399a70306ce0cd5cb106e6ed54e0c21",
+  "reviewed_head_sha": "25368adf78fe0dd00b105e183ddd5b25af8f0f23",
+  "reviewed_run_id": "r-20261117T110726691330-session-scratch-uses-node-disk",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T12:25:10.596456+00:00",
+  "total": 103
+}

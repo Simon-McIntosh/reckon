@@ -25,7 +25,7 @@
   <title>The Fleet Node Stays Inside Its Memory | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="6">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -126,13 +126,19 @@
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s6" data-id="c-close-s6" data-who="reckon-build" data-when="2026-11-17T12:14:00Z">
-    <div class="r-comment-body"><p>§6 landed through the crew's own promotion after its review (landing commit <code>7c327b389b</code>). A reader outside the fleet allocation records the job&#x27;s scheduler state each minute in the same series and writes one row naming the end state and reason when the job ends; reviewed 118 of 120.</p></div>
+    <div class="r-comment-body"><p>§6 landed through the crew's own promotion after its review (landing commit <code>7c327b389b</code>). A reader outside the fleet allocation records the job's scheduler state each minute in the same series and writes one row naming the end state and reason when the job ends; reviewed 118 of 120.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261117T110917738170-a-sampler-outlives-the-fleet-job" data-who="reckon-build" data-when="2026-11-17T11:47:41Z">
+    <div class="r-comment-body"><p>Added an independent once-per-minute scheduler reader with GPFS locking for the shared TSV; the cancellation rehearsal writes one terminal row 59.839 seconds after cancellation, and the stopped-reader control fails. The exact health-header assertion now covers all seven scheduler columns: expanded scoped/head gates pass 88 tests, the baseline arm passes 73, and both 17-file importer arms pass 162 tests with 1 skip and zero added failures.</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-close-s10" data-who="reckon-build" data-when="2026-11-17T12:12:00Z">
     <div class="r-comment-body"><p>§10 landed by direct merge (head <code>d8e0a90d94</code>), on the lead's instruction. Each service the supervisor runs may declare a memory limit, applied as an address-space limit on its own process; one that reaches it is restarted under the existing backoff with the event recorded and no other service affected. Review 120 of 120 with no finding. Merged candidate gate: 12 passed, 1 skipped in 13.38s.</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-s10-not-landed-1211" data-who="reckon-build" data-when="2026-11-17T12:11:00Z">
     <div class="r-comment-body"><p>§10 is delivered and not landed: head <code>d8e0a90d94</code> passed its merged-candidate gate and the merge was refused at the promotion dry run. The landing record written before the merge attempt is withdrawn.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261117T114358834620-review-of-a-service-over-its-limit-restarts-alone-d8e0a90d9400" data-who="reckon-build" data-when="2026-11-17T11:50:17Z">
+    <div class="r-comment-body"><p>Exact-revision independent review stored at both granted paths; all six dimensions 20/20, zero findings, zero added failure IDs; record checks passed.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-11-17T10:53:00Z">
     <div class="r-comment-body"><p>§2 landed through the crew's own promotion after its review (landing commit <code>859a28b2a1</code>). A memory kill in the fleet job is recorded with its time and victim; reviewed 120 of 120.</p></div>
@@ -146,11 +152,8 @@
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261117T114158604983-review-of-fleet-test-processes-are-counted-3bc970691ad5" data-who="reckon-build" data-when="2026-11-17T11:49:15Z">
     <div class="r-comment-body"><p>Independent review stored for base 421f01042a982737973e1d9d65121120ddaf7bd5 and head 3bc970691ad589154df018c51494ece4a16bd1aa; all six dimensions scored, one blocking header-contract finding, armed suite added failures 0, broader importer added failures 1.</p></div>
 </div>
-<div class="r-comment" data-section="s10" data-id="c-run-r-20261117T114358834620-review-of-a-service-over-its-limit-restarts-alone-d8e0a90d9400" data-who="reckon-build" data-when="2026-11-17T11:50:17Z">
-    <div class="r-comment-body"><p>Exact-revision independent review stored at both granted paths; all six dimensions 20/20, zero findings, zero added failure IDs; record checks passed.</p></div>
-</div>
-<div class="r-comment" data-section="s6" data-id="c-run-r-20261117T110917738170-a-sampler-outlives-the-fleet-job" data-who="reckon-build" data-when="2026-11-17T11:47:41Z">
-    <div class="r-comment-body"><p>Added an independent once-per-minute scheduler reader with GPFS locking for the shared TSV; the cancellation rehearsal writes one terminal row 59.839 seconds after cancellation, and the stopped-reader control fails. The exact health-header assertion now covers all seven scheduler columns: expanded scoped/head gates pass 88 tests, the baseline arm passes 73, and both 17-file importer arms pass 162 tests with 1 skip and zero added failures.</p></div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261117T120947306571-review-of-session-scratch-uses-node-disk-25368adf78fe" data-who="reckon-build" data-when="2026-11-17T12:18:49Z">
+    <div class="r-comment-body"><p>Independent review stored for base 45967c6c6399a70306ce0cd5cb106e6ed54e0c21 and head 25368adf78fe0dd00b105e183ddd5b25af8f0f23; six scores 20/19/20/19/20/5, one blocking reuse finding, declared suite added failures 0 and separate importer added failures 1.</p></div>
 </div>
 </section>
 </main>
