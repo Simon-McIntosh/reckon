@@ -1,5 +1,6 @@
 """A rewritten repair manifest cannot erase the run's committed history."""
 
+import json
 import shlex
 from pathlib import Path
 
@@ -33,6 +34,20 @@ def repaired_run(tmp_path, monkeypatch):
             "node: repaired-run\nstatus: complete\n"
             f"commits: {commits[0] if len(commits) == 1 else ''}\n"
         )
+    # A repair round delivers against the tree it rebuilt, so this one carries
+    # the head arm a real delivery records. The citations stay cleared: the
+    # history, not the manifest, is where the offered commits come from.
+    arm = {
+        "revision": commits[-1],
+        "completed": True,
+        "command": "python -m pytest tests/test_result.py",
+        "exit_status": 0,
+        "log_path": str(tmp_path / "suite.log"),
+    }
+    manifest.write_text(
+        "node: repaired-run\nstatus: complete\ncommits: \n"
+        f"after_suite: {json.dumps(arm)}\n"
+    )
     record = {
         "run_id": "r-repaired-history",
         "project": "repair-history",
