@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s69">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-16">
+  <title>A stream is decoded once per byte | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="a-stream-is-decoded-once-per-byte">
+  <h2>A stream is decoded once per byte</h2>
+
+  <p><strong>The defect.</strong> A terminal run's stream cannot change, yet every
+  producer pass asked <code>promotion_checks._terminal_stream_data</code> for a
+  completion stamp and a budget timing, and <code>recovery_stream._observed_stream</code>
+  for the observation the classifier reads. Each of those decoded the whole
+  stream again, because the only cache of a stream's records — the shared
+  events cache — is bounded by bytes (32 MB), so a fleet whose streams exceed
+  that bound evicted its own entries and re-parsed every stream on the next
+  pass. On this node's fixture of forty terminal runs at five thousand records
+  each, a pass made <strong>200,040</strong> <code>json.loads</code> calls from
+  <code>reckon/_backends.py</code> at the base revision, every one of them over
+  bytes the process had already read.</p>
+
+  <p><strong>What landed.</strong> <code>reckon/_backends.py</code> keeps a
+  per-stream summary under the file's stat identity: the observation each
+  settings key folded and the earliest and latest zoned stamp the stream
+  states. The summary records the byte offset the last read reached and the
+  digest of the stream's opening. A stream whose identity is unchanged is
+  answered from the summary with no decode at all; a grown stream is read only
+  from that offset and <em>extended</em> through the dialect's own fold; a
+  truncated, replaced or in-place-rewritten stream fails the opening check and
+  is read again whole. The records are not retained, so the cache is bounded by
+  the number of streams the process is watching (2,048 entries) rather than by
+  their bytes, and it survives the events cache evicting a stream's records.</p>
+
+  <h3 id="a-stream-is-decoded-once-per-byte-gate">The gate</h3>
+
+  <p><code>tests/test_a_stream_is_decoded_once_per_byte.py</code> builds a
+  temporary crew home of forty terminal runs whose streams hold five thousand
+  records each, and reads every run through
+  <code>_terminal_stream_data</code>, <code>_stream_completion_stamp</code> and
+  <code>_stream_budget</code> twice in one process. A recording stand-in for the
+  <code>json</code> module counts the decodes made from
+  <code>reckon._backends</code>. At head the first pass makes
+  <strong>200,040</strong> decodes — one per record — and the second pass makes
+  <strong>0</strong>, returning the same measures, stamps and budgets.
+  Appending ten records to one stream makes the next pass decode exactly
+  <strong>10</strong>; truncating a stream makes it decode that stream's whole
+  content, <strong>1,000</strong> records. Gate:
+  <strong>3 passed, EXIT=0</strong> (<code>gate-head-bd7f02bc7b50.log</code>).</p>
+
+  <p><strong>One accounting repair this exposed.</strong>
+  <code>recovery_watch.watch_ticker</code> took and reset the parsed-bytes
+  counter at the top of its tick, while the transition pass that runs after
+  the registration reads streams too. Those reads were dropped by the next
+  reset, and the poll reported less than it parsed. The producer now takes
+  the counter at the registration only, so a poll reports every byte its tick
+  parsed; <code>tests/test_producer_reads_only_what_changed.py</code> passes in
+  full — <strong>7 passed</strong>.</p>
+
+  <p>The declared negative control restores whole-stream decoding — the summary
+  read returns nothing and the bounds read falls back to the events cache — and
+  the same file at the same revision then reports the first case's second pass
+  at <strong>200,040</strong> decodes, the append case at 200,050 and the
+  truncation case at 196,039, failing all three
+  (<code>negative-control-bd7f02bc7b50.log</code>, <code>EXIT=1</code>). The
+  counter therefore sees an absence at head and a presence with the summary
+  disabled, rather than an instrument that cannot see either.</p>
+
+  <h3 id="a-stream-is-decoded-once-per-byte-census">The decode census</h3>
+
+  <p>Six traced station ticks at each revision, each arm one
+  <code>all_debug</code> job running the census harness from a worktree
+  extracted at its own revision, over a frozen sample of the live fleet's
+  pointers: 96 pointers at base's start and 91 at head's, because five runs
+  were removed by the fleet between the two arms, so head's population is a
+  subset of base's. Bytes decoded per tick by sites under
+  <code>reckon/_backends.py</code>,
+  <code>reckon/crew/promotion_checks.py</code> and
+  <code>reckon/crew/recovery_stream.py</code> together:</p>
+
+  <table id="a-stream-is-decoded-once-per-byte-census-bytes">
+    <tr><th>tick</th><th>base bytes</th><th>head bytes</th></tr>
+    <tr><td>1</td><td>77,446,141</td><td>68,744</td></tr>
+    <tr><td>2</td><td>93,151,241</td><td>20,396</td></tr>
+    <tr><td>3</td><td>88,374,674</td><td>0</td></tr>
+    <tr><td>4</td><td>87,097,184</td><td>132,352</td></tr>
+    <tr><td>5</td><td>96,029,660</td><td>910,944</td></tr>
+    <tr><td>6</td><td>72,805,087</td><td>60,464</td></tr>
+  </table>
+
+  <p>After the first tick the five steady ticks decode
+  <strong>437,457,846</strong> bytes at base and <strong>1,124,156</strong>
+  at head, a ratio of <strong>0.002570</strong>, inside the declared bound
+  of a tenth. The first tick is excluded because a warm fold has already read
+  every stream once; the bound measures what a steady tick costs. Both logs
+  open with their revision and literal command and end in
+  <code>EXIT=0</code> (<code>census/decode-census-base.log</code>,
+  <code>census/decode-census-head.log</code>).</p>
+</section>
+</main>
+</body>
+</html>
