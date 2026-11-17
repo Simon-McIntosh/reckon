@@ -176,7 +176,20 @@ def test_private_repository_copies_packs_without_changing_the_source(tmp_path):
             assert (private / ".git/objects/pack" / name).read_bytes() == content
 
 
-def test_real_replay_exercises_guards_and_a_positive_control(tmp_path):
+def test_real_replay_exercises_guards_and_a_positive_control(tmp_path, monkeypatch):
+    from reckon import ledger
+    from reckon.crew import promotion_scope
+
+    appended = []
+    append = ledger.append_run
+
+    def observed_append(*args, **kwargs):
+        scope = promotion_scope._BRANCH_WRITES.get()
+        assert scope and scope.get("lease"), "real ledger write has no branch lease"
+        appended.append(True)
+        return append(*args, **kwargs)
+
+    monkeypatch.setattr(ledger, "append_run", observed_append)
     crew = tmp_path / "source-crew"
     request = {
         **_request("r-unavailable", START),
@@ -197,6 +210,7 @@ def test_real_replay_exercises_guards_and_a_positive_control(tmp_path):
         scratch_root=tmp_path,
     )
     assert result["positive_control"]["phase"] == "promoted"
+    assert appended, "the positive control did not reach the real ledger writer"
     assert result["requests"] == 1
     assert result["verdicts"] == {"promotion-refused": 1}
     assert result["successful_promotions_per_hour"] == 0
