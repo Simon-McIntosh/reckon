@@ -1871,6 +1871,81 @@ def _require_gate_log_agrees(
 _SUITE_ARM_NAMES = ("baseline_suite", "after_suite")
 
 
+def _merged_primary_revision(record: Mapping[str, Any], head: str = "") -> str:
+    """The newest primary ancestor explicitly merged into the run after dispatch.
+
+    Read merge parents rather than today's primary tip: primary may have moved
+    since the repair, and an unmerged failure there cannot excuse this run.
+    A merge parent must belong to primary and advance the dispatch base.
+    """
+    from reckon.crew.promotion_records import _run_head, _scope_tree
+
+    tree = _scope_tree(record)
+    repo = str(record.get("repo") or "").strip()
+    base = str(record.get("base_sha") or "").strip()
+    if tree is None or not repo or not base:
+        return ""
+    head = head or _run_head(record)
+    primary = _commit_canonical_id(Path(repo), "HEAD")
+    if not head or not primary:
+        return ""
+    history = subprocess.run(
+        [
+            "git",
+            "rev-list",
+            "--first-parent",
+            "--merges",
+            "--parents",
+            f"{base}..{head}",
+        ],
+        cwd=tree,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=10,
+    )
+    if history.returncode:
+        return ""
+    for line in history.stdout.splitlines():
+        for parent in line.split()[2:]:
+            if (
+                parent != base
+                and _revision_is_ancestor(tree, base, parent)
+                and _revision_is_ancestor(tree, parent, primary)
+            ):
+                return parent
+    return ""
+
+
+def _armed_delta_owns_gate(record: Mapping[str, Any], gate: Mapping[str, Any]) -> bool:
+    """Whether the mandatory armed delta will judge this exact gate's failures.
+
+    An imported primary can be newer than the recorded baseline. Its reading
+    belongs to the armed evaluator, which can schedule it or report a dry-run
+    measurement without changing state. Only that evaluator's own gate may
+    defer the verdict check; unrelated commands keep their independent guard.
+    """
+    from reckon.crew.promotion_records import (
+        _arm_command_matches,
+        _scope_tree,
+        _scoped_suite_command,
+    )
+
+    command = _scoped_suite_command(record)
+    manifest = _fresh_manifest(record)
+    after = manifest.get("after_suite") if manifest else None
+    return bool(
+        command
+        and isinstance(after, Mapping)
+        and after.get("completed") is True
+        and _head_arm_cites_gate(after, gate)
+        and _arm_command_matches(
+            str(gate.get("command") or ""), [command], _scope_tree(record)
+        )
+        and _merged_primary_revision(record)
+    )
+
+
 def _gate_cited_log_text(gate_check: Mapping[str, Any] | None) -> str | None:
     """The text of the log a gate cites, or ``None`` when it cannot be read here.
 
@@ -2210,6 +2285,8 @@ def _require_verdict_matches_exit_status(
         return
     asserted = gate_check.get("exit_status")
     if isinstance(asserted, bool) or not isinstance(asserted, int) or asserted == 0:
+        return
+    if _armed_delta_owns_gate(record, gate_check):
         return
     uncovered = _red_base_uncovered_ids(record, gate_check)
     if uncovered == set():
