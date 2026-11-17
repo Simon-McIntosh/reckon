@@ -227,6 +227,35 @@ def _split_dispatch_detail(path: Path, payload: Mapping[str, Any]) -> Mapping[st
     return slim
 
 
+#: Run-record fields no live pointer carries. The promotion's clone report is
+#: evidence of the run — every function a run added or modified whose normalised
+#: window duplicates one already in the tree — and it belongs on the committed
+#: ledger row, where ``velocity`` and every other history reader take it. A live
+#: pointer is read by every fleet-state derivation on every pass, and none of
+#: them asks for the report: 12 live pointers carried it, 14.2 MB of a 23.5 MB
+#: directory, one of them 10.3 MB on its own.
+POINTER_OMITTED_FIELDS = ("clone_matches",)
+
+
+def _without_pointer_omitted_fields(
+    payload: Mapping[str, Any],
+) -> Mapping[str, Any]:
+    """``payload`` as a live pointer may hold it: no run-record-only field.
+
+    Applied on the write, so a caller that hands the pointer a row-shaped record
+    — a landing that marks an already-promoted run for repair, a promotion that
+    keeps a pointer it could not retire — cannot put a report no pointer reader
+    asks for on the file the whole node lists.
+    """
+    if not any(name in payload for name in POINTER_OMITTED_FIELDS):
+        return payload
+    return {
+        name: value
+        for name, value in payload.items()
+        if name not in POINTER_OMITTED_FIELDS
+    }
+
+
 def read_dispatch_detail(record: Mapping[str, Any]) -> dict[str, Any]:
     """One run's dispatch-time detail, read through its single accessor.
 
@@ -467,6 +496,7 @@ def _write_json(path: Path, payload: Mapping[str, Any]) -> None:
     """Write JSON atomically, so a reader never sees a half-written record."""
     payload = _stamp_pointer_launch_host(path, payload)
     if path.parent == live_dir() and path.suffix == ".json":
+        payload = _without_pointer_omitted_fields(payload)
         payload = _split_dispatch_detail(path, payload)
     write_json_atomically(
         path,
@@ -1064,8 +1094,128 @@ _POINTER_TEXT: dict[str, tuple[tuple[int, int, int, int], str]] = {}
 _POINTER_TEXT_LOCK = threading.Lock()
 
 
+_JSON_WHITESPACE = " \t\r\n"
+
+
+def _json_string_end(text: str, start: int) -> int:
+    """The index just past the JSON string literal opening at ``start``."""
+    index = start + 1
+    while index < len(text):
+        char = text[index]
+        if char == "\\":
+            index += 2
+            continue
+        if char == '"':
+            return index + 1
+        index += 1
+    return len(text)
+
+
+def _json_value_end(text: str, start: int) -> int:
+    """The index just past the JSON value beginning at ``start``."""
+    if start >= len(text):
+        return start
+    if text[start] == '"':
+        return _json_string_end(text, start)
+    if text[start] in "{[":
+        depth = 0
+        index = start
+        while index < len(text):
+            char = text[index]
+            if char == '"':
+                index = _json_string_end(text, index)
+                continue
+            if char in "{[":
+                depth += 1
+            elif char in "}]":
+                depth -= 1
+                if depth == 0:
+                    return index + 1
+            index += 1
+        return len(text)
+    index = start
+    while index < len(text) and text[index] not in ",}]":
+        index += 1
+    return index
+
+
+def _pointer_text_without_omitted_members(text: str) -> str:
+    """``text`` with every top-level omitted member cut out of its object.
+
+    A pointer written before this reader existed still holds the field on disk,
+    and every fleet-state derivation re-reads the directory: reading it back to
+    hand it to a decoder that has no reader for it is the whole cost. The bytes
+    are read either way; what this saves is the decode.
+
+    Only the object's own top level is walked, and strings, escapes and nesting
+    are tracked, so a key spelled inside some value is not mistaken for a
+    member. A text this cannot reduce — not one object, a scanner surprise — is
+    returned exactly as it arrived, and the caller parses the reduction before
+    it is offered, so an unexpected shape costs a decode rather than a pointer.
+    """
+    if not any(f'"{name}"' in text for name in POINTER_OMITTED_FIELDS):
+        return text
+    opening = text.find("{")
+    if opening < 0:
+        return text
+    spans: list[tuple[int, int]] = []
+    depth = 1
+    index = opening + 1
+    while index < len(text):
+        char = text[index]
+        if char == '"':
+            end = _json_string_end(text, index)
+            if depth == 1:
+                try:
+                    name = json.loads(text[index:end])
+                except ValueError:
+                    name = None
+                probe = end
+                while probe < len(text) and text[probe] in _JSON_WHITESPACE:
+                    probe += 1
+                if (
+                    name in POINTER_OMITTED_FIELDS
+                    and probe < len(text)
+                    and text[probe] == ":"
+                ):
+                    value = probe + 1
+                    while value < len(text) and text[value] in _JSON_WHITESPACE:
+                        value += 1
+                    spans.append((index, _json_value_end(text, value)))
+            index = end
+            continue
+        if char in "{[":
+            depth += 1
+        elif char in "}]":
+            depth -= 1
+            if depth == 0:
+                break
+        index += 1
+    for begin, end in reversed(spans):
+        after = end
+        while after < len(text) and text[after] in _JSON_WHITESPACE:
+            after += 1
+        before = begin - 1
+        while before >= 0 and text[before] in _JSON_WHITESPACE:
+            before -= 1
+        if after < len(text) and text[after] == ",":
+            cut_from, cut_to = begin, after + 1
+        elif before >= 0 and text[before] == ",":
+            cut_from, cut_to = before, end
+        else:
+            cut_from, cut_to = begin, end
+        text = text[:cut_from] + text[cut_to:]
+    return text
+
+
 def _pointer_text(path: Path) -> str:
     """A pointer's text, re-read only when its stat identity has moved.
+
+    The text is kept without the fields no live pointer reader asks for, so a
+    pointer left on disk by an older writer costs its decoder no more than a
+    current one. The reduction is parsed here before it is kept: a text this
+    reader cannot reduce is parsed as it is, rather than one pointer dropped
+    from every listing by a scanner that misjudged it.
 
     Raises ``FileNotFoundError`` for a pointer that is gone, as a direct read
     would, and forgets whatever was kept for it.
@@ -1083,9 +1233,15 @@ def _pointer_text(path: Path) -> str:
     if kept is not None and kept[0] == identity:
         return kept[1]
     text = path.read_text()
+    reduced = _pointer_text_without_omitted_members(text)
+    if reduced is not text:
+        try:
+            json.loads(reduced)
+        except ValueError:
+            reduced = text
     with _POINTER_TEXT_LOCK:
-        _POINTER_TEXT[key] = (identity, text)
-    return text
+        _POINTER_TEXT[key] = (identity, reduced)
+    return reduced
 
 
 #: The lease this node's station keeps under the node-local runtime root. Its
