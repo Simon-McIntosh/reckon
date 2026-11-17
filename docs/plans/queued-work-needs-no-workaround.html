@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="326">
+<meta name="plan-version" content="328">
 <meta name="plan-modified" content="2026-11-17">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -1070,6 +1070,12 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261116T104613229366-qwnw-red-file-a-review-is-not-carried-over-its-own-deliverable" data-who="reckon-build" data-when="2026-11-16T11:41:00.055Z">
     <div class="r-comment-body"><p>A test file passes in full: tests/test_a_review_is_not_carried_over_its_own_deliverable.py reads 4 passed at a8fdea6d2c against 4 failed at 52f2055b, the four causes all test-wrong (a fixture with no remote-tracking integration ref, so the reflex read its history as uncomparable), repaired by pushing the fixture to a bare origin with no assertion deleted or weakened, and the armed selection reads 58 passed on both arms.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261116T104534646959-qwnw-red-file-crew-watch-lifetime" data-who="reckon-build" data-when="2026-11-16T11:38:41.168Z">
+    <div class="r-comment-body"><p>tests/test_crew_watch_lifetime.py passes in full at head (4 passed, EXIT=0, all_debug job 1319844 with SLURM_JOB_ID unset) against 4 failed at revision 24bc79d8ee; both causes are the test fixture, not the product — it recorded a promotion with no checkout named and a revision where the row is asked for a commit the branch carries, so the reader's fail-closed answer was "complete", and it wrote that row before the watcher's first pass so a delivered pointer read promoted at once; the fixture now records the row promotion writes, in the checkout the head lands in, with the cited revision resolved to a commit the primary branch carries, at the point each landing happens; no assertion was deleted or weakened.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261116T104542062410-qwnw-red-file-an-admission-pass-reads-the-roadmap-once" data-who="reckon-build" data-when="2026-11-16T12:08:38.618Z">
+    <div class="r-comment-body"><p>§29&#x27;s named file passes in full at head — 4 passed, EXIT=0 as an all_debug job with SLURM_JOB_ID unset, against 3 failed and 1 passed at the base revision; one cause, test wrong: the fixture declared s1 done and then queued a request for s1, which dispatch refuses unless it is a measurement run, so the done section is now a separate upstream s0 and no assertion changed. Only the test file and two evidence files change; no product repair.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
