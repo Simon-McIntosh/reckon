@@ -3390,7 +3390,14 @@ def _complete_many(run_ids, parameters):
         if parameters.get("dry_run"):
             reports.append(result)
             continue
-        path = runs.run_dir(run_id) / f"completion-{time.time_ns()}.json"
+        directory = runs.reports_dir()
+        if run_id not in {"", ".", ".."} and Path(run_id).name == run_id:
+            existing = runs.run_dir(run_id)
+            if existing.is_dir():
+                directory = existing
+        # A refusal must not create a run directory: its existence is evidence
+        # the recovery reader uses to distinguish a missing run from a delivery.
+        path = directory / f"completion-{time.time_ns()}.json"
         runs._write_json(path, result)
         report = {
             key: result[key]
@@ -3438,7 +3445,10 @@ def _complete_many(run_ids, parameters):
         )
         >= 1900
     ):
-        path = runs.run_dir(run_ids[0]) / f"completion-batch-{time.time_ns()}.json"
+        path = (
+            Path(reports[0]["record_path"]).parent
+            / f"completion-batch-{time.time_ns()}.json"
+        )
         runs._write_json(path, reply)
         reply = {
             "ok": all(row["ok"] for row in reports),

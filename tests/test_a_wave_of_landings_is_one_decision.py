@@ -331,6 +331,19 @@ def test_the_tool_callback_returns_the_same_bounded_record_link(
     assert record["record"]["evidence"] == "x" * 60000
 
 
+def test_a_missing_runs_receipt_does_not_create_a_run(repository):
+    from reckon import mcp
+
+    run_id = "run-missing"
+    directory = runs.run_dir(run_id)
+    assert not directory.exists()
+    receipt = mcp._crew(action="complete", run_id=run_id, gate="passed")
+    assert receipt["ok"] is False
+    assert any(run_id in str(guard) for guard in receipt["guards"]), receipt
+    assert not directory.exists()
+    assert json.loads(Path(receipt["record_path"]).read_text())["ok"] is False
+
+
 def test_a_ready_report_is_left_to_its_existing_automatic_promoter(
     repository, tmp_path
 ):
