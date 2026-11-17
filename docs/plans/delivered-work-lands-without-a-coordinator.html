@@ -25,7 +25,7 @@
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="48">
+<meta name="plan-version" content="49">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -182,9 +182,6 @@
 </section>
 
     <section data-reckon="comments" id="comments" class="r-comments">
-<div class="r-comment" data-section="s20" data-id="c-close-s20" data-who="reckon-build" data-when="2026-11-17T21:45:00Z">
-    <div class="r-comment-body"><p>§20 landed by direct merge (head <code>888ac7aadd</code>), on the lead's instruction. Each promotion verdict records the code revision it was judged under; a refusal judged under a revision older than the primary&#x27;s promotion code is judged again once the service runs current code, and a refusal under current code stays terminal. Reviewed 120 of 120 with no finding. Merged candidate gate: 15 passed in 2.71s.</p></div>
-</div>
 <div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-11-17T00:02:00Z">
     <div class="r-comment-body"><p>§11 landed by direct merge at <code>8e4d75cb23</code> (head <code>a923f2f79d</code>), on the lead's instruction. Twelve code changes five minutes apart now cause two reloads of a service, or three with the immediate command, where the base reloaded twelve times with no tick exported between them. <code>reckon crew reload &lt;service&gt; --reason</code> reloads one named service at once and <code>--status</code> reads its schedule. Review 118 of 120, no blocking finding. A merged candidate passed 49 of 51 focused tests on all_debug (job 1321135); the two failures are base failures in <code>test_code_reload_never_cuts_off_a_promotion.py</code>. The worker stopped three times for write paths the section had not named: the admission service's own reload loop, the flight schema, the CLI and supervisor, and two importer tests. The live measure, no more than five station re-executions in two hours, is still to be read.</p></div>
 </div>
@@ -302,6 +299,15 @@
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261116T222157542493-the-promotion-queue-serves-fairly" data-who="reckon-build" data-when="2026-11-16T23:01:39Z">
     <div class="r-comment-body"><p>Promotion requests retain review, starvation, priority and fair session ordering (B/C at positions 3/4 in the 70-request case); only requested rows consume simulated future turns, running/parked counts stay separate, and rate-report windows no longer alter drain ordering. Six scoped cases pass; armed repair base/head pass 61/64 tests; 16 importer files add zero failures (same five IDs); reversing the repair fails both accounting cases and the rate-window case, and run-name order reproduces B=68/C=69.</p></div>
 </div>
+<div class="r-comment" data-section="s20" data-id="c-close-s20" data-who="reckon-build" data-when="2026-11-17T21:45:00Z">
+    <div class="r-comment-body"><p>§20 landed by direct merge (head <code>888ac7aadd</code>), on the lead's instruction. Each promotion verdict records the code revision it was judged under; a refusal judged under a revision older than the primary's promotion code is judged again once the service runs current code, and a refusal under current code stays terminal. Reviewed 120 of 120 with no finding. Merged candidate gate: 15 passed in 2.71s.</p></div>
+</div>
+<div class="r-comment" data-section="s20" data-id="c-run-r-20261117T213334053773-review-of-a-stale-refusal-is-judged-again-888ac7aadde5" data-who="reckon-build" data-when="2026-11-17T21:40:28Z">
+    <div class="r-comment-body"><p>Independent review stored for d7cb2a4ab6a50aac8ee4737f95a9b061a8adb48e..888ac7aadde585c72dcd2da7cc5b2a7675440c2c with all six dimensions 20, no findings and zero added suite failure ids; source unchanged.</p></div>
+</div>
+<div class="r-comment" data-section="s20" data-id="c-run-r-20261117T210442067147-a-stale-refusal-is-judged-again" data-who="reckon-build" data-when="2026-11-17T21:32:05Z">
+    <div class="r-comment-body"><p>Promotion verdicts and acceptance refusal memos carry the imported code identity, so current code rejudges superseded refusals once and retains current refusals; scoped/head arms pass 73 tests (base 58), both base negative controls fail as intended, and 66 importer files add zero failure ids (18 failed, 516 passed, 10 warnings, 1 error in each arm).</p></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-11-16T23:25:00Z">
     <div class="r-comment-body"><p>§3 landed (head <code>e44a9454d7</code>, review 120 of 120, no added failures). A repeated completion call now re-evaluates a parked request and dates the check, and a request parked for more than 30 minutes is an obligation naming its condition. The worker's replay showed the base drain already promotes a repaired request when a slot is free, so the section's first case was already met; the congested case is §12.</p></div>
 </div>
@@ -385,9 +391,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261116T233752526352-delivered-rows-say-what-is-owed" data-who="reckon-build" data-when="2026-11-17T01:05:40Z">
     <div class="r-comment-body"><p>Shared live classification separates 1 delivered run, 2 promotion requests and 1 landed leftover across pane and obligations/MCP reads; refusal rows now keep their complete remedy beside the new counters. The committed gate passes 74 tests versus 70 at the repair base and 58 at the original base; all 9 affected importer tests pass unchanged, and reversing the answering commit makes the review-named assertion fail (1 failed). Earlier importer observations remain outside scope.</p></div>
-</div>
-<div class="r-comment" data-section="s20" data-id="c-run-r-20261117T213334053773-review-of-a-stale-refusal-is-judged-again-888ac7aadde5" data-who="reckon-build" data-when="2026-11-17T21:40:28Z">
-    <div class="r-comment-body"><p>Independent review stored for d7cb2a4ab6a50aac8ee4737f95a9b061a8adb48e..888ac7aadde585c72dcd2da7cc5b2a7675440c2c with all six dimensions 20, no findings and zero added suite failure ids; source unchanged.</p></div>
 </div>
 </section>
   </main>
