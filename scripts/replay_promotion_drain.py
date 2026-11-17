@@ -341,6 +341,20 @@ def _relocate(value, replacements: dict):
     return value
 
 
+def _seed_store(repositories: dict, replacements: dict) -> dict:
+    """Populate the authoritative private store from the copied ledger."""
+    from reckon import ledger, run_store
+
+    counts = {}
+    for project, repository in repositories.items():
+        data, _version = ledger.load(project, repository, use_index=False)
+        with run_store.RunStore() as store:
+            for record in data["runs"]:
+                store.sync_run(project, _relocate(record, replacements))
+        counts[project] = len(data["runs"])
+    return counts
+
+
 def _drain(rows: list[dict], requests, runs, *, timeout: float) -> dict:
     observed, reasons = {}, {}
     pending = list(rows)
@@ -542,6 +556,7 @@ def replay(
             "GIT_TERMINAL_PROMPT": "0",
         }
         with patch.dict(os.environ, environment):
+            stored_counts = _seed_store(repositories, replacements)
             with patch.dict(
                 os.environ,
                 {
@@ -553,6 +568,7 @@ def replay(
                 control = _positive_control(root, requests, runs)
             result = _drain(relocated, requests, runs, timeout=timeout)
         result["positive_control"] = control
+        result["copied_store_rows"] = stored_counts
         result["header"] = {
             **data["header"],
             "repository_sources_sha256": sources["sha256"],

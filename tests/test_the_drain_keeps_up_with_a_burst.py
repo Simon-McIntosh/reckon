@@ -187,6 +187,26 @@ def test_real_replay_exercises_guards_and_a_positive_control(tmp_path):
     } == before
 
 
+def test_replay_store_is_seeded_before_it_becomes_authoritative(tmp_path, monkeypatch):
+    from reckon import ledger, run_store
+    from scripts.replay_promotion_drain import _seed_store
+
+    monkeypatch.setenv("RECKON_RUN_STORE", str(tmp_path / "store.db"))
+    repository = tmp_path / "repository"
+    target = ledger.run_path("fixture", "known", repository)
+    target.parent.mkdir(parents=True)
+    target.write_text(
+        ledger.serialize_run({"run_id": "known", "worktree": "/copied/tree"})
+    )
+    assert run_store.stored_run_rows("fixture") is None
+    assert _seed_store(
+        {"fixture": repository}, {"/copied/tree": str(tmp_path / "worker")}
+    ) == {"fixture": 1}
+    [row] = run_store.stored_run_rows("fixture")
+    assert row["run_id"] == "known"
+    assert row["worktree"] == str(tmp_path / "worker")
+
+
 def test_empty_real_replay_reports_no_rate(tmp_path):
     with pytest.raises(ValueError, match="no rate"):
         replay(collect(tmp_path / "empty", START, END), sources={}, assets=tmp_path)
