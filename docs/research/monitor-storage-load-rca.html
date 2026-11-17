@@ -537,9 +537,12 @@
     bytes it has decoded. It now keeps, beside them, one resume cursor per stream it has read — the
     device, inode, size and mtime the read was taken at, the offset after the last complete record, and
     the digest of the stream's opening — and keeps that cursor when the byte bound drops the stream's
-    records. A stream asked for again is read from its cursor when the file is the one the cursor
-    recorded and has only grown; a stream that was replaced, truncated or rewritten, or one asked for
-    whole, is still read from its first byte. Holding the decoded events instead of a cursor was
+    records. The cursor lives in the per-path summary the process already keeps, which is count-bounded,
+    rather than in a second store beside it. A stream asked for again is read from its cursor when the
+    file is the one the cursor recorded and has only grown, and a request for the whole stream extends
+    the entry the cache still holds rather than reading it again from the first byte; a stream that was
+    replaced, truncated or rewritten, or a whole request whose held entry is only what one earlier read
+    gained, is still read from its first byte. Holding the decoded events instead of a cursor was
     measured and rejected: all of the live fleet's records cost about 504&nbsp;MB resident, against a
     32&nbsp;MB bound.</p>
     <p>Each figure below names the reader that produced it, because the two readers answer different
