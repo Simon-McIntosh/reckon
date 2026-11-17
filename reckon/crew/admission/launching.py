@@ -356,6 +356,8 @@ def _launch_queued(
     # and keeps the whole-plan check.
     units_token = routing.ADMISSION_REVIEW_UNITS.set(plan_review_units(node.section))
     try:
+        from reckon.crew.stage_receipts import note_review
+        note_review(pointer, "review_admitted")
         launched = dispatch(
             node=node,
             run_id=str(pointer["run_id"]),

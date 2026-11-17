@@ -4336,6 +4336,9 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
                 # receipt. A delayed supervisor re-reads the attempt before spawning.
                 if writer is not None:
                     writer(process)
+                from reckon.crew.stage_receipts import note_review
+                note_review(current, "review_admitted", at=str(spec.get("launched_at") or "") or None)
+                note_review(current, "review_started")
                 return process
 
     process = _spawn_worker_retrying_a_vanished_bind(

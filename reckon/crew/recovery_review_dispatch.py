@@ -4062,6 +4062,9 @@ def _dispatch_composed_review(
     """Launch either review subject from the shared fields and dispatch path."""
     run_id = str(record.get("run_id") or "")
     dispatch_subject = record if record.get("subject") == "plan" else run_id
+    if not dry_run and record.get("subject") != "plan":
+        from reckon.crew.stage_receipts import record_stage
+        record_stage(run_id, "review_requested", attempt=str(fields.get("head") or ""))
     if record.get("subject") != "plan":
         _list_write_grants_in_brief(record, fields)
     rubric = str(fields.get("rubric") or "")

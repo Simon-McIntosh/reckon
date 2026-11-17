@@ -4334,6 +4334,8 @@ def _write_record(path: Path, record: Mapping[str, Any]) -> None:
     from reckon.crew import review_records
 
     review_records.record_written(path, record)
+    from reckon.crew.stage_receipts import note_review_record
+    note_review_record(record)
 
 
 # ── The review-record store family, owned by review_records ──

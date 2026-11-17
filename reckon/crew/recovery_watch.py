@@ -2857,6 +2857,8 @@ def _watch_transition(
             streams_root=streams_root,
         )
     )
+    from reckon.crew.stage_receipts import note_delivery
+    note_delivery(event)
     return event
 
 

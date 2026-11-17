@@ -24,7 +24,7 @@ from typing import Any
 from uuid import uuid4
 
 from reckon._timestamps import parse_utc
-from reckon.crew import runs
+from reckon.crew import runs, stage_receipts
 from reckon.crew.host_lease import HostLease, local_host
 from reckon.crew.node import CrewError
 from reckon.crew.queue_order import STARVATION_AGE_SECONDS, _override
@@ -324,6 +324,7 @@ def request_promotion(
             "options": json.loads(json.dumps(dict(options or {}), default=str)),
         }
         runs._write_json(path, request)
+        stage_receipts.record_stage(run_id, "promotion_requested", at=request["requested_at"], attempt=request["request_id"])
         _mark_pointer(request, REQUESTED)
         return request
 
@@ -457,6 +458,7 @@ def _execute(request: Mapping[str, Any]) -> dict[str, Any] | None:
 def _finish(request: Mapping[str, Any], phase: str, **result: Any) -> dict[str, Any]:
     run_id = str(request["run_id"])
     receipt = {**request, **result, "phase": phase, "finished_at": _now()}
+    stage_receipts.note_promotion_outcome(request, phase, result)
     with runs._pointer_lock(f"promotion-request-{run_id}"):
         runs._write_json(_receipt_path(run_id), receipt)
         _mark_pointer(receipt, phase)
@@ -614,6 +616,7 @@ def _defer_to_a_queued_review(
         }
         requeued.pop("started_at", None)
         runs._write_json(_request_path(run_id), requeued)
+        stage_receipts.note_promotion_outcome(request, DEFERRED, {"reason": str(refusal)})
         _mark_pointer(requeued, REQUESTED)
     return True
 
@@ -879,12 +882,14 @@ class PromotionService:
                     return
                 request = {
                     **current,
+                    "attempt_id": uuid4().hex,
                     "phase": RUNNING,
                     "started_at": _now(),
                     "checked_at": _now(),
                     "waiting_reason": "",
                 }
                 runs._write_json(_request_path(run_id), request)
+                stage_receipts.record_stage(run_id, "promotion_attempt", at=request["started_at"], attempt=request["attempt_id"])
                 _mark_pointer(request, RUNNING)
             result = self.execute(request)
             if result is None:
@@ -893,6 +898,7 @@ class PromotionService:
             if result.get("waiting"):
                 # The reviewer is still writing the record: park the request
                 # rather than refusing a run that is not finished.
+                stage_receipts.note_promotion_outcome(request, WAITING, result)
                 _mark_waiting(request, str(result.get("reason") or ""))
                 return
             if (
@@ -1003,6 +1009,7 @@ def _settle(request: Mapping[str, Any], reason: str) -> dict[str, Any]:
         if current.get("request_id") != request.get("request_id"):
             return {}
         runs._write_json(_request_path(run_id), settled)
+    stage_receipts.record_stage(run_id, "promotion_settled", at=settled["settled_at"], outcome=reason)
     return settled
 
 

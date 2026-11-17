@@ -2401,6 +2401,8 @@ def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]
             requested.append(run_id)
             continue
         if accepted:
+            from reckon.crew.stage_receipts import record_stage
+            record_stage(run_id, "landing")
             landed.append(run_id)
             try:
                 from reckon.crew import review_dispositions as dispositions_module
