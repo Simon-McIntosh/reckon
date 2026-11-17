@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="371">
+<meta name="plan-version" content="372">
 <meta name="plan-modified" content="2026-11-17">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -1198,7 +1198,10 @@
     <div class="r-comment-body"><p>The reserved-lane window file's four red expectations were stale, not a product defect: at the 60% reserved-lane ceiling, on an unknown window reading, and on a routine pick below the tier floor, the Claude CLI reservation still withholds the lane (snapshot.py's `enforce_reservation = policy_family == "claude"`, five passing cases in tests/test_picker_reserved_lanes.py), so the four expectations were restored to withheld and the routine pick also asserts the policy's own reason; tests/test_reserved_lane_window_reading.py goes from 4 failed to 14 passed in 1.6s on all_debug.</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261116T104605930332-qwnw-red-file-a-review-passes-its-sessions-queue-cap" data-who="reckon-build" data-when="2026-11-16T11:40:48.614Z">
-    <div class="r-comment-body"><p>the review queue-cap test file passes in full at head (6 passed, EXIT=0); one cause, the test was wrong: the fixture&#x27;s queued node named no goal, which TaskNode requires, so it names one now.</p></div>
+    <div class="r-comment-body"><p>the review queue-cap test file passes in full at head (6 passed, EXIT=0); one cause, the test was wrong: the fixture's queued node named no goal, which TaskNode requires, so it names one now.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261116T064934298273-qwnw-red-file-a-held-request-records-what-holds-it-second-launch" data-who="reckon-build" data-when="2026-11-16T09:41:53.825Z">
+    <div class="r-comment-body"><p>tests/test_a_held_request_records_what_holds_it.py passes 7/7 at head (base: 3 failed, 4 passed) — an unchanged refusal keeps its recorded instant via `_carried_hold`, a stored scope refusal is re-judged against the fleet each pass via `_released_claim` and retired onto the request&#x27;s back-off, and the stored-reason case now claims a figure topic directory because an undeclared project shares its source files; no assertion deleted or weakened, node arm adds no failure, both suite arms 58 passed EXIT=0</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
