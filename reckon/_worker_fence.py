@@ -2004,9 +2004,11 @@ def fence_argv(
     # runtime path below be re-bound inside the scratch view. The seal stays
     # because it is what a fence that mounts no scratch still holds. See
     # :func:`worker_tmp_mount_source`.
+    directory_sources: list[str] = []
     tmp_mount = worker_tmp_mount_source(roots, node_tmp=node_tmp)
     if tmp_mount is not None:
         fenced += ["--bind", str(tmp_mount), str(node_tmp)]
+        directory_sources.append(str(tmp_mount))
     # A masked path is hidden, not sealed: the protected overlay above still
     # exposes its content read-only, so a directory gets an empty tmpfs and a
     # file gets /dev/null, both of which read as absent. Emitted after the
@@ -2072,6 +2074,8 @@ def fence_argv(
             continue
         granted.add(key)
         fenced += ["--bind", key, key]
+        if target.is_dir() or target in by_construction:
+            directory_sources.append(key)
     # The paths git cannot merge are sealed here, after the writable grants: a
     # grant is the last word on its own path, so a seal emitted before the
     # grant that covers it would be re-opened. A run with no declared write
@@ -2086,6 +2090,8 @@ def fence_argv(
         fenced += ["--ro-bind", str(source), str(destination)]
     for source, destination in read_write_binds:
         fenced += ["--bind", str(source), str(destination)]
+        if Path(source).is_dir():
+            directory_sources.append(str(source))
     # The scheduler starts tasks outside this mount namespace. Carry the
     # composed mounts rather than rediscovering protection from job-local env,
     # including masks, credentials and the worktree's exclusive seals.
@@ -2103,6 +2109,7 @@ def fence_argv(
     recipe = {
         "argv": list(fenced),
         "directories": [str(path) for path in directories],
+        "directory_sources": sorted(set(directory_sources)),
         "scratch": str(scratch),
         "limit": "Absolute scheduler paths bypass task re-entry; interpreter permissions guard that route.",
     }
