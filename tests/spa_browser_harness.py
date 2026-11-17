@@ -396,7 +396,14 @@ function navigationUrl(generation) {
 async function navigateAndWait(devtools, generation) {
   await devtools.call("Page.navigate", { url: navigationUrl(generation) });
   stage(`navigation-${generation}-started`);
-  const deadline = Date.now() + 45000;
+  // The first paint of a freshly served SPA waits on discovery, and a cold
+  // served process spends two ten-second git lookups plus a walk of the docs
+  // tree before it answers: measured 37.4 s for `/_index/<project>` against a
+  // fresh RECKON_HOME on the shared filesystem, and 46 s to the topbar. A
+  // 45 s budget therefore reds a page that does render. The wait stays bounded
+  // at twice the measured worst case, and `_evaluate_browser_url` gives its
+  // process a longer budget than this one so this one is what decides.
+  const deadline = Date.now() + 120000;
   let ready = false;
   while (Date.now() < deadline) {
     try {
@@ -930,7 +937,7 @@ def _evaluate_browser_url(
             start_new_session=True,
         )
         try:
-            stdout, stderr = probe.communicate(timeout=75)
+            stdout, stderr = probe.communicate(timeout=180)
         except subprocess.TimeoutExpired:
             stdout, stderr = _terminate_process_group(probe)
             count, limit = _inotify_usage()

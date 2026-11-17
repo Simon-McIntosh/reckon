@@ -1,0 +1,77 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: arm-base.log ran at 915acff37f4d535f44f39ebf0cc21827bbfc5827 to a summary line of '58 passed' with EXIT=0 and no failing id, arm-head.log ran at 25dcca50a941fe7f512371b3871c6dc3fc3faf14 to '61 passed' with EXIT=0 and no failing id, so the after_suite adds the three new tests and no failure the baseline did not carry.",
+  "call_sites": [
+    "reckon/roadmap.py:3798",
+    "reckon/crew/dispatch_batch.py:977"
+  ],
+  "checks": [
+    "goal",
+    "done_when",
+    "write_paths",
+    "manifest",
+    "diff",
+    "call_sites"
+  ],
+  "completed_at": "2026-11-16T14:23:51.138Z",
+  "dimensions": [
+    "goal_fidelity",
+    "evidence",
+    "scope_discipline",
+    "durability",
+    "fit",
+    "reuse"
+  ],
+  "dispatched_at": "2026-11-16T14:21:48Z",
+  "findings": [
+    {
+      "file": "reckon/crew/section_holds.py",
+      "id": "f9e050b41c7",
+      "line": 95,
+      "severity": "non-blocking",
+      "text": "the process-wide cache re-implements the memo the repository already owns: reckon/file_memo.py:445 memoized_key is documented as the memo for a derivation whose caller carries its complete change key, which is exactly the (project, root, store path, store stamp) key this dict builds, so a second memo now exists for one capability; it is non-blocking because the local dict deliberately replaces its entry rather than accruing one per stamp and hands out the stored rows instead of the copies file_memo makes."
+    },
+    {
+      "file": "reckon/crew/section_holds.py",
+      "id": "f26db0a2527",
+      "line": 131,
+      "severity": "non-blocking",
+      "text": "the cache hands every caller the same list object and the same row dicts, and the docstring's claim that every caller reads history is asserted rather than enforced, so one consumer that mutated a row would corrupt the answer for the whole process until the store's token next moved; non-blocking because today's callers at reckon/roadmap.py:3798 and reckon/crew/dispatch_batch.py:977 only read through _collect, which builds new dicts."
+    },
+    {
+      "file": "tests/test_queue_ordering_reads_history_once.py",
+      "id": "f75f82c6457",
+      "line": 229,
+      "severity": "non-blocking",
+      "text": "this assertion compares the read's answer against the run id the test itself handed run_store.append one line earlier, so it proves the store round-trips the test's own value rather than deriving its expectation from an independent read of the store; the stale-cache guard in this test is carried by the decode count at line 212, not by this line."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to read the run store's section history for queue ordering only when the store has changed; reckon/crew/section_holds.py:120-131 takes run_store.store_stamp before the ledger read and answers from the held rows while it is unchanged, so a rebuild on an unmoved store decodes nothing.\nVERDICT done_when: the done_when is quantitative and this file carries every part of it -- 2,000 promoted rows over three plans and 20 queued requests, three orderings with a stand-in counting decodes at run_store.stored_run_rows, second and third decoding 0 and equal to the first, a recorded promotion read again, and a base-revision negative control -- and gate.log (3 passed, EXIT=0), arm-base.log (58 passed, EXIT=0), arm-head.log (61 passed, EXIT=0), base-read.log (2 failed in 8.05s with [2000, 2000]) and negative-control.log (2 failed in 9.30s) record the results; the one clause no log records is the all_debug partition submission with the SLURM env unset.\nVERDICT write_paths: the node declared reckon/crew/section_holds.py, reckon/ledger.py, reckon/run_store.py, tests/test_queue_ordering_reads_history_once.py, docs/evidence/fragments/the-monitor-reads-each-fact-once/queue-ordering-reads-history-once.html and docs/figures/the-monitor-reads-each-fact-once/queue-ordering-reads-history-once; the diff touches four of them and nothing outside.\nVERDICT manifest: read; the source manifest.md records status complete, the gate and all four arms with their pass/fail counts, the negative control at negative-control.log, the two commits and the changed paths, and each figure reconciles with the logs re-read here.\nVERDICT diff: read commit by commit against 915acff37f4d535f44f39ebf0cc21827bbfc5827 -- 272a3bc0e7 adds run_store.store_stamp plus _STAMPED_HEADER_BYTES, the keyed read at reckon/crew/section_holds.py:95-132 and a 269-line test, and 25dcca50a9 adds the evidence fragment; 439 insertions, 2 deletions, no file outside the declared scope.\nCALL_SITES: reckon/roadmap.py:3798, reckon/crew/dispatch_batch.py:977\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/section_holds.py:120-131 answers an unchanged store from the rows it already read and returns the ledger read uncached when the store stamp is None, which is what the goal states.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_queue_ordering_reads_history_once.py:182-191 asserts the measure the done_when names and the run's logs record it, but no artefact records the all_debug partition job or the unset SLURM environment the done_when also requires for the arms.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all four changed paths in the diff (reckon/run_store.py:230, reckon/crew/section_holds.py:95-132, the node test and its evidence fragment) lie inside the six granted write paths, and nothing the goal does not imply was carried.\nSCORE durability: 17\nJUSTIFICATION durability: reinstating the base read reddens tests/test_queue_ordering_reads_history_once.py:189 (base-read.log records [2000, 2000]) and dropping the post-read comparison at reckon/crew/section_holds.py:130 reddens :266, though :229 rests on an id the test supplied itself.\nSCORE fit: 18\nJUSTIFICATION fit: the module-level dict at reckon/crew/section_holds.py:95 follows the cache idiom of reckon/crew/dispatch_peer.py:64 and the test's `from tests import ... as fixtures` line 36 follows tests/test_an_admission_pass_finishes_in_ten_seconds.py:14.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/section_holds.py:95-131 re-implements the caller-keyed memo owned at reckon/file_memo.py:445 rather than extending it, and run_store.py:230 builds its own stat tuple instead of extending file_memo.signature_from_stat.\nFINDING reckon/crew/section_holds.py:95 non-blocking: a second caller-keyed memo exists for one capability, the one reckon/file_memo.py:445 owns as \"a derivation whose caller already carries its complete change key\".\nFINDING reckon/crew/section_holds.py:131 non-blocking: the cache hands every caller the same list and row dicts, so the docstring's read-only invariant is asserted rather than enforced.\nFINDING tests/test_queue_ordering_reads_history_once.py:229 non-blocking: the assertion compares against the run id the test itself passed to run_store.append, so it is not independent of the value under test.\n",
+  "review_run_id": "r-20261116T141712148534-review-of-queue-ordering-reads-history-once-25dcca50a941",
+  "reviewed_base_sha": "915acff37f4d535f44f39ebf0cc21827bbfc5827",
+  "reviewed_head_sha": "25dcca50a941fe7f512371b3871c6dc3fc3faf14",
+  "reviewed_run_id": "r-20261116T124250552356-queue-ordering-reads-history-once",
+  "rubric": "dimensions",
+  "score_justifications": {
+    "durability": "tests/test_queue_ordering_reads_history_once.py:189 reddens on the base read (base-read.log shows [2000, 2000]) and :266 reddens if the post-read stamp check is dropped, while :229 compares against the id the test itself appended.",
+    "evidence": "tests/test_queue_ordering_reads_history_once.py:170-191 runs the three orderings over the 2,000-row population and gate.log, arm-base.log, arm-head.log and base-read.log record the results, though no log records the all_debug submission or the unset SLURM env the done_when also asks for.",
+    "fit": "the module-level cache at reckon/crew/section_holds.py:95 matches the dict-cache idiom already used by reckon/crew/dispatch_peer.py:64, and the fixture import at tests/test_queue_ordering_reads_history_once.py:36 matches tests/test_an_admission_pass_finishes_in_ten_seconds.py:14.",
+    "goal_fidelity": "reckon/crew/section_holds.py:120-131 keys the section-history read on run_store.store_stamp taken before and after the read, and reads uncached when the store is absent.",
+    "reuse": "reckon/crew/section_holds.py:95-131 duplicates the caller-keyed memo reckon/file_memo.py:445 already owns rather than extending it, with no new capability argument recorded.",
+    "scope_discipline": "the two commits change reckon/run_store.py, reckon/crew/section_holds.py, tests/test_queue_ordering_reads_history_once.py and docs/evidence/fragments/the-monitor-reads-each-fact-once/queue-ordering-reads-history-once.html, all inside the six granted paths."
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T14:42:22.522374+00:00",
+  "total": 95
+}

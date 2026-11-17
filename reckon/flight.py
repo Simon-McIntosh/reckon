@@ -1331,6 +1331,14 @@ def queue_repick_after_seconds(config: Mapping[str, Any] | None) -> int:
     return int(value)
 
 
+def service_reload_window_seconds(config: Mapping[str, Any] | None) -> int:
+    """Minimum automatic reload interval; a host flight may retune the window."""
+    value = (config or {}).get("service_reload_window_seconds", 1800)
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        return 1800
+    return value
+
+
 def admission_pass_budget_seconds(config: Mapping[str, Any] | None) -> float:
     """How long one admission pass may spend launching before it ends.
 

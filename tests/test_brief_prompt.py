@@ -289,11 +289,18 @@ ROLE     implement
 
 
 CONTRACT — LANDING YOUR RECORD
-  Write your landing record to your own fragment path and never to the plan:
-  your evidence anchor to your scope's fragment under
-  docs/evidence/fragments/<plan>/<node-id>.html, and exactly one `landing:`
-  line in your manifest in place of a plan edit. The fragment goes into your
-  final commit; promotion lands the `landing:` line on your plan section.
+  Exactly one `landing:` line in your manifest is the record of this node,
+  stating what changed and its measure's figure, and promotion lands it on
+  your plan section. A per-node evidence fragment is optional: it is not the
+  record and a routine landing writes none, so the landing line is the whole
+  prose account of the node. Write a fragment only in one of the two cases
+  it is for — you have a negative result, or a mechanism that does not fit a
+  landing line — and when you write one, place it as follows. Write your
+  landing record to your own fragment path and never to the plan: your
+  evidence anchor to your scope's fragment under
+  docs/evidence/fragments/<plan>/<node-id>.html, and
+  exactly one `landing:` line in your manifest in place of a plan edit. The
+  fragment goes into your final commit; promotion lands the `landing:` line on your plan section.
   A node is small when its diff has at most 50 changed lines (added plus
   deleted), or when it changes no product source or tests and has at most
   300 changed lines. A small node writes one `landing:` line in its manifest,
@@ -302,12 +309,19 @@ CONTRACT — LANDING YOUR RECORD
   no figure and no evidence prose unless its done-when names that artifact;
   naming one does not permit the other. Any single data file above 300,000
   bytes belongs in the run directory, not the repository.
+  Nothing splices a fragment into the plan's landed record: that record is
+  synthesized once at closure and links the fragment from your node's row
+  without reproducing its text.
   Every element id in the fragment begins with the node id, so sibling
   fragments composed into one record cannot claim the same anchor.
   Use a figure wherever a spatial, plotted or sequential relationship is clearer
   shown than described, under your own docs/figures/<plan>/<node-id>/ with the
   project-absolute src /<project>/figures/<plan>/<node-id>/...; never an image
-  of what is naturally a table.
+  of what is naturally a table. Name each figure you keep on a `figures:`
+  line in your manifest, giving the path the run commits under the plan's
+  figure directory docs/figures/<plan>/; a node with nothing to show names
+  none, and the manifest check holds a named figure to a file the run's
+  commits carry there.
   Do not edit the plan-version or plan-modified meta lines: every worker
   touching them makes every merge conflict there.
   Your done-when names no artifact, so this node writes no figure and no
@@ -323,10 +337,12 @@ CONTRACT — WHO CLOSES THE NODE
   verdict: write it `complete`, `blocked` or `failed` when you finish,
   which reports your node and never closes the plan.
 
-FENCE — SCOPE (exclusive write paths; nothing outside them)
+FENCE — SCOPE (declared write paths; nothing outside them)
   reckon/crew/prompts.py
 
-CONCURRENT NODES (never touch their paths; request a scope change instead)
+CONCURRENT NODES (information only; overlapping source and test edits are allowed)
+  Work in your own worktree within your declared write paths. Git merge reconciles
+  shared edits; a real conflict returns to the worker for a merge repair.
   none
 
 PEER CHANNEL — knowledge only; write scopes never transfer. Run ; endpoint /state/runs/carrier-node/peer-channel.
@@ -378,6 +394,7 @@ MANIFEST (write exactly these keys; after reading the plan, observe path and rev
   resume_brief: <only when an external condition is actually awaited — never at the orientation write: what the resumed self does next>
   checkpoint: <when you are recording progress and not setting status to waiting — any worker recording progress at any point, not only a resumed worker whose wait is met: one line recording where work stands and what comes next, so you leave a checkpoint rather than a wait block>
   commits: <sha list>
+
   changed_paths: <explicit list>
   retry_failures: <failure ids for repeated runs of the same command, including unattributed failures; record each before applying the stop rule>
   landing: <exactly one line recording your landing record; promotion lands it as a comment on your plan section, so do not edit the plan>
@@ -385,7 +402,7 @@ MANIFEST (write exactly these keys; after reading the plan, observe path and rev
   test_logs: <paths on disk>. A gate log's first line names the revision it ran at, the tree, and the command; its last line is a bare `EXIT=<code>` line, which is where promotion reads the gate's exit status — a log without one leaves the status unread. A gate or base-arm measurement run in a scratch tree also names on its header lines the absolute path of the module under test as imported (`module.__file__`) and the resolved working directory the run resolved from
   measurement_module: <only for a gate or base-arm measurement run in a scratch tree: the absolute path of the module under test as imported — the value the run printed for `module.__file__`>
   measurement_cwd: <only for a gate or base-arm measurement run in a scratch tree: the resolved working directory the run resolved from>
-  negative_control_log: <the path alone, and nothing else on this line — no description, note or continuation>. Required when the node's write paths include a test file and its negative_control is not `none: <reason>`. Admission is judged on the facts the run recorded — a non-zero `EXIT=` line and at least one failing test id the head arm does not fail, falling back to the baseline's failing ids only when the manifest records no readable head arm, an arm being readable only when it declares its run complete — never on the log's wording. The log's last line is a bare line reading `EXIT=` followed by the exit code
+  negative_control_log: <the path alone, and nothing else on this line — no description, note or continuation>. Required when the node's write paths include a test file and its negative_control is not `none: <reason>`. Admission is judged on the facts the run recorded — that the run failed, read from a non-zero `EXIT=` line when one was captured or from the runner's own `FAILED` ids and `N failed` summary when none was, and at least one failing test id the head arm does not fail, falling back to the baseline's failing ids only when the manifest records no readable head arm, an arm being readable only when it declares its run complete — never on the log's wording. A log that carries a capture `EXIT=` line ends with it as a bare line reading `EXIT=` followed by the exit code
   negative_control_note: <where an explanation goes: one line of commentary on the red log named above, since that value stands alone; omit when the log is self-explanatory>
   baseline_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed is true only when the suite ran to its summary line; false, null or absent is unreadable; command is the literal command that ran, with absolute paths and no angle-bracket placeholder>
   after_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed is true only when the suite ran to its summary line; false, null or absent is unreadable; command is the literal command that ran, with absolute paths and no angle-bracket placeholder>
@@ -561,7 +578,8 @@ def test_the_literal_copy_of_the_artifacts_line_carries_the_metric_rule() -> Non
 # with no placeholder.
 
 NEGATIVE_CONTROL_EXIT_RULE = (
-    "The log's last line is a bare line reading `EXIT=` followed by the exit code"
+    "A log that carries a capture `EXIT=` line ends with it as a bare line "
+    "reading `EXIT=` followed by the exit code"
 )
 
 SUITE_COMMAND_RULE = (

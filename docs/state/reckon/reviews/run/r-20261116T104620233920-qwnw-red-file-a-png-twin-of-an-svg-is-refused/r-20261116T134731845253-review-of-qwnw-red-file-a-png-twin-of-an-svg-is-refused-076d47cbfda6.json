@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite arms: baseline-suite.log ran at 8fdf39585f1fb4b05ac8a6e5b707a7c651d42176 to '58 passed' with EXIT=0 and no failing id, after-suite.log ran at 076d47cbfda621422646f9da56a1e98185478d8a to '58 passed' with EXIT=0 and no failing id, so the change adds no failure the baseline did not carry.",
+  "call_sites": [
+    "reckon/crew_run_commands.py:1398",
+    "reckon/crew/promotion_checks.py:666",
+    "reckon/crew/reports.py:1904"
+  ],
+  "checks": [
+    "goal",
+    "done_when",
+    "write_paths",
+    "manifest",
+    "diff",
+    "call_sites"
+  ],
+  "completed_at": "2026-11-16T14:48:54.600Z",
+  "dimensions": [
+    "goal_fidelity",
+    "evidence",
+    "scope_discipline",
+    "durability",
+    "fit",
+    "reuse"
+  ],
+  "dispatched_at": "2026-11-16T14:48:23Z",
+  "findings": [
+    "non-blocking: tests/test_a_png_twin_of_an_svg_is_refused.py:190 asserts promoted[\"record\"][\"run_id\"] == RUN_ID, where RUN_ID is the value the test itself handed crew.complete two lines earlier, so the two sides move together and the line cannot fail by any change to the promotion path it appears to check; the same echo repeats at :203, :220 and :233. It is pre-existing and unmodified by this diff, and the file's durability does not rest on it, because the base negative control reddens the surrounding assertions at :186, :199, :216 and :230."
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make tests/test_a_png_twin_of_an_svg_is_refused.py pass in full on the primary branch; tests/test_a_png_twin_of_an_svg_is_refused.py:93 adds the `messages_received: none` statement the audit requires and gate-all-debug.log records 5 passed at 076d47cbfd, against 4 failures on that one statement at the base.\nVERDICT done_when: the done_when asks for the file passing in full as an all_debug job with SLURM_JOB_ID unset, a per-cause verdict, no deleted or weakened assertion, an arm over importing files, and a logged base run beside the head run; gate-all-debug.log carries `job: 1319949 partition=all_debug` and `env -u SLURM_JOB_ID` with 5 passed EXIT=0, base-red-file.log carries 4 failed, 1 passed and EXIT=1 with the four ids, the suite arms were 58 passed on both sides, and the only clause not reproduced at the revision it names is the plan's 8d50b0333f figure, whose base was rebuilt at 8fdf39585f with the same four-failure count.\nVERDICT write_paths: the node declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git show --numstat 076d47cbfd lists only tests/test_a_png_twin_of_an_svg_is_refused.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-png-twin-of-an-svg-is-refused.html, both inside them, and no product file changed.\nVERDICT manifest: the manifest's status is complete, its commits field names 076d47cbfda621422646f9da56a1e98185478d8a, its tests line is the literal gate command, its negative_control_log names base-red-file.log, and its two suite arms are the command the dispatch's suite fence imposed; its claim that origin/main 415faeaedd is already contained in the head checks true with git merge-base --is-ancestor.\nVERDICT diff: read commit by commit against 8fdf39585f there is one commit, 076d47cbfd, adding one fixture line at tests/test_a_png_twin_of_an_svg_is_refused.py:93 and a 92-line landing fragment; no assertion, test body or product rule was touched, and the added line is the exact statement reckon/hooks/worker_inbox.py:355-360 requires.\nCALL_SITES: reckon/crew_run_commands.py:1398, reckon/crew/promotion_checks.py:666, reckon/crew/reports.py:1904\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_png_twin_of_an_svg_is_refused.py:93 now writes `messages_received: none`, the exact statement reckon/hooks/worker_inbox.py:355-360 requires of a run with no delivery receipt, so the file runs to 5 passed at head while the PNG refusal at :160-177 still fires.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-all-debug.log names the revision, tree and literal command with `env -u SLURM_JOB_ID`, carries `partition=all_debug`, and ends `5 passed` / `EXIT=0`, while base-red-file.log ends `4 failed, 1 passed` / `EXIT=1` with its four failing ids.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --numstat 076d47cbfd lists only tests/test_a_png_twin_of_an_svg_is_refused.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-png-twin-of-an-svg-is-refused.html, both inside the declared paths.\nSCORE durability: 17\nJUSTIFICATION durability: deleting tests/test_a_png_twin_of_an_svg_is_refused.py:93 reinstates the regression, and base-red-file.log shows that tree failing four of five cases on `messages_received: no delivery receipt was recorded`, so the guard is demonstrated rather than assumed.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_a_png_twin_of_an_svg_is_refused.py:93 sits among the other `none` fields of the same manifest template and names the key reckon/hooks/worker_inbox.py:57 owns.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module, so nothing duplicates an owned capability, and the statement is expressed in the value reckon/hooks/worker_inbox.py:58 declares.\nFINDING tests/test_a_png_twin_of_an_svg_is_refused.py:190 non-blocking: promoted[\"record\"][\"run_id\"] is compared against the RUN_ID the test itself passed to crew.complete, so the two sides move together and the line guards nothing; pre-existing and unmodified by this diff, recorded rather than blocking.\n",
+  "review_run_id": "r-20261116T134731845253-review-of-qwnw-red-file-a-png-twin-of-an-svg-is-refused-076d47cbfda6",
+  "reviewed_base_sha": "8fdf39585f1fb4b05ac8a6e5b707a7c651d42176",
+  "reviewed_head_sha": "076d47cbfda621422646f9da56a1e98185478d8a",
+  "reviewed_run_id": "r-20261116T104620233920-qwnw-red-file-a-png-twin-of-an-svg-is-refused",
+  "rubric": "dimensions",
+  "score_justifications": {
+    "durability": "deleting tests/test_a_png_twin_of_an_svg_is_refused.py:93 reinstates the regression, and base-red-file.log shows that tree failing four of five cases on `messages_received: no delivery receipt was recorded`, so the guard is demonstrated rather than assumed.",
+    "evidence": "gate-all-debug.log names revision 076d47cbfd, the tree and the literal command with `env -u SLURM_JOB_ID`, carries `job: 1319949 partition=all_debug`, and ends `5 passed` / `EXIT=0`, while base-red-file.log ends `4 failed, 1 passed` / `EXIT=1` with its four failing ids.",
+    "fit": "tests/test_a_png_twin_of_an_svg_is_refused.py:93 sits among the other `none` fields of the same manifest template and names the key reckon/hooks/worker_inbox.py:57 owns, so the fixture speaks the audit's own vocabulary rather than a second spelling.",
+    "goal_fidelity": "tests/test_a_png_twin_of_an_svg_is_refused.py:93 now writes `messages_received: none`, the exact statement reckon/hooks/worker_inbox.py:355-360 requires of a run with no delivery receipt, so the file runs to 5 passed at head while the PNG refusal at :160-177 still fires.",
+    "reuse": "the diff adds no function, class or module, so nothing duplicates an owned capability, and the statement is expressed in the value reckon/hooks/worker_inbox.py:58 declares.",
+    "scope_discipline": "git show --numstat 076d47cbfd lists only tests/test_a_png_twin_of_an_svg_is_refused.py (one added line) and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-png-twin-of-an-svg-is-refused.html (92 added lines), both inside the declared tests and docs/evidence/fragments paths; no product file changed."
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T20:53:04.179358+00:00",
+  "total": 113
+}

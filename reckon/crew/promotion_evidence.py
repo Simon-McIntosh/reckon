@@ -1228,7 +1228,18 @@ def _require_worktree_at_its_base(run_id: str, record: Mapping[str, Any]) -> Non
     no readable worktree, is not measured here: a released worktree has nothing
     left to ask, and a blank field names nothing rather than the current
     directory.
+
+    A review run is exempt because its worktree is the reviewed node's tree,
+    checked out at the reviewed head rather than at the base the review was
+    dispatched against: the head is the reviewed work, not a commit the review
+    made, and the pointer carries it by design. The review's deliverable is the
+    stored record, so measuring its tree against the review's base would refuse
+    every review promoted with a passing gate.
     """
+    from reckon.crew.recovery_review_delivery import _is_review_run
+
+    if _is_review_run(record):
+        return
     base = str(record.get("base_sha") or "").strip()
     worktree = _record_worktree(record)
     if not base or worktree is None:

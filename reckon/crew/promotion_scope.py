@@ -1342,8 +1342,14 @@ def _declared_manifest_commits(record: Mapping[str, Any]) -> list[str]:
     The declaration parser is the one authority on whether the field declares
     an absence, and it is asked here, so one reader decides what the line says
     for the landing record, the figure twin check and the boundary check alike.
-    A role that commits keeps the entry-by-entry reading, so a citation-shaped
-    value that names nothing is still returned and still refused by value.
+    A role that commits keeps the entry-by-entry reading, which is why the
+    per-entry declaration is asked as well: ``commits: none (repository worktree
+    remained clean)`` is the record stating it has no commit, and it reached the
+    figure twin check as a citation naming no object — refused by its own
+    declaration, which is the one value in this field no store can be asked
+    about. An entry that opens with an absence word and continues with a
+    revision (``none 7892cb69``) is not that declaration, so it stays here and
+    is still refused by value.
     """
     manifest_path = str(record.get("manifest_path") or "")
     if not manifest_path:
@@ -1356,7 +1362,9 @@ def _declared_manifest_commits(record: Mapping[str, Any]) -> list[str]:
     if _commits_field_declares_absence(text, record):
         return []
     return [
-        str(sha).strip() for sha in (declared.get("commits") or []) if str(sha).strip()
+        str(sha).strip()
+        for sha in (declared.get("commits") or [])
+        if str(sha).strip() and not _declares_absent_commits(str(sha))
     ]
 
 
@@ -1513,14 +1521,49 @@ def _record_landing_comment(
                 # and a later call's narrative that differs from it is reported
                 # beside the receipt rather than raised as a refusal, which
                 # would leave the live pointer and the worktree for a reader to
-                # clear by hand. Before the row exists there is no promotion to
-                # defer to, so a differing narrative stays a refusal.
+                # clear by hand.
+                #
+                # No row means no promotion recorded that text: the attempt
+                # that wrote it wrote the comment before the row, and its row
+                # write was rolled back, so the comment is the only trace of a
+                # landing that never committed. Nothing recorded that narrative
+                # and nothing pins it, so recording it now would defend a
+                # promotion that does not exist. Replace it with the narrative
+                # being promoted, keeping the comment's id so a retry lands
+                # rather than repeating wording its author cannot reconstruct.
                 if not _ledger_holds_row(project, root, run_id, unreadable=False):
-                    raise CrewError(
-                        f"landing comment {comment_id!r} for plan {plan!r} already "
-                        "contains a different narrative; refusing to report the "
-                        "corrected outcome as recorded"
-                    )
+                    superseded = _strip_tags(str(existing.get("body") or ""))
+                    for position, item in enumerate(items):
+                        if item is existing:
+                            items[position] = {
+                                **existing,
+                                "who": author,
+                                "when": when,
+                                "body": desired_body,
+                            }
+                            break
+                    payload = {**state, "comments": comments}
+                    if started:
+                        payload["status"] = "in-progress"
+                    try:
+                        _store.write_plan(
+                            project,
+                            plan,
+                            payload,
+                            version,
+                            root,
+                            artifact_type="plan",
+                        )
+                    except _store.VersionConflict:
+                        continue
+                    return {
+                        "recorded": True,
+                        "comment_id": comment_id,
+                        "section": anchor,
+                        "already_recorded": False,
+                        "superseded_narrative": superseded,
+                        **({"status": "in-progress"} if started else {}),
+                    }
                 # Both sides go to the stripper as they were written: it
                 # unescapes once, so a narrative that names an entity in its
                 # own text keeps it. Feeding it the already-unescaped forms
