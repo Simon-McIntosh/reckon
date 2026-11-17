@@ -39,6 +39,7 @@ from reckon import file_memo, ledger
 from reckon.crew import (
     obligation_snapshot,
     plan_review,
+    recovery_review_subject,
     recovery_watch,
     runs,
     station,
@@ -323,6 +324,30 @@ def test_a_steady_promotion_reads_no_git_and_a_moved_head_re_reads(
     assert after == [*first, moved], (
         f"the moved head was not re-read: {after} (expected {[*first, moved]})"
     )
+
+
+def test_a_steady_review_brief_reads_the_diff_once_and_a_moved_head_re_reads(
+    fleet: dict[str, Any],
+) -> None:
+    """The reviewed diff is read once per range, and re-read when the head moves."""
+    run_id = "run-01"
+    record = json.loads(runs.pointer_path(run_id).read_text(encoding="utf-8"))
+    worktree = fleet["worktrees"][run_id]
+    head = _git(worktree, "rev-parse", "HEAD").strip()
+    first = recovery_review_subject._review_brief_text(record, head)
+    assert recovery_review_subject.REVIEWED_SCOPE_HEADING in first, first
+
+    with _GitCounter() as git_calls:
+        again = recovery_review_subject._review_brief_text(record, head)
+    assert again == first, "the same range composed a different brief"
+    assert git_calls.calls == 0, (
+        f"a steady brief read ran {git_calls.calls} git processes with no head move"
+    )
+
+    moved = _commit(worktree, "moved-scope.txt", "moved\n")
+    after = recovery_review_subject._review_brief_text(record, moved)
+    assert f"Delivered diff {record['base_sha']}..{moved}" in after, after
+    assert "moved-scope.txt" in after, f"the moved head was not re-read: {after}"
 
 
 def test_a_steady_answer_store_read_parses_once_and_a_write_re_reads(
