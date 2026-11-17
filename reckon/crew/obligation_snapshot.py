@@ -354,6 +354,7 @@ STATION_STALE_SECONDS = FRESHNESS_WINDOW_SECONDS
 STATION_TICK_STAGE_KEY = "tick_stage"
 STATION_TICK_STARTED_AT_KEY = "tick_started_at"
 STATION_TICK_FINISHED_AT_KEY = "tick_finished_at"
+STATION_LAST_TICK_KEY = "last_tick"
 STATION_TICK_STAGES = (
     "store-tick",
     "classify",
@@ -460,6 +461,15 @@ def station_tick_reading(
     return stage, max(0, int((instant - started).total_seconds()))
 
 
+def _last_tick_reading(markers: Mapping[str, Any]) -> dict[str, Any]:
+    """The completed measurement, retained while the current tick runs."""
+    try:
+        record = json.loads(markers.get(STATION_LAST_TICK_KEY) or "null")
+    except (TypeError, ValueError):
+        return {}
+    return {"last_tick": record} if isinstance(record, dict) else {}
+
+
 def _running_tick_start(markers: Mapping[str, Any], tick_age: int | None) -> str:
     """The instant the running tick started, and "" when no tick is running.
 
@@ -521,13 +531,14 @@ def _station_markers(connection: Any) -> dict[str, str]:
     markers = {
         str(key): str(value)
         for key, value in connection.execute(
-            "SELECT key, value FROM station WHERE key IN (?, ?, ?, ?, ?)",
+            "SELECT key, value FROM station WHERE key IN (?, ?, ?, ?, ?, ?)",
             (
                 "heartbeat",
                 STATION_TICK_STAGE_KEY,
                 STATION_TICK_STARTED_AT_KEY,
                 STATION_TICK_FINISHED_AT_KEY,
                 "store_identity",
+                STATION_LAST_TICK_KEY,
             ),
         )
     }
@@ -636,6 +647,7 @@ def read_station_tick(
         "tick_age_seconds": tick_age,
         "tick_started_at": _running_tick_start(markers, tick_age),
         "stale": age > STATION_STALE_SECONDS,
+        **_last_tick_reading(markers),
     }
 
 
@@ -717,6 +729,7 @@ def read_station_answer(
         "tick_age_seconds": tick_age,
         "tick_started_at": _running_tick_start(markers, tick_age),
         "stale": stale,
+        **_last_tick_reading(markers),
     }
 
 
