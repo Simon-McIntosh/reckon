@@ -2087,7 +2087,7 @@ def _stuck_count(rows: Iterable[Mapping[str, Any]]) -> int:
 
 def _fleet_counts(
     snapshots: Mapping[str, Mapping[str, Any]], *, session: str | None = None
-) -> dict[str, int]:
+) -> dict[str, Any]:
     """Partition the fleet into working, reviewing, blocked, delivered and waiting.
 
     ``working`` is what a reader means by a live implementation worker, and
@@ -2152,6 +2152,7 @@ def _fleet_counts(
         counts["unpromoted"] = delivery["delivered"]
         counts["promotion_queued"] = delivery["promotion_queued"]
         counts["oldest_promotion_position"] = delivery["oldest_promotion_position"]
+        counts["oldest_promotion_requested_at"] = delivery["oldest_promotion_requested_at"]
     if reviewing:
         counts["reviewing"] = reviewing
     waiting = held
@@ -2625,7 +2626,7 @@ def handover_run_ids(project: str) -> set[str]:
 
 def _session_fleet_counts(
     snapshots: Mapping[str, Mapping[str, Any]],
-) -> dict[str, dict[str, int]]:
+) -> dict[str, dict[str, Any]]:
     """The fleet partition per owning session, unowned rows under ``""``.
 
     Each figure is the partition ``_fleet_counts`` takes for that session, so a
@@ -2634,7 +2635,7 @@ def _session_fleet_counts(
     ``""`` entry, which counts only the rows no session owns.
     """
     owners = {str(snapshot.get("session") or "") for snapshot in snapshots.values()}
-    counts: dict[str, dict[str, int]] = {}
+    counts: dict[str, dict[str, Any]] = {}
     for owner in owners | {""}:
         rows, _peers = _partition_session_rows(snapshots.values(), owner)
         counts[owner] = {
@@ -2793,6 +2794,7 @@ def _watch_transition(
         "blocked": counts["blocked"],
         "promotion_queued": counts.get("promotion_queued", 0),
         "oldest_promotion_position": counts.get("oldest_promotion_position"),
+        "oldest_promotion_requested_at": counts.get("oldest_promotion_requested_at"),
         "unpromoted": counts["unpromoted"],
         # The stuck count sits beside the bucket counters rather than inside
         # them: a stuck request keeps the cell its phase belongs to, so this
@@ -3132,7 +3134,27 @@ def _other_project_producer_is_live(project: str, session: str, stamp: str) -> b
     return reading != obligation_snapshot.NO_PRODUCER
 
 
-def _session_counts_in_other_projects(project: str, session: str) -> dict[str, int]:
+def _oldest_promotion_fields(readings: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
+    """Carry the position of the earliest dated request across project totals."""
+    dated = [
+        (parse_utc(row.get("oldest_promotion_requested_at")), row) for row in readings
+    ]
+    if any(row.get("promotion_queued") and stamp is None for stamp, row in dated):
+        return {
+            "oldest_promotion_requested_at": None,
+            "oldest_promotion_position": None,
+        }
+    dated = [(stamp, row) for stamp, row in dated if stamp is not None]
+    if not dated:
+        return {}
+    _stamp, oldest = min(dated, key=lambda item: item[0])
+    return {
+        "oldest_promotion_requested_at": oldest["oldest_promotion_requested_at"],
+        "oldest_promotion_position": oldest.get("oldest_promotion_position"),
+    }
+
+
+def _session_counts_in_other_projects(project: str, session: str) -> dict[str, Any]:
     """The session's totals in every watched project but this row's own.
 
     A follower scoped to one session relays one project's stream, but the
@@ -3160,6 +3182,7 @@ def _session_counts_in_other_projects(project: str, session: str) -> dict[str, i
         "unpromoted": 0,
         "stuck": 0,
     }
+    promotion_readings = []
     waiting_seen = False
     waiting = 0
     stamp: str | None = None
@@ -3190,6 +3213,7 @@ def _session_counts_in_other_projects(project: str, session: str) -> dict[str, i
             stamp = _running_code_stamp()
         if not _other_project_producer_is_live(other, session, stamp):
             continue
+        promotion_readings.append(entry)
         for key in total:
             total[key] += int(entry.get(key) or 0)
         if "waiting" in entry:
@@ -3197,10 +3221,11 @@ def _session_counts_in_other_projects(project: str, session: str) -> dict[str, i
             waiting += int(entry.get("waiting") or 0)
     if waiting_seen:
         total["waiting"] = waiting
+    total.update(_oldest_promotion_fields(promotion_readings))
     return total
 
 
-def _live_project_session_counts(project: str, session: str) -> dict[str, int]:
+def _live_project_session_counts(project: str, session: str) -> dict[str, Any]:
     """Re-select one project's live fleet for a session, for a legacy event.
 
     An event written before the per-session figures existed carries none, so the
@@ -3275,6 +3300,7 @@ def _scoped_watch_event(event: Mapping[str, Any], session: str) -> dict[str, Any
         project_counts["waiting"] = int(own.get("waiting") or 0)
 
     total = dict(project_counts)
+    oldest_promotion = _oldest_promotion_fields([own])
     if session:
         elsewhere = _session_counts_in_other_projects(
             str(event.get("project") or ""), session
@@ -3288,6 +3314,7 @@ def _scoped_watch_event(event: Mapping[str, Any], session: str) -> dict[str, Any
             "stuck",
         ):
             total[key] = total.get(key, 0) + elsewhere.get(key, 0)
+        oldest_promotion = _oldest_promotion_fields([own, elsewhere])
         if "waiting" in elsewhere:
             total["waiting"] = total.get("waiting", 0) + elsewhere["waiting"]
 
@@ -3296,7 +3323,8 @@ def _scoped_watch_event(event: Mapping[str, Any], session: str) -> dict[str, Any
     scoped["reviewing"] = total.get("reviewing", 0)
     scoped["blocked"] = total.get("blocked", 0)
     scoped["promotion_queued"] = total.get("promotion_queued", 0)
-    scoped["oldest_promotion_position"] = own.get("oldest_promotion_position")
+    scoped["oldest_promotion_position"] = oldest_promotion.get("oldest_promotion_position")
+    scoped["oldest_promotion_requested_at"] = oldest_promotion.get("oldest_promotion_requested_at")
     scoped["unpromoted"] = total.get("unpromoted", 0)
     scoped["project_working"] = project_counts.get("working", 0)
     scoped["project_reviewing"] = project_counts.get("reviewing", 0)

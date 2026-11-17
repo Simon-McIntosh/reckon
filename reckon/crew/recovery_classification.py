@@ -3416,6 +3416,7 @@ def delivery_summary(
         if (row.get("delivery") or {}).get("status") == "landed"
     )
     position = None
+    requested_at = None
     if queued:
         from .promotion_requests import promotion_queue_report
 
@@ -3431,10 +3432,12 @@ def delivery_summary(
             for row in promotion_queue_report()["requests"]
         }
         position = places.get(oldest["run_id"])
+        requested_at = (oldest.get("delivery") or {}).get("requested_at")
     return {
         "delivered": len(delivered),
         "promotion_queued": len(queued),
         "oldest_promotion_position": position,
+        "oldest_promotion_requested_at": requested_at,
         "landed_pointers": len(landed),
         "remove_pointers": landed,
     }

@@ -206,18 +206,19 @@ def test_delivered_counts_and_owed_rows_share_the_classified_population(
     assert counts["unpromoted"] == 1, counts
     assert counts["promotion_queued"] == 2, counts
     assert counts["oldest_promotion_position"] == 1, counts
-    pane = Ticker(color=False).render(
-        dict(
-            project=PROJECT,
-            event="transition",
-            observed_at=now.isoformat(),
-            run_id="delivered",
-            node="delivered",
-            from_state="working",
-            to_state="complete",
-            **counts,
-        )
+    event = recovery_watch._watch_transition(
+        PROJECT,
+        kind="transition",
+        snapshot=snapshots["delivered"],
+        previous="working",
+        current="complete",
+        counts=recovery_watch._transition_counts(snapshots),
+        spend_runs=pointers,
+        rate_statuses={},
+        pointers=pointers,
     )
+    scoped = recovery_watch._scoped_watch_event(event, SESSION)
+    pane = Ticker(color=False).render(scoped)
     print("pane:", pane)
     assert "1d" in pane and "2p" in pane and "@ 1" in pane, pane
     view = obligations.obligations(PROJECT, SESSION)
@@ -255,8 +256,18 @@ def test_the_owed_command_promotes_the_run_verbatim(repository, tmp_path, role):
     argv = shlex.split(command)
     assert argv.pop(0) == "reckon"
     result = CliRunner().invoke(cli.main, argv)
-    print("command receipt:", result.output)
     assert result.exit_code == 0, result.output
+    receipt = json.loads(result.output)
+    assert receipt["pointer_removed"] is True, receipt
+    assert Path(receipt["ledger_path"]).is_relative_to(repository), receipt[
+        "ledger_path"
+    ]
+    print(
+        "command receipt:",
+        receipt["run_id"],
+        receipt["pointer_removed"],
+        receipt["record"]["gate"],
+    )
     assert not runs.pointer_path(pointer["run_id"]).exists(), result.output
     assert any(
         row["run_id"] == pointer["run_id"]
@@ -324,3 +335,27 @@ def test_a_stored_promotion_label_is_not_a_request(repository, tmp_path):
     view = obligations.obligations(PROJECT, SESSION)
     assert view["summary"]["delivered"] == 1
     assert view["summary"]["promotion_queued"] == 0
+
+
+def test_a_session_pane_carries_the_oldest_request_across_projects(monkeypatch):
+    newer = {
+        "unpromoted": 1,
+        "promotion_queued": 1,
+        "oldest_promotion_requested_at": "2026-11-01T12:01:00Z",
+        "oldest_promotion_position": 1,
+    }
+    older = {
+        "unpromoted": 2,
+        "promotion_queued": 2,
+        "oldest_promotion_requested_at": "2026-11-01T12:00:00Z",
+        "oldest_promotion_position": 5,
+    }
+    monkeypatch.setattr(
+        recovery_watch, "_session_counts_in_other_projects", lambda *_: older
+    )
+    event = recovery_watch._scoped_watch_event(
+        {"project": "current", "session_counts": {SESSION: newer}}, SESSION
+    )
+    assert event["unpromoted"] == 3
+    assert event["promotion_queued"] == 3
+    assert event["oldest_promotion_position"] == 5
