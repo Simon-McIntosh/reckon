@@ -3646,7 +3646,7 @@ def crew_complete(
         )
     if land and not dry_run:
         _refuse_a_landing_without_its_pointer(run_id)
-# The identity check runs before the request block below: that block writes
+    # The identity check runs before the request block below: that block writes
     # a promotion request, and a caller whose --project disagrees with the run
     # must be refused without a request left queued for a run it did not name.
     _accept_a_matching_project(run_id, project)
