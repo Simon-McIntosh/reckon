@@ -123,15 +123,19 @@ def admit_once(
             # to ``blocked-upstream`` the moment one is closed as abandoned or
             # failed, with no coordinator turn in between. This is what lets a
             # batch queued in one call launch in dependency order.
-            waits_started = time.monotonic()
-            upstream = _release.advance_waiting_requests(live)
-            _verdicts._record_readiness_verdicts(
-                result, live=live, lane=lane, config_for=config_for
-            )
-            result["released_plan_review"] = _reviews._release_plan_review_holds(
-                live, config_for=config_for
-            )
-            result["waits_seconds"] = round(time.monotonic() - waits_started, 3)
+            # Opened before the stage's clock starts, so the cost of measuring
+            # the stage is not charged to the stage.
+            with _service._read_tally() as wait_reads:
+                waits_started = time.monotonic()
+                upstream = _release.advance_waiting_requests(live)
+                _verdicts._record_readiness_verdicts(
+                    result, live=live, lane=lane, config_for=config_for
+                )
+                result["released_plan_review"] = _reviews._release_plan_review_holds(
+                    live, config_for=config_for
+                )
+                result["waits_seconds"] = round(time.monotonic() - waits_started, 3)
+            _service._record_stage_reads(result, "wait", wait_reads)
             result["promoted_upstream"] = upstream["promoted"]
             result["blocked_upstream"] = upstream["blocked"]
             result["upstream_obligations"] = upstream["obligations"]
