@@ -3284,7 +3284,9 @@ def test_append_run_writes_the_shadow_store_beside_the_file(home, repo) -> None:
     # them, so a field the declaration does not index is still kept forever.
     durable = json.loads(stored["payload"])
     assert durable["run_id"] == "r-store-echo"
-    assert durable["project"] == PROJECT
+    # The project routes the row through its column; it is not a field of the
+    # record, so the payload is the row the promotion wrote and nothing more.
+    assert "project" not in durable
     assert durable["member"] == "worker-a"
     assert durable["node"] == ""
     assert durable["gate"] == "passed"
