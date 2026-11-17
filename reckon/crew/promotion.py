@@ -1843,6 +1843,22 @@ def _budget_overrun_facts(
     }
 
 
+def _record_release_on_ledger(**kwargs):
+    """Serialize the release row update together with its landing commit."""
+    from reckon.crew.promotion_scope import (
+        _acquire_branch_write,
+        _branch_write_scope,
+        _release_branch_write,
+    )
+
+    with _branch_write_scope():
+        _acquire_branch_write(kwargs.get("checkout"))
+        try:
+            return _write_release_record(**kwargs)
+        finally:
+            _release_branch_write()
+
+
 def _with_branch_write_scope(function):
     @wraps(function)
     def invoke(*args, **kwargs):
@@ -3501,7 +3517,6 @@ from reckon.crew.promotion_release import (
     _harvest_lane_receipt,
     _other_live_run_citations,
     _receipt_unmeasured_reason,
-    _record_release_on_ledger,
     _record_tree,
     _record_worktree,
     _release_after_promotion,
@@ -3517,6 +3532,9 @@ from reckon.crew.promotion_release import (
     _unreconciled_live_runs,
     _update_run_record,
     remove_cited_arms,
+)
+from reckon.crew.promotion_release import (
+    _record_release_on_ledger as _write_release_record,
 )
 from reckon.crew.promotion_scope import (
     _OPEN_OPERATION_MARKERS,

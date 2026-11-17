@@ -425,3 +425,39 @@ def test_a_refusal_releases_the_branch_and_rates_count_only_successes(tmp_path):
     assert report["refused_last_window"] == 1
     assert report["successful_promotions_per_hour"] == 1
     assert report["rate_bounded_by"] in report["stage_seconds_last_window"]
+
+
+def test_release_record_is_written_under_the_branch_lease(tmp_path, monkeypatch):
+    from reckon import ledger
+    from reckon.crew import promotion, promotion_release, promotion_scope
+    from scripts.replay_promotion_drain import git
+
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("RECKON_RUN_STORE", str(tmp_path / "store.db"))
+
+    repo = tmp_path / "repository"
+    repo.mkdir()
+    git(repo, "init", "-q", "-b", "main")
+    git(repo, "config", "user.name", "Fixture")
+    git(repo, "config", "user.email", "fixture@example.invalid")
+    git(repo, "config", "commit.gpgsign", "false")
+    path = ledger.run_path("fixture", "run", repo)
+    path.parent.mkdir(parents=True)
+    path.write_text(ledger.serialize_run({"run_id": "run"}))
+    git(repo, "add", str(path.relative_to(repo)))
+    git(repo, "commit", "-qm", "Seed release record")
+    original = promotion_release._update_run_record
+
+    def observed(*args, **kwargs):
+        scope = promotion_scope._BRANCH_WRITES.get()
+        assert scope and scope.get("lease"), (
+            "release record writes before acquiring the branch lease"
+        )
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(promotion_release, "_update_run_record", observed)
+    with promotion_scope._branch_write_scope():
+        promotion._record_release_on_ledger(
+            project="fixture", root=repo, run_id="run",
+            release={"worktree_released": True}, checkout=repo,
+        )
