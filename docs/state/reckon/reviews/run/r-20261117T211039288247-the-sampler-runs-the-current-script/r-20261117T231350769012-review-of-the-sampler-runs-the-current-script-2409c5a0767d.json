@@ -1,0 +1,118 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertions": "Changed-path case retains earlier rows, produces an independently specified added=present row, changes PID, completes within two periods and has a singleton event-derived active set.",
+      "fails_if": "Restoring pathname matching refuses the changed-path case, so the added-row wait fails (observed in cross-path-negative.log); retaining the incumbent fails PID/added-row checks; overlap fails the singleton check; dropped history fails the independent padded-row expectation.",
+      "path": "tests/test_the_sampler_runs_the_current_script.py:61-130"
+    },
+    {
+      "assertions": "Unidentified real held lock refuses replacement, emits refusal and sends no signals through the actual updated signal primitive.",
+      "fails_if": "Bypassing unidentified-owner refusal returns success, logs no refusal or calls _signal_one, breaking the corresponding assertion.",
+      "path": "tests/test_the_sampler_runs_the_current_script.py:178-190"
+    },
+    {
+      "assertions": "Old sampler shares the test group; replacement subprocess succeeds and records a PID; added rows and history exist; old shell exits cleanly; peer lives; live replacement argv names the checkout script; observed events order old start/stop before replacement start.",
+      "fails_if": "Restoring old pathname or session-leader filtering leaves recorded=None; group signalling kills the peer or test; wrong default script selection fails the kernel argv/added-row checks; premature replacement fails event order; data loss fails history equality. Returncode and rows-presence checks detect failed launch/no samples; group equality establishes the non-isolated fixture, not product coverage.",
+      "path": "tests/test_the_sampler_runs_the_current_script.py:293-327"
+    },
+    {
+      "assertions": "An actual lock on fd8 plus an independently opened fd9 is held but does not authorise sampler replacement; fixture process survives and refusal is reported.",
+      "fails_if": "Removing the fdinfo exclusive-lock requirement misclassifies the shell by fd9 inode alone and stops it or succeeds, breaking refusal and survival checks.",
+      "path": "tests/test_the_sampler_runs_the_current_script.py:359-362"
+    }
+  ],
+  "assertion_independence": "No newly added regression assertion merely compares a returned value with its own supplied input: checkout-path equality queries the live process argv, event PID expectations use independently emitted script events, and preservation checks compare retained history with explicit padding; fixture returncode/group checks are not counted as regression protection.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/fleet_supervisor.py:serve:3961",
+    "reckon/crew/fleet_supervisor.py:start_health_sampler:1489",
+    "reckon/crew/fleet_supervisor.py:handle_line:3838-3842"
+  ],
+  "completed_at": "2026-11-17T23:19:56Z",
+  "dispatched_at": "2026-11-17T23:15:33Z",
+  "findings": [],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/fleet_supervisor.py:serve:3961, reckon/crew/fleet_supervisor.py:start_health_sampler:1489, reckon/crew/fleet_supervisor.py:handle_line:3838-3842",
+    "diff": "Read the single incremental commit 2409c5a0767d27e05f60bf8c95c7da66d49de1fa against parent 6dfe8f2f47a6be4181368e1e7a6498ac166866f1; its two-file delta replaces pathname/session assumptions with descriptor-lock discovery and direct signals, and adds cross-path, manual-symlink and open-descriptor regression checks.",
+    "done_when": "The source node.done_when requires the section cases, a failing control and no added importer failures on all_debug; cross-path-negative.log records the prior head refusing both changed-path and manual-symlink handovers, scoped-gate-1794956435357131729.log records 114 passed, and the completed suite receipts contain identical eight failing IDs; live-fleet confirmation remains post-integration.",
+    "goal": "The source live pointer node.goal requires the current checkout sampler after re-execution; reckon/crew/fleet_supervisor.py:1508-1603 now identifies the incumbent by its held runtime lock independently of its script path and stops its own tree.",
+    "manifest": "The source manifest.md records committed head 2409c5a0767d27e05f60bf8c95c7da66d49de1fa, 114 scoped passes, completed baseline/head and importer arms, a red prior-head cross-path control and the deferred live-fleet observation, all consistent with the receipts read.",
+    "write_paths": "The source node.write_paths and manifest orientation_write_paths grant reckon/crew/fleet_supervisor.py and tests/test_the_sampler_runs_the_current_script.py, the only paths changed by the incremental commit."
+  },
+  "justifications": {
+    "durability": "tests/test_the_sampler_runs_the_current_script.py:61-126 fails if pathname matching returns, :293-327 fails if manual ownership is refused or peer groups are signalled, and :359-362 fails if an open descriptor is accepted without an exclusive lock; the prior-head control actually records the first two regressions.",
+    "evidence": "The source scoped-gate-1794956435357131729.log records same-path/cross-path handovers at 1.130/1.290 seconds for a two-second period and 114 passed, cross-path-negative.log records two corresponding failures at the prior head, and completed suite receipts yield zero added IDs, while the live-fleet observation in plan section 12 is still deferred.",
+    "fit": "reckon/crew/fleet_supervisor.py:1548-1549 reuses the existing process-liveness and signal helpers, :1534 reuses the local lock parser, and the added definitions and test names describe mechanisms without transient labels.",
+    "goal_fidelity": "reckon/crew/fleet_supervisor.py:1518-1535 identifies same-uid exclusive lock descriptors and :1555-1587 selects the root shell and signals only its enumerated tree, repairing the previously blocking cross-path and manual-launch cases.",
+    "reuse": "Capability searches for lock owners, fdinfo and process-tree stopping found fleet_supervisor.py:1759 lock_holders_in and :1784 service_lock_holders plus process_signal.py:_running_descendants/_signal_one and process_liveness.py:_process_start_time; the new descriptor-specific discovery extends the sampler owner, reuses the parser and signal owners, and the added tests reuse the existing _script/_wait/_rows fixtures.",
+    "scope_discipline": "Commit 2409c5a0767d27e05f60bf8c95c7da66d49de1fa changes only the two granted files reckon/crew/fleet_supervisor.py and tests/test_the_sampler_runs_the_current_script.py to repair incumbent discovery and prove its ownership boundary."
+  },
+  "limitations": [
+    "Incremental review covers only the single added commit and its two changed paths.",
+    "No test suite rerun; completed source receipts and actual FAILED IDs were read.",
+    "Source suite baseline is original implementation base 3845a12fe055e3b175e74f47984d4ecee9262d4e; review diff baseline is prior reviewed head 6dfe8f2f47a6be4181368e1e7a6498ac166866f1.",
+    "Live-fleet current-column confirmation within two re-executions belongs to coordinator integration."
+  ],
+  "prior_finding_resolution": {
+    "control": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T211039288247-the-sampler-runs-the-current-script/cross-path-negative.log",
+    "control_result": "2 failed, 1 passed, 7 deselected in 9.65s; EXIT=1; sampler replacement refused: lock held with 0 identified owners",
+    "prior_head": "6dfe8f2f47a6be4181368e1e7a6498ac166866f1",
+    "result": "Answered by lock-based discovery and changed-path/manual-symlink regression cases."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source live pointer node.goal requires the current checkout sampler after re-execution; reckon/crew/fleet_supervisor.py:1508-1603 now identifies the incumbent by its held runtime lock independently of its script path and stops its own tree.\nVERDICT done_when: The source node.done_when requires the section cases, a failing control and no added importer failures on all_debug; cross-path-negative.log records the prior head refusing both changed-path and manual-symlink handovers, scoped-gate-1794956435357131729.log records 114 passed, and the completed suite receipts contain identical eight failing IDs; live-fleet confirmation remains post-integration.\nVERDICT write_paths: The source node.write_paths and manifest orientation_write_paths grant reckon/crew/fleet_supervisor.py and tests/test_the_sampler_runs_the_current_script.py, the only paths changed by the incremental commit.\nVERDICT manifest: The source manifest.md records committed head 2409c5a0767d27e05f60bf8c95c7da66d49de1fa, 114 scoped passes, completed baseline/head and importer arms, a red prior-head cross-path control and the deferred live-fleet observation, all consistent with the receipts read.\nVERDICT diff: Read the single incremental commit 2409c5a0767d27e05f60bf8c95c7da66d49de1fa against parent 6dfe8f2f47a6be4181368e1e7a6498ac166866f1; its two-file delta replaces pathname/session assumptions with descriptor-lock discovery and direct signals, and adds cross-path, manual-symlink and open-descriptor regression checks.\nCALL_SITES: reckon/crew/fleet_supervisor.py:serve:3961, reckon/crew/fleet_supervisor.py:start_health_sampler:1489, reckon/crew/fleet_supervisor.py:handle_line:3838-3842\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_supervisor.py:1518-1535 identifies same-uid exclusive lock descriptors and :1555-1587 selects the root shell and signals only its enumerated tree, repairing the previously blocking cross-path and manual-launch cases.\nSCORE evidence: 18\nJUSTIFICATION evidence: The source scoped-gate-1794956435357131729.log records same-path/cross-path handovers at 1.130/1.290 seconds for a two-second period and 114 passed, cross-path-negative.log records two corresponding failures at the prior head, and completed suite receipts yield zero added IDs, while the live-fleet observation in plan section 12 is still deferred.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Commit 2409c5a0767d27e05f60bf8c95c7da66d49de1fa changes only the two granted files reckon/crew/fleet_supervisor.py and tests/test_the_sampler_runs_the_current_script.py to repair incumbent discovery and prove its ownership boundary.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_the_sampler_runs_the_current_script.py:61-126 fails if pathname matching returns, :293-327 fails if manual ownership is refused or peer groups are signalled, and :359-362 fails if an open descriptor is accepted without an exclusive lock; the prior-head control actually records the first two regressions.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/fleet_supervisor.py:1548-1549 reuses the existing process-liveness and signal helpers, :1534 reuses the local lock parser, and the added definitions and test names describe mechanisms without transient labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for lock owners, fdinfo and process-tree stopping found fleet_supervisor.py:1759 lock_holders_in and :1784 service_lock_holders plus process_signal.py:_running_descendants/_signal_one and process_liveness.py:_process_start_time; the new descriptor-specific discovery extends the sampler owner, reuses the parser and signal owners, and the added tests reuse the existing _script/_wait/_rows fixtures.\n",
+  "review_run_id": "r-20261117T231350769012-review-of-the-sampler-runs-the-current-script-2409c5a0767d",
+  "reviewed_base_sha": "6dfe8f2f47a6be4181368e1e7a6498ac166866f1",
+  "reviewed_head_sha": "2409c5a0767d27e05f60bf8c95c7da66d49de1fa",
+  "reviewed_run_id": "r-20261117T211039288247-the-sampler-runs-the-current-script",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "completed": true,
+      "failure_count": 8,
+      "failure_ids": [
+        "tests/test_a_crashed_producer_is_restarted.py::test_a_lapsed_lease_is_restarted",
+        "tests/test_a_run_leaves_nothing_behind.py::test_landing_retires_the_entire_run",
+        "tests/test_an_installed_interpreter_refuses_a_write.py::test_each_health_sample_repairs_a_later_install",
+        "tests/test_an_installed_interpreter_refuses_a_write.py::test_unreadable_registry_is_unknown_in_the_health_series",
+        "tests/test_each_admission_pass_records_its_verdict.py::test_the_log_is_trimmed_within_its_size_bound",
+        "tests/test_gc_bounds_a_run_file.py::test_gc_skips_files_the_run_directory_does_not_own",
+        "tests/test_no_caller_waits_on_a_promotion.py::test_a_failure_is_durable_and_is_a_session_obligation",
+        "tests/test_the_station_starts_where_workers_run.py::test_station_reloads_from_a_node_local_image"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T211039288247-the-sampler-runs-the-current-script/after_suite_review-1794956436200126191.receipt.log",
+      "revision": "2409c5a0767d27e05f60bf8c95c7da66d49de1fa",
+      "summary": "8 failed, 173 passed in 215.49s (0:03:35)"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "failure_count": 8,
+      "failure_ids": [
+        "tests/test_a_crashed_producer_is_restarted.py::test_a_lapsed_lease_is_restarted",
+        "tests/test_a_run_leaves_nothing_behind.py::test_landing_retires_the_entire_run",
+        "tests/test_an_installed_interpreter_refuses_a_write.py::test_each_health_sample_repairs_a_later_install",
+        "tests/test_an_installed_interpreter_refuses_a_write.py::test_unreadable_registry_is_unknown_in_the_health_series",
+        "tests/test_each_admission_pass_records_its_verdict.py::test_the_log_is_trimmed_within_its_size_bound",
+        "tests/test_gc_bounds_a_run_file.py::test_gc_skips_files_the_run_directory_does_not_own",
+        "tests/test_no_caller_waits_on_a_promotion.py::test_a_failure_is_durable_and_is_a_session_obligation",
+        "tests/test_the_station_starts_where_workers_run.py::test_station_reloads_from_a_node_local_image"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T211039288247-the-sampler-runs-the-current-script/baseline_suite-1794951749253646711.receipt.log",
+      "revision": "3845a12fe055e3b175e74f47984d4ecee9262d4e",
+      "summary": "8 failed, 162 passed in 203.78s (0:03:23)"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T23:23:44.674781+00:00",
+  "total": 118
+}
