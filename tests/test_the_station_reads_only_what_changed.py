@@ -1026,3 +1026,90 @@ def test_a_moved_stream_is_read_only_where_it_changed(
         f"the second tick read {over} bytes of the moved streams, whose whole is "
         f"{total} and whose appended part is {appended}"
     )
+
+
+def _result_record(*, is_error: bool, detail: str) -> str:
+    """One terminal result record, as a stream line."""
+    return json.dumps(
+        {
+            "type": "result",
+            "is_error": is_error,
+            "timestamp": "2026-10-24T11:00:00Z",
+            "detail": detail,
+        }
+    )
+
+
+def _filling_records(*, target_bytes: int, tag: str) -> list[str]:
+    """Assistant records whose joined length reaches ``target_bytes``."""
+    lines: list[str] = []
+    size = 0
+    number = 0
+    while size < target_bytes:
+        line = json.dumps(
+            {
+                "type": "assistant",
+                "timestamp": "2026-10-24T11:00:00Z",
+                "message": {"content": [{"type": "text", "text": f"{tag}-{number}"}]},
+            }
+        )
+        lines.append(line)
+        size += len(line) + 1
+        number += 1
+    return lines
+
+
+def test_a_stream_rewritten_in_place_is_read_from_its_first_record(
+    tmp_path: Path,
+) -> None:
+    """A stream rewritten to its own length restarts the cursor at record one.
+
+    A replaced stream moves its inode and a truncated one shrinks, and the stat
+    identity catches both. A producer that rewrites its stream in place keeps
+    the inode and lands at the same size or longer, so neither catches it, and
+    the offset the cursor holds then points into bytes its file no longer leads
+    to. The opening fingerprint is what catches it. This case is the one that
+    would pass on inode and size alone: the newest result sits before the held
+    offset, so a resumed read answers with the result the stream no longer ends
+    with, and the bytes read say whether the read started at record one.
+    """
+    stream = tmp_path / "stream.jsonl"
+    held = _result_record(is_error=False, detail="the first turn")
+    stream.write_text(
+        "\n".join([*_filling_records(target_bytes=200_000, tag="a"), held]) + "\n"
+    )
+    original_size = stream.stat().st_size
+
+    assert recovery_memo_module._newest_result_event(stream) == json.loads(held)
+    assert (
+        recovery_memo_module._NEWEST_RESULTS[str(stream)]["offset"] == original_size
+    ), "the cursor must sit at the stream's end"
+
+    # Rewritten in place: same inode, at least as long, and the only result
+    # record now sits before the offset the cursor holds.
+    newer = _result_record(is_error=True, detail="the second turn")
+    rewritten = (
+        "\n".join([newer, *_filling_records(target_bytes=original_size, tag="b")])
+        + "\n"
+    )
+    inode_before = stream.stat().st_ino
+    with stream.open("w", encoding="utf-8") as handle:
+        handle.write(rewritten)
+    after = stream.stat()
+    assert after.st_ino == inode_before, "the case must rewrite in place, not replace"
+    assert after.st_size >= original_size, (
+        f"the rewrite shrank the stream from {original_size} to {after.st_size}"
+    )
+
+    with _PerPathReads() as reads:
+        answer = recovery_memo_module._newest_result_event(stream)
+    read = reads.total_for([stream])
+
+    assert answer == json.loads(newer), (
+        "the cursor resumed into a stream whose opening moved, so it answered "
+        "with a result the stream no longer holds as its newest"
+    )
+    assert read >= after.st_size, (
+        f"the read took {read} bytes of a {after.st_size}-byte stream, so it did "
+        "not start at its first record"
+    )

@@ -40,7 +40,7 @@
   parsed-stream cache records &mdash; so one sample size governs every rewrite
   check in the tree rather than a second, smaller one chosen here.</p>
 
-  <h3 id="station-cursor-census">What the census named</h3>
+  <h3 id="the-station-reads-only-what-changed-after-one-pointer-read-census">What the census named</h3>
 
   <p>One station ran alone at <code>--interval 1</code> over a copy of the fleet
   node's live crew home &mdash; 147 live pointers, 152 streams, with
@@ -66,7 +66,7 @@
   two passes that paid for them. The full per-path log is
   <code>logs/station-read-census-40s.txt</code> in the run directory.</p>
 
-  <h3 id="station-cursor-fixture">The fixture: one appended record, one read</h3>
+  <h3 id="the-station-reads-only-what-changed-after-one-pointer-read-fixture">The fixture: one appended record, one read</h3>
 
   <p><code>tests/test_the_station_reads_only_what_changed.py</code> builds its own crew
   home of five runs whose streams total 11,004,305 bytes, runs a tick, appends 510
@@ -97,7 +97,19 @@
   cursor &mdash; one sample size, the same bytes the parsed-stream cache records, in
   place of a second choice made here.</p>
 
-  <h3 id="station-cursor-counter">The scan is not the producer&#x27;s parsed traffic</h3>
+  <p>A second case holds the branch a replaced or truncated stream does not
+  reach: a stream rewritten <em>in place</em> at its own length or longer, which
+  keeps its inode and so passes the stat identity that catches a rename or a
+  truncation. The case rewrites a 200&nbsp;KB stream to its own length with its
+  newest result sitting before the offset the cursor holds, then asserts both
+  that the answer is that newer result and that the read took at least the
+  stream&#x27;s whole length &mdash; so a resume into the old offset fails twice
+  over. Removing the <code>_stream_head_intact</code> conjunct from the
+  resumable test reddens it: <strong>1 failed, EXIT=1</strong>
+  (<code>head-check-reversed.log</code>), against <strong>1 passed</strong> with
+  the conjunct in place.</p>
+
+  <h3 id="the-station-reads-only-what-changed-after-one-pointer-read-counter">The scan is not the producer&#x27;s parsed traffic</h3>
 
   <p>When the scan first took its appended read through
   <code>_backends._stream_lines_from</code>, it also fed the producer&#x27;s
@@ -111,7 +123,7 @@
   <code>count=False</code>; the case passes with the bytes appended and exactly
   those, and this node&#x27;s own gate still passes.</p>
 
-  <h3 id="station-cursor-arms">Arms and control</h3>
+  <h3 id="the-station-reads-only-what-changed-after-one-pointer-read-arms">Arms and control</h3>
 
   <p><code>gate-base.log</code> at base <code>73a771c</code> and
   <code>gate-after.log</code> at head, each with the command resolved over its own
@@ -123,7 +135,7 @@
   recorded in <code>ruff-check.log</code> and <code>ruff-format-check.log</code> and
   add no finding against base.</p>
 
-  <h3 id="station-cursor-remaining">What this node did not change</h3>
+  <h3 id="the-station-reads-only-what-changed-after-one-pointer-read-remaining">What this node did not change</h3>
 
   <p>The live 20&nbsp;MB/min and 5&nbsp;% of one core bound is <strong>not met</strong>
   by this change: the station alone over 147 live pointers read 1,131&nbsp;MB/min at
