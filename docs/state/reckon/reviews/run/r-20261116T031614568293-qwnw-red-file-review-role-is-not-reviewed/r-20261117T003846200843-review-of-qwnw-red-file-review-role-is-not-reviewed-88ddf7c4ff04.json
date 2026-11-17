@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "read from the reviewed run's own arms: logs/baseline-arm-e35fd9f935.log and logs/after-arm-head.log each end 58 passed, carry no FAILED id, and end EXIT=0, so the delta is zero.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:2827",
+    "reckon/crew/recovery_review_dispatch.py:2922",
+    "reckon/crew/recovery_watch.py:1640",
+    "reckon/crew/promotion.py:1004",
+    "reckon/serve.py:902"
+  ],
+  "completed_at": "2026-11-17T00:44:18.825Z",
+  "dispatched_at": "2026-11-17T00:43:45Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "1813",
+      "severity": "non-blocking",
+      "text": "non-blocking: the rule that a terminal manifest status outranks a pre-spawn phase now exists in two places \u2014 inline here and in _observed_phase at reckon/crew/recovery_liveness.py:127 \u2014 so a change to one can drift from the other; the arm should consult that owner."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031614568293-qwnw-red-file-review-role-is-not-reviewed/manifest.md",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when clause requiring an arm over the test files that import the changed module to add no failure against the base is unmeasured \u2014 logs/importer-arm-base.log ends EXIT=139 at 26% with no summary or FAILED id \u2014 and the baseline/after pair recorded at manifest.md:22-23 names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import neither the changed module nor its package."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit from e35fd9f935 \u2014 the two authored commits add a 13-line condition plus comment in the classifier and a 64-line evidence fragment; 44f00a3b15 and 7dcc00c627 are origin/main ancestors brought by the merge, not this node's edits.",
+    "done_when": "the gate clause (the file in full, as an all_debug job with SLURM_JOB_ID unset) is met by gate-head.sh:1 and logs/gate-head.log, but the importer-arm clause is unmeasured \u2014 logs/importer-arm-base.log ends EXIT=139 with no summary line.",
+    "goal": "the goal is that tests/test_review_role_is_not_reviewed.py pass in full; reckon/crew/recovery_classification.py:1811-1815 now gates the pre-spawn arm on `manifest_status not in TERMINAL_MANIFEST_STATUSES`, and logs/gate-head.log records 7 passed.",
+    "manifest": "read; it records `7 passed in 34.11s` with EXIT=0 for the gate at 875ecf7150, a red base arm at e35fd9f935, and one cause with the verdict product wrong.",
+    "write_paths": "the node was fenced to reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; 875ecf7150 touches only reckon/crew/recovery_classification.py and 88ddf7c4ff only the fragment under that directory."
+  },
+  "justifications": {
+    "durability": "tests/test_review_role_is_not_reviewed.py is untouched by the diff, yet logs/negative-control-base.log runs it at the base tree and records `7 failed` with all seven ids, so reinstating the removed condition reddens exactly that set.",
+    "evidence": "logs/gate-head.log records `7 passed in 34.11s` under a `# slurm_job_id: unset` header from a script whose first line is --partition=all_debug, but the recorded baseline/after pair at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031614568293-qwnw-red-file-review-role-is-not-reviewed/manifest.md:22-23 names two census tests that import neither recovery_classification nor recovery, so they measure nothing this change touches.",
+    "fit": "the condition is added as a plain conjunct inside the existing predicate at reckon/crew/recovery_classification.py:1811, in the module's comment-first idiom, and introduces no new name.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:1813 makes the delivered-manifest reading outrank the stale phase label, which is the arm that left the seven ids red at e35fd9f935.",
+    "reuse": "the same precedence is already owned by `_observed_phase` at reckon/crew/recovery_liveness.py:127-131, and the arm restates it inline instead of calling it.",
+    "scope_discipline": "git diff e35fd9f935..88ddf7c4ff names five files, and the three outside the fence under docs/plans/ arrive as origin/main ancestors 44f00a3b15 and 7dcc00c627, not as edits of this node."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that tests/test_review_role_is_not_reviewed.py pass in full; reckon/crew/recovery_classification.py:1811-1815 now gates the pre-spawn arm on `manifest_status not in TERMINAL_MANIFEST_STATUSES`, and logs/gate-head.log records 7 passed.\nVERDICT done_when: the gate clause (the file in full, as an all_debug job with SLURM_JOB_ID unset) is met by gate-head.sh:1 and logs/gate-head.log, but the importer-arm clause is unmeasured \u2014 logs/importer-arm-base.log ends EXIT=139 with no summary line.\nVERDICT write_paths: the node was fenced to reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; 875ecf7150 touches only reckon/crew/recovery_classification.py and 88ddf7c4ff only the fragment under that directory.\nVERDICT manifest: read; it records `7 passed in 34.11s` with EXIT=0 for the gate at 875ecf7150, a red base arm at e35fd9f935, and one cause with the verdict product wrong.\nVERDICT diff: read commit by commit from e35fd9f935 \u2014 the two authored commits add a 13-line condition plus comment in the classifier and a 64-line evidence fragment; 44f00a3b15 and 7dcc00c627 are origin/main ancestors brought by the merge, not this node's edits.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:2827, reckon/crew/recovery_review_dispatch.py:2922, reckon/crew/recovery_watch.py:1640, reckon/crew/promotion.py:1004, reckon/serve.py:902\nSCORE goal_fidelity: 19\nSCORE evidence: 14\nSCORE scope_discipline: 18\nSCORE durability: 19\nSCORE fit: 19\nSCORE reuse: 16\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:1813 makes the delivered-manifest reading outrank the stale phase label, which is the arm that left the seven ids red at e35fd9f935.\nJUSTIFICATION evidence: logs/gate-head.log records `7 passed in 34.11s` under a `# slurm_job_id: unset` header from a script whose first line is --partition=all_debug, but the recorded baseline/after pair at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031614568293-qwnw-red-file-review-role-is-not-reviewed/manifest.md:22-23 names two census tests that import neither recovery_classification nor recovery, so they measure nothing this change touches.\nJUSTIFICATION scope_discipline: git diff e35fd9f935..88ddf7c4ff names five files, and the three outside the fence under docs/plans/ arrive as origin/main ancestors 44f00a3b15 and 7dcc00c627, not as edits of this node.\nJUSTIFICATION durability: tests/test_review_role_is_not_reviewed.py is untouched by the diff, yet logs/negative-control-base.log runs it at the base tree and records `7 failed` with all seven ids, so reinstating the removed condition reddens exactly that set.\nJUSTIFICATION fit: the condition is added as a plain conjunct inside the existing predicate at reckon/crew/recovery_classification.py:1811, in the module's comment-first idiom, and introduces no new name.\nJUSTIFICATION reuse: the same precedence is already owned by `_observed_phase` at reckon/crew/recovery_liveness.py:127-131, and the arm restates it inline instead of calling it.\nFINDING reckon/crew/recovery_classification.py:1813 non-blocking: the rule that a terminal manifest status outranks a pre-spawn phase now exists in two places \u2014 inline here and in _observed_phase at reckon/crew/recovery_liveness.py:127 \u2014 so a change to one can drift from the other; the arm should consult that owner.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031614568293-qwnw-red-file-review-role-is-not-reviewed/manifest.md:21 non-blocking: the done_when clause requiring an arm over the test files that import the changed module to add no failure against the base is unmeasured \u2014 logs/importer-arm-base.log ends EXIT=139 at 26% with no summary or FAILED id \u2014 and the baseline/after pair recorded at manifest.md:22-23 names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import neither the changed module nor its package.\n",
+  "review_run_id": "r-20261117T003846200843-review-of-qwnw-red-file-review-role-is-not-reviewed-88ddf7c4ff04",
+  "reviewed_base_sha": "e35fd9f935225b7005482a75032eb28abeb46c63",
+  "reviewed_head_sha": "88ddf7c4ff04d15a850f1eedb907b0d454a18411",
+  "reviewed_run_id": "r-20261116T031614568293-qwnw-red-file-review-role-is-not-reviewed",
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T00:55:39Z",
+  "total": 105
+}

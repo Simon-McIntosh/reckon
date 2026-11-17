@@ -2,12 +2,14 @@
 
 A review that raises a finding and is answered ``acted`` has already said what
 the plan must change. The edit that follows is the review's own subject, so it
-does not owe a second review while it stays under the word-share threshold —
-even when the review-need judge would ask for one, which is what the gate did to
-a 1 % correction a finding had asked for. An edit of the same size to a section
-no finding named is still uncovered, and so is an edit past the threshold. The
-answer names the commit it answers for, so the covering record carries the
-evidence for its verdict.
+does not owe a second review — not while it stays under the word-share
+threshold, which is what the gate did to a 1 % correction a finding had asked
+for, and not when it is larger: the answer cites the commit of the edit it
+answers for, and that commit's copy of the unit is the text the answer covers.
+An edit of any size to a section no finding named is still uncovered, and so is
+an edit that moves a unit past the text the answer cited. The answer names the
+commit it answers for, so the covering record carries the evidence for its
+verdict.
 
 The cases drive ``plan_review.review_coverage`` and the threshold the flight
 layer declares; the fixture synthesises a mounted project under ``RECKON_HOME``,
@@ -241,7 +243,14 @@ def test_a_same_size_edit_elsewhere_is_uncovered(sectioned, monkeypatch):
     assert "s5" not in uncovered
 
 
-def test_an_edit_past_the_threshold_is_uncovered(sectioned, monkeypatch):
+def test_an_acted_answer_covers_its_edit_past_the_threshold(sectioned, monkeypatch):
+    """An edit the answer cites is covered whatever its size.
+
+    The word-share threshold is a guess about an edit nobody explained. An
+    answer explains it: the commit it cites is the text it is evidence of, so
+    the size of that edit stops deciding. The next edit moves the unit past
+    what was answered, and that one owes a review again.
+    """
     _, repo, path = sectioned
     _requires_a_review(monkeypatch)
     _store_review(path, findings=[_finding()])
@@ -255,7 +264,14 @@ def test_an_edit_past_the_threshold_is_uncovered(sectioned, monkeypatch):
     assert share >= THRESHOLD, f"the edit is 30 % of the section's words, not {share}"
     assert share < 0.40, "but not much past it"
     _, uncovered, _ = _coverage(path)
-    assert "s5" in uncovered, "an edit past the threshold still owes a review"
+    assert "s5" not in uncovered, "the edit the answer cites is covered"
+
+    text, paragraph = _section_paragraph_match(path, "s5")
+    path.write_text(
+        text[: paragraph.end(1)] + " and one more thing" + text[paragraph.end(1) :]
+    )
+    _, uncovered, _ = _coverage(path)
+    assert "s5" in uncovered, "an edit past the one the answer cited owes a review"
 
 
 def test_an_answer_before_the_edit_lands_cites_the_plan_commit(sectioned, monkeypatch):

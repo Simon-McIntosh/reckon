@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>An edit recorded as an answer keeps its section covered</title>
+</head>
+<body>
+<h1 id="qwnw-answering-edits-stay-covered-title">An edit recorded as an answer keeps its section covered</h1>
+
+<p id="qwnw-answering-edits-stay-covered-summary">
+An <code>acted</code> answer to a plan-review finding cites the commit of the edit it
+answers for. Plan-review coverage now reads each unit that finding blocks at that
+commit and covers the unit while the plan still holds that text: the answered edit
+is covered whatever its size, a later edit moves the unit and owes a review again,
+and a <code>declined</code> answer — which asks for no edit — covers nothing.
+</p>
+
+<h2 id="qwnw-answering-edits-stay-covered-measure">Measure</h2>
+<p id="qwnw-answering-edits-stay-covered-result">
+<code>tests/test_answering_edits_stay_covered.py</code>, driven through
+<code>queue_admission.admit_once</code> over a synthesised repository and crew home:
+at head, 3 passed. At the base revision, 2 failed and 1 passed — the two requests
+queued on the answered sections stayed <code>held</code>, each naming its own
+section as uncovered (<code>uncovered units: s2; s2 changed</code>).
+</p>
+
+<h2 id="qwnw-answering-edits-stay-covered-cases">Cases</h2>
+<ul id="qwnw-answering-edits-stay-covered-case-list">
+<li id="qwnw-answering-edits-stay-covered-case-both">Both sections edited and
+answered <code>acted</code>: both requests launch, <code>held</code> is empty, and no
+<code>plan-review-owed</code> obligation is composed.</li>
+<li id="qwnw-answering-edits-stay-covered-case-later">A later done-when edit with no
+finding answered: that section is held with
+<code>uncovered units: s2</code>, and the request on the second section launches.</li>
+<li id="qwnw-answering-edits-stay-covered-case-declined">A finding answered
+<code>declined</code> with the section edited: the section is held, owing a review.</li>
+</ul>
+
+<h2 id="qwnw-answering-edits-stay-covered-changed">Changed</h2>
+<p id="qwnw-answering-edits-stay-covered-paths">
+<code>reckon/crew/plan_review.py</code> — <code>_answered_edit_units</code> reads the
+answered units at the cited edit's commit, and <code>_compute_coverage</code> covers a
+unit whose present digest equals that copy. <code>tests/test_answering_edits_stay_covered.py</code>
+is new; <code>tests/test_an_answered_findings_edit_is_covered.py</code> records
+that an answered edit past the threshold is covered while a later edit is not.
+</p>
+</body>
+</html>

@@ -18,6 +18,10 @@ from tests.helpers.git import git as _git
 
 PROJECT = "sample"
 
+#: A repository path whose class a merge cannot reconcile, so a stray edit to it
+#: in a tree this run did not work in is charged where a source path is shared.
+EXCLUSIVE_STRAY = "docs/figures/plot.png"
+
 
 @pytest.fixture()
 def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
@@ -92,8 +96,15 @@ def _declare_shared_write_paths(repository: Path, *paths: str) -> None:
     )
 
 
-def _guarded_pointer(repository: Path, run_tree: Path, run_id: str, base: str) -> None:
-    _pointer(repository, run_id, base)
+def _guarded_pointer(
+    repository: Path,
+    run_tree: Path,
+    run_id: str,
+    base: str,
+    *,
+    write_paths: tuple[str, ...] = ("allowed.txt",),
+) -> None:
+    _pointer(repository, run_id, base, write_paths=write_paths)
     pointer = json.loads(pointer_path(run_id).read_text(encoding="utf-8"))
     pointer["worktree"] = str(run_tree)
     pointer["repository_tree_snapshot"] = routing._repository_tree_snapshot(repository)
@@ -128,7 +139,7 @@ def _advance_main_and_merge_run(repository: Path, commit: str) -> None:
     _git(repository, "merge", "-q", "--no-ff", commit, "-m", "Merge worker commit")
 
 
-def test_main_checkout_write_is_refused_and_pointer_is_retained(
+def test_main_checkout_source_write_allows_promotion(
     repository: Path, tmp_path: Path
 ) -> None:
     base = _git(repository, "rev-parse", "HEAD")
@@ -138,11 +149,39 @@ def test_main_checkout_write_is_refused_and_pointer_is_retained(
     commit = _commit_allowed(run_tree)
     (repository / "allowed.txt").write_text("stray\n", encoding="utf-8")
 
+    # A declared source path is shared across isolated worktrees, so a stray edit
+    # to one says nothing about this run's boundary. Only a path a merge cannot
+    # reconcile is charged, which is the class the scan below reports.
+    stored = crew.complete(run_id, gate="passed", commits=[commit], root=repository)[
+        "record"
+    ]
+
+    assert stored["commits"] == [commit]
+    assert not pointer_path(run_id).exists()
+
+
+def test_main_checkout_write_is_refused_and_pointer_is_retained(
+    repository: Path, tmp_path: Path
+) -> None:
+    base = _git(repository, "rev-parse", "HEAD")
+    run_tree = _detached_tree(repository, tmp_path / "run-tree")
+    run_id = "r-main-tree-unmergeable-write"
+    _guarded_pointer(
+        repository,
+        run_tree,
+        run_id,
+        base,
+        write_paths=("allowed.txt", EXCLUSIVE_STRAY),
+    )
+    commit = _commit_allowed(run_tree)
+    (repository / "docs" / "figures").mkdir(parents=True)
+    (repository / EXCLUSIVE_STRAY).write_bytes(b"stray image\n")
+
     with pytest.raises(crew.CrewError) as refusal:
         crew.complete(run_id, gate="passed", commits=[commit], root=repository)
 
     message = str(refusal.value)
-    assert "allowed.txt" in message
+    assert EXCLUSIVE_STRAY in message
     assert f"main checkout {repository}" in message
     assert ledger.runs(PROJECT, root=repository) == []
     assert pointer_path(run_id).is_file()
@@ -165,7 +204,7 @@ def test_unchanged_main_checkout_allows_promotion(
     assert not pointer_path(run_id).exists()
 
 
-def test_peer_worktree_write_is_refused_and_pointer_is_retained(
+def test_peer_worktree_source_write_allows_promotion(
     repository: Path, tmp_path: Path
 ) -> None:
     base = _git(repository, "rev-parse", "HEAD")
@@ -176,11 +215,39 @@ def test_peer_worktree_write_is_refused_and_pointer_is_retained(
     commit = _commit_allowed(run_tree)
     (peer_tree / "allowed.txt").write_text("stray\n", encoding="utf-8")
 
+    # The peer's own declaration covers the path and a merge reconciles it, so the
+    # edit is the peer's in-flight work rather than this run's boundary.
+    stored = crew.complete(run_id, gate="passed", commits=[commit], root=repository)[
+        "record"
+    ]
+
+    assert stored["commits"] == [commit]
+    assert not pointer_path(run_id).exists()
+
+
+def test_peer_worktree_write_is_refused_and_pointer_is_retained(
+    repository: Path, tmp_path: Path
+) -> None:
+    base = _git(repository, "rev-parse", "HEAD")
+    run_tree = _detached_tree(repository, tmp_path / "run-tree")
+    peer_tree = _detached_tree(repository, tmp_path / "peer-tree")
+    run_id = "r-peer-tree-unmergeable-write"
+    _guarded_pointer(
+        repository,
+        run_tree,
+        run_id,
+        base,
+        write_paths=("allowed.txt", EXCLUSIVE_STRAY),
+    )
+    commit = _commit_allowed(run_tree)
+    (peer_tree / "docs" / "figures").mkdir(parents=True)
+    (peer_tree / EXCLUSIVE_STRAY).write_bytes(b"stray image\n")
+
     with pytest.raises(crew.CrewError) as refusal:
         crew.complete(run_id, gate="passed", commits=[commit], root=repository)
 
     message = str(refusal.value)
-    assert "allowed.txt" in message
+    assert EXCLUSIVE_STRAY in message
     assert f"peer worktree {peer_tree}" in message
     assert ledger.runs(PROJECT, root=repository) == []
     assert pointer_path(run_id).is_file()
@@ -496,9 +563,16 @@ def _complete_arguments(run_id: str, commit: str) -> list[str]:
     ]
 
 
-def test_companion_path_acceptance_admits_a_shared_write_claim(
+def test_companion_path_acceptance_refuses_a_shared_binary_claim(
     repository: Path, tmp_path: Path
 ) -> None:
+    """A sharing declaration cannot name a class a merge cannot reconcile.
+
+    The project publishes ``artifact.png`` on its shared list, but a binary is a
+    class a worktree cannot isolate and a merge cannot combine, so the entry
+    cannot admit a concurrent claim on it. The live claim still refuses the
+    acceptance, and the pointer is retained so the peer's own work can land.
+    """
     base = _git(repository, "rev-parse", "HEAD")
     run_tree = _detached_tree(repository, tmp_path / "run-tree")
     run_id = "r-shared-companion"
@@ -528,16 +602,13 @@ def test_companion_path_acceptance_admits_a_shared_write_claim(
         ],
     )
 
-    assert accepted.exit_code == 0, accepted.output
-    stored = json.loads(accepted.output)["record"]
-    assert stored["scope_acceptances"] == [
-        {
-            "path": "artifact.png",
-            "reason": "rendered by the shared producer",
-        }
-    ]
-    assert not pointer_path(run_id).exists()
-    assert not (real_live / f"{run_id}.json").exists()
+    assert accepted.exit_code == 1
+    assert "conflicts with live claim" in accepted.output
+    assert "artifact.png" in accepted.output
+    assert peer_run in accepted.output
+    assert "binary or generated receipt" in accepted.output
+    assert ledger.runs(PROJECT, root=repository) == []
+    assert pointer_path(run_id).is_file()
     assert not (real_live / f"{peer_run}.json").exists()
 
 
@@ -578,15 +649,25 @@ def test_companion_path_acceptance_still_refuses_a_claim_off_the_shared_list(
     assert pointer_path(run_id).is_file()
 
 
-@pytest.mark.parametrize("outside_path", ["rendered/note.txt", "rendered/artifact.png"])
-def test_directory_claim_keeps_refusing_paths_under_it(
-    repository: Path, tmp_path: Path, outside_path: str
+@pytest.mark.parametrize(
+    "outside_path,refused",
+    [("rendered/note.txt", False), ("rendered/artifact.png", True)],
+)
+def test_a_directory_claim_holds_only_what_a_merge_cannot_reconcile(
+    repository: Path, tmp_path: Path, outside_path: str, refused: bool
 ) -> None:
+    """A peer's directory claim reserves the classes a merge cannot combine.
+
+    A text file under the claimed directory is a path two worktrees can edit and
+    the merge reconciles, so the claim admits it. A binary under the same
+    directory is not: the worktree cannot isolate it and the merge cannot
+    combine it, so the claim still refuses and names itself in the refusal.
+    """
     base = _git(repository, "rev-parse", "HEAD")
     run_tree = _detached_tree(repository, tmp_path / "run-tree")
     run_id = "r-directory-claim"
     peer_run = "r-directory-claim-owner"
-    _pointer(repository, run_id, base, write_paths=("artifact.json",))
+    _guarded_pointer(repository, run_tree, run_id, base, write_paths=("artifact.json",))
     _pointer(
         repository,
         peer_run,
@@ -602,21 +683,31 @@ def test_directory_claim_keeps_refusing_paths_under_it(
     _git(run_tree, "commit", "-q", "-m", "test: render into the output directory")
     commit = _git(run_tree, "rev-parse", "HEAD")
 
-    with pytest.raises(crew.CrewError) as refusal:
-        crew.complete(
-            run_id,
-            gate="passed",
-            commits=[commit],
-            root=repository,
-            accepted_paths={outside_path: "rendered companion"},
-        )
+    if refused:
+        with pytest.raises(crew.CrewError) as refusal:
+            crew.complete(
+                run_id,
+                gate="passed",
+                commits=[commit],
+                root=repository,
+                accepted_paths={outside_path: "rendered companion"},
+            )
 
-    assert (
-        f"cannot accept {outside_path}: live run "
-        f"'r-directory-claim-owner' claims rendered"
-    ) in str(refusal.value)
-    assert ledger.runs(PROJECT, root=repository) == []
-    assert pointer_path(run_id).is_file()
+        assert (
+            f"cannot accept {outside_path}: live run "
+            f"'r-directory-claim-owner' claims rendered"
+        ) in str(refusal.value)
+        assert ledger.runs(PROJECT, root=repository) == []
+        assert pointer_path(run_id).is_file()
+        return
+
+    stored = crew.complete(run_id, gate="passed", commits=[commit], root=repository)[
+        "record"
+    ]
+
+    assert stored["commits"] == [commit]
+    assert not stored.get("scope_acceptances")
+    assert not pointer_path(run_id).exists()
 
 
 def test_stored_line_counts_cover_the_cumulative_run_commit_span(
@@ -819,10 +910,26 @@ def test_a_passing_gate_may_not_leave_the_run_s_own_commits_uncited(
     assert "discarded the moment someone believes the ledger" in message
     assert "--no-commit" in message
 
-    # Citing the commit, or declaring the absence deliberately, both pass.
+    # Citing the commit passes.
     promotion._require_gate_evidence(
         "r-cited", record, verdict="passed", commits=("HEAD",), no_commit_reason=""
     )
+
+    # Declaring the absence is legal only while the worktree agrees with it: over
+    # a tree that committed, `--no-commit` would record the work as delivered
+    # nowhere and the release step would take it with the worktree, so the same
+    # worktree-at-its-base guard runs on the declaration path.
+    with pytest.raises(crew.CrewError) as declared_refusal:
+        promotion._require_gate_evidence(
+            "r-declared",
+            record,
+            verdict="passed",
+            commits=(),
+            no_commit_reason="artifact retained out-of-tree by design",
+        )
+    assert "its worktree is at" in str(declared_refusal.value)
+
+    git("reset", "-q", "--hard", base)
     promotion._require_gate_evidence(
         "r-declared",
         record,

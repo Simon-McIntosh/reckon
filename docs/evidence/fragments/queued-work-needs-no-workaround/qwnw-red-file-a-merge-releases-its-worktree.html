@@ -1,0 +1,137 @@
+<section id="qwnw-red-file-a-merge-releases-its-worktree-landing">
+  <h2>A merge releases the worktree of a run that promoted itself</h2>
+
+  <p><strong>What changed.</strong> This file's four red cases were two causes,
+  and they had opposite verdicts.</p>
+
+  <p><em>A promoted row's tree was not in the set a landing frees — product
+  wrong.</em> <code>merge.release_landed_worktrees</code> asked the obligations
+  view which trees a record holds, and that view holds a tree only while
+  <code>_tree_holds_unmerged_work</code> answers true for it. The landing this
+  function follows is precisely what removes the tree's commit from the side the
+  primary branch lacks: after the merge, the tree's <code>git status</code> is
+  clean and its commits are ancestors of the branch, so the duty view stopped
+  naming the one tree the landing was meant to free. The result was
+  <code>{'judged': True, 'released': [], 'withheld': []}</code> — nothing
+  released and nothing withheld, which is the one outcome the landing report
+  cannot describe.</p>
+
+  <p><code>reckon/crew/obligations.py</code> now files every tree it inspects and
+  a row names, not only the trees that fail the duty judgement, and
+  <code>_named_worktree_records</code> answers that view;
+  <code>release_landed_worktrees</code> reads it. Both views come out of one
+  pass, so the wider answer costs no extra status read, and the duties other
+  callers show are unchanged. The retention rule is untouched: a tree a
+  recoverable session keeps stays held, which is why the release judges
+  <code>worktree_retention</code> before it removes anything.</p>
+
+  <p><em>The fixture's promotion never happened — test wrong.</em> The fixture
+  drove <code>crew complete</code> through the CLI and read its zero exit as a
+  promoted row. That command now files a promotion request for the fleet service
+  to carry out, and a plain completion refuses a reviewed head the remote branch
+  does not yet carry, so no row existed for a merge to judge and three cases
+  failed at promotion or at the absent row. The fixture promotes through the
+  same entry point the command calls, and records a recoverable session's
+  retention in the run store — the copy every reader unions against — rather
+  than in the per-run file that the store's row wins against. The rule the file
+  now asserts is that a promotion is a call that returns its receipt, while a
+  queued request is not a promotion. Every assertion is unchanged: a landed head
+  releases the tree, a tree holding a commit the head does not carry is
+  withheld, a merge refused before it pushes releases nothing, a retained tree
+  is withheld and named, and a release that raises leaves the landing standing.</p>
+
+  <p><em>A test stub mirrored an old signature — test wrong.</em> The arm over
+  every test file that imports the changed modules found one case newly failing:
+  the warm-read case in
+  <code>tests/test_a_review_duty_reads_its_run_review_once.py</code> replaces
+  <code>_held_worktree_records_read</code> with a stub that accepted the project
+  and repository only, so the reader's new view argument raised
+  <code>TypeError</code>. The stub forwards the view and counts re-reads exactly
+  as it did; no assertion in that file changed.</p>
+
+  <h3 id="qwnw-red-file-a-merge-releases-its-worktree-measured">Measured</h3>
+
+  <p>Every case synthesises its own origin, checkout, ledger, workspace and
+  config home under a temporary directory and enters the product's own promotion
+  and merge paths; none reads or writes the live crew home. The gate file is
+  <code>tests/test_a_merge_releases_its_worktree.py</code>, run on the
+  <code>all_debug</code> partition with <code>SLURM_JOB_ID</code> unset.</p>
+
+  <table id="qwnw-red-file-a-merge-releases-its-worktree-arms">
+    <caption>Each arm's log names its revision, tree, imported module and
+    command on its first lines and ends with a bare
+    <code>EXIT=&lt;code&gt;</code> line.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>this file, head</td>
+        <td><code>16856d6056</code>, this worktree</td>
+        <td>5 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>this file, base</td>
+        <td><code>8277191059</code>, scratch checkout</td>
+        <td>4 failed, 1 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the gate's two files, head arm</td>
+        <td><code>16856d6056</code>, this worktree</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the gate's two files, base arm</td>
+        <td><code>8277191059</code>, scratch checkout</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the importers of the changed modules, head arm</td>
+        <td><code>16856d6056</code>, this worktree</td>
+        <td id="qwnw-red-file-a-merge-releases-its-worktree-importers-head">92 failed, 772 passed, 1 error, <code>EXIT=1</code>; none of the 92 added</td></tr>
+      <tr><td>the importers of the changed modules, base arm</td>
+        <td><code>8277191059</code>, scratch checkout</td>
+        <td id="qwnw-red-file-a-merge-releases-its-worktree-importers-base">93 failed, 771 passed, 1 error, <code>EXIT=1</code>; one of the 93 fixed</td></tr>
+    </tbody>
+  </table>
+
+  <p>The head of this worktree as it was dispatched was
+  <code>8277191059</code>, three commits behind the <code>origin/main</code>
+  already fetched into the shared repository; the four failures reproduce
+  unchanged after fast-forwarding onto it, so the defect was live at the merged
+  head rather than fixed by it. No network fetch was possible, so
+  <code>5c4ff34929</code> is the newest primary revision this arm could see.</p>
+
+  <p>The importer arm is every test file under <code>tests/</code> that imports
+  <code>reckon.crew.obligations</code> or <code>reckon.crew.merge</code> — 148
+  files, the same list over both revisions. Most of its failures in both arms are
+  environmental: this population includes the scheduler-driven tests, and a
+  sandboxed run reaches an <code>sbatch --wait --parsable</code> verb their own
+  stub does not provide, so the absolute count measures the host rather than the
+  change. The delta is what the arm is for, and it is zero added failures: the
+  one case the first head run added, the warm-read stub named above, is the case
+  that is now absent, and
+  <code>test_a_finished_pending_landing_retires_its_run</code> is the one
+  the head arm no longer fails.</p>
+
+  <h3 id="qwnw-red-file-a-merge-releases-its-worktree-control">Negative control</h3>
+
+  <p>At <code>8277191059</code> the same file reports four failures and one
+  pass: <code>test_a_promoted_runs_worktree_is_released_by_a_separate_merge</code>
+  and <code>test_a_release_that_raises_does_not_refuse_the_landing</code> are
+  refused at promotion for a gate record carrying no check,
+  <code>test_a_tree_holding_a_commit_beyond_the_head_is_withheld</code> reports a
+  release that judged no tree, and
+  <code>test_a_retained_worktree_is_withheld_and_its_retention_named</code> reads
+  a row that never landed. Only
+  <code>test_a_merge_refused_before_it_pushes_releases_nothing</code> passes
+  there, because a refused merge never reaches the release at all. The red log is
+  <code>logs/base-gate.log</code> in this run's directory.</p>
+
+  <h3 id="qwnw-red-file-a-merge-releases-its-worktree-outside">Outside scope</h3>
+
+  <p><code>ledger.write_run_file</code> writes a run's document, advances the
+  write generation and publishes the document index, but never calls
+  <code>run_store.sync_run</code>. A promoted row lives in the run store, and
+  the union readers use takes the store's copy, so an amendment written only
+  through <code>write_run_file</code> is invisible to every reader that asks the
+  store — the retention this file records was lost that way until the fixture
+  wrote the store as well. Production amends promoted rows exactly this way:
+  <code>promotion_release._update_run_record</code> writes a release receipt and
+  <code>crew_run_commands</code> writes completion changes, both through that
+  writer alone.</p>
+
+  <p>This node's measure is the release path, so the writer was left as it is.
+  The defect is worth its own section: a promoted row's amendment should reach
+  the same store the row was appended to, or the file should stop being written
+  where no reader would see it.</p>
+</section>

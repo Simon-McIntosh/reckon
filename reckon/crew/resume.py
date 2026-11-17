@@ -380,48 +380,66 @@ def _emit(payload: Mapping[str, Any], pretty: bool) -> None:
     )
 
 
-def _register_commands() -> None:
-    """Attach the two hold verbs to the crew group, once per process."""
-    from reckon.crew_dispatch_commands import crew
+def register_hold_commands(group: click.Group) -> None:
+    """Attach the two hold verbs to ``group``, once per process.
 
-    if "hold" in crew.commands:
+    The group is passed in rather than imported: this module sits deep in the
+    ``reckon.crew`` graph that the group's module imports, so importing the
+    group back from here closes a cycle and makes the verb module depend on
+    every module in between, which only shows when it is the one imported
+    first.
+    """
+    if "hold" in group.commands:
         return
 
-    @crew.command(name="hold")
+    @group.command(name="hold")
     @click.option("--run", "run_id", required=True, help="The delivered run to hold.")
+    @click.option(
+        "--project", default=None, help="Project owning the run; cross-checks the run."
+    )
     @click.option(
         "--reason", required=True, help="Why the landing is deferred; recorded."
     )
     @click.option("--by", default=DEFAULT_HOLDER, help="Who took the hold.")
     @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-    def crew_hold(run_id: str, reason: str, by: str, pretty: bool) -> None:
+    def crew_hold(
+        run_id: str, project: str | None, reason: str, by: str, pretty: bool
+    ) -> None:
         """Hold a delivered run from automatic promotion and landing.
 
         The landing pass and the review-acceptance sweep both read the hold, so
         a held run waits for its coordinator however clean its evidence reads.
         """
+        from reckon.crew_dispatch_commands import _accept_a_matching_project
+
+        _accept_a_matching_project(run_id, project)
         try:
             result = hold_delivery(run_id, reason, by=by)
         except CrewError as exc:
             raise click.ClickException(str(exc)) from exc
         _emit(result, pretty)
 
-    @crew.command(name="release")
+    @group.command(name="release")
     @click.option("--run", "run_id", required=True, help="The held run to release.")
+    @click.option(
+        "--project", default=None, help="Project owning the run; cross-checks the run."
+    )
     @click.option("--reason", required=True, help="Why the deferral ended; recorded.")
     @click.option("--by", default=DEFAULT_HOLDER, help="Who released the hold.")
     @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-    def crew_release(run_id: str, reason: str, by: str, pretty: bool) -> None:
+    def crew_release(
+        run_id: str, project: str | None, reason: str, by: str, pretty: bool
+    ) -> None:
         """Release a hold so the run is the lander's again.
 
         The release is recorded beside the hold, with its own reason, so the
         run's record explains the delay it carried.
         """
+        from reckon.crew_dispatch_commands import _accept_a_matching_project
+
+        _accept_a_matching_project(run_id, project)
         try:
             result = release_hold(run_id, reason, by=by)
         except CrewError as exc:
             raise click.ClickException(str(exc)) from exc
         _emit(result, pretty)
-
-
-_register_commands()

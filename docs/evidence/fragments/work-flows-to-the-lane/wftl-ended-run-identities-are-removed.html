@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-flows-to-the-lane">
+  <meta name="plan-evidence-for" content="reckon:work-flows-to-the-lane">
+  <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s68">
+  <meta name="plan-recorded-at" content="2026-11-16">
+  <meta name="plan-verdict" content="passed">
+  <title>Retired worker identities do not accumulate | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="wftl-ended-run-identities-are-removed-landing"
+  data-node="wftl-ended-run-identities-are-removed" data-reckon="landed"
+  data-when="2026-11-16">
+  <h2>The maintenance pass removes an ended run's identity file</h2>
+  <p>The sweep that removes <code>exec-&lt;pid&gt;.identity</code> files existed
+  behind <code>gc --sweep-exec-identities</code>, and the hourly retention
+  service never passed that flag: it runs
+  <code>-m reckon.crew.gc --apply --limit N</code>, which reached
+  <code>retention_sweep</code> and no identity judgment at all. That is why
+  §9's window closed at 27,854 files with a target below 100 while every
+  reader that lists the crew home kept paying for them.</p>
+  <p>One change, in <code>reckon/crew/gc.py</code>: the pass now calls
+  <code>sweep_exec_identities(apply=apply)</code> as its first phase, reports
+  the counts as <code>exec_identities</code> (paths are not copied into the
+  JSON, because a pass over tens of thousands of files would carry them all),
+  writes each removal to the pass's one log, and declares the new
+  <code>identities</code> phase in <code>RETENTION_PHASES</code>, which the
+  bounded-pass timing test reads its expectation from. The judgment itself is
+  unchanged: a file is removed only when the process wearing its pid is not
+  the process that wrote it, so a live execution's file — including one being
+  rewritten atomically as the pass runs — survives.</p>
+  <p><code>tests/test_ended_run_identities_are_removed.py</code> holds the
+  measure with a temporary crew home:</p>
+  <table id="wftl-ended-run-identities-are-removed-cases">
+    <thead><tr><th>Case</th><th>What it reads</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>test_one_pass_removes_every_ended_identity_and_keeps_every_live_one</code></td>
+        <td>three identities for exited processes and two published by live
+        claim holders; after one pass every ended file is gone, every live
+        file is present, and the report reads
+        <code>removed == 3</code>, so the same pass is shown removing and
+        preserving rather than an empty directory reading as success</td>
+      </tr>
+      <tr>
+        <td><code>test_the_pass_removes_nothing_while_a_live_identity_is_being_written</code></td>
+        <td>this process's identity is rewritten through <code>os.replace</code>
+        in a loop for the pass's whole duration while one ended file sits
+        beside it; the ended file is removed, at the same time the live one is
+        kept, so the pass removes nothing it could not judge. The loop's own
+        count is asserted (<code>written &gt;= 2</code>) so the writer cannot
+        read as never having run</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>Both arms ran on <code>all_debug</code> (the last gate run was job 1319315)
+  over this run's worktree and an extraction of the base revision. The head arm at
+  <code>ef179fd6e4</code>, and again at the revision the committed log's first
+  line names, reports <em>2 passed</em>,
+  <code>EXIT=0</code>; the base arm at <code>c6f9f10f23</code> reports
+  <em>2 failed</em>, <code>EXIT=1</code>, naming
+  <code>test_one_pass_removes_every_ended_identity_and_keeps_every_live_one</code>
+  and quoting the three <code>exec-*.identity</code> paths that survived the
+  base pass — the recorded defect reproduced, not an assertion about it.</p>
+  <p>The live-file guard was made to fire on its own: with
+  <code>_execution_is_live</code> mutated to return <code>False</code>, the
+  pass removed the rewriting live identity as well and the second case reddens
+  (<code>assert 2 == 1</code>, with both removal lines naming the live pid).
+  The mutation was reverted before the gate above was run; the red log is kept
+  in the run directory.</p>
+  <p>The service entry point itself was exercised once against a temporary
+  crew home: <code>python -m reckon.crew.gc --apply --limit 1</code> reported
+  <code>exec_identities: {"removed": 1, "kept": 1}</code> and wrote
+  <code>removed identity file …</code> to the pass log, which is the same code
+  path the installed hourly timer runs.</p>
+  <p>Two failures met beside this work are present at the base revision too and
+  belong to no change here:
+  <code>tests/test_the_retention_sweep_runs_on_its_own.py::test_the_pass_reads_each_ledger_through_its_index</code>
+  and
+  <code>tests/test_the_run_store_retires_old_runs.py::test_a_changed_ledger_keeps_archive_membership_and_updates_its_durable_fields</code>,
+  both reproduced in the base extraction. The bounded-pass suite that the new
+  phase could have broken passes at head (6 passed).</p>
+</article>
+</body>
+</html>

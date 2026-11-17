@@ -58,6 +58,11 @@ CONFIG = {
     },
     "roles": {"implement": {}},
     "fences": {"time_budget": "25m", "needs_help_after_failures": 2},
+    # The dispatch refuses a run when the host's scratch filesystem is near
+    # full, so the floor is pinned here rather than read from the machine the
+    # suite happens to run on: the fixture's own repository is the only state
+    # this case reads.
+    "worktree": {"scratch_min_free_bytes": 0, "scratch_min_free_pct": 0},
 }
 
 
@@ -140,13 +145,15 @@ def _stub_picker(monkeypatch: pytest.MonkeyPatch, seen: dict) -> None:
     The rendered state is the artifact under test, so ``pick`` itself is left
     real: only the client answer and the candidate scan are replaced, the two
     boundaries a test cannot reach without the operator's credentials or the
-    live lane documents.
+    live lane documents. Both are replaced where they are read from -- the
+    ``snapshot.candidates`` and ``client.ask`` module attributes -- because the
+    dispatcher passes its own scan and its own caller into the pick, so a
+    keyword supplied to ``pick`` here would be shadowed by the dispatcher's.
     """
 
-    real_pick = picker_package.pick
     key = "local:local-model:clive"
 
-    def snapshotter(request, config, repo, **kwargs):
+    def snapshotter(*_args, **_kwargs):
         return [_candidate()]
 
     def caller(state, questions, **kwargs):
@@ -168,13 +175,7 @@ def _stub_picker(monkeypatch: pytest.MonkeyPatch, seen: dict) -> None:
     # the boundary both paths read, and it is the one that sees the state Jev
     # weighs.
     monkeypatch.setattr(picker_package.client, "ask", caller)
-
-    def stubbed_pick(request, config, **kwargs):
-        kwargs.setdefault("snapshotter", snapshotter)
-        kwargs.setdefault("caller", caller)
-        return real_pick(request, config, **kwargs)
-
-    monkeypatch.setattr(picker_package, "pick", stubbed_pick)
+    monkeypatch.setattr(picker_package.snapshot, "candidates", snapshotter)
 
 
 def _invoke(
@@ -230,7 +231,14 @@ def _invoke(
 
 
 def _payload(result) -> dict:
-    return json.loads(result.output.splitlines()[0])
+    """The document dispatch answers on its own channel.
+
+    Read from ``stdout`` rather than from the mixed terminal stream: dispatch
+    prints its advisory notices to stderr, and one of them can precede the
+    document a reader parses. The document itself is the single JSON line the
+    command answers on stdout.
+    """
+    return json.loads(result.stdout.splitlines()[0])
 
 
 def test_assessment_renders_beside_the_declared_capability(

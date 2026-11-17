@@ -943,6 +943,11 @@ def write_run_file(
     ``mode`` is the permission bits the file must carry. A caller amending a
     file it did not create passes ``None``, leaving the bits the file already
     has, which is what a rewrite that only re-encodes an existing row wants.
+
+    The store holds the same row, and it is the copy a stored read answers
+    from, so an amendment reaches it here too: a row rewritten in its file and
+    left stale in the store would be read as the revision it superseded by
+    every reader that does not walk the documents.
     """
     target = run_path(project, str(row["run_id"]), root)
     _store.write_atomically(
@@ -951,12 +956,44 @@ def write_run_file(
         mode=mode,
         fsync=fsync,
     )
+    _sync_amended_run(project, row)
     from reckon.crew import open_run_index
 
     _bump_generation(project)
     open_run_index.record_written(project, row, root)
     _index_record_written_document(project, root, row, target)
     return target
+
+
+def _sync_amended_run(project: str, row: Mapping[str, Any]) -> None:
+    """Bring the store's copy of an amended run row up to date, or refuse.
+
+    A store that does not hold the run is left alone — a project with no store
+    does not acquire one from an amendment — so the ordinary write of a row
+    nothing has promoted costs one existence check and no store write.
+
+    A store that declines the amendment is a refusal rather than an unhealthy
+    index: the store is the durable authority, and a row amended in its file
+    while the store keeps the revision it superseded is exactly the history a
+    stored read would answer with. The file has already been rewritten when
+    this runs, so the refusal names the repair. A caller that must leave
+    neither copy ahead of the other passes the row it read, and a rerun after
+    the repair converges.
+    """
+    from reckon import run_store
+
+    try:
+        run_store.sync(project, dict(row))
+    except Exception as exc:  # every store failure is a refusal
+        raise LedgerError(
+            f"cannot record the amendment to run {str(row.get('run_id'))!r} in "
+            f"the run store at {_run_store_location()}: {type(exc).__name__}: "
+            f"{exc}. The run store is the durable authority for every promoted "
+            "run, so a row amended only in its own file would be read as the "
+            "revision that amendment superseded; repair the store with "
+            f"`python scripts/import_runs_into_store.py --project {project}` "
+            "and amend the run again"
+        ) from exc
 
 
 def _run_files(project: str, root: str | Path | None = None) -> list[Path]:
@@ -2340,6 +2377,25 @@ def _aggregate_headers(project: str, root: str | Path | None) -> tuple[dict, int
     return {**data, "runs": []}, version
 
 
+def _selected_rows(data: dict[str, Any], run_ids: set[str] | None) -> dict[str, Any]:
+    """Narrow a loaded payload to the named run ids.
+
+    A copy rather than an edit in place: a loaded payload may be the one the
+    index region is holding for other readers, and a selection is one caller's
+    question rather than a new answer about the project.
+    """
+    if run_ids is None:
+        return data
+    return {
+        **data,
+        "runs": [
+            row
+            for row in data["runs"]
+            if isinstance(row, Mapping) and str(row.get("run_id") or "") in run_ids
+        ],
+    }
+
+
 def load(
     project: str,
     root: str | Path | None = None,
@@ -2349,13 +2405,18 @@ def load(
     headers_only: bool = False,
     activity_since: float | None = None,
     plan: str | None = None,
+    run_ids: Iterable[str] | None = None,
 ) -> tuple[dict[str, Any], int]:
     """Read authoritative stored runs with selection and projection in SQL.
 
     ``plan`` and ``activity_since`` narrow the returned payloads before they
-    are decoded. ``headers_only`` reads identities, and ``picker_only`` reads
-    the picker fields; neither materialises full run records. No stored read
-    inspects per-run documents or refreshes their disposable indexes.
+    are decoded, and ``run_ids`` names the rows outright: the store selects
+    those identities by key and decodes nothing else, so a caller that already
+    knows which runs it will look at pays for those rows rather than for the
+    plan's whole history. ``headers_only`` reads identities, and
+    ``picker_only`` reads the picker fields; neither materialises full run
+    records. No stored read inspects per-run documents or refreshes their
+    disposable indexes.
 
     ``plan`` uses :func:`row_plan`, including the durable implementation move
     and the node definition when a brief-carried row has no top-level plan.
@@ -2366,6 +2427,7 @@ def load(
     and comparison, independently of the store being checked or rebuilt.
     Roster and holds retain their versioned aggregate read until migrated.
     """
+    selected = None if run_ids is None else {str(run_id) for run_id in run_ids}
     if use_index:
         from reckon import run_store
 
@@ -2375,6 +2437,7 @@ def load(
         stored = run_store.stored_run_rows(
             project,
             plan=plan,
+            run_ids=sorted(selected) if selected is not None else None,
             fields=fields,
             activity_since=activity_since,
         )
@@ -2386,7 +2449,7 @@ def load(
     _report_damaged_run_records(project, ())
     if use_index and _ledger_holds_content(project, root):
         try:
-            return _indexed_data(
+            data, version = _indexed_data(
                 project,
                 root,
                 headers_only=headers_only,
@@ -2398,6 +2461,7 @@ def load(
                 ),
                 **({"plan": plan} if plan else {}),
             )
+            return _selected_rows(data, selected), version
         except (OSError, sqlite3.Error):
             # A disposable cache cannot make an otherwise readable ledger fail.
             stale = _last_good_index_data(
@@ -2415,13 +2479,14 @@ def load(
             if stale is not None:
                 data, version, age = stale
                 data["index_age_seconds"] = round(age, 3)
-                return data, version
+                return _selected_rows(data, selected), version
     data, version = _load_aggregate(project, root)
     _merge_run_documents(project, root, data, refuse=True)
     if activity_since is not None:
         data["runs"] = _active_records(data["runs"], activity_since)
     if plan:
         data["runs"] = [row for row in data["runs"] if row_plan(row) == plan]
+    data = _selected_rows(data, selected)
     if picker_only:
         data["runs"] = [
             picker_record(row) if isinstance(row, Mapping) else row
@@ -3255,7 +3320,10 @@ def _commit_state_write(
     the merge's lock wait, so a transient hold is waited out rather than
     refusing the state write; a failure with no lock behind it, or a lock that
     outlasts the wait's attempts, raises as before, naming the lock in the
-    second case. Returns the number of retries the wait made, so a caller that
+    second case. A lock the wait proves stale is cleared by it, and that
+    clearing is stated on stderr with the lock and the age it stood for, so a
+    lock that disappeared out from under a shared checkout is never one nobody
+    accounted for. Returns the number of retries the wait made, so a caller that
     records a write which waited has the count.
 
     The commit is skipped while a merge is in progress: a commit made there
@@ -3285,6 +3353,7 @@ def _commit_state_write(
         DEFAULT_ATTEMPTS,
         _index_lock_held,
         _run_waiting_out_a_held_index_lock,
+        note_stale_index_lock_removal,
     )
 
     relative_args = [str(relative) for relative in relative_paths]
@@ -3298,7 +3367,7 @@ def _commit_state_write(
         )
 
     staged, stage_retries = _run_waiting_out_a_held_index_lock(
-        checkout, stage, sleep=sleep
+        checkout, stage, sleep=sleep, on_stale_removed=note_stale_index_lock_removal
     )
     if staged.returncode != 0:
         if _index_lock_held(checkout):
@@ -3332,7 +3401,7 @@ def _commit_state_write(
         )
 
     committed, commit_retries = _run_waiting_out_a_held_index_lock(
-        checkout, commit, sleep=sleep
+        checkout, commit, sleep=sleep, on_stale_removed=note_stale_index_lock_removal
     )
     if committed.returncode != 0:
         subprocess.run(
@@ -3924,6 +3993,7 @@ def read_records(
     limit: int | None = None,
     with_figures: bool = True,
     activity_since: float | None = None,
+    run_ids: Iterable[str] | None = None,
 ) -> tuple[list[dict[str, Any]], int]:
     """Read selected completed runs and their ledger version once.
 
@@ -3942,11 +4012,17 @@ def read_records(
     Disabling figures preserves stored measurements in promotion order.
     Both paths add catalogue identity fields without rewriting committed rows.
     ``activity_since`` has :func:`load`'s epoch-seconds meaning. Stored reads
-    select payloads by activity and plan before decoding. Figures use a narrow
-    timestamp projection across all plans to count width, so the selected rows
-    retain the fleet-wide figure without decoding unrelated full records.
+    select payloads by activity, plan and run id before decoding. Figures use a
+    narrow timestamp projection across all plans to count width, so the selected
+    rows retain the fleet-wide figure without decoding unrelated full records.
+
+    ``run_ids`` is the row selection for a caller that already holds the ids it
+    will look at, such as the landing audit reading the promoted runs of the
+    sections it suspects: the store answers those identities by key, so the
+    plan's other history is never decoded.
     """
     selected_plan = str(plan or "").strip()
+    selected_ids = None if run_ids is None else {str(run_id) for run_id in run_ids}
     from reckon import run_store
 
     stored = run_store.store_path().exists()
@@ -3962,6 +4038,11 @@ def read_records(
         **(
             {"plan": selected_plan}
             if selected_plan and (stored or not with_figures)
+            else {}
+        ),
+        **(
+            {"run_ids": sorted(selected_ids)}
+            if selected_ids is not None and (stored or not with_figures)
             else {}
         ),
     )
@@ -3986,6 +4067,12 @@ def read_records(
         records = _active_records(records, activity_since)
     if selected_plan:
         records = [record for record in records if row_plan(record) == selected_plan]
+    if selected_ids is not None:
+        records = [
+            record
+            for record in records
+            if str(record.get("run_id") or "") in selected_ids
+        ]
     if since is not None:
         boundary = _parse_timestamp(since, "since")
         filtered: list[dict[str, Any]] = []
@@ -4736,6 +4823,21 @@ from reckon.run_record import (  # noqa: E402, F401
     underivable_duration,
     unmeasured_clone_report,
 )
+
+
+def session_rows(
+    project: str, session: str | None = None, root: str | Path | None = None
+) -> list[dict[str, Any]]:
+    """Rows one dispatched session owns, selected from the live-run index.
+
+    Promoted work leaves the live index before its section is accounted for, so
+    this answers for a session's own runs from the projection the writers keep
+    rather than by reading every finished run's document.
+    """
+    from reckon.crew import open_run_index
+
+    with open_run_index.read_scope():
+        return open_run_index.dispatched_rows(project, session, root)
 
 
 def open_runs(project: str, root: str | Path | None = None) -> list[dict[str, Any]]:

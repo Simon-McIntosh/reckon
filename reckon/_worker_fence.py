@@ -1444,6 +1444,26 @@ def worktree_git_write_roots(worktree: str | Path) -> list[Path]:
     return roots
 
 
+def _worker_scratch_roots(
+    writable_roots: Iterable[str | Path],
+) -> tuple[Path, list[Path]]:
+    """Return the scratch root's spelling and handed destinations within it.
+
+    The root itself can trigger its seal but must never become a writable
+    grant or tmp mount. Import dispatch lazily because backend translation
+    loads this module while the crew package is still loading.
+    """
+    from reckon.crew.dispatch_launch import worker_scratch_root
+
+    root = worker_scratch_root()
+    target = resolved_destination(root)
+    return root, [
+        path
+        for path in (resolved_destination(Path(raw)) for raw in writable_roots)
+        if path.is_relative_to(target)
+    ]
+
+
 def worker_scratch_seal_root(
     writable_roots: Iterable[str | Path],
 ) -> Path | None:
@@ -1462,19 +1482,9 @@ def worker_scratch_seal_root(
     with no such grant is not fencing a run's scratch, so it neither seals nor
     creates the root — a preview invents nothing, and a launch never given a
     scratch directory owns none to protect.
-
-    The dispatch package is imported here rather than at module load: reckon's
-    backend translation imports this module while the crew package is still
-    loading, so a module-level import would close a cycle.
     """
-    from reckon.crew.dispatch_launch import worker_scratch_root
-
-    root = worker_scratch_root()
-    root_target = resolved_destination(root)
-    for raw in writable_roots:
-        if resolved_destination(Path(raw)).is_relative_to(root_target):
-            return root
-    return None
+    root, members = _worker_scratch_roots(writable_roots)
+    return root if members else None
 
 
 # The node's own temp root. Pinned rather than read from ``TMPDIR`` for the
@@ -1580,14 +1590,8 @@ def worker_scratch_write_roots(
     The scratch root itself is not one of them: it is the directory sealed
     read-only and it holds every other run's copy.
     """
-    from reckon.crew.dispatch_launch import worker_scratch_root
-
-    root = resolved_destination(worker_scratch_root())
-    return {
-        target
-        for target in (resolved_destination(Path(raw)) for raw in writable_roots)
-        if target != root and target.is_relative_to(root)
-    }
+    root, members = _worker_scratch_roots(writable_roots)
+    return set(members) - {resolved_destination(root)}
 
 
 def worker_tmp_mount_source(
@@ -1619,20 +1623,13 @@ def worker_tmp_mount_source(
     """
     if node_tmp is None:
         return None
-    from reckon.crew.dispatch_launch import worker_scratch_root
-
-    scratch_root = resolved_destination(worker_scratch_root())
+    root, members = _worker_scratch_roots(writable_roots)
+    scratch_root = resolved_destination(root)
     node_target = resolved_destination(node_tmp)
     if scratch_root == node_target or not scratch_root.is_relative_to(node_target):
         return None
-    own = [
-        target
-        for target in (resolved_destination(Path(raw)) for raw in writable_roots)
-        if target != scratch_root and target.is_relative_to(scratch_root)
-    ]
-    if not own:
-        return None
-    return min(own, key=lambda path: len(path.parts))
+    own = (target for target in members if target != scratch_root)
+    return min(own, key=lambda path: len(path.parts), default=None)
 
 
 def node_tmp_seal_root() -> Path | None:
