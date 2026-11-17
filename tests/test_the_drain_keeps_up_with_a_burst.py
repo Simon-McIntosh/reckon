@@ -17,7 +17,9 @@ START = "2026-11-16T21:00:00Z"
 END = "2026-11-16T22:30:00Z"
 
 
-def test_locked_promotion_reads_its_target_in_the_operational_scope(tmp_path, monkeypatch):
+def test_locked_promotion_reads_its_target_in_the_operational_scope(
+    tmp_path, monkeypatch
+):
     from reckon.crew import open_run_index, promotion
 
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))

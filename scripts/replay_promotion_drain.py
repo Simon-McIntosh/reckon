@@ -459,11 +459,29 @@ def replay(
                 )
                 git(worker, "config", "--worktree", "core.sparseCheckout", "true")
                 git(worker, "config", "--worktree", "core.sparseCheckoutCone", "false")
-                sparse = Path(git(worker, "rev-parse", "--git-path", "info/sparse-checkout"))
+                sparse = Path(
+                    git(worker, "rev-parse", "--git-path", "info/sparse-checkout")
+                )
                 if not sparse.is_absolute():
                     sparse = worker / sparse
                 sparse.parent.mkdir(parents=True, exist_ok=True)
-                sparse.write_text("/*\n!/docs/state/\n")
+                patterns = [
+                    "/*",
+                    "!/docs/state/",
+                    "!/docs/figures/",
+                    "!/docs/evidence/",
+                ]
+                declared = pointer.get("node", {}).get("write_paths", [])
+                manifest = row["run_files"].get("manifest.md", "")
+                match = re.search(r"^changed_paths:\s*(.*)$", manifest, re.MULTILINE)
+                if match:
+                    declared = [*declared, *re.findall(r"docs/[^\s,\]\"']+", match[1])]
+                patterns.extend(
+                    "/" + path.rstrip("/")
+                    for path in declared
+                    if path.startswith("docs/")
+                )
+                sparse.write_text("\n".join(patterns) + "\n")
                 git(worker, "read-tree", "-mu", "HEAD", timeout=600)
                 environment = Path(sources["projects"][project]["root"]) / ".venv"
                 if environment.exists():
@@ -534,7 +552,7 @@ def replay(
             **data["header"],
             "repository_sources_sha256": sources["sha256"],
             "relocation": "repositories and crew paths relocated; process and scheduler handles cleared; request options and promotion guards retained",
-            "worker_materialization": "sparse checkout omits duplicate docs/state; canonical repositories keep the full state and Git objects",
+            "worker_materialization": "sparse checkout retains source and declared deliverables, omitting duplicate docs/state, docs/figures and docs/evidence except declared paths; canonical repositories and Git objects remain complete",
         }
         return result
 
