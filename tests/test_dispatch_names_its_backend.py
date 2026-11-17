@@ -160,8 +160,10 @@ def _payload(result) -> dict:
     """Read the documented JSON response from stdout.
 
     A launched dispatch writes its run id to stderr as a notice, so the mixed
-    ``output`` stream carries that line first; the command's JSON document is
-    the first line of stdout on every exit.
+    ``output`` stream carries that line first: since Click 8.2
+    ``Result.output`` interleaves the two streams in write order. The command's
+    JSON document is the first line of stdout on every exit, so stdout is the
+    one channel to read.
     """
     return json.loads(result.stdout.splitlines()[0])
 
