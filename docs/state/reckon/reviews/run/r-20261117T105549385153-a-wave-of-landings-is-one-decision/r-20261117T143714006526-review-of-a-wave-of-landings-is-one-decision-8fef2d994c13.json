@@ -1,0 +1,99 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 6,
+  "added_failure_ids": [
+    "tests/test_a_conflicting_landing_is_repaired.py::test_conflicting_delivery_opens_repair_then_lands[automatic]",
+    "tests/test_a_conflicting_landing_is_repaired.py::test_conflicting_delivery_opens_repair_then_lands[manual]",
+    "tests/test_a_finished_pending_landing_retires_its_run.py::test_a_finished_pending_landing_retires_its_run",
+    "tests/test_a_finished_pending_landing_retires_its_run.py::test_a_newer_attempt_keeps_its_pointer_and_worktree",
+    "tests/test_a_finished_pending_landing_retires_its_run.py::test_a_refused_push_keeps_the_run_and_its_recovery_state",
+    "tests/test_crew_help_names_its_state.py::test_every_crew_verb_help_names_its_state_or_condition"
+  ],
+  "added_failure_source": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T105549385153-a-wave-of-landings-is-one-decision/merge-final-armed-gate.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T105549385153-a-wave-of-landings-is-one-decision/review-baseline-suite.log"
+  },
+  "assertion_independence": "No new tautological assertion found. The synchronous mocked record.commits assertion in tests/test_no_caller_waits_on_a_promotion.py:491 tests receipt transport only; independent ledger and remote assertions establish actual landing and commit behavior.",
+  "assertion_review": {
+    "MCP action translation": "Removing command-to-action translation fails the non-None assertion or retained tool-promotion checks; the fixture explicitly reserves its manual decision.",
+    "delivered population": "Returning automatic deliveries to the decision list breaks the empty-list expectation while independent delivered, queue and removal counts remain asserted.",
+    "delivered-review duty selector": "Removing review-ready/promotable-stale support loses the one independently expected duty and fails the length assertion.",
+    "explicit manual decision integration": "Ignoring the manual choice removes the selected duty; an invalid command fails invocation; failing to push breaks pushed or remote-content checks; losing pointer, ledger or gate data breaks independently loaded completion-record assertions.",
+    "landing refusal remedy": "Dropping record_action=observe or the guard prefix breaks literal assertions; dropping persisted remediation breaks independently observed gate-log and EXIT guidance.",
+    "linked receipt reads across landing tests": "A missing, wrong or incomplete record breaks Path/json reads or retained merged, pushed, release, interruption, conflict, pointer and ledger assertions; reverting reads to inline fields reproduces the recorded importer failures.",
+    "merged-primary commit cases": "Returning automatic runs as manual duties breaks absence assertions; changing the classified action breaks literal observe expectations; existing ledger checks still assert the runs own commits.",
+    "primary refusal preservation": "Removing review_filed/refused or queuing before validation breaks malformed status/subject cases; merge-review-guard-head.log records 2 failed and merge-final-review-guard.log records 2 passed.",
+    "remote branch equality": "Failing to update either branch produces unequal Git object IDs; remote candidate content is also checked against the fixed answer = 42 literal, so equal stale tips cannot pass.",
+    "synchronous completion transport": "Returning no record_path or not persisting the complete record breaks file loading and the retained commit transport check; mocked commit input is not evidence of commit selection."
+  },
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_run_commands.py:crew_complete",
+    "reckon/crew/promotion_requests.py:_execute_command",
+    "reckon/mcp_crew_actions.py:_verb_for",
+    "reckon/mcp_crew_actions.py:_call_verb"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-17T14:39:39Z",
+  "findings": [],
+  "importer_delta": {
+    "added_failure_count": 0,
+    "added_failure_ids": [],
+    "base_failure_count": 69,
+    "base_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T105549385153-a-wave-of-landings-is-one-decision/merge-importers-primary-base.log",
+    "base_revision": "774263c9b5b315243345806e40818a29009dbd92",
+    "head_failure_count": 66,
+    "head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T105549385153-a-wave-of-landings-is-one-decision/merge-final-importers-head.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read the five first-parent increments a6b76759e5118d21db899dd2821839b5edc1f373 through 8fef2d994c13e7052f5084ff2df4a498d317a7e9 and the merge resolution; the scoped delta migrates importer evidence reads and preserves early review refusal capture.",
+    "done_when": "The live pointer requires behavioral and help cases plus no added importer failures; merge-final-armed-gate.log records 152 passed and eight inherited failures, primary-suite-base.log has the same eight, and importer logs show zero added IDs against merged primary.",
+    "goal": "The live source pointer asks for a bounded decision list and repeated completion; incremental tests retain real landing and receipt checks while reckon/crew_run_commands.py:3473 preserves the primary review refusal in compact replies.",
+    "manifest": "The source manifest.md names eleven commits, its exact final head, literal gate commands and completed baseline/after receipts, and separates inherited primary failures from the repairs.",
+    "write_paths": "The live pointer's expanded write_paths include all ten scoped files changed by this increment; unrelated changes inherited through the primary merge are excluded from this review."
+  },
+  "justifications": {
+    "durability": "tests/test_delivered_rows_say_what_is_owed.py:315 checks remote content, migrated landing tests retain receipt and repository assertions, and tests/test_review_record_contract.py:269 fails without the two refusal fields, as merge-review-guard-head.log demonstrates.",
+    "evidence": "review-baseline-suite.log and merge-final-armed-gate.log yield six raw added IDs, all independently present in primary-suite-base.log, and merge-final-importers-head.log adds zero IDs against merge-importers-primary-base.log.",
+    "fit": "tests/test_delivered_rows_say_what_is_owed.py:137 configures an isolated fixture through the semantic plan writer and importer changes consistently open record_path through pathlib and json without introducing forbidden names.",
+    "goal_fidelity": "tests/test_delivered_rows_say_what_is_owed.py:293 executes the offered command and independently checks persisted promotion, remote branch and candidate contents, while reckon/crew_run_commands.py:3473 keeps refusal fields visible.",
+    "reuse": "Capability searches located store_review_refusals in reckon/crew/review.py:1118 and repair_manifest_arm in reckon/crew/runs.py:2828; command wrappers delegate to these owners and the added test helper configures its fixture through the existing _plan_html reader and writer.",
+    "scope_discipline": "Worker-authored edits in the ten reviewed paths match the expanded pointer scope and answer the previous importer finding; reckon/crew_run_commands.py's inherited repair-arm wrapper and early guard survive the authorized primary merge."
+  },
+  "primary_comparison": {
+    "added_failure_count": 0,
+    "added_failure_ids": [],
+    "inherited_added_failure_ids": [
+      "tests/test_a_conflicting_landing_is_repaired.py::test_conflicting_delivery_opens_repair_then_lands[automatic]",
+      "tests/test_a_conflicting_landing_is_repaired.py::test_conflicting_delivery_opens_repair_then_lands[manual]",
+      "tests/test_a_finished_pending_landing_retires_its_run.py::test_a_finished_pending_landing_retires_its_run",
+      "tests/test_a_finished_pending_landing_retires_its_run.py::test_a_newer_attempt_keeps_its_pointer_and_worktree",
+      "tests/test_a_finished_pending_landing_retires_its_run.py::test_a_refused_push_keeps_the_run_and_its_recovery_state",
+      "tests/test_crew_help_names_its_state.py::test_every_crew_verb_help_names_its_state_or_condition"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T105549385153-a-wave-of-landings-is-one-decision/primary-suite-base.log",
+    "revision": "774263c9b5b315243345806e40818a29009dbd92"
+  },
+  "prior_finding_answer": "Previous importer-contract blocker answered by linked-record assertions and zero added primary-relative importer IDs; canonical pair retains six failures inherited from merged primary.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The live source pointer asks for a bounded decision list and repeated completion; incremental tests retain real landing and receipt checks while reckon/crew_run_commands.py:3473 preserves the primary review refusal in compact replies.\nVERDICT done_when: The live pointer requires behavioral and help cases plus no added importer failures; merge-final-armed-gate.log records 152 passed and eight inherited failures, primary-suite-base.log has the same eight, and importer logs show zero added IDs against merged primary.\nVERDICT write_paths: The live pointer's expanded write_paths include all ten scoped files changed by this increment; unrelated changes inherited through the primary merge are excluded from this review.\nVERDICT manifest: The source manifest.md names eleven commits, its exact final head, literal gate commands and completed baseline/after receipts, and separates inherited primary failures from the repairs.\nVERDICT diff: Read the five first-parent increments a6b76759e5118d21db899dd2821839b5edc1f373 through 8fef2d994c13e7052f5084ff2df4a498d317a7e9 and the merge resolution; the scoped delta migrates importer evidence reads and preserves early review refusal capture.\nCALL_SITES: reckon/crew_run_commands.py:crew_complete, reckon/crew/promotion_requests.py:_execute_command, reckon/mcp_crew_actions.py:_verb_for, reckon/mcp_crew_actions.py:_call_verb\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_delivered_rows_say_what_is_owed.py:293 executes the offered command and independently checks persisted promotion, remote branch and candidate contents, while reckon/crew_run_commands.py:3473 keeps refusal fields visible.\nSCORE evidence: 20\nJUSTIFICATION evidence: review-baseline-suite.log and merge-final-armed-gate.log yield six raw added IDs, all independently present in primary-suite-base.log, and merge-final-importers-head.log adds zero IDs against merge-importers-primary-base.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Worker-authored edits in the ten reviewed paths match the expanded pointer scope and answer the previous importer finding; reckon/crew_run_commands.py's inherited repair-arm wrapper and early guard survive the authorized primary merge.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_delivered_rows_say_what_is_owed.py:315 checks remote content, migrated landing tests retain receipt and repository assertions, and tests/test_review_record_contract.py:269 fails without the two refusal fields, as merge-review-guard-head.log demonstrates.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_delivered_rows_say_what_is_owed.py:137 configures an isolated fixture through the semantic plan writer and importer changes consistently open record_path through pathlib and json without introducing forbidden names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches located store_review_refusals in reckon/crew/review.py:1118 and repair_manifest_arm in reckon/crew/runs.py:2828; command wrappers delegate to these owners and the added test helper configures its fixture through the existing _plan_html reader and writer.\n",
+  "review_run_id": "r-20261117T143714006526-review-of-a-wave-of-landings-is-one-decision-8fef2d994c13",
+  "reviewed_base_sha": "d0d7c6d1fd1bc7f85346a0481855632a3a631c7f",
+  "reviewed_head_sha": "8fef2d994c13e7052f5084ff2df4a498d317a7e9",
+  "reviewed_run_id": "r-20261117T105549385153-a-wave-of-landings-is-one-decision",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T14:47:07.885540+00:00",
+  "total": 120
+}
