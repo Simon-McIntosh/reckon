@@ -1,0 +1,72 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "a290999a7dd5aaf099d00cfdf918eb1fde02a878",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/obligations.py:3276-3279 _held_records_pass",
+    "reckon/crew/open_run_index.py:243 _source_written"
+  ],
+  "completed_at": "2026-11-17T15:12:06.533Z",
+  "dispatched_at": "2026-11-17T15:11:11Z",
+  "findings": [
+    {
+      "file": "tests/test_the_held_worktree_screen_reads_only_open_runs.py",
+      "line": "280",
+      "severity": "non-blocking",
+      "summary": "bounded-path marker cannot fail on a stamp-encoding defect",
+      "text": "this assertion is meant to show the bounded path was taken, but the store-backed arm returns _current() without reading the signature at reckon/crew/open_run_index.py:737-739, and the fixture home built at :163 always has a run store, so the assertion holds whatever the signature encodes and cannot redden on a stamp-encoding regression."
+    },
+    {
+      "file": "reckon/crew/open_run_index.py",
+      "line": "748",
+      "severity": "non-blocking",
+      "summary": "document-backed stamp comparison is unguarded",
+      "text": "the document-backed stamp comparison is exercised by no test: tests/test_the_held_worktree_screen_reads_only_open_runs.py:163 writes a run store into RECKON_HOME, so matches_sources takes the store branch at :737 and restoring the base's exact-equality comparison here reddens no assertion, leaving the branch the commit message describes as the first defect unguarded."
+    },
+    {
+      "file": "reckon/crew/open_run_index.py",
+      "line": "225",
+      "severity": "non-blocking",
+      "summary": "second stamp encoder beside the owned canonical one",
+      "text": "_stamp_text is a second \"stable string for a stamp\" encoder beside the owned reckon/capabilities.py:1355 pick_input_stamp_key, and unlike it the new one is dict-insertion-order dependent for the Any it accepts, so two spellings of one identity are still possible for a mapping stamp \u2014 the drift its own docstring claims to prevent."
+    }
+  ],
+  "head_log_revision": "db4228c6821980e870589d8bf9defadd55df9ca0",
+  "item_verdicts": {
+    "call_sites": "pass \u2014 reckon/crew/obligations.py:3276-3279 is the one production caller and reckon/crew/open_run_index.py:243 is the writer of the stamps the comparison reads.",
+    "diff": "pass \u2014 one commit read: 54 lines changed in reckon/crew/open_run_index.py and 312 lines of new test, nothing outside the goal.",
+    "done_when": "pass \u2014 tests/test_the_held_worktree_screen_reads_only_open_runs.py:244-311 builds the 2,000-run home, asserts both derivations decode at most 5 rows, asserts the duties match the whole-population read, and asserts a newly retained tree is reported on the next derivation.",
+    "goal": "pass \u2014 reckon/crew/open_run_index.py:710-749 accepts the projection where a run store exists, so the screen takes its bounded path; the test measures 3 decoded rows against 2,000 at base.",
+    "manifest": "pass \u2014 read; it records the gate command's 60 passed, the base arm's 58 passed, the negative control at EXIT=1 and the two changed paths.",
+    "write_paths": "pass \u2014 the only paths in git diff a290999a7d..db4228c682 are reckon/crew/open_run_index.py and tests/test_the_held_worktree_screen_reads_only_open_runs.py, both inside the declared set."
+  },
+  "justifications": {
+    "durability": "the bound assertion at tests/test_the_held_worktree_screen_reads_only_open_runs.py:274 is proven to fail at the base revision, but nothing reddens if the document-backed arm at reckon/crew/open_run_index.py:748 is restored to the base's exact-equality comparison, because every fixture home carries a run store.",
+    "evidence": "tests/test_the_held_worktree_screen_reads_only_open_runs.py:274 asserts second_rows <= DECODE_BOUND (5) and the recorded negative control at logs/negative-control-base-screen.log reddens the same assertion with \"assert 2000 <= 5\" at EXIT=1, a test id the head arm passes.",
+    "fit": "reckon/crew/open_run_index.py:225-232 follows the module's private-helper-with-docstring idiom, though the predicate at :710 now performs a projection rebuild through _ensure at :736 and ignores the signature argument it is handed in that mode.",
+    "goal_fidelity": "reckon/crew/open_run_index.py:735-739 accepts the projection by the store's own signature where a store exists, which is the bounded path the screen was being refused, while :746-749 still requires every present document to carry its current stamp on a document-backed home.",
+    "reuse": "reckon/crew/open_run_index.py:225 records a stamp with a bare json.dumps while reckon/capabilities.py:1355 pick_input_stamp_key already owns a canonical stamp text (sort_keys, separators) with eight call sites, so the added encoder is a second spelling rather than an extension of that owner.",
+    "scope_discipline": "the only paths in git diff a290999a7d..db4228c682 are reckon/crew/open_run_index.py and tests/test_the_held_worktree_screen_reads_only_open_runs.py, both declared."
+  },
+  "outside_scope": [],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the held-worktree screen take its bounded open-run path on a steady tick; reckon/crew/open_run_index.py:710-749 now accepts the projection where a run store exists, and the added test measures 3 decoded rows against 2,000 at base.\nVERDICT done_when: tests/test_the_held_worktree_screen_reads_only_open_runs.py:244-286 builds the 2,000-run home, runs the derivation twice, asserts second_rows and first_rows <= DECODE_BOUND (5), asserts duties equal the whole-population read and the literal expected duties, and :289-311 asserts a newly retained tree reaches the next derivation.\nVERDICT write_paths: the node declared reckon/crew/obligations.py, reckon/crew/open_run_index.py, the test file and one docs fragment; git diff a290999a7d..db4228c682 touches only open_run_index.py and the test file, both inside that set.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T133739961090-the-held-worktree-screen-reads-only-open-runs/manifest.md; it records the gate command (60 passed), the base arm (58 passed), the negative control EXIT=1 and the changed paths.\nVERDICT diff: one commit, db4228c682; the source change is 54 lines in reckon/crew/open_run_index.py and 312 lines of new test, with no unrelated hunk.\nCALL_SITES: reckon/crew/obligations.py:3276-3279 _held_records_pass, reckon/crew/open_run_index.py:243 _source_written\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/open_run_index.py:735-739 accepts the projection by the store's own signature where a store exists, which is the bounded path the screen was being refused, while :746-749 still requires every present document to carry its current stamp on a document-backed home.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_the_held_worktree_screen_reads_only_open_runs.py:274 asserts second_rows <= DECODE_BOUND (5) and the recorded negative control at logs/negative-control-base-screen.log reddens the same assertion with \"assert 2000 <= 5\" at EXIT=1, a test id the head arm passes.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only paths in git diff a290999a7d..db4228c682 are reckon/crew/open_run_index.py and tests/test_the_held_worktree_screen_reads_only_open_runs.py, both declared.\nSCORE durability: 15\nJUSTIFICATION durability: the bound assertion at tests/test_the_held_worktree_screen_reads_only_open_runs.py:274 is proven to fail at the base revision, but nothing reddens if the document-backed arm at reckon/crew/open_run_index.py:748 is restored to the base's exact-equality comparison, because every fixture home carries a run store.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/open_run_index.py:225-232 follows the module's private-helper-with-docstring idiom, though the predicate at :710 now performs a projection rebuild through _ensure at :736 and ignores the signature argument it is handed in that mode.\nSCORE reuse: 14\nJUSTIFICATION reuse: reckon/crew/open_run_index.py:225 records a stamp with a bare json.dumps while reckon/capabilities.py:1355 pick_input_stamp_key already owns a canonical stamp text (sort_keys, separators) with eight call sites, so the added encoder is a second spelling rather than an extension of that owner.\nFINDING tests/test_the_held_worktree_screen_reads_only_open_runs.py:280 non-blocking: this assertion is meant to show the bounded path was taken, but the store-backed arm returns _current() without reading the signature at reckon/crew/open_run_index.py:737-739, and the fixture home built at :163 always has a run store, so the assertion holds whatever the signature encodes and cannot redden on a stamp-encoding regression.\nFINDING reckon/crew/open_run_index.py:748 non-blocking: the document-backed stamp comparison is exercised by no test \u2014 tests/test_the_held_worktree_screen_reads_only_open_runs.py:163 writes a run store into RECKON_HOME, so matches_sources takes the store branch at :737 and restoring the base's exact-equality comparison here reddens no assertion, leaving the branch the commit message describes as the first defect unguarded.\nFINDING reckon/crew/open_run_index.py:225 non-blocking: _stamp_text is a second \"stable string for a stamp\" encoder beside the owned reckon/capabilities.py:1355 pick_input_stamp_key, and unlike it the new one is dict-insertion-order dependent for the Any it accepts, so two spellings of one identity are still possible for a mapping stamp \u2014 the drift its own docstring claims to prevent.\n",
+  "review_run_id": "r-20261117T150818348738-review-of-the-held-worktree-screen-reads-only-open-runs-db4228c68219",
+  "reviewed_base_sha": "a290999a7dd5aaf099d00cfdf918eb1fde02a878",
+  "reviewed_head_sha": "db4228c6821980e870589d8bf9defadd55df9ca0",
+  "reviewed_run_id": "r-20261117T133739961090-the-held-worktree-screen-reads-only-open-runs",
+  "reviewer_run_id": "r-20261117T150818348738-review-of-the-held-worktree-screen-reads-only-open-runs-db4228c68219",
+  "scores": {
+    "durability": 15,
+    "evidence": 19,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T15:18:35.834781+00:00",
+  "total": 101
+}
