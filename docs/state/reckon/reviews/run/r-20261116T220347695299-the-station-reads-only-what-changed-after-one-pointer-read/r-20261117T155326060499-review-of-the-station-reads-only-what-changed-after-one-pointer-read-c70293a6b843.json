@@ -1,0 +1,124 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: gate-base.log at 73a771c records 81 passed EXIT=0 with no FAILED line and gate-after.log at c70293a6 records 83 passed EXIT=0 with no FAILED line, so the set difference is empty (0).",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:3204",
+    "reckon/crew/recovery_memo.py:801",
+    "reckon/_backends.py:3893",
+    "reckon/_backends.py:4481"
+  ],
+  "completed_at": "2026-11-17T15:55:16.543Z",
+  "dispatched_at": "2026-11-17T15:54:56Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the dropped 1,724 MB/min head window had no surviving raw log (the prior review's finding 5); the RCA keeps only windows whose receipts exist, and the live bound is s88's measure now.",
+      "recorded_at": "2026-11-17T16:18:44.744243+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/research/monitor-storage-load-rca.html",
+      "line": "511",
+      "severity": "non-blocking",
+      "text": "non-blocking: the final record reports two live windows and drops the 1,724 MB/min 145 s head window that commit 5d61bd888a had recorded, so the worse of the run's own head measurements leaves the research document in a commit whose stated purpose was the sample size and the test labels."
+    },
+    {
+      "file": "docs/research/monitor-storage-load-rca.html",
+      "line": "456",
+      "severity": "non-blocking",
+      "text": "non-blocking: the census was taken over 40 s where the done_when names one 60 s window, so the recorded census does not match the window the measure states."
+    },
+    {
+      "file": "docs/research/monitor-storage-load-rca.html",
+      "line": "460",
+      "severity": "non-blocking",
+      "text": "non-blocking: the change removes the census's second-largest reader and leaves its dominant one, _cached_stream_entry at 42.7 %, named as residual, so the goal sentence's dominant read is not the read this node removed."
+    },
+    {
+      "file": "reckon/crew/recovery_memo.py",
+      "line": "787",
+      "severity": "non-blocking",
+      "text": "non-blocking: the 4096-cursor eviction bound has no assertion anywhere, so a change back to clearing the whole store, which the commit message claims to replace, would pass every test in the gate."
+    },
+    {
+      "file": "reckon/crew/recovery_memo.py",
+      "line": "768",
+      "severity": "non-blocking",
+      "text": "non-blocking: the resume trusts only the shared 8 KiB opening sample, so an in-place rewrite that keeps the opening and changes bytes before the held offset is answered from the cursor, which is the same bound the parsed-stream cache accepts but is now reachable from a second reader."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/the-station-reads-only-what-changed-after-one-pointer-read.html",
+      "line": "140",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment records the live bound as unmet by this change, so the node's own deliverable carries a done_when clause the section must still close."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit from 73a771c to c70293a6; 77100cbd43 replaces the whole-stream scan with a cursor, 157e612e11 routes the rewrite check through _backends.stream_head_fingerprint and _stream_head_intact and drops the duplicated sample, 3d28583c0c adds and then loses the plain-mapping tolerance, 622fd58737 adds the count flag to _backends._stream_lines_from, and c70293a6b8 adds the in-place-rewrite case.",
+    "done_when": "the done_when's census, fixture, verdict-equality, matched-arm and ruff clauses are all measured and recorded, but the live clause (under 20 MB/min and under 5 % of one core over 60 s after the first tick) is recorded unmet at docs/research/monitor-storage-load-rca.html:511-530 with the head window at 1,376 MB/min and 75.4 % of one core against the base window's 1,131 MB/min and 92.5 %.",
+    "goal": "the goal is to remove the dominant read a per-path census of the station names; the census at docs/research/monitor-storage-load-rca.html:460 names _backends._cached_stream_entry at 42.7 % and recovery_memo._newest_result_event at 19.5 %, and the landed cursor in reckon/crew/recovery_memo.py:741 removes the second, leaving the census's dominant reader named as residual rather than removed.",
+    "manifest": "read; it records status complete, the eight commits, arm gates of 81 passed at base and 83 passed at head with EXIT=0, the negative control and the head-check reversal at EXIT=1, matched-importer arms failing the same single pre-existing id at both revisions, and four ruff logs whose findings are identical either side, and each of those logs was opened and matches what the manifest states.",
+    "write_paths": "read the declared paths; the eight node commits touch only reckon/crew/recovery_memo.py, reckon/_backends.py, tests/test_the_station_reads_only_what_changed.py, tests/test_a_lane_signal_reads_a_stream_once.py, docs/research/monitor-storage-load-rca.html and the evidence fragment, all inside the fence, and the 365-path delivered range is the run's own merge of main at dc8a209001 rather than authored work."
+  },
+  "justifications": {
+    "durability": "tests/test_the_station_reads_only_what_changed.py:1108 and the negative control at logs/negative-control.log redden on a restored whole-stream read, and tests/test_a_lane_signal_reads_a_stream_once.py:62 reddens if the identity short-circuit is removed.",
+    "evidence": "docs/research/monitor-storage-load-rca.html:511-530 records the live window as 1,376 MB/min and 75.4 % of one core against a 20 MB/min and 5 % bound, so the done_when's headline clause is measured and recorded unmet rather than asserted.",
+    "fit": "reckon/crew/recovery_memo.py:723 keeps the module's per-process memo idiom and its bounded store, and the staged paths add no ruff finding against base as logs/ruff-check-head.log records.",
+    "goal_fidelity": "docs/research/monitor-storage-load-rca.html:460 names _cached_stream_entry at 42.7 % as dominant while the cursor changes _newest_result_event at 19.5 %, and no census at the delivered head shows the dominant read gone.",
+    "reuse": "reckon/crew/recovery_memo.py:768 and :777 read through _backends._stream_head_intact and _stream_lines_from rather than the private 256-byte sample the first commit added.",
+    "scope_discipline": "every one of the eight authored commits touches only a declared path, and the merge dc8a209001 contributes main's work rather than this node's."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to remove the dominant read a per-path census of the station names; the census at docs/research/monitor-storage-load-rca.html:460 names _backends._cached_stream_entry at 42.7 % and recovery_memo._newest_result_event at 19.5 %, and the landed cursor in reckon/crew/recovery_memo.py:741 removes the second, leaving the census's dominant reader named as residual rather than removed.\nVERDICT done_when: the done_when's census, fixture, verdict-equality, matched-arm and ruff clauses are all measured and recorded, but the live clause (under 20 MB/min and under 5 % of one core over 60 s after the first tick) is recorded unmet at docs/research/monitor-storage-load-rca.html:511-530 with the head window at 1,376 MB/min and 75.4 % of one core against the base window's 1,131 MB/min and 92.5 %.\nVERDICT write_paths: read the declared paths; the eight node commits touch only reckon/crew/recovery_memo.py, reckon/_backends.py, tests/test_the_station_reads_only_what_changed.py, tests/test_a_lane_signal_reads_a_stream_once.py, docs/research/monitor-storage-load-rca.html and the evidence fragment, all inside the fence, and the 365-path delivered range is the run's own merge of main at dc8a209001 rather than authored work.\nVERDICT manifest: read; it records status complete, the eight commits, arm gates of 81 passed at base and 83 passed at head with EXIT=0, the negative control and the head-check reversal at EXIT=1, matched-importer arms failing the same single pre-existing id at both revisions, and four ruff logs whose findings are identical either side, and each of those logs was opened and matches what the manifest states.\nVERDICT diff: read commit by commit from 73a771c to c70293a6; 77100cbd43 replaces the whole-stream scan with a cursor, 157e612e11 routes the rewrite check through _backends.stream_head_fingerprint and _stream_head_intact and drops the duplicated sample, 3d28583c0c adds and then loses the plain-mapping tolerance, 622fd58737 adds the count flag to _backends._stream_lines_from, and c70293a6b8 adds the in-place-rewrite case.\nCALL_SITES: reckon/crew/recovery_classification.py:3204, reckon/crew/recovery_memo.py:801, reckon/_backends.py:3893, reckon/_backends.py:4481\nSCORE goal_fidelity: 7\nJUSTIFICATION goal_fidelity: docs/research/monitor-storage-load-rca.html:460 names _cached_stream_entry at 42.7 % as dominant while the cursor changes _newest_result_event at 19.5 %, and no census at the delivered head shows the dominant read gone.\nSCORE evidence: 11\nJUSTIFICATION evidence: docs/research/monitor-storage-load-rca.html:511-530 records the live window as 1,376 MB/min and 75.4 % of one core against a 20 MB/min and 5 % bound, so the done_when's headline clause is measured and recorded unmet rather than asserted.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: every one of the eight authored commits touches only a declared path, and the merge dc8a209001 contributes main's work rather than this node's.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_the_station_reads_only_what_changed.py:1108 and the negative control at logs/negative-control.log redden on a restored whole-stream read, and tests/test_a_lane_signal_reads_a_stream_once.py:62 reddens if the identity short-circuit is removed.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/recovery_memo.py:723 keeps the module's per-process memo idiom and its bounded store, and the staged paths add no ruff finding against base as logs/ruff-check-head.log records.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/recovery_memo.py:768 and :777 read through _backends._stream_head_intact and _stream_lines_from rather than the private 256-byte sample the first commit added.\nFINDING docs/research/monitor-storage-load-rca.html:511 non-blocking: the final record reports two live windows and drops the 1,724 MB/min 145 s head window that commit 5d61bd888a had recorded, so the worse of the run's own head measurements leaves the research document in a commit whose stated purpose was the sample size and the test labels.\nFINDING docs/research/monitor-storage-load-rca.html:456 non-blocking: the census was taken over 40 s where the done_when names one 60 s window, so the recorded census does not match the window the measure states.\nFINDING docs/research/monitor-storage-load-rca.html:460 non-blocking: the change removes the census's second-largest reader and leaves its dominant one, _cached_stream_entry at 42.7 %, named as residual, so the goal sentence's dominant read is not the read this node removed.\nFINDING reckon/crew/recovery_memo.py:787 non-blocking: the 4096-cursor eviction bound has no assertion anywhere, so a change back to clearing the whole store, which the commit message claims to replace, would pass every test in the gate.\nFINDING reckon/crew/recovery_memo.py:768 non-blocking: the resume trusts only the shared 8 KiB opening sample, so an in-place rewrite that keeps the opening and changes bytes before the held offset is answered from the cursor, which is the same bound the parsed-stream cache accepts but is now reachable from a second reader.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/the-station-reads-only-what-changed-after-one-pointer-read.html:140 non-blocking: the fragment records the live bound as unmet by this change, so the node's own deliverable carries a done_when clause the section must still close.",
+  "review_node": "review-of-the-station-reads-only-what-changed-after-one-pointer-read-c70293a6b843",
+  "review_run_id": "r-20261117T155326060499-review-of-the-station-reads-only-what-changed-after-one-pointer-read-c70293a6b843",
+  "reviewed_base_arms": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_lane_signal_reads_a_stream_once.py tests/test_producer_reads_only_what_changed.py tests/test_the_station_reads_only_what_changed.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T220347695299-the-station-reads-only-what-changed-after-one-pointer-read/logs/gate-after.log",
+      "revision": "c70293a6b8435db8af8825731444ec41bc004633"
+    },
+    "base_sha": "73a771cde3238af66d88944a3bae01debf09896f",
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_lane_signal_reads_a_stream_once.py tests/test_producer_reads_only_what_changed.py tests/test_the_station_reads_only_what_changed.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T220347695299-the-station-reads-only-what-changed-after-one-pointer-read/logs/gate-base.log",
+      "revision": "73a771cde3238af66d88944a3bae01debf09896f"
+    },
+    "head_sha": "c70293a6b8435db8af8825731444ec41bc004633"
+  },
+  "reviewed_base_sha": "73a771cde3238af66d88944a3bae01debf09896f",
+  "reviewed_head_sha": "c70293a6b8435db8af8825731444ec41bc004633",
+  "reviewed_run_id": "r-20261116T220347695299-the-station-reads-only-what-changed-after-one-pointer-read",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261117T155326060499-review-of-the-station-reads-only-what-changed-after-one-pointer-read-c70293a6b843"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 11,
+    "fit": 18,
+    "goal_fidelity": 7,
+    "reuse": 18,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T16:18:38.302546+00:00",
+  "total": 86
+}
