@@ -683,15 +683,13 @@ def _with_action_form(item: Mapping[str, Any]) -> dict[str, Any]:
         reason = str(row.get("reason") or "")
         if len(reason) > available and available < 25 and "gate" in reason.lower():
             reason = "gate failed"
-        row["reason"] = (
-            (
-                reason
-                if len(reason) <= available
-                else reason[: max(0, available - 3)] + "..."
-            )
-            if available >= 3
-            else reason[:available]
-        )
+        if len(json.dumps(reason)) - 2 > available:
+            suffix = "..." if available >= 3 else ""
+            reason = reason[:available]
+            while reason and len(json.dumps(reason + suffix)) - 2 > available:
+                reason = reason[:-1]
+            reason += suffix
+        row["reason"] = reason
         return row
     row = dict(item)
     row.pop("_delivery_decision", None)

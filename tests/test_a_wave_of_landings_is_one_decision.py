@@ -359,6 +359,21 @@ def test_a_long_run_name_keeps_its_condition_and_a_working_evidence_read(
     assert "test_guard" in result.output
 
 
+def test_escaped_condition_text_stays_inside_the_serialized_row_bound():
+    row = obligations._with_action_form(
+        {
+            "kind": "landing-refused",
+            "run_id": "r-escaped-condition",
+            "age_seconds": 1,
+            "reason": "convergence failed: " + 'μ"\\' * 100,
+            "next_command": "reckon crew complete --run r-escaped-condition --gate passed --land",
+            "_delivery_decision": "delivered",
+        }
+    )
+    assert len(json.dumps(row)) <= 400, row
+    assert "convergence" in row["reason"]
+
+
 def test_the_default_batch_requests_both_promotions_without_running_them(
     repository, tmp_path, monkeypatch
 ):
