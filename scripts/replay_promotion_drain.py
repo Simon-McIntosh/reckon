@@ -614,6 +614,22 @@ def _drain(rows: list[dict], requests, runs, *, timeout: float) -> dict:
                         )[:2000]
                         del active[run_id]
                 if time.monotonic() - began > timeout:
+                    print(
+                        json.dumps(
+                            {
+                                "timeout_diagnostic": {
+                                    "unsettled_requests": len(active),
+                                    "in_flight_threads": [
+                                        thread.name
+                                        for thread in service._threads
+                                        if thread.is_alive()
+                                    ],
+                                    "queue_report": requests.promotion_queue_report(),
+                                }
+                            }
+                        ),
+                        flush=True,
+                    )
                     raise TimeoutError(
                         f"real replay exceeded {timeout:g} seconds with {len(active)} requests active"
                     )
@@ -622,20 +638,27 @@ def _drain(rows: list[dict], requests, runs, *, timeout: float) -> dict:
         finally:
             service.stop_refill()
             service.begin_drain()
-            if service.wait_for_in_flight(timeout):
+            remaining_in_flight = service.wait_for_in_flight(timeout)
+            if remaining_in_flight:
                 raise TimeoutError("a real promotion remains in flight")
         pending = remaining
     elapsed = time.monotonic() - began
     counts = Counter(observed.values())
+    report = requests.promotion_queue_report()
+    active_at_completion = int(report.get("waiting", 0)) + int(report.get("running", 0))
+    if active_at_completion:
+        raise RuntimeError("the replay left active promotion requests")
     return {
         "measurement": "real drain and promotion execution in temporary repositories",
+        "active_requests_at_completion": active_at_completion,
+        "in_flight_at_completion": remaining_in_flight,
         "requests": len(rows),
         "elapsed_seconds": elapsed,
         "verdicts": dict(counts),
         "verdicts_by_request": observed,
         "reasons_by_request": reasons,
         "successful_promotions_per_hour": counts[requests.PROMOTED] * 3600 / elapsed,
-        "queue_report": requests.promotion_queue_report(),
+        "queue_report": report,
     }
 
 

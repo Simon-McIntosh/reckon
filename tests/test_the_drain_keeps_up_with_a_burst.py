@@ -222,11 +222,36 @@ def test_real_replay_exercises_guards_and_a_positive_control(tmp_path, monkeypat
     assert result["positive_control"]["phase"] == "promoted"
     assert appended, "the positive control did not reach the real ledger writer"
     assert result["requests"] == 1
+    assert result["active_requests_at_completion"] == 0
+    assert result["in_flight_at_completion"] == []
     assert result["verdicts"] == {"promotion-refused": 1}
     assert result["successful_promotions_per_hour"] == 0
     assert {
         p.relative_to(crew): p.read_bytes() for p in crew.rglob("*") if p.is_file()
     } == before
+
+
+def test_a_replay_refuses_completion_with_a_queued_request(tmp_path, monkeypatch):
+    from scripts.replay_promotion_drain import _drain
+
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("RECKON_RUN_STORE", str(tmp_path / "store.db"))
+    first = _queue_for_repository("r-replayed", tmp_path / "repository")
+    wait = promotion_requests.PromotionService.wait_for_in_flight
+
+    def leave_queued(service, timeout):
+        remaining = wait(service, timeout)
+        _queue_for_repository("r-left-queued", tmp_path / "repository")
+        return remaining
+
+    monkeypatch.setattr(
+        promotion_requests.PromotionService, "wait_for_in_flight", leave_queued
+    )
+    with pytest.raises(RuntimeError, match="left active promotion requests"):
+        _drain([{"request": first}], promotion_requests, runs, timeout=10)
+    assert promotion_requests.read_promotion("r-left-queued")["phase"] == (
+        promotion_requests.REQUESTED
+    )
 
 
 def test_replay_store_is_seeded_before_it_becomes_authoritative(tmp_path, monkeypatch):
@@ -508,6 +533,7 @@ def test_a_release_record_holds_the_branch_before_another_ledger_write(
             assert finish_release.wait(10), "release fixture was not finished"
         else:
             second_write.set()
+            attempted.set()
         return update(path, run_id, changes)
 
     def observed_claim(name):
@@ -543,7 +569,7 @@ def test_a_release_record_holds_the_branch_before_another_ledger_write(
         first.start()
         assert releasing.wait(5), "first promotion never reached its release"
         second.start()
-        assert attempted.wait(5), "second promotion never attempted the branch lease"
+        assert attempted.wait(5), "second promotion reached neither its lease nor its write"
         assert not second_write.wait(0.25), (
             "second promotion wrote the shared ledger before the first release finished"
         )
