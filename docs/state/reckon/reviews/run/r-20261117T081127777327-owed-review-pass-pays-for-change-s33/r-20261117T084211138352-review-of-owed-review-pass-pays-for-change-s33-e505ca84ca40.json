@@ -1,0 +1,95 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "Fixture insertion omits or duplicates stored runs; independent SQL count no longer equals 20000.",
+      "lines": "88"
+    },
+    {
+      "failure_condition": "Composition errors, selects an unexpected plan, or instrumentation misses the known 50 review, 20000 run or 50 plan cold inputs.",
+      "lines": "166-169"
+    },
+    {
+      "failure_condition": "An unchanged pass changes composition or reparses any input; restoring the base uncached run read or clearing reuse makes the parse assertions fail.",
+      "lines": "174-175,220-223"
+    },
+    {
+      "failure_condition": "A rewritten review fails to invalidate only its cached parse, reparses other inputs, or changes the expected owed-review result.",
+      "lines": "183-184"
+    },
+    {
+      "failure_condition": "A plan and run rewrite changes composition incorrectly, decodes zero or multiple run payloads, rereads reviews, or parses unrelated plans; base read yields 20000 instead of one.",
+      "lines": "200-203"
+    },
+    {
+      "failure_condition": "The warm or cold cache path disagrees with fallback composition or the independent ledger-backed author selection; reference uses unchanged base policy helpers, not a supplied expected return.",
+      "lines": "226,229-231"
+    },
+    {
+      "failure_condition": "Time expiry, clock reversal, a live author, a rewritten plan/session, or deletion yields a different author selection from the ledger reference, or a final unchanged selection decodes runs again.",
+      "lines": "232-261"
+    }
+  ],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/resumption.py:2956 compose_owed_plan_reviews",
+    "reckon/crew/plan_review.py:4621 plan_authoring_runs",
+    "reckon/crew/plan_review.py:4256 plan_authoring_run"
+  ],
+  "completed_at": "2026-11-17T08:50:35Z",
+  "dispatched_at": "2026-11-17T08:44:06Z",
+  "findings": [],
+  "gate_evidence": {
+    "after_failure_ids": [],
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T081127777327-owed-review-pass-pays-for-change-s33/after-suite.log",
+    "after_summary": "60 passed in 49.06s",
+    "base_reproduction": "unchanged_parse_counts={'runs': 20000}; changed_parse_counts={'plans': 2, 'runs': 20000}; 2 failed in 3.91s; EXIT=1",
+    "baseline_failure_ids": [],
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T081127777327-owed-review-pass-pays-for-change-s33/baseline-suite.log",
+    "baseline_summary": "58 passed in 38.74s",
+    "import_added_failure_ids": [],
+    "import_after_summary": "28 failed, 2054 passed, 4 warnings in 618.66s (0:10:18)",
+    "import_base_summary": "32 failed, 2048 passed, 4 warnings in 523.26s (0:08:43)",
+    "negative_control": "Clearing file_memo at each composition pass produced 51 plan, 50 review and 20000 run parses; 2 failed in 4.21s; EXIT=1"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read the sole commit e505ca84ca4052f79ee70b75505dffcb0b936ab9 against d0b16d70143dda6140081fd63eaaeda728a0a699; it adds author-selection caching in reckon/crew/plan_review.py:4089 and two regression tests, plus one harmless formatting adjustment.",
+    "done_when": "Live docs/plans/history-persists-as-detail-washes-out.html:427 and source prompt.txt:175 require 50 plans, 20000 runs, zero warm parses, changed-input parsing, base parity and no added importing-test failures; the new tests and completed all_debug gate logs measure these requirements.",
+    "goal": "The goal in the source prompt.txt:38 is incremental owed-review parsing; reckon/crew/plan_review.py:4114 adds stored-author reuse while retaining the existing plan and review memoization.",
+    "manifest": "Source manifest.md names e505ca84ca4052f79ee70b75505dffcb0b936ab9 and readable baseline_suite and after_suite receipts corroborated by baseline-suite.log and after-suite.log, although its current status is in-progress while the source run is resumed.",
+    "write_paths": "Source prompt.txt:94 and manifest.md declare plan_review.py, resumption.py, the new test and optional evidence paths; the two-file diff stays within those declarations."
+  },
+  "justifications": {
+    "durability": "tests/test_an_owed_review_pass_pays_for_what_changed.py:175 and :201 fail when reuse is removed and :232-261 compare expiry, clock reversal, live pointers, rewrite and deletion against the base-policy ledger reference, although archive invalidation and equal-stamp ordering lack dedicated cases.",
+    "evidence": "tests/test_an_owed_review_pass_pays_for_what_changed.py:168 positively calibrates all counters before :175 asserts zero warm parses, and source final-base-reproduction.log and negative-control.log both record two failures while after-suite.log records 60 passes with EXIT=0.",
+    "fit": "reckon/crew/plan_review.py:4089-4186 uses mechanism-based names, existing file_memo ownership and ledger timestamp/order helpers, and the source stream.jsonl records clean final scoped Ruff checks.",
+    "goal_fidelity": "reckon/crew/plan_review.py:4167 memoizes changed row payloads and :4182 memoizes selections by store and archive stamps and time bucket, satisfying zero warm parsing and incremental decode work.",
+    "reuse": "Capability searches and owner reads found memoization in reckon/file_memo.py:445, joined encoded rows in reckon/run_store.py:330 and decoded activity selection in :650; the added helpers reuse those owners while supplying author-specific projection and parse-free selection that the existing decoded activity path at :451 cannot provide.",
+    "scope_discipline": "The complete diff changes only reckon/crew/plan_review.py and tests/test_an_owed_review_pass_pays_for_what_changed.py, both explicitly declared in source prompt.txt:95-97."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal in the source prompt.txt:38 is incremental owed-review parsing; reckon/crew/plan_review.py:4114 adds stored-author reuse while retaining the existing plan and review memoization.\nVERDICT done_when: Live docs/plans/history-persists-as-detail-washes-out.html:427 and source prompt.txt:175 require 50 plans, 20000 runs, zero warm parses, changed-input parsing, base parity and no added importing-test failures; the new tests and completed all_debug gate logs measure these requirements.\nVERDICT write_paths: Source prompt.txt:94 and manifest.md declare plan_review.py, resumption.py, the new test and optional evidence paths; the two-file diff stays within those declarations.\nVERDICT manifest: Source manifest.md names e505ca84ca4052f79ee70b75505dffcb0b936ab9 and readable baseline_suite and after_suite receipts corroborated by baseline-suite.log and after-suite.log, although its current status is in-progress while the source run is resumed.\nVERDICT diff: Read the sole commit e505ca84ca4052f79ee70b75505dffcb0b936ab9 against d0b16d70143dda6140081fd63eaaeda728a0a699; it adds author-selection caching in reckon/crew/plan_review.py:4089 and two regression tests, plus one harmless formatting adjustment.\nCALL_SITES: reckon/crew/resumption.py:2956 compose_owed_plan_reviews, reckon/crew/plan_review.py:4621 plan_authoring_runs, reckon/crew/plan_review.py:4256 plan_authoring_run\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:4167 memoizes changed row payloads and :4182 memoizes selections by store and archive stamps and time bucket, satisfying zero warm parsing and incremental decode work.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_an_owed_review_pass_pays_for_what_changed.py:168 positively calibrates all counters before :175 asserts zero warm parses, and source final-base-reproduction.log and negative-control.log both record two failures while after-suite.log records 60 passes with EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The complete diff changes only reckon/crew/plan_review.py and tests/test_an_owed_review_pass_pays_for_what_changed.py, both explicitly declared in source prompt.txt:95-97.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_an_owed_review_pass_pays_for_what_changed.py:175 and :201 fail when reuse is removed and :232-261 compare expiry, clock reversal, live pointers, rewrite and deletion against the base-policy ledger reference, although archive invalidation and equal-stamp ordering lack dedicated cases.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/plan_review.py:4089-4186 uses mechanism-based names, existing file_memo ownership and ledger timestamp/order helpers, and the source stream.jsonl records clean final scoped Ruff checks.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches and owner reads found memoization in reckon/file_memo.py:445, joined encoded rows in reckon/run_store.py:330 and decoded activity selection in :650; the added helpers reuse those owners while supplying author-specific projection and parse-free selection that the existing decoded activity path at :451 cannot provide.\n",
+  "review_limits": "Read-only review of the named commit; no suite rerun or implementation mutation. Dedicated archive and equal-activity tie cases are not in the new test.",
+  "review_run_id": "r-20261117T084211138352-review-of-owed-review-pass-pays-for-change-s33-e505ca84ca40",
+  "reviewed_base_sha": "d0b16d70143dda6140081fd63eaaeda728a0a699",
+  "reviewed_head_sha": "e505ca84ca4052f79ee70b75505dffcb0b936ab9",
+  "reviewed_run_id": "r-20261117T081127777327-owed-review-pass-pays-for-change-s33",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_comparing_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T09:02:34.692363+00:00",
+  "total": 119
+}
