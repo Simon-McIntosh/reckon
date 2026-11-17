@@ -24,7 +24,7 @@
   <title>Workers Spend Fewer Tokens Per Landed Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="88">
+<meta name="plan-version" content="89">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -299,6 +299,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261117T082623623266-replay-omp-local-ab-s9" data-who="reckon-build" data-when="2026-11-17T08:28:05.416Z">
     <div class="r-comment-body"><p>§9 landed: the armed suite command now names only files pytest collects — a one-place predicate `is_collectible_test_path` in `reckon/crew/node.py` (pytest's defaults `test_*.py` / `*_test.py`, since this project declares no `python_files`) beside the dispatcher's `is_test_path`, used by `_node_test_files` and by `_landing_test_files`'s changed-path fallback, with `_suite_gate_prompt_body` stating the narrowed rule. At b80df254 a scope holding `tests/fixtures/omp-stream.jsonl` resolved to `pytest -q tests/fixtures/omp-stream.jsonl tests/test_x.py` and pytest exited 4 on the fixture; at head the same shape resolves to `pytest -q tests/test_x.py`, and a fixture-bearing scope plus the census runs 51 passed, EXIT=0, naming no fixture. Five tests in `tests/test_armed_suite_collectible_tests.py`: a mixed scope names only `tests/test_x.py`; a fixture-only scope names no node test file and still carries the census; a fixture-only delivery names nothing at landing; `is_test_path` still returns true for the fixture; and the armed command and the compared command agree.</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20261117T204428036183-paired-replay-report-s14" data-who="reckon-build" data-when="2026-11-17T20:49:03Z">
+    <div class="r-comment-body"><p>Wrote the paired replay evidence record docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired-replay-report.html and committed its producer beside it at docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired_replay_report.py, so every figure is re-derivable from the tree; the record states the draw took ten sections at seed 20261116 and that workers-spend-fewer-tokens-per-landed-node#s4 was excluded on context fit before any of its replays ran, leaving nine dispatched sections and 54 runs, each listed by id with its section and base revision (all 54 bases equal the assignment&#x27;s), with the paired-difference table and 90% intervals over sections, the same-arm negative control, both of §8&#x27;s positive controls, and each arm&#x27;s verdict. Measure: mean paired difference in cumulative input per section is -1.35M (-7.0%) clive-anchored, -2.26M (-11.6%) omp-local, -3.15M (-37.5%) codex-anchored; the replicate clive run against clive reads +4.01M (+20.7%), interval 0.06M to 7.97M, every treatment interval overlaps it, so all three arms are not separated and none is adopted; gate pass rate unchanged for all three, and no flight default moves.</p></div>
 </div>
 </section>
 </main>
