@@ -1,0 +1,95 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T210318326359-review-of-an-admission-pass-decides-within-its-budget-29fd41eb4cb1/assertion-audit.md",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/admission/service.py:admit_until_stopped once branch at 428",
+    "reckon/crew/admission/service.py:admit_until_stopped loop at 493",
+    "reckon/crew/admission/wait_refs.py:derive_wait_refs at 266",
+    "reckon/crew/plan_review.py:_plan_inventory_item at 6601",
+    "reckon/crew/plan_review.py:section_readiness_rows at 6669",
+    "reckon/crew/admission/readiness.py:_readiness_rows_unlocked at 150"
+  ],
+  "completed_at": "2026-11-17T21:10:54Z",
+  "dispatched_at": "2026-11-17T21:05:15Z",
+  "failure_evidence": {
+    "after_suite": {
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T111346928196-an-admission-pass-decides-within-its-budget/logs/after_suite.log",
+      "summary": "63 passed in 172.61s (0:02:52)"
+    },
+    "baseline_suite": {
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T111346928196-an-admission-pass-decides-within-its-budget/logs/baseline_suite.log",
+      "summary": "60 passed in 127.39s (0:02:07)"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/admission/wait_refs.py",
+      "line": "245",
+      "severity": "blocking",
+      "text": "blocking: parse_meta reads metadata only from text[:16384] through reckon/_plan_html.py:2731, whereas the replaced read_state_file reads all metadata; a valid plan-depends-on tag after a long head or an HTML-escaped reference can therefore be lost or changed, dropping required waits, and the same substitution at reckon/crew/plan_review.py:6697 omits the upstream inventory row."
+    },
+    {
+      "file": "reckon/crew/admission/selection.py",
+      "line": "137",
+      "severity": "blocking",
+      "text": "blocking: A matching list of run IDs and phases does not establish unchanged readiness inputs; a plan edit changing a queued request's waits between _release_tick and admit_once leaves that signature identical, skips the rederivation that formerly moved it back to awaiting-upstream, and can feed the stale queued request into launch ordering; the once path explicitly settles a landing between these stages at service.py:426."
+    },
+    {
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "line": "232",
+      "severity": "blocking",
+      "text": "blocking: The decision-equivalence assertion runs both arms on head code after the first sweep already mutated the home, with QUEUED_REQUESTS=0 and zero lane slots; a regression shared by both arms, including dropping every wait or never releasing a request, can pass this comparison, so it does not prove base-equivalent launch and release decisions required by done_when."
+    },
+    {
+      "file": "reckon/crew/admission/wait_refs.py",
+      "line": "235",
+      "severity": "non-blocking",
+      "text": "non-blocking: The new docstring says used to read and the new test module says used to pay, violating the user's binding ban on changelog prose in comments and docstrings; rewrite these passages in mechanism terms during the repair node."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Read both authored commits against their parents and inspected the base-to-head history; changes in reckon/crew/admission and reckon/crew/plan_review.py replace parsed dependencies and reuse release sweeps, with correctness and decision-equivalence gaps detailed below.",
+    "done_when": "docs/plans/dispatch-admission-and-landing-take-seconds.html#s10 requires timing and base-equivalent launch/release decisions; logs/negative-control-base-pass.log records 101.47921030689031 seconds at base, but tests/test_an_admission_pass_decides_within_its_budget.py:232 compares two head passes and the ten live post-landing receipts remain owed.",
+    "goal": "The live source pointer's node.goal requires unchanged launch decisions within 20 seconds for 240 pointers and 80 requests; reckon/crew/admission/selection.py:137 accelerates the pass but does not invalidate reused waits on changed plan inputs.",
+    "manifest": "The source manifest.md names the two authored commits and completed baseline_suite/after_suite arms; their log summaries independently record 60 passed and 63 passed with EXIT=0, yielding zero added failures, while its scoped_gate artifact count is stale at 61 against the log's 63.",
+    "write_paths": "The source live pointer's node.write_paths grants all seven files authored by commits 2ad4707fd7265240e79f0c5f977ea337725c014b and 29fd41eb4cb1795e476c1ccfed664b38e895738d; the other paths in the base-to-head diff are inherited primary history before 2ad4707f's parent 91edbf4e03783efb724f7a3079df6a37b6a2bff2."
+  },
+  "justifications": {
+    "durability": "tests/test_an_admission_pass_decides_within_its_budget.py:195 demonstrably reddens when full parsing is restored, but assertions at 230 and 231 allow shared wrong decisions and never exercise successful launches, releases, or plan-input invalidation.",
+    "evidence": "tests/test_an_admission_pass_decides_within_its_budget.py:232 compares two head implementations on an all-waiting zero-slot home rather than asserting the required equality with base launch and release decisions.",
+    "fit": "reckon/crew/admission/wait_refs.py:235 and tests/test_an_admission_pass_decides_within_its_budget.py:10 carry prohibited changelog prose such as used to read and used to pay rather than describing only the mechanism.",
+    "goal_fidelity": "reckon/crew/admission/selection.py:137 and reckon/crew/admission/wait_refs.py:245 introduce paths that can decide from stale or incomplete dependencies despite the measured speed improvement.",
+    "reuse": "The added dependency adapter delegates to reckon/_plan_html.py:2625, the body-free specialization extends the existing _plan_inventory_item owner using its parser's _head_declarations, and capability searches over admission population/fingerprint helpers found no existing release-sweep signature owner.",
+    "scope_discipline": "The seven authored paths listed in the source manifest.md are all within the widened node.write_paths, and primary-history changes precede the worker's two commits."
+  },
+  "post_landing_measure": "Ten consecutive live receipts and comparison with the specified pre-landing baseline remain owed after integration.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The live source pointer's node.goal requires unchanged launch decisions within 20 seconds for 240 pointers and 80 requests; reckon/crew/admission/selection.py:137 accelerates the pass but does not invalidate reused waits on changed plan inputs.\nVERDICT done_when: docs/plans/dispatch-admission-and-landing-take-seconds.html#s10 requires timing and base-equivalent launch/release decisions; logs/negative-control-base-pass.log records 101.47921030689031 seconds at base, but tests/test_an_admission_pass_decides_within_its_budget.py:232 compares two head passes and the ten live post-landing receipts remain owed.\nVERDICT write_paths: The source live pointer's node.write_paths grants all seven files authored by commits 2ad4707fd7265240e79f0c5f977ea337725c014b and 29fd41eb4cb1795e476c1ccfed664b38e895738d; the other paths in the base-to-head diff are inherited primary history before 2ad4707f's parent 91edbf4e03783efb724f7a3079df6a37b6a2bff2.\nVERDICT manifest: The source manifest.md names the two authored commits and completed baseline_suite/after_suite arms; their log summaries independently record 60 passed and 63 passed with EXIT=0, yielding zero added failures, while its scoped_gate artifact count is stale at 61 against the log's 63.\nVERDICT diff: Read both authored commits against their parents and inspected the base-to-head history; changes in reckon/crew/admission and reckon/crew/plan_review.py replace parsed dependencies and reuse release sweeps, with correctness and decision-equivalence gaps detailed below.\nCALL_SITES: reckon/crew/admission/service.py:admit_until_stopped once branch at 428, reckon/crew/admission/service.py:admit_until_stopped loop at 493, reckon/crew/admission/wait_refs.py:derive_wait_refs at 266, reckon/crew/plan_review.py:_plan_inventory_item at 6601, reckon/crew/plan_review.py:section_readiness_rows at 6669, reckon/crew/admission/readiness.py:_readiness_rows_unlocked at 150\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: reckon/crew/admission/selection.py:137 and reckon/crew/admission/wait_refs.py:245 introduce paths that can decide from stale or incomplete dependencies despite the measured speed improvement.\nSCORE evidence: 12\nJUSTIFICATION evidence: tests/test_an_admission_pass_decides_within_its_budget.py:232 compares two head implementations on an all-waiting zero-slot home rather than asserting the required equality with base launch and release decisions.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The seven authored paths listed in the source manifest.md are all within the widened node.write_paths, and primary-history changes precede the worker's two commits.\nSCORE durability: 10\nJUSTIFICATION durability: tests/test_an_admission_pass_decides_within_its_budget.py:195 demonstrably reddens when full parsing is restored, but assertions at 230 and 231 allow shared wrong decisions and never exercise successful launches, releases, or plan-input invalidation.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/admission/wait_refs.py:235 and tests/test_an_admission_pass_decides_within_its_budget.py:10 carry prohibited changelog prose such as used to read and used to pay rather than describing only the mechanism.\nSCORE reuse: 20\nJUSTIFICATION reuse: The added dependency adapter delegates to reckon/_plan_html.py:2625, the body-free specialization extends the existing _plan_inventory_item owner using its parser's _head_declarations, and capability searches over admission population/fingerprint helpers found no existing release-sweep signature owner.\nFINDING reckon/crew/admission/wait_refs.py:245 blocking: parse_meta reads metadata only from text[:16384] through reckon/_plan_html.py:2731, whereas the replaced read_state_file reads all metadata; a valid plan-depends-on tag after a long head or an HTML-escaped reference can therefore be lost or changed, dropping required waits, and the same substitution at reckon/crew/plan_review.py:6697 omits the upstream inventory row.\nFINDING reckon/crew/admission/selection.py:137 blocking: A matching list of run IDs and phases does not establish unchanged readiness inputs; a plan edit changing a queued request's waits between _release_tick and admit_once leaves that signature identical, skips the rederivation that formerly moved it back to awaiting-upstream, and can feed the stale queued request into launch ordering; the once path explicitly settles a landing between these stages at service.py:426.\nFINDING tests/test_an_admission_pass_decides_within_its_budget.py:232 blocking: The decision-equivalence assertion runs both arms on head code after the first sweep already mutated the home, with QUEUED_REQUESTS=0 and zero lane slots; a regression shared by both arms, including dropping every wait or never releasing a request, can pass this comparison, so it does not prove base-equivalent launch and release decisions required by done_when.\nFINDING reckon/crew/admission/wait_refs.py:235 non-blocking: The new docstring says used to read and the new test module says used to pay, violating the user's binding ban on changelog prose in comments and docstrings; rewrite these passages in mechanism terms during the repair node.\n",
+  "review_run_id": "r-20261117T210318326359-review-of-an-admission-pass-decides-within-its-budget-29fd41eb4cb1",
+  "review_text": "VERDICT goal: The live source pointer's node.goal requires unchanged launch decisions within 20 seconds for 240 pointers and 80 requests; reckon/crew/admission/selection.py:137 accelerates the pass but does not invalidate reused waits on changed plan inputs.\nVERDICT done_when: docs/plans/dispatch-admission-and-landing-take-seconds.html#s10 requires timing and base-equivalent launch/release decisions; logs/negative-control-base-pass.log records 101.47921030689031 seconds at base, but tests/test_an_admission_pass_decides_within_its_budget.py:232 compares two head passes and the ten live post-landing receipts remain owed.\nVERDICT write_paths: The source live pointer's node.write_paths grants all seven files authored by commits 2ad4707fd7265240e79f0c5f977ea337725c014b and 29fd41eb4cb1795e476c1ccfed664b38e895738d; the other paths in the base-to-head diff are inherited primary history before 2ad4707f's parent 91edbf4e03783efb724f7a3079df6a37b6a2bff2.\nVERDICT manifest: The source manifest.md names the two authored commits and completed baseline_suite/after_suite arms; their log summaries independently record 60 passed and 63 passed with EXIT=0, yielding zero added failures, while its scoped_gate artifact count is stale at 61 against the log's 63.\nVERDICT diff: Read both authored commits against their parents and inspected the base-to-head history; changes in reckon/crew/admission and reckon/crew/plan_review.py replace parsed dependencies and reuse release sweeps, with correctness and decision-equivalence gaps detailed below.\nCALL_SITES: reckon/crew/admission/service.py:admit_until_stopped once branch at 428, reckon/crew/admission/service.py:admit_until_stopped loop at 493, reckon/crew/admission/wait_refs.py:derive_wait_refs at 266, reckon/crew/plan_review.py:_plan_inventory_item at 6601, reckon/crew/plan_review.py:section_readiness_rows at 6669, reckon/crew/admission/readiness.py:_readiness_rows_unlocked at 150\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: reckon/crew/admission/selection.py:137 and reckon/crew/admission/wait_refs.py:245 introduce paths that can decide from stale or incomplete dependencies despite the measured speed improvement.\nSCORE evidence: 12\nJUSTIFICATION evidence: tests/test_an_admission_pass_decides_within_its_budget.py:232 compares two head implementations on an all-waiting zero-slot home rather than asserting the required equality with base launch and release decisions.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The seven authored paths listed in the source manifest.md are all within the widened node.write_paths, and primary-history changes precede the worker's two commits.\nSCORE durability: 10\nJUSTIFICATION durability: tests/test_an_admission_pass_decides_within_its_budget.py:195 demonstrably reddens when full parsing is restored, but assertions at 230 and 231 allow shared wrong decisions and never exercise successful launches, releases, or plan-input invalidation.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/admission/wait_refs.py:235 and tests/test_an_admission_pass_decides_within_its_budget.py:10 carry prohibited changelog prose such as used to read and used to pay rather than describing only the mechanism.\nSCORE reuse: 20\nJUSTIFICATION reuse: The added dependency adapter delegates to reckon/_plan_html.py:2625, the body-free specialization extends the existing _plan_inventory_item owner using its parser's _head_declarations, and capability searches over admission population/fingerprint helpers found no existing release-sweep signature owner.\nFINDING reckon/crew/admission/wait_refs.py:245 blocking: parse_meta reads metadata only from text[:16384] through reckon/_plan_html.py:2731, whereas the replaced read_state_file reads all metadata; a valid plan-depends-on tag after a long head or an HTML-escaped reference can therefore be lost or changed, dropping required waits, and the same substitution at reckon/crew/plan_review.py:6697 omits the upstream inventory row.\nFINDING reckon/crew/admission/selection.py:137 blocking: A matching list of run IDs and phases does not establish unchanged readiness inputs; a plan edit changing a queued request's waits between _release_tick and admit_once leaves that signature identical, skips the rederivation that formerly moved it back to awaiting-upstream, and can feed the stale queued request into launch ordering; the once path explicitly settles a landing between these stages at service.py:426.\nFINDING tests/test_an_admission_pass_decides_within_its_budget.py:232 blocking: The decision-equivalence assertion runs both arms on head code after the first sweep already mutated the home, with QUEUED_REQUESTS=0 and zero lane slots; a regression shared by both arms, including dropping every wait or never releasing a request, can pass this comparison, so it does not prove base-equivalent launch and release decisions required by done_when.\nFINDING reckon/crew/admission/wait_refs.py:235 non-blocking: The new docstring says used to read and the new test module says used to pay, violating the user's binding ban on changelog prose in comments and docstrings; rewrite these passages in mechanism terms during the repair node.\n",
+  "reviewed_base_sha": "a290999a7dd5aaf099d00cfdf918eb1fde02a878",
+  "reviewed_head_sha": "29fd41eb4cb1795e476c1ccfed664b38e895738d",
+  "reviewed_run_id": "r-20261117T111346928196-an-admission-pass-decides-within-its-budget",
+  "scores": {
+    "durability": 10,
+    "evidence": 12,
+    "fit": 15,
+    "goal_fidelity": 13,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T21:12:34.742781+00:00",
+  "total": 90
+}
