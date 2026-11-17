@@ -118,7 +118,11 @@ def project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
         "backend": "text-lane",
         "launch": "cli",
         "argv": ["codex"],
-        "phase": "starting",
+        # The phase a delivered run's pointer carries: the pointer is advanced
+        # to its manifest's word, so a complete manifest here and a pre-spawn
+        # phase would be one record claiming two different things. A pre-spawn
+        # pointer is read as running and never reaches the review arms.
+        "phase": "complete",
         "process_alive": False,
         "session": "review-session",
         "manifest_path": str(manifest),
