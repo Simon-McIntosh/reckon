@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite.json (45967c6c63, 42 ids) and after_suite.json (05778cd90d, 42 ids), reduced here as set difference",
+  "call_sites": [
+    "reckon/crew/directory.py:342",
+    "reckon/crew/recovery_watch.py:4258",
+    "reckon/crew/forgotten_runs.py:94",
+    "reckon/crew/station_subscriber.py:144",
+    "reckon/serve.py:902",
+    "reckon/roadmap.py:3224",
+    "reckon/crew/promotion_release.py:1169"
+  ],
+  "completed_at": "2026-11-17T15:56:02.033Z",
+  "dispatched_at": "2026-11-17T15:55:38Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-lane-follows-its-run.html",
+      "line": "35",
+      "severity": "non-blocking",
+      "text": "non-blocking: the closing bench claims a pair carrying the same 42 ids with none added and none fixed, but its two arms are the same code \u2014 head 05778cd90d differs from primary 45967c6c63 only in this fragment (git diff 45967c6c63 05778cd90d: 1 file changed, 34 insertions) \u2014 so an equal column is guaranteed by construction and cannot witness that the merge added no failure; the base-anchored pair (logs/base-arm.ids 53 ids, logs/after-arm.ids 29 ids) is the arm that measures anything."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read commit by commit over 24bc79d8..8851d154 \u2014 55e48f3bd8 adds 13 lines narrowing pre_spawn_waiting in reckon/crew/recovery_classification.py, b0fc763fc0, 7fd9d970ac, 2091615cbc, 1f28851dd2 and 8851d154 touch only the evidence fragment, and the merges 45e653ee77 and 05778cd90d take primary whole, so the delivered product tree is primary's and the node's own predicate is not in it.",
+    "done_when": "the measure is the named file green at head as an all_debug job with SLURM_JOB_ID unset, a base control red beforehand, and an importer arm adding no failure; the manifest's gate-head.log (6 passed, EXIT=0), base-control.log (4 failed, 2 passed, EXIT=1 at 24bc79d8) and baseline-arm-primary.log/after-arm-head.log (42 ids each side) are the recorded runs.",
+    "goal": "the goal is that tests/test_review_lane_follows_its_run.py passes in full, and logs/gate-head.log records \"6 passed in 51.54s\" with EXIT=0 at 8851d154, while that file is byte-identical over the range (git diff 24bc79d8 8851d154 -- tests/test_review_lane_follows_its_run.py is empty).",
+    "manifest": "read; it names eight commits, the gate, control and arm logs, states the two failing ids' provenance, and says the landing merge took primary's predicates whole, which the empty git diff 70e048c78f 45e653ee77 -- reckon tests and git diff 45967c6c63 05778cd90d -- reckon tests confirm.",
+    "write_paths": "the declared paths are reckon, tests and the two queued-work-needs-no-workaround evidence paths; every path the node authored is inside them \u2014 reckon/crew/recovery_classification.py in 55e48f3bd8 and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-lane-follows-its-run.html in four docs commits \u2014 and the remainder of the 1165-path range is primary's, since git diff 45967c6c63 05778cd90d reports that one file changed with 34 insertions."
+  },
+  "justifications": {
+    "durability": "tests/test_review_lane_follows_its_run.py:234 asserts report[\"dispatched\"] is True, which reddens if the pre-spawn label again outranks a delivered manifest \u2014 four ids are red at 24bc79d8 in logs/base-control.log \u2014 though this run added no assertion of its own and the guard now covers primary's predicate rather than the discarded one.",
+    "evidence": "logs/gate-head.log and logs/base-control.log measure the file the done_when names, but the fragment's closing arm at line 35 compares 05778cd90d against 45967c6c63, two trees whose reckon and tests are identical, so that zero is structural rather than measured.",
+    "fit": "the landed tree's reckon/crew/recovery_classification.py is primary's own idiom with its pre_spawn_reads_as_claim arm and no name the node introduced, the node's 55e48f3bd8 comment matching the surrounding block.",
+    "goal_fidelity": "the named file reads 6 passed EXIT=0 at 8851d154 in logs/gate-head.log, and the done_when itself permits delivering that passing run after merging primary.",
+    "reuse": "no definition survives at head from this run; the intermediate predicate in 55e48f3bd8 was superseded by the owner of that capability, reckon/crew/recovery_classification.py's pre_spawn_reads_as_claim, which the merge adopted whole rather than forking.",
+    "scope_discipline": "the node's authored commits touch only reckon/crew/recovery_classification.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-lane-follows-its-run.html, both declared, and the rest of the range is merged primary."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that tests/test_review_lane_follows_its_run.py passes in full, and logs/gate-head.log records \"6 passed in 51.54s\" with EXIT=0 at 8851d154, while that file is byte-identical over the range (git diff 24bc79d8 8851d154 -- tests/test_review_lane_follows_its_run.py is empty).\nVERDICT done_when: the measure is the named file green at head as an all_debug job with SLURM_JOB_ID unset, a base control red beforehand, and an importer arm adding no failure; the manifest's gate-head.log (6 passed, EXIT=0), base-control.log (4 failed, 2 passed, EXIT=1 at 24bc79d8) and baseline-arm-primary.log/after-arm-head.log (42 ids each side) are the recorded runs.\nVERDICT write_paths: the declared paths are reckon, tests and the two queued-work-needs-no-workaround evidence paths; every path the node authored is inside them \u2014 reckon/crew/recovery_classification.py in 55e48f3bd8 and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-lane-follows-its-run.html in four docs commits \u2014 and the remainder of the 1165-path range is primary's, since git diff 45967c6c63 05778cd90d reports that one file changed with 34 insertions.\nVERDICT manifest: read; it names eight commits, the gate, control and arm logs, states the two failing ids' provenance, and says the landing merge took primary's predicates whole, which the empty git diff 70e048c78f 45e653ee77 -- reckon tests and git diff 45967c6c63 05778cd90d -- reckon tests confirm.\nVERDICT diff: read commit by commit over 24bc79d8..8851d154 \u2014 55e48f3bd8 adds 13 lines narrowing pre_spawn_waiting in reckon/crew/recovery_classification.py, b0fc763fc0, 7fd9d970ac, 2091615cbc, 1f28851dd2 and 8851d154 touch only the evidence fragment, and the merges 45e653ee77 and 05778cd90d take primary whole, so the delivered product tree is primary's and the node's own predicate is not in it.\nCALL_SITES: reckon/crew/directory.py:342, reckon/crew/recovery_watch.py:4258, reckon/crew/forgotten_runs.py:94, reckon/crew/station_subscriber.py:144, reckon/serve.py:902, reckon/roadmap.py:3224, reckon/crew/promotion_release.py:1169\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the named file reads 6 passed EXIT=0 at 8851d154 in logs/gate-head.log, and the done_when itself permits delivering that passing run after merging primary.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/gate-head.log and logs/base-control.log measure the file the done_when names, but the fragment's closing arm at line 35 compares 05778cd90d against 45967c6c63, two trees whose reckon and tests are identical, so that zero is structural rather than measured.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the node's authored commits touch only reckon/crew/recovery_classification.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-lane-follows-its-run.html, both declared, and the rest of the range is merged primary.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_review_lane_follows_its_run.py:234 asserts report[\"dispatched\"] is True, which reddens if the pre-spawn label again outranks a delivered manifest \u2014 four ids are red at 24bc79d8 in logs/base-control.log \u2014 though this run added no assertion of its own and the guard now covers primary's predicate rather than the discarded one.\nSCORE fit: 19\nJUSTIFICATION fit: the landed tree's reckon/crew/recovery_classification.py is primary's own idiom with its pre_spawn_reads_as_claim arm and no name the node introduced, the node's 55e48f3bd8 comment matching the surrounding block.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition survives at head from this run; the intermediate predicate in 55e48f3bd8 was superseded by the owner of that capability, reckon/crew/recovery_classification.py's pre_spawn_reads_as_claim, which the merge adopted whole rather than forking.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-lane-follows-its-run.html:35 non-blocking: the closing bench claims a pair carrying the same 42 ids with none added and none fixed, but its two arms are the same code \u2014 head 05778cd90d differs from primary 45967c6c63 only in this fragment (git diff 45967c6c63 05778cd90d: 1 file changed, 34 insertions) \u2014 so an equal column is guaranteed by construction and cannot witness that the merge added no failure; the base-anchored pair (logs/base-arm.ids 53 ids, logs/after-arm.ids 29 ids) is the arm that measures anything.\n",
+  "review_run_id": "r-20261117T155408793365-review-of-qwnw-red-file-review-lane-follows-its-run-8851d1545126",
+  "reviewed_base_sha": "24bc79d8ee8e73d6d262d0879a27cd27d5a4048c",
+  "reviewed_head_sha": "8851d1545126f3d04330a8eb0564c42757ee50a1",
+  "reviewed_run_id": "r-20261116T104406455270-qwnw-red-file-review-lane-follows-its-run",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T16:20:43.094885+00:00",
+  "total": 109
+}
