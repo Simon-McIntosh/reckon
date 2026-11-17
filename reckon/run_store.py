@@ -199,6 +199,72 @@ _STORE_SCHEMA_VERSION = hashlib.sha256(
 ).hexdigest()
 
 
+class UnreadableRunStoreError(RuntimeError):
+    """A store that exists but cannot answer for itself.
+
+    Raised by the read-only readers — the ones that cannot migrate, rebuild or
+    repair — so a damaged file, an unattachable archive or a runs table that
+    lacks a column a read selects reaches the caller as the failure it is,
+    rather than as a project that happens to hold no runs.
+    """
+
+
+def _unreadable(path: Path, cause: str) -> UnreadableRunStoreError:
+    """The one refusal message: which store, and why it could not be read."""
+    return UnreadableRunStoreError(f"cannot read the run store at {path}: {cause}")
+
+
+def _table_columns(
+    connection: sqlite3.Connection, schema: str = "main"
+) -> frozenset[str]:
+    """The columns one runs table carries, empty when the table is absent."""
+    try:
+        described = connection.execute(f'SELECT * FROM "{schema}"."runs" LIMIT 0')  # noqa: S608 - a fixed table name
+    except sqlite3.OperationalError:
+        return frozenset()
+    return frozenset(str(desc[0]) for desc in described.description)
+
+
+def _refuse_owed_migration(connection: sqlite3.Connection, path: Path) -> None:
+    """Refuse a store that owes its migration rather than answer it partially.
+
+    The read-only readers cannot run the backfill themselves: opening the store
+    through :class:`RunStore` is a write, and that is what migrates it. A store
+    whose ``runs`` table predates the current declaration would otherwise
+    answer as though it held fewer runs than it does — a runs table without the
+    ``payload`` column reports no record at all while the id columns still list
+    every id.
+
+    The table's own shape is what decides, not the schema record: a store whose
+    columns are complete reads correctly whatever ``store_meta`` says, and a
+    store carrying every column but no version record is the state a migration
+    leaves when it commits the backfill and is interrupted before writing that
+    record.
+    """
+    try:
+        columns = _table_columns(connection)
+    except sqlite3.Error as exc:
+        raise _unreadable(path, f"{type(exc).__name__}: {exc}") from exc
+    missing = sorted(_RUNS_COLUMNS - columns)
+    if not missing:
+        return
+    raise _unreadable(
+        path,
+        "it owes the schema migration "
+        f"(the runs table has no {', '.join(missing)} column, current "
+        f"{_STORE_SCHEMA_VERSION[:12]}); open it through RunStore, which "
+        "migrates it before answering",
+    )
+
+
+def _open_readonly(path: Path) -> sqlite3.Connection:
+    """Open an existing store read-only, refusing one that will not open."""
+    try:
+        return sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)
+    except (OSError, sqlite3.Error) as exc:
+        raise _unreadable(path, f"{type(exc).__name__}: {exc}") from exc
+
+
 # The single place the store's location is resolved. The default keeps the
 # database beside the committed ledger under the crew config home; the
 # override moves it wholesale, so a deployment can hold the single-writer
@@ -598,14 +664,28 @@ def backfill_revisions(
 
 
 def _read_attached_tables(connection: sqlite3.Connection, path: Path) -> list[str]:
-    """The tables one store's runs may answer from, hot first then retired."""
+    """The tables one store's runs may answer from, hot first then retired.
+
+    An archive that exists but cannot be attached raises rather than being
+    passed over. Continuing against the main database alone would answer this
+    project's history without its retired rows, which is the loss the read is
+    meant to prevent; the attach is also probed, because SQLite attaches a file
+    lazily and a damaged archive would otherwise fail inside the record read
+    with the failure charged to the main store.
+    """
     tables = ["main"]
     archive = _archive_path(path)
     if archive.is_file():
-        connection.execute(
-            "ATTACH DATABASE ? AS archive",
-            (f"{archive.resolve().as_uri()}?mode=ro",),
-        )
+        try:
+            connection.execute(
+                "ATTACH DATABASE ? AS archive",
+                (f"{archive.resolve().as_uri()}?mode=ro",),
+            )
+            connection.execute("SELECT 1 FROM archive.runs LIMIT 0").fetchall()
+        except (OSError, sqlite3.Error) as exc:
+            raise _unreadable(
+                path, f"its archive {archive} cannot be attached: {exc}"
+            ) from exc
         tables.append("archive")
     return tables
 
@@ -730,8 +810,9 @@ def stored_run_rows(
     """Read selected stored history without writing or consulting run files.
 
     None means the store is absent. An existing empty store answers an empty
-    list; an unreadable store raises rather than looking like an empty project.
-    Retired rows retain both halves of their record in the attached archive.
+    list; an unreadable store raises :class:`UnreadableRunStoreError` naming the
+    store and the cause rather than looking like an empty project. Retired rows
+    retain both halves of their record in the attached archive.
 
     ``path`` names the store to read and falls back to the resolved location,
     so a caller comparing two stores — or a probe holding its own fixture —
@@ -740,8 +821,9 @@ def stored_run_rows(
     target = store_path() if path is None else Path(path)
     if not target.exists():
         return None
-    connection = sqlite3.connect(f"{target.resolve().as_uri()}?mode=ro", uri=True)
+    connection = _open_readonly(target)
     try:
+        _refuse_owed_migration(connection, target)
         schemas = _read_attached_tables(connection, target)
         records = []
         for run_id, payload, detail in _record_rows(
@@ -767,7 +849,7 @@ def stored_run_rows(
                 )
         return records
     except sqlite3.Error as error:
-        raise RuntimeError(f"cannot read the run store at {target}: {error}") from error
+        raise _unreadable(target, f"{type(error).__name__}: {error}") from error
     finally:
         connection.close()
 
@@ -1874,23 +1956,27 @@ def indexed_run_ids(project: str) -> set[str] | None:
     path = store_path()
     if not path.exists():
         return None
-    connection = sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)
+    connection = _open_readonly(path)
     try:
-        ids = {
-            str(row[0])
-            for row in connection.execute(
-                "SELECT run_id FROM runs WHERE project = ?", (project,)
-            )
-        }
-        if connection.execute(
-            "SELECT 1 FROM sqlite_master WHERE name = 'retired_runs'"
-        ).fetchone():
-            ids.update(
+        _refuse_owed_migration(connection, path)
+        try:
+            ids = {
                 str(row[0])
                 for row in connection.execute(
-                    "SELECT run_id FROM retired_runs WHERE project = ?", (project,)
+                    "SELECT run_id FROM runs WHERE project = ?", (project,)
                 )
-            )
+            }
+            if connection.execute(
+                "SELECT 1 FROM sqlite_master WHERE name = 'retired_runs'"
+            ).fetchone():
+                ids.update(
+                    str(row[0])
+                    for row in connection.execute(
+                        "SELECT run_id FROM retired_runs WHERE project = ?", (project,)
+                    )
+                )
+        except sqlite3.Error as exc:
+            raise _unreadable(path, f"{type(exc).__name__}: {exc}") from exc
         return ids
     finally:
         connection.close()
