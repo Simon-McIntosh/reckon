@@ -1080,6 +1080,35 @@ PROTECTED_PATHS_KEY = "protected_paths"
 UNPROTECTED_PATHS_KEY = "unprotected_paths"
 
 
+def _shared_environment_paths(home: Path) -> list[Path]:
+    """Seal install storage and registered environments through their aliases.
+
+    A checkout overlay cannot seal a symlink's external target. Use the same
+    environment and interpreter resolvers as provisioning and health checks.
+    An explicitly supplied foreign home reads its own registry, so composing
+    a synthetic home never consults the operator's registered checkouts.
+    """
+    from reckon._store import _mounts_path
+    from reckon.crew.fleet_supervisor import (
+        environment_interpreters,
+        resolved_environment,
+    )
+    from reckon.flight import mounted_project_docs
+
+    data = Path(os.environ.get("XDG_DATA_HOME", home / ".local/share"))
+    install = Path(os.environ.get("UV_PYTHON_INSTALL_DIR", data / "uv/python"))
+    paths = [home / ".local/share/uv/python", install.expanduser()]
+    registry = (
+        _mounts_path() if home == Path.home() else home / ".config/reckon/mounts.json"
+    )
+    for docs in mounted_project_docs(registry).values():
+        repository = docs.parent
+        paths.extend(
+            [resolved_environment(repository), *environment_interpreters(repository)]
+        )
+    return paths
+
+
 def _named_protected_paths(home: str | Path | None = None) -> list[Path]:
     """Return every path in the fence's shipped default set, home-relative.
 
@@ -1116,6 +1145,7 @@ def _named_protected_paths(home: str | Path | None = None) -> list[Path]:
         root / ".local" / "bin",
         root / "Code" / ".reckon-worktrees",
     ]
+    named.extend(_shared_environment_paths(root))
     checkouts = root / "Code"
     if checkouts.is_dir():
         named.extend(
