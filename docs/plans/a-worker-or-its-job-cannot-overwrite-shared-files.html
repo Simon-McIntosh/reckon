@@ -25,7 +25,7 @@
   <title>A Worker Or Its Job Cannot Overwrite Shared Files | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="16">
+<meta name="plan-version" content="17">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -120,7 +120,13 @@
 
     <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s7" data-id="c-close-s7" data-who="reckon-build" data-when="2026-11-17T10:53:00Z">
-    <div class="r-comment-body"><p>§7 landed through the crew's own promotion after its review (landing commit <code>0388ce623c</code>). A worker&#x27;s gate command is composed for it, so no hand-written wrapper carries the redirect.</p></div>
+    <div class="r-comment-body"><p>§7 landed through the crew's own promotion after its review (landing commit <code>0388ce623c</code>). A worker's gate command is composed for it, so no hand-written wrapper carries the redirect.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261117T085844992573-review-of-a-worker-gates-without-a-wrapper-4e038329c87e" data-who="reckon-build" data-when="2026-11-17T09:06:29Z">
+    <div class="r-comment-body"><p>Independent revision-bound review parsed; all six dimensions scored 20/20; no findings; zero added scoped or importer failure ids; coordinator can consume the stored record.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261117T081605545548-a-worker-gates-without-a-wrapper" data-who="reckon-build" data-when="2026-11-17T08:58:29Z">
+    <div class="r-comment-body"><p>Extended verify-gate and suite run with live-worker scoped gates and independently resolved base/head arms, and composed both executable calls in the worker prompt while leaving node.py unchanged. Logs are exclusively created beside the recorded manifest and keep revision, command and terminal receipt. Base scoped suite: 64 passed; final head: 72 passed. Withheld-call control: 1 expected failure. Two literal prompt strings produced three passing all_debug arms and a promotion-accepted manifest with zero wrapper scripts. Importers: 23 failed / 951 passed at base and the same 23 failed / 958 passed at the delivered head, across 79 selected importer files; zero added failure ids.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-11-17T04:19:00Z">
     <div class="r-comment-body"><p>§2 landed by direct merge (head <code>5372106fac</code>), on the lead's instruction. One shared resolver and permission check keep every interpreter a registered checkout resolves to free of write permission, at worktree provisioning and on each fleet health sample, which now reports the count still writable. Redirects onto both decoys were denied with size, time and digest unchanged, and 495 importer cases add no failure. The final head was reviewed after an earlier landing attempt was refused for want of that review. Merged candidate gate: 28 passed in 10.98s.</p></div>
@@ -173,12 +179,6 @@
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261116T233347554815-a-gate-creates-its-log" data-who="reckon-build" data-when="2026-11-17T04:24:53Z">
     <div class="r-comment-body"><p>Execution logs are exclusively created and earlier receipts are preserved; repeated candidate replays now choose a fresh internal path using the existing helper. Repaired armed suite: 114 passed in 72.55s (0:01:12); importer comparison has 0 added ids versus the original base, with 8 shared failures. Reversing answering commit 9518701b7c produces 1 failed in 5.75s in the exact named retry check.</p></div>
 </div>
-<div class="r-comment" data-section="s7" data-id="c-run-r-20261117T085844992573-review-of-a-worker-gates-without-a-wrapper-4e038329c87e" data-who="reckon-build" data-when="2026-11-17T09:06:29Z">
-    <div class="r-comment-body"><p>Independent revision-bound review parsed; all six dimensions scored 20/20; no findings; zero added scoped or importer failure ids; coordinator can consume the stored record.</p></div>
-</div>
-<div class="r-comment" data-section="s7" data-id="c-run-r-20261117T081605545548-a-worker-gates-without-a-wrapper" data-who="reckon-build" data-when="2026-11-17T08:58:29Z">
-    <div class="r-comment-body"><p>Extended verify-gate and suite run with live-worker scoped gates and independently resolved base/head arms, and composed both executable calls in the worker prompt while leaving node.py unchanged. Logs are exclusively created beside the recorded manifest and keep revision, command and terminal receipt. Base scoped suite: 64 passed; final head: 72 passed. Withheld-call control: 1 expected failure. Two literal prompt strings produced three passing all_debug arms and a promotion-accepted manifest with zero wrapper scripts. Importers: 23 failed / 951 passed at base and the same 23 failed / 958 passed at the delivered head, across 79 selected importer files; zero added failure ids.</p></div>
-</div>
 <div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-11-17T00:59:00Z">
     <div class="r-comment-body"><p>§8 landed by direct merge (head <code>98fc83f81a</code>), on the lead's instruction. A shell holds the fleet allocation and restarts the supervisor under the supervisor's own backoff rule: in the all_debug rehearsal both session stand-ins and the step were running thirty seconds after the supervisor was killed, their pids unchanged, and a deliberate retirement exits. First review 101 of 120 with one blocking reuse finding, repaired; re-review 120 of 120. Merged candidate gate: 26 passed, 1 skipped in 47.58s.</p></div>
 </div>
@@ -193,6 +193,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261117T095709800650-review-of-a-submitted-job-runs-inside-the-fence-a4f84da5743e" data-who="reckon-build" data-when="2026-11-17T10:05:31Z">
     <div class="r-comment-body"><p>Independent review of a4f84da5743e6e41c9ed4c0bca810680dd9d40c0 records one blocking production PATH-wiring gap and canonical added_failure_count 0; importer caveat retained separately.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261117T111512021799-review-of-a-submitted-job-runs-inside-the-fence-c48178ede7c5" data-who="reckon-build" data-when="2026-11-17T11:21:56Z">
+    <div class="r-comment-body"><p>Parsed incremental review of a4f84da5743e6e41c9ed4c0bca810680dd9d40c0..c48178ede7c58296198371678d5a9b168157ec0a stored at both granted paths; six scores total 119/120, no findings, zero added canonical failures; prior PATH finding answered.</p></div>
 </div>
 </section>
   </main>
