@@ -259,6 +259,7 @@ def test_late_display_does_not_make_a_complete_history_unknown(clock):
     receipts.record_stage(run_id, "review_record_written", attempt="reviewer")
     census = receipts.stage_census([run_id])
     assert census["unknown_seconds"] == 0
+    assert census["intervals"][3]["stage"] == "review_admitted"
 
 
 def test_saturation_accounts_for_the_tail_as_unknown(clock):

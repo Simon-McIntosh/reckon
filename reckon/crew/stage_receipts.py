@@ -211,6 +211,7 @@ def stage_census(run_ids: Iterable[str], *, until: str | None = None) -> dict[st
         seen: set[tuple[str, str]] = set()
         shown = any(row["stage"] == "delivery_shown" for row in dated)
         pending_attempts: set[str] = set()
+        active_stage = "delivery_recorded"
         for left, right in itertools.pairwise(dated):
             seen.add((left["stage"], left["attempt"]))
             if left["stage"] == "promotion_attempt":
@@ -218,7 +219,14 @@ def stage_census(run_ids: Iterable[str], *, until: str | None = None) -> dict[st
             elif left["stage"] == "promotion_outcome":
                 pending_attempts.discard(left["attempt"])
             duration = (parse_utc(right["at"]) - parse_utc(left["at"])).total_seconds()
-            stage = left["stage"]
+            # Display is an independent branch: a pane shown late cannot move
+            # time already spent on a review back onto session notification.
+            if left["stage"] not in {
+                "delivery_recorded",
+                "delivery_shown",
+            } or active_stage in {"delivery_recorded", "delivery_shown"}:
+                active_stage = left["stage"]
+            stage = active_stage
             expected = _PREVIOUS.get(right["stage"])
             present = (
                 (expected, right["attempt"]) in seen
