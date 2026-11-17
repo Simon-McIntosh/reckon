@@ -25,7 +25,7 @@
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="8">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -166,6 +166,9 @@
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261116T234905696475-review-of-a-parked-request-is-reconsidered-while-slots-are-full-be128087c15f" data-who="reckon-build" data-when="2026-11-16T23:56:14Z">
     <div class="r-comment-body"><p>Independent review of 5345b861002afdfccdcf9e8a07ff74a87deccf1d..be128087c15fa9b69c61b3ae793440cabac68d9a stored as parsed; all six dimensions 20/20, no findings, zero added failures; canonical and revision records pass crew check.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261116T232538118202-a-parked-request-is-reconsidered-while-slots-are-full" data-who="reckon-build" data-when="2026-11-16T23:45:35Z">
+    <div class="r-comment-body"><p>Every parked promotion is rechecked before slot admission and newly ready requests rejoin fair ordering without using a slot; 2/2 repaired reviews refresh under full slots and promote in order, incomplete reviews keep their reason, and 100/100 incomplete and complete reviews recheck in 0.302077 s and 0.300292 s respectively; 62 scoped checks pass and 115 importer cases add zero failures (110 pass, the same 5 fail in both arms).</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-11-16T23:25:00Z">
     <div class="r-comment-body"><p>§2 landed by direct merge at <code>112bbec4b6</code> (head <code>18f4fdaf71</code>), on the lead's instruction, because its own promotion request waited in the queue it replaces. The first review gave 109 of 120 with two blocking findings: a running or parked request took a simulated turn, and the report's window option ordered differently from the drain. Both were repaired with a test each, and the re-review of the repaired head gave 120 of 120 with no findings. In the 70-request case the later sessions' requests move from positions 68 and 69 to 3 and 4. A merged candidate with §3 passed 34 of 36 focused tests; the two failures are in the base's own failure list.</p></div>
