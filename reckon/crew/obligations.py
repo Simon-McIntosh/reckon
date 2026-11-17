@@ -2849,6 +2849,8 @@ def _review_duty_item(
     may leave them out, and the queued reading reads the pointers and the
     ordering for itself when it needs them.
     """
+    if (row.get("delivery") or {}).get("status") == "promotion-queued":
+        return None
     age = _row_age(row, now=now)
     classification = str(row.get("classification") or "")
     if pointer is not None and not recovery_classification.completion_offer(
@@ -3110,6 +3112,10 @@ def _review_duty_item(
                     item["overdue_remedy"] = overdue_remedy
                 item["review_owner"] = "reflex"
                 item["reflex_window_seconds"] = _reflex_review_window_seconds()
+    if item["kind"] in {"review-ready", "promotable-stale"} and pointer is not None:
+        item["next_command"] = recovery_classification._promotion_command(
+            str(row.get("run_id") or ""), pointer, list(row.get("manifest_commits") or [])
+        )
     return item
 
 
@@ -4637,6 +4643,8 @@ def _obligations_view(
         ),
         "unreconciled_runs": int(unreconciled),
     }
+    delivery = recovery_classification.delivery_summary(classified, session=session)
+    summary.update({key: value for key, value in delivery.items() if key != "remove_pointers"})
     view = {
         "project": project,
         "session": session,
@@ -4654,6 +4662,7 @@ def _obligations_view(
             vocabulary=DUTY_ROW_FIELDS,
             sections=sections,
         ),
+        "remove_pointers": delivery["remove_pointers"],
         "summary": summary,
     }
     # Carried only when the session has one. The published snapshot is sliced

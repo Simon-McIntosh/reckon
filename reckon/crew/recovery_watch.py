@@ -1504,6 +1504,10 @@ def _snapshot_reuse_key(record: Mapping[str, Any]) -> str | None:
         parts.append(
             f"promote={_file_identity(promote) if promote is not None else 'absent'}"
         )
+    from .promotion_requests import _receipt_path, _request_path
+
+    parts.append(f"promotion-request={_file_identity(_request_path(run_id))}")
+    parts.append(f"promotion-receipt={_file_identity(_receipt_path(run_id))}")
     return "|".join(parts)
 
 
@@ -1720,6 +1724,7 @@ def _compute_watch_snapshot(
         # carries it under its own name rather than as a flattened display flag.
         "lineage": pointer.get("lineage"),
         "state": verdict["state"],
+        "delivery": row.get("delivery"),
         "classification": row["classification"],
         "process_alive": row["process_alive"],
         "liveness_proven": row["liveness_proven"],
@@ -2140,6 +2145,13 @@ def _fleet_counts(
         "unpromoted": sum(state in FLEET_UNPROMOTED_STATES for state in states)
         - repairing,
     }
+    if any("delivery" in row and row["delivery"] is not None for row in rows):
+        from .recovery_classification import delivery_summary
+
+        delivery = delivery_summary(rows)
+        counts["unpromoted"] = delivery["delivered"]
+        counts["promotion_queued"] = delivery["promotion_queued"]
+        counts["oldest_promotion_position"] = delivery["oldest_promotion_position"]
     if reviewing:
         counts["reviewing"] = reviewing
     waiting = held
@@ -2779,6 +2791,8 @@ def _watch_transition(
         # and the columns after them never move.
         "reviewing": counts.get("reviewing", 0),
         "blocked": counts["blocked"],
+        "promotion_queued": counts.get("promotion_queued", 0),
+        "oldest_promotion_position": counts.get("oldest_promotion_position"),
         "unpromoted": counts["unpromoted"],
         # The stuck count sits beside the bucket counters rather than inside
         # them: a stuck request keeps the cell its phase belongs to, so this
@@ -3142,6 +3156,7 @@ def _session_counts_in_other_projects(project: str, session: str) -> dict[str, i
         "working": 0,
         "reviewing": 0,
         "blocked": 0,
+        "promotion_queued": 0,
         "unpromoted": 0,
         "stuck": 0,
     }
@@ -3252,6 +3267,7 @@ def _scoped_watch_event(event: Mapping[str, Any], session: str) -> dict[str, Any
         "working": int(own.get("working") or 0),
         "reviewing": int(own.get("reviewing") or 0),
         "blocked": int(own.get("blocked") or 0),
+        "promotion_queued": int(own.get("promotion_queued") or 0),
         "unpromoted": int(own.get("unpromoted") or 0),
         "stuck": int(own.get("stuck") or 0),
     }
@@ -3267,6 +3283,7 @@ def _scoped_watch_event(event: Mapping[str, Any], session: str) -> dict[str, Any
             "working",
             "reviewing",
             "blocked",
+            "promotion_queued",
             "unpromoted",
             "stuck",
         ):
@@ -3278,6 +3295,8 @@ def _scoped_watch_event(event: Mapping[str, Any], session: str) -> dict[str, Any
     scoped["working"] = total.get("working", 0)
     scoped["reviewing"] = total.get("reviewing", 0)
     scoped["blocked"] = total.get("blocked", 0)
+    scoped["promotion_queued"] = total.get("promotion_queued", 0)
+    scoped["oldest_promotion_position"] = own.get("oldest_promotion_position")
     scoped["unpromoted"] = total.get("unpromoted", 0)
     scoped["project_working"] = project_counts.get("working", 0)
     scoped["project_reviewing"] = project_counts.get("reviewing", 0)
