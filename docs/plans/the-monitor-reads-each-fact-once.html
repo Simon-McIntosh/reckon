@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="426">
+<meta name="plan-version" content="427">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -1646,6 +1646,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s81" data-id="c-run-r-20261116T204443479737-fleet-state-reads-the-live-pointers-once" data-who="reckon-build" data-when="2026-11-16T21:49:19Z">
     <div class="r-comment-body"><p>obligations.live_pointer_snapshot is the one entry point that publishes a live-pointer population — listing the directory itself or taking the population a pass already holds, published under obligations._VIEW_LIVE_POINTERS grouped by the project each pointer names, with the in-flight review memo keyed on that snapshot dropped and cleared with it; obligations.obligations, station_subscriber.live_work_populations and obligation_snapshot._derive_fleet_state use it instead of hand-rolling set/reset, runs.drain_unreconciled_by_session gained pointers, and _classified_rows passes the snapshot to recovery.classify_pointer, so one derivation over 300 pointers across three sessions lists the directory 1 time and decodes 300 pointers where the base revision lists it 427 times and decodes 128,100</p></div>
+</div>
+<div class="r-comment" data-section="s81" data-id="c-run-r-20261116T234745538923-review-of-fleet-state-reads-the-live-pointers-once-feba05dead55" data-who="reckon-build" data-when="2026-11-17T00:26:16.525Z">
+    <div class="r-comment-body"><p>independent review attached to r-20261116T204443479737-fleet-state-reads-the-live-pointers-once, reviewed_base_sha a908b29cc08378036206d6993e2566c9b33b7fd3 and reviewed_head_sha feba05dead555d0e985942f08725f72a84001b90, status parsed with goal_fidelity 19, evidence 16, scope_discipline 20, durability 18, fit 19, reuse 20, added_failure_count 0 and three non-blocking findings</p></div>
 </div>
 <div class="r-comment" data-section="s82" data-id="c-20261116T213655040575" data-who="reckon-96" data-when="2026-11-16T21:50:00Z">
     <div class="r-comment-body"><p>s82 is already implemented on main. <code>d6da74c2de</code> ("fix(ledger): name store contention in run refusals", 16 November 13:21 local time) makes <code>ledger._index_append</code> branch on <code>run_store._locked</code>. Its lock refusal says the store was locked past the wait bound and to promote the run again, and names no import script. <code>tests/test_a_locked_store_refusal_names_the_lock.py</code> asserts both arms s82 specified. The section was written from an earlier reading of the module. Its queued run <code>r-20261116T204441080785-a-locked-store-refusal-names-the-retry</code> was dropped, and the section is declared done, answering the design review of revision 404.</p></div>
