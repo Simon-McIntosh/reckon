@@ -11,6 +11,7 @@ import pytest
 
 from reckon.crew.dispatch_sessions import _apply_orientation_check
 from reckon.crew.recovery_classification import classify_pointer
+from reckon.crew.runs import run_dir
 
 
 def _git(tree: Path, *args: str) -> str:
@@ -38,7 +39,8 @@ def delivered(tmp_path: Path) -> tuple[dict, Path]:
     _git(tree, "config", "user.name", "Test")
     base = _commit(tree, "seed.txt")
     head = _commit(tree, "allowed.txt")
-    manifest = tmp_path / "manifest.md"
+    manifest = run_dir("delivered-run") / "manifest.md"
+    manifest.parent.mkdir(parents=True)
     record = {
         "run_id": "delivered-run",
         "project": "fixture",
@@ -132,7 +134,8 @@ def test_a_nonancestor_pointer_base_stays_blocked(delivered):
     assert classify_pointer(original)["classification"] == "blocked"
 
 
-def test_a_commit_from_another_worktree_stays_blocked(delivered, tmp_path):
+@pytest.mark.parametrize("described", [False, True])
+def test_a_commit_from_another_worktree_stays_blocked(delivered, tmp_path, described):
     record, manifest = delivered
     tree = Path(record["worktree"])
     foreign = tmp_path / "foreign-tree"
@@ -142,7 +145,8 @@ def test_a_commit_from_another_worktree_stays_blocked(delivered, tmp_path):
         # Make the foreign object distinct from the run's own commit.
         _git(foreign, "commit", "--allow-empty", "-m", "foreign work")
         head = _git(foreign, "rev-parse", "HEAD")
-        _report(record, manifest, commits=[head], orientation_worktree=str(foreign))
+        citation = f"{head} foreign work" if described else head
+        _report(record, manifest, commits=[citation], orientation_worktree=str(foreign))
         original = copy.deepcopy(record)
         _apply_orientation_check(record, manifest)
         assert record["phase"] == "blocked", record
@@ -215,3 +219,21 @@ def test_a_classification_rechecks_scope_after_the_head_moves(delivered):
     classified = classify_pointer(record)
     assert classified["classification"] == "blocked", classified
     assert "outside.txt" in classified["detail"]
+
+
+@pytest.mark.parametrize("form", ["absence", "comma-separated-absence", "described"])
+def test_free_text_commit_fields_do_not_imply_foreign_work(delivered, form):
+    record, manifest = delivered
+    head = _git(Path(record["worktree"]), "rev-parse", "HEAD")
+    commits = {
+        "absence": "none (read-only review; findings written to the record)",
+        "comma-separated-absence": "none, read-only report with no repository work",
+        "described": f"{head} fix: deliver content",
+    }[form]
+    _report(record, manifest, commits=commits, orientation_base_sha="mistyped")
+    original = copy.deepcopy(record)
+    _apply_orientation_check(record, manifest)
+    assert record["phase"] == "complete", record
+    assert record["orientation_check"]["matched"] is True
+    assert "base_sha" in record["orientation_check"]["repaired_echo"]
+    assert classify_pointer(original)["classification"] == "promotable"

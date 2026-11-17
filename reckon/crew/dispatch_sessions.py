@@ -380,6 +380,7 @@ def _orientation_substance(
     """Verify the issued tree, ancestry and commit scope independently of echoes."""
     from reckon.crew.promotion_evidence import _committed_scope
     from reckon.crew.promotion_scope import _outside_declared_scope
+    from reckon.crew.reports import _COMMIT_IDENTIFIER_TOKEN
 
     worktree = Path(str(record.get("worktree") or ""))
     if not record.get("worktree") or not worktree.is_dir():
@@ -398,8 +399,14 @@ def _orientation_substance(
             f"base {base!r} is not a verified ancestor of the worktree head: {error}"
         ]
     for commit in reported.get("commits") or ():
+        # An object identifier can establish foreign work. Free-text absence
+        # declarations and citation descriptions are validated by promotion.
+        tokens = str(commit).split(maxsplit=1)
+        candidate = tokens[0].strip("`") if tokens else ""
+        if not _COMMIT_IDENTIFIER_TOKEN.fullmatch(candidate):
+            continue
         ancestor, error = _worktree_git_read(
-            worktree, "merge-base", "--is-ancestor", str(commit), "HEAD"
+            worktree, "merge-base", "--is-ancestor", candidate, "HEAD"
         )
         if error or ancestor is None:
             return [
