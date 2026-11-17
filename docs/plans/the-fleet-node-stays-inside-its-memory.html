@@ -25,7 +25,7 @@
   <title>The Fleet Node Stays Inside Its Memory | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="10">
+<meta name="plan-version" content="11">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -160,6 +160,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261117T110917738170-a-sampler-outlives-the-fleet-job" data-who="reckon-build" data-when="2026-11-17T11:47:41Z">
     <div class="r-comment-body"><p>Added an independent once-per-minute scheduler reader with GPFS locking for the shared TSV; the cancellation rehearsal writes one terminal row 59.839 seconds after cancellation, and the stopped-reader control fails. The exact health-header assertion now covers all seven scheduler columns: expanded scoped/head gates pass 88 tests, the baseline arm passes 73, and both 17-file importer arms pass 162 tests with 1 skip and zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261117T115716792975-review-of-a-sampler-outlives-the-fleet-job-31096e1a5a57" data-who="reckon-build" data-when="2026-11-17T12:05:47Z">
+    <div class="r-comment-body"><p>Independently reviewed 5cba94a80e4e5dc68fa488816af4c1e0e0f21e57..31096e1a5a5749b98b793d22003dc26bdc7d001d; no blocking findings, one non-blocking schema-assertion finding; zero added failures.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261117T121522141015-review-of-control-passes-profile-without-live-writes-bf3c02cf0770" data-who="reckon-build" data-when="2026-11-17T12:24:04Z">
     <div class="r-comment-body"><p>Independent revision-bound review stored; no blocking findings, two non-blocking findings, zero added suite failures; original station timing remains unmet after an authorized extended replay.</p></div>
