@@ -23,9 +23,9 @@
   <title>History Persists As Detail Washes Out | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="120">
+<meta name="plan-version" content="121">
 <meta name="plan-modified" content="2026-11-17">
-<meta name="plan-section-declarations" content="{&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s27&quot;:&quot;implementable&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;done&quot;,&quot;s30&quot;:&quot;done&quot;,&quot;s31&quot;:&quot;done&quot;,&quot;s32&quot;:&quot;done&quot;,&quot;s33&quot;:&quot;done&quot;,&quot;s34&quot;:&quot;done&quot;,&quot;s35&quot;:&quot;done&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;implementable&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;done&quot;,&quot;s30&quot;:&quot;done&quot;,&quot;s31&quot;:&quot;done&quot;,&quot;s32&quot;:&quot;done&quot;,&quot;s33&quot;:&quot;done&quot;,&quot;s34&quot;:&quot;done&quot;,&quot;s35&quot;:&quot;done&quot;}">
 <meta name="plan-section-depends-on" content="{&quot;s26&quot;:[&quot;history-persists-as-detail-washes-out#s21&quot;,&quot;history-persists-as-detail-washes-out#s22&quot;,&quot;history-persists-as-detail-washes-out#s23&quot;,&quot;history-persists-as-detail-washes-out#s24&quot;,&quot;history-persists-as-detail-washes-out#s25&quot;,&quot;history-persists-as-detail-washes-out#s28&quot;,&quot;history-persists-as-detail-washes-out#s29&quot;,&quot;history-persists-as-detail-washes-out#s34&quot;],&quot;s27&quot;:[&quot;history-persists-as-detail-washes-out#s26&quot;]}">
 </head>
 <body>
@@ -387,7 +387,7 @@
 <p><strong>Done when.</strong> A repository with no tracked <code>crew.json</code> and no <code>flight.yaml</code> is still refused by both guards, and a crew project with no tracked ledger is still recognised, asserted by removing both files and requiring the refusal; the test fails at base. Write paths: <code>reckon/hooks/native_agent_guard.py</code>, <code>reckon/hooks/worker_message_guard.py</code>, <code>reckon/cli_entry.py</code>, <code>reckon/crew/dispatching/comparisons.py</code> and the new test.</p>
 
     <h2 id="s26">The untracking migration</h2>
-<section data-reckon="section" data-id="s26" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="critical" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s26" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="critical" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> With the store load-bearing, every reader on it, members and holds in tables, history reads restated and the guards independent of the file, the ledger can leave git. History stays in every earlier commit; nothing is rewritten.</p>
 <p><strong>Done when.</strong> <code>git ls-files docs/state/*/crew.json docs/state/*/runs</code> returns nothing; the row count and the canonical JSON of every row match before and after for every mounted project; a promotion lands while the paths are untracked. Write paths: <code>.gitignore</code>, <code>docs/state/&lt;project&gt;/crew.json</code> and <code>docs/state/&lt;project&gt;/runs/</code> for each mounted project (removed from the index and the working tree by <code>git rm</code>, so every checkout loses its copy with the merge that carries the removal and the run store is the only store; every other tracked file under <code>docs/state</code> stays) and <code>scripts/import_runs_into_store.py</code>.</p>
 
@@ -517,10 +517,11 @@
     <pre class="r-fu-prompt">/reckon-build history-persists-as-detail-washes-out §33</pre>
     <p class="r-fu-outcome"><p>§33 landed: the owed-plan-review pass reuses stored author selections and reads through <code>run_store.stored_run_payloads</code>; on 50 plans and 20,000 runs an unchanged pass parses no review, plan or run (heads e505ca84ca and c70245dc30, both reviewed clean).</p></p>
     </article>
-<article class="r-fu" data-id="f-hpdw-015" data-status="open" data-written-by="reckon-56" data-written-at="2026-11-17" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-hpdw-015" data-status="resolved" data-written-by="reckon-56" data-written-at="2026-11-17" data-recommends-skill="" data-resolved-at="2026-11-17T16:17:16+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Land §34, then resume §26</h4>
     <div class="r-fu-body"><p>§26 blocked: a promotion is refused once the ledger leaves git. §34 makes a committed removal promotable; §26 then resumes.</p></div>
     <pre class="r-fu-prompt">/reckon-build history-persists-as-detail-washes-out §34</pre>
+    <p class="r-fu-outcome"><p>§34 landed, then §26: the ledger files leave git at 60c4622f55 (9,891 files; 25,266/25,266 store rows matched across 18 mounts). §27 is next.</p></p>
     </article>
 <article class="r-fu" data-id="f-hpdw-016" data-status="resolved" data-written-by="reckon-56" data-written-at="2026-11-17" data-recommends-skill="" data-resolved-at="2026-11-17T15:45:53+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Land §35</h4>
@@ -645,6 +646,9 @@
 <div class="r-comment" data-section="s25" data-id="c-run-r-20261115T102556398704-guards-without-tracked-ledger-s25" data-who="reckon-build" data-when="2026-11-15T11:40:55.488Z">
     <div class="r-comment-body"><p>presence checks now recognise a crew project by the configuration its state directory carries (index.json, flight.yaml or crew.json) rather than by the run ledger, across both pre-tool-use guards, the sync-time install check and the shadow fallback; removing both ledger files still refuses both guards, the new test fails 4 of 5 cases at base and passes 5 of 5 at head, and the gate runs 63 passed at head against 58 passed at base</p></div>
 </div>
+<div class="r-comment" data-section="s26" data-id="c-run-r-20261117T160042305176-review-of-untracking-migration-s26-60c4622f5565" data-who="reckon-build" data-when="2026-11-17T16:11:18Z">
+    <div class="r-comment-body"><p>Independent review of e76577d9450dd76d22e4782b4a882b7eb997a0d3..60c4622f5565bdbf8ae62da10d855fc0a3fe697a stored and validated; six dimensions scored (20,20,20,20,20,5); no blocking findings, one non-blocking duplicate test helper; zero added failures from source gate logs.</p></div>
+</div>
 <div class="r-comment" data-section="s28" data-id="c-run-r-20261115T214744541560-review-of-static-site-repo-not-crew-s28-a511bf6547ff" data-who="reckon-build" data-when="2026-11-15T22:03:45Z">
     <div class="r-comment-body"><p>Independent review of a70244fcaf771a224d819576cb40162689c62cd4..a511bf6547ffbb7cf1f5e65560e32a9c29909aa7: all six dimensions 20/20, no findings, zero added failures.</p></div>
 </div>
@@ -728,9 +732,6 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260923T141652653142-review-of-history-persists-as-detail-washes-out" data-who="reckon-ship" data-when="2026-09-23T15:39:47.829Z">
     <div class="r-comment-body"><p>read-back found 50 sentences with two readings, 43 load-bearing, and node 4 without a measure; the per-run ledger moved to its own plan</p></div>
-</div>
-<div class="r-comment" data-section="s26" data-id="c-run-r-20261117T160042305176-review-of-untracking-migration-s26-60c4622f5565" data-who="reckon-build" data-when="2026-11-17T16:11:18Z">
-    <div class="r-comment-body"><p>Independent review of e76577d9450dd76d22e4782b4a882b7eb997a0d3..60c4622f5565bdbf8ae62da10d855fc0a3fe697a stored and validated; six dimensions scored (20,20,20,20,20,5); no blocking findings, one non-blocking duplicate test helper; zero added failures from source gate logs.</p></div>
 </div>
 </section>
 </main>
