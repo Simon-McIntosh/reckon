@@ -1,0 +1,120 @@
+<article id="wftl-two-queue-tests-set-their-own-local-lane-codex-receipts">
+<h3>Temporary local flight: measured receipts</h3>
+<table><thead><tr><th>Arm</th><th>Revision</th><th>Partition / job</th><th>Result</th></tr></thead><tbody>
+<tr><td>Base / negative control</td><td>c2dae66a4e0478ae6e0dc4983793c70739dda1d0</td><td>all_debug / 1317960</td><td>2 failed, 62 passed in 40.13s; EXIT=1</td></tr>
+<tr><td>Local flight declarations</td><td>2432e44b51ad612fbfe75187ea28f97207308689</td><td>all_debug / 1317965</td><td>1 failed, 63 passed in 39.38s; EXIT=1</td></tr>
+<tr><td>Declarations and dispatch-detail accessor</td><td>0957e6f9674d71d72e94c7c32f8803d8799fc70f</td><td>all_debug / 1317973</td><td>64 passed in 38.59s; EXIT=0</td></tr>
+</tbody></table>
+<p>The base live-view refusal reads <code>local_backend: must be set before `reckon crew dispatch --local` can route work</code>. Declaring each fixture's local flight fixes it. The other base failure, still present in the intermediate arm, reads admission identities as <code>['', '']</code>: the test looks for inline pointer detail. Reading through the existing dispatch-detail accessor preserves the exact expected identities and makes that assertion pass. No product code changed and no assertion was removed or weakened.</p>
+<p>Each measured command runs the two target files plus the two armed safety files. The shared interpreter imports this worktree's module through the explicit <code>PYTHONPATH</code>. The fixtures set the flight path explicitly; no operator flight supplies either lane.</p>
+<details><summary>Base and negative control: complete log</summary><pre># revision: c2dae66a4e0478ae6e0dc4983793c70739dda1d0; tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-two-queue-tests-set-their-own-local-lane-codex
+# command: PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-two-queue-tests-set-their-own-local-lane-codex /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-two-queue-tests-set-their-own-local-lane-codex/tests/test_a_queued_pointer_without_its_time_reads_no_place.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-two-queue-tests-set-their-own-local-lane-codex/tests/test_the_admission_pass_survives_a_pointer_without_its_time.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-two-queue-tests-set-their-own-local-lane-codex/tests/test_staged_write_inventory.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-two-queue-tests-set-their-own-local-lane-codex/tests/test_every_shared_home_lock_holds_across_nodes.py
+# module: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-two-queue-tests-set-their-own-local-lane-codex/reckon/crew/queue_admission.py
+# cwd: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-two-queue-tests-set-their-own-local-lane-codex
+.F.F............................................................         [100%]
+=================================== FAILURES ===================================
+____________ test_the_live_view_lists_the_unplaceable_run_as_queued ____________
+
+queued_crew_home = PosixPath(&#x27;/tmp/queue-tests-1317960-Nvcp/pytest-of-mcintos/pytest-0/test_the_live_view_lists_the_u0&#x27;)
+
+    def test_the_live_view_lists_the_unplaceable_run_as_queued(
+        queued_crew_home: Path,
+    ) -&gt; None:
+&gt;       rows = _live_rows(queued_crew_home)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_a_queued_pointer_without_its_time_reads_no_place.py:138: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+repository = PosixPath(&#x27;/tmp/queue-tests-1317960-Nvcp/pytest-of-mcintos/pytest-0/test_the_live_view_lists_the_u0&#x27;)
+
+    def _live_rows(repository: Path) -&gt; dict[str, dict]:
+        from reckon.cli import main as cli_main
+    
+        result = CliRunner().invoke(
+            cli_main,
+            [
+                &quot;crew&quot;,
+                &quot;view&quot;,
+                &quot;live&quot;,
+                &quot;--project&quot;,
+                PROJECT,
+                &quot;--checkout-path&quot;,
+                str(repository),
+            ],
+        )
+&gt;       assert result.exit_code == 0, result.output
+E       AssertionError: {&quot;detail&quot;: &quot;&lt;resolved flight&gt;: local_backend: must be set before `reckon crew dispatch --local` can route work&quot;, &quot;error&quot;: &quot;crew_error&quot;, &quot;ok&quot;: false, &quot;project&quot;: &quot;queued-time&quot;}
+E         
+E       assert 1 == 0
+E        +  where 1 = &lt;Result SystemExit(1)&gt;.exit_code
+
+tests/test_a_queued_pointer_without_its_time_reads_no_place.py:98: AssertionError
+____ test_the_pass_admits_the_placed_requests_and_names_the_unplaceable_one ____
+
+admit_repo = PosixPath(&#x27;/tmp/queue-tests-1317960-Nvcp/pytest-of-mcintos/pytest-0/test_the_pass_admits_the_place0/checkout&#x27;)
+tmp_path = PosixPath(&#x27;/tmp/queue-tests-1317960-Nvcp/pytest-of-mcintos/pytest-0/test_the_pass_admits_the_place0&#x27;)
+
+    def test_the_pass_admits_the_placed_requests_and_names_the_unplaceable_one(
+        admit_repo: Path, tmp_path: Path
+    ) -&gt; None:
+        _config, resolve = _queue_with_one_unplaceable(admit_repo, tmp_path, worker_slots=2)
+        recorded: list = []
+    
+        # The instrument check: the malformed pointer must be in the snapshot the
+        # pass reads, or its absence from the order would prove nothing.
+        held = {str(pointer.get(&quot;run_id&quot;) or &quot;&quot;): pointer for pointer in runs.list_live()}
+        assert {PLACED_OLDER, PLACED_NEWER, UNREADABLE} &lt;= set(held), sorted(held)
+        assert held[UNREADABLE].get(&quot;queued_at&quot;) is None
+    
+        result = queue_admission.admit_once(
+            config_for=resolve, launcher=_launcher(recorded)
+        )
+    
+        assert len(result[&quot;launched&quot;]) == 2, result[&quot;launched&quot;]
+        # A launch re-publishes the request under its own run id, so the ordering is
+        # read from the marker each launched run carries back to the request it was
+        # admitted from rather than from the ids themselves.
+        admitted_from = [
+            str(runs.read_pointer(run_id).get(&quot;admit_request&quot;, {}).get(&quot;run_id&quot;) or &quot;&quot;)
+            for run_id in result[&quot;launched&quot;]
+        ]
+&gt;       assert admitted_from == [PLACED_OLDER, PLACED_NEWER], admitted_from
+E       AssertionError: [&#x27;&#x27;, &#x27;&#x27;]
+E       assert [&#x27;&#x27;, &#x27;&#x27;] == [&#x27;r-placed-ol...placed-newer&#x27;]
+E         
+E         At index 0 diff: &#x27;&#x27; != &#x27;r-placed-older&#x27;
+E         Use -v to get more diff
+
+tests/test_the_admission_pass_survives_a_pointer_without_its_time.py:267: AssertionError
+----------------------------- Captured stderr call -----------------------------
+reckon: created run r-placed-older
+reckon: created run r-placed-newer
+=========================== short test summary info ============================
+FAILED tests/test_a_queued_pointer_without_its_time_reads_no_place.py::test_the_live_view_lists_the_unplaceable_run_as_queued
+FAILED tests/test_the_admission_pass_survives_a_pointer_without_its_time.py::test_the_pass_admits_the_placed_requests_and_names_the_unplaceable_one
+2 failed, 62 passed in 40.13s
+EXIT=1
+</pre></details>
+<details><summary>Repaired source: complete log</summary><pre># revision: 0957e6f9674d71d72e94c7c32f8803d8799fc70f; tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-two-queue-tests-set-their-own-local-lane-codex
+# command: PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-two-queue-tests-set-their-own-local-lane-codex /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-two-queue-tests-set-their-own-local-lane-codex/tests/test_a_queued_pointer_without_its_time_reads_no_place.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-two-queue-tests-set-their-own-local-lane-codex/tests/test_the_admission_pass_survives_a_pointer_without_its_time.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-two-queue-tests-set-their-own-local-lane-codex/tests/test_staged_write_inventory.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-two-queue-tests-set-their-own-local-lane-codex/tests/test_every_shared_home_lock_holds_across_nodes.py
+# module: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-two-queue-tests-set-their-own-local-lane-codex/reckon/crew/queue_admission.py
+# cwd: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-two-queue-tests-set-their-own-local-lane-codex
+................................................................         [100%]
+64 passed in 38.59s
+EXIT=0
+</pre></details>
+<details><summary>Lint, format and assertion-preservation check</summary><pre># command: /home/ITER/mcintos/Code/reckon/.venv/bin/ruff check --no-cache tests/test_a_queued_pointer_without_its_time_reads_no_place.py tests/test_the_admission_pass_survives_a_pointer_without_its_time.py
+All checks passed!
+
+
+EXIT=0
+# command: /home/ITER/mcintos/Code/reckon/.venv/bin/ruff format --check --no-cache tests/test_a_queued_pointer_without_its_time_reads_no_place.py tests/test_the_admission_pass_survives_a_pointer_without_its_time.py
+2 files already formatted
+
+
+EXIT=0
+tests/test_a_queued_pointer_without_its_time_reads_no_place.py: 15 assertions unchanged (AST equality)
+tests/test_the_admission_pass_survives_a_pointer_without_its_time.py: 13 assertions unchanged (AST equality)
+</pre></details>
+</article>

@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="measurement-run-never-lands-s13">
+  <meta name="plan-title" content="A measurement run builds and gates and then lands not">
+  <meta name="plan-evidence-for" content="reckon:workers-spend-fewer-tokens-per-landed-node">
+  <meta name="plan-verifies" content="reckon:workers-spend-fewer-tokens-per-landed-node#s13">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,measurement,dispatch,landing,worker-tokens">
+  <title>A measurement run lands not &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1 id="measurement-run-never-lands-s13-title">A measurement run builds and gates and then lands not</h1>
+
+    <section id="measurement-run-never-lands-s13-landing">
+      <h2 id="measurement-run-never-lands-s13-landing-what">Landing</h2>
+      <p id="measurement-run-never-lands-s13-landing-flag"><code>crew dispatch
+        --measure-only REASON</code> dispatches a node as a measurement run. It
+        builds and gates exactly as an implementation run does, and then
+        nothing else takes it: the review reflex composes no review, the
+        landing pass skips it before reading its evidence, <code>crew
+        complete</code> writes a row whose outcome is <code>measured</code>
+        beside the gate verdict, the token counts and the commits it reached,
+        and the worktree is released even though its head is deliberately
+        unmerged. The marker is written on the run's own pointer, which is the
+        record the reflex and the lander both read, so one write decides all
+        three; the dispatch answer carries the same field so a caller does not
+        pay a second read to see the run it asked for.</p>
+      <p id="measurement-run-never-lands-s13-landing-declaration">A section
+        declared <code>done</code> is dispatchable only with the flag, and the
+        refusal names it: <q>section &sect;13 of plan … is declared done, so its
+        work is already on the branch; it is dispatchable only as a measurement
+        run … pass --measure-only REASON</q>. The declaration is read from the
+        plan through the ledger's own section normal form, so <code>s13</code>,
+        <code>&sect;13</code> and <code>section 13</code> are one identity. The
+        refusal is raised before any claim, run directory or worktree exists, so
+        a refused dispatch leaves nothing behind and the next call is the same
+        call with the flag on it.</p>
+      <p id="measurement-run-never-lands-s13-landing-roles">The requirement is on
+        roles whose work lands. <code>review</code>, <code>verify</code> and
+        <code>investigate</code> dispatch a landed section without the flag,
+        because they read work rather than add it, and a done section is exactly
+        what they are given. This was not the first shape of the check: refusing
+        every role made the review reflex's own dispatch of a landed section
+        impossible, which the comparison control found, and refusing a review is
+        the one refusal a landed section cannot afford.</p>
+      <p id="measurement-run-never-lands-s13-landing-release">The ordinary
+        release withholds a worktree whose HEAD is not an ancestor of the
+        integration branch, because that head is the only copy of work nobody
+        has merged. A measurement run's head is never merged, so the same policy
+        would hold every replay's tree back and a measurement population — every
+        arm building the same landed sections — would fill the disk it is
+        measured on. The tree is therefore removed before the ordinary release
+        runs, so the release reports it already absent and its audit describes
+        the trees the release left behind rather than contradicting the
+        removal. The commit stays in the repository's object store and the row
+        names it, and a tree any other live pointer names is left alone.</p>
+
+      <h2 id="measurement-run-never-lands-s13-measure">Measure</h2>
+      <p id="measurement-run-never-lands-s13-measure-gate"><code>tests/test_a_measurement_run_never_lands.py</code>:
+        <strong>10 passed</strong>, <code>EXIT=0</code> on its own. The ten
+        cases are the marker the dispatch writes; the reflex refusing and
+        composing nothing; the landing pass skipping the run and recording no
+        judgement against it; <code>crew complete</code> writing
+        <code>outcome: measured</code> with <code>gate: passed</code>, the run's
+        commit and its 1200/40 tokens, the run's commit still not an ancestor of
+        <code>main</code> and its file absent from it, and the worktree gone;
+        the refusal of a landed section without the flag naming it; an open
+        section dispatching without the flag; the preview reaching the same
+        refusal and then accepting the flag it names; and the two controls
+        below.</p>
+      <p id="measurement-run-never-lands-s13-measure-fixture">Every case
+        synthesises its own repository, plan, ledger and workspace under a
+        temporary config home. The launcher stands in for the worker: the case
+        writes the manifest, the run's commit and the token counts a harness fold
+        would have put on the run, so the complete case measures the promotion
+        rather than a stand-in for it. Nothing reads or writes outside the
+        temporary tree.</p>
+
+      <h2 id="measurement-run-never-lands-s13-controls">Negative controls</h2>
+      <p id="measurement-run-never-lands-s13-controls-log">Two declared
+        mutations were applied to the working tree over the head revision:
+        <code>recovery_review_dispatch._is_measurement_run</code> returning
+        <code>False</code> for every record, and
+        <code>queue_landing._land_deliveries</code> ignoring
+        <code>_measurement_run_skip</code>'s answer. The reflex case then fails
+        because its refusal no longer names the measurement — the reason it
+        reports is the run's liveness — and the lander case fails because the
+        pass skipped nothing and recorded no status for the run. Log:
+        <code>2 failed, 2 passed, 6 deselected</code>, <code>EXIT=1</code>
+        (<code>negative_control.log</code>). The two cases that keep passing are
+        the controls below, whose own guard removal is what the source mutation
+        does; both modules were restored to their committed contents before the
+        after arm ran.</p>
+      <p id="measurement-run-never-lands-s13-controls-guards">The two controls
+        remove one guard each on the same delivered run rather than picking a
+        different fixture: the lander control lifts
+        <code>_measurement_run_skip</code> and finds an
+        <code>admission_landing</code> judgement recorded against the run, and
+        the reflex control lifts <code>_measurement_run_refusal</code> and finds
+        a review composed. Both deliveries end the stand-in worker before the
+        pass runs: a live pid legitimately defers a terminal manifest, so
+        without that step a control would measure liveness instead of the
+        guard.</p>
+
+      <h2 id="measurement-run-never-lands-s13-suite">Suite</h2>
+      <p id="measurement-run-never-lands-s13-suite-arms">Base arm: a
+        <code>git clone --shared</code> of the repository checked out at
+        <code>fe5d1eab6c</code>, so the staged-write inventory case has a
+        repository and the tree under test is that revision's own —
+        <code>tests/test_staged_write_inventory.py</code> and
+        <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>,
+        <strong>58 passed</strong>, <code>EXIT=0</code>. After arm at code head
+        <code>bda40225ad</code>, the same two files beside this node's own test
+        file: <strong>68 passed</strong>, <code>EXIT=0</code>. The delta is the
+        ten new cases; neither sibling changed. The node's own file alone at
+        that head reads <strong>10 passed</strong>, <code>EXIT=0</code>. Both
+        arms ran on <code>all_debug</code>, one at a time, at
+        <code>-n 4</code>.</p>
+      <p id="measurement-run-never-lands-s13-suite-lint">Ruff on the six staged
+        paths reports one finding, the unused <code>noqa</code> directive at
+        <code>preparation.py:141</code> that the base revision carries as well,
+        so the commit adds none; the new test file is clean on check and format.
+        <code>ruff format --check</code> finds the test file, the command module
+        and the four touched crew modules formatted apart from one docstring in
+        <code>recovery_review_dispatch.py</code> that is unformatted at the base
+        revision too and is left alone rather than rewritten in passing.</p>
+    </section>
+  </main>
+</body>
+</html>

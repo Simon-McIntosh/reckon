@@ -155,6 +155,39 @@ def _upstream_record(
     )
 
 
+@pytest.mark.parametrize("explicit_manifest", [False, True])
+def test_a_queued_request_stores_its_manifest_path(
+    projects: tuple[Path, Path], explicit_manifest: bool
+) -> None:
+    first, _ = projects
+    node = _node("waiting", "s1")
+    default = runs.run_dir("r-waiting") / "manifest.md"
+    expected = default.with_name("delivery.md") if explicit_manifest else default
+    if explicit_manifest:
+        node.manifest_path = str(expected)
+
+    stored = _queue(first, node, run_ids={node.id: "r-waiting"})
+
+    assert stored["r-waiting"]["phase"] == queue_admission.QUEUED_PHASE
+    pointer = runs.read_pointer("r-waiting")
+    assert pointer is not None
+    assert pointer["node"]["manifest_path"] == str(expected)
+    assert node.manifest_path == str(expected)
+
+
+def test_a_relative_manifest_still_refuses_before_queueing(
+    projects: tuple[Path, Path],
+) -> None:
+    first, _ = projects
+    node = _node("waiting", "s2")
+    node.manifest_path = "delivery.md"
+
+    with pytest.raises(CrewError, match=r"manifest path.*relative"):
+        _queue(first, node, run_ids={node.id: "r-waiting"})
+
+    assert not runs.pointer_path("r-waiting").exists()
+
+
 def test_foreign_section_waits_for_its_declaration(projects: tuple[Path, Path]) -> None:
     first, second = projects
     fixtures._declare_wait_refs(first, section="s2", refs=["other:plan-b#s2"])

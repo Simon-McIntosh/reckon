@@ -43,11 +43,12 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         f"<title>{PLAN}</title></head><body></body></html>"
     )
     _seed_git_repository(root)
+    _commit_work(root)
     return root
 
 
 def _seed_git_repository(root: Path) -> None:
-    """Make the fixture a git worktree with one commit."""
+    """Make the fixture a git worktree whose base commit holds the plan."""
     for arguments in (
         ("init", "-q", "-b", "main"),
         ("config", "user.email", "worker@example.invalid"),
@@ -70,12 +71,48 @@ def _seed_git_repository(root: Path) -> None:
         )
 
 
+def _commit_work(root: Path) -> None:
+    """Add the run's own commit, so its head is not its base."""
+    (root / "docs" / "plans" / "notes.txt").write_text("landed\n")
+    subprocess.run(
+        ["git", "add", "--", "docs/plans/notes.txt"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "commit", "-q", "-m", "node work"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+    )
+
+
+def _sha(root: Path, revision: str) -> str:
+    return subprocess.run(
+        ["git", "rev-parse", revision],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+
+def _base_sha(root: Path) -> str:
+    return _sha(root, "HEAD~1")
+
+
+def _head_sha(root: Path) -> str:
+    return _sha(root, "HEAD")
+
+
 def _write_pointer(
     run_id: str,
     repository: Path,
     *,
     suite_command: str,
     manifest_path: str,
+    base_sha: str,
 ) -> None:
     _write_json(
         pointer_path(run_id),
@@ -89,7 +126,7 @@ def _write_pointer(
             "backend": "native",
             "created_at": "2026-08-26T09:00:00Z",
             "manifest_path": manifest_path,
-            "base_sha": "base-abc",
+            "base_sha": base_sha,
             "suite_command": suite_command,
             "worktree": str(repository),
             "node": {
@@ -116,9 +153,9 @@ def _suite_observation(command: str, revision: str) -> dict[str, object]:
 
 
 def _write_suite_manifest(
-    path: Path, *, baseline: dict[str, object], after: dict[str, object]
+    path: Path, *, commits: str, baseline: dict[str, object], after: dict[str, object]
 ) -> None:
-    lines = ["node: node-a", "status: complete", "commits: abc123", "tests: done"]
+    lines = ["node: node-a", "status: complete", f"commits: {commits}", "tests: done"]
     lines.append("baseline_suite: " + json.dumps(baseline))
     lines.append("after_suite: " + json.dumps(after))
     path.write_text("\n".join(lines) + "\n")
@@ -157,8 +194,9 @@ def _complete(run_id: str, repository: Path):
             "0",
             "--gate-log-path",
             "/durable/gate.log",
-            "--no-commit",
-            "report-only fixture",
+            "--commit",
+            _head_sha(repository),
+            "--wait",
         ],
     )
 
@@ -175,14 +213,16 @@ def test_focused_pair_against_a_whole_suite_arming_is_refused(
     manifest = tmp_path / "focused-pair.md"
     _write_suite_manifest(
         manifest,
-        baseline=_suite_observation(FOCUSED_PAIR, "base-abc"),
-        after=_suite_observation(FOCUSED_PAIR, "after-abc"),
+        commits=_head_sha(repository),
+        baseline=_suite_observation(FOCUSED_PAIR, _base_sha(repository)),
+        after=_suite_observation(FOCUSED_PAIR, _head_sha(repository)),
     )
     _write_pointer(
         run_id,
         repository,
         suite_command=WHOLE_SUITE,
         manifest_path=str(manifest),
+        base_sha=_base_sha(repository),
     )
     _stored_review(run_id)
 
@@ -203,14 +243,16 @@ def test_pair_matching_the_arming_modulo_spacing_is_accepted(
     manifest = tmp_path / "spacing.md"
     _write_suite_manifest(
         manifest,
-        baseline=_suite_observation("pytest  -q   tests/", "base-abc"),
-        after=_suite_observation("pytest -q tests/ ", "after-abc"),
+        commits=_head_sha(repository),
+        baseline=_suite_observation("pytest  -q   tests/", _base_sha(repository)),
+        after=_suite_observation("pytest -q tests/ ", _head_sha(repository)),
     )
     _write_pointer(
         run_id,
         repository,
         suite_command=WHOLE_SUITE,
         manifest_path=str(manifest),
+        base_sha=_base_sha(repository),
     )
     _stored_review(run_id)
 
@@ -230,14 +272,16 @@ def test_one_arm_matching_the_arming_and_one_not_is_refused(
     manifest = tmp_path / "one-arm.md"
     _write_suite_manifest(
         manifest,
-        baseline=_suite_observation(WHOLE_SUITE, "base-abc"),
-        after=_suite_observation(FOCUSED_PAIR, "after-abc"),
+        commits=_head_sha(repository),
+        baseline=_suite_observation(WHOLE_SUITE, _base_sha(repository)),
+        after=_suite_observation(FOCUSED_PAIR, _head_sha(repository)),
     )
     _write_pointer(
         run_id,
         repository,
         suite_command=WHOLE_SUITE,
         manifest_path=str(manifest),
+        base_sha=_base_sha(repository),
     )
     _stored_review(run_id)
 

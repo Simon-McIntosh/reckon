@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": "reckon/crew/admission/selection.py:116, reckon/crew/queue_admission.py:131, reckon/crew/recovery_review_dispatch.py:622, reckon/crew/recovery_review_dispatch.py:550",
+  "completed_at": "2026-11-15T21:27:28.416Z",
+  "dispatched_at": "2026-11-15T21:26:49Z",
+  "findings": [
+    {
+      "file": "reckon/crew/admission/launching.py",
+      "line": 689,
+      "severity": "non-blocking",
+      "text": "the released-stranded-launch write-back now lives in two places with two independently written guard sets: this helper, and the reflex inline sequence at reckon/crew/recovery_review_dispatch.py:2818 which calls the same owner _record_review_dispatch (recovery_review_dispatch.py:622) after _discard_stranded_review; the helper extends the writer rather than forking it, but a change to the reflex status spelling or reason shape must be mirrored here by hand and nothing reddens when the two drift."
+    },
+    {
+      "file": "reckon/crew/admission/launching.py",
+      "line": 681,
+      "severity": "non-blocking",
+      "text": "the early returns at :681 (runs._promoted_record_project) and :686 (a record naming another review) carry no test: tests/test_a_released_review_is_composed_again.py has only the release-and-recompose case at :184 and the discarded-run case at :225, so neither guard has a case that fails if it has been removed."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T125732090447-fence-names-the-attempt-s10/logs/after-merge-head.log",
+      "line": 5,
+      "severity": "non-blocking",
+      "text": "the arm the manifest declares in after_suite is this 5-file run (69 passed at 90622f7f40) and its command omits tests/test_a_released_review_is_composed_again.py, the only test reaching the merged-in helper; the 6-file run that does include it exists as logs/merge-head-gate.log (71 passed, EXIT=0) but is not the declared arm, so a promotion re-running the declared command measures none of the gained code."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_released_review_is_composed_again.py:211 asserts the stored review_dispatch status, which reverts to dispatched and reddens the case if the call at launching.py:603 is dropped, so the gained call is guarded; the two early returns at launching.py:681 and :686 are not, since neither test case reaches them.",
+    "evidence": "logs/merge-head-gate.log records 71 passed at 90622f7f40 with its bare EXIT=0 line and logs/baseline-c3f7a61e.log records 65 passed at the base revision, but the manifest after_suite names logs/after-merge-head.log (69 passed) whose command omits tests/test_a_released_review_is_composed_again.py, and no importer sweep exists at 90622f7f40.",
+    "fit": "reckon/crew/admission/launching.py:676 imports the owners lazily inside the function as the module already does at :553 for recovery_review_delivery._resolved_reviewed_run_id, no added name carries a plan or ticket identifier, and the one rough edge is the call at :603 passing the reviewed run positionally beside a keyword named review_run_id.",
+    "goal_fidelity": "reckon/crew/admission/launching.py:581 still hands record_launch_refusal attempt=_released_attempt(claim) and :591 still calls mark_launch_requeued, so the attempt-keyed fence the goal names is intact at the reviewed head and the merge added only the review write-back the goal does not touch.",
+    "reuse": "reckon/crew/admission/launching.py:689 writes through the owner recovery_review_dispatch._record_review_dispatch (reckon/crew/recovery_review_dispatch.py:622), so the field writer is extended rather than forked, but the same released-stranded-launch write-back is spelled inline again with its own guards at reckon/crew/recovery_review_dispatch.py:2818.",
+    "scope_discipline": "git diff cebed77898..90622f7f40 -- reckon/crew/admission/launching.py is the whole of the node gained change, and every hunk in it is the conflict resolution for that one declared file."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261115T212440705976-review-of-fence-names-the-attempt-s10-90622f7f40e3",
+  "reviewed_base_sha": "cebed77898c3b27152434136a2413ff80ec888b9",
+  "reviewed_head_sha": "90622f7f40e3284b5d4cc4d93c3e6ea3cf800423",
+  "reviewed_run_id": "r-20261115T125732090447-fence-names-the-attempt-s10",
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T21:51:13.658221+00:00",
+  "total": 98,
+  "verdicts": {
+    "diff": "VERDICT diff: read commit by commit; the one gained commit 90622f7f40 is a merge whose resolution adds _owe_the_review_again (launching.py:644) and its call at launching.py:603 with three docstring lines, and git diff dd863c6cc4..90622f7f40 -- reckon/crew/admission/launching.py confirms the merge carries the reviewed head attempt fence (_released_attempt, mark_launch_requeued) onto the primary version.",
+    "done_when": "VERDICT done_when: the done_when asks new cases to fail at base 2424ab7511 and the two existing test files to keep their cases; the gained commit is measured by logs/merge-head-gate.log (71 passed at 90622f7f40, EXIT=0) against logs/baseline-c3f7a61e.log (65 passed, EXIT=0), while the manifest declared after_suite arm is the narrower logs/after-merge-head.log (69 passed, EXIT=0) that omits the merged test file.",
+    "goal": "VERDICT goal: the node goal keys the released-launch refusal on the abandoned attempt; the gained merge at 90622f7f40 leaves reckon/crew/dispatch_refusals.py untouched and keeps the attempt fence in reckon/crew/admission/launching.py:581-591, where record_launch_refusal is handed attempt=_released_attempt(claim) and the requeue branch calls mark_launch_requeued, so the goal endpoint survives the merge.",
+    "manifest": "VERDICT manifest: read; it names commit 90622f7f40 as the merge of primary dd863c6cc4 into delivery head cebed77898, states the only conflict was reckon/crew/admission/launching.py and that both sides were kept, and records 71 passed plus 69 passed at the merge head against 65 passed at base c3f7a61e05.",
+    "write_paths": "VERDICT write_paths: the node declared scope includes reckon/crew/admission/launching.py, and git diff --stat cebed77898..90622f7f40 -- reckon/crew/admission/launching.py is the entire gained change at 1 file, +64/-1, inside that scope."
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/evidence.py:1362 compose_landed_record",
+    "reckon/resources.py:244 _is_evidence_fragment",
+    "reckon/crew/recovery_review_dispatch.py:1284 review_head_move",
+    "reckon/crew/recovery_review_dispatch.py:1551 carry_review_forward",
+    "reckon/clones.py:650 own_changed_paths"
+  ],
+  "completed_at": "2026-11-16T07:09:37.780Z",
+  "dispatched_at": "2026-11-16T07:09:11Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031627389364-qwnw-red-file-review-carries-forward/logs/after-suite.log",
+      "line": "1",
+      "severity": "blocking",
+      "text": "blocking: the file holds three header lines and two blank lines and nothing else - no summary line and no EXIT= line - so the after arm recorded at manifest.md:17 as after_suite 58 passed, exit_status 0, completed true has no receipt, and its own header names f9f3644548 while the record names 1d929a5187, which leaves promotion reading a claim whose log it cannot reconcile."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-review-carries-forward.html",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head row cites revision 1d929a5187 and 9 passed in 19.06s against logs/head-file.log, which by delivery the later all_debug run at f9f3644548 had rewritten to 9 passed in 18.76s, so the row no longer reconciles with the log it names even though the later run is green at the delivered head."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit: ea3235cb96 adds the eight fixture lines, fa9bb1fcd9, 1d929a5187 and f9f3644548 write and re-point the two evidence fragments; no product file, no assertion and no expected value changes.",
+    "done_when": "the done_when asks the file to pass in full at head as an all_debug job with SLURM_JOB_ID unset; logs/head-file.log:3 carries that exact command, sacct reports job 1319157 on all_debug COMPLETED, and logs/base-file.log ends 7 failed, 2 passed with seven ids identical to the seven suite-at-8d50b0333f.log lists for this file, though that base red ran at 44f00a3b15 and not at the change's own parent, so no arm reinstates the fixture against the head's product revision.",
+    "goal": "the node's goal is to make tests/test_review_carries_forward.py pass in full on the primary branch; logs/head-file.log:1-7 records 9 passed in 18.76s EXIT=0 at the delivered head f9f3644548, and the only code in the diff is eight fixture lines at tests/test_review_carries_forward.py:117-124 with no assertion touched, which is the right side because reckon/crew/recovery_review_dispatch.py:1115-1117 and reckon/clones.py:672-677 document a repository with no remote as uncomparable and every case seeded one.",
+    "manifest": "read; status complete, four commits, the tests line naming the literal pytest invocation, four log paths, baseline_suite and after_suite both recording zero failure ids - but the after-suite log the record names at manifest.md:17 holds only its three-line header, with no summary line and no EXIT= line.",
+    "write_paths": "the declared fence is reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git rev-list 44f00a3b15..f9f3644548 --not origin/main returns exactly the four node commits, and git show --stat over them lists only tests/test_review_carries_forward.py and the two fragments under that directory."
+  },
+  "justifications": {
+    "durability": "no assertion was added and the added lines are git seeding, so the guard is the nine existing cases in tests/test_review_carries_forward.py, which redden when the four lines are removed - the shape logs/base-file.log shows seven of - but that arm ran at 44f00a3b15, so the attribution to those lines is inferred rather than measured at head.",
+    "evidence": "logs/head-file.log:1-7 records the head gate at the delivered revision with EXIT=0 and its base arm's seven ids match suite-at-8d50b0333f.log exactly, but logs/after-suite.log carries three header lines and no result, so the arm manifest.md:17 records as 58 passed EXIT=0 has no receipt.",
+    "fit": "tests/test_review_carries_forward.py:117-121 uses the same _git(tmp_path, 'init', '-q', '--bare', '-b', 'main', str(origin)) seeding tests/test_a_review_reads_only_its_runs_changes.py:60 already uses, and the commit subjects are the repo's existing test(...)/docs(evidence) forms.",
+    "goal_fidelity": "tests/test_review_carries_forward.py:117-121 seeds a bare origin and pushes the reviewed commit, which is the integration ref reckon/clones.py:676-677 needs, and logs/head-file.log ends 9 passed EXIT=0 at head f9f3644548.",
+    "reuse": "the diff adds no function, class or module; its one definition reuse is the file's own _git helper plus the repository's bare-origin fixture convention, which a search over tests/ found in fourteen sibling files such as tests/test_a_discarded_run_stays_discarded.py:38.",
+    "scope_discipline": "each of the four commits changes only tests/test_review_carries_forward.py or a file under docs/evidence/fragments/queued-work-needs-no-workaround/, both inside the declared fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make tests/test_review_carries_forward.py pass in full on the primary branch; logs/head-file.log:1-7 records 9 passed in 18.76s EXIT=0 at the delivered head f9f3644548, and the only code in the diff is eight fixture lines at tests/test_review_carries_forward.py:117-124 with no assertion touched, which is the right side because reckon/crew/recovery_review_dispatch.py:1115-1117 and reckon/clones.py:672-677 document a repository with no remote as uncomparable and every case seeded one.\nVERDICT done_when: the done_when asks the file to pass in full at head as an all_debug job with SLURM_JOB_ID unset; logs/head-file.log:3 carries that exact command, sacct reports job 1319157 on all_debug COMPLETED, and logs/base-file.log ends 7 failed, 2 passed with seven ids identical to the seven suite-at-8d50b0333f.log lists for this file, though that base red ran at 44f00a3b15 and not at the change's own parent, so no arm reinstates the fixture against the head's product revision.\nVERDICT write_paths: the declared fence is reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git rev-list 44f00a3b15..f9f3644548 --not origin/main returns exactly the four node commits, and git show --stat over them lists only tests/test_review_carries_forward.py and the two fragments under that directory.\nVERDICT manifest: read; status complete, four commits, the tests line naming the literal pytest invocation, four log paths, baseline_suite and after_suite both recording zero failure ids - but the after-suite log the record names at manifest.md:17 holds only its three-line header, with no summary line and no EXIT= line.\nVERDICT diff: read commit by commit: ea3235cb96 adds the eight fixture lines, fa9bb1fcd9, 1d929a5187 and f9f3644548 write and re-point the two evidence fragments; no product file, no assertion and no expected value changes.\nCALL_SITES: reckon/evidence.py:1362 compose_landed_record, reckon/resources.py:244 _is_evidence_fragment, reckon/crew/recovery_review_dispatch.py:1284 review_head_move, reckon/crew/recovery_review_dispatch.py:1551 carry_review_forward, reckon/clones.py:650 own_changed_paths\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_review_carries_forward.py:117-121 seeds a bare origin and pushes the reviewed commit, which is the integration ref reckon/clones.py:676-677 needs, and logs/head-file.log ends 9 passed EXIT=0 at head f9f3644548.\nSCORE evidence: 11\nJUSTIFICATION evidence: logs/head-file.log:1-7 records the head gate at the delivered revision with EXIT=0 and its base arm's seven ids match suite-at-8d50b0333f.log exactly, but logs/after-suite.log carries three header lines and no result, so the arm manifest.md:17 records as 58 passed EXIT=0 has no receipt.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: each of the four commits changes only tests/test_review_carries_forward.py or a file under docs/evidence/fragments/queued-work-needs-no-workaround/, both inside the declared fence.\nSCORE durability: 16\nJUSTIFICATION durability: no assertion was added and the added lines are git seeding, so the guard is the nine existing cases in tests/test_review_carries_forward.py, which redden when the four lines are removed - the shape logs/base-file.log shows seven of - but that arm ran at 44f00a3b15, so the attribution to those lines is inferred rather than measured at head.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_review_carries_forward.py:117-121 uses the same _git(tmp_path, 'init', '-q', '--bare', '-b', 'main', str(origin)) seeding tests/test_a_review_reads_only_its_runs_changes.py:60 already uses, and the commit subjects are the repo's existing test(...)/docs(evidence) forms.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module; its one definition reuse is the file's own _git helper plus the repository's bare-origin fixture convention, which a search over tests/ found in fourteen sibling files such as tests/test_a_discarded_run_stays_discarded.py:38.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031627389364-qwnw-red-file-review-carries-forward/logs/after-suite.log:1 blocking: the file holds three header lines and two blank lines and nothing else - no summary line and no EXIT= line - so the after arm recorded at manifest.md:17 as after_suite 58 passed, exit_status 0, completed true has no receipt, and its own header names f9f3644548 while the record names 1d929a5187, which leaves promotion reading a claim whose log it cannot reconcile.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-review-carries-forward.html:20 non-blocking: the head row cites revision 1d929a5187 and 9 passed in 19.06s against logs/head-file.log, which by delivery the later all_debug run at f9f3644548 had rewritten to 9 passed in 18.76s, so the row no longer reconciles with the log it names even though the later run is green at the delivered head.\n",
+  "review_run_id": "r-20261116T063434417686-review-of-qwnw-red-file-review-carries-forward-f9f3644548a9",
+  "reviewed_base_sha": "44f00a3b150e311df5f662dcce656fe5fe766107",
+  "reviewed_head_sha": "f9f3644548a93fac7773051409aaa8bd3b22af02",
+  "reviewed_run_id": "r-20261116T031627389364-qwnw-red-file-review-carries-forward",
+  "reviewer_run_id": "r-20261116T063434417686-review-of-qwnw-red-file-review-carries-forward-f9f3644548a9",
+  "scores": {
+    "durability": 16,
+    "evidence": 11,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T07:30:08Z",
+  "total": 104
+}

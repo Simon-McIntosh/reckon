@@ -1,0 +1,122 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own recorded arms: baseline_suite logs/baseline-suite-arm.log (ee93819a0d, 58 passed, EXIT=0) and after_suite logs/after-suite-arm.log (ae0e43bee5, 58 passed, EXIT=0). Both logs are pytest format, both list no FAILED or ERROR id, so the added-failure set is empty and the count is a measured 0 rather than an unmeasured one. The same reader over the node pair logs/repro-base.log (6 failed, 5 passed, EXIT=1) and logs/all-debug-node-test.log (11 passed, EXIT=0) also answers (0, []): the head log names no failure the base log does not.",
+  "assertion_analysis": [
+    {
+      "failure_condition": "The diff adds no assertion; it changes which stream the shared helper decodes. Reinstating result.output.splitlines()[0] at tests/test_dispatch_names_its_backend.py:166 reddens the six launched cases logged FAILED in logs/repro-base.log \u2014 test_explicit_metered_backend_dispatches_without_changing_resolution, test_member_backend_without_budget_check_dispatches_without_lane_flag, test_in_harness_default_without_budget_check_dispatches_without_lane_flag, test_unmetered_member_harness_dispatches_without_a_lane_flag, test_unknown_backend_without_budget_check_dispatches_without_lane_flag and test_run_record_pairs_declared_lane_with_dispatch_window \u2014 each with json.decoder.JSONDecodeError on the created-run notice, which my own rerun at ee93819a0d reproduced (6 failed, 5 passed).",
+      "lines": "tests/test_dispatch_names_its_backend.py:157-166"
+    },
+    {
+      "failure_condition": "The 11-passed line reddens if any of the eleven cases fails; the five dry-run and refusal cases redden if the helper stops reading stdout on the paths that print no notice, so the repair is guarded in both directions.",
+      "lines": "logs/all-debug-node-test.log:6-7"
+    }
+  ],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-16T08:56:01.124Z",
+  "dispatched_at": "2026-11-16T08:55:42Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031720687365-qwnw-red-file-dispatch-names-its-backend/manifest.md",
+      "line": "6",
+      "severity": "non-blocking",
+      "text": "The checkpoint claims the node file is green at head ae0e43bee5 as all_debug job 1319518, but logs/all-debug-node-test.log:1 names revision c6fa529200371bd59fd9637522394c1601b86525 for that job; ae0e43bee5 touches only the evidence fragment, so the result carries to the head, but the recorded claim is one commit ahead of the revision the log names and a reader comparing the two cannot tell whether the head was measured."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031720687365-qwnw-red-file-dispatch-names-its-backend/logs/baseline-suite-arm.log",
+      "line": "4",
+      "severity": "non-blocking",
+      "text": "The recorded baseline_suite arm carries '# worktree state:  M tests/test_dispatch_names_its_backend.py', so the arm run stored as the base arm at ee93819a0d ran with the change already applied; the 'adds no failure against the base' clause is therefore a comparison of matched trees. Nothing in the arm imports the changed helper, and the arm reads 58 passed in both arms, so the outcome cannot differ, but the recorded field does not name a clean base arm."
+    },
+    {
+      "file": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/review-of-qwnw-red-file-dispatch-names-its-backend-ae0e43bee5bf/docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-names-its-backend.html",
+      "line": "66",
+      "severity": "non-blocking",
+      "text": "The measured table's 'the gate, after arm' row cites revision 64829d8750, while the after arm log the manifest records, logs/after-suite-arm.log:1, names ae0e43bee5 for its 58 passed; the table cites a revision no log in the run names, so a reader following the citation cannot open the run it describes."
+    }
+  ],
+  "gate_evidence": [
+    {
+      "exit": 0,
+      "log": "logs/all-debug-node-test.log",
+      "revision": "c6fa529200371bd59fd9637522394c1601b86525",
+      "summary": "11 passed in 2.88s"
+    },
+    {
+      "exit": 1,
+      "log": "logs/repro-base.log",
+      "revision": "ee93819a0dfd283816a577795513c00bca2b8e19",
+      "summary": "6 failed, 5 passed in 4.17s"
+    },
+    {
+      "exit": 0,
+      "log": "logs/baseline-suite-arm.log",
+      "revision": "ee93819a0dfd283816a577795513c00bca2b8e19",
+      "summary": "58 passed in 40.46s"
+    },
+    {
+      "exit": 0,
+      "log": "logs/after-suite-arm.log",
+      "revision": "ae0e43bee5bf93f27a57f36d4071488683ed7fba",
+      "summary": "58 passed in 47.99s"
+    },
+    {
+      "exit": 0,
+      "log": "logs/one-document-stdout-only.log",
+      "revision": "64829d875006a7e936b34a7af15a045bbb8d5825",
+      "summary": "8 passed in 1.28s"
+    }
+  ],
+  "item_manifest": {
+    "done_when": "tests/test_dispatch_names_its_backend.py passes in full at head as a job on all_debug with SLURM_JOB_ID unset; at revision 8d50b0333f it reported 6 failing or erroring tests; first merge the current origin/main and rerun the file; the manifest lists each cause with a verdict, product wrong or test wrong, updating a test that encodes a rule the code no longer keeps with no assertion deleted or weakened; an arm over the test files that import what you changed adds no failure against the base; negative control: the base revision's run of the named file, with its failing ids, logged beside the head run under docs/evidence/fragments/queued-work-needs-no-workaround/",
+    "goal": "Make tests/test_dispatch_names_its_backend.py pass in full on the primary branch",
+    "write_paths": [
+      "reckon",
+      "tests",
+      "docs/evidence/fragments/queued-work-needs-no-workaround"
+    ]
+  },
+  "item_verdicts": {
+    "call_sites": "None: the landed change is confined to a test-module helper, so no runtime module reaches it.",
+    "diff": "Read commit by commit against ee93819a0d: 64829d8750 changes _payload at tests/test_dispatch_names_its_backend.py:157-166 from result.output to result.stdout with a docstring naming why; c6fa529200 adds the 116-line evidence fragment; ae0e43bee5 rewrites one row of that fragment's measured table. 2 files, 123 insertions, 2 deletions, all inside the declared scope.",
+    "done_when": "The done_when asks for the file green as an all_debug job with SLURM_JOB_ID unset plus a recorded file beneath docs/evidence/fragments/queued-work-needs-no-workaround; logs/all-debug-node-test.log:3-5 records job 1319518 on partition all_debug with SLURM_JOB_ID unset, :7 reads 11 passed, and the fragment docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-names-its-backend.html:53-70. The base run at ee93819a0d is logs/repro-base.log with six failing ids, matching the 6 failed, 5 passed its own file had.",
+    "goal": "The node's goal is a green tests/test_dispatch_names_its_backend.py; the landed repair is the one-line helper change at tests/test_dispatch_names_its_backend.py:166 (and the two-line version at :157-166), and its head run recorded in logs/all-debug-node-test.log reads 11 passed, EXIT=0.",
+    "manifest": "Read: manifest.md records commits 64829d8750, c6fa529200 and ae0e43bee5, changed paths, tests and test_logs, baseline_suite/after_suite arms at 58 passed each with exit 0, negative_control_log logs/repro-base.log, and the cause with the verdict that the test was wrong and the product rule unchanged; its checkpoint line's head claim is off by one commit (see findings).",
+    "write_paths": "Declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the diff's two files are tests/test_dispatch_names_its_backend.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-names-its-backend.html, so every path is inside the fence."
+  },
+  "justifications": {
+    "durability": "No assertion is added; the six launched cases at tests/test_dispatch_names_its_backend.py already fail whenever _payload is reverted from result.stdout to result.output, which logs/repro-base.log:1 and my own base rerun (6 failed, 5 passed, same JSONDecodeError) demonstrate.",
+    "evidence": "logs/all-debug-node-test.log:3-8 records the job, revision, command and EXIT=0 and logs/repro-base.log:1-3 records the base arm, but logs/baseline-suite-arm.log:4 shows that base arm ran with the changed test file already in its worktree, so the arm pair is not a clean base-versus-head comparison.",
+    "fit": "The docstringed private helper and the json.loads(result.stdout) read follow the same idiom as tests/test_project_state.py:1497 and dozens of sibling test modules, and no name the naming rules forbid is introduced.",
+    "goal_fidelity": "tests/test_dispatch_names_its_backend.py:166 now decodes result.stdout, and the file's own run at c6fa529200 reads 11 passed in logs/all-debug-node-test.log:7, which is the goal's whole measure.",
+    "reuse": "The diff adds no function, class or module; it repairs the private helper in place and leans on the product's existing single-document rule reckon/crew_dispatch_commands.py:_single_document_stdout and its existing guard tests/test_dispatch_stdout_is_one_document.py (8 passed, logs/one-document-stdout-only.log) rather than adding a second guard.",
+    "scope_discipline": "Both files in git diff ee93819a0d..ae0e43bee5 lie inside the declared tests and docs/evidence/fragments/queued-work-needs-no-workaround paths, and nothing else is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a green tests/test_dispatch_names_its_backend.py; the landed repair is the stdout read at tests/test_dispatch_names_its_backend.py:166 and its head run logs/all-debug-node-test.log:7 reads 11 passed, EXIT=0.\nVERDICT done_when: the done_when asks for the file green as an all_debug job with SLURM_JOB_ID unset plus the base and head runs recorded under docs/evidence/fragments/queued-work-needs-no-workaround/; logs/all-debug-node-test.log:3-5 records job 1319518 on all_debug with SLURM_JOB_ID unset, and logs/repro-base.log:1 names the base revision with six failing ids.\nVERDICT write_paths: declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff ee93819a0d..ae0e43bee5 touches only tests/test_dispatch_names_its_backend.py and the matching fragment there, all inside the fence.\nVERDICT manifest: read; manifest.md records three commits, both arm logs at 58 passed with exit 0, negative_control_log logs/repro-base.log and the cause with its test-wrong verdict, with its checkpoint head claim one commit ahead of the log it cites.\nVERDICT diff: read commit by commit against ee93819a0d; 64829d8750 fixes _payload, c6fa529200 adds the evidence fragment and ae0e43bee5 corrects one table row, 2 files and 123 insertions all inside the declared scope.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_dispatch_names_its_backend.py:166 decodes result.stdout and logs/all-debug-node-test.log:7 reads 11 passed, which is the goal's measure.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/all-debug-node-test.log:3-8 records the job, revision, command and EXIT=0, but logs/baseline-suite-arm.log:4 shows the base arm ran with the change already in its worktree.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only two files in git diff ee93819a0d..ae0e43bee5, tests/test_dispatch_names_its_backend.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-names-its-backend.html, are inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: reverting tests/test_dispatch_names_its_backend.py:166 to result.output reddens the six launched cases, as logs/repro-base.log:1 and my own base rerun both show.\nSCORE fit: 19\nJUSTIFICATION fit: json.loads(result.stdout) is the idiom in dozens of sibling modules such as tests/test_project_state.py:1497, and the changed helper keeps its private docstringed form.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition; it repairs the existing helper and relies on reckon/crew_dispatch_commands.py:_single_document_stdout and its guard tests/test_dispatch_stdout_is_one_document.py rather than adding a second guard.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031720687365-qwnw-red-file-dispatch-names-its-backend/manifest.md:6 non-blocking: the checkpoint claims green at head ae0e43bee5 while logs/all-debug-node-test.log:1 names c6fa529200 for that job, so the head is asserted rather than measured.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031720687365-qwnw-red-file-dispatch-names-its-backend/logs/baseline-suite-arm.log:4 non-blocking: the recorded base arm carries '# worktree state:  M tests/test_dispatch_names_its_backend.py', so it ran with the change applied rather than at a clean base tree.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-names-its-backend.html:66 non-blocking: the after-arm row cites 64829d8750 while logs/after-suite-arm.log:1 names ae0e43bee5 for its 58 passed, so the table cites a revision no log names.",
+  "review_run_id": "r-20261116T085238850679-review-of-qwnw-red-file-dispatch-names-its-backend-ae0e43bee5bf",
+  "reviewed_base_sha": "ee93819a0dfd283816a577795513c00bca2b8e19",
+  "reviewed_head_sha": "ae0e43bee5bf93f27a57f36d4071488683ed7fba",
+  "reviewed_run_id": "r-20261116T031720687365-qwnw-red-file-dispatch-names-its-backend",
+  "reviewer_rerun": {
+    "command": "PYTHONPATH=. timeout 300 /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_dispatch_names_its_backend.py (run in the review worktree at ee93819a0d; the review worktree sits at the base revision)",
+    "note": "The review worktree sits at the base revision, so this run is the base arm, not a head run; the head was not re-run.",
+    "result": "6 failed, 5 passed in 4.75s, every failure json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0) - an independent reproduction of the recorded base defect at the review worktree's own base revision",
+    "revision": "ee93819a0dfd283816a577795513c00bca2b8e19",
+    "tree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/review-of-qwnw-red-file-dispatch-names-its-backend-ae0e43bee5bf"
+  },
+  "rubric": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T12:02:12.807179+00:00",
+  "total": 112
+}

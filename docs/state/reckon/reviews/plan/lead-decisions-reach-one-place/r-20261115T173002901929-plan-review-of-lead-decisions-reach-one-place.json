@@ -1,0 +1,68 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T17:46:37.578Z",
+  "dispatched_at": "2026-11-15T17:46:17Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/lead-decisions-reach-one-place/r-20261115T173002901929-plan-review-of-lead-decisions-reach-one-place/plan.html:51",
+      "id": "done_when-1",
+      "reason": "an unmeasured deliverable clause is a clause the node will not implement, and the state is one of the seven the new trial table reports coming back from live sessions, so dropping it loses a measured need silently.",
+      "text": "\u00a71's deliverable states that a decision a session took under a standing rule \"may be recorded as taken and reversible, and is listed apart as well\", but the done-when measures only the ready list, the plan-block inclusion, the absent-when-answered rule and the pending-on-a-run list \u2014 nothing asserts that a taken-and-reversible record appears, that it is kept out of the ready list, or that it is distinguishable from a pending one, so a build can omit the state entirely and still pass its gate",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/lead-decisions-reach-one-place/r-20261115T173002901929-plan-review-of-lead-decisions-reach-one-place/plan.html:56",
+      "id": "done_when-2",
+      "reason": "one line in \u00a72's done-when closes it; left open, the writer's validated range and the reader's stated range differ and the mismatch surfaces only when a record with five options reaches the presenter.",
+      "text": "\u00a71 fixes the tolerance at \"two to four options\" while \u00a72's refusal, the place a malformed record is actually rejected, names only \"fewer than two options or no recommendation\", so a five-option record is permitted by the section whose job is to enforce \u00a71's shape and the declared ceiling is never exercised by any test",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/lead-decisions-reach-one-place/r-20261115T173002901929-plan-review-of-lead-decisions-reach-one-place/plan.html:50",
+      "id": "reasoning-1",
+      "reason": "the node must otherwise invent which fields are optional and how a record with no held work orders inside a held-work-ordered list, which is the one decision the plan should make and every downstream consumer then depends on.",
+      "text": "\u00a71 requires every record to carry the owning project, session, plan and section, the time it was recorded, what an answer releases, any action the lead must take, and whether a live session owns the plan, then adds that \"an open decision already written in a plan's decisions block appears in the same read\"; a plan-block decision has no owning session, no recorded time, no held work and no release or action field, and \u00a74 in turn requires each presented choice to show its session and what the read released, so the read's output shape is defined for one half of its own population and undefined for the other",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/lead-decisions-reach-one-place/r-20261115T173002901929-plan-review-of-lead-decisions-reach-one-place/plan.html:44",
+      "id": "reasoning-2",
+      "reason": "without a withdrawn or duplicate state the presenter either shows the lead a decision already settled or silently drops a report, and the plan's own trial shows this occurring in one of nine decisions collected.",
+      "text": "the new evidence table records \"A reported decision was already settled elsewhere and had to be withdrawn\", reported by one of the fifteen sessions, and the Why paragraph records that of nine decisions returned one \"was already settled\", so duplicate reports are measured in the plan's own evidence; \u00a71 defines no withdrawn or duplicate state \u2014 it says only that an answered decision does not appear \u2014 while \u00a74 has a presenting session ask every live session for unrecorded decisions, which is exactly the pass that produced the duplicate, and names no rule for recognising that two reports are one decision",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "d59d5667c720b60d376fe14124634a916a69bbb8",
+  "plan_fingerprint": "694ae2e0eba46fa66e690b756d7b2195da710d56b366aa2c71f4631bb864f52e",
+  "plan_slug": "lead-decisions-reach-one-place",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261115T173002901929-plan-review-of-lead-decisions-reach-one-place",
+  "reviewed_blob_sha": "951ffd09cb80aee0af004f1a609fc9ecf4770193",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the three plans the Why cites resolve under `nova/docs/plans/` as `iron-core-magnetisation.html`, `kernel-compile-barrier.html` and `sub-millisecond-forward-path.html`, `work-flows-to-the-lane.html` exists, and `reckon-select` is a new name rather than a pointer to something removed.",
+    "done_when": "findings \u2014 `plan.html:51` states a \"taken and reversible\" listing with no measure, and `plan.html:56` refuses a record below the declared option floor but never above the declared ceiling.",
+    "evidence_paths": "pass \u2014 every section writes its evidence and its failing run to `docs/evidence/fragments/lead-decisions-reach-one-place/sN.html`, an in-repo directory whose sibling slugs already exist, so nothing lands in a scratchpad.",
+    "naming": "pass \u2014 `reckon-select` joins the existing `skills/reckon-*` family and no section carries a stage name, ticket number or changelog sentence into the work, so a reader of the code needs no tracker entry.",
+    "reasoning": "findings \u2014 the record shape declared at `plan.html:50` cannot be filled by the plan-block population it also admits, and the duplicate the trial reports at `plan.html:44` has no state in that shape.",
+    "single_goal": "pass \u2014 each of \u00a71\u2013\u00a74 names one deliverable (one read; one hold rule for the lead's word; one answer path; one presenting skill) and one fragment to verify it.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares s2\u2192s1, s3\u2192s1 and s4\u2192{s1,s3}, which matches what each section needs (\u00a72 writes the record \u00a71 reads, \u00a73 answers a record only \u00a71 can produce, \u00a74 reads \u00a71's read and records through \u00a73), and `plan-after` names `docs/plans/work-flows-to-the-lane.html`, which exists."
+  },
+  "section_digests": {
+    "_document": "9ca2e30dea6de247b0e0695bc073ea5e9f2ab6b9c1ed342b2b8558bd2e88654c",
+    "s1": "988ff80099600d149c344b0ae6d055140098718f2577498bb3d7d61ea8b076df",
+    "s2": "3990e36d5d1e1fce72789dd300c8052dce0aad29048cc58f7f33b570edfae4c6",
+    "s3": "523de628c2d878374dd177819b12ea5129bf326cc71f71a04fa9bab90ef314ce",
+    "s4": "e3d4ea14d0d4f7de233d9d9bf8b33afd1125da5541f9fae57b1864be038ac7cf"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T18:01:05.864171+00:00",
+  "total": null
+}

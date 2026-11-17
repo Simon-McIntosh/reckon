@@ -42,8 +42,12 @@ BATCH_ENTRY_FIELDS = frozenset(
         "regenerate_paths",
         "anchor_paths",
         "negative_control",
+        "mcp_set",
         "time_budget",
         "over_fence_reason",
+        "comment",
+        "local",
+        "priority",
         "estimated_hours",
         "manifest",
         "brief",
@@ -223,11 +227,17 @@ def _built_once(
         from reckon.mcp_discovery import _discover_project, _inventory_row
 
         # Ordering names no docs dir and resolves through the project's mount,
-        # while the wait check names the checkout's own; both answer with the
-        # same tree, so the key is the resolved dir rather than the arguments.
+        # while the wait check names the checkout's own. Those two readers can
+        # name different trees — a dispatch made from a worktree names the
+        # worktree's docs while the mount resolves to the main checkout's — and
+        # keying on the resolved dir made that pair pay two whole-project
+        # scans. The batch derives one project once whichever checkout it runs
+        # from, so the key is the project and the build reads the registered
+        # mount, which is the tree the dispatch actually builds against.
         docs_dir = kwargs.get("docs_dir")
-        resolved = Path(docs_dir) if docs_dir else _docs_dir_for_project(project, None)
-        key = (str(project), str(resolved or ""))
+        mounted = _docs_dir_for_project(project, None)
+        resolved = Path(mounted) if mounted else (Path(docs_dir) if docs_dir else None)
+        key = (str(project), "")
         if key not in built:
             # Discovery derives the project's roadmap to attach its ready set,
             # and the scope hands that derivation back, so the batch takes it
@@ -240,7 +250,7 @@ def _built_once(
                 # reads who coordinates a critical-path link, so the build skips
                 # that resolution: it reads every run's ledger document, which
                 # was most of each entry's queue time.
-                with roadmap_build_scope(resolve_coordinators=False) as scope:
+                with roadmap_build_scope(resolve_coordinators=False, audit_landings=False) as scope:
                     discovered = _discover_project(
                         str(project), Path(resolved).parent if resolved else None
                     )
@@ -563,6 +573,7 @@ def _entry_node(
     entry: Mapping[str, Any],
     *,
     plans: _Plans,
+    defaults: Mapping[str, Any] | None = None,
 ) -> tuple[str, TaskNode, dict[str, str]]:
     """Build one entry's node, filling every omitted field from its section.
 
@@ -621,6 +632,12 @@ def _entry_node(
     if estimated_hours is None and "estimated_hours" in derivation:
         estimated_hours, derived["estimated_hours"] = derivation["estimated_hours"]
     spec_level = str(entry.get("spec_level") or "")
+    # A field the entry leaves out falls back to the command-level value, so a
+    # coordinator queuing one batch for many sections states a reason, a
+    # comment or a lane once rather than on every entry.
+    over_fence_reason = str(entry.get("over_fence_reason") or "") or str(
+        (defaults or {}).get("over_fence_reason") or ""
+    )
 
     node = TaskNode(
         id=node_id,
@@ -633,12 +650,13 @@ def _entry_node(
         role=str(entry.get("role") or "implement"),
         spec_level=spec_level,
         negative_control=str(entry.get("negative_control") or ""),
+        mcp_set=str(entry.get("mcp_set") or ""),
         done_when=done_when,
         write_paths=list(write_paths),
         regenerate_paths=_as_list(entry.get("regenerate_paths")),
         anchor_paths=_as_list(entry.get("anchor_paths")),
         time_budget=str(entry.get("time_budget") or ""),
-        over_fence_reason=str(entry.get("over_fence_reason") or ""),
+        over_fence_reason=over_fence_reason,
         estimated_hours=estimated_hours,
         manifest_path=str(entry.get("manifest") or ""),
         requires_decisions=_as_list(entry.get("requires_decisions")),
@@ -648,6 +666,37 @@ def _entry_node(
         compares_with=str(entry.get("compares_with") or ""),
     )
     return project, node, derived
+
+
+def _entry_options(
+    index: int, entry: Mapping[str, Any], defaults: Mapping[str, Any]
+) -> dict[str, Any]:
+    """The steering comment, lane and queue priority one entry carries.
+
+    Each value the entry leaves out is taken from the command-level default, so
+    an option given beside the batch applies to every entry that does not set
+    it. The two switches are read as booleans rather than as non-empty strings,
+    because a batch file spelling one ``"false"`` must not read as set.
+    """
+    comment = str(entry.get("comment") or "") or str(defaults.get("comment") or "")
+
+    raw_local = entry.get("local")
+    if raw_local is None:
+        local = bool(defaults.get("local"))
+    elif isinstance(raw_local, bool):
+        local = raw_local
+    else:
+        raise BatchEntryRefusedError(f"entry {index + 1} local must be true or false")
+
+    raw_priority = entry.get("priority")
+    priority = defaults.get("priority") if raw_priority is None else raw_priority
+    if priority is not None and (
+        isinstance(priority, bool) or not isinstance(priority, int)
+    ):
+        raise BatchEntryRefusedError(
+            f"entry {index + 1} priority must be a whole number"
+        )
+    return {"comment": comment, "local": local, "priority": priority}
 
 
 def _peer_scopes(values: Any) -> dict[str, list[str]]:
@@ -724,12 +773,18 @@ def queue_plan(
     config_for,
     repo_root: str | Path,
     launch_kind: str = "cli",
+    over_fence_reason: str = "",
+    comment: str = "",
+    local: bool = False,
+    dry_run: bool = False,
 ) -> dict[str, Any]:
     """Queue a plan's implementable sections, reporting every authored section.
 
     Ownership uses the coordinator view's resolver. Existing work is reported
     before deriving a new contract, so a repeat neither edits queued requests
-    nor forgets delivered work whose pointer has already been promoted.
+    nor forgets delivered work whose pointer has already been promoted. The
+    command-level options are carried to every section this queues, exactly as
+    they are to the entries of a batch file.
     """
     from reckon import _plan_html, ledger
     from reckon.crew import runs
@@ -811,6 +866,10 @@ def queue_plan(
             config_for=lambda _: config,
             repo_root=read.repo_root,
             launch_kind=launch_kind,
+            over_fence_reason=over_fence_reason,
+            comment=comment,
+            local=local,
+            dry_run=dry_run,
         )
         if entries
         else {"ok": True, "queued": 0, "refused": 0, "results": []}
@@ -849,6 +908,11 @@ def queue_batch(
     config_for,
     repo_root: str | Path,
     launch_kind: str = "cli",
+    over_fence_reason: str = "",
+    comment: str = "",
+    local: bool = False,
+    priority: int | None = None,
+    dry_run: bool = False,
 ) -> dict[str, Any]:
     """Queue each entry on its own — see :func:`_queue_batch`.
 
@@ -858,14 +922,25 @@ def queue_batch(
     sections chosen.
     """
     from reckon.crew.queue_admission import plan_read_scopes
+    from reckon.serve import discovery_without_git_dates
 
-    with _parsed_once(), _built_once(), plan_read_scopes():
+    with (
+        _parsed_once(),
+        _built_once(),
+        plan_read_scopes(),
+        discovery_without_git_dates(),
+    ):
         return _queue_batch(
             entries,
             session=session,
             config_for=config_for,
             repo_root=repo_root,
             launch_kind=launch_kind,
+            over_fence_reason=over_fence_reason,
+            comment=comment,
+            local=local,
+            priority=priority,
+            dry_run=dry_run,
         )
 
 
@@ -876,6 +951,11 @@ def _queue_batch(
     config_for,
     repo_root: str | Path,
     launch_kind: str = "cli",
+    over_fence_reason: str = "",
+    comment: str = "",
+    local: bool = False,
+    priority: int | None = None,
+    dry_run: bool = False,
 ) -> dict[str, Any]:
     """Queue each entry on its own and report one row per entry.
 
@@ -922,12 +1002,30 @@ def _queue_batch(
         # stored and every member is reported by name.
         for index, entry in enumerate(entries):
             refuse(index, entry, str(exc))
-        return {"ok": False, "queued": 0, "refused": refused, "results": results}
+        cycle: dict[str, Any] = {
+            "ok": False,
+            "queued": 0,
+            "refused": refused,
+            "results": results,
+        }
+        if dry_run:
+            cycle["dry_run"] = True
+            cycle["would_queue"] = 0
+        return cycle
 
+    defaults = {
+        "over_fence_reason": over_fence_reason,
+        "comment": comment,
+        "local": local,
+        "priority": priority,
+    }
     for index in ordered:
         entry = entries[index]
         try:
-            project, node, derived = _entry_node(index, entry, plans=plans)
+            project, node, derived = _entry_node(
+                index, entry, plans=plans, defaults=defaults
+            )
+            options = _entry_options(index, entry, defaults)
             # An entry waits on another entry of this batch by that entry's node
             # id; the stored request is named by its run id, which the earlier
             # entry's row carries.
@@ -1006,27 +1104,35 @@ def _queue_batch(
                 launch_kind=launch_kind,
                 run_ids={node.id: run_id},
                 allow_unreviewed_plan=bool(entry.get("allow_unreviewed_plan")),
+                local=options["local"],
+                comment=options["comment"],
+                priority=options["priority"],
+                dry_run=dry_run,
             )
-            for stored_id in stored:
-                pointer = read_pointer(stored_id)
-                if isinstance(pointer, dict):
-                    queue_admission.record_review_contract(pointer)
-                if derived and stored_id == run_id:
-                    # A request already queued keeps the node it was stored
-                    # with, so its marks stay the ones that node was built under.
-                    _stamp_section_derived(stored_id, derived)
+            if not dry_run:
+                for stored_id in stored:
+                    pointer = read_pointer(stored_id)
+                    if isinstance(pointer, dict):
+                        queue_admission.record_review_contract(pointer)
+                    if derived and stored_id == run_id:
+                        # A request already queued keeps the node it was stored
+                        # with, so its marks stay the ones that node was built
+                        # under.
+                        _stamp_section_derived(stored_id, derived)
             _require_stored(stored, project, node)
             actual_id, row = next(iter(stored.items()))
             phase = str(row.get("phase") or "")
             stored_by_node[node.id] = actual_id
             already = actual_id != run_id
-            status = (
-                "already-queued"
-                if already
-                else (
+            if dry_run:
+                # A preview names what the entry resolved to and stores nothing.
+                status = "would-queue"
+            elif already:
+                status = "already-queued"
+            else:
+                status = (
                     "awaiting-upstream" if phase in WAITING_UPSTREAM_PHASES else phase
                 )
-            )
             results.append(
                 {
                     "index": index,
@@ -1044,13 +1150,21 @@ def _queue_batch(
             refuse(index, entry, str(exc))
 
     results.sort(key=lambda row: int(row["index"]))
+    accepted = len(results) - refused
     # A held entry stored no request, so it is neither queued nor refused: it is
     # answered, and the answer is the run that already holds its node.
     held_count = sum(1 for row in results if row.get("status") == "held")
-    return {
+    payload: dict[str, Any] = {
         "ok": refused == 0,
-        "queued": len(results) - refused - held_count,
+        "queued": accepted - held_count,
         "held": held_count,
         "refused": refused,
         "results": results,
     }
+    if dry_run:
+        # A preview stores nothing, so it reports what it would have queued
+        # rather than claiming a queue depth it never wrote.
+        payload["dry_run"] = True
+        payload["queued"] = 0
+        payload["would_queue"] = accepted
+    return payload

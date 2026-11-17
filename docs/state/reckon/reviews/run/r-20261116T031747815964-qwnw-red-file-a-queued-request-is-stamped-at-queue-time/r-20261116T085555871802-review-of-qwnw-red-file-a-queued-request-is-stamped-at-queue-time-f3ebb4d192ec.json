@@ -1,0 +1,93 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures": [],
+  "added_failures_note": "Derived with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own armed pair: logs/armed-base-arm.log (revision ee93819a0d, 58 passed, EXIT=0) and logs/armed-head-arm.log (revision d67a1a6c02, 58 passed, EXIT=0) return (0, []), so the head adds no failing test. The node's own gate pair returns (0, []) likewise: gate-base-arm.log fails six ids at ee93819a0d that gate-head-arm.log does not fail at d67a1a6c02.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatching/requests.py:187 queue_requests",
+    "reckon/crew/routing.py:112 _role_overlay",
+    "reckon/crew/admission/reviews.py:100 review_contract"
+  ],
+  "completed_at": "2026-11-16T09:07:14.688Z",
+  "dispatched_at": "2026-11-16T09:06:53Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-request-is-stamped-at-queue-time.html",
+      "id": "f5b4b1fa2c1",
+      "line": "65",
+      "severity": "blocking",
+      "text": "The negative-control row records only \"6 failed, EXIT=1\" and no failing test ids, while the node's done_when requires the base run \"with its failing ids, logged beside the head run in docs/evidence/fragments/queued-work-needs-no-workaround/<fragment>.html\"; a reader of the repository alone therefore cannot see which six tests were red, and the ids exist only in the run directory's logs/gate-base-arm.log."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-request-is-stamped-at-queue-time.html",
+      "id": "f1de3477cda",
+      "line": "57",
+      "severity": "non-blocking",
+      "text": "The paragraph states the logs are in the run directory under logs/, but the second cause's red run (the one that reported \"no done-when measure is stated; no time budget is set; no specification level is declared\") is not among them \u2014 logs/ holds base-arm.log, head-arm.log, gate-head-arm.log, gate-base-arm.log and the two armed arms only \u2014 so that reproduction survives solely in the run's session stream."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031747815964-qwnw-red-file-a-queued-request-is-stamped-at-queue-time/manifest.md",
+      "id": "f97dff53dfd",
+      "line": "30",
+      "severity": "non-blocking",
+      "text": "The lint result \"ruff check and ruff format --check ... report nothing new\" is asserted with no retained log, and test_logs names only the four pytest logs, so the lint claim cannot be re-read by a later reader."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q --basetemp=/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031747815964-qwnw-red-file-a-queued-request-is-stamped-at-queue-time/scratch/pytest-armed-head tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031747815964-qwnw-red-file-a-queued-request-is-stamped-at-queue-time/logs/armed-head-arm.log",
+      "revision": "d67a1a6c02ad3879e90c028de57485bf1e52209a"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q --basetemp=/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031747815964-qwnw-red-file-a-queued-request-is-stamped-at-queue-time/scratch/pytest-armed-base tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031747815964-qwnw-red-file-a-queued-request-is-stamped-at-queue-time/logs/armed-base-arm.log",
+      "revision": "ee93819a0dfd283816a577795513c00bca2b8e19"
+    }
+  },
+  "item_verdicts": {
+    "diff": "Read d67a1a6c02 (23 insertions and 1 deletion at tests/test_a_queued_request_is_stamped_at_queue_time.py:33-48 and :145-165 \u2014 a module CONFIG declaring roles and backends, and done_when/write_paths/time_budget/spec_level on the _node fixture) and f3ebb4d192 (a new 90-line evidence fragment); no product file and no assertion body changes.",
+    "done_when": "Read the done_when's four clauses against the file and the run's logs; the head clause holds (6 passed, EXIT=0), the base clause holds (logs/gate-base-arm.log: 6 failed, EXIT=1), the armed clause holds (58 passed on both arms), and the cause-with-verdict clause holds, but the negative-control clause fails: the fragment it names records the count only and no failing ids.",
+    "goal": "Read the goal in dispatch-detail.json against the reviewed head; tests/test_a_queued_request_is_stamped_at_queue_time.py passes its six tests as an all_debug job with SLURM_JOB_ID unset (logs/gate-head-arm.log: \"6 passed in 3.16s\", EXIT=0, job 1319514), delivered by completing the fixture at tests/test_a_queued_request_is_stamped_at_queue_time.py:33-48 and :145-152 and not by a product change.",
+    "manifest": "Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031747815964-qwnw-red-file-a-queued-request-is-stamped-at-queue-time/manifest.md; it records both commits, the gate command, four arm logs with exit codes, two causes each with a verdict, and the armed pair as 58 passed on both.",
+    "write_paths": "Read the reviewed fence at prompt.txt:84-86 (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround plus that directory's fragment paths) and both commits; the only changed paths are tests/test_a_queued_request_is_stamped_at_queue_time.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-request-is-stamped-at-queue-time.html, both inside it."
+  },
+  "justifications": {
+    "durability": "restoring the base revision's fixture line at tests/test_a_queued_request_is_stamped_at_queue_time.py:163 reddens all six tests, which the landed base arm shows as \"6 failed\" EXIT=1, and the added fixture fields are the ones validate_node refuses without.",
+    "evidence": "logs/gate-head-arm.log ends \"6 passed in 3.16s\" / EXIT=0 and logs/gate-base-arm.log ends \"6 failed in 4.85s\" / EXIT=1 at the base revision, but the fragment the done_when names at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-request-is-stamped-at-queue-time.html:65 carries no failing test ids and the ruff result at manifest.md:30 has no log.",
+    "fit": "the module-level CONFIG literal at tests/test_a_queued_request_is_stamped_at_queue_time.py:33 follows the same shape as tests/test_a_brief_run_names_its_plan_at_dispatch.py:53 and tests/test_a_batch_derives_an_absolute_write_path.py:47.",
+    "goal_fidelity": "tests/test_a_queued_request_is_stamped_at_queue_time.py:33-48 supplies the roles and backends queue_requests needs, and :145-152 the node contract validate_node needs, so the six tests reach and pass their assertions at the reviewed head.",
+    "reuse": "no shared owner exists for a queueing test config \u2014 tests/conftest.py carries no roles or backends fixture and more than forty sibling files each declare their own CONFIG \u2014 so the addition extends the established per-file idiom rather than forking a capability.",
+    "scope_discipline": "every path in d67a1a6c02 and f3ebb4d192 is a test file under tests/ or a fragment under docs/evidence/fragments/queued-work-needs-no-workaround/, both inside the fence at prompt.txt:84-86, and the goal implies both a fixture repair and its evidence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the goal in dispatch-detail.json against the reviewed head; tests/test_a_queued_request_is_stamped_at_queue_time.py passes its six tests as an all_debug job with SLURM_JOB_ID unset (logs/gate-head-arm.log: \"6 passed in 3.16s\", EXIT=0, job 1319514), delivered by completing the fixture at tests/test_a_queued_request_is_stamped_at_queue_time.py:33-48 and :145-152 and not by a product change.\nVERDICT done_when: Read the done_when's four clauses against the file and the run's logs; the head clause holds (6 passed, EXIT=0), the base clause holds (logs/gate-base-arm.log: 6 failed, EXIT=1), the armed clause holds (58 passed on both arms), and the cause-with-verdict clause holds, but the negative-control clause fails: the fragment it names records the count only and no failing ids.\nVERDICT write_paths: Read the reviewed fence at prompt.txt:84-86 (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround plus that directory's fragment paths) and both commits; the only changed paths are tests/test_a_queued_request_is_stamped_at_queue_time.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-request-is-stamped-at-queue-time.html, both inside it.\nVERDICT manifest: Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031747815964-qwnw-red-file-a-queued-request-is-stamped-at-queue-time/manifest.md; it records both commits, the gate command, four arm logs with exit codes, two causes each with a verdict, and the armed pair as 58 passed on both.\nVERDICT diff: Read d67a1a6c02 (23 insertions and 1 deletion at tests/test_a_queued_request_is_stamped_at_queue_time.py:33-48 and :145-165 \u2014 a module CONFIG declaring roles and backends, and done_when/write_paths/time_budget/spec_level on the _node fixture) and f3ebb4d192 (a new 90-line evidence fragment); no product file and no assertion body changes.\nCALL_SITES: reckon/crew/dispatching/requests.py:187 queue_requests, reckon/crew/routing.py:112 _role_overlay, reckon/crew/admission/reviews.py:100 review_contract (the production path the added fixture values are judged by; the change adds no production symbol, so no production code calls the change itself)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_queued_request_is_stamped_at_queue_time.py:33-48 supplies the roles and backends queue_requests needs, and :145-152 the node contract validate_node needs, so the six tests reach and pass their assertions at the reviewed head.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/gate-head-arm.log ends \"6 passed in 3.16s\" / EXIT=0 and logs/gate-base-arm.log ends \"6 failed in 4.85s\" / EXIT=1 at the base revision, but the fragment the done_when names at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-request-is-stamped-at-queue-time.html:65 carries no failing test ids and the ruff result at manifest.md:30 has no log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in d67a1a6c02 and f3ebb4d192 is a test file under tests/ or a fragment under docs/evidence/fragments/queued-work-needs-no-workaround/, both inside the fence at prompt.txt:84-86, and the goal implies both a fixture repair and its evidence.\nSCORE durability: 18\nJUSTIFICATION durability: restoring the base revision's fixture line at tests/test_a_queued_request_is_stamped_at_queue_time.py:163 reddens all six tests, which the landed base arm shows as \"6 failed\" EXIT=1, and the added fixture fields are the ones validate_node refuses without.\nSCORE fit: 19\nJUSTIFICATION fit: the module-level CONFIG literal at tests/test_a_queued_request_is_stamped_at_queue_time.py:33 follows the same shape as tests/test_a_brief_run_names_its_plan_at_dispatch.py:53 and tests/test_a_batch_derives_an_absolute_write_path.py:47.\nSCORE reuse: 19\nJUSTIFICATION reuse: no shared owner exists for a queueing test config \u2014 tests/conftest.py carries no roles or backends fixture and forty-odd sibling files each declare their own CONFIG \u2014 so the addition extends the established per-file idiom rather than forking a capability.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-request-is-stamped-at-queue-time.html:65 blocking: the negative-control row records only \"6 failed, EXIT=1\" and no failing test ids, while the node's done_when requires the base run \"with its failing ids, logged beside the head run in docs/evidence/fragments/queued-work-needs-no-workaround/<fragment>.html\"; a reader of the repository alone therefore cannot see which six tests were red, and the ids exist only in the run directory's logs/gate-base-arm.log.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-request-is-stamped-at-queue-time.html:57 non-blocking: the paragraph states the logs are in the run directory under logs/, but the second cause's red run (the one that reported \"no done-when measure is stated; no time budget is set; no specification level is declared\") is not among them \u2014 logs/ holds base-arm.log, head-arm.log, gate-head-arm.log, gate-base-arm.log and the two armed arms only \u2014 so that reproduction survives solely in the run's session stream.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031747815964-qwnw-red-file-a-queued-request-is-stamped-at-queue-time/manifest.md:30 non-blocking: the lint result \"ruff check and ruff format --check ... report nothing new\" is asserted with no retained log, and test_logs names only the four pytest logs, so the lint claim cannot be re-read by a later reader.\n",
+  "review_run_id": "r-20261116T085555871802-review-of-qwnw-red-file-a-queued-request-is-stamped-at-queue-time-f3ebb4d192ec",
+  "reviewed_base_sha": "ee93819a0dfd283816a577795513c00bca2b8e19",
+  "reviewed_head_sha": "f3ebb4d192ec83b82c131e0d3521cf9e972f30a4",
+  "reviewed_run_id": "r-20261116T031747815964-qwnw-red-file-a-queued-request-is-stamped-at-queue-time",
+  "rubric": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T09:19:46.928652+00:00",
+  "total": 110
+}

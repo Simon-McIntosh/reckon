@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/serve.py:2751 compose_landed_record serves a plan's cumulative evidence record with its fragments composed in",
+    "reckon/mcp.py:1344 compose_landed_record reads the same record over MCP",
+    "reckon/doccheck.py:1970 compose_landed_record audits the composed record"
+  ],
+  "completed_at": "2026-11-16T10:13:47.576Z",
+  "dispatched_at": "2026-11-16T10:13:13Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-only-unmergeable-paths-are-claimed-second-launch.html",
+      "line": "82",
+      "severity": "non-blocking",
+      "text": "non-blocking: the suite-arm block labels the after arm \"8d5be69198, this worktree at head\" as 58 passed in 33.70s while the manifest's after_suite cites logs/after-6a7ffbd9d40cc979cb9ab8d2e58ba3d198676dbf-suite-arm.log at 58 passed in 34.75s, so the fragment and the manifest hand a reconciling reader two different after-arm figures with no line saying which one the record stands on."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-only-unmergeable-paths-are-claimed-second-launch.html",
+      "line": "64",
+      "severity": "non-blocking",
+      "text": "non-blocking: both quoted gate blocks name revisions 8d5be69198 and 6a7ffbd9d4 while the node landed be2bf2df13, and no log or suite arm names the landed head, so a reader cannot tell from the record that the trailing fragment-only commit changed no measurement."
+    }
+  ],
+  "head_log_revision": "6a7ffbd9d40cc979cb9ab8d2e58ba3d198676dbf",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read all three commits against base 0e0f25b0 commit by commit: 8d5be69198 adds the 87-line fragment, 6a7ffbd9d4 and be2bf2df13 rewrite only its figures and one citation, and no Python or test file changes, which is the branch the goal's \"if it already passes, deliver that passing run and stop\" names.",
+    "done_when": "the done_when asks for the file passing in full at head as an all_debug job with SLURM_JOB_ID unset, a verdict per cause, no weakened assertion, an arm over the fence's test files adding no failure, a negative control logged with its failing ids, and nothing new from ruff; the manifest records job 1319594 with SLURM_JOB_ID unset and 25 passed, the one recorded cause with a verdict in the table at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-only-unmergeable-paths-are-claimed-second-launch.html:22-29, both arms at 58 passed, a mutation-derived negative control whose 14 failing ids match logs/negative-control-reckon-exclusive.log, and ruff clean on the reverted module; the clause asking for the base run's own failing ids is unsatisfiable because the base run has none, and the substitute is recorded as a deviation.",
+    "goal": "the node's goal is to make tests/test_only_unmergeable_paths_are_claimed.py pass in full on the primary branch; the file already passed at the assigned base 0e0f25b0 (logs/base-0e0f25b0-target-file.log: 25 passed, EXIT=0) and at head (logs/head-6a7ffbd9d40cc979cb9ab8d2e58ba3d198676dbf-target-file.log: 25 passed, EXIT=0), so the landed change is the pass record at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-only-unmergeable-paths-are-claimed-second-launch.html rather than a repair, and origin/main cb557f9711 verifies as an ancestor of the base.",
+    "manifest": "read in full; status complete, commits 8d5be69198, 6a7ffbd9d4 and be2bf2df13, changed_paths the one fragment, baseline_suite 0 failures at 0e0f25b0 and after_suite 0 failures at 6a7ffbd9d4 with both logs named, both marked complete and both carrying an EXIT line, and every rubric line present.",
+    "write_paths": "the fence was reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround with its named fragment and a figures directory, and git diff --name-status 0e0f25b0f941 be2bf2df13 lists exactly one added path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-only-unmergeable-paths-are-claimed-second-launch.html, inside it."
+  },
+  "justifications": {
+    "durability": "the diff adds no assertion of its own, so durability rests on the pre-existing tests/test_only_unmergeable_paths_are_claimed.py, whose firing is shown only by the reverted mutation at logs/negative-control-reckon-exclusive.log reading 14 failed, 11 passed with EXIT=1, and nothing committed fails if the fragment's figures go stale.",
+    "evidence": "logs/baseline-suite.log:2 and logs/after-6a7ffbd9d40cc979cb9ab8d2e58ba3d198676dbf-suite-arm.log:2 are the fence's own command and each ended 58 passed with EXIT=0, so added_failure_count is 0 from a readable pair, but the after arm's recorded revision 6a7ffbd9d4 is not the landed head be2bf2df13.",
+    "fit": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-only-unmergeable-paths-are-claimed-second-launch.html:1-2 follows the sibling idiom of docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-gate-log-agrees.html:1-6 with a section wrapper, h3 and h4 headings, a verdict table and pre blocks, but the h4s at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-only-unmergeable-paths-are-claimed-second-launch.html:22 and :35 carry no id where the sibling ids its headings.",
+    "goal_fidelity": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-only-unmergeable-paths-are-claimed-second-launch.html:2 states the file passes in full and logs/head-6a7ffbd9d40cc979cb9ab8d2e58ba3d198676dbf-target-file.log:9 records 25 passed with EXIT=0, but the \"on the primary branch\" half rests on promotion because the diff changes no product or test file.",
+    "reuse": "the diff adds no function, class or module to fork a capability, and a search over reckon/ for a composer of evidence fragments found its single owner at reckon/evidence.py:1618 compose_landed_record, which reads exactly this plan directory and node-named file.",
+    "scope_discipline": "git diff --name-status 0e0f25b0f941 be2bf2df13 names only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-only-unmergeable-paths-are-claimed-second-launch.html, a declared write path, and the source worktree reports no uncommitted change."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make tests/test_only_unmergeable_paths_are_claimed.py pass in full on the primary branch; the file already passed at the assigned base 0e0f25b0 (logs/base-0e0f25b0-target-file.log: 25 passed, EXIT=0) and at head (logs/head-6a7ffbd9d40cc979cb9ab8d2e58ba3d198676dbf-target-file.log: 25 passed, EXIT=0), so the landed change is the pass record at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-only-unmergeable-paths-are-claimed-second-launch.html rather than a repair, and origin/main cb557f9711 verifies as an ancestor of the base.\nVERDICT done_when: the done_when asks for the file passing in full at head as an all_debug job with SLURM_JOB_ID unset, a verdict per cause, no weakened assertion, an arm over the fence's test files adding no failure, a negative control logged with its failing ids, and nothing new from ruff; the manifest records job 1319594 with SLURM_JOB_ID unset and 25 passed, the one recorded cause with a verdict in the table at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-only-unmergeable-paths-are-claimed-second-launch.html:22-29, both arms at 58 passed, a mutation-derived negative control whose 14 failing ids match logs/negative-control-reckon-exclusive.log, and ruff clean on the reverted module; the clause asking for the base run's own failing ids is unsatisfiable because the base run has none, and the substitute is recorded as a deviation.\nVERDICT write_paths: the fence was reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround with its named fragment and a figures directory, and git diff --name-status 0e0f25b0f941 be2bf2df13 lists exactly one added path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-only-unmergeable-paths-are-claimed-second-launch.html, inside it.\nVERDICT manifest: read in full; status complete, commits 8d5be69198, 6a7ffbd9d4 and be2bf2df13, changed_paths the one fragment, baseline_suite 0 failures at 0e0f25b0 and after_suite 0 failures at 6a7ffbd9d4 with both logs named, both marked complete and both carrying an EXIT line, and every rubric line present.\nVERDICT diff: read all three commits against base 0e0f25b0 commit by commit: 8d5be69198 adds the 87-line fragment, 6a7ffbd9d4 and be2bf2df13 rewrite only its figures and one citation, and no Python or test file changes, which is the branch the goal's \"if it already passes, deliver that passing run and stop\" names.\nCALL_SITES: reckon/serve.py:2751 compose_landed_record serves a plan's cumulative evidence record with its fragments composed in, reckon/mcp.py:1344 compose_landed_record reads the same record over MCP, reckon/doccheck.py:1970 compose_landed_record audits the composed record\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-only-unmergeable-paths-are-claimed-second-launch.html:2 states the file passes in full and logs/head-6a7ffbd9d40cc979cb9ab8d2e58ba3d198676dbf-target-file.log:9 records 25 passed with EXIT=0, but the \"on the primary branch\" half rests on promotion because the diff changes no product or test file.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/baseline-suite.log:2 and logs/after-6a7ffbd9d40cc979cb9ab8d2e58ba3d198676dbf-suite-arm.log:2 are the fence's own command and each ended 58 passed with EXIT=0, so added_failure_count is 0 from a readable pair, but the after arm's recorded revision 6a7ffbd9d4 is not the landed head be2bf2df13.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status 0e0f25b0f941 be2bf2df13 names only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-only-unmergeable-paths-are-claimed-second-launch.html, a declared write path, and the source worktree reports no uncommitted change.\nSCORE durability: 15\nJUSTIFICATION durability: the diff adds no assertion of its own, so durability rests on the pre-existing tests/test_only_unmergeable_paths_are_claimed.py, whose firing is shown only by the reverted mutation at logs/negative-control-reckon-exclusive.log reading 14 failed, 11 passed with EXIT=1, and nothing committed fails if the fragment's figures go stale.\nSCORE fit: 17\nJUSTIFICATION fit: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-only-unmergeable-paths-are-claimed-second-launch.html:1-2 follows the sibling idiom of docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-gate-log-agrees.html:1-6 with a section wrapper, h3 and h4 headings, a verdict table and pre blocks, but the h4s at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-only-unmergeable-paths-are-claimed-second-launch.html:22 and :35 carry no id where the sibling ids its headings.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module to fork a capability, and a search over reckon/ for a composer of evidence fragments found its single owner at reckon/evidence.py:1618 compose_landed_record, which reads exactly this plan directory and node-named file.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-only-unmergeable-paths-are-claimed-second-launch.html:82 non-blocking: the suite-arm block labels the after arm \"8d5be69198, this worktree at head\" as 58 passed in 33.70s while the manifest's after_suite cites logs/after-6a7ffbd9d40cc979cb9ab8d2e58ba3d198676dbf-suite-arm.log at 58 passed in 34.75s, so the fragment and the manifest hand a reconciling reader two different after-arm figures with no line saying which one the record stands on.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-only-unmergeable-paths-are-claimed-second-launch.html:64 non-blocking: both quoted gate blocks name revisions 8d5be69198 and 6a7ffbd9d4 while the node landed be2bf2df13, and no log or suite arm names the landed head, so a reader cannot tell from the record that the trailing fragment-only commit changed no measurement.\n",
+  "review_run_id": "r-20261116T101157404231-review-of-qwnw-red-file-only-unmergeable-paths-are-claimed-second-launch-be2bf2df13ce",
+  "reviewed_base_sha": "0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc",
+  "reviewed_head_sha": "be2bf2df13ce53260f16ec8a534f306b4603ca4f",
+  "reviewed_run_id": "r-20261116T064833984990-qwnw-red-file-only-unmergeable-paths-are-claimed-second-launch",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T101157404231-review-of-qwnw-red-file-only-unmergeable-paths-are-claimed-second-launch-be2bf2df13ce"
+  },
+  "reviewer_run_id": "r-20261116T101157404231-review-of-qwnw-red-file-only-unmergeable-paths-are-claimed-second-launch-be2bf2df13ce",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T20:26:46.759889+00:00",
+  "total": 106
+}

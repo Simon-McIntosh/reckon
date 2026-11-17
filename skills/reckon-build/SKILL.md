@@ -333,12 +333,19 @@ deliverables first.
 Immediately after EACH `reckon crew complete`, review the worker's authored
 record and merge it: the landing is a review of an authored record, not a
 transcription of a manifest — read it, and may edit or append to it. Workers
-author their own landing record in the same beat: Write your landing record to
-your own fragment path and never to the plan: your evidence anchor to your
-scope's fragment under docs/evidence/fragments/<plan>/<node-id>.html, and
+author their own landing record in the same beat. A per-node evidence fragment
+is optional: write one only when you have a negative result or a mechanism that
+does not fit a landing line, and a routine landing writes none, so the landing
+line is the whole prose account of the node. When you write one, place it as
+follows. Write your landing record to your own fragment path and never to the
+plan: your evidence anchor to your scope's fragment under
+docs/evidence/fragments/<plan>/<node-id>.html, and
 exactly one `landing:` line in your manifest in place of a plan edit. The
 fragment goes into your final commit; promotion lands the `landing:` line on
-your plan section. Never mutate the shared project index, sprint state, or a
+your plan section. Nothing splices a fragment into the plan's landed record:
+that record is synthesized once at closure and links the fragment from your
+node's row without reproducing its text. Never mutate the shared project
+index, sprint state, or a
 plan other than the one you are landing against. Do not edit the plan-version or
 plan-modified meta lines: every worker touching them makes every merge conflict
 there. Dispatching an unrelated ready node is outside this freeze.
@@ -539,13 +546,16 @@ a timer is the pattern this replaces.
   only where the pane has room.
 
 **The pane words**: `queued` (waiting for a lane slot), `waiting` (held on an
-upstream section, a pause or a declared condition), `working` (dispatched,
-starting or running, and a coordinator's own gate or a lift or reset row),
-`in review` (delivered, and its review is running), `delivered` (finished and
-waiting to be promoted and landed), `needs you` (stopped until you act:
-blocked, failed, stalled, held, stopped, unreadable, or refused at admission),
-`landed` (promoted, recorded, or a lift ended), `dropped` (withdrawn, discarded
-or departed), and `seat moved` (the producer moved to another node).
+upstream section, a pause, a declared condition, a held refusal, an
+interruption or a readiness: work that lifts on other work rather than on
+you), `working` (dispatched, starting or running, and a coordinator's own gate
+or a lift or reset row), `in review` (delivered, and its review is running),
+`delivered` (finished and waiting to be promoted and landed), `help` (stopped
+until you act: blocked, failed, stalled, stopped, unreadable, or refused at
+admission), `landed` (promoted, recorded, or a lift ended), `dropped`
+(withdrawn, discarded or departed), and `seat moved` (the producer moved to
+another node). `waiting` therefore holds four states besides the declared
+waits: `blocked-upstream`, `held`, `interrupted` and `ready`.
 
 **The counters**:
 
@@ -556,15 +566,16 @@ or departed), and `seat moved` (the producer moved to another node).
 - `r`: live review work: review runs dispatched, starting or running. Read it
   beside `w`, so a session whose only live run is a review reads as reviewing
   rather than as idle.
-- `n`: needs you: runs stopped on your move. Read `crew view obligations` for
-  the command each one needs.
+- `h`: help: runs stopped on your move, and nothing else. Read `crew view
+  obligations` for the command each one needs.
 - `d`: delivered and not yet landed. A delivered run must not sit: promote and
   land it, or answer the review that holds it. A `d` that stays above zero with
   `0w` is a stalled session, whatever else is quiet.
-- `q`: queued or waiting, including held requests: work that will start
-  without you once its slot or upstream frees.
+- `q`: queued or waiting, including held requests, an interruption and a
+  readiness: work that will start without you once its slot, its upstream or
+  whatever interrupted it frees.
 
-What the counts mean together: `0w 0q` with `n` or `d` above zero means
+What the counts mean together: `0w 0q` with `h` or `d` above zero means
 nothing moves until you act. A count that stays put while `w` is above zero is
 a worker to observe with `crew observe`, not a pane to restart. The rows do not name the runs behind
 a count. Take names from `reckon crew view obligations --project P --session S`,

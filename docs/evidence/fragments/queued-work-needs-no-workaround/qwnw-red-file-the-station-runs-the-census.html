@@ -1,0 +1,45 @@
+<section id="qwnw-red-file-the-station-runs-the-census-red-file">
+  <h3>The red file: <code>tests/test_the_station_runs_the_census.py</code></h3>
+  <p>At the base revision the file reports three failures. The head run is a job
+  on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset inside the job;
+  the base run is the same file from the base revision, executed from a scratch
+  checkout on the local host because <code>/tmp</code> does not cross nodes.
+  Both arms run the project template resolved over their own tree; the command
+  is identical and only the revision, tree and log differ.</p>
+  <table id="qwnw-red-file-the-station-runs-the-census-red-file-arms">
+    <thead><tr><th>Arm</th><th>Revision</th><th>Summary line</th><th>Exit</th><th>Log</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>base</td>
+        <td><code>125628f608ef00b5f4a4a9ce845c5e8a04b12f58</code></td>
+        <td><code>3 failed, 5 passed in 0.75s</code></td>
+        <td>1</td>
+        <td><code>logs/baseline-arm.log</code></td>
+      </tr>
+      <tr>
+        <td>head</td>
+        <td><code>68f206f4d2e2b23230136588c440295b045c02c4</code></td>
+        <td><code>8 passed in 1.70s</code></td>
+        <td>0</td>
+        <td><code>logs/after-arm.log</code></td>
+      </tr>
+    </tbody>
+  </table>
+  <p>The base arm's three failing ids, all of them
+  <code>AttributeError: 'types.SimpleNamespace' object has no attribute
+  'duties'</code>:</p>
+  <ul id="qwnw-red-file-the-station-runs-the-census-red-file-ids">
+    <li><code>test_station_beat_stops_only_the_ownerless_stub</code></li>
+    <li><code>test_the_census_thread_stops_when_the_station_exits</code></li>
+    <li><code>test_a_station_that_did_not_opt_in_never_opens_the_census</code></li>
+  </ul>
+  <p>One cause accounts for all three: a stopping station drains its derivation
+  beat before it stops the reflex, and each of these tests builds a stand-in
+  station carrying only the attributes the tick path reads, so the shutdown
+  raised before the census assertions ran. The verdict is <strong>test
+  wrong</strong>: <code>run_station</code> is typed against a
+  <code>Station</code>, whose shutdown contract includes the duties drain, and
+  the product rule that a derivation in flight lands before the station stops
+  is retained. The repair supplies a no-op duties collaborator in the two
+  stand-in builders; no assertion is deleted, weakened or moved.</p>
+</section>

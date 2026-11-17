@@ -1,0 +1,122 @@
+<section id="qwnw-red-file-schema-landing">
+  <h2>A conformance scan that read evidence fragments as documents</h2>
+
+  <p><strong>What changed.</strong> <code>tests/test_schema.py</code>'s
+  cross-project conformance scan walked the whole docs tree of every mounted
+  project, including <code>evidence/fragments/</code>. A node writes its landing
+  record as a fragment there
+  (<code>evidence/fragments/&lt;plan&gt;/&lt;node&gt;.html</code>) and the
+  product composes it into that plan's cumulative record at read time: the
+  fragment is a body include, not a typed resource, so every discovery walk
+  passes over the subtree
+  (<code>resources.EVIDENCE_FRAGMENTS_SUBTREE</code>), and
+  <code>evidence.compose_landed_record</code> appends only the fragment's body,
+  never its document wrapper. The scan held a different line, and a section
+  wrapper or a table row that no reader ever treats as a document failed the
+  document's contract.</p>
+
+  <p>The scan now reads the product's own
+  <code>EVIDENCE_FRAGMENTS_SUBTREE</code> constant rather than a second spelling
+  of the layout, and a case asserts the exclusion is in effect: the subtree must
+  be present in the mount set, and no file it names may also be one the scan
+  reads. On this mount set the scan passes over 4,557 fragment files and still
+  reads 2,803 documents and audits 536 archived evidence records.</p>
+
+  <h3 id="qwnw-red-file-schema-causes">Causes and verdicts</h3>
+
+  <p>All four failures the recorded suite carried for this file are one cause:
+  the scan read fragments as documents. <strong>Verdict: the test was wrong; no
+  product rule broke and no product file changed.</strong> Each cause below names
+  the rule the scan now asserts.</p>
+
+  <table>
+    <thead>
+      <tr><th>Failing id</th><th>What the scan read</th><th>Piece that is not a document</th><th>Verdict</th></tr>
+    </thead>
+    <tbody>
+      <tr id="qwnw-red-file-schema-cause-backup-profiles">
+        <td><code>test_cross_project_conformance[imas-ambix:backup-profiles-and-downloads]</code></td>
+        <td>a fragment's "Revision" table cell, resolved as a landing commit</td>
+        <td>a pinned Hugging Face model revision (<code>f831ab66…</code>, <code>6a7f202e…</code>), which is no git object in any mounted repository</td>
+        <td>test wrong: a fragment's table is a measurement, and its landing citations belong to the composed record</td>
+      </tr>
+      <tr id="qwnw-red-file-schema-cause-verify-shards">
+        <td><code>test_cross_project_conformance[imas-ambix:verify-backup-shards]</code></td>
+        <td>the same two model revisions, in a "Repository @ revision" cell</td>
+        <td>the same external artifact pins</td>
+        <td>test wrong, same rule</td>
+      </tr>
+      <tr id="qwnw-red-file-schema-cause-every-read">
+        <td><code>test_cross_project_conformance[reckon:every-read-enters-the-existing-scopes]</code></td>
+        <td>a fragment's <code>&lt;section data-reckon="section" data-id=…&gt;</code> wrapper and its prose</td>
+        <td>a fragment's own anchor wrapper, which composition drops</td>
+        <td>test wrong: an evidence fragment's markup is not plan state</td>
+      </tr>
+      <tr id="qwnw-red-file-schema-cause-sdbc">
+        <td><code>test_cross_project_conformance[imas-codex:sdbc-unit-spelling]</code></td>
+        <td>a fragment's section wrapper carrying authored prose</td>
+        <td>the same wrapper shape in another project's fragment</td>
+        <td>test wrong, same rule</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The fourth id above is not in the 15 November log: it is the same defect in
+  a fragment merged after that run, found by the pre-change arm below. With
+  <code>RECKON_MOUNTS_PATH</code> pointed at this workstation's mounts, the three
+  ids the log records for the fragment causes reproduce exactly, and no fifth
+  cause appeared.</p>
+
+  <h3 id="qwnw-red-file-schema-measured">Measured</h3>
+
+  <p><strong>The base arm.</strong> The named file at the base revision
+  <code>cb557f9711</code>, extracted from that revision and given a repository of
+  its own at the copy — the file asks its own tree for a tip commit and tree, and
+  an archive extraction has none — then run as a job on <code>all_debug</code>
+  with <code>RECKON_MOUNTS_PATH</code> set to this workstation's mounts — without
+  which every mount-dependent case skips and the failures cannot appear:</p>
+
+  <pre id="qwnw-red-file-schema-base-arm"># revision: cb557f9711670ca8a00dd1d6dd22a17b42d3a51e
+# tree: archive extraction of cb557f9711670ca8a00dd1d6dd22a17b42d3a51e at /tmp/reckon-crew-scratch/r-20261116T032259284393-qwnw-red-file-schema/base-arm-cb557f9711670ca8a00dd1d6dd22a17b42d3a51e, with its own repository at the copy
+# host: 98dci4-clu-3142.iter.org
+# command: env -u SLURM_JOB_ID RECKON_MOUNTS_PATH=/home/ITER/mcintos/.config/reckon/mounts.json PYTHONPATH=/tmp/reckon-crew-scratch/r-20261116T032259284393-qwnw-red-file-schema/base-arm-cb557f9711670ca8a00dd1d6dd22a17b42d3a51e /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_schema.py
+FAILED tests/test_schema.py::test_cross_project_conformance[imas-ambix:backup-profiles-and-downloads] - AssertionError: unresolved landing shas: ['6a7f202e8dbd0e57b3fe1da03917d08d75abc4b8', 'f831ab66814297da540d832a5235f8e904f29d06']
+FAILED tests/test_schema.py::test_cross_project_conformance[imas-ambix:verify-backup-shards] - AssertionError: unresolved landing shas: ['6a7f202e8dbd0e57b3fe1da03917d08d75abc4b8', 'f831ab66814297da540d832a5235f8e904f29d06']
+FAILED tests/test_schema.py::test_cross_project_conformance[reckon:every-read-enters-the-existing-scopes] - ValueError: sections['every-read-enters-the-existing-scopes'].id: record must be adjacent to its h2
+FAILED tests/test_schema.py::test_cross_project_conformance[imas-codex:sdbc-unit-spelling] - ValueError: sections['sdbc-unit-spelling-landing']: record metadata must not contain authored prose
+4 failed, 7427 passed in 1311.70s (0:21:51)
+EXIT=1</pre>
+
+  <p><strong>The head arm</strong> at <code>2649a72c92</code>, the same command,
+  the same host, the same mounts:</p>
+
+  <pre id="qwnw-red-file-schema-head-arm"># revision: 2649a72c92c73496a1b2663a85eb5db3d7163010
+# host: 98dci4-clu-3141.iter.org
+# command: env -u SLURM_JOB_ID RECKON_MOUNTS_PATH=/home/ITER/mcintos/.config/reckon/mounts.json PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-schema /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_schema.py
+2875 passed in 277.25s (0:04:37)
+EXIT=0</pre>
+
+  <p><strong>The guard still fires.</strong> Excluding the fragment subtree is
+  not "any malformed document is tolerated": a document elsewhere in the tree
+  whose structured citation does not resolve is still refused, and the change
+  was falsified by making that happen rather than by watching the suite stay
+  green:</p>
+
+  <pre id="qwnw-red-file-schema-guard">cited from a document: ['0000000000000000000000000000000000000000']
+reported unresolved: ['0000000000000000000000000000000000000000']
+fragment excluded from the scan: True
+documents still scanned: 2803 | excluded fragments: 4557
+archive records still audited: 536</pre>
+
+  <p>The product already states the rule the scan now holds, in
+  <code>tests/test_discovery_skips_evidence_fragments.py</code>: "The fragment is
+  not a typed resource of its own, so a full-tree walk must pass over the subtree
+  rather than refuse a path shape the typed roots reserve for their own
+  documents." That case also asserts a mis-shaped document <em>outside</em> the
+  subtree is still refused, which is the boundary this scan keeps.</p>
+
+  <p><strong>Lint.</strong> <code>ruff check</code> on the changed path reports
+  one finding, <code>RUF043</code> at line 681 (<code>match="multiple of
+  0.25"</code>), which the base revision's copy of the same file reports too;
+  <code>ruff format --check</code> reports the file already formatted.</p>
+</section>

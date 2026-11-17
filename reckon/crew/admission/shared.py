@@ -60,6 +60,7 @@ __all__ = [
     "GATE_REF_PREFIX",
     "HELD_PHASE",
     "HOLD_VERDICTS",
+    "LANDED_RUN_PHASES",
     "LANDING_STOP_SECONDS",
     "LANDING_THREAD_NAME",
     "LAUNCH_FAILED_PHASE",
@@ -183,9 +184,16 @@ BLOCKED_UPSTREAM_PHASE = "blocked-upstream"
 #: lane slot. Both are read here rather than spelled out at each filter.
 WAITING_UPSTREAM_PHASES = (AWAITING_UPSTREAM_PHASE, BLOCKED_UPSTREAM_PHASE)
 
-#: A run whose phase is one of these will not deliver the section it names, so
-#: a ref waiting on that section is blocked rather than pending.
+#: A run whose phase is one of these ended without delivering the section it
+#: names. It is not on its own enough to close that section: a section closes
+#: only when none of the runs it owns may still land, so a sibling of this run
+#: that is live, queued or parked keeps every ref waiting on the section
+#: pending, and a resume of this run lifts it the moment it is recorded.
 DEAD_RUN_PHASES = frozenset({"failed"})
+
+#: A run whose work already landed. Its pointer can outlive the landing and no
+#: pass will land it again, so it neither keeps its section open nor closes it.
+LANDED_RUN_PHASES = frozenset({"complete"})
 
 # A queued request whose last attempt failed for a reason other than a lane
 # hold waits this long before it is attempted again, doubling per consecutive

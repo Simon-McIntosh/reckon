@@ -1,0 +1,131 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:1401 (_watch_verdict calls hold_owner)",
+    "reckon/crew/recovery_classification.py:3133 (_watch_verdict)",
+    "reckon/crew/recovery_memo.py:903 (_watch_verdict)",
+    "reckon/crew/recovery_watch.py:2794 (_fleet_counts via _session_fleet_counts)",
+    "reckon/crew/recovery_watch.py:3379 (_fleet_counts)",
+    "reckon/crew/admission/holds.py:456 (_fleet_counts)",
+    "reckon/crew/runs.py:4439 (_fleet_counts)"
+  ],
+  "completed_at": "2026-11-16T21:04:47.926Z",
+  "dispatched_at": "2026-11-16T21:04:30Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "a docstring that no longer matches the caller this window added; behaviour is what the tests assert",
+      "recorded_at": "2026-11-16T21:21:27.660798+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "a coverage gap on the no-record branch, not a behaviour defect; main's own test covers the unlaunched case",
+      "recorded_at": "2026-11-16T21:21:30.300642+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "a missing mutation log; the declared negative control's log in logs/negative-control.log shows the file red at base",
+      "recorded_at": "2026-11-16T21:21:32.518056+00:00"
+    },
+    "3": {
+      "kind": "exempted",
+      "reason": "an evidence wording slip about which log records the 11 passes; logs/negative-control.log holds it",
+      "recorded_at": "2026-11-16T21:21:34.670319+00:00"
+    },
+    "4": {
+      "kind": "exempted",
+      "reason": "a file count in the fragment off by one; the importer logs' own headers are the record",
+      "recorded_at": "2026-11-16T21:21:36.480683+00:00"
+    },
+    "5": {
+      "kind": "exempted",
+      "reason": "the tests line abbreviates the gate command; logs/gate.log's header names the full command",
+      "recorded_at": "2026-11-16T21:21:38.718171+00:00"
+    },
+    "6": {
+      "kind": "exempted",
+      "reason": "a malformed landing prefix in the manifest; the landing field is recovered from the record",
+      "recorded_at": "2026-11-16T21:21:40.770675+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "1190",
+      "severity": "non-blocking",
+      "text": "non-blocking: hold_owner's docstring says a held phase with no readable record \"keeps the coordinator's reading, because the release command is the only thing that moves such a pointer, and offering nothing would strand it\", while the caller this window adds at :1417-1423 keeps the held word and hands no command, so the docstring states a behaviour no call site implements and a reader trusting it would expect a release the pane withholds."
+    },
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "1423",
+      "severity": "non-blocking",
+      "text": "non-blocking: no case exercises the no-record branch's withholding: tests/test_a_held_request_is_drawn_by_its_owner.py asserts the owner table and the two written-hold populations only, and main's tests/test_a_request_that_has_not_launched_is_not_drawn_working.py asserts the state word alone, so deleting `next_action = None` here leaves every suite green while a held pointer with no written record hands the classifier's release again."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-tells-the-truth-under-load/held-drawn-by-its-owner-s3.html",
+      "line": "66",
+      "severity": "non-blocking",
+      "text": "non-blocking: the declared mutation's \"9 failed, 2 passed\" has no log in logs/, and the mutation as described (hold_owner returning the coordinator's reading for every hold) reaches only the six parked cases and the owner table, since the two launched-run cases never call hold_owner through the written-record gate at recovery_watch.py:1400, so at most 7 of 11 cases could fail and the recorded figure does not reconcile with the test file it describes."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-tells-the-truth-under-load/held-drawn-by-its-owner-s3.html",
+      "line": "56",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment says the file's \"11 passed\" at 564f48e1c8 is recorded in the run's gate.log, but logs/gate.log runs three files for \"69 passed\" at 35f8a1d1c0 and the only log naming the file alone at 564f48e1c8 is logs/negative-control.log, which is the red arm."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-tells-the-truth-under-load/held-drawn-by-its-owner-s3.html",
+      "line": "75",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states 104 test files at the merged head, while logs/importers-head.log's header names 105 files against logs/importers-main-tip.log's 104, so the population the two arms compare is not the one the record states."
+    },
+    {
+      "file": "manifest.md",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "non-blocking: the tests line states the gate command as the node's test file alone, while logs/gate.log's own header names that file plus tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, so a promotion receipt filled from this line cannot reproduce the 69-passed figure the artifacts line quotes."
+    },
+    {
+      "file": "manifest.md",
+      "line": "10",
+      "severity": "non-blocking",
+      "text": "non-blocking: the landing record is glued onto a stray \"acted dimension-reuse: 9b0584ae76\" prefix instead of opening a landing key, so the one line the coordinator lands as a comment on the manifest cannot be read as the landing field."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit from 31ac0fac to 35f8a1d1c0; 911ae59674 moves a coordinator hold to the blocked state, drops held from NEEDS_ACTION and names the help cell, ca7f7b1c4c and 35f8a1d1c0 restate the landing record, 1b62470363 restores main's cut-off word, c587876dfd and 564f48e1c8 gate the hold read on a written record at recovery_watch.py:1400 and add the no-record branch at :1417, and the test file's 22 changed lines move three cases from held/needs you to queued/blocked/help.",
+    "done_when": "the done_when asks for new tests red at base, queue holds drawn and counted waiting, coordinator holds drawn in the attention word naming the act, word/bucket agreement per hold kind, and no added failure among ticker/recovery_watch importers; logs/gate.log records \"69 passed\" EXIT=0 at 35f8a1d1c0, logs/base-test-arm.log \"11 failed\" EXIT=1 at 98b7fdd4, logs/negative-control.log \"6 failed, 5 passed\" EXIT=1, and logs/importers-head.log against logs/importers-main-tip.log the same 47 failing/erroring ids.",
+    "goal": "the node's goal is that a held request is drawn by whose move lifts it; the commits gained since 31ac0fac land it at reckon/crew/recovery_watch.py:1398-1425, where a written queue hold draws queued (pre-launch) or waiting (launched) with no command, a written coordinator hold draws blocked with the classifier's own act, and a held row with no written record keeps held and hands nothing.",
+    "manifest": "read manifest.md; status complete, sixteen commits, five logs, both suite arms at failure_count 0; its tests line names one file where logs/gate.log's header names three, and its line 10 glues the landing record onto a stray \"acted dimension-reuse:\" prefix instead of starting a landing key.",
+    "write_paths": "the manifest declares recovery_watch.py, ticker.py, tests/test_a_held_request_is_drawn_by_its_owner.py and the landing fragment; each of the six non-merge commits since 31ac0fac (911ae59674, ca7f7b1c4c, 1b62470363, c587876dfd, 564f48e1c8, 35f8a1d1c0) touches only those, and the two origin/main merges (a8de3c4aad, 5c35509f2f, 8759c1b443) carry shared-branch integration."
+  },
+  "justifications": {
+    "durability": "logs/negative-control.log shows removing the withholding reddens 6 of 11 cases, but the no-record branch's `next_action = None` at reckon/crew/recovery_watch.py:1423 has no case that reddens when it is deleted.",
+    "evidence": "logs/gate.log and logs/base-test-arm.log record the arms the done_when asks for, but the manifest's tests line (manifest.md:15) and the fragment's declared-mutation figure (held-drawn-by-its-owner-s3.html:66-69) do not reconcile with the logs they cite.",
+    "fit": "the added branches follow the module's literal state-word idiom of reckon/crew/recovery_watch.py:1338, but the no-record branch at :1417 contradicts hold_owner's docstring at :1190-1192.",
+    "goal_fidelity": "reckon/crew/recovery_watch.py:1416 draws a queue-parked request queued and :1404 a written coordinator hold blocked with the act named, which is the goal's split expressed in the merged pane's vocabulary.",
+    "reuse": "_HELP_CELL extends the cell constants (_WAIT_CELL) that reckon/crew/ticker.py:731 and ticker.py:999 already own, and a search over reckon/crew for hold-record readers (admission/holds.py, admission/reviews.py, readiness.py) found no owner of the lift decision that hold_owner duplicates.",
+    "scope_discipline": "every file touched by the six non-merge commits since 31ac0fac is inside the four paths the manifest declares at line 8."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a held request is drawn by whose move lifts it; the commits gained since 31ac0fac land it at reckon/crew/recovery_watch.py:1398-1425, where a written queue hold draws queued (pre-launch) or waiting (launched) with no command, a written coordinator hold draws blocked with the classifier's own act, and a held row with no written record keeps held and hands nothing.\nVERDICT done_when: the done_when asks for new tests red at base, queue holds drawn and counted waiting, coordinator holds drawn in the attention word naming the act, word/bucket agreement per hold kind, and no added failure among ticker/recovery_watch importers; logs/gate.log records \"69 passed\" EXIT=0 at 35f8a1d1c0, logs/base-test-arm.log \"11 failed\" EXIT=1 at 98b7fdd4, logs/negative-control.log \"6 failed, 5 passed\" EXIT=1, and logs/importers-head.log against logs/importers-main-tip.log the same 47 failing/erroring ids.\nVERDICT write_paths: the manifest declares recovery_watch.py, ticker.py, tests/test_a_held_request_is_drawn_by_its_owner.py and the landing fragment; each of the six non-merge commits since 31ac0fac (911ae59674, ca7f7b1c4c, 1b62470363, c587876dfd, 564f48e1c8, 35f8a1d1c0) touches only those, and the two origin/main merges (a8de3c4aad, 5c35509f2f, 8759c1b443) carry shared-branch integration.\nVERDICT manifest: read manifest.md; status complete, sixteen commits, five logs, both suite arms at failure_count 0; its tests line names one file where logs/gate.log's header names three, and its line 10 glues the landing record onto a stray \"acted dimension-reuse:\" prefix instead of starting a landing key.\nVERDICT diff: read commit by commit from 31ac0fac to 35f8a1d1c0; 911ae59674 moves a coordinator hold to the blocked state, drops held from NEEDS_ACTION and names the help cell, ca7f7b1c4c and 35f8a1d1c0 restate the landing record, 1b62470363 restores main's cut-off word, c587876dfd and 564f48e1c8 gate the hold read on a written record at recovery_watch.py:1400 and add the no-record branch at :1417, and the test file's 22 changed lines move three cases from held/needs you to queued/blocked/help.\nCALL_SITES: reckon/crew/recovery_watch.py:1401 (_watch_verdict calls hold_owner), reckon/crew/recovery_classification.py:3133 (_watch_verdict), reckon/crew/recovery_memo.py:903 (_watch_verdict), reckon/crew/recovery_watch.py:2794 (_fleet_counts via _session_fleet_counts), reckon/crew/recovery_watch.py:3379 (_fleet_counts), reckon/crew/admission/holds.py:456 (_fleet_counts), reckon/crew/runs.py:4439 (_fleet_counts)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_watch.py:1416 draws a queue-parked request queued and :1404 a written coordinator hold blocked with the act named, which is the goal's split expressed in the merged pane's vocabulary.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/gate.log and logs/base-test-arm.log record the arms the done_when asks for, but the manifest's tests line (manifest.md:15) and the fragment's declared-mutation figure (held-drawn-by-its-owner-s3.html:66-69) do not reconcile with the logs they cite.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every file touched by the six non-merge commits since 31ac0fac is inside the four paths the manifest declares at line 8.\nSCORE durability: 14\nJUSTIFICATION durability: logs/negative-control.log shows removing the withholding reddens 6 of 11 cases, but the no-record branch's `next_action = None` at reckon/crew/recovery_watch.py:1423 has no case that reddens when it is deleted.\nSCORE fit: 15\nJUSTIFICATION fit: the added branches follow the module's literal state-word idiom of reckon/crew/recovery_watch.py:1338, but the no-record branch at :1417 contradicts hold_owner's docstring at :1190-1192.\nSCORE reuse: 19\nJUSTIFICATION reuse: _HELP_CELL extends the cell constants (_WAIT_CELL) that reckon/crew/ticker.py:731 and ticker.py:999 already own, and a search over reckon/crew for hold-record readers (admission/holds.py, admission/reviews.py, readiness.py) found no owner of the lift decision that hold_owner duplicates.\nFINDING reckon/crew/recovery_watch.py:1190 non-blocking: hold_owner's docstring says a held phase with no readable record \"keeps the coordinator's reading, because the release command is the only thing that moves such a pointer, and offering nothing would strand it\", while the caller this window adds at :1417-1423 keeps the held word and hands no command, so the docstring states a behaviour no call site implements and a reader trusting it would expect a release the pane withholds.\nFINDING reckon/crew/recovery_watch.py:1423 non-blocking: no case exercises the no-record branch's withholding: tests/test_a_held_request_is_drawn_by_its_owner.py asserts the owner table and the two written-hold populations only, and main's tests/test_a_request_that_has_not_launched_is_not_drawn_working.py asserts the state word alone, so deleting `next_action = None` here leaves every suite green while a held pointer with no written record hands the classifier's release again.\nFINDING docs/evidence/fragments/the-monitor-tells-the-truth-under-load/held-drawn-by-its-owner-s3.html:66 non-blocking: the declared mutation's \"9 failed, 2 passed\" has no log in logs/, and the mutation as described (hold_owner returning the coordinator's reading for every hold) reaches only the six parked cases and the owner table, since the two launched-run cases never call hold_owner through the written-record gate at recovery_watch.py:1400, so at most 7 of 11 cases could fail and the recorded figure does not reconcile with the test file it describes.\nFINDING docs/evidence/fragments/the-monitor-tells-the-truth-under-load/held-drawn-by-its-owner-s3.html:56 non-blocking: the fragment says the file's \"11 passed\" at 564f48e1c8 is recorded in the run's gate.log, but logs/gate.log runs three files for \"69 passed\" at 35f8a1d1c0 and the only log naming the file alone at 564f48e1c8 is logs/negative-control.log, which is the red arm.\nFINDING docs/evidence/fragments/the-monitor-tells-the-truth-under-load/held-drawn-by-its-owner-s3.html:75 non-blocking: the fragment states 104 test files at the merged head, while logs/importers-head.log's header names 105 files against logs/importers-main-tip.log's 104, so the population the two arms compare is not the one the record states.\nFINDING manifest.md:15 non-blocking: the tests line states the gate command as the node's test file alone, while logs/gate.log's own header names that file plus tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, so a promotion receipt filled from this line cannot reproduce the 69-passed figure the artifacts line quotes.\nFINDING manifest.md:10 non-blocking: the landing record is glued onto a stray \"acted dimension-reuse: 9b0584ae76\" prefix instead of opening a landing key, so the one line the coordinator lands as a comment on the manifest cannot be read as the landing field.",
+  "review_run_id": "r-20261116T210241795401-review-of-held-drawn-by-its-owner-s3-35f8a1d1c076",
+  "reviewed_base_sha": "31ac0fac388aa32d5508a33c5774d64a654fe507",
+  "reviewed_head_sha": "35f8a1d1c0765a4943668fd2a4fccdfbf4088e55",
+  "reviewed_run_id": "r-20261115T145426280351-held-drawn-by-its-owner-s3",
+  "reviewer_run_id": "r-20261116T210241795401-review-of-held-drawn-by-its-owner-s3-35f8a1d1c076",
+  "scores": {
+    "durability": 14,
+    "evidence": 14,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T23:26:52.928852+00:00",
+  "total": 100
+}

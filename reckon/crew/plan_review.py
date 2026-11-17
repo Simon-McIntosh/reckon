@@ -75,6 +75,7 @@ from typing import Any
 from reckon import _plan_html, file_memo
 from reckon._plan_html import DOCUMENT_UNIT, landed_section_ids
 from reckon._store import write_json_atomically
+from reckon.crew import domain_rules as _domain_rules
 from reckon.crew import review as _review_store
 from reckon.crew import review_need, runs
 from reckon.served_code import neighbourhood
@@ -1348,6 +1349,11 @@ def _compute_coverage(
             )
         return reviewed_texts[key]
 
+    # The plan's own path, when the caller named one: an answered edit is read
+    # from the commit its answer cites, which needs the file's history. A
+    # caller that passed the document text instead has no path to walk, so the
+    # history lookup is skipped rather than given the text as a path.
+    plan_hint = plan if isinstance(plan, Path) else None
     for record in _records_oldest_first(records, project):
         evidence = _snapshot_evidence(project, plan_slug, record)
         if evidence is None:
@@ -1380,6 +1386,25 @@ def _compute_coverage(
         # not covered by it and the review is owed again for that unit alone.
         for identity in _accepted_edit_units(record, digests) & outstanding:
             if traced and identity not in traced:
+                continue
+            covered.add(identity)
+            matched = True
+        # An answer this review received names the units its finding blocks and
+        # cites the commit of the edit it answers for. That edit's copy of a
+        # unit still holding it is covered by this review whatever its size, and
+        # a unit that has moved since is not. A section the review's snapshot
+        # never declared implementable was not reviewed, so it cannot be
+        # covered this way.
+        for identity in (
+            _answered_edit_units(record, digests, plan_path=plan_hint) & outstanding
+        ):
+            if traced and identity not in traced:
+                continue
+            if identity == DOCUMENT_UNIT:
+                covered.add(identity)
+                matched = True
+                continue
+            if implemented is not None and identity not in implemented:
                 continue
             covered.add(identity)
             matched = True
@@ -2766,6 +2791,64 @@ def _accepted_edit_units(
     return covered
 
 
+def _answered_edit_units(
+    record: Mapping[str, Any],
+    digests: Mapping[str, str],
+    *,
+    plan_path: str | Path | None = None,
+) -> set[str]:
+    """The units an ``acted`` answer covers, from the edit its answer cites.
+
+    An answer names the units its finding blocks, and an answer given after its
+    edit cites that edit's commit. The plan's copy of each named unit at that
+    commit is the text the answer is evidence of, so a unit whose present digest
+    equals the digest that copy holds is covered by this review; a unit that has
+    moved since is not, because the later edit answers nothing the review
+    raised.
+
+    An answer that cites the plan's newest commit at answer time rather than the
+    edit was given before its fix landed, so it is no evidence of a fix and
+    covers nothing. Neither does a ``declined`` answer, which asks for no edit,
+    nor a ``carried`` or ``noted`` one, which is not an answer about the plan's
+    prose. A history that cannot be read covers nothing rather than guessing,
+    and a unit the review never read is left to the caller's own checks.
+    """
+    covered: set[str] = set()
+    responses = record.get("responses")
+    if not isinstance(responses, Mapping):
+        return covered
+    project = str(record.get("project") or "").strip()
+    plan_slug = str(record.get("plan_slug") or "").strip()
+    if not project or not plan_slug:
+        return covered
+    by_commit: dict[str, dict[str, str | None]] = {}
+    for finding_id, response in responses.items():
+        if not isinstance(response, Mapping):
+            continue
+        if str(response.get("action") or "").strip().lower() != "acted":
+            continue
+        if str(response.get("commit_basis") or "") != EDIT_COMMIT:
+            continue
+        commit = str(response.get("commit") or "").strip()
+        if not commit:
+            continue
+        pending = [
+            unit
+            for unit in finding_units(record, str(finding_id), plan_path=plan_path)
+            if unit in digests and unit not in covered
+        ]
+        if not pending:
+            continue
+        if commit not in by_commit:
+            text = _plan_text_at(project, plan_slug, commit, plan_path=plan_path)
+            by_commit[commit] = {} if text is None else _section_digests(text)
+        answered = by_commit[commit]
+        for unit in pending:
+            if answered.get(unit) == digests[unit]:
+                covered.add(unit)
+    return covered
+
+
 def _review_read_units(
     project: str, plan_slug: str, record: Mapping[str, Any]
 ) -> set[str]:
@@ -4002,6 +4085,80 @@ def _run_moment(record: Mapping[str, Any]) -> float | None:
     return ledger.run_activity_seconds(record)
 
 
+def _authoring_row(payload: str, detail: str | None) -> dict[str, Any] | None:
+    """Decode only the fields needed to select a plan's newest author."""
+    record = {**json.loads(payload), **(json.loads(detail) if detail else {})}
+    return _authoring_pointer(record)
+
+
+def _authoring_pointer(record: Mapping[str, Any]) -> dict[str, Any] | None:
+    """The author identity and activity shared by pointers and stored rows."""
+    from reckon import ledger
+
+    plan = _run_plan(record)
+    moment = _run_moment(record)
+    session = str(record.get("session") or "").strip()
+    run_id = str(record.get("run_id") or "").strip()
+    if not plan or moment is None or not session or not run_id:
+        return None
+    return {
+        "plan": plan,
+        "moment": moment,
+        "session": session,
+        "run_id": run_id,
+        "order": ledger.promotion_order_key(record),
+    }
+
+
+def _stored_authoring_runs(project: str, moment: float) -> list[dict[str, Any]] | None:
+    """Reuse stored author selections, decoding each row only when it changes.
+
+    The store's change token invalidates the selection, and each encoded row's
+    digest invalidates its parse. The time bucket includes the entire authoring
+    window; the caller still checks exact ages on every pass. A new bucket or
+    an archive edit refreshes selection without decoding unchanged rows. Only
+    the newest eligible author per plan is retained in a selection's answer.
+    """
+    from reckon import run_store
+
+    path = run_store.store_path()
+    bucket = int(moment // PLAN_REVIEW_BURST_SECONDS)
+    boundary = (bucket - 1) * PLAN_REVIEW_BURST_SECONDS
+    snapshot = run_store.stored_run_payloads(
+        project, path=path, activity_since=boundary
+    )
+    if snapshot is None:
+        return None
+    stamp, rows = snapshot
+
+    def read() -> list[dict[str, Any]]:
+        authors = []
+        for run_id, payload, detail in rows:
+            digest = hashlib.sha256(
+                (payload + "\0" + (detail or "")).encode("utf-8")
+            ).hexdigest()
+            author = file_memo.memoized_key(
+                "plan-authoring-row",
+                (str(path), project, run_id, digest),
+                lambda payload=payload, detail=detail: _authoring_row(payload, detail),
+            )
+            if author is not None:
+                authors.append(author)
+        newest = {}
+        # Equal activity stamps retain the ledger's first promotion-order row.
+        for author in sorted(authors, key=lambda row: row["order"]):
+            held = newest.get(author["plan"])
+            if held is None or author["moment"] > held["moment"]:
+                newest[author["plan"]] = author
+        return list(newest.values())
+
+    return file_memo.memoized_key(
+        "plan-authoring-selection",
+        (str(path), project, stamp, bucket),
+        read,
+    )
+
+
 def plan_authoring_runs(
     project: str,
     *,
@@ -4030,27 +4187,32 @@ def plan_authoring_runs(
     moment = time.time() if now_seconds is None else now_seconds
     newest: dict[str, tuple[float, str, str]] = {}
     live = runs.list_live(project=project) if pointers is None else pointers
-    candidates: list[dict[str, Any]] = [dict(pointer) for pointer in live]
+    candidates = [
+        author
+        for pointer in live
+        if (author := _authoring_pointer(pointer)) is not None
+    ]
     try:
-        rows, _version = ledger.read_records(
-            project,
-            with_figures=False,
-            activity_since=moment - PLAN_REVIEW_BURST_SECONDS,
-        )
+        stored = _stored_authoring_runs(project, moment)
+        if stored is None:
+            rows, _version = ledger.read_records(
+                project,
+                with_figures=False,
+                activity_since=moment - PLAN_REVIEW_BURST_SECONDS,
+            )
+            stored = [
+                author
+                for row in rows
+                if (author := _authoring_pointer(row)) is not None
+            ]
     except Exception:  # noqa: BLE001 — an unreadable ledger names no run
-        rows = []
-    candidates.extend(rows)
-    for record in candidates:
-        plan = _run_plan(record)
-        if not plan:
+        stored = []
+    candidates.extend(stored)
+    for author in candidates:
+        plan, started = author["plan"], author["moment"]
+        if moment - started > PLAN_REVIEW_BURST_SECONDS:
             continue
-        started = _run_moment(record)
-        if started is None or moment - started > PLAN_REVIEW_BURST_SECONDS:
-            continue
-        session = str(record.get("session") or "").strip()
-        run_id = str(record.get("run_id") or "").strip()
-        if not session or not run_id:
-            continue
+        run_id, session = author["run_id"], author["session"]
         held = newest.get(plan)
         if held is None or started > held[0]:
             newest[plan] = (started, run_id, session)
@@ -5190,9 +5352,13 @@ def delivered_report_record(sidecar: Mapping[str, Any]) -> dict[str, Any]:
     reviewed blob sha and the content fingerprint; the report named by
     ``report_path`` supplies the rubric's verdicts and findings. A parse that
     holds no rubric item and no finding was composed and never delivered — a
-    snapshot and a sidecar with no reviewer output beside them — so it is
-    refused here as not a review rather than stored as an empty one, and the
-    refusal names the grammar it read the report under. The record carries an
+    snapshot and a sidecar with none of the reviewer's output beside it — so it
+    is refused here as not a review rather than stored as an empty one, and the
+    refusal names the grammar it read the report under. A parse that holds the
+    brief's template placeholders in the place a verdict and a finding go is
+    refused as unfinished, which is the state a reviewer writes its report in
+    before it has read anything: storing it takes a record with no verdict and
+    no finding back to the gate. The record carries an
     empty ``responses``, so its findings arrive unanswered and the
     gate refuses until each is answered. ``review_run_id`` is the report
     directory's name, which is what makes a re-read of the same delivered report
@@ -5212,6 +5378,8 @@ def delivered_report_record(sidecar: Mapping[str, Any]) -> dict[str, Any]:
     text = report_path.read_text(encoding="utf-8", errors="replace")
     rubric = str(sidecar.get("rubric") or "").strip()
     parsed = parse_review_report(text, rubric=rubric)
+    if parsed["placeholders"]:
+        raise UnfinishedReviewReportError(report_path, parsed["placeholders"])
     if not parsed["rubric_items"] and not parsed["findings"]:
         raise ValueError(
             f"delivered review report {report_path} carries no RUBRIC or "
@@ -5386,6 +5554,61 @@ def store_delivered_reviews(
     return refused
 
 
+class UnfinishedReviewReportError(ValueError):
+    """A delivered report still carries the brief's template placeholders.
+
+    A reviewer writes its report into the file its dispatch granted, and the
+    brief hands it the line shapes to emit. A report read while that is still
+    being written carries the placeholders where a verdict and a finding go, and
+    the grammar reads it as a finished review — the placeholder is non-empty
+    text and the FINDING line carries a claim of nothing — so storing it takes a
+    record with no verdict and no finding back to the gate. The error is its own
+    type because the store's pass must tell the two states apart: a report held
+    by a live reviewer is read again later, while the same report once its
+    reviewer has ended is a delivery defect.
+
+    ``placeholders`` names the tokens the report still carries, in the order
+    they appear, so the refusal says which places to fill rather than that the
+    report is unfinished.
+    """
+
+    def __init__(self, path: str | Path, placeholders: Iterable[str]) -> None:
+        self.path = Path(path)
+        self.placeholders = list(placeholders)
+        super().__init__(
+            f"delivered review report {self.path} still carries the brief's "
+            f"placeholders {', '.join(self.placeholders)} where its verdicts "
+            "and findings go"
+        )
+
+
+def _review_run_is_live(sidecar: Mapping[str, Any]) -> bool:
+    """Whether the run that writes this delivery's report still has a worker.
+
+    A plan review's report directory is named for the composed review, which is
+    not a crew run, so the run that actually wrote the report is the one its
+    ``dispatch.json`` sidecar names. That run's own pointer and the process it
+    records are what every liveness decision on this host is taken from. A
+    directory naming no run, or a pointer that cannot be read, answers not live:
+    a report nothing is writing is finished however it reads, and reading an
+    unknown liveness as live would hold a review open forever.
+    """
+    project = str(sidecar.get("project") or "").strip()
+    plan_slug = str(sidecar.get("plan_slug") or "").strip()
+    composed = str(sidecar.get("review_run_id") or "").strip()
+    crew_run = _review_store._plan_review_crew_run_id(project, plan_slug, composed)
+    if not crew_run:
+        return False
+    from reckon.crew.node import CrewError
+    from reckon.crew.process_liveness import record_process_alive
+
+    try:
+        record = runs.read_pointer(crew_run)
+    except (CrewError, OSError, ValueError):
+        return False
+    return record_process_alive(record) is True
+
+
 def _store_deliveries(
     sidecars: Iterable[Mapping[str, Any]],
     *,
@@ -5395,7 +5618,14 @@ def _store_deliveries(
 
     One loop serves both delivery kinds, so a plan report and a code report are
     stored, refused and cleared the same way. An already-stored delivery is
-    skipped. The returned list names each refused delivery and its reason.
+    skipped. A report that still carries the brief's template placeholders is
+    held rather than refused while the run that writes it is live: the reviewer
+    is still reading, the file is half-written, and a refusal recorded against a
+    live reviewer would send a coordinator to repair a review that is mid-turn.
+    The same report once that reviewer has ended is a delivery defect, recorded
+    on the sidecar and returned, because nothing will finish it and the review
+    the plan owed never arrived. The returned list names each refused delivery
+    and its reason.
     """
     refused: list[dict[str, Any]] = []
     for sidecar in sidecars:
@@ -5403,6 +5633,19 @@ def _store_deliveries(
             continue
         try:
             _store_delivered_report(sidecar, base_dir=base_dir)
+        except UnfinishedReviewReportError as exc:
+            if _review_run_is_live(sidecar):
+                # The reviewer may finish the report this pass read, so a
+                # reason recorded now would name a defect that is not one yet.
+                _clear_store_error(sidecar)
+                continue
+            _record_store_error(sidecar, f"{type(exc).__name__}: {exc}")
+            refused.append(
+                {
+                    "review_run_id": sidecar.get("review_run_id"),
+                    "store_error": f"{type(exc).__name__}: {exc}",
+                }
+            )
         except (OSError, ValueError) as exc:
             reason = f"{type(exc).__name__}: {exc}"
             _record_store_error(sidecar, reason)
@@ -5710,21 +5953,57 @@ def code_review_subject(
     }
 
 
-def _open_findings_for(subject: Mapping[str, Any]) -> list[dict[str, Any]]:
-    """The open findings the stored reviews carry against the named paths."""
+def _named_finding_roots(named: Iterable[str]) -> list[str]:
+    """The repository paths a review's named paths cover.
+
+    A named path arrives in one of two shapes. A plan's section write paths are
+    repository paths — a file or a directory — and are taken as they are. The
+    paths a ``--path`` names are resolved to production modules at the reviewed
+    head, so they arrive dotted, and a stored finding is keyed by the file it
+    names rather than by the module that file holds. A dotted name therefore
+    contributes the module's file and the package directory of the same name, so
+    a finding on a module named either way is found. Matching a named directory
+    is by path boundary rather than by a bare string prefix, so a sibling whose
+    name merely begins with the directory's is not stored beneath it.
+    """
+    roots: list[str] = []
+    for name in named:
+        text = str(name).strip()
+        if not text:
+            continue
+        if "/" not in text and "." in text:
+            module_path = text.replace(".", "/")
+            roots.extend((module_path + ".py", module_path))
+        else:
+            roots.append(text.rstrip("/"))
+    return roots
+
+
+def _open_findings_for(subject: Mapping[str, Any]) -> list[dict[str, Any]] | None:
+    """The open findings the stored reviews carry against the named paths.
+
+    ``None`` is the store that exists and could not be read: no row was
+    measured, so a caller reporting a count must say so rather than report the
+    empty list an unread store and an empty one both produce.
+    """
     from reckon.crew import findings as findings_reader
 
-    named = {str(path) for path in subject.get("named_paths") or ()}
+    roots = _named_finding_roots(subject.get("named_paths") or ())
     try:
         grouped = findings_reader.findings_by_path(
             str(subject["project"]), root=str(subject["repo"])
         )
     except (OSError, ValueError):
-        return []
+        return None
+    if grouped.get("unreadable"):
+        return None
     return [
         row
         for group in grouped.get("paths") or ()
-        if str(group.get("path")) in named
+        if any(
+            _domain_rules.path_at_or_beneath(str(group.get("path")) or "", root)
+            for root in roots
+        )
         for row in group.get("rows") or ()
         if row.get("disposition") == "open"
     ]
@@ -5764,7 +6043,15 @@ def code_review_brief(subject: Mapping[str, Any]) -> str:
         _interface_figure_line(subject),
     ]
     open_findings = _open_findings_for(subject)
-    if open_findings:
+    if open_findings is None:
+        # The store exists and could not be read: no row was measured, so a
+        # count or "none" here would report an absence the reader never saw.
+        lines.append(
+            "Open findings: the stored findings could not be read for the named "
+            "paths, so this brief carries no count; treat the store as unknown "
+            "rather than empty."
+        )
+    elif open_findings:
         lines.append(
             "Open findings already stored against the named paths; cite these by "
             "their row rather than re-reporting them:"
@@ -6241,7 +6528,9 @@ def project_section_readiness(
             section_verdicts_by_plan,
         )
 
-        with roadmap_build_scope(resolve_coordinators=False) as scope:
+        with roadmap_build_scope(
+            resolve_coordinators=False, audit_landings=False
+        ) as scope:
             discovered = _discover_project(project, None)
             roadmap = scope.built
             if roadmap is None:

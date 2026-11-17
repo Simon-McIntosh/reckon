@@ -244,8 +244,16 @@ def _earlier_review_with_a_blocking_finding(
     _commit(repository, "reckon/repair_source.py", f"VALUE = {marker!r}\n")
 
 
-def _record_refusal(run_id: str, *, at: datetime) -> dict:
-    """Write the refusal the reflex records on the run it acted for."""
+def _record_refusal(run_id: str, *, at: datetime, head: str | None = None) -> dict:
+    """Write the refusal the reflex records on the run it acted for.
+
+    ``head`` is the revision the refusal was made against, which is the only
+    fact that lets a reader tell a refusal about the run's current revision
+    from one about a revision the run has since left. A record that names none
+    covers no revision at all, so the cases below pass either the run's head —
+    the refusal speaks — or nothing, which is what every entry written before
+    the writer took a head looks like.
+    """
     pointer = runs.read_pointer(run_id)
     pointer["review_dispatch"] = {
         "status": "refused",
@@ -255,7 +263,7 @@ def _record_refusal(run_id: str, *, at: datetime) -> dict:
         ),
         "run_id": None,
         "backend": None,
-        "head": None,
+        "head": head,
         "at": at.isoformat(),
         "attempt": 9,
     }
@@ -265,7 +273,10 @@ def _record_refusal(run_id: str, *, at: datetime) -> dict:
 
 def _duty(result: dict) -> dict:
     duties = [
-        item for item in result["obligations"] if item["kind"] == "review-missing"
+        item
+        for item in result["obligations"]
+        if item["kind"]
+        in ("review-missing", obligations_module.REVIEW_DISPATCH_REFUSED_DUTY_KIND)
     ]
     assert len(duties) == 1, [
         (item["kind"], item["run_id"]) for item in result["obligations"]
@@ -281,12 +292,13 @@ def test_a_refusal_after_delivery_names_the_answer_that_lifts_it(
     _earlier_review_with_a_blocking_finding(repository, run_id=run_id, marker="1")
     head = _git(repository, "rev-parse", "HEAD")
     _delivered_run(repository, tmp_path, run_id=run_id, head=head)
-    pointer = _record_refusal(run_id, at=OBSERVED_AT)
+    pointer = _record_refusal(run_id, at=OBSERVED_AT, head=head)
 
     with runs.follower_claim(PROJECT, SESSION, delivery="stream"):
         result = obligations_module.obligations(PROJECT, SESSION)
 
     duty = _duty(result)
+    assert duty["kind"] == obligations_module.REVIEW_DISPATCH_REFUSED_DUTY_KIND, duty
     assert "review_owner" not in duty, duty
     assert duty["reason"] == pointer["review_dispatch"]["reason"], duty
     fold, exempt = (
@@ -301,7 +313,7 @@ def test_a_refusal_after_delivery_names_the_answer_that_lifts_it(
 def test_a_refusal_from_before_the_delivery_leaves_the_reflex_the_owner(
     repository: Path, tmp_path: Path
 ) -> None:
-    """A refusal older than the run's last delivery says nothing about this head."""
+    """A refusal that names no head speaks about no revision of this run."""
     run_id = "run-refused-before-delivery"
     _earlier_review_with_a_blocking_finding(repository, run_id=run_id, marker="2")
     head = _git(repository, "rev-parse", "HEAD")

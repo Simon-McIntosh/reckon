@@ -1,0 +1,46 @@
+<section id="alro-s3f-one-resolver-in-every-plan-keyed-read" class="evidence-fragment">
+  <h2>§3 — Every plan-keyed ledger read resolves a run's plan the same way</h2>
+  <p>
+    <code>ledger._row_plan</code> gave the plan-selected run read one owner for a
+    row's plan, but three other readers in <code>reckon/ledger.py</code> still
+    read the row's top-level <code>plan</code> field directly, so a
+    brief-carried run fell into the empty-plan bucket everywhere else. All three
+    reproduced over a temporary store: a promoted brief-carried run naming a
+    plan, read through <code>review_scores(runs, plan=NAMED)</code>, returned
+    <code>[]</code>; <code>effort_report</code> reported one row, for
+    <code>""</code>, with all three runs in it; and <code>summary()["plans"]</code>
+    read <code>['']</code> with the named plans absent.
+  </p>
+  <p>
+    <strong>Decision.</strong> Each reader takes the plan from the one resolver:
+    the scored read selects and reports on <code>_row_plan(record)</code>, the
+    effort rollup buckets by it, and the plans index is
+    <code>sorted({_row_plan(record) for record in records})</code>. No second
+    resolver was added and each read stays where it was — the scored and effort
+    reads still filter decoded rows, and the plan-selected run read keeps its
+    filter inside the index query.
+  </p>
+  <p>
+    <strong>The stored-row half.</strong> The version bump that forces
+    re-extraction of stored rows had no test: every case read a cold index over
+    a fresh store. The new case builds an index under the earlier extraction —
+    the row's own field alone, under that extraction's own projection version,
+    so the index entry carries no plan while the row's node definition names one
+    — and then reads through the current code, which returns the row for its
+    plan. With the index version returned to its earlier value the same case
+    fails, because the warm planless entry is reused and the row is missing from
+    its plan's read.
+  </p>
+  <p id="alro-s3f-one-resolver-in-every-plan-keyed-read-measure">
+    Measure, over a temporary store built through
+    <code>write_run_file</code>: <code>tests/test_a_brief_carried_run_keeps_its_plan.py</code>
+    reports <strong>8 passed</strong> at the head, adding one case per reader
+    (scored read, effort rollup, plans index — each counting the brief-carried
+    run under the plan it names and keeping the run naming no plan in the
+    <code>""</code> bucket) and the stored-row case.
+    The negative control runs the same file with <code>_RUN_INDEX_VERSION</code>
+    returned to 6: <strong>1 failed, 7 passed</strong>, the failure being
+    <code>test_a_row_indexed_under_the_earlier_extraction_is_read_for_its_plan</code>
+    with <code>assert 'r-20260102T000001000-alro-stored' in set()</code>.
+  </p>
+</section>

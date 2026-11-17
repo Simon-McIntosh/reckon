@@ -283,6 +283,7 @@ def _review_record_evidence(record: Mapping[str, Any]) -> dict[str, Any] | None:
         return None
     findings = body.get("findings")
     return {
+        "run_id": str(record.get("run_id") or "").strip(),
         "path": str(path),
         "status": status,
         "findings": len(findings) if isinstance(findings, list) else 0,
@@ -290,22 +291,44 @@ def _review_record_evidence(record: Mapping[str, Any]) -> dict[str, Any] | None:
     }
 
 
-def _review_record_check(evidence: Mapping[str, Any]) -> dict[str, Any]:
+def _review_record_check(
+    evidence: Mapping[str, Any], *, capture_log: bool = True
+) -> dict[str, Any]:
     """The gate check a stored review record stands as.
 
     A review run changes no code, so there is no suite for the integration
     re-run to execute at the integrated head. What a reader can re-execute is
-    that the record this promotion rests on is still on disk holding its
-    content — that is the review run's whole check. The record is also the log:
-    it carries the status and the record's findings, which is the evidence the
-    verdict was read from.
+    that the record this promotion rests on is present and non-empty — that is
+    the review run's whole check. The record is not the log: it is JSON, and no
+    JSON record carries the terminal ``EXIT=<n>`` line every reader of a cited
+    log reads the command's status from, so citing the record as its own
+    capture states no status at all and the check refuses the derivation that
+    produced it. The check's outcome is captured into the run's own log
+    instead, which the record is named on, and that log is what the check
+    cites.
+
+    ``capture_log`` is false when the promotion already holds a log — the
+    caller's flag, or one the manifest names — because that is the evidence the
+    run re-executed and a log written beside it would be a file nothing points
+    at. The check still reports its own exit status in that case, so a citation
+    that disagrees with the record still refuses.
     """
+    from reckon.crew.promotion_evidence import _derived_review_gate_log
+
     record_path = str(evidence["path"])
-    return {
-        "command": f"test -s {shlex.quote(record_path)}",
-        "exit_status": 0,
-        "log_path": record_path,
-    }
+    command = f"test -s {shlex.quote(record_path)}"
+    check: dict[str, Any] = {"command": command}
+    check.update(
+        _derived_review_gate_log(
+            str(evidence.get("run_id") or ""),
+            Path(record_path),
+            command=command,
+            status=str(evidence.get("status") or ""),
+            findings=int(evidence.get("findings") or 0),
+            capture=capture_log,
+        )
+    )
+    return check
 
 
 def _default_gate_log_from_manifest(
@@ -434,7 +457,15 @@ def _default_gate_evidence_from_manifest(
     if _review_role_run(record):
         review_evidence = _review_record_evidence(record)
     if review_evidence is not None:
-        for key, value in _review_record_check(review_evidence).items():
+        # The check's log is captured only where the promotion will cite it: a
+        # caller's own flag, or a log the manifest already names, is the
+        # evidence that run re-executed, and writing a second log beside it
+        # would leave a file nothing points at.
+        check = _review_record_check(
+            review_evidence,
+            capture_log=not str(resolved_gate.get("log_path") or "").strip(),
+        )
+        for key, value in check.items():
             if key == "exit_status":
                 if resolved_gate.get(key) is None:
                     resolved_gate[key] = value
@@ -631,6 +662,21 @@ def _arm_command_matches(
 
 
 SCOPED_SUITE_PLACEHOLDER = "{node_test_files}"
+
+#: The fields a suite arm's record states, in the flat shape a reader accepts.
+#: An arm carrying none of them declares no measurement rather than a record.
+_ARM_FIELDS = frozenset(
+    {
+        "revision",
+        "command",
+        "exit_status",
+        "completed",
+        "failure_count",
+        "failure_ids",
+        "log_path",
+        "log_digest",
+    }
+)
 
 
 def _scope_tree(record: Mapping[str, Any]) -> Path | None:
@@ -994,6 +1040,74 @@ def _arm_measured_nothing(
     return bool(_named_paths_absent_from_tree(record, observation))
 
 
+def _arm_declares_no_measurement(observation: Any) -> bool:
+    """Whether a suite arm states no measurement at all.
+
+    ``baseline_suite: none`` parses to an empty record, and a mapping carrying
+    no arm field is the same declaration. Anything stating a revision, a command
+    or a count is a measurement to be judged on its own terms rather than a
+    declaration that there is none.
+    """
+    if not isinstance(observation, Mapping):
+        return True
+    return not (set(observation) & _ARM_FIELDS)
+
+
+def _base_tree_holds_no_test_file(record: Mapping[str, Any]) -> bool:
+    """Whether the run's base revision holds none of the node's test files.
+
+    Read from the base revision's own tree through the object store rather than
+    from a working directory, which holds the head's content whichever arm is
+    being asked about. An unanswered probe answers False, because an unprobed
+    base is not a licence to accept an absent arm.
+    """
+    files = _node_test_files(record)
+    base = str(record.get("base_sha") or "").strip()
+    if not files or not base:
+        return False
+    present = _paths_present_in_tree(_scope_tree(record), base, files)
+    return present is not None and not present
+
+
+def _base_arm_measured_an_empty_suite(
+    record: Mapping[str, Any], observation: Any
+) -> bool:
+    """Whether an absent base arm is the complete measurement of an empty scope.
+
+    The pair is accepted only when all three hold: the declaration is scoped, so
+    the base command is resolved per tree and can legitimately have named no
+    file; the arm states no measurement of its own; and the base revision holds
+    none of the tests the node is fenced to. A base tree that does hold them has
+    a suite to run, and an arm declaring none there is missing evidence.
+    """
+    declared = " ".join(str(record.get("suite_command") or "").split())
+    if SCOPED_SUITE_PLACEHOLDER not in declared:
+        return False
+    if not _arm_declares_no_measurement(observation):
+        return False
+    return _base_tree_holds_no_test_file(record)
+
+
+def _empty_base_arm(command: str, revision: str) -> dict[str, Any]:
+    """The base arm of a directly scoped suite whose tests the change creates.
+
+    ``exit_status`` is pytest's exit for a collection that found nothing to run,
+    which is what the command would have returned over the base tree: it names
+    the measurement as empty rather than as a pass. There are zero failures
+    because no test existed that could fail, and no log because no test ran.
+    """
+    return {
+        "revision": revision,
+        "command": command,
+        "exit_status": 5,
+        "completed": True,
+        "failure_count": 0,
+        "failure_ids": [],
+        "log_path": None,
+        "log_digest": None,
+    }
+
+
 def _arm_missing_fields(
     record: Mapping[str, Any],
     arm_name: str,
@@ -1150,13 +1264,6 @@ def _a_held_arm_pair(baseline: Any, after: Any) -> bool:
     return True
 
 
-def _only_command_mismatch(missing: Sequence[str]) -> bool:
-    """Whether the only missing fields are arm commands differing from the arming."""
-    return bool(missing) and all(
-        field.endswith(".command_matches_suite_command") for field in missing
-    )
-
-
 def _record_arm_waiver(
     run_id: str,
     reason: str,
@@ -1294,9 +1401,20 @@ def _evaluate_suite_delta(
         missing.append("manifest")
     elif not fresh:
         missing.append("fresh_manifest")
-    missing.extend(
-        ledger.suite_observation_missing_fields(baseline, name="baseline_suite")
-    )
+    # A scope whose tests the change creates has nothing to measure against: the
+    # base tree holds none of the node's test files, so the base arm measured an
+    # empty suite. That is a complete measurement of nothing rather than an
+    # absent one, and an arm declaring it as ``none`` is accepted once the base
+    # tree confirms it. It is recorded as pytest's own exit for a collection
+    # that found nothing to run, with no log, because no test ran and no result
+    # beyond that is being claimed.
+    base_sha = str(record.get("base_sha") or "").strip()
+    if _base_arm_measured_an_empty_suite(record, baseline):
+        baseline = _empty_base_arm(suite_command, base_sha)
+    else:
+        missing.extend(
+            ledger.suite_observation_missing_fields(baseline, name="baseline_suite")
+        )
     missing.extend(ledger.suite_observation_missing_fields(after, name="after_suite"))
     for arm_name, observation in (
         ("baseline_suite", baseline),
@@ -1307,7 +1425,6 @@ def _evaluate_suite_delta(
         for field in _arm_missing_fields(record, arm_name, observation, head=head):
             if field not in missing:
                 missing.append(field)
-    base_sha = str(record.get("base_sha") or "").strip()
     if (
         isinstance(baseline, Mapping)
         and str(baseline.get("revision") or "").strip()
@@ -1372,19 +1489,12 @@ def _evaluate_suite_delta(
                     ),
                 }
             measured_arms = None
-        elif not gate_declaration(record).get("command") and _only_command_mismatch(
-            missing
-        ):
-            # The pair is present and complete; only its commands differ from
-            # the one the run was armed with. That is decidable from the record
-            # alone, and re-running the armed command here would submit a
-            # scheduler job over a question the run has already answered
-            # differently, so the refusal is reported without measuring. A run
-            # that declared the command its arms ran with takes the measurement
-            # path below instead, against the declared command and partition,
-            # which is the supported rescue.
-            measured_arms = None
         else:
+            # A pair whose commands differ from the one the run was armed with
+            # is measured here like a missing pair: the landing runs the armed
+            # command at the base and at the head itself, so a worker that
+            # gated on its own focused tests does not cost its coordinator a
+            # waiver, and the comparison the gate makes is unchanged.
             declaration = gate_declaration(record)
             measured_arms = _measure_missing_arms(
                 run_id,
@@ -1752,11 +1862,8 @@ def _retire_disposable_identity(record: Mapping[str, Any]) -> dict[str, Any]:
     that was considered. A blocked run is kept: it may still be resumed, and its
     identity is part of what a resume finds.
 
-    The removal runs after the release receipt is committed, so no later write
-    amends a run file and leaves the aggregate behind. The roster read is the
-    aggregate's own (:func:`ledger.load_aggregate`), never :func:`ledger.load`'s
-    union: a roster holds no run rows, so the union's run rows could only be
-    copied into the tracked aggregate beside the files that already carry them.
+    The removal runs after the release receipt is committed and changes only
+    the run store's roster, leaving promoted history intact.
     """
     run_id = str(record.get("run_id") or "")
     member_id = str(record.get("member") or "").strip()
@@ -1776,7 +1883,7 @@ def _retire_disposable_identity(record: Mapping[str, Any]) -> dict[str, Any]:
         }
     try:
         for _attempt in range(8):
-            data, version = ledger.load_aggregate(project, root)
+            data, version = ledger.load_auxiliary(project, root)
             if not any(str(entry.get("id")) == member_id for entry in data["members"]):
                 return {
                     "identity_retired": False,
@@ -1787,13 +1894,12 @@ def _retire_disposable_identity(record: Mapping[str, Any]) -> dict[str, Any]:
                 entry for entry in data["members"] if str(entry.get("id")) != member_id
             ]
             try:
-                ledger.write(
+                ledger.write_members(
                     project,
-                    data,
+                    data["members"],
                     version,
                     root=root,
                     allow_member_removal=True,
-                    commit=True,
                 )
             except ledger.LedgerError:
                 continue

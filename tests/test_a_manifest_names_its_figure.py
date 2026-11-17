@@ -130,6 +130,30 @@ def test_a_figure_the_commits_do_not_carry_is_refused_naming_the_path(
     assert "not carried by this run's commits" in findings[0]
 
 
+def test_a_figure_redrawn_after_the_base_passes(repo: Path) -> None:
+    """A node that redraws a figure already present at its base delivers it.
+
+    The path exists at the base, so a check that reads only added paths refuses
+    a figure the run's own commit carried. The figure here is committed before
+    the base and rewritten after it, which is the shape every redraw has.
+    """
+    _commit_figure(repo, FIGURE)
+    base = _base(repo)
+    figure = repo / FIGURE
+    figure.write_text("<svg><!-- redrawn --></svg>\n", encoding="utf-8")
+    _git(repo, "add", FIGURE)
+    _git(repo, "commit", "-q", "-m", "docs: redraw the figure")
+
+    assert (
+        _findings(
+            _manifest(base=base, figures=[FIGURE]),
+            worktree=repo,
+            repository=repo,
+        )
+        == []
+    )
+
+
 def test_a_figure_outside_the_figure_directory_is_refused(repo: Path) -> None:
     base = _base(repo)
     _commit_figure(repo, OUTSIDE_FIGURE)

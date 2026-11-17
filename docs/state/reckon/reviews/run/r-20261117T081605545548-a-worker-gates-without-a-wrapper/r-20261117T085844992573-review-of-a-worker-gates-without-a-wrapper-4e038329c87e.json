@@ -1,0 +1,104 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "failure_condition": "Changing the submission partition, removing --wait or retaining scheduler environment variables fails the recording-scheduler assertions.",
+      "path": "tests/test_a_worker_gates_without_a_wrapper.py:140-145"
+    },
+    {
+      "failure_condition": "Withholding either composed prompt call fails len(calls)==2; observed in negative-control.log.",
+      "path": "tests/test_a_worker_gates_without_a_wrapper.py:162-170"
+    },
+    {
+      "failure_condition": "CLI failure, wrong base/head forwarding, invalid observation fields, missing completion, wrong partition, missing revision/command header or missing exit receipt fails the corresponding assertion; identities are independently read from pointer and git HEAD, and scheduler argv is checked separately.",
+      "path": "tests/test_a_worker_gates_without_a_wrapper.py:179-195"
+    },
+    {
+      "failure_condition": "A wrapper .sh or .py created beside the actual dispatch prompt fails the no-script checks; the prompt is a positive control for the directory being examined.",
+      "path": "tests/test_a_worker_gates_without_a_wrapper.py:197-198"
+    },
+    {
+      "failure_condition": "Manifest audit rejection, suite delta rejection or fewer/more than three scheduler submissions fails these assertions.",
+      "path": "tests/test_a_worker_gates_without_a_wrapper.py:218-226"
+    },
+    {
+      "failure_condition": "Resolving both commands against the same revision includes the added test in baseline or excludes it from head; a copied baseline test population also breaks the independent one/two-pass log expectations.",
+      "path": "tests/test_a_worker_gates_without_a_wrapper.py:243-248"
+    },
+    {
+      "failure_condition": "Swallowing command exit 7, marking it successful, losing the executed marker or losing EXIT=7 fails these checks.",
+      "path": "tests/test_a_worker_gates_without_a_wrapper.py:257-263"
+    },
+    {
+      "failure_condition": "Removing checkout ownership validation allows submission or loses the refusal text and fails these checks.",
+      "path": "tests/test_a_worker_gates_without_a_wrapper.py:274-278"
+    },
+    {
+      "failure_condition": "Treating a successful submission with no job receipt as a completed gate fails the nonzero-exit and completed-false assertions.",
+      "path": "tests/test_a_worker_gates_without_a_wrapper.py:295-296"
+    },
+    {
+      "failure_condition": "Removing worker/arm help or partition support, or adding a caller log option, fails help checks; accepting --log-path also fails its explicit usage refusal.",
+      "path": "tests/test_a_worker_gates_without_a_wrapper.py:299-310; tests/test_crew_help_names_its_state.py:160-168"
+    }
+  ],
+  "assertion_independence": "No vacuous comparison of a supplied value to its returned copy was counted as regression coverage: header comparisons measure serialization, independent pointer/git identities constrain revision labels, and recording-scheduler argv checks constrain the reported partition. Fixture assert True statements only seed the measured population.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/dispatch_claims.py:1544 compose_prompt",
+    "reckon/crew/prompts.py:976 worker_gate_commands",
+    "reckon/crew_run_commands.py:2169 run_node_arms",
+    "reckon/crew_run_commands.py:4777 run_worker_gate",
+    "reckon/crew/promotion_gate.py:84 run_node_command",
+    "reckon/crew/standing_suite.py:290 run_node_command"
+  ],
+  "completed_at": "2026-11-17T09:06:29Z",
+  "dispatched_at": "2026-11-17T09:00:24Z",
+  "findings": [],
+  "gate_evidence": {
+    "after_failure_ids": [],
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T081605545548-a-worker-gates-without-a-wrapper/final-after-suite.log",
+    "after_summary": "72 passed in 51.00s",
+    "baseline_failure_ids": [],
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T081605545548-a-worker-gates-without-a-wrapper/baseline-suite.log",
+    "baseline_summary": "64 passed in 41.89s"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Read 9f54dd12c811fcf867fed6fd148dc2ffc4f958bf and 4e038329c87e3fc7633949df82477d323c605a1e against e20550d4e0106174415609f96ca5ad92b8b88ce3; the first extends existing verbs and their execution owners and the second confines test fixtures to the recording scheduler.",
+    "done_when": "The pointer done_when and live plan section 7 require wrapper-free all_debug execution, a withheld-command control and no importer regression; final-after-suite.log records 72 passed, negative-control.log records the expected wrapper-free failure, and the literal rehearsal receipts and importer logs support the remaining measures.",
+    "goal": "The live run pointer goal requests scoped gates, base/head arms and prompt calls; reckon/crew_run_commands.py:2165 and :4767 expose both paths and reckon/crew/prompts.py:976 composes them into dispatch prompts.",
+    "manifest": "The reviewed run's manifest.md names both full commits, six changed paths and readable baseline_suite/after_suite logs; direct log parsing confirms zero added failures and the manifest's 64-to-72 scoped pass counts.",
+    "write_paths": "The live pointer's node.write_paths includes all six changed files, including reckon/crew/prompts.py added to the initial grant; the manifest orientation list predates that addition but the current grant covers the diff."
+  },
+  "justifications": {
+    "durability": "tests/test_a_worker_gates_without_a_wrapper.py:186 checks independent revision identities, :194 checks their log headers, :245 checks per-tree population resolution, :257 checks a failed command receipt, and :278 refuses a foreign checkout before submission.",
+    "evidence": "tests/test_a_worker_gates_without_a_wrapper.py:175 is supported by the 72-pass final-after-suite.log, the deliberately failing negative-control.log and three independently opened real-smoke job logs ending EXIT=0.",
+    "fit": "reckon/crew/standing_suite.py:217 delegates execution and observation to landing_measure and reckon/crew_run_commands.py:4767 follows the existing Click and JSON result idioms without introducing a new verb or forbidden source label.",
+    "goal_fidelity": "reckon/crew/prompts.py:764 composes both executable calls and reckon/crew/standing_suite.py:288 resolves and submits each arm at its own revision through the existing gate verbs.",
+    "reuse": "Capability searches over reckon/crew and the CLI found existing execution, observation and scoped-command owners in reckon/crew/landing_measure.py:855, :1199 and reckon/crew/promotion_records.py:911, which the new helpers wrap; prompt composition extends its existing owner and no competing live-run identity or done_when partition resolver was found.",
+    "scope_discipline": "All six paths in the two-commit diff are covered by the live pointer's node.write_paths, and reckon/crew/node.py remains unchanged."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The live run pointer goal requests scoped gates, base/head arms and prompt calls; reckon/crew_run_commands.py:2165 and :4767 expose both paths and reckon/crew/prompts.py:976 composes them into dispatch prompts.\nVERDICT done_when: The pointer done_when and live plan section 7 require wrapper-free all_debug execution, a withheld-command control and no importer regression; final-after-suite.log records 72 passed, negative-control.log records the expected wrapper-free failure, and the literal rehearsal receipts and importer logs support the remaining measures.\nVERDICT write_paths: The live pointer's node.write_paths includes all six changed files, including reckon/crew/prompts.py added to the initial grant; the manifest orientation list predates that addition but the current grant covers the diff.\nVERDICT manifest: The reviewed run's manifest.md names both full commits, six changed paths and readable baseline_suite/after_suite logs; direct log parsing confirms zero added failures and the manifest's 64-to-72 scoped pass counts.\nVERDICT diff: Read 9f54dd12c811fcf867fed6fd148dc2ffc4f958bf and 4e038329c87e3fc7633949df82477d323c605a1e against e20550d4e0106174415609f96ca5ad92b8b88ce3; the first extends existing verbs and their execution owners and the second confines test fixtures to the recording scheduler.\nCALL_SITES: reckon/crew/dispatch_claims.py:1544 compose_prompt, reckon/crew/prompts.py:976 worker_gate_commands, reckon/crew_run_commands.py:2169 run_node_arms, reckon/crew_run_commands.py:4777 run_worker_gate, reckon/crew/promotion_gate.py:84 run_node_command, reckon/crew/standing_suite.py:290 run_node_command\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/prompts.py:764 composes both executable calls and reckon/crew/standing_suite.py:288 resolves and submits each arm at its own revision through the existing gate verbs.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_a_worker_gates_without_a_wrapper.py:175 is supported by the 72-pass final-after-suite.log, the deliberately failing negative-control.log and three independently opened real-smoke job logs ending EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: All six paths in the two-commit diff are covered by the live pointer's node.write_paths, and reckon/crew/node.py remains unchanged.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_worker_gates_without_a_wrapper.py:186 checks independent revision identities, :194 checks their log headers, :245 checks per-tree population resolution, :257 checks a failed command receipt, and :278 refuses a foreign checkout before submission.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/standing_suite.py:217 delegates execution and observation to landing_measure and reckon/crew_run_commands.py:4767 follows the existing Click and JSON result idioms without introducing a new verb or forbidden source label.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches over reckon/crew and the CLI found existing execution, observation and scoped-command owners in reckon/crew/landing_measure.py:855, :1199 and reckon/crew/promotion_records.py:911, which the new helpers wrap; prompt composition extends its existing owner and no competing live-run identity or done_when partition resolver was found.\n",
+  "review_run_id": "r-20261117T085844992573-review-of-a-worker-gates-without-a-wrapper-4e038329c87e",
+  "reviewed_base_sha": "e20550d4e0106174415609f96ca5ad92b8b88ce3",
+  "reviewed_head_sha": "4e038329c87e3fc7633949df82477d323c605a1e",
+  "reviewed_run_id": "r-20261117T081605545548-a-worker-gates-without-a-wrapper",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T09:07:35.226568+00:00",
+  "total": 120
+}

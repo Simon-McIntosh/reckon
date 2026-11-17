@@ -1,0 +1,93 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": {
+    "166-170": "No added assertion echoes a value the test handed in: the queued dicts feed runs.queue_dispatch and the compared role is read back through runs.read_pointer.",
+    "171": "A literal set {review, implement} against the roles read back from the run store at :169; it reddens if queue_dispatch stops persisting the role or read_pointer stops returning it, and its two sides are not the same variable.",
+    "172": "The join itself: the row's role keys (production output) against the roles carried by the queued pointers, read back through runs.read_pointer. logs/negative-control.log measures the condition under which it fails - {'implementation','review'} against {'implement','review'} with the constant renamed back.",
+    "177": "sum(launched) == SEATS (SEATS = 3 at :29) reddens on the zero-launch cadence the commit describes, where every role reads launched 0, and on a pass that under- or over-fills the lane it was given."
+  },
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/admission/ordering.py:_role_of",
+    "reckon/crew/admission/ordering.py:_role_seat_weights",
+    "reckon/crew/admission/ordering.py:role_cadence",
+    "reckon/crew/admission/selection.py:605",
+    "reckon/crew/admission/verdicts.py:399"
+  ],
+  "completed_at": "2026-11-16T00:43:04.278Z",
+  "dispatched_at": "2026-11-16T00:26:59Z",
+  "failure_delta_evidence": {
+    "after": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_reviews_and_implementations_share_the_seats.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224328568660-verdict-role-matches-run-role-s13/logs/after-suite.log",
+      "revision": "6e5c1fd1c2b50afaf127c4c015e50cbd73f67141",
+      "summary": "62 passed in 149.40s (0:02:29)"
+    },
+    "baseline": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_reviews_and_implementations_share_the_seats.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224328568660-verdict-role-matches-run-role-s13/logs/baseline-suite.log",
+      "revision": "93e596c64faa6c263e5860e3250004ceb10b3f67",
+      "summary": "62 passed in 58.18s"
+    }
+  },
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the coordinator rebuilt the manifest's tests, test_logs, suite arms, negative_control_log and landing line from the run's own logs at its reviewed head 6e5c1fd1c2; the record check now passes",
+      "recorded_at": "2026-11-16T03:48:09.402314+00:00"
+    }
+  },
+  "findings": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224328568660-verdict-role-matches-run-role-s13/manifest.md:5 blocking: the delivered manifest carries no tests:, test_logs:, baseline_suite, after_suite, negative_control_log or landing line - audit_manifest over its own text prints 'status is complete but no test result is recorded', 'status is complete but baseline_suite is missing' and 'status is complete but after_suite is missing' (suite_armed=True), and promotion fills its gate receipt from the tests: line and compares those two arms, so the reviewed gate facts survive only as logs/baseline-suite.log and logs/after-suite.log on disk while the record promotion reads has no gate.",
+    "reckon/crew/admission/ordering.py:156 non-blocking: the implementation role name stays a module-local literal beside a review role that ordering.py:159-163 imports from reckon.crew.recovery_vocabulary.REVIEW_ROLE, and the repository states the implement spelling in three other places (reckon/crew/worker_digest.py:63, reckon/crew/ticker.py:657, reckon/crew/dispatching/preparation.py:237) with no owner, so the same key drift this node repaired can recur without any gate noticing."
+  ],
+  "item_verdicts": {
+    "call_sites": "Verified reckon/crew/admission/ordering.py:_role_of (175), _role_seat_weights, role_cadence (239, seeded at 254) and its two production callers, admission/selection.py:605 and admission/verdicts.py:399, which writes the roles map into admission-verdicts.jsonl.",
+    "diff": "Read the one commit 6e5c1fd1c2b50afaf127c4c015e50cbd73f67141 against base 93e596c64faa6c263e5860e3250004ceb10b3f67: one constant value renamed with a comment, the verdict-row case reworked to keep the fixture's backend and gain three assertions, and an 88-line landing fragment; 3 files, 119 insertions, 6 deletions.",
+    "done_when": "The done_when asks that the row's role keys equal the pointer role values, that a new assertion pin the launched count, that the nine-implementations/three-reviews seat order be unchanged and that the admission-importing tests add no failure against base; tests/test_reviews_and_implementations_share_the_seats.py:172 carries the join assertion, :177 the launched count, the ordering cases at :103-118 are untouched and still pass, and logs/baseline-suite.log and logs/after-suite.log both read 62 passed with EXIT=0.",
+    "goal": "The source goal is to name the verdict row's implementation role as run pointers do and pin the launched count; reckon/crew/admission/ordering.py:156 now spells IMPLEMENTATION_ROLE \"implement\", the spelling a run pointer carries per reckon/crew/recovery_review_acceptance.py:650 and reckon/crew/queue_landing.py:1984, and tests/test_reviews_and_implementations_share_the_seats.py:177 pins the launched count.",
+    "manifest": "The manifest at the reviewed run directory is a seven-line orientation record: worktree, base 93e596c64faa, node, status complete and commit 6e5c1fd1c2b5, with no tests:, test_logs:, baseline_suite, after_suite, negative_control_log or landing line, so its gate facts live only in logs/baseline-suite.log, logs/after-suite.log and logs/negative-control.log.",
+    "write_paths": "The source fence names reckon/crew/admission/ordering.py, selection.py, verdicts.py, the seats test and the landing fragment; the single commit changes ordering.py, the seats test and docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/verdict-role-matches-run-role-s13.html, all inside it, and correctly leaves selection.py and verdicts.py untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_reviews_and_implementations_share_the_seats.py:172 compares the row's role keys against the role read back through runs.read_pointer at :169, and :177 fails a pass that launches nothing, with logs/negative-control.log showing :172 redden when the old spelling is reinstated.",
+    "evidence": "logs/baseline-suite.log (62 passed, EXIT=0 at 93e596c64faa) and logs/after-suite.log (62 passed, EXIT=0 at 6e5c1fd1c2b5) record the arms and logs/negative-control.log records the declared mutation failing 1 of 4 at tests/test_reviews_and_implementations_share_the_seats.py:172 with EXIT=1, but manifest.md:5 records none of it.",
+    "fit": "reckon/crew/admission/ordering.py:151-163 keeps the module's comment-then-constant idiom and its lazy import of the sibling role name, adding no name outside the admission package's vocabulary.",
+    "goal_fidelity": "reckon/crew/admission/ordering.py:156 sets IMPLEMENTATION_ROLE to \"implement\" and tests/test_reviews_and_implementations_share_the_seats.py:177 pins the launched count at the pass's seats, which are the two halves of the goal.",
+    "reuse": "No owner of the implementation spelling exists - reckon/crew/recovery_vocabulary.py:158 declares only REVIEW_ROLE while reckon/crew/worker_digest.py:63, reckon/crew/ticker.py:657 and reckon/crew/dispatching/preparation.py:237 each restate it - and the literal left at ordering.py:156 is recorded as a non-blocking finding.",
+    "scope_discipline": "The commit's three paths - reckon/crew/admission/ordering.py, tests/test_reviews_and_implementations_share_the_seats.py and the node fragment - lie inside the declared write paths and carry nothing beyond the constant rename and the case rework."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source goal is to name the verdict row's implementation role as run pointers do and pin the launched count; reckon/crew/admission/ordering.py:156 now spells IMPLEMENTATION_ROLE \"implement\", the spelling a run pointer carries, and tests/test_reviews_and_implementations_share_the_seats.py:177 pins the launched count.\nVERDICT done_when: The done_when asks that the row's role keys equal pointer role values, that a new assertion pin the launched count, that the nine-implementations/three-reviews order be unchanged and that the admission-importing tests add no failure against base; tests/test_reviews_and_implementations_share_the_seats.py:172 and :177 carry the first two, the ordering cases at :103-118 are untouched, and logs/baseline-suite.log and logs/after-suite.log both read 62 passed EXIT=0.\nVERDICT write_paths: The source fence names ordering.py, selection.py, verdicts.py, the seats test and the landing fragment; the single commit changes ordering.py, the seats test and docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/verdict-role-matches-run-role-s13.html, all inside it, and correctly leaves selection.py and verdicts.py alone.\nVERDICT manifest: The manifest at the reviewed run directory is a seven-line orientation record: worktree, base 93e596c64faa, node, status complete, commit 6e5c1fd1c2b5, and no tests:, baseline_suite, after_suite, negative_control_log or landing line, so its gate facts live only in logs/baseline-suite.log, logs/after-suite.log and logs/negative-control.log.\nVERDICT diff: Read the one commit 6e5c1fd1c2b50afaf127c4c015e50cbd73f67141 against base 93e596c64faa6c263e5860e3250004ceb10b3f67: one constant value renamed with a comment, the verdict-row case reworked to keep the fixture's backend and gain three assertions, and an 88-line landing fragment; 3 files, 119 insertions, 6 deletions.\nCALL_SITES: reckon/crew/admission/ordering.py:_role_of, reckon/crew/admission/ordering.py:_role_seat_weights, reckon/crew/admission/ordering.py:role_cadence, reckon/crew/admission/selection.py:605, reckon/crew/admission/verdicts.py:399\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/admission/ordering.py:156 sets IMPLEMENTATION_ROLE to \"implement\" and tests/test_reviews_and_implementations_share_the_seats.py:177 pins the launched count at the pass's seats, the two halves of the goal.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/baseline-suite.log and logs/after-suite.log record 62 passed EXIT=0 at each revision and logs/negative-control.log records the declared mutation failing 1 of 4 at tests/test_reviews_and_implementations_share_the_seats.py:172, but manifest.md:5 records none of it.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: The commit's three paths - reckon/crew/admission/ordering.py, tests/test_reviews_and_implementations_share_the_seats.py and the node fragment - lie inside the declared write paths and carry nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_reviews_and_implementations_share_the_seats.py:172 compares the row's role keys against the role read back through runs.read_pointer at :169 and :177 fails a pass that launches nothing, with logs/negative-control.log showing :172 redden when the old spelling is reinstated.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/admission/ordering.py:151-163 keeps the module's comment-then-constant idiom and its lazy import of the sibling role name, adding no name outside the admission package's vocabulary.\nSCORE reuse: 17\nJUSTIFICATION reuse: No owner of the implementation spelling exists - reckon/crew/recovery_vocabulary.py:158 declares only REVIEW_ROLE while reckon/crew/worker_digest.py:63, reckon/crew/ticker.py:657 and reckon/crew/dispatching/preparation.py:237 each restate it - and the literal left at ordering.py:156 is recorded as a non-blocking finding.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224328568660-verdict-role-matches-run-role-s13/manifest.md:5 blocking: the manifest records no tests:, baseline_suite, after_suite or landing line, so audit_manifest reports a complete status with no test result, no baseline_suite and no after_suite and promotion reads no gate from the record.\nFINDING reckon/crew/admission/ordering.py:156 non-blocking: the implement spelling stays a module-local literal beside a review role imported from reckon/crew/recovery_vocabulary.py:158, so the drift this node repaired can recur unnoticed.\n",
+  "reuse_audit": {
+    "production": "No production definition is added; the change edits the value of an existing constant.",
+    "search": "Searched for an owner of the dispatch-role vocabulary and of the cadence row writer: reckon/crew/recovery_vocabulary.py (REVIEW_ROLE at :158), reckon/crew/worker_digest.py:63, reckon/crew/ticker.py:657, reckon/crew/dispatching/preparation.py:237, reckon/crew/admission/verdicts.py:399 and reckon/crew/admission/selection.py:605.",
+    "tests": "tests/test_reviews_and_implementations_share_the_seats.py:90 adds one local helper, _carried_role, mirroring the role read the recovery surfaces already perform; it is test instrumentation, not a second runtime capability."
+  },
+  "review_run_id": "r-20261116T001433927866-review-of-verdict-role-matches-run-role-s13-6e5c1fd1c2b5",
+  "reviewed_base_sha": "93e596c64faa6c263e5860e3250004ceb10b3f67",
+  "reviewed_commits": [
+    "6e5c1fd1c2b50afaf127c4c015e50cbd73f67141"
+  ],
+  "reviewed_head_sha": "6e5c1fd1c2b50afaf127c4c015e50cbd73f67141",
+  "reviewed_run_id": "r-20261115T224328568660-verdict-role-matches-run-role-s13",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T01:14:27.795951+00:00",
+  "total": 107
+}

@@ -60,7 +60,20 @@ def queued_crew_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """A temporary crew home holding two placeable queued pointers and one not."""
     from reckon import crew
 
-    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "crew-home"))
+    config_home = tmp_path / "crew-home"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+    flight = config_home / "flight.yaml"
+    flight.write_text(
+        json.dumps(
+            {
+                "local_backend": LANE,
+                "backends": {LANE: {"launch": "cli", "command": "codex"}},
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("RECKON_FLIGHT_CONFIG", str(flight))
     now = datetime.now(tz=UTC)
     for run_id, queued_at in (
         (PLACED_OLDER, now - timedelta(minutes=3)),

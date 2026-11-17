@@ -34,7 +34,12 @@ def _request(
     session: str = "coordinator",
 ) -> dict[str, Any]:
     moment = queued_at.isoformat()
-    node: dict[str, Any] = {"id": run_id, "plan": "fixture", "section": "s1"}
+    node: dict[str, Any] = {
+        "id": run_id,
+        "goal": "build the queued work",
+        "plan": "fixture",
+        "section": "s1",
+    }
     if role is not None:
         node["role"] = role
     return {

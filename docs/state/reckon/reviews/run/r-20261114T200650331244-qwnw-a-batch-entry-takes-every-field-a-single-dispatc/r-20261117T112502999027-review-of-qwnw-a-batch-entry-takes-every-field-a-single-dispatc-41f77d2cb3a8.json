@@ -1,0 +1,73 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-17T11:50:45.836Z",
+  "dispatched_at": "2026-11-17T11:26:11Z",
+  "findings": [
+    {
+      "file": "tests/test_a_batch_entry_takes_every_field_a_single_dispatch_takes.py",
+      "line": "213",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion compares the stored backend against CONFIG[\"local_backend\"], but the fixture sets both default_backend and local_backend to \"clive\" (line 31), so a regression that dropped the entry's local choice would still record backend \"clive\" and local true (requests.py:272 sets local=true whenever lane equals local_backend); the lane guard only becomes independent of the value under test when the two names differ."
+    },
+    {
+      "file": "reckon/crew/dispatching/requests.py",
+      "line": "172",
+      "severity": "non-blocking",
+      "text": "non-blocking: when an entry asks for the local lane and the configuration declares no local_backend, the guard is skipped so the request is queued on the default backend, while the record written at line 272 reads local=bool(local) and stores local true; the stored request then names a local lane it is not on, where the single-dispatch path records local only when the chosen backend is the configured local_backend (fences.py:238)."
+    },
+    {
+      "file": "reckon/calibration.py",
+      "line": "27",
+      "severity": "non-blocking",
+      "text": "non-blocking: a second duration parser _DECLARED_DURATION still matches only one integer-and-unit run, so a request storing the newly accepted \"1h30m\" reaches _declared_budget_verdict at line 143 and yields budget_seconds None, and an overrun of that budget is judged as having none rather than as duration_over_budget."
+    },
+    {
+      "file": "tests/test_a_batch_entry_takes_every_field_a_single_dispatch_takes.py",
+      "line": "176",
+      "severity": "non-blocking",
+      "text": "non-blocking: _home_snapshot keeps only paths where is_file() is true, so a regression that created an empty run directory under the crew home would leave both the before/after comparison and the list_live() check green, although the done-when says a preview writes no run directory."
+    },
+    {
+      "file": "tests/test_a_batch_dry_run_previews.py",
+      "line": "3",
+      "severity": "non-blocking",
+      "text": "non-blocking: the module docstring narrates the defect's history (\"On 8 November ... exited 0, printed queued\" and \"now reaches the batch\") rather than stating the mechanism the test guards, which dates the comment against the repository rule that comments are code and not a changelog."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 5 production call sites",
+    "diff": "read the five node commits against 1ba716cf and the two merges after them; 7de0489345 carries the four per-entry fields, the dry-run preview and the compound duration, the next four change only the evidence fragment, and every marker the change introduced is present at the reviewed head.",
+    "done_when": "the plan's five done-when bullets are each exercised by tests/test_a_batch_entry_takes_every_field_a_single_dispatch_takes.py:194, 219, 251, 281, 328 and 341; gate-nodegate.log records that file inside a fifteen-file run reading \"98 passed in 8.77s\" at EXIT=0, and negative-control.log records the same file at the base revision as \"7 failed, 1 passed\" EXIT=1.",
+    "goal": "the node's goal is that a batch entry takes every field a single dispatch takes; reckon/crew/dispatch_batch.py:663 _entry_options resolves the entry's comment, lane and priority against command-level defaults and reckon/crew/dispatching/requests.py:272 stores them on the same queued-request record a single dispatch writes, with over_fence_reason resolved at dispatch_batch.py:651 and the compound duration read at reckon/crew/node.py:873.",
+    "manifest": "read; status complete, baseline_suite at 1ba716cf and after_suite at b412a2d7 both completed with failure_count 0, negative_control_log naming negative-control.log, and test_logs naming the five gate logs read here.",
+    "write_paths": "the source fence was reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and skills; git diff --stat 1ba716cf..ec3f17e99 lists exactly seven files, every one inside it."
+  },
+  "justifications": {
+    "durability": "reverting the batch-entry fields reddens seven of the eight new cases as negative-control.log shows the base revision doing, but the lane assertions at tests/test_a_batch_entry_takes_every_field_a_single_dispatch_takes.py:212-213 hold whether or not the local choice is honoured.",
+    "evidence": "gate-nodegate.log measures the done-when's own test file at EXIT=0, but it ran at b412a2d7 and the reviewed head 41f77d2c, a merge of later main content, is itself unmeasured.",
+    "fit": "reckon/crew/dispatch_batch.py:663 _entry_options follows the module's resolve-then-refuse idiom and names the mechanism, but the docstring at tests/test_a_batch_dry_run_previews.py:3 narrates the defect's history.",
+    "goal_fidelity": "reckon/crew/dispatching/requests.py:272 stores the four fields on the single-dispatch request record, but line 172 drops the local-lane routing when no local_backend is configured while still recording local true at line 272.",
+    "reuse": "reckon/crew/node.py:246 extends the one duration owner rather than forking it, but reckon/calibration.py:27 keeps a second single-run duration parser that the same change lets disagree with it.",
+    "scope_discipline": "git diff --stat 1ba716cf..ec3f17e99 lists seven files, all inside the declared fence of reckon, tests and the plan's evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a batch entry takes every field a single dispatch takes; reckon/crew/dispatch_batch.py:663 _entry_options resolves the entry's comment, lane and priority against command-level defaults and reckon/crew/dispatching/requests.py:272 stores them on the same queued-request record a single dispatch writes, with over_fence_reason resolved at dispatch_batch.py:651 and the compound duration read at reckon/crew/node.py:873.\nVERDICT done_when: the plan's five done-when bullets are each exercised by tests/test_a_batch_entry_takes_every_field_a_single_dispatch_takes.py:187, 219, 251, 328, 355 and 364; gate-nodegate.log records that file inside a fifteen-file run reading \"98 passed in 8.77s\" at EXIT=0, and negative-control.log records the same file at the base revision as \"7 failed, 1 passed\" EXIT=1 with \"unknown field(s): comment, local, priority\".\nVERDICT write_paths: the source fence was reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and skills; git diff --stat 1ba716cf..ec3f17e99 lists exactly reckon/crew/dispatch_batch.py, reckon/crew/dispatching/requests.py, reckon/crew/node.py, reckon/crew_dispatch_commands.py, the two test files and the fragment, every one inside it.\nVERDICT manifest: read; status complete, commits 7de0489345 884dc05959 483f946aca f121122adf ec3f17e994 97b6c94b8e b412a2d7 ca98e841 and the head merge, baseline_suite at 1ba716cf and after_suite at b412a2d7 both completed with failure_count 0, negative_control_log naming negative-control.log, and test_logs naming the five gate logs read here.\nVERDICT diff: read the five node commits against 1ba716cf and the two merges after them; 7de0489345 carries the four per-entry fields, the dry-run preview and the compound duration, the next four change only the evidence fragment, the two merge commits bring primary and origin main in; every marker the change introduced (_entry_options, would-queue, _DURATION_TERM, priority_override) is present at the reviewed head.\nCALL_SITES: reckon/crew_dispatch_commands.py:1220 _queue_dispatch_batch from the crew dispatch --batch branch, reckon/crew/dispatch_batch.py:855 queue_plan forwarding to queue_batch, reckon/crew/admission/release.py:555 queue_requests, reckon/crew/node.py:1538 validate_node calling parse_duration, reckon/crew/dispatching/fences.py:238 recording local for a single dispatch\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatching/requests.py:272 stores the four fields on the single-dispatch request record, but line 172 drops the local-lane routing when no local_backend is configured while still recording local true at line 272.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-nodegate.log measures the done-when's own test file at EXIT=0, but it ran at b412a2d7 and the reviewed head 41f77d2c, a merge of later main content, is itself unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 1ba716cf..ec3f17e99 lists seven files, all inside the declared fence of reckon, tests and the plan's evidence fragment.\nSCORE durability: 15\nJUSTIFICATION durability: reverting the batch-entry fields reddens seven of the eight new cases as negative-control.log shows the base revision doing, but the lane assertions at tests/test_a_batch_entry_takes_every_field_a_single_dispatch_takes.py:212-213 hold whether or not the local choice is honoured.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/dispatch_batch.py:663 _entry_options follows the module's resolve-then-refuse idiom and names the mechanism, but the docstring at tests/test_a_batch_dry_run_previews.py:3 narrates the defect's history.\nSCORE reuse: 15\nJUSTIFICATION reuse: reckon/crew/node.py:246 extends the one duration owner rather than forking it, but reckon/calibration.py:27 keeps a second single-run duration parser that the same change lets disagree with it.\nFINDING tests/test_a_batch_entry_takes_every_field_a_single_dispatch_takes.py:213 non-blocking: the assertion compares the stored backend against CONFIG[\"local_backend\"], but the fixture sets both default_backend and local_backend to \"clive\", so a regression that dropped the entry's local choice would still record backend \"clive\" and local true.\nFINDING reckon/crew/dispatching/requests.py:172 non-blocking: when an entry asks for the local lane and the configuration declares no local_backend, the guard is skipped so the request queues on the default backend while the record at line 272 still stores local true.\nFINDING reckon/calibration.py:27 non-blocking: a second duration parser _DECLARED_DURATION matches only one integer-and-unit run, so a request storing \"1h30m\" reaches _declared_budget_verdict as budget_seconds None and an overrun of that budget is never judged.\nFINDING tests/test_a_batch_entry_takes_every_field_a_single_dispatch_takes.py:176 non-blocking: _home_snapshot keeps only files, so an empty run directory created by a dry-run regression leaves both checks green although the done-when says no run directory is written.\nFINDING tests/test_a_batch_dry_run_previews.py:3 non-blocking: the module docstring narrates the defect's history rather than the mechanism the test guards.\n",
+  "review_run_id": "r-20261117T112502999027-review-of-qwnw-a-batch-entry-takes-every-field-a-single-dispatc-41f77d2cb3a8",
+  "reviewed_base_sha": "1ba716cf0aeb500f4cf9bc0192d6927e11f9d6b2",
+  "reviewed_head_sha": "41f77d2cb3a822c60aac137b93e8c92b527cc6be",
+  "reviewed_run_id": "r-20261114T200650331244-qwnw-a-batch-entry-takes-every-field-a-single-dispatc",
+  "reviewer_run_id": "r-20261117T112502999027-review-of-qwnw-a-batch-entry-takes-every-field-a-single-dispatc-41f77d2cb3a8",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T11:58:07.306034+00:00",
+  "total": 101
+}

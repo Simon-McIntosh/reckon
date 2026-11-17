@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-tells-the-truth-under-load">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-tells-the-truth-under-load">
+  <meta name="plan-verifies" content="reckon:the-monitor-tells-the-truth-under-load#s13">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="passed">
+  <title>A due station reload fires within its bound however slow the ticks are</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+
+<article class="r-note" id="due-reload-fires-in-bound-s13-landing" data-node="due-reload-fires-in-bound-s13" data-reckon="landed" data-when="2026-11-15">
+  <h2>The hold is dated from when the code moved, and a deferred image is proved again</h2>
+
+  <p id="due-reload-fires-in-bound-s13-defect-1"><strong>The defect.</strong> <code>StationReloader</code> holds a due reload while the derivations in flight land, and dates that hold at the poll that first sees the code move. The reloader is polled only after a tick, so a tick longer than <code>RELOAD_HOLD_SECONDS</code> left no poll between the move and the bound's expiry: the deadline moved by the tick's own length and the reload fired on the tick after the one that had already outlasted the bound. Reproduced at the base revision <code>af516b3ac9</code> with the station's clock and polls driven by a 30 s tick against a 20 s bound: the reload that should fire at the tick's end held instead (<code>station-reload: holding a due reload … for at most 20s</code>), and the case failed <code>DID NOT RAISE OSError</code>.</p>
+
+  <p id="due-reload-fires-in-bound-s13-defect-2"><strong>The second defect.</strong> A deferred image was suppressed until committed code moved again, so a refusal that says nothing about the image — the throwaway import proof timing out, or a peer process holding that image's own proof lock (<code>ImportProofPending</code>) — held the station on stale code for exactly as long as the branch stood still. Reproduced at base: with the proof refusing on one poll and answering on the next, the same identity was never proved again and the reload never fired. That is the shape of the 15 November report of a station 100 minutes past several landings.</p>
+
+  <p id="due-reload-fires-in-bound-s13-what-landed"><strong>What landed.</strong> <code>reckon/crew/station.py</code> now records <code>_clear_since</code>, the instant of the last poll that found no reload owed, and <code>_quiet</code> dates the hold from there rather than from its own poll. That instant is never later than the moment the code moved, so the station now fires at the first poll at or after the bound's expiry whatever the tick length, and the bound stays the upper bound it reads as. The exec path is untouched: the reloader is still polled at a tick's end and still re-executes on the station's loop, after the dispatches in flight have been waited for, so no re-exec lands in the middle of a tick.</p>
+
+  <p id="due-reload-fires-in-bound-s13-deferred"><strong>A deferred image is retried.</strong> <code>_reload_owed</code> treats a deferred identity as owed again once <code>_deferred_proof_at</code> passes, and <code>_arm_deferred_proof</code> sets it, so the next poll repeats the proof. A deferral that repeats then waits <code>RELOAD_DEFERRED_RETRY_SECONDS</code> (60 s), doubling up to the hold bound, so an image that will not import is not re-proved on every tick — a recorded verdict is, so the image's own answer costs a file read.</p>
+
+  <p id="due-reload-fires-in-bound-s13-gate"><strong>Gate.</strong> <code>tests/test_a_due_reload_fires_within_its_bound.py</code>, four cases, each driving the reloader's monotonic clock and its polls directly. A reload due through a slow tick fires within one tick of its bound; a deferred image is proved again at the next poll; a repeatedly deferred image waits its spacing (2 probes over three polls, a third after the spacing); a reload due with nothing in flight fires at the first poll. The first three fail at base — <strong>3 failed, 1 passed, EXIT=1</strong> (<code>logs/base-red.log</code>, the base tree with this file copied in unmodified) — and the fourth passes there, which is the honest reading: the no-derivation path was already correct, so the case is a guard on the dating rather than a repair.</p>
+
+  <p id="due-reload-fires-in-bound-s13-counts"><strong>Counts at both revisions.</strong> The new file at base <code>af516b3ac9</code>: <strong>3 failed, 1 passed</strong>. At the head <code>fa156c22cb</code>, together with <code>tests/test_a_reload_lets_derivations_land.py</code> whose nine cases are unchanged and stay green: <strong>13 passed</strong>. The declared negative control — the hold dated from the poll that noticed the move again, i.e. polling the reload only after a tick — turns the slow-tick case red: <strong>1 failed, 3 passed</strong>, exactly the case the head passes. The station's own gate, resolved over the head's tree: <strong>62 passed, EXIT=0</strong>. Every test file importing <code>reckon.crew.station</code>, with the reload cases, at the head: <strong>70 passed</strong>.</p>
+
+  <p id="due-reload-fires-in-bound-s13-arms"><strong>Matched arms.</strong> Both arms ran in <code>git archive</code> extractions of their own revision under the run's scratch directory, each log headed with its revision, tree and literal command and ending in its own <code>EXIT=</code>. Base arm (<code>af516b3ac9</code>), which drops this node's file because it does not exist there: <strong>56 passed, 2 errors</strong>. After arm (<code>fa156c22cb</code>): <strong>60 passed, 2 errors</strong>. The four added passes are this node's cases, and the two errors are the same pair in both arms: <code>test_staged_write_inventory</code>'s two cases run <code>git ls-tree</code> in their own root, and an archive extraction has no git metadata.</p>
+
+  <p id="due-reload-fires-in-bound-s13-logs"><strong>Logs.</strong> <code>logs/gate-head.log</code>, <code>logs/reload-suite.log</code>, <code>logs/base-red.log</code>, <code>logs/base-arm.log</code>, <code>logs/after-arm.log</code> and <code>logs/negative-control.log</code>, each naming its revision, tree and command, with the scratch runs also naming <code>module.__file__</code> and the resolved cwd. <code>ruff check</code> and <code>ruff format --check</code> report no finding on the two staged paths.</p>
+</article>
+
+</body>
+</html>
