@@ -378,3 +378,56 @@ def test_an_editor_waiting_on_the_commit_keeps_its_plan_and_staging(
     assert not errors
     assert "Peer delivery" in path.read_text()
     assert "Peer delivery" in git(repository, "show", f":{PLAN_PATH}")
+
+
+def test_a_merged_peer_comment_survives_a_failed_commit(
+    repository: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import subprocess
+
+    from reckon.crew import promotion_scope
+
+    path = repository / PLAN_PATH
+    write_comment = promotion._record_landing_comment
+    merged_bytes = []
+
+    def peer_then_comment(*args, **kwargs):
+        state, version = _store.read_plan(
+            PROJECT, PLAN, repository, artifact_type="plan"
+        )
+        comments = {key: list(entries) for key, entries in state["comments"].items()}
+        comments.setdefault("delivery", []).append(
+            {
+                "id": "c-peer-append",
+                "who": "peer",
+                "when": "2026-11-17T00:00:00Z",
+                "body": "<p>A peer's independently delivered comment</p>",
+            }
+        )
+        _store.write_plan(
+            PROJECT,
+            PLAN,
+            {**state, "comments": comments},
+            version,
+            repository,
+            artifact_type="plan",
+        )
+        result = write_comment(*args, **kwargs)
+        merged_bytes.append(path.read_bytes())
+        return result
+
+    monkeypatch.setattr(promotion, "_record_landing_comment", peer_then_comment)
+    monkeypatch.setattr(
+        promotion_scope,
+        "_stage_landing_writes",
+        lambda *args, **kwargs: subprocess.CompletedProcess(
+            ["git", "add"], 128, "", "injected staging refusal"
+        ),
+    )
+    with pytest.raises(CrewError, match="injected staging refusal"):
+        crew.complete(
+            RUN_ID, gate="passed", outcome="Delivered the run's change", root=repository
+        )
+    assert path.read_bytes() == merged_bytes[0]
+    assert "A peer's independently delivered comment" in path.read_text()
+    assert git(repository, "diff", "--cached", "--name-only", "--", PLAN_PATH) == ""

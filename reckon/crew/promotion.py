@@ -23,11 +23,13 @@ from collections.abc import (
 from contextlib import (
     ExitStack,
     contextmanager,
+    nullcontext,
     suppress,
 )
 from dataclasses import (
     dataclass,
     field,
+    replace,
 )
 from datetime import (
     UTC,
@@ -1884,7 +1886,7 @@ class _PlanWriteSnapshot:
             blob = _git(
                 self.checkout, "hash-object", "--", str(self.path)
             ).stdout.strip()
-            if entry == f"{mode} {blob} 0\t{relative}\0" and current != self.content:
+            if entry == f"{mode} {blob} 0\t{relative}\0":
                 return
             if self.rollback_content is not None:
                 metadata, name = self.head_entry.split("\t", 1)
@@ -1895,7 +1897,7 @@ class _PlanWriteSnapshot:
             "plan index changed after the snapshot; preserving the other writer's staging"
         )
 
-    def restore(self) -> None:
+    def restore(self, *, plan_locked: bool = False) -> None:
         from reckon.crew.merge import _run_waiting_out_a_held_index_lock
         from reckon.crew.promotion_scope import (
             _INDEX_LOCK_RETRY_ATTEMPTS,
@@ -1978,7 +1980,11 @@ class _PlanWriteSnapshot:
 
         # Editors use this same resource lock. The git index lock also excludes
         # a stager between the ownership check and the path-specific update.
-        with _store._serialized_path_lock(self.path, "plans"):
+        with (
+            nullcontext()
+            if plan_locked
+            else _store._serialized_path_lock(self.path, "plans")
+        ):
             restored, _retries = _run_waiting_out_a_held_index_lock(
                 self.checkout,
                 restore_owned,
@@ -2042,14 +2048,56 @@ def _commit_with_plan_snapshot(
     # interval too, so that rollback cannot erase a concurrent plan write.
     with _store._serialized_path_lock(snapshot.path, "plans"):
         current = snapshot.path.read_bytes()
-        snapshot.require_owned_content(current)
-        snapshot.require_owned_index(current)
-        snapshot.commit_attempted = True
+        checkpoint = snapshot
+        try:
+            snapshot.require_owned_content(current)
+        except CrewError:
+            from bs4 import BeautifulSoup
+
+            from reckon import _plan_html
+
+            if snapshot.expected_content is None:
+                raise
+            intended = _plan_html.read_state(snapshot.expected_content.decode("utf-8"))
+            actual = _plan_html.read_state(current.decode("utf-8"))
+            merged = _store._comment_append_onto_current(actual, intended)
+            held_comments = actual.get("comments") or {}
+            kept = all(
+                entry in held_comments.get(section, [])
+                for section, entries in (intended.get("comments") or {}).items()
+                for entry in entries
+            )
+            rendered = _plan_html.write_state(
+                snapshot.expected_content.decode("utf-8"),
+                actual,
+                drop_authored_impl_meta=True,
+            ).encode("utf-8")
+            same_document = BeautifulSoup(
+                rendered.decode("utf-8"), "html.parser"
+            ) == BeautifulSoup(current.decode("utf-8"), "html.parser")
+            if merged is None or not kept or not same_document:
+                raise
+            # A commutative peer append may land with this run. Its full bytes
+            # and staging become the commit's rollback target, never the older
+            # snapshot that predates the peer's comment.
+            checkpoint = replace(
+                snapshot,
+                content=current,
+                mode=snapshot.path.stat().st_mode,
+                index=snapshot.index_entry(),
+                expected_content=current,
+                rollback_content=None,
+                commit_attempted=False,
+            )
+        checkpoint.require_owned_index(current)
+        checkpoint.commit_attempted = True
         try:
             return _commit_landing_writes(**kwargs)
         except BaseException:
-            if snapshot.path.read_bytes() == snapshot.head_content:
-                snapshot.rollback_content = snapshot.head_content
+            if checkpoint.path.read_bytes() == checkpoint.head_content:
+                checkpoint.rollback_content = checkpoint.head_content
+            if checkpoint is not snapshot:
+                checkpoint.restore(plan_locked=True)
             raise
 
 
