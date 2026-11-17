@@ -25,6 +25,7 @@ import os
 import shlex
 import subprocess
 import sys
+import tempfile
 import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
@@ -930,10 +931,7 @@ def append_node_reading(path: Path, values: str = "") -> None:
             with path.open() as stream:
                 header = stream.readline().rstrip("\r\n").split("\t")
             if header != _HEALTH_COLUMNS:
-                archived = path.with_suffix(
-                    "." + datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ") + ".tsv"
-                )
-                path.rename(archived)
+                _widen_health_series(path, header)
         with path.open("a", encoding="utf-8", newline="") as stream:
             writer = csv.writer(stream, delimiter="\t", lineterminator="\n")
             if not stream.tell():
@@ -945,6 +943,43 @@ def append_node_reading(path: Path, values: str = "") -> None:
                 writer.writerow(row)
             stream.flush()
             os.fsync(stream.fileno())
+
+
+def _widen_health_series(path: Path, header: list[str]) -> None:
+    """Replace a series atomically under its writer lock, retaining each row."""
+    if (
+        not header
+        or len(set(header)) != len(header)
+        or not set(header) <= set(_HEALTH_COLUMNS)
+    ):
+        raise FleetNodeError(f"health series has unrecognised columns: {path}")
+    temporary = None
+    try:
+        with (
+            path.open(encoding="utf-8", newline="") as source,
+            tempfile.NamedTemporaryFile(
+                mode="w",
+                encoding="utf-8",
+                newline="",
+                dir=path.parent,
+                prefix=f".{path.name}.",
+                delete=False,
+            ) as target,
+        ):
+            temporary = Path(target.name)
+            reader = csv.DictReader(source, delimiter="\t")
+            writer = csv.writer(target, delimiter="\t", lineterminator="\n")
+            writer.writerow(_HEALTH_COLUMNS)
+            for row in reader:
+                if None in row or any(value is None for value in row.values()):
+                    raise FleetNodeError(f"health series has a malformed row: {path}")
+                writer.writerow(row.get(column, "-") for column in _HEALTH_COLUMNS)
+            target.flush()
+            os.fsync(target.fileno())
+        os.replace(temporary, path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":

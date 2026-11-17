@@ -431,9 +431,10 @@ def node_disk_reading_obligation(error: NodeDiskSampleError) -> dict[str, Any]:
     return {
         "kind": error.kind,
         "run_id": "",
+        "service": "fleet-health",
         "age_seconds": 0,
-        "reason": str(error),
-        "next_command": "Restore current fleet disk samples before admitting new launches",
+        "reason": f"{error}. Service fleet-health owes the published disk sample",
+        "next_command": "Restore current disk publication from service fleet-health",
     }
 
 
@@ -576,6 +577,8 @@ def published_node_disk_sample(
     target = f"Fleet node {fleet['node']} disk sample {path}"
     try:
         sample = json.loads(path.read_text())
+    except FileNotFoundError as exc:
+        raise NodeDiskSampleError("missing", f"{target} is missing") from exc
     except (OSError, ValueError) as exc:
         raise NodeDiskSampleError(
             "unreadable", f"{target} is unreadable: {exc}"
@@ -1465,32 +1468,85 @@ def apply_task_ceiling(environ: Mapping[str, str] | None = None) -> int:
 
 
 def start_health_sampler(environ: Mapping[str, str] | None = None) -> int | None:
-    """Start the node sampler as this batch step's own child, and return its pid.
-
-    The sampler holds a lock in the runtime directory, so a reload that calls
-    this again starts a copy that exits at once rather than a second sampler.
-    It leads its own session, so it ends with the allocation and with nothing
-    else.
-    """
+    """Replace the runtime's sampler with a child running the current script."""
     environ = os.environ if environ is None else environ
     name = environ.get(HEALTH_SAMPLER_ENV, DEFAULT_HEALTH_SAMPLER)
     if not name:
         return None
-    sampler = shutil.which(name, path=environ.get("PATH"))
+    checkout_script = _checkout_root() / "bin" / DEFAULT_HEALTH_SAMPLER
+    sampler = (
+        str(checkout_script)
+        if name == DEFAULT_HEALTH_SAMPLER and checkout_script.is_file()
+        else shutil.which(name, path=environ.get("PATH"))
+    )
     if sampler is None:
         log(f"no node sampler: {name} is not on PATH")
         return None
-    sampler_environment = {**environ, "RECKON_SHIM_PYTHON": sys.executable}
-    process = subprocess.Popen(
-        [sampler],
-        env=sampler_environment,
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL,
-        stderr=None,
-        start_new_session=True,
-    )
+    runtime = Path(environ.get("XDG_RUNTIME_DIR") or runtime_directory(environ))
+    runtime.mkdir(parents=True, exist_ok=True)
+    with (runtime / "fleet-health.handover.lock").open("a+b") as handover:
+        fcntl.flock(handover, fcntl.LOCK_EX)
+        if not _stop_health_sampler(runtime, sampler):
+            return None
+        sampler_environment = {
+            **environ,
+            "XDG_RUNTIME_DIR": str(runtime),
+            "RECKON_SHIM_PYTHON": sys.executable,
+        }
+        process = subprocess.Popen(
+            [sampler],
+            env=sampler_environment,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=None,
+            start_new_session=True,
+        )
     log(f"node sampler {sampler} started as pid {process.pid}")
     return process.pid
+
+
+def _stop_health_sampler(runtime: Path, sampler: str) -> bool:
+    """Stop only the script session holding this runtime's sampler descriptor.
+
+    Bash inherits the flock through descriptor 9. Match that inode and the
+    script argument, rather than trusting a pid record or a command substring.
+    The session contains only that sampler and its sampling children.
+    """
+    if not lock_held("fleet-health", runtime):
+        return True
+    inode = (runtime / "fleet-health.lock").stat()
+    candidates = []
+    for pid, argv in all_process_cmdlines().items():
+        if len(argv) < 2 or Path(argv[1]).resolve() != Path(sampler).resolve():
+            continue
+        try:
+            held = Path(f"/proc/{pid}/fd/9").stat()
+            if (held.st_dev, held.st_ino) == (inode.st_dev, inode.st_ino) and os.getsid(
+                pid
+            ) == pid:
+                candidates.append(pid)
+        except OSError:
+            continue
+    if len(candidates) != 1:
+        log(
+            f"sampler replacement refused: lock held with {len(candidates)} identified owners"
+        )
+        return False
+    pid = candidates[0]
+    log(
+        f"replacing sampler session {pid}: {process_cmdline(pid)}; other sessions are outside its group"
+    )
+    for sig in (signal.SIGTERM, signal.SIGKILL):
+        signal_worker(pid, sig, reason="fleet-health-replace")
+        deadline = time.monotonic() + SERVICE_STOP_GRACE_SECONDS
+        while time.monotonic() < deadline:
+            with suppress(ChildProcessError):
+                os.waitpid(pid, os.WNOHANG)
+            if not lock_held("fleet-health", runtime) and not process_cmdline(pid):
+                return True
+            time.sleep(SERVICE_POLL_SECONDS)
+    log(f"sampler replacement refused: session {pid} still holds its runtime")
+    return False
 
 
 def config_directory(environ: Mapping[str, str] | None = None) -> Path:
