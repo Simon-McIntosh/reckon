@@ -1545,6 +1545,29 @@ def crew_check(manifest, review, run_id, record_path, pretty, project=None):
     help="Repair a review's status or missing subject.",
 )
 @click.option(
+    "--arm",
+    type=click.Choice(["baseline_suite", "after_suite"]),
+    default=None,
+    help="Re-point a suite arm's revision.",
+)
+@click.option(
+    "--revision",
+    default=None,
+    help="The commit object id the re-pointed arm's command ran against.",
+)
+@click.option(
+    "--command",
+    "arm_command",
+    default="",
+    help="The command the re-pointed arm ran, when it differs from the recorded one.",
+)
+@click.option(
+    "--log-path",
+    "arm_log_path",
+    default="",
+    help="The log the re-pointed arm wrote, when the recorded one is wrong; a run keeps the files it was armed with otherwise.",
+)
+@click.option(
     "--run", "run_id", required=True, help="Run whose manifest or review is repaired."
 )
 @click.option(
@@ -1560,16 +1583,35 @@ def crew_check(manifest, review, run_id, record_path, pretty, project=None):
 @click.option("--reason", required=True, help="Why the recorded repair is justified.")
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_repair(
-    status, repair_review, run_id, record_path, change, reason, pretty, project=None
+    status,
+    repair_review,
+    arm,
+    revision,
+    arm_command,
+    arm_log_path,
+    run_id,
+    record_path,
+    change,
+    reason,
+    pretty,
+    project=None,
 ):
-    """Repair a manifest's status word or a review's status or subject identity."""
+    """Repair a manifest's status word, a suite arm's revision, or a review's fields."""
     resolved_project = _accept_a_matching_project(run_id, project)
-    if bool(status) == repair_review:
-        raise click.UsageError("choose exactly one of --status or --review")
+    if sum((bool(status), repair_review, bool(arm))) != 1:
+        raise click.UsageError("choose exactly one of --status, --review or --arm")
     if status:
         if record_path or change:
             raise click.UsageError("--status does not accept --record or --set")
         return crew_repair_status(run_id, status, reason, pretty)
+    if arm:
+        if record_path or change:
+            raise click.UsageError("--arm does not accept --record or --set")
+        if not revision:
+            raise click.UsageError("--arm needs --revision")
+        return crew_repair_arm(
+            run_id, arm, revision, reason, arm_command, arm_log_path, pretty
+        )
     if not record_path or not change:
         raise click.UsageError("--review needs --record and --set")
     return crew_repair_review(
@@ -3195,6 +3237,25 @@ def crew_repair_status(run_id, status, reason, pretty):
 
     try:
         result = runs_module.repair_manifest_status(run_id, status, reason)
+    except crew_module.CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit_crew_result(result, pretty)
+
+
+def crew_repair_arm(run_id, arm, revision, reason, command, log_path, pretty):
+    """Re-point a suite arm at a revision, keeping the manifest as delivered."""
+    crew_module, _ = _crew_modules()
+    from reckon.crew import runs as runs_module
+
+    try:
+        result = runs_module.repair_manifest_arm(
+            run_id,
+            arm,
+            revision=revision,
+            reason=reason,
+            command=command,
+            log_path=log_path,
+        )
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit_crew_result(result, pretty)

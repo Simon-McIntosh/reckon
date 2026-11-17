@@ -663,6 +663,21 @@ def _arm_command_matches(
 
 SCOPED_SUITE_PLACEHOLDER = "{node_test_files}"
 
+#: The fields a suite arm's record states, in the flat shape a reader accepts.
+#: An arm carrying none of them declares no measurement rather than a record.
+_ARM_FIELDS = frozenset(
+    {
+        "revision",
+        "command",
+        "exit_status",
+        "completed",
+        "failure_count",
+        "failure_ids",
+        "log_path",
+        "log_digest",
+    }
+)
+
 
 def _scope_tree(record: Mapping[str, Any]) -> Path | None:
     """The tree whose object store answers what a revision holds, or None."""
@@ -1025,6 +1040,74 @@ def _arm_measured_nothing(
     return bool(_named_paths_absent_from_tree(record, observation))
 
 
+def _arm_declares_no_measurement(observation: Any) -> bool:
+    """Whether a suite arm states no measurement at all.
+
+    ``baseline_suite: none`` parses to an empty record, and a mapping carrying
+    no arm field is the same declaration. Anything stating a revision, a command
+    or a count is a measurement to be judged on its own terms rather than a
+    declaration that there is none.
+    """
+    if not isinstance(observation, Mapping):
+        return True
+    return not (set(observation) & _ARM_FIELDS)
+
+
+def _base_tree_holds_no_test_file(record: Mapping[str, Any]) -> bool:
+    """Whether the run's base revision holds none of the node's test files.
+
+    Read from the base revision's own tree through the object store rather than
+    from a working directory, which holds the head's content whichever arm is
+    being asked about. An unanswered probe answers False, because an unprobed
+    base is not a licence to accept an absent arm.
+    """
+    files = _node_test_files(record)
+    base = str(record.get("base_sha") or "").strip()
+    if not files or not base:
+        return False
+    present = _paths_present_in_tree(_scope_tree(record), base, files)
+    return present is not None and not present
+
+
+def _base_arm_measured_an_empty_suite(
+    record: Mapping[str, Any], observation: Any
+) -> bool:
+    """Whether an absent base arm is the complete measurement of an empty scope.
+
+    The pair is accepted only when all three hold: the declaration is scoped, so
+    the base command is resolved per tree and can legitimately have named no
+    file; the arm states no measurement of its own; and the base revision holds
+    none of the tests the node is fenced to. A base tree that does hold them has
+    a suite to run, and an arm declaring none there is missing evidence.
+    """
+    declared = " ".join(str(record.get("suite_command") or "").split())
+    if SCOPED_SUITE_PLACEHOLDER not in declared:
+        return False
+    if not _arm_declares_no_measurement(observation):
+        return False
+    return _base_tree_holds_no_test_file(record)
+
+
+def _empty_base_arm(command: str, revision: str) -> dict[str, Any]:
+    """The base arm of a directly scoped suite whose tests the change creates.
+
+    ``exit_status`` is pytest's exit for a collection that found nothing to run,
+    which is what the command would have returned over the base tree: it names
+    the measurement as empty rather than as a pass. There are zero failures
+    because no test existed that could fail, and no log because no test ran.
+    """
+    return {
+        "revision": revision,
+        "command": command,
+        "exit_status": 5,
+        "completed": True,
+        "failure_count": 0,
+        "failure_ids": [],
+        "log_path": None,
+        "log_digest": None,
+    }
+
+
 def _arm_missing_fields(
     record: Mapping[str, Any],
     arm_name: str,
@@ -1318,9 +1401,20 @@ def _evaluate_suite_delta(
         missing.append("manifest")
     elif not fresh:
         missing.append("fresh_manifest")
-    missing.extend(
-        ledger.suite_observation_missing_fields(baseline, name="baseline_suite")
-    )
+    # A scope whose tests the change creates has nothing to measure against: the
+    # base tree holds none of the node's test files, so the base arm measured an
+    # empty suite. That is a complete measurement of nothing rather than an
+    # absent one, and an arm declaring it as ``none`` is accepted once the base
+    # tree confirms it. It is recorded as pytest's own exit for a collection
+    # that found nothing to run, with no log, because no test ran and no result
+    # beyond that is being claimed.
+    base_sha = str(record.get("base_sha") or "").strip()
+    if _base_arm_measured_an_empty_suite(record, baseline):
+        baseline = _empty_base_arm(suite_command, base_sha)
+    else:
+        missing.extend(
+            ledger.suite_observation_missing_fields(baseline, name="baseline_suite")
+        )
     missing.extend(ledger.suite_observation_missing_fields(after, name="after_suite"))
     for arm_name, observation in (
         ("baseline_suite", baseline),
@@ -1331,7 +1425,6 @@ def _evaluate_suite_delta(
         for field in _arm_missing_fields(record, arm_name, observation, head=head):
             if field not in missing:
                 missing.append(field)
-    base_sha = str(record.get("base_sha") or "").strip()
     if (
         isinstance(baseline, Mapping)
         and str(baseline.get("revision") or "").strip()

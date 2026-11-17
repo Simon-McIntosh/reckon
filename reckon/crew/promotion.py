@@ -1276,6 +1276,7 @@ def complete(
                 root,
                 overridden_worktree_changes,
                 _manifest_status,
+                _manifest_fault,
                 live_run_waived,
                 _partner_hold,
                 _shadow_commit,
@@ -1299,6 +1300,11 @@ def complete(
                         run_id, record, no_commit_reason=no_commit
                     ),
                     lambda: _require_recognised_manifest_status(run_id, record),
+                    # The rest of the manifest's own faults, refused with the
+                    # reason the worker's check emits while the run still holds
+                    # a turn. Judged from the file rather than the repository, so
+                    # the two readers cannot answer differently.
+                    lambda: _require_no_manifest_fault(run_id, record),
                     # A run whose own worker is still alive and not finished is
                     # refused before any store is written: deleting its live
                     # pointer now would orphan the process until it exits on its
@@ -3699,6 +3705,7 @@ from reckon.crew.promotion_checks import (
     _require_gate_check_precondition,
     _require_impl_moved,
     _require_independently,
+    _require_no_manifest_fault,
     _require_no_png_twin_of_an_svg,
     _require_partner_terminal_before_promotion,
     _require_plan_review_delivered_in_its_directory,

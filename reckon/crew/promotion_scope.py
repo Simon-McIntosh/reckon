@@ -37,6 +37,7 @@ from reckon.crew.node import (
 from reckon.crew.plan_review import RUN_COMMENT_PREFIX
 from reckon.crew.recovery import _resolve_commit
 from reckon.crew.reports import (
+    _citation_tokens,
     parse_manifest,
     path_within_declared_scope,
 )
@@ -379,16 +380,25 @@ def _require_commit_for_changed_manifest(
 
 
 def _resolve_commits(*, cwd: Path, revisions: Iterable[str], run_id: str) -> list[str]:
-    """Resolve every recorded revision to its canonical commit object id."""
+    """Resolve every recorded revision to its canonical commit object id.
+
+    An entry's ids are read as tokens: a revision followed by the subject it was
+    committed under, and several revisions in one entry, both resolve to the
+    commits they name, and the delivery check reads its citations the same way,
+    so a manifest the check accepted is not refused here for spelling its
+    citation as a log line. An entry whose leading revision admission reads by
+    its own rule is read through that rule as a second attempt, so both
+    spellings resolve.
+    """
     from reckon.crew.queue_landing import _delivered_revision
 
-    commits = []
+    commits: list[str] = []
     for revision in revisions:
-        # A citation may carry its subject. Read its leading revision by the
-        # same rule as admission, leaving other revision spellings for git.
-        candidate = _delivered_revision([revision]) or revision
-        commit = _resolve_commit(cwd, candidate)
-        if not commit:
+        resolved = _entry_commits(cwd, revision)
+        if not resolved:
+            candidate = _delivered_revision([revision]) or revision
+            resolved = _entry_commits(cwd, str(candidate))
+        if not resolved:
             # A commit that resolves somewhere else is not a bad sha, it is a
             # node whose write target was not its run repository — dispatched
             # without --repo and pointed at a foreign checkout by prose. Naming
@@ -410,8 +420,20 @@ def _resolve_commits(*, cwd: Path, revisions: Iterable[str], run_id: str) -> lis
                 "list or JSON-list entries containing an id optionally followed "
                 "by its subject, or list entries written as 'commit: <id>'"
             )
-        commits.append(commit)
+        for commit in resolved:
+            if commit not in commits:
+                commits.append(commit)
     return commits
+
+
+def _entry_commits(cwd: Path, entry: str) -> list[str]:
+    """The commits one citation entry names, in the order it writes them."""
+    found: list[str] = []
+    for candidate in [entry, *_citation_tokens(str(entry))]:
+        resolved = _resolve_commit(cwd, candidate)
+        if resolved and resolved not in found:
+            found.append(resolved)
+    return found
 
 
 def _promoted_revision(run_tree: Path, commit_list: Sequence[str]) -> str:
