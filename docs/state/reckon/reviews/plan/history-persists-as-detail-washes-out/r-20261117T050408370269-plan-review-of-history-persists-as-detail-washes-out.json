@@ -1,0 +1,151 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "digests": {
+        "s33": "013d38ead3ef1d626c6065009c19f475efba97993154035da7d5008a84bbe939"
+      },
+      "reason": "s33's rewrite answers all three findings: the Why states each read already runs once per pass, the done-when's red arm is a second unchanged pass re-parsing everything at base, and f-hpdw-014 carries it",
+      "units": [
+        "s33"
+      ],
+      "when": "2026-11-17T08:10:37.161555+00:00"
+    }
+  ],
+  "completed_at": "2026-11-17T05:05:52.741Z",
+  "dispatched_at": "2026-11-17T05:05:37Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/history-persists-as-detail-washes-out/r-20261117T050408370269-plan-review-of-history-persists-as-detail-washes-out/plan.html:425",
+      "id": "wiring-1",
+      "reason": "without an s33 edge on \u00a732 and a queued followup naming \u00a733, the section is never dispatched.",
+      "text": "s33 is declared implementable yet sits in no depends-on edge and in no followup: plan-section-depends-on (plan.html:29) carries s26 and s27 only, and the sole open followup f-hpdw-013 (plan.html:500) queues \u00a722, \u00a724, \u00a728, \u00a729, then \u00a726 and \u00a727, so the node is unreachable by any dispatch and its dependency on the now-done \u00a732 is asserted in prose alone",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/history-persists-as-detail-washes-out/r-20261117T050408370269-plan-review-of-history-persists-as-detail-washes-out/plan.html:427",
+      "id": "done_when-1",
+      "reason": "an arm that already passes at base measures nothing and would let the node close without having reduced the pass's cost.",
+      "text": "the arms \"reads each plan's stored reviews at most once, resolves the project's plan paths at most once, and reads the store's authoring runs at most once\" hold at the reviewed base by construction: reckon/crew/plan_review.py:4457 calls `_project_plan_paths` once per pass, :4470 calls `list_plan_reviews` once for the whole pass (\"One walk of the store for the whole pass, not one per plan\"), and :4515 calls `plan_authoring_runs` once, which performs one `ledger.read_records`; the hoist is commit eae15928ac (\"fix(review): read coverage and the review store once per pass\"), an ancestor of the reviewed base \u2014 so no test over these counts can be red at base, and the negative control \"restore the base per-plan re-reading\" restores behaviour the base does not have",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/history-persists-as-detail-washes-out/r-20261117T050408370269-plan-review-of-history-persists-as-detail-washes-out/plan.html:426",
+      "id": "reasoning-1",
+      "reason": "the repair would go after repetition that is already absent, and the real per-pass cost would survive the node's gate.",
+      "text": "the stated cause does not match the cited profile: the Why says \"one pass still pays for each plan's reviews, its authoring runs and the project's plan paths repeatedly\", but the same functions' shares in the 04:27Z profile (plan_authoring_runs 14%, list_plan_reviews 9.5%, _project_plan_paths 7%) belong to one call each per pass in the cited tree, so the 32% is the cost of three single whole-project reads \u2014 a project-wide review listing, a project plan-path resolution and an authoring read \u2014 not a per-plan repetition a call-count arm would catch; the endpoint the evidence supports is making those once-per-pass reads cheaper (or incremental across ticks), which a \"read at most once\" test cannot show",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "a29f3455962e81aaef4aabdd6bf256fd9a12931e",
+  "plan_fingerprint": "24aa5b85c2acdd704096c030075b0beb305901ef2425cabfb82eb0a274f8e374",
+  "plan_slug": "history-persists-as-detail-washes-out",
+  "plan_version": 95,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "a29f3455962e81aaef4aabdd6bf256fd9a12931e",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "s33's Why now states the evidence correctly: each of the three reads already runs once per pass (eae15928ac hoisted them), so the 32% is the cost of three whole-project reads per tick; s33 now asks that a pass pay only for what changed since the last one",
+      "reason": "",
+      "when": "2026-11-17T08:06:23.797251+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "a29f3455962e81aaef4aabdd6bf256fd9a12931e",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "s33's red arm is now constructible at base: a second pass with nothing changed since the first re-reads every review record, plan file and stored run at base, and must parse none of them at head; the negative control disables that reuse",
+      "reason": "",
+      "when": "2026-11-17T08:06:28.009590+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "a29f3455962e81aaef4aabdd6bf256fd9a12931e",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "s33 is carried by a new followup and dispatched directly after this round; its only upstream, s32, is done, so no section wait is needed",
+      "reason": "",
+      "when": "2026-11-17T08:06:33.011284+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "a29f3455962e81aaef4aabdd6bf256fd9a12931e",
+      "commit_basis": "edit",
+      "note": "s33's red arm is now constructible at base: a second pass with nothing changed since the first re-reads every review record, plan file and stored run at base, and must parse none of them at head; the negative control disables that reuse",
+      "reason": "",
+      "when": "2026-11-17T08:06:28.009590+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "a29f3455962e81aaef4aabdd6bf256fd9a12931e",
+      "commit_basis": "edit",
+      "note": "s33's Why now states the evidence correctly: each of the three reads already runs once per pass (eae15928ac hoisted them), so the 32% is the cost of three whole-project reads per tick; s33 now asks that a pass pay only for what changed since the last one",
+      "reason": "",
+      "when": "2026-11-17T08:06:23.797251+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "a29f3455962e81aaef4aabdd6bf256fd9a12931e",
+      "commit_basis": "edit",
+      "note": "s33 is carried by a new followup and dispatched directly after this round; its only upstream, s32, is done, so no section wait is needed",
+      "reason": "",
+      "when": "2026-11-17T08:06:33.011284+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-history-persists-as-detail-washes-out.v95.json",
+  "review_run_id": "r-20261117T050408370269-plan-review-of-history-persists-as-detail-washes-out",
+  "reviewed_blob_sha": "f23ad4dd19e277c308929109ed679ec61e30357c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a732 resolves to the done section at plan.html:420, `reckon/crew/plan_review.py` and `reckon/crew/resumption.py` exist, and `compose_owed_plan_reviews`, `plan_authoring_runs`, `list_plan_reviews` and `_project_plan_paths` all resolve in the tree at the reviewed base.",
+    "done_when": "a finding \u2014 s33's Done when (plan.html:427) asserts each of the three named facts is read at most once per pass, and the reviewed base already reads each exactly once.",
+    "evidence_paths": "pass \u2014 the profile the Why cites resolves at ~/.cache/reckon-landing/station-prof-post-s81.raw (250,705 bytes) and the done-when places gate logs under the run directory.",
+    "naming": "pass \u2014 the section's prose carries \u00a732 as a plan cross-reference in plan text only; no symbol, symbol name or file proposed for new code carries a plan label, stage name or ticket number.",
+    "reasoning": "a finding \u2014 s33's Why (plan.html:426) blames per-plan re-reading of plans' reviews, authoring runs and plan paths inside one pass, and the cited base performs each of those three reads exactly once per pass.",
+    "single_goal": "pass \u2014 s33 carries one deliverable, the cost of one owed-plan-review pass, with the \u22642 s bound as its tolerance rather than a second goal.",
+    "wiring": "a finding \u2014 s33 (plan.html:425) is declared `plan-section-declarations` implementable, its precondition \u00a732 is recorded in prose only, no `plan-section-depends-on` edge carries it, and the sole open followup `f-hpdw-013` (plan.html:500) names \u00a722, \u00a724, \u00a728, \u00a729, \u00a726 and \u00a727, so no dispatch names \u00a733."
+  },
+  "section_digests": {
+    "_document": "c9bec2727e7197e324873c84e9c3c96b3ad28946c3a72079ca660ce0bbdc3b11",
+    "s1": "16a4b0ff613308f968af13a86453cdda7611fbb4a0b662f0998319199f08c1f2",
+    "s2": "81ea5591beea9f0bfe0621b90127946f5c732b8471e2c5373404a592fa5daefe",
+    "s20": "469126d7a8d70994107c002b967dbf9da3c5237e4a3d05823281a9885c92731d",
+    "s21": "b2ec3716b6dd37a6a203c9b9d7c0be1209c9fa8d48d83ddcdf537eb47428cd4c",
+    "s22": "5b80738fa65b0a373485bf67bf0f2f191c8cf69ad935ef9ae258accc3a43cfc1",
+    "s23": "5f979f2ac2c694c8465c9b3b76743b70a3df967a1496488ebe45e96a41451c59",
+    "s24": "ff4464a256205179d7e9af583afcd456372bf9b4a393a90fe8b93955826be5f8",
+    "s25": "6e50b703cae5c188d1fb24250a943eb5f654fc5c26334335a3a7288120690168",
+    "s26": "37c27b0d54e7bf1a99e322e08776a72ffa748c2b88388aaa51f267a1db5c358a",
+    "s27": "9d55fe84f9ee617248a7eec57379797bd44bc1cb050fc378d20ac1b3da8152b2",
+    "s28": "1b395017f55a124f94b5b856f557b80c1246dd6aa0b94d4c21a412922010b47f",
+    "s29": "08680da58b87d39a60d022d76781f1c03ec98c2eec17478fcee45582b9ef204e",
+    "s3": "3422a7a0a23c318e54716e2fbbaf99599e0142f7bbc74d9eb45f924541cd8ccf",
+    "s30": "73d5c5ce099e375a2b18ae59f31aec4205212d2104108d1b97ce543d20c55270",
+    "s31": "5e320fec30580df18f57b6d28c58a517e834ccc7f4632502d8abefcc9dc8a743",
+    "s32": "be917fc2f31d989ce173566c1819ca4f00641eda62fa8b26f1e5a2da43c522a9",
+    "s33": "0fd845caadb41585d6439c94e4f77eb521b93d66298fb1fe7b5d872a3e650898",
+    "s4": "6beff7af8378d0a3be80a490fb73cc8c5e6a8ee94449c98de40a252d2f57fcd5",
+    "s5": "0cd70cc30708f232bf564bff0e7825d783d5f5ab455747bfac40ebe742ea0ed3",
+    "s6": "5181e894e8b3823f366d0b459a48ecc8e236e645ca5b1f02071dfc0fdae47681",
+    "s7": "6173f16d89316af11f74c75b5bec44f90742582abf47efd7e72af7af3bb31b50"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T08:06:21.057999+00:00",
+  "total": null
+}
