@@ -25,7 +25,7 @@
   <title>The Fleet Node Stays Inside Its Memory | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="24">
+<meta name="plan-version" content="25">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -125,9 +125,6 @@
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
-<div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-11-17T20:44:00Z">
-    <div class="r-comment-body"><p>§5 landed by direct merge (head <code>beff6a53ab</code>), on the lead's instruction. Each health sample carries the local disk&#x27;s total, used and free bytes and free inodes; free space under the reserve is an obligation and an admission hold, a missing, unreadable or expired sample is its own hold, and the scheduler columns are validated by name so an existing series stays readable. Final merged head reviewed 109 of 120 with no blocking finding. Merged candidate gate: 60 passed in 74.07s (0:01:14).</p></div>
-</div>
 <div class="r-comment" data-section="s10" data-id="c-close-s10" data-who="reckon-build" data-when="2026-11-17T12:12:00Z">
     <div class="r-comment-body"><p>§10 landed by direct merge (head <code>d8e0a90d94</code>), on the lead's instruction. Each service the supervisor runs may declare a memory limit, applied as an address-space limit on its own process; one that reaches it is restarted under the existing backoff with the event recorded and no other service affected. Review 120 of 120 with no finding. Merged candidate gate: 12 passed, 1 skipped in 13.38s.</p></div>
 </div>
@@ -182,6 +179,9 @@
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261117T134941960383-review-of-session-scratch-uses-node-disk-9f6b2f3a0eb9" data-who="reckon-build" data-when="2026-11-17T13:56:36Z">
     <div class="r-comment-body"><p>Incremental review e3aee6dea5db92d0e58f574077c84f1b0105f098 to 9f6b2f3a0eb9afceee70ed1600df18109b6841eb stored parsed; scores 20/18/20/20/20/20; no in-scope finding; scoped baseline/head delta 0.</p></div>
 </div>
+<div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-11-17T20:44:00Z">
+    <div class="r-comment-body"><p>§5 landed by direct merge (head <code>beff6a53ab</code>), on the lead's instruction. Each health sample carries the local disk's total, used and free bytes and free inodes; free space under the reserve is an obligation and an admission hold, a missing, unreadable or expired sample is its own hold, and the scheduler columns are validated by name so an existing series stays readable. Final merged head reviewed 109 of 120 with no blocking finding. Merged candidate gate: 60 passed in 74.07s (0:01:14).</p></div>
+</div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261117T121741631122-review-of-node-disk-is-in-the-health-series-23a656b40b88" data-who="reckon-build" data-when="2026-11-17T12:26:44Z">
     <div class="r-comment-body"><p>Independent review of base 45967c6c6399a70306ce0cd5cb106e6ed54e0c21 through head 23a656b40b8863c6f95cf95a8349e16a688f30ba is parsed with six scores (16,12,20,17,20,20), one blocking remote disk-reading finding, and official suite added-failure delta 0; four supplementary importer additions and the live observation remain for the coordinator.</p></div>
 </div>
@@ -199,6 +199,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261117T165856607924-review-of-node-disk-is-in-the-health-series-beff6a53ab59" data-who="reckon-build" data-when="2026-11-17T17:05:27Z">
     <div class="r-comment-body"><p>Incremental review e9c999bf21a4db0918a05db01f1075faf9cb6bd0..beff6a53ab590e8bccf3ec98d47a5feac73f67c9 stored parsed; scores 20/10/20/19/20/20; zero in-scope findings and zero official added failing IDs; importer/live-hour gaps retained for coordinator.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261117T110445940804-node-disk-is-in-the-health-series" data-who="reckon-build" data-when="2026-11-17T16:52:20Z">
+    <div class="r-comment-body"><p>Merged final primary 7a34691de4fa9d1a19bffe9642b3323ae98fd7cc at beff6a53ab590e8bccf3ec98d47a5feac73f67c9, preserving its 29 health columns with the four disk fields last (33 total), primary by-name row reads and named scheduler validation, all three samplers, both sections&#x27; settings and obligation paths. Disk reserve remains 8 GiB and sample freshness 180 s. Fresh all_debug scope/head: 118 passed each; original baseline: 73 passed. One-mount, unbounded-freshness and suffix-validation mutations fail 1/2/2 tests; all seven actual scheduler refusals leave their series unchanged. Importer base/head failures 70/74: 68 inherited head ids attributed to primary, 6 added ungranted ids handed off. Jobs used authorized directory preparation with unchanged fence recipes.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-close-s6" data-who="reckon-build" data-when="2026-11-17T12:14:00Z">
     <div class="r-comment-body"><p>§6 landed through the crew's own promotion after its review (landing commit <code>7c327b389b</code>). A reader outside the fleet allocation records the job's scheduler state each minute in the same series and writes one row naming the end state and reason when the job ends; reviewed 118 of 120.</p></div>
