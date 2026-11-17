@@ -123,6 +123,17 @@ function withHandoffProvenance(prompt, planVersion) {
 function PromptModal({ initialPrompt, planSlug, planVersion, onClose }) {
   const [text, setText] = useState(initialPrompt);
   const textareaRef = useRef(null);
+  // The prompt is built from live state, and the loaded plan version can
+  // arrive after the modal opened. Until the reader edits the text, the text
+  // follows the prompt it was built from: a handoff that states "unavailable"
+  // beside a loaded version is the version the reader did not get.
+  const lastPrompt = useRef(initialPrompt);
+  useEffect(() => {
+    const previous = lastPrompt.current;
+    lastPrompt.current = initialPrompt;
+    if (previous === initialPrompt) return;
+    setText(current => (current === previous ? initialPrompt : current));
+  }, [initialPrompt]);
 
   useEffect(() => {
     const k = (e) => { if (e.key === "Escape") onClose(); };

@@ -245,6 +245,7 @@ const derivedBlocks = (mergedInventory, { sprints, disc = null, idx = {} }) => {
     endpoints,
     source_format: disc?.source_format ?? idx.source_format ?? "legacy-index",
     resource_versions: disc?.resource_versions ?? idx.resource_versions ?? {},
+    review: disc?.review ?? null,
     blockers: Array.isArray(disc?.blockers) ? disc.blockers
               : (Array.isArray(idx.blockers) ? idx.blockers : []),
     timeline: Array.isArray(disc?.timeline) ? disc.timeline
@@ -605,6 +606,10 @@ window.revalidateProjectState = async function () {
       derived,
       {
         milestones: Array.isArray(disc.milestones) ? disc.milestones : state.milestones,
+        // A discovery that carries no review leaves the one on screen: the
+        // sprint surface's ranked priority and open findings are a served fact,
+        // and an omitted key means the server had nothing new to say about it.
+        review: disc.review ?? state.review,
         north_stars: Array.isArray(disc.north_stars) ? disc.north_stars : state.north_stars,
         projects: projectRows(
           state.inventory,
@@ -894,6 +899,21 @@ window.revealArrivals = function (kind) {
       arrivalRendered.keys.add(key);
       arrivalRendered.versions.set(key, arrivalVersionOf(inv));
     }
+  }
+  // Revealing a held row is the moment it joins the rendered snapshot: the
+  // list it was held out of is driven by the inventory, so a row left out of
+  // it could never be drawn and the reveal would drop it silently.
+  const inventory = window.STATE.inventory;
+  if (revealed.length && Array.isArray(inventory)) {
+    const present = new Set(inventory.map(arrivalKeyOf));
+    for (const row of revealed) {
+      const key = arrivalKeyOf(row);
+      if (!key || present.has(key)) continue;
+      inventory.push(row);
+      present.add(key);
+    }
+    window.STATE.plans = Object.fromEntries(inventory.map(row => [arrivalKeyOf(row), row]));
+    window.STATE.attachment_relations = attachmentRelationsOf(inventory);
   }
   window.STATE.arrival = {
     ...current,
