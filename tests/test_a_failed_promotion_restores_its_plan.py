@@ -623,3 +623,26 @@ def test_a_copied_context_cannot_revive_a_released_plan_lock(
             timer.join(5)
     assert not worker.is_alive()
     assert not errors
+
+
+@pytest.mark.parametrize("boundary", ["profile", "commit"])
+def test_a_failed_promotion_preserves_a_plan_absent_from_head(
+    repository: Path, monkeypatch: pytest.MonkeyPatch, boundary: str
+) -> None:
+    git(repository, "rm", "--cached", "--", PLAN_PATH)
+    git(repository, "commit", "-q", "-m", "test: leave plan untracked")
+    before = _plan_snapshot(repository)
+    _force_failure(repository, monkeypatch, boundary)
+    with pytest.raises(CrewError, match="injected"):
+        _promote(repository)
+    assert _plan_snapshot(repository) == before
+
+
+def test_a_successful_promotion_can_commit_a_plan_absent_from_head(
+    repository: Path,
+) -> None:
+    git(repository, "rm", "--cached", "--", PLAN_PATH)
+    git(repository, "commit", "-q", "-m", "test: leave plan untracked")
+    result = _promote(repository)
+    assert result["plan_comment"]["recorded"]
+    assert "Delivered the change" in git(repository, "show", f"HEAD:{PLAN_PATH}")

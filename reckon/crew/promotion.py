@@ -1856,7 +1856,7 @@ class _PlanWriteSnapshot:
     index: str
     head_entry: str
     run_id: str
-    head_content: bytes
+    head_content: bytes | None
     commit_attempted: bool = False
     rollback_content: bytes | None = None
     expected_content: bytes | None = None
@@ -2085,7 +2085,10 @@ def _commit_with_plan_snapshot(
     try:
         return _commit_landing_writes(**kwargs)
     except BaseException:
-        if checkpoint.path.read_bytes() == checkpoint.head_content:
+        if (
+            checkpoint.head_content is not None
+            and checkpoint.path.read_bytes() == checkpoint.head_content
+        ):
             checkpoint.rollback_content = checkpoint.head_content
         if checkpoint is not snapshot:
             checkpoint.restore(plan_locked=True)
@@ -2116,6 +2119,7 @@ def _preserve_plan_on_refusal(promote: Callable[..., dict[str, Any]]) -> Callabl
         checkout = Path(root).expanduser().resolve()
         path = path.resolve()
         with _store._serialized_path_lock(path, "plans"):
+            head_entry = _git(checkout, "ls-tree", "-z", "HEAD", "--", str(path)).stdout
             snapshot = _PlanWriteSnapshot(
                 checkout=checkout,
                 path=path,
@@ -2124,13 +2128,17 @@ def _preserve_plan_on_refusal(promote: Callable[..., dict[str, Any]]) -> Callabl
                 index=_git(
                     checkout, "ls-files", "--stage", "-z", "--", str(path)
                 ).stdout,
-                head_entry=_git(
-                    checkout, "ls-tree", "-z", "HEAD", "--", str(path)
-                ).stdout,
+                head_entry=head_entry,
                 run_id=run_id,
-                head_content=_git(
-                    checkout, "show", f"HEAD:{path.relative_to(checkout).as_posix()}"
-                ).stdout.encode("utf-8"),
+                head_content=(
+                    _git(
+                        checkout,
+                        "show",
+                        f"HEAD:{path.relative_to(checkout).as_posix()}",
+                    ).stdout.encode("utf-8")
+                    if head_entry
+                    else None
+                ),
             )
             kwargs["_plan_snapshot"] = snapshot
             try:
