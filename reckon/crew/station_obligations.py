@@ -17,7 +17,9 @@ Two clocks bound the writing. The derivation runs when the station sees a change
 when no row is stored yet, and on a floor beat for duties that fall due by the
 clock alone; the export is rewritten only when what it would carry has moved, and
 at most once every :data:`EXPORT_MIN_INTERVAL_SECONDS`, so an unchanged fleet
-leaves the file untouched however long it runs.
+leaves the file untouched however long it runs. A due refresh publishes its
+freshness transitions immediately, retaining the last answer while inputs are
+read and replacing that stale answer when the derivation finishes.
 """
 
 from __future__ import annotations
@@ -77,6 +79,14 @@ class _Memory:
 _REFRESHES: dict[tuple[str, str], _Memory] = {}
 _EXPORTS: dict[tuple[str, str], _Memory] = {}
 _SWEEP_REPORT_LOCK = threading.Lock()
+_SWEEP_REPORT_LOCKS: dict[tuple[str, str], Any] = {}
+
+
+def _sweep_report_lock(store: Any, project: str) -> Any:
+    """Serialise one project's reports without holding another project's reads."""
+    key = (str(store.root), project)
+    with _SWEEP_REPORT_LOCK:
+        return _SWEEP_REPORT_LOCKS.setdefault(key, threading.Lock())
 
 
 def _sweep_failure_key(project: str) -> str:
@@ -102,7 +112,7 @@ def record_sweep_report(
         return
     failures = list(reviews["failed"] or ())
     key = _sweep_failure_key(project)
-    with _SWEEP_REPORT_LOCK:
+    with _sweep_report_lock(store, project):
         before = store.station_value(key) or "{}"
         sessions = json.loads(before)
         if failures:
@@ -172,7 +182,7 @@ def prune_sweep_failures(store: Any, project: str) -> dict[str, Any]:
     something actually ended, so an unchanged fleet leaves it untouched.
     """
     key = _sweep_failure_key(project)
-    with _SWEEP_REPORT_LOCK:
+    with _sweep_report_lock(store, project):
         before = store.station_value(key) or "{}"
         recorded = json.loads(before)
         kept: dict[str, Any] = {}
@@ -339,11 +349,12 @@ def refresh(
             identity = payload_identity(payload)
             stored = store.read_obligation(session)
             document = stored_document(stored) or {}
-            if (
+            unchanged = (
                 stored is not None
                 and str(document.get("project") or "") == project
                 and stored_identity(stored) == identity
-            ):
+            )
+            if unchanged and not document.get("stale"):
                 continue
             published = obligation_snapshot.document_for(
                 payload,
@@ -355,7 +366,11 @@ def refresh(
             store.write_obligation(
                 session,
                 {"identity": identity, "document": published},
-                changed_at=instant,
+                changed_at=(
+                    datetime.fromisoformat(str(stored["changed_at"]))
+                    if unchanged
+                    else instant
+                ),
             )
             written.append(session)
         dropped = _drop_absent(store, project, sessions)
@@ -556,7 +571,11 @@ def publish(
     if submit is not None:
         submit(project, home=home, changed=changed, moment=now)
         return None
+    pending = False
     try:
+        pending = _publish_pending(
+            store, project=project, home=home, changed=changed, now=now
+        )
         refresh(
             store,
             project=project,
@@ -568,10 +587,70 @@ def publish(
         _report_failure(project, "refresh")
         return None
     try:
-        return export_snapshot(store, project=project, home=home, now=now)
+        return export_snapshot(
+            store, project=project, home=home, now=now, force=pending
+        )
     except Exception:  # noqa: BLE001 - the rows are stored; the export retries
         _report_failure(project, "export")
         return None
+
+
+def _publish_pending(
+    store: Any,
+    *,
+    project: str,
+    home: str | Path,
+    changed: bool,
+    now: datetime | None,
+) -> bool:
+    """Keep the last answer dated and stale while a due refresh reads inputs.
+
+    This runs on the project's worker before any external input is read. No
+    empty answer is manufactured when the project has never published one.
+    The roadmap's existing marking carries the last composition's age and
+    reason, and a completed derivation replaces it with its fresh document.
+    """
+    from reckon.roadmap_snapshot import roadmap_stale_answer
+
+    instant = _utc_now() if now is None else now
+    memory = _REFRESHES.get((str(store.root), project))
+    if (
+        not changed
+        and memory is not None
+        and (instant - memory.at).total_seconds() < REFRESH_FLOOR_SECONDS
+    ):
+        return False
+    marked = False
+    for row in store.obligation_rows():
+        document = stored_document(row)
+        if document is None or document.get("project") != project:
+            continue
+        stamp = document.get("computed_at")
+        previous = document.get("stale")
+        stored_at = (
+            float(previous["stored_at"])
+            if isinstance(previous, Mapping)
+            else memory.at.timestamp()
+            if memory is not None
+            else datetime.fromisoformat(str(stamp)).timestamp()
+        )
+        stale = roadmap_stale_answer(
+            {"payload": document, "stored_at": stored_at, "key": stored_identity(row)},
+            "project refresh is still reading inputs",
+            now=instant.timestamp(),
+        )
+        store.write_obligation(
+            str(row["session"]),
+            {"identity": stored_identity(row), "document": stale},
+            changed_at=datetime.fromisoformat(str(row["changed_at"])),
+        )
+        marked = True
+    if marked:
+        try:
+            export_snapshot(store, project=project, home=home, now=instant, force=True)
+        except Exception:  # noqa: BLE001 - an unavailable export cannot stop derivation
+            _report_failure(project, "pending-export")
+    return marked
 
 
 def _report_failure(project: str, step: str) -> None:
