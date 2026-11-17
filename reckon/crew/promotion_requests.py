@@ -8,6 +8,7 @@ existing guards, lease and idempotent ledger/release path.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
@@ -15,7 +16,7 @@ import re
 import threading
 import time
 from collections import Counter
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from contextlib import suppress
 from contextvars import ContextVar
 from datetime import UTC, datetime
@@ -247,7 +248,13 @@ def _read(path: Path) -> dict[str, Any]:
 
 def read_promotion(run_id: str) -> dict[str, Any]:
     """Read a pending request or its durable terminal outcome."""
-    return _read(_request_path(run_id)) or _read(_receipt_path(run_id))
+    record = _read(_request_path(run_id)) or _read(_receipt_path(run_id))
+    if not record and runs.pointer_path(run_id).exists():
+        pointer = runs.read_pointer(run_id)
+        leader = str(pointer.get("landing_group") or "")
+        if leader and leader != run_id:
+            return _read(_request_path(leader)) or _read(_receipt_path(leader))
+    return record
 
 
 def _mark_pointer(
@@ -262,7 +269,9 @@ def _mark_pointer(
                 return
             pointer = runs.read_pointer(run_id)
             pointer["promotion_status"] = phase
-            pointer["promotion_request"] = str(_request_path(run_id))
+            pointer["promotion_request"] = str(
+                _request_path(str(request.get("group_run_id") or run_id))
+            )
             pointer["phase"] = (
                 phase
                 if phase in {REQUESTED, PROMOTED}
@@ -288,7 +297,13 @@ def request_promotion(
     one arriving through a different caller. Retrying a terminal refusal is an
     explicit coordinator action; automatic sweeps leave its obligation visible.
     """
-    if kind not in {"command", "complete", "acceptance", "review-self"}:
+    if kind not in {
+        "command",
+        "complete",
+        "acceptance",
+        "review-self",
+        "landing-group",
+    }:
         raise CrewError(f"unknown promotion request kind {kind!r}")
     path = _request_path(run_id)
     with runs._pointer_lock(f"promotion-request-{run_id}"):
@@ -325,6 +340,15 @@ def request_promotion(
             "requested_at": _now(),
             "options": json.loads(json.dumps(dict(options or {}), default=str)),
         }
+        if kind == "landing-group":
+            priorities = [
+                _override(member["pointer"])
+                for member in request["options"].get("members") or ()
+            ]
+            request["priority_override"] = max(
+                (priority for priority in priorities if priority is not None),
+                default=request["priority_override"],
+            )
         runs._write_json(path, request)
         stage_receipts.record_stage(run_id, "promotion_requested", at=request["requested_at"], attempt=request["request_id"])
         _mark_pointer(request, REQUESTED)
@@ -417,6 +441,10 @@ def _execute_command(options: Mapping[str, Any]) -> dict[str, Any]:
 def _execute(request: Mapping[str, Any]) -> dict[str, Any] | None:
     run_id = str(request["run_id"])
     options = request.get("options") or {}
+    if request["kind"] == "landing-group":
+        from reckon.crew_run_commands import _complete_landing_group
+
+        return _complete_landing_group(request)
     if request["kind"] == "command":
         return _execute_command(options)
     if request["kind"] == "complete":
@@ -472,10 +500,27 @@ def _finish(request: Mapping[str, Any], phase: str, **result: Any) -> dict[str, 
         else:
             path.unlink(missing_ok=True)
     _record_drained(receipt)
+    for member in (request.get("options") or {}).get("members") or ():
+        member_id = str(member["pointer"]["run_id"])
+        if member_id != run_id:
+            member_receipt = {
+                **receipt,
+                "run_id": member_id,
+                "group_run_id": run_id,
+                "session": str(member["pointer"].get("session") or ""),
+                "priority_override": _override(member["pointer"]),
+                "node": (member["pointer"].get("node") or {}).get("id", ""),
+                "plan": str(member["pointer"].get("plan") or ""),
+            }
+            runs._write_json(_receipt_path(member_id), member_receipt)
+            _mark_pointer(member_receipt, phase)
+            _record_drained(member_receipt)
     return receipt
 
 
-def _reviewed_run_id(request: Mapping[str, Any]) -> str:
+def _reviewed_run_id(
+    request: Mapping[str, Any], *, pointers: Sequence[Mapping[str, Any]] | None = None
+) -> str:
     """The run a queued review promotion reviews, or empty for any other request.
 
     A review run's node id carries the run it scored, so the queue can tell a
@@ -490,13 +535,46 @@ def _reviewed_run_id(request: Mapping[str, Any]) -> str:
         return ""
     from reckon.crew.recovery_review_delivery import _resolved_reviewed_run_id
 
+    project = str(request.get("project") or "")
     try:
         return _resolved_reviewed_run_id(
-            {"node": {"id": node_id}, "project": str(request.get("project") or "")},
-            str(request.get("project") or ""),
+            {"node": {"id": node_id}, "project": project},
+            project,
+            pointers=(
+                None
+                if pointers is None
+                else [p for p in pointers if str(p.get("project") or "") == project]
+            ),
         )
     except Exception:  # noqa: BLE001 — ordering must never stop the drain
         return ""
+
+
+def _reviewed_request_runs(
+    requests: Iterable[Mapping[str, Any]],
+) -> Iterator[tuple[Mapping[str, Any], str]]:
+    """Resolve a pass lazily, sharing one listing across source-node reviews."""
+    from reckon.crew.recovery_vocabulary import REVIEW_NODE_PREFIX
+    from reckon.crew.repair import round_node_source
+
+    pointers = None
+    listing_failed = False
+    for request in requests:
+        source = round_node_source(str(request.get("node") or ""), REVIEW_NODE_PREFIX)
+        needs_population = bool(source and not source.startswith("r-"))
+        if needs_population and pointers is None:
+            try:
+                pointers = runs.list_live()
+            except Exception:  # noqa: BLE001 — ordering must never stop the drain
+                pointers, listing_failed = [], True
+        yield (
+            request,
+            (
+                ""
+                if needs_population and listing_failed
+                else _reviewed_run_id(request, pointers=pointers)
+            ),
+        )
 
 
 def _pending_requests(
@@ -528,8 +606,8 @@ def _pending_requests(
     waiting = {str(request.get("run_id") or "") for request in pending}
     review_first = {
         str(request.get("run_id") or "")
-        for request in pending
-        if _reviewed_run_id(request) in waiting
+        for request, reviewed in _reviewed_request_runs(pending)
+        if reviewed in waiting
     }
     served = Counter(
         str(row["session"])
@@ -602,8 +680,12 @@ def _defer_to_a_queued_review(
         return False
     run_id = str(request["run_id"])
     if not any(
-        other.get("phase") in QUEUED and _reviewed_run_id(other) == run_id
-        for other in (_read(path) for path in _requests_dir().glob("*.json"))
+        reviewed == run_id
+        for _other, reviewed in _reviewed_request_runs(
+            request
+            for request in map(_read, _requests_dir().glob("*.json"))
+            if request.get("phase") in QUEUED
+        )
     ):
         return False
     with runs._pointer_lock(f"promotion-request-{run_id}"):
@@ -860,9 +942,26 @@ class PromotionService:
             if owner is None:
                 self._release(slot)
                 continue
+            branch = None
+            members = (request.get("options") or {}).get("members") or ()
+            repository = ""
+            if request.get("kind") == "landing-group" and members:
+                repository = str(members[0]["pointer"]["repo"])
+            elif (request.get("options") or {}).get("land"):
+                with suppress(CrewError):
+                    repository = str(
+                        runs.read_pointer(str(request["run_id"])).get("repo") or ""
+                    )
+            if repository:
+                identity = hashlib.sha256(repository.encode()).hexdigest()
+                branch = self._claim(f"promotion-branch-{identity}")
+                if branch is None:
+                    self._release(owner)
+                    self._release(slot)
+                    continue
             thread = threading.Thread(
                 target=self._run,
-                args=(request, owner, slot),
+                args=(request, owner, slot, *([branch] if branch else [])),
                 name=f"promotion-request-{request['run_id']}",
                 daemon=True,
             )

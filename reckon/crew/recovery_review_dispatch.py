@@ -1571,7 +1571,18 @@ _FIGURE_IMAGE_SUFFIXES = frozenset({".svg", ".png", ".jpg", ".jpeg", ".gif", ".w
 
 
 def _changed_figure_paths(record: Mapping[str, Any]) -> list[str]:
-    """Images below a figures directory that this run added or changed."""
+    """Images below a figures directory that this run added or changed.
+
+    An uncomparable own-commit range is not an empty one. The own-commit reader
+    answers ``None`` when there is no remote-tracking ref to exclude — a
+    repository with no remote at all — and reading that as an empty delta
+    reports no figure path for a run that changed one, so a lander owing a
+    figure review lands on evidence nobody read. The base-to-head pair is the
+    only comparison left then, so it is read instead. It can name a figure the
+    integration branch brought in as the run's own, which asks for a review of
+    a figure the run did not draw — the safe direction for a guard. The
+    reverse, no figure review owed for a changed figure, is a fail-open.
+    """
     tree = _review_tree(record)
     if tree is None:
         return []
@@ -1580,6 +1591,8 @@ def _changed_figure_paths(record: Mapping[str, Any]) -> list[str]:
     changed = clones.own_changed_paths(
         tree, base, head, integration_ref=_integration_ref(tree)
     )
+    if changed is None:
+        changed = _changed_paths_between(tree, base, head)
     if changed is None:
         return []
     images: list[str] = []

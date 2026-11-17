@@ -780,6 +780,29 @@ def _requeue_stranded_request(run_id: str, *, step: str) -> bool:
     return True
 
 
+def _record_failure_hold(record: dict[str, Any]) -> None:
+    """Write the hold a failed attempt leaves, so no earlier lane reason survives.
+
+    A request restored to the queue after a failed launch keeps whatever hold the
+    last pass wrote, and a pass writes that hold from the lane's own reading: a
+    request sitting in a full lane comes back holding the router's congestion
+    sentence. Its reader ranks a hold above the refusal the attempt recorded, so
+    the request then shows a lane figure instead of the finding that stopped it,
+    and the command that clears the finding appears nowhere on the row.
+
+    The attempt's own failure is the later fact and the one a session can act on,
+    so it is written as the request's hold here, by the writer that composes the
+    failed request's record. A failure naming no remedy leaves the hold as it
+    stands: there is nothing to publish, and the waiting reading remains the
+    true one.
+    """
+    named = _verdicts.failure_hold(record)
+    if named is None:
+        return
+    record[RECORDED_HOLD_FIELD] = dict(named)
+    record["reason"] = str(named.get("reason") or "")
+
+
 def _requeued_request(request: Mapping[str, Any], run_id: str) -> dict[str, Any]:
     """The request written back as a queued pointer under the id it already has.
 
@@ -851,6 +874,7 @@ def _requeue_admitted_failures(
             moment=_service._now(),
             guard=_holds._dependency_guard(restored, None),
         )
+        _record_failure_hold(restored)
         try:
             _writeback_pointer(str(pointer["run_id"]), restored)
         except _PointerWritebackError as exc:
@@ -952,9 +976,11 @@ def _restore_queued(
         _holds._stamp_failure(
             restored, failure, moment=moment or _service._now(), guard=guard
         )
+        _record_failure_hold(restored)
     else:
-        restored[RECORDED_HOLD_FIELD] = dict(hold)
-        restored["reason"] = str(hold.get("reason") or "")
+        carried = _holds._carried_hold(snapshot, hold)
+        restored[RECORDED_HOLD_FIELD] = carried
+        restored["reason"] = str(carried.get("reason") or "")
     for key in (
         "pid",
         "pid_start_time",
@@ -1022,7 +1048,9 @@ def _record_queued_failure(
         )
         if _retain_launched_record(current, refused):
             return current
-        return _holds._stamp_failure(current, failure, moment=failed_at, guard=guard)
+        stamped = _holds._stamp_failure(current, failure, moment=failed_at, guard=guard)
+        _record_failure_hold(stamped)
+        return stamped
 
     try:
         runs._mutate_pointer(original_run_id, annotate)

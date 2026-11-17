@@ -69,7 +69,14 @@ import tempfile
 import termios
 import threading
 import time
-from collections.abc import Callable, Iterator, Mapping, MutableMapping, Sequence
+from collections.abc import (
+    Callable,
+    Iterable,
+    Iterator,
+    Mapping,
+    MutableMapping,
+    Sequence,
+)
 from contextlib import contextmanager, suppress
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -296,8 +303,85 @@ def _short_hostname(name: str | None = None) -> str:
     return (socket.gethostname() if name is None else str(name)).split(".")[0]
 
 
-def log(message: str) -> None:
-    print(f"[{_utc_now()}] {message}", flush=True)
+def log(message: str, *, file: Any = None) -> None:
+    print(f"[{_utc_now()}] {message}", file=file, flush=True)
+
+
+def resolved_environment(repository: Path) -> Path:
+    """The shared environment a checkout or provisioned tree resolves to."""
+    return (repository / ".venv").resolve()
+
+
+def environment_interpreters(repository: Path) -> tuple[Path, ...]:
+    """Resolve interpreter aliases to their regular files, including external ones.
+
+    Resolve afresh on every call: an environment manager can install another
+    interpreter or replace an alias between health samples. Configuration
+    helpers such as python-config are not interpreter entry points.
+    """
+    binaries = resolved_environment(repository) / "bin"
+    targets = set()
+    try:
+        aliases = list(binaries.iterdir())
+    except FileNotFoundError:
+        return ()
+    for alias in aliases:
+        if not re.fullmatch(r"(?:pythonw?|pypy)(?:\d+(?:\.\d+)*)?[dt]?", alias.name):
+            continue
+        try:
+            target = alias.resolve(strict=True)
+            if stat.S_ISREG(target.stat().st_mode):
+                targets.add(target)
+        except FileNotFoundError:
+            continue
+    return tuple(sorted(targets))
+
+
+def check_environment_interpreters(
+    repositories: Iterable[Path], *, report: Callable[[str], None] | None = None
+) -> int:
+    """Remove every write bit and return the count still writable after repair.
+
+    A refused repair stays in the count and is logged, so zero means the check
+    observed read-only files. Resolution errors propagate rather than reporting
+    an unchecked environment as healthy.
+    """
+    report = log if report is None else report
+    writable = 0
+    targets = {
+        target for repo in repositories for target in environment_interpreters(repo)
+    }
+    for target in sorted(targets):
+        mode = target.stat().st_mode
+        if not mode & 0o222:
+            continue
+        try:
+            target.chmod(stat.S_IMODE(mode) & ~0o222)
+        except OSError as exc:
+            report(f"interpreter permission repair failed: {target}: {exc}")
+        if target.stat().st_mode & 0o222:
+            writable += 1
+        else:
+            report(f"interpreter made read-only: {target}")
+    return writable
+
+
+def sample_interpreter_permissions() -> int:
+    """Check the registered checkouts and emit one health-series reading."""
+    from reckon.flight import FlightConfigError, mounted_project_docs
+
+    def report(message: str) -> None:
+        log(message, file=sys.stderr)
+
+    try:
+        remaining = check_environment_interpreters(
+            (docs.parent for docs in mounted_project_docs().values()), report=report
+        )
+    except (OSError, ValueError, RuntimeError, FlightConfigError) as exc:
+        report(f"interpreter permission check failed: {exc}")
+        return 1
+    print(remaining, flush=True)
+    return 0
 
 
 def stripped_variables(environ: Mapping[str, str]) -> list[str]:
@@ -720,12 +804,13 @@ def start_health_sampler(environ: Mapping[str, str] | None = None) -> int | None
     if sampler is None:
         log(f"no node sampler: {name} is not on PATH")
         return None
+    sampler_environment = {**environ, "RECKON_SHIM_PYTHON": sys.executable}
     process = subprocess.Popen(
         [sampler],
-        env=dict(environ),
+        env=sampler_environment,
         stdin=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        stderr=None,
         start_new_session=True,
     )
     log(f"node sampler {sampler} started as pid {process.pid}")
@@ -1691,6 +1776,10 @@ class DeclaredServices:
         if state.reload_window is not None and not state.reload_window.due(
             current, publish=False
         ):
+            # No replacement follows a window that is not due, so a boundary
+            # requested earlier would hold the copy before its next pass with
+            # nothing left to release it.
+            (self._runtime / f"{name}.pass.reload").unlink(missing_ok=True)
             return "adopt"
         if not recorded or recorded == _unknown_code_stamp():
             if not self._pass_allows_restart(name, pid):
@@ -1795,6 +1884,9 @@ class DeclaredServices:
             if window is None or not window.due(
                 self._code_stamp_value(), publish=False
             ):
+                # The copy replaced itself between the decision and this stop,
+                # so the boundary this restart requested is withdrawn with it.
+                (self._runtime / f"{name}.pass.reload").unlink(missing_ok=True)
                 return
         if not self._stop_locked(name):
             # The stale copy is still alive, so it still holds the lock and
@@ -3149,6 +3241,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Enter either the one-shot session start or the request loop."""
     arguments = list(sys.argv[1:] if argv is None else argv)
     environ = os.environ
+    if arguments == ["check-interpreters"]:
+        return sample_interpreter_permissions()
     if arguments and arguments[0] == START_MODE:
         # A stop from the request loop ends the copy as an exit rather than a
         # kill, so the sizing client's detach in its finally block still runs.

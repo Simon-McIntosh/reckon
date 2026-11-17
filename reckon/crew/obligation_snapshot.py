@@ -2171,6 +2171,8 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
             state.unreconciled.get(session, state.unreconciled.get("", 0))
         ),
     }
+    delivery = module.recovery_classification.delivery_summary(state.rows, session=session)
+    summary.update({key: value for key, value in delivery.items() if key != "remove_pointers"})
     return {
         "project": state.project,
         "session": session,
@@ -2186,6 +2188,7 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
             vocabulary=module.DUTY_ROW_FIELDS,
             sections=sections,
         ),
+        "remove_pointers": delivery["remove_pointers"],
         "summary": summary,
     }
 
