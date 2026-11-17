@@ -513,12 +513,15 @@ def test_disk_and_scheduler_samples_share_the_locked_series(tmp_path):
     node_row = sample_rows(box)[0]
     assert node_row["source"] == "node"
     assert node_row["node_tmp_free_bytes"] == "40"
-    assert list(node_row)[-4:] == [
+    disk_columns = [
         "node_tmp_total_bytes",
         "node_tmp_used_bytes",
         "node_tmp_free_bytes",
         "node_tmp_free_inodes",
     ]
+    columns = list(node_row)
+    assert [column for column in columns if column in disk_columns] == disk_columns
+    assert columns.index("source") < columns.index(disk_columns[0])
     assert fleet_node.append_scheduler_reading(
         box.samples()[0].parent,
         {
