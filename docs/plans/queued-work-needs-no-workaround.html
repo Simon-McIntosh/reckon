@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="412">
+<meta name="plan-version" content="413">
 <meta name="plan-modified" content="2026-11-17">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -470,6 +470,9 @@
 </div>
 <div class="r-comment" data-section="s24" data-id="c-run-r-20261117T134819766625-review-of-qwnw-a-node-may-change-any-mergeable-file-74c57478a9e1" data-who="reckon-build" data-when="2026-11-17T13:50:07.190Z">
     <div class="r-comment-body"><p>Reviewed r-20261115T094618237010-qwnw-a-node-may-change-any-mergeable-file over 75ecd95a0e69b419f0786cba53decba6b93daa4c..74c57478a9e1b37f1dd1fea19c6629eb451e518b and stored a parsed record scoring goal_fidelity 18, evidence 17, scope_discipline 20, durability 17, fit 18, reuse 20, with one non-blocking finding at tests/test_a_node_may_change_any_mergeable_file.py:207 (the added assertions have no recorded red arm).</p></div>
+</div>
+<div class="r-comment" data-section="s24" data-id="c-run-r-20261115T094618237010-qwnw-a-node-may-change-any-mergeable-file" data-who="reckon-build" data-when="2026-11-17T12:07:52Z">
+    <div class="r-comment-body"><p>The dispatch brief now presents the worktree as writable and the declared write paths as where the change is expected, naming only the classes git cannot reconcile (docs/plans/*.html, docs/evidence/archive/, docs/state/, docs/figures/, pyproject.toml, uv.lock, *.receipt, plus any pattern the project declares) as writable when a dispatch declares them; a dispatch declaring no path states &quot;Expected: the repository itself&quot; instead of printing &quot;none&quot; under a heading that claimed nothing lay outside it. The delivered-run review brief now carries the node&#x27;s declared paths, the numstat diff over the reviewed range and every changed path outside the declaration. Measure: 6 tests in tests/test_a_node_may_change_any_mergeable_file.py, 4 of them red without their fix (fragment brief reads &quot;nothing outside them&quot;, no-write-path brief reads &quot;none&quot;, the review brief has no scope block, and a project-declared pattern is missing from the brief) and 6 green at head; ruff format --check and W292 clean on the three staged paths.</p></div>
 </div>
 <div class="r-comment" data-section="s25" data-id="c-run-r-20261115T133159620544-review-of-qwnw-a-commits-field-is-read-in-every-form-codex-0d06d1dbb285" data-who="reckon-build" data-when="2026-11-15T13:39:24Z">
     <div class="r-comment-body"><p>Independent review records all six dimensions at 20/20 with no findings; armed logs show zero added failures between the reviewed base and head.</p></div>
