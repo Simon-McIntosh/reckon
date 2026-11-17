@@ -25,7 +25,7 @@
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="33">
+<meta name="plan-version" content="34">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -167,6 +167,12 @@
 <div class="r-comment" data-section="s14" data-id="c-close-s14" data-who="reckon-build" data-when="2026-11-17T12:28:00Z">
     <div class="r-comment-body"><p>§14 landed through the crew's own promotion after its review (landing commit <code>2410997514</code>). The promotion queue and the admission queue call one definition of their precedence rule; reviewed 120 of 120 with no finding.</p></div>
 </div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20261117T105905352759-both-queues-share-one-order" data-who="reckon-build" data-when="2026-11-17T11:51:50Z">
+    <div class="r-comment-body"><p>Admission and promotion now use one precedence definition, with promotion history and runnable-turn accounting supplied to shared fairness ordering; the promotion module is 25 lines shorter. Changing the shared starvation bound moves both queues; all six unchanged promotion cases and 29 focused cases pass, the base-product control fails 1 case with 4 controls passing, armed base/head pass 58/63 tests, and 41 importer files add 0 failure ids (the same 7 failed and 358 passed in both all_debug arms).</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20261117T120346751402-review-of-both-queues-share-one-order-5aa58e3d56ff" data-who="reckon-build" data-when="2026-11-17T12:11:09Z">
+    <div class="r-comment-body"><p>Independent review of base 2eeb5f61801269b20bf2de7de8981b0c8a2a7f2e to head 5aa58e3d56ff5677a12c8e2b50af9a02b1ac2a6b stored at both granted record paths; parsed, six scores of 20/20, zero findings, and zero added failures from source baseline/head gate logs.</p></div>
+</div>
 <div class="r-comment" data-section="s15" data-id="c-close-s15" data-who="reckon-build" data-when="2026-11-17T12:21:00Z">
     <div class="r-comment-body"><p>§15 landed by direct merge (head <code>f3662210f6</code>), on the lead's instruction. A promotion that does not complete leaves the plan document, its version and the index for that path as they were, holding the plan writer lock through snapshot, commit and rollback. The first head landed at 8db4627633; this follow-up head answers its review's blocking finding and was reviewed 119 of 120 with no blocking finding. Merged candidate gate: 50 passed in 8.83s.</p></div>
 </div>
@@ -299,11 +305,8 @@
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261116T233752526352-delivered-rows-say-what-is-owed" data-who="reckon-build" data-when="2026-11-17T01:05:40Z">
     <div class="r-comment-body"><p>Shared live classification separates 1 delivered run, 2 promotion requests and 1 landed leftover across pane and obligations/MCP reads; refusal rows now keep their complete remedy beside the new counters. The committed gate passes 74 tests versus 70 at the repair base and 58 at the original base; all 9 affected importer tests pass unchanged, and reversing the answering commit makes the review-named assertion fail (1 failed). Earlier importer observations remain outside scope.</p></div>
 </div>
-<div class="r-comment" data-section="s14" data-id="c-run-r-20261117T105905352759-both-queues-share-one-order" data-who="reckon-build" data-when="2026-11-17T11:51:50Z">
-    <div class="r-comment-body"><p>Admission and promotion now use one precedence definition, with promotion history and runnable-turn accounting supplied to shared fairness ordering; the promotion module is 25 lines shorter. Changing the shared starvation bound moves both queues; all six unchanged promotion cases and 29 focused cases pass, the base-product control fails 1 case with 4 controls passing, armed base/head pass 58/63 tests, and 41 importer files add 0 failure ids (the same 7 failed and 358 passed in both all_debug arms).</p></div>
-</div>
-<div class="r-comment" data-section="s14" data-id="c-run-r-20261117T120346751402-review-of-both-queues-share-one-order-5aa58e3d56ff" data-who="reckon-build" data-when="2026-11-17T12:11:09Z">
-    <div class="r-comment-body"><p>Independent review of base 2eeb5f61801269b20bf2de7de8981b0c8a2a7f2e to head 5aa58e3d56ff5677a12c8e2b50af9a02b1ac2a6b stored at both granted record paths; parsed, six scores of 20/20, zero findings, and zero added failures from source baseline/head gate logs.</p></div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261117T122916805015-review-of-a-base-failure-is-not-charged-to-the-run-30ebc5c13551" data-who="reckon-build" data-when="2026-11-17T12:38:29Z">
+    <div class="r-comment-body"><p>Independent exact-revision review stored at both granted paths; six dimensions scored 17/20/20/17/20/5, one blocking receipt-validation finding, zero added source gate failure IDs; coordinator must repair the finding before landing the source node.</p></div>
 </div>
 </section>
   </main>
