@@ -1963,20 +1963,22 @@ def classify_pointer(
     stuck = _stuck_verdict_for(record) if phase else None
 
     # A pre-spawn launch past its bound with its holder gone is not waiting to
-    # start: the pre-spawn reading needs a launch that has spawned nothing, and
-    # the liveness arms read the rest — a stranded launch as a failed launch the
-    # admission pass then releases or returns to the queue, and a launch whose
-    # worker has come and gone from that worker's own liveness and output.
+    # start: the liveness arms read it as a failed launch, which the admission
+    # pass then releases or returns to the queue.
     #
     # The pre-spawn phrase is the launcher's label and a stale one, so it cannot
     # be trusted alone. A run that reached its worker carries a pid, a worker
     # record, a stream or a launch log, and any of those outranks the label:
     # reading them as a request that has not started held a refused, unreadable
     # or dead run at ``running`` for as long as its pointer lived, and left
-    # ``fleet_verdict`` free to call the same row abandoned, so one row stated
-    # two outcomes and neither surface could be acted on.
+    # ``fleet_verdict`` free to match the same row abandoned, so one row
+    # stated two outcomes and neither surface could be acted on. A pointer
+    # already recorded dead is not waiting to start either, whatever label it
+    # still carries: a killed run keeps the phase it held when it died, so
+    # honouring the label there would let a pre-spawn word outrank the process.
     pre_spawn_waiting = (
         phase in _PRE_SPAWN_PHASES
+        and alive is not False
         and not _spawn_evidence(record)
         and not _stranded_launch(record, now_seconds=moment)
     )
