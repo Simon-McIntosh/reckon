@@ -19,7 +19,7 @@ from pathlib import Path
 import pytest
 
 from reckon.crew import promotion_scope, recovery_review_subject
-from reckon.crew.node import CrewError, TaskNode
+from reckon.crew.node import CrewError, TaskNode, validate_node
 from reckon.crew.prompts import compose_prompt
 
 PROJECT = "proj"
@@ -112,7 +112,9 @@ def _needs_acceptance(changed: list[str], declared: list[str], record: dict) -> 
         tree=Path(str(record["worktree"])),
     )
     return promotion_scope._changed_artifacts_needing_acceptance(
-        outside, record=record, tree=Path(str(record["worktree"]))  # type: ignore[arg-type]
+        outside,
+        record=record,
+        tree=Path(str(record["worktree"])),  # type: ignore[arg-type]
     )
 
 
@@ -161,7 +163,9 @@ def test_an_undeclared_plan_file_is_refused_at_promotion_naming_the_file(
     assert UNDECLARED_PLAN in str(refused.value)
 
 
-def test_a_fragment_scope_brief_does_not_present_the_fragment_as_the_whole_scope() -> None:
+def test_a_fragment_scope_brief_does_not_present_the_fragment_as_the_whole_scope() -> (
+    None
+):
     brief = _prompt_brief([FRAGMENT])
 
     assert "nothing outside them" not in brief, brief
@@ -173,13 +177,69 @@ def test_a_fragment_scope_brief_does_not_present_the_fragment_as_the_whole_scope
     assert "docs/plans/*.html" in brief, brief
 
 
-def test_a_dispatch_declaring_no_write_path_states_the_repository_as_its_scope() -> None:
+def test_a_dispatch_declaring_no_write_path_states_the_repository_as_its_scope() -> (
+    None
+):
     brief = _prompt_brief([])
 
     assert "Writable: the whole worktree" in brief, brief
     assert "Expected: the repository itself" in brief, brief
     assert "docs/plans/*.html" in brief, brief
-    assert "  none" not in brief, brief
+
+    # A dispatch judges the node before it launches, so the acceptance the
+    # done-when names is asserted on that verdict: an empty declaration is not
+    # a contract violation, and the brief above is the assertion's own account.
+    node = TaskNode(
+        id="scope-node",
+        goal="change a thing",
+        plan=PLAN,
+        section="s1",
+        done_when="pytest reports the check passing",
+        write_paths=[],
+        role="implement",
+        spec_level="guided",
+        time_budget="20m",
+        manifest_path="/state/runs/r-scope/manifest.md",
+    )
+    verdict = validate_node(node)
+    assert verdict.ok, verdict.findings
+
+
+def test_a_project_declared_pattern_is_named_in_the_scope_block(
+    tmp_path: Path,
+) -> None:
+    repository = _repository(tmp_path)
+    state = repository / "docs" / "state" / PROJECT
+    state.mkdir(parents=True, exist_ok=True)
+    (state / "shared-write-paths.json").write_text(
+        '{"paths": [], "exclusive_patterns": ["deploy/*.lock"]}\n', encoding="utf-8"
+    )
+    node = TaskNode(
+        id="scope-node",
+        goal="change a thing",
+        plan=PLAN,
+        section="s1",
+        done_when="pytest reports the check passing",
+        write_paths=[],
+        role="implement",
+        spec_level="guided",
+    )
+    prompt = compose_prompt(
+        node=node,
+        project=PROJECT,
+        worktree=str(repository),
+        working_directory=str(repository),
+        manifest_path=str(repository / "manifest.md"),
+        time_budget="20m",
+        needs_help_after_failures=2,
+        run_id="r-scope",
+    )
+    start = prompt.index("FENCE — SCOPE")
+    brief = prompt[start : prompt.index("CONCURRENT NODES", start)]
+
+    # The pattern the project declares is the one its fence seals, so a brief
+    # naming only the shipped classes would describe a narrower fence.
+    assert "deploy/*.lock" in brief, brief
 
 
 def test_a_review_brief_names_the_declared_paths_and_the_delivered_diff(

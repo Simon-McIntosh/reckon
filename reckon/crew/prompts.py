@@ -34,6 +34,29 @@ DURABLE_WRITE_CONTRACT = (
     "  preceding a long generation survives that generation failing."
 )
 
+
+def _resolved_exclusive_patterns(project: str, worktree: str) -> tuple[str, ...]:
+    """The classes git cannot reconcile in this checkout, for the scope block.
+
+    The brief states what the fence seals, so it reads the list the launch's
+    fence is composed from (``unmergeable_patterns``) rather than the shipped
+    defaults alone: a project's own declared patterns name paths its worker is
+    refused for, and a brief that left them out would describe a narrower seal
+    than the one in force.
+
+    A declaration that cannot be read, and a worktree that does not exist, fall
+    back to the shipped classes. Composing a prompt must not fail on a fence
+    declaration another surface already reports, and the shipped classes are
+    what such a fence seals anyway.
+    """
+    from reckon.crew.runs import DEFAULT_EXCLUSIVE_PATHS, unmergeable_patterns
+
+    try:
+        return tuple(unmergeable_patterns(project or None, Path(worktree)))
+    except (OSError, ValueError):
+        return tuple(DEFAULT_EXCLUSIVE_PATHS)
+
+
 # The heading the scope fence is carried under. One spelling, so a reader
 # handed two briefs compares the same marker, and a test can find the block
 # without parsing prose.
@@ -43,7 +66,9 @@ SCOPE_HEADING = (
 )
 
 
-def scope_block(node: TaskNode, *, paths: Iterable[str] = (), patterns: Iterable[str] = ()) -> str:
+def scope_block(
+    node: TaskNode, *, paths: Iterable[str] = (), patterns: Iterable[str] = ()
+) -> str:
     """Compose the scope fence: what may be written, and what is expected.
 
     A dispatched node may change any file in its repository that git can
@@ -54,9 +79,11 @@ def scope_block(node: TaskNode, *, paths: Iterable[str] = (), patterns: Iterable
     promotion.
 
     ``paths`` and ``patterns`` are the declarations to state. A caller that
-    composes with nothing names the shipped classes alone, which is what a node
-    declaring no write path is fenced against; the dispatcher passes the
-    resolved list, so a project's own patterns are named beside them. A
+    composes with nothing reads the node's own write paths and the shipped
+    classes alone, which is what a node declaring no write path is fenced
+    against. ``compose_prompt`` passes the resolved list, so a project's own
+    exclusive patterns — the ones its fence actually seals — are named beside
+    the shipped ones rather than left out of the brief. A
     declaration written absolutely names a location outside the checkout — a
     role's own delivery root — so it is stated as a delivery grant rather than
     as an expected edit.
@@ -89,7 +116,9 @@ def scope_block(node: TaskNode, *, paths: Iterable[str] = (), patterns: Iterable
             ]
         )
     if delivery:
-        lines.append("  Delivery grants outside the repository (named, not expected edits):")
+        lines.append(
+            "  Delivery grants outside the repository (named, not expected edits):"
+        )
         lines.extend(f"  {path}" for path in delivery)
     exclusive = list(patterns) or list(DEFAULT_EXCLUSIVE_PATHS)
     lines.extend(
@@ -927,7 +956,9 @@ def compose_prompt(
         f"{sys.executable} -c 'from reckon.crew.dispatch import _peer_command; "
         "raise SystemExit(_peer_command())'"
     )
-    scope_lines = scope_block(node)
+    scope_lines = scope_block(
+        node, patterns=_resolved_exclusive_patterns(project, worktree)
+    )
     section = f" {node.section}" if node.section else ""
     # The plan pointer is the plan-section read instruction, and the plan name
     # and section it names are the whole of it. A brief alone replaces that

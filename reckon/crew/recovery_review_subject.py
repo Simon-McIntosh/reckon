@@ -687,14 +687,10 @@ def _within_declared(path: str, declared: Iterable[str], tree: Path | None) -> b
     """
     from reckon.crew.reports import path_within_declared_scope
 
-    return path_within_declared_scope(
-        path, declared, worktree=tree, repository=tree
-    )
+    return path_within_declared_scope(path, declared, worktree=tree, repository=tree)
 
 
-def _reviewed_scope_block(
-    record: Mapping[str, Any], head: str
-) -> str:
+def _reviewed_scope_block(record: Mapping[str, Any], head: str) -> str:
     """The declared paths and the delivered diff a review brief states.
 
     A review scores a node against its section's expected scope, which it can
