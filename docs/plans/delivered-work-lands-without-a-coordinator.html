@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-monitor-reads-each-fact-once">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s8&quot;:[&quot;delivered-work-lands-without-a-coordinator#s6&quot;,&quot;delivered-work-lands-without-a-coordinator#s7&quot;],&quot;s10&quot;:[&quot;delivered-work-lands-without-a-coordinator#s4&quot;,&quot;delivered-work-lands-without-a-coordinator#s5&quot;,&quot;delivered-work-lands-without-a-coordinator#s6&quot;,&quot;delivered-work-lands-without-a-coordinator#s7&quot;,&quot;delivered-work-lands-without-a-coordinator#s8&quot;,&quot;delivered-work-lands-without-a-coordinator#s9&quot;,&quot;delivered-work-lands-without-a-coordinator#s11&quot;,&quot;delivered-work-lands-without-a-coordinator#s12&quot;,&quot;delivered-work-lands-without-a-coordinator#s13&quot;,&quot;delivered-work-lands-without-a-coordinator#s14&quot;,&quot;delivered-work-lands-without-a-coordinator#s15&quot;,&quot;delivered-work-lands-without-a-coordinator#s16&quot;,&quot;delivered-work-lands-without-a-coordinator#s17&quot;]}">
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="31">
+<meta name="plan-version" content="32">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -137,7 +137,7 @@
     <p><strong>Done when.</strong> <code>git grep</code> at head finds one definition of the precedence rule and both queues calling it; the promotion module is shorter than at the base; §2's six cases pass unchanged and the admission order's own tests pass. A test changes the starvation bound in the one definition and finds both queues' orders change. Negative control: at the base revision the same change moves one queue only. Importers of both modules add no failure against the base, on <code>all_debug</code>. Write paths: <code>reckon/crew/queue_order.py</code>, <code>reckon/crew/promotion_requests.py</code> and <code>tests/test_both_queues_share_one_order.py</code>.</p>
 
     <h2 id="s15">§15 — A promotion that fails leaves its plan file as it found it</h2>
-<section data-reckon="section" data-id="s15" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s15" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p><strong>Why.</strong> A promotion writes its landing comment into the plan before its last checks. When it then fails, the plan file is left modified in the main checkout, and dispatch refuses every launch for that plan until someone notices and reverts it. A failure in one run stops the whole plan's queue.</p>
     <p><strong>Deliverable.</strong> A promotion that does not complete leaves the plan document, its version and the checkout's index for that path exactly as they were before it started, and says in its refusal that it restored them.</p>
     <p><strong>Done when.</strong> A test starts a promotion in a temporary repository, forces a failure after the plan comment is written, and finds the plan file's digest and <code>git status</code> for its path equal to their values before the promotion; a dispatch for the same plan then validates. Negative control: at the base revision the plan file is modified after the failure and the dispatch is refused. A successful promotion still writes its comment. Importers add no failure against the base, on <code>all_debug</code>. Write paths: <code>reckon/crew/promotion.py</code> and <code>tests/test_a_failed_promotion_restores_its_plan.py</code>.</p>
@@ -164,6 +164,9 @@
 </section>
 
     <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s15" data-id="c-close-s15" data-who="reckon-build" data-when="2026-11-17T12:21:00Z">
+    <div class="r-comment-body"><p>§15 landed by direct merge (head <code>f3662210f6</code>), on the lead's instruction. A promotion that does not complete leaves the plan document, its version and the index for that path as they were, holding the plan writer lock through snapshot, commit and rollback. The first head landed at 8db4627633; this follow-up head answers its review&#x27;s blocking finding and was reviewed 119 of 120 with no blocking finding. Merged candidate gate: 50 passed in 8.83s.</p></div>
+</div>
 <div class="r-comment" data-section="s16" data-id="c-s16-s17-added" data-who="reckon-build" data-when="2026-11-17T11:50:00Z">
     <div class="r-comment-body"><p>§16 and §17 added from two cases a peer session measured on its own runs on 17 November: eighteen promoted runs stuck awaiting merge repair after redelivery, and one test red on the primary branch charged as an added failure to every run that merged it. The red test itself is in the peer's own area and is theirs to repair.</p></div>
 </div>
@@ -220,6 +223,9 @@
 </div>
 <div class="r-comment" data-section="s15" data-id="c-run-r-20261117T002355536252-review-of-a-failed-promotion-restores-its-plan-b8dc50aa168d" data-who="reckon-build" data-when="2026-11-17T00:32:44Z">
     <div class="r-comment-body"><p>Independent review of 891a4e54f19486e82117d68826044be51d2e0a8d..b8dc50aa168d697d3c8201c5a213282c8d610641 stored in both granted review records; six scores 16/20/20/18/20/20, zero added failure ids, one blocking same-plan concurrent-write rollback defect; both review contract checks pass.</p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261117T120051998024-review-of-a-failed-promotion-restores-its-plan-f3662210f69e" data-who="reckon-build" data-when="2026-11-17T12:08:36Z">
+    <div class="r-comment-body"><p>Independent review of f3662210f69ee18cf7367978f276f4b2428496fb records no blocking or non-blocking findings; all six dimensions scored, zero added failures in the armed pair, and historical importer caveats retained.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-11-16T23:25:00Z">
     <div class="r-comment-body"><p>§2 landed by direct merge at <code>112bbec4b6</code> (head <code>18f4fdaf71</code>), on the lead's instruction, because its own promotion request waited in the queue it replaces. The first review gave 109 of 120 with two blocking findings: a running or parked request took a simulated turn, and the report's window option ordered differently from the drain. Both were repaired with a test each, and the re-review of the repaired head gave 120 of 120 with no findings. In the 70-request case the later sessions' requests move from positions 68 and 69 to 3 and 4. A merged candidate with §3 passed 34 of 36 focused tests; the two failures are in the base's own failure list.</p></div>
