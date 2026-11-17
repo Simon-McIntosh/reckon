@@ -146,6 +146,7 @@ def _report_review_delivery(record: Mapping[str, Any]) -> dict[str, Any] | None:
         key = node_id.removeprefix(plan_review.CODE_REVIEW_NODE_PREFIX)
         directory = plan_review.code_review_report_directory(project=project, key=key)
         sidecar_name = plan_review.CODE_REVIEW_SIDECAR_NAME
+        subject = "code"
         key_field = "neighbourhood_key"
         parse = plan_review._code_review_record
     elif node_id.startswith(plan_review.PORTFOLIO_NODE_PREFIX):
@@ -154,6 +155,7 @@ def _report_review_delivery(record: Mapping[str, Any]) -> dict[str, Any] | None:
             project=project, key=key
         )
         sidecar_name = plan_review.PORTFOLIO_SIDECAR_NAME
+        subject = plan_review.PORTFOLIO_SUBJECT
         key_field = "scope_key"
         parse = plan_review._portfolio_review_record
     else:
@@ -167,7 +169,9 @@ def _report_review_delivery(record: Mapping[str, Any]) -> dict[str, Any] | None:
     def read() -> dict[str, Any]:
         sidecar = json.loads((directory / sidecar_name).read_text(encoding="utf-8"))
         if not isinstance(sidecar, Mapping) or (
-            sidecar.get("project") != project or sidecar.get(key_field) != key
+            sidecar.get("project") != project
+            or sidecar.get(key_field) != key
+            or str(sidecar.get("subject") or "") != subject
         ):
             raise ValueError("report sidecar names a different subject")
         mtime = path.stat().st_mtime

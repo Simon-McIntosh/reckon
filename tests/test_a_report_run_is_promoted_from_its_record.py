@@ -278,3 +278,67 @@ def test_a_red_implementation_gate_keeps_its_failing_test_ids(
     )
     assert runs.pointer_path(acceptance_cases.RUN_ID).exists()
     assert ledger.runs(acceptance_cases.PROJECT, root=root) == []
+
+
+@pytest.mark.parametrize("kind", ["code", "portfolio"])
+@pytest.mark.parametrize("subject", [None, "misspelled"])
+def test_a_report_with_an_unrecognised_subject_stays_delivered(
+    repository: Path, kind: str, subject: str | None
+) -> None:
+    pointer = _deliver(repository, kind)
+    report = Path(pointer["node"]["write_paths"][0])
+    sidecar_name = (
+        plan_review.CODE_REVIEW_SIDECAR_NAME
+        if kind == "code"
+        else plan_review.PORTFOLIO_SIDECAR_NAME
+    )
+    sidecar = report.parent / sidecar_name
+    body = json.loads(sidecar.read_text())
+    if subject is None:
+        body.pop("subject")
+    else:
+        body["subject"] = subject
+    sidecar.write_text(json.dumps(body))
+
+    deliveries = (
+        plan_review.delivered_code_reviews(PROJECT)
+        if kind == "code"
+        else plan_review.delivered_portfolio_reviews(PROJECT)
+    )
+    assert deliveries == []
+
+    result = promote_review_run_itself(pointer)
+
+    assert not result["promoted"], json.dumps(result, indent=2)
+    assert "different subject" in result["reason"], result
+    assert runs.pointer_path(pointer["run_id"]).exists()
+    assert ledger.runs(PROJECT, root=repository) == []
+
+
+@pytest.mark.parametrize("kind", ["code", "portfolio"])
+def test_a_promoted_scope_report_is_persisted(repository: Path, kind: str) -> None:
+    pointer = _deliver(repository, kind)
+    key = f"fixture-{kind}"
+    stored_path = (
+        plan_review.code_review_path(PROJECT, key)
+        if kind == "code"
+        else plan_review.portfolio_review_path(PROJECT, key)
+    )
+    assert not stored_path.exists()
+
+    result = promote_review_run_itself(pointer)
+
+    assert result["promoted"], result
+    assert not runs.pointer_path(pointer["run_id"]).exists()
+    stored = json.loads(stored_path.read_text())
+    assert stored["subject"] == kind
+    assert stored["project"] == PROJECT
+    assert stored["review_run_id"] == f"composed-{kind}"
+    if kind == "code":
+        assert stored["neighbourhood_key"] == key
+        assert set(stored["rubric_items"]) == set(review_module.HEALTH_REVIEW_ITEMS)
+    else:
+        assert stored["scope_key"] == key
+        assert [entry["plan_slug"] for entry in stored["dispositions"]] == [PLAN]
+    [row] = ledger.runs(PROJECT, root=repository)
+    assert row["promoted_by"] == "review-self"
