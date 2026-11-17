@@ -60,7 +60,7 @@ from reckon import budget as budget_module
 from reckon._backends import _human_age
 from reckon._store import write_atomically, write_json_atomically
 from reckon._timestamps import parse_utc
-from reckon.crew import plan_review, runs
+from reckon.crew import plan_review, recovery_wait, runs
 from reckon.crew.dispatch import (
     _WORKER_DONE_MANIFEST_STATUSES,
     BudgetHold,
@@ -777,7 +777,18 @@ def recovery_log_path(project: str) -> Path:
     return crew_home() / "recovery" / f"{readable or 'project'}.jsonl"
 
 
-def _lifted_holds(project: str) -> set[tuple[str, str]]:
+# What each project's recovery log has already taught the sweep: the offset the
+# last read reached, and the lifted set those lines produced. The log only grows
+# and each sweep re-derived the same answer from all of it, which on a 41 MB
+# record cost a fifth of the sweep thread in ``json.loads`` alone. The read
+# itself — the byte offset, the whole-line clamp and the rejection of a replaced
+# or shortened file — is ``recovery_wait.appended_lines``, which the stream
+# readers share; what is kept here is only the answer those lines gave.
+_LIFTED_HOLDS: dict[str, tuple[int, frozenset[tuple[str, str]]]] = {}
+_LIFTED_HOLDS_LOCK = threading.Lock()
+
+
+def _lifted_holds(project: str) -> frozenset[tuple[str, str]]:
     """The (run id, signature) pairs the recovery log already records as lifted.
 
     The sweep's append-only recovery log is the authority on what it has already
@@ -787,33 +798,52 @@ def _lifted_holds(project: str) -> set[tuple[str, str]]:
     the pointer's own ``auto_resume`` slot cannot promise — a resume's launch
     rewrites the pointer from a snapshot taken before the stamp, so the slot can
     read absent for a lift that happened.
+
+    Only the lines appended since the previous read are decoded, because a sweep
+    already holds the answer for everything before them. A log replaced or
+    shortened since the last read is read from the start: its earlier bytes are
+    no longer the file those lines came from, and the read reports a start
+    offset the recorded answer was not reached from.
     """
-    lifted: set[tuple[str, str]] = set()
-    try:
-        lines = recovery_log_path(project).read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return lifted
-    for line in lines:
-        if not line.strip():
-            continue
-        try:
-            report = json.loads(line)
-        except ValueError:
-            continue
-        if not isinstance(report, Mapping):
-            continue
-        # A dry run appends its own line and lists what it *would* resume, so a
-        # preview is not a lift and must not retire a hold the sweep never took.
-        if report.get("dry_run"):
-            continue
-        for entry in report.get("resumed") or ():
-            if not isinstance(entry, Mapping):
+    path = recovery_log_path(project)
+    key = str(path)
+    # The read advances the offset the next read starts from, so the set that
+    # offset stands for must be published by the same critical section. Split
+    # across two, two overlapping sweeps could read from an advanced offset
+    # while the stored answer still belonged to the older one: the later caller
+    # finds a start it never read from, discards the set, and publishes an
+    # offset past lines nobody counted — after which the sweep resumes a hold it
+    # already lifted.
+    with _LIFTED_HOLDS_LOCK:
+        previous = _LIFTED_HOLDS.get(key)
+        lines, offset, start = recovery_wait.appended_lines(path)
+        lifted = (
+            set(previous[1]) if previous is not None and previous[0] == start else set()
+        )
+        for line in lines:
+            if not line.strip():
                 continue
-            run_id = str(entry.get("run_id") or "")
-            signature = str(entry.get("hold") or "")
-            if run_id and signature:
-                lifted.add((run_id, signature))
-    return lifted
+            try:
+                report = json.loads(line)
+            except ValueError:
+                continue
+            if not isinstance(report, Mapping):
+                continue
+            # A dry run appends its own line and lists what it *would* resume,
+            # so a preview is not a lift and must not retire a hold the sweep
+            # never took.
+            if report.get("dry_run"):
+                continue
+            for entry in report.get("resumed") or ():
+                if not isinstance(entry, Mapping):
+                    continue
+                run_id = str(entry.get("run_id") or "")
+                signature = str(entry.get("hold") or "")
+                if run_id and signature:
+                    lifted.add((run_id, signature))
+        result = frozenset(lifted)
+        _LIFTED_HOLDS[key] = (offset, result)
+    return result
 
 
 def _refusal_observed_at(record: Mapping[str, Any]) -> datetime | None:

@@ -498,3 +498,43 @@ def test_remote_admission_holds_if_the_fleet_record_disappears_during_the_read(
     monkeypatch.setattr(socket, "gethostname", lambda: "remote-reader")
     monkeypatch.setattr(supervisor, "published_node_disk_sample", lambda: None)
     assert service.node_disk_admission_hold()["kind"] == "node-disk-unreadable"
+
+
+def test_disk_and_scheduler_samples_share_the_locked_series(tmp_path):
+    from reckon.crew import fleet_node
+
+    box = sandbox(tmp_path, extra_env=BASE)
+    reader = box.root / "stubbin" / "disk-python"
+    reader.write_text("#!/bin/bash\necho '100 60 40 200'\n")
+    reader.chmod(0o755)
+    box.env["FLEET_DISK_PYTHON"] = str(reader)
+    result = run_pass(box.env)
+    assert result.returncode == 0, result.stderr
+    node_row = sample_rows(box)[0]
+    assert node_row["source"] == "node"
+    assert node_row["node_tmp_free_bytes"] == "40"
+    assert list(node_row)[-4:] == [
+        "node_tmp_total_bytes",
+        "node_tmp_used_bytes",
+        "node_tmp_free_bytes",
+        "node_tmp_free_inodes",
+    ]
+    assert fleet_node.append_scheduler_reading(
+        box.samples()[0].parent,
+        {
+            "utc": "2000-01-01T00:00:00Z",
+            "job_id": node_row["job_id"],
+            "node": node_row["node"],
+            "source": "scheduler",
+            "scheduler_state": "CANCELLED",
+            "scheduler_reason": "None",
+            "scheduler_running": "false",
+            "scheduler_event": "end",
+        },
+    )
+    result = sample_rows(box)
+    assert len(result) == 2
+    assert result[0] == node_row
+    assert result[1]["scheduler_event"] == "end"
+    assert result[1]["node_tmp_free_bytes"] == "-"
+    assert all(None not in row for row in result)

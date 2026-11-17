@@ -1,0 +1,113 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_source": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T105549385153-a-wave-of-landings-is-one-decision/final-after-suite.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T105549385153-a-wave-of-landings-is-one-decision/baseline-suite-provenance.log"
+  },
+  "assertion_independence": "No added assertion was found tautological under the stated two-sides-move-together rule. Fixture ids and literals are compared with independently read ledger membership, persisted JSON, actual pointer existence, serialized size or observed calls. Mock-based evidence transport checks establish transport only; actual promotion and refusal are covered by the integration cases.",
+  "assertion_review": {
+    "test_a_dry_run_returns_guard_evidence_without_creating_completion_receipts": "Writing normal completion receipts during dry-run breaks the empty glob; performing promotion breaks pointer survival; omitting dry_run breaks its literal flag assertion.",
+    "test_a_held_report_still_names_the_coordinators_decision": "Filtering before consulting the hold loses the single row; forgetting hold text or replacing release by completion breaks its literal checks.",
+    "test_a_large_pretty_batch_keeps_its_reply_bounded": "Removing the batch fallback exceeds 2000 bytes; omitting a member breaks fixed expected count and stored member-set checks; omitting per-run persistence breaks file checks.",
+    "test_a_long_run_name_keeps_its_condition_and_a_working_evidence_read": "Repeating a full observe command or unbounded evidence can exceed 400; losing the gate prefix breaks the reason assertion; a broken evidence action fails the command or omits test_guard from its actual output.",
+    "test_a_missing_runs_receipt_does_not_create_a_run": "Writing a receipt under a newly created run directory breaks the second absence assertion; misclassifying a missing run breaks ok=False or the run-specific guards assertion; failing to preserve the refusal breaks independently opened record content.",
+    "test_a_nested_landing_refusal_keeps_its_condition_in_the_compact_reply": "Losing the nested refusal breaks the nonzero exit or named test_guard condition; not storing full evidence breaks receipt existence.",
+    "test_a_ready_report_is_left_to_its_existing_automatic_promoter": "Returning the old review duty breaks the empty list; deleting a pointer during this read breaks pointer existence; READY verifies this is the eligible control population.",
+    "test_a_refused_member_does_not_skip_the_other_confirmation": "Removing gate validation makes the first member successful and deletes its pointer; aborting at the first refusal leaves the valid pointer; either regression breaks the exit/ok vector and pointer assertions; skipping receipt persistence breaks file-existence checks.",
+    "test_a_single_reply_keeps_large_evidence_in_its_readable_record": "Returning 60000 characters inline breaks the byte limit; dropping the full evidence or writing the wrong record breaks an independent file read against the fixed evidence literal.",
+    "test_automatic_delivery_reuses_the_head_the_duty_already_read": "Restoring the wrapper head reread appends the run twice and breaks the exact read sequence; failing to filter the eligible delivery breaks is None.",
+    "test_complete_help_names_repeated_run_confirmation_and_full_records": "Restoring the old option/help breaks both help substrings or the independent Click option.multiple introspection.",
+    "test_escaped_condition_text_stays_inside_the_serialized_row_bound": "Counting raw characters instead of escaped JSON restores the recorded 742-character row; removing the reason prefix breaks convergence identification.",
+    "test_one_confirmation_promotes_both_runs_and_links_the_full_receipts": "Restoring last-value-wins processes only the second run, so independent ledger membership and reply run membership fail; returning the full outcome breaks the byte limit; not writing the receipt or not promoting it breaks independent file contents, recorded gate and pointer deletion checks.",
+    "test_several_runs_refuse_evidence_that_cannot_be_assigned": "Accepting one shared commit across members breaks nonzero exit, refusal wording and untouched pointer assertions.",
+    "test_the_default_batch_requests_both_promotions_without_running_them": "Executing synchronously populates calls; ignoring a repeated run breaks returned membership and independently read promotion requests; wrong request state breaks phase assertions.",
+    "test_the_drain_keeps_the_full_receipt_for_stored_click_options": "Applying the public compact projection to the internal COMMAND_REPLY sink removes record.gate or pointer_removed and breaks direct internal receipt reads.",
+    "test_the_tool_callback_returns_the_same_bounded_record_link": "Routing the tool sink past the compact adapter returns large evidence inline and breaks the byte limit; lost capture breaks ok or independently opened evidence.",
+    "test_twelve_deliveries_leave_three_bounded_decisions": "Restoring unconditional delivered duties yields twelve rather than three ids; retaining full evidence or removing JSON-aware trimming breaks the 400-character assertion; losing the failure condition, observe action or completion command breaks their literal assertions; mutating the pointer instead of projecting it breaks the stored refusal assertion.",
+    "test_two_of_three_manual_decisions_land_from_the_twelve_run_list": "Ignoring the plan manual choice breaks the REFUSED setup and visible-id assertions; dropping either repeated run breaks the returned member set or receipt pointer_removed checks; promoting automatic neighbors or the third manual report breaks untouched-pointer and remaining-row assertions; oversized output breaks both explicit bounds."
+  },
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/obligations.py:_obligations_view",
+    "reckon/crew/obligation_snapshot.py:2103",
+    "reckon/crew/obligation_snapshot.py:2180",
+    "reckon/crew/station_subscriber.py:163",
+    "reckon/crew/promotion_requests.py:_execute_command",
+    "reckon/mcp_crew_actions.py:_call_verb"
+  ],
+  "completed_at": "2026-11-17T12:56:53Z",
+  "dispatched_at": "2026-11-17T12:50:31Z",
+  "findings": [
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": "3402",
+      "severity": "blocking",
+      "text": "blocking: The compact reply and obligation contracts leave 19 added importer failures in importers-last-head.log versus importers-git-base.log; for example tests/test_no_caller_waits_on_a_promotion.py::test_wait_returns_the_synchronous_outcome still reads record.commits from the reply, while the new reply moves it behind record_path, so repair the affected importer assertions and demonstrate zero added failures before landing, as node.done_when requires."
+    }
+  ],
+  "importer_delta": {
+    "added_failure_count": 19,
+    "added_failure_ids": [
+      "tests/test_a_clean_landing_releases_its_worktree.py::test_a_clean_landing_releases_its_worktree_and_exits_zero",
+      "tests/test_a_conflicting_landing_is_repaired.py::test_conflicting_delivery_opens_repair_then_lands[manual]",
+      "tests/test_a_conflicting_landing_is_repaired.py::test_independent_functions_both_land",
+      "tests/test_a_delivered_review_reads_as_awaiting_promotion.py::test_a_promoted_delivered_review_reads_ready",
+      "tests/test_a_finished_pending_landing_retires_its_run.py::test_a_finished_pending_landing_retires_its_run",
+      "tests/test_a_finished_pending_landing_retires_its_run.py::test_a_newer_attempt_keeps_its_pointer_and_worktree",
+      "tests/test_a_finished_pending_landing_retires_its_run.py::test_a_refused_push_keeps_the_run_and_its_recovery_state",
+      "tests/test_a_finished_pending_landing_retires_its_run.py::test_an_already_removed_pointer_does_not_prevent_finishing",
+      "tests/test_a_landing_refusal_names_its_remedy.py::test_a_gate_log_without_an_exit_record_names_the_log_and_the_record",
+      "tests/test_a_merged_primary_run_keeps_its_own_commits.py::test_obligations_offer_exactly_the_runs_commits_and_merge",
+      "tests/test_a_merged_primary_run_keeps_its_own_commits.py::test_one_landing_call_records_only_the_runs_line_of_history[False]",
+      "tests/test_a_merged_primary_run_keeps_its_own_commits.py::test_one_landing_call_records_only_the_runs_line_of_history[True]",
+      "tests/test_a_plain_complete_refuses_an_unmerged_head.py::test_a_land_complete_on_an_unmerged_head_is_unaffected",
+      "tests/test_delivered_rows_say_what_is_owed.py::test_delivered_counts_and_owed_rows_share_the_classified_population",
+      "tests/test_delivered_rows_say_what_is_owed.py::test_the_owed_action_form_promotes_on_the_tool_surface",
+      "tests/test_delivered_rows_say_what_is_owed.py::test_the_owed_command_promotes_the_run_verbatim[implement]",
+      "tests/test_delivered_rows_say_what_is_owed.py::test_the_owed_command_promotes_the_run_verbatim[investigate]",
+      "tests/test_delivered_rows_say_what_is_owed.py::test_the_owed_command_promotes_the_run_verbatim[review]",
+      "tests/test_no_caller_waits_on_a_promotion.py::test_wait_returns_the_synchronous_outcome"
+    ],
+    "base_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T105549385153-a-wave-of-landings-is-one-decision/importers-git-base.log",
+    "head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T105549385153-a-wave-of-landings-is-one-decision/importers-last-head.log",
+    "note": "Separate importer arm; canonical added_failure fields above are derived strictly from the manifest baseline_suite/after_suite pair."
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Read the six commits ba811581d35e1d384bd9e4b622f37f10fc92c998 through d0d7c6d1fd1bc7f85346a0481855632a3a631c7f individually and as a base-to-head diff; they add decision filtering, batch completion, compact durable receipts and focused regression tests in four declared files.",
+    "done_when": "The source pointer's node.done_when requires help, behavioral controls and no added importer failures; final-after-suite.log records 84 passes, negative-control.log records two expected failures, but importers-last-comparison.json records 19 added failures, leaving the measure unmet.",
+    "goal": "The source pointer's node.goal asks for one bounded decision list and repeated completion; reckon/crew/obligations.py:2884 filters automatic deliveries and reckon/crew_run_commands.py:3344 processes distinct runs with existing guards.",
+    "manifest": "manifest.md records all six commits, complete gate provenance and the 19 external contract-test failures under outside_scope, honestly separating scoped green gates from the outstanding importer repairs.",
+    "write_paths": "The source pointer declares four code/test paths plus optional evidence and figure paths; the base-to-head diff changes only the four declared code/test files."
+  },
+  "justifications": {
+    "durability": "tests/test_a_wave_of_landings_is_one_decision.py:125 independently reads the committed ledger and receipt files, and its refused-member case injects failing gate evidence so removing the per-run guard would turn the expected refusal and retained pointer assertions red.",
+    "evidence": "final-after-suite.log records 84 passed and negative-control.log records two base failures, but importers-last-head.log adds 19 failure ids against importers-git-base.log, contrary to node.done_when.",
+    "fit": "reckon/crew_run_commands.py:3344 extends the existing Click callback and uses runs._write_json for receipts, while reckon/crew/obligations.py:675 retains project_run_rows projection and descriptive mechanism names.",
+    "goal_fidelity": "reckon/crew_run_commands.py:3344 retains per-run promotion checks while tests/test_a_wave_of_landings_is_one_decision.py:145 confirms two of three manually reserved reports from the twelve-run population.",
+    "reuse": "Capability searches located projection in reckon/crew/query.py:321, reply capture in reckon/crew/promotion_requests.py:469, report eligibility in reckon/crew/recovery_review_acceptance.py:1175 and tool capture in reckon/mcp_crew_actions.py:322; the additions extend their command and duty owners and call the existing projection, gate, review, hold and storage mechanisms.",
+    "scope_discipline": "The complete base-to-head diff contains only reckon/crew/obligations.py, reckon/crew_run_commands.py and the two declared test files, with each change supporting the requested behavior or its verification."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source pointer's node.goal asks for one bounded decision list and repeated completion; reckon/crew/obligations.py:2884 filters automatic deliveries and reckon/crew_run_commands.py:3344 processes distinct runs with existing guards.\nVERDICT done_when: The source pointer's node.done_when requires help, behavioral controls and no added importer failures; final-after-suite.log records 84 passes, negative-control.log records two expected failures, but importers-last-comparison.json records 19 added failures, leaving the measure unmet.\nVERDICT write_paths: The source pointer declares four code/test paths plus optional evidence and figure paths; the base-to-head diff changes only the four declared code/test files.\nVERDICT manifest: manifest.md records all six commits, complete gate provenance and the 19 external contract-test failures under outside_scope, honestly separating scoped green gates from the outstanding importer repairs.\nVERDICT diff: Read the six commits ba811581d35e1d384bd9e4b622f37f10fc92c998 through d0d7c6d1fd1bc7f85346a0481855632a3a631c7f individually and as a base-to-head diff; they add decision filtering, batch completion, compact durable receipts and focused regression tests in four declared files.\nCALL_SITES: reckon/crew/obligations.py:_obligations_view, reckon/crew/obligation_snapshot.py:2103, reckon/crew/obligation_snapshot.py:2180, reckon/crew/station_subscriber.py:163, reckon/crew/promotion_requests.py:_execute_command, reckon/mcp_crew_actions.py:_call_verb\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:3344 retains per-run promotion checks while tests/test_a_wave_of_landings_is_one_decision.py:145 confirms two of three manually reserved reports from the twelve-run population.\nSCORE evidence: 12\nJUSTIFICATION evidence: final-after-suite.log records 84 passed and negative-control.log records two base failures, but importers-last-head.log adds 19 failure ids against importers-git-base.log, contrary to node.done_when.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The complete base-to-head diff contains only reckon/crew/obligations.py, reckon/crew_run_commands.py and the two declared test files, with each change supporting the requested behavior or its verification.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_wave_of_landings_is_one_decision.py:125 independently reads the committed ledger and receipt files, and its refused-member case injects failing gate evidence so removing the per-run guard would turn the expected refusal and retained pointer assertions red.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew_run_commands.py:3344 extends the existing Click callback and uses runs._write_json for receipts, while reckon/crew/obligations.py:675 retains project_run_rows projection and descriptive mechanism names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches located projection in reckon/crew/query.py:321, reply capture in reckon/crew/promotion_requests.py:469, report eligibility in reckon/crew/recovery_review_acceptance.py:1175 and tool capture in reckon/mcp_crew_actions.py:322; the additions extend their command and duty owners and call the existing projection, gate, review, hold and storage mechanisms.\nFINDING reckon/crew_run_commands.py:3402 blocking: The compact reply and obligation contracts leave 19 added importer failures in importers-last-head.log versus importers-git-base.log; for example tests/test_no_caller_waits_on_a_promotion.py::test_wait_returns_the_synchronous_outcome still reads record.commits from the reply, while the new reply moves it behind record_path, so repair the affected importer assertions and demonstrate zero added failures before landing, as node.done_when requires.\n",
+  "review_run_id": "r-20261117T124728423775-review-of-a-wave-of-landings-is-one-decision-d0d7c6d1fd1b",
+  "reviewed_base_sha": "b5dda3fd06b6dfbad3c1eda77c8503a3d8af5fb6",
+  "reviewed_head_sha": "d0d7c6d1fd1bc7f85346a0481855632a3a631c7f",
+  "reviewed_run_id": "r-20261117T105549385153-a-wave-of-landings-is-one-decision",
+  "scores": {
+    "durability": 19,
+    "evidence": 12,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T13:03:33.552728+00:00",
+  "total": 109
+}

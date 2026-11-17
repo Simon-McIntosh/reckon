@@ -478,6 +478,94 @@ def _delivered_repair(
     return head
 
 
+def pending_repair_head(pointer: Mapping[str, Any]) -> str:
+    """The completed, gated head a promoted merge repair now owes a review of."""
+    run_id = str(pointer.get("run_id") or "")
+    if not run_id:
+        return ""
+    pending = _read(_record_path(run_id)) or {}
+    conflict = pending.get("merge_conflict") or {}
+    if not conflict:
+        return ""
+    original = str(conflict.get("head") or _cited_head(pending))
+    try:
+        return _delivered_repair(
+            pointer, original, conflict, Path(str(pointer.get("repo") or ""))
+        )
+    except runs.CrewError:
+        return ""
+
+
+def _repair_review_wait(pointer: Mapping[str, Any], head: str) -> dict[str, Any] | None:
+    """Read every review owed at the repair head through the lander's readers."""
+    from reckon.crew import queue_landing
+    from reckon.crew.recovery_review_dispatch import dispatch_review_for_run
+
+    run_id, project = str(pointer["run_id"]), str(pointer["project"])
+    tree = Path(str(pointer.get("worktree") or pointer["repo"]))
+    for tier in queue_landing._owed_review_tiers(pointer):
+        try:
+            review, stale = queue_landing._review_for_tier(
+                project, run_id, head, tree, tier
+            )
+        except (OSError, ValueError) as exc:
+            review, stale, error = None, "", str(exc)
+        else:
+            error = ""
+        added = queue_landing._review_added_failure_guard(review)
+        if (
+            not stale
+            and not added
+            and queue_landing._review_tier_is_complete(tier, review)
+        ):
+            continue
+        report = {}
+        if review is None and not error:
+            report = dispatch_review_for_run(pointer)
+        refused = review is not None or bool(error) or bool(report.get("refused"))
+        reason = error or str(report.get("reason") or "")
+        if review is not None:
+            from reckon.crew import promotion_checks, repair
+
+            findings = promotion_checks._describe_blocking_findings(
+                repair.blocking_findings(review)
+            )
+            reason = (
+                added or findings or f"the stored {tier} review is incomplete at {head}"
+            )
+        guard = f"repair {tier} review: {reason or 'awaiting review of ' + head}"
+        current = runs.read_pointer(run_id)
+        if refused:
+            queue_landing._record_attempt(
+                run_id,
+                head=head,
+                guard=guard,
+                status="refused",
+                code_stamp=queue_landing._landing_code_stamp(),
+                review_stamp=queue_landing._review_stamp(review),
+                previous=current.get("admission_landing"),
+            )
+        else:
+            queue_landing._record_awaiting_review(
+                run_id,
+                current,
+                head=head,
+                code_stamp=queue_landing._landing_code_stamp(),
+                review_stamp=queue_landing._review_stamp(review),
+                tier=tier,
+                stale_head=stale,
+                read_error=error,
+            )
+        return {
+            "run_id": run_id,
+            "session": str(pointer.get("session") or ""),
+            "head": head,
+            "status": "review-refused" if refused else "awaiting-review",
+            "guard": guard,
+        }
+    return None
+
+
 def _require_repair_gate(
     pointer: Mapping[str, Any], head: str, repository: Path, primary: str = ""
 ) -> None:
@@ -888,7 +976,12 @@ def finish_pending_landings(
         if conflict:
             try:
                 repaired = (
-                    _delivered_repair(pointer, head, conflict, repository)
+                    _delivered_repair(
+                        pointer,
+                        str(conflict.get("head") or head),
+                        conflict,
+                        repository,
+                    )
                     if pointer
                     else ""
                 )
@@ -914,6 +1007,67 @@ def finish_pending_landings(
                 results.append({"run_id": run_id, "status": "awaiting-merge-repair"})
                 continue
             head = repaired
+            if pointer.get("pending_landing_repair_attempt") != marked_identity(
+                pointer
+            ):
+
+                def mark_delivery(current, delivered=pointer):
+                    if attempt_identity(current) != attempt_identity(delivered):
+                        raise runs.CrewError("the delivered repair attempt moved")
+                    return {
+                        **current,
+                        "pending_landing_repair": True,
+                        "pending_landing_repair_attempt": marked_identity(current),
+                    }
+
+                try:
+                    pointer = runs._mutate_pointer(run_id, mark_delivery)
+                except runs.CrewError as exc:
+                    results.append(
+                        {
+                            "run_id": run_id,
+                            "status": "repair-gate-refused",
+                            "error": str(exc),
+                        }
+                    )
+                    continue
+            if _cited_head(record) != head:
+                record.update(head=head, attempts=0)
+            record["pointer"] = {**(record.get("pointer") or {}), **dict(pointer)}
+            runs._write_json(path, record)
+            from reckon.crew import queue_landing
+
+            conflicts = queue_landing._merge_conflicts(pointer, head)
+            if conflicts:
+                from reckon.crew.recovery_repair_dispatch import dispatch_merge_repair
+
+                primary = queue_landing._primary_revision(pointer)
+                repair = dispatch_merge_repair(
+                    pointer, head=head, primary=primary, paths=conflicts, promoted=True
+                )
+                queue_landing._record_attempt(
+                    run_id,
+                    head=head,
+                    guard="merge conflict: " + ", ".join(conflicts),
+                    status="refused",
+                    remedy=str(repair.get("advice") or ""),
+                    previous=pointer.get("admission_landing"),
+                )
+                results.append(
+                    {
+                        "run_id": run_id,
+                        "status": "merge-conflict",
+                        "head": head,
+                        "paths": conflicts,
+                        "main_revision": primary,
+                        "repair": repair,
+                    }
+                )
+                continue
+            waiting = _repair_review_wait(pointer, head)
+            if waiting:
+                results.append(waiting)
+                continue
 
         replay_pointer = record.get("pointer") or {}
 

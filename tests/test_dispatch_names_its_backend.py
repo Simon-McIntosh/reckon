@@ -157,7 +157,7 @@ def _invoke(
 
 
 def _payload(result) -> dict:
-    """Read the documented JSON response from stdout.
+    """Read the documented JSON response from stdout, where the command puts it.
 
     A launched dispatch writes its run id to stderr as a notice, so the mixed
     ``output`` stream carries that line first: since Click 8.2
