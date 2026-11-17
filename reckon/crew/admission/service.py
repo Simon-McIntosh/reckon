@@ -287,8 +287,8 @@ def _read_tally():
                 with tally.reading(__label):
                     return __original(*arguments, **keywords)
 
-        # ``original`` and ``label`` are captured at definition, so each wrapper
-        # measures the reader it names rather than whichever the loop holds last.
+            # ``original`` and ``label`` are captured at definition, so each wrapper
+            # measures the reader it names rather than whichever the loop holds last.
             functools.update_wrapper(timed, original)
             setattr(module, attribute, timed)
             tally._patched.append((module, attribute, original))
@@ -299,9 +299,7 @@ def _read_tally():
         tally._patched.clear()
 
 
-def _record_stage_reads(
-    result: dict[str, Any], stage: str, tally: _ReadTally
-) -> None:
+def _record_stage_reads(result: dict[str, Any], stage: str, tally: _ReadTally) -> None:
     """Attach one stage's reads to the pass result.
 
     The receipt reports a stage by its seconds; the entries here say what those

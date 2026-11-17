@@ -35,6 +35,10 @@ REQUESTS_PER_PLAN = 1
 #: Every plan whose request waits on the pending upstream section; the rest are queued, so the pass
 #: has a launch to decide and writes its receipt from it.
 PLANS_WAITING = 80
+#: Upstream plans one waiting request's section depends on. A wait on several
+#: refs reads several plans, so the reading a waiting request costs is the
+#: several-plan one and not a single cached document.
+UPSTREAMS = 1
 #: The whole live population the pass is measured at.
 LIVE_POINTERS = 240
 
@@ -51,16 +55,17 @@ def _plan(slug: str, waiting: bool = True) -> str:
         {"s1": "implementable", "s2": "implementable"}, separators=(",", ":")
     ).replace('"', "&quot;")
     depends_on = (
-        json.dumps({"s1": ["upstream#s2"]}, separators=(",", ":")).replace(
-            '"', "&quot;"
-        )
+        json.dumps(
+            {"s1": [f"upstream-{number}#s2" for number in range(UPSTREAMS)]},
+            separators=(",", ":"),
+        ).replace('"', "&quot;")
         if waiting
         else "{}"
     )
     paragraphs = "\n".join(
         f"<p>Section one of {slug} reads the upstream work {index} times, and the "
         f"pass that resolves its wait reads this plan to learn it.</p>"
-        for index in range(700)
+        for index in range(3000)
     )
     return "\n".join(
         [
@@ -103,16 +108,17 @@ def populated(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         },
         separators=(",", ":"),
     ).replace('"', "&quot;")
-    (plans / "upstream.html").write_text(
-        "<!doctype html>\n"
-        f'<meta name="docs-project" content="{PROJECT}">\n'
-        '<meta name="reckon-type" content="plan">\n'
-        '<meta name="plan-slug" content="upstream">\n'
-        '<meta name="plan-status" content="active">\n'
-        f'<meta name="plan-section-declarations" content="{upstream}">\n'
-        '<h2 id="s2">Upstream</h2>\n',
-        encoding="utf-8",
-    )
+    for number in range(UPSTREAMS):
+        (plans / f"upstream-{number}.html").write_text(
+            "<!doctype html>\n"
+            f'<meta name="docs-project" content="{PROJECT}">\n'
+            '<meta name="reckon-type" content="plan">\n'
+            f'<meta name="plan-slug" content="upstream-{number}">\n'
+            '<meta name="plan-status" content="active">\n'
+            f'<meta name="plan-section-declarations" content="{upstream}">\n'
+            '<h2 id="s2">Upstream</h2>\n',
+            encoding="utf-8",
+        )
     fixtures._git(repository, "add", "--", "docs")
     fixtures._git(repository, "commit", "-q", "-m", "chore: seed measured plans")
     _populate(repository)
@@ -135,8 +141,9 @@ def _populate(repository: Path) -> None:
             pointer["dispatch_options"]["plan_slug"] = f"plan-{slug}"
             if slug < PLANS_WAITING:
                 pointer["phase"] = queue_admission.AWAITING_UPSTREAM_PHASE
-                pointer["waits"] = [f"plan-{slug}#s2"]
-                pointer["wait_projects"] = {f"plan-{slug}#s2": PROJECT}
+                refs = [f"upstream-{number}#s2" for number in range(UPSTREAMS)]
+                pointer["waits"] = refs
+                pointer["wait_projects"] = dict.fromkeys(refs, PROJECT)
             queue_admission._write_pointer(run_id, pointer)
     written = PLANS * REQUESTS_PER_PLAN
     for index in range(LIVE_POINTERS - written):
