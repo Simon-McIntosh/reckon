@@ -1352,6 +1352,8 @@ def _first_turn_without_action(record: Mapping[str, Any]) -> tuple[str, str] | N
     if _FIRST_TURN_ERROR_RE.match(text):
         return ("error", text)
     return ("premature", text)
+
+
 def _stuck_verdict_for(record: Mapping[str, Any]) -> dict[str, Any] | None:
     """Ask the drain view's stuck verdict about one pointer.
 
@@ -1920,6 +1922,18 @@ def classify_pointer(
         )
         terminal_age_seconds = max(0, int(moment - terminal_seconds))
 
+    # Observation and recovery share the same orientation verdict. Work in
+    # motion is still classified from liveness before any delivered outcome.
+    orientation_record = dict(record)
+    if manifest_status == "complete" and not deferred_outcome:
+        from reckon.crew.dispatch_sessions import _apply_orientation_check
+
+        if memo_fresh and isinstance(memo.get("orientation_check"), Mapping):
+            orientation_record["orientation_check"] = memo["orientation_check"]
+        _apply_orientation_check(orientation_record, None, reported=manifest_data)
+        memo["orientation_check"] = orientation_record.get("orientation_check")
+    orientation_check = orientation_record.get("orientation_check")
+
     # Classification order: the process is consulted before the manifest
     # reading. A worker whose process is alive is classified from that life and
     # never as unreadable, so a strictness added for manifests at rest cannot
@@ -2199,6 +2213,16 @@ def classify_pointer(
         classification = "running"
         detail = "the process is alive"
         action = f"reckon crew observe --run {run_id}"
+    elif (
+        manifest_status == "complete"
+        and isinstance(orientation_check, Mapping)
+        and orientation_check.get("matched") is False
+    ):
+        classification = "blocked"
+        detail = str(
+            orientation_check.get("detail") or "orientation could not be verified"
+        )
+        action = f"inspect the worktree at {record.get('worktree')} before promoting run {run_id}"
     elif manifest_status == "complete":
         if _is_measurement_run(record):
             classification = "promotable"
@@ -3211,6 +3235,7 @@ def classify_pointer(
         # watcher still needs to recognise a fresh completion written by the
         # resumed attempt it is waiting for.
         "manifest_reported_status": manifest_reported_status or None,
+        "orientation_check": orientation_check,
         "manifest_derived": manifest_derived,
         "manifest_commits": manifest_commits,
         # Committed work past the recorded base, read from git on the abandoned
