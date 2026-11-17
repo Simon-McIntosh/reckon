@@ -190,7 +190,17 @@ def test_actual_single_pass_finishes_and_keeps_source_unchanged(
     assert isinstance(result, dict)
     assert profile.inventory(source) == receipt["source_before"]
     if command == "station":
-        assert (destination / ".profile-runtime" / "station.sqlite3").exists()
+        from reckon.crew import obligation_snapshot, station_store
+
+        with station_store.StationStore(destination / ".profile-runtime") as store:
+            finished = store.station_value(
+                obligation_snapshot.STATION_TICK_FINISHED_AT_KEY
+            )
+            assert finished
+            completed = json.loads(
+                store.station_value(obligation_snapshot.STATION_LAST_TICK_KEY)
+            )
+            assert completed["finished_at"] == finished
     else:
         assert admission is not None
         assert list((destination / "crew" / "locks").iterdir())
@@ -348,4 +358,32 @@ sys.exit(record['exit_status'])
     assert result.returncode == 0, result.stderr + result.stdout
     record = json.loads(result.stdout)
     assert record["result"]["bytes"] == 32 * 1024 * 1024
+    assert profile.inventory(source) == receipt["source_before"]
+
+
+def test_a_refused_station_tick_propagates_and_leaves_no_finished_marker(
+    copied, monkeypatch
+):
+    from reckon.crew import obligation_snapshot, station, station_store
+
+    source, destination, receipt = copied
+    monkeypatch.setenv("RECKON_HOME", str(destination))
+    monkeypatch.setenv("RECKON_MOUNTS_PATH", str(destination / "mounts.json"))
+    monkeypatch.setenv("RECKON_RUN_STORE", str(destination / "crew" / "run_store.db"))
+    monkeypatch.setenv("XDG_RUNTIME_DIR", str(destination / ".profile-runtime"))
+
+    def refused_stage(self, *args, **kwargs):
+        raise PermissionError("controlled refused stage write")
+
+    monkeypatch.setattr(station.Station, "_enter", refused_stage)
+    with pytest.raises(PermissionError, match="controlled refused stage write"):
+        profile._pass(
+            "station", home=destination, batch=None, entries=1, repository=ROOT
+        )
+    with station_store.StationStore(destination / ".profile-runtime") as store:
+        assert (
+            store.station_value(obligation_snapshot.STATION_TICK_FINISHED_AT_KEY)
+            is None
+        )
+    assert station.station_lease(destination / ".profile-runtime").holder() is None
     assert profile.inventory(source) == receipt["source_before"]
