@@ -4,14 +4,16 @@ from __future__ import annotations
 
 import importlib
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
 
-from reckon import cli, ledger
+from reckon import _plan_html, cli, ledger
 from reckon.crew import runs
 from tests import test_delivered_rows_say_what_is_owed as delivery
+from tests import test_review_promotion_waits_for_its_record as review_delivery
 from tests.helpers.git import git
 from tests.test_review_promotion_waits_for_its_record import (
     repository as review_repository,
@@ -138,6 +140,83 @@ def test_one_confirmation_promotes_both_runs_and_links_the_full_receipts(
     } == set(names)
 
 
+def test_two_of_three_manual_decisions_land_from_the_twelve_run_list(
+    repository, tmp_path
+):
+    from reckon.crew import recovery_review_acceptance as acceptance
+
+    automatic = [
+        _deliver(repository, tmp_path, f"r-automatic-{index}", implementation=True)
+        for index in range(9)
+    ]
+    source = repository / "docs" / "plans" / f"{delivery.PLAN}.html"
+    state = _plan_html.read_state(source.read_text())
+    state.update(
+        slug="confirm-reports",
+        decisions={
+            "landing": {
+                "choice": "manual",
+                "rationale": "Confirm the delivered reports.",
+            },
+        },
+    )
+    reserved = source.with_name("confirm-reports.html")
+    reserved.write_text(_plan_html.write_state(source.read_text(), state))
+    git(repository, "add", str(reserved.relative_to(repository)))
+    git(
+        repository,
+        "commit",
+        "-qm",
+        "test: reserve report publication",
+        "-m",
+        "Leave three reports for explicit confirmation.",
+    )
+    names = [f"r-confirm-report-{index}" for index in range(3)]
+    for name in names:
+        subject = name + "-subject"
+        review_delivery._write_pointer(repository, tmp_path, name, subject, pid=None)
+        review_delivery._store_record(name, subject)
+        review_delivery._write_exit_record(name)
+        pointer = runs.read_pointer(name)
+        pointer.update(session=delivery.SESSION, phase="blocked")
+        pointer["node"]["plan"] = "confirm-reports"
+        runs._write_json(runs.pointer_path(name), pointer)
+        assert (
+            acceptance.review_self_state(pointer)[0] == acceptance.REVIEW_SELF_REFUSED
+        )
+    rows = obligations.obligations(delivery.PROJECT, delivery.SESSION)["obligations"]
+    assert {row["run_id"] for row in rows} == set(names)
+    assert all(len(json.dumps(row)) <= 400 for row in rows)
+    response = CliRunner().invoke(
+        cli.main,
+        [
+            "crew",
+            "complete",
+            "--gate",
+            "not-run",
+            "--wait",
+            "--run",
+            names[0],
+            "--run",
+            names[1],
+        ],
+    )
+    assert response.exit_code == 0, response.output
+    assert len(response.output.encode()) < 2000
+    receipts = json.loads(response.output)["runs"]
+    assert {row["run_id"] for row in receipts} == set(names[:2])
+    for receipt in receipts:
+        assert (
+            json.loads(Path(receipt["record_path"]).read_text())["pointer_removed"]
+            is True
+        )
+    assert all(runs.pointer_path(pointer["run_id"]).exists() for pointer in automatic)
+    remaining = obligations.obligations(delivery.PROJECT, delivery.SESSION)[
+        "obligations"
+    ]
+    assert [row["run_id"] for row in remaining] == names[2:]
+
+
 def test_a_refused_member_does_not_skip_the_other_confirmation(repository, tmp_path):
     names = ("r-refused-delivery", "r-valid-delivery")
     for name in names:
@@ -212,6 +291,34 @@ def test_a_ready_report_is_left_to_its_existing_automatic_promoter(
     view = obligations.obligations(delivery.PROJECT, delivery.SESSION)
     assert view["obligations"] == []
     assert runs.pointer_path(pointer["run_id"]).exists()
+
+
+def test_automatic_delivery_reuses_the_head_the_duty_already_read(
+    repository, tmp_path, monkeypatch
+):
+    from reckon.crew import recovery
+
+    pointer = _deliver(repository, tmp_path, "r-head-read", implementation=True)
+    row = recovery.classify_pointer(pointer)
+    actual = recovery._review_head_and_tree
+    reads = []
+
+    def resolve(record):
+        reads.append(record["run_id"])
+        return actual(record)
+
+    monkeypatch.setattr(recovery, "_review_head_and_tree", resolve)
+    assert (
+        obligations._review_duty_item(
+            delivery.PROJECT,
+            row,
+            pointer,
+            now=datetime.now(UTC),
+            grace=900,
+        )
+        is None
+    )
+    assert reads == [pointer["run_id"]]
 
 
 def test_a_held_report_still_names_the_coordinators_decision(repository, tmp_path):

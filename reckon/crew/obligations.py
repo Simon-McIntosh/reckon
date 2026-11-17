@@ -2894,6 +2894,7 @@ def _review_duty_item(
     placements: Mapping[str, Mapping[str, int]] | None = None,
 ) -> dict[str, Any] | None:
     """Leave automatic deliveries to their promoter and show its refusals."""
+    resolution: dict[str, Any] = {}
     item = _review_duty_detail(
         project,
         row,
@@ -2902,15 +2903,19 @@ def _review_duty_item(
         grace=grace,
         live_pointers=live_pointers,
         placements=placements,
+        resolution=resolution,
     )
     if item is None or pointer is None:
         return item
     from reckon.crew import recovery_review_acceptance as acceptance
     from reckon.crew import review_landing
-    from reckon.crew.resume import hold_reason
+    from reckon.crew.resume import hold_reason, station_hold_reason
 
-    head, tree = recovery._review_head_and_tree(pointer)
-    held = hold_reason(pointer, head)
+    held = (
+        hold_reason(pointer, str(resolution["head"]))
+        if "head" in resolution
+        else station_hold_reason(pointer)
+    )
     if held:
         item["kind"] = "run-held"
         item["reason"] = held
@@ -2924,6 +2929,7 @@ def _review_duty_item(
             return None
         item["reason"] = reason
     elif item["kind"] in {"review-ready", "promotable-stale"}:
+        head, tree = str(resolution["head"]), resolution["tree"]
         try:
             reason = review_landing.manual_landing_reason(pointer)
         except (OSError, ValueError, _store.CorruptEnvelopeError) as exc:
@@ -2991,6 +2997,7 @@ def _review_duty_detail(
     grace: int,
     live_pointers: Sequence[Mapping[str, Any]] | None = None,
     placements: Mapping[str, Mapping[str, int]] | None = None,
+    resolution: dict[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     """One review duty, keyed to the review of the run's current worktree head.
 
@@ -3103,6 +3110,8 @@ def _review_duty_detail(
         return item
 
     resumed_head, _tree = recovery._review_head_and_tree(pointer)
+    if resolution is not None:
+        resolution.update(head=resumed_head, tree=_tree)
     if supersedes_head(pointer, resumed_head):
         return None
     landing = pointer.get("admission_landing")
