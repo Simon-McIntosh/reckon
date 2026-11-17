@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import json
 import os
 import shlex
@@ -158,6 +159,79 @@ fi
         _finish(process, log)
 
 
+def _session_process_pids(directory):
+    """Read role-labelled stand-ins from live process command lines."""
+    expected = {
+        f"fleet-{role}:{directory}".encode(): role for role in ("descendant", "step")
+    }
+    for _ in range(50):
+        observed = {}
+        for process in Path("/proc").iterdir():
+            if not process.name.isdecimal():
+                continue
+            try:
+                command = (process / "cmdline").read_bytes().split(b"\0", 1)[0]
+            except OSError:
+                continue
+            role = expected.get(command)
+            if role is not None:
+                assert role not in observed, f"multiple live stand-ins for {role}"
+                observed[role] = int(process.name)
+        if set(observed) == {"descendant", "step"}:
+            return observed
+        time.sleep(0.1)
+    raise AssertionError(f"missing live stand-ins: {observed}")
+
+
+def test_rehearsal_reads_processes_instead_of_a_stale_ready_receipt(tmp_path):
+    def stand_in(role):
+        process = subprocess.Popen(
+            [
+                "bash",
+                "-c",
+                'exec -a "$1" sleep 400',
+                "stand-in",
+                f"fleet-{role}:{tmp_path}",
+            ],
+            start_new_session=True,
+        )
+        _eventually(
+            lambda: (
+                Path(f"/proc/{process.pid}/cmdline")
+                .read_bytes()
+                .startswith(f"fleet-{role}:".encode())
+            )
+        )
+        return process
+
+    original = stand_in("descendant")
+    original.terminate()
+    original.wait(timeout=5)
+    descendant = stand_in("descendant")
+    step = stand_in("step")
+    ready = {"supervisor": 0, "descendant": original.pid, "step": step.pid}
+    (tmp_path / "ready.json").write_text(json.dumps(ready))
+    log = (tmp_path / "supervisor.log").open("w")
+    supervisor = subprocess.Popen(
+        [sys.executable, "-c", REHEARSAL_SUPERVISOR],
+        env=dict(os.environ, REHEARSAL_DIRECTORY=str(tmp_path)),
+        stdout=log,
+        stderr=log,
+        start_new_session=True,
+    )
+    try:
+        current = _eventually(lambda: _read_json(tmp_path / "current.json"))
+        assert current["descendant"] == descendant.pid
+        assert current["descendant"] != ready["descendant"]
+        assert current["step"] == step.pid
+        assert _read_json(tmp_path / "ready.json") == ready
+    finally:
+        _finish(supervisor, log)
+        for process in (descendant, step):
+            process.terminate()
+            process.wait(timeout=5)
+
+
 @pytest.mark.timeout(550)
 @pytest.mark.skipif(
     os.environ.get("RECKON_FLEET_REHEARSAL") != "1",
@@ -275,6 +349,15 @@ def test_sessions_survive_a_killed_supervisor_and_a_broken_interpreter(tmp_path)
             assert "State=RUNNING" in receipt["thirty_second_steps"], receipt
             assert len(receipt["starts"]) >= 2, receipt
             second = _read_json(work / "current.json")
+            receipt["after_restart"] = second
+            receipt["observed_session_pids"] = _read_json(
+                work / "observed-session-pids.json"
+            )
+            receipt_path.write_text(json.dumps(receipt, indent=2))
+            assert receipt["observed_session_pids"] == {
+                name: first[name] for name in ("descendant", "step")
+            }
+            assert second["supervisor"] != first["supervisor"]
             assert second["descendant"] == first["descendant"]
             assert second["step"] == first["step"]
             assert float(receipt["starts"][1]) - float(receipt["starts"][0]) < 10
@@ -324,7 +407,16 @@ def _read_json(path):
         return None
 
 
-REHEARSAL_SUPERVISOR = r'''
+SESSION_PROBE_SOURCE = "from pathlib import Path\nimport time\n" + inspect.getsource(
+    _session_process_pids
+)
+
+REHEARSAL_SUPERVISOR = (
+    SESSION_PROBE_SOURCE
+    + "SESSION_PROBE_SOURCE = "
+    + repr(SESSION_PROBE_SOURCE)
+    + "\n"
+    + r'''
 import json, os, signal, subprocess, time
 from pathlib import Path
 work = Path(os.environ["REHEARSAL_DIRECTORY"])
@@ -333,16 +425,16 @@ with (work / "starts").open("a") as log:
 (work / "lifetime").write_text(os.environ.get("FLEET_LIFETIME_DIRECTORY", ""))
 ready = work / "ready.json"
 if not ready.exists():
-    descendant = subprocess.Popen(["sleep", "400"], start_new_session=True)
-    step = subprocess.Popen(["/usr/bin/srun", "--overlap", "--cpu-bind=none", "--ntasks=1", "--cpus-per-task=1", "--mem=256M", "bash", "-c", 'echo "$BASHPID" > "$REHEARSAL_DIRECTORY/step.pid"; exec sleep 400'], start_new_session=True)
+    descendant = subprocess.Popen(["bash", "-c", 'exec -a "$1" sleep 400', "stand-in", f"fleet-descendant:{work}"], start_new_session=True)
+    step = subprocess.Popen(["/usr/bin/srun", "--overlap", "--cpu-bind=none", "--ntasks=1", "--cpus-per-task=1", "--mem=256M", "bash", "-c", 'echo "$BASHPID" > "$REHEARSAL_DIRECTORY/step.pid"; exec -a "fleet-step:$REHEARSAL_DIRECTORY" sleep 400'], start_new_session=True)
     deadline = time.monotonic() + 30
     while not (work / "step.pid").exists():
         assert time.monotonic() < deadline
         time.sleep(.1)
-    data = {"supervisor": os.getpid(), "descendant": descendant.pid, "step": int((work / "step.pid").read_text())}
+    data = {"supervisor": os.getpid(), **_session_process_pids(work)}
     ready.write_text(json.dumps(data))
     monitor = work / "monitor.py"
-    monitor.write_text(r"""
+    monitor.write_text(SESSION_PROBE_SOURCE + r"""
 import json, os, signal, time
 from pathlib import Path
 work = Path(os.environ['REHEARSAL_DIRECTORY'])
@@ -354,6 +446,7 @@ time.sleep(29)
 def alive(pid):
     try: os.kill(pid, 0); return Path(f"/proc/{pid}/stat").read_text().split(") ", 1)[1][0] != "Z"
     except ProcessLookupError: return False
+(work / 'observed-session-pids.json').write_text(json.dumps(_session_process_pids(work)))
 (work / 'survivors.json').write_text(json.dumps({name: alive(first[name]) for name in ('descendant', 'step')}))
 while not (work / 'break').exists(): time.sleep(.1)
 current = json.loads((work / 'current.json').read_text())
@@ -363,8 +456,8 @@ Path(os.environ['FLEET_LIFETIME_DIRECTORY'], 'stop').touch()
 """)
     subprocess.Popen([os.environ['REHEARSAL_MONITOR_PYTHON'], str(monitor)], start_new_session=True)
 else:
-    data = json.loads(ready.read_text())
-data['supervisor'] = os.getpid()
+    data = {"supervisor": os.getpid(), **_session_process_pids(work)}
 (work / "current.json").write_text(json.dumps(data))
 while True: time.sleep(1)
 '''
+)
