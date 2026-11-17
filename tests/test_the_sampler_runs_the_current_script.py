@@ -47,12 +47,14 @@ def _sampler_events(path):
     ]
 
 
-def _handover_counts(rows, events, first, replacement):
+def _handover_counts(rows, events, first, replacement, earlier_count):
     """Measure delivery against slots emitted by the samplers' shared kernel clock."""
     before = [row for row in rows if int(row["sampler_pid"]) == first]
     after = [row for row in rows if int(row["sampler_pid"]) == replacement]
     assert before and after, "both sampler generations must publish a row"
     assert rows == before + after, "sampler generations must not interleave"
+    delivery_rows = len(before) - earlier_count + 1
+    assert 1 <= delivery_rows <= 2, "first replacement row exceeds two series samples"
     stop_slots = [slot for verb, pid, slot in events if (verb, pid) == ("stop", first)]
     assert len(stop_slots) == 1, "the previous sampler must emit its stop slot"
     first_slot = int(after[0]["slot"])
@@ -66,16 +68,17 @@ def _handover_counts(rows, events, first, replacement):
     return {
         "rows_before": len(before),
         "rows_after": len(after),
+        "delivery_rows": delivery_rows,
         "elapsed_slots": elapsed_slots,
         "missed_slots": missing,
     }
 
 
-def _record_handover(directory, rows, events, first, replacement):
-    record = {"rows": rows, "events": events}
+def _record_handover(directory, rows, events, first, replacement, earlier):
+    record = {"rows": rows, "events": events, "earlier_rows": earlier}
     path = directory / "handover-measurement.json"
     path.write_text(json.dumps(record))
-    counts = _handover_counts(rows, events, first, replacement)
+    counts = _handover_counts(rows, events, first, replacement, len(earlier))
     path.write_text(json.dumps({"counts": counts, **record}))
     return counts
 
@@ -170,7 +173,9 @@ def test_reexecution_replaces_the_script_and_keeps_earlier_samples(
         assert replacement != first
         assert rows[: len(earlier)] == [dict(row, added="-") for row in earlier]
         recorded_events = _sampler_events(events)
-        counts = _record_handover(tmp_path, rows, recorded_events, first, replacement)
+        counts = _record_handover(
+            tmp_path, rows, recorded_events, first, replacement, earlier
+        )
         active = set()
         for verb, pid, _ in recorded_events:
             if verb == "start":
@@ -371,7 +376,9 @@ def test_a_manual_symlink_sampler_in_a_shared_group_is_replaced(tmp_path):
         series_rows = _rows(tmp_path / "series.tsv")
         assert series_rows[: len(earlier)] == [dict(row, added="-") for row in earlier]
         events = _sampler_events(tmp_path / "events")
-        counts = _record_handover(tmp_path, series_rows, events, old.pid, replacement)
+        counts = _record_handover(
+            tmp_path, series_rows, events, old.pid, replacement, earlier
+        )
         assert old.wait(timeout=HANG_SECONDS) == 0
         assert survivor.poll() is None, (
             "replacement signalled a peer in the same process group"
@@ -430,15 +437,18 @@ def test_handover_counts_accept_two_slots_and_two_missing_samples():
         {"sampler_pid": "22", "slot": "10"},
     ]
     events = [("start", 11, 6), ("stop", 11, 8), ("start", 22, 9)]
-    assert _handover_counts(rows, events, 11, 22) == {
+    assert _handover_counts(rows, events, 11, 22, 1) == {
         "rows_before": 2,
         "rows_after": 1,
+        "delivery_rows": 2,
         "elapsed_slots": 2,
         "missed_slots": [8, 9],
     }
 
 
-@pytest.mark.parametrize("violation", ["late_replacement", "missing_samples"])
+@pytest.mark.parametrize(
+    "violation", ["late_replacement", "missing_samples", "late_series"]
+)
 def test_handover_counts_refuse_excess_slots(violation):
     rows = [
         {"sampler_pid": "11", "slot": "6" if violation == "missing_samples" else "7"},
@@ -447,11 +457,13 @@ def test_handover_counts_refuse_excess_slots(violation):
             "slot": "11" if violation == "late_replacement" else "10",
         },
     ]
+    if violation == "late_series":
+        rows[1:1] = [{"sampler_pid": "11", "slot": "8"}] * 2
     events = [("start", 11, 6), ("stop", 11, 8), ("start", 22, 9)]
-    message = (
-        "first replacement sample exceeds two sampling slots"
-        if violation == "late_replacement"
-        else "handover missed more than two sampling slots"
-    )
+    message = {
+        "late_replacement": "first replacement sample exceeds two sampling slots",
+        "missing_samples": "handover missed more than two sampling slots",
+        "late_series": "first replacement row exceeds two series samples",
+    }[violation]
     with pytest.raises(AssertionError, match=message):
-        _handover_counts(rows, events, 11, 22)
+        _handover_counts(rows, events, 11, 22, 1)
