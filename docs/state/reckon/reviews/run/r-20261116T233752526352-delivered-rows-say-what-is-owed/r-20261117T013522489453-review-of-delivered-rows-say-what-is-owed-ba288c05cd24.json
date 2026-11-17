@@ -1,0 +1,99 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "failure_condition": "Restore the reason-first clause or omit/truncate next_action: the full fixed REMEDY no longer occurs in rendered output.",
+      "lines": "425"
+    },
+    {
+      "failure_condition": "Append the command without removing its existing suffix: the full REMEDY occurs twice.",
+      "lines": "426"
+    },
+    {
+      "failure_condition": "Discard the explanation, or consume its room at width 208: the independently fixed PlanReviewMissingError class is lost.",
+      "lines": "428"
+    },
+    {
+      "failure_condition": "Omit or misformat the promotion counter: the expected formatted numeric cell disappears; supplied values test serialization, not count derivation.",
+      "lines": "429"
+    },
+    {
+      "failure_condition": "Omit or misformat the oldest position: the independently specified @ cell and alignment disappear.",
+      "lines": "431"
+    },
+    {
+      "failure_condition": "Bypass _clause_line truncation or append text after width allocation: the rendered line exceeds the chosen width.",
+      "lines": "432"
+    },
+    {
+      "failure_condition": "Mutate the input refusal field while reordering the display: the saved pre-render value differs afterward.",
+      "lines": "433"
+    },
+    {
+      "failure_condition": "The real PaneRowPath fixture changes refusal state away from queued: the fixed state expectation fails; this supplements the visibility guard rather than proving it.",
+      "lines": "434"
+    }
+  ],
+  "assertion_independence": "REMEDY and counters are supplied fixture inputs whose display is the behavior under test; restoring the reason-first renderer loses REMEDY and fails its output assertion, so these are not assertions that remain true under the targeted regression. The saved clause equality separately protects against input mutation.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/ticker.py:Ticker.render",
+    "reckon/crew/ticker.py:PaneRowPath.feed",
+    "reckon/crew/recovery_watch.py:format_watch_transition"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-17T01:40:10Z",
+  "findings": [],
+  "gate_evidence": {
+    "affected_importer": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233752526352-delivered-rows-say-what-is-owed/repair-importer-after.log",
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233752526352-delivered-rows-say-what-is-owed/repair-after-suite.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233752526352-delivered-rows-say-what-is-owed/repair-original-baseline.log",
+    "baseline_summary": "58 passed in 33.78s",
+    "head_summary": "74 passed in 48.43s",
+    "importer_summary": "9 passed in 0.30s",
+    "negative_control": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233752526352-delivered-rows-say-what-is-owed/repair-negative-control.log",
+    "negative_summary": "1 failed in 0.30s",
+    "repair_base_summary": "70 passed in 41.37s",
+    "repair_baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233752526352-delivered-rows-say-what-is-owed/repair-baseline-suite.log",
+    "reproduction": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233752526352-delivered-rows-say-what-is-owed/repair-reproduction.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/ticker.py:Ticker.render, reckon/crew/ticker.py:PaneRowPath.feed, reckon/crew/recovery_watch.py:format_watch_transition",
+    "diff": "Read commit ba288c05cd24494e28107c87f63729e1074ee349 against parent 86e1f2a6a3c2c099de307c58f7e985ff5539da58; 13 production lines and 33 test lines preserve the command and add four width/counter cases.",
+    "done_when": "Read resume-2-advice.txt and repair gate logs; the exact three-file repair command passes 70 tests at the repair base and 74 at the head, and reversing the answering commit restores the named importer failure.",
+    "goal": "Read prompt.txt and resume-2-advice.txt:5-9 against live plan s9; ticker.py:3790-3806 answers the sole repair finding by putting the actionable command before the refusal explanation.",
+    "manifest": "Read manifest.md and the named receipts; acted f3fe65e68a7 cites the answering commit, original and repair baseline arms are separately recorded, and after_suite reconciles with the committed head log.",
+    "write_paths": "Read manifest.md orientation_write_paths and resume-2-advice.txt; the one-commit delta changes only reckon/crew/ticker.py and tests/test_delivered_rows_say_what_is_owed.py, both expressly granted."
+  },
+  "justifications": {
+    "durability": "tests/test_delivered_rows_say_what_is_owed.py:425-434 independently guards full command visibility, uniqueness, diagnostic retention, counter formatting, width, input immutability and queued state; restoring the old clause order truncates the fixed fixture command and fails line 425.",
+    "evidence": "repair-reproduction.log and repair-negative-control.log each record the named importer failing with EXIT=1, while repair-after-suite.log records 74 passed and repair-importer-after.log records 9 passed at the reviewed head.",
+    "fit": "reckon/crew/ticker.py:3790-3806 extends the existing refusal renderer with the surrounding lazy-import and string-composition idioms and introduces no forbidden source name or comment.",
+    "goal_fidelity": "reckon/crew/ticker.py:3790-3806 prints the classifier-provided remedy first and removes only the repeated refusal prefix, answering the lost-command finding.",
+    "reuse": "Capability searches for refusal composition, remedy and next_action found ticker.py:623 queued_refusal and recovery_classification.py:147-152 as existing owners; the change extends Ticker._refusal_line, reuses their prefixes and _clause_line, and the new test reuses the existing refusal fixture.",
+    "scope_discipline": "The sole commit changes only reckon/crew/ticker.py and tests/test_delivered_rows_say_what_is_owed.py as authorized in resume-2-advice.txt, with no unrelated source or plan edits."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read prompt.txt and resume-2-advice.txt:5-9 against live plan s9; ticker.py:3790-3806 answers the sole repair finding by putting the actionable command before the refusal explanation.\nVERDICT done_when: Read resume-2-advice.txt and repair gate logs; the exact three-file repair command passes 70 tests at the repair base and 74 at the head, and reversing the answering commit restores the named importer failure.\nVERDICT write_paths: Read manifest.md orientation_write_paths and resume-2-advice.txt; the one-commit delta changes only reckon/crew/ticker.py and tests/test_delivered_rows_say_what_is_owed.py, both expressly granted.\nVERDICT manifest: Read manifest.md and the named receipts; acted f3fe65e68a7 cites the answering commit, original and repair baseline arms are separately recorded, and after_suite reconciles with the committed head log.\nVERDICT diff: Read commit ba288c05cd24494e28107c87f63729e1074ee349 against parent 86e1f2a6a3c2c099de307c58f7e985ff5539da58; 13 production lines and 33 test lines preserve the command and add four width/counter cases.\nCALL_SITES: reckon/crew/ticker.py:Ticker.render, reckon/crew/ticker.py:PaneRowPath.feed, reckon/crew/recovery_watch.py:format_watch_transition\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:3790-3806 prints the classifier-provided remedy first and removes only the repeated refusal prefix, answering the lost-command finding.\nSCORE evidence: 20\nJUSTIFICATION evidence: repair-reproduction.log and repair-negative-control.log each record the named importer failing with EXIT=1, while repair-after-suite.log records 74 passed and repair-importer-after.log records 9 passed at the reviewed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The sole commit changes only reckon/crew/ticker.py and tests/test_delivered_rows_say_what_is_owed.py as authorized in resume-2-advice.txt, with no unrelated source or plan edits.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_delivered_rows_say_what_is_owed.py:425-434 independently guards full command visibility, uniqueness, diagnostic retention, counter formatting, width, input immutability and queued state; restoring the old clause order truncates the fixed fixture command and fails line 425.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/ticker.py:3790-3806 extends the existing refusal renderer with the surrounding lazy-import and string-composition idioms and introduces no forbidden source name or comment.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for refusal composition, remedy and next_action found ticker.py:623 queued_refusal and recovery_classification.py:147-152 as existing owners; the change extends Ticker._refusal_line, reuses their prefixes and _clause_line, and the new test reuses the existing refusal fixture.\n",
+  "review_run_id": "r-20261117T013522489453-review-of-delivered-rows-say-what-is-owed-ba288c05cd24",
+  "review_scope": "Incremental review only: sole commit gained since previously reviewed 86e1f2a6a3c2c099de307c58f7e985ff5539da58; earlier importer findings remain in the prior revision record and are not re-adjudicated here.",
+  "reviewed_base_sha": "86e1f2a6a3c2c099de307c58f7e985ff5539da58",
+  "reviewed_head_sha": "ba288c05cd24494e28107c87f63729e1074ee349",
+  "reviewed_run_id": "r-20261116T233752526352-delivered-rows-say-what-is-owed",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T01:46:52.136667+00:00",
+  "total": 120
+}
