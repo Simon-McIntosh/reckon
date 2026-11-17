@@ -148,3 +148,43 @@ def test_unmerged_run_is_untouched(cohort: dict) -> None:
         ).read_text()
     )
     assert "release" not in row
+
+
+@pytest.mark.parametrize("owner", ["promotion", "pending-journal"])
+def test_an_existing_landing_owner_is_not_bypassed(
+    cohort: dict, monkeypatch, owner: str
+) -> None:
+    from reckon.crew import promotion_requests
+
+    member = cohort["members"]["clean"]
+    pointer = member["pointer"]
+    run_id = pointer["run_id"]
+    if owner == "promotion":
+        promotion_requests.request_promotion(run_id)
+    else:
+        pending_landing.write_pending(
+            run_id, PROJECT, pointer=pointer, head=member["head"]
+        )
+
+    def unexpected(*args):
+        raise AssertionError(
+            "the existing landing owner must be checked before its ledger"
+        )
+
+    monkeypatch.setattr(pending_landing, "_promoted_row", unexpected)
+    assert pending_landing.release_merged_promotions(only_run=run_id) == []
+    assert runs.pointer_path(run_id).exists()
+    assert member["tree"].exists()
+
+
+def test_a_repair_mark_cannot_release_a_newer_attempt(cohort: dict) -> None:
+    member = cohort["members"]["clean"]
+    pointer = {**member["pointer"], "attempt": 1}
+    run_id = pointer["run_id"]
+    marked = pending_landing.mark_pending_landing_repair(run_id, pointer)
+    marked["attempt"] = 2
+    runs._write_json(runs.pointer_path(run_id), marked)
+    before = runs.pointer_path(run_id).read_bytes()
+    assert pending_landing.release_merged_promotions(only_run=run_id) == []
+    assert runs.pointer_path(run_id).read_bytes() == before
+    assert member["tree"].exists()

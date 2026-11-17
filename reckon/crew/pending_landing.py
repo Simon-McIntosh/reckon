@@ -792,6 +792,7 @@ def release_merged_promotions(*, only_run: str = "") -> list[dict[str, Any]]:
     failed write leaves the pointer for the next pass to finish.
     """
     from reckon.crew import merge, promotion, promotion_release
+    from reckon.crew.promotion_requests import COMMAND_REPLY, PENDING, read_promotion
     from reckon.crew.recovery_repair_dispatch import _reviewed_run_is_busy
     from reckon.crew.review_landing import finish_landing
 
@@ -802,6 +803,18 @@ def release_merged_promotions(*, only_run: str = "") -> list[dict[str, Any]]:
         if not run_id or not project or (only_run and run_id != only_run):
             continue
         if not pointer.get("worktree") or pointer.get("landing_group"):
+            continue
+        # A journaled landing already has an owner in the pending-record pass.
+        # Its repair mark also keeps a newer attempt outside that owner's reach.
+        if _record_path(run_id).exists():
+            continue
+        marked = pointer.get("pending_landing_repair_attempt")
+        if pointer.get("pending_landing_repair") and marked_identity(pointer) != marked:
+            continue
+        if (
+            COMMAND_REPLY.get() is None
+            and read_promotion(run_id).get("phase") in PENDING
+        ):
             continue
         row = _promoted_row(project, run_id)
         head = _reviewed_head(row) if row else ""
