@@ -883,6 +883,54 @@ def stored_run_rows(
         connection.close()
 
 
+def project_snapshot(project: str) -> dict[str, Any]:
+    """Read complete history, mutable state and revisions in one snapshot.
+
+    Encoded rows are collected under a read transaction; decoding happens
+    after it closes so publishing a large export never holds up a writer.
+    The archive participates in the same transaction as the hot store.
+    """
+    target = store_path()
+    connection = _open_readonly(target)
+    try:
+        schemas = _read_attached_tables(connection, target)
+        connection.execute("BEGIN")
+        if not _refuse_owed_migration(connection, target):
+            raise _unreadable(target, "cannot export an uncreated store")
+        records = list(_record_rows(connection, schemas=schemas, project=project))
+        auxiliary = _encoded_auxiliary_rows(connection, project)
+        marker = connection.execute(
+            "SELECT value FROM store_meta WHERE key = ?", (f"auxiliary:{project}",)
+        ).fetchone()
+        revisions = {}
+        for schema in schemas:
+            revisions.update(
+                connection.execute(
+                    f"SELECT run_id, revision FROM {schema}.runs "  # noqa: S608 - fixed schema names
+                    "WHERE project = ? AND revision IS NOT NULL AND revision != ''",
+                    (project,),
+                ).fetchall()
+            )
+    except sqlite3.Error as error:
+        raise _unreadable(target, f"{type(error).__name__}: {error}") from error
+    finally:
+        connection.close()
+    return {
+        "project": project,
+        "data": {
+            **_decode_auxiliary_rows(auxiliary),
+            "_version": int(marker[0]) if marker else 0,
+            "runs": [
+                run_record.normalize_outside_scope_paths(
+                    {**json.loads(payload), **(json.loads(detail) if detail else {})}
+                )
+                for _run_id, payload, detail in records
+            ],
+        },
+        "run_revisions": revisions,
+    }
+
+
 def _decoded_record(stored: str) -> dict[str, Any]:
     """Decode a stored payload, mapping a retired outside-scope key on the way in.
 
