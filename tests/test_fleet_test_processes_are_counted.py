@@ -170,6 +170,8 @@ def test_service_arguments_do_not_identify_an_executed_runner(argv):
         (["pytest", "tests/"], 1, 1, False),
         (["pytest"], 1, 1, False),
         (["ctest"], 1, 1, False),
+        (["ctest", "tests/pytest_fixture.py"], 1, 1, False),
+        (["python", "-m", "unittest", "tests/pytest_fixture.py"], 1, 1, False),
         (["python", "-m", "unittest", "discover"], 1, 1, False),
         (["pytest", "--pyargs", "package"], 1, 1, False),
     ],
@@ -194,6 +196,20 @@ def test_descendant_cpu_can_exceed_the_light_bound():
         observed_at=NOW.isoformat(),
         job_id="100",
     )
+    assert sample["tree_count"] == 1
+
+
+def test_reaped_child_cpu_cannot_hide_under_the_light_exception(tmp_path):
+    proc = tmp_path / "proc"
+    write_processes(proc, [process(10, 0, ["pytest", "tests/test_unit.py"])])
+    path = proc / "10" / "stat"
+    prefix, suffix = path.read_text().rsplit(")", 1)
+    fields = suffix.split()
+    fields[13] = str(70 * os.sysconf("SC_CLK_TCK"))
+    path.write_text(prefix + ") " + " ".join(fields))
+    rows = fleet.read_fleet_processes(proc, "100")
+    assert rows[0]["cpu_seconds"] == 71
+    sample = fleet.fleet_test_processes(rows, observed_at=NOW.isoformat(), job_id="100")
     assert sample["tree_count"] == 1
 
 

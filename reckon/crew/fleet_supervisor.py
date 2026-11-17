@@ -416,9 +416,10 @@ def light_test_command(argv: Sequence[str]) -> bool:
     exception. Only pytest file selectors qualify; ctest and discovery do not.
     """
     args = test_runner_arguments(argv)
-    if args is None or not any(
-        "pytest" in Path(arg).name or arg == "py.test" for arg in argv[:4]
-    ):
+    if args is None or Path(argv[len(argv) - len(args) - 1]).name not in {
+        "pytest",
+        "py.test",
+    }:
         return False
     files: set[str] = set()
     workers = 0
@@ -571,7 +572,9 @@ def read_fleet_processes(proc: Path, job_id: str) -> list[dict[str, Any]]:
                     "run_id": run_id,
                     "rss_bytes": int(rss[1]) * 1024 if rss else 0,
                     "elapsed_seconds": max(0, uptime - int(fields[19]) / ticks),
-                    "cpu_seconds": (int(fields[11]) + int(fields[12])) / ticks,
+                    # Reaped children no longer appear as descendants in this table.
+                    "cpu_seconds": sum(int(fields[index]) for index in (11, 12, 13, 14))
+                    / ticks,
                 }
             )
         except (FileNotFoundError, ProcessLookupError):
