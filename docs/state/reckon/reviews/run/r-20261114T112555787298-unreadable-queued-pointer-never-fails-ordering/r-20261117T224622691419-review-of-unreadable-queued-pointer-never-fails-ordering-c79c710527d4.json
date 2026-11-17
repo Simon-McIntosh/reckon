@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-17T22:58:09.411Z",
+  "dispatched_at": "2026-11-17T22:47:48Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatching/requests.py",
+      "line": 473,
+      "severity": "non-blocking",
+      "summary": "the comment on _oldest_waiting_request still says the ordering keeps its refusal, which this change removed, and its filter at line 482 re-partitions the raw field inline rather than taking queue_order.partition_placeable, so this production caller both documents and duplicates the split the change centralised."
+    },
+    {
+      "file": "tests/test_unreadable_queued_pointer_never_fails_ordering.py",
+      "line": 187,
+      "severity": "non-blocking",
+      "summary": "the writer-coverage case in tests/test_unreadable_queued_pointer_never_fails_ordering.py detects only an ast.Subscript copy of queued_at, so a .get(\"queued_at\") or .pop(\"queued_at\") copy of an unread arrival would pass it and the done-when's every-writer clause is guarded more narrowly than claimed."
+    },
+    {
+      "file": "reckon/crew/admission/launching.py",
+      "line": 974,
+      "severity": "non-blocking",
+      "summary": "_restore_queued stamps through readable_queued_at but no case drives it with an unreadable snapshot, so removing that line leaves the suite green and the replay path free to store an unplaceable pointer."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that one unreadable queued pointer never fails admission ordering or a review compose; reckon/crew/queue_order.py:406 now splits the queue through partition_placeable and logs the set-aside run ids instead of raising, and reckon/crew/runs.py:1002 stamps every pointer the queue writer stores, so both halves of the goal hold at c79c710527d4.\nVERDICT done_when: the done_when asks for an ordering case over three pointers, a review case, a writer-coverage case, a negative control reddening the first two, and an all_debug gate logged to the fragment; all five are present in tests/test_unreadable_queued_pointer_never_fails_ordering.py:75,126,158 and logs/negative-control.log shows the raise reinstated ending \"2 failed, 5 deselected\" with exactly those two ids red.\nVERDICT write_paths: the node was dispatched with reckon, tests/test_unreadable_queued_pointer_never_fails_ordering.py and the evidence fragment, and the coordinator widened it to tests/test_the_admission_pass_survives_a_pointer_without_its_time.py, tests/test_a_queued_pointer_without_its_time_reads_no_place.py, tests/test_a_dispatch_survives_an_unplaceable_queued_pointer.py and reckon/crew/admission/ordering.py; every path in the node's own eleven commits lies inside that widened set, and the 3189 paths the brief reports outside it are the three primary merges this run carried, not edits the node made.\nVERDICT manifest: read in full; it names fourteen commits with full 40-character ids, both arms with their revisions, literal commands, log paths and completed flags, the base arm's two failure ids, a negative-control log path, and its rubric lines; its summary of 66 passed at c79c710527d4 agrees with the log on disk.\nVERDICT diff: read commit by commit over the node's own eleven commits against cd5e68ecbd2b48d24a8bd5b0037f042a2de84810: e83916f17f replaces the raise at reckon/crew/queue_order.py:345 with the set-aside split and adds readable_queued_at, 1be6d4692b moves the split into partition_placeable and takes it in reckon/crew/admission/selection.py:241, a768372456 takes it at reckon/crew/admission/ordering.py:408 and drops the inline partition, b1c5ab974a restores the parse_utc import the merge made necessary, and 3dd46a1117 rewrites the two cases primary had left asserting the removed refusal.\nCALL_SITES: reckon/crew/runs.py:1002, reckon/crew/runs.py:1021, reckon/crew/admission/selection.py:241, reckon/crew/admission/ordering.py:335, reckon/crew/admission/ordering.py:408, reckon/crew/admission/launching.py:819, reckon/crew/admission/launching.py:974, reckon/crew/dispatching/requests.py:486\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_order.py:406-412 sets aside the unreadable pointers and warns with their run ids while ranking the rest, and reckon/crew/runs.py:1002 stamps an arrival through readable_queued_at, which is the deliverable both ways round.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/base-arm-review.log ends \"2 failed, 55 passed ... EXIT=1\" at cd5e68ec and logs/after-arm-final2.log ends \"66 passed in 47.62s\" with EXIT=0 at c79c710527d4, and the derived added-failure count from those two logs is 0 with no ids.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the node's own commits is under reckon/, one of the four declared test files, or the declared evidence fragment path, and no path outside that set was edited, though the node also rewrote reckon/crew/admission/launching.py:763-975 which the goal implies but which no test drives.\nSCORE durability: 14\nJUSTIFICATION durability: logs/negative-control.log shows the raise reinstated reddening tests/test_unreadable_queued_pointer_never_fails_ordering.py:75 and :126, but the writer clause rests on the AST scan at tests/test_unreadable_queued_pointer_never_fails_ordering.py:187 which matches only a Subscript copy, so removing the stamp at reckon/crew/admission/launching.py:974 leaves the gate green.\nSCORE fit: 14\nJUSTIFICATION fit: reckon/crew/dispatching/requests.py:473-477 still states that \"the ordering keeps its refusal\", which the landed change removed, so a production call site now documents behaviour the code no longer has.\nSCORE reuse: 16\nJUSTIFICATION reuse: queue_order.partition_placeable is the owner for the split and is taken at reckon/crew/admission/selection.py:241 and reckon/crew/admission/ordering.py:408, but reckon/crew/dispatching/requests.py:478-482 re-partitions the same field inline rather than calling it.\nFINDING reckon/crew/dispatching/requests.py:473 non-blocking: the comment on _oldest_waiting_request still says \"the ordering keeps its refusal\" and the filter at line 482 reimplements the placeable split inline, so this production caller documents and duplicates behaviour the landed change replaced, and a change to partition_placeable would not reach it.\nFINDING tests/test_unreadable_queued_pointer_never_fails_ordering.py:187 non-blocking: the writer-coverage case detects only an ast.Subscript copy of queued_at, so record[\"queued_at\"] = current.get(\"queued_at\") or a .pop(\"queued_at\") copy of the same unread arrival would pass it, and the done_when's \"every path that writes a queued pointer\" clause is therefore guarded more narrowly than it is claimed.\nFINDING reckon/crew/admission/launching.py:974 non-blocking: _restore_queued stamps its restored pointer through readable_queued_at but no case drives it with a snapshot whose queued_at is unreadable, so deleting that one line would leave the suite green and the replay path free to write an unplaceable pointer again.\n",
+  "review_run_id": "r-20261117T224622691419-review-of-unreadable-queued-pointer-never-fails-ordering-c79c710527d4",
+  "reviewed_base_sha": "cd5e68ecbd2b48d24a8bd5b0037f042a2de84810",
+  "reviewed_head_sha": "c79c710527d4ab98a27abd2af679cdd234cb5b67",
+  "reviewed_run_id": "r-20261114T112555787298-unreadable-queued-pointer-never-fails-ordering",
+  "scores": {
+    "durability": 14,
+    "evidence": 17,
+    "fit": 14,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T23:00:20.531722+00:00",
+  "total": 98
+}

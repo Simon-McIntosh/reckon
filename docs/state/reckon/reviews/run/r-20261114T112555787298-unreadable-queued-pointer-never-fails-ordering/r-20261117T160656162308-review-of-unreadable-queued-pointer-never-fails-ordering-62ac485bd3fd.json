@@ -3,6 +3,38 @@
   "added_failure_ids": [],
   "completed_at": "2026-11-17T16:24:51.779Z",
   "dispatched_at": "2026-11-17T16:08:35Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "unreadable-queued-pointer-never-fails-ordering",
+      "recorded_at": "2026-11-17T22:40:24.623263+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "Non-blocking and not addressed by the repair: the dispatch yield check still partitions the queue inline instead of taking queue_order's partition. Left for a later consolidation of the two partitions.",
+      "recorded_at": "2026-11-17T22:40:59.090061+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "unreadable-queued-pointer-never-fails-ordering",
+      "recorded_at": "2026-11-17T22:40:31.820644+00:00"
+    },
+    "3": {
+      "kind": "folded",
+      "node": "unreadable-queued-pointer-never-fails-ordering",
+      "recorded_at": "2026-11-17T22:40:36.389882+00:00"
+    },
+    "4": {
+      "kind": "exempted",
+      "reason": "Non-blocking and not addressed by the repair: the every-writer case is a static scan, not a driven write. Stands as a known weakness of that test.",
+      "recorded_at": "2026-11-17T22:41:04.031081+00:00"
+    },
+    "5": {
+      "kind": "exempted",
+      "reason": "Non-blocking and not addressed by the repair: no test drives _restore_queued, so its stamp is unpinned. Stands as an open gap.",
+      "recorded_at": "2026-11-17T22:41:07.465238+00:00"
+    }
+  },
   "findings": [
     {
       "file": "tests/test_a_dispatch_survives_an_unplaceable_queued_pointer.py",

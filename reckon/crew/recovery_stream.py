@@ -834,7 +834,7 @@ def _admission_refusal(
     from reckon import _backends
 
     try:
-        events, _malformed = _backends.cached_stream_events(log)
+        events, _malformed = _backends.cached_stream_events(log, whole=True)
         size = log.stat().st_size
     except OSError:
         return None

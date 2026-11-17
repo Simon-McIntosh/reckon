@@ -532,6 +532,75 @@
     the evicted parsed-stream cache, the per-document digests and the per-run document reads, each of
     which is a whole-file re-read of an unchanged file.
 </p>
+    <h3 id="station-read-parsed-stream-cursor">The parsed-stream cache keeps the resume state the next pass asks for</h3>
+    <p>The cache that ranks first in the census re-read the whole population because it keeps only the
+    bytes it has decoded. It now keeps, beside them, one resume cursor per stream it has read — the
+    device, inode, size and mtime the read was taken at, the offset after the last complete record, and
+    the digest of the stream's opening — and keeps that cursor when the byte bound drops the stream's
+    records. The cursor lives in the per-path summary the process already keeps, which is count-bounded,
+    rather than in a second store beside it. A stream asked for again is read from its cursor when the
+    file is the one the cursor recorded and has only grown, and a request for the whole stream extends
+    the entry the cache still holds rather than reading it again from the first byte; a stream that was
+    replaced, truncated or rewritten, or a whole request whose held entry is only what one earlier read
+    gained, is still read from its first byte. Holding the decoded events instead of a cursor was
+    measured and rejected: all of the live fleet's records cost about 504&nbsp;MB resident, against a
+    32&nbsp;MB bound.</p>
+    <p>Each figure below names the reader that produced it, because the two readers answer different
+    questions and only one of them is where the cursor acts. <code>cached_stream_events</code> is the
+    census's first-ranked reader: it is entered for a reader the summary has not folded yet, and by
+    <code>observe_log</code>'s own fallback. The tick's steady path is
+    <code>_summarised_observation</code> over <code>_STREAM_SUMMARIES</code>, which was already reading
+    only what grew for a stream it had folded, at both revisions.</p>
+    <table>
+      <thead><tr><th>Reader and population</th><th>base <code>b3a277e</code></th><th>with the cursor</th></tr></thead>
+      <tbody>
+        <tr><th colspan="3" scope="colgroup">The node's fixture: sixty two-megabyte streams (125.84&nbsp;MB), through
+          <code>cached_stream_events</code></th></tr>
+        <tr><td>Bytes parsed on the pass after each stream gained 500&nbsp;bytes</td>
+          <td>125,562,900&nbsp;B</td><td>27,120&nbsp;B</td></tr>
+        <tr><th colspan="3" scope="colgroup">A copy of the fleet's live streams (57 streams, 129.0&nbsp;MB, the fleet
+          as it stood during this measurement), one 500&nbsp;byte append per stream between passes,
+          through <code>cached_stream_events</code></th></tr>
+        <tr><td>Bytes parsed on the second pass</td><td>126,806,578&nbsp;B</td><td>12,296&nbsp;B</td></tr>
+        <tr><th colspan="3" scope="colgroup">The same copy left unchanged, through <code>cached_stream_events</code></th></tr>
+        <tr><td>Bytes parsed on the second pass</td><td>126,806,578&nbsp;B</td><td>128,311,372&nbsp;B</td></tr>
+        <tr><th colspan="3" scope="colgroup">The tick's own path, <code>observe_log</code> through
+          <code>_summarised_observation</code>, over the same copy</th></tr>
+        <tr><td>The pass after each stream gained 500&nbsp;bytes, one folded reader</td>
+          <td>12,084&nbsp;B</td><td>12,084&nbsp;B</td></tr>
+        <tr><td>A reader the summary has not folded yet, over the whole population</td>
+          <td>127,075,255&nbsp;B</td><td>126,831,507&nbsp;B</td></tr>
+      </tbody>
+    </table>
+    <p>What the cursor buys, and what it does not:</p>
+    <ul>
+      <li>A grown stream is re-parsed from its cursor, so the second pass over the live population parses
+      the appended bytes and nothing else — 12,296&nbsp;B against 126.8&nbsp;MB.
+      The fixture's 27,120&nbsp;B is the same effect at fixture scale: 120 decodes of a 226&nbsp;byte
+      record, because the appended record is parsed once by the events cache and once by the summary
+      that folds the growth.</li>
+      <li>An <em>unchanged</em> stream whose records the byte bound dropped still costs a whole read: the
+      cache no longer holds them, and only a whole read can answer for what it lost. That is
+      128.3&nbsp;MB at head against 126.8&nbsp;MB at base on an idle copy — the same order, and the reason
+      the cursor is not a substitute for a bound that fits the population.</li>
+      <li>A reader the summary has not folded still reads every stream whole, once per distinct
+      backend, receipt and elapsed-time key (126.8&nbsp;MB at head). This is the census's 42.7&nbsp;%
+      row and the cost that remains.</li>
+      <li>The tick's steady path was already cheap for a folded reader at the base revision
+      (12,084&nbsp;B, the same figure as head), so nothing in this table attributes the station's
+      post-landing cost to the cursor.</li>
+    </ul>
+    <p>The fixture's negative control runs the node's test against an extracted base tree, where the
+    fixture's second pass parses 125,562,900&nbsp;B and the test fails. The live figures were taken in
+    this worktree's process over a copy of the fleet's crew home with no station running, so they compare
+    the read path and not the station's cost.</p>
+    <p>The §12 bound itself is unchanged by this measurement and remains unmet on the evidence above: the
+    remaining cost is a whole read per stream for each reader the summary has not folded and for each
+    unchanged stream the byte bound evicted, plus the per-document digests and the per-run document
+    reads. The 60&nbsp;s live window that would state the station's post-landing cost reads 20&nbsp;MB/min
+    and 5&nbsp;% of one core only once the station runs on the reloaded fleet node, which this worker
+    could not do. That window and those two figures are the coordinator's, and no after-window result is
+    claimed here.</p>
   </main>
 </body>
 </html>

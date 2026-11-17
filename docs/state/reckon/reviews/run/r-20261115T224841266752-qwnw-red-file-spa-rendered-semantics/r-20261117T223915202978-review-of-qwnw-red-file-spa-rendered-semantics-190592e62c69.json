@@ -1,0 +1,108 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "Derived from the reviewed run's own arms as the manifest names them. baseline_suite names suite-base.log: '# revision: d0d77f07e2dcc64d74713755aebe748602f9a06f', '58 passed in 59.09s', EXIT=0, no FAILED or ERROR line, so its failure set is a measured empty set. after_suite names suite-head.log: '# revision: 190592e62c6910602e7ae2d961d948d710b03a7c', 'PYTHONPATH arms: tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py', '58 passed in 44.78s', EXIT=0, no FAILED or ERROR line, so the head arm is readable and its failure set is empty too. Difference of the two id sets is empty: 0 added failures.",
+  "assertions": [
+    {
+      "added": "tests/test_spa_rendered_semantics.py:508-523 reads every .r-status-transition node and asserts some node's text carries the authored status, the effective status and '1 open gate'; the removal control at :525 now removes every node carrying the class",
+      "fails_when": "removing the .r-status-transition span from docs/ui/shell-plans.jsx:587 leaves no node, so texts.some(...) is false and _assert_rendered_signal raises 'rendered signal missing: status transition'; the removal arm still reddens because document.querySelectorAll returns nothing",
+      "lines": "tests/test_spa_rendered_semantics.py:478-526"
+    },
+    {
+      "added": "tests/test_spa_rendered_semantics.py:786-800 holds the sprint table to the payload alone: it strips derived_state, implementation_pct and blocked and supplies only a metrics block, then asserts the row reads unknown and 0%",
+      "fails_when": "restoring the removed dominantEffectiveStatus/mean_impl derivation in docs/ui/sprint.jsx:96 makes the same row read active and 42%, so ok is false; nc-fallback.log shows that failing observation, though at a revision where the case does not exist (see the finding at fragment line 151)",
+      "lines": "tests/test_spa_rendered_semantics.py:763-806"
+    },
+    {
+      "added": "tests/test_spa_rendered_semantics.py:668-676 asserts the refreshed, revealed arrival is in .r-artifact-row after the reveal and absent before it, along with an exact dict of navigation and request counts",
+      "fails_when": "reverting the revealArrivals inventory adoption at docs/ui/state-loader.js:899 leaves the row out of the list the surface draws from, so rows stays ['rendered-contract'] after the reveal and the dict comparison fails",
+      "lines": "tests/test_spa_rendered_semantics.py:612-676"
+    },
+    {
+      "added": "tests/test_spa_rendered_semantics.py:390-412 asserts the plans route states the served snapshot receipt with a non-zero resource count and no legacy-index source",
+      "fails_when": "a receipt that reads only the index (the base behaviour) renders 'legacy-index' and '0 resources', so count > 0 and the legacy-index exclusion both fail; the case's own prepare step waits for the served figures first, so a regression that never serves them also reds it after the 5 s deadline",
+      "lines": "tests/test_spa_rendered_semantics.py:533-601"
+    },
+    {
+      "added": "tests/test_spa_rendered_semantics.py:565-600 asserts the reader route states the source, the missing sections, and a Retry control on a 503",
+      "fails_when": "dropping the .r-reader-source-failure banner or its Retry button leaves the wait selector unresolved or the button list empty, so the probe never becomes ready or ok is false",
+      "independent": true,
+      "lines": "tests/test_spa_rendered_semantics.py:503-531"
+    },
+    {
+      "added": "each case pairs its baseline probe with _assert_removal_is_detected (tests/test_spa_rendered_semantics.py:378-384), which requires the same probe to fail once the signal's own nodes are removed",
+      "fails_when": "any probe that stops reading the rendered node \u2014 which is the shape of a probe that asserts about its own fixture rather than the DOM \u2014 leaves ok true in the removed arm and raises 'DID NOT RAISE'; this is the independence check the file applies to every assertion it adds",
+      "lines": "tests/test_spa_rendered_semantics.py:374-384"
+    }
+  ],
+  "call_site_count": 8,
+  "call_sites": [
+    "docs/index.html:25",
+    "docs/index.html:30",
+    "docs/index.html:33",
+    "docs/index.html:40",
+    "docs/index.html:41",
+    "docs/index.html:44",
+    "docs/ui/shell.jsx:32",
+    "docs/ui/sprint.jsx:442"
+  ],
+  "completed_at": "2026-11-17T22:48:56.355Z",
+  "dispatched_at": "2026-11-17T22:48:35Z",
+  "findings": [
+    {
+      "file": "docs/ui/sprint.jsx",
+      "line": "96",
+      "severity": "non-blocking",
+      "summary": "the product repairs land in docs/ui, which the node's declared write paths do not include",
+      "text": "non-blocking: the node's declared write paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and docs/figures/queued-work-needs-no-workaround, so the five edited product files (docs/ui/sprint.jsx:96, docs/ui/state-loader.js:248, docs/ui/shell-plans.jsx:547, docs/ui/shell-titlebar.jsx:345, docs/ui/bits.jsx) are outside the fence; the manifest records this under over_fence_reason and outside_scope rather than hiding it, and the file cannot be made green without them, but the grant was never obtained."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-spa-rendered-semantics.html",
+      "line": "159",
+      "severity": "non-blocking",
+      "summary": "the fixture is claimed to carry the row shape the roadmap walk emits, and it does not",
+      "text": "non-blocking: the prose says the sprint fixture 'carries the row the roadmap walk emits and nothing else', but reckon/roadmap.py:4979 serves \"items\": len(members) as an integer with the plans under \"members\" (:4980), while tests/test_spa_rendered_semantics.py:126 carries \"items\": [{\"slug\": \"rendered-contract\"}] and no \"members\" key at all, so the fixture states a row shape production never emits and the claim is unsupported by the file it describes."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-spa-rendered-semantics.html",
+      "line": "151",
+      "severity": "non-blocking",
+      "summary": "the derivation control's only red log is keyed to a revision that does not contain the control",
+      "text": "non-blocking: the durability claim 'with the derivation put back in place the same case fails reading {\"state\": \"active\", \"implementation\": \"42%\"}' rests on nc-fallback.log, whose header reads '# revision: 73dd207e563b81aec18ea792c2afcaadc9ecae15'; test_sprint_table_states_only_the_figures_the_payload_serves does not exist at that revision (git grep at 73dd207e56 finds nothing; it lands at ba8bc692c3), so the log records a real failure in an uncommitted tree and cannot be reproduced from the revision it names."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-spa-rendered-semantics.html",
+      "line": "106",
+      "severity": "non-blocking",
+      "summary": "the gate table's head arm names a revision one commit behind the delivered head",
+      "text": "non-blocking: the table records 'the file, head' as 2efb56b1 with 10 passed and 'suite arm, head' as 2efb56b1 with 58 passed, while the delivered head is 190592e62c, whose gate-head.log reads 11 passed EXIT=0 and whose suite-head.log reads 58 passed EXIT=0; the final commit changed the transition probe, so the fragment records an arm that predates the change it is evidence for."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "docs/index.html:25,30,33,40,41,44 load state-loader.js, bits.js, sprint.js, shell-plans.jsx, shell-titlebar.jsx and shell.jsx; docs/ui/shell.jsx:32 renders ArtifactSurface, which mounts TitleBar and ListCol; docs/ui/sprint.jsx:442 renders the .r-sprint-status cell the payload-only control reads.",
+    "diff": "Read commit by commit: twelve non-merge commits, each confined to the product files it repairs, the test file, and (twice) the fragment; the last commit 190592e62c strengthens the transition removal control from one node to all nodes and adds the count to the reported observation, and deletes no assertion.",
+    "done_when": "Measured: gate-head.log's header names revision 190592e62c and tree ec51898c, which git rev-parse 190592e62c^{tree} confirms is that commit's tree, and it ends '11 passed in 39.56s' EXIT=0 on host 98dci4-clu-3141; gate.sh unsets SLURM_JOB_ID and declares --partition=all_debug; gate-base.log names d0d77f07 with tree bff3a503 (confirmed) and ends '8 failed, 2 passed' EXIT=1.",
+    "goal": "The run's admit_request states 'Make tests/test_spa_rendered_semantics.py pass in full on the primary branch'; the twelve non-merge commits repair the sprint surface, the plans index transition, the arrival reveal, the reader's handoff prompt and the snapshot receipt, and gate-head.log reads 11 passed EXIT=0 at 190592e62c.",
+    "manifest": "Read from the run's classification record (manifest digest 18e0f4c36076a7612bedb70b435fc881d1a48afe6f83f5172e150707654ebe00): status complete, twenty-five changed_paths/commits listed, gate and suite logs named, both suite arms as JSON with exit_status 0 and failure_count 0, and retry_failures carrying six product/test verdicts; it also names the over-fence repair rather than leaving it unstated.",
+    "write_paths": "admit_request's write_paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and docs/figures/queued-work-needs-no-workaround; the diff of the twelve commits touches docs/ui/sprint.jsx, docs/ui/state-loader.js, docs/ui/shell-plans.jsx, docs/ui/shell-titlebar.jsx, docs/ui/bits.jsx plus tests/test_spa_rendered_semantics.py and the fragment, so five product files sit outside the fence and the manifest records them under over_fence_reason and outside_scope."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261117T223915202978-review-of-qwnw-red-file-spa-rendered-semantics-190592e62c69",
+  "review_scope": "the run's own twelve non-merge commits from d0d77f07 to 190592e62c (dca7b3337c, 96308682a5, 65b3cd8306, 2d8244e689, 961a97b702, 2efb56b182, 57f43cade0, 843e448388, 73dd207e56, ba8bc692c3, d9793f992a, 190592e62c); the merge 277a6de8f1 only reconciles primary 39cc9d142c and is not scored as the run's change",
+  "reviewed_base_sha": "d0d77f07e2dcc64d74713755aebe748602f9a06f",
+  "reviewed_head_sha": "190592e62c6910602e7ae2d961d948d710b03a7c",
+  "reviewed_run_id": "r-20261115T224841266752-qwnw-red-file-spa-rendered-semantics",
+  "rubric": "",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 10
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T23:40:15.000000+00:00",
+  "total": 95
+}

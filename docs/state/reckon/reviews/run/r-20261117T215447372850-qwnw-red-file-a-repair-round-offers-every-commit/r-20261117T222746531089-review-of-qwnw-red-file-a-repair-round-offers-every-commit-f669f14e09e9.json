@@ -1,0 +1,87 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "5ee573b8c178c74afac142289f628d141af1e103",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-17T22:31:06.282Z",
+  "dispatched_at": "2026-11-17T22:30:03Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "deferred",
+      "recorded_at": "2026-11-17T22:48:20.937153+00:00",
+      "rule": "landing-defers-non-blocking-findings",
+      "run": "r-20261117T215447372850-qwnw-red-file-a-repair-round-offers-every-commit"
+    },
+    "1": {
+      "kind": "deferred",
+      "recorded_at": "2026-11-17T22:48:20.937153+00:00",
+      "rule": "landing-defers-non-blocking-findings",
+      "run": "r-20261117T215447372850-qwnw-red-file-a-repair-round-offers-every-commit"
+    },
+    "2": {
+      "kind": "deferred",
+      "recorded_at": "2026-11-17T22:48:20.937153+00:00",
+      "rule": "landing-defers-non-blocking-findings",
+      "run": "r-20261117T215447372850-qwnw-red-file-a-repair-round-offers-every-commit"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-repair-round-offers-every-commit.html",
+      "line": "61",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head-run block quotes \"6 passed in 0.84s\" while the log it points at for the head revision, scoped-gate-1794954189930921966.log at f669f14e09, reads \"6 passed in 0.88s\"; 0.84s is the summary of the earlier gates at 6ba9320b and 9f83dd2d, so a reader reconciling the record against the log it names finds a figure the log does not contain."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T215447372850-qwnw-red-file-a-repair-round-offers-every-commit/manifest.md",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "non-blocking: the artifacts field quotes \"6 passed in 0.87s\" from scoped-gate-1794954189930921966.log, which reads \"6 passed in 0.88s\" at f669f14e09, so the record does not reconcile with the log it cites even though the pass claim itself holds."
+    },
+    {
+      "file": "tests/test_a_repair_round_keeps_the_manifest_s_commits_and_commits_beyond_base_ar.py",
+      "line": "33",
+      "severity": "non-blocking",
+      "text": "non-blocking: the commit loop's manifest.write_text at lines 33-36 is now dead, because the added block at lines 47-50 rewrites the same file before any assertion reads it, so the loop suggests a per-commit rewrite the fixture no longer performs and hides which write the cleared-commits assertion actually depends on."
+    }
+  ],
+  "head_log_revision": "f669f14e09e940bfff84b87914f598be91726e43",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read all five commits against base 5ee573b8c178c74afac142289f628d141af1e103; 6ba9320b64 adds 15 fixture lines (a json import and an after_suite arm written after the commit loop), the remaining four commits 9f83dd2d97 2b2753947f 2e6189d5ff f669f14e09 add and then correct the 70-line evidence fragment, and no source module is touched anywhere in the range.",
+    "done_when": "the done_when's measure is that the named file passes in full at head as an all_debug job with SLURM_JOB_ID unset, that the base run's failing ids are logged beside the head run, that the relevant suite arms add no failure with both revisions recorded, and that ruff reports nothing new on the changed paths; the manifest records the head file gate and both suite arms as inline JSON at full 40-character revisions, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-repair-round-offers-every-commit.html carries the base failure and the head run, but the manifest records no ruff result for its own changed paths.",
+    "goal": "the node goal is \"Make tests/test_a_repair_round_keeps_the_manifest_s_commits_and_commits_beyond_base_ar.py pass in full on the primary branch\"; scoped-gate-1794954189930921966.log at f669f14e09 reads \"6 passed in 0.88s\" with EXIT=0, against the run directory's own red log at 5ee573b8 reading \"1 failed, 5 passed\" EXIT=1, which names the single id test_promotion_offers_every_commit_after_a_repair and asserts an empty citation list where two commits are expected.",
+    "manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T215447372850-qwnw-red-file-a-repair-round-offers-every-commit/manifest.md states status complete, the five commits 6ba9320b64 9f83dd2d97 2b2753947f 2e6189d5ff f669f14e09, the scoped gate command with its 6-passed result, baseline_suite and after_suite as inline JSON at full 40-character revisions with 0 failures on each arm, and a test-wrong verdict naming reckon/crew/recovery_classification.py:3621 completion_offer as the gate its fixture never satisfied and no product file edited.",
+    "write_paths": "the declared write paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround as dispatch-detail.json node.write_paths states; both delivered paths, tests/test_a_repair_round_keeps_the_manifest_s_commits_and_commits_beyond_base_ar.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-repair-round-offers-every-commit.html, are inside them."
+  },
+  "justifications": {
+    "durability": "no assertion is added by the diff, and the guard that carries it, the `assert presented == commits` at tests/test_a_repair_round_keeps_the_manifest_s_commits_and_commits_beyond_base_ar.py:73, compares the product's offered --commit words against git rev-parse output from the fixture's own tree and is shown red by the base reproduction in logs/negative-control-base-5ee573b8.log and by the fragment's recorded citation-from-manifest mutation.",
+    "evidence": "the gate recorded in the reviewed manifest.md names the file and its result, but manifest.md:20 quotes \"6 passed in 0.87s\" from scoped-gate-1794954092924165557.log at 2e6189d5 while naming scoped-gate-1794954189930921966.log, which reads 0.88s, and no ruff result is recorded for the changed paths the done_when names.",
+    "fit": "the added block at tests/test_a_repair_round_keeps_the_manifest_s_commits_and_commits_beyond_base_ar.py:37-50 follows the fixture's existing inline-manifest idiom and introduces no name the surrounding module does not already use.",
+    "goal_fidelity": "tests/test_a_repair_round_keeps_the_manifest_s_commits_and_commits_beyond_base_ar.py at f669f14e09 reads 6 passed EXIT=0 where the same file at 5ee573b8 reads 1 failed, 5 passed in the run directory's red log.",
+    "reuse": "the diff adds no function, class or module, and the arm reuses the after_suite fields reckon/crew/recovery_classification.py:3621 completion_offer already reads; a capability search over tests/helpers (git.py, landing_repository.py) and the file's own neighbouring fixtures found no existing manifest-fixture writer to extend.",
+    "scope_discipline": "the entire base-to-head range changes only tests/test_a_repair_round_keeps_the_manifest_s_commits_and_commits_beyond_base_ar.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-repair-round-offers-every-commit.html, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"Make tests/test_a_repair_round_keeps_the_manifest_s_commits_and_commits_beyond_base_ar.py pass in full on the primary branch\"; scoped-gate-1794954189930921966.log at f669f14e09 reads \"6 passed in 0.88s\" with EXIT=0, against the run directory's own red log at 5ee573b8 reading \"1 failed, 5 passed\" EXIT=1, which names the single id test_promotion_offers_every_commit_after_a_repair and asserts an empty citation list where two commits are expected.\nVERDICT done_when: the done_when's measure is that the named file passes in full at head as an all_debug job with SLURM_JOB_ID unset, that the base run's failing ids are logged beside the head run, that the relevant suite arms add no failure with both revisions recorded, and that ruff reports nothing new on the changed paths; the manifest records the head file gate and both suite arms as inline JSON at full 40-character revisions, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-repair-round-offers-every-commit.html carries the base failure and the head run, but the manifest records no ruff result for its own changed paths.\nVERDICT write_paths: the declared write paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround as dispatch-detail.json node.write_paths states; both delivered paths, tests/test_a_repair_round_keeps_the_manifest_s_commits_and_commits_beyond_base_ar.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-repair-round-offers-every-commit.html, are inside them.\nVERDICT manifest: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T215447372850-qwnw-red-file-a-repair-round-offers-every-commit/manifest.md states status complete, the five commits 6ba9320b64 9f83dd2d97 2b2753947f 2e6189d5ff f669f14e09, the scoped gate command with its 6-passed result, baseline_suite and after_suite as inline JSON at full 40-character revisions with 0 failures on each arm, and a test-wrong verdict naming reckon/crew/recovery_classification.py:3621 completion_offer as the gate its fixture never satisfied and no product file edited.\nVERDICT diff: read all five commits against base 5ee573b8c178c74afac142289f628d141af1e103; 6ba9320b64 adds 15 fixture lines (a json import and an after_suite arm written after the commit loop), the remaining four commits 9f83dd2d97 2b2753947f 2e6189d5ff f669f14e09 add and then correct the 70-line evidence fragment, and no source module is touched anywhere in the range.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_repair_round_keeps_the_manifest_s_commits_and_commits_beyond_base_ar.py at f669f14e09 reads 6 passed EXIT=0 where the same file at 5ee573b8 reads 1 failed, 5 passed in the run directory's red log.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate recorded in the reviewed manifest.md names the file and its result, but manifest.md:20 quotes \"6 passed in 0.87s\" from scoped-gate-1794954092924165557.log at 2e6189d5 while naming scoped-gate-1794954189930921966.log, which reads 0.88s, and no ruff result is recorded for the changed paths the done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the entire base-to-head range changes only tests/test_a_repair_round_keeps_the_manifest_s_commits_and_commits_beyond_base_ar.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-repair-round-offers-every-commit.html, both inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: no assertion is added by the diff, and the guard that carries it, the `assert presented == commits` at tests/test_a_repair_round_keeps_the_manifest_s_commits_and_commits_beyond_base_ar.py:73, compares the product's offered --commit words against git rev-parse output from the fixture's own tree and is shown red by the base reproduction in logs/negative-control-base-5ee573b8.log and by the fragment's recorded citation-from-manifest mutation.\nSCORE fit: 18\nJUSTIFICATION fit: the added block at tests/test_a_repair_round_keeps_the_manifest_s_commits_and_commits_beyond_base_ar.py:37-50 follows the fixture's existing inline-manifest idiom and introduces no name the surrounding module does not already use.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module, and the arm reuses the after_suite fields reckon/crew/recovery_classification.py:3621 completion_offer already reads; a capability search over tests/helpers (git.py, landing_repository.py) and the file's own neighbouring fixtures found no existing manifest-fixture writer to extend.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-repair-round-offers-every-commit.html:61 non-blocking: the head-run block quotes \"6 passed in 0.84s\" while the log it points at for the head revision, scoped-gate-1794954189930921966.log at f669f14e09, reads \"6 passed in 0.88s\"; 0.84s is the summary of the earlier gates at 6ba9320b and 9f83dd2d, so a reader reconciling the record against the log it names finds a figure the log does not contain.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T215447372850-qwnw-red-file-a-repair-round-offers-every-commit/manifest.md:20 non-blocking: the artifacts field quotes \"6 passed in 0.87s\" from scoped-gate-1794954189930921966.log, which reads \"6 passed in 0.88s\" at f669f14e09, so the record does not reconcile with the log it cites even though the pass claim itself holds.\nFINDING tests/test_a_repair_round_keeps_the_manifest_s_commits_and_commits_beyond_base_ar.py:33 non-blocking: the commit loop's manifest.write_text at lines 33-36 is now dead, because the added block at lines 47-50 rewrites the same file before any assertion reads it, so the loop suggests a per-commit rewrite the fixture no longer performs and hides which write the cleared-commits assertion actually depends on.\n",
+  "review_run_id": "r-20261117T222746531089-review-of-qwnw-red-file-a-repair-round-offers-every-commit-f669f14e09e9",
+  "reviewed_base_sha": "5ee573b8c178c74afac142289f628d141af1e103",
+  "reviewed_head_sha": "f669f14e09e940bfff84b87914f598be91726e43",
+  "reviewed_run_id": "r-20261117T215447372850-qwnw-red-file-a-repair-round-offers-every-commit",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T22:40:53.831613+00:00",
+  "total": 110
+}
