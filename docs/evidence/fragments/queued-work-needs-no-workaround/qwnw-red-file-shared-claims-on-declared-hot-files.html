@@ -1,0 +1,102 @@
+<section id="qwnw-red-file-shared-claims-on-declared-hot-files-landing">
+  <h2>The declared-hot-file cases read the sharing policy the code keeps</h2>
+
+  <p><strong>What changed.</strong> <code>tests/test_shared_claims_on_declared_hot_files.py</code>
+  asserted a sharing policy the product no longer keeps. The policy moved from
+  "a path is shared only when a <code>shared-write-paths.json</code> entry names
+  it" to "every path a textual merge can reconcile is shared between isolated
+  worktrees, and only the unmergeable artifact classes keep the whole-file
+  refusal": <code>471bf98366</code> shares source files in a project that
+  declares no shared roots, <code>4b70522237</code> shares a directory claim
+  under a shared root as its files do, and <code>5695689722</code> reserves
+  path claims for nonmergeable artifacts. Those commits updated their base
+  predicate and the shared-root tests but left this file at its 25 September
+  wording, so three of its five cases asserted refusals the current rule does
+  not give.</p>
+
+  <p><strong>Verdict: test wrong, for all three failing ids, one cause.</strong>
+  No product module was edited. The three cases were rewritten to the rule the
+  code asserts and now name its two directions:</p>
+
+  <ul>
+    <li>Case two, <code>test_an_unlisted_path_keeps_the_artifact_refusal</code>:
+      the claimed path is the fixture's plan document
+      (<code>docs/plans/shared-claims.html</code>), an unlisted path the declaration
+      cannot make shareable. The refusal assertion and its owner-run-id
+      comparison are unchanged; only the path's class, and so the reason for
+      the refusal, moved from a source file to an artifact.</li>
+    <li>Case three, <code>test_a_directory_claim_over_an_artifact_is_refused</code>:
+      the owner claims that plan document and the co-claimant claims its
+      directory (<code>docs/plans</code>), which no source file beneath it
+      can launder. Still asserted as <code>crew.ScopeConflict</code> naming the
+      owner's run id.</li>
+    <li>Case four, <code>test_a_source_file_shares_when_no_list_is_present</code>:
+      the absent-declaration case now asserts the sharing default that replaced
+      its refusal — two distinct runs and both pointer files — with the same
+      strength as case one's admission.</li>
+  </ul>
+
+  <p>No assertion was deleted or weakened: the file keeps five cases — two
+  refusals (cases two and three), two admissions (cases one and four), and the
+  read-model case. The inverted case four carries the same strength it had. Case
+  one (a listed source file admits both co-claimants) and case five (both remain
+  visible in <code>scope_claims</code>) were already green at the base revision
+  and are unedited.</p>
+
+  <h3 id="qwnw-red-file-shared-claims-on-declared-hot-files-reproduction">Reproduction, before the repair</h3>
+
+  <p>The defect was confirmed to reproduce at the base revision
+  <code>8277191059</code> as a job on <code>all_debug</code> (job
+  <code>1320039</code>, the wrapper unsetting <code>SLURM_JOB_ID</code>), from a
+  checkout detached at that commit. The three failing ids read:</p>
+
+  <pre><code>FAILED tests/test_shared_claims_on_declared_hot_files.py::test_an_unlisted_file_is_refused_against_a_live_claim - Failed: DID NOT RAISE ScopeConflict
+FAILED tests/test_shared_claims_on_declared_hot_files.py::test_a_directory_claim_containing_a_shared_file_is_refused - Failed: DID NOT RAISE ScopeConflict
+FAILED tests/test_shared_claims_on_declared_hot_files.py::test_a_shared_file_is_refused_when_no_list_is_present - Failed: DID NOT RAISE ScopeConflict
+3 failed, 2 passed in 9.01s
+EXIT=1</code></pre>
+
+  <p>Each failure is the same observable: the second dispatch of an overlapping
+  claim created its run (<code>reckon: created run
+  r-20261116T131845948479-owner</code> is followed by
+  <code>r-20261116T131846686130-joiner</code>) instead of raising. The
+  arbitration's own predicate was traced before the repair:
+  <code>_claim_paths_share</code> returned <code>True</code> for
+  <code>pkg/cold.py</code> against a declaration naming only
+  <code>pkg/hot.py</code>, and the same for <code>pkg/hot.py</code> with no
+  declaration at all — the sharing default acting as designed, which is why the
+  verdict is test-side.</p>
+
+  <h3 id="qwnw-red-file-shared-claims-on-declared-hot-files-arms">The arms</h3>
+
+  <table id="qwnw-red-file-shared-claims-on-declared-hot-files-arm-table">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>tree / revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file, head</td>
+        <td>worktree at <code>b0fbab2823</code>, <code>all_debug</code> job 1320018</td>
+        <td>5 passed in 7.33s, <code>EXIT=0</code></td></tr>
+      <tr><td>the named file, base (negative control)</td>
+        <td>checkout detached at <code>8277191059</code>, <code>all_debug</code> job 1320039</td>
+        <td>3 failed, 2 passed in 9.01s, <code>EXIT=1</code></td></tr>
+      <tr><td>promotion suite, base</td>
+        <td>checkout detached at <code>8277191059</code></td>
+        <td>58 passed in 41.83s, <code>EXIT=0</code></td></tr>
+      <tr><td>promotion suite, after</td>
+        <td>worktree at the delivered head</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Cause and verdict.</strong> Stated once, quantitatively: three
+  failing ids at the base revision, all three the same cause — the sharing
+  policy's default changed on 11–13 November and this file was not among the
+  tests those commits updated — and all three are test-side. The product rules
+  that broke nothing are the ones the file now asserts.</p>
+
+  <p><strong>Lint.</strong> <code>ruff check</code> and
+  <code>ruff format --check</code> on the changed test path report
+  <code>All checks passed!</code> and <code>1 file already formatted</code>, so
+  the change adds no finding.</p>
+</section>

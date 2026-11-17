@@ -3,12 +3,20 @@
 Each attempt is rebuilt from what recorded it: the node definition from the
 coordinator's own dispatch command line, the flight configuration from the
 layers in force at the moment, and the pick-timing row that recorded the
-refusal. The picker is then asked the same question, and its answer is
-compared with the record candidate by candidate, in the picker's own order.
+refusal. The picker's candidate scan is then run over those inputs unchanged,
+and the set it withholds is compared with the record candidate by candidate, in
+the picker's own order. Each attempt also carries the rows the rules now keep,
+because two rules landed after the record was written and they moved reasons
+between candidates without changing the refusal; the report names every
+recorded row the picker no longer emits, beside the rule that replaced it.
 
 No routing or competence verdict is stubbed. The candidate scan runs
-``reckon.crew.picker.snapshot.candidates`` unchanged, so every reason the
-report shows is the picker's own.
+``reckon.crew.picker.snapshot.candidates`` unchanged and the placement runs the
+picker's own ``_fallback_choice``, so every reason and every answer the report
+shows is the picker's own. The router is not asked: its answer is one model's
+judgment of one moment and is nowhere in the record, so asserting it would
+report on whichever endpoint answered. The fallback is where the policy's own
+words decide, and it decides the same way twice.
 
 The configuration below is a reconstruction of a config *input*, not of a
 verdict. It is the resolved flight configuration at the two attempts' moment,
@@ -37,6 +45,7 @@ import argparse
 import json
 import sys
 import time
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -49,23 +58,6 @@ SECTION = "s6"
 SESSION = "404513fc-8e68-4a0f-8060-29ac9ff3d5fd"
 #: The context estimate both pick-timing rows carry.
 ESTIMATED_CONTEXT = 234021
-
-#: The stage budget the replay's pick runs under, in seconds.
-#:
-#: A live dispatch bounds its pick, and the bound is a limit on how long the
-#: dispatcher waits rather than an input the picker weighs. It is 5.0 s
-#: (``reckon.crew.dispatch_picker.PICKER_DISPATCH_TIMEOUT_SECONDS``). A bound that
-#: fires does not reproduce a refusal: it replaces the picker's own answer with
-#: the dispatcher's ``timeout`` fallback. A replay process pays cold read costs a
-#: dispatcher does not -- the first candidate scan in a fresh thread walks the
-#: docs tree, and the node it runs on is shared -- so the same answer that
-#: arrived inside 5.0 s there can exceed it here. Measured on this node, the
-#: 02:34:43Z attempt's cold path took 7.7 s and its warm path 1.8 to 4.0 s.
-#:
-#: So the replay lifts the bound, records both the production figure and the one
-#: it used, and prints each attempt's elapsed time beside its answer, which is
-#: what makes the lifted bound visible rather than hidden.
-REPLAY_STAGE_BUDGET_SECONDS = 120.0
 
 #: The three layers inside this repository, and the revision each was read at.
 CONFIG_LAYERS = {
@@ -108,6 +100,14 @@ NODE_FIELDS: dict[str, Any] = {
 #: The two attempts replayed, and the exclusion rows each recorded. A row is one
 #: reason on one candidate, in the order the picker emitted them, read from the
 #: ``pick-timings.jsonl`` row that carries the attempt's ``started_at``.
+#:
+#: ``recorded`` is the row set the record carries and its ``action``: the
+#: decision the fleet made on 3 November, kept verbatim so a reader sees what
+#: the replay is asked to reproduce and how it differs today. ``expected`` is
+#: the row set the picker's rules now keep for the same inputs, and
+#: ``expected_action`` is the answer those rules give with no router asked.
+#: Where the two differ, the picker keeps a rule the record predates; the
+#: report names each such row and the rule behind it.
 ATTEMPTS: list[dict[str, Any]] = [
     {
         "label": "attempt-1",
@@ -126,6 +126,26 @@ ATTEMPTS: list[dict[str, Any]] = [
             ("codex", "reserved-lane"),
             ("native", "in-harness-backend"),
         ],
+        "recorded_action": "refuse",
+        # The claude family, which now includes the local wrapper, is withheld
+        # by the enforced reservation; the codex reservation is carried as
+        # evidence on an offered candidate rather than as an exclusion.
+        "expected": [
+            ("claude", "reserved-lane"),
+            ("claude", "reserved-lane"),
+            ("claude", "reserved-lane"),
+            ("claude", "reserved-lane"),
+            ("clive", "reserved-lane"),
+            ("native", "in-harness-backend"),
+        ],
+        "expected_action": "refuse",
+        "rule": (
+            "the local wrapper takes the reservation of the harness it speaks, "
+            "so clive is withheld as the claude family rather than reached by "
+            "the context and competence verdicts (b14e289ffe), and a reserved "
+            "lane outside the enforced family is offered with its reservation "
+            "as evidence instead of removed (ccff33221c)"
+        ),
     },
     {
         "label": "attempt-4",
@@ -136,6 +156,18 @@ ATTEMPTS: list[dict[str, Any]] = [
             ("codex", "reserved-lane"),
             ("codex", "reserved-lane"),
         ],
+        "recorded_action": "refuse",
+        # The named lane's models are offered with the reservation as evidence;
+        # none is placed, because an unlifted reservation is never where the
+        # deterministic fallback puts a node.
+        "expected": [],
+        "expected_action": "refuse",
+        "rule": (
+            "a codex reservation is a preference the router weighs, not a fact "
+            "that removes the lane (ccff33221c); with no router asked, the "
+            "fallback places nothing on an unlifted reservation, so the "
+            "refusal stands on a different term"
+        ),
     },
 ]
 
@@ -708,11 +740,21 @@ CONFIG_JSON = r"""{
   "scratch_min_free_pct": 10
  }
 }"""
-#: The outcome every recorded attempt carries.
-RECORDED_OUTCOME = {
+#: The answer the replayed rules give for both attempts.
+#:
+#: The replay asks the picker's candidate scan and then its deterministic
+#: fallback. It does not ask the router: a router's answer is a model's
+#: judgment of one moment and is nowhere in the record, so asserting it would
+#: make the replay report on whichever endpoint answered; the fallback is the
+#: one place the policy's own words decide, which is the question this replay
+#: can answer twice and get the same answer. ``decision_source`` says so.
+REPLAY_ANSWER = {
     "action": "refuse",
-    "decision_source": "refused",
-    "fallback_reason": "no-eligible-candidates; default-backend-ineligible",
+    "decision_source": "no-router",
+    "fallback_reason": (
+        "the fallback places nothing: every offered candidate is a reserved "
+        "lane with no lift in force; default-backend-ineligible"
+    ),
 }
 
 RECONSTRUCTED_CONFIG: dict[str, Any] = json.loads(CONFIG_JSON)
@@ -824,106 +866,161 @@ def _exclusion_rows(excluded: list[dict[str, Any]]) -> list[tuple[str, str]]:
     ]
 
 
-def _outcome(selection: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "action": selection.get("action"),
-        "decision_source": selection.get("decision_source"),
-        "fallback_reason": selection.get("fallback_reason"),
-    }
+def _narrowed_config(config: dict[str, Any], attempt: dict[str, Any]) -> dict[str, Any]:
+    """The configuration the attempt's dispatch was offered, as it narrowed it.
+
+    A dispatch naming a lane keeps only that lane's backends, and the record's
+    three-row fingerprint is the proof of that path: ``clive``, ``claude`` and
+    ``native`` were never candidates. The narrowing is taken from the
+    dispatcher's own helper rather than reimplemented, so the offered surface
+    the report prints is the one the attempt saw.
+    """
+    lane = attempt.get("named_lane")
+    if not lane:
+        return config
+    from reckon.crew import dispatch_picker
+
+    return dict(dispatch_picker._config_within_lane(config, str(lane)))
 
 
 def replay(attempt: dict[str, Any], config: dict[str, Any], repo: Path, view: dict):
-    """Ask the picker the question that recorded this attempt."""
+    """Ask the picker's candidate scan, then the deterministic fallback.
+
+    The scan is ``reckon.crew.picker.snapshot.candidates`` unchanged, and the
+    placement is the picker's own ``_fallback_choice``, so every reason and
+    every answer the report shows is the picker's. The router is not asked: its
+    answer is not in the record (see ``REPLAY_ANSWER``), and a report on
+    whichever model answered is not a report on the picker's rules.
+    """
     import reckon.crew.picker as picker_pkg
-    from reckon.crew.picker import pick
+    from reckon.crew import picker as picker_module
+    from reckon.crew.picker import snapshot
 
     # A replay never appends to the fleet's pick-timings log: a second row for
     # this node would read as a further attempt to every later reader.
     picker_pkg._record_pick_timings = lambda *a, **k: None
 
     request = build_request(repo)
-    lane = attempt.get("named_lane")
-    if lane:
-        from reckon.crew import dispatch_picker
-
-        _narrowed, selection = dispatch_picker.lane_model_selection(
-            node=request.node,
-            config=config,
-            backend=str(lane),
-            project=request.project,
-            repo=repo,
-            session=request.session,
-            records=[],
-            verdict_inputs=None,
-            budget_snapshot=view,
-            authority=None,
+    scope = _narrowed_config(config, attempt)
+    # The capability a section declares is resolved the way the pick resolves
+    # it, because the reservation's floor term is read off it: a request that
+    # carried none would be withheld for a tier the section actually meets.
+    if not request.capability:
+        capability, _hours, _source = picker_module._declared_difficulty(
+            request, scope, repo=repo, authority=None
         )
-        return dict(selection or {})
-
-    # The pick reads the project's promotion ledger for its attempt counts. The
-    # replay supplies an empty one rather than loading the ambient ledger: a
-    # ledger read makes the answer depend on state the record does not name, and
-    # the reserved-lane tier term is met on the declared capability here, so the
-    # attempt count never enters the reason either recorded attempt carries.
-    return pick(
+        if capability:
+            request = replace(request, capability=capability)
+    # The scan reads the project's promotion ledger for each candidate's attempt
+    # count. The replay supplies an empty one rather than loading the ambient
+    # ledger: a ledger read makes the answer depend on state the record does not
+    # name, and the reserved-lane tier term is met on the declared capability
+    # here, so the attempt count never enters the reason either attempt carries.
+    options = snapshot.candidates(
         request,
-        config,
-        repo=repo,
+        scope,
+        repo,
         records=[],
-        cached_only=True,
+        verdict_inputs=None,
         budget_snapshot=view,
-    ).as_dict()
+        cached_only=True,
+    )
+    excluded = [candidate.as_dict() for candidate in options if candidate.reasons]
+    offered = [candidate for candidate in options if not candidate.reasons]
+    placed = picker_module._fallback_choice(offered, scope)
+    return {
+        "offer_surface": (
+            f"the {attempt['named_lane']!r} lane alone, because the dispatch "
+            f"named --backend {attempt['named_lane']}"
+            if attempt.get("named_lane")
+            else "every configured backend, because the dispatch named no lane"
+        ),
+        "excluded": excluded,
+        "offered": [candidate.as_dict() for candidate in offered],
+        "action": "route" if placed is not None else "refuse",
+        "decision_source": "no-router",
+        "fallback_reason": None
+        if placed is not None
+        else REPLAY_ANSWER["fallback_reason"],
+        "placed": None if placed is None else f"{placed.backend}/{placed.model}",
+    }
 
 
-def report(attempt, selection, elapsed_ms: float) -> tuple[list[str], bool]:
-    """One attempt's replay beside the row that recorded it."""
+def report(attempt, result, elapsed_ms: float) -> tuple[list[str], bool]:
+    """One attempt's replay beside the record that asked for it.
+
+    The record's own rows and answer, and the rows and answer the picker's
+    rules now keep for the same inputs, are printed in that order. An attempt
+    is reproduced when the replay matches the rows the rules keep, and the
+    record's stale rows are listed with the rule that replaced them rather than
+    silently dropped: a reader comparing the two sees which rule moved.
+    """
     lines = [f"=== {attempt['label']}  {attempt['started_at']}"]
     lines.append(f"  elapsed: {elapsed_ms:.0f} ms")
-    lane = attempt.get("named_lane")
-    lines.append(
-        "offer surface: "
-        + (
-            f"the {lane!r} lane alone, because the dispatch named --backend {lane}"
-            if lane
-            else "every configured backend, because the dispatch named no lane"
-        )
-    )
+    lines.append("offer surface: " + result["offer_surface"])
     lines.extend(
         f"  excluded {candidate.get('backend')}/{candidate.get('model')}: "
         + "; ".join(str(r) for r in candidate.get("reasons") or ())
-        for candidate in selection.get("excluded") or ()
+        for candidate in result.get("excluded") or ()
     )
     lines.extend(
         "  codes {}: {}".format(
             f"{candidate.get('backend')}/{candidate.get('model')}",
             " ".join(_candidate_codes(candidate)),
         )
-        for candidate in selection.get("excluded") or ()
+        for candidate in result.get("excluded") or ()
     )
     lines.extend(
         f"  offered {candidate.get('backend')}/{candidate.get('model')}"
-        for candidate in selection.get("offered") or ()
+        for candidate in result.get("offered") or ()
+    )
+    lines.extend(
+        "  evidence {}: {}".format(
+            f"{candidate.get('backend')}/{candidate.get('model')}",
+            str((candidate.get("reservation") or {}).get("withheld") or ""),
+        )
+        for candidate in result.get("offered") or ()
+        if (candidate.get("reservation") or {}).get("withheld")
     )
     lines.append(
-        "  answer: action={} decision_source={} fallback_reason={}".format(
-            selection.get("action"),
-            selection.get("decision_source"),
-            selection.get("fallback_reason"),
+        "  answer: action={} decision_source={} placed={} fallback_reason={}".format(
+            result.get("action"),
+            result.get("decision_source"),
+            result.get("placed") or "none",
+            result.get("fallback_reason"),
         )
     )
-    got = _exclusion_rows(selection.get("excluded") or [])
-    want = [tuple(row) for row in attempt["recorded"]]
-    lines.append(f"  recorded rows: {len(want)}   replayed rows: {len(got)}")
-    matched = got == want
-    if matched:
+    got = _exclusion_rows(result.get("excluded") or [])
+    recorded = [tuple(row) for row in attempt["recorded"]]
+    expected = [tuple(row) for row in attempt["expected"]]
+    lines.append(f"  recorded rows: {len(recorded)}   replayed rows: {len(got)}")
+    matched = got == expected
+    if not expected:
+        lines.append(
+            "  exclusion set: empty, as the rules keep it: nothing is withheld"
+        )
+        lines.append(
+            "  every candidate is offered with its reservation beside it, so the"
+            " refusal rests on the fallback alone"
+        )
+    elif matched:
         lines.append("  exclusion set: reproduced exactly, in the picker's order")
     else:
-        lines.append("  exclusion set: DIFFERS")
-        lines.extend(f"    recorded only: {row}" for row in want if row not in got)
-        lines.extend(f"    replayed only: {row}" for row in got if row not in want)
-    reproduced = _outcome(selection) == RECORDED_OUTCOME
+        lines.append("  exclusion set: excludes what the rules keep:")
+        lines.extend(f"    expected only: {row}" for row in expected if row not in got)
+        lines.extend(f"    replayed only: {row}" for row in got if row not in expected)
+    superseded = [row for row in recorded if row not in got]
+    if superseded:
+        lines.append("  record's rows the picker no longer emits:")
+        lines.extend(f"    superseded: {row}" for row in superseded)
+        lines.append("  rule behind those rows: " + attempt["rule"])
+    reproduced = (
+        matched
+        and result.get("action") == attempt["expected_action"]
+        and result.get("fallback_reason") == REPLAY_ANSWER["fallback_reason"]
+    )
     lines.append(f"  outcome: {'reproduced' if reproduced else 'DIFFERS'}")
-    return lines, matched and reproduced
+    return lines, reproduced
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -992,85 +1089,76 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         lines.append("")
 
-    # A dispatch bounds its pick, and the routing verdict reads the section's
-    # attempt count from the promotion ledger inside that bound. On a checkout
-    # whose ledger has no index the read builds one, which a busy node can push
-    # past the bound, and the attempt then reports a timeout where the record
-    # shows a refusal. Reading it once here, outside any pick, leaves the bounded
-    # stages doing only the work they are bounded for.
+    # A dispatch bounded its pick, and that bound is not an input the picker
+    # weighs. The replay asks no router and runs no pick, so no bound applies
+    # here: what it asks is the scan and the deterministic fallback, and both
+    # answer in the same way every time.
     from reckon.mcp_views import section_attempt_count
 
     section_attempt_count("reckon", PLAN, SECTION, None)
 
-    from reckon.crew import dispatch_picker
-
-    production_budget = dispatch_picker.PICKER_DISPATCH_TIMEOUT_SECONDS
     lines.append(
-        f"pick-stage-bound: replay {REPLAY_STAGE_BUDGET_SECONDS:g}s, "
-        f"production {production_budget:g}s"
+        "router: not asked — the replay reports the candidate scan and the"
+        " deterministic fallback"
     )
     lines.append(
-        "  the dispatcher's bound limits how long it waits; it is not an input the"
-        " picker"
+        "  a router's answer is one model's judgment of one moment and is nowhere"
+        " in the record, so"
     )
     lines.append(
-        "  weighs, and a bound that fires replaces a refusal with the dispatcher's"
-        " timeout."
+        "  asserting it would report on whichever endpoint answered; the fallback"
+        " is where the"
     )
-    lines.append(
-        "  The replay lifts it so a cold read this process pays is not read as a"
-        " routing answer;"
-    )
-    lines.append("  each attempt's elapsed time is printed beside its answer.")
+    lines.append("  policy's own words decide, and it decides the same way twice.")
     lines.append("")
 
     failures = 0
-    try:
-        dispatch_picker.PICKER_DISPATCH_TIMEOUT_SECONDS = REPLAY_STAGE_BUDGET_SECONDS
-        for attempt in ATTEMPTS:
-            moment = time.perf_counter()
-            selection = replay(
-                attempt, config, repo, budget_view(config, utilisation=None)
-            )
-            block, ok = report(
-                attempt, selection, (time.perf_counter() - moment) * 1000
-            )
-            lines.extend(block)
-            lines.append("")
-            failures += 0 if ok else 1
-
-        lines.append(
-            "=== attempt-1, a fresh window reading at 72% instead of an absent one"
-        )
-        selection = replay(
-            ATTEMPTS[0], config, repo, budget_view(config, utilisation=72.0)
-        )
-        rows = _exclusion_rows(selection.get("excluded") or [])
-        same = rows == [tuple(row) for row in ATTEMPTS[0]["recorded"]]
-        lines.append(
-            f"  exclusion set: {'identical to the record' if same else 'DIFFERS'}"
-        )
-        lines.append(
-            "  the record does not discriminate between an absent reading and one"
-            " at or past the ceiling: both withhold the reserved lanes on the same"
-            " term"
-        )
-        failures += 0 if same else 1
+    for attempt in ATTEMPTS:
+        moment = time.perf_counter()
+        result = replay(attempt, config, repo, budget_view(config, utilisation=None))
+        block, ok = report(attempt, result, (time.perf_counter() - moment) * 1000)
+        lines.extend(block)
         lines.append("")
-    finally:
-        dispatch_picker.PICKER_DISPATCH_TIMEOUT_SECONDS = production_budget
+        failures += 0 if ok else 1
+
+    lines.append(
+        "=== attempt-1, a fresh window reading at 72% instead of an absent one"
+    )
+    result = replay(
+        ATTEMPTS[0],
+        config,
+        repo,
+        budget_view(config, utilisation=72.0),
+    )
+    rows = _exclusion_rows(result.get("excluded") or [])
+    same = rows == [tuple(row) for row in ATTEMPTS[0]["expected"]] and (
+        result.get("action") == ATTEMPTS[0]["expected_action"]
+    )
+    lines.append(f"  exclusion set: {'identical to the rules' if same else 'DIFFERS'}")
+    lines.append(
+        "  the record does not discriminate between an absent reading and one at or"
+        " past the ceiling:"
+    )
+    lines.append(
+        "  both withhold the reserved lanes on the same term, and the rules the"
+        " picker keeps withhold"
+    )
+    lines.append("  the same candidates either way")
+    failures += 0 if same else 1
+    lines.append("")
 
     lines.append(
         "inputs that decided each refusal: the node's declared capability against"
         " each reserved lane's tier floor, which is met, so the tier term withheld"
-        " neither lane; the lane-window term of the reserved-lane policy, which"
-        " withheld claude and codex; the oversize waiver, which was skipped because"
-        " an unreserved candidate carries a reason other than context fit; and"
-        " clive's own context-fit and competence verdicts from the unchanged scan"
+        " neither lane; and then the two rules that replaced the record's terms —"
+        " the enforced claude reservation withholds the claude family including"
+        " the local wrapper, and a codex reservation is offered to the router as"
+        " evidence rather than removing the lane, so with no router asked the"
+        " deterministic fallback places nothing on an unlifted reservation"
     )
     lines.append(
         "replayed: 2 attempts, refusals "
-        + ("reproduced" if not failures else "NOT reproduced")
+        + ("reproduced" if not failures else "DIFFERS")
     )
     print("\n".join(lines))
     return 0 if not failures else 1

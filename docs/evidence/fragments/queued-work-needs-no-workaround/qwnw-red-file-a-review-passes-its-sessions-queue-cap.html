@@ -1,0 +1,84 @@
+<section id="qwnw-red-file-a-review-passes-its-sessions-queue-cap-landing">
+<h3>A test file red on the primary branch passes: the review queue-cap file</h3>
+<p>One cause, and it was the test. The four failing cases queue a request whose node declares only
+<code>id</code>, <code>plan</code> and <code>section</code>. Since <code>TaskNode.goal</code> has
+no default, the review contract stamped at queue time rebuilt the pointer's node and raised
+<code>TypeError: TaskNode.__init__() missing 1 required positional argument: 'goal'</code> before
+any cap rule ran. The pointer a real dispatch stores is the node's own <code>as_dict()</code>,
+which always names its goal, so the fixture encoded a node shape the code no longer keeps; the
+fixture now carries a goal. No assertion was deleted or weakened and no product module changed.</p>
+<p>Every arm below ran as an <code>all_debug</code> job with <code>SLURM_JOB_ID</code> unset in the
+test environment. The base arm runs the base revision in its own extracted tree; the head arm runs
+the assigned worktree at the delivered commit. Full logs are in the run directory
+<code>~/.config/reckon/crew/runs/r-20261116T104605930332-qwnw-red-file-a-review-passes-its-sessions-queue-cap/</code>
+(<code>base-gate.log</code>, <code>head-gate.log</code>, <code>suite-base.log</code>,
+<code>suite-head.log</code>).</p>
+
+<h4 id="qwnw-red-file-a-review-passes-its-sessions-queue-cap-base">Base arm — the negative control</h4>
+<pre id="qwnw-red-file-a-review-passes-its-sessions-queue-cap-base-log"># revision: 52f2055b65a61a81b796c7e5e315e5a003801a59
+# tree: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104605930332-qwnw-red-file-a-review-passes-its-sessions-queue-cap/scratch/base
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_review_passes_its_sessions_queue_cap.py
+# measurement_module: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104605930332-qwnw-red-file-a-review-passes-its-sessions-queue-cap/scratch/base/reckon/crew/runs.py
+# measurement_cwd: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104605930332-qwnw-red-file-a-review-passes-its-sessions-queue-cap/scratch/base
+FFFF..                                                                   [100%]
+=================================== FAILURES ===================================
+____________ test_a_review_is_queued_when_the_session_holds_its_cap ____________
+…
+tests/test_a_review_passes_its_sessions_queue_cap.py:67:
+reckon/crew/runs.py:993: in queue_dispatch
+    record_review_contract(record)
+reckon/crew/admission/reviews.py:163: in record_review_contract
+    node = _launching._node_from_pointer(pointer)
+…
+&gt;       return TaskNode(**values)
+               ^^^^^^^^^^^^^^^^^^
+E       TypeError: TaskNode.__init__() missing 1 required positional argument: &#x27;goal&#x27;
+…
+FAILED tests/test_a_review_passes_its_sessions_queue_cap.py::test_a_review_is_queued_when_the_session_holds_its_cap - TypeError: TaskNode.__init__() missing 1 required positional argument: &#x27;goal&#x27;
+FAILED tests/test_a_review_passes_its_sessions_queue_cap.py::test_a_review_is_exempt_by_its_minted_node_id_alone - TypeError: TaskNode.__init__() missing 1 required positional argument: &#x27;goal&#x27;
+FAILED tests/test_a_review_passes_its_sessions_queue_cap.py::test_a_further_implementation_is_still_refused_queue_full - TypeError: TaskNode.__init__() missing 1 required positional argument: &#x27;goal&#x27;
+FAILED tests/test_a_review_passes_its_sessions_queue_cap.py::test_a_queued_review_does_not_shrink_the_implementation_allowance - TypeError: TaskNode.__init__() missing 1 required positional argument: &#x27;goal&#x27;
+4 failed, 2 passed in 2.53s
+EXIT=1
+</pre>
+<p>Excerpt: the four tracebacks are identical and the full 340-line log is the run directory's
+<code>base-gate.log</code>. The two cases that pass are the admission-order ones, which never call
+<code>queue_dispatch</code> and so never rebuild a node.</p>
+
+<h4 id="qwnw-red-file-a-review-passes-its-sessions-queue-cap-head">Head arm</h4>
+<pre id="qwnw-red-file-a-review-passes-its-sessions-queue-cap-head-log"># revision: 704f7a5ad1fdf0f1d2aafcb401cc19079ca18b34
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-review-passes-its-sessions-queue-cap
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_review_passes_its_sessions_queue_cap.py
+# measurement_module: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-review-passes-its-sessions-queue-cap/reckon/crew/runs.py
+# measurement_cwd: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-review-passes-its-sessions-queue-cap
+......                                                                   [100%]
+6 passed in 1.19s
+EXIT=0
+</pre>
+
+<h4 id="qwnw-red-file-a-review-passes-its-sessions-queue-cap-suite">The armed selection</h4>
+<p>The node's write scope is <code>tests/</code>, over which the suite template resolves to
+<code>tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code>.
+Both arms carry the same command and the same result, 58 passed, so the change adds no failure.
+The only file this node changed is a test module, which nothing imports, so there is no further
+arm over importers of a changed module.</p>
+<pre id="qwnw-red-file-a-review-passes-its-sessions-queue-cap-suite-log"># base: # revision: 52f2055b65a61a81b796c7e5e315e5a003801a59
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+..........................................................               [100%]
+58 passed in 33.96s
+EXIT=0
+
+# head: # revision: 704f7a5ad1fdf0f1d2aafcb401cc19079ca18b34
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+..........................................................               [100%]
+58 passed in 34.15s
+EXIT=0
+</pre>
+
+<h4 id="qwnw-red-file-a-review-passes-its-sessions-queue-cap-note">Observation, not repaired here</h4>
+<p>Rebuilding a pointer's node from a stored dict raises a bare <code>TypeError</code> when the
+stored node lacks a field <code>TaskNode</code> declares without a default, rather than a refusal
+naming the request. Every pointer the dispatch path writes carries the field, so nothing in
+production reaches it; the fault only surfaces from a hand-built fixture, as it did here. Fixing
+it is a product change with its own test and is outside this node's measure.</p>
+</section>

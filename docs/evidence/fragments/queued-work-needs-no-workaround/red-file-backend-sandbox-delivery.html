@@ -1,0 +1,196 @@
+# revision: 69fab1372f16686ce6acdb6094a357c6f6bfe18d (base content of the named file)
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-backend-sandbox-delivery
+# command: env -u TMPDIR -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_backend_sandbox_delivery.py
+.FFF                                                                     [100%]
+=================================== FAILURES ===================================
+____________ test_claude_read_only_grants_every_computed_write_root ____________
+
+tmp_path = PosixPath('/tmp/pytest-of-mcintos/pytest-8/test_claude_read_only_grants_e0')
+
+    def test_claude_read_only_grants_every_computed_write_root(tmp_path: Path) -> None:
+        """Each root sandbox_write_roots computes appears as a writable directory."""
+        worktree = tmp_path / "worktree"
+        run_dir = tmp_path / "run"
+        reports = tmp_path / "reports"
+        worktree.mkdir()
+        run_dir.mkdir()
+        reports.mkdir()
+        manifest = tmp_path / "run" / "manifest.md"
+        roots = _computed_write_roots(
+            repository=worktree,
+            run_directory=run_dir,
+            reports_directory=reports,
+            manifest_path=manifest,
+        )
+        plan = _backends.launch_plan(
+            backend_name="b",
+            backend=_read_only(CLAUDE),
+            prompt="p",
+            worktree=str(worktree),
+            manifest_path=str(manifest),
+            writable_directories=roots,
+        )
+        grant = plan.argv[plan.argv.index("--add-dir") + 1 :]
+        for root in roots:
+>           assert root in grant
+E           AssertionError: assert '/tmp' in ['/tmp/pytest-of-mcintos/pytest-8/test_claude_read_only_grants_e0/reports', '/tmp/pytest-of-mcintos/pytest-8/test_claude_read_only_grants_e0/run']
+
+tests/test_backend_sandbox_delivery.py:90: AssertionError
+______________ test_claude_read_only_grant_excludes_the_worktree _______________
+
+tmp_path = PosixPath('/tmp/pytest-of-mcintos/pytest-8/test_claude_read_only_grant_ex0')
+
+    def test_claude_read_only_grant_excludes_the_worktree(tmp_path: Path) -> None:
+        """The repository under test never enters the writable-directory grant."""
+        worktree = tmp_path / "worktree"
+        run_dir = tmp_path / "run"
+        reports = tmp_path / "reports"
+        worktree.mkdir()
+        run_dir.mkdir()
+        reports.mkdir()
+        manifest = tmp_path / "run" / "manifest.md"
+        roots = _computed_write_roots(
+            repository=worktree,
+            run_directory=run_dir,
+            reports_directory=reports,
+            manifest_path=manifest,
+        )
+        plan = _backends.launch_plan(
+            backend_name="b",
+            backend=_read_only(CLAUDE),
+            prompt="p",
+            worktree=str(worktree),
+            manifest_path=str(manifest),
+            writable_directories=roots,
+        )
+        grant = plan.argv[plan.argv.index("--add-dir") + 1 :]
+        assert str(worktree) not in grant
+        # The worktree appears nowhere else in a Claude invocation (no -C flag).
+>       assert str(worktree) not in plan.argv
+E       AssertionError: assert '/tmp/pytest-of-mcintos/pytest-8/test_claude_read_only_grant_ex0/worktree' not in ['bwrap', '--dev-bind', '/', '/', '--unshare-pid', '--proc', ...]
+E        +  where '/tmp/pytest-of-mcintos/pytest-8/test_claude_read_only_grant_ex0/worktree' = str(PosixPath('/tmp/pytest-of-mcintos/pytest-8/test_claude_read_only_grant_ex0/worktree'))
+E        +  and   ['bwrap', '--dev-bind', '/', '/', '--unshare-pid', '--proc', ...] = LaunchPlan(backend='b', dialect='claude', argv=['bwrap', '--dev-bind', '/', '/', '--unshare-pid', '--proc', '/proc', '...mpt='p', anchored_edit=False, anchored_edit_reason='disabled', unmergeable_seals={}, mcp_set='', worker_mcp_servers=()).argv
+
+tests/test_backend_sandbox_delivery.py:119: AssertionError
+____________________ test_codex_read_only_argv_is_unchanged ____________________
+
+tmp_path = PosixPath('/tmp/pytest-of-mcintos/pytest-8/test_codex_read_only_argv_is_u0')
+
+    def test_codex_read_only_argv_is_unchanged(tmp_path: Path) -> None:
+        """The codex dialect's read-only argv stays byte-identical.
+    
+        The dialect's own argv, so the fence wrapper is not composed: this pins
+        what the dialect builds from the sandbox tier, while the fence is a
+        wrapper around a launch and is asserted on its own.
+        """
+        delivery = tmp_path / "delivery"
+        delivery.mkdir()
+        manifest = delivery / "manifest.md"
+        roots = [
+            str(tmp_path / "run"),
+            str(tmp_path / "reports"),
+            str(tmp_path / "other"),
+        ]
+        plan = _backends.launch_plan(
+            backend_name="b",
+            backend=_read_only(CODEX),
+            prompt="p",
+            worktree=str(tmp_path / "worktree"),
+            manifest_path=str(manifest),
+            writable_directories=roots,
+            fence=False,
+        )
+        expected = [
+            "codex",
+            "exec",
+            "--json",
+            "-C",
+            str(delivery),
+            "--sandbox",
+            "workspace-write",
+            "-c",
+            "sandbox_workspace_write.exclude_slash_tmp=true",
+            "--skip-git-repo-check",
+        ]
+        # Every root outside the delivery workspace is admitted as a writable dir,
+        # in the order the caller passed them. None of the roots here lies under
+        # the delivery workspace, so all three survive the reachability filter.
+        for root in roots:
+            expected += ["--add-dir", root]
+        expected.append("-")
+>       assert plan.argv == expected
+E       assert ['codex', 'ex...y', '-c', ...] == ['codex', 'ex...sandbox', ...]
+E         
+E         At index 5 diff: '-c' != '--sandbox'
+E         Left contains 6 more items, first extra item: '/tmp/pytest-of-mcintos/pytest-8/test_codex_read_only_argv_is_u0/run'
+E         
+E         Full diff:
+E           [
+E               'codex',
+E               'exec',
+E               '--json',
+E               '-C',
+E               '/tmp/pytest-of-mcintos/pytest-8/test_codex_read_only_argv_is_u0/delivery',
+E         +     '-c',
+E         +     'mcp_servers={}',
+E         +     '-c',
+E         +     'hooks.PostToolUse=[{hooks=[{type="command", '
+E         +     'command="/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-backend-sandbox-delivery/.venv/bin/python '
+E         +     '/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-backend-sandbox-delivery/reckon/hooks/worker_inbox.py"}]}]',
+E         +     '-c',
+E         +     'hooks.state={"/<session-flags>/config.toml:post_tool_use:0:0"={trusted_hash="sha256:9789b03a711cf6152b29f10082cb9ce4b23b61ce89efe872ffc3f1a6755941f7"}}',
+E               '--sandbox',
+E               'workspace-write',
+E               '-c',
+E               'sandbox_workspace_write.exclude_slash_tmp=true',
+E               '--skip-git-repo-check',
+E               '--add-dir',
+E               '/tmp/pytest-of-mcintos/pytest-8/test_codex_read_only_argv_is_u0/run',
+E               '--add-dir',
+E               '/tmp/pytest-of-mcintos/pytest-8/test_codex_read_only_argv_is_u0/reports',
+E               '--add-dir',
+E               '/tmp/pytest-of-mcintos/pytest-8/test_codex_read_only_argv_is_u0/other',
+E               '-',
+E           ]
+
+tests/test_backend_sandbox_delivery.py:164: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_backend_sandbox_delivery.py::test_claude_read_only_grants_every_computed_write_root - AssertionError: assert '/tmp' in ['/tmp/pytest-of-mcintos/pytest-8/test_claude_read_only_grants_e0/reports', '/tmp/pytest-of-mcintos/pytest-8/test_claude_read_only_grants_e0/run']
+FAILED tests/test_backend_sandbox_delivery.py::test_claude_read_only_grant_excludes_the_worktree - AssertionError: assert '/tmp/pytest-of-mcintos/pytest-8/test_claude_read_only_grant_ex0/worktree' not in ['bwrap', '--dev-bind', '/', '/', '--unshare-pid', '--proc', ...]
+ +  where '/tmp/pytest-of-mcintos/pytest-8/test_claude_read_only_grant_ex0/worktree' = str(PosixPath('/tmp/pytest-of-mcintos/pytest-8/test_claude_read_only_grant_ex0/worktree'))
+ +  and   ['bwrap', '--dev-bind', '/', '/', '--unshare-pid', '--proc', ...] = LaunchPlan(backend='b', dialect='claude', argv=['bwrap', '--dev-bind', '/', '/', '--unshare-pid', '--proc', '/proc', '...mpt='p', anchored_edit=False, anchored_edit_reason='disabled', unmergeable_seals={}, mcp_set='', worker_mcp_servers=()).argv
+FAILED tests/test_backend_sandbox_delivery.py::test_codex_read_only_argv_is_unchanged - assert ['codex', 'ex...y', '-c', ...] == ['codex', 'ex...sandbox', ...]
+  
+  At index 5 diff: '-c' != '--sandbox'
+  Left contains 6 more items, first extra item: '/tmp/pytest-of-mcintos/pytest-8/test_codex_read_only_argv_is_u0/run'
+  
+  Full diff:
+    [
+        'codex',
+        'exec',
+        '--json',
+        '-C',
+        '/tmp/pytest-of-mcintos/pytest-8/test_codex_read_only_argv_is_u0/delivery',
+  +     '-c',
+  +     'mcp_servers={}',
+  +     '-c',
+  +     'hooks.PostToolUse=[{hooks=[{type="command", '
+  +     'command="/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-backend-sandbox-delivery/.venv/bin/python '
+  +     '/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-backend-sandbox-delivery/reckon/hooks/worker_inbox.py"}]}]',
+  +     '-c',
+  +     'hooks.state={"/<session-flags>/config.toml:post_tool_use:0:0"={trusted_hash="sha256:9789b03a711cf6152b29f10082cb9ce4b23b61ce89efe872ffc3f1a6755941f7"}}',
+        '--sandbox',
+        'workspace-write',
+        '-c',
+        'sandbox_workspace_write.exclude_slash_tmp=true',
+        '--skip-git-repo-check',
+        '--add-dir',
+        '/tmp/pytest-of-mcintos/pytest-8/test_codex_read_only_argv_is_u0/run',
+        '--add-dir',
+        '/tmp/pytest-of-mcintos/pytest-8/test_codex_read_only_argv_is_u0/reports',
+        '--add-dir',
+        '/tmp/pytest-of-mcintos/pytest-8/test_codex_read_only_argv_is_u0/other',
+        '-',
+    ]
+3 failed, 1 passed in 2.99s
+EXIT=1

@@ -33,13 +33,20 @@ SECTIONS = ("s1", "s2", "s3")
 def _plan_html(waits: dict[str, list[str]]) -> str:
     """One plan: three ready sections, a done upstream, and a gate on a fourth.
 
+    The upstream is ``s0`` and not one of the three queued sections: a dispatch
+    of a section declared ``done`` is refused unless it is a measurement run, so
+    a queued request whose own section is declared done can never launch. The
+    three sections this measurement queues are therefore all implementable, and
+    ``s0`` exists only to be waited on.
+
     The gate is what makes a launch ask for its own section's verdict. A plan
     carrying no gate and no decision is judged from its authored waits alone,
     and never derives the roadmap this measurement counts.
     """
     quote = '"'
     declarations = {
-        "s1": "done",
+        "s0": "done",
+        "s1": "implementable",
         "s2": "implementable",
         "s3": "implementable",
         "s9": "implementable",
@@ -56,7 +63,8 @@ def _plan_html(waits: dict[str, list[str]]) -> str:
         f"{declared}{quote}>\n"
         f"<meta name={quote}plan-section-depends-on{quote} content={quote}"
         f"{awaited}{quote}>\n"
-        f"<h2 id={quote}s1{quote}>§1</h2>\n<h2 id={quote}s2{quote}>§2</h2>\n"
+        f"<h2 id={quote}s0{quote}>§0</h2>\n<h2 id={quote}s1{quote}>§1</h2>\n"
+        f"<h2 id={quote}s2{quote}>§2</h2>\n"
         f"<h2 id={quote}s3{quote}>§3</h2>\n<h2 id={quote}s9{quote}>§9</h2>\n"
         '<section data-reckon="gates"><div class="r-gate" data-id="ship" '
         'data-status="open" data-verdict="" data-gated-sections="s9">'
@@ -228,7 +236,7 @@ def test_the_launches_read_the_waits_an_uncached_computation_gives(
 ) -> None:
     """Caching the readiness changes how often it is built, not what it says."""
     repository = _seed(
-        tmp_path, monkeypatch, {"s2": [f"{PLAN}#s1"], "s3": [f"{PLAN}#s1"]}
+        tmp_path, monkeypatch, {"s2": [f"{PLAN}#s0"], "s3": [f"{PLAN}#s0"]}
     )
     _queue(repository)
     original = queue_admission.dispatch_waits

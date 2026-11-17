@@ -1,0 +1,139 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "failure_conditions": "Nonzero remaining count fails the checker result assertion; disabling chmod makes the redirect return zero and fails line 83 (recorded), missing permission refusal text fails line 84, truncation/content or mtime change fails line 85, retained write bits fail line 86, loss of executable behavior fails line 94, missing/duplicate repairs fail the count assertion, wrong target reporting fails the path inclusion/exclusion assertions, missing timestamp format fails the final assertion. Identity is independently sampled before mutation; executable output is a fixed decoy marker.",
+      "file": "tests/test_an_installed_interpreter_refuses_a_write.py",
+      "lines": "70-99",
+      "test": "test_shell_redirects_are_refused_and_decoys_still_execute"
+    },
+    {
+      "failure_conditions": "A redirect that is refused despite the disabled checker fails its return-code assertion; a missing/different write fails the replacement byte assertion; a decoy retaining its prior size/mtime/digest fails the changed-identity assertion. This is the positive overwrite control, not evidence of the enabled guard.",
+      "file": "tests/test_an_installed_interpreter_refuses_a_write.py",
+      "lines": "102-110",
+      "test": "test_disabled_check_replaces_the_writable_decoy"
+    },
+    {
+      "failure_conditions": "Linking the wrong environment fails the resolved-link assertion; a wrong receipt fails the linked-path assertion; removing the provisioning checker leaves write bits and permits redirect, failing two independent filesystem assertions; stdout repair chatter fails the empty-stdout assertion and absent/wrong stderr target fails the final assertion. The receipt path expectation uses a known fixture path and is corroborated by link identity and the refused redirect.",
+      "file": "tests/test_an_installed_interpreter_refuses_a_write.py",
+      "lines": "113-126",
+      "test": "test_provisioning_repairs_before_exposing_the_environment"
+    },
+    {
+      "failure_conditions": "Restoring either consumer to its inline repo/.venv resolution fails the comparison to selected because selected belongs to the other decoy; bypassing the resolver in interpreter discovery fails its target tuple; no resolver invocation or resolving another repository fails the calls assertion. The monkeypatch is a dependency-substitution control: both consumers must observe an independently chosen alternative environment, so the assertion does not survive reinstating the bypass.",
+      "file": "tests/test_an_installed_interpreter_refuses_a_write.py",
+      "lines": "129-149",
+      "test": "test_provisioning_and_measurement_use_the_same_resolver"
+    },
+    {
+      "failure_conditions": "Including python-config/directories/dangling aliases or duplicate target entries fails the target tuple; reporting a false repair failure fails the zero result; sealing python-config fails its retained-write-bit assertion.",
+      "file": "tests/test_an_installed_interpreter_refuses_a_write.py",
+      "lines": "152-162",
+      "test": "test_aliases_are_deduplicated_and_non_interpreters_are_untouched"
+    },
+    {
+      "failure_conditions": "Swallowing chmod refusal as success fails count==1; omitting or misidentifying the failure fails the report assertion; removing the provisioning remaining-count refusal fails pytest.raises; exposing a link after failed repair fails the absent-link assertion.",
+      "file": "tests/test_an_installed_interpreter_refuses_a_write.py",
+      "lines": "165-188",
+      "test": "test_failed_repair_is_counted_and_provisioning_refuses"
+    },
+    {
+      "failure_conditions": "Sampler failure fails its exit assertion; skipping a sample fails the three-row assertion; missing/renamed column fails the header assertion; missing/incorrect readings fail the two-zero assertion; omitting sealing on either pass leaves writable targets, successful redirects or damaged executables and fails those three assertions; missing/extra repairs or incorrect target names fail stderr count and path assertions. A later writable installation created between passes is a positive discovery control for the reported zero.",
+      "file": "tests/test_an_installed_interpreter_refuses_a_write.py",
+      "lines": "191-238",
+      "test": "test_each_health_sample_repairs_a_later_install"
+    },
+    {
+      "failure_conditions": "Stopping the sampler on registry failure fails returncode==0; returning healthy zero instead of unknown fails the final-column assertion; silently losing the diagnostic fails the stderr assertion.",
+      "file": "tests/test_an_installed_interpreter_refuses_a_write.py",
+      "lines": "241-255",
+      "test": "test_unreadable_registry_is_unknown_in_the_health_series"
+    },
+    {
+      "failure_conditions": "Dropping or moving the appended writable_interpreters column fails the literal expected header comparison; the expected string is independent of sampler output.",
+      "file": "tests/test_fleet_health.py",
+      "lines": "217"
+    },
+    {
+      "failure_conditions": "Either from reckon.flight import ... or import reckon.flight reinstated in the script fails the AST allowlist; both mutations are recorded failing in assertion-import-control-from.log and assertion-import-control-direct.log. The expected allowed module is a fixed literal, not derived from inspected imports.",
+      "file": "tests/test_worktree_fleet.py",
+      "lines": "338-349"
+    }
+  ],
+  "call_site_count": 6,
+  "call_sites": [
+    "bin/fleet-health:86",
+    "reckon/crew/fleet_supervisor.py:3018",
+    "reckon/crew/fleet_supervisor.py:3181",
+    "skills/reckon-build/scripts/worktree_fleet.py:244",
+    "reckon/crew/landing_measure.py:1534",
+    "reckon/crew/landing_measure.py:858"
+  ],
+  "completed_at": "2026-11-17T04:16:24Z",
+  "dispatched_at": "2026-11-17T04:10:55Z",
+  "findings": [],
+  "gate_evidence": {
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T232947941177-an-installed-interpreter-refuses-a-write/assertion-head-suite.log",
+    "after_summary": "86 passed in 59.40s",
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T232947941177-an-installed-interpreter-refuses-a-write/assertion-baseline-suite.log",
+    "baseline_summary": "78 passed in 47.71s",
+    "importer_added_failure_count": 0,
+    "importer_delta": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T232947941177-an-installed-interpreter-refuses-a-write/assertion-importer-delta.json",
+    "negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T232947941177-an-installed-interpreter-refuses-a-write/negative-control-assertions.log",
+    "negative_control_summary": "1 failed in 0.62s; EXIT=1"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Read b84ef1b7a8876d51c89228ed4ad24b4c032b621d, e4fd5fb31e33bd5acce8fde8897225f8ca99adaf and 5372106facfa38a772a7cf3c72b41fb133b835fd against base 4440e9282a117bef445aaaeda7f768988c9ff670; the change adds one checker/resolver, connects provisioning and health sampling, and repairs two affected assertions.",
+    "done_when": "Read prompt.txt FENCE \u2014 EVIDENCE; assertion-head-suite.log records 86 passed, negative-control-assertions.log records the disabled-check failure, and isolated importer receipts record zero added failures on all_debug with at most four processes.",
+    "goal": "Read prompt.txt GOAL and live plan section 2; reckon/crew/fleet_supervisor.py:340 seals resolved regular interpreter files and bin/fleet-health:86 invokes the check on each sample.",
+    "manifest": "Read manifest.md including baseline_suite and after_suite; both point to completed revision-labelled logs with EXIT=0, and its 78/86 pass counts reconcile with those receipts.",
+    "write_paths": "Read manifest.md orientation_write_paths and both resume advice grants; the seven changed paths are within the original scope plus the explicitly granted provisioner, sampler and two importer tests."
+  },
+  "justifications": {
+    "durability": "tests/test_an_installed_interpreter_refuses_a_write.py:83 fails when sealing is removed as the recorded negative control demonstrates, and its provisioning, later-install, refused-repair and unknown-registry assertions independently guard the other changed behavior.",
+    "evidence": "assertion-head-suite.log records Permission denied with identical pre/post size, nanosecond mtime and digest, while negative-control-assertions.log records exit 0 and changed identity when the checker is disabled.",
+    "fit": "reckon/crew/fleet_supervisor.py:310 uses the existing Path-based style and timestamped log owner, while bin/fleet-health:77 appends one field and preserves the sampler's existing receipt format.",
+    "goal_fidelity": "reckon/crew/fleet_supervisor.py:340 removes every write bit, skills/reckon-build/scripts/worktree_fleet.py:212 checks before exposing the environment, and bin/fleet-health:86 repeats the check for later installations.",
+    "reuse": "Capability searches at the base found inline environment resolution in reckon/crew/landing_measure.py:548 and its partition runner plus provision_env_links in skills/reckon-build/scripts/worktree_fleet.py:185, which now share resolved_environment; no interpreter permission-repair owner existed in reckon, bin or the fleet scripts.",
+    "scope_discipline": "The seven paths in the base-to-head diff match manifest.md changed_paths and the explicit scope grants in resume-1-advice.txt and resume-2-advice.txt."
+  },
+  "limitations": [
+    "No suite rerun or mutation was performed during review; recorded gate receipts were read.",
+    "The review does not certify the merged head or a live deployment; those are outside this node."
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read prompt.txt GOAL and live plan section 2; reckon/crew/fleet_supervisor.py:340 seals resolved regular interpreter files and bin/fleet-health:86 invokes the check on each sample.\nVERDICT done_when: Read prompt.txt FENCE \u2014 EVIDENCE; assertion-head-suite.log records 86 passed, negative-control-assertions.log records the disabled-check failure, and isolated importer receipts record zero added failures on all_debug with at most four processes.\nVERDICT write_paths: Read manifest.md orientation_write_paths and both resume advice grants; the seven changed paths are within the original scope plus the explicitly granted provisioner, sampler and two importer tests.\nVERDICT manifest: Read manifest.md including baseline_suite and after_suite; both point to completed revision-labelled logs with EXIT=0, and its 78/86 pass counts reconcile with those receipts.\nVERDICT diff: Read b84ef1b7a8876d51c89228ed4ad24b4c032b621d, e4fd5fb31e33bd5acce8fde8897225f8ca99adaf and 5372106facfa38a772a7cf3c72b41fb133b835fd against base 4440e9282a117bef445aaaeda7f768988c9ff670; the change adds one checker/resolver, connects provisioning and health sampling, and repairs two affected assertions.\nCALL_SITES: bin/fleet-health:86, reckon/crew/fleet_supervisor.py:3018, reckon/crew/fleet_supervisor.py:3181, skills/reckon-build/scripts/worktree_fleet.py:244, reckon/crew/landing_measure.py:1534, reckon/crew/landing_measure.py:858\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_supervisor.py:340 removes every write bit, skills/reckon-build/scripts/worktree_fleet.py:212 checks before exposing the environment, and bin/fleet-health:86 repeats the check for later installations.\nSCORE evidence: 20\nJUSTIFICATION evidence: assertion-head-suite.log records Permission denied with identical pre/post size, nanosecond mtime and digest, while negative-control-assertions.log records exit 0 and changed identity when the checker is disabled.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The seven paths in the base-to-head diff match manifest.md changed_paths and the explicit scope grants in resume-1-advice.txt and resume-2-advice.txt.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_an_installed_interpreter_refuses_a_write.py:83 fails when sealing is removed as the recorded negative control demonstrates, and its provisioning, later-install, refused-repair and unknown-registry assertions independently guard the other changed behavior.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/fleet_supervisor.py:310 uses the existing Path-based style and timestamped log owner, while bin/fleet-health:77 appends one field and preserves the sampler's existing receipt format.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches at the base found inline environment resolution in reckon/crew/landing_measure.py:548 and its partition runner plus provision_env_links in skills/reckon-build/scripts/worktree_fleet.py:185, which now share resolved_environment; no interpreter permission-repair owner existed in reckon, bin or the fleet scripts.\n",
+  "reproduction": "provisioning-reproduction.log at base: redirect exit=0, size 31 to 11, defect_reproduced=True; negative-control-assertions.log at delivered head with checker disabled: redirect exit=0, size 33 to 11; head gate: redirect exit=1, Permission denied, size/mtime/digest unchanged for both decoys.",
+  "reuse_search": {
+    "judgment": "The first two consumers now share the extracted resolver; command spelling canonicalization and hook interpreter selection have different responsibilities and do not enumerate/seal environment targets. The checker is new capability; health reporting extends the existing sampler/log. Added test helpers create decoys and record identity locally; no duplicate production owner.",
+    "owners_opened": [
+      "reckon/crew/landing_measure.py:_link_environment",
+      "skills/reckon-build/scripts/worktree_fleet.py:provision_env_links",
+      "reckon/crew/promotion_records.py:_resolved_interpreter",
+      "reckon/hooks/interpreter_bootstrap.py:checkout_interpreter",
+      "reckon/flight.py:mounted_project_docs"
+    ],
+    "searched": "Base revision: definitions and uses of environment resolution, interpreter selection and chmod across reckon, bin and skills/reckon-build/scripts."
+  },
+  "review_run_id": "r-20261117T040841263342-review-of-an-installed-interpreter-refuses-a-write-5372106facfa",
+  "reviewed_base_sha": "4440e9282a117bef445aaaeda7f768988c9ff670",
+  "reviewed_head_sha": "5372106facfa38a772a7cf3c72b41fb133b835fd",
+  "reviewed_run_id": "r-20261116T232947941177-an-installed-interpreter-refuses-a-write",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T04:27:14.878415+00:00",
+  "total": 120
+}

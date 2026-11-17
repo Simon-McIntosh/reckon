@@ -1,0 +1,118 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "assertions": "deliveries == []",
+      "failure_condition": "Fails if storage enumeration starts accepting missing or misspelled subjects; establishes the independent storage-owner refusal against which promotion is checked.",
+      "file": "tests/test_a_report_run_is_promoted_from_its_record.py",
+      "lines": "308"
+    },
+    {
+      "assertions": "not promoted; reason contains different subject; pointer exists; ledger empty",
+      "failure_condition": "Removing line 174 permits malformed reports to promote and makes not-promoted fail, as both red logs show; bypassing pointer preservation or writing a refused promotion breaks the independent filesystem/ledger assertions, and changing the refusal reason breaks its substring check.",
+      "file": "tests/test_a_report_run_is_promoted_from_its_record.py",
+      "lines": "312-315"
+    },
+    {
+      "assertions": "stored path does not exist before promotion",
+      "failure_condition": "Fails if fixture setup or prior state already persisted the report, preventing an old stored record from masquerading as the result of this promotion.",
+      "file": "tests/test_a_report_run_is_promoted_from_its_record.py",
+      "lines": "327"
+    },
+    {
+      "assertions": "promoted; pointer removed; actual stored record readable",
+      "failure_condition": "Rejecting valid subjects fails promoted; preserving the pointer fails its absence; skipping storage fails read_text even if promotion reports success.",
+      "file": "tests/test_a_report_run_is_promoted_from_its_record.py",
+      "lines": "331-333"
+    },
+    {
+      "assertions": "stored subject/project/review identity/key; parsed rubric items or plan disposition",
+      "failure_condition": "Storing another report, wrong metadata or dropping parser contents breaks the corresponding field read from durable JSON; expectations derive from the fixture identity but are compared to independent persisted output rather than an argument echoed by the function under test.",
+      "file": "tests/test_a_report_run_is_promoted_from_its_record.py",
+      "lines": "334-342"
+    },
+    {
+      "assertions": "exactly one ledger row; promoted_by review-self",
+      "failure_condition": "Skipping or duplicating the ledger entry fails unpacking; recording another promotion route fails the literal attribution.",
+      "file": "tests/test_a_report_run_is_promoted_from_its_record.py",
+      "lines": "343-344"
+    }
+  ],
+  "assertion_independence": "No tautological same-variable assertion found; kind, key, project and review identity expectations are checked against independently read persisted records, and malformed subject cases compare promotion against the storage owner refusal.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:1230 (review_self_state)",
+    "reckon/crew/promotion_checks.py:1958 (_resolve_promotion_outcome)",
+    "reckon/crew/promotion_checks.py:3022 (portfolio storage enumeration)",
+    "reckon/crew/promotion_checks.py:3083 (code storage enumeration)"
+  ],
+  "completed_at": "2026-11-17T01:41:07Z",
+  "dispatched_at": "2026-11-17T01:33:49Z",
+  "failure_delta_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233437459813-report-runs-are-promoted-from-their-record/repair-head.log",
+      "revision": "80b6a6b9ca96a921b3542b0a0a9b575be4b1b0ac",
+      "summary": "77 passed in 49.06s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233437459813-report-runs-are-promoted-from-their-record/baseline-verified.log",
+      "revision": "891a4e54f19486e82117d68826044be51d2e0a8d",
+      "summary": "58 passed in 35.46s"
+    },
+    "repair_base_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233437459813-report-runs-are-promoted-from-their-record/repair-base.log",
+      "revision": "4d9433f24fadec6f7fc15964bfdd8a4d2cab92c8",
+      "summary": "71 passed in 42.91s"
+    }
+  },
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified production readiness, outcome and storage call sites",
+    "diff": "read the sole new commit 80b6a6b9ca96a921b3542b0a0a9b575be4b1b0ac against previously reviewed 4d9433f24fadec6f7fc15964bfdd8a4d2cab92c8; it adds exact subject validation and six parametrized regression cases across two files.",
+    "done_when": "source prompt.txt:250 requires scoped report-promotion tests, a failing negative control and no added importer failures; repair-base.log records 71 passes, repair-head.log records 77 passes and subject-negative-control.log records four regression failures.",
+    "goal": "source prompt.txt:38 extends unattended promotion to report runs; this incremental repair in reckon/crew/recovery_review_delivery.py:174 prevents malformed code and portfolio subjects from promoting without storage.",
+    "manifest": "source manifest.md records the answering commit, actual persisted-record assertions, repair suite pair and four malformed-subject negative-control failures; its earlier replay evidence is explicitly tied to the earlier revision.",
+    "write_paths": "source prompt.txt:94 and manifest.md grant the delivery reader and report test; commit 80b6a6b9ca96a921b3542b0a0a9b575be4b1b0ac changes only those two granted paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_report_run_is_promoted_from_its_record.py:312 fails when subject validation is removed, and :327-344 independently inspect durable storage, pointer removal and ledger attribution for valid promotions.",
+    "evidence": "source repair-base.log and repair-head.log record completed 71-pass and 77-pass gates with EXIT=0, while subject-reproduction.log and subject-negative-control.log each record four failures at the independent promotion assertion in tests/test_a_report_run_is_promoted_from_its_record.py:312.",
+    "fit": "reckon/crew/recovery_review_delivery.py:149-176 follows its existing identity checks and CrewError wrapping, using the storage owner's subject normalization and existing portfolio constant without forbidden names.",
+    "goal_fidelity": "reckon/crew/recovery_review_delivery.py:174 now rejects exactly the missing or misspelled subjects excluded by plan_review.py:5154 and :6835, answering the prior blocking finding.",
+    "reuse": "capability searches for subject filtering, report enumeration and persistence found plan_review.py:5142 and :6831; the repair extends the existing delivery reader, and tests at :285 and :319 reuse _deliver, existing storage paths and promotion rather than duplicating an owner.",
+    "scope_discipline": "commit 80b6a6b9ca96a921b3542b0a0a9b575be4b1b0ac modifies only the granted reckon/crew/recovery_review_delivery.py and tests/test_a_report_run_is_promoted_from_its_record.py."
+  },
+  "prior_finding_resolution": "The previously recorded missing/misspelled subject finding is answered at recovery_review_delivery.py:174; the four cases reproduce at the repair base and under reversed source hunk, with both valid persistence controls passing.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: source prompt.txt:38 extends unattended promotion to report runs; this incremental repair in reckon/crew/recovery_review_delivery.py:174 prevents malformed code and portfolio subjects from promoting without storage.\nVERDICT done_when: source prompt.txt:250 requires scoped report-promotion tests, a failing negative control and no added importer failures; repair-base.log records 71 passes, repair-head.log records 77 passes and subject-negative-control.log records four regression failures.\nVERDICT write_paths: source prompt.txt:94 and manifest.md grant the delivery reader and report test; commit 80b6a6b9ca96a921b3542b0a0a9b575be4b1b0ac changes only those two granted paths.\nVERDICT manifest: source manifest.md records the answering commit, actual persisted-record assertions, repair suite pair and four malformed-subject negative-control failures; its earlier replay evidence is explicitly tied to the earlier revision.\nVERDICT diff: read the sole new commit 80b6a6b9ca96a921b3542b0a0a9b575be4b1b0ac against previously reviewed 4d9433f24fadec6f7fc15964bfdd8a4d2cab92c8; it adds exact subject validation and six parametrized regression cases across two files.\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:1230 (review_self_state), reckon/crew/promotion_checks.py:1958 (_resolve_promotion_outcome), reckon/crew/promotion_checks.py:3022 (portfolio storage enumeration), reckon/crew/promotion_checks.py:3083 (code storage enumeration)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_delivery.py:174 now rejects exactly the missing or misspelled subjects excluded by plan_review.py:5154 and :6835, answering the prior blocking finding.\nSCORE evidence: 20\nJUSTIFICATION evidence: source repair-base.log and repair-head.log record completed 71-pass and 77-pass gates with EXIT=0, while subject-reproduction.log and subject-negative-control.log each record four failures at the independent promotion assertion in tests/test_a_report_run_is_promoted_from_its_record.py:312.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commit 80b6a6b9ca96a921b3542b0a0a9b575be4b1b0ac modifies only the granted reckon/crew/recovery_review_delivery.py and tests/test_a_report_run_is_promoted_from_its_record.py.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_report_run_is_promoted_from_its_record.py:312 fails when subject validation is removed, and :327-344 independently inspect durable storage, pointer removal and ledger attribution for valid promotions.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/recovery_review_delivery.py:149-176 follows its existing identity checks and CrewError wrapping, using the storage owner's subject normalization and existing portfolio constant without forbidden names.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability searches for subject filtering, report enumeration and persistence found plan_review.py:5142 and :6831; the repair extends the existing delivery reader, and tests at :285 and :319 reuse _deliver, existing storage paths and promotion rather than duplicating an owner.\n",
+  "review_method": "Read-only incremental review of exact git blobs and recorded gate receipts; no suite rerun or source mutation.",
+  "review_run_id": "r-20261117T012737887566-review-of-report-runs-are-promoted-from-their-record-80b6a6b9ca96",
+  "reviewed_base_sha": "4d9433f24fadec6f7fc15964bfdd8a4d2cab92c8",
+  "reviewed_head_sha": "80b6a6b9ca96a921b3542b0a0a9b575be4b1b0ac",
+  "reviewed_run_id": "r-20261116T233437459813-report-runs-are-promoted-from-their-record",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T04:18:02.160975+00:00",
+  "total": 120
+}

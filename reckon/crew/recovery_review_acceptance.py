@@ -1220,6 +1220,18 @@ def review_self_state(
             ),
             None,
         )
+    from reckon.crew import review_landing
+    from reckon.crew.recovery_review_delivery import _report_review_delivery
+
+    try:
+        manual_reason = review_landing.manual_landing_reason(pointer)
+        if manual_reason:
+            return REVIEW_SELF_REFUSED, manual_reason, None
+        report = _report_review_delivery(pointer)
+    except (CrewError, OSError, ValueError) as refusal:
+        return REVIEW_SELF_REFUSED, str(refusal), None
+    if report is not None:
+        return REVIEW_SELF_READY, "", Path(report["path"])
     # A run review's delivery is identified by the head it was dispatched to
     # read, and a record of an earlier round is not this run's verdict.
     declares = _declared_head_keyed_record(pointer, project)

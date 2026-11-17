@@ -1,0 +1,21 @@
+<section id="qwnw-red-file-a-scoped-suite-names-only-present-files-landing">
+  <h3>The scoped-suite red file passes in full at head</h3>
+  <p>The file failed four of its five cases on the primary branch at
+  <code>8d50b0333f</code>. Every one was the fixture, not a product rule: the manifest it
+  wrote cited <code>commits: abc123</code> while its worktree held a commit and the command
+  declared <code>--no-commit</code>, so two guards the product now keeps refused before the
+  suite pair — a manifest revision that resolves to no object, and
+  <code>_require_worktree_at_its_base</code> — and two cases that parse a
+  <code>suite-delta-refused</code> payload saw a plain-text refusal instead. The fixture now
+  cites the head the repository holds and drops the commitless declaration; the five
+  assertions are unchanged and none was weakened.</p>
+  <p>The measure: <code>tests/test_a_scoped_suite_names_only_present_files.py</code> at head
+  <code>af9ef20d15a9d339205ccb6fdc3147ba990bb54d</code> reads <code>5 passed in 3.00s</code> with
+  <code>EXIT=0</code>; the base arm at
+  <code>8fdf39585f1fb4b05ac8a6e5b707a7c651d42176</code> reads
+  <code>4 failed, 1 passed in 1.42s</code> with <code>EXIT=1</code>. Both are
+  <code>all_debug</code> jobs with <code>SLURM_JOB_ID</code> not supplied
+  to the runner. <code>ruff check</code> and <code>ruff format --check</code> report nothing on the
+  changed path.</p>
+  <p><a href="/reckon/evidence/fragments/queued-work-needs-no-workaround/red-file-a-scoped-suite-names-only-present-files.html">Red-file record: base arm, head arm and the four failing ids</a></p>
+</section>
