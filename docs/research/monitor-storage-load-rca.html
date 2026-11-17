@@ -500,7 +500,7 @@
     <code>tests/test_a_lane_signal_reads_a_stream_once.py</code> — still passes, which is what says the
     cursor did not simply stop reading.</p>
     <h3 id="station-read-live-window-after-the-cursor">The live window: the bound is still not met</h3>
-    <p>Two windows, each of one station alone at <code>--interval 1</code> over the same 147 live pointers,
+    <p>Three windows, each of one station alone at <code>--interval 1</code> over the same 147 live pointers,
     measured with §2's instruments — <code>/proc/&lt;pid&gt;/io</code> <code>rchar</code> deltas over the
     window and utime+stime from <code>/proc/&lt;pid&gt;/stat</code> — starting after the first tick:</p>
     <table>
@@ -508,6 +508,7 @@
       <tbody>
         <tr><td>base <code>73a771c</code></td><td>215&nbsp;s</td><td>1,131 MB/min</td><td>92.5&nbsp;% of one core</td></tr>
         <tr><td>with the cursor</td><td>235&nbsp;s</td><td>1,376 MB/min</td><td>75.4&nbsp;% of one core</td></tr>
+        <tr><td>with the cursor (second window)</td><td>145&nbsp;s</td><td>1,724 MB/min</td><td>78.0&nbsp;% of one core</td></tr>
       </tbody>
     </table>
     <p>The cursor removes the terminal-lane scan's re-read, and the windows do not show it: at rest on
