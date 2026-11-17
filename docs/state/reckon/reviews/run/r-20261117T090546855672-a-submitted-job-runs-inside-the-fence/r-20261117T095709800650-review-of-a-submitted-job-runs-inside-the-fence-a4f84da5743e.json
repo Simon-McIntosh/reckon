@@ -1,0 +1,112 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the completed baseline_suite and after_suite logs named by the reviewed manifest; this zero is scoped to those canonical arms, not the wider importer comparison.",
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T090546855672-a-submitted-job-runs-inside-the-fence/final-after.log",
+  "assertion_analysis": [
+    {
+      "fails_if": "Scheduler output is absent, or task execution never reaches TASK_JOB; prevents a failed launch masquerading as a protected overwrite.",
+      "lines": "tests/test_shared_environments_are_read_only.py:330-331"
+    },
+    {
+      "fails_if": "Absolute-path control is fenced, cannot execute, or fails to replace the decoy with the independently fixed replacement string.",
+      "lines": "tests/test_shared_environments_are_read_only.py:333-335"
+    },
+    {
+      "fails_if": "Removing task re-entry lets the redirect succeed, removes the read-only refusal, or changes size/mtime/digest sampled before and after; recorded mutation reddens all four cases.",
+      "lines": "tests/test_shared_environments_are_read_only.py:337-339"
+    },
+    {
+      "fails_if": "Removing the bootstrap fence allows the decoy overwrite or suppresses its read-only refusal.",
+      "lines": "tests/test_shared_environments_are_read_only.py:391-393"
+    },
+    {
+      "fails_if": "Bootstrap loses stdin, changes caller PYTHONHOME, denies the fresh run log, or omits the supplied scratch root from the transported directories.",
+      "lines": "tests/test_shared_environments_are_read_only.py:394-397"
+    },
+    {
+      "fails_if": "Scheduler option tokens change or option-value boundaries consume resources; these compare returned tokens to input because preservation is the contract, and do not independently prove protection.",
+      "lines": "tests/test_shared_environments_are_read_only.py:418,421"
+    },
+    {
+      "fails_if": "Transport drops or changes the composed recipe; equality against the supplied recipe tests serialization fidelity only, not correctness of that recipe, which the independent target checks establish.",
+      "lines": "tests/test_shared_environments_are_read_only.py:424"
+    },
+    {
+      "fails_if": "Parser wraps the wrong command or loses wrap-shell semantics; independent expected command literals provide the oracle.",
+      "lines": "tests/test_shared_environments_are_read_only.py:425-427"
+    },
+    {
+      "fails_if": "Removing unknown-option, hook, heterogeneous-launch, conflicting-wrap or missing-value refusal lets that input return normally.",
+      "lines": "tests/test_shared_environments_are_read_only.py:450-451"
+    }
+  ],
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T090546855672-a-submitted-job-runs-inside-the-fence/baseline-canonical.log",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/_backends.py:3320",
+    "reckon/crew/dispatch_launch.py:729",
+    "reckon/crew/dispatch_launch.py:776",
+    "reckon/host_shims/sbatch:65",
+    "reckon/host_shims/srun:65",
+    "reckon/nested_launch.py:638"
+  ],
+  "completed_at": "2026-11-17T10:05:31Z",
+  "dispatched_at": "2026-11-17T09:59:13Z",
+  "findings": [
+    {
+      "file": "reckon/_worker_fence.py",
+      "line": "2110",
+      "severity": "blocking",
+      "text": "blocking: exporting RECKON_WORKER_FENCE does not ensure PATH scheduler interception for all fenced launches: reckon/crew/dispatch_launch.py:776-777 adds scheduler shims only when placement.in_allocation is true, so a fenced worker launched outside SLURM with an ordinary scheduler PATH submits a task through the real sbatch/srun without re-entry; include fenced launches in shim provisioning and test the production launch_search_path path with in_allocation false."
+    }
+  ],
+  "importer_caveat": {
+    "disposition": "Outside this reviewer scope; reviewed brief delegates importer repairs/adjudication to the coordinator; canonical added_failure_count remains zero.",
+    "raw_added_failure_ids": [
+      "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py::test_the_composed_fence_argv_for_a_fixed_root_set_is_literal",
+      "tests/test_spawn_retries_a_vanished_bind.py::test_a_spawn_refused_over_a_vanished_protected_bind_is_retried[Can't bind mount]"
+    ]
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read edd79b651054fe81edd10a831013a1baa0451da2 for recipe transport, task wrapping and assertions, then a4f84da5743e6e41c9ed4c0bca810680dd9d40c0 for deterministic directories, heterogeneous-launch refusal and corrected stdin control; production PATH coverage remains incomplete.",
+    "done_when": "final-scheduler-gate.log records 23 passed and final-negative-control.log records four expected failures; baseline-canonical.log and final-after.log add zero failures, while final-importers.log retains two raw added importer IDs requiring coordinator adjudication under brief.md.",
+    "goal": "dispatch-detail.json names same-fence scheduler tasks; reckon/_worker_fence.py:2110 and reckon/nested_launch.py:535 implement re-entry, but production launch_search_path omits the shims outside an allocation.",
+    "manifest": "manifest.md names both delivered commits and readable revision-labelled baseline/head, scheduler and negative-control logs, explicitly disclosing importer failures and fixture-cleanup limits.",
+    "write_paths": "dispatch-detail.json grants five source/test paths and the diff from 0388ce623ce61f7ec604955d5e36e3e858975b63 to a4f84da5743e6e41c9ed4c0bca810680dd9d40c0 changes exactly those five paths."
+  },
+  "justifications": {
+    "durability": "tests/test_shared_environments_are_read_only.py:330-345 checks task execution, refusal and independently sampled target identity, and its four red controls prove regression sensitivity, but line 265 explicitly chooses a shim and cannot catch missing production PATH wiring.",
+    "evidence": "tests/test_shared_environments_are_read_only.py:249 produces actual scheduler receipts and final-negative-control.log proves all four overwrite routes fail their assertions without re-entry, but its explicitly selected shim bypasses production PATH composition.",
+    "fit": "reckon/nested_launch.py:466 consolidates option interpretation in its existing scheduler owner and reckon/_worker_fence.py:2089 transports the existing ordered mounts with mechanism-based names.",
+    "goal_fidelity": "reckon/nested_launch.py:535 wraps the task correctly when reached, but reckon/crew/dispatch_launch.py:776 only installs its PATH shims inside an allocation, leaving fenced launches elsewhere uncovered.",
+    "reuse": "capability searches for scheduler wrapping, batch directives, bootstrap, re-entry and bwrap found the existing owners reckon/nested_launch.py and reckon/_worker_fence.py, which these definitions extend; reckon/shim_lookup.py:126 remains the shared caller-environment owner.",
+    "scope_discipline": "both commit diffs modify only reckon/_worker_fence.py, reckon/nested_launch.py, reckon/host_shims/sbatch, reckon/host_shims/srun and tests/test_shared_environments_are_read_only.py, matching dispatch-detail.json."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json names same-fence scheduler tasks; reckon/_worker_fence.py:2110 and reckon/nested_launch.py:535 implement re-entry, but production launch_search_path omits the shims outside an allocation.\nVERDICT done_when: final-scheduler-gate.log records 23 passed and final-negative-control.log records four expected failures; baseline-canonical.log and final-after.log add zero failures, while final-importers.log retains two raw added importer IDs requiring coordinator adjudication under brief.md.\nVERDICT write_paths: dispatch-detail.json grants five source/test paths and the diff from 0388ce623ce61f7ec604955d5e36e3e858975b63 to a4f84da5743e6e41c9ed4c0bca810680dd9d40c0 changes exactly those five paths.\nVERDICT manifest: manifest.md names both delivered commits and readable revision-labelled baseline/head, scheduler and negative-control logs, explicitly disclosing importer failures and fixture-cleanup limits.\nVERDICT diff: read edd79b651054fe81edd10a831013a1baa0451da2 for recipe transport, task wrapping and assertions, then a4f84da5743e6e41c9ed4c0bca810680dd9d40c0 for deterministic directories, heterogeneous-launch refusal and corrected stdin control; production PATH coverage remains incomplete.\nCALL_SITES: reckon/_backends.py:3320, reckon/crew/dispatch_launch.py:729, reckon/crew/dispatch_launch.py:776, reckon/host_shims/sbatch:65, reckon/host_shims/srun:65, reckon/nested_launch.py:638\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/nested_launch.py:535 wraps the task correctly when reached, but reckon/crew/dispatch_launch.py:776 only installs its PATH shims inside an allocation, leaving fenced launches elsewhere uncovered.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_shared_environments_are_read_only.py:249 produces actual scheduler receipts and final-negative-control.log proves all four overwrite routes fail their assertions without re-entry, but its explicitly selected shim bypasses production PATH composition.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both commit diffs modify only reckon/_worker_fence.py, reckon/nested_launch.py, reckon/host_shims/sbatch, reckon/host_shims/srun and tests/test_shared_environments_are_read_only.py, matching dispatch-detail.json.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_shared_environments_are_read_only.py:330-345 checks task execution, refusal and independently sampled target identity, and its four red controls prove regression sensitivity, but line 265 explicitly chooses a shim and cannot catch missing production PATH wiring.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/nested_launch.py:466 consolidates option interpretation in its existing scheduler owner and reckon/_worker_fence.py:2089 transports the existing ordered mounts with mechanism-based names.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability searches for scheduler wrapping, batch directives, bootstrap, re-entry and bwrap found the existing owners reckon/nested_launch.py and reckon/_worker_fence.py, which these definitions extend; reckon/shim_lookup.py:126 remains the shared caller-environment owner.\nFINDING reckon/_worker_fence.py:2110 blocking: exporting RECKON_WORKER_FENCE does not ensure PATH scheduler interception for all fenced launches: reckon/crew/dispatch_launch.py:776-777 adds scheduler shims only when placement.in_allocation is true, so a fenced worker launched outside SLURM with an ordinary scheduler PATH submits a task through the real sbatch/srun without re-entry; include fenced launches in shim provisioning and test the production launch_search_path path with in_allocation false.\n",
+  "reuse_analysis": {
+    "production_definitions": "_task_command and fenced_scheduler_task extend nested_launch; _scheduler_options replaces its prior partition parser; _batch_directives has no other directive-extraction owner; fence_argv remains the sole mount composer and the bootstrap replays its output.",
+    "test_definitions": "_scheduler_replay shares the existing _chain and _identity decoy helpers; _recipe decodes the production transport for tests rather than recomposing mounts."
+  },
+  "review_run_id": "r-20261117T095709800650-review-of-a-submitted-job-runs-inside-the-fence-a4f84da5743e",
+  "reviewed_base_sha": "0388ce623ce61f7ec604955d5e36e3e858975b63",
+  "reviewed_head_sha": "a4f84da5743e6e41c9ed4c0bca810680dd9d40c0",
+  "reviewed_run_id": "r-20261117T090546855672-a-submitted-job-runs-inside-the-fence",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T10:06:59.315586+00:00",
+  "total": 109
+}
