@@ -1,6 +1,6 @@
 """The working-worker mean with runs still in flight at the window's end counted.
 
-§9's census builds a worker's span from its launch and its exit, falling back to
+The lane census builds a worker's span from its launch and its exit, falling back to
 dispatch and completion. A run whose worker is still alive when the census runs
 has neither an exit nor a completion, so the census leaves it out of the mean
 entirely, however long it had been working inside the window. That undercount

@@ -1,10 +1,10 @@
 """Report every admission hold in a window beside the claim path it names.
 
-§9's census (``scripts/lane_window_census.py``) counts the admit passes in a
-window and how many of them held a request on a claim under a shared root. It
-does not print the paths, so a count of one cannot say whether that hold was a
-crew-home directory no run owns (§69's case) or a crew-home file one live run
-does own (permitted). This reads the same admission log and prints the total
+The lane census (``scripts/lane_window_census.py``) counts the admit passes in
+a window and how many of them held a request on a claim under a shared root. It
+does not print the paths, so a count of one cannot say whether that hold named a
+crew-home directory no run owns or a crew-home file one live run does own, which
+the rules treat differently. This reads the same admission log and prints the total
 passes and, for every hold, the verdict, the claimed path, and whether that
 path lies under the crew home.
 
