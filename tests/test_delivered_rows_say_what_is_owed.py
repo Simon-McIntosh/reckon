@@ -399,3 +399,36 @@ def test_the_owed_action_form_promotes_on_the_tool_surface(repository, tmp_path)
     result = mcp._crew(PROJECT, **arguments)
     assert result["ok"], result
     assert not runs.pointer_path(pointer["run_id"]).exists()
+
+
+@pytest.mark.parametrize(
+    "width,promotions,position",
+    [(180, 0, None), (180, 2, 1), (208, 12, 10), (208, 123, 123)],
+)
+def test_a_refusal_keeps_its_command_with_the_promotion_counters(
+    width, promotions, position
+):
+    from reckon.crew import ticker
+    from tests.test_a_requeued_refusal_draws_no_dropped_row import (
+        REMEDY,
+        _Pane,
+        _refused_launch,
+    )
+
+    pane = _Pane()
+    pane.grid = Ticker(width=width, color=False, model_aliases=())
+    [event] = _refused_launch(pane, "r-refused", at=1000.0)
+    event.update(promotion_queued=promotions, oldest_promotion_position=position)
+    clause = event[ticker.QUEUED_REFUSED_FIELD]
+    rendered = pane.grid.render(event)
+    print("refusal row:", rendered)
+    assert REMEDY in rendered, rendered
+    assert rendered.count(REMEDY) == 1
+    if width >= 208:
+        assert "PlanReviewMissingError" in rendered, rendered
+    assert f"{promotions}p" in rendered
+    if position is not None:
+        assert f"@{position:>2}" in rendered
+    assert len(rendered) <= width
+    assert event[ticker.QUEUED_REFUSED_FIELD] == clause
+    assert pane.path.reported["r-refused"] == "queued"

@@ -3787,12 +3787,23 @@ class Ticker:
             # The request's own word does not move, so the next row's left half
             # reads the word this row left the pane holding.
             self._reported[run_id] = "queued"
+        clause = str(event.get(QUEUED_REFUSED_FIELD) or "")
+        remedy = str(event.get("next_action") or "").strip()
+        if remedy:
+            from reckon.crew.recovery_classification import QUEUED_REFUSAL_PREFIXES
+
+            reason = clause.removesuffix(f" — {remedy}")
+            for prefix in QUEUED_REFUSAL_PREFIXES:
+                reason = reason.removeprefix(prefix)
+            # The stage already names the refusal. Put its command before the
+            # explanation so a narrow clause keeps the action a reader needs.
+            clause = f"{remedy} — {reason}" if reason and reason != remedy else remedy
         return self._clause_line(
             event,
             stage=REFUSAL_STAGE,
             handle=run_id,
             hue_key=str(event.get("node") or run_id),
-            clause=str(event.get(QUEUED_REFUSED_FIELD) or ""),
+            clause=clause,
         )
 
     def _submission_line(self, event: Mapping[str, Any]) -> str:
