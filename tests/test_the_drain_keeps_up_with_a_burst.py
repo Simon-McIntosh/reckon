@@ -17,6 +17,22 @@ START = "2026-11-16T21:00:00Z"
 END = "2026-11-16T22:30:00Z"
 
 
+def test_locked_promotion_reads_its_target_in_the_operational_scope(tmp_path, monkeypatch):
+    from reckon.crew import open_run_index, promotion
+
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    record = {"run_id": "target", "project": "fixture", "repo": str(tmp_path)}
+    monkeypatch.setattr(promotion, "read_dispatch_detail", lambda record: {})
+
+    def checked(checkout, run_id):
+        assert open_run_index.pointers() == (record,)
+        raise RuntimeError("scope checked")
+
+    monkeypatch.setattr(promotion, "_require_committable_checkout", checked)
+    with pytest.raises(RuntimeError, match="scope checked"):
+        promotion._complete_locked("target", record=record, gate="passed")
+
+
 def _write(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value))

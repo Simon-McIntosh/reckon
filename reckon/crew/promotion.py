@@ -1843,7 +1843,6 @@ def _budget_overrun_facts(
     }
 
 
-@operational_read
 def _with_branch_write_scope(function):
     @wraps(function)
     def invoke(*args, **kwargs):
@@ -1855,6 +1854,7 @@ def _with_branch_write_scope(function):
     return invoke
 
 
+@operational_read
 @_with_branch_write_scope
 def _complete_locked(
     run_id: str,
