@@ -209,3 +209,80 @@ def test_health_sampler_calls_scratch_sampling_and_keeps_the_reading(
     with box.samples()[0].open() as sample:
         rows = list(csv.DictReader(sample, delimiter="\t"))
     assert rows[0]["session_scratch_bytes"] == "12345"
+
+
+def test_excess_reaches_only_its_conversation_in_both_obligation_views(
+    scratch, monkeypatch
+):
+    from datetime import UTC, datetime
+
+    from reckon.crew import obligation_snapshot, obligations
+
+    monkeypatch.setenv("FLEET_STATE_DIR", scratch["FLEET_STATE_DIR"])
+    monkeypatch.setattr(obligations, "_classified_rows", lambda *_: [])
+    monkeypatch.setattr(obligations, "_index_lag_notice", lambda *a, **kw: None)
+    busy = supervisor.prepare_session_tmp(scratch, "busy")
+    supervisor.prepare_session_tmp(scratch, "empty")
+    largest = busy / "extractions"
+    largest.mkdir()
+    data = largest / "source"
+    data.write_bytes(b"x" * 16384)
+    state_dir = Path(scratch["FLEET_STATE_DIR"])
+    state_dir.mkdir(parents=True)
+    (state_dir / "sessions.tsv").write_text(
+        "now\tbusy\t1\t/decoy\tbusy-conversation\n"
+        "now\tempty\t2\t/decoy\tempty-conversation\n"
+    )
+    assert supervisor.sample_session_scratch(scratch) == 0
+    now = datetime.now(UTC)
+    state = SimpleNamespace(
+        project="scratch-fixture",
+        now=now,
+        reviews_in_flight={},
+        pointers={},
+        rows=[],
+        sub_floor={},
+        held_worktrees={},
+        merged_sections={},
+        findings=[],
+        acknowledged={},
+        unreconciled={},
+    )
+    direct = obligations.obligations(state.project, "busy-conversation")
+    published = obligation_snapshot.payload_for(state, "busy-conversation")
+    direct_duties = [
+        item
+        for item in direct["obligations"]
+        if item["kind"] == "session-scratch-over-bound"
+    ]
+    published_duties = [
+        item
+        for item in published["obligations"]
+        if item["kind"] == "session-scratch-over-bound"
+    ]
+    assert len(direct_duties) == 1
+    assert direct_duties[0]["paths"] == [str(largest)]
+    assert direct_duties[0]["reason"] == published_duties[0]["reason"]
+    assert direct_duties[0]["next_command"] == published_duties[0]["next_command"]
+    assert (
+        obligations.session_scratch_items(state.project, "empty-conversation", now=now)
+        == []
+    )
+    assert (
+        obligations.session_scratch_items(
+            state.project, "unrelated-conversation", now=now
+        )
+        == []
+    )
+    data.unlink()
+    assert supervisor.sample_session_scratch(scratch) == 0
+    assert (
+        obligations.session_scratch_items(state.project, "busy-conversation", now=now)
+        == []
+    )
+    assert not any(
+        item["kind"] == "session-scratch-over-bound"
+        for item in obligation_snapshot.payload_for(state, "busy-conversation")[
+            "obligations"
+        ]
+    )

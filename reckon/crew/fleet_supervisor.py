@@ -631,6 +631,16 @@ def _scratch_walk_error(error: OSError) -> None:
     raise error
 
 
+def session_scratch_snapshot_path(environ: Mapping[str, str] | None = None) -> Path:
+    """The fleet's atomic scratch reading shared with obligation readers."""
+    from reckon.crew.run_paths import crew_home
+
+    name = fleet_name(environ)
+    if not SAFE_NAME.fullmatch(name):
+        raise ValueError("unsafe fleet name")
+    return crew_home() / "fleet-health" / f"{name}-session-scratch.json"
+
+
 def sample_session_scratch(environ: Mapping[str, str] | None = None) -> int:
     """Persist the session readings and surface current duties in the fleet notice."""
     environ = os.environ if environ is None else environ
@@ -647,6 +657,19 @@ def sample_session_scratch(environ: Mapping[str, str] | None = None) -> int:
     path = health / f"{sample['job_id']}-{_short_hostname()}-session-scratch.jsonl"
     with path.open("a", encoding="utf-8") as output:
         output.write(json.dumps(sample) + "\n")
+    bindings: dict[str, str] = {}
+    try:
+        rows = (state / "sessions.tsv").read_text(encoding="utf-8").splitlines()
+    except FileNotFoundError:
+        rows = []
+    for row in rows:
+        fields = row.split("\t")
+        if len(fields) == 5:
+            bindings[fields[4]] = fields[1]
+    sample["session_bindings"] = bindings
+    snapshot = session_scratch_snapshot_path(environ)
+    snapshot.parent.mkdir(parents=True, exist_ok=True)
+    _write_json(snapshot, sample)
     with redirect_stdout(sys.stderr):
         for item in sample["obligations"]:
             alert(f"{sample['utc']} obligation: {item['reason']}", environ)
