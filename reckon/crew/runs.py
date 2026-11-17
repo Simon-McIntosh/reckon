@@ -886,11 +886,19 @@ def queue_dispatch(
     is otherwise in flight, writes nothing: the existing run is returned with
     its phase and ``None`` for the position, because a run that is not queued is
     ordered nowhere in the admission queue.
+
+    A node's own launch claim is not such a run. A dispatch publishes its claim
+    from the moment it has a run id — before the bound read that sends it here
+    when the lane has no room — so the pointer naming this very run id is the
+    dispatch's own pending launch, and answering it would return the request to
+    itself instead of storing it. That pointer is skipped; every other run of
+    the node still answers as before.
     """
     lock = crew_home() / "locks" / "queued-dispatch.lock"
     with ExitStack() as stack:
         stack.enter_context(exclusive_lock(lock))
         project = str(record["project"])
+        own_run_id = str(record.get("run_id") or "")
         identity = _node_identity(record)
         live = _list_live_records(project=project)
         existing = next(
@@ -904,19 +912,15 @@ def queue_dispatch(
         )
         if existing is None:
             # No queued copy of the request. A run of the same node still in
-            # flight is answered as it is, with no second pointer: the
-            # request is already somewhere between the queue and a worker.
-            # The gap where no live pointer names the node — an admission
-            # handing the request to a launch — is covered by the dispatch
-            # path's own check against the handover record, not here: this
-            # primitive is also how the admission pass itself re-queues, and
-            # that write must not be answered by its own handover.
+            # flight is answered as it is, and the caller's own claim is not
+            # one: this dispatch is the run it names.
             current = next(
                 (
                     pointer
                     for pointer in live
                     if _node_identity(pointer) == identity
                     and str(pointer.get("phase") or "") not in _TERMINAL_RUN_PHASES
+                    and str(pointer.get("run_id") or "") != own_run_id
                 ),
                 None,
             )
@@ -3531,17 +3535,24 @@ def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
     return result
 
 
-def drain_unreconciled_by_session(project: str) -> dict[str, int]:
+def drain_unreconciled_by_session(
+    project: str, *, pointers: Iterable[Mapping[str, Any]] | None = None
+) -> dict[str, int]:
     """The drain's unreconciled count for every session, derived once.
 
     A sweep needs the count for each session it publishes for, and deriving the
     rows once and partitioning them per session keeps that from repeating every
     pointer's classification for each reader. Rows with no recorded owner count
     for every session, exactly as :func:`drain` counts them.
+
+    ``pointers`` is the snapshot the caller's own pass is deriving from, so a
+    reader already holding one population counts over it instead of listing and
+    decoding every pointer again. With none the directory is listed here.
     """
     from reckon.crew.recovery import _partition_session_rows
 
-    rows = _closure_rows(list_live(project=project))
+    population = list_live(project=project) if pointers is None else list(pointers)
+    rows = _closure_rows(population)
     counts: dict[str, int] = {}
     for session in {str(row.get("session") or "") for row in rows} | {""}:
         counted, _peers = _partition_session_rows(rows, session)

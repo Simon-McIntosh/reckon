@@ -704,6 +704,10 @@ class StationStore:
         return highest
 
     def station_value(self, key: str) -> str | None:
+        if key == HEARTBEAT_KEY:
+            from reckon.crew.obligation_snapshot import _station_markers
+
+            return _station_markers(self.connect()).get(key)
         row = (
             self.connect()
             .execute("SELECT value FROM station WHERE key = ?", (key,))

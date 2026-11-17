@@ -1,0 +1,625 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "assert run_id not in state.refused",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 110,
+      "would_fail_if": "A refused member reaches the completion double, exposing missing all-member preflight."
+    },
+    {
+      "assertion": "assert checked.returncode == 0, checked.stdout + checked.stderr",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 179,
+      "would_fail_if": "An individual delivery fails its independent sample gate, invalidating the clean-delivery premise."
+    },
+    {
+      "assertion": "assert result[\"ok\"]",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 224,
+      "would_fail_if": "Grouped publication fails to return success."
+    },
+    {
+      "assertion": "assert len(fleet.measured) == 1",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 225,
+      "would_fail_if": "The group runs zero or multiple measurements instead of one."
+    },
+    {
+      "assertion": "assert len(fleet.calls) == 3",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 226,
+      "would_fail_if": "A member is skipped or promoted more than once."
+    },
+    {
+      "assertion": "assert f\"def {name}():\\n    return {index}\" in text",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 229,
+      "would_fail_if": "Publication drops any independently specified alpha/beta/gamma edit."
+    },
+    {
+      "assertion": "assert (\n        git(fleet.repo, \"rev-parse\", \"HEAD\")\n        == git(fleet.repo, \"ls-remote\", \"origin\", \"refs/heads/main\").split()[0]\n    )",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 237,
+      "would_fail_if": "Publication fails to push the local primary revision."
+    },
+    {
+      "assertion": "assert not list(pending_landing.pending_dir().glob(\"*.json\"))",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 241,
+      "would_fail_if": "Ordinary pending landing files remain after successful publication."
+    },
+    {
+      "assertion": "assert len(fleet.measured) == 1",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 251,
+      "would_fail_if": "An unchanged gate refusal reruns the expensive measurement."
+    },
+    {
+      "assertion": "assert not fleet.calls",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 252,
+      "would_fail_if": "The added merged-head failure is allowed to promote a member."
+    },
+    {
+      "assertion": "assert git(fleet.repo, \"rev-parse\", \"HEAD\") == fleet.base",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 253,
+      "would_fail_if": "The refused semantic regression moves primary."
+    },
+    {
+      "assertion": "assert not fleet.calls and not fleet.measured",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 262,
+      "would_fail_if": "The preflight refusal permits promotion or measurement work."
+    },
+    {
+      "assertion": "assert git(fleet.repo, \"rev-parse\", \"HEAD\") == fleet.base",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 263,
+      "would_fail_if": "Preflight refusal permits primary to move."
+    },
+    {
+      "assertion": "assert len(fleet.calls) == 1",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 280,
+      "would_fail_if": "The injected post-ledger interruption does not leave exactly one promoted member."
+    },
+    {
+      "assertion": "assert git(fleet.repo, \"rev-parse\", \"HEAD\") == fleet.base",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 281,
+      "would_fail_if": "A partial group is published before all members promote."
+    },
+    {
+      "assertion": "assert len(fleet.calls) == 2",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 284,
+      "would_fail_if": "Recovery duplicates a promotion or omits the remaining member."
+    },
+    {
+      "assertion": "assert len(fleet.measured) == 1",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 285,
+      "would_fail_if": "Recovery discards reusable measurement and measures again."
+    },
+    {
+      "assertion": "assert {row[\"status\"] for row in recovered} == {\"finished\"}",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 286,
+      "would_fail_if": "Recovery reports refusal or partial progress rather than finishing."
+    },
+    {
+      "assertion": "assert len(recovered) == 2",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 287,
+      "would_fail_if": "Recovery loses a member result."
+    },
+    {
+      "assertion": "assert commands._complete_landing_group(request)[\"ok\"]",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 313,
+      "would_fail_if": "A post-publication interruption cannot be recovered."
+    },
+    {
+      "assertion": "assert len(fleet.measured) == 1",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 314,
+      "would_fail_if": "An already published group is measured again."
+    },
+    {
+      "assertion": "assert len(queued) == 2",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 346,
+      "would_fail_if": "The conflict candidate is grouped or a compatible candidate is omitted."
+    },
+    {
+      "assertion": "assert conflicting[\"pointer\"][\"run_id\"] not in queued",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 347,
+      "would_fail_if": "The conflicting member is admitted to the clean group."
+    },
+    {
+      "assertion": "assert request[\"kind\"] == \"landing-group\"",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 349,
+      "would_fail_if": "The queue falls back to individual publication requests."
+    },
+    {
+      "assertion": "assert promotion_requests.read_promotion(queued[1])[\"run_id\"] == queued[0]",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 350,
+      "would_fail_if": "A follower cannot resolve the leader request."
+    },
+    {
+      "assertion": "assert refused.value.paths == [\"sample.py\"]",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 358,
+      "would_fail_if": "The merge exception omits or misidentifies the conflicting source path."
+    },
+    {
+      "assertion": "assert refused.value.base == first[\"head\"]",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 359,
+      "would_fail_if": "The merge exception loses the actual other-side commit identity."
+    },
+    {
+      "assertion": "assert not queue_landing._measure_guard(measured)",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 376,
+      "would_fail_if": "The clean initial per-member measurement is refused."
+    },
+    {
+      "assertion": "assert not conflicts",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 381,
+      "would_fail_if": "Independent-function edits unexpectedly conflict."
+    },
+    {
+      "assertion": "assert checked.head == member[\"head\"]",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 385,
+      "would_fail_if": "Refreshed evidence refers to a head other than the delivered member."
+    },
+    {
+      "assertion": "assert checked.population[\"main_sha\"] == git(fleet.repo, \"rev-parse\", \"HEAD\")",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 386,
+      "would_fail_if": "Refreshed evidence still names the old primary rather than current Git HEAD."
+    },
+    {
+      "assertion": "assert not queue_landing._measure_guard(checked)",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 387,
+      "would_fail_if": "Refreshing a clean moved-primary candidate leaves a refusing measure."
+    },
+    {
+      "assertion": "assert set(result[\"promotion_requested\"]) == set(ids)",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 407,
+      "would_fail_if": "The unattended pass omits or separately schedules members."
+    },
+    {
+      "assertion": "assert not fleet.measured, \"individual gates ran before the group was composed\"",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 408,
+      "would_fail_if": "The pass spends individual measurements before composing a group."
+    },
+    {
+      "assertion": "assert len(service.tick()) == 1",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 410,
+      "would_fail_if": "The promotion service launches no group or multiple requests."
+    },
+    {
+      "assertion": "assert receipt[\"phase\"] == promotion_requests.PROMOTED, receipt",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 413,
+      "would_fail_if": "The real request drain refuses the composed group."
+    },
+    {
+      "assertion": "assert len(fleet.measured) == 1",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 414,
+      "would_fail_if": "The drained group measures more than once or never measures."
+    },
+    {
+      "assertion": "assert len(fleet.calls) == 3",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 415,
+      "would_fail_if": "The drain omits or duplicates member completion."
+    },
+    {
+      "assertion": "assert (\n            promotion_requests.read_promotion(run_id)[\"phase\"]\n            == promotion_requests.PROMOTED\n        )",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 417,
+      "would_fail_if": "A follower loses the terminal promoted receipt."
+    },
+    {
+      "assertion": "assert commands._complete_landing_group(request)[\"ok\"]",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 438,
+      "would_fail_if": "Persisting a reverse-sorted leader with distinct gates breaks completion."
+    },
+    {
+      "assertion": "assert len(fleet.measured) == 2",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 439,
+      "would_fail_if": "A distinct command is omitted or spuriously repeated."
+    },
+    {
+      "assertion": "assert len(set(paths)) == 2",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 441,
+      "would_fail_if": "Distinct commands overwrite the same log path."
+    },
+    {
+      "assertion": "assert Path(path).is_file()",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 443,
+      "would_fail_if": "A recorded command log does not exist."
+    },
+    {
+      "assertion": "assert not fleet.measured and not fleet.calls",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 456,
+      "would_fail_if": "A mismatched promoted head permits measurement or further promotion."
+    },
+    {
+      "assertion": "assert commands._complete_landing_group(_request(fleet))[\"ok\"]",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 466,
+      "would_fail_if": "The initial clean group cannot publish before the repair scenario."
+    },
+    {
+      "assertion": "assert len(seen) == 1",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 481,
+      "would_fail_if": "The conflict does not dispatch exactly one existing repair resume."
+    },
+    {
+      "assertion": "assert \"sample.py\" in seen[0] and first[\"head\"] in seen[0]",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 482,
+      "would_fail_if": "Repair advice omits the independently committed peer SHA or actual file."
+    },
+    {
+      "assertion": "assert first[\"head\"] in [item[\"sha\"] for item in repair[\"peer_commits\"]]",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 483,
+      "would_fail_if": "The durable conflict receipt omits the independently read peer SHA."
+    },
+    {
+      "assertion": "assert merged.returncode == 1",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 491,
+      "would_fail_if": "The fixture no longer causes the real Git merge conflict it claims."
+    },
+    {
+      "assertion": "assert checked.returncode == 0",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 506,
+      "would_fail_if": "The hand-resolved repair fails its sample gate."
+    },
+    {
+      "assertion": "assert (\n        pending_landing._delivered_repair(\n            pointer, conflicting[\"head\"], repair, fleet.repo\n        )\n        == head\n    )",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 524,
+      "would_fail_if": "The existing repair owner fails to select the fresh repair commit from its receipt."
+    },
+    {
+      "assertion": "assert result[0][\"status\"] == \"finished\", result",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 533,
+      "would_fail_if": "Pending recovery does not finish the repaired landing."
+    },
+    {
+      "assertion": "assert fleet.calls == promoted_before",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 534,
+      "would_fail_if": "Repair recovery performs another promotion instead of finishing the existing one."
+    },
+    {
+      "assertion": "assert git(fleet.repo, \"ls-remote\", \"origin\", \"refs/heads/main\").split()[0] == git(\n        fleet.repo, \"rev-parse\", \"HEAD\"\n    )",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 535,
+      "would_fail_if": "Repair completion leaves the remote primary behind its local revision."
+    },
+    {
+      "assertion": "assert \"REPAIRED = True\" in (fleet.repo / \"sample.py\").read_text()",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 538,
+      "would_fail_if": "Repair publication drops the added repair marker."
+    },
+    {
+      "assertion": "assert queued[\"priority_override\"] == 90",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 551,
+      "would_fail_if": "The group loses its highest member priority."
+    },
+    {
+      "assertion": "assert release.wait(10)",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 562,
+      "would_fail_if": "The lease test never releases the intentionally blocked group within the bound."
+    },
+    {
+      "assertion": "assert service.tick() == [group[\"run_id\"]]",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 567,
+      "would_fail_if": "The service admits the individual concurrently with the blocked group."
+    },
+    {
+      "assertion": "assert entered.wait(5)",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 568,
+      "would_fail_if": "The test never reaches the blocked group executor, so its non-overlap claim lacks a positive control."
+    },
+    {
+      "assertion": "assert active == [group[\"run_id\"]]",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 569,
+      "would_fail_if": "An individual executor runs while the group holds the branch lease."
+    },
+    {
+      "assertion": "assert service.tick() == [third[\"pointer\"][\"run_id\"]]",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 573,
+      "would_fail_if": "The individual cannot run when the group releases its branch lease."
+    },
+    {
+      "assertion": "assert active == [group[\"run_id\"], third[\"pointer\"][\"run_id\"]]",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 575,
+      "would_fail_if": "Execution order overlaps or omits the waiting individual."
+    },
+    {
+      "assertion": "assert receipt[\"session\"] == \"second-session\"",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 577,
+      "would_fail_if": "The follower terminal receipt inherits the leader session rather than its own."
+    },
+    {
+      "assertion": "assert receipt[\"priority_override\"] == 90",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 578,
+      "would_fail_if": "The follower terminal receipt loses its own priority."
+    },
+    {
+      "assertion": "assert not fleet.measured and not fleet.calls",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 591,
+      "would_fail_if": "A failed promoted-row gate permits measurement or member promotion."
+    }
+  ],
+  "assertion_independence": "No assertion compares an echo-only supplied value as its sole regression oracle: head identity comparisons are supplemented by Git HEAD and source-marker reads; supplied peer SHAs are checked against independently constructed conflicting Git history; count assertions use observed calls or measurement outputs. The fixture gate test_interaction fails only for the independently passing alpha=1/beta=9 combination. pytest.raises checks guard exceptions and messages, and would redden if the respective refusal were removed. Restoring the old moved-primary refusal reddens both parametrized refresh cases as recorded by the negative control. The complete/dry-run doubles limit coverage of the real promotion layer; no test covers the newly conflicting queued group.",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:_land_deliveries",
+    "reckon/crew/queue_landing.py:land_once",
+    "reckon/crew/promotion_requests.py:_execute",
+    "reckon/crew/promotion_requests.py:PromotionService._tick_locked",
+    "reckon/crew/pending_landing.py:finish_pending_landings",
+    "reckon/crew_run_commands.py:crew_complete",
+    "reckon/crew_run_commands.py:_land_a_promoted_run"
+  ],
+  "completed_at": "2026-11-17T01:54:44Z",
+  "dispatched_at": "2026-11-17T01:45:45Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-concurrent-edits-land-unattended-cff27336df6c",
+      "recorded_at": "2026-11-17T02:30:27.667357+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "line": "2057",
+      "severity": "blocking",
+      "text": "blocking: A group queued cleanly can encounter a new primary conflict before it drains; build_merge_group raises MergeConflictError here without dispatch_merge_repair for the conflicting member, _complete_landing_group propagates it, and finish_landing_groups retries the same persisted heads, leaving the group stuck instead of returning the originating worktree for the repair round the plan requires; catch this case, identify and dispatch the affected member through the existing repair owner, and test a primary conflict introduced between queueing and draining."
+    }
+  ],
+  "importer_evidence": {
+    "added_failure_ids": [],
+    "baseline": {
+      "exit_receipt": "EXIT=1",
+      "failure_ids": [
+        "tests/test_a_crew_verb_ok_reads_its_outcome.py::test_crew_emit_sites_do_not_put_literal_success_beside_a_result",
+        "tests/test_a_finished_pending_landing_retires_its_run.py::test_a_finished_pending_landing_retires_its_run",
+        "tests/test_a_hand_merged_run_is_recorded.py::test_a_hand_merged_run_is_recorded_on_the_branch",
+        "tests/test_a_merge_releases_its_worktree.py::test_a_promoted_runs_worktree_is_released_by_a_separate_merge",
+        "tests/test_a_merge_releases_its_worktree.py::test_a_release_that_raises_does_not_refuse_the_landing",
+        "tests/test_a_merge_releases_its_worktree.py::test_a_retained_worktree_is_withheld_and_its_retention_named",
+        "tests/test_a_merge_releases_its_worktree.py::test_a_tree_holding_a_commit_beyond_the_head_is_withheld",
+        "tests/test_a_plain_complete_refuses_an_unmerged_head.py::test_a_failed_gate_on_an_unmerged_head_promotes_as_before",
+        "tests/test_a_plain_complete_refuses_an_unmerged_head.py::test_a_head_fast_forwarded_locally_but_not_pushed_is_refused",
+        "tests/test_a_plain_complete_refuses_an_unmerged_head.py::test_a_plain_complete_on_a_head_the_branch_carries_promotes",
+        "tests/test_a_plain_complete_refuses_an_unmerged_head.py::test_a_plain_complete_on_an_unmerged_head_refuses_and_leaves_the_run",
+        "tests/test_a_plain_complete_refuses_an_unmerged_head.py::test_a_remote_with_no_primary_ref_refuses_naming_the_missing_ref",
+        "tests/test_a_plain_complete_refuses_an_unmerged_head.py::test_a_review_run_promotes_without_reading_the_remote",
+        "tests/test_a_plain_complete_refuses_an_unmerged_head.py::test_an_unreachable_remote_refuses_naming_the_failed_fetch",
+        "tests/test_a_stopped_run_resumes_with_advice.py::test_a_legacy_stopped_run_with_no_exit_resumes_on_its_launch_host",
+        "tests/test_a_stopped_run_resumes_with_advice.py::test_a_stopped_tree_records_its_exit_and_resumes_with_advice",
+        "tests/test_code_reload_never_cuts_off_a_promotion.py::test_a_landing_in_flight_finishes_before_the_service_reexecutes",
+        "tests/test_code_reload_never_cuts_off_a_promotion.py::test_a_promotion_in_flight_finishes_before_the_service_reexecutes",
+        "tests/test_crew.py::test_a_complete_manifest_emits_an_authorised_review_dispatch",
+        "tests/test_crew.py::test_blocked_manifest_is_not_promotable",
+        "tests/test_crew.py::test_crew_read_and_recovery_command_share_classification",
+        "tests/test_crew.py::test_failed_manifest_is_not_promotable",
+        "tests/test_crew_families_fold.py::test_complete_accept_path_updates_the_run_claim",
+        "tests/test_crew_families_fold.py::test_repair_and_check_successors_preserve_recorded_answers",
+        "tests/test_crew_lane_change.py::test_redispatch_continues_a_stream_resolved_session_and_records_its_source",
+        "tests/test_crew_lane_change.py::test_redispatch_keeps_the_run_node_and_worktree",
+        "tests/test_crew_tool_carries_the_write_verbs.py::test_each_action_matches_its_cli_verb[land]",
+        "tests/test_crew_tool_carries_the_write_verbs.py::test_the_negative_control_breaks_one_action_only",
+        "tests/test_hot_path_reads_only_live_runs.py::test_history_does_not_change_the_open_population[landing]",
+        "tests/test_hot_path_reads_only_live_runs.py::test_history_does_not_change_the_open_population[obligations]",
+        "tests/test_landing_runs_beside_admission.py::test_a_land_step_past_its_bound_is_stopped_and_refused",
+        "tests/test_landing_runs_beside_admission.py::test_the_land_step_waives_the_impl_move_the_beat_makes",
+        "tests/test_no_caller_waits_on_a_promotion.py::test_a_failure_is_durable_and_is_a_session_obligation",
+        "tests/test_queue_landing.py::test_accepted_delivery_uses_the_real_crew_land_path",
+        "tests/test_queue_landing.py::test_land_invokes_the_shared_path_through_the_scheduler_shim",
+        "tests/test_queue_verbs.py::test_an_over_ceiling_edit_is_refused_and_stores_nothing",
+        "tests/test_reflex_acceptance_reads_the_remote_primary.py::test_a_run_only_on_local_main_is_not_promoted",
+        "tests/test_refused_promotion_request_settles.py::test_a_landed_run_settles_its_refused_request_as_landed",
+        "tests/test_review_promoted_before_its_run.py::test_a_run_whose_review_is_parked_while_its_record_is_written_waits",
+        "tests/test_the_consequence_gate_runs_the_nodes_tests.py::test_a_project_with_no_declaration_records_no_suite_observation",
+        "tests/test_the_consequence_gate_runs_the_nodes_tests.py::test_a_scoped_pair_over_another_nodes_files_is_refused",
+        "tests/test_the_consequence_gate_runs_the_nodes_tests.py::test_a_scoped_pair_over_the_nodes_test_files_promotes",
+        "tests/test_the_consequence_gate_runs_the_nodes_tests.py::test_a_scoped_pair_over_the_whole_suite_is_refused",
+        "tests/test_the_consequence_gate_runs_the_nodes_tests.py::test_the_declared_command_measures_the_nodes_fenced_test_files",
+        "tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py::test_a_finding_with_no_disposition_is_not_promoted",
+        "tests/test_the_lander_measures_the_population.py::test_candidate_handoff_preserves_the_promotion_guard",
+        "tests/test_the_lander_measures_the_population.py::test_primary_advance_after_measurement_refuses_the_actual_cli_merge",
+        "tests/test_the_lander_measures_the_population.py::test_primary_advance_after_promotion_measurement_refuses_publication",
+        "tests/test_the_lander_measures_the_population.py::test_the_actual_cli_lands_exactly_the_measured_candidate",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_a_figure_review_with_an_undisposed_blocking_finding_holds_the_run",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_a_store_read_that_raises_records_its_error_apart_from_stale_head",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_an_unparsable_figure_record_is_recorded_as_unreadable",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_the_awaiting_record_names_its_tier_under_its_own_key",
+        "tests/test_the_lander_waits_for_every_owed_review.py::test_a_run_owing_a_figure_review_is_not_landed_on_its_code_review",
+        "tests/test_the_lander_waits_for_every_owed_review.py::test_storing_the_owed_figure_review_lands_the_held_run"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234158820301-concurrent-edits-land-unattended/baseline-final-importers.log",
+      "summary": "55 failed, 1031 passed, 27 warnings, 1 error in 247.47s (0:04:07)"
+    },
+    "head": {
+      "exit_receipt": "EXIT=1",
+      "failure_ids": [
+        "tests/test_a_crew_verb_ok_reads_its_outcome.py::test_crew_emit_sites_do_not_put_literal_success_beside_a_result",
+        "tests/test_a_finished_pending_landing_retires_its_run.py::test_a_finished_pending_landing_retires_its_run",
+        "tests/test_a_hand_merged_run_is_recorded.py::test_a_hand_merged_run_is_recorded_on_the_branch",
+        "tests/test_a_merge_releases_its_worktree.py::test_a_promoted_runs_worktree_is_released_by_a_separate_merge",
+        "tests/test_a_merge_releases_its_worktree.py::test_a_release_that_raises_does_not_refuse_the_landing",
+        "tests/test_a_merge_releases_its_worktree.py::test_a_retained_worktree_is_withheld_and_its_retention_named",
+        "tests/test_a_merge_releases_its_worktree.py::test_a_tree_holding_a_commit_beyond_the_head_is_withheld",
+        "tests/test_a_plain_complete_refuses_an_unmerged_head.py::test_a_failed_gate_on_an_unmerged_head_promotes_as_before",
+        "tests/test_a_plain_complete_refuses_an_unmerged_head.py::test_a_head_fast_forwarded_locally_but_not_pushed_is_refused",
+        "tests/test_a_plain_complete_refuses_an_unmerged_head.py::test_a_plain_complete_on_a_head_the_branch_carries_promotes",
+        "tests/test_a_plain_complete_refuses_an_unmerged_head.py::test_a_plain_complete_on_an_unmerged_head_refuses_and_leaves_the_run",
+        "tests/test_a_plain_complete_refuses_an_unmerged_head.py::test_a_remote_with_no_primary_ref_refuses_naming_the_missing_ref",
+        "tests/test_a_plain_complete_refuses_an_unmerged_head.py::test_a_review_run_promotes_without_reading_the_remote",
+        "tests/test_a_plain_complete_refuses_an_unmerged_head.py::test_an_unreachable_remote_refuses_naming_the_failed_fetch",
+        "tests/test_a_stopped_run_resumes_with_advice.py::test_a_legacy_stopped_run_with_no_exit_resumes_on_its_launch_host",
+        "tests/test_a_stopped_run_resumes_with_advice.py::test_a_stopped_tree_records_its_exit_and_resumes_with_advice",
+        "tests/test_code_reload_never_cuts_off_a_promotion.py::test_a_landing_in_flight_finishes_before_the_service_reexecutes",
+        "tests/test_code_reload_never_cuts_off_a_promotion.py::test_a_promotion_in_flight_finishes_before_the_service_reexecutes",
+        "tests/test_crew.py::test_a_complete_manifest_emits_an_authorised_review_dispatch",
+        "tests/test_crew.py::test_blocked_manifest_is_not_promotable",
+        "tests/test_crew.py::test_crew_read_and_recovery_command_share_classification",
+        "tests/test_crew.py::test_failed_manifest_is_not_promotable",
+        "tests/test_crew_families_fold.py::test_complete_accept_path_updates_the_run_claim",
+        "tests/test_crew_families_fold.py::test_repair_and_check_successors_preserve_recorded_answers",
+        "tests/test_crew_lane_change.py::test_redispatch_continues_a_stream_resolved_session_and_records_its_source",
+        "tests/test_crew_lane_change.py::test_redispatch_keeps_the_run_node_and_worktree",
+        "tests/test_crew_tool_carries_the_write_verbs.py::test_each_action_matches_its_cli_verb[land]",
+        "tests/test_crew_tool_carries_the_write_verbs.py::test_the_negative_control_breaks_one_action_only",
+        "tests/test_hot_path_reads_only_live_runs.py::test_history_does_not_change_the_open_population[landing]",
+        "tests/test_hot_path_reads_only_live_runs.py::test_history_does_not_change_the_open_population[obligations]",
+        "tests/test_landing_runs_beside_admission.py::test_a_land_step_past_its_bound_is_stopped_and_refused",
+        "tests/test_landing_runs_beside_admission.py::test_the_land_step_waives_the_impl_move_the_beat_makes",
+        "tests/test_no_caller_waits_on_a_promotion.py::test_a_failure_is_durable_and_is_a_session_obligation",
+        "tests/test_queue_landing.py::test_accepted_delivery_uses_the_real_crew_land_path",
+        "tests/test_queue_landing.py::test_land_invokes_the_shared_path_through_the_scheduler_shim",
+        "tests/test_queue_verbs.py::test_an_over_ceiling_edit_is_refused_and_stores_nothing",
+        "tests/test_reflex_acceptance_reads_the_remote_primary.py::test_a_run_only_on_local_main_is_not_promoted",
+        "tests/test_refused_promotion_request_settles.py::test_a_landed_run_settles_its_refused_request_as_landed",
+        "tests/test_review_promoted_before_its_run.py::test_a_run_whose_review_is_parked_while_its_record_is_written_waits",
+        "tests/test_the_consequence_gate_runs_the_nodes_tests.py::test_a_project_with_no_declaration_records_no_suite_observation",
+        "tests/test_the_consequence_gate_runs_the_nodes_tests.py::test_a_scoped_pair_over_another_nodes_files_is_refused",
+        "tests/test_the_consequence_gate_runs_the_nodes_tests.py::test_a_scoped_pair_over_the_nodes_test_files_promotes",
+        "tests/test_the_consequence_gate_runs_the_nodes_tests.py::test_a_scoped_pair_over_the_whole_suite_is_refused",
+        "tests/test_the_consequence_gate_runs_the_nodes_tests.py::test_the_declared_command_measures_the_nodes_fenced_test_files",
+        "tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py::test_a_finding_with_no_disposition_is_not_promoted",
+        "tests/test_the_lander_measures_the_population.py::test_candidate_handoff_preserves_the_promotion_guard",
+        "tests/test_the_lander_measures_the_population.py::test_primary_advance_after_measurement_refuses_the_actual_cli_merge",
+        "tests/test_the_lander_measures_the_population.py::test_primary_advance_after_promotion_measurement_refuses_publication",
+        "tests/test_the_lander_measures_the_population.py::test_the_actual_cli_lands_exactly_the_measured_candidate",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_a_figure_review_with_an_undisposed_blocking_finding_holds_the_run",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_a_store_read_that_raises_records_its_error_apart_from_stale_head",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_an_unparsable_figure_record_is_recorded_as_unreadable",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_the_awaiting_record_names_its_tier_under_its_own_key",
+        "tests/test_the_lander_waits_for_every_owed_review.py::test_a_run_owing_a_figure_review_is_not_landed_on_its_code_review",
+        "tests/test_the_lander_waits_for_every_owed_review.py::test_storing_the_owed_figure_review_lands_the_held_run"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234158820301-concurrent-edits-land-unattended/head-handoff-importers.log",
+      "summary": "55 failed, 1046 passed, 27 warnings, 1 error in 276.49s (0:04:36)"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "reviewed all seven commit changes from 5b93c97d604b49797e845a7fda92a9c31a9b2e3c to cff27336df6c2ba389b4e0246a62a79a2ae03651 across seven paths; publication extends the existing callback, while queue_landing.py:2057 leaves newly conflicting groups on a retry path without repair.",
+    "done_when": "prompt.txt:251 and live docs/plans/delivered-work-lands-without-a-coordinator.html#s7 require three grouped landings, conflict repair, regression refusal and a red control; head-handoff-suite.log records 73 passed, negative-control.log records both expected failures, and importer logs add no failures, but the tests omit a conflict introduced after queueing and the research-count replay is not supplied.",
+    "goal": "prompt.txt:38 requires clean reviewed heads to land after primary moves; reckon/crew/queue_landing.py:1760 refreshes individual evidence and :1963 groups compatible heads, but a conflict arising after grouping has no repair dispatch.",
+    "manifest": "manifest.md names seven real commits, actual baseline/after receipts, a two-case negative control, and the extra authorized repair owner; the recorded clean armed-suite delta agrees with the logs.",
+    "write_paths": "prompt.txt:94 and resume-1-advice.txt authorize the six original implementation/test paths plus one additional owner; all seven changed paths comply, with recovery_repair_dispatch.py explicitly reported and its failing id supplied."
+  },
+  "justifications": {
+    "durability": "tests/test_concurrent_edits_land_unattended.py:219 checks real source markers and :244 exercises a clean semantic regression, but no assertion reinstates a conflict between group selection and measure_landing_group at queue_landing.py:2057.",
+    "evidence": "head-handoff-suite.log records 73 passed against baseline-final-suite.log's 58 passed and negative-control.log records two expected moved-primary refusals, while tests/test_concurrent_edits_land_unattended.py:459 covers an individually detected conflict rather than the queued-group race.",
+    "fit": "reckon/crew/merge.py:925 wraps build_merge_commit, pending_landing.py:67 uses the atomic store, and crew_run_commands.py:4179 retains the existing completion callback and conventional mechanism-based names.",
+    "goal_fidelity": "reckon/crew/queue_landing.py:1963 and reckon/crew_run_commands.py:4179 implement automatic grouped publication, but queue_landing.py:2057 fails to return a newly conflicting member for repair.",
+    "reuse": "capability searches for candidate composition, pending recovery and publication found merge.py:903, pending_landing.py:111 and :709, queue_landing.py:1028, and crew_run_commands.py:4310 as the owners, and each new group helper wraps or extends those owners rather than duplicating their mechanisms.",
+    "scope_discipline": "the seven paths in git diff --name-only are authorized by prompt.txt:94 plus resume-1-advice.txt's three named extensions and one additional-owner allowance."
+  },
+  "negative_control": {
+    "cases": [
+      "second-landing",
+      "third-landing"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234158820301-concurrent-edits-land-unattended/negative-control.log",
+    "observed_refusal": "the measured primary changed before completion",
+    "result": "2 failed in 12.90s; EXIT=1"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 requires clean reviewed heads to land after primary moves; reckon/crew/queue_landing.py:1760 refreshes individual evidence and :1963 groups compatible heads, but a conflict arising after grouping has no repair dispatch.\nVERDICT done_when: prompt.txt:251 and live docs/plans/delivered-work-lands-without-a-coordinator.html#s7 require three grouped landings, conflict repair, regression refusal and a red control; head-handoff-suite.log records 73 passed, negative-control.log records both expected failures, and importer logs add no failures, but the tests omit a conflict introduced after queueing and the research-count replay is not supplied.\nVERDICT write_paths: prompt.txt:94 and resume-1-advice.txt authorize the six original implementation/test paths plus one additional owner; all seven changed paths comply, with recovery_repair_dispatch.py explicitly reported and its failing id supplied.\nVERDICT manifest: manifest.md names seven real commits, actual baseline/after receipts, a two-case negative control, and the extra authorized repair owner; the recorded clean armed-suite delta agrees with the logs.\nVERDICT diff: reviewed all seven commit changes from 5b93c97d604b49797e845a7fda92a9c31a9b2e3c to cff27336df6c2ba389b4e0246a62a79a2ae03651 across seven paths; publication extends the existing callback, while queue_landing.py:2057 leaves newly conflicting groups on a retry path without repair.\nCALL_SITES: reckon/crew/queue_landing.py:_land_deliveries, reckon/crew/queue_landing.py:land_once, reckon/crew/promotion_requests.py:_execute, reckon/crew/promotion_requests.py:PromotionService._tick_locked, reckon/crew/pending_landing.py:finish_pending_landings, reckon/crew_run_commands.py:crew_complete, reckon/crew_run_commands.py:_land_a_promoted_run\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/queue_landing.py:1963 and reckon/crew_run_commands.py:4179 implement automatic grouped publication, but queue_landing.py:2057 fails to return a newly conflicting member for repair.\nSCORE evidence: 17\nJUSTIFICATION evidence: head-handoff-suite.log records 73 passed against baseline-final-suite.log's 58 passed and negative-control.log records two expected moved-primary refusals, while tests/test_concurrent_edits_land_unattended.py:459 covers an individually detected conflict rather than the queued-group race.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the seven paths in git diff --name-only are authorized by prompt.txt:94 plus resume-1-advice.txt's three named extensions and one additional-owner allowance.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_concurrent_edits_land_unattended.py:219 checks real source markers and :244 exercises a clean semantic regression, but no assertion reinstates a conflict between group selection and measure_landing_group at queue_landing.py:2057.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/merge.py:925 wraps build_merge_commit, pending_landing.py:67 uses the atomic store, and crew_run_commands.py:4179 retains the existing completion callback and conventional mechanism-based names.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability searches for candidate composition, pending recovery and publication found merge.py:903, pending_landing.py:111 and :709, queue_landing.py:1028, and crew_run_commands.py:4310 as the owners, and each new group helper wraps or extends those owners rather than duplicating their mechanisms.\nFINDING reckon/crew/queue_landing.py:2057 blocking: A group queued cleanly can encounter a new primary conflict before it drains; build_merge_group raises MergeConflictError here without dispatch_merge_repair for the conflicting member, _complete_landing_group propagates it, and finish_landing_groups retries the same persisted heads, leaving the group stuck instead of returning the originating worktree for the repair round the plan requires; catch this case, identify and dispatch the affected member through the existing repair owner, and test a primary conflict introduced between queueing and draining.\n",
+  "reuse_audit": {
+    "_complete_landing_group": "coordinates _execute_command and existing _land_a_promoted_run; no second publisher",
+    "_queue_landing_groups": "uses existing eligibility, _land_command, Click option parsing and request_promotion",
+    "build_merge_group": "wraps merge.build_merge_commit and _is_ancestor; existing merge owner read at reviewed head",
+    "finish_landing_groups": "extends existing pending recovery and invokes the same group completion",
+    "group_path/save_group": "extend pending_landing pending_dir and use reckon._store.write_json_atomically",
+    "measure_landing_group": "wraps existing _measure_delivery and _record_suite_evidence",
+    "test_helpers": "_commit, fleet and _request express this scenario, while git operations reuse tests.helpers.git.git"
+  },
+  "review_limits": "Read-only artifact review; no suite rerun, mutations or production state changes; late-group conflict finding follows the exception and retry paths by inspection, not a new reproduction.",
+  "review_run_id": "r-20261117T014135891606-review-of-concurrent-edits-land-unattended-cff27336df6c",
+  "reviewed_base_sha": "5b93c97d604b49797e845a7fda92a9c31a9b2e3c",
+  "reviewed_head_sha": "cff27336df6c2ba389b4e0246a62a79a2ae03651",
+  "reviewed_run_id": "r-20261116T234158820301-concurrent-edits-land-unattended",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_log_evidence": [
+    {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234158820301-concurrent-edits-land-unattended/baseline-final-suite.log",
+      "revision": "5b93c97d604b49797e845a7fda92a9c31a9b2e3c",
+      "summary": "58 passed in 33.98s"
+    },
+    {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234158820301-concurrent-edits-land-unattended/head-handoff-suite.log",
+      "revision": "cff27336df6c2ba389b4e0246a62a79a2ae03651",
+      "summary": "73 passed in 82.12s (0:01:22)"
+    }
+  ],
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T03:43:58.937312+00:00",
+  "total": 108
+}

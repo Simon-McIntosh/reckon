@@ -198,6 +198,15 @@ def _stored_review(run_id: str) -> None:
 
 
 def _complete(run_id: str, repository: Path, *extra: str, land: bool = False):
+    """Complete a run, presenting the commit its worktree delivers.
+
+    The fixture's worktree sits one commit past its base, so the run made one
+    and the landing cites it. Declaring ``--no-commit`` over a worktree that
+    moved off its base is refused — the row would say the node succeeded with
+    nothing pointing at its work — and this file's subject is the gate's
+    declared arms, not the commitless form.
+    """
+    _base, head_sha = _revisions(repository)
     return CliRunner().invoke(
         cli_main,
         [
@@ -216,8 +225,8 @@ def _complete(run_id: str, repository: Path, *extra: str, land: bool = False):
             "0",
             "--gate-log-path",
             "/durable/gate.log",
-            "--no-commit",
-            "report-only fixture",
+            "--commit",
+            head_sha,
             *(["--land", "--wait"] if land else []),
             *extra,
         ],

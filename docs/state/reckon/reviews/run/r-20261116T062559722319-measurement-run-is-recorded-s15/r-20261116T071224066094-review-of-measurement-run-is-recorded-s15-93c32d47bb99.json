@@ -1,0 +1,84 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:4088 _refuse_a_plain_complete_off_the_branch -> _is_measurement_run",
+    "reckon/crew/recovery_classification.py:2051 classify_pointer -> promotable branch",
+    "reckon/crew/promotion.py:752 promotion -> measure_only marker reader (pre-existing owner)"
+  ],
+  "completed_at": "2026-11-16T07:42:08.284Z",
+  "dispatched_at": "2026-11-16T07:41:43Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the four readers of measure_only agree on every value dispatch writes; consolidating them into one public predicate is a follow-up section, not a reason to hold the fix that unblocks seven recorded replays",
+      "recorded_at": "2026-11-16T07:47:01.289814+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the four readers of measure_only agree on every value dispatch writes; consolidating them into one public predicate is a follow-up section, not a reason to hold the fix that unblocks seven recorded replays",
+      "recorded_at": "2026-11-16T07:47:03.151403+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "id": "f5427f0c59b",
+      "line": "38",
+      "severity": "non-blocking",
+      "text": "non-blocking: _is_measurement_run duplicates the measure_only marker predicate the repository already owns at reckon/crew/promotion.py:752, reckon/crew/queue_landing.py:1943 and reckon/crew/recovery_review_dispatch.py:3368; a fourth copy lets the four readers drift on what a measurement run is."
+    },
+    {
+      "file": "reckon/crew_run_commands.py",
+      "id": "f8b1682f9c3",
+      "line": "4104",
+      "severity": "non-blocking",
+      "text": "non-blocking: the module imports the private _is_measurement_run from recovery_classification, coupling crew_run_commands to a leading-underscore helper of another module instead of a public predicate."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified promote path call sites: classify_pointer consumed by the recovery CLI/observe surface and _refuse_a_plain_complete_off_the_branch called from crew complete.",
+    "diff": "read both commits against base 6fa76c49f \u2014 10e0959e5 adds _is_measurement_run and the promotable branch in recovery_classification.py and the exemption in crew_run_commands.py plus three test changes; 93c32d47b adds the evidence fragment.",
+    "done_when": "the done_when names the three-file pytest gate; the manifest records base 68 passed, final after 70 passed, negative control 2 failed, both arms completed over the logged paths, so the gate asserts the measure.",
+    "goal": "the node's goal is that a completed measurement run is recorded and promoted without a review; reckon/crew/recovery_classification.py:2051-2058 returns promotable with 'no review is owed' and reckon/crew_run_commands.py:4104 exempts the off-branch head refusal, so the goal is met.",
+    "manifest": "read; status complete, commits 10e0959e5 and 93c32d47b, changed_paths the four landed files, tests the three-file gate, test_logs naming baseline-1319187.log and final-1319236.log, baseline_suite and after_suite both completed with 0 failures.",
+    "write_paths": "declared paths were reckon/crew_run_commands.py, reckon/crew/recovery_classification.py, tests/test_a_measurement_run_never_lands.py, the evidence fragment and a figures directory; git diff 6fa76c49f..93c32d47b touches the first three plus the evidence fragment, all inside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_a_measurement_run_never_lands.py:426 redness follows from removing the classify_pointer measurement branch at reckon/crew/recovery_classification.py:2051, which sends the completed pointer back to the review-owed branch.",
+    "evidence": "the manifest's baseline_suite (6fa76c49f, 0 failures) and after_suite (93c32d47b, 0 failures) both name completed runs over final-1319236.log and baseline-1319187.log, so added_failure_count 0 is read from the logs, not claimed.",
+    "fit": "reckon/crew_run_commands.py:4104 imports the private _is_measurement_run across modules rather than through a public predicate, against the module-boundary idiom of the surrounding code.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:2051-2058 classifies a completed measurement pointer against the goal: promotable, no review owed, with the promotion command.",
+    "reuse": "reckon/crew/recovery_classification.py:38 adds a fourth measure_only marker reader beside reckon/crew/promotion.py:752, reckon/crew/queue_landing.py:1943 and reckon/crew/recovery_review_dispatch.py:3368, so the repository already owns this capability.",
+    "scope_discipline": "git diff --stat 6fa76c49f..93c32d47b lists exactly the four declared paths and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a completed measurement run is recorded and promoted without a review; reckon/crew/recovery_classification.py:2051-2058 returns promotable with 'no review is owed' and reckon/crew_run_commands.py:4104 exempts the off-branch refusal, so the goal is met.\nVERDICT done_when: the done_when names the three-file pytest gate; the manifest records base 68 passed, final after 70 passed and a 2-failure negative control, both arms declared complete over baseline-1319187.log and final-1319236.log, so the gate asserts the measure.\nVERDICT write_paths: the declared paths were crew_run_commands.py, recovery_classification.py, tests/test_a_measurement_run_never_lands.py, the evidence fragment and a figures directory; git diff 6fa76c49f..93c32d47b touches the first three plus the fragment, all inside the fence.\nVERDICT manifest: read; status complete, commits 10e0959e5 and 93c32d47b, tests the three-file gate, baseline_suite and after_suite both completed with 0 failures and named log paths.\nVERDICT diff: read both commits against base 10e0959e5's parent 6fa76c49f -- 10e0959e5 adds _is_measurement_run and the promotable branch in reckon/crew/recovery_classification.py:2051, the off-branch exemption in reckon/crew_run_commands.py:4104 and three test changes; 93c32d47b adds only the evidence fragment.\nCALL_SITES: reckon/crew_run_commands.py:4088 _refuse_a_plain_complete_off_the_branch, reckon/crew/recovery_classification.py:2051 classify_pointer, reckon/crew/promotion.py:752 measure_only reader\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:2051-2058 and reckon/crew_run_commands.py:4104 together record and promote a completed measurement run without a review.\nSCORE evidence: 19\nJUSTIFICATION evidence: baseline-1319187.log (6fa76c49f, 0 failures) and final-1319236.log (93c32d47b, 0 failures) are recorded in the manifest's suite blocks and give added_failure_count 0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 6fa76c49f..93c32d47b lists exactly the four declared paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_measurement_run_never_lands.py:426 reddens if the promotable branch at reckon/crew/recovery_classification.py:2051 is removed, though the reflex case at :546 weakens its own guard by also unstubbing _is_measurement_run.\nSCORE fit: 13\nJUSTIFICATION fit: reckon/crew_run_commands.py:4104 reaches into another module's leading-underscore helper.\nSCORE reuse: 4\nJUSTIFICATION reuse: reckon/crew/recovery_classification.py:38 is a fourth copy of the measure_only marker reader already owned by reckon/crew/promotion.py:752.\nFINDING reckon/crew/recovery_classification.py:38 non-blocking: _is_measurement_run duplicates the measure_only predicate owned by reckon/crew/promotion.py:752, reckon/crew/queue_landing.py:1943 and reckon/crew/recovery_review_dispatch.py:3368.\nFINDING reckon/crew_run_commands.py:4104 non-blocking: the private _is_measurement_run is imported across a module boundary instead of a public predicate.\n",
+  "review_run_id": "r-20261116T071224066094-review-of-measurement-run-is-recorded-s15-93c32d47bb99",
+  "reviewed_base_sha": "6fa76c49f48e1d4fe4f104431f85f519ce92aae0",
+  "reviewed_head_sha": "93c32d47bb995686d78e513bce69bf68a3e67e3d",
+  "reviewed_run_id": "r-20261116T062559722319-measurement-run-is-recorded-s15",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T071224066094-review-of-measurement-run-is-recorded-s15-93c32d47bb99"
+  },
+  "reviewer_run_id": "r-20261116T071224066094-review-of-measurement-run-is-recorded-s15-93c32d47bb99",
+  "reviewer_total": 81,
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 13,
+    "goal_fidelity": 18,
+    "reuse": 4,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T07:45:30.298058+00:00",
+  "total": 91
+}

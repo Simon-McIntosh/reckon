@@ -1,0 +1,120 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own completed suite arms: suite-fence-base.log records 58 passed and no failures; suite-fence-head.log records 61 passed and no failures, so there are no added failure ids.",
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/crew/promotion_checks.py:179",
+    "reckon/crew/recovery_stream.py:600",
+    "reckon/crew/resumption.py:710",
+    "reckon/crew/resumption.py:915",
+    "reckon/crew/dispatch_sessions.py:267",
+    "reckon/crew/dispatch_sessions.py:853",
+    "reckon/crew/recovery_wait.py:190",
+    "reckon/crew/recovery_classification.py:1503",
+    "reckon/crew/promotion.py:3074"
+  ],
+  "completed_at": "2026-11-17T04:31:21Z",
+  "dispatched_at": "2026-11-17T04:13:23Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the coordinator directed this change in the repair advice: the merged arm's deterministic failure (bytes parsed 16001128 vs appended 18001269) lived in recovery_watch's producer counter, so the fix had to be there; the path is ratified with --accept-path at landing.",
+      "recorded_at": "2026-11-17T04:34:37.626304+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the control at bd7f02bc restores whole-stream decoding over the same tests and fails all three cases (200,040, 200,050 and 196,039 decodes, EXIT=1), which is the behaviour of the base revision's decode path; the coordinator's matched arms at main fbf1f0cc63 vs merged 1d879eeec7 over 274 files add 0 real failures.",
+      "recorded_at": "2026-11-17T04:34:39.918906+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "id": "f6ca7f1b65d",
+      "line": "3763",
+      "severity": "blocking",
+      "text": "The byte-counter reset changed in commit 0a66bee is outside the source run's declared write_paths in prompt.txt:84-90 and dispatch-detail.json; the source manifest's orientation_write_paths also disagrees with that scope."
+    },
+    {
+      "file": "negative-control-bd7f02bc7b506b1de21e0d8eb0dc25e144fd68f3.log",
+      "id": "fbcc86b5c0a",
+      "line": "1",
+      "severity": "blocking",
+      "text": "The done_when requires the negative control at base 6acc2ef, but this log names revision bd7f02bc; the regression fails there, but the specified base-revision control is absent."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_stream_is_decoded_once_per_byte.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids_note": "No failure ids; 61 passed.",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224050940768-a-stream-is-decoded-once-per-byte/census/suite-fence-head.log",
+      "revision": "0a66bee254d5cb3f8403fe74f57473ccf0d14e7f",
+      "summary": "61 passed; EXIT=0"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids_note": "No failure ids; 58 passed.",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224050940768-a-stream-is-decoded-once-per-byte/census/suite-fence-base.log",
+      "revision": "6acc2ef37f3ff08cb61c34802f2efb7f13445bcb",
+      "summary": "58 passed; EXIT=0"
+    },
+    "negative_control": {
+      "exit_status": 1,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224050940768-a-stream-is-decoded-once-per-byte/negative-control-bd7f02bc7b506b1de21e0d8eb0dc25e144fd68f3.log",
+      "mutation": "whole-stream decoding regression restored",
+      "revision": "bd7f02bc7b506b1de21e0d8eb0dc25e144fd68f3",
+      "summary": "3 failed; EXIT=1"
+    },
+    "test_gate": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_stream_is_decoded_once_per_byte.py",
+      "exit_status": 0,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224050940768-a-stream-is-decoded-once-per-byte/gate-head-0a66bee254d5cb3f8403fe74f57473ccf0d14e7f.log",
+      "revision": "0a66bee254d5cb3f8403fe74f57473ccf0d14e7f",
+      "summary": "3 passed; EXIT=0"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Production paths verified include observation through promotion_checks.py and recovery_stream.py, resumption.py, dispatch_sessions.py, budget reads in recovery_wait.py and recovery_classification.py, and promotion.py; the nine exact sites are listed in call_sites.",
+    "diff": "Read commits 4a61e4e0, 232f9e11, 5c5916a4, bd7f02bc, 0a66bee2, and 5a7c4d2a against base 6acc2ef; they add the stream summary and gate, extend append/truncation equivalence, share summary reads with the parsed-event cache, adjust producer byte accounting, and add the evidence fragment, with recovery_watch.py as the sole out-of-scope path.",
+    "done_when": "prompt.txt:192 specifies the 40-run gate, a base negative control, six-tick census, and matched suite arms; the gate log records 3 passed, suite logs record 58 and 61 passed, and census logs yield a 0.002570 steady-tick ratio, but the negative-control log is at bd7f rather than base 6acc.",
+    "goal": "prompt.txt:38 names the deliverable as decoding only newly gained stream bytes; reckon/_backends.py:3863-3878 keys summaries by file identity and reads growth from the saved offset, with the test covering unchanged, append, and truncation cases.",
+    "manifest": "The source manifest records six commits, the gate command and logs, both suite arms, and census results, but its orientation_write_paths and changed_paths do not agree with the dispatch write_paths.",
+    "write_paths": "prompt.txt:84-90 and dispatch-detail.json declare _backends.py, recovery_stream.py, promotion_checks.py, the gate test, and the evidence fragment; the diff also changes recovery_watch.py:3763 outside that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_stream_is_decoded_once_per_byte.py:159-171 proves the counter sees known first-pass decodes and would redden if unchanged streams were decoded again; :189 catches rereading old bytes after append, :213 catches treating truncation as growth, and :171, :193, :217 catch changed results against a cold whole-read fold.",
+    "evidence": "The head gate records 3 passed in gate-head-0a66bee254d5cb3f8403fe74f57473ccf0d14e7f.log, both suite arms record zero failures, and the census logs calculate 437457846 base steady bytes versus 1124156 head bytes; the required negative-control revision mismatch is recorded at the named log's first line.",
+    "fit": "reckon/_backends.py:3701-3724 keeps the new private summary beside the existing parsed-stream cache and uses descriptive private helper names without plan or stage labels.",
+    "goal_fidelity": "reckon/_backends.py:3863-3878 reuses a summary for an unchanged stat identity and extends it from the prior byte offset, while tests/test_a_stream_is_decoded_once_per_byte.py:167-213 checks unchanged, appended, and truncated streams.",
+    "reuse": "reckon/_backends.py:3789-3842 publishes summary reads into the existing parsed-event cache, while the inspected recovery_stream.py:44-97 cache owns only final completion stamps, so the new summary extends the stream-read owner rather than duplicating it.",
+    "scope_discipline": "The only out-of-scope diff path is reckon/crew/recovery_watch.py:3763, which is absent from the write_paths declared in prompt.txt:84-90."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261117T041121586691-review-of-a-stream-is-decoded-once-per-byte-5a7c4d2a1ef7",
+  "reviewed_base_sha": "6acc2ef37f3ff08cb61c34802f2efb7f13445bcb",
+  "reviewed_head_sha": "5a7c4d2a1ef71d097219ad70e02e2f8d5b4f1ca0",
+  "reviewed_run_id": "r-20261115T224050940768-a-stream-is-decoded-once-per-byte",
+  "rubric": "Six required dimensions scored independently; all five artifact verdicts and production call sites are present.",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 8
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T04:31:28.058491+00:00",
+  "total": 100
+}

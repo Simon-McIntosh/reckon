@@ -86,11 +86,17 @@ def fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
         _git(root, *arguments)
 
     # A plan document the review tier reads its declared risk from, so the
-    # tier's plan input is a real file whose stat identity keys the memo.
+    # tier's plan input is a real file whose stat identity keys the memo. The
+    # record sits beside its heading because that adjacency is what the typed
+    # section read requires of a plan document.
     (root / "docs" / "plans" / "fixture-plan.html").write_text(
         '<html><head><meta name="plan-version" content="1"></head><body>'
+        '<h2 id="fixture-section">Fixture section</h2>'
         '<section data-reckon="section" data-id="fixture-section" '
-        'data-capability-risk="light"></section></body></html>',
+        'data-effort-hours="0.25" data-capability-class="general" '
+        'data-capability-reasoning="standard" data-capability-verification="strict" '
+        'data-capability-risk="low" data-status="implementable"></section>'
+        "</body></html>",
         encoding="utf-8",
     )
 

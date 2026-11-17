@@ -73,10 +73,35 @@ def dispatch_merge_repair(
         runs._write_json(runs.run_dir(run_id) / "merge-repair.json", receipt)
         return receipt
     branch = merge._current_branch(Path(str(record.get("repo") or "")))
+    other_side = merge._run(
+        Path(str(record.get("repo") or "")),
+        "log",
+        "--reverse",
+        "--no-merges",
+        "--format=%H %s",
+        f"{head}..{primary}",
+        "--",
+        *paths,
+    )
+    if other_side.returncode:
+        raise CrewError(
+            "could not identify the commits on the conflicting side: "
+            + (other_side.stderr or other_side.stdout)
+        )
+    peer_commits = []
+    for line in other_side.stdout.splitlines():
+        sha, _, subject = line.partition(" ")
+        if sha:
+            peer_commits.append({"sha": sha, "subject": subject})
+    receipt["peer_commits"] = peer_commits
+    provenance = "".join(
+        f"  {item['sha']} {item['subject']}\n" for item in peer_commits
+    )
     advice = (
         _repair_round_token(round_id) + "\n"
         f"Landing met a merge conflict against primary {branch} at {primary}.\n"
         f"Conflicted paths: {', '.join(paths)}.\n"
+        f"Other-side commits affecting these paths:\n{provenance}"
         f"Merge the current primary {branch} into this run's worktree, resolve "
         "the named paths keeping both changes' intent, and commit the merge. "
         "Do not discard either side or commit conflict markers. Re-run this "
