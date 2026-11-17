@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s83">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-17">
+  <meta name="evidence-commit" content="19e566b147">
+  <title>Lifted holds are read only where the log grew | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="lifted-holds-read-only-where-the-log-grew">
+  <h2>Lifted holds are read only where the log grew</h2>
+
+  <p><strong>The defect.</strong> <code>resumption._lifted_holds</code> rebuilt
+  the sweep's lift set from the project's whole append-only recovery log on
+  every tick, decoding every line to reach an answer the previous sweep already
+  held. On reckon's 41.6 MB, 6,747-line record that put 30% of one sweep thread
+  in the function and 19% in <code>json.loads</code> inside it.</p>
+
+  <p><strong>What landed.</strong> The read is incremental: each log's byte
+  offset through the last whole line and the lift set those lines produced are
+  kept, and a later read decodes only the bytes appended past that offset. A log
+  replaced (its inode moved) or shortened below what a read reached is read from
+  the start. The reading itself is not new code:
+  <code>recovery_wait.appended_lines</code> is the function the stream readers
+  already use, and <code>_stream_scan</code> already owns both the inode and the
+  not-shorter test. The scan record gained the appended-record offset it covers,
+  the store is guarded by one lock because a sweep and a classification can
+  advance the same record at once, and the read reports the offset it began at
+  &mdash; a start below the offset a caller recorded is how the caller learns the
+  file on disk is no longer the file it read.</p>
+
+  <h3 id="lifted-holds-read-only-where-the-log-grew-decodes">Five thousand lines, then none, then three</h3>
+
+  <p><code>tests/test_lifted_holds_read_only_what_was_appended.py</code> writes
+  5,000 recovery-report lines on a temporary crew home, 715 of them marked
+  <code>dry_run</code>, and counts decodes through a recording stand-in for
+  <code>json.loads</code> in <code>resumption</code>. The first call decodes
+  <strong>5,000</strong> lines and returns a set equal to a whole-file decode of
+  the same log; the second call on the unchanged log decodes
+  <strong>0</strong>; appending three lines makes the next call decode exactly
+  <strong>3</strong> and return the enlarged whole-file set; replacing the log
+  with a shorter file makes the next call decode <strong>4</strong> of 4 lines,
+  from the start. The whole-file count is asserted before the zero is reported,
+  so the instrument is shown seeing something present before an absence is
+  claimed. A 12-line log staged at a new inode is decoded in full, so a
+  replacement is not mistaken for an append.</p>
+
+  <h3 id="lifted-holds-read-only-where-the-log-grew-fragment">A record landing mid-append</h3>
+
+  <p>The same file writes half of a report line with no newline after 20
+  complete lines. The call decodes the 20 complete lines and the scan's offset
+  is asserted to stand at the last newline rather than at the file's end, so the
+  fragment waits; appending the completing bytes and the newline makes the next
+  call decode exactly <strong>1</strong> line, which is that record, and the set
+  gains its pair.</p>
+
+  <p>Each mutation of the check was applied and its run kept. With the base
+  revision's whole-file read restored, the second call decodes
+  <strong>5,000</strong> again and the incremental case fails
+  (<code>assert 5000 == 0</code>). With the whole-line clamp removed from
+  <code>_appended_lines</code> &mdash; its last segment kept as a line &mdash;
+  the fragment case fails (<code>assert 21 == 20</code>), because the
+  half-written record is handed to the decoder and consumed.</p>
+
+  <h3 id="lifted-holds-read-only-where-the-log-grew-race">Two overlapping reads</h3>
+
+  <p>The offset a read advances and the set that offset stands for are one
+  fact, and they were published by two critical sections: the read advanced the
+  shared scan offset first, the accumulated set landed after. A second sweep
+  running between the two took its start from the offset the first had already
+  advanced to, found a start its stored answer was not reached from, dropped
+  every hold the first had counted but not yet published, and recorded an offset
+  past those lines &mdash; after which the sweep resumes a hold it already
+  lifted. Both now advance inside one critical section.</p>
+
+  <p>The test interleaves two reads: it seeds 20 lines and their set, appends
+  three, and holds the first read inside its append read &mdash; offset
+  advanced, set not yet published &mdash; while a second read runs to
+  completion. It asserts the final set holds all <strong>23</strong> pairs and
+  that the three appended lines are decoded exactly once, with no line decoded
+  twice. Run against the code before this repair (<code>39524c0f</code>) the
+  case fails: the final set holds only the three appended pairs, and the 20
+  seeded holds are gone
+  (<code>assert {('r-000020-node', ...)} == {('r-000000-node', 'hold-0'), ...}</code>).</p>
+
+  <h3 id="lifted-holds-read-only-where-the-log-grew-arms">Matched arms</h3>
+
+  <p>The base arm at <code>73e2f52fa998607d07caffa8dfcc9f9f1c8cce62</code>
+  runs the two tests that import the changed modules,
+  <code>tests/test_staged_write_inventory.py</code> and
+  <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>:
+  <strong>58 passed</strong>, exit 0. The after arm adds this node's test file and
+  reports <strong>62 passed</strong>, exit 0 &mdash; the same 58 plus the four
+  cases above. <code>ruff check</code> is clean on every staged path, and
+  <code>ruff format --check</code> adds no finding: the three hunks it reports in
+  <code>reckon/crew/resumption.py</code> are present in the base blob as well.</p>
+</section>
+</main>
+</body>
+</html>

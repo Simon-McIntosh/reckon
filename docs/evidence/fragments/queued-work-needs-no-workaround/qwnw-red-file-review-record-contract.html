@@ -1,0 +1,61 @@
+<section id="qwnw-red-file-review-record-contract-verdict">
+<h3>The red file passes at head, and its two causes are named</h3>
+<p><code>tests/test_review_record_contract.py</code> read <code>4 failed, 7 passed</code> at <code>24bc79d8ee8e73d6d262d0879a27cd27d5a4048c</code> and <code>11 passed</code> at the branch head, both as <code>all_debug</code> batch jobs with <code>SLURM_JOB_ID</code> unset for the pytest process; each run's own revision is the first line of its log. The four failing ids are the four the node recorded:</p>
+<ul>
+<li><code>test_complete_reports_a_refused_review_before_promotion[change0-status 'complete']</code></li>
+<li><code>test_complete_reports_a_refused_review_before_promotion[change1-no subject]</code></li>
+<li><code>test_obligation_names_a_delivered_refusal_and_its_repair[change0-status 'complete']</code></li>
+<li><code>test_obligation_names_a_delivered_refusal_and_its_repair[change1-no subject]</code></li>
+</ul>
+<table>
+<thead><tr><th>Cause</th><th>Verdict</th><th>What was wrong</th></tr></thead>
+<tbody>
+<tr><td><code>test_complete_reports_a_refused_review_before_promotion</code> (both cases)</td><td>product wrong</td><td>The refusal existed but was judged inside the promotion the command runs itself. <code>crew complete</code> without <code>--wait</code> answers with a queued promotion request before that point, so a review's unfileable record was never named to the command that queued the work. The guard now runs ahead of that branch and reads the paths this call accepts beside the run's declaration.</td></tr>
+<tr><td><code>test_obligation_names_a_delivered_refusal_and_its_repair</code> (both cases)</td><td>test wrong</td><td>The case registers a review-in-flight reader of the rule's older one-argument shape. The rule is asked with the launched pointer set, so the double raised <code>TypeError</code> before reaching the obligation it measures. The double now takes the snapshot keyword and answers the same review id; no assertion was removed or weakened.</td></tr>
+</tbody>
+</table>
+</section>
+
+<section id="qwnw-red-file-review-record-contract-negative-control">
+<h3>The guarded command refuses at head and did not before</h3>
+<p>One invocation — a queued <code>crew complete --run r-review-fixture --gate not-run</code> over a review record carrying <code>status: "complete"</code> — at each revision. At the base revision the command answered with a request receipt and exit code 0, so nothing told the reviewer the record could not be filed:</p>
+<pre>exit_code: 0
+receipt: {"kind": "command", "node": "review-of-fixture", "ok": true, "options": {..., "run_id": "r-review-fixture", ...}</pre>
+<p>At the head the same call refuses, naming the record path and the field to repair, and exits 1:</p>
+<pre>exit_code: 1
+receipt: {"ok": false, "refused": [{"reasons": ["review record carries status 'complete', which no reader acts on; the accepted statuses are incomplete, parsed, unparsed"], "record": ".../r-reviewed-fixture/review-records/r-reviewed-fixture.json"}], "review_filed": false}</pre>
+<p>Logs <code>logs/show-base.log</code> and <code>logs/show-head.log</code> in the run directory <code>r-20261116T104355176177-qwnw-red-file-review-record-contract</code>. The pytest-level control is <code>logs/node-base.log</code>: <code>4 failed, 7 passed in 1.76s</code>, <code>EXIT=1</code>, carrying the four ids above; the head arm is <code>logs/node-head.log</code>: <code>11 passed in 1.06s</code>, <code>EXIT=0</code>.</p>
+</section>
+
+<section id="qwnw-red-file-review-record-contract-arms">
+<h3>Arms, and what each measured</h3>
+<p>Every arm writes its own revision into the head of its log, so the figures below are tied to a revision by the log beside them rather than by a revision written down here. The two pytest arms are the node's file at the base and at the branch head; the two suite arms are the fence template resolved over each arm's own tree; the last two only lint the paths this node touched.</p>
+<table>
+<thead><tr><th>Arm</th><th>Summary line</th><th>Exit</th></tr></thead>
+<tbody>
+<tr><td>node gate, head (<code>logs/node-head.log</code>)</td><td><code>11 passed</code></td><td><code>EXIT=0</code></td></tr>
+<tr><td>node gate, base — the negative control (<code>logs/node-base.log</code>)</td><td><code>4 failed, 7 passed</code>, ids as recorded on this node</td><td><code>EXIT=1</code></td></tr>
+<tr><td>suite base (<code>logs/suite-base.log</code>)</td><td><code>58 passed</code></td><td><code>EXIT=0</code></td></tr>
+<tr><td>suite after (<code>logs/suite-after.log</code>)</td><td><code>58 passed</code></td><td><code>EXIT=0</code></td></tr>
+<tr><td>ruff check (<code>logs/ruff-check.log</code>)</td><td><code>All checks passed!</code></td><td><code>EXIT=0</code></td></tr>
+<tr><td>ruff format --check (<code>logs/ruff-format.log</code>)</td><td><code>2 files already formatted</code></td><td><code>EXIT=0</code></td></tr>
+</tbody>
+</table>
+<p>Both suite arms run the template <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code> resolved over their own tree: the base arm in a <code>--shared</code> clone of the primary checkout checked out at <code>24bc79d8ee</code>, the after arm in this worktree at its head. Both gate and suite arms ran as <code>all_debug</code> batch jobs with <code>SLURM_JOB_ID</code> unset for the pytest process.</p>
+<p><strong>Importers arm.</strong> The 28 test files that import <code>reckon.crew_run_commands</code> ran at each revision: <code>g00</code> <code>10 failed, 53 passed</code> at base and head, <code>g02</code> <code>11 failed, 312 passed</code>, <code>g03</code> <code>9 failed, 95 passed</code>, and the six files of the fourth group <code>5</code>, <code>4</code>, <code>3</code>, <code>2</code>, <code>5</code> and <code>6</code> passed at both revisions: base <code>30 failed, 485 passed</code> against head <code>30 failed, 485 passed</code>, <strong>0 added and 0 removed failing ids</strong>. The failures in <code>g00</code>, <code>g02</code> and <code>g03</code> are the same ids at both revisions; the comparison is over the runner's <code>FAILED</code>/<code>ERROR</code> ids, not over counts. The last two files (<code>git status</code> inside a tree snapshot stalls under a batch node in this environment) were measured on the login node at both revisions, each reading 5 and 6 passed, and the log header records which host they ran on.</p>
+</section>
+<section id="qwnw-red-file-review-record-contract-merge">
+<h3>The landing conflict, and how it was resolved</h3>
+<p>The delivery's guard sits in the same place as a primary-side guard, so merging primary <code>648a141a93</code> conflicted in <code>reckon/crew_run_commands.py</code>: one region, five lines each side, both adding a call immediately after the landing check. The primary added <code>_accept_a_matching_project(run_id, project)</code>, refusing a caller whose <code>--project</code> disagrees with the run; this branch added <code>_refuse_an_unfileable_review_record(run_id, accepted=..., pretty=...)</code>, judging the delivered review records.</p>
+<p>Neither call can sit after the request block: that block writes the promotion request, so a caller refused for the wrong project would leave a request queued for a run it did not name, and a review whose record is unfileable would leave one queued for a promotion it cannot pass. Both therefore run first, in the order the primary's own comment establishes: identity, then the review record.</p>
+<pre><code>if land and not dry_run:
+    _refuse_a_landing_without_its_pointer(run_id)
+_accept_a_matching_project(run_id, project)
+_refuse_an_unfileable_review_record(
+    run_id, accepted=[path for path, _ in accepted_paths], pretty=pretty
+)
+driven = False</code></pre>
+<p>No line from either side was dropped: the merge commit <code>9053048f44</code> carries primary <code>648a141a93</code> as its second parent and this run's four delivery commits behind its first. After the resolution the approachable proof is the same file plus its sibling: <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_review_record_contract.py tests/test_a_subjectless_review_record_is_refused_at_delivery.py</code> reads <code>16 passed</code> on the merged tree, the node's own 11 ids included.</p>
+<h3>The importing population after the merge</h3>
+<p>The 28-file comparison above was measured against the delivery's own base. Across the merge the population itself moved, so it was measured again against the merge base <code>648a141a93</code>: the same 28 files that import <code>reckon.crew_run_commands</code>, in four groups, each arm resolved over its own tree. Base <code>2 failed, 61 passed</code>, <code>14 passed</code>, <code>10 failed, 313 passed</code>, <code>7 failed, 97 passed</code>, and the pair of files that stall on a tree snapshot inside a batch node reading <code>5</code> and <code>6</code> passed on the login node; head reads the same four group lines and the same two files. <strong>0 added and 0 removed failing ids.</strong> The 19 failures present at both revisions are primary's own and are untouched by this node.</p>
+</section>
