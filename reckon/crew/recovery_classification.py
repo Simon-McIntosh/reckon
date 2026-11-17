@@ -1982,9 +1982,12 @@ def classify_pointer(
     # exactly as the drain view and the stop hook judge it.
     stuck = _stuck_verdict_for(record) if phase else None
 
-    # A pre-spawn launch past its bound with its holder gone is not waiting to
-    # start: the liveness arms read it as a failed launch, which the admission
-    # pass then releases or returns to the queue.
+    # A pre-spawn launch whose phase says it has not started is not waiting to
+    # start on that label alone: the pre-spawn reading needs a launch that has
+    # spawned nothing, and the liveness arms read the rest — a launch whose
+    # worker has come and gone from that worker's own liveness and output, which
+    # is a failed launch the admission pass then releases or returns to the
+    # queue.
     #
     # The pre-spawn phrase is the launcher's label and a stale one, so it cannot
     # be trusted alone. A run that reached its worker carries a pid, a worker
