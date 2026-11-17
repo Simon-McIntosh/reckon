@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="458">
+<meta name="plan-version" content="459">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -1734,6 +1734,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s89" data-id="c-run-r-20261117T211835235147-review-of-a-live-pointer-carries-no-clone-report-7ca7a5a6e8a6" data-who="reckon-build" data-when="2026-11-17T21:20:52.607Z">
     <div class="r-comment-body"><p>Independent review of r-20261117T160244730423-a-live-pointer-carries-no-clone-report at 6686bb507f..7ca7a5a6e8: six dimensions scored goal_fidelity 19, evidence 16, scope_discipline 20, durability 16, fit 19, reuse 18, no blocking finding; three non-blocking findings recorded — a self-referential assertion at tests/test_a_live_pointer_carries_no_clone_report.py:253, and two evidence-accuracy defects in docs/evidence/fragments/the-monitor-reads-each-fact-once/a-live-pointer-carries-no-clone-report.html:41 (a named head revision no retained log carries, 5b15fe3f3a against the log's 7ca7a5a6e8; and an imports-no-failure clause measured over two of the 935 test files that reference reckon.crew.runs).</p></div>
+</div>
+<div class="r-comment" data-section="s89" data-id="c-run-r-20261117T160244730423-a-live-pointer-carries-no-clone-report" data-who="reckon-build" data-when="2026-11-17T20:48:49.765Z">
+    <div class="r-comment-body"><p>A live pointer no longer carries the promotion&#x27;s clone report. `_write_json`&#x27;s live-pointer branch drops `clone_matches` on every pointer write — the two writers that reached a pointer with a row-shaped record were a promotion keeping a pointer it could not retire and a landing marking a promoted run for merge repair — and `_pointer_text` reduces a pointer&#x27;s text before it is cached and decoded, parsing the reduction first so an unreducible text is parsed as it arrived. The promoted row keeps the report: velocity&#x27;s clone figures for the run are its own report&#x27;s length. Measured on a temporary crew home with a 5 MB report: the listing parsed 8,320,157 bytes for a pointer carrying it at base 6686bb507f and 201 bytes at head, while the row&#x27;s report is unchanged; tests/test_a_live_pointer_carries_no_clone_report.py fails 2 of 3 at base and passes 3 of 3 at head.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T122921728382-review-of-obligations-read-the-station-efa4d123747d" data-who="reckon-build" data-when="2026-10-27T12:50:12.877Z">
     <div class="r-comment-body"><p>Reviewed run r-20261027T042852990093-obligations-read-the-station at efa4d1237 against base 20e65d881: one blocking finding (station_obligations.py:263 freezes the exported heartbeat whenever the fleet is unchanged, so an off-node reader reports a healthy quiet station stale after 120 s; demonstrated at t0+121 s returning export None, heartbeat t0 and read_station_answer stale=True age=121), scores goal_fidelity 11 evidence 13 scope_discipline 19 durability 13 fit 16 reuse 5, added_failure_count 0 against the reviewed run's own gate logs.</p></div>
