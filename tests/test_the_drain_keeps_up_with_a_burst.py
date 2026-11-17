@@ -461,3 +461,60 @@ def test_release_record_is_written_under_the_branch_lease(tmp_path, monkeypatch)
             project="fixture", root=repo, run_id="run",
             release={"worktree_released": True}, checkout=repo,
         )
+
+
+def test_a_measurement_wait_holds_no_preparation_slot(tmp_path, monkeypatch):
+    import subprocess
+
+    from reckon.crew import landing_measure
+
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv(landing_measure.MEASUREMENT_WIDTH_ENV, "2")
+    release, reported = threading.Event(), threading.Event()
+    lock = threading.Lock()
+    active = maximum = 0
+    measuring = {"r-measure-a", "r-measure-b", "r-measure-c"}
+    for run_id in [*sorted(measuring), "r-report"]:
+        _queue_for_repository(run_id, tmp_path / "repo")
+
+    def run(command, **kwargs):
+        nonlocal active, maximum
+        with lock:
+            active += 1
+            maximum = max(maximum, active)
+        try:
+            assert release.wait(5), "the measurement fixture was not released"
+            return subprocess.CompletedProcess(command, 0, "1 passed in 0.01s\n", "")
+        finally:
+            with lock:
+                active -= 1
+
+    def execute(request):
+        if request["run_id"] in measuring:
+            landing_measure.armed_observations(
+                command="python -c pass",
+                tree=tmp_path,
+                base_tree=tmp_path,
+                base_sha="base",
+                head_sha="head",
+                logs_dir=tmp_path / request["run_id"],
+                run=run,
+                config={"landing": {}},
+            )
+        else:
+            reported.set()
+        return {"ok": True, "record": {"commits": []}}
+
+    service = promotion_requests.PromotionService(width=1, execute=execute)
+    service.start_refill()
+    try:
+        service.tick()
+        assert reported.wait(2), "a measurement wait spent a preparation slot"
+        with lock:
+            assert active == 2
+            assert maximum == 2
+    finally:
+        release.set()
+        service.stop_refill()
+        service.begin_drain()
+        assert service.wait_for_in_flight(10) == []
