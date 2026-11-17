@@ -1022,11 +1022,12 @@ def complete(
         # and nothing about it is ever reviewed or merged.
         measurement_reason = _measurement_reason(record)
         if measurement_reason:
-            outcome = (
-                f"measured: {str(outcome).strip()}"
-                if str(outcome).strip()
-                else "measured"
-            )
+            if verdict == "failed":
+                outcome = "measured"
+            elif str(outcome).strip():
+                outcome = f"measured: {str(outcome).strip()}"
+            else:
+                outcome = "measured"
             if not str(no_impl_change).strip():
                 # A replay must not move the plan it replays: the section is
                 # already declared done, and an impl tick from a duplicate of
@@ -1388,6 +1389,7 @@ def complete(
                 run_id,
                 record,
                 waiver_reason=suite_delta_waiver,
+                gate_verdict=verdict,
                 dry_run=dry_run,
             )
             if dry_run:
@@ -2019,7 +2021,7 @@ class _PlanWriteSnapshot:
                 lock_path.unlink()
 
         # Editors use this same resource lock. The git index lock also excludes
-        # a stager between the ownership check and the path-specific update.
+        # an index writer between the ownership check and the path-specific update.
         with (
             nullcontext()
             if plan_locked
@@ -2196,7 +2198,7 @@ def _preserve_plan_on_refusal(promote: Callable[..., dict[str, Any]]) -> Callabl
                 return promote(run_id, **kwargs)
             except BaseException as exc:
                 # A committed landing survives a cleanup failure. Rewinding its
-                # plan here would stage a reversal of a commit that already landed.
+                # plan here would add an index change reversing a landed commit.
                 if snapshot.committed_entry() != snapshot.head_entry:
                     raise
                 try:
@@ -2888,7 +2890,7 @@ def _complete_locked(
         # already gone records each figure as absent rather than as zero, so a
         # missing measurement never reads as a free run.
         run.update(capabilities.derive_run_figures(run))
-        # The landing comment is written last of the plan-facing steps: the record
+        # The landing comment is written after all plan-facing operations: the record
         # is assembled, and every refusal it raises is raised, before anything is
         # written to the plan. A promotion that refuses after writing the comment
         # leaves the plan mutated for the caller that retries it, and the first
@@ -3281,8 +3283,8 @@ def discard(run_id: str, *, allowed_phases: Sequence[str] = ()) -> dict[str, Any
     the departure leaves them holding the work, and the coordinator reading the
     result is told which runs those are.
 
-    ``allowed_phases`` narrows the removal to a pointer still in one of those
-    phases, tested against the record re-read under the lock, so a caller whose
+    The supplied live-run states narrow the removal, tested against the record
+    re-read under the lock, so a caller whose
     own pre-check raced a test sees a launch as the refusal it is rather than
     removing a run that has started.
 

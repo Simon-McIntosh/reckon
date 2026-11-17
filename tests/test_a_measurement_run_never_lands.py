@@ -29,6 +29,7 @@ from reckon import _store, crew, crew_dispatch_commands
 from reckon import cli as cli_module
 from reckon.crew import (
     open_run_index,
+    promotion_records,
     queue_landing,
     recovery_classification,
     recovery_review_dispatch,
@@ -474,9 +475,17 @@ def test_complete_records_a_measured_row_and_leaves_the_branch_alone(
 
 
 def test_a_failed_measurement_records_added_suite_failures(
-    measurement_repo: Path, tmp_path: Path
+    measurement_repo: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A failed gate records the added failures as the measurement result."""
+    if os.environ.get("RECKON_DISABLE_MEASUREMENT_FAILURE_EXEMPTION") == "1":
+        monkeypatch.setattr(
+            promotion_records,
+            "_failed_measurement_gate",
+            lambda _record, _gate_verdict: False,
+        )
     run = _delivered_measurement_run(measurement_repo, tmp_path)
     failure_id = _record_added_failure_arms(run)
 
@@ -501,6 +510,21 @@ def test_an_ordinary_failed_run_still_refuses_added_suite_failures(
 
     assert result.exit_code != 0, result.output
     assert "armed promotion added suite failures" in result.output, result.output
+    assert failure_id in result.output, result.output
+    assert open_run_index.row_for_run(PROJECT, run["run_id"], measurement_repo) is None
+
+
+def test_a_passing_measurement_still_refuses_added_suite_failures(
+    measurement_repo: Path, tmp_path: Path
+) -> None:
+    """A passing gate does not record added failures as a measurement result."""
+    run = _delivered_measurement_run(measurement_repo, tmp_path)
+    failure_id = _record_added_failure_arms(run)
+
+    result = _complete(run, measurement_repo, tmp_path, gate="passed")
+
+    assert result.exit_code != 0, result.output
+    assert "suite-delta-refused" in result.output, result.output
     assert failure_id in result.output, result.output
     assert open_run_index.row_for_run(PROJECT, run["run_id"], measurement_repo) is None
 
