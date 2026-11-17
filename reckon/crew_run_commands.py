@@ -4176,6 +4176,129 @@ def _refuse_a_plain_complete_off_the_branch(
     )
 
 
+def _complete_landing_group(request: Mapping[str, Any]) -> dict[str, Any]:
+    """Complete every member, then use the ordinary publication callback once.
+
+    The group record precedes promotion. Recovery can therefore finish missing
+    promotions before publishing, even if a process ends after a ledger write
+    and before the callback records that write on the group.
+    """
+    from reckon.crew import pending_landing, queue_landing, runs
+    from reckon.crew.promotion_requests import _execute_command
+    from reckon.node_exclusive_lock import LockHeld, exclusive_lock
+
+    leader = str(request["run_id"])
+    path = pending_landing.group_path(leader)
+    try:
+        lock = exclusive_lock(path.with_suffix(".lock"), blocking=False)
+        lock.__enter__()
+    except LockHeld as exc:
+        raise runs.CrewError("the landing group is already being completed") from exc
+    try:
+        group = pending_landing._read(path)
+        if group is None:
+            members = request["options"]["members"]
+            group = {
+                "run_id": leader,
+                "request": dict(request),
+                "members": {
+                    str(member["pointer"]["run_id"]): dict(member) for member in members
+                },
+            }
+            pending_landing.save_group(group)
+        # Preflight all still-unpromoted members before the first write. This
+        # is the same guard as each real completion, never a group exemption.
+        for run_id, member in group["members"].items():
+            project = str(member["pointer"]["project"])
+            row = pending_landing._promoted_row(project, run_id)
+            if row is not None:
+                member["promotion"] = {"project": project, "record": dict(row)}
+                continue
+            current, _tree = queue_landing.recovery._review_head_and_tree(
+                member["pointer"]
+            )
+            if current != member["head"]:
+                raise runs.CrewError(f"group member {run_id} changed its reviewed head")
+            dry = _execute_command(
+                {**member["options"], "dry_run": True, "land": False, "candidate": ""}
+            )
+            if not dry.get("would_promote"):
+                raise runs.CrewError(f"group member {run_id} refused: {dry}")
+        pending_landing.save_group(group)
+        # A finished measurement is reusable only for this complete set and
+        # the current product; publication records alone leave it unchanged.
+        pointer = group["members"][leader]["pointer"]
+        primary = queue_landing._primary_revision(pointer)
+        if not group.get(
+            "head"
+        ) or not queue_landing._moved_primary_keeps_the_measurement(
+            pointer, str(group.get("primary") or ""), primary
+        ):
+            from reckon.crew import merge
+
+            if not group.get("head") or not merge._is_ancestor(
+                Path(str(pointer["repo"])), str(group["head"]), primary
+            ):
+                queue_landing.measure_landing_group(group)
+        group.pop("publishing", None)
+        token = pending_landing.LANDING_GROUP.set(group)
+        try:
+            for member in group["members"].values():
+                if member.get("promotion"):
+                    continue
+                _execute_command({**member["options"], "candidate": ""})
+            primary = queue_landing._primary_revision(pointer)
+            if not queue_landing._moved_primary_keeps_the_measurement(
+                pointer, str(group["primary"]), primary
+            ):
+                from reckon.crew import merge
+
+                if not merge._is_ancestor(
+                    Path(str(pointer["repo"])), str(group["head"]), primary
+                ):
+                    queue_landing.measure_landing_group(group)
+            group["publishing"] = True
+            pending_landing.save_group(group)
+            first = group["members"][leader]
+            report, code = _land_a_promoted_run(
+                first["promotion"],
+                run_id=leader,
+                gate="passed",
+                checkout_path=None,
+                pointer=first["pointer"],
+                candidate=str(group["head"]),
+            )
+            if code:
+                raise runs.CrewError(str(report.get("error") or report))
+        finally:
+            group.pop("publishing", None)
+            pending_landing.LANDING_GROUP.reset(token)
+        # Every other head is now on primary. Their ordinary callback performs
+        # its idempotent push/release path without another merge or gate.
+        for run_id, member in group["members"].items():
+            if run_id == leader:
+                continue
+            released, code = _land_a_promoted_run(
+                member["promotion"],
+                run_id=run_id,
+                gate="passed",
+                checkout_path=None,
+                pointer=member["pointer"],
+            )
+            if code:
+                raise runs.CrewError(str(released.get("error") or released))
+        path.unlink()
+        return {
+            "ok": True,
+            "run_id": leader,
+            "members": list(group["members"]),
+            "candidate": group["head"],
+            "landing": report,
+        }
+    finally:
+        lock.__exit__(None, None, None)
+
+
 def _land_a_promoted_run(
     promoted: Mapping[str, Any],
     *,
@@ -4224,7 +4347,8 @@ def _land_a_promoted_run(
         "steps": {"promote": {"ok": True}},
         "promotion": promoted,
     }
-    head = _reviewed_head_of(record)
+    group = pending_landing.LANDING_GROUP.get()
+    head = str(group["head"]) if group and group.get("publishing") else _reviewed_head_of(record)
     if not head:
         report["steps"]["land"] = {
             "ok": False,
@@ -4302,6 +4426,11 @@ def _land_a_promoted_run(
         )
         return report, 1
 
+    if group and not group.get("publishing"):
+        group["members"][run_id]["promotion"] = dict(promoted)
+        pending_landing.save_group(group)
+        return {"ok": True, "run_id": run_id, "group_pending": group["run_id"]}, 0
+
     def verify_gate(checkout, _base, _head, revision, objects=None):
         from reckon.crew.review_landing import replay_candidate
 
@@ -4324,7 +4453,7 @@ def _land_a_promoted_run(
             raise merge_module.MergeError(checked["reason"])
 
     try:
-        if candidate:
+        if candidate and not merge_module._is_ancestor(repository, head, "HEAD"):
             from reckon.crew import queue_landing
 
             # Promotion writes records onto primary. Measure the resulting
@@ -4335,6 +4464,8 @@ def _land_a_promoted_run(
                 head,
                 str(worktree or repository),
             )
+        elif candidate:
+            candidate = ""
         landed = merge_module.land(
             repository,
             head=head,

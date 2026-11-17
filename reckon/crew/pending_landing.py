@@ -26,6 +26,7 @@ import contextlib
 import json
 import time
 from collections.abc import Callable, Mapping
+from contextvars import ContextVar
 from pathlib import Path
 from typing import Any
 
@@ -51,6 +52,52 @@ UNPROMOTED_RECORD_SECONDS = 2 * 3600
 #: with no live lease holder and no promoted row, names a promotion that
 #: stopped between its record and its ledger row rather than one still running.
 UNFINISHED_PROMOTION_SECONDS = 60.0
+
+# The completion callback still owns publication. A group defers that callback
+# until every member's ordinary promotion has succeeded.
+LANDING_GROUP: ContextVar[dict[str, Any] | None] = ContextVar(
+    "landing_group", default=None
+)
+
+
+def group_path(run_id: str) -> Path:
+    return pending_dir() / "groups" / f"{run_id}.json"
+
+
+def save_group(group: Mapping[str, Any]) -> None:
+    from reckon._store import write_json_atomically
+
+    write_json_atomically(group_path(str(group["run_id"])), dict(group))
+
+
+def finish_landing_groups(*, only_run: str = "") -> list[dict[str, Any]]:
+    """Resume the same queued group after interruption, including its promotions."""
+    from reckon.crew.promotion_requests import PENDING, read_promotion
+    from reckon.crew_run_commands import _complete_landing_group
+
+    results = []
+    for path in sorted((pending_dir() / "groups").glob("*.json")):
+        group = _read(path)
+        if not group or (only_run and only_run not in group["members"]):
+            continue
+        run_id = str(group["run_id"])
+        if read_promotion(run_id).get("phase") in PENDING:
+            continue
+        try:
+            result = _complete_landing_group(group["request"])
+        except Exception as exc:  # noqa: BLE001 - retain failed groups for recovery
+            results.append(
+                {"run_id": run_id, "status": "group-refused", "error": str(exc)}
+            )
+            continue
+        results.extend(
+            {
+                "run_id": member,
+                "status": "finished" if result.get("ok") else "group-refused",
+            }
+            for member in group["members"]
+        )
+    return results
 
 
 def pending_dir() -> Path:
@@ -671,7 +718,8 @@ def finish_pending_landings(
 
     moment = time.time() if now is None else now
     lander = land or merge.land
-    results: list[dict[str, Any]] = retire_stuck_review_pointers(only_run=only_run)
+    results: list[dict[str, Any]] = finish_landing_groups(only_run=only_run)
+    results.extend(retire_stuck_review_pointers(only_run=only_run))
     directory = pending_dir()
     if not directory.is_dir():
         return results
@@ -687,6 +735,11 @@ def finish_pending_landings(
         run_id = str(record.get("run_id") or "")
         project = str(record.get("project") or "")
         if not run_id or not project or (only_run and run_id != only_run):
+            continue
+        group_id = str((record.get("pointer") or {}).get("landing_group") or "")
+        if group_id and group_path(group_id).exists():
+            # A subset of a proved group need not pass its combined gate.
+            # Only the group's completion callback may publish this record.
             continue
         from reckon.crew.promotion_requests import (
             COMMAND_REPLY,
