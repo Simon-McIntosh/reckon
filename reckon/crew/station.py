@@ -1103,6 +1103,10 @@ class Station:
         self.projects = projects
         self.stall_seconds = stall_seconds
         self.clock = clock or (lambda: datetime.now(tz=UTC))
+        self._stage_durations: dict[str, float] = {}
+        self._timed_stage = ""
+        self._stage_since: float | None = None
+        self._tick_started_at = ""
         # The schedule that keeps every managed repository packed. ``None``
         # leaves it off, which is what a test driving one tick wants: a pass
         # submits a scheduler job, and only the long-running service does that.
@@ -1145,12 +1149,45 @@ class Station:
         Both are written before the work they name rather than after it, so a
         stage a reader sees is the stage the tick has not yet finished.
         """
+        timer = time.monotonic()
         if started is not None:
+            self._stage_durations = {}
+            self._tick_started_at = started.astimezone(UTC).isoformat()
             self.store.set_station_value(
                 obligation_snapshot.STATION_TICK_STARTED_AT_KEY,
-                started.astimezone(UTC).isoformat(),
+                self._tick_started_at,
             )
+        else:
+            self._measure_stage(timer)
+        self._timed_stage, self._stage_since = stage, timer
         self.store.set_station_value(obligation_snapshot.STATION_TICK_STAGE_KEY, stage)
+
+    def _measure_stage(self, timer: float) -> None:
+        """Accumulate elapsed time independently of wall-clock adjustments."""
+        if self._stage_since is not None:
+            elapsed = timer - self._stage_since
+            self._stage_durations[self._timed_stage] = (
+                self._stage_durations.get(self._timed_stage, 0.0) + elapsed
+            )
+
+    def _record_finished_tick(self, finished: str) -> None:
+        """Replace the completed measurement as one bounded station record."""
+        self._measure_stage(time.monotonic())
+        slowest = max(self._stage_durations, key=self._stage_durations.get)
+        self.store.set_station_value(
+            obligation_snapshot.STATION_LAST_TICK_KEY,
+            json.dumps(
+                {
+                    "started_at": self._tick_started_at,
+                    "finished_at": finished,
+                    "stage_durations_seconds": self._stage_durations,
+                    "duration_seconds": sum(self._stage_durations.values()),
+                    "slowest_stage": slowest,
+                    "slowest_stage_seconds": self._stage_durations[slowest],
+                }
+            ),
+        )
+        self._stage_since = None
 
     def _due_reset_events(
         self, project: str, moment: datetime
@@ -1392,9 +1429,10 @@ class Station:
                 print(f"station-maintenance: {row}", flush=True)
         # The finish stamp is what closes the tick for a reader: until it is
         # later than the start, a stage on record is a tick still running.
+        finished = self.clock().astimezone(UTC).isoformat()
+        self._record_finished_tick(finished)
         self.store.set_station_value(
-            obligation_snapshot.STATION_TICK_FINISHED_AT_KEY,
-            self.clock().astimezone(UTC).isoformat(),
+            obligation_snapshot.STATION_TICK_FINISHED_AT_KEY, finished
         )
         return published
 
