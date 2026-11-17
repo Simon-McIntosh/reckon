@@ -4,6 +4,9 @@ Ledger readers query the store directly. Explicit import and comparison read
 committed documents, allowing the store to be rebuilt without asking it for its
 own input. ``DETAIL_FIELDS`` names the wide fields rotation may remove; every
 other field is durable. Refusal stamps are independent durable records.
+
+Project-scoped roster members, budget holds and their version are authoritative
+mutable state, imported once and independent of run-index rebuilds.
 """
 
 from __future__ import annotations
@@ -145,22 +148,25 @@ _RUNS_UPDATE_SET = ", ".join(
 )
 _RUNS_UPDATE = f'UPDATE "runs" SET {_RUNS_UPDATE_SET} WHERE "run_id" = ?'  # noqa: S608
 
-# The three companion tables have stable shapes of their own and never need
-# migrating; only the runs row has drifted across declarations. The store also
-# keeps one keyed record of which schema declaration it was last brought up
-# to, beside those tables, so a later open can tell whether the pass is owed.
+# Mutable collections are keyed by project as well as identity because the
+# store is shared across projects. The schema record beside them identifies
+# the declaration the run rows were last brought up to.
 _AUX_SCHEMA = """
 CREATE TABLE IF NOT EXISTS "run_details" (
     "run_id" TEXT PRIMARY KEY,
     "detail" TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS "members" (
-    "member_id" TEXT PRIMARY KEY,
-    "payload" TEXT NOT NULL
+    "project" TEXT NOT NULL DEFAULT '',
+    "member_id" TEXT NOT NULL,
+    "payload" TEXT NOT NULL,
+    PRIMARY KEY ("project", "member_id")
 );
 CREATE TABLE IF NOT EXISTS "holds" (
-    "hold_id" TEXT PRIMARY KEY,
-    "payload" TEXT NOT NULL
+    "project" TEXT NOT NULL DEFAULT '',
+    "hold_id" TEXT NOT NULL,
+    "payload" TEXT NOT NULL,
+    PRIMARY KEY ("project", "hold_id")
 );
 CREATE TABLE IF NOT EXISTS "refusals" (
     "refused_at" TEXT PRIMARY KEY,
@@ -831,6 +837,66 @@ def _split_durable(project: str, record: Mapping[str, Any]) -> tuple[str, dict, 
     return run_id, payload, detail
 
 
+def _encoded_auxiliary_rows(
+    connection: sqlite3.Connection, project: str
+) -> dict[str, list[tuple[str]]]:
+    encoded = {}
+    for table in ("members", "holds"):
+        cursor = connection.execute(
+            f'SELECT "payload" FROM "{table}" WHERE "project" = ? ORDER BY rowid',  # noqa: S608 - fixed auxiliary table names
+            (project,),
+        )
+        try:
+            encoded[table] = cursor.fetchall()
+        finally:
+            cursor.close()
+    return encoded
+
+
+def _decode_auxiliary_rows(
+    rows: Mapping[str, list[tuple[str]]],
+) -> dict[str, list[dict[str, Any]]]:
+    return {
+        table: [json.loads(row[0]) for row in encoded]
+        for table, encoded in rows.items()
+    }
+
+
+def _auxiliary_rows(
+    connection: sqlite3.Connection, project: str
+) -> dict[str, list[dict[str, Any]]]:
+    return _decode_auxiliary_rows(_encoded_auxiliary_rows(connection, project))
+
+
+def read_auxiliary(project: str) -> tuple[dict[str, Any], int] | None:
+    """Read an imported mutable snapshot without creating or migrating a store.
+
+    An absent import marker leaves the aggregate as the readable projection.
+    Explicit mutable access imports it before any registration or hold write.
+    """
+    path = store_path()
+    if not path.is_file():
+        return None
+    connection = sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)
+    try:
+        connection.execute("BEGIN")
+        if not connection.execute(
+            "SELECT 1 FROM sqlite_master WHERE name = 'store_meta'"
+        ).fetchone():
+            return None
+        found = connection.execute(
+            'SELECT "value" FROM "store_meta" WHERE "key" = ?',
+            (f"auxiliary:{project}",),
+        ).fetchone()
+        if found is None:
+            return None
+        encoded = _encoded_auxiliary_rows(connection, project)
+        version = int(found[0])
+    finally:
+        connection.close()
+    return _decode_auxiliary_rows(encoded), version
+
+
 def _payload_activity_seconds(payload: str) -> float | None:
     """Cache the ledger's timestamp semantics once per inserted or amended row."""
     from reckon import ledger
@@ -888,6 +954,7 @@ class RunStore:
         older one, from before this record existed, or one written by code
         whose schema has since changed — still migrates.
         """
+        self._migrate_auxiliary()
         self._conn.executescript(_AUX_SCHEMA)
         if self._recorded_schema_version() == _STORE_SCHEMA_VERSION:
             return
@@ -895,6 +962,114 @@ class RunStore:
         if self.archive_path.is_file():
             self._attach_archive(create=True)
         self._record_schema_version()
+
+    def _migrate_auxiliary(self) -> None:
+        """Preserve unscoped rows while making mutable identities project-local."""
+        tables = (("members", "member_id"), ("holds", "hold_id"))
+
+        def needs_migration(table: str) -> bool:
+            columns = {
+                row[1] for row in self._conn.execute(f'PRAGMA table_info("{table}")')
+            }
+            return bool(columns) and "project" not in columns
+
+        if not any(needs_migration(table) for table, _identity in tables):
+            return
+        with self._conn:
+            self._conn.execute("BEGIN IMMEDIATE")
+            for table, identity in tables:
+                if not needs_migration(table):
+                    continue
+                self._conn.execute(
+                    f'ALTER TABLE "{table}" RENAME TO "unscoped_{table}"'
+                )
+                self._conn.execute(
+                    f'CREATE TABLE "{table}" ("project" TEXT NOT NULL DEFAULT \'\', '
+                    f'"{identity}" TEXT NOT NULL, "payload" TEXT NOT NULL, '
+                    f'PRIMARY KEY ("project", "{identity}"))'
+                )
+                self._conn.execute(
+                    f'INSERT INTO "{table}" ("project", "{identity}", "payload") '  # noqa: S608 - fixed auxiliary table names
+                    f'SELECT \'\', "{identity}", "payload" FROM "unscoped_{table}"'
+                )
+                self._conn.execute(f'DROP TABLE "unscoped_{table}"')
+
+    def _auxiliary_rows(self, project: str) -> dict[str, list[dict[str, Any]]]:
+        return _auxiliary_rows(self._conn, project)
+
+    def _replace_auxiliary(self, project: str, data: Mapping[str, Any]) -> None:
+        for table, identity, field in (
+            ("members", "member_id", "id"),
+            ("holds", "hold_id", "hold_id"),
+        ):
+            if table not in data:
+                continue
+            self._conn.execute(
+                f'DELETE FROM "{table}" WHERE "project" = ?',  # noqa: S608 - fixed auxiliary table names
+                (project,),
+            )
+            self._conn.executemany(
+                f'INSERT INTO "{table}" ("project", "{identity}", "payload") VALUES (?, ?, ?)',  # noqa: S608 - fixed table and column names
+                [
+                    (project, str(row[field]), json.dumps(dict(row), sort_keys=True))
+                    for row in data[table]
+                ],
+            )
+
+    def auxiliary(
+        self, project: str, seed: Callable[[], tuple[dict[str, Any], int]]
+    ) -> tuple[dict[str, Any], int]:
+        """Import once, then read roster, holds and their version in one transaction.
+
+        The marker survives an empty roster or hold history. An aggregate in
+        another checkout can therefore never resurrect deliberately removed rows.
+        """
+        key = f"auxiliary:{project}"
+        with self._conn:
+            self._conn.execute("BEGIN IMMEDIATE")
+            found = self._conn.execute(
+                'SELECT "value" FROM "store_meta" WHERE "key" = ?', (key,)
+            ).fetchone()
+            if found is None:
+                data, version = seed()
+                self._replace_auxiliary(project, data)
+                self._conn.execute(
+                    'INSERT INTO "store_meta" ("key", "value") VALUES (?, ?)',
+                    (key, str(version)),
+                )
+            else:
+                version = int(found[0])
+            encoded = _encoded_auxiliary_rows(self._conn, project)
+        return _decode_auxiliary_rows(encoded), version
+
+    def write_auxiliary(
+        self, project: str, data: Mapping[str, Any], expected_version: int
+    ) -> int:
+        """Compare and replace mutable collections atomically, never run records."""
+        key = f"auxiliary:{project}"
+        with self._conn:
+            self._conn.execute("BEGIN IMMEDIATE")
+            found = self._conn.execute(
+                'SELECT "value" FROM "store_meta" WHERE "key" = ?', (key,)
+            ).fetchone()
+            if found is None:
+                raise ValueError(
+                    f"mutable state for {project!r} must be imported first"
+                )
+            version = int(found[0])
+            if expected_version != version:
+                encoded = _encoded_auxiliary_rows(self._conn, project)
+            else:
+                self._replace_auxiliary(project, data)
+                self._conn.execute(
+                    'UPDATE "store_meta" SET "value" = ? WHERE "key" = ?',
+                    (str(version + 1), key),
+                )
+        if expected_version != version:
+            raise _store.VersionConflict(
+                expected_version, version, _decode_auxiliary_rows(encoded)
+            )
+        return version + 1
 
     def _recorded_schema_version(self) -> str | None:
         """Return the declaration version this store was last migrated to."""
@@ -1490,13 +1665,14 @@ class RunStore:
                 stamped += cursor.rowcount
         return stamped
 
-    def append_member(self, member: Mapping[str, Any]) -> None:
+    def append_member(self, member: Mapping[str, Any], *, project: str = "") -> None:
         """Record one roster member's full payload under its own id."""
         with self._conn:
             self._conn.execute(
-                'INSERT OR REPLACE INTO "members" ("member_id", "payload") '
-                "VALUES (?, ?)",
+                'INSERT OR REPLACE INTO "members" ("project", "member_id", "payload") '
+                "VALUES (?, ?, ?)",
                 (
+                    project,
                     str(member["id"]),
                     json.dumps(dict(member), sort_keys=True, separators=(",", ":")),
                 ),

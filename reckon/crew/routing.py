@@ -3416,22 +3416,8 @@ def _register_session_member(
     root: Path,
     attempts: int = 12,
 ) -> dict[str, Any]:
-    """Provision a session-owned member, committing the registration it writes.
-
-    A dispatch that names no member registers one under its own session so the
-    run has a roster identity. The registration is written here, so the commit
-    is requested here rather than left to ride whatever unrelated commit comes
-    next: an uncommitted roster row is visible only in the checkout that wrote
-    it, which is a state a declared member's registration never sits in.
-
-    A commit that fails is surfaced rather than retried away. The retry would
-    find the row its own failed attempt left behind and return it as though the
-    registration were recorded. A registration whose commit failed and one
-    whose write never happened would otherwise leave the caller without a
-    member, and only the first leaves a roster no other checkout can see.
-    """
-    # Hold one repository lock through both the ledger write and its git commit.
-    # Distinct member ids still share the same roster and git index.
+    """Provision a session-owned member in the shared run store."""
+    # Serialise provisioning of one identity; roster transactions pair versions.
     identity = hashlib.sha256(str(root.resolve()).encode()).hexdigest()
     with _pointer_lock(f"roster-registration-{identity}"):
         last: ledger.LedgerError | None = None
@@ -3446,15 +3432,12 @@ def _register_session_member(
                     harness=backend,
                     role=role,
                     root=root,
-                    commit=True,
                 )
             except ledger.LedgerError as exc:
                 last = exc
                 if ledger.member(project, member_id, root=root) is not None:
                     raise CrewError(
-                        f"session member {member_id!r} was written to the roster and "
-                        f"not committed, so no other checkout can see the "
-                        f"registration: {exc}"
+                        f"session member {member_id!r} could not be provisioned: {exc}"
                     ) from exc
         raise CrewError(
             f"could not provision session member {member_id!r} after {attempts} "
@@ -3501,13 +3484,8 @@ def reap_idle_session_members(
 
     reaped: list[str] = []
     for attempt in range(max(1, attempts)):
-        data, version = ledger.load(project, root=root)
-        # The decision reads the union — a member's last dispatch may sit in a
-        # completed run's own file — while the write carries the aggregate's own
-        # rows. Writing the union back would copy every per-run row into the
-        # tracked aggregate beside the file that already holds it, which the
-        # writer refuses.
-        aggregate, _aggregate_version = ledger.load_aggregate(project, root)
+        data, _aggregate_version = ledger.load(project, root=root)
+        roster, version = ledger.load_auxiliary(project, root=root)
         last_dispatch: dict[str, datetime] = {}
         for record in [*data["runs"], *pointers]:
             member_id = str(record.get("member") or "")
@@ -3521,7 +3499,7 @@ def reap_idle_session_members(
             ):
                 last_dispatch[member_id] = stamp
         candidates = []
-        for entry in data["members"]:
+        for entry in roster["members"]:
             member_id = str(entry.get("id") or "")
             if not member_id.startswith("session-") or member_id in protected:
                 continue
@@ -3550,30 +3528,16 @@ def reap_idle_session_members(
         reaped = sorted(set(candidates) - newly_protected)
         if not reaped:
             return {"reaped": [], "idle_window": idle_window}
-        data["members"] = [
-            entry for entry in data["members"] if str(entry.get("id")) not in reaped
+        retained_members = [
+            entry for entry in roster["members"] if str(entry.get("id")) not in reaped
         ]
-        # The write carries the aggregate's own rows with the roster removal
-        # applied; the union's run rows stay in the files that already hold them.
-        data["runs"] = aggregate["runs"]
         try:
-            # The reap is the one caller entitled to drop roster members: this
-            # function computes `reaped` above and the removal is its whole
-            # purpose, so the intent is declared here rather than inferred from
-            # a member count. Every other caller must pass no flag and have its
-            # unrequested decrease refused.
-            #
-            # The removal is also committed here, for the same reason: a retire
-            # that left the roster dirty would be absorbed by the next roster
-            # registration, and a registration that refuses to commit on a
-            # dirty roster would then be unable to provision its member at all.
-            ledger.write(
+            ledger.write_members(
                 project,
-                data,
+                retained_members,
                 version,
                 root=root,
                 allow_member_removal=True,
-                commit=True,
             )
         except ledger.LedgerError:
             if attempt + 1 >= max(1, attempts):

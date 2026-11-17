@@ -1769,11 +1769,8 @@ def _retire_disposable_identity(record: Mapping[str, Any]) -> dict[str, Any]:
     that was considered. A blocked run is kept: it may still be resumed, and its
     identity is part of what a resume finds.
 
-    The removal runs after the release receipt is committed, so no later write
-    amends a run file and leaves the aggregate behind. The roster read is the
-    aggregate's own (:func:`ledger.load_aggregate`), never :func:`ledger.load`'s
-    union: a roster holds no run rows, so the union's run rows could only be
-    copied into the tracked aggregate beside the files that already carry them.
+    The removal runs after the release receipt is committed and changes only
+    the run store's roster, leaving promoted history intact.
     """
     run_id = str(record.get("run_id") or "")
     member_id = str(record.get("member") or "").strip()
@@ -1793,7 +1790,7 @@ def _retire_disposable_identity(record: Mapping[str, Any]) -> dict[str, Any]:
         }
     try:
         for _attempt in range(8):
-            data, version = ledger.load_aggregate(project, root)
+            data, version = ledger.load_auxiliary(project, root)
             if not any(str(entry.get("id")) == member_id for entry in data["members"]):
                 return {
                     "identity_retired": False,
@@ -1804,13 +1801,12 @@ def _retire_disposable_identity(record: Mapping[str, Any]) -> dict[str, Any]:
                 entry for entry in data["members"] if str(entry.get("id")) != member_id
             ]
             try:
-                ledger.write(
+                ledger.write_members(
                     project,
-                    data,
+                    data["members"],
                     version,
                     root=root,
                     allow_member_removal=True,
-                    commit=True,
                 )
             except ledger.LedgerError:
                 continue
