@@ -178,7 +178,11 @@ def test_a_held_input_does_not_hold_a_finished_project(
 def test_a_held_derivation_retains_only_a_real_last_answer(
     home, tmp_path, projects, monkeypatch, has_previous
 ):
-    store = station_store.StationStore(tmp_path / "station")
+    # Successful temporary directories can be reused, while process memos keep
+    # their path keys. Each scenario therefore owns distinct store/export keys.
+    scenario = "retained" if has_previous else "unread"
+    home = home / scenario
+    store = station_store.StationStore(tmp_path / scenario / "station")
     beat = station.DutyBeat(store.root)
     entered, release = threading.Event(), threading.Event()
     original = obligation_snapshot.fleet_state
@@ -191,15 +195,19 @@ def test_a_held_derivation_retains_only_a_real_last_answer(
         previous_row = store.read_obligation(_session(SLOW))
         if previous is not None:
             payload = obligation_snapshot.live_payload(previous, now=MOMENT)
-            monkeypatch.setattr(obligation_snapshot, "payload_for", lambda *args: payload)
+            monkeypatch.setattr(
+                obligation_snapshot, "payload_for", lambda *args: payload
+            )
 
         def held(project, **kwargs):
-            entered.set()
-            assert release.wait(10), "the case did not release the derivation"
+            if project == SLOW:
+                entered.set()
+                assert release.wait(20), "the case did not release the derivation"
             return original(project, **kwargs)
 
         monkeypatch.setattr(obligation_snapshot, "fleet_state", held)
         later = MOMENT + timedelta(seconds=20)
+        store.heartbeat(now=later)
         station_obligations.publish(
             store, project=SLOW, home=home, changed=True, now=later, submit=beat.request
         )
@@ -214,9 +222,42 @@ def test_a_held_derivation_retains_only_a_real_last_answer(
             )
             assert json.loads(path.read_text())["sessions"][_session(SLOW)] == pending
         else:
-            assert pending is None
+            assert pending is None, "a first refresh has not yet read the project"
+            assert obligation_snapshot.snapshot_age_seconds(pending, now=later) is None
             assert not path.exists(), (
                 "an unfinished first refresh published an empty answer"
+            )
+            reader = {"XDG_RUNTIME_DIR": str(tmp_path / scenario / "reader")}
+            assert (
+                obligation_snapshot.read_station_answer(
+                    SLOW, _session(SLOW), now=later, environ=reader, home=home
+                )
+                is None
+            )
+            started = time.monotonic()
+            station_obligations.publish(
+                store,
+                project=READY,
+                home=home,
+                changed=True,
+                now=later,
+                submit=beat.request,
+            )
+            assert _wait_until(lambda: READY not in beat.in_flight())
+            exported = obligation_snapshot.station_snapshot_path(READY, home=home)
+            assert exported.is_file(), "a finished project must export independently"
+            answer = obligation_snapshot.read_station_answer(
+                READY, _session(READY), now=later, environ=reader, home=home
+            )
+            assert answer is not None and answer["payload"]["obligations"]
+            assert answer["stale"] is False
+            assert _document(store, SLOW) is None
+            assert not path.exists()
+            assert not release.is_set()
+            assert beat.in_flight() == {SLOW}
+            print(
+                f"first read: no answer, no age; ready project exported in "
+                f"{time.monotonic() - started:.3f}s while the first input stayed held"
             )
         release.set()
         beat.drain(timeout=10)
