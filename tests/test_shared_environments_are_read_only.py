@@ -269,6 +269,7 @@ def _scheduler_replay(decoys, tool, *, absolute):
             "--time=00:03:00",
             "--cpus-per-task=1",
             "--mem=1G",
+            f"--chdir={run}",
             "--wait",
             "--parsable",
             f"--output={output}",
@@ -289,16 +290,19 @@ def _scheduler_replay(decoys, tool, *, absolute):
     else:
         command = [
             executable,
+            "--partition=all_debug",
+            "--time=00:03:00",
+            "--mem=1G",
+            f"--chdir={run}",
             "--ntasks=1",
             "--cpus-per-task=1",
             "--cpu-bind=none",
             f"--output={output}",
             *task,
         ]
-    # A batch submission starts a separate allocation; the step deliberately
-    # stays in this test's own all_debug allocation, never the fleet job.
-    shell = "unset SLURM_JOB_ID SLURM_JOBID SLURM_STEP_ID; " if tool == "sbatch" else ""
-    shell += "exec " + shlex.join(command)
+    # Explicit resources and a shared working directory let either scheduler
+    # client submit its own job from a batch shell or an occupied job step.
+    shell = "exec " + shlex.join(command)
     argv = fence.fence_argv(
         ["/bin/sh", "-c", shell],
         home=home,
@@ -306,7 +310,11 @@ def _scheduler_replay(decoys, tool, *, absolute):
         manifest_path=run / "manifest.md",
         writable_directories=[scratch],
     )
-    env = dict(os.environ)
+    env = {
+        name: value
+        for name, value in os.environ.items()
+        if not name.startswith("SLURM_")
+    }
     env["PATH"] = f"{shim.parent}:/usr/bin:/bin"
     env["RECKON_SHIM_PYTHON"] = "/home/ITER/mcintos/Code/reckon/.venv/bin/python"
     env["RECKON_ALLOW_NESTED_LAUNCH"] = "1"
@@ -319,15 +327,27 @@ def _scheduler_replay(decoys, tool, *, absolute):
         env=env,
         input=wrapper.read_text() if form == "stdin" else None,
     )
+    output_text = output.read_text() if output.exists() else ""
+    task_job_id = next(
+        (
+            line.split()[0].partition("=")[2]
+            for line in output_text.splitlines()
+            if line.startswith("TASK_JOB=")
+        ),
+        "",
+    )
+    enclosing_job_id = os.environ.get("SLURM_JOB_ID") or os.environ.get("SLURM_JOBID")
     receipt = {
         "tool": tool,
+        "job_id": task_job_id,
+        "enclosing_job_id": enclosing_job_id,
         "form": form,
         "absolute": absolute,
         "returncode": result.returncode,
         "stdout": result.stdout,
         "stderr": result.stderr,
         "output_path": str(output),
-        "output": output.read_text() if output.exists() else "",
+        "output": output_text,
         "before": before,
         "after": _identity(target),
         "target_bytes": target.read_text(),
@@ -335,7 +355,10 @@ def _scheduler_replay(decoys, tool, *, absolute):
     (run / "receipt.json").write_text(json.dumps(receipt, indent=2))
     print(json.dumps(receipt, sort_keys=True))
     assert output.exists(), receipt
-    assert "TASK_JOB=" in receipt["output"], receipt
+    assert task_job_id, receipt
+    assert task_job_id != enclosing_job_id, (
+        "scheduler task reused the enclosing allocation"
+    )
     if absolute:
         assert result.returncode == 0, receipt
         assert _identity(target) != before
@@ -472,3 +495,46 @@ def test_fenced_launch_resolves_scheduler_shims_outside_allocation(tmp_path, too
     assert Path(resolved).resolve() == expected.resolve(), (
         f"fenced launch outside SLURM resolved {resolved} instead of {expected}"
     )
+
+
+@pytest.mark.parametrize("tool", ["sbatch", "srun"])
+def test_scheduler_replay_discards_enclosing_slurm_environment(
+    decoys, monkeypatch, tool
+):
+    inherited = {
+        "SLURM_JOB_ID": "enclosing-job",
+        "SLURM_JOBID": "enclosing-job",
+        "SLURM_STEP_ID": "enclosing-step",
+        "SLURM_STEPID": "enclosing-step",
+        "SLURM_STEP_NUM_TASKS": "4",
+        "SLURM_NTASKS": "4",
+        "SLURM_JOB_NODELIST": "enclosing-node",
+        "SLURM_CPUS_PER_TASK": "4",
+        "SLURM_CPU_BIND": "enclosing-binding",
+        "SLURM_SRUN_COMM_PORT": "1234",
+    }
+    for name, value in inherited.items():
+        monkeypatch.setenv(name, value)
+
+    run = subprocess.run
+
+    def capture(_argv, *args, **kwargs):
+        if not _argv or _argv[0] != fence.FENCE_BINARY:
+            return run(_argv, *args, **kwargs)
+        env = kwargs["env"]
+        remaining = {
+            name: value for name, value in env.items() if name.startswith("SLURM_")
+        }
+        assert not remaining, (
+            f"scheduler inherited enclosing allocation state: {remaining}"
+        )
+        command = shlex.split(_argv[-1].removeprefix("exec "))
+        assert "--partition=all_debug" in command
+        assert "--time=00:03:00" in command
+        assert f"--chdir={decoys[3]}" in command
+        raise RuntimeError("scheduler submission captured")
+
+    monkeypatch.setattr(subprocess, "run", capture)
+    with pytest.raises(RuntimeError, match="scheduler submission captured"):
+        _scheduler_replay(decoys, tool, absolute=False)
+    assert all(os.environ[name] == value for name, value in inherited.items())
