@@ -199,6 +199,10 @@ _HEALTH_COLUMNS = [
     "test_trees",
     "test_rss_bytes",
     "test_runs",
+    "node_tmp_total_bytes",
+    "node_tmp_used_bytes",
+    "node_tmp_free_bytes",
+    "node_tmp_free_inodes",
 ]
 
 

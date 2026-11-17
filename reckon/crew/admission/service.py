@@ -170,6 +170,50 @@ def _pause(seconds: float) -> None:
     time.sleep(seconds)
 
 
+def node_disk_admission_hold() -> dict[str, Any] | None:
+    """Read the target fleet disk locally or through its published sample."""
+    import json
+    import socket
+
+    from reckon.crew import fleet_supervisor as supervisor
+
+    try:
+        fleet = json.loads(
+            (supervisor.state_directory() / supervisor.RECORD_NAME).read_text()
+        )
+    except (OSError, ValueError):
+        return None
+    if not isinstance(fleet, dict) or not fleet.get("node"):
+        return None
+    if str(fleet["node"]).split(".")[0] != socket.gethostname().split(".")[0]:
+        try:
+            sample = supervisor.published_node_disk_sample()
+        except supervisor.NodeDiskSampleError as exc:
+            return supervisor.node_disk_reading_obligation(exc)
+        if sample is None:
+            return supervisor.node_disk_reading_obligation(
+                supervisor.NodeDiskSampleError(
+                    "unreadable",
+                    f"Fleet node {fleet['node']} has no current published disk reading",
+                )
+            )
+        return supervisor.node_disk_pressure(sample)
+    mount = Path(os.environ.get(supervisor.NODE_DISK_ROOT_ENV) or "/tmp")  # noqa: S108 - node-local
+    try:
+        sample = supervisor.node_disk_snapshot(
+            mount, reserve_bytes=supervisor.node_disk_reserve_bytes()
+        )
+    except OSError as exc:
+        return {
+            "kind": "node-disk-unreadable",
+            "run_id": "",
+            "age_seconds": 0,
+            "reason": f"Fleet local disk {mount} cannot be read: {exc}",
+            "next_command": "Restore the fleet local disk reading before admitting launches",
+        }
+    return supervisor.node_disk_pressure(sample)
+
+
 #: The reads a pass makes while it releases waiters and resolves holds, each
 #: named as the receipt reports it: the module that performs the read, the
 #: callable there, and the label a reader of the receipt recognises. A reader

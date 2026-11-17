@@ -1095,6 +1095,16 @@ slots:
   cleanup:
     range: WorktreeCleanup
 
+  node_tmp_reserve_bytes:
+    description: Minimum usable bytes on the fleet node local disk; lower free space holds new launches and raises an obligation. Defaults to 8 GiB.
+    range: integer
+    minimum_value: 0
+
+  node_tmp_sample_max_age_seconds:
+    description: Maximum age in seconds of a published fleet local disk reading. Missing, unreadable or older samples hold remote admission and raise a distinct reading obligation. Defaults to 180 seconds, three default one-minute sampling periods.
+    range: integer
+    minimum_value: 1
+
   session_scratch:
     description: Per-session scratch bound and aggregate share of the local disk.
     range: SessionScratchConfig
@@ -1632,6 +1642,8 @@ classes:
     description: Worktree lifecycle policy.
     slots:
       - cleanup
+      - node_tmp_reserve_bytes
+      - node_tmp_sample_max_age_seconds
       - scratch_min_free_bytes
       - scratch_min_free_pct
 

@@ -386,6 +386,267 @@ def sample_interpreter_permissions() -> int:
     return 0
 
 
+NODE_DISK_RECORD = "node-disk.json"
+NODE_DISK_ROOT_ENV = "FLEET_NODE_TMP_ROOT"
+DEFAULT_NODE_DISK_RESERVE_BYTES = 8 * 1024**3
+DEFAULT_NODE_DISK_SAMPLE_MAX_AGE_SECONDS = 180
+
+
+def node_disk_reserve_bytes(config: Mapping[str, Any] | None = None) -> int:
+    """The fleet's local disk reserve, resolved from flight settings."""
+    if config is None:
+        from reckon import flight
+
+        config = flight.resolve().config
+    return int(
+        config.get("worktree", {}).get(
+            "node_tmp_reserve_bytes", DEFAULT_NODE_DISK_RESERVE_BYTES
+        )
+    )
+
+
+def node_disk_sample_max_age_seconds(config: Mapping[str, Any] | None = None) -> int:
+    """The age limit for a published reading, defaulting to three minute samples."""
+    if config is None:
+        from reckon import flight
+
+        config = flight.resolve().config
+    return int(
+        config.get("worktree", {}).get(
+            "node_tmp_sample_max_age_seconds", DEFAULT_NODE_DISK_SAMPLE_MAX_AGE_SECONDS
+        )
+    )
+
+
+class NodeDiskSampleError(ValueError):
+    """A known fleet has no usable current disk reading."""
+
+    def __init__(self, state: str, reason: str):
+        super().__init__(reason)
+        self.kind = f"node-disk-{state}"
+
+
+def node_disk_reading_obligation(error: NodeDiskSampleError) -> dict[str, Any]:
+    """Keep an unavailable reading distinct from a measured low-space condition."""
+    return {
+        "kind": error.kind,
+        "run_id": "",
+        "age_seconds": 0,
+        "reason": str(error),
+        "next_command": "Restore current fleet disk samples before admitting new launches",
+    }
+
+
+def node_disk_largest_entries(mount: Path) -> tuple[list[dict[str, Any]], bool]:
+    """Bound a same-filesystem census and retain its largest entries by owner.
+
+    A partial or refused census stays labelled incomplete; it never becomes a
+    claim that a directory contains zero bytes. Symlinks are not followed.
+    """
+    import pwd
+
+    complete = False
+    try:
+        result = subprocess.run(
+            ["du", "-a", "-x", "-B1", "--max-depth=1", "--", str(mount)],
+            capture_output=True,
+            timeout=5,
+            check=False,
+        )
+        output = result.stdout
+        complete = result.returncode == 0
+    except subprocess.TimeoutExpired as exc:
+        output = exc.stdout or b""
+    except OSError:
+        return [], False
+    entries = []
+    for line in os.fsdecode(output).splitlines():
+        size, separator, name = line.partition("\t")
+        path = Path(name)
+        if not separator or not size.isdigit() or path == mount or path.parent != mount:
+            continue
+        try:
+            uid = path.lstat().st_uid
+            try:
+                owner = pwd.getpwuid(uid).pw_name
+            except KeyError:
+                owner = str(uid)
+        except OSError:
+            complete = False
+            continue
+        entries.append({"path": name, "bytes": int(size), "uid": uid, "owner": owner})
+    return sorted(entries, key=lambda entry: (-entry["bytes"], entry["path"]))[
+        :5
+    ], complete
+
+
+def node_disk_snapshot(mount: Path, *, reserve_bytes: int) -> dict[str, Any]:
+    """Read this mount's usable bytes and inodes, including reserved blocks."""
+    mount = mount.resolve()
+    stats = os.statvfs(mount)
+    block = stats.f_frsize or stats.f_bsize
+    free = stats.f_bavail * block
+    under_reserve = free < reserve_bytes
+    entries, complete = (
+        node_disk_largest_entries(mount) if under_reserve else ([], True)
+    )
+    return {
+        "utc": datetime.now(UTC).isoformat(),
+        "mount": str(mount),
+        "total_bytes": stats.f_blocks * block,
+        "used_bytes": (stats.f_blocks - stats.f_bfree) * block,
+        "free_bytes": free,
+        "free_inodes": stats.f_favail,
+        "reserve_bytes": reserve_bytes,
+        "under_reserve": under_reserve,
+        "largest_entries": entries,
+        "entries_complete": complete,
+        "node": socket.gethostname().split(".")[0],
+        "job_id": os.environ.get("SLURM_JOB_ID", ""),
+    }
+
+
+def node_disk_pressure(sample: Mapping[str, Any]) -> dict[str, Any] | None:
+    """One pressure obligation shared by admission and both obligation readers."""
+    if not sample.get("under_reserve"):
+        return None
+    largest = (
+        "; ".join(
+            f"{entry['path']} ({entry['owner']}, {entry['bytes']} bytes)"
+            for entry in sample.get("largest_entries", [])
+        )
+        or "unavailable"
+    )
+    qualifier = "" if sample.get("entries_complete") else " (census incomplete)"
+    return {
+        "kind": "node-disk-reserve",
+        "run_id": "",
+        "age_seconds": 0,
+        "reason": (
+            f"Fleet node {sample['node']} mount {sample['mount']} has "
+            f"{sample['free_bytes']} free bytes below its {sample['reserve_bytes']} "
+            f"byte reserve. Largest entries by owner{qualifier}: {largest}"
+        ),
+        "next_command": "Review the named entries with their owners and free local disk space",
+        "disk": dict(sample),
+    }
+
+
+def sample_node_disk(environ: Mapping[str, str] | None = None) -> int:
+    """Publish one local disk reading and emit the health series' four fields."""
+    environ = os.environ if environ is None else environ
+    mount = Path(environ.get(NODE_DISK_ROOT_ENV) or "/tmp")  # noqa: S108 - node-local
+    try:
+        sample = node_disk_snapshot(mount, reserve_bytes=node_disk_reserve_bytes())
+        sample["job_id"] = environ.get("SLURM_JOB_ID", "")
+        write_json_atomically(state_directory(environ) / NODE_DISK_RECORD, sample)
+    except OSError as exc:
+        log(f"local disk reading unavailable for {mount}: {exc}", file=sys.stderr)
+        return 1
+    print(
+        *(
+            sample[key]
+            for key in ("total_bytes", "used_bytes", "free_bytes", "free_inodes")
+        )
+    )
+    return 0
+
+
+def published_node_disk_sample(
+    environ: Mapping[str, str] | None = None,
+    *,
+    now: datetime | None = None,
+    max_age_seconds: int | None = None,
+) -> dict[str, Any] | None:
+    """Read a current sample, refusing unavailable data for a known fleet.
+
+    No fleet record means no known target. Once a target is known, missing,
+    malformed, mismatched or expired readings cannot stand in for usable space.
+    """
+    from reckon._timestamps import parse_utc
+
+    directory = state_directory(environ)
+    try:
+        fleet = json.loads((directory / RECORD_NAME).read_text())
+    except (OSError, ValueError):
+        return None
+    if not isinstance(fleet, dict) or not fleet.get("node"):
+        return None
+    path = directory / NODE_DISK_RECORD
+    target = f"Fleet node {fleet['node']} disk sample {path}"
+    try:
+        sample = json.loads(path.read_text())
+    except (OSError, ValueError) as exc:
+        raise NodeDiskSampleError(
+            "unreadable", f"{target} is unreadable: {exc}"
+        ) from exc
+    if not isinstance(sample, dict):
+        raise NodeDiskSampleError("unreadable", f"{target} is not an object")
+    if (
+        str(sample.get("job_id") or "") != str(fleet.get("job_id") or "")
+        or str(sample.get("node") or "").split(".")[0]
+        != str(fleet.get("node") or "").split(".")[0]
+    ):
+        raise NodeDiskSampleError(
+            "unreadable", f"{target} belongs to another job or node"
+        )
+    sampled_at = parse_utc(sample.get("utc"))
+    if sampled_at is None:
+        raise NodeDiskSampleError("unreadable", f"{target} has no readable timestamp")
+    moment = now if now is not None else datetime.now(UTC)
+    age = (moment - sampled_at).total_seconds()
+    limit = (
+        max_age_seconds
+        if max_age_seconds is not None
+        else node_disk_sample_max_age_seconds()
+    )
+    if age < 0:
+        raise NodeDiskSampleError("unreadable", f"{target} is dated in the future")
+    if age > limit:
+        raise NodeDiskSampleError(
+            "stale",
+            f"{target} is {age:.1f} seconds old, beyond its {limit}-second freshness limit",
+        )
+    for key in (
+        "total_bytes",
+        "used_bytes",
+        "free_bytes",
+        "free_inodes",
+        "reserve_bytes",
+    ):
+        value = sample.get(key)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise NodeDiskSampleError("unreadable", f"{target} has no readable {key}")
+    if not isinstance(sample.get("mount"), str) or not sample["mount"]:
+        raise NodeDiskSampleError("unreadable", f"{target} has no readable mount")
+    if not isinstance(sample.get("under_reserve"), bool) or sample["under_reserve"] != (
+        sample["free_bytes"] < sample["reserve_bytes"]
+    ):
+        raise NodeDiskSampleError(
+            "unreadable", f"{target} has inconsistent reserve data"
+        )
+    entries = sample.get("largest_entries")
+    if not isinstance(entries, list) or any(
+        not isinstance(entry, dict) or not {"path", "owner", "bytes"} <= entry.keys()
+        for entry in entries
+    ):
+        raise NodeDiskSampleError(
+            "unreadable", f"{target} has unreadable owner entries"
+        )
+    return sample
+
+
+def node_disk_obligation(project: str) -> dict[str, Any] | None:
+    """Read the owning fleet's published sample, never the reader's own disk."""
+    environ = dict(os.environ)
+    environ[FLEET_NAME_ENV] = fleet_for_project(project)
+    try:
+        sample = published_node_disk_sample(environ)
+    except NodeDiskSampleError as exc:
+        return node_disk_reading_obligation(exc)
+    return node_disk_pressure(sample) if sample is not None else None
+
+
 TEST_PROCESS_SAMPLE = "test-processes.json"
 LIGHT_TEST_SECONDS = 60
 LIGHT_TEST_FILES = 2
@@ -3751,6 +4012,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Enter either the one-shot session start or the request loop."""
     arguments = list(sys.argv[1:] if argv is None else argv)
     environ = os.environ
+    if arguments == ["sample-node-disk"]:
+        return sample_node_disk(environ)
     if arguments == ["sample-session-scratch"]:
         return sample_session_scratch(environ)
     if arguments == ["check-interpreters"]:

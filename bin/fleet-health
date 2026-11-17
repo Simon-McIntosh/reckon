@@ -126,10 +126,13 @@ while :; do
     read -r top_n top_pid < <(awk '{print $2}' <<<"$table" | sort | uniq -c | sort -rn | head -1)
     top_args=$(ps -o args= -p "${top_pid:-0}" 2>/dev/null | tr -d '\t\n' | cut -c1-80)
     top="${top_n:-0}:${top_pid:--}:${top_args:--}"
+    disk=$(timeout 15 "${FLEET_DISK_PYTHON:-${RECKON_SHIM_PYTHON:-python3}}" -m reckon.crew.fleet_supervisor sample-node-disk) || disk="unknown unknown unknown unknown"
+    read -r disk_total disk_used disk_free disk_inodes <<<"$disk"
     now=$(date -u +%FT%TZ)
-    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t-\t-\t-\t-\tnode\t%s\t%s\t%s\t%s\n' "$now" \
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t-\t-\t-\t-\tnode\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$now" \
         "$load1" "$load5" "$running" "$blocked" "$dstate" "$avail" "$swap" \
         "$jobmem" "$jobmax" "$home" "$slurmd" "${ping:-none}" "$tasks" "$python" "$top" "$writable_interpreters" "$kills" "$SLURM_JOB_ID" "$node" "$session_scratch" "$test_trees" "$test_rss" "$test_runs" \
+        "${disk_total:-unknown}" "${disk_used:-unknown}" "${disk_free:-unknown}" "${disk_inodes:-unknown}" \
         | "$health_python" -m reckon.crew.fleet_node --append-node-row "$out" || exit 1
 
     reason=""
