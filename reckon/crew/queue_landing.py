@@ -2028,7 +2028,10 @@ def measure_landing_group(group: dict[str, Any]) -> str:
     """Prove one combined candidate with the union of its members' own gates."""
     from reckon.crew import merge
 
-    members = list(group["members"].values())
+    leader = str(group["run_id"])
+    members = [group["members"][leader], *(
+        member for run_id, member in sorted(group["members"].items()) if run_id != leader
+    )]
     pointer = members[0]["pointer"]
     repo = Path(str(pointer["repo"]))
     primary = _primary_revision(pointer)

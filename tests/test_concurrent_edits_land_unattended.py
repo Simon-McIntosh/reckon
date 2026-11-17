@@ -424,7 +424,17 @@ def test_each_distinct_gate_keeps_its_own_candidate_log(fleet):
     fleet.deliver("alpha", 1)
     member = fleet.deliver("beta", 2)
     member["pointer"]["suite_command"] += " -x"
-    request = _request(fleet)
+    request = _request(fleet, list(reversed(fleet.members)))
+    pending_landing.save_group(
+        {
+            "run_id": request["run_id"],
+            "request": request,
+            "members": {
+                item["pointer"]["run_id"]: item
+                for item in request["options"]["members"]
+            },
+        }
+    )
     assert commands._complete_landing_group(request)["ok"]
     assert len(fleet.measured) == 2
     paths = [item.suite["head"]["log_path"] for item in fleet.measured]
