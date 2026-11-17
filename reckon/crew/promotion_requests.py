@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from reckon import checkout_trust
 from reckon._timestamps import parse_utc
 from reckon.crew import runs, stage_receipts
 from reckon.crew.host_lease import HostLease, local_host
@@ -31,6 +32,11 @@ from reckon.crew.node import CrewError
 from reckon.crew.queue_order import _override, fair_queue_order_details
 
 _LOGGER = logging.getLogger(__name__)
+
+# Capture the imported image once: HEAD can advance during a judgement.
+_JUDGING_CODE_REVISION = checkout_trust.running_code_identity(
+    Path(__file__).resolve().parent.parent
+)
 
 REQUESTED = "promotion-requested"
 RUNNING = "promotion-running"
@@ -118,6 +124,29 @@ def _now() -> str:
     return datetime.now(UTC).isoformat()
 
 
+def _current_code_revision() -> str:
+    """The source identity the service's existing reloader would load."""
+    return checkout_trust.source_code_identity(Path(__file__).resolve().parent.parent)
+
+
+def _refusal_uses_replaced_code(request: Mapping[str, Any]) -> bool:
+    """Retry a superseded verdict only once the current image is running.
+
+    Content identities stay stable across commits that change no runtime code.
+    An unstamped verdict proves no code change, and an unknown source identity
+    proves no reload, so neither supplies authority to retry a terminal refusal.
+    """
+    judged = request.get("code_revision")
+    return bool(
+        request.get("phase") == REFUSED
+        and isinstance(judged, str)
+        and judged not in {"", checkout_trust.IDENTITY_UNKNOWN, _JUDGING_CODE_REVISION}
+        and _JUDGING_CODE_REVISION != checkout_trust.IDENTITY_UNKNOWN
+        and _current_code_revision() == _JUDGING_CODE_REVISION
+        and runs.pointer_path(str(request["run_id"])).exists()
+    )
+
+
 def _requests_dir() -> Path:
     return runs.crew_home() / "promotion-requests"
 
@@ -169,6 +198,7 @@ def _record_drained(receipt: Mapping[str, Any]) -> None:
     row = {
         "run_id": receipt.get("run_id"),
         "phase": receipt.get("phase"),
+        "code_revision": receipt.get("code_revision"),
         "session": receipt.get("session"),
         "requested_at": receipt.get("requested_at"),
         "finished_at": receipt.get("finished_at"),
@@ -346,8 +376,9 @@ def request_promotion(
     """Record one request and return without doing any promotion work.
 
     A pending request wins over every later request for the same run, including
-    one arriving through a different caller. Retrying a terminal refusal is an
-    explicit coordinator action; automatic sweeps leave its obligation visible.
+    one arriving through a different caller. A refusal by superseded code is
+    retried by the current image; other terminal refusals require an explicit
+    coordinator action and retain their visible obligation.
     """
     if kind not in {
         "command",
@@ -360,6 +391,7 @@ def request_promotion(
     path = _request_path(run_id)
     with runs._pointer_lock(f"promotion-request-{run_id}"):
         existing = read_promotion(run_id)
+        replaced_code = _refusal_uses_replaced_code(existing)
         if existing.get("phase") == WAITING:
             waiting, reason = _review_self_waits(existing)
             existing = {
@@ -373,10 +405,13 @@ def request_promotion(
         if existing and (
             existing.get("phase") in QUEUED
             or existing.get("phase") == PROMOTED
-            or (existing.get("phase") in ERRORS and not retry)
+            or (existing.get("phase") in ERRORS and not retry and not replaced_code)
         ):
             return {**existing, "duplicate": True}
         pointer = runs.read_pointer(run_id)
+        if replaced_code:
+            kind = str(existing["kind"])
+            options = existing.get("options") or {}
         request = {
             "ok": True,
             "run_id": run_id,
@@ -392,6 +427,11 @@ def request_promotion(
             "requested_at": _now(),
             "options": json.loads(json.dumps(dict(options or {}), default=str)),
         }
+        if replaced_code:
+            request["previous_verdict"] = {
+                key: existing.get(key)
+                for key in ("code_revision", "phase", "finished_at", "error")
+            }
         if kind == "landing-group":
             priorities = [
                 _override(member["pointer"])
@@ -540,7 +580,13 @@ def _execute(request: Mapping[str, Any]) -> dict[str, Any] | None:
 
 def _finish(request: Mapping[str, Any], phase: str, **result: Any) -> dict[str, Any]:
     run_id = str(request["run_id"])
-    receipt = {**request, **result, "phase": phase, "finished_at": _now()}
+    receipt = {
+        **request,
+        **result,
+        "phase": phase,
+        "finished_at": _now(),
+        "code_revision": request.get("code_revision", _JUDGING_CODE_REVISION),
+    }
     stage_receipts.note_promotion_outcome(request, phase, result)
     with runs._pointer_lock(f"promotion-request-{run_id}"):
         runs._write_json(_receipt_path(run_id), receipt)
@@ -911,6 +957,13 @@ class PromotionService:
         self._threads = [thread for thread in self._threads if thread.is_alive()]
         if self._draining:
             return []
+        for path in _requests_dir().glob("*.json"):
+            request = _read(path)
+            if _refusal_uses_replaced_code(request):
+                try:
+                    request_promotion(str(request["run_id"]))
+                except CrewError as exc:
+                    _LOGGER.warning("could not rejudge promotion: %s", exc)
         pending = _pending_requests()
         parked = [request for request in pending if request.get("phase") == WAITING]
         for request in parked:
@@ -1027,6 +1080,7 @@ class PromotionService:
                     "phase": RUNNING,
                     "started_at": _now(),
                     "checked_at": _now(),
+                    "code_revision": _JUDGING_CODE_REVISION,
                     "waiting_reason": "",
                     "stage_seconds": stage_seconds,
                 }
