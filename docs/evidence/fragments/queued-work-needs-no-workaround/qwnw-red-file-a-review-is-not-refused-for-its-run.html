@@ -51,4 +51,14 @@ EXIT=0</pre>
 EXIT=1</pre>
 <p>Both added ids live in <code>tests/test_a_classification_read_creates_no_run_directory.py</code>, and both fail in a tree of primary <code>ef83af75fa</code> alone, with neither side of this node applied: the read leaves <code>classification.json</code> and <code>launcher-host-observation.json</code> in the run directory. Primary&#x27;s own spawn-evidence bound introduced that write, so the pair is reported under outside scope.</p>
 <p>One id that is red at base and red at the merge head changed its failure mode rather than its verdict: <code>tests/test_review_reflex_sweep.py::test_the_review_dispatch_waives_the_unreconciled_fence</code> reports <code>dispatched: []</code> at primary alone, and at the merge head it dispatches its review and then reads no <code>unreconciled_override</code> on the review run&#x27;s pointer (<code>KeyError</code>). It fails at base too, so the arm adds no failure; the remaining gap is the reflex path&#x27;s own record and it is left under outside scope.</p>
+<h4 id="qwnw-red-file-a-review-is-not-refused-for-its-run-merge2">Second merge: primary promotes this repair and grows the same arm</h4>
+<p>Primary advanced to <code>72af0d13dd</code>, whose history contains the promotion of this very run (<code>5fb05aaca2</code>), so the product code it carries already holds the terminal-verdict bound. It also grew the same pre-spawn arm, bounding it by the process reading (<code>alive is not False</code>) and adding <code>pre_spawn_reads_as_claim</code>, which ends the pre-spawn reading once the manifest carries a verdict word. One comment block conflicted and both sides described the same rule.</p>
+<p>The merge keeps both changes&#x27; intent rather than either text wholesale: the arm now requires a claim without spawn evidence, without a terminal verdict and not past the stranded bound, and primary&#x27;s claim guard is kept beside it, so a terminal word still contradicted by a live or superseded reading stays deferred. The conflicted comment is resolved to primary&#x27;s wording because its next paragraph already states the manifest precedence this run&#x27;s sentence described, so nothing is dropped. The merged file differs from primary by two hunks only: the named <code>terminal_verdict</code> and its use inside that arm.</p>
+<pre># merge commit 8c734a9ae34ee657b370d2c725bde823afdd439f
+# parents fa2df5da897ca703d3ec7c35c38a886a72436a98 72af0d13dd12ad600d035237d8dd93164250df0d
+# conflict reckon/crew/recovery_classification.py — resolved inside primary&#x27;s arm, no marker committed
+# gate at the merge head, job 1321714 on all_debug:
+4 passed in 3.03s
+EXIT=0</pre>
+<p>The suite arm at this head reads 58 passed and exits zero; <code>ruff check</code> reports the one pre-existing SIM102 that primary&#x27;s own copy of the file carries at line 3565, and <code>ruff format --check</code> is clean.</p>
 </section>
