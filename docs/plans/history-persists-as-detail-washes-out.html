@@ -23,7 +23,7 @@
   <title>History Persists As Detail Washes Out | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="93">
+<meta name="plan-version" content="94">
 <meta name="plan-modified" content="2026-11-17">
 <meta name="plan-section-declarations" content="{&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s27&quot;:&quot;implementable&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;done&quot;,&quot;s30&quot;:&quot;done&quot;,&quot;s31&quot;:&quot;done&quot;,&quot;s32&quot;:&quot;done&quot;}">
 <meta name="plan-section-depends-on" content="{&quot;s26&quot;:[&quot;history-persists-as-detail-washes-out#s21&quot;,&quot;history-persists-as-detail-washes-out#s22&quot;,&quot;history-persists-as-detail-washes-out#s23&quot;,&quot;history-persists-as-detail-washes-out#s24&quot;,&quot;history-persists-as-detail-washes-out#s25&quot;,&quot;history-persists-as-detail-washes-out#s28&quot;,&quot;history-persists-as-detail-washes-out#s29&quot;],&quot;s27&quot;:[&quot;history-persists-as-detail-washes-out#s26&quot;]}">
@@ -661,6 +661,9 @@
 </div>
 <div class="r-comment" data-section="s32" data-id="c-run-r-20261117T004407260331-review-of-activity-read-costs-what-was-active-s32-3708fec651e7" data-who="reckon-build" data-when="2026-11-17T00:51:23Z">
     <div class="r-comment-body"><p>Independent review of 05c5d148d32f887950d1539da08c8e8fdd687a48..3708fec651e7ce9ca46fd4d8a0661d492085e9d8: parsed record, six scores of 20/20, no findings, zero added failures; reviewed base 72 passes, head 77 passes and four failing full-history mutation cases.</p></div>
+</div>
+<div class="r-comment" data-section="s32" data-id="c-run-r-20261116T224515143735-activity-read-costs-what-was-active-s32" data-who="reckon-build" data-when="2026-11-17T00:37:36Z">
+    <div class="r-comment-body"><p>Activity-bounded ledger reads materialize 100 rows (~2800 SQLite VM steps) for 50 active among 20000 historical runs, versus 20050 rows (~500900 steps) at base. Explicit insertion order preserves hot/archive scan behavior; atomic backfills recover interrupted migrations. Landing-read fixture batching retains all reader assertions. Expanded all_debug gate: base 72 passed, repaired head 77 passed, zero added failures; restored full-history reader fails four row-count checks.</p></div>
 </div>
 </section>
 </main>
