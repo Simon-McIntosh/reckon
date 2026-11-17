@@ -1,0 +1,64 @@
+<section id="qwnw-red-file-review-role-is-not-reviewed-logs">
+<h3>Review-role classification: the file passes in full</h3>
+<p>One cause, and the product is wrong. A pointer keeps the phase its launcher last wrote, and a completed run whose launcher never advanced it still reads <code>starting</code> beside a manifest that says <code>complete</code>. The pre-spawn arm added on 14 November classified every such pointer as <code>running</code> before the manifest was read, so a delivered review-role run was drawn as still working and a delivered implement-role run never composed the review it lacked. The classifier now lets a terminal manifest status outrank the stale phase label; a strand past its bound still falls through to the liveness arms, and a pre-spawn pointer with no manifest reads exactly as before. No test was changed and no assertion was deleted or weakened.</p>
+<p>Assigned base and negative control each reproduce the recorded defect as 7 failed with the seven ids below; the head arm, run as a separate <code>all_debug</code> job with <code>SLURM_JOB_ID</code> unset, reports 7 passed. The census pair is 58 passed on both arms.</p>
+<h4 id="qwnw-red-file-review-role-is-not-reviewed-negative-control">Negative control: the target file at the assigned base</h4>
+<pre># revision: e35fd9f935225b7005482a75032eb28abeb46c63
+# tree: /tmp/reckon-crew-scratch/r-20261116T031614568293-qwnw-red-file-review-role-is-not-reviewed/base-tree
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_review_role_is_not_reviewed.py
+# measurement_module: /tmp/reckon-crew-scratch/r-20261116T031614568293-qwnw-red-file-review-role-is-not-reviewed/base-tree/reckon/crew/recovery_classification.py
+# measurement_cwd: /tmp/reckon-crew-scratch/r-20261116T031614568293-qwnw-red-file-review-role-is-not-reviewed/base-tree
+FFFFFFF                                                                  [100%]
+FAILED tests/test_review_role_is_not_reviewed.py::test_a_completed_review_run_is_not_classified_as_scoring
+FAILED tests/test_review_role_is_not_reviewed.py::test_a_completed_review_run_composes_no_review_of_itself
+FAILED tests/test_review_role_is_not_reviewed.py::test_an_unreviewed_implement_run_still_classifies_as_scoring
+FAILED tests/test_review_role_is_not_reviewed.py::test_the_role_is_read_from_either_spelling_the_pointer_may_car
+FAILED tests/test_review_role_is_not_reviewed.py::test_dispatch_awaiting_reviews_reports_only_the_run_awaiting_review
+FAILED tests/test_review_role_is_not_reviewed.py::test_no_dispatch_ever_names_a_review_of_a_review
+FAILED tests/test_review_role_is_not_reviewed.py::test_the_promotion_boundary_exempts_the_same_role_the_classifier_does
+7 failed in 5.46s
+EXIT=1
+</pre>
+<h4 id="qwnw-red-file-review-role-is-not-reviewed-head-gate">Head: the repaired file, as an all_debug job</h4>
+<pre># revision: 875ecf7150a39987ab12bd4e01cef942270d8ed0
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-review-role-is-not-reviewed
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_review_role_is_not_reviewed.py
+# module: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-review-role-is-not-reviewed/reckon/crew/recovery_classification.py
+# cwd: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-review-role-is-not-reviewed
+# slurm_job_id: unset
+.......                                                                  [100%]
+7 passed in 34.11s
+EXIT=0
+</pre>
+<h4 id="qwnw-red-file-review-role-is-not-reviewed-census-arms">Suite arms (census tests) at the assigned base and at head</h4>
+<pre># revision: e35fd9f935225b7005482a75032eb28abeb46c63
+# tree: /tmp/reckon-crew-scratch/r-20261116T031614568293-qwnw-red-file-review-role-is-not-reviewed/base-tree
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+# measurement_module: /tmp/reckon-crew-scratch/r-20261116T031614568293-qwnw-red-file-review-role-is-not-reviewed/base-tree/reckon/crew/recovery_classification.py
+# measurement_cwd: /tmp/reckon-crew-scratch/r-20261116T031614568293-qwnw-red-file-review-role-is-not-reviewed/base-tree
+..........................................................               [100%]
+58 passed in 51.12s
+EXIT=0
+</pre>
+<pre># revision: 875ecf7150a39987ab12bd4e01cef942270d8ed0
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-review-role-is-not-reviewed
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+# measurement_module: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-review-role-is-not-reviewed/reckon/crew/recovery_classification.py
+# measurement_cwd: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-review-role-is-not-reviewed
+..........................................................               [100%]
+58 passed in 52.05s
+EXIT=0
+</pre>
+<h4 id="qwnw-red-file-review-role-is-not-reviewed-importer-arm">Wider arm over the module's importers: not measured</h4>
+<p>The arm over the 106 test files that name <code>reckon.crew.recovery_classification</code> did not complete. At the assigned base it aborted with a segmentation fault (exit 139) at 26% of collection progress, before pytest wrote a summary line or any <code>FAILED</code> id, so it names no base failure set to compare a head run against. The abort is the instrument, not the module: the run stopped before the ids of the failures it passed were written, so what it failed on is unrecorded rather than attributed either way. The measured arms are the target file (7 failed at base, 7 passed at head) and the census pair (58 passed on both), and both are recorded above. The importer arm's own log is at <code>logs/importer-arm-base.log</code> in the run directory.</p>
+<pre># revision: e35fd9f935225b7005482a75032eb28abeb46c63
+# tree: /tmp/reckon-crew-scratch/r-20261116T031614568293-qwnw-red-file-review-role-is-not-reviewed/base-tree
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q &lt;106 files importing recovery_classification&gt;
+# measurement_module: /tmp/reckon-crew-scratch/r-20261116T031614568293-qwnw-red-file-review-role-is-not-reviewed/base-tree/reckon/crew/recovery_classification.py
+# measurement_cwd: /tmp/reckon-crew-scratch/r-20261116T031614568293-qwnw-red-file-review-role-is-not-reviewed/base-tree
+........................................................................ [  8%]
+...........F.........F................................................F. [ 17%]
+..........FFF.....F..................................................... [ 26%]
+................................EXIT=139
+</pre>
+</section>
