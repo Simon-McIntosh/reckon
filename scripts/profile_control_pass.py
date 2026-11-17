@@ -370,6 +370,9 @@ def decision_digest(result: dict) -> str:
     it. That is pacing rather than a decision about any request, and comparing
     it would read a cadence as a behaviour change.
 
+    ``code_stamp`` is dropped too: it names the checkout the pass ran, so two
+    revisions would differ in it while deciding the same thing.
+
     The series is meant to be compared between two revisions pass by pass, not
     within one run: a pass writes handovers and verdicts, so on a home with a
     live queue the next pass reads what this one left and may decide
@@ -392,6 +395,7 @@ def decision_digest(result: dict) -> str:
                     "moment",
                     "release",
                     "landing",
+                    "code_stamp",
                 }
             }
         if isinstance(value, (list, tuple)):
