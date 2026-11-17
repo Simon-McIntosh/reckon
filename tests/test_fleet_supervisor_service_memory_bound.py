@@ -25,7 +25,9 @@ copies = list(root.iterdir())
 while not (root.parent / 'go').exists():
     time.sleep(0.02)
 if mode == 'grow' and not copies:
-    data = bytearray(3 * 1024 * 1024 * 1024)
+    data = []
+    while True:
+        data.append(bytearray(b"x" * (64 * 1024 * 1024)))
 while True:
     time.sleep(0.02)
 """
