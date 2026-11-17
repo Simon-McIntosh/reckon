@@ -283,3 +283,69 @@ def test_the_cli_completes_a_fenced_pass_and_reuses_the_snapshot(copied, command
     for name, value in initial.items():
         assert profile.inventory(destination)[name] == value
     assert not (destination / ".profile-runtime").exists()
+
+
+def test_a_missing_source_is_refused_before_starting_a_pass(copied, monkeypatch):
+    source, destination, _ = copied
+    source.rename(source.with_name("moved-source"))
+    calls = []
+    monkeypatch.setattr(
+        profile.subprocess,
+        "run",
+        lambda *args, **kwargs: calls.append(args) or SimpleNamespace(returncode=0),
+    )
+    assert (
+        profile.main(
+            ["admission", "--source-home", str(source), "--home", str(destination)]
+        )
+        == 2
+    )
+    assert calls == []
+
+
+def test_a_changed_snapshot_is_refused_before_starting_a_pass(copied, monkeypatch):
+    source, destination, _ = copied
+    (destination / "crew" / "known.json").write_text('{"changed": true}')
+    calls = []
+    monkeypatch.setattr(
+        profile.subprocess,
+        "run",
+        lambda *args, **kwargs: calls.append(args) or SimpleNamespace(returncode=0),
+    )
+    assert (
+        profile.main(
+            ["admission", "--source-home", str(source), "--home", str(destination)]
+        )
+        == 2
+    )
+    assert calls == []
+
+
+def test_sqlite_can_spill_to_private_disk_inside_the_fence(copied):
+    source, destination, receipt = copied
+    code = f"""
+import importlib.util, json, sqlite3, sys
+from pathlib import Path
+spec = importlib.util.spec_from_file_location('control_profile', {str(ROOT / "scripts/profile_control_pass.py")!r})
+profile = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(profile)
+def spill(*args, **kwargs):
+    with sqlite3.connect(':memory:') as connection:
+        connection.execute('PRAGMA temp_store=FILE')
+        connection.execute('CREATE TEMP TABLE items(payload BLOB)')
+        connection.executemany('INSERT INTO items VALUES (zeroblob(1048576))', [()] * 32)
+        return {{'bytes': connection.execute('SELECT SUM(length(payload)) FROM items').fetchone()[0]}}
+profile._pass = spill
+record = profile.profile('admission', home=Path({str(destination)!r}), batch=None, entries=1, repository=Path({str(ROOT)!r}))
+print(json.dumps(record))
+sys.exit(record['exit_status'])
+"""  # noqa: S608 - only Python path literals interpolate; SQL is static
+    command = profile.fenced_command(destination, [])
+    command[command.index("--") + 1 :] = [sys.executable, "-c", code]
+    result = subprocess.run(
+        command, capture_output=True, text=True, check=False, timeout=30
+    )
+    assert result.returncode == 0, result.stderr + result.stdout
+    record = json.loads(result.stdout)
+    assert record["result"]["bytes"] == 32 * 1024 * 1024
+    assert profile.inventory(source) == receipt["source_before"]

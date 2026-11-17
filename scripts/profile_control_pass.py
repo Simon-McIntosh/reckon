@@ -64,6 +64,8 @@ def require_copy(home: Path, source: Path) -> None:
 
 def inventory(root: Path) -> dict[str, dict]:
     """Hash regular files and symlink text without following directory symlinks."""
+    if not root.is_dir():
+        raise UnsafeProfileError(f"source directory is absent: {root}")
     result = {}
     for directory, folders, files in os.walk(root, followlinks=False):
         for name in sorted(folders + files):
@@ -93,6 +95,25 @@ def inventory(root: Path) -> dict[str, dict]:
 
 def input_digest(listing: dict) -> str:
     return hashlib.sha256(json.dumps(listing, sort_keys=True).encode()).hexdigest()
+
+
+def require_snapshot(home: Path, receipt: dict) -> None:
+    """Bind the measured input to the receipt before starting another process."""
+    listing = {
+        name: value
+        for name, value in inventory(home).items()
+        if name != ".profile-copy.json"
+        and not re.fullmatch(
+            r"(?:profile|integrity)-(?:dispatch|admission|station)-[0-9]+\.json", name
+        )
+    }
+    if (
+        listing != receipt["input_listing"]
+        or input_digest(listing) != receipt["input_digest"]
+    ):
+        raise UnsafeProfileError(
+            "the copied input changed since its receipt was written"
+        )
 
 
 def rebind_paths(destination: Path, source: Path) -> None:
@@ -427,6 +448,10 @@ def profile(
         )
     receipt = json.loads((home / ".profile-copy.json").read_text())
     require_copy(home, Path(receipt["source_home"]))
+    # SQLite spills sorts and temporary tables to disk. Its directory must
+    # exist before the first query, since every fallback directory is read-only.
+    for name in (".profile-tmp", ".profile-cache", ".profile-runtime"):
+        (home / name).mkdir(exist_ok=True)
     stores = StoreReads()
     started = time.monotonic()
     error = None
@@ -512,6 +537,9 @@ def fenced_command(home: Path, arguments: list[str]) -> list[str]:
         "TMPDIR",
         str(home / ".profile-tmp"),
         "--setenv",
+        "SQLITE_TMPDIR",
+        str(home / ".profile-tmp"),
+        "--setenv",
         "PYTHONDONTWRITEBYTECODE",
         "1",
         "--setenv",
@@ -568,6 +596,7 @@ def main(argv: list[str] | None = None) -> int:
             )
             print(json.dumps(record))
             return record["exit_status"]
+        require_snapshot(args.home, receipt)
         before = inventory(args.source_home)
         # Each process starts with the same input, even when the preceding pass
         # wrote pointers, verdicts, station state or a SQLite transaction.
