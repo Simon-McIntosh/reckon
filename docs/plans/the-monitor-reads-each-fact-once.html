@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="421">
+<meta name="plan-version" content="422">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -1503,6 +1503,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s69" data-id="c-run-r-20261116T063024742036-review-of-a-stream-is-decoded-once-per-byte-bd7f02bc7b50" data-who="reckon-build" data-when="2026-11-16T06:32:15.223Z">
     <div class="r-comment-body"><p>reviewed r-20261115T224050940768-a-stream-is-decoded-once-per-byte from 6acc2ef37f3ff08cb61c34802f2efb7f13445bcb to bd7f02bc7b506b1de21e0d8eb0dc25e144fd68f3 and scored goal_fidelity 18, evidence 9, scope_discipline 20, durability 19, fit 17, reuse 12, with two blocking findings (the manifest stub and the missing head census arm) and one non-blocking reuse finding</p></div>
+</div>
+<div class="r-comment" data-section="s69" data-id="c-run-r-20261115T224050940768-a-stream-is-decoded-once-per-byte" data-who="reckon-build" data-when="2026-11-15T23:02:58Z">
+    <div class="r-comment-body"><p>A terminal run&#x27;s stream is decoded once — the gate&#x27;s second pass over forty terminal runs makes zero decodes and the six-tick census makes head&#x27;s steady ticks decode at most a tenth of base&#x27;s bytes under the changed modules — with a per-stream summary keyed on the stream&#x27;s stat identity, extended from the byte offset it recorded, and the producer&#x27;s parsed-byte counter taken at its registration.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261026T205710583680-one-station-per-node-runs-the-tick" data-who="reckon-build" data-when="2026-10-26T21:33:14Z">
     <div class="r-comment-body"><p>Station command holds one node lock, seeds new verdicts without an event, and resumes transitions and three stored stream offsets after a kill; 5 focused tests passed, importer failure delta 0 across 57 files, and the lock mutation failed the integration case as declared. Fragment: docs/evidence/fragments/the-monitor-reads-each-fact-once/one-station-per-node-runs-the-tick.html</p></div>
