@@ -647,6 +647,70 @@ def stored_run_revisions(
     return revisions
 
 
+def stored_run_payloads(
+    project: str,
+    *,
+    path: str | Path | None = None,
+    activity_since: float | None = None,
+) -> tuple[tuple[Any, ...], Iterator[tuple[Any, ...]]] | None:
+    """Return a change token and lazy, encoded durable/detail rows.
+
+    A caller memoising a derivation can inspect the token without opening a
+    connection, and consume the rows only when that token changes. The token
+    includes both the hot store and its archive. Each row is the run id and
+    the two JSON strings, through the same join as :func:`stored_run_rows`.
+    Indexed activity selection reads no timestamp JSON; stores without that
+    column use the shared reader's timestamp predicate.
+
+    None means the store is absent. An unreadable store or archive raises on
+    consumption. The entire selection is buffered and the connection closed
+    before yielding any row, so consumers hold no read lock while decoding.
+    """
+    target = store_path() if path is None else Path(path)
+    if not target.exists():
+        return None
+    token = (store_stamp(target), store_stamp(_archive_path(target)))
+
+    def read() -> Iterator[tuple[Any, ...]]:
+        connection = None
+        try:
+            connection = sqlite3.connect(
+                f"{target.resolve().as_uri()}?mode=ro", uri=True
+            )
+            rows = []
+            for schema in _read_attached_tables(connection, target):
+                parameters: dict[str, Any] = {"activity_since": activity_since}
+                if activity_since is not None:
+                    columns = connection.execute(
+                        f'SELECT * FROM "{schema}".runs LIMIT 0'  # noqa: S608 - store-owned schema names
+                    ).description
+                    if any(column[0] == "activity_seconds" for column in columns):
+                        identities = [
+                            row[0]
+                            for row in connection.execute(
+                                f'SELECT run_id FROM "{schema}".runs '  # noqa: S608 - store-owned schema names
+                                "WHERE project = ? AND activity_seconds >= ?",
+                                (project, activity_since),
+                            ).fetchall()
+                        ]
+                        parameters = {"run_ids": identities}
+                rows.extend(
+                    _record_rows(
+                        connection, schemas=(schema,), project=project, **parameters
+                    )
+                )
+        except sqlite3.Error as error:
+            raise RuntimeError(
+                f"cannot read the run store at {target}: {error}"
+            ) from error
+        finally:
+            if connection is not None:
+                connection.close()
+        yield from rows
+
+    return token, read()
+
+
 def stored_run_rows(
     project: str,
     *,

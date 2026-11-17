@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import ast
+import inspect
 import json
 import os
 from collections import Counter
@@ -161,6 +163,29 @@ def _reference_authors(now, pointers=()):
     }
 
 
+def _assert_public_store_boundary():
+    tree = ast.parse(inspect.getsource(plan_review))
+    private = [
+        node.attr
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Attribute)
+        and isinstance(node.value, ast.Name)
+        and node.value.id == "run_store"
+        and node.attr.startswith("_")
+    ]
+    connections = [
+        node
+        for node in ast.walk(tree)
+        if (
+            isinstance(node, ast.Import)
+            and any(name.name == "sqlite3" for name in node.names)
+        )
+        or (isinstance(node, ast.ImportFrom) and node.module == "sqlite3")
+    ]
+    assert not private, f"the plan reader reaches private store names: {private}"
+    assert not connections, "the plan reader must let the run store own connections"
+
+
 def test_an_unchanged_pass_parses_nothing(population, monkeypatch):
     counts = _instrument(monkeypatch)
     first = _pass(population)
@@ -173,6 +198,7 @@ def test_an_unchanged_pass_parses_nothing(population, monkeypatch):
     print(f"unchanged_parse_counts={dict(counts)}")
     assert second == first
     assert counts == {}, "an unchanged pass must parse no review, plan or stored run"
+    _assert_public_store_boundary()
     _assert_composition_matches_an_uncached_pass(population, monkeypatch)
     review_path = population.reviews / PROJECT / "plan-topic-00.v1.json"
     record = json.loads(review_path.read_text())
@@ -201,9 +227,11 @@ def test_a_changed_pass_parses_only_changed_inputs(population, monkeypatch):
     assert counts["runs"] == 1
     assert counts["reviews"] == 0
     assert 1 <= counts["plans"] <= 2
+    _assert_public_store_boundary()
     _assert_authoring_reuse_tracks_time_live_runs_rewrites_and_deletions(
         population, monkeypatch
     )
+    _assert_encoded_reader_contract(population)
 
 
 def _assert_composition_matches_an_uncached_pass(population, monkeypatch):
@@ -259,3 +287,51 @@ def _assert_authoring_reuse_tracks_time_live_runs_rewrites_and_deletions(
         == expected
     )
     assert counts["runs"] == 0
+
+
+def _assert_encoded_reader_contract(population):
+    path = population.database.parent / "encoded.db"
+    missing = path.parent / "absent.db"
+    assert run_store.stored_run_payloads(PROJECT, path=missing) is None
+    assert not missing.exists(), "reading an absent store must not create it"
+    rows = [
+        dict(population.records[0], run_id="encoded-first"),
+        dict(population.records[1], run_id="encoded-second"),
+    ]
+    with run_store.RunStore(path) as store, store._conn:
+        for row in rows:
+            _insert(store, row)
+    token, stream = run_store.stored_run_payloads(PROJECT, path=path)
+    first = next(stream)
+    assert first[0] == rows[0]["run_id"]
+    # A partially consumed public iterator must leave a writer free to commit.
+    with run_store.RunStore(path, busy_timeout=0.1) as store:
+        store.sync_run(PROJECT, dict(rows[1], session="rewritten"))
+    assert next(stream)[0] == rows[1]["run_id"]
+    changed_token, changed_rows = run_store.stored_run_payloads(PROJECT, path=path)
+    assert changed_token != token
+    assert json.loads(list(changed_rows)[1][1])["session"] == "rewritten"
+    _, empty = run_store.stored_run_payloads("another-project", path=path)
+    assert list(empty) == []
+    # Retirement and an archive-only edit must both invalidate the public token.
+    with run_store.RunStore(path) as store:
+        store.retire(
+            before=datetime.fromtimestamp(MOMENT, UTC),
+            protected=set(),
+            projects={PROJECT},
+            apply=True,
+        )
+    archived_token, archived = run_store.stored_run_payloads(PROJECT, path=path)
+    assert {row[0] for row in archived} == {row["run_id"] for row in rows}
+    with run_store.RunStore(path) as store:
+        store.sync_run(PROJECT, dict(rows[0], session="archive-author"))
+    rewritten_token, rewritten = run_store.stored_run_payloads(PROJECT, path=path)
+    assert rewritten_token != archived_token
+    assert any(json.loads(row[1])["session"] == "archive-author" for row in rewritten)
+    # A healthy empty answer and a refused unreadable answer are different.
+    corrupt = path.parent / "unreadable.db"
+    corrupt.write_bytes(b"not a database")
+    _, unreadable = run_store.stored_run_payloads(PROJECT, path=corrupt)
+    with pytest.raises(RuntimeError, match="cannot read the run store"):
+        list(unreadable)
+    assert corrupt.read_bytes() == b"not a database"

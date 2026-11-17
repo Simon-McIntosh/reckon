@@ -62,7 +62,6 @@ import hashlib
 import json
 import re
 import shlex
-import sqlite3
 import subprocess
 import sys
 import time
@@ -4123,42 +4122,16 @@ def _stored_authoring_runs(project: str, moment: float) -> list[dict[str, Any]] 
     from reckon import run_store
 
     path = run_store.store_path()
-    stamp = run_store.store_stamp(path)
-    if stamp is None:
-        return None
-    archive = run_store._archive_path(path)
     bucket = int(moment // PLAN_REVIEW_BURST_SECONDS)
     boundary = (bucket - 1) * PLAN_REVIEW_BURST_SECONDS
+    snapshot = run_store.stored_run_payloads(
+        project, path=path, activity_since=boundary
+    )
+    if snapshot is None:
+        return None
+    stamp, rows = snapshot
 
     def read() -> list[dict[str, Any]]:
-        connection = sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)
-        try:
-            rows = []
-            for schema in run_store._read_attached_tables(connection, path):
-                columns = connection.execute(
-                    f'SELECT * FROM "{schema}".runs LIMIT 0'  # noqa: S608 - store-owned schema names
-                ).description
-                indexed = any(column[0] == "activity_seconds" for column in columns)
-                query = f'SELECT run_id FROM "{schema}".runs WHERE project = ?'  # noqa: S608 - store-owned schema names
-                identities = [
-                    row[0]
-                    for row in connection.execute(
-                        query + (" AND activity_seconds >= ?" if indexed else ""),
-                        (project, boundary) if indexed else (project,),
-                    ).fetchall()
-                ]
-                # Buffer and close the store read before any JSON or timestamp
-                # parsing, so the selection holds no lock while deriving authors.
-                rows.extend(
-                    run_store._record_rows(
-                        connection,
-                        schemas=(schema,),
-                        project=project,
-                        run_ids=identities,
-                    )
-                )
-        finally:
-            connection.close()
         authors = []
         for run_id, payload, detail in rows:
             digest = hashlib.sha256(
@@ -4181,7 +4154,7 @@ def _stored_authoring_runs(project: str, moment: float) -> list[dict[str, Any]] 
 
     return file_memo.memoized_key(
         "plan-authoring-selection",
-        (str(path), project, stamp, run_store.store_stamp(archive), bucket),
+        (str(path), project, stamp, bucket),
         read,
     )
 
