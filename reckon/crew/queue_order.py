@@ -246,6 +246,42 @@ def _override(pointer: Mapping[str, Any]) -> int | None:
     )
 
 
+def partition_placeable(
+    queued_pointers: Sequence[Mapping[str, Any]],
+) -> tuple[list[Mapping[str, Any]], list[Mapping[str, Any]]]:
+    """Split queued pointers into those the order can place and those it cannot.
+
+    A request is placed by when it arrived, so one carrying no readable
+    ``queued_at`` has no place in the order. One malformed record must cost its
+    own place and no other request's, so every reader of the queue takes this
+    split from here rather than reading the field again.
+    """
+    placeable: list[Mapping[str, Any]] = []
+    unplaceable: list[Mapping[str, Any]] = []
+    for pointer in queued_pointers:
+        if parse_utc(pointer.get("queued_at")) is None:
+            unplaceable.append(pointer)
+        else:
+            placeable.append(pointer)
+    return placeable, unplaceable
+
+
+def readable_queued_at(record: Mapping[str, Any], *, now: datetime) -> str:
+    """The record's own arrival stamp, or a fresh one when it cannot be read.
+
+    Every queued pointer is ordered by its ``queued_at``, so a pointer written
+    without a readable one has no place until something rewrites it. A writer
+    that carries a stored stamp forward keeps it when it still reads; a re-queue
+    of a record whose stamp is missing or malformed stamps the moment the
+    request re-enters the queue, which is when it did arrive, rather than
+    writing a pointer the ordering cannot place.
+    """
+    stamp = record.get("queued_at")
+    if parse_utc(stamp) is not None:
+        return str(stamp)
+    return now.astimezone(UTC).isoformat()
+
+
 def _starved(queued_at: datetime | None, now: datetime) -> bool:
     return (
         queued_at is not None
@@ -352,20 +388,34 @@ def admission_order_details(
     *,
     now: datetime,
 ) -> list[tuple[Mapping[str, Any], str]]:
-    """Rank requests and name the signal that placed each one."""
+    """Rank requests and name the signal that placed each one.
+
+    A pointer whose ``queued_at`` cannot be read is set aside rather than
+    ranked: it has no arrival to place it by, and raising here would end every
+    ordering pass, and with it every dispatch and review compose that ranks the
+    queue, until someone rewrites the one record. The set-aside pointers are
+    named by :func:`partition_placeable`, and the next pass orders them again,
+    so repair is a rewritten pointer rather than a stopped queue.
+    """
     from reckon.crew.recovery_review_delivery import _is_review_run
 
     if now.tzinfo is None:
         raise ValueError("now must have a timezone")
     moment = now.astimezone(UTC)
-    keys = _roadmap_priority_keys(queued_pointers)
 
-    joined = []
-    for index, pointer in enumerate(queued_pointers):
-        queued_at = parse_utc(pointer.get("queued_at"))
-        if queued_at is None:
-            raise ValueError("queued pointer has no readable queued_at")
-        joined.append((queued_at, index, pointer))
+    placeable, set_aside = partition_placeable(queued_pointers)
+    joined = [
+        (parse_utc(pointer.get("queued_at")), index, pointer)
+        for index, pointer in enumerate(placeable)
+    ]
+    if set_aside:
+        _LOGGER.warning(
+            "queued pointers with no readable queued_at set aside from ordering: %s",
+            ", ".join(
+                str(pointer.get("run_id") or "<no run id>") for pointer in set_aside
+            ),
+        )
+    keys = _roadmap_priority_keys(placeable)
     joined.sort(key=lambda row: (row[0], row[1]))
 
     waiting = defaultdict(deque)

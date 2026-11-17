@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import deque
 
+from .. import queue_order
 from reckon.crew.open_run_index import operational_read
 
 from . import holds as _holds
@@ -252,21 +253,13 @@ def admit_once(
                 str(pointer.get("run_id") or ""),
             ]
         # A queued pointer whose arrival time cannot be read has no place in the
-        # ordering, and the ordering refuses such a pointer outright. That
-        # refusal belongs to the pointer, not to the pass: left to propagate, one
+        # ordering, so it is set aside rather than ranked. Left to propagate, one
         # such record — a fixture, or a hand-edited record in the crew home —
-        # ends the pass and the service with it, so no queued request on the lane
-        # launches for any session. The pointer is left out of the ordering and
-        # named in a verdict instead, and every other request is admitted in the
-        # order the pass would otherwise have given them.
-        placeable = [
-            pointer
-            for pointer in queued
-            if parse_utc(pointer.get("queued_at")) is not None
-        ]
-        unplaceable = [
-            pointer for pointer in queued if parse_utc(pointer.get("queued_at")) is None
-        ]
+        # would end the pass and the service with it, so no queued request on the
+        # lane would launch for any session. The pointer is left out of the
+        # ordering and named in a verdict instead, and every other request is
+        # admitted in the order the pass would otherwise have given them.
+        placeable, unplaceable = queue_order.partition_placeable(queued)
         order = (
             placeable
             if run_id
