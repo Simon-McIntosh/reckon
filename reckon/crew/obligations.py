@@ -4629,6 +4629,9 @@ def _obligations_view(
     )
     reviews_in_flight = _live_review_runs(project, session)
     items: list[dict[str, Any]] = []
+    from reckon.crew.fleet_supervisor import fleet_test_obligations
+
+    items.extend(fleet_test_obligations(project, session, now=now))
     pointers = {
         str(pointer.get("run_id") or ""): pointer for pointer in _live_pointers(project)
     }

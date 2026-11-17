@@ -61,6 +61,7 @@ import pty
 import re
 import resource
 import select
+import shlex
 import shutil
 import signal
 import socket
@@ -383,6 +384,259 @@ def sample_interpreter_permissions() -> int:
         return 1
     print(remaining, flush=True)
     return 0
+
+
+TEST_PROCESS_SAMPLE = "test-processes.json"
+LIGHT_TEST_SECONDS = 60
+LIGHT_TEST_FILES = 2
+LIGHT_TEST_WORKERS = 4
+
+
+def test_runner_arguments(argv: Sequence[str]) -> list[str] | None:
+    """Recognise an executed test runner, never a word in a service's arguments."""
+    if not argv:
+        return None
+    program = Path(argv[0]).name
+    if program in {"pytest", "py.test", "ctest"}:
+        return list(argv[1:])
+    if re.fullmatch(r"python(?:\d+(?:\.\d+)*)?", program):
+        rest = list(argv[1:])
+        while rest and rest[0] in {"-u", "-B", "-I", "-E", "-s", "-S"}:
+            rest.pop(0)
+        if rest[:2] in (["-m", "pytest"], ["-m", "unittest"]):
+            return rest[2:]
+        if rest and Path(rest[0]).name in {"pytest", "py.test"}:
+            return rest[1:]
+    return None
+
+
+def light_test_command(argv: Sequence[str]) -> bool:
+    """Prove a pytest invocation names at most two files and four workers.
+
+    Unknown options are counted conservatively: they cannot prove the light
+    exception. Only pytest file selectors qualify; ctest and discovery do not.
+    """
+    args = test_runner_arguments(argv)
+    if args is None or Path(argv[len(argv) - len(args) - 1]).name not in {
+        "pytest",
+        "py.test",
+    }:
+        return False
+    files: set[str] = set()
+    workers = 0
+    valued = {"-k", "-m", "-p", "--tb", "--maxfail", "--basetemp", "--timeout"}
+    flags = {
+        "-q",
+        "-v",
+        "-vv",
+        "-x",
+        "-s",
+        "--disable-warnings",
+        "--no-header",
+        "--no-summary",
+    }
+    while args:
+        arg = args.pop(0)
+        option, separator, value = arg.partition("=")
+        if option in {"-n", "--numprocesses"} or (arg.startswith("-n") and arg != "-n"):
+            value = (
+                value
+                if separator
+                else (
+                    arg[2:]
+                    if arg.startswith("-n") and len(arg) > 2
+                    else (args.pop(0) if args else "")
+                )
+            )
+            if not value.isdecimal():
+                return False
+            workers = int(value)
+        elif option in valued:
+            if not separator and not args:
+                return False
+            if not separator:
+                args.pop(0)
+        elif arg in flags:
+            continue
+        elif arg.startswith("-"):
+            return False
+        else:
+            path = arg.split("::", 1)[0]
+            if not path.endswith(".py"):
+                return False
+            files.add(path)
+    return 0 < len(files) <= LIGHT_TEST_FILES and workers <= LIGHT_TEST_WORKERS
+
+
+def fleet_test_processes(
+    processes: Sequence[Mapping[str, Any]], *, observed_at: str, job_id: str
+) -> dict[str, Any]:
+    """Count disjoint runner trees and their RSS, including helper descendants."""
+    table = {int(row["pid"]): row for row in processes}
+    runners = {
+        pid
+        for pid, row in table.items()
+        if test_runner_arguments(row["argv"]) is not None
+    }
+
+    def ancestry(pid: int) -> Iterator[int]:
+        seen: set[int] = set()
+        while pid in table and pid not in seen:
+            seen.add(pid)
+            yield pid
+            pid = int(table[pid]["ppid"])
+
+    roots = {
+        pid for pid in runners if not (set(ancestry(int(table[pid]["ppid"]))) & runners)
+    }
+    members: dict[int, list[Mapping[str, Any]]] = {pid: [] for pid in roots}
+    for pid, row in table.items():
+        root = next((parent for parent in ancestry(pid) if parent in roots), None)
+        if root is not None:
+            members[root].append(row)
+    trees = []
+    for pid in sorted(roots):
+        row = table[pid]
+        descendants = members[pid]
+        cpu = sum(float(child["cpu_seconds"]) for child in descendants)
+        if (
+            light_test_command(row["argv"])
+            and float(row["elapsed_seconds"]) <= LIGHT_TEST_SECONDS
+            and cpu <= LIGHT_TEST_SECONDS
+        ):
+            continue
+        run_id = next(
+            (
+                str(table[parent].get("run_id") or "")
+                for parent in ancestry(pid)
+                if table[parent].get("run_id")
+            ),
+            "",
+        )
+        trees.append(
+            {
+                "pid": pid,
+                "run_id": run_id,
+                "command": shlex.join(row["argv"]),
+                "process_count": len(descendants),
+                "rss_bytes": sum(int(child["rss_bytes"]) for child in descendants),
+            }
+        )
+    return {
+        "observed_at": observed_at,
+        "job_id": job_id,
+        "trees": trees,
+        "tree_count": len(trees),
+        "process_count": sum(tree["process_count"] for tree in trees),
+        "rss_bytes": sum(tree["rss_bytes"] for tree in trees),
+    }
+
+
+def read_fleet_processes(proc: Path, job_id: str) -> list[dict[str, Any]]:
+    """Read this user's processes in the allocation, independently of inherited env."""
+    uptime = float((proc / "uptime").read_text().split()[0])
+    ticks = os.sysconf("SC_CLK_TCK")
+    job = re.compile(r"(?:^|/)job_" + re.escape(job_id) + r"(?:/|$)")
+    rows = []
+    for directory in proc.iterdir():
+        if not directory.name.isdecimal():
+            continue
+        try:
+            if directory.stat().st_uid != os.getuid():
+                continue
+            if not job.search((directory / "cgroup").read_text()):
+                continue
+            fields = (directory / "stat").read_text().rsplit(")", 1)[1].split()
+            status = (directory / "status").read_text()
+            rss = re.search(r"^VmRSS:\s+(\d+)\s+kB", status, re.MULTILINE)
+            argv = (
+                (directory / "cmdline")
+                .read_bytes()
+                .decode("utf-8", "replace")
+                .rstrip("\0")
+                .split("\0")
+            )
+            environment = (directory / "environ").read_bytes().split(b"\0")
+            run_id = next(
+                (
+                    value.partition(b"=")[2].decode("utf-8", "replace")
+                    for value in environment
+                    if value.startswith(b"RECKON_RUN_ID=")
+                ),
+                "",
+            )
+            rows.append(
+                {
+                    "pid": int(directory.name),
+                    "ppid": int(fields[1]),
+                    "argv": argv,
+                    "run_id": run_id,
+                    "rss_bytes": int(rss[1]) * 1024 if rss else 0,
+                    "elapsed_seconds": max(0, uptime - int(fields[19]) / ticks),
+                    # Reaped children no longer appear as descendants in this table.
+                    "cpu_seconds": sum(int(fields[index]) for index in (11, 12, 13, 14))
+                    / ticks,
+                }
+            )
+        except (FileNotFoundError, ProcessLookupError):
+            continue
+    return rows
+
+
+def sample_fleet_tests(environ: Mapping[str, str] | None = None) -> dict[str, Any]:
+    """Persist one attributed sample; a failed process read never publishes zero."""
+    from reckon.crew.run_paths import crew_home
+
+    environ = os.environ if environ is None else environ
+    job_id = environ["SLURM_JOB_ID"]
+    sample = fleet_test_processes(
+        read_fleet_processes(Path(environ.get("FLEET_PROC_DIR", "/proc")), job_id),
+        observed_at=_utc_now(),
+        job_id=job_id,
+    )
+    for tree in sample["trees"]:
+        run_id = tree["run_id"]
+        pointer = {}
+        if re.fullmatch(r"[A-Za-z0-9._-]+", run_id):
+            with suppress(OSError, ValueError):
+                pointer = json.loads(
+                    (crew_home() / "live" / f"{run_id}.json").read_text()
+                )
+        tree["project"] = str(pointer.get("project") or "")
+        tree["session"] = str(pointer.get("session") or "")
+    directory = state_directory(environ)
+    directory.mkdir(parents=True, exist_ok=True)
+    _write_json(directory / TEST_PROCESS_SAMPLE, sample)
+    return sample
+
+
+def fleet_test_obligations(
+    project: str, session: str, *, now: datetime
+) -> list[dict[str, Any]]:
+    """Route a fresh fleet sample to the coordinator that owns each offending run."""
+    directory = state_directory()
+    try:
+        sample = json.loads((directory / TEST_PROCESS_SAMPLE).read_text())
+        record = json.loads((directory / RECORD_NAME).read_text())
+        observed = datetime.fromisoformat(sample["observed_at"])
+        if (
+            sample["job_id"] != str(record["job_id"])
+            or not 0 <= (now - observed).total_seconds() <= 180
+        ):
+            return []
+    except (OSError, ValueError, KeyError, TypeError):
+        return []
+    return [
+        {
+            "kind": "fleet-test-processes",
+            "run_id": tree["run_id"],
+            "age_seconds": int((now - observed).total_seconds()),
+            "reason": f"Fleet job {sample['job_id']} runs a test tree ({tree['rss_bytes']} resident bytes): {tree['command']}",
+            "next_command": f"Move the test command to all_debug for run {tree['run_id']}: {tree['command']}",
+        }
+        for tree in sample["trees"]
+        if tree.get("project") == project and tree.get("session") == session
+    ]
 
 
 def stripped_variables(environ: Mapping[str, str]) -> list[str]:
@@ -3501,6 +3755,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         return sample_session_scratch(environ)
     if arguments == ["check-interpreters"]:
         return sample_interpreter_permissions()
+    if arguments == ["sample-test-processes"]:
+        sample = sample_fleet_tests()
+        print(f"{sample['tree_count']}\t{sample['rss_bytes']}\t" + json.dumps(sample["trees"]))
+        return 0
     if arguments and arguments[0] == START_MODE:
         # A stop from the request loop ends the copy as an exit rather than a
         # kill, so the sizing client's detach in its finally block still runs.
