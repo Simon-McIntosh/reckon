@@ -125,6 +125,19 @@ def test_changed_copied_set_is_refused(tmp_path):
         validate_dataset(data)
 
 
+def test_relocation_uses_the_longest_path_and_clears_process_handles():
+    from scripts.replay_promotion_drain import _relocate
+
+    assert _relocate(
+        {"paths": ["/source/worker/file", "unchanged"], "pid": 123},
+        {"/source": "/private", "/source/worker": "/private/worker"},
+    ) == {"paths": ["/private/worker/file", "unchanged"], "pid": None}
+    assert _relocate({"pid": 123, "note": "unchanged"}, {}) == {
+        "pid": None,
+        "note": "unchanged",
+    }
+
+
 def test_private_repository_copies_packs_without_changing_the_source(tmp_path):
     from scripts.replay_promotion_drain import _repository, git
 
@@ -210,6 +223,8 @@ def test_replay_store_is_seeded_before_it_becomes_authoritative(tmp_path, monkey
     [row] = run_store.stored_run_rows("fixture")
     assert row["run_id"] == "known"
     assert row["worktree"] == str(tmp_path / "worker")
+    with run_store.RunStore() as store:
+        assert store._conn.execute("PRAGMA synchronous").fetchone() == (2,)
 
 
 def test_empty_real_replay_reports_no_rate(tmp_path):

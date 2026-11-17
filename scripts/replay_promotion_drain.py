@@ -19,6 +19,7 @@ import tempfile
 import time
 from collections import Counter
 from contextlib import suppress
+from functools import lru_cache
 from pathlib import Path
 from unittest.mock import patch
 
@@ -328,29 +329,43 @@ def _positive_control(root: Path, requests, runs) -> dict:
     return {"phase": requests.PROMOTED, "elapsed_seconds": result["elapsed_seconds"]}
 
 
+@lru_cache(maxsize=8)
+def _relocation_pattern(keys: tuple[str, ...]):
+    if not keys:
+        return None, ""
+    return re.compile(
+        "|".join(re.escape(key) for key in sorted(keys, key=len, reverse=True))
+    ), os.path.commonprefix(keys)
+
+
 def _relocate(value, replacements: dict):
-    if isinstance(value, str):
-        for original in sorted(replacements, key=len, reverse=True):
-            value = value.replace(original, replacements[original])
-        return value
-    if isinstance(value, list):
-        return [_relocate(item, replacements) for item in value]
-    if isinstance(value, dict):
-        return {
-            key: None
-            if key
-            in {
-                "pid",
-                "worker_pid",
-                "launcher_pid",
-                "process_id",
-                "job_id",
-                "slurm_job_id",
+    pattern, prefix = _relocation_pattern(tuple(replacements))
+
+    def visit(item):
+        if isinstance(item, str):
+            if pattern is None or (prefix and prefix not in item):
+                return item
+            return pattern.sub(lambda match: replacements[match.group()], item)
+        if isinstance(item, list):
+            return [visit(entry) for entry in item]
+        if isinstance(item, dict):
+            return {
+                key: None
+                if key
+                in {
+                    "pid",
+                    "worker_pid",
+                    "launcher_pid",
+                    "process_id",
+                    "job_id",
+                    "slurm_job_id",
+                }
+                else visit(entry)
+                for key, entry in item.items()
             }
-            else _relocate(item, replacements)
-            for key, item in value.items()
-        }
-    return value
+        return item
+
+    return visit(value)
 
 
 def _seed_store(repositories: dict, replacements: dict) -> dict:
@@ -361,6 +376,9 @@ def _seed_store(repositories: dict, replacements: dict) -> dict:
     for project, repository in repositories.items():
         data, _version = ledger.load(project, repository, use_index=False)
         with run_store.RunStore() as store:
+            # Fixture restoration uses one disposable connection; promotions
+            # open their own connections with the normal durability settings.
+            store._conn.execute("PRAGMA synchronous=OFF")
             for record in data["runs"]:
                 store.sync_run(project, _relocate(record, replacements))
         counts[project] = len(data["runs"])
