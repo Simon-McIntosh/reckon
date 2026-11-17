@@ -2001,6 +2001,7 @@ RETENTION_PHASES = (
     "scratch",
     "cache",
     "store",
+    "export",
     "log",
 )
 
