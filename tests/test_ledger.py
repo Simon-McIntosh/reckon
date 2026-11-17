@@ -3188,9 +3188,45 @@ def test_duration_backfill_uses_shared_observation_and_marks_real_gaps(
     assert again["rows_processed"] == 0
 
 
-def test_committed_runs_measure_or_explain_every_duration() -> None:
-    repository = Path(__file__).resolve().parents[1]
-    data, _version = ledger.load("reckon", root=repository)
+def test_committed_runs_measure_or_explain_every_duration(
+    repo: Path, tmp_path: Path
+) -> None:
+    """Every run row is scored: it measures its duration or states why it cannot.
+
+    The repository no longer commits run documents — history lives in the
+    durable store — so a case that read the repository's own ledger would assert
+    this invariant over an empty population and prove nothing. The population
+    here is one the test owns, scored by the same backfill a promotion runs:
+    one run whose stream is present, one whose stream is gone. What is asserted
+    is the invariant the retired corpus had to satisfy.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    try:
+        import backfill_run_durations as duration_backfill
+    finally:
+        sys.path.pop(0)
+
+    streams = tmp_path / "streams"
+    measured_stream = streams / "r-measured" / "stream.jsonl"
+    measured_stream.parent.mkdir(parents=True)
+    measured_stream.write_text(
+        (FIXTURES / "claude-turn.jsonl").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    rows = []
+    for run_id in ("r-measured", "r-missing"):
+        row = ledger.build_record(
+            run_id=run_id, plan="work", gate="passed", backend="claude"
+        )
+        # These rows model records committed before duration status existed.
+        row.pop("duration_measurement")
+        rows.append(row)
+    ledger.write(PROJECT, {"members": [], "runs": rows, "holds": []}, 0, root=repo)
+    duration_backfill.backfill_run_durations(
+        PROJECT, root=repo, streams_root=streams
+    )
+
+    data, _version = ledger.load(PROJECT, root=repo)
 
     missing = [
         str(row.get("run_id") or "")
