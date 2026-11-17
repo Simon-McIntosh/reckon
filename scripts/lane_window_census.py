@@ -640,7 +640,17 @@ def main(argv: list[str]) -> int:
             "one is named"
         ),
     )
+    parser.add_argument(
+        "--spool-only",
+        action="store_true",
+        help=(
+            "take one copy into --spool-to and stop, without reading the ledger; "
+            "this is the tick a repeated copy through an open window runs"
+        ),
+    )
     args = parser.parse_args(argv)
+    if args.spool_only and not args.spool_to:
+        parser.error("--spool-only needs --spool-to")
 
     chosen = []
     if args.window:
@@ -662,6 +672,9 @@ def main(argv: list[str]) -> int:
         extras = args.spool_from or [str(SERVICE_LOG)]
         spooled = spool_passes(Path(args.spool_to), [*sources, *extras])
         sources = [*sources, *extras, str(args.spool_to)]
+    if args.spool_only:
+        print(json.dumps(spooled, sort_keys=True))
+        return 0
     passes, coverage = read_passes(sources)
     report = {
         "read": {
