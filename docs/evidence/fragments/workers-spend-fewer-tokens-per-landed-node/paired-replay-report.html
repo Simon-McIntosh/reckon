@@ -5,25 +5,30 @@
   <meta name="docs-project" content="reckon">
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="paired-replay-report">
-  <meta name="plan-title" content="Every arm replays the same landed sections, paired">
+  <meta name="plan-title" content="Nine landed sections replayed by six arms, paired">
   <meta name="plan-evidence-for" content="reckon:workers-spend-fewer-tokens-per-landed-node">
   <meta name="plan-verifies" content="reckon:workers-spend-fewer-tokens-per-landed-node#s14">
   <meta name="plan-recorded-at" content="2026-11-17">
   <meta name="plan-tags" content="crew,measurement,paired-replay,worker-tokens">
-  <title>Paired replay of ten landed sections across six arms</title>
+  <title>Paired replay of nine dispatched sections across six arms</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
 </head>
 <body>
 <main class="plan-doc">
 <article class="r-evidence" id="paired-replay-report">
-  <h3 id="paired-replay-report-summary">Paired replay: six arms over the same landed sections</h3>
+  <h3 id="paired-replay-report-summary">Paired replay: six arms over nine landed sections</h3>
 
   <p id="paired-replay-report-question">Six measurement runs build each of the same already-landed sections from
   the same base revision, so the section-difficulty confound &sect;12's record names is removed from
-  the comparison: the arm's run and its baseline's run on a section differ only in the arm. The
-  population is the draw recorded in <code>paired-replay-assignment.json</code> before any replay
-  ran &mdash; seed <strong>20261116</strong>, 10 sections &mdash; and all 54 runs
-  below are its members.</p>
+  the comparison: the arm's run and its baseline's run on a section differ only in the arm. The draw
+  recorded in <code>paired-replay-assignment.json</code> before any replay ran took
+  <strong>10</strong> sections at seed <strong>20261116</strong>; one of them,
+  <strong>workers-spend-fewer-tokens-per-landed-node#s4</strong>, was excluded before any of its replays ran, on context fit:
+  its first replay's dispatch estimated more usable input than the local lane's window holds, and
+  every local arm has that window, so the section could not be paired for any of the six arms. Its
+  full reason is in the exclusion table below. <strong>9</strong> sections were therefore
+  dispatched and their
+  <strong>54</strong> runs are the population below, all listed by id.</p>
 
   <h4 id="paired-replay-report-verdicts">Each arm's verdict under &sect;8's rule</h4>
   <p id="paired-replay-report-rule">The rule applied to the paired differences: <strong>adopt</strong> only when
@@ -34,10 +39,9 @@
   <strong>not separated</strong> and is not adopted, whatever its point estimate. Second, the
   direction of the defect: fewer edit failures and less input per landed node are better, and a lower
   gate pass rate is worse, so an arm that spends fewer tokens by passing fewer gates reads as a
-  failure rather than as a saving. The interval quoted is over the sections on which both arms
-  every section on which both arms ran, which takes no selection on the outcome; the
-  both-arms-passed pairing, &sect;8's per-landed-node view, is listed per arm below beside
-  it.</p>
+  failure rather than as a saving. The interval quoted is over every section on which both arms ran,
+  which takes no selection on the outcome; the both-arms-passed pairing, &sect;8's per-landed-node
+  view, is listed per arm below beside it.</p>
   <table>
     <thead><tr><th>Arm</th><th>Baseline</th><th>Sections paired</th>
     <th>Mean paired &Delta; input</th><th>Relative</th><th>90% interval</th>
@@ -119,7 +123,7 @@
   </table>
 
   <h4 id="paired-replay-report-runs">Every run, by id, with its section and base revision</h4>
-  <p id="paired-replay-report-runs-note">54 runs over 10 sections: one per arm per section,
+  <p id="paired-replay-report-runs-note">54 runs over 9 sections: one per arm per section,
   except for the excluded section, which holds none. The arm shown is the arm the run is counted in;
   where a run was dispatched under another name the dispatched name is shown beside it.</p>
   <table>
@@ -170,9 +174,11 @@
 
   <h4 id="paired-replay-report-method">The query that produced this record</h4>
   <p id="paired-replay-report-command">Computed on the <code>all_debug</code> partition, never on the fleet node,
-  from the run store and the replay run directories. The literal command, whose log sits in the run
-  directory beside this record and ends in its own exit status:</p>
-  <pre><code>python3 /home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T204428036183-paired-replay-report-s14/paired_replay_report.py --repo /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/829e5a4a-6870-4aec-876d-ba2efb1b5ecf/paired-replay-report-s14 --root /home/ITER/mcintos/.config/reckon/crew --run-store /home/ITER/mcintos/.config/reckon/crew/run_store.db --write</code></pre>
+  from the run store and the replay run directories. The producer is committed with this record at
+  <code>docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired_replay_report.py</code>, so every figure here can be re-derived from the tree; it reads no state
+  of its own and prints no figure it did not measure. The literal command, whose log sits in the run
+  directory and ends in its own exit status:</p>
+  <pre><code>python3 docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired_replay_report.py --repo /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/829e5a4a-6870-4aec-876d-ba2efb1b5ecf/paired-replay-report-s14 --root /home/ITER/mcintos/.config/reckon/crew --run-store /home/ITER/mcintos/.config/reckon/crew/run_store.db --write</code></pre>
   <p id="paired-replay-report-definitions">Read from the run store: every row whose node matches
   <code>replay-&lt;arm&gt;-&lt;plan&gt;-s&lt;n&gt;</code> for one of the six arms and one of the six
   named plans, and from that row the gate verdict, base revision, commits, attempt count and outcome.

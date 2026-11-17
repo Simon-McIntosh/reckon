@@ -27,28 +27,31 @@
       literal command that produced it, &sect;8's two positive controls, the same-arm negative
       control, and each arm's verdict under &sect;8's rule. It reports one section excluded with its
       reason and no run excluded on arm membership.</p>
-      <p id="paired-replay-report-s14-record-query">The record is generated, not transcribed: a
-      script kept beside the record in the run directory reads the run store through
-      <code>runs</code>/<code>run_details</code> for each replay's gate, base revision, commits and
-      attempts, and each run's own directory for its streams (and, for codex, the harness's own
-      session rollout) for tokens, tool calls and edit outcomes. It ran on the
-      <code>all_debug</code> partition; its log in the run directory names the revision, the tree and
-      the literal command on its header lines and ends in <code>EXIT=0</code>.</p>
+      <p id="paired-replay-report-s14-record-query">The record is generated, not transcribed: the
+      producer committed beside it at
+      <a href="paired_replay_report.py"><code>paired_replay_report.py</code></a> reads the run store
+      through <code>runs</code>/<code>run_details</code> for each replay's gate, base revision,
+      commits and attempts, and each run's own directory for its streams (and, for codex, the
+      harness's own session rollout) for tokens, tool calls and edit outcomes. It ran on the
+      <code>all_debug</code> partition; its log in the run directory names the revision and the
+      literal command on its header lines and ends in <code>EXIT=0</code>.</p>
     </section>
 
     <section id="paired-replay-report-s14-figures">
-      <h2 id="paired-replay-report-s14-figures-what">What it measures</h2>
-      <p id="paired-replay-report-s14-figures-differences">Over the nine dispatchable sections of
-      seed <code>20261116</code>'s draw, the mean paired difference in cumulative input tokens, with
-      its paired bootstrap 90% interval over sections, is &minus;1.35M (&minus;7.0%) for
-      <code>clive-anchored</code>, &minus;2.26M (&minus;11.6%) for <code>omp-local</code> and
-      &minus;3.15M (&minus;37.5%) for <code>codex-anchored</code>.</p>
-      <p id="paired-replay-report-s14-figures-spread">The same-arm spread is not small: the replicate
-      clive run paired against clive on the same sections reads +4.01M (+20.7%), interval 0.06M to
-      7.97M. Every treatment interval overlaps that interval, so all three arms are reported as
-      <strong>not separated</strong>, and under &sect;8's rule as &sect;14 applies it none is
-      adopted. The gate pass rate is unchanged against the baseline for all three, and no flight
-      default moves.</p>
+      <h2 id="paired-replay-report-s14-figures-what">Where the figures are</h2>
+      <p id="paired-replay-report-s14-figures-point">No number is restated here: a figure typed into
+      prose is a second copy that drifts from the one the script measured. The record's own tables
+      carry them, generated from the store and the run directories in one pass &mdash;
+      <a href="paired-replay-report.html#paired-replay-report-verdicts">each arm's verdict under
+      &sect;8's rule</a> with its mean paired difference and 90% interval over sections,
+      <a href="paired-replay-report.html#paired-replay-report-same-arm">the same-arm spread</a> the
+      replicate clive run shows against clive, and
+      <a href="paired-replay-report.html#paired-replay-report-per-arm">&sect;8's metrics per
+      arm</a>.</p>
+      <p id="paired-replay-report-s14-figures-verdicts">Every treatment interval overlaps the same-arm
+      interval, so all three arms are reported as <strong>not separated</strong> and, under &sect;8's
+      rule as &sect;14 applies it, none is adopted. The gate pass rate is unchanged against the
+      baseline for all three, and no flight default moves.</p>
     </section>
   </main>
 </body>
