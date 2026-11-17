@@ -383,9 +383,13 @@ def shim_directory() -> Path:
 
 
 # The bubblewrap options a composed fence is built from, grouped by what they
-# leave at their destination. Every option that consumes a *source* and a
-# *destination* is named here, so a seal and a grant are read from the argv that
+# leave at their destination, so a seal and a grant are read from the argv that
 # emits them rather than from a second composition that could disagree with it.
+# This table is the fence's own: the launch-time reader
+# ``reckon.crew.dispatch_launch._FENCE_BIND_FLAGS`` answers a different question
+# (which *sources* to retry from a vanished bind) and names only the three
+# options it composes, so it neither knows the ``-try`` forms nor the mask this
+# reader reports.
 _SEAL_OPTIONS = ("--ro-bind", "--ro-bind-try")
 _GRANT_OPTIONS = ("--bind", "--bind-try", "--dev-bind", "--dev-bind-try")
 _MASK_OPTIONS = ("--tmpfs",)

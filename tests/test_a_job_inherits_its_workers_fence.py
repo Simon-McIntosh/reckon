@@ -23,6 +23,7 @@ is why the packs of roots are compared rather than "a recipe exists".
 from __future__ import annotations
 
 import base64
+import importlib
 import json
 import os
 import shutil
@@ -33,7 +34,9 @@ from pathlib import Path
 import pytest
 
 from reckon import _worker_fence as fence
-from reckon import ledger, nested_launch
+from reckon import crew, ledger, nested_launch
+
+dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
 PROJECT = "sample"
 RUN_ID = "r-20261117T120000000000-a-job-inherits-its-workers-fence"
@@ -63,6 +66,131 @@ JOB_SCRIPT = """#!/bin/sh
 printf '%s' "${RECKON_WORKER_FENCE:-}" > "$1"
 printf '%s' "${RECKON_RUN_ID:-}" > "$2"
 """
+
+
+PLAN_HTML = (
+    "<!doctype html>\n<html><head>\n"
+    f'<meta name="docs-project" content="{PROJECT}">\n'
+    '<meta name="reckon-type" content="plan">\n'
+    '<meta name="plan-slug" content="plan-a">\n'
+    '</head><body><h2 id="s9">\u00a79 \u2014 Job fence</h2></body></html>\n'
+)
+
+# The smallest dispatch a waived run needs: one cli backend carrying no launch
+# that this test has to run, because the launcher is a stand-in.
+DISPATCH_CONFIG = {
+    "default_backend": "alpha",
+    "backends": {
+        "alpha": {
+            "launch": "cli",
+            "command": "codex",
+            "model": "some-model",
+            "effort": "high",
+            "sandbox": "worktree-full",
+            "time_budget": "25m",
+        },
+    },
+    "roles": {"implement": {}},
+    "fences": {"time_budget": "25m", "needs_help_after_failures": 2},
+}
+
+
+def _git(repository, *arguments):
+    return subprocess.run(
+        ["git", *arguments],
+        cwd=repository,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+
+def _stub_launcher(plan, *, log_path, stderr_path, prompt_path):
+    """Stand in for the launch: spawn nothing, return a pid."""
+    return 4242
+
+
+def _node(scratch):
+    return crew.TaskNode(
+        id="job-fence-node",
+        goal="a waived worker's job is unfenced and recorded",
+        plan="plan-a",
+        section="\u00a79",
+        done_when="tests/test_a_job_inherits_its_workers_fence.py reports 4 passed",
+        write_paths=["allowed.txt"],
+        time_budget="25m",
+        manifest_path=str(scratch / "manifest.md"),
+        spec_level="guided",
+        role="implement",
+    )
+
+
+def _build_repository(config_home, root):
+    """A synthetic repo, its mount registry and the fleet script it needs."""
+    config_home.mkdir(parents=True, exist_ok=True)
+    (root / "docs" / "state" / PROJECT).mkdir(parents=True)
+    (root / "docs" / "plans").mkdir(parents=True)
+    (root / "docs" / "plans" / "plan-a.html").write_text(PLAN_HTML, encoding="utf-8")
+    scripts = root / "skills" / "reckon-build" / "scripts"
+    scripts.mkdir(parents=True)
+    (scripts / "worktree_fleet.py").write_text(
+        (
+            Path(__file__).parents[1]
+            / "skills"
+            / "reckon-build"
+            / "scripts"
+            / "worktree_fleet.py"
+        ).read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    (root / "allowed.txt").write_text("seed\n", encoding="utf-8")
+    for arguments in (
+        ("init", "-q", "-b", "main"),
+        ("config", "user.email", "worker@example.invalid"),
+        ("config", "user.name", "Worker"),
+        ("add", "allowed.txt", "docs/plans/plan-a.html", "skills"),
+        ("commit", "-q", "-m", "chore: seed"),
+    ):
+        _git(root, *arguments)
+    (config_home / "mounts.json").write_text(
+        json.dumps({PROJECT: str(root / "docs")}), encoding="utf-8"
+    )
+    return root
+
+
+@pytest.fixture
+def waived_run(tmp_path, monkeypatch):
+    """Dispatch one run with the fence waived, as a coordinator would.
+
+    The record the dispatch returns is the production account of that run, and
+    the reason on it is what every later reader — the job, the ledger row — is
+    checked against.
+    """
+    config_home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+    monkeypatch.setenv("RECKON_MOUNTS_PATH", str(config_home / "mounts.json"))
+    monkeypatch.setenv("RECKON_RUN_STORE", str(tmp_path / "store"))
+    repository = _build_repository(config_home, tmp_path / "repo")
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    record = dispatch_module.dispatch(
+        node=_node(scratch),
+        project=PROJECT,
+        repo=repository,
+        config=DISPATCH_CONFIG,
+        session="job-fence-session",
+        check_budget=False,
+        launcher=_stub_launcher,
+        no_fence_reason=WAIVER_REASON,
+    )
+    return record, repository, _run_dir(record)
+
+
+def _run_dir(record):
+    from reckon.crew.runs import run_dir
+
+    return run_dir(record["run_id"])
+
 
 requires_bwrap = pytest.mark.skipif(
     shutil.which(fence.FENCE_BINARY) is None,
@@ -134,9 +262,8 @@ def _job_script(run):
     return job
 
 
-def _submit(decoys, worker_environment, job, job_report):
+def _submit(run, run_id, worker_environment, job, job_report):
     """Run one worker stand-in, which submits one job and reports both fences."""
-    _home, _worktree, run, _scratch, _extra = decoys
     stand_in = run / "worker-stand-in.py"
     stand_in.write_text(WORKER_STAND_IN)
     led = run / "job-ledger-row.json"
@@ -151,7 +278,7 @@ def _submit(decoys, worker_environment, job, job_report):
     }
     environ.update(
         PYTHONPATH=str(Path(__file__).resolve().parents[1]),
-        RECKON_RUN_ID=RUN_ID,
+        RECKON_RUN_ID=run_id,
         **worker_environment,
     )
     result = subprocess.run(
@@ -180,7 +307,11 @@ def test_a_fenced_job_holds_exactly_its_workers_roots(decoys):
     job = _job_script(run)
     job_report = run / "job-fence.txt"
 
-    report, _led = _submit(decoys, worker_environment, job, job_report)
+    # The composition names the channel this reader reads: a composer that
+    # spelled another name would leave the stand-in unfenced here rather than
+    # fail further down as a mismatched root.
+    assert nested_launch.WORKER_FENCE_ENV in worker_argv, worker_argv
+    report, _led = _submit(run, RUN_ID, worker_environment, job, job_report)
 
     worker_roots = nested_launch.fence_roots(worker_argv)
     assert report["worker_fence"] == worker_roots.as_dict(), report
@@ -196,51 +327,47 @@ def test_a_fenced_job_holds_exactly_its_workers_roots(decoys):
     assert str(extra.resolve()) in job_roots.writable
 
 
-@requires_bwrap
 def test_a_waived_workers_job_is_unfenced_and_its_row_carries_the_reason(
-    decoys, tmp_path
+    waived_run,
 ):
-    _home, _worktree, run, _scratch, _extra = decoys
-    _argv, waived_environment = _unfenced_composition()
-    assert waived_environment == {}, "a waived worker must carry no fence"
-    job = _job_script(run)
-    job_report = run / "job-fence.txt"
+    """Both the job and the row are read from what the dispatch path recorded.
 
-    report, led = _submit(decoys, waived_environment, job, job_report)
+    Nothing here appends a row or names the reason as a literal in the
+    assertion: the reason is read from the pointer dispatch wrote, the row is
+    written by promotion, and the run the row must belong to is the id the job
+    itself reported.
+    """
+    record, repository, run_directory = waived_run
+    job = _job_script(run_directory)
+    job_report = run_directory / "job-fence.txt"
 
-    # The shim forwarded the worker's argv unchanged: nothing was rebuilt.
-    assert report["submitted"] == ["/bin/sh", str(job), str(job_report), str(led)]
+    report, led = _submit(run_directory, record["run_id"], {}, job, job_report)
+
+    # A waived worker's launch carries no recipe, so its job holds no fence and
+    # the shim forwards the submitted argv unchanged.
     assert report["worker_fence"] is None
-    # The job reports none, and it is the run's own job, not a stray process.
+    assert report["submitted"] == ["/bin/sh", str(job), str(job_report), str(led)]
     assert _job_report(job_report) is None
-    assert led.read_text() == RUN_ID
+    assert led.read_text() == record["run_id"]
 
-    root = tmp_path / "repo"
-    (root / "docs").mkdir(parents=True)
-    (root / "docs" / "sample.html").write_text("<!doctype html>\n")
-    registry = Path(os.environ["RECKON_MOUNTS_PATH"])
-    registry.write_text(json.dumps({PROJECT: str(root / "docs")}))
-    ledger.append_run(
-        PROJECT,
-        {
-            "run_id": RUN_ID,
-            "project": PROJECT,
-            "fenced": False,
-            "fence_waiver": {"reason": WAIVER_REASON},
-        },
-        root=root,
-        allow_create=True,
-    )
+    # Promotion is the production writer of the ledger row, and it reads the
+    # reason from the record dispatch wrote rather than from this test.
+    worktree = Path(str(record["worktree"]))
+    (worktree / "allowed.txt").write_text("seed\nwork\n", encoding="utf-8")
+    _git(worktree, "add", "allowed.txt")
+    _git(worktree, "commit", "-q", "-m", "test: worker edit")
+    commit = _git(worktree, "rev-parse", "HEAD")
+    crew.complete(record["run_id"], gate="passed", commits=[commit], root=repository)
+
     row = next(
-        item for item in ledger.runs(PROJECT, root=root) if item["run_id"] == RUN_ID
+        item
+        for item in ledger.runs(PROJECT, root=repository)
+        if item["run_id"] == led.read_text()
     )
-    assert row["fence_waiver"] == {"reason": WAIVER_REASON}
-    assert row["run_id"] == led.read_text()
-
-
-def _unfenced_composition():
-    """The argv and environment of a worker the fence was waived for."""
-    return [sys.executable, "-c", "true"], {}
+    # The row carries the reason the launch recorded for the run whose worker
+    # submitted this job, and it is the same job the row is read against.
+    assert record["fence_waiver"]["reason"] == WAIVER_REASON
+    assert row["fence_waiver"] == record["fence_waiver"]
 
 
 def test_a_fence_built_from_defaults_differs_from_one_holding_an_extra_grant(decoys):
