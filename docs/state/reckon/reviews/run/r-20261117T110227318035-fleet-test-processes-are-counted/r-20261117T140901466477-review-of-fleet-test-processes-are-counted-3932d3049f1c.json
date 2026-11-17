@@ -1,0 +1,133 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "failure_condition": "Restoring the pre-composition writer, deleting any appended column, or reordering either the scheduler prefix or test suffix makes the produced header differ from the independently written full literal expectation. The expected header is not passed to the writer.",
+      "lines": "tests/test_fleet_health.py:223-228"
+    }
+  ],
+  "assertion_independence": "The only authored assertion change compares a produced header with an independent literal contract; it does not compare output to the same input variable. Imported primary assertions and previously reviewed assertions were not rescored.",
+  "call_site_count": 4,
+  "call_sites": [
+    "bin/fleet-health:88",
+    "bin/fleet-health:126-129",
+    "reckon/crew/fleet_node.py:watch_scheduler:341",
+    "reckon/crew/fleet_node.py:__main__:959-961"
+  ],
+  "completed_at": "2026-11-17T14:16:55Z",
+  "dispatched_at": "2026-11-17T14:11:13Z",
+  "durability_limits": "The recorded 28-field acceptance, 29-field refusal and 25/28-column compatibility controls could fail and did exercise production code, but no committed regression test for those specific composition controls was added by these two commits.",
+  "failure_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_health.py tests/test_fleet_test_processes_are_counted.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110227318035-fleet-test-processes-are-counted/merged-after-suite-1794921988495495276.log",
+      "measured_by": "worker",
+      "partition": "all_debug",
+      "reason": "",
+      "revision": "3932d3049f1c5b6d7a4b1ac523ab5f6ff6f3122f",
+      "summary": "99 passed in 71.92s (0:01:11)"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_health.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110227318035-fleet-test-processes-are-counted/baseline_suite-1794916940555443831.log",
+      "measured_by": "worker",
+      "partition": "all_debug",
+      "reason": "",
+      "revision": "421f01042a982737973e1d9d65121120ddaf7bd5",
+      "summary": "73 passed in 46.67s"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/fleet_node.py",
+      "line": "198",
+      "severity": "blocking",
+      "text": "blocking: Appending the test fields makes the source column cease to be last, but tests/test_a_sampler_outlives_the_fleet_job.py:198 still puts node in row[-1], so its assertion at line 215 reads source as '-' and fails; the matched importer logs show this added failure, which must be repaired before the no-added-importer-failures condition holds."
+    },
+    {
+      "file": "tests/conftest.py",
+      "line": "1576",
+      "severity": "blocking",
+      "text": "blocking: Setting FLEET_STATE_DIR in the parent fixture leaves tests/test_an_admission_pass_fills_free_slots.py's child service explicitly pointed at a different fleet-state directory; its parent CLI reload request therefore uses a different store and the recorded head arm times out at line 258 waiting for stopped.json, adding the second importer failure."
+    }
+  ],
+  "importer_added_failure_count": 2,
+  "importer_added_failure_ids": [
+    "tests/test_a_sampler_outlives_the_fleet_job.py::test_shell_and_reader_share_one_schema",
+    "tests/test_an_admission_pass_fills_free_slots.py::test_the_admit_service_stops_after_its_launches_finish"
+  ],
+  "importer_evidence": {
+    "base_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110227318035-fleet-test-processes-are-counted/merged-importer-base-1794922139225727391.log",
+    "base_revision": "4b7aa8a071ed10e619d95fdacdaa5e644d04b548",
+    "base_summary": "45 failed, 1235 passed, 7 skipped, 1 warning in 975.42s (0:16:15)",
+    "head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110227318035-fleet-test-processes-are-counted/merged-importer-head-1794923142480565915.log",
+    "head_revision": "3932d3049f1c5b6d7a4b1ac523ab5f6ff6f3122f",
+    "head_summary": "46 failed, 1234 passed, 7 skipped in 1013.58s (0:16:53)",
+    "removed_ids": [
+      "tests/test_obligations_read_the_station.py::test_an_exported_snapshot_with_a_stale_heartbeat_names_its_age"
+    ]
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read ad8e5de49e6eca7b553a6a45c155dfc3a3796a74 and merge 3932d3049f1c5b6d7a4b1ac523ab5f6ff6f3122f against previously reviewed 3bc970691ad589154df018c51494ece4a16bd1aa, separating inherited primary changes with second-parent 4b7aa8a071ed10e619d95fdacdaa5e644d04b548; the authored delta updates the header assertion, composes the shared schema and isolates fixture state.",
+    "done_when": "Read the source done_when and gate receipts; the scoped gate records 41 passed, the canonical after_suite records 99 passed, and the matcher mutation records 12 failed, but the matched importer pair adds two failing IDs and the plan's 24-hour live observation remains outstanding.",
+    "goal": "Read live plan section 3 and the source node goal in its live run record; bin/fleet-health:126-129 now preserves scheduler fields while appending attributed test-tree measurements.",
+    "manifest": "Read the source manifest and its named gate logs; its 73-to-99 canonical passes, 41 scoped passes and two added importer IDs reconcile with the receipts, and it explicitly reports the out-of-scope repairs.",
+    "write_paths": "Read the source live record's write_paths and resume-2/3/4-advice.txt; the header assertion, schema composition and fixture changes are explicitly granted, while fleet_supervisor.py's service-limit changes are inherited from the authorised primary merge."
+  },
+  "justifications": {
+    "durability": "tests/test_fleet_health.py:223-228 independently fixes the full column order and would fail if any new column were dropped or reordered, but strict-row rejection and 25/28-column scheduler compatibility are only ad hoc recorded probes in this incremental change.",
+    "evidence": "tests/test_fleet_health.py:223-228 passes in the 41-case scoped receipt and the 99-case canonical receipt, but the importer head log records two new failures caused by the schema and fixture composition.",
+    "fit": "reckon/crew/fleet_node.py:169-200 names scheduler columns by capability within the existing schema owner, and tests/conftest.py:1575-1576 follows adjacent temporary-home setup conventions.",
+    "goal_fidelity": "bin/fleet-health:126-129 carries the three attributed test fields through the existing node writer without changing the landed scheduler prefix, while the live percentage remains unmeasured.",
+    "reuse": "A capability search for health schemas and reading appenders in reckon/ and bin/ found fleet_node.py:178,269,920 as the existing owner, and the change extends that schema and its validation instead of introducing another writer.",
+    "scope_discipline": "tests/test_fleet_health.py:223, reckon/crew/fleet_node.py:169-200 and tests/conftest.py:1575-1576 match the explicit resume grants; fleet_supervisor.py's service-limit delta is inherited unchanged from the primary parent."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read live plan section 3 and the source node goal in its live run record; bin/fleet-health:126-129 now preserves scheduler fields while appending attributed test-tree measurements.\nVERDICT done_when: Read the source done_when and gate receipts; the scoped gate records 41 passed, the canonical after_suite records 99 passed, and the matcher mutation records 12 failed, but the matched importer pair adds two failing IDs and the plan's 24-hour live observation remains outstanding.\nVERDICT write_paths: Read the source live record's write_paths and resume-2/3/4-advice.txt; the header assertion, schema composition and fixture changes are explicitly granted, while fleet_supervisor.py's service-limit changes are inherited from the authorised primary merge.\nVERDICT manifest: Read the source manifest and its named gate logs; its 73-to-99 canonical passes, 41 scoped passes and two added importer IDs reconcile with the receipts, and it explicitly reports the out-of-scope repairs.\nVERDICT diff: Read ad8e5de49e6eca7b553a6a45c155dfc3a3796a74 and merge 3932d3049f1c5b6d7a4b1ac523ab5f6ff6f3122f against previously reviewed 3bc970691ad589154df018c51494ece4a16bd1aa, separating inherited primary changes with second-parent 4b7aa8a071ed10e619d95fdacdaa5e644d04b548; the authored delta updates the header assertion, composes the shared schema and isolates fixture state.\nCALL_SITES: bin/fleet-health:88, bin/fleet-health:126-129, reckon/crew/fleet_node.py:watch_scheduler:341, reckon/crew/fleet_node.py:__main__:959-961\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: bin/fleet-health:126-129 carries the three attributed test fields through the existing node writer without changing the landed scheduler prefix, while the live percentage remains unmeasured.\nSCORE evidence: 14\nJUSTIFICATION evidence: tests/test_fleet_health.py:223-228 passes in the 41-case scoped receipt and the 99-case canonical receipt, but the importer head log records two new failures caused by the schema and fixture composition.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: tests/test_fleet_health.py:223, reckon/crew/fleet_node.py:169-200 and tests/conftest.py:1575-1576 match the explicit resume grants; fleet_supervisor.py's service-limit delta is inherited unchanged from the primary parent.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_fleet_health.py:223-228 independently fixes the full column order and would fail if any new column were dropped or reordered, but strict-row rejection and 25/28-column scheduler compatibility are only ad hoc recorded probes in this incremental change.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/fleet_node.py:169-200 names scheduler columns by capability within the existing schema owner, and tests/conftest.py:1575-1576 follows adjacent temporary-home setup conventions.\nSCORE reuse: 20\nJUSTIFICATION reuse: A capability search for health schemas and reading appenders in reckon/ and bin/ found fleet_node.py:178,269,920 as the existing owner, and the change extends that schema and its validation instead of introducing another writer.\nFINDING reckon/crew/fleet_node.py:198 blocking: Appending the test fields makes the source column cease to be last, but tests/test_a_sampler_outlives_the_fleet_job.py:198 still puts node in row[-1], so its assertion at line 215 reads source as '-' and fails; the matched importer logs show this added failure, which must be repaired before the no-added-importer-failures condition holds.\nFINDING tests/conftest.py:1576 blocking: Setting FLEET_STATE_DIR in the parent fixture leaves tests/test_an_admission_pass_fills_free_slots.py's child service explicitly pointed at a different fleet-state directory; its parent CLI reload request therefore uses a different store and the recorded head arm times out at line 258 waiting for stopped.json, adding the second importer failure.\n",
+  "remaining_evidence": "Coordinator must repair the two added importer failures and rerun the matched importer gate; deployment followed by the plan-owned 24-hour observation remains separate.",
+  "reproduction_evidence": {
+    "previous_finding": "The stale exact-header assertion from the prior review is repaired at tests/test_fleet_health.py:223-228; its final scoped gate passes.",
+    "schema_after": "merged-scoped-1794921913159994189.log: positive_control_columns=28; refused_29_fields=node health row does not match its schema; scheduler_compatibility_columns=25,28",
+    "schema_before": "primary-schema-probe-1794920770411801130.log: positive_control_columns: 25; refused_28_fields: node health row does not match its schema"
+  },
+  "review_run_id": "r-20261117T140901466477-review-of-fleet-test-processes-are-counted-3932d3049f1c",
+  "reviewed_base_sha": "3bc970691ad589154df018c51494ece4a16bd1aa",
+  "reviewed_commits": [
+    "ad8e5de49e6eca7b553a6a45c155dfc3a3796a74",
+    "3932d3049f1c5b6d7a4b1ac523ab5f6ff6f3122f"
+  ],
+  "reviewed_head_sha": "3932d3049f1c5b6d7a4b1ac523ab5f6ff6f3122f",
+  "reviewed_paths": [
+    "tests/test_fleet_health.py",
+    "bin/fleet-health",
+    "reckon/crew/fleet_node.py",
+    "reckon/crew/fleet_supervisor.py",
+    "tests/conftest.py"
+  ],
+  "reviewed_run_id": "r-20261117T110227318035-fleet-test-processes-are-counted",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T14:19:24.909110+00:00",
+  "total": 110
+}
