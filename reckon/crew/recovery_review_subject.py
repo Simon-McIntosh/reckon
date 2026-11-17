@@ -690,6 +690,67 @@ def _within_declared(path: str, declared: Iterable[str], tree: Path | None) -> b
     return path_within_declared_scope(path, declared, worktree=tree, repository=tree)
 
 
+# The changed paths a reviewed range lists, keyed by the tree that listed them
+# and the two commit ids the range names. A diff over two object ids cannot
+# change, so a run whose reviewed range has not moved answers from here and a
+# steady tick spawns no git for it; the tree is part of the key because a
+# range one tree can read is a question another tree may answer differently.
+_REVIEWED_DIFF_CACHE: dict[tuple[str, str, str], tuple[str, ...]] = {}
+
+# A station composes a brief for every run it classifies on every tick, so this
+# gains an entry per range it has composed. Past this many entries the cache
+# drops the ranges whose tree is gone — a reclaimed tree cannot move its head
+# again, so their answers are dead weight — then the oldest of what remains, so
+# it is bounded by the live fleet rather than by every range ever reviewed.
+_REVIEWED_DIFF_CACHE_LIMIT = 512
+
+
+def _forget_gone_review_trees() -> None:
+    """Drop cached diffs whose tree is no longer on disk."""
+    cache = _REVIEWED_DIFF_CACHE
+    for key in [key for key in cache if not Path(key[0]).is_dir()]:
+        cache.pop(key, None)
+
+
+def _remember_reviewed_rows(key: tuple[str, str, str], rows: tuple[str, ...]) -> None:
+    """Store one range's rows, keeping the cache bounded first."""
+    cache = _REVIEWED_DIFF_CACHE
+    if len(cache) >= _REVIEWED_DIFF_CACHE_LIMIT and key not in cache:
+        _forget_gone_review_trees()
+        while len(cache) >= _REVIEWED_DIFF_CACHE_LIMIT:
+            cache.pop(next(iter(cache)), None)
+    cache[key] = rows
+
+
+def _reviewed_numstat_rows(tree: Path, base: str, head: str) -> tuple[str, ...] | None:
+    """The paths git lists for one reviewed range, read once per range.
+
+    ``None`` is a range this tree could not list, which the brief states as
+    unreadable rather than as nothing changed. An answer git did not give is
+    never remembered: an object a repository does not hold yet it may hold
+    later, so only a range that was listed is a fact the cache may repeat.
+    """
+    key = (str(tree), base, head)
+    cached = _REVIEWED_DIFF_CACHE.get(key)
+    if cached is not None:
+        return cached
+    try:
+        completed = subprocess.run(
+            ["git", "diff", "--numstat", "--no-renames", f"{base}..{head}"],
+            cwd=tree,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return None
+    if completed.returncode:
+        return None
+    rows = tuple(line for line in completed.stdout.splitlines() if line.strip())
+    _remember_reviewed_rows(key, rows)
+    return rows
+
+
 def _reviewed_scope_block(record: Mapping[str, Any], head: str) -> str:
     """The declared paths and the delivered diff a review brief states.
 
@@ -727,23 +788,13 @@ def _reviewed_scope_block(record: Mapping[str, Any], head: str) -> str:
             "its scope."
         )
         return "\n".join(lines)
-    try:
-        completed = subprocess.run(
-            ["git", "diff", "--numstat", "--no-renames", f"{base}..{head}"],
-            cwd=tree,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-    except OSError:
-        completed = None
-    if completed is None or completed.returncode:
+    rows = _reviewed_numstat_rows(tree, base, head)
+    if rows is None:
         lines.append(
             f"Delivered diff {base}..{head}: unreadable — git could not list it "
             "from the reviewed tree."
         )
         return "\n".join(lines)
-    rows = [line for line in completed.stdout.splitlines() if line.strip()]
     if not rows:
         lines.append(f"Delivered diff {base}..{head}: no path changed.")
         return "\n".join(lines)
