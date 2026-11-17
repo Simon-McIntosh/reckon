@@ -2334,6 +2334,12 @@ def retention_sweep(
     )
     _emit_phase("store", started, phase_seconds)
 
+    from reckon.crew.export_ledger import export_projects
+
+    started = time.perf_counter()
+    ledger_exports = export_projects(roots, apply=apply)
+    _emit_phase("export", started, phase_seconds)
+
     started = time.perf_counter()
     written = ""
     if (
@@ -2391,6 +2397,7 @@ def retention_sweep(
         "persisted_memos": persisted_memos,
         "cache_removed_count": len(caches_removed),
         "run_store": store_retention,
+        "ledger_exports": ledger_exports,
         "log": written,
         "phase_seconds": phase_seconds,
     }
