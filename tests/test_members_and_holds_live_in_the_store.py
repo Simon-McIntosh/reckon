@@ -352,6 +352,20 @@ def test_plan_selection_preserves_the_roster_on_each_history_path(
     )
     assert sorted(row["run_id"] for row in data["runs"]) == expected
     assert version == 7
+    selected, selected_version = ledger.load(
+        PROJECT,
+        root=root,
+        run_ids=iter([expected[0]]),
+        use_index=path_kind != "uncached",
+    )
+    assert [row["run_id"] for row in selected["runs"]] == [expected[0]]
+    assert selected_version == version
+    for field in ("members", "holds", "auxiliary_version"):
+        assert selected[field] == data[field]
+    empty, _ = ledger.load(
+        PROJECT, root=root, run_ids=[], use_index=path_kind != "uncached"
+    )
+    assert empty["runs"] == []
     if path_kind == "stored":
         assert data["auxiliary_version"] == 8
         assert "registered" in {member["id"] for member in data["members"]}

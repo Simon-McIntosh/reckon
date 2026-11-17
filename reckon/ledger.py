@@ -2485,6 +2485,7 @@ def load(
         headers_only=headers_only,
         activity_since=activity_since,
         plan=plan,
+        run_ids=run_ids,
     )
     from reckon import run_store
 
@@ -2509,6 +2510,7 @@ def _load_file_history(
     headers_only: bool = False,
     activity_since: float | None = None,
     plan: str | None = None,
+    run_ids: Iterable[str] | None = None,
 ) -> tuple[dict[str, Any], int]:
     """Read authoritative stored runs with selection and projection in SQL.
 
