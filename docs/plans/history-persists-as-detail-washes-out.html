@@ -23,7 +23,7 @@
   <title>History Persists As Detail Washes Out | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="103">
+<meta name="plan-version" content="104">
 <meta name="plan-modified" content="2026-11-17">
 <meta name="plan-section-declarations" content="{&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s27&quot;:&quot;implementable&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;done&quot;,&quot;s30&quot;:&quot;done&quot;,&quot;s31&quot;:&quot;done&quot;,&quot;s32&quot;:&quot;done&quot;,&quot;s33&quot;:&quot;done&quot;}">
 <meta name="plan-section-depends-on" content="{&quot;s26&quot;:[&quot;history-persists-as-detail-washes-out#s21&quot;,&quot;history-persists-as-detail-washes-out#s22&quot;,&quot;history-persists-as-detail-washes-out#s23&quot;,&quot;history-persists-as-detail-washes-out#s24&quot;,&quot;history-persists-as-detail-washes-out#s25&quot;,&quot;history-persists-as-detail-washes-out#s28&quot;,&quot;history-persists-as-detail-washes-out#s29&quot;],&quot;s27&quot;:[&quot;history-persists-as-detail-washes-out#s26&quot;]}">
@@ -600,6 +600,9 @@
 </div>
 <div class="r-comment" data-section="s23" data-id="c-run-r-20261117T085502776138-review-of-members-and-holds-in-store-s23-c6d6e6e5c8b2" data-who="reckon-build" data-when="2026-11-17T09:04:30Z">
     <div class="r-comment-body"><p>Parsed incremental review at c6d6e6e5c8b2a0efdb41bcf66ccc6d418cbce688; scores 20/19/20/20/20/20, zero findings and zero added failures against recorded primary baseline.</p></div>
+</div>
+<div class="r-comment" data-section="s23" data-id="c-run-r-20261115T102553812624-members-and-holds-in-store-s23" data-who="reckon-build" data-when="2026-11-17T08:43:59Z">
+    <div class="r-comment-body"><p>Final head c6d6e6e5c8b2a0efdb41bcf66ccc6d418cbce688 merges current primary, restores run-id selection through the mutable-state wrapper, and exercises a real store CAS refusal in the migrated hold-retry fixture. Paired five-file measure: base 31 failed, 216 passed in 187.11s (0:03:07); head 9 failed, 238 passed in 158.72s (0:02:38); zero head-red/base-green failures. Selector mutation control fails the four checks that pass at head. Evidence: docs/evidence/fragments/history-persists-as-detail-washes-out/members-and-holds-in-store-s23.html#members-and-holds-in-store-s23-landing.</p></div>
 </div>
 <div class="r-comment" data-section="s24" data-id="c-run-r-20261115T183015279464-review-of-revision-reads-on-the-store-s24-84165b187d1c" data-who="reckon-build" data-when="2026-11-15T18:33:49.419Z">
     <div class="r-comment-body"><p>reviewed r-20261115T102555144818-revision-reads-on-the-store-s24 at 27958ce9c4fa..84165b187d1c across two commits; 5 of 6 declared write paths touched, all inside scope; blocking finding that reckon/run_store.py:280 stamps `promoted_revision` as the commit a row's record file entered the tree at, which promotion_scope.py:305 defines differently, and that no backfill repairs; reuse 5 because run_store.py:1142 duplicates velocity.py:1294.</p></div>
