@@ -3003,6 +3003,29 @@ def sweep(
         "reviews": reviews,
         "swept_at": _utc_now(),
     }
+    # The request's own reading, taken on the same pass that makes the request.
+    # A delivered run whose review was never asked for is an obligation with the
+    # reason its record gives, and the interval between the delivery and the
+    # request is reported apart from the interval between the request and its
+    # launch, so a late request and a slow launch are told apart. Only the
+    # obligations ride the sweep's report: the intervals are the census's own
+    # reading, and a sweep that printed them on every tick would be reporting a
+    # distribution nobody asked it for.
+    review_requests: dict[str, Any] = {}
+    if not dry_run:
+        try:
+            from reckon.crew.recovery_review_dispatch import review_request_census
+
+            census = review_request_census(
+                [str(pointer.get("run_id") or "") for pointer in live],
+                pointers=live,
+            )
+            if census["obligations"]:
+                review_requests = {"obligations": census["obligations"]}
+        except Exception as exc:  # noqa: BLE001 - a reading must not fail a sweep
+            review_requests = {"error": str(exc)}
+    if review_requests.get("obligations"):
+        report["review_requests"] = review_requests
     if any(
         plan_reviews.get(key)
         for key in ("composed", "skipped", "notes", "failed", "error")

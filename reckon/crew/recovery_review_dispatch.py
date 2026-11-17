@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import math
 import re
 import shutil
 import subprocess
@@ -4594,6 +4595,203 @@ def _dispatch_composed_review(
         "reason": f"dispatched the composed review as run {review_run_id}",
         **({"released_reviews": released_reviews} if released_reviews else {}),
         **({"dispatch": launched} if record.get("subject") == "plan" else {}),
+    }
+
+
+# ── The request, the launch, and the wait between them ─────────────────────
+# A delivered run cannot land until it is reviewed, and the request that starts
+# the review is made by the crew rather than by its coordinator. Two latencies
+# decide how long that takes, and reading them as one figure is what left the
+# cause of a slow review unestablished: the request can be late, or it can be
+# made on time and then wait for a lane, a member or a budget. The receipts name
+# a distinct instant for each stage, so the census below reports the delivery to
+# request interval and the request to launch interval apart, and names every
+# delivered run whose request was never made with the reason its own record
+# gives. Its report is the figure this section's measure is judged on.
+#
+# The obligation is stated against the same clock a person reads: a delivered
+# run with no request after this long is no longer a reflex about to fire but a
+# request nothing is going to make.
+REVIEW_REQUEST_DEADLINE_SECONDS = 600
+
+DELIVERED_PHASES = frozenset(
+    {"completed_unpromoted", "scoring", "promotable", "complete"}
+)
+
+
+def review_stage_instants(run_id: str) -> dict[str, str | None]:
+    """The first instant of each handoff the receipts hold for one run.
+
+    The first instant wins: a retried stage leaves a second receipt, and the
+    request this census measures is the one the run was first asked for. A
+    receipt the journal could not read is a gap, so its stage stays ``None``
+    rather than becoming a zero-length interval.
+    """
+    from reckon.crew import stage_receipts
+
+    instants: dict[str, str | None] = {
+        "delivered_at": None,
+        "requested_at": None,
+        "launched_at": None,
+        "started_at": None,
+    }
+    wanted = {
+        "delivery_recorded": "delivered_at",
+        "review_requested": "requested_at",
+        "review_admitted": "launched_at",
+        "review_started": "started_at",
+    }
+    for row in stage_receipts.read_receipts(run_id):
+        field = wanted.get(str(row.get("stage") or ""))
+        if field is None or row.get("at") is None or instants[field] is not None:
+            continue
+        instants[field] = str(row["at"])
+    return instants
+
+
+def _lag_seconds(left: str | None, right: str | None) -> float | None:
+    """The interval between two stored instants, or ``None`` when either is absent."""
+    start = parse_utc(left)
+    end = parse_utc(right)
+    if start is None or end is None:
+        return None
+    return max(0.0, (end - start).total_seconds())
+
+
+def _nearest_rank(values: Sequence[float], quantile: float) -> float | None:
+    """The nearest-rank quantile of the sample, so a small sample names a member."""
+    if not values:
+        return None
+    ordered = sorted(values)
+    rank = max(1, min(len(ordered), math.ceil(quantile * len(ordered))))
+    return ordered[rank - 1]
+
+
+def _unrequested_reason(
+    record: Mapping[str, Any] | None, *, session: str
+) -> str:
+    """Why a delivered run's review was never requested, from its own record.
+
+    Three readings, in the order that keeps the reason closest to the evidence:
+    the reflex's own recorded dispatch, the refusal its dispatch rule would
+    return now, and finally the liveness of the session that owes the request.
+    A delivered run whose session has no armed follower is the case that leaves
+    the request unmade with nothing recorded at all, because no sweep ever
+    reached the run to refuse it.
+    """
+    if isinstance(record, Mapping):
+        recorded = record.get(REVIEW_DISPATCH_FIELD)
+        if isinstance(recorded, Mapping) and str(recorded.get("reason") or ""):
+            return (
+                f"the review reflex recorded {recorded.get('status') or 'no dispatch'}: "
+                f"{recorded['reason']}"
+            )
+        try:
+            refusal = review_dispatch_refusal(record)
+        except (CrewError, OSError, ValueError) as exc:
+            refusal = {"reason": f"the run's dispatch rule could not be read: {exc}"}
+        if isinstance(refusal, Mapping) and str(refusal.get("reason") or ""):
+            return str(refusal["reason"])
+    project = str((record or {}).get("project") or "")
+    if session and project:
+        try:
+            state = runs.follower_state(project, session)
+        except (OSError, ValueError, CrewError):
+            state = {}
+        if not state.get("live"):
+            return (
+                f"no armed follower serves session {session!r}, so no sweep "
+                "requests this run's review"
+            )
+    return (
+        "no sweep has requested this run's review and the run records no "
+        "dispatch to explain why"
+    )
+
+
+def review_request_census(
+    run_ids: Sequence[str],
+    *,
+    now: datetime | None = None,
+    deadline_seconds: int = REVIEW_REQUEST_DEADLINE_SECONDS,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Report the delivery, request and launch instants of delivered runs.
+
+    ``rows`` carries one entry per delivered run with both intervals, so a late
+    request and a slow launch are told apart by the reader rather than inferred
+    from a total. ``obligations`` carries every delivered run with no request
+    after ``deadline_seconds``, each with the reason its own record gives. A run
+    whose delivery was never recorded is not in either list: nothing is known
+    about it, and a zero-length interval would be a claim the receipts do not
+    support.
+    """
+    moment = now if now is not None else datetime.now(tz=UTC)
+    live = {
+        str(pointer.get("run_id") or ""): pointer
+        for pointer in (pointers if pointers is not None else list_live())
+    }
+    rows: list[dict[str, Any]] = []
+    obligations: list[dict[str, Any]] = []
+    request_lags: list[float] = []
+    launch_lags: list[float] = []
+    for run_id in run_ids:
+        instants = review_stage_instants(run_id)
+        delivered_at = instants["delivered_at"]
+        if not delivered_at:
+            continue
+        request_lag = _lag_seconds(delivered_at, instants["requested_at"])
+        launch_lag = _lag_seconds(instants["requested_at"], instants["launched_at"])
+        row = {
+            "run_id": run_id,
+            "delivered_at": delivered_at,
+            "requested_at": instants["requested_at"],
+            "launched_at": instants["launched_at"],
+            "started_at": instants["started_at"],
+            "request_lag_seconds": request_lag,
+            "launch_lag_seconds": launch_lag,
+        }
+        rows.append(row)
+        if request_lag is None:
+            age = _lag_seconds(delivered_at, moment.isoformat())
+            age = int(age) if age is not None else 0
+            record = live.get(run_id)
+            if age >= int(deadline_seconds):
+                obligations.append(
+                    {
+                        "run_id": run_id,
+                        "delivered_at": delivered_at,
+                        "age_seconds": age,
+                        "session": str((record or {}).get("session") or ""),
+                        "reason": _unrequested_reason(
+                            record, session=str((record or {}).get("session") or "")
+                        ),
+                    }
+                )
+            continue
+        request_lags.append(request_lag)
+        if launch_lag is not None:
+            launch_lags.append(launch_lag)
+    return {
+        "rows": rows,
+        "counts": {
+            "delivered": len(rows),
+            "requested": len(request_lags),
+            "launched": len(launch_lags),
+            "unrequested": len(rows) - len(request_lags),
+        },
+        "request_lag_seconds": {
+            "p50": _nearest_rank(request_lags, 0.50),
+            "p90": _nearest_rank(request_lags, 0.90),
+            "max": max(request_lags) if request_lags else None,
+        },
+        "launch_lag_seconds": {
+            "p50": _nearest_rank(launch_lags, 0.50),
+            "p90": _nearest_rank(launch_lags, 0.90),
+            "max": max(launch_lags) if launch_lags else None,
+        },
+        "deadline_seconds": int(deadline_seconds),
+        "obligations": obligations,
     }
 
 
