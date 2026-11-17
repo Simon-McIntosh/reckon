@@ -177,19 +177,29 @@ def test_private_repository_copies_packs_without_changing_the_source(tmp_path):
 
 
 def test_real_replay_exercises_guards_and_a_positive_control(tmp_path, monkeypatch):
+    import os
+    from pathlib import Path
+
     from reckon import ledger
     from reckon.crew import promotion_scope
+    from reckon.crew.dispatch_launch import worker_scratch_root
 
     appended = []
     append = ledger.append_run
 
     def observed_append(*args, **kwargs):
+        assert worker_scratch_root().is_relative_to(Path(os.environ["TMPDIR"]))
+        assert Path(os.environ["XDG_RUNTIME_DIR"]).is_relative_to(
+            Path(os.environ["TMPDIR"])
+        )
         scope = promotion_scope._BRANCH_WRITES.get()
         assert scope and scope.get("lease"), "real ledger write has no branch lease"
         appended.append(True)
         return append(*args, **kwargs)
 
     monkeypatch.setattr(ledger, "append_run", observed_append)
+    monkeypatch.setenv("RECKON_WORKER_SCRATCH_ROOT", str(tmp_path / "foreign-scratch"))
+    monkeypatch.setenv("XDG_RUNTIME_DIR", str(tmp_path / "foreign-runtime"))
     crew = tmp_path / "source-crew"
     request = {
         **_request("r-unavailable", START),

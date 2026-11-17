@@ -411,6 +411,14 @@ def _fence_batch_script(script: str, logs: str) -> str:
     if arguments and arguments[0] == "srun":
         shell = arguments.index("bash")
         redirect = arguments.index(">")
+        arguments[shell + 2] = arguments[shell + 2].replace(
+            'export TMPDIR="$scratch"\n',
+            'export TMPDIR="$scratch"\n'
+            'export RECKON_WORKER_SCRATCH_ROOT="$scratch/worker-scratch"\n'
+            'export XDG_RUNTIME_DIR="$scratch/runtime"\n'
+            'mkdir -p "$XDG_RUNTIME_DIR"\n',
+            1,
+        )
         return (
             shlex.join([*arguments[:shell], *fence, *arguments[shell:redirect]])
             + " > "
@@ -510,6 +518,8 @@ def _batch_transport(root: Path, repositories: dict, sources: dict, shared: Path
 
 def _batch_probe(root: Path, repositories: dict, sources: dict) -> dict:
     """Require a real remote job to read a known object and return its receipt."""
+    from reckon.crew.landing_measure import NODE_LOCAL_TEMP_ROOT
+
     project = next(iter(repositories))
     repository = repositories[project]
     revision = sources["projects"][project]["revision"]
@@ -531,6 +541,7 @@ def _batch_probe(root: Path, repositories: dict, sources: dict) -> dict:
         if not key.startswith(("SLURM_", "SBATCH_"))
     }
     environment["RECKON_ALLOW_NESTED_LAUNCH"] = "1"
+    environment["TMPDIR"] = NODE_LOCAL_TEMP_ROOT
     completed = subprocess.run(
         [
             "sbatch",
@@ -761,6 +772,8 @@ def replay(
             "RECKON_RUN_STORE": str(crew / "run_store.db"),
             "RECKON_MOUNTS_PATH": str(home / "mounts.json"),
             "XDG_CACHE_HOME": str(root / "cache"),
+            "XDG_RUNTIME_DIR": str(root / "runtime"),
+            "RECKON_WORKER_SCRATCH_ROOT": str(root / "worker-scratch"),
             "TMPDIR": str(root),
             "PYTHONDONTWRITEBYTECODE": "1",
             "GIT_ALLOW_PROTOCOL": "file",
@@ -771,6 +784,7 @@ def replay(
                 root, repositories, sources, batch_home
             )
         with patch.dict(os.environ, environment):
+            (root / "runtime").mkdir()
             stored_counts = _seed_store(repositories, replacements)
             with patch.dict(
                 os.environ,
@@ -786,9 +800,22 @@ def replay(
                 if batch_home is not None and repositories
                 else None
             )
+            checkout_control = None
+            if repositories:
+                from reckon.crew.landing_measure import base_checkout
+
+                project = next(iter(repositories))
+                revision = sources["projects"][project]["revision"]
+                with base_checkout(repositories[project], revision) as checked:
+                    if not checked.is_relative_to(root):
+                        raise RuntimeError("base checkout escaped the replay scratch root")
+                    if git(checked, "rev-parse", "HEAD") != revision:
+                        raise RuntimeError("base checkout read a different revision")
+                    checkout_control = {"phase": "passed", "revision": revision}
             result = _drain(relocated, requests, runs, timeout=timeout)
         result["positive_control"] = control
         result["batch_control"] = batch_control
+        result["checkout_control"] = checkout_control
         result["copied_store_rows"] = stored_counts
         result["header"] = {
             **data["header"],
