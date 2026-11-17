@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_an_acceptance_check_holds_no_lease.py::test_a_changed_stored_review_rejudges_the_same_head"
+  ],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2166",
+    "reckon/crew_run_commands.py:2171",
+    "reckon/crew/promotion_gate.py:961",
+    "reckon/crew/promotion_gate.py:1261",
+    "reckon/crew/landing_measure.py:918",
+    "reckon/crew/landing_measure.py:1078",
+    "reckon/crew/review_landing.py:107"
+  ],
+  "completed_at": "2026-11-17T00:47:54Z",
+  "dispatched_at": "2026-11-17T00:43:00Z",
+  "failure_delta_evidence": {
+    "after_failure_ids": [
+      "tests/test_an_acceptance_check_holds_no_lease.py::test_a_changed_stored_review_rejudges_the_same_head"
+    ],
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233347554815-a-gate-creates-its-log/resumed-after-suite.log",
+    "baseline_failure_ids": [],
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233347554815-a-gate-creates-its-log/resumed-baseline-suite.log"
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "line": "801",
+      "severity": "blocking",
+      "text": "blocking: Exclusive reservation makes the existing production caller reckon/crew/review_landing.py:106 fail on the second check of the same candidate because it always supplies gate-{candidate}.log; resumed-after-suite.log proves tests/test_an_acceptance_check_holds_no_lease.py::test_a_changed_stored_review_rejudges_the_same_head changes from a baseline pass to integrated_verdict not-run with FileExistsError, so allocate a fresh internal attempt path before this node lands."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "Read all three commits 0a8feb06467606bfbb50f9c3b3515bbc5b44c810, c0abdc7bfb8679b5030c8b2033c75df9516efaee and 4e156982398d88a38e52900ecd31776f3923a508 against 891a4e54f19486e82117d68826044be51d2e0a8d; they reserve logs, retain retry receipts and update recording schedulers without weakening verdict assertions.",
+    "done_when": "Read prompt.txt:251-252 and the live plan section s6; resumed-baseline-suite.log records 90 passed, resumed-after-suite.log records 1 failed/113 passed, and final-negative-control.log records 18 failed/6 passed after restoring truncation.",
+    "goal": "Read prompt.txt:38; exclusive creation now precedes execution in standing_suite.py:273, promotion_gate.py:745 and landing_measure.py:695/801, but an existing production retry caller still reuses its path.",
+    "manifest": "Read manifest.md including baseline_suite and after_suite; it candidly records the added candidate-replay failure and separately reports zero added importer failures, supported by the named receipts.",
+    "write_paths": "Read prompt.txt:94-100 and resume-1-advice.txt:1; the seven changed files are the four original source/test grants plus the three explicitly granted fixture repairs."
+  },
+  "justifications": {
+    "durability": "tests/test_a_gate_creates_its_log.py:51-282 checks independent filesystem snapshots, execution markers and stale receipt preservation, and final-negative-control.log records 18 failures when exclusive opens regress.",
+    "evidence": "resumed-after-suite.log records the one added failure against resumed-baseline-suite.log, and final-negative-control.log proves the preservation assertions fail with truncating opens restored.",
+    "fit": "promotion_gate.py:725 preserves the existing public entry point and delegates to its original implementation, while landing_measure.py:801 makes the existing retry call in review_landing.py:106 incompatible with exclusive creation.",
+    "goal_fidelity": "reckon/crew/landing_measure.py:801 refuses existing paths before submission, but reckon/crew/review_landing.py:106 still supplies the same path on repeated candidate checks.",
+    "reuse": "promotion_gate.py:83 owns retry name selection and landing_measure.py calls it; the capability search found _store.py:517 owns atomic temporary siblings rather than caller-named execution logs, so using Python's exclusive-open primitive does not duplicate that owner.",
+    "scope_discipline": "manifest.md:12 names exactly the seven paths in the diff, with the additional three test files authorized by resume-1-advice.txt:1."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read prompt.txt:38; exclusive creation now precedes execution in standing_suite.py:273, promotion_gate.py:745 and landing_measure.py:695/801, but an existing production retry caller still reuses its path.\nVERDICT done_when: Read prompt.txt:251-252 and the live plan section s6; resumed-baseline-suite.log records 90 passed, resumed-after-suite.log records 1 failed/113 passed, and final-negative-control.log records 18 failed/6 passed after restoring truncation.\nVERDICT write_paths: Read prompt.txt:94-100 and resume-1-advice.txt:1; the seven changed files are the four original source/test grants plus the three explicitly granted fixture repairs.\nVERDICT manifest: Read manifest.md including baseline_suite and after_suite; it candidly records the added candidate-replay failure and separately reports zero added importer failures, supported by the named receipts.\nVERDICT diff: Read all three commits 0a8feb06467606bfbb50f9c3b3515bbc5b44c810, c0abdc7bfb8679b5030c8b2033c75df9516efaee and 4e156982398d88a38e52900ecd31776f3923a508 against 891a4e54f19486e82117d68826044be51d2e0a8d; they reserve logs, retain retry receipts and update recording schedulers without weakening verdict assertions.\nCALL_SITES: reckon/crew_run_commands.py:2166, reckon/crew_run_commands.py:2171, reckon/crew/promotion_gate.py:961, reckon/crew/promotion_gate.py:1261, reckon/crew/landing_measure.py:918, reckon/crew/landing_measure.py:1078, reckon/crew/review_landing.py:107\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/landing_measure.py:801 refuses existing paths before submission, but reckon/crew/review_landing.py:106 still supplies the same path on repeated candidate checks.\nSCORE evidence: 17\nJUSTIFICATION evidence: resumed-after-suite.log records the one added failure against resumed-baseline-suite.log, and final-negative-control.log proves the preservation assertions fail with truncating opens restored.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: manifest.md:12 names exactly the seven paths in the diff, with the additional three test files authorized by resume-1-advice.txt:1.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_gate_creates_its_log.py:51-282 checks independent filesystem snapshots, execution markers and stale receipt preservation, and final-negative-control.log records 18 failures when exclusive opens regress.\nSCORE fit: 18\nJUSTIFICATION fit: promotion_gate.py:725 preserves the existing public entry point and delegates to its original implementation, while landing_measure.py:801 makes the existing retry call in review_landing.py:106 incompatible with exclusive creation.\nSCORE reuse: 20\nJUSTIFICATION reuse: promotion_gate.py:83 owns retry name selection and landing_measure.py calls it; the capability search found _store.py:517 owns atomic temporary siblings rather than caller-named execution logs, so using Python's exclusive-open primitive does not duplicate that owner.\nFINDING reckon/crew/landing_measure.py:801 blocking: Exclusive reservation makes the existing production caller reckon/crew/review_landing.py:106 fail on the second check of the same candidate because it always supplies gate-{candidate}.log; resumed-after-suite.log proves tests/test_an_acceptance_check_holds_no_lease.py::test_a_changed_stored_review_rejudges_the_same_head changes from a baseline pass to integrated_verdict not-run with FileExistsError, so allocate a fresh internal attempt path before this node lands.\n\nReviewed base: 891a4e54f19486e82117d68826044be51d2e0a8d\nReviewed head: 4e156982398d88a38e52900ecd31776f3923a508\n\nAssertion audit (reading only; no mutation or suite rerun):\n- tests/test_a_gate_creates_its_log.py:75-82: restoring truncating opens changes sentinel bytes/mtime or creates the dangling target, accepts the collision, runs the independent command marker, or replaces the symlink; each assertion has an observable failure condition.\n- :90-92: suppressing execution, dropping captured stdout, or dropping the final receipt fails the independent marker/receipt assertions; the command supplies fixed output, not an expected value derived from a returned argument.\n- :107-118 and :134-147: restoring truncation removes FileExistsError and damages the sentinel or creates the dangling target; the scheduler regular-file branch checks bytes but does not separately assert its mtime.\n- :165-173: removing reservation makes the empty log/file assertions fail; a broken shell wrapper changes the actual exit code or exact captured marker/receipt; removing append mode fails the argv assertion.\n- :212-217: resolving symlinks or accepting collisions makes the arm readable, invokes the recording scheduler or changes the independent target snapshot.\n- :248-251: reusing an earlier arm path fails the disjoint-path assertion, truncation changes its bytes/mtime, and refusal rather than retry makes the second arm exit status nonzero/unreadable.\n- :278-282: not submitting changes the scheduler call count, accepting a stale EXIT=0 changes the refusal, clearing the stale receipt changes its bytes/mtime, and copying stale output leaks old-marker into the replay log.\n- tests/test_a_gate_replay_runs_on_the_measure_partition.py:89 and :265-269: removing precreation fails the fixture file assertion; clearing/reusing the stale path changes its snapshot or violates submitted != stale; accepting stale evidence fails the retained failed-verdict assertions.\n- tests/test_an_acceptance_check_holds_no_lease.py:47 and tests/test_cleanly_reviewed_run_lands_itself.py:128: removing reservation or handing the scheduler a symlink fails these fixture assertions; existing lease, partition, promotion and verdict checks remain intact.\nNo added assertion compares a returned argument to the same input as its sole regression oracle. The fake scheduler's file-existence assertions are not claimed as sole safety coverage: independent snapshot and command-suppression assertions cover the refusal.\n\nReuse audit: searched execution-log path selection, exclusive creation and temporary-file creation in the repository; opened reckon/_store.py:517-562 and production callers at the reviewed head. _unused_log_path is the only added production capability; _rerun_gate_at_integrated_revision is the existing body moved behind a reservation wrapper. New test definitions extend the existing pytest fixture and runner mechanisms.\n\nFailure delta: the completed baseline_suite receipt has no FAILED ids; the completed after_suite receipt has exactly tests/test_an_acceptance_check_holds_no_lease.py::test_a_changed_stored_review_rejudges_the_same_head, yielding one added failure. The head receipt names source c0abdc7bfb8679b5030c8b2033c75df9516efaee plus fixture overlay 4e156982398d88a38e52900ecd31776f3923a508; git inspection confirms the final commit changes only those three overlaid tests and preserves the three product module blobs. Importer receipts separately record eight identical failures at both revisions; they do not erase the armed-suite failure.\n",
+  "review_run_id": "r-20261117T004058271329-review-of-a-gate-creates-its-log-4e156982398d",
+  "reviewed_base_sha": "891a4e54f19486e82117d68826044be51d2e0a8d",
+  "reviewed_head_sha": "4e156982398d88a38e52900ecd31776f3923a508",
+  "reviewed_run_id": "r-20261116T233347554815-a-gate-creates-its-log",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T00:58:27.496032+00:00",
+  "total": 112
+}
