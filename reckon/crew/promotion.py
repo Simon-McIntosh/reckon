@@ -2010,7 +2010,7 @@ def _record_comment_with_snapshot(
             )
             from reckon.crew.promotion_scope import _landing_comment_update
 
-            payload, _anchor, _comment, existing = _landing_comment_update(
+            payload, _anchor, _comment, _existing = _landing_comment_update(
                 state,
                 section=kwargs["section"],
                 run_id=snapshot.run_id,
@@ -2018,7 +2018,7 @@ def _record_comment_with_snapshot(
                 author=kwargs["author"],
                 when=kwargs["when"],
             )
-            if existing is None:
+            if payload.get("comments") != state.get("comments"):
                 payload = {
                     **payload,
                     "version": int(state.get("version") or 0) + 1,
@@ -2029,7 +2029,6 @@ def _record_comment_with_snapshot(
                     payload,
                     drop_authored_impl_meta=True,
                 ).encode("utf-8")
-        kwargs["plan_locked"] = True
     return _record_landing_comment(**kwargs)
 
 

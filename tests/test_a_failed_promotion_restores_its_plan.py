@@ -521,3 +521,105 @@ def test_the_plan_lock_covers_the_snapshot_through_restoration(
     assert observed == [before]
     assert "Peer delivery" in path.read_text()
     assert "Peer delivery" in git(repository, "show", f":{PLAN_PATH}")
+
+
+def test_a_copied_context_cannot_lend_its_plan_lock_to_another_thread(
+    repository: Path,
+) -> None:
+    import subprocess
+    import threading
+    from contextvars import copy_context
+
+    path = repository / PLAN_PATH
+    attempted = threading.Event()
+    acquired = threading.Event()
+    errors = []
+
+    def editor():
+        try:
+            attempted.set()
+            with _store._serialized_path_lock(path, "plans"):
+                acquired.set()
+                path.write_bytes(
+                    path.read_bytes().replace(b"Delivery</h2>", b"Peer delivery</h2>")
+                )
+                git(repository, "add", "--", PLAN_PATH)
+        except (
+            AssertionError,
+            CrewError,
+            OSError,
+            subprocess.CalledProcessError,
+        ) as error:
+            errors.append(error)
+
+    worker = None
+    try:
+        with _store._serialized_path_lock(path, "plans"):
+            worker = threading.Thread(target=copy_context().run, args=(editor,))
+            worker.start()
+            assert attempted.wait(5)
+            assert not acquired.wait(0.2), (
+                "a copied context borrowed another thread's lock"
+            )
+    finally:
+        if worker is not None:
+            worker.join(10)
+    assert not worker.is_alive()
+    assert not errors
+    assert acquired.is_set()
+    assert "Peer delivery" in path.read_text()
+    assert "Peer delivery" in git(repository, "show", f":{PLAN_PATH}")
+
+
+def test_a_copied_context_cannot_revive_a_released_plan_lock(
+    repository: Path,
+) -> None:
+    import subprocess
+    import threading
+    from contextvars import copy_context
+
+    path = repository / PLAN_PATH
+    with _store._serialized_path_lock(path, "plans"):
+        stale = copy_context()
+    holding = threading.Event()
+    release = threading.Event()
+    written = threading.Event()
+    errors = []
+
+    def editor():
+        try:
+            with _store._serialized_path_lock(path, "plans"):
+                holding.set()
+                assert release.wait(5)
+                path.write_bytes(
+                    path.read_bytes().replace(b"Delivery</h2>", b"Peer delivery</h2>")
+                )
+                written.set()
+        except (
+            AssertionError,
+            CrewError,
+            OSError,
+            subprocess.CalledProcessError,
+        ) as error:
+            errors.append(error)
+
+    def read_after_editor():
+        with _store._serialized_path_lock(path, "plans"):
+            assert written.is_set(), "a copied context revived its released lock"
+            assert "Peer delivery" in path.read_text()
+
+    worker = threading.Thread(target=editor)
+    worker.start()
+    timer = threading.Timer(0.2, release.set)
+    try:
+        assert holding.wait(5)
+        timer.start()
+        stale.run(read_after_editor)
+    finally:
+        release.set()
+        worker.join(10)
+        timer.cancel()
+        if timer.ident is not None:
+            timer.join(5)
+    assert not worker.is_alive()
+    assert not errors

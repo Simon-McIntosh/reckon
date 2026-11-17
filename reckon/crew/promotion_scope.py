@@ -1472,6 +1472,10 @@ def _landing_comment_update(
     )
     if existing is None:
         items.append(comment)
+    elif html.unescape(str(existing.get("body") or "")) != html.unescape(
+        comment["body"]
+    ):
+        items[items.index(existing)] = {**existing, **comment}
     payload = {**state, "comments": comments}
     if str(state.get("status") or "").strip().lower() in {"draft", "pending"}:
         payload["status"] = "in-progress"
@@ -1491,7 +1495,6 @@ def _record_landing_comment(
     worker_tree: Path | None = None,
     worker_commits: Iterable[str] = (),
     landing: str = "",
-    plan_locked: bool = False,
 ) -> dict[str, Any]:
     """Append one idempotent section comment for a promoted run.
 
@@ -1585,18 +1588,6 @@ def _record_landing_comment(
                 # rather than repeating wording its author cannot reconstruct.
                 if not _ledger_holds_row(project, root, run_id, unreadable=False):
                     superseded = _strip_tags(str(existing.get("body") or ""))
-                    for position, item in enumerate(items):
-                        if item is existing:
-                            items[position] = {
-                                **existing,
-                                "who": author,
-                                "when": when,
-                                "body": desired_body,
-                            }
-                            break
-                    payload = {**state, "comments": comments}
-                    if started:
-                        payload["status"] = "in-progress"
                     try:
                         _store.write_plan(
                             project,
@@ -1659,17 +1650,9 @@ def _record_landing_comment(
                 "reason": "worker_authored_landing_record",
             }
         try:
-            if plan_locked:
-                # Promotion owns the plan lock through its commit or rollback.
-                # Reuse the store's locked writer without reacquiring that lock.
-                _store._write_state_locked(
-                    project, plan, payload, version, root, artifact_type="plan"
-                )
-                _store.advance_write_generation(project)
-            else:
-                _store.write_plan(
-                    project, plan, payload, version, root, artifact_type="plan"
-                )
+            _store.write_plan(
+                project, plan, payload, version, root, artifact_type="plan"
+            )
         except _store.VersionConflict:
             continue
         # The status is reported only when this write flipped it, so a landing
