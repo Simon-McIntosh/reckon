@@ -1416,8 +1416,11 @@ def test_complete_command_assumes_utc_for_a_naive_completion_stamp(home, repo) -
     )
 
     payload = json.loads(result.output)
-    stored = payload["record"]
     assert result.exit_code == 0
+    assert payload["ok"] is True
+    # The reply is the compact receipt; the promotion's full outcome, record
+    # included, is retained at the path it names.
+    stored = json.loads(Path(payload["record_path"]).read_text())["record"]
     assert stored["completed_at"] == "2027-01-01T02:00:00Z"
     assert stored["worker_seconds"] is None
     assert stored["worker_seconds_source"] == "unavailable"
@@ -2535,8 +2538,15 @@ def test_the_crew_tool_reads_the_ledger_and_the_live_pointers(home, repo) -> Non
     assert live["runs"][0]["classification"] == "running"
 
 
-def test_the_crew_tool_reads_the_worktrees_ledger_not_the_main_one(home, repo) -> None:
-    """A worker inside a worktree must not read the registered checkout."""
+def test_the_crew_tool_answers_a_projects_history_from_any_checkout(home, repo) -> None:
+    """One store answers the project's history; the path names the asking tree.
+
+    The per-run documents were the ledger, so a read inside a worker's worktree
+    answered only the runs promoted into that worktree. The run store under the
+    crew home is the store every checkout reads, so a run promoted from the
+    registered checkout and one promoted from a worktree both answer, and what
+    stays the caller's own is the path the answer reports.
+    """
     from reckon import mcp
 
     worktree = _worktree(repo, "worker-checkout")
@@ -2554,9 +2564,16 @@ def test_the_crew_tool_reads_the_worktrees_ledger_not_the_main_one(home, repo) -
     from_worktree = mcp._crew(PROJECT, view="ledger", checkout_path=str(worktree))
     from_main = mcp._crew(PROJECT, view="ledger", checkout_path=str(repo))
 
-    assert [item["run_id"] for item in from_worktree["runs"]] == ["r-worktree"]
-    assert [item["run_id"] for item in from_main["runs"]] == ["r-main"]
+    assert sorted(item["run_id"] for item in from_worktree["runs"]) == [
+        "r-main",
+        "r-worktree",
+    ]
+    assert sorted(item["run_id"] for item in from_main["runs"]) == [
+        "r-main",
+        "r-worktree",
+    ]
     assert from_worktree["path"].startswith(str(worktree))
+    assert from_main["path"].startswith(str(repo))
 
 
 def test_an_unknown_crew_view_names_every_view_it_has(home, repo) -> None:
@@ -3267,7 +3284,9 @@ def test_append_run_writes_the_shadow_store_beside_the_file(home, repo) -> None:
     # them, so a field the declaration does not index is still kept forever.
     durable = json.loads(stored["payload"])
     assert durable["run_id"] == "r-store-echo"
-    assert durable["project"] == PROJECT
+    # The project routes the row through its column; it is not a field of the
+    # record, so the payload is the row the promotion wrote and nothing more.
+    assert "project" not in durable
     assert durable["member"] == "worker-a"
     assert durable["node"] == ""
     assert durable["gate"] == "passed"
