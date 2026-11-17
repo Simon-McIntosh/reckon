@@ -277,7 +277,15 @@ def append_scheduler_reading(directory: Path, row: Mapping[str, str]) -> bool:
         if not header:
             header = _HEALTH_COLUMNS
             csv.writer(stream, delimiter="\t", lineterminator="\n").writerow(header)
-        if not set(_HEALTH_COLUMNS[-7:]).issubset(header):
+        if not {
+            "job_id",
+            "node",
+            "scheduler_state",
+            "scheduler_reason",
+            "scheduler_running",
+            "scheduler_event",
+            "source",
+        }.issubset(header):
             raise FleetNodeError(f"health series lacks scheduler columns: {path}")
         # Only the tail is read, keeping each tick independent of series age.
         stream.flush()

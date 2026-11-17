@@ -538,3 +538,138 @@ def test_disk_and_scheduler_samples_share_the_locked_series(tmp_path):
     assert result[1]["scheduler_event"] == "end"
     assert result[1]["node_tmp_free_bytes"] == "-"
     assert all(None not in row for row in result)
+
+
+@pytest.fixture
+def existing_scheduler_series(tmp_path):
+    columns = [
+        "utc",
+        "load1",
+        "load5",
+        "procs_running",
+        "procs_blocked",
+        "dstate",
+        "mem_avail_mb",
+        "swap_free_mb",
+        "job_mem_mb",
+        "job_mem_max_mb",
+        "home_stat_ms",
+        "slurmd_ms",
+        "ctld_ping",
+        "tasks",
+        "python_procs",
+        "top_parent",
+        "writable_interpreters",
+        "job_oom_kill",
+        "job_id",
+        "node",
+        "scheduler_state",
+        "scheduler_reason",
+        "scheduler_running",
+        "scheduler_event",
+        "source",
+    ]
+    row = {
+        "utc": "2000-01-01T00:00:00Z",
+        "job_id": "84521",
+        "node": "recorded-node",
+        "source": "node",
+        "job_mem_mb": "37",
+    }
+    path = tmp_path / "84521-recorded-node.tsv"
+    return path, columns, row
+
+
+@pytest.mark.parametrize("extra_columns", [[], ["further_metric", "another_metric"]])
+def test_outside_reader_finishes_existing_series_with_any_suffix(
+    existing_scheduler_series, extra_columns, monkeypatch
+):
+    import csv
+    import subprocess
+
+    from reckon.crew import fleet_node
+
+    monkeypatch.setattr(
+        fleet_node,
+        "_HEALTH_COLUMNS",
+        [
+            *fleet_node._HEALTH_COLUMNS,
+            "additional_memory_bytes",
+            "additional_task_count",
+        ],
+    )
+    path, columns, node_row = existing_scheduler_series
+    columns = columns + extra_columns
+    with path.open("w") as stream:
+        writer = csv.DictWriter(stream, fieldnames=columns, delimiter="\t")
+        writer.writeheader()
+        writer.writerow(node_row)
+    prefix = path.read_text()
+    calls = []
+
+    def scheduler(argv, **kwargs):
+        calls.append(argv)
+        assert argv[0] == "squeue"
+        assert kwargs["timeout"] == 10
+        return subprocess.CompletedProcess(
+            argv, 0, "84521|recorded-node|CANCELLED|None\n", ""
+        )
+
+    fleet_node.watch_scheduler(
+        "84521", "recorded-node", directory=path.parent, runner=scheduler
+    )
+    assert len(calls) == 1
+    assert path.read_text().startswith(prefix)
+    with path.open() as stream:
+        reader = csv.DictReader(stream, delimiter="\t")
+        rows = list(reader)
+        assert reader.fieldnames == columns
+    assert len(rows) == 2
+    assert rows[0]["source"] == "node"
+    assert rows[0]["job_mem_mb"] == "37"
+    assert rows[1]["source"] == "scheduler"
+    assert rows[1]["scheduler_state"] == "CANCELLED"
+    assert rows[1]["scheduler_event"] == "end"
+    assert all(rows[1][column] == "-" for column in extra_columns)
+    assert all(None not in row for row in rows)
+
+
+@pytest.mark.parametrize(
+    "missing_column",
+    [
+        "job_id",
+        "node",
+        "scheduler_state",
+        "scheduler_reason",
+        "scheduler_running",
+        "scheduler_event",
+        "source",
+    ],
+)
+def test_scheduler_refuses_a_series_missing_a_required_column(
+    existing_scheduler_series, missing_column
+):
+    import csv
+
+    from reckon.crew import fleet_node
+
+    path, columns, node_row = existing_scheduler_series
+    columns.remove(missing_column)
+    with path.open("w") as stream:
+        writer = csv.DictWriter(
+            stream, fieldnames=columns, delimiter="\t", extrasaction="ignore"
+        )
+        writer.writeheader()
+        writer.writerow(node_row)
+    before = path.read_bytes()
+    terminal = dict(
+        node_row,
+        source="scheduler",
+        scheduler_state="CANCELLED",
+        scheduler_reason="None",
+        scheduler_running="false",
+        scheduler_event="end",
+    )
+    with pytest.raises(fleet_node.FleetNodeError, match="lacks scheduler columns"):
+        fleet_node.append_scheduler_reading(path.parent, terminal)
+    assert path.read_bytes() == before
