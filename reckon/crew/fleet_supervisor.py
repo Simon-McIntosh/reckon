@@ -387,6 +387,7 @@ def sample_interpreter_permissions() -> int:
 NODE_DISK_RECORD = "node-disk.json"
 NODE_DISK_ROOT_ENV = "FLEET_NODE_TMP_ROOT"
 DEFAULT_NODE_DISK_RESERVE_BYTES = 8 * 1024**3
+DEFAULT_NODE_DISK_SAMPLE_MAX_AGE_SECONDS = 180
 
 
 def node_disk_reserve_bytes(config: Mapping[str, Any] | None = None) -> int:
@@ -400,6 +401,38 @@ def node_disk_reserve_bytes(config: Mapping[str, Any] | None = None) -> int:
             "node_tmp_reserve_bytes", DEFAULT_NODE_DISK_RESERVE_BYTES
         )
     )
+
+
+def node_disk_sample_max_age_seconds(config: Mapping[str, Any] | None = None) -> int:
+    """The age limit for a published reading, defaulting to three minute samples."""
+    if config is None:
+        from reckon import flight
+
+        config = flight.resolve().config
+    return int(
+        config.get("worktree", {}).get(
+            "node_tmp_sample_max_age_seconds", DEFAULT_NODE_DISK_SAMPLE_MAX_AGE_SECONDS
+        )
+    )
+
+
+class NodeDiskSampleError(ValueError):
+    """A known fleet has no usable current disk reading."""
+
+    def __init__(self, state: str, reason: str):
+        super().__init__(reason)
+        self.kind = f"node-disk-{state}"
+
+
+def node_disk_reading_obligation(error: NodeDiskSampleError) -> dict[str, Any]:
+    """Keep an unavailable reading distinct from a measured low-space condition."""
+    return {
+        "kind": error.kind,
+        "run_id": "",
+        "age_seconds": 0,
+        "reason": str(error),
+        "next_command": "Restore current fleet disk samples before admitting new launches",
+    }
 
 
 def node_disk_largest_entries(mount: Path) -> tuple[list[dict[str, Any]], bool]:
@@ -519,22 +552,85 @@ def sample_node_disk(environ: Mapping[str, str] | None = None) -> int:
 
 def published_node_disk_sample(
     environ: Mapping[str, str] | None = None,
+    *,
+    now: datetime | None = None,
+    max_age_seconds: int | None = None,
 ) -> dict[str, Any] | None:
-    """The latest disk reading belonging to the fleet's current job and node."""
+    """Read a current sample, refusing unavailable data for a known fleet.
+
+    No fleet record means no known target. Once a target is known, missing,
+    malformed, mismatched or expired readings cannot stand in for usable space.
+    """
+    from reckon._timestamps import parse_utc
+
     directory = state_directory(environ)
     try:
-        sample = json.loads((directory / NODE_DISK_RECORD).read_text())
         fleet = json.loads((directory / RECORD_NAME).read_text())
     except (OSError, ValueError):
         return None
-    if not isinstance(sample, dict) or not isinstance(fleet, dict):
+    if not isinstance(fleet, dict) or not fleet.get("node"):
         return None
+    path = directory / NODE_DISK_RECORD
+    target = f"Fleet node {fleet['node']} disk sample {path}"
+    try:
+        sample = json.loads(path.read_text())
+    except (OSError, ValueError) as exc:
+        raise NodeDiskSampleError(
+            "unreadable", f"{target} is unreadable: {exc}"
+        ) from exc
+    if not isinstance(sample, dict):
+        raise NodeDiskSampleError("unreadable", f"{target} is not an object")
     if (
         str(sample.get("job_id") or "") != str(fleet.get("job_id") or "")
         or str(sample.get("node") or "").split(".")[0]
         != str(fleet.get("node") or "").split(".")[0]
     ):
-        return None
+        raise NodeDiskSampleError(
+            "unreadable", f"{target} belongs to another job or node"
+        )
+    sampled_at = parse_utc(sample.get("utc"))
+    if sampled_at is None:
+        raise NodeDiskSampleError("unreadable", f"{target} has no readable timestamp")
+    moment = now if now is not None else datetime.now(UTC)
+    age = (moment - sampled_at).total_seconds()
+    limit = (
+        max_age_seconds
+        if max_age_seconds is not None
+        else node_disk_sample_max_age_seconds()
+    )
+    if age < 0:
+        raise NodeDiskSampleError("unreadable", f"{target} is dated in the future")
+    if age > limit:
+        raise NodeDiskSampleError(
+            "stale",
+            f"{target} is {age:.1f} seconds old, beyond its {limit}-second freshness limit",
+        )
+    for key in (
+        "total_bytes",
+        "used_bytes",
+        "free_bytes",
+        "free_inodes",
+        "reserve_bytes",
+    ):
+        value = sample.get(key)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise NodeDiskSampleError("unreadable", f"{target} has no readable {key}")
+    if not isinstance(sample.get("mount"), str) or not sample["mount"]:
+        raise NodeDiskSampleError("unreadable", f"{target} has no readable mount")
+    if not isinstance(sample.get("under_reserve"), bool) or sample["under_reserve"] != (
+        sample["free_bytes"] < sample["reserve_bytes"]
+    ):
+        raise NodeDiskSampleError(
+            "unreadable", f"{target} has inconsistent reserve data"
+        )
+    entries = sample.get("largest_entries")
+    if not isinstance(entries, list) or any(
+        not isinstance(entry, dict) or not {"path", "owner", "bytes"} <= entry.keys()
+        for entry in entries
+    ):
+        raise NodeDiskSampleError(
+            "unreadable", f"{target} has unreadable owner entries"
+        )
     return sample
 
 
@@ -542,7 +638,10 @@ def node_disk_obligation(project: str) -> dict[str, Any] | None:
     """Read the owning fleet's published sample, never the reader's own disk."""
     environ = dict(os.environ)
     environ[FLEET_NAME_ENV] = fleet_for_project(project)
-    sample = published_node_disk_sample(environ)
+    try:
+        sample = published_node_disk_sample(environ)
+    except NodeDiskSampleError as exc:
+        return node_disk_reading_obligation(exc)
     return node_disk_pressure(sample) if sample is not None else None
 
 

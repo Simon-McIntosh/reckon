@@ -182,9 +182,21 @@ def node_disk_admission_hold() -> dict[str, Any] | None:
         )
     except (OSError, ValueError):
         return None
-    if str(fleet.get("node") or "").split(".")[0] != socket.gethostname().split(".")[0]:
-        sample = supervisor.published_node_disk_sample()
-        return supervisor.node_disk_pressure(sample) if sample is not None else None
+    if not isinstance(fleet, dict) or not fleet.get("node"):
+        return None
+    if str(fleet["node"]).split(".")[0] != socket.gethostname().split(".")[0]:
+        try:
+            sample = supervisor.published_node_disk_sample()
+        except supervisor.NodeDiskSampleError as exc:
+            return supervisor.node_disk_reading_obligation(exc)
+        if sample is None:
+            return supervisor.node_disk_reading_obligation(
+                supervisor.NodeDiskSampleError(
+                    "unreadable",
+                    f"Fleet node {fleet['node']} has no current published disk reading",
+                )
+            )
+        return supervisor.node_disk_pressure(sample)
     mount = Path(os.environ.get(supervisor.NODE_DISK_ROOT_ENV) or "/tmp")  # noqa: S108 - node-local
     try:
         sample = supervisor.node_disk_snapshot(

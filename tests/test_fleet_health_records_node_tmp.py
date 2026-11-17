@@ -3,6 +3,7 @@
 import json
 import os
 import socket
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -160,7 +161,7 @@ def test_sample_publishes_the_same_four_fields_and_obligation(
     assert supervisor.node_disk_obligation("fixture")["disk"] == published
     published["job_id"] = "departed-job"
     (disk_state / supervisor.NODE_DISK_RECORD).write_text(json.dumps(published))
-    assert supervisor.node_disk_obligation("fixture") is None
+    assert supervisor.node_disk_obligation("fixture")["kind"] == "node-disk-unreadable"
 
 
 def test_admission_reads_the_local_disk_and_holds_only_below_reserve(
@@ -175,12 +176,15 @@ def test_admission_reads_the_local_disk_and_holds_only_below_reserve(
     monkeypatch.setenv("FLEET_NODE_TMP_ROOT", str(large / "missing"))
     assert service.node_disk_admission_hold()["kind"] == "node-disk-unreadable"
     (disk_state / "record.json").write_text(json.dumps({"node": "another-host"}))
-    assert service.node_disk_admission_hold() is None
+    assert service.node_disk_admission_hold()["kind"] == "node-disk-unreadable"
 
 
 @pytest.mark.parametrize("named", [False, True])
+@pytest.mark.parametrize(
+    "reading_kind", ["node-disk-reserve", "node-disk-unreadable", "node-disk-stale"]
+)
 def test_disk_pressure_prevents_both_named_and_service_admission(
-    disk_state, monkeypatch, named
+    disk_state, monkeypatch, named, reading_kind
 ):
     from contextlib import nullcontext
 
@@ -200,8 +204,8 @@ def test_disk_pressure_prevents_both_named_and_service_admission(
         "backend": "fixture-lane",
     }
     pressure = {
-        "kind": "node-disk-reserve",
-        "reason": "free bytes under reserve",
+        "kind": reading_kind,
+        "reason": f"disk condition: {reading_kind}",
         "run_id": "",
         "age_seconds": 0,
     }
@@ -304,5 +308,193 @@ def test_remote_admission_uses_the_published_fleet_disk(
     assert service.node_disk_admission_hold() == expected
     published = json.loads((disk_state / supervisor.NODE_DISK_RECORD).read_text())
     published["under_reserve"] = False
+    published["free_bytes"] = published["reserve_bytes"]
     (disk_state / supervisor.NODE_DISK_RECORD).write_text(json.dumps(published))
     assert service.node_disk_admission_hold() is None
+
+
+@pytest.mark.parametrize(
+    "condition", ["missing", "unreadable", "expired-free", "expired-low"]
+)
+def test_remote_admission_refuses_unavailable_samples(
+    disk_state, mounts, monkeypatch, condition
+):
+    small, large = mounts
+    path = disk_state / supervisor.NODE_DISK_RECORD
+    if condition == "unreadable":
+        path.write_text("{broken")
+    elif condition.startswith("expired"):
+        sample = supervisor.node_disk_snapshot(
+            small if condition == "expired-low" else large, reserve_bytes=100 * 4096
+        )
+        sample["utc"] = (datetime.now(UTC) - timedelta(hours=1)).isoformat()
+        path.write_text(json.dumps(sample))
+    monkeypatch.setattr(socket, "gethostname", lambda: "remote-reader")
+    hold = service.node_disk_admission_hold()
+    assert hold is not None, "a known remote fleet needs a current disk reading"
+    expected = (
+        "node-disk-stale" if condition.startswith("expired") else "node-disk-unreadable"
+    )
+    assert hold["kind"] == expected
+    assert hold["kind"] != "node-disk-reserve"
+    assert supervisor.node_disk_obligation("fixture")["kind"] == expected
+
+
+@pytest.mark.parametrize("max_age", [17, 180])
+def test_published_disk_reading_expires_at_the_configured_bound(
+    disk_state, mounts, monkeypatch, max_age
+):
+    _, large = mounts
+    sample = supervisor.node_disk_snapshot(large, reserve_bytes=100 * 4096)
+    sampled_at = datetime.fromisoformat(sample["utc"])
+    (disk_state / supervisor.NODE_DISK_RECORD).write_text(json.dumps(sample))
+    monkeypatch.setattr(supervisor, "node_disk_sample_max_age_seconds", lambda: max_age)
+    assert (
+        supervisor.published_node_disk_sample(
+            now=sampled_at + timedelta(seconds=max_age)
+        )
+        == sample
+    )
+    with pytest.raises(
+        supervisor.NodeDiskSampleError, match="freshness limit"
+    ) as error:
+        supervisor.published_node_disk_sample(
+            now=sampled_at + timedelta(seconds=max_age + 1)
+        )
+    assert error.value.kind == "node-disk-stale"
+
+
+def test_fresh_remote_disk_reading_admits(disk_state, mounts, monkeypatch):
+    _, large = mounts
+    sample = supervisor.node_disk_snapshot(large, reserve_bytes=100 * 4096)
+    (disk_state / supervisor.NODE_DISK_RECORD).write_text(json.dumps(sample))
+    monkeypatch.setattr(socket, "gethostname", lambda: "remote-reader")
+    assert service.node_disk_admission_hold() is None
+    assert supervisor.node_disk_obligation("fixture") is None
+
+
+@pytest.mark.parametrize(
+    "damage",
+    [
+        "no-time",
+        "bad-time",
+        "future-time",
+        "wrong-job",
+        "wrong-node",
+        "bad-metrics",
+        "contradictory-reserve",
+    ],
+)
+def test_remote_disk_reading_rejects_invalid_data(
+    disk_state, mounts, monkeypatch, damage
+):
+    _, large = mounts
+    sample = supervisor.node_disk_snapshot(large, reserve_bytes=100 * 4096)
+    if damage == "no-time":
+        sample.pop("utc")
+    elif damage == "bad-time":
+        sample["utc"] = "not a timestamp"
+    elif damage == "future-time":
+        sample["utc"] = (datetime.now(UTC) + timedelta(hours=1)).isoformat()
+    elif damage == "wrong-job":
+        sample["job_id"] = "departed-job"
+    elif damage == "wrong-node":
+        sample["node"] = "departed-host"
+    elif damage == "bad-metrics":
+        sample["free_bytes"] = "unknown"
+    elif damage == "contradictory-reserve":
+        sample["under_reserve"] = True
+    (disk_state / supervisor.NODE_DISK_RECORD).write_text(json.dumps(sample))
+    monkeypatch.setattr(socket, "gethostname", lambda: "remote-reader")
+    assert service.node_disk_admission_hold()["kind"] == "node-disk-unreadable"
+
+
+@pytest.mark.parametrize("state", ["missing", "expired"])
+def test_both_obligation_readers_record_unavailable_disk_readings(
+    disk_state, mounts, state
+):
+    from reckon.crew import obligation_snapshot, obligations
+
+    if state == "expired":
+        _, large = mounts
+        sample = supervisor.node_disk_snapshot(large, reserve_bytes=100 * 4096)
+        sample["utc"] = (datetime.now(UTC) - timedelta(hours=1)).isoformat()
+        (disk_state / supervisor.NODE_DISK_RECORD).write_text(json.dumps(sample))
+    kind = "node-disk-stale" if state == "expired" else "node-disk-unreadable"
+    direct = obligations.obligations("fixture", "fixture-session")
+    published = obligation_snapshot.payload_for(
+        obligation_snapshot.fleet_state("fixture"), "fixture-session"
+    )
+    assert [
+        row for row in direct["obligations"] if row["kind"].startswith("node-disk-")
+    ] == [
+        row for row in published["obligations"] if row["kind"].startswith("node-disk-")
+    ]
+    assert [
+        row["kind"]
+        for row in direct["obligations"]
+        if row["kind"].startswith("node-disk-")
+    ] == [kind]
+
+
+def test_flight_disk_reading_age_default_and_override(disk_state):
+    from reckon import flight
+    from reckon._flight_schema import WorktreeConfig
+
+    assert supervisor.node_disk_sample_max_age_seconds(flight.resolve().config) == 180
+    assert (
+        supervisor.node_disk_sample_max_age_seconds(
+            {"worktree": {"node_tmp_sample_max_age_seconds": 17}}
+        )
+        == 17
+    )
+    with pytest.raises(ValueError, match="greater than or equal to 1"):
+        WorktreeConfig(node_tmp_sample_max_age_seconds=0)
+
+
+def test_remote_queued_launch_waits_until_a_fresh_sample_arrives(
+    disk_state, mounts, tmp_path, monkeypatch
+):
+    from reckon.crew import queue_admission, runs
+    from tests import test_each_admission_pass_records_its_verdict as fixtures
+
+    queue_root = tmp_path / "queue-fixture"
+    queue_root.mkdir()
+    repository = fixtures.admit_repo.__wrapped__(queue_root, monkeypatch)
+    lane = queue_root / "lane.json"
+    fixtures._write_lane(lane, fixtures._session_lane(1))
+    _, resolve = fixtures._config_with_lane(lane)
+    pointer = fixtures._queue(repository)
+    runs.queue_dispatch(pointer)
+    monkeypatch.setattr(socket, "gethostname", lambda: "remote-reader")
+    launched = []
+
+    def launch(queued, **kwargs):
+        launched.append(queued["run_id"])
+        return runs._mutate_pointer(
+            queued["run_id"], lambda row: {**row, "phase": "working"}
+        )
+
+    monkeypatch.setattr(queue_admission, "_launch_queued", launch)
+    missing = queue_admission.admit_once(run_id=pointer["run_id"], config_for=resolve)
+    assert missing["held"] == [pointer["run_id"]]
+    assert missing["obligations"][0]["kind"] == "node-disk-unreadable"
+    assert launched == []
+    assert runs.read_pointer(pointer["run_id"])["phase"] == "queued"
+
+    _, large = mounts
+    sample = supervisor.node_disk_snapshot(large, reserve_bytes=100 * 4096)
+    sample["node"] = json.loads((disk_state / "record.json").read_text())["node"]
+    (disk_state / supervisor.NODE_DISK_RECORD).write_text(json.dumps(sample))
+    admitted = queue_admission.admit_once(run_id=pointer["run_id"], config_for=resolve)
+    assert admitted["launched"] == [pointer["run_id"]]
+    assert admitted["obligations"] == []
+    assert launched == [pointer["run_id"]]
+
+
+def test_remote_admission_holds_if_the_fleet_record_disappears_during_the_read(
+    disk_state, monkeypatch
+):
+    monkeypatch.setattr(socket, "gethostname", lambda: "remote-reader")
+    monkeypatch.setattr(supervisor, "published_node_disk_sample", lambda: None)
+    assert service.node_disk_admission_hold()["kind"] == "node-disk-unreadable"

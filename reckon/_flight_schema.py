@@ -739,6 +739,7 @@ class WorktreeConfig(ConfiguredBaseModel):
     """
     cleanup: WorktreeCleanup | None = Field(default=None)
     node_tmp_reserve_bytes: int | None = Field(default=None, description="""Minimum usable bytes on the fleet node local disk; lower free space holds new launches and raises an obligation. Defaults to 8 GiB.""", ge=0)
+    node_tmp_sample_max_age_seconds: int | None = Field(default=None, description="""Maximum age in seconds of a published fleet local disk reading. Missing, unreadable or older samples hold remote admission and raise a distinct reading obligation. Defaults to 180 seconds, three default one-minute sampling periods.""", ge=1)
     scratch_min_free_bytes: int | None = Field(default=None, description="""Minimum free bytes on the worker scratch filesystem before a dispatch.""", ge=0)
     scratch_min_free_pct: int | None = Field(default=None, description="""Minimum free percentage on the worker scratch filesystem before a dispatch.""", ge=0, le=100)
 
