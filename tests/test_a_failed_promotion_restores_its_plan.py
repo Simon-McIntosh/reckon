@@ -646,3 +646,52 @@ def test_a_successful_promotion_can_commit_a_plan_absent_from_head(
     result = _promote(repository)
     assert result["plan_comment"]["recorded"]
     assert "Delivered the change" in git(repository, "show", f"HEAD:{PLAN_PATH}")
+
+
+def test_a_staging_refusal_restores_a_plan_the_commit_owner_removed(
+    repository: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import subprocess
+
+    from reckon.crew import promotion_scope
+
+    git(repository, "rm", "--cached", "--", PLAN_PATH)
+    git(repository, "commit", "-q", "-m", "test: leave plan untracked")
+    before = _plan_snapshot(repository)
+    monkeypatch.setattr(
+        promotion_scope,
+        "_stage_landing_writes",
+        lambda *args, **kwargs: subprocess.CompletedProcess(
+            ["git", "add"], 128, "", "injected staging refusal"
+        ),
+    )
+    with pytest.raises(CrewError, match="injected staging refusal"):
+        _promote(repository)
+    assert _plan_snapshot(repository) == before
+
+
+def test_a_refusal_preserves_a_deletion_the_commit_owner_did_not_report(
+    repository: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = repository / PLAN_PATH
+
+    def delete_then_refuse(*args, **kwargs):
+        path.unlink()
+        raise CrewError("injected refusal after an unowned deletion")
+
+    monkeypatch.setattr(promotion, "_commit_landing_writes", delete_then_refuse)
+    with pytest.raises(CrewError, match="preserving the other writer's deletion"):
+        _promote(repository)
+    assert not path.exists()
+
+
+def test_a_staged_untracked_plan_is_refused_without_removing_it(
+    repository: Path,
+) -> None:
+    git(repository, "rm", "--cached", "--", PLAN_PATH)
+    git(repository, "commit", "-q", "-m", "test: leave plan untracked")
+    git(repository, "add", "--", PLAN_PATH)
+    before = _plan_snapshot(repository)
+    with pytest.raises(CrewError, match="uncommitted change"):
+        _promote(repository)
+    assert _plan_snapshot(repository) == before

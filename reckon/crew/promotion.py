@@ -1859,6 +1859,7 @@ class _PlanWriteSnapshot:
     head_content: bytes | None
     commit_attempted: bool = False
     rollback_content: bytes | None = None
+    rollback_removed: bool = False
     expected_content: bytes | None = None
 
     def index_entry(self) -> str:
@@ -1876,9 +1877,9 @@ class _PlanWriteSnapshot:
                 "plan content changed after the snapshot; preserving the other writer's plan"
             )
 
-    def require_owned_index(self, current: bytes) -> None:
+    def require_owned_index(self, current: bytes | None) -> None:
         entry = self.index_entry()
-        if entry == self.index:
+        if entry == self.index or (self.rollback_removed and not entry):
             return
         if self.commit_attempted:
             relative = self.path.relative_to(self.checkout).as_posix()
@@ -1922,10 +1923,16 @@ class _PlanWriteSnapshot:
                     f"Unable to create '{lock_path}': File exists",
                 )
             try:
-                current = self.path.read_bytes()
-                self.require_owned_content(current)
+                current = self.path.read_bytes() if self.path.exists() else None
+                if current is None:
+                    if not self.rollback_removed:
+                        raise CrewError(
+                            "plan was removed after the snapshot; preserving the other writer's deletion"
+                        )
+                else:
+                    self.require_owned_content(current)
                 self.require_owned_index(current)
-                if self.path.stat().st_mode != self.mode:
+                if current is not None and self.path.stat().st_mode != self.mode:
                     raise CrewError(
                         "plan mode changed after the snapshot; preserving the other writer's plan"
                     )
@@ -2084,9 +2091,20 @@ def _commit_with_plan_snapshot(
     checkpoint.commit_attempted = True
     try:
         return _commit_landing_writes(**kwargs)
-    except BaseException:
+    except BaseException as exc:
+        rollback = getattr(exc, LANDING_ROLLBACK_ATTRIBUTE, {})
         if (
+            checkpoint.head_content is None
+            and isinstance(rollback, Mapping)
+            and rollback.get(str(checkpoint.path)) is True
+            and not checkpoint.path.exists()
+        ):
+            # The commit owner's receipt proves it removed this path while
+            # restoring a plan absent from HEAD. Restore its saved preimage.
+            checkpoint.rollback_removed = True
+        elif (
             checkpoint.head_content is not None
+            and checkpoint.path.is_file()
             and checkpoint.path.read_bytes() == checkpoint.head_content
         ):
             checkpoint.rollback_content = checkpoint.head_content
