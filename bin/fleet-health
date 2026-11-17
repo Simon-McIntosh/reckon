@@ -75,7 +75,7 @@ fi
 ms_since() { echo $(( ($(date +%s%N) - $1) / 1000000 )); }
 over_load() { awk -v l="$1" -v t="$2" 'BEGIN { exit !(l > t) }'; }
 
-header=$'utc\tload1\tload5\tprocs_running\tprocs_blocked\tdstate\tmem_avail_mb\tswap_free_mb\tjob_mem_mb\tjob_mem_max_mb\thome_stat_ms\tslurmd_ms\tctld_ping\ttasks\tpython_procs\ttop_parent\twritable_interpreters\tjob_oom_kill'
+header=$'utc\tload1\tload5\tprocs_running\tprocs_blocked\tdstate\tmem_avail_mb\tswap_free_mb\tjob_mem_mb\tjob_mem_max_mb\thome_stat_ms\tslurmd_ms\tctld_ping\ttasks\tpython_procs\ttop_parent\twritable_interpreters\tjob_oom_kill\tsession_scratch_bytes'
 if [ -s "$out" ] && [ "$(head -1 "$out")" != "$header" ]; then
     mv -f "$out" "${out%.tsv}.$(date -u +%Y%m%dT%H%M%SZ).tsv"
 fi
@@ -86,6 +86,7 @@ last_kills=$(awk -F '\t' 'NR > 1 && $18 ~ /^[0-9]+$/ {n=$18} END {print n}' "$ou
 last_snapshot=0
 count=0
 while :; do
+    session_scratch=$(timeout 20 "${RECKON_SHIM_PYTHON:-python3}" -m reckon.crew.fleet_supervisor sample-session-scratch) || session_scratch=unknown
     writable_interpreters=$(timeout 20 "${RECKON_SHIM_PYTHON:-python3}" -m reckon.crew.fleet_supervisor check-interpreters) || writable_interpreters=unknown
     read -r load1 load5 _ < "$procdir/loadavg"
     running=$(awk '/^procs_running/ {print $2}' "$procdir/stat")
@@ -113,9 +114,9 @@ while :; do
     top_args=$(ps -o args= -p "${top_pid:-0}" 2>/dev/null | tr -d '\t\n' | cut -c1-80)
     top="${top_n:-0}:${top_pid:--}:${top_args:--}"
     now=$(date -u +%FT%TZ)
-    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$now" \
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$now" \
         "$load1" "$load5" "$running" "$blocked" "$dstate" "$avail" "$swap" \
-        "$jobmem" "$jobmax" "$home" "$slurmd" "${ping:-none}" "$tasks" "$python" "$top" "$writable_interpreters" "$kills" >> "$out"
+        "$jobmem" "$jobmax" "$home" "$slurmd" "${ping:-none}" "$tasks" "$python" "$top" "$writable_interpreters" "$kills" "$session_scratch" >> "$out"
 
     reason=""
     [ "$tasks" -gt "$TASKS_ALERT" ] && reason="$tasks tasks"

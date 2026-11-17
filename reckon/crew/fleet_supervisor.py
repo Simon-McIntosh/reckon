@@ -107,11 +107,9 @@ CATCH_ALL_FLEET = "fleet"
 FLEETS_DIRECTORY_NAME = "fleets"
 FLEETS_FILE_NAME = "fleets.json"
 
-# The sessions' temporary files live in the node's RAM-backed /dev/shm rather
-# than on the shared filesystem, in one directory per allocation so a later
-# fleet on the same node can tell its own from a dead one's. Worker scratch is
-# not here: it can run to gigabytes and stays on the node's /tmp disk.
-SESSION_TMP_ROOT = Path("/dev/shm")  # noqa: S108 - node-local, never shared
+# Session scratch is disk-backed and private to its allocation and session.
+# Memory-backed temporary files count against the allocation's memory limit.
+SESSION_TMP_ROOT = Path("/tmp")  # noqa: S108 - node-local, never shared
 SESSION_TMP_ROOT_ENV = "FLEET_SESSION_TMP_ROOT"
 SESSION_TMP_INFIX = "-fleet-"
 
@@ -495,28 +493,167 @@ def session_tmp_root(environ: Mapping[str, str] | None = None) -> Path:
     return Path(environ.get(SESSION_TMP_ROOT_ENV) or SESSION_TMP_ROOT)
 
 
-def session_tmp_directory(environ: Mapping[str, str] | None = None) -> Path:
-    """The allocation's own directory for session temporary files on /dev/shm."""
+def session_tmp_directory(
+    environ: Mapping[str, str] | None = None, session: str | None = None
+) -> Path:
+    """The allocation's disk directory, optionally narrowed to one session."""
     environ = os.environ if environ is None else environ
     job = (environ.get("SLURM_JOB_ID") or "").strip() or "nojob"
-    return session_tmp_root(environ) / f"{os.getuid()}{SESSION_TMP_INFIX}{job}"
-
-
-def prepare_session_tmp(environ: Mapping[str, str] | None = None) -> Path:
-    """Create the session temp directory, or fall back to the node's /tmp.
-
-    Both are node-local. /dev/shm is preferred because it keeps the sessions'
-    small, frequent temporary writes off every disk; a node without a writable
-    /dev/shm uses /tmp instead rather than failing the fleet.
-    """
-    directory = session_tmp_directory(environ)
-    try:
-        directory.mkdir(parents=True, exist_ok=True)
-        os.chmod(directory, 0o700)
-    except OSError as exc:
-        log(f"session temp {directory} unavailable ({exc}); using /tmp")
-        return Path("/tmp")  # noqa: S108 - the node's own tmp, never shared
+    if not SAFE_NAME.fullmatch(job):
+        raise ValueError("unsafe allocation name")
+    directory = session_tmp_root(environ) / f"{os.getuid()}{SESSION_TMP_INFIX}{job}"
+    if session is not None:
+        if not SAFE_NAME.fullmatch(session):
+            raise ValueError("unsafe session name")
+        directory /= session
     return directory
+
+
+def _scratch_disk(directory: Path) -> Path:
+    """Reject memory-backed mounts, including paths reached through symlinks."""
+    resolved = directory.resolve()
+    mount_type = ""
+    longest = -1
+    for line in Path("/proc/self/mountinfo").read_text().splitlines():
+        before, after = line.split(" - ", 1)
+        mount = Path(before.split()[4].replace("\\040", " "))
+        if resolved.is_relative_to(mount) and len(str(mount)) > longest:
+            longest, mount_type = len(str(mount)), after.split()[0]
+    if mount_type not in {"ext4", "xfs", "btrfs", "zfs", "overlay"}:
+        raise ValueError(
+            f"session scratch requires local disk: {resolved} ({mount_type})"
+        )
+    return resolved
+
+
+def prepare_session_tmp(
+    environ: Mapping[str, str] | None = None, session: str | None = None
+) -> Path:
+    """Create private scratch on local disk; never fall back to untracked scratch."""
+    directory = session_tmp_directory(environ, session)
+    _scratch_disk(directory)
+    if directory.is_symlink():
+        raise ValueError(f"session scratch directory is a symlink: {directory}")
+    directory.mkdir(parents=True, exist_ok=True)
+    if directory.stat().st_uid != os.getuid():
+        raise ValueError(f"session scratch directory has another owner: {directory}")
+    os.chmod(directory, 0o700)
+    return directory
+
+
+def session_scratch_limits() -> tuple[int, float]:
+    """The per-session bytes and aggregate disk share from host flight layers."""
+    from reckon import flight
+
+    config = flight.resolve().config["session_scratch"]
+    return int(config["max_bytes"]), float(config["disk_share"])
+
+
+def session_scratch_sample(
+    environ: Mapping[str, str] | None = None,
+    *,
+    limits: tuple[int, float] | None = None,
+) -> dict[str, Any]:
+    """Sample allocated file bytes without following links or treating errors as zero.
+
+    The largest immediate directory names a subtree the session can act on.
+    Files directly in the session directory are attributed to that directory.
+    A bounded walk refuses an incomplete reading rather than publishing a zero.
+    """
+    directory = prepare_session_tmp(environ)
+    max_bytes, share = session_scratch_limits() if limits is None else limits
+    disk = shutil.disk_usage(directory)
+    deadline = time.monotonic() + 15
+    sessions = []
+    for child in sorted(directory.iterdir()):
+        if child.is_symlink() or not child.is_dir():
+            continue
+        groups: dict[str, int] = {}
+        for root, dirs, files in os.walk(
+            child, followlinks=False, onerror=_scratch_walk_error
+        ):
+            if time.monotonic() > deadline:
+                raise TimeoutError("session scratch sample exceeded 15 seconds")
+            dirs[:] = [name for name in dirs if not (Path(root) / name).is_symlink()]
+            relative = Path(root).relative_to(child)
+            group = child if not relative.parts else child / relative.parts[0]
+            for name in files:
+                if time.monotonic() > deadline:
+                    raise TimeoutError("session scratch sample exceeded 15 seconds")
+                path = Path(root) / name
+                try:
+                    info = path.lstat()
+                except FileNotFoundError:
+                    continue
+                if stat.S_ISREG(info.st_mode):
+                    groups[str(group)] = (
+                        groups.get(str(group), 0) + info.st_blocks * 512
+                    )
+        used = sum(groups.values())
+        largest = max(groups, key=groups.get) if groups else None
+        sessions.append(
+            {
+                "session": child.name,
+                "path": str(child),
+                "bytes": used,
+                "largest_directory": largest,
+                "largest_bytes": groups.get(largest, 0),
+            }
+        )
+    total = sum(row["bytes"] for row in sessions)
+    cap = int(disk.total * share)
+    obligations = [
+        {
+            "kind": "session-scratch-over-bound",
+            **row,
+            "bound_bytes": max_bytes,
+            "total_bytes": total,
+            "disk_share_bytes": cap,
+            "reason": f"session {row['session']} scratch {row['bytes']} bytes; "
+            f"bound {max_bytes}; total {total}/{cap}; "
+            f"reduce largest directory {row['largest_directory']}",
+        }
+        for row in sessions
+        if row["bytes"] > max_bytes or (total >= cap and row["bytes"])
+    ]
+    return {
+        "utc": _utc_now(),
+        "job_id": (environ or os.environ).get("SLURM_JOB_ID", ""),
+        "sessions": sessions,
+        "total_bytes": total,
+        "bound_bytes": max_bytes,
+        "disk_share_bytes": cap,
+        "obligations": obligations,
+    }
+
+
+def _scratch_walk_error(error: OSError) -> None:
+    raise error
+
+
+def sample_session_scratch(environ: Mapping[str, str] | None = None) -> int:
+    """Persist the session readings and surface current duties in the fleet notice."""
+    environ = os.environ if environ is None else environ
+    try:
+        sample = session_scratch_sample(environ)
+    except (OSError, ValueError, TimeoutError) as exc:
+        alert(f"session scratch sample unknown: {exc}", environ)
+        print("unknown")
+        return 1
+    state = state_directory(environ)
+    health = state / "health"
+    health.mkdir(parents=True, exist_ok=True)
+    path = health / f"{sample['job_id']}-{_short_hostname()}-session-scratch.jsonl"
+    with path.open("a", encoding="utf-8") as output:
+        output.write(json.dumps(sample) + "\n")
+    for item in sample["obligations"]:
+        alert(f"{sample['utc']} obligation: {item['reason']}", environ)
+    if sample["obligations"]:
+        (state / NOTICE_NAME).write_text(
+            "\n".join(item["reason"] for item in sample["obligations"]) + "\n"
+        )
+    print(sample["total_bytes"])
+    return 0
 
 
 def remove_stale_session_tmp(environ: Mapping[str, str] | None = None) -> list[Path]:
@@ -589,8 +726,8 @@ def prepare_runtime(environ: MutableMapping[str, str] | None = None) -> Path:
     environ["ZELLIJ_SOCKET_DIR"] = str(socket_dir)
     # Node-local scratch is pinned rather than taken from TMPDIR: the allocator
     # may point TMPDIR at shared storage, and the fleet's runtime sockets must
-    # live on the node that holds them. The sessions inherit it, so their
-    # temporary files stay on the node, in /dev/shm where it is writable.
+    # live on the node that holds them. Session starts narrow scratch to their
+    # own child directory; the supervisor uses the allocation directory.
     environ["TMPDIR"] = str(prepare_session_tmp(environ))
     environ["FLEET_JOB_ID"] = environ.get("SLURM_JOB_ID", "")
     return runtime
@@ -2604,6 +2741,16 @@ def start_session(
     if session_running(name, environ):
         log(f"session {name} already running")
         return 0
+    child_environ = dict(os.environ if environ is None else environ)
+    try:
+        scratch = session_scratch_sample(child_environ)
+        if scratch["total_bytes"] >= scratch["disk_share_bytes"]:
+            log(f"refused session {name}: scratch reached its configured disk share")
+            return 1
+        child_environ["TMPDIR"] = str(prepare_session_tmp(child_environ, name))
+    except (OSError, ValueError, TimeoutError) as exc:
+        log(f"refused session {name}: {exc}")
+        return 1
     suffix = f" with layout {layout}" if layout else ""
     log(f"starting zellij session {name}{suffix}")
     argv = ["zellij"]
@@ -2621,7 +2768,7 @@ def start_session(
                 stdout=started,
                 stderr=started,
                 check=False,
-                env=None if environ is None else dict(environ),
+                env=child_environ,
                 timeout=ZELLIJ_CREATE_SECONDS,
             )
         except subprocess.TimeoutExpired:
@@ -2632,7 +2779,7 @@ def start_session(
     if result.returncode != 0:
         log(f"zellij start failed for {name}")
         return 1
-    size_tabs_with_a_client(name, environ)
+    size_tabs_with_a_client(name, child_environ)
     return 0
 
 
@@ -3241,6 +3388,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Enter either the one-shot session start or the request loop."""
     arguments = list(sys.argv[1:] if argv is None else argv)
     environ = os.environ
+    if arguments == ["sample-session-scratch"]:
+        return sample_session_scratch(environ)
     if arguments == ["check-interpreters"]:
         return sample_interpreter_permissions()
     if arguments and arguments[0] == START_MODE:
