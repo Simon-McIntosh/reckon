@@ -4216,6 +4216,10 @@ def _complete_landing_group(request: Mapping[str, Any]) -> dict[str, Any]:
                     raise runs.CrewError(
                         f"group member {run_id} was promoted at a different head"
                     )
+                if row.get("gate") != "passed":
+                    raise runs.CrewError(
+                        f"group member {run_id} has no passing promotion"
+                    )
                 member["promotion"] = {"project": project, "record": dict(row)}
                 continue
             current, _tree = queue_landing.recovery._review_head_and_tree(

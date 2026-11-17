@@ -6,6 +6,7 @@ import json
 import shlex
 import subprocess
 import sys
+import threading
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -109,7 +110,12 @@ def fleet(tmp_path, monkeypatch):
         assert run_id not in state.refused
         pointer = runs.read_pointer(run_id)
         head = git(Path(pointer["worktree"]), "rev-parse", "HEAD")
-        row = {**pointer, "commits": [head], "promoted_revision": head}
+        row = {
+            **pointer,
+            "commits": [head],
+            "promoted_revision": head,
+            "gate": "passed",
+        }
         path = ledger.run_path(PROJECT, run_id, repo)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(row))
@@ -433,5 +439,134 @@ def test_recovery_refuses_a_ledger_row_for_another_delivered_head(fleet, monkeyp
         lambda *args: {"promoted_revision": fleet.base},
     )
     with pytest.raises(runs.CrewError, match="different head"):
+        commands._complete_landing_group(_request(fleet))
+    assert not fleet.measured and not fleet.calls
+
+
+def test_conflict_repair_names_the_peer_commit_and_reuses_the_repair_gate(
+    fleet, monkeypatch
+):
+    from reckon.crew import recovery_repair_dispatch, resumption
+
+    first = fleet.deliver("alpha", 1)
+    fleet.deliver("beta", 2)
+    assert commands._complete_landing_group(_request(fleet))["ok"]
+    conflicting = fleet.deliver("alpha", 7)
+    primary = git(fleet.repo, "rev-parse", "HEAD")
+    pointer = conflicting["pointer"]
+    seen = []
+    monkeypatch.setattr(
+        recovery_repair_dispatch, "_reviewed_run_is_busy", lambda pointer: ""
+    )
+    monkeypatch.setattr(
+        resumption, "_resume", lambda *args, **kwargs: seen.append(kwargs["advice"])
+    )
+    with pytest.raises(runs.CrewError, match="merge-conflict"):
+        promotion_requests._execute_command(conflicting["options"])
+    pointer = runs.read_pointer(pointer["run_id"])
+    repair = pointer["merge_conflict"]
+    assert len(seen) == 1
+    assert "sample.py" in seen[0] and first["head"] in seen[0]
+    assert first["head"] in [item["sha"] for item in repair["peer_commits"]]
+    tree = Path(pointer["worktree"])
+    merged = subprocess.run(
+        ["git", "-C", str(tree), "merge", "--no-commit", "--no-ff", primary],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert merged.returncode == 1
+    # Keep the primary function and the repaired delivery's additional intent.
+    (tree / "sample.py").write_text(
+        (fleet.repo / "sample.py").read_text() + "\nREPAIRED = True\n"
+    )
+    head = _commit(tree, "test: combine the conflicting intent")
+    log = tree / "repair.log"
+    checked = subprocess.run(
+        [sys.executable, "-m", "pytest", "-q", "tests/test_sample.py"],
+        cwd=tree,
+        env={"PATH": str(Path(sys.executable).parent), "PYTHONPATH": "."},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert checked.returncode == 0
+    gate_command = shlex.join(
+        [sys.executable, "-m", "pytest", "-q", "tests/test_sample.py"]
+    )
+    log.write_text(
+        f"# revision: {head}\n# command: {gate_command}\n" + checked.stdout + "EXIT=0\n"
+    )
+    manifest = tree / "manifest.md"
+    manifest.write_text(
+        f"status: complete\ncommits: [{conflicting['head']}, {head}]\ntests: {gate_command}\ntest_logs: {json.dumps([str(log)])}\n"
+    )
+    pointer["manifest_path"] = str(manifest)
+    runs._write_json(runs.pointer_path(pointer["run_id"]), pointer)
+    monkeypatch.setattr(
+        queue_landing.recovery,
+        "classify_pointer",
+        lambda pointer: {"manifest_status": "complete", "manifest_commits": [head]},
+    )
+    assert (
+        pending_landing._delivered_repair(
+            pointer, conflicting["head"], repair, fleet.repo
+        )
+        == head
+    )
+    # Finishing this repair invokes its fresh gate, not another promotion/review.
+    promoted_before = list(fleet.calls)
+    result = pending_landing.finish_pending_landings()
+    assert result[0]["status"] == "finished", result
+    assert fleet.calls == promoted_before
+    assert git(fleet.repo, "ls-remote", "origin", "refs/heads/main").split()[0] == git(
+        fleet.repo, "rev-parse", "HEAD"
+    )
+    assert "REPAIRED = True" in (fleet.repo / "sample.py").read_text()
+
+
+def test_a_group_and_an_individual_landing_share_the_branch_lease(fleet):
+    first = fleet.deliver("alpha", 1)
+    second = fleet.deliver("beta", 2)
+    third = fleet.deliver("gamma", 3)
+    group = _request(fleet, [first, second])
+    promotion_requests.request_promotion(
+        group["run_id"], kind="landing-group", options=group["options"]
+    )
+    promotion_requests.request_promotion(
+        third["pointer"]["run_id"], kind="command", options=third["options"]
+    )
+    entered, release = threading.Event(), threading.Event()
+    active = []
+
+    def execute(request):
+        active.append(request["run_id"])
+        if request["kind"] == "landing-group":
+            entered.set()
+            assert release.wait(10)
+        return {"ok": True}
+
+    service = promotion_requests.PromotionService(width=2, execute=execute)
+    try:
+        assert service.tick() == [group["run_id"]]
+        assert entered.wait(5)
+        assert active == [group["run_id"]]
+    finally:
+        release.set()
+        service.settle(15)
+    assert service.tick() == [third["pointer"]["run_id"]]
+    service.settle(15)
+    assert active == [group["run_id"], third["pointer"]["run_id"]]
+
+
+def test_a_failed_promotion_row_does_not_admit_a_group(fleet, monkeypatch):
+    first = fleet.deliver("alpha", 1)
+    fleet.deliver("beta", 2)
+    monkeypatch.setattr(
+        pending_landing,
+        "_promoted_row",
+        lambda *args: {"promoted_revision": first["head"], "gate": "failed"},
+    )
+    with pytest.raises(runs.CrewError, match="no passing promotion"):
         commands._complete_landing_group(_request(fleet))
     assert not fleet.measured and not fleet.calls

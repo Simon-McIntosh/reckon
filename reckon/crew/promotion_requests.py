@@ -866,8 +866,15 @@ class PromotionService:
                 continue
             branch = None
             members = (request.get("options") or {}).get("members") or ()
+            repository = ""
             if request.get("kind") == "landing-group" and members:
                 repository = str(members[0]["pointer"]["repo"])
+            elif (request.get("options") or {}).get("land"):
+                with suppress(CrewError):
+                    repository = str(
+                        runs.read_pointer(str(request["run_id"])).get("repo") or ""
+                    )
+            if repository:
                 identity = hashlib.sha256(repository.encode()).hexdigest()
                 branch = self._claim(f"promotion-branch-{identity}")
                 if branch is None:
