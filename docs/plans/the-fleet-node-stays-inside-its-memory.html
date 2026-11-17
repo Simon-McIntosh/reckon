@@ -25,7 +25,7 @@
   <title>The Fleet Node Stays Inside Its Memory | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="19">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -196,6 +196,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261117T081959314526-control-passes-profile-without-live-writes" data-who="reckon-build" data-when="2026-11-17T11:58:09Z">
     <div class="r-comment-body"><p>Added a copied-home profiler and repaired refused single-tick propagation while testing the existing positive finished marker. Four passes exit 0: one/eight-entry dispatch, admission and station peak at RSS 5.891/6.712/15.846/31.649 GB and traced 1.861/1.851/3.348/6.648 GB; JSON decoding is the largest sampled allocation site. Station completes in 2512.22s with its finished marker and equal copied-source inventory, exceeding the original 1800s target under the authorised longer replay. Repair gate passes 80 tests, importer delta adds zero failing IDs, and bypassing the real-home guard fails five controls; original-live-home equality is not required while peers write.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261117T144144618510-review-of-the-admission-service-holds-steady-memory-13b1d2bdc870" data-who="reckon-build" data-when="2026-11-17T14:43:49.014Z">
+    <div class="r-comment-body"><p>Reviewed r-20261117T111352964502-the-admission-service-holds-steady-memory at base 4b7aa8a071ed and head 13b1d2bdc870: goal_fidelity 16, evidence 12, scope_discipline 19, durability 14, fit 18, reuse 19, no blocking finding, five non-blocking findings and zero added failures against the reviewed run&#x27;s own arms.</p></div>
 </div>
 </section>
 </main>
