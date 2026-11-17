@@ -1,0 +1,71 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: baseline_suite-1794923154130834061.log at f93503d8 records 70 passed EXIT=0 with failure_ids [], after_suite-1794923229158996809.log at 670bee36 records 73 passed EXIT=0 with failure_ids [], so the set difference is empty (0).",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:1389 (complete calls _evaluate_suite_delta with gate_verdict=verdict)",
+    "reckon/crew/promotion.py:1022-1031 (complete derives the measured outcome from _measurement_reason)"
+  ],
+  "completed_at": "2026-11-17T14:02:42.987Z",
+  "dispatched_at": "2026-11-17T14:02:14Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "comment and docstring rewording in the touched modules; behaviour unchanged and reviewed",
+      "recorded_at": "2026-11-17T14:13:38.902960+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the assertion still discriminates a baseline or empty delta; a computed-versus-copied check would be stronger but the negative control already proves the exemption path",
+      "recorded_at": "2026-11-17T14:13:40.736514+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "2024",
+      "severity": "non-blocking",
+      "text": "non-blocking: the commit also rewrites unrelated prose comments ('staged writer' -> 'index writer' at promotion.py:2024, and the docstring rewrites at promotion.py:2201, 2893, 3286 and promotion_records.py:917, 938), none of which the goal implies and none of which any test covers."
+    },
+    {
+      "file": "tests/test_a_measurement_run_never_lands.py",
+      "line": "507",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion `row[\"suite_delta\"][\"added_failure_ids\"] == [failure_id]` compares against the id the test itself wrote into the after arm; it does discriminate a regression that records the baseline set or an empty set, but it cannot tell a computed delta from a copy of the after arm's ids."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commits 4984ef527c and 183 lines against base f93503d8; the change adds _failed_measurement_gate and threads gate_verdict into _evaluate_suite_delta, adjusts the measured-outcome text, and adds two tests plus a third passing-gate case.",
+    "done_when": "the done-when names two cases (failed measurement records added ids; ordinary run still refused) plus a negative control; tests/test_a_measurement_run_never_lands.py:477 and :507 implement both and the manifest's focused log records their pass, so the gate asserts the stated measure.",
+    "goal": "the node goal is to deliver section s16 as its done-when states: a failed measurement run records its added suite failures; reckon/crew/promotion_records.py:1327 _failed_measurement_gate and promotion_records.py:1630 gate the added-failure refusal on measurement-plus-failed-gate, so the goal is met.",
+    "manifest": "read; it reports status complete, a focused gate of 73 passed EXIT=0, base arm 70 passed EXIT=0, after arm 73 passed EXIT=0, a negative-control log red with suite-delta-refused naming tests/test_sample.py::test_new_regression, and every named log exists on disk.",
+    "write_paths": "the declared paths are reckon/crew/promotion_records.py, reckon/crew/promotion.py, tests/test_a_measurement_run_never_lands.py and an unused fragment/figure pair; the diff touches exactly the first three, all inside the fence, and writes no fragment or figure."
+  },
+  "justifications": {
+    "durability": "tests/test_a_measurement_run_never_lands.py:477 reddens if _failed_measurement_gate returns False for a failed measurement run, which negative-control.log demonstrates with the predicate forced false.",
+    "evidence": "the gate command in the manifest names the three test files and its receipts baseline_suite-1794923154130834061.log (70 passed) and after_suite-1794923229158996809.log (73 passed) are on disk with EXIT=0.",
+    "fit": "the new helper reckon/crew/promotion_records.py:1327 follows the module's leading-underscore predicate idiom beside _writes_product_source and _scoped_suite_command.",
+    "goal_fidelity": "reckon/crew/promotion_records.py:1630 now exempts the added-failure refusal only when the run is a measurement run and the gate verdict is failed, which is the behaviour the section's done-when states.",
+    "reuse": "no existing predicate for a failed measurement gate exists; a search of reckon/crew for measurement-plus-suite-delta logic found only _evaluate_suite_delta, which the addition extends rather than duplicates.",
+    "scope_discipline": "reckon/crew/promotion.py:2024 and promotion_records.py:917 carry comment-only rewrites unrelated to the goal, inside the fence but outside what it implies."
+  },
+  "project": "reckon",
+  "review_node": "review-of-failed-measurement-is-recorded-s16-670bee36297f",
+  "review_run_id": "r-20261117T140034068651-review-of-failed-measurement-is-recorded-s16-670bee36297f",
+  "reviewed_base_sha": "f93503d87092ad0440bff2c6a1aff8d184f8eedd",
+  "reviewed_head_sha": "670bee36297f36201ad31a53473d6a3d6fa9d9d8",
+  "reviewed_run_id": "r-20261117T125353986055-failed-measurement-is-recorded-s16",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 11
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T14:38:42.442181+00:00",
+  "total": 100
+}
