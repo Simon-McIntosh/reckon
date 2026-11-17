@@ -20,7 +20,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-fleet-node-stays-in-service">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-worker-or-its-job-cannot-overwrite-shared-files#s7&quot;],&quot;s8&quot;:[&quot;the-fleet-node-stays-inside-its-memory#s7&quot;],&quot;s9&quot;:[&quot;the-fleet-node-stays-inside-its-memory#s7&quot;],&quot;s11&quot;:[&quot;the-fleet-node-stays-inside-its-memory#s2&quot;,&quot;the-fleet-node-stays-inside-its-memory#s3&quot;,&quot;the-fleet-node-stays-inside-its-memory#s4&quot;,&quot;the-fleet-node-stays-inside-its-memory#s5&quot;,&quot;the-fleet-node-stays-inside-its-memory#s6&quot;,&quot;the-fleet-node-stays-inside-its-memory#s8&quot;,&quot;the-fleet-node-stays-inside-its-memory#s9&quot;,&quot;the-fleet-node-stays-inside-its-memory#s10&quot;]}">
   <title>The Fleet Node Stays Inside Its Memory | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -57,7 +57,7 @@
     <p>What is already owned and left alone: <code>the-fleet-node-stays-in-service</code> bounds a worker step at 24 GB; <code>the-monitor-reads-each-fact-once</code> owns the station's retained memory and the admission pass's read of the job's memory against a worker's reservation; <code>a-worker-or-its-job-cannot-overwrite-shared-files</code> §7 gives a worker the composed gate command that §3 here relies on. Resident sizes count shared pages more than once, so no figure above is a promise of memory returned; each section that claims a reduction measures it on the same input before and after.</p>
 
     <h2 id="s2">§2 — Every memory kill is dated and the series outlives the job</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
     <p><strong>Why.</strong> 125 kills happened and not one can be placed in time, so none can be tied to what was running. Every other section here is steered by what kills what.</p>
     <p><strong>Deliverable.</strong> Each one-minute health sample carries the job's memory in use, its limit and its cumulative kill count, so a kill is dated to the minute it happened, and the process table saved nearest to a kill is kept with it. A change in the count becomes an obligation naming the minute and the largest processes at that sample.</p>
     <p><strong>Done when.</strong> A test feeds the sampler a stand-in cgroup whose kill count rises from 3 to 5 between two samples and finds the second row carrying 5, an event dated to that sample, and a retained process table for it; an unchanged count raises nothing. Negative control: with the count field absent the event is not raised and the test fails. In a rehearsal allocation of 2 GiB on <code>all_debug</code>, a stand-in that allocates past the limit produces a dated event within two minutes. The test runs on <code>all_debug</code> with at most <code>-n 4</code>; importers add no failure against the base. Write paths: <code>bin/fleet-health</code>, <code>reckon/crew/fleet_supervisor.py</code>, <code>tests/test_fleet_health.py</code> and <code>tests/test_a_memory_kill_is_dated.py</code>.</p>
@@ -125,6 +125,9 @@
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-11-17T10:53:00Z">
+    <div class="r-comment-body"><p>§2 landed through the crew's own promotion after its review (landing commit <code>859a28b2a1</code>). A memory kill in the fleet job is recorded with its time and victim; reviewed 120 of 120.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261117T083906163283-review-of-a-memory-kill-is-dated-23f77ae28886" data-who="reckon-build" data-when="2026-11-17T08:54:08Z">
     <div class="r-comment-body"><p>Independent exact-revision review complete: all six dimensions 20/20; zero findings; added_failure_count=0 derived from completed base/head logs; ready for coordinator consumption.</p></div>
 </div>
