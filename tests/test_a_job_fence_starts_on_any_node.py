@@ -84,6 +84,7 @@ def rehearsal(tmp_path, monkeypatch):
             worktree=worktree,
             manifest_path=run / "manifest.md",
             writable_directories=[scratch, grant],
+            read_only_binds=[(sealed, sealed)],
         )
         encoded = argv[argv.index(nested_launch.WORKER_FENCE_ENV) + 1]
         yield {
@@ -225,3 +226,46 @@ def test_scheduler_starts_with_absent_local_grant_and_refuses_redirect(rehearsal
     assert receipt["task"]["empty"] and receipt["task"]["redirect_refused"], receipt
     assert receipt["cleanup"]["returncode"] == 0, receipt
     assert _identity(case["decoy"]) == before
+
+
+@pytest.mark.parametrize("option", ["--bind", "--ro-bind"])
+def test_missing_file_source_refuses_before_command(rehearsal, option):
+    case = rehearsal
+    source = case["run"] / "absent-credential"
+    destination = case["run"] / "credential"
+    recipe = case["recipe"]
+    recipe["argv"].extend([option, str(source), str(destination)])
+    marker = case["run"] / "command-ran"
+    result = subprocess.run(
+        nested_launch._task_command(recipe, ["/usr/bin/touch", str(marker)]),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=30,
+    )
+    assert result.returncode != 0
+    assert str(source) in result.stderr
+    assert not source.exists() and not destination.exists() and not marker.exists()
+
+
+def test_missing_seal_alone_is_not_materialized(rehearsal):
+    case = rehearsal
+    case["sealed"].rmdir()
+    command = [
+        "/bin/sh",
+        "-c",
+        'test ! -e "$1" && ! mkdir "$1" && test -f "$2/worker-marker"',
+        "check-seal",
+        str(case["sealed"]),
+        str(case["grant"]),
+    ]
+    result = subprocess.run(
+        nested_launch._task_command(case["recipe"], command),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "Read-only file system" in result.stderr
+    assert not case["sealed"].exists()

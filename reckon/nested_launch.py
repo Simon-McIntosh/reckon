@@ -487,10 +487,57 @@ def job_fence(environ: Mapping[str, str]) -> JobFence | None:
 # argv so sbatch --export=NONE cannot discard the fence. The child gets the
 # caller's stdin unchanged, including srun's redirected input.
 _TASK_REENTRY = """import base64, json, os, pathlib, subprocess, sys, tempfile
-spec = json.loads(base64.urlsafe_b64decode(sys.argv[1]))
+spec = json.loads(base64.urlsafe_b64decode(sys.argv[-1]))
 recipe = spec["fence"]
-for directory in recipe["directories"]:
-    pathlib.Path(directory).mkdir(parents=True, exist_ok=True)
+if not spec.get("sources_prepared"):
+    # Only sources known to be directory grants may be supplied empty. A
+    # missing credential or executable must still refuse the task.
+    directory_sources = set(recipe.get("directory_sources", ()))
+    prefix = recipe["argv"]
+    seals = ("--ro-bind", "--ro-bind-try")
+    grants = ("--bind", "--bind-try", "--dev-bind", "--dev-bind-try")
+    index = 1
+    while index < len(prefix):
+        option = prefix[index]
+        if option in (*seals, *grants):
+            source = prefix[index + 1]
+            if option in grants and source in recipe.get("directories", ()):
+                directory_sources.add(source)
+            if (option in seals and source == prefix[index + 2]
+                    and not os.path.lexists(source)):
+                prefix[index] = "--ro-bind-try"
+            index += 3
+        else:
+            index += 1
+    missing = sorted(pathlib.Path(p) for p in directory_sources
+                     if not os.path.lexists(p))
+    if missing:
+        # Build source directories in a private mount namespace. Existing
+        # children remain bind-mounted; only absent paths get empty tmpfs.
+        # The scaffolding is read-only, then the inherited fence re-opens
+        # exactly its grants. No mkdir touches the job node's filesystem.
+        ancestors = set()
+        for path in missing:
+            parent = path.parent
+            while not parent.exists():
+                parent = parent.parent
+            ancestors.add(parent)
+        prepare = [prefix[0], "--dev-bind", "/", "/"]
+        for parent in sorted(ancestors, key=lambda p: len(p.parts)):
+            prepare += ["--tmpfs", str(parent)]
+            for child in sorted(parent.iterdir()):
+                if child.is_symlink():
+                    prepare += ["--symlink", os.readlink(child), str(child)]
+                else:
+                    prepare += ["--dev-bind", str(child), str(child)]
+        for path in missing:
+            prepare += ["--tmpfs", str(path)]
+        for parent in sorted(ancestors, key=lambda p: -len(p.parts)):
+            prepare += ["--remount-ro", str(parent)]
+        spec["sources_prepared"] = True
+        encoded = base64.urlsafe_b64encode(json.dumps(spec).encode()).decode()
+        os.execvp(prepare[0], [*prepare, "--", sys.executable, "-I", "-c",
+                              sys.argv[1], sys.argv[1], encoded])
 command = spec["command"]
 script = None
 try:
@@ -519,7 +566,7 @@ def _task_command(
     if script is not None:
         spec["script"] = base64.b64encode(script).decode()
     encoded = base64.urlsafe_b64encode(json.dumps(spec).encode()).decode()
-    return [sys.executable, "-I", "-c", _TASK_REENTRY, encoded]
+    return [sys.executable, "-I", "-c", _TASK_REENTRY, _TASK_REENTRY, encoded]
 
 
 # Task-boundary parsing is deliberately strict: an unknown option may consume
