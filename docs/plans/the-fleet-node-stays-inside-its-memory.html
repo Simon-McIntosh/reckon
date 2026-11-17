@@ -25,7 +25,7 @@
   <title>The Fleet Node Stays Inside Its Memory | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="10">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -125,12 +125,6 @@
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
-<div class="r-comment" data-section="s6" data-id="c-close-s6" data-who="reckon-build" data-when="2026-11-17T12:14:00Z">
-    <div class="r-comment-body"><p>§6 landed through the crew's own promotion after its review (landing commit <code>7c327b389b</code>). A reader outside the fleet allocation records the job's scheduler state each minute in the same series and writes one row naming the end state and reason when the job ends; reviewed 118 of 120.</p></div>
-</div>
-<div class="r-comment" data-section="s6" data-id="c-run-r-20261117T110917738170-a-sampler-outlives-the-fleet-job" data-who="reckon-build" data-when="2026-11-17T11:47:41Z">
-    <div class="r-comment-body"><p>Added an independent once-per-minute scheduler reader with GPFS locking for the shared TSV; the cancellation rehearsal writes one terminal row 59.839 seconds after cancellation, and the stopped-reader control fails. The exact health-header assertion now covers all seven scheduler columns: expanded scoped/head gates pass 88 tests, the baseline arm passes 73, and both 17-file importer arms pass 162 tests with 1 skip and zero added failures.</p></div>
-</div>
 <div class="r-comment" data-section="s10" data-id="c-close-s10" data-who="reckon-build" data-when="2026-11-17T12:12:00Z">
     <div class="r-comment-body"><p>§10 landed by direct merge (head <code>d8e0a90d94</code>), on the lead's instruction. Each service the supervisor runs may declare a memory limit, applied as an address-space limit on its own process; one that reaches it is restarted under the existing backoff with the event recorded and no other service affected. Review 120 of 120 with no finding. Merged candidate gate: 12 passed, 1 skipped in 13.38s.</p></div>
 </div>
@@ -139,6 +133,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261117T114358834620-review-of-a-service-over-its-limit-restarts-alone-d8e0a90d9400" data-who="reckon-build" data-when="2026-11-17T11:50:17Z">
     <div class="r-comment-body"><p>Exact-revision independent review stored at both granted paths; all six dimensions 20/20, zero findings, zero added failure IDs; record checks passed.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261117T111120978029-a-service-over-its-limit-restarts-alone" data-who="reckon-build" data-when="2026-11-17T11:36:33Z">
+    <div class="r-comment-body"><p>Optional memory_limit_bytes now applies per-process RLIMIT_AS before service exec with fail-closed refusal and existing isolated restart backoff; 70 scoped checks passed (1 dedicated-allocation check skipped), a 768 MiB service restarted in a 2 GiB all_debug job with peer PID unchanged and oom_kill 0→0, while the unbounded control killed both stand-ins and raised oom_kill 0→2; importer comparison added zero failure IDs. Aggregate child-tree memory is not bounded.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-11-17T10:53:00Z">
     <div class="r-comment-body"><p>§2 landed through the crew's own promotion after its review (landing commit <code>859a28b2a1</code>). A memory kill in the fleet job is recorded with its time and victim; reviewed 120 of 120.</p></div>
@@ -155,11 +152,20 @@
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261117T120947306571-review-of-session-scratch-uses-node-disk-25368adf78fe" data-who="reckon-build" data-when="2026-11-17T12:18:49Z">
     <div class="r-comment-body"><p>Independent review stored for base 45967c6c6399a70306ce0cd5cb106e6ed54e0c21 and head 25368adf78fe0dd00b105e183ddd5b25af8f0f23; six scores 20/19/20/19/20/5, one blocking reuse finding, declared suite added failures 0 and separate importer added failures 1.</p></div>
 </div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261117T121741631122-review-of-node-disk-is-in-the-health-series-23a656b40b88" data-who="reckon-build" data-when="2026-11-17T12:26:44Z">
+    <div class="r-comment-body"><p>Independent review of base 45967c6c6399a70306ce0cd5cb106e6ed54e0c21 through head 23a656b40b8863c6f95cf95a8349e16a688f30ba is parsed with six scores (16,12,20,17,20,20), one blocking remote disk-reading finding, and official suite added-failure delta 0; four supplementary importer additions and the live observation remain for the coordinator.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-close-s6" data-who="reckon-build" data-when="2026-11-17T12:14:00Z">
+    <div class="r-comment-body"><p>§6 landed through the crew's own promotion after its review (landing commit <code>7c327b389b</code>). A reader outside the fleet allocation records the job's scheduler state each minute in the same series and writes one row naming the end state and reason when the job ends; reviewed 118 of 120.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261117T110917738170-a-sampler-outlives-the-fleet-job" data-who="reckon-build" data-when="2026-11-17T11:47:41Z">
+    <div class="r-comment-body"><p>Added an independent once-per-minute scheduler reader with GPFS locking for the shared TSV; the cancellation rehearsal writes one terminal row 59.839 seconds after cancellation, and the stopped-reader control fails. The exact health-header assertion now covers all seven scheduler columns: expanded scoped/head gates pass 88 tests, the baseline arm passes 73, and both 17-file importer arms pass 162 tests with 1 skip and zero added failures.</p></div>
+</div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261117T121522141015-review-of-control-passes-profile-without-live-writes-bf3c02cf0770" data-who="reckon-build" data-when="2026-11-17T12:24:04Z">
     <div class="r-comment-body"><p>Independent revision-bound review stored; no blocking findings, two non-blocking findings, zero added suite failures; original station timing remains unmet after an authorized extended replay.</p></div>
 </div>
-<div class="r-comment" data-section="s5" data-id="c-run-r-20261117T121741631122-review-of-node-disk-is-in-the-health-series-23a656b40b88" data-who="reckon-build" data-when="2026-11-17T12:26:44Z">
-    <div class="r-comment-body"><p>Independent review of base 45967c6c6399a70306ce0cd5cb106e6ed54e0c21 through head 23a656b40b8863c6f95cf95a8349e16a688f30ba is parsed with six scores (16,12,20,17,20,20), one blocking remote disk-reading finding, and official suite added-failure delta 0; four supplementary importer additions and the live observation remain for the coordinator.</p></div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261117T081959314526-control-passes-profile-without-live-writes" data-who="reckon-build" data-when="2026-11-17T11:58:09Z">
+    <div class="r-comment-body"><p>Added a copied-home profiler and repaired refused single-tick propagation while testing the existing positive finished marker. Four passes exit 0: one/eight-entry dispatch, admission and station peak at RSS 5.891/6.712/15.846/31.649 GB and traced 1.861/1.851/3.348/6.648 GB; JSON decoding is the largest sampled allocation site. Station completes in 2512.22s with its finished marker and equal copied-source inventory, exceeding the original 1800s target under the authorised longer replay. Repair gate passes 80 tests, importer delta adds zero failing IDs, and bypassing the real-home guard fails five controls; original-live-home equality is not required while peers write.</p></div>
 </div>
 </section>
 </main>
