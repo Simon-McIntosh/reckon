@@ -1,0 +1,102 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "assertions": "test_the_holder_uses_the_service_backoff lines 154-157: holder exits zero and actual sleep arguments equal [5, 10, 13, 13]",
+      "fails_if": "Restore independent shell reset/doubling/cap logic: actual delays become [5, 10, 20, 40]; ignoring the stop marker times out instead of exiting."
+    },
+    {
+      "assertions": "_session_process_pids line 178: no duplicate stand-ins for a role; missing roles raise at line 183",
+      "fails_if": "A restart creates another matching role or removes a role: the live-process probe refuses the ambiguous or absent observation."
+    },
+    {
+      "assertions": "test_rehearsal_reads_processes_instead_of_a_stale_ready_receipt lines 224-225: observed descendant equals the replacement subprocess PID and differs from the stale PID",
+      "fails_if": "Restore data = json.loads(ready.read_text()) in the restarted supervisor: it reports the dead original PID, demonstrated by repair-negative-identity.log."
+    },
+    {
+      "assertions": "line 226: current step equals the independently spawned step PID",
+      "fails_if": "The observer misidentifies or swaps the step role; expected PID comes from Popen, never from the supplied ready receipt."
+    },
+    {
+      "assertions": "line 227: ready.json stays equal to its original contents",
+      "fails_if": "The fixture rewrites ready.json to hide the stale identity; this is deliberately a fixture-integrity guard, not sole evidence of process identity."
+    },
+    {
+      "assertions": "rehearsal lines 358-360: fresh observed_session_pids equal the first observation",
+      "fails_if": "Replace either stand-in across restart or restore the monitor without fresh observations: PIDs differ or the observation is absent."
+    },
+    {
+      "assertions": "rehearsal line 361: second supervisor PID differs from the first",
+      "fails_if": "The restart receipt retains the first supervisor identity or restart never occurs."
+    },
+    {
+      "assertions": "existing equality assertions at lines 362-363 now consume an independent current.json observation",
+      "fails_if": "A restarted supervisor discovers a replacement descendant or step; current.json no longer copies the expected initial identity."
+    }
+  ],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/fleet_node.py:219 _supervisor_lifetime_script",
+    "reckon/crew/fleet_node.py:320 generate_hold_script",
+    "reckon/project_setup_commands.py:202 fleet_node_hold",
+    "reckon/crew/fleet_migrate.py:1075 stand-up",
+    "reckon/crew/fleet_supervisor.py:2121 supervise_once"
+  ],
+  "completed_at": "2026-11-17T00:53:40Z",
+  "dispatched_at": "2026-11-17T00:49:47Z",
+  "failure_delta_evidence": {
+    "after_suite": {
+      "exit_receipt": "EXIT=0",
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233659120864-sessions-outlive-the-supervisor/repair-head.log",
+      "revision": "98fc83f81a29786cbbe267018c9fc896f234c047",
+      "summary": "65 passed in 152.63s (0:02:32)"
+    },
+    "baseline_suite": {
+      "exit_receipt": "EXIT=0",
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233659120864-sessions-outlive-the-supervisor/baseline-suite.log",
+      "revision": "f6e2b6b695d4f84aa8e7846e46ba6e469c744865",
+      "summary": "58 passed in 39.50s"
+    }
+  },
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Read commits 4519af210f7e7f8581d4c489bfe7a974dfd5485b and 98fc83f81a29786cbbe267018c9fc896f234c047 individually against a78f7d02a52326b9c7a0cae72a46966666724324; their three-file diff derives shell transitions from next_backoff and replaces copied PID evidence with live process observations.",
+    "done_when": "Read source prompt.txt:253 and receipt-1321272.json; repair-head.log records 65 passed, repair-importers.log records 53 passed, the all_debug receipt records RUNNING survivors at thirty seconds, a 5.31-second restart, two broken-interpreter retries and COMPLETED 0:0 retirement, and both repair counterfactual logs record their intended failing test.",
+    "goal": "Read source prompt.txt:38, live plan section s8 and repair-advice-3e09ec3cc2952a81.txt; fleet_node.py:219 now consumes the service policy and tests/test_sessions_outlive_the_supervisor.py:459 independently observes retained session identities, answering both prior findings.",
+    "manifest": "Read source manifest.md and the named baseline_suite and after_suite logs; baseline-suite.log records 58 passed and EXIT=0 at f6e2b6b695d4f84aa8e7846e46ba6e469c744865, repair-head.log records 65 passed and EXIT=0 at the reviewed head, giving zero added failures, and repair-baseline.log separately records 63 passed and one skipped at the incremental base.",
+    "write_paths": "Read source manifest.md:3 and the repair advice; the incremental diff changes only reckon/crew/fleet_node.py, reckon/crew/fleet_supervisor.py and tests/test_sessions_outlive_the_supervisor.py, all within declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_sessions_outlive_the_supervisor.py:155 fails if the independent shell doubling rule is restored and line 224 fails if current.json again copies ready.json; repair-negative-policy.log and repair-negative-identity.log each demonstrate the corresponding retained assertion failing.",
+    "evidence": "repair-reproduce-both.log records the original delay mismatch [5, 10, 20, 40] versus [5, 10, 13, 13] and unequal actual versus copied PIDs, while repair-head.log and receipt-1321272.json record the repaired gate and real scheduler outcomes.",
+    "fit": "reckon/crew/fleet_supervisor.py:1048 extends the existing policy owner with a typed shell compiler and fleet_node.py:219 integrates it through the existing batch generator without forbidden names.",
+    "goal_fidelity": "reckon/crew/fleet_supervisor.py:1061 resolves both runtime classes through next_backoff and tests/test_sessions_outlive_the_supervisor.py:459 discovers current session PIDs instead of copying the initial receipt, satisfying the two repair instructions.",
+    "reuse": "Capability searches over reckon and tests found next_backoff in fleet_supervisor.py:1036, which the new compiler extends; census.py:31, process_liveness.py:319 and tests/conftest.py:1006 expose ownership or watcher-specific scans rather than a reusable exact role-labelled rehearsal probe, so the test helper introduces no competing production mechanism.",
+    "scope_discipline": "The incremental three-file diff matches the declared scope in source manifest.md:3 and the two specific repairs in repair-advice-3e09ec3cc2952a81.txt."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read source prompt.txt:38, live plan section s8 and repair-advice-3e09ec3cc2952a81.txt; fleet_node.py:219 now consumes the service policy and tests/test_sessions_outlive_the_supervisor.py:459 independently observes retained session identities, answering both prior findings.\nVERDICT done_when: Read source prompt.txt:253 and receipt-1321272.json; repair-head.log records 65 passed, repair-importers.log records 53 passed, the all_debug receipt records RUNNING survivors at thirty seconds, a 5.31-second restart, two broken-interpreter retries and COMPLETED 0:0 retirement, and both repair counterfactual logs record their intended failing test.\nVERDICT write_paths: Read source manifest.md:3 and the repair advice; the incremental diff changes only reckon/crew/fleet_node.py, reckon/crew/fleet_supervisor.py and tests/test_sessions_outlive_the_supervisor.py, all within declared scope.\nVERDICT manifest: Read source manifest.md and the named baseline_suite and after_suite logs; baseline-suite.log records 58 passed and EXIT=0 at f6e2b6b695d4f84aa8e7846e46ba6e469c744865, repair-head.log records 65 passed and EXIT=0 at the reviewed head, giving zero added failures, and repair-baseline.log separately records 63 passed and one skipped at the incremental base.\nVERDICT diff: Read commits 4519af210f7e7f8581d4c489bfe7a974dfd5485b and 98fc83f81a29786cbbe267018c9fc896f234c047 individually against a78f7d02a52326b9c7a0cae72a46966666724324; their three-file diff derives shell transitions from next_backoff and replaces copied PID evidence with live process observations.\nCALL_SITES: reckon/crew/fleet_node.py:219 _supervisor_lifetime_script, reckon/crew/fleet_node.py:320 generate_hold_script, reckon/project_setup_commands.py:202 fleet_node_hold, reckon/crew/fleet_migrate.py:1075 stand-up, reckon/crew/fleet_supervisor.py:2121 supervise_once\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_supervisor.py:1061 resolves both runtime classes through next_backoff and tests/test_sessions_outlive_the_supervisor.py:459 discovers current session PIDs instead of copying the initial receipt, satisfying the two repair instructions.\nSCORE evidence: 20\nJUSTIFICATION evidence: repair-reproduce-both.log records the original delay mismatch [5, 10, 20, 40] versus [5, 10, 13, 13] and unequal actual versus copied PIDs, while repair-head.log and receipt-1321272.json record the repaired gate and real scheduler outcomes.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The incremental three-file diff matches the declared scope in source manifest.md:3 and the two specific repairs in repair-advice-3e09ec3cc2952a81.txt.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_sessions_outlive_the_supervisor.py:155 fails if the independent shell doubling rule is restored and line 224 fails if current.json again copies ready.json; repair-negative-policy.log and repair-negative-identity.log each demonstrate the corresponding retained assertion failing.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/fleet_supervisor.py:1048 extends the existing policy owner with a typed shell compiler and fleet_node.py:219 integrates it through the existing batch generator without forbidden names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches over reckon and tests found next_backoff in fleet_supervisor.py:1036, which the new compiler extends; census.py:31, process_liveness.py:319 and tests/conftest.py:1006 expose ownership or watcher-specific scans rather than a reusable exact role-labelled rehearsal probe, so the test helper introduces no competing production mechanism.\n",
+  "review_run_id": "r-20261117T004819777812-review-of-sessions-outlive-the-supervisor-98fc83f81a29",
+  "review_text": "VERDICT goal: Read source prompt.txt:38, live plan section s8 and repair-advice-3e09ec3cc2952a81.txt; fleet_node.py:219 now consumes the service policy and tests/test_sessions_outlive_the_supervisor.py:459 independently observes retained session identities, answering both prior findings.\nVERDICT done_when: Read source prompt.txt:253 and receipt-1321272.json; repair-head.log records 65 passed, repair-importers.log records 53 passed, the all_debug receipt records RUNNING survivors at thirty seconds, a 5.31-second restart, two broken-interpreter retries and COMPLETED 0:0 retirement, and both repair counterfactual logs record their intended failing test.\nVERDICT write_paths: Read source manifest.md:3 and the repair advice; the incremental diff changes only reckon/crew/fleet_node.py, reckon/crew/fleet_supervisor.py and tests/test_sessions_outlive_the_supervisor.py, all within declared scope.\nVERDICT manifest: Read source manifest.md and the named baseline_suite and after_suite logs; baseline-suite.log records 58 passed and EXIT=0 at f6e2b6b695d4f84aa8e7846e46ba6e469c744865, repair-head.log records 65 passed and EXIT=0 at the reviewed head, giving zero added failures, and repair-baseline.log separately records 63 passed and one skipped at the incremental base.\nVERDICT diff: Read commits 4519af210f7e7f8581d4c489bfe7a974dfd5485b and 98fc83f81a29786cbbe267018c9fc896f234c047 individually against a78f7d02a52326b9c7a0cae72a46966666724324; their three-file diff derives shell transitions from next_backoff and replaces copied PID evidence with live process observations.\nCALL_SITES: reckon/crew/fleet_node.py:219 _supervisor_lifetime_script, reckon/crew/fleet_node.py:320 generate_hold_script, reckon/project_setup_commands.py:202 fleet_node_hold, reckon/crew/fleet_migrate.py:1075 stand-up, reckon/crew/fleet_supervisor.py:2121 supervise_once\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_supervisor.py:1061 resolves both runtime classes through next_backoff and tests/test_sessions_outlive_the_supervisor.py:459 discovers current session PIDs instead of copying the initial receipt, satisfying the two repair instructions.\nSCORE evidence: 20\nJUSTIFICATION evidence: repair-reproduce-both.log records the original delay mismatch [5, 10, 20, 40] versus [5, 10, 13, 13] and unequal actual versus copied PIDs, while repair-head.log and receipt-1321272.json record the repaired gate and real scheduler outcomes.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The incremental three-file diff matches the declared scope in source manifest.md:3 and the two specific repairs in repair-advice-3e09ec3cc2952a81.txt.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_sessions_outlive_the_supervisor.py:155 fails if the independent shell doubling rule is restored and line 224 fails if current.json again copies ready.json; repair-negative-policy.log and repair-negative-identity.log each demonstrate the corresponding retained assertion failing.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/fleet_supervisor.py:1048 extends the existing policy owner with a typed shell compiler and fleet_node.py:219 integrates it through the existing batch generator without forbidden names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches over reckon and tests found next_backoff in fleet_supervisor.py:1036, which the new compiler extends; census.py:31, process_liveness.py:319 and tests/conftest.py:1006 expose ownership or watcher-specific scans rather than a reusable exact role-labelled rehearsal probe, so the test helper introduces no competing production mechanism.\n",
+  "reviewed_base_sha": "a78f7d02a52326b9c7a0cae72a46966666724324",
+  "reviewed_head_sha": "98fc83f81a29786cbbe267018c9fc896f234c047",
+  "reviewed_run_id": "r-20261116T233659120864-sessions-outlive-the-supervisor",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T01:00:51.612419+00:00",
+  "total": 120
+}

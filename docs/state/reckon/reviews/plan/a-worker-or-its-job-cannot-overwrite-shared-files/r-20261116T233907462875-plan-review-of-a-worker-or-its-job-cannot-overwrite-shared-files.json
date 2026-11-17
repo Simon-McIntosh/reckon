@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-17T01:56:00.949Z",
+  "dispatched_at": "2026-11-17T01:55:16Z",
+  "findings": [
+    {
+      "anchor": "plan.html:58",
+      "id": "wiring-1",
+      "reason": "without an edge one of the two nodes's edits to those log sites is lost at merge or comes back as a repair round the plan did not budget.",
+      "text": "\u00a72 declares `reckon/crew/landing_measure.py` as a write path while \u00a76 declares the same file (plan.html:82) and neither the `plan-section-depends-on` map nor followup f-awojcosf-001, which says \"\u00a76 and \u00a78 are independent of them and of each other\", orders them, so two nodes the plan calls independent edit one module concurrently.",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:82",
+      "id": "reasoning-1",
+      "reason": "the section's measure would go green while the defect it exists to stop survives, and \"with truncating open restored\" cannot be applied to a runner that does not truncate.",
+      "text": "\u00a76's done-when measures only the absence of a truncating open, but the truncating mode is not the whole exposure: `reckon/crew/landing_measure.py:922,932` append (`open(\"a\")`) and `reckon/crew/promotion_gate.py` never writes a log through the named path, and an append open follows a symlink and creates a dangling target exactly as `\"w\"` does, so a tree that passes the grep still replays the incident through the append runner.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:87",
+      "id": "reasoning-2",
+      "reason": "the section should declare the delivered record \u2014 a gate log the run created, no caller-supplied path, manifest gate fields a promotion check accepts \u2014 and leave the verb choice to the node, so a wrong guess about which verbs qualify does not cost a review round.",
+      "text": "\u00a77's deliverable fixes a method and an interface (\"The two gate verbs ... are extended ...; no new verb is added;\" plus \"a dispatched worker's prompt carries the composed call\"), which is the reuse map a node brief composes, not an endpoint a plan should state.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "feea4061f6e4f39d971986af445fc4c02ff96b19",
+  "plan_fingerprint": "a6feb81ff01a0089e3ce2256618f9463ef396c2074d9894dd54179ac40f780c8",
+  "plan_slug": "a-worker-or-its-job-cannot-overwrite-shared-files",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261116T233907462875-plan-review-of-a-worker-or-its-job-cannot-overwrite-shared-files",
+  "reviewed_blob_sha": "fb07532654ed253b2f1829c25edacc54bcc8130d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the research record `docs/research/four-guards-against-a-shared-file-overwrite.html`, the figure `docs/figures/shared-file-guards/fence-boundaries.svg`, the neighbour plans `the-monitor-reads-each-fact-once` (section \"A foreign run is freed by its allocation ending\") and `test-time-is-not-the-nodes-time` (decision keys `gate-time-shape`, `time-ceiling-shape`), `plan-after a-worker-cannot-write-your-home`, and every cited module (`reckon/_worker_fence.py`, `reckon/nested_launch.py`, `reckon/host_shims/sbatch`, `reckon/host_shims/srun`, `reckon/crew/{standing_suite,promotion_gate,landing_measure,fleet_supervisor,dispatch_launch,node,fleet_node}.py`, `reckon/crew_run_commands.py`, `bin/fleet-supervisor`) resolve; the test files named in write paths that do not yet exist are deliverables, not citations.",
+    "done_when": "pass \u2014 each implementable section names a declared negative control that can fail (\u00a72 disabled check, \u00a73 unsealed install tree, \u00a74 re-entry removed, \u00a75 base arm, \u00a76 truncating open restored, \u00a77 composed command withheld, \u00a78 supervisor as batch process, \u00a79 default-built fence, \u00a710 arms that each leave the section open).",
+    "evidence_paths": "pass \u2014 \u00a710 lands its record on `docs/evidence/archive/a-worker-or-its-job-cannot-overwrite-shared-files-landed.html`, a durable repository path, and each other section's evidence is a test log or a fleet health field, not a node-local scratch path.",
+    "naming": "pass \u2014 no section carries a plan label, stage name, ticket number or version tag into a symbol, and the evidence record's slug-named filename is the repository's archive convention rather than a tracker identifier.",
+    "reasoning": "a finding \u2014 \u00a76 states that reckon's own gate runners open their log for truncating write and makes \"truncating open restored\" its control, but the cited runners do not all truncate: `reckon/crew/standing_suite.py:273,327` open `\"w\"`, `reckon/crew/landing_measure.py:922,932` open `\"a\"`, and `reckon/crew/promotion_gate.py` opens no log at all, so the stated cause is narrower than the exposure and the named measure cannot fail on the append path; \u00a77 separately prescribes the interface to extend instead of the endpoint.",
+    "single_goal": "pass \u2014 every section names one deliverable (a record, a state, or one measurement record in \u00a710), and \u00a710's five arms are one record rather than five nodes.",
+    "wiring": "a finding \u2014 the depends-on map and followup f-awojcosf-001 put \u00a76 outside \u00a72's chain, yet \u00a72 and \u00a76 both declare `reckon/crew/landing_measure.py` as a write path (plan.html:58 and plan.html:82), so two nodes the plan calls independent edit one file."
+  },
+  "section_digests": {
+    "_document": "2a545263486290860cc9d0a9ad52694d7936a721f3eb5546bb6444eb61f1a8eb",
+    "s1": "02ecdc6ddfe6575cb01d7e9c9b2771837c17f6937b1e43b03bd3357d679530eb",
+    "s10": "2921806863fa66f192dc45d31056b040e9e07cc5f67e20df721264aafdecb087",
+    "s2": "672162d0e96a24a032f95b7ade817c96cf03b6d88f8f4c83f57f8e7b253409ce",
+    "s3": "9b6d5901be84127eaa75a84242d4374832a661d904144efdfaa597367a03eaac",
+    "s4": "a3c7a8b5ec0e4c73942c7a4e34993f7eba319f6c9a0540d008b2b4f0eb300aff",
+    "s5": "b13609cff56884176ba39c5271b433dc1e3f45d3d68839601b924a79f1357c5a",
+    "s6": "4d339ca4c2860c39db4a36518f8045c9b620085666f9beffdd963261346af665",
+    "s7": "2099f1fb292d04b4514f50a5dac17e2c0480f9b2d27c3a83ba62c45c0c7e1afb",
+    "s8": "1b886461a44e82b5dcefddc891828d3bd8e080296db484cac33bf8e4d032637f",
+    "s9": "21591eb5ff8f91a9c46261fa442b1bb9853f3ad03fec0ffe3444cfdeb96f07d3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T03:45:40.154853+00:00",
+  "total": null
+}

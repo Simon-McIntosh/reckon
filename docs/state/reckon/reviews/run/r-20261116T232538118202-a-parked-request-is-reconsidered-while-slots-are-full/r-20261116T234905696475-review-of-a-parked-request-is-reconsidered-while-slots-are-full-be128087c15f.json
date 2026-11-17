@@ -1,0 +1,178 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T232538118202-a-parked-request-is-reconsidered-while-slots-are-full/after-suite-final.log",
+  "assertion_analysis": [
+    {
+      "fails_if": "Fixture is not actually parked on an incomplete manifest; validates adversarial setup.",
+      "lines": "44"
+    },
+    {
+      "fails_if": "Either of the two lease claims fails, so the congestion precondition is not established.",
+      "lines": "90,166"
+    },
+    {
+      "fails_if": "The earlier ready request no longer precedes the parked requests, invalidating the starvation trigger.",
+      "lines": "92"
+    },
+    {
+      "fails_if": "A promotion launches while both slots are held; these are capacity guards, not readiness coverage by themselves.",
+      "lines": "93,106,179"
+    },
+    {
+      "fails_if": "Reinstate the base loop that breaks at a full slot before reaching parked reviews: reconsidered becomes zero.",
+      "lines": "99"
+    },
+    {
+      "fails_if": "A refreshed complete review stays parked or retains its stale waiting reason.",
+      "lines": "100-101"
+    },
+    {
+      "fails_if": "Readiness refresh replaces a durable request identity; equality to the original input is intentional identity preservation, not evidence of the congestion repair.",
+      "lines": "102-105"
+    },
+    {
+      "fails_if": "The incomplete review is made ready, its reason is changed, or its timestamp is not refreshed; the clock value is independently advanced after the stored initial timestamp.",
+      "lines": "108-110"
+    },
+    {
+      "fails_if": "Freed capacity admits requests out of the independently specified FIFO order or the executor starts another order.",
+      "lines": "115,119"
+    },
+    {
+      "fails_if": "The request lacks a terminal promoted receipt after settling.",
+      "lines": "118"
+    },
+    {
+      "fails_if": "Real review promotion fails to persist either review to the isolated repository ledger, or persists extra rows; expected identities alone do not establish promotion, the independent ledger does.",
+      "lines": "120-122"
+    },
+    {
+      "fails_if": "An incomplete remaining review launches or changes out of WAITING after eligible requests finish.",
+      "lines": "123-125"
+    },
+    {
+      "fails_if": "The test fails to release its controlled executor within ten seconds; this is a bounded fixture guard.",
+      "lines": "141"
+    },
+    {
+      "fails_if": "Remove the second _pending_requests call after readiness changes: same-session requests take both slots instead of giving the other session its turn.",
+      "lines": "146"
+    },
+    {
+      "fails_if": "The remaining same-session request fails to launch next or a terminal promoted receipt is missing.",
+      "lines": "150,153"
+    },
+    {
+      "fails_if": "Restore the capacity-dependent loop: the hundred stored timestamps remain unchanged, yielding checked=0.",
+      "lines": "187"
+    },
+    {
+      "fails_if": "Readiness is disconnected from the independent complete/in-progress manifest state; complete is not an argument to tick or the writer.",
+      "lines": "188-189"
+    },
+    {
+      "fails_if": "Remove readiness_checked=True so ready pointer updates repeat their readiness reads, or omit/duplicate a parked request check.",
+      "lines": "190-191"
+    },
+    {
+      "fails_if": "Complete requests keep a reason or incomplete requests lose the manifest-in-progress explanation.",
+      "lines": "193-198"
+    },
+    {
+      "fails_if": "A full tick over the hundred parked requests takes one second or longer.",
+      "lines": "199"
+    }
+  ],
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T232538118202-a-parked-request-is-reconsidered-while-slots-are-full/baseline-suite-repaired.log",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/admission/service.py:admit_until_stopped",
+    "reckon/crew/promotion_requests.py:PromotionService._refill",
+    "reckon/crew/promotion_requests.py:PromotionService._run"
+  ],
+  "completed_at": "2026-11-16T23:56:14Z",
+  "dispatched_at": "2026-11-16T23:50:25Z",
+  "findings": [],
+  "importer_delta": {
+    "added_failure_count": 0,
+    "added_failure_ids": [],
+    "after_failure_ids": [
+      "tests/test_code_reload_never_cuts_off_a_promotion.py::test_a_landing_in_flight_finishes_before_the_service_reexecutes",
+      "tests/test_code_reload_never_cuts_off_a_promotion.py::test_a_promotion_in_flight_finishes_before_the_service_reexecutes",
+      "tests/test_no_caller_waits_on_a_promotion.py::test_a_failure_is_durable_and_is_a_session_obligation",
+      "tests/test_refused_promotion_request_settles.py::test_a_landed_run_settles_its_refused_request_as_landed",
+      "tests/test_review_promoted_before_its_run.py::test_a_run_whose_review_is_parked_while_its_record_is_written_waits"
+    ],
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T232538118202-a-parked-request-is-reconsidered-while-slots-are-full/after-importers-final.log",
+    "baseline_failure_ids": [
+      "tests/test_code_reload_never_cuts_off_a_promotion.py::test_a_landing_in_flight_finishes_before_the_service_reexecutes",
+      "tests/test_code_reload_never_cuts_off_a_promotion.py::test_a_promotion_in_flight_finishes_before_the_service_reexecutes",
+      "tests/test_no_caller_waits_on_a_promotion.py::test_a_failure_is_durable_and_is_a_session_obligation",
+      "tests/test_refused_promotion_request_settles.py::test_a_landed_run_settles_its_refused_request_as_landed",
+      "tests/test_review_promoted_before_its_run.py::test_a_run_whose_review_is_parked_while_its_record_is_written_waits"
+    ],
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T232538118202-a-parked-request-is-reconsidered-while-slots-are-full/baseline-importers.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read bdd03eaf6cf96b3eab294137b3d806bf3089e148, c524dd7eb7b72258e0439fafabc13a1e6e152431 and be128087c15fa9b69c61b3ae793440cabac68d9a individually against base 5345b861002afdfccdcf9e8a07ff74a87deccf1d; the changes add the congestion replay, refresh readiness before admission, and reuse a verdict for pointer updates.",
+    "done_when": "Read prompt.txt:250 and the named gate logs; after-suite-final.log records 62 passed, negative-control-final.log records four failures on the base, both 100-request populations finish below one second, and importer logs have identical five failures.",
+    "goal": "Read prompt.txt:38 and live docs/plans/delivered-work-lands-without-a-coordinator.html:125; reckon/crew/promotion_requests.py:828 now refreshes every parked request before any slot claim.",
+    "manifest": "Read manifest.md and its baseline_suite/after_suite receipts against baseline-suite-repaired.log and after-suite-final.log; their revisions, complete summaries and EXIT lines agree, with zero added failures.",
+    "write_paths": "Read prompt.txt:94 and manifest.md:3; the complete base-to-head diff changes only reckon/crew/promotion_requests.py and tests/test_waiting_promotion_readiness_precedes_slot_admission.py, both declared paths."
+  },
+  "justifications": {
+    "durability": "Restoring the capacity-dependent loop makes tests/test_waiting_promotion_readiness_precedes_slot_admission.py:99 and :187 fail, omitting the reorder makes :146 fail, and rereading readiness during pointer updates makes :190-191 fail.",
+    "evidence": "tests/test_waiting_promotion_readiness_precedes_slot_admission.py:99 and :187 correspond to the base replay's 0/2 and 0/100 failures, while after-suite-final.log records 62 passed and 0.302077/0.300292 second readiness passes.",
+    "fit": "reckon/crew/promotion_requests.py:356-381 extends the existing locked request writer, preserves its identity/phase guard and uses capability names without prohibited source labels.",
+    "goal_fidelity": "reckon/crew/promotion_requests.py:828-835 refreshes parked requests without claiming slots and reruns the existing fair ordering before admission.",
+    "reuse": "Searching readiness and waiting-state capabilities in reckon/crew identifies promotion_requests.py:request_promotion and recovery_review_acceptance.py:review_self_state; the added writer extends the existing promotion owner and calls the existing readiness, ordering, lease and executor mechanisms, while the tests reuse tests/test_review_promotion_waits_for_its_record.py fixtures.",
+    "scope_discipline": "The three commits touch only reckon/crew/promotion_requests.py and tests/test_waiting_promotion_readiness_precedes_slot_admission.py, matching prompt.txt:94 and the goal."
+  },
+  "negative_control": {
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T232538118202-a-parked-request-is-reconsidered-while-slots-are-full/negative-control-final.log",
+    "reading_only": true,
+    "reproduction": "full slots: reconsidered 0/2 repaired reviews; launched 0; both readiness populations 0/100",
+    "summary": "4 failed in 4.87s"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read prompt.txt:38 and live docs/plans/delivered-work-lands-without-a-coordinator.html:125; reckon/crew/promotion_requests.py:828 now refreshes every parked request before any slot claim.\nVERDICT done_when: Read prompt.txt:250 and the named gate logs; after-suite-final.log records 62 passed, negative-control-final.log records four failures on the base, both 100-request populations finish below one second, and importer logs have identical five failures.\nVERDICT write_paths: Read prompt.txt:94 and manifest.md:3; the complete base-to-head diff changes only reckon/crew/promotion_requests.py and tests/test_waiting_promotion_readiness_precedes_slot_admission.py, both declared paths.\nVERDICT manifest: Read manifest.md and its baseline_suite/after_suite receipts against baseline-suite-repaired.log and after-suite-final.log; their revisions, complete summaries and EXIT lines agree, with zero added failures.\nVERDICT diff: Read bdd03eaf6cf96b3eab294137b3d806bf3089e148, c524dd7eb7b72258e0439fafabc13a1e6e152431 and be128087c15fa9b69c61b3ae793440cabac68d9a individually against base 5345b861002afdfccdcf9e8a07ff74a87deccf1d; the changes add the congestion replay, refresh readiness before admission, and reuse a verdict for pointer updates.\nCALL_SITES: reckon/crew/admission/service.py:admit_until_stopped, reckon/crew/promotion_requests.py:PromotionService._refill, reckon/crew/promotion_requests.py:PromotionService._run\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_requests.py:828-835 refreshes parked requests without claiming slots and reruns the existing fair ordering before admission.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_waiting_promotion_readiness_precedes_slot_admission.py:99 and :187 correspond to the base replay's 0/2 and 0/100 failures, while after-suite-final.log records 62 passed and 0.302077/0.300292 second readiness passes.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The three commits touch only reckon/crew/promotion_requests.py and tests/test_waiting_promotion_readiness_precedes_slot_admission.py, matching prompt.txt:94 and the goal.\nSCORE durability: 20\nJUSTIFICATION durability: Restoring the capacity-dependent loop makes tests/test_waiting_promotion_readiness_precedes_slot_admission.py:99 and :187 fail, omitting the reorder makes :146 fail, and rereading readiness during pointer updates makes :190-191 fail.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/promotion_requests.py:356-381 extends the existing locked request writer, preserves its identity/phase guard and uses capability names without prohibited source labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: Searching readiness and waiting-state capabilities in reckon/crew identifies promotion_requests.py:request_promotion and recovery_review_acceptance.py:review_self_state; the added writer extends the existing promotion owner and calls the existing readiness, ordering, lease and executor mechanisms, while the tests reuse tests/test_review_promotion_waits_for_its_record.py fixtures.\n",
+  "reuse_search": {
+    "capabilities": [
+      "parked promotion readiness refresh",
+      "review readiness state",
+      "request identity guarded update",
+      "fair session turns",
+      "review fixture creation"
+    ],
+    "conclusion": "Existing owner extended; no duplicated production capability.",
+    "owners_opened": [
+      "reckon/crew/promotion_requests.py:request_promotion",
+      "reckon/crew/promotion_requests.py:_mark_waiting (base)",
+      "reckon/crew/promotion_requests.py:_pending_requests",
+      "reckon/crew/recovery_review_acceptance.py:review_self_state",
+      "tests/test_review_promotion_waits_for_its_record.py:repository"
+    ]
+  },
+  "review_run_id": "r-20261116T234905696475-review-of-a-parked-request-is-reconsidered-while-slots-are-full-be128087c15f",
+  "reviewed_base_sha": "5345b861002afdfccdcf9e8a07ff74a87deccf1d",
+  "reviewed_head_sha": "be128087c15fa9b69c61b3ae793440cabac68d9a",
+  "reviewed_run_id": "r-20261116T232538118202-a-parked-request-is-reconsidered-while-slots-are-full",
+  "revision_note": "Review is pinned to explicit git objects. Initial rev-parse HEAD returned the requested head; subsequent clean read-only checkout returned c6274b6a0e with base-version source. No checkout or repair was attempted. Explicit git show of every reviewed commit supplied the reviewed source.",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T00:17:22.659035+00:00",
+  "total": 120
+}

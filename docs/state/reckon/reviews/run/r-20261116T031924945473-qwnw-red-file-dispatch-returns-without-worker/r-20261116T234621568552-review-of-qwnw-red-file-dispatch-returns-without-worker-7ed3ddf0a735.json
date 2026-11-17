@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_log_revision": "7ed3ddf0a735f93a3da6c823ea968bc0d578c8a7",
+  "after_suite": {
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031924945473-qwnw-red-file-dispatch-returns-without-worker/logs/head-fence-suite.log",
+    "revision": "7ed3ddf0a735f93a3da6c823ea968bc0d578c8a7"
+  },
+  "baseline_log_revision": "0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc",
+  "baseline_suite": {
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031924945473-qwnw-red-file-dispatch-returns-without-worker/logs/base-fence-suite.log",
+    "revision": "0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc"
+  },
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-17T00:46:28.361Z",
+  "dispatched_at": "2026-11-17T00:45:53Z",
+  "findings": [
+    {
+      "file": "tests/test_dispatch_returns_without_worker.py",
+      "line": "552",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base is removed by shutil.rmtree placed after the `assert not leaked` at :545, so a run that trips that assertion \u2014 the very failure the module exists to detect \u2014 raises before the removal and leaves the whole reckon-dispatch-gate- tree, repository and worktrees, behind on the shared node."
+    },
+    {
+      "file": "tests/test_dispatch_returns_without_worker.py",
+      "line": "189",
+      "severity": "non-blocking",
+      "text": "non-blocking: GATE_BASE_ROOT hardcodes /var/tmp, so the case now depends on a host path existing and being writable \u2014 the same class of dependency the fixture docstring at :89-108 rejects for FLEET_RUNTIME_DIR \u2014 and it puts a temp tree outside TMPDIR, where an aborted run's tree no longer dies with the run's scratch."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-returns-without-worker.html",
+      "line": "77",
+      "severity": "non-blocking",
+      "text": "non-blocking: the 7b003650da6a row describes the arm as TMPDIR and the test base both under the node /tmp, but that commit is the one that moves the base to /var/tmp and logs/arms.log records the arm as TMPDIR=/tmp/qwnw-arms-1320860/node with the base created under GATE_BASE_ROOT; the same log names no node, so the row's job-on-98dci4-clu-4073 attribution is not readable from the arm it cites."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "both commits read against f53e1750 \u2014 7b003650da6a creates the base with tempfile.mkdtemp under GATE_BASE_ROOT and moves writable_marker_dir under that base, and 7ed3ddf0a735 rewrites the fragment's cause statement, adds two run-table rows and replaces the sealed-tmp section; no product code is touched.",
+    "done_when": "the done_when asks for the file passing in full at head as a job on all_debug with SLURM_JOB_ID unset, a verdict per cause, an importer arm and a negative control; logs/head-gate-file.log records 10 passed EXIT=0 at 7ed3ddf0a735 with TMPDIR under /tmp but names no job id and carries no `env -u SLURM_JOB_ID` prefix, logs/base-gate-file.log records 5 failed of 10 EXIT=1 at 0e0f25b0f941, and the fragment now names both causes, so the file's own measure is asserted by the arms the worker ran while the done_when's job-geometry clause is not readable from the head log.",
+    "goal": "the node's goal is that tests/test_dispatch_returns_without_worker.py passes in full, and the two commits read here move the case's whole base out from under the node tmp (tests/test_dispatch_returns_without_worker.py:189 and :508-511), which is what lets the four spawn-lane cases reach the worker they launch; logs/head-gate-file.log reads 10 passed EXIT=0 at 7ed3ddf0a735.",
+    "manifest": "read; status complete, commits naming 7b003650da6a and 7ed3ddf0a735, the gate file at 7ed3ddf0a735 recorded as 10 passed EXIT=0 on 98dci4-clu-4073 with TMPDIR under the node tmp, the base arm as 5 failed of 10 at 0e0f25b0f941 in logs/base-gate-file.log, and the fence suite 58 passed on both revisions.",
+    "write_paths": "the declared fence is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the node's own fragment path; `git diff --stat f53e1750..7ed3ddf0` lists only tests/test_dispatch_returns_without_worker.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-returns-without-worker.html, both inside it."
+  },
+  "justifications": {
+    "durability": "no assertion is added and the relocation is observable only where the caller's TMPDIR lies under /tmp \u2014 logs/repro-tmp-basetemp.log records the four spawn-lane cases failing at f53e1750 in that geometry \u2014 so a revert reddens the gate there and passes silently elsewhere, and no assertion in the diff compares a value against one the test itself supplied.",
+    "evidence": "logs/head-gate-file.log carries the revision, the command, 10 passed and a bare EXIT=0, but it names no job id and no `env -u SLURM_JOB_ID`, so the done_when's all_debug-and-unset-job clause rests on the fragment's prose rather than on the arm.",
+    "fit": "tests/test_dispatch_returns_without_worker.py:189 follows the module's constant-with-rationale idiom and the fixture docstrings at :89-108 explain the new placement, though the same line suppresses S108 with a noqa rather than meeting the rule.",
+    "goal_fidelity": "tests/test_dispatch_returns_without_worker.py:508-511 builds the shared base under /var/tmp, so the four spawn-lane cases that could not see their stub now pass, and logs/head-gate-file.log reads 10 passed at 7ed3ddf0a735.",
+    "reuse": "no owner exists for a temp root the worker fence leaves alone \u2014 a search of reckon/ for `temp_root`, `scratch_root` and `/var/tmp` found only reckon/crew/dispatch_launch.worker_scratch_root (the root the fence seals) and reckon/crew/gc.py:1525, neither of which answers the positive question, so GATE_BASE_ROOT is the first such definition.",
+    "scope_discipline": "`git diff --stat f53e1750..7ed3ddf0` names only tests/test_dispatch_returns_without_worker.py and the node's own evidence fragment, each inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_dispatch_returns_without_worker.py passes in full, and the two commits read here move the case's whole base out from under the node tmp (tests/test_dispatch_returns_without_worker.py:189 and :508-511), which is what lets the four spawn-lane cases reach the worker they launch; logs/head-gate-file.log reads 10 passed EXIT=0 at 7ed3ddf0a735.\nVERDICT done_when: the done_when asks for the file passing in full at head as a job on all_debug with SLURM_JOB_ID unset, a verdict per cause, an importer arm and a negative control; logs/head-gate-file.log records 10 passed EXIT=0 at 7ed3ddf0a735 with TMPDIR under /tmp but names no job id and carries no `env -u SLURM_JOB_ID` prefix, logs/base-gate-file.log records 5 failed of 10 EXIT=1 at 0e0f25b0f941, and the fragment now names both causes, so the file's own measure is asserted by the arms the worker ran while the done_when's job-geometry clause is not readable from the head log.\nVERDICT write_paths: the declared fence is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the node's own fragment path; `git diff --stat f53e1750..7ed3ddf0` lists only tests/test_dispatch_returns_without_worker.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-returns-without-worker.html, both inside it.\nVERDICT manifest: read; status complete, commits naming 7b003650da6a and 7ed3ddf0a735, the gate file at 7ed3ddf0a735 recorded as 10 passed EXIT=0 on 98dci4-clu-4073 with TMPDIR under the node tmp, the base arm as 5 failed of 10 at 0e0f25b0f941 in logs/base-gate-file.log, and the fence suite 58 passed on both revisions.\nVERDICT diff: both commits read against f53e1750 \u2014 7b003650da6a creates the base with tempfile.mkdtemp under GATE_BASE_ROOT and moves writable_marker_dir under that base, and 7ed3ddf0a735 rewrites the fragment's cause statement, adds two run-table rows and replaces the sealed-tmp section; no product code is touched.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_dispatch_returns_without_worker.py:508-511 builds the shared base under /var/tmp, so the four spawn-lane cases that could not see their stub now pass, and logs/head-gate-file.log reads 10 passed at 7ed3ddf0a735.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/head-gate-file.log carries the revision, the command, 10 passed and a bare EXIT=0, but it names no job id and no `env -u SLURM_JOB_ID`, so the done_when's all_debug-and-unset-job clause rests on the fragment's prose rather than on the arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat f53e1750..7ed3ddf0` names only tests/test_dispatch_returns_without_worker.py and the node's own evidence fragment, each inside the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: no assertion is added and the relocation is observable only where the caller's TMPDIR lies under /tmp \u2014 logs/repro-tmp-basetemp.log records the four spawn-lane cases failing at f53e1750 in that geometry \u2014 so a revert reddens the gate there and passes silently elsewhere, and no assertion in the diff compares a value against one the test itself supplied.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_dispatch_returns_without_worker.py:189 follows the module's constant-with-rationale idiom and the fixture docstrings at :89-108 explain the new placement, though the same line suppresses S108 with a noqa rather than meeting the rule.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner exists for a temp root the worker fence leaves alone \u2014 a search of reckon/ for `temp_root`, `scratch_root` and `/var/tmp` found only reckon/crew/dispatch_launch.worker_scratch_root (the root the fence seals) and reckon/crew/gc.py:1525, neither of which answers the positive question, so GATE_BASE_ROOT is the first such definition.\nFINDING tests/test_dispatch_returns_without_worker.py:552 non-blocking: the base is removed by shutil.rmtree placed after the `assert not leaked` at :545, so a run that trips that assertion \u2014 the very failure the module exists to detect \u2014 raises before the removal and leaves the whole reckon-dispatch-gate- tree, repository and worktrees, behind on the shared node.\nFINDING tests/test_dispatch_returns_without_worker.py:189 non-blocking: GATE_BASE_ROOT hardcodes /var/tmp, so the case now depends on a host path existing and being writable \u2014 the same class of dependency the fixture docstring at :89-108 rejects for FLEET_RUNTIME_DIR \u2014 and it puts a temp tree outside TMPDIR, where an aborted run's tree no longer dies with the run's scratch.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-returns-without-worker.html:77 non-blocking: the 7b003650da6a row describes the arm as TMPDIR and the test base both under the node /tmp, but that commit is the one that moves the base to /var/tmp and logs/arms.log records the arm as TMPDIR=/tmp/qwnw-arms-1320860/node with the base created under GATE_BASE_ROOT; the same log names no node, so the row's job-on-98dci4-clu-4073 attribution is not readable from the arm it cites.\n",
+  "review_run_id": "r-20261116T234621568552-review-of-qwnw-red-file-dispatch-returns-without-worker-7ed3ddf0a735",
+  "reviewed_base_sha": "f53e175079dc41705d2f2936c9342bedc12fd321",
+  "reviewed_head_sha": "7ed3ddf0a735f93a3da6c823ea968bc0d578c8a7",
+  "reviewed_run_id": "r-20261116T031924945473-qwnw-red-file-dispatch-returns-without-worker",
+  "reviewer_run_id": "r-20261116T234621568552-review-of-qwnw-red-file-dispatch-returns-without-worker-7ed3ddf0a735",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T01:04:03.817279+00:00",
+  "total": 110
+}

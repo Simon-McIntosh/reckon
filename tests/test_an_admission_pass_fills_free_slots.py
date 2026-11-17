@@ -234,6 +234,26 @@ queue_admission.admit_until_stopped(
         assert not (tmp_path / "stopped.json").exists()
         wait_for(lambda: len(list(tmp_path.glob("completed-*"))) == len(queued))
         wait_for(lambda: manager._pass_allows_restart("admit", pid))
+        from click.testing import CliRunner
+
+        from reckon import cli
+        from reckon.crew.follower_reload import service_reload_status
+
+        schedule = service_reload_status("admit")
+        assert schedule["running_code"] == "running-image"
+        assert schedule["tick_exported_at"] is not None
+        assert schedule["next_reload_at"] > time.time()
+        manager.supervise_once()
+        assert fleet.recorded_service_pid(runtime, "admit") == pid
+        assert not (tmp_path / "stopped.json").exists()
+        requested = CliRunner().invoke(
+            cli.main,
+            ["crew", "reload", "admit", "--reason", "replace after launch drain"],
+        )
+        assert requested.exit_code == 0, requested.output
+        receipt = json.loads(requested.output)
+        assert receipt["reason"] == "replace after launch drain"
+        assert receipt["requested_by"]
         manager.supervise_once()
         wait_for((tmp_path / "stopped.json").exists)
         stopped = json.loads((tmp_path / "stopped.json").read_text())

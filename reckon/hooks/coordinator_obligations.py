@@ -243,8 +243,9 @@ def derive_within_budget(
 # stalled run is one that pass could launch and did not, an unreadable record is
 # a reading of a file caught mid-write rather than a duty the coordinator can
 # act on, an index that stages a path HEAD still holds belongs to the project
-# rather than to any run's work, and a repair round is a worker the reflex
-# resumed and will re-fire when the round ends, so blocking would ask a
+# rather than to any run's work, a repair round is a worker the reflex resumed
+# and will re-fire when the round ends, and a route the picker defaulted is a
+# notice about a run that is working rather than a debt, so blocking would ask a
 # coordinator to act on a condition no run of this session created.
 # Mirrors the derivation's own vocabulary, which cannot be imported here on the
 # paths that read a fresh snapshot.
@@ -258,6 +259,7 @@ _NON_BLOCKING_KINDS = frozenset(
         "index-lags-head",
         "repair-round",
         "scope-held",
+        "route-defaulted",
     }
 )
 

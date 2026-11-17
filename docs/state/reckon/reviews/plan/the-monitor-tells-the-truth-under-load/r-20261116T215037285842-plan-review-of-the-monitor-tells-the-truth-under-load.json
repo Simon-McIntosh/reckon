@@ -1,0 +1,146 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-16T23:46:31.482Z",
+  "dispatched_at": "2026-11-16T23:46:10Z",
+  "findings": [
+    {
+      "anchor": "plan.html:244",
+      "id": "wiring-1",
+      "reason": "the followup is the record a later session acts on, so as written it drops the section the round just added.",
+      "text": "the only open followup is titled \"Land \u00a728\" and its one-line invocation builds \u00a728, while the same revision declares s29 implementable; a coordinator resolving this chain as its title and its invocation instruct ends the plan with \u00a729 unbuilt, and `f-mttu-002`'s outcome at plan.html:243 states \"the remaining work is \u00a728\", which the s29 declaration contradicts",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:228",
+      "id": "done_when-1",
+      "reason": "the worker's red arm has to be the per-stage duration alone, and the plan should say so the way s24 and s25 already separate a still-holds clause from a fails-at-base one.",
+      "text": "s29's fails-at-base sentence requires the store to hold \"that tick's start, end\", but the base station already writes `STATION_TICK_STARTED_AT_KEY` when a tick opens and `STATION_TICK_FINISHED_AT_KEY` when it closes (`reckon/crew/station.py:1095,1336-1339`, read back by `station_tick_reading` in `reckon/crew/obligation_snapshot.py:440-461`), so one third of the declared red assertion is green before any change and a worker writing it as instructed must reinterpret the sentence; the same sentence also leaves the read surface as \"`crew view fleet` or the station reading\", which lets the gate be met on either surface",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:227",
+      "id": "evidence_paths-1",
+      "reason": "the deliverable is constructed from store state after a tick, not from those figures, so a missing citation costs the reader context but does not move the measure.",
+      "text": "s29's Why quotes two moving figures as fact, \"the station tick's target is 10 s\" and \"on 16 November it ran 4 to 7 minutes\", and cites only two session ids for the profiling; no run id, log, store reading or configuration path is named that a later reader could open, unlike s28's Why which quotes the hook's measured 2m58s heartbeat age",
+      "type": "evidence_paths",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "f8c04ef3b3ae8544264428e9eb45f45b232faf37",
+  "plan_fingerprint": "138a2d064d9f06bee04143b3fb753b6a1de2bc8f5e13a7c9dd5baf651c457b24",
+  "plan_slug": "the-monitor-tells-the-truth-under-load",
+  "plan_version": 92,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "c0597500edb561ce4079010bf52a5a61f2e0f48b",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "f-mttu-003 is resolved and f-mttu-004 carries both \u00a728 and \u00a729",
+      "reason": "",
+      "when": "2026-11-17T00:19:01.200963+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "c0597500edb561ce4079010bf52a5a61f2e0f48b",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "s29's fails-at-base sentence now asks only for what the base lacks, the per-stage durations of the last tick; start and end move to a still-holds sentence",
+      "reason": "",
+      "when": "2026-11-17T00:19:04.499199+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "c0597500edb561ce4079010bf52a5a61f2e0f48b",
+      "commit_basis": "edit",
+      "finding": "evidence_paths-1",
+      "note": "s29's Why now cites reckon-96's profile at ~/.cache/reckon-landing/station-prof-post-s77.raw and the station table in /tmp/39486-fleet/station.sqlite3",
+      "reason": "",
+      "when": "2026-11-17T00:19:08.438184+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "c0597500edb561ce4079010bf52a5a61f2e0f48b",
+      "commit_basis": "edit",
+      "note": "s29's fails-at-base sentence now asks only for what the base lacks, the per-stage durations of the last tick; start and end move to a still-holds sentence",
+      "reason": "",
+      "when": "2026-11-17T00:19:04.499199+00:00"
+    },
+    "evidence_paths-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "c0597500edb561ce4079010bf52a5a61f2e0f48b",
+      "commit_basis": "edit",
+      "note": "s29's Why now cites reckon-96's profile at ~/.cache/reckon-landing/station-prof-post-s77.raw and the station table in /tmp/39486-fleet/station.sqlite3",
+      "reason": "",
+      "when": "2026-11-17T00:19:08.438184+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "c0597500edb561ce4079010bf52a5a61f2e0f48b",
+      "commit_basis": "edit",
+      "note": "f-mttu-003 is resolved and f-mttu-004 carries both \u00a728 and \u00a729",
+      "reason": "",
+      "when": "2026-11-17T00:19:01.200963+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-monitor-tells-the-truth-under-load.v92.json",
+  "review_run_id": "r-20261116T215037285842-plan-review-of-the-monitor-tells-the-truth-under-load",
+  "reviewed_blob_sha": "6867310a5b0026c18ff6fc5b82f773a8c50dc2b8",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/station.py`, `reckon/crew/station_store.py` and `reckon/crew/obligation_snapshot.py` all exist, `crew view fleet` answers (`{\"ok\": true, ... \"view\": \"fleet\"}`), and the s29 anchor resolves.",
+    "done_when": "a finding \u2014 s29's \"New tests, each failing at the base revision\" (plan.html:228) includes store contents the base station already writes.",
+    "evidence_paths": "a finding \u2014 s29's Why (plan.html:227) rests on \"the tick's target is 10 s\" and \"ran 4 to 7 minutes\" with no openable run id, log or configuration path behind either figure.",
+    "naming": "pass \u2014 s29's text carries no plan label, stage name or ticket number into a symbol or comment; session ids appear in prose only.",
+    "reasoning": "pass \u2014 the stated root cause matches the base code: `_enter` writes only `tick_stage` and `station_tick_started_at`, `station.py:1336-1339` writes `tick_finished_at`, and no per-stage duration is recorded anywhere, so the endpoint is obtainable and the store keys the measure reads already exist.",
+    "single_goal": "pass \u2014 s29 names one deliverable, the per-stage duration record, with one read surface and one negative control.",
+    "wiring": "a finding \u2014 the open chain in `_document` (`f-mttu-003`, plan.html:244-247) names \u00a728 alone while `plan-section-declarations` at plan.html:23 now declares s29 implementable."
+  },
+  "section_digests": {
+    "_document": "ad64f84cc2c63cafcd12567cf27e775224661ed8a17f5ae465532ef81aa476db",
+    "s1": "7df70e005850ec7773b3db8cdf1384c5422e6cbfac994a1cfc3bdeca2fd47ef2",
+    "s10": "b83b287b25ce35ab03c105da8c02eec999809dbdea6073436eae2dc72bb0055d",
+    "s11": "db2972ed7155bc484ac98ce58f8c119ab201e99f5a53c1af54606eb6564a66e4",
+    "s12": "93d79e3e452ecd1f5c10186fc7eb1781f5e7455324237438f574fbc699447b31",
+    "s13": "79271d44153e341633146df7233120d46939c41b1ca66de6bac074c2472ea991",
+    "s14": "c0f58bcc6da33e5ff402ec71bef199b31de1619824a04f6db8d415d9669a38d7",
+    "s15": "3d6257718e450fda1363e42a9394f2cb631579e92f2cf0dbdaca2f25c62d6537",
+    "s16": "9c67ebb9a89d3b566da303e2866877a636f868c501bf32f08ff80e2c7a7f26da",
+    "s17": "229d1aee2b054a2680acdd7883f3d6cd8216513f31305ff21ed874c51b1af3a7",
+    "s18": "4a5429fac53529c64918e90d1bc4d47480e08689bea9601336332ce330c82e49",
+    "s19": "1f9e10fa3b0ee55a46bc415cf145a732b0361a363b70930a33a7c5ccbe2189ca",
+    "s2": "a065d657377c24ca69329c265d4a0a821a0104c7df8d1140dec9c3b9d1c6edf2",
+    "s20": "2a22cb56cd43d1c837c31506853a47a9de4ea2b23c97d583934c0f47da03fad0",
+    "s21": "b07e6731435129f50c6cb46f57c3e1172601f799b7c52c4f55ea6d99f25bf88f",
+    "s22": "002813700f469262299757ff5d18cdb27c019b46a0dfafdeb6c41450129b4cc5",
+    "s23": "ee414aaed9e9f5dcdb9da2c749629c72b5012385aab644da5c10a79231bd3157",
+    "s24": "a4c0e935a8ea9b7a17e8572e4ee0bcb70375ed4bf7585fd6b453850521dbfae2",
+    "s25": "58fab8fc1326f514ceac7aa72bd4e83d954c5c53256c464dc38a3646da0ae892",
+    "s26": "4ac7545d5a200b4cdf26198c3e182ea37f2ab47cefba6e881c3cf624bbfda695",
+    "s27": "d2da99aa3991671ae01d0e656ab2b5ef0c07864b441cfd5fabd3480305c3d999",
+    "s28": "7427b8f9fbee79ddba7d976a20b07e0df3e32ca73c02f7c4b3ebfff2a2d7a4f4",
+    "s29": "7c8f911687cd311c7c6c47fe56cd273c07b839bc2cb88dee431f87ffb0e23d7a",
+    "s3": "f3cf9279ee0efc6c6e7b55dede5b9ff68ee3db1e40edd78b825098ecee64d396",
+    "s4": "739bbbd316f3b5138d938c01abaac59b3f08e1231effa6dc1e416fb46b9b34b1",
+    "s5": "2806db9da94cd21c23ef92806d85a99f15d28df20b272f97173d332fba5a1587",
+    "s6": "a8a7d00ef50ab0ca240bc59bb917ff62442d6f3567da095cb913cd5860246056",
+    "s7": "9f299f30b0fda7b1f5bbc9f6d7cf6b936604181068a2c9a8363b64e58ace0fd6",
+    "s8": "30f0e740e2caee5b735cc3bdc83d5eaa23eac7eeaae780899f811d7a1c32956c",
+    "s9": "56c122a4d4057a2e12e9ebbaae0a53fb955938f47dbe9275cdf2dd5566896f78"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T00:18:59.396878+00:00",
+  "total": null
+}

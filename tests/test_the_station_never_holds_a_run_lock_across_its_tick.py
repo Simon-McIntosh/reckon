@@ -113,18 +113,44 @@ def test_a_station_sweep_leaves_the_pointer_lock_available(
     monkeypatch.setattr(resumption, "_pointer_lock", observe_lock)
     monkeypatch.setattr(promotion, "_require_commit_for_changed_manifest", check)
     monkeypatch.setattr(queue_admission, "_resolve_and_move", move)
+
+    # A sweep hands each review's promotion to a worker of its own rather
+    # than promoting inside its pass, so the promotion this case holds at
+    # its barrier runs on the worker the sweep started. The worker is the
+    # in-process one: the durable request a station files in production is
+    # drained by the fleet service, and no service runs in this test.
+    def sweep(project, **kwargs):
+        return resumption.sweep(
+            project,
+            promotions=resumption.PromotionWorkers(width=1, wait_seconds=60),
+            **kwargs,
+        )
+
     store = station_store.StationStore(tmp_path / "station")
     node = station.Station(
         store,
         home=runs.crew_home(),
         projects=dict,
-        sweeps=station.SweepBeat(start=start),
+        sweeps=station.SweepBeat(sweep=sweep, start=start),
     )
     contender = threading.Thread(target=acquire, name="pointer-contender")
     try:
         node.tick(now=datetime(2026, 11, 9, 12, tzinfo=UTC))
         assert held.wait(30), "the sweep never reached the promotion barrier"
-        assert ("station-sweep", review_fixture.REVIEW_RUN_ID) in acquisitions
+        # The promotion runs on the worker the sweep handed it to, beside the
+        # sweep's own pass, so the acquisition is that worker's rather than the
+        # sweep thread's. What the case measures is the lock's availability
+        # while that promotion is held, not which thread of the station holds
+        # it.
+        promoters = [
+            thread
+            for thread, run_id in acquisitions
+            if run_id == review_fixture.REVIEW_RUN_ID
+            and thread.startswith("promotion-")
+        ]
+        assert promoters, (
+            f"the promotion never took the run's pointer lock: {acquisitions}"
+        )
         started = time.monotonic()
         contender.start()
         assert acquired.wait(5), "pointer acquisition timed out after five seconds"
@@ -160,16 +186,22 @@ def test_a_resumed_pointer_is_not_removed_by_an_earlier_promotion(
         return receipt
 
     monkeypatch.setattr(promotion, "_commit_landing_writes", resume_after_commit)
-    with pytest.raises(promotion.CrewError, match=r"changed.*promotion"):
-        promotion.complete(
-            review_fixture.REVIEW_RUN_ID,
-            gate="not-run",
-            root=delivered_review,
-            promoted_by="review-self",
-        )
+    # A review run has no head to merge, so a pointer a newer attempt wrote is
+    # kept rather than retired or refused: the promotion completes, the newer
+    # attempt's pointer is left in place, and the mark says the row is written
+    # so the next sweep retires it once nothing owns it.
+    promotion.complete(
+        review_fixture.REVIEW_RUN_ID,
+        gate="not-run",
+        root=delivered_review,
+        promoted_by="review-self",
+    )
     current = runs.read_pointer(review_fixture.REVIEW_RUN_ID)
     assert current["attempt"] == 2
     assert current["pid"] == 12345
+    assert current["phase"] == "working"
+    assert current.get("promoted") is True
+    assert current.get("pending_landing_repair") is None
 
 
 def test_a_local_promotion_holds_its_own_serialisation_lock(

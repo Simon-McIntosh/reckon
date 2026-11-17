@@ -22,6 +22,7 @@ real queued pointers, so what these cases read is what an admission pass writes.
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import os
 from datetime import UTC, datetime, timedelta
@@ -39,6 +40,10 @@ HOLDER_SESSION = "coordinator-b"
 RUN_ID = "r-waiting"
 HOLDER_RUN_ID = "r-holder"
 HELD_PATH = "s1.txt"
+#: A figure topic directory: one of the classes git cannot reconcile, so a
+#: live claim on it fences a peer even where the project shares its source
+#: files, which an undeclared project does.
+CLAIMED_PATH = "docs/figures/held/plot.svg"
 #: Six hours and one minute: past the bound at which a holder's session is
 #: plainly not coming back on its own.
 IDLE_SECONDS = 6 * 3600 + 60
@@ -78,10 +83,13 @@ def _config_for(tmp_path: Path, *, worker_slots: float):
     return resolve
 
 
-def _queue_waiting(repository: Path) -> dict:
+def _queue_waiting(repository: Path, *, write_paths: list[str] | None = None) -> dict:
     """One queued request on the fixture's dependency-free section."""
+    node = fixtures._node("n1", "s1")
+    if write_paths is not None:
+        node = dataclasses.replace(node, write_paths=list(write_paths))
     stored = queue_admission.queue_requests(
-        [fixtures._node("n1", "s1")],
+        [node],
         project=PROJECT,
         session=WAITING_SESSION,
         repo_root=repository,
@@ -263,8 +271,14 @@ def test_a_scope_conflict_replaces_a_stored_router_full_reason(
     The specimen was a request whose reason still said the router was full
     months after a live run's claim had started blocking it. A pass that finds
     the claim replaces the stored reason, so the wait reads for what it is.
+
+    The claim is on a figure topic directory because that is a class the pass
+    can find: a project with no sharing declaration shares its source files, so
+    a claim on one is no collision, while a figure, a plan document, an
+    evidence record, generated state, a lock and a binary file each fence their
+    holder's peers.
     """
-    _queue_waiting(chain_repo)
+    _queue_waiting(chain_repo, write_paths=[CLAIMED_PATH])
     pointer = dict(runs.read_pointer(RUN_ID))
     router_full = (
         "the lane's router grants 0 extra workers to session "
@@ -274,7 +288,7 @@ def test_a_scope_conflict_replaces_a_stored_router_full_reason(
     pointer["pass_hold"] = {"verdict": "held-for-allowance", "reason": router_full}
     runs._write_json(runs.pointer_path(RUN_ID), pointer)
 
-    _write_holder(chain_repo, write_paths=[HELD_PATH])
+    _write_holder(chain_repo, write_paths=[CLAIMED_PATH])
 
     _admit(_config_for(tmp_path, worker_slots=4))
 
@@ -282,7 +296,9 @@ def test_a_scope_conflict_replaces_a_stored_router_full_reason(
     assert recorded["verdict"] == "held-on-claim", recorded
     assert recorded["reason"] != router_full
     assert router_full not in runs.read_pointer(RUN_ID)["reason"]
+    assert CLAIMED_PATH in recorded["reason"], recorded
     assert recorded["holder"]["run_id"] == HOLDER_RUN_ID, recorded
+    assert recorded["holder"]["path"] == CLAIMED_PATH, recorded
 
 
 def test_a_finished_holder_owes_its_session_one_obligation(

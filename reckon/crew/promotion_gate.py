@@ -2,6 +2,7 @@ from __future__ import annotations
 
 # Imports below the definitions resolve sibling cycles after names are bound.
 # ruff: noqa: E402
+import contextlib
 import os
 import re
 import shlex
@@ -11,7 +12,7 @@ import tempfile
 import time
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
-from typing import Any
+from typing import IO, Any
 
 from reckon import (
     ledger,
@@ -79,14 +80,18 @@ def _job_log_receipt(text: str) -> int | None:
     return int(receipts[-1]) if receipts else None
 
 
+def _unused_log_path(path: Path) -> Path:
+    """Choose another name for an internal retry; exclusive open still arbitrates."""
+    if path.exists() or path.is_symlink():
+        return path.with_name(f"{path.stem}-{time.time_ns()}{path.suffix}")
+    return path
+
+
 def _replay_job_log(replay_log_path: str | Path | None) -> Path:
     """Where a batch job writes its own output, durable when the caller names one.
 
-    The path is derived from the caller's replay log, so the same verify-gate
-    of a run lands on the same file on every attempt. It is therefore cleared
-    before each submission: a submission that never reaches its step leaves
-    the file empty, and an earlier attempt's verdict cannot be read back as
-    the verdict of a job that did not run.
+    Each attempt uses a fresh path. The partition submitter reserves it before
+    submission, so a job that never starts cannot inherit an earlier receipt.
     """
     if replay_log_path is not None:
         path = (
@@ -97,8 +102,7 @@ def _replay_job_log(replay_log_path: str | Path | None) -> Path:
     else:
         path = Path(tempfile.mkdtemp(prefix="reckon-gate-replay-")) / "job.log"
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("", encoding="utf-8")
-    return path
+    return _unused_log_path(path)
 
 
 def _partition_replay_script(replayed: str) -> str:
@@ -149,6 +153,7 @@ def _write_replay_log(
     output: str,
     exit_status: int | None,
     cut_short: str | None = None,
+    stream: IO[str] | None = None,
 ) -> Path | None:
     """Write a re-run's captured output under the run directory, or None.
 
@@ -176,7 +181,11 @@ def _write_replay_log(
         parts.append(f"EXIT={exit_status}")
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text("\n".join(parts) + "\n", encoding="utf-8")
+        if stream is not None:
+            stream.write("\n".join(parts) + "\n")
+        else:
+            with path.open("x", encoding="utf-8") as created:
+                created.write("\n".join(parts) + "\n")
     except OSError:
         return None
     return path
@@ -230,7 +239,9 @@ def _preserve_cited_gate_log(
     destination = directory / _PRESERVED_GATE_LOG_NAME
     try:
         destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(source, destination)
+        destination = _unused_log_path(destination)
+        with source.open("rb") as incoming, destination.open("xb") as outgoing:
+            shutil.copyfileobj(incoming, outgoing)
     except OSError:
         return dict(gate_check)
     return {**dict(gate_check), "log_path": str(destination)}
@@ -725,6 +736,44 @@ def rerun_gate_at_integrated_revision(
     recorded_gate_seconds: float | None = None,
     run: Callable[..., Any] | None = None,
 ) -> dict[str, Any]:
+    """Reserve a caller's log before running the integrated-revision check."""
+    with contextlib.ExitStack() as stack:
+        stream = None
+        if replay_log_path is not None:
+            path = Path(replay_log_path).expanduser()
+            path.parent.mkdir(parents=True, exist_ok=True)
+            stream = stack.enter_context(path.open("x", encoding="utf-8"))
+        return _rerun_gate_at_integrated_revision(
+            repository=repository,
+            gate_check=gate_check,
+            base_verdict=base_verdict,
+            integrated_revision=integrated_revision,
+            timeout_seconds=timeout_seconds,
+            command=command,
+            changed_paths=changed_paths,
+            worktree_roots=worktree_roots,
+            replay_log_path=replay_log_path,
+            recorded_gate_seconds=recorded_gate_seconds,
+            run=run,
+            replay_log_stream=stream,
+        )
+
+
+def _rerun_gate_at_integrated_revision(
+    *,
+    repository: Path,
+    gate_check: Mapping[str, Any] | None,
+    base_verdict: str = "passed",
+    integrated_revision: str = "HEAD",
+    timeout_seconds: float | None = None,
+    command: str | None = None,
+    changed_paths: Sequence[str] | None = None,
+    worktree_roots: Sequence[str | Path] = (),
+    replay_log_path: str | Path | None = None,
+    recorded_gate_seconds: float | None = None,
+    run: Callable[..., Any] | None = None,
+    replay_log_stream: IO[str] | None = None,
+) -> dict[str, Any]:
     """Re-run one gate against the tree that ships, and compare its verdict.
 
     A worker's gate runs against the base revision its worktree branched from,
@@ -962,6 +1011,7 @@ def rerun_gate_at_integrated_revision(
                     )
             written = _write_replay_log(
                 replay_log_path,
+                stream=replay_log_stream,
                 header=header,
                 output=partial,
                 exit_status=None,
@@ -998,6 +1048,7 @@ def rerun_gate_at_integrated_revision(
             report["integrated_verdict"] = "passed" if status == 0 else "failed"
             written = _write_replay_log(
                 replay_log_path,
+                stream=replay_log_stream,
                 header=header,
                 output=replay_text,
                 exit_status=status,
@@ -1036,7 +1087,7 @@ def rerun_gate_at_integrated_revision(
 # The file name each declared invariant's replay log is written under, in the
 # run directory beside the suite replay's own log. Named from the invariant's
 # id so a reader told which invariant failed can open exactly its log, and a
-# second run of the same check replaces its log rather than accumulating.
+# second run of the same check gets its own log.
 def _domain_check_log_name(invariant_id: str) -> str:
     safe = "".join(
         character if character.isalnum() or character in "-_" else "-"
@@ -1089,7 +1140,9 @@ def replay_domain_invariant_checks(
             command=command,
             changed_paths=changed_paths,
             worktree_roots=worktree_roots,
-            replay_log_path=directory / _domain_check_log_name(identifier),
+            replay_log_path=_unused_log_path(
+                directory / _domain_check_log_name(identifier)
+            ),
             recorded_gate_seconds=recorded_gate_seconds,
             run=run,
         )
@@ -1207,14 +1260,16 @@ def record_gate_rerun_at_integrated_revision(
     )
     report = rerun_gate_at_integrated_revision(
         repository=checkout,
-        gate_check=stored_gate_check if isinstance(stored_gate_check, Mapping) else None,
+        gate_check=stored_gate_check
+        if isinstance(stored_gate_check, Mapping)
+        else None,
         base_verdict=str(row.get("gate") or "passed"),
         integrated_revision=integrated_revision,
         timeout_seconds=timeout_seconds,
         command=command,
         changed_paths=_cited_changed_paths(checkout, row.get("commits")),
         worktree_roots=_recorded_worktree_roots(row),
-        replay_log_path=run_dir(run_id) / _REPLAY_GATE_LOG_NAME,
+        replay_log_path=_unused_log_path(run_dir(run_id) / _REPLAY_GATE_LOG_NAME),
         recorded_gate_seconds=recorded_gate_seconds,
     )
     record_path = ledger.run_path(project, run_id, ledger_root)
@@ -1270,7 +1325,6 @@ def record_gate_rerun_at_integrated_revision(
         "landing_check": landing_check,
         "store_synopsis": store_synopsis,
     }
-
 
 
 from reckon.crew.promotion_checks import (
