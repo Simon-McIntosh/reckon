@@ -1,0 +1,84 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/run_store.py:579 sync",
+    "reckon/run_store.py:1578 _retrying",
+    "reckon/run_store.py:1807 compare",
+    "reckon/budget.py:544 _stamp_refusal",
+    "reckon/budget.py:580 binding_window",
+    "reckon/crew/gc.py:2135 retirement path",
+    "reckon/ledger.py:986 _sync_amended_run",
+    "reckon/ledger.py:3523 append promotion path"
+  ],
+  "completed_at": "2026-11-17T12:13:28Z",
+  "dispatched_at": "2026-11-17T11:52:29Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/older-code-never-migrates-a-newer-store.html",
+      "line": 76,
+      "severity": "blocking",
+      "text": "blocking: the claim that the missing-column case passes at both revisions is not supported by the recorded base arm, which runs only the prior test files, or the negative control, which runs only the newer-store case; line 94 also attributes assert 500 == 0 to removing the coverage check, while mutation-no-coverage-check.log shows pass-count and version failures with zero row decodes and the 500-row failure belongs to the separate backfill-gate mutation; correct the evidence text to match its receipts."
+    },
+    {
+      "file": "manifest.md",
+      "line": 28,
+      "severity": "blocking",
+      "text": "blocking: the verification rubric claims ruff check and ruff format --check were clean, but the manifest records only pytest commands and logs at lines 11-12 and 20, with no lint command or receipt; section s84 requires those results, so the gate evidence is incomplete."
+    },
+    {
+      "disposition": "exempted",
+      "disposition_reason": "The identity-only get_run assertion is redundant to the migration durability measure; the independent records count and direct SQLite row-count assertion verify retained rows and persisted append.",
+      "file": "tests/test_older_code_never_migrates_a_newer_store.py",
+      "line": 272,
+      "severity": "non-blocking",
+      "text": "non-blocking: get_run(appended[\"run_id\"])[\"run_id\"] is compared with the same key supplied to get_run, so an implementation that echoes the key instead of reading the appended row would pass this assertion; disposition: exempted because the independent records count and direct SQLite row-count assertion verify retained rows and persisted append, and this assertion does not carry the durability score."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Verified direct production opens in reckon/run_store.py:579, :1578 and :1807, budget reads/writes at reckon/budget.py:544 and :580, retirement at reckon/crew/gc.py:2135, and ledger amendment/append routes at reckon/ledger.py:986 and :3523.",
+    "diff": "I read all six commits from a5e9b92cc749edac32962d8d1c3dc15ceb63e05e through dcb1bfc3568251a438fb329b4c82805c3831cb30; tests/test_older_code_never_migrates_a_newer_store.py:174-178 fail if backfill returns, the coverage check is removed, the shape changes or the record is restamped; :200-203 fail if missing-index detection, restoration or recording regresses; :241-258 fail if missing-column backfill, values, index or recording regress; :269-280 measure retained rows and persisted append, with :272 input-coupled; all final paths are declared.",
+    "done_when": "The plan's tests pass at head (gate.log: 4 passed, repair-gate.log: 9 passed), and the base negative control records the original 500-row decode, while the ruff check and format claims have no recorded command or receipt.",
+    "goal": "docs/plans/the-monitor-reads-each-fact-once.html:818-821 states the coverage-based migration goal; reckon/run_store.py:842-903 skips migration for a store with all declared columns and indexes, while :936 still backfills only when declared columns are missing.",
+    "manifest": "The source manifest.md:7-21 records six commits, literal pytest commands, base/head suite receipts, and the 500-row negative control; it also repeats an unsupported missing-column-at-both-revisions claim at :21 and claims lint results without a receipt at :28.",
+    "write_paths": "The source manifest.md:3 declares four paths, and the complete base-to-head diff changes exactly those four paths."
+  },
+  "justifications": {
+    "durability": "tests/test_older_code_never_migrates_a_newer_store.py:174-203 and :241-258 fail under the recorded coverage-check and backfill-gate mutations, while :272 is input-coupled and excluded from the score.",
+    "evidence": "The gate and negative-control logs establish the main behaviour, but source manifest.md:28 has no Ruff receipt and the evidence fragment at :76-100 misstates which recorded runs support its claims.",
+    "fit": "reckon/run_store.py:877 follows the existing private-helper style of _runs_columns at :869, and the new helper and test names describe schema coverage without forbidden labels.",
+    "goal_fidelity": "reckon/run_store.py:842-843 returns before a row migration when :877-903 finds all declared columns and indexes, and :936 preserves migration for genuinely missing columns.",
+    "reuse": "The capability search for PRAGMA table_info, sqlite_master, _runs_columns, _migrate_runs and _STORE_SCHEMA_VERSION under reckon/ found the existing RunStore owner in reckon/run_store.py:869-906, which _lacks_declaration extends.",
+    "scope_discipline": "The source manifest.md:3 declares reckon/run_store.py, two test files and the evidence fragment, and the six-commit diff changes only those four paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: docs/plans/the-monitor-reads-each-fact-once.html:818-821 states the coverage-based migration goal; reckon/run_store.py:842-903 skips migration for a store with all declared columns and indexes, while :936 still backfills only when declared columns are missing.\nVERDICT done_when: the named tests pass at head (gate.log: 4 passed, repair-gate.log: 9 passed), and the base negative control records the original 500-row decode, while the ruff check and format claims have no recorded command or receipt.\nVERDICT write_paths: the source manifest.md:3 declares four paths, and the complete base-to-head diff changes exactly those four paths.\nVERDICT manifest: source manifest.md:7-21 records six commits, literal pytest commands, base/head suite receipts, and the 500-row negative control; it repeats an unsupported missing-column-at-both-revisions claim at :21 and claims lint results without a receipt at :28.\nVERDICT diff: I read all six commits from a5e9b92cc749edac32962d8d1c3dc15ceb63e05e through dcb1bfc3568251a438fb329b4c82805c3831cb30; tests/test_older_code_never_migrates_a_newer_store.py:174-178 fail if backfill returns, the coverage check is removed, the shape changes or the record is restamped; :200-203 fail if missing-index detection, restoration or recording regresses; :241-258 fail if missing-column backfill, values, index or recording regress; :269-280 measure retained rows and persisted append, with :272 input-coupled; all final paths are declared.\nCALL_SITES: reckon/run_store.py:579 sync, reckon/run_store.py:1578 _retrying, reckon/run_store.py:1807 compare, reckon/budget.py:544 _stamp_refusal, reckon/budget.py:580 binding_window, reckon/crew/gc.py:2135 retirement path, reckon/ledger.py:986 _sync_amended_run, reckon/ledger.py:3523 append promotion path\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/run_store.py:842-843 returns before a row migration when :877-903 finds all declared columns and indexes, and :936 preserves migration for genuinely missing columns.\nSCORE evidence: 12\nJUSTIFICATION evidence: the gate and negative-control logs establish the main behaviour, but source manifest.md:28 has no Ruff receipt and the evidence fragment at :76-100 misstates which recorded runs support its claims.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: source manifest.md:3 declares reckon/run_store.py, two test files and the evidence fragment, and the six-commit diff changes only those four paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_older_code_never_migrates_a_newer_store.py:174-203 and :241-258 fail under the recorded coverage-check and backfill-gate mutations, while :272 is input-coupled and excluded from the score.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/run_store.py:877 follows the existing private-helper style of _runs_columns at :869, and the new helper and test names describe schema coverage without forbidden labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search for PRAGMA table_info, sqlite_master, _runs_columns, _migrate_runs and _STORE_SCHEMA_VERSION under reckon/ found the existing RunStore owner in reckon/run_store.py:869-906, which _lacks_declaration extends.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/older-code-never-migrates-a-newer-store.html:76 blocking: the claim that the missing-column case passes at both revisions is not supported by the recorded base arm, which runs only the prior test files, or the negative control, which runs only the newer-store case; line 94 also attributes assert 500 == 0 to removing the coverage check, while mutation-no-coverage-check.log shows pass-count and version failures with zero row decodes and the 500-row failure belongs to the separate backfill-gate mutation; correct the evidence text to match its receipts.\nFINDING manifest.md:28 blocking: the verification rubric claims ruff check and ruff format --check were clean, but the manifest records only pytest commands and logs at lines 11-12 and 20, with no lint command or receipt; section s84 requires those results, so the gate evidence is incomplete.\nFINDING tests/test_older_code_never_migrates_a_newer_store.py:272 non-blocking: get_run(appended[\"run_id\"])[\"run_id\"] is compared with the same key supplied to get_run, so an implementation that echoes the key instead of reading the appended row would pass this assertion; disposition: exempted because the independent records count and direct SQLite row-count assertion verify retained rows and persisted append, and this assertion does not carry the durability score.",
+  "review_run_id": "r-20261117T115029984529-review-of-older-code-never-migrates-a-newer-store-dcb1bfc35682",
+  "reviewed_base_sha": "d5694fa44d63c6b52d9b80e8315d1afa897bc11e",
+  "reviewed_commits": [
+    "a5e9b92cc749edac32962d8d1c3dc15ceb63e05e",
+    "0e0c715c8f0ac444ee501ab2e7e36b69c3d26b0b",
+    "19d35d7deff0f0c459dc7cf70facdbe317e31ef7",
+    "4e492e9b17297d76c1431fc404cd4d6436cb78ad",
+    "f6b4fd0358d808a4efdbb229f50f0c868d1e58bb",
+    "dcb1bfc3568251a438fb329b4c82805c3831cb30"
+  ],
+  "reviewed_head_sha": "dcb1bfc3568251a438fb329b4c82805c3831cb30",
+  "reviewed_run_id": "r-20261117T050100558634-older-code-never-migrates-a-newer-store",
+  "scores": {
+    "durability": 17,
+    "evidence": 12,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T12:31:18.595202+00:00",
+  "total": 106
+}

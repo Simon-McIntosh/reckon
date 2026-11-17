@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="434">
+<meta name="plan-version" content="435">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -1663,10 +1663,13 @@ staged paths.</p>
     <div class="r-comment-body"><p>parsed review stored at both declared review-records paths; one blocking finding records the out-of-scope recovery_wait.py write.</p></div>
 </div>
 <div class="r-comment" data-section="s83" data-id="c-run-r-20261117T044909932126-lifted-holds-read-only-where-the-log-grew" data-who="reckon-build" data-when="2026-11-17T05:57:25Z">
-    <div class="r-comment-body"><p>`resumption._lifted_holds` decodes only the recovery-log lines appended since its last read, reading them through `recovery_wait.appended_lines` (the stream readers&#x27; own `_stream_scan` inode/not-shorter restart and `_appended_lines` whole-line clamp) and advancing the offset and the lifted set inside one critical section, so two overlapping sweeps cannot publish past uncounted lines. Measured on a 5,000-line temporary log: 5,000 decodes first call, 0 unchanged, exactly 3 after 3 appended (set equal to the whole-file answer), 4 of 4 after truncation, 12 of 12 at a new inode; a record left unterminated is not consumed, its offset stays at the last newline, and the completing bytes make the next call decode it once. Two interleaved reads leave all 23 pairs with each appended line decoded once. At base the second call decodes 5,000 again; with the whole-line clamp removed the mid-append case fails `assert 21 == 20`; on the pre-repair code the interleaved case returns only the 3 appended pairs.</p></div>
+    <div class="r-comment-body"><p>`resumption._lifted_holds` decodes only the recovery-log lines appended since its last read, reading them through `recovery_wait.appended_lines` (the stream readers' own `_stream_scan` inode/not-shorter restart and `_appended_lines` whole-line clamp) and advancing the offset and the lifted set inside one critical section, so two overlapping sweeps cannot publish past uncounted lines. Measured on a 5,000-line temporary log: 5,000 decodes first call, 0 unchanged, exactly 3 after 3 appended (set equal to the whole-file answer), 4 of 4 after truncation, 12 of 12 at a new inode; a record left unterminated is not consumed, its offset stays at the last newline, and the completing bytes make the next call decode it once. Two interleaved reads leave all 23 pairs with each appended line decoded once. At base the second call decodes 5,000 again; with the whole-line clamp removed the mid-append case fails `assert 21 == 20`; on the pre-repair code the interleaved case returns only the 3 appended pairs.</p></div>
 </div>
 <div class="r-comment" data-section="s84" data-id="c-run-r-20261117T085953647948-review-of-older-code-never-migrates-a-newer-store-19d35d7deff0" data-who="reckon-build" data-when="2026-11-17T09:02:12.818Z">
     <div class="r-comment-body"><p>independent review of run r-20261117T050100558634-older-code-never-migrates-a-newer-store at base d5694fa44d63c6b52d9b80e8315d1afa897bc11e and head 19d35d7deff0f0c459dc7cf70facdbe317e31ef7 — parsed record: 5 item verdicts plus CALL_SITES, 6 scores, 6 justifications.</p></div>
+</div>
+<div class="r-comment" data-section="s84" data-id="c-run-r-20261117T115029984529-review-of-older-code-never-migrates-a-newer-store-dcb1bfc35682" data-who="reckon-build" data-when="2026-11-17T12:13:28Z">
+    <div class="r-comment-body"><p>Review record is stored at both declared review-records paths; promotion lands the outcome on section s84, and the plan is not edited.</p></div>
 </div>
 <div class="r-comment" data-section="s85" data-id="c-20261117T082107016083" data-who="reckon-96" data-when="2026-11-17T08:25:00Z">
     <div class="r-comment-body"><p>s85 is withdrawn. The content review of revision 426 showed its trigger is already covered. Any commit to <code>reckon/run_store.py</code> moves the checkout's code stamp, and the pass-boundary reload window (<code>follower_reload.ReloadWindow.due</code>, fed by <code>admission/service.py</code>) and <code>fleet_supervisor</code> already reload a service whose running stamp differs. The stall it cited, no admission pass from 02:27Z to 04:11Z, was a stuck reload boundary, fixed at <code>658ee9d230</code>. The 3 h 37 min stale admit service outlived that window only because of the same stuck boundary. So s85's queued run <code>r-20261117T050926723517</code> was dropped, and s84 alone removes the harm a stale process can do to the store.</p></div>
