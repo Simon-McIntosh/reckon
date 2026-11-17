@@ -2331,9 +2331,9 @@ def _edit_plan_tool(
     declaration_write = mode == "state" and _changes_section_declarations(ops)
     declarations_before = (
         _with_read_scopes(
-            lambda: read_plan(project, slug, checkout_path, artifact_type=doc_type)[0].get(
-                DECLARATIONS_PATH_HEAD
-            )
+            lambda: read_plan(project, slug, checkout_path, artifact_type=doc_type)[
+                0
+            ].get(DECLARATIONS_PATH_HEAD)
         )
         if declaration_write
         else None
@@ -2380,7 +2380,9 @@ def _edit_plan_tool(
                 )[0].get(DECLARATIONS_PATH_HEAD)
                 result.update(
                     _plan_readiness_fields(
-                        project, slug, checkout_path,
+                        project,
+                        slug,
+                        checkout_path,
                         changed=declarations_before != declarations_after,
                     )
                 )

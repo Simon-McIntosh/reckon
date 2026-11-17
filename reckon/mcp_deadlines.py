@@ -805,7 +805,7 @@ def _plan_readiness_report(
     inventory to the ordinary roadmap reader instead. The projection has its
     own request shape so it never replaces a full roadmap response.
     """
-    from reckon import mcp, serve
+    from reckon import mcp, run_store, serve
     from reckon.roadmap import roadmap_build_scope
 
     mounts = dict(serve.mounts_for_snapshot())
@@ -818,7 +818,9 @@ def _plan_readiness_report(
         key, _states = serve.roadmap_snapshot_key(
             project, mounts, mcp._SERVER_CODE_STAMP, shape=shape
         )
-        return key
+        # A promoted run may have left the live set before its declaration
+        # lands, so the durable run store also governs section readiness.
+        return json.dumps([key, run_store.store_stamp()])
 
     key = current_key()
     served = serve.roadmap_snapshot_load(project, docs_dir, key, shape=shape)

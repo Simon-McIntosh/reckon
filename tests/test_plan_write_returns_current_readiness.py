@@ -29,7 +29,7 @@ CAPABILITY = {
 }
 
 
-def _plan(docs: Path, slug: str, *, after: list[str] | None = None) -> Path:
+def _plan(docs: Path, slug: str, *, depends_on: list[str] | None = None) -> Path:
     state = {
         "project": PROJECT,
         "type": "plan",
@@ -38,7 +38,7 @@ def _plan(docs: Path, slug: str, *, after: list[str] | None = None) -> Path:
         "status": "active",
         "version": 0,
         "standalone": "isolated fixture",
-        "after": after or [],
+        "depends_on": depends_on or [],
         "section_declarations": {"s1": "implementable", "s2": "implementable"},
         "sections": [
             {
@@ -54,11 +54,12 @@ def _plan(docs: Path, slug: str, *, after: list[str] | None = None) -> Path:
     }
     text = (
         f'<!doctype html><html><head><meta name="docs-project" content="{PROJECT}">'
-        f'<meta name="plan-after" content="{",".join(after or [])}">'
+        f'<meta name="plan-depends-on" content="{",".join(depends_on or [])}">'
         '</head><body><main class="plan-doc">'
     )
     text += "".join(
-        f'<h2 id="{name}">{name}</h2><p>Deliver work.</p>' for name in ("s1", "s2")
+        f'<h2 id="{name}">{name}</h2><p>Deliver {name} work.</p>'
+        for name in ("s1", "s2")
     )
     path = docs / "plans" / f"{slug}.html"
     path.write_text(_plan_html.write_state(text + "</main></body></html>", state))
@@ -82,7 +83,7 @@ def project(tmp_path, monkeypatch):
     serve._resolve_paths(mounts)
     roadmap_snapshot._ROADMAP_SNAPSHOTS.clear()
     _plan(docs, "upstream")
-    _plan(docs, "target", after=["upstream"])
+    _plan(docs, "target", depends_on=["upstream"])
     _plan(docs, "independent")
     return docs
 
@@ -137,8 +138,8 @@ def test_metadata_and_text_writes_build_no_roadmap(project, builds):
         "target",
         expected_version=version,
         mode="text",
-        old_html="Deliver work.",
-        new_html="Ship work.",
+        old_html="Deliver s1 work.",
+        new_html="Ship s1 work.",
     )
     assert answer["ok"], answer
     assert "readiness" not in answer
@@ -180,7 +181,9 @@ def test_changed_declaration_builds_once_and_returns_current_fields(
 def test_upstream_write_invalidates_readiness(project, builds):
     before = mcp_deadlines._plan_readiness_fields(PROJECT, "target")
     assert before["readiness"] == "blocked"
-    _edit("upstream", [_set("status", "abandoned")])
+    _edit("upstream", [_set("section_declarations", {"s1": "done", "s2": "done"})])
+    current = mcp_deadlines._plan_readiness_fields(PROJECT, "target")
+    assert _assert_current(current)["readiness"] == "ready"
     answer = _edit("target", [_set("section_declarations.s1", "done")])
     assert _assert_current(answer)["readiness"] == "ready"
     assert answer["readiness"] != before["readiness"]
@@ -242,7 +245,9 @@ def test_promoted_unlanded_run_invalidates_snapshot(project, builds):
     )
     with run_store.RunStore() as store:
         store.append(PROJECT, row)
+    builds.clear()
     current = mcp_deadlines._plan_readiness_fields(PROJECT, "target")
+    assert builds, "a promoted store write must invalidate the readiness snapshot"
     _assert_current(current)
     report = mcp._roadmap_scoped(PROJECT)
     assert any(
