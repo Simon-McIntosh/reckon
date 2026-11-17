@@ -4595,6 +4595,13 @@ def _obligations_view(
             if item is not None:
                 items.append(item)
             continue
+        if recovery_reading == "stopped" and str(row.get("detail") or "").startswith(
+            recovery_classification.SUPERVISOR_STOP_PREFIX
+        ):
+            item = _live_item(row, kind="force-stopped", now=now)
+            item["reason"] = str(row["detail"])
+            items.append(item)
+            continue
         if recovery_reading in RECOVERY_CLASSIFICATION_DUTY_KINDS:
             kind = RECOVERY_CLASSIFICATION_DUTY_KINDS[recovery_reading]
         else:

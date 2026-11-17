@@ -1177,6 +1177,8 @@ def _remembered_word(state: Any) -> str:
 
 def _state_hue(theme: str, word: str) -> Any:
     """The hue of the pane's state word, or dim for a non-state marker."""
+    if word == "stopped":
+        return STATE_HUE[theme][word]
     return DISPLAY_HUE[theme].get(word, "dim")
 
 
@@ -1576,12 +1578,26 @@ def _pane_word(event: Mapping[str, Any]) -> str:
     rather than by the event's own field.
     """
     typed = str(event.get("recovery_classification") or "")
+    if supervisor_stop_clause(event):
+        return "stopped"
     entry = (
         typed
         if typed in {"held", "needs-help", "unwritten"}
         else str(event.get("to_state") or "")
     )
     return _display_state(entry)
+
+
+def supervisor_stop_clause(event: Mapping[str, Any]) -> str:
+    """The supervisor stop's cause, as the classifier wrote it."""
+    from reckon.crew.recovery_classification import SUPERVISOR_STOP_PREFIX
+
+    detail = str(event.get("detail") or "")
+    if event.get("recovery_classification") == "stopped" and detail.startswith(
+        SUPERVISOR_STOP_PREFIX
+    ):
+        return detail.partition(";")[0]
+    return ""
 
 
 def is_submission_row(event: Mapping[str, Any]) -> bool:
@@ -1686,7 +1702,7 @@ def stream_carries(event: Mapping[str, Any]) -> bool:
         # notice a coordinator gets that the launch will repeat the same
         # refusal until the remedy is run.
         return True
-    if _pane_word(event) in CARRIED_PANE_WORDS:
+    if _pane_word(event) in CARRIED_PANE_WORDS or supervisor_stop_clause(event):
         return True
     return (
         transition_class(event.get("from_state"), event.get("to_state"))
@@ -3506,9 +3522,9 @@ class Ticker:
         elapsed and the fleet counters, which every row carries at fixed
         widths, then the lane's rate, the model and the effort. Those three
         are added while the pane has room for them, so a narrow pane drops the
-        effort first and never wraps. Nothing follows the effort: the row
-        carries no free text, and ends on its last cell with any trailing pad
-        removed.
+        effort first and never wraps. Supervisor stops carry their recorded
+        cause before these optional cells. The row ends on its last cell with
+        any trailing pad removed.
         """
         if is_submission_row(event):
             return self._submission_line(event)
@@ -3528,15 +3544,9 @@ class Ticker:
         # as the fresh grant having landed.
         if raw_to_state in LIFT_STATES and event.get("lift_replaces"):
             return self._lift_line(event)
-        typed_state = str(event.get("recovery_classification") or "")
         # The compatibility lifecycle state may group several stops as blocked.
         # The row spells the cause-specific type when the producer supplied one.
-        entry_state = (
-            typed_state
-            if typed_state in {"held", "needs-help", "unwritten"}
-            else raw_to_state
-        )
-        to_state = _display_state(entry_state)
+        to_state = _pane_word(event) or _display_state(raw_to_state)
         run_id = str(event.get("run_id") or node)
         stream_event = bool(str(event.get("event") or "").strip())
         # A run an admission pass launched from a queued request continues the
@@ -3642,12 +3652,11 @@ class Ticker:
         cells.extend(self._spend_cells(event, to_state))
         cells.append((" " * GAP, None))
         cells.extend(self._stats(event))
-        # A lift row carries its own naming clause after the figures, so it
-        # reads as the lift it is — form, scope and id — rather than as the
-        # run-state word its transition maps to. The clause takes the room the
-        # pane has left and is cut like any other cell, so it never wraps.
-        if raw_to_state in LIFT_STATES:
-            clause = lift_clause(event)
+        # A lift or supervisor stop carries its own naming clause after the
+        # figures. It takes the room the pane has left and is cut like any
+        # other cell, so it never wraps.
+        if raw_to_state in LIFT_STATES or supervisor_stop_clause(event):
+            clause = supervisor_stop_clause(event) or lift_clause(event)
             spare = self._grid_width() - sum(len(text) for text, _ in cells)
             if clause and spare > GAP + 1:
                 text = elide(clause, spare - GAP)
