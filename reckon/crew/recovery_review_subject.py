@@ -667,6 +667,110 @@ def _re_review_block(
     return "\n".join(lines)
 
 
+# The heading a delivered run's declared scope and diff are carried under in its
+# review brief. One heading for one block, so a reader comparing two briefs sees
+# the same marker, and the review can score a node that strayed from its
+# section's expected scope as readily as one that stayed inside it.
+REVIEWED_SCOPE_HEADING = "Scope the reviewed node declared, and the diff it delivered"
+
+# A delivered run can change more files than a reviewer reads comfortably in a
+# brief, so the changed list is capped...
+_REVIEWED_DIFF_LIMIT = 60
+
+
+def _within_declared(path: str, declared: Iterable[str], tree: Path | None) -> bool:
+    """Whether a changed path lies within one of the reviewed node's declarations.
+
+    The containment rule is promotion's own, imported rather than restated, so a
+    path the brief calls out of scope is a path a landing would also refuse when
+    a merge cannot reconcile it.
+    """
+    from reckon.crew.reports import path_within_declared_scope
+
+    return path_within_declared_scope(path, declared, worktree=tree, repository=tree)
+
+
+def _reviewed_scope_block(record: Mapping[str, Any], head: str) -> str:
+    """The declared paths and the delivered diff a review brief states.
+
+    A review scores a node against its section's expected scope, which it can
+    only do when the brief names what the node declared and what it changed. The
+    declaration is read from the node the dispatch recorded, then from the
+    manifest the run delivered, which outlives a reclaimed pointer; the diff is
+    read from the run's own tree over the range the review judges. A tree that
+    cannot be read, and a range git cannot list, are stated as unreadable rather
+    than as nothing changed — the reviewer has to know which of the two it faces.
+    """
+    node = record.get("node") if isinstance(record.get("node"), Mapping) else {}
+    declared = [
+        str(path) for path in (node or {}).get("write_paths") or () if str(path).strip()
+    ]
+    if not declared:
+        declared = [
+            str(path) for path in record.get("write_paths") or () if str(path).strip()
+        ]
+    lines = [REVIEWED_SCOPE_HEADING]
+    if declared:
+        lines.append("Declared write paths:")
+        lines.extend(f"  {path}" for path in declared)
+    else:
+        lines.append(
+            "Declared write paths: none. The repository is the scope a node "
+            "declaring nothing is expected to change."
+        )
+    base = str(record.get("base_sha") or "").strip()
+    tree = _review_tree(record)
+    if tree is None or not base or not head:
+        lines.append(
+            "Delivered diff: unreadable — the reviewed range cannot be resolved "
+            "from this run's record, so read the run's own commits before scoring "
+            "its scope."
+        )
+        return "\n".join(lines)
+    try:
+        completed = subprocess.run(
+            ["git", "diff", "--numstat", "--no-renames", f"{base}..{head}"],
+            cwd=tree,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        completed = None
+    if completed is None or completed.returncode:
+        lines.append(
+            f"Delivered diff {base}..{head}: unreadable — git could not list it "
+            "from the reviewed tree."
+        )
+        return "\n".join(lines)
+    rows = [line for line in completed.stdout.splitlines() if line.strip()]
+    if not rows:
+        lines.append(f"Delivered diff {base}..{head}: no path changed.")
+        return "\n".join(lines)
+    lines.append(f"Delivered diff {base}..{head} ({len(rows)} path(s)):")
+    for row in rows[:_REVIEWED_DIFF_LIMIT]:
+        added, _, rest = row.partition("\t")
+        removed, _, path = rest.partition("\t")
+        lines.append(f"  {path} (+{added} -{removed})")
+    if len(rows) > _REVIEWED_DIFF_LIMIT:
+        lines.append(
+            f"  ... {len(rows) - _REVIEWED_DIFF_LIMIT} further path(s) the run's "
+            "own diff lists."
+        )
+    stray = [
+        path
+        for path in (row.rsplit("\t", 1)[-1] for row in rows)
+        if declared and not _within_declared(path, declared, tree)
+    ]
+    if stray:
+        lines.append(
+            "Changed outside the declared paths (a merge reconciles these; score "
+            "whether the node stayed in its section's expected scope): "
+            + ", ".join(stray[:_REVIEWED_DIFF_LIMIT])
+        )
+    return "\n".join(lines)
+
+
 def _review_brief_text(
     record: Mapping[str, Any],
     head: str,
@@ -717,6 +821,7 @@ def _review_brief_text(
     ]
     if brief_path:
         lines.append(f"Reviewed run's brief: {brief_path}")
+    lines.extend(["", _reviewed_scope_block(record, head)])
     # A figure record carries no text scores; its findings declare their own
     # severity.
     if rubric_name == review_module.FIGURE_REVIEW_RUBRIC:

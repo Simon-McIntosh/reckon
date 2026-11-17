@@ -194,9 +194,9 @@ def test_shell_and_reader_share_one_schema(tmp_path):
         text=True,
     )
     assert path.read_text().strip().split("\t") == fleet_node._HEALTH_COLUMNS
-    row = ["-" for _ in fleet_node._HEALTH_COLUMNS]
-    row[0] = "2000-01-01T00:00:00Z"
-    row[-1] = "node"
+    row = dict.fromkeys(fleet_node._HEALTH_COLUMNS, "-")
+    row["utc"] = "2000-01-01T00:00:00Z"
+    row["source"] = "node"
     subprocess.run(
         [
             sys.executable,
@@ -205,7 +205,7 @@ def test_shell_and_reader_share_one_schema(tmp_path):
             "--append-node-row",
             str(path),
         ],
-        input="\t".join(row) + "\n",
+        input="\t".join(row[column] for column in fleet_node._HEALTH_COLUMNS) + "\n",
         check=True,
         capture_output=True,
         text=True,

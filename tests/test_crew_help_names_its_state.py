@@ -54,7 +54,9 @@ STATE_PHRASES: dict[CommandPath, str] = {
     ("reload",): "one named service's reload schedule",
     ("recover",): "live pointers",
     ("repair-completion",): "historical completion measurements missing",
-    ("repair",): "a manifest's status word or a review's status",
+    (
+        "repair",
+    ): "a manifest's status word, a suite arm's revision, or a review's fields",
     ("resume",): "one stopped run, every ready run",
     ("retention-sweep",): "run directories past their retention window",
     ("review",): "one plan's content, a code neighbourhood or a portfolio",
@@ -165,6 +167,18 @@ def test_gate_help_names_worker_scope_and_paired_arms() -> None:
     for result in (gate, suite):
         assert "--partition" in result.output
         assert "--log" not in result.output
+
+
+def test_complete_help_names_repeated_run_confirmation_and_full_records() -> None:
+    result = _help_result(("complete",))
+    text = " ".join(result.output.split())
+    assert result.exit_code == 0, result.output
+    assert "repeat to confirm several runs" in text
+    assert "Replies link the full record and stay below 2 kB" in text
+    option = next(
+        param for param in cli_module.crew_complete.params if param.name == "run_id"
+    )
+    assert option.multiple
 
 
 def test_the_one_word_near_namesake_states_its_distinction() -> None:

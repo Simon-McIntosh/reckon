@@ -23,12 +23,40 @@ def _git(root: Path, *args: str) -> str:
     ).stdout.strip()
 
 
+def _tracked_ledger_documents(root: Path) -> list[str]:
+    return [
+        path
+        for path in _git(root, "ls-files", "--", "docs/state").splitlines()
+        if path.endswith("/crew.json") or "/runs/" in path
+    ]
+
+
 def test_no_ledger_document_is_tracked() -> None:
     assert _git(ROOT, "ls-files", "--", ".gitignore") == ".gitignore"
-    tracked = _git(
-        ROOT, "ls-files", "--", "docs/state/*/crew.json", "docs/state/*/runs"
-    ).splitlines()
+    tracked = _tracked_ledger_documents(ROOT)
     assert not tracked, f"ledger documents remain tracked: {tracked[:5]}"
+
+
+@pytest.mark.parametrize(
+    "document", ["crew.json", "runs/r-sample.json", "runs/nested/r-sample.json"]
+)
+def test_index_inventory_finds_a_tracked_ledger_document(
+    tmp_path: Path, document: str
+) -> None:
+    root = tmp_path / "repository"
+    path = root / "docs" / "state" / "sample" / document
+    path.parent.mkdir(parents=True)
+    path.write_text("{}\n")
+    index = root / "docs/state/sample/index.json"
+    index.write_text("{}\n")
+    _git(root, "init", "-q")
+    _git(
+        root,
+        "add",
+        path.relative_to(root).as_posix(),
+        index.relative_to(root).as_posix(),
+    )
+    assert _tracked_ledger_documents(root) == [path.relative_to(root).as_posix()]
 
 
 def test_every_project_ledger_is_ignored_but_other_state_is_kept(

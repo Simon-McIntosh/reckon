@@ -191,6 +191,7 @@ DUTY_ROW_FIELDS = (
     "until_condition",
     "deferred_duty",
     "record",
+    "record_action",
     "head",
     "reviewed_head",
     "review_tier",
@@ -658,7 +659,40 @@ def _with_action_form(item: Mapping[str, Any]) -> dict[str, Any]:
     view projects passes through here, in the derivation and in the slice a
     sweep publishes, so the two surfaces cannot disagree about what a duty names.
     """
+    if item.get("_delivery_decision") and not item.get("deferred_duty"):
+        row = {
+            key: item[key]
+            for key in (
+                "kind",
+                "run_id",
+                "age_seconds",
+                "reason",
+                "next_command",
+            )
+            if key in item
+        }
+        # The run id is the key of the full read, so the bounded row need not
+        # repeat the manifest, pointer, worktree and review paths.
+        row["record_action"] = "observe"
+        row = project_run_rows(
+            [row],
+            view="obligations",
+            sections={str(row["run_id"]): str(item["_delivery_decision"])},
+        )[0]
+        available = max(0, 400 - len(json.dumps({**row, "reason": ""})))
+        reason = str(row.get("reason") or "")
+        if len(reason) > available and available < 25 and "gate" in reason.lower():
+            reason = "gate failed"
+        if len(json.dumps(reason)) - 2 > available:
+            suffix = "..." if available >= 3 else ""
+            reason = reason[:available]
+            while reason and len(json.dumps(reason + suffix)) - 2 > available:
+                reason = reason[:-1]
+            reason += suffix
+        row["reason"] = reason
+        return row
     row = dict(item)
+    row.pop("_delivery_decision", None)
     rendered = action_form(str(item.get("next_command") or ""))
     if rendered is not None:
         row["next_action_form"] = rendered
@@ -2857,6 +2891,112 @@ def _review_duty_item(
     live_pointers: Sequence[Mapping[str, Any]] | None = None,
     placements: Mapping[str, Mapping[str, int]] | None = None,
 ) -> dict[str, Any] | None:
+    """Leave automatic deliveries to their promoter and show its refusals."""
+    resolution: dict[str, Any] = {}
+    item = _review_duty_detail(
+        project,
+        row,
+        pointer,
+        now=now,
+        grace=grace,
+        live_pointers=live_pointers,
+        placements=placements,
+        resolution=resolution,
+    )
+    if item is None or pointer is None:
+        return item
+    from reckon.crew import recovery_review_acceptance as acceptance
+    from reckon.crew import review_landing
+    from reckon.crew.resume import hold_reason, station_hold_reason
+
+    held = (
+        hold_reason(pointer, str(resolution["head"]))
+        if "head" in resolution
+        else station_hold_reason(pointer)
+    )
+    if held:
+        item["kind"] = "run-held"
+        item["reason"] = held
+        item["next_command"] = (
+            f"reckon crew release --run {shlex.quote(str(row['run_id']))} "
+            "--reason 'The delivery is ready to land.'"
+        )
+    elif recovery._is_review_run(pointer):
+        state, reason, _record = acceptance.review_self_state(pointer)
+        if state != acceptance.REVIEW_SELF_REFUSED:
+            return None
+        item["reason"] = reason
+    elif item["kind"] in {"review-ready", "promotable-stale"}:
+        head, tree = str(resolution["head"]), resolution["tree"]
+        try:
+            reason = review_landing.manual_landing_reason(pointer)
+        except (OSError, ValueError, _store.CorruptEnvelopeError) as exc:
+            reason = f"the landing decision could not be read: {exc}"
+        if not reason:
+            gate, commits = acceptance._recorded_gate_passed(pointer)
+            if gate is None:
+                reason = "the run records no passing gate to re-run at the merged head"
+            else:
+                review, _ = _selected_review(
+                    project, str(row["run_id"]), head, tree=tree
+                )
+                try:
+                    memo = json.loads(
+                        (
+                            runs.run_dir(str(row["run_id"])) / "acceptance-refusal.json"
+                        ).read_text()
+                    )
+                except (OSError, ValueError):
+                    memo = None
+                inputs = acceptance._acceptance_input_view(
+                    pointer, head, tree, review, gate, commits
+                )
+                key = memo.get("inputs") if isinstance(memo, Mapping) else None
+                if (
+                    isinstance(key, (tuple, list))
+                    and key
+                    and key[0] == acceptance._inputs_digest(inputs)
+                ):
+                    reason = str((memo.get("refusal") or {}).get("reason") or "")
+                if not reason and (
+                    acceptance._review_accepts_promotion(review)
+                    or item.get("review_tier") == review_tiers.NONE
+                ):
+                    return None
+        if reason:
+            item["reason"] = reason
+    elif item["kind"] == "landing-refused":
+        item["reason"] = str(
+            (pointer.get("admission_landing") or {}).get("guard")
+            or item.get("reason")
+            or ""
+        )
+    else:
+        return item
+    if (
+        not held
+        and str(pointer.get("role") or (pointer.get("node") or {}).get("role"))
+        == "implement"
+    ):
+        item["next_command"] = (
+            f"reckon crew complete --run {shlex.quote(str(row['run_id']))} "
+            "--gate passed --land --wait"
+        )
+    item["_delivery_decision"] = str((pointer.get("node") or {}).get("section") or " ")
+    return item
+
+
+def _review_duty_detail(
+    project: str,
+    row: Mapping[str, Any],
+    pointer: Mapping[str, Any] | None,
+    *,
+    now: datetime,
+    grace: int,
+    live_pointers: Sequence[Mapping[str, Any]] | None = None,
+    placements: Mapping[str, Mapping[str, int]] | None = None,
+    resolution: dict[str, Any] | None = None,
+) -> dict[str, Any] | None:
     """One review duty, keyed to the review of the run's current worktree head.
 
     The kind is decided by the selection promotion uses
@@ -2968,6 +3108,8 @@ def _review_duty_item(
         return item
 
     resumed_head, _tree = recovery._review_head_and_tree(pointer)
+    if resolution is not None:
+        resolution.update(head=resumed_head, tree=_tree)
     if supersedes_head(pointer, resumed_head):
         return None
     landing = pointer.get("admission_landing")
@@ -3190,7 +3332,9 @@ def _review_duty_item(
                 item["reflex_window_seconds"] = _reflex_review_window_seconds()
     if item["kind"] in {"review-ready", "promotable-stale"} and pointer is not None:
         item["next_command"] = recovery_classification._promotion_command(
-            str(row.get("run_id") or ""), pointer, list(row.get("manifest_commits") or [])
+            str(row.get("run_id") or ""),
+            pointer,
+            list(row.get("manifest_commits") or []),
         )
     return item
 
@@ -4485,6 +4629,9 @@ def _obligations_view(
     )
     reviews_in_flight = _live_review_runs(project, session)
     items: list[dict[str, Any]] = []
+    from reckon.crew.fleet_supervisor import fleet_test_obligations
+
+    items.extend(fleet_test_obligations(project, session, now=now))
     pointers = {
         str(pointer.get("run_id") or ""): pointer for pointer in _live_pointers(project)
     }
@@ -4882,7 +5029,9 @@ def _obligations_view(
         "unreconciled_runs": int(unreconciled),
     }
     delivery = recovery_classification.delivery_summary(classified, session=session)
-    summary.update({key: value for key, value in delivery.items() if key != "remove_pointers"})
+    summary.update(
+        {key: value for key, value in delivery.items() if key != "remove_pointers"}
+    )
     view = {
         "project": project,
         "session": session,

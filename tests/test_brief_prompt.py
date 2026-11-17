@@ -337,12 +337,20 @@ CONTRACT — WHO CLOSES THE NODE
   verdict: write it `complete`, `blocked` or `failed` when you finish,
   which reports your node and never closes the plan.
 
-FENCE — SCOPE (declared write paths; nothing outside them)
+FENCE — SCOPE (the worktree is writable; the declared paths say where the change is expected)
+  Writable: the whole worktree — any file git can merge, declared or not.
+  The declared paths are where this node's change is expected, and a review
+  compares your diff against them; editing a mergeable file outside them
+  neither refuses nor blocks the node.
+  Expected:
   reckon/crew/prompts.py
+  Writable only when a dispatch declares it: a path a merge cannot
+  reconcile — docs/plans/*.html, docs/evidence/archive/, docs/state/, docs/figures/, pyproject.toml, uv.lock, *.receipt — plus any pattern this project adds.
+  The fence holds those read-only where none is declared.
 
 CONCURRENT NODES (information only; overlapping source and test edits are allowed)
-  Work in your own worktree within your declared write paths. Git merge reconciles
-  shared edits; a real conflict returns to the worker for a merge repair.
+  Work in your own worktree. Git merge reconciles shared edits; a real conflict
+  returns to the worker for a merge repair.
   none
 
 PEER CHANNEL — knowledge only; write scopes never transfer. Run ; endpoint /state/runs/carrier-node/peer-channel.

@@ -34,12 +34,16 @@ def test_a_locked_store_is_refused_as_locked(tmp_path) -> None:
     assert "owes the schema migration" not in str(refusal.value)
 
 
-def test_an_absent_runs_table_still_owes_its_migration(tmp_path) -> None:
-    connection = sqlite3.connect(tmp_path / "empty.db")
+def test_a_recorded_store_without_its_runs_table_owes_its_migration(tmp_path) -> None:
+    path = tmp_path / "recorded.db"
+    with run_store.RunStore(path):
+        pass
+    connection = sqlite3.connect(path)
     try:
+        connection.execute("DROP TABLE runs")
         assert run_store._table_columns(connection) == frozenset()
         with pytest.raises(run_store.UnreadableRunStoreError) as refusal:
-            run_store._refuse_owed_migration(connection, tmp_path / "empty.db")
+            run_store._refuse_owed_migration(connection, path)
     finally:
         connection.close()
 
