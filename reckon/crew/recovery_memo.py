@@ -777,6 +777,32 @@ def _fold_result_lines(
     return result
 
 
+def _touch_newest_result(key: str) -> None:
+    """Mark one cursor as the most recently used, where the store orders.
+
+    The store is an ordered mapping so its bound evicts the least recently
+    asked-for stream rather than the whole set; a caller that swaps in a plain
+    mapping -- a test holding its own empty store -- is still served, in
+    insertion order.
+    """
+    move = getattr(_NEWEST_RESULTS, "move_to_end", None)
+    if move is not None:
+        move(key)
+
+
+def _evict_newest_results() -> None:
+    """Drop the oldest cursors until the store is inside its bound."""
+    if len(_NEWEST_RESULTS) <= _NEWEST_RESULTS_LIMIT:
+        return
+    pop = getattr(_NEWEST_RESULTS, "popitem", None)
+    if pop is not None and isinstance(_NEWEST_RESULTS, OrderedDict):
+        while len(_NEWEST_RESULTS) > _NEWEST_RESULTS_LIMIT:
+            pop(last=False)
+        return
+    for key in list(_NEWEST_RESULTS)[: len(_NEWEST_RESULTS) - _NEWEST_RESULTS_LIMIT]:
+        _NEWEST_RESULTS.pop(key, None)
+
+
 def _newest_result_event(path: Path) -> Mapping[str, Any] | None:
     """The stream's last ``result`` record, reading only what changed.
 
@@ -796,7 +822,7 @@ def _newest_result_event(path: Path) -> Mapping[str, Any] | None:
     identity = (info.st_ino, info.st_size, info.st_mtime_ns)
     cursor = _NEWEST_RESULTS.get(key)
     if cursor is not None and cursor["identity"] == identity:
-        _NEWEST_RESULTS.move_to_end(key)
+        _touch_newest_result(key)
         return cursor["result"]
     result: Mapping[str, Any] | None = None
     offset = 0
@@ -819,9 +845,8 @@ def _newest_result_event(path: Path) -> Mapping[str, Any] | None:
         "result": result,
     }
     _NEWEST_RESULTS[key] = entry
-    _NEWEST_RESULTS.move_to_end(key)
-    while len(_NEWEST_RESULTS) > _NEWEST_RESULTS_LIMIT:
-        _NEWEST_RESULTS.popitem(last=False)
+    _touch_newest_result(key)
+    _evict_newest_results()
     return result
 
 
