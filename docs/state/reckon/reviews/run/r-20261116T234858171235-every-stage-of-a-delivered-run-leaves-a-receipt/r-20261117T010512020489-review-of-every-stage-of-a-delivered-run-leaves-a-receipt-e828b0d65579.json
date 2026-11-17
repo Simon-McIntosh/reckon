@@ -1,0 +1,422 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived by reading both completed baseline_suite and after_suite logs: 58 passed versus 73 passed, no FAILED/ERROR IDs in either; broader importer evidence is separate.",
+  "assertion_audit": [
+    {
+      "assertion": "not report['dispatched']",
+      "fails_when": "If the deliberately incomplete dispatch fixture unexpectedly launches a worker, this fixture-safety assertion fails; it does not prove a receipt hook.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 82
+    },
+    {
+      "assertion": "requests.read_promotion(run_id)['error'] == 'review requires a repair'",
+      "fails_when": "Dropping or changing the refusal reason in promotion persistence fails the independent literal check.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 102
+    },
+    {
+      "assertion": "requests.read_promotion(run_id)['phase'] == requests.PROMOTED",
+      "fails_when": "Failing to promote the successful retry fails the expected terminal phase check.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 107
+    },
+    {
+      "assertion": "receipts.receipt_path(run_id).read_bytes().startswith(prefix)",
+      "fails_when": "Rewriting or truncating earlier journal bytes during the retry breaks the preserved-prefix comparison.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 108
+    },
+    {
+      "assertion": "[row['stage'] for row in rows] == ['delivery_recorded', 'delivery_shown', 'review_requested', 'review_admitted', 'review_started', 'review_record_written', 'promotion_requested', 'promotion_attempt', 'promotion_outcome', 'promotion_requested', 'promotion_attempt', 'promotion_outcome', 'promotion_settled', 'landing']",
+      "fails_when": "Removing any lifecycle hook, losing either retry, or reordering the expected stages breaks the literal sequence; suppressing admission is demonstrated red in the saved mutation log.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 116
+    },
+    {
+      "assertion": "[row['at'] for row in rows] == sorted((row['at'] for row in rows))",
+      "fails_when": "Returning receipt timestamps out of order breaks sorted equality; this checks order, not timestamp accuracy.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 132
+    },
+    {
+      "assertion": "outcomes[0]['outcome'] == requests.REFUSED",
+      "fails_when": "Recording the first outcome as success or losing its phase fails the expected refusal enum.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 134
+    },
+    {
+      "assertion": "outcomes[0]['reason'] == 'review requires a repair'",
+      "fails_when": "Discarding or altering the retained refusal reason fails the independent literal reason.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 135
+    },
+    {
+      "assertion": "outcomes[1]['outcome'] == requests.PROMOTED",
+      "fails_when": "Recording the successful retry as refused or losing its outcome fails the expected promoted enum.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 136
+    },
+    {
+      "assertion": "len({row['attempt'] for row in outcomes}) == 2",
+      "fails_when": "Reusing an attempt identity for both outcomes fails the two-distinct-attempt cardinality.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 137
+    },
+    {
+      "assertion": "census['unread_runs'] == []",
+      "fails_when": "Misclassifying one complete fixture as unread makes the empty unread list assertion fail; ten known-written journals are the positive control.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 145
+    },
+    {
+      "assertion": "census['unknown_seconds'] == 0",
+      "fails_when": "Suppressing admission makes unknown_seconds positive; the recorded mutation produces 10 unknown seconds and fails this assertion.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 146
+    },
+    {
+      "assertion": "len(census['intervals']) == 130",
+      "fails_when": "Omitting or duplicating a fixture interval fails the independently counted 10 times 13 interval expectation.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 147
+    },
+    {
+      "assertion": "sum((row['seconds'] for row in intervals)) == duration > 0",
+      "fails_when": "Dropping, double-counting or zeroing intervals fails their sum against independently read journal endpoint duration, including the positive-duration check.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 156
+    },
+    {
+      "assertion": "all((left['end'] == right['start'] for left, right in itertools.pairwise(intervals)))",
+      "fails_when": "A gap or overlap between consecutive intervals fails endpoint adjacency; no loop iterations would be vacuous alone, but interval count and positive duration guard it.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 157
+    },
+    {
+      "assertion": "sum(census['seconds_by_stage'].values()) == total",
+      "fails_when": "Omitting or duplicating a stage-total contribution fails equality against the accumulated independent journal durations.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 162
+    },
+    {
+      "assertion": "census['unknown_seconds'] > 0",
+      "fails_when": "Treating a deliberately suppressed admission as zero rather than unknown makes the strict positive check fail.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 177
+    },
+    {
+      "assertion": "any((row['stage'] == 'unknown' for row in census['intervals']))",
+      "fails_when": "Failing to emit any unknown interval after admission suppression fails the existence check.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 178
+    },
+    {
+      "assertion": "len(rows) == 150",
+      "fails_when": "Losing any of the 50 request/start/outcome triples fails the literal 150-row count.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 199
+    },
+    {
+      "assertion": "not any((row['stage'] == 'overflow' for row in rows))",
+      "fails_when": "Saturating before all 50 attempts produces an overflow row and fails this check.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 200
+    },
+    {
+      "assertion": "all((row['reason'].endswith('\u2026') for row in rows if row['stage'] == 'promotion_outcome'))",
+      "fails_when": "Truncating a long UTF-8 reason without the explicit ellipsis fails the suffix check; the 150-row and outcome-path checks prevent an empty journal from passing the whole test.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 201
+    },
+    {
+      "assertion": "path.stat().st_size < 16000",
+      "fails_when": "Exceeding the independent literal 16000-byte ceiling after 50 attempts fails this check.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 207
+    },
+    {
+      "assertion": "path.read_bytes().startswith(prefix)",
+      "fails_when": "Compaction or rewriting on saturation changes the captured prefix and fails byte preservation.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 212
+    },
+    {
+      "assertion": "path.stat().st_size <= receipts.MAX_BYTES",
+      "fails_when": "Writing past the configured hard capacity fails this check; although this uses the implementation constant, line 207 independently fixes the required numerical ceiling.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 213
+    },
+    {
+      "assertion": "receipts.read_receipts(run_id)[-1]['stage'] == 'overflow'",
+      "fails_when": "Dropping saturation silently without an overflow receipt fails the literal final-stage check.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 214
+    },
+    {
+      "assertion": "receipts.receipt_path('r-replayed').read_bytes() == before",
+      "fails_when": "Appending a replayed delivery or changing its first timestamp changes bytes and fails against the earlier captured journal.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 221
+    },
+    {
+      "assertion": "len(receipts.read_receipts('r-replayed')) == 1",
+      "fails_when": "Deduplication returning multiple delivery rows fails the fixed single-row count.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 222
+    },
+    {
+      "assertion": "len(receipts.read_receipts('r-replayed')) == 1",
+      "fails_when": "Recording a working transition as shown delivery changes the count and fails the single-row check.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 224
+    },
+    {
+      "assertion": "receipts.receipt_path('r-durable').read_bytes() == before",
+      "fails_when": "Coupling journal retention to replacement/removal of the mutable request changes the journal bytes and fails against the preserved prefix.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 234
+    },
+    {
+      "assertion": "receipts.read_receipts('r-durable')[-1]['reason'] == 'review incomplete'",
+      "fails_when": "Losing the stored refusal reason when the request file disappears fails the independent literal reason.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 235
+    },
+    {
+      "assertion": "census['unknown_seconds'] > 0",
+      "fails_when": "Ignoring a corrupt append rather than assigning its measured gap unknown makes this positive-duration check fail.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 244
+    },
+    {
+      "assertion": "receipts.read_receipts('r-absent') == []",
+      "fails_when": "Returning fabricated events for an absent run fails the empty-list expectation; present journals in the other tests provide the positive control.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 248
+    },
+    {
+      "assertion": "receipts.stage_census(['r-absent'])['unread_runs'] == ['r-absent']",
+      "fails_when": "Treating an absent run as read rather than listing its known requested ID fails this check.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 249
+    },
+    {
+      "assertion": "census['unknown_seconds'] == 0",
+      "fails_when": "Treating late display as a missing prerequisite makes a complete history unknown and fails zero-unknown.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 261
+    },
+    {
+      "assertion": "census['intervals'][3]['stage'] == 'review_admitted'",
+      "fails_when": "Restoring the pre-final-commit stage=left.stage assignment yields delivery_shown at interval three and fails the literal review_admitted owner.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 262
+    },
+    {
+      "assertion": "census['unknown_seconds'] > 0",
+      "fails_when": "Discarding the saturated tail or treating it as zero makes unknown_seconds nonpositive.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 272
+    },
+    {
+      "assertion": "census['intervals'][-1]['stage'] == 'unknown'",
+      "fails_when": "Attributing the tail to a known stage rather than unknown fails the last-interval stage assertion.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 273
+    },
+    {
+      "assertion": "census['intervals'][0]['stage'] == 'delivery_recorded'",
+      "fails_when": "Marking every interval unknown on saturation fails the intact first delivery interval assertion.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 274
+    },
+    {
+      "assertion": "result.exit_code == 0",
+      "fails_when": "Breaking the follower invocation produces a nonzero CLI exit; this is invocation evidence rather than receipt-specific coverage.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 303
+    },
+    {
+      "assertion": "('delivery_shown' in stages) is not json_output",
+      "fails_when": "Recording JSON output as pane delivery, or failing to record the owning text pane, breaks the deliberately opposing two-parameter cases.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 305
+    },
+    {
+      "assertion": "dispatch_launch._supervisor_spawn_worker(spec) == 123",
+      "fails_when": "Changing the supervisor fake-spawn result from its injected PID fails this passthrough check; it is scaffolding, not independent evidence that a receipt hook runs.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 361
+    },
+    {
+      "assertion": "[row['stage'] for row in receipts.read_receipts(source)] == ['review_admitted', 'review_started']",
+      "fails_when": "Removing either actual-spawn admission/start hook fails the literal two-stage list; suppressing admission is demonstrated red in the saved mutation log.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 362
+    },
+    {
+      "assertion": "len(rows) == 2",
+      "fails_when": "Reinstating truncation of long review identities merges the two suffix-distinct reviews and fails the literal two-row count.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 373
+    },
+    {
+      "assertion": "rows[0]['attempt'] != rows[1]['attempt']",
+      "fails_when": "Hashing or truncating both review IDs to the same value fails the explicit inequality.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 374
+    },
+    {
+      "assertion": "[row['stage'] for row in receipts.read_receipts(run_id)] == ['delivery_recorded']",
+      "fails_when": "Removing supervisor delivery instrumentation leaves no receipt and fails the literal delivery_recorded sequence.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 392
+    },
+    {
+      "assertion": "receipts.receipt_path(run_id).read_bytes() == before",
+      "fails_when": "Appending a later monitor delivery instead of preserving the supervisor instant changes bytes and fails the captured-first-journal comparison.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 397
+    }
+  ],
+  "assertion_independence": "No tautological self-comparison was found. The injected PID return check at line 361 only verifies passthrough and is not counted as receipt durability; line 213 uses an implementation capacity constant but line 207 independently checks the literal ceiling. Direct helper calls in the lifecycle fixture do not prove production wiring; the two findings and durability justification account for that limitation.",
+  "call_sites": [
+    "reckon/crew/admission/launching.py:_launch_queued",
+    "reckon/crew/dispatch_launch.py:_supervisor_spawn_worker",
+    "reckon/crew/dispatch_launch.py:_publish_stored_phase",
+    "reckon/crew/promotion_requests.py:request_promotion",
+    "reckon/crew/promotion_requests.py:_finish",
+    "reckon/crew/promotion_requests.py:_defer_to_a_queued_review",
+    "reckon/crew/promotion_requests.py:PromotionService._run",
+    "reckon/crew/promotion_requests.py:_settle",
+    "reckon/crew/queue_landing.py:_land_deliveries",
+    "reckon/crew/recovery_review_dispatch.py:_dispatch_composed_review",
+    "reckon/crew/recovery_watch.py:_watch_transition",
+    "reckon/crew/review.py:_write_record",
+    "reckon/crew_follow_commands.py:crew_follow.note_delivered"
+  ],
+  "completed_at": "2026-11-17T01:20:30Z",
+  "dispatched_at": "2026-11-17T01:11:01Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": 4337,
+      "severity": "blocking",
+      "text": "The review_record_written receipt is emitted only by _write_record, but composed reviewers are instructed to write their declared JSON file directly; recovery_review_delivery.py:50-86 accepts those files without this wrapper, and review_records.py:2392 reconciles foreign files without stamping this receipt. Such a completed review either has no write instant or first receives one when a later promotion copies it through _write_record, assigning the intervening queue wait to review execution. Observe the actual delivered-file completion, retaining its write time, and cover that path instead of calling the wrapper directly in the lifecycle fixture."
+    },
+    {
+      "file": "reckon/crew/stage_receipts.py",
+      "line": 234,
+      "severity": "blocking",
+      "text": "The non-paired predecessor check accepts any earlier stage in the whole run. After review A has recorded review_requested, suppress review_requested for review B and retain B admission/start/write: review_admitted is not paired to a request identity, so A request satisfies B admission and the missing interval is assigned to review_record_written instead of unknown. Request receipts use a head identity while admission receipts use a reviewer run identity, so the relationship needs an explicit association; add a second-round suppression case to protect the negative-control contract."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_review_handoff_has_durable_stage_receipts.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234858171235-every-stage-of-a-delivered-run-leaves-a-receipt/armed-final-suite.log",
+      "revision": "e828b0d65579a7b837828cac71c135a57d6f43e8"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234858171235-every-stage-of-a-delivered-run-leaves-a-receipt/base-suite.log",
+      "revision": "c6274b6a0e6698ed29f59c3027552f4e795abc10"
+    }
+  },
+  "importer_evidence": {
+    "added_failure_ids": [
+      "tests/test_a_commit_that_fails_to_resolve_refuses_the_promotion.py::test_a_timeout_refusal_is_worded_differently_from_an_unresolvable_citation",
+      "tests/test_dispatch_returns_without_worker.py::test_dispatch_returns_when_its_supervisor_finished_the_launch"
+    ],
+    "base_failure_id_count": 168,
+    "base_revision": "c6274b6a0e6698ed29f59c3027552f4e795abc10",
+    "final_revision": "e828b0d65579a7b837828cac71c135a57d6f43e8",
+    "head_failure_id_count": 168,
+    "note": "Final commit changes stage_census only; existing importer tests do not call it. The final armed gate at e828b0d65579a7b837828cac71c135a57d6f43e8 passes all 73 cases.",
+    "owner_head_revision": "d075ec62e2f52354e720d513857e4f6ec10b455b",
+    "removed_failure_ids": [
+      "tests/test_stop_before_spawn_spawns_nothing.py::test_a_stop_between_the_check_and_the_spawn_spawns_no_worker",
+      "tests/test_stop_before_spawn_spawns_nothing.py::test_a_stop_during_the_pre_spawn_snapshot_spawns_no_worker"
+    ],
+    "test_files": 572
+  },
+  "item_verdicts": {
+    "diff": "Read b692022ec5e7113a1ad9ab37a10251277cef9d90, d075ec62e2f52354e720d513857e4f6ec10b455b and e828b0d65579a7b837828cac71c135a57d6f43e8 against c6274b6a0e6698ed29f59c3027552f4e795abc10; the ten-file change adds the journal, event hooks and 15 parametrized test cases, with the two blocking gaps below.",
+    "done_when": "Read prompt.txt:257 and the live plan; base-suite.log records 58 passed, armed-final-suite.log records 73 passed, negative-delivery.log records 4 failed and 11 passed, while importer-comparison.json reports two added importer IDs under the resume-1-advice.txt exception.",
+    "goal": "Read the goal in the reviewed run live pointer and live plan section 13; reckon/crew/stage_receipts.py:97 implements a durable bounded journal, but review.py:4337 misses direct reviewer JSON filing and stage_receipts.py:234 can conceal a missing request on a later review round.",
+    "manifest": "Read the complete source manifest.md and its referenced gate logs; its base/head arm revisions and zero added armed failures reconcile, and its two added importer IDs are explicitly qualified rather than claimed green.",
+    "write_paths": "Read the original prompt scope, resume-1-advice.txt authorization and current live pointer node.write_paths; all ten paths changed by the three commits are within the expanded grant."
+  },
+  "justifications": {
+    "durability": "tests/test_review_handoff_has_durable_stage_receipts.py:116 and :146 redden when review_admitted is suppressed, as negative-delivery.log demonstrates, but :84-86 inject admission/start directly and :88 invokes the wrapper, leaving direct filing and repeated-review predecessor loss unguarded.",
+    "evidence": "The source base-suite.log and armed-final-suite.log contain completed summaries and EXIT=0 at the canonical revisions, and negative-delivery.log has four named failures with EXIT=1, but importer-comparison.json retains two added IDs at the preceding owner head under the authorized exception.",
+    "fit": "reckon/crew/stage_receipts.py:29-31 reuses timestamp parsing, run-directory resolution and the cross-node lock, its semantic names comply with naming rules, and its compact array encoding stays behind named readers.",
+    "goal_fidelity": "reckon/crew/stage_receipts.py:97 preserves durable receipts and retry reasons, but review.py:4337 observes a wrapper write rather than every delivered review file and stage_receipts.py:234 accepts stale predecessor evidence across review rounds.",
+    "reuse": "Capability searches for append-only journals, receipts, census intervals, UTF-8 bounds and review subject resolution found no existing bounded per-run handoff journal; stage_receipts.py extends promotion_requests.py:_record_drained with distinct per-run retention and wraps the existing node resolver and exclusive_lock instead of copying them.",
+    "scope_discipline": "All ten files in the c6274b6a0e6698ed29f59c3027552f4e795abc10..e828b0d65579a7b837828cac71c135a57d6f43e8 diff belong to the current source node.write_paths, including the six event-owner modules granted in resume-1-advice.txt."
+  },
+  "method": "Read exact git objects because the assigned review checkout HEAD is 63590cc91912ca31c6c89ca9c9a6a2bbd815f03c; no source mutation or test rerun; assertion regression judgements are readings, not experiments.",
+  "negative_control_evidence": {
+    "exit_status": 1,
+    "mutation": "suppress review_admitted receipt in record_stage",
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234858171235-every-stage-of-a-delivered-run-leaves-a-receipt/negative-delivery.log",
+    "summary": "4 failed, 11 passed in 2.13s"
+  },
+  "prior_defect_reproduction": {
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234858171235-every-stage-of-a-delivered-run-leaves-a-receipt/reproduction.log",
+    "quotes": [
+      "POSITIVE CONTROL: promotion-refused fixture review refused True",
+      "FIRST ATTEMPT RETAINED IN PER-RUN RECEIPT: False",
+      "REFUSAL REASON RETAINED IN PER-RUN RECEIPT: False"
+    ]
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the goal in the reviewed run live pointer and live plan section 13; reckon/crew/stage_receipts.py:97 implements a durable bounded journal, but review.py:4337 misses direct reviewer JSON filing and stage_receipts.py:234 can conceal a missing request on a later review round.\nVERDICT done_when: Read prompt.txt:257 and the live plan; base-suite.log records 58 passed, armed-final-suite.log records 73 passed, negative-delivery.log records 4 failed and 11 passed, while importer-comparison.json reports two added importer IDs under the resume-1-advice.txt exception.\nVERDICT write_paths: Read the original prompt scope, resume-1-advice.txt authorization and current live pointer node.write_paths; all ten paths changed by the three commits are within the expanded grant.\nVERDICT manifest: Read the complete source manifest.md and its referenced gate logs; its base/head arm revisions and zero added armed failures reconcile, and its two added importer IDs are explicitly qualified rather than claimed green.\nVERDICT diff: Read b692022ec5e7113a1ad9ab37a10251277cef9d90, d075ec62e2f52354e720d513857e4f6ec10b455b and e828b0d65579a7b837828cac71c135a57d6f43e8 against c6274b6a0e6698ed29f59c3027552f4e795abc10; the ten-file change adds the journal, event hooks and 15 parametrized test cases, with the two blocking gaps below.\nCALL_SITES: reckon/crew/admission/launching.py:_launch_queued, reckon/crew/dispatch_launch.py:_supervisor_spawn_worker, reckon/crew/dispatch_launch.py:_publish_stored_phase, reckon/crew/promotion_requests.py:request_promotion, reckon/crew/promotion_requests.py:_finish, reckon/crew/promotion_requests.py:_defer_to_a_queued_review, reckon/crew/promotion_requests.py:PromotionService._run, reckon/crew/promotion_requests.py:_settle, reckon/crew/queue_landing.py:_land_deliveries, reckon/crew/recovery_review_dispatch.py:_dispatch_composed_review, reckon/crew/recovery_watch.py:_watch_transition, reckon/crew/review.py:_write_record, reckon/crew_follow_commands.py:crew_follow.note_delivered\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/stage_receipts.py:97 preserves durable receipts and retry reasons, but review.py:4337 observes a wrapper write rather than every delivered review file and stage_receipts.py:234 accepts stale predecessor evidence across review rounds.\nSCORE evidence: 17\nJUSTIFICATION evidence: The source base-suite.log and armed-final-suite.log contain completed summaries and EXIT=0 at the canonical revisions, and negative-delivery.log has four named failures with EXIT=1, but importer-comparison.json retains two added IDs at the preceding owner head under the authorized exception.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: All ten files in the c6274b6a0e6698ed29f59c3027552f4e795abc10..e828b0d65579a7b837828cac71c135a57d6f43e8 diff belong to the current source node.write_paths, including the six event-owner modules granted in resume-1-advice.txt.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_review_handoff_has_durable_stage_receipts.py:116 and :146 redden when review_admitted is suppressed, as negative-delivery.log demonstrates, but :84-86 inject admission/start directly and :88 invokes the wrapper, leaving direct filing and repeated-review predecessor loss unguarded.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/stage_receipts.py:29-31 reuses timestamp parsing, run-directory resolution and the cross-node lock, its semantic names comply with naming rules, and its compact array encoding stays behind named readers.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for append-only journals, receipts, census intervals, UTF-8 bounds and review subject resolution found no existing bounded per-run handoff journal; stage_receipts.py extends promotion_requests.py:_record_drained with distinct per-run retention and wraps the existing node resolver and exclusive_lock instead of copying them.\nFINDING reckon/crew/review.py:4337 blocking: The review_record_written receipt is emitted only by _write_record, but composed reviewers are instructed to write their declared JSON file directly; recovery_review_delivery.py:50-86 accepts those files without this wrapper, and review_records.py:2392 reconciles foreign files without stamping this receipt. Such a completed review either has no write instant or first receives one when a later promotion copies it through _write_record, assigning the intervening queue wait to review execution. Observe the actual delivered-file completion, retaining its write time, and cover that path instead of calling the wrapper directly in the lifecycle fixture.\nFINDING reckon/crew/stage_receipts.py:234 blocking: The non-paired predecessor check accepts any earlier stage in the whole run. After review A has recorded review_requested, suppress review_requested for review B and retain B admission/start/write: review_admitted is not paired to a request identity, so A request satisfies B admission and the missing interval is assigned to review_record_written instead of unknown. Request receipts use a head identity while admission receipts use a reviewer run identity, so the relationship needs an explicit association; add a second-round suppression case to protect the negative-control contract.\n",
+  "reuse_search": {
+    "assessment": "The new journal is distinct from the existing trimmed aggregate promotion log and indexed review store; no equivalent bounded per-run handoff/interval owner was found. Existing timestamp parser, run path, lock and review-node resolver are reused.",
+    "capabilities": [
+      "bounded per-run append-only handoff journal",
+      "retry outcome retention",
+      "stage interval partition",
+      "UTF-8 truncation and stable attempt identity",
+      "review subject resolution",
+      "cross-host serialization"
+    ],
+    "owners_examined": [
+      "reckon/crew/promotion_requests.py:_record_drained",
+      "reckon/crew/review_records.py:record_written",
+      "reckon/crew/review_records.py:reconcile_foreign_write",
+      "reckon/crew/recovery_review_delivery.py:_review_store_record_paths"
+    ]
+  },
+  "review_run_id": "r-20261117T010512020489-review-of-every-stage-of-a-delivered-run-leaves-a-receipt-e828b0d65579",
+  "reviewed_base_sha": "c6274b6a0e6698ed29f59c3027552f4e795abc10",
+  "reviewed_commits": [
+    "b692022ec5e7113a1ad9ab37a10251277cef9d90",
+    "d075ec62e2f52354e720d513857e4f6ec10b455b",
+    "e828b0d65579a7b837828cac71c135a57d6f43e8"
+  ],
+  "reviewed_head_sha": "e828b0d65579a7b837828cac71c135a57d6f43e8",
+  "reviewed_run_id": "r-20261116T234858171235-every-stage-of-a-delivered-run-leaves-a-receipt",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 14,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T01:18:55.884191+00:00",
+  "total": 106
+}
