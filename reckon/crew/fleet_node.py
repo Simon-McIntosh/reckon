@@ -216,16 +216,14 @@ def _supervisor_lifetime_script(*, standby: bool) -> str:
     """
     from reckon.crew import fleet_supervisor
 
-    first = int(fleet_supervisor.FIRST_BACKOFF_SECONDS)
-    cap = int(fleet_supervisor.BACKOFF_CAP_SECONDS)
-    steady = int(fleet_supervisor.STEADY_RUN_SECONDS)
+    backoff_setup, backoff_transition = fleet_supervisor.shell_backoff_transition()
     arguments = " --standby" if standby else ""
     return dedent(
         f'''
         FLEET_LIFETIME_DIRECTORY=$(mktemp -d "$TMPDIR/fleet-lifetime.XXXXXXXX")
         export FLEET_LIFETIME_DIRECTORY
         trap 'rm -fv -- "$FLEET_LIFETIME_DIRECTORY/stop" "$FLEET_LIFETIME_DIRECTORY/active"; rmdir -v -- "$FLEET_LIFETIME_DIRECTORY"' EXIT
-        delay={first}
+        {backoff_setup}
         while [ ! -f "$FLEET_LIFETIME_DIRECTORY/stop" ]; do
             started=$SECONDS
             echo "[$(date -u +%FT%TZ)] fleet supervisor starting"
@@ -242,11 +240,9 @@ def _supervisor_lifetime_script(*, standby: bool) -> str:
             fi
             [ ! -f "$FLEET_LIFETIME_DIRECTORY/stop" ] || break
             ran=$((SECONDS - started))
-            if (( ran >= {steady} )); then delay={first}; fi
+            {backoff_transition}
             echo "[$(date -u +%FT%TZ)] fleet supervisor exited ($result); restart in ${{delay}}s"
             sleep "$delay"
-            delay=$((delay * 2))
-            if (( delay > {cap} )); then delay={cap}; fi
         done
         exit 0
         '''

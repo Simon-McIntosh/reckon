@@ -1045,6 +1045,36 @@ def next_backoff(delay: float, ran_seconds: float) -> tuple[float, float]:
     return delay, min(delay * 2, BACKOFF_CAP_SECONDS)
 
 
+def shell_backoff_transition() -> tuple[str, str]:
+    """Compile the service policy's reachable transitions for a shell holder.
+
+    Short and steady lifetimes are the policy's two input classes. Resolve both
+    through next_backoff at submission time; the shell only selects a table row
+    and can continue using it while no Python interpreter works.
+    """
+    states = [FIRST_BACKOFF_SECONDS]
+    rows: list[str] = []
+    for state in states:
+        if len(states) > 64:
+            raise ValueError("backoff policy has no bounded transition graph")
+        for name, runtime in (("short", 0.0), ("steady", STEADY_RUN_SECONDS)):
+            wait, following = next_backoff(state, runtime)
+            if following not in states:
+                states.append(following)
+            rows.append(
+                f"{state:g}:{name}) delay={wait:g}; backoff_state={following:g} ;;"
+            )
+    transition = "\n".join(
+        [
+            f"if (( ran >= {STEADY_RUN_SECONDS:g} )); then run_class=steady; else run_class=short; fi",
+            'case "$backoff_state:$run_class" in',
+            *rows,
+            "esac",
+        ]
+    )
+    return f"backoff_state={FIRST_BACKOFF_SECONDS:g}", transition
+
+
 def trim_file_ends(
     path: Path, *, limit: int, head: int, tail: int = 0
 ) -> tuple[bytes, bytes] | None:

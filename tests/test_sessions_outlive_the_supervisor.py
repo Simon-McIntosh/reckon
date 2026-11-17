@@ -131,13 +131,31 @@ fi""",
 
 
 def test_the_holder_uses_the_service_backoff(monkeypatch, tmp_path):
-    monkeypatch.setattr(fleet_supervisor, "FIRST_BACKOFF_SECONDS", 7.0)
-    monkeypatch.setattr(fleet_supervisor, "BACKOFF_CAP_SECONDS", 80.0)
-    monkeypatch.setattr(fleet_supervisor, "STEADY_RUN_SECONDS", 120.0)
-    script = _hold(tmp_path)
-    assert "delay=7" in script
-    assert "delay > 80" in script
-    assert "ran >= 120" in script
+    transition = fleet_supervisor.next_backoff
+
+    def capped(delay, ran_seconds):
+        wait, following = transition(delay, ran_seconds)
+        return min(wait, 13.0), min(following, 13.0)
+
+    monkeypatch.setattr(fleet_supervisor, "next_backoff", capped)
+    home = _home(tmp_path, "exit 1")
+    sleep = home / ".local/bin/sleep"
+    sleep.write_text("""#!/bin/bash
+echo "$1" >> "$HOME/delays"
+if [ "$(wc -l < "$HOME/delays")" -ge 4 ]; then
+    : > "$FLEET_LIFETIME_DIRECTORY/stop"
+fi
+""")
+    sleep.chmod(0o755)
+    monkeypatch.setenv("PATH", str(sleep.parent) + os.pathsep + os.environ["PATH"])
+    process, log = _launch(home, _hold(home))
+    try:
+        assert process.wait(timeout=5) == 0
+        assert [
+            float(value) for value in (home / "delays").read_text().splitlines()
+        ] == [5, 10, 13, 13]
+    finally:
+        _finish(process, log)
 
 
 @pytest.mark.timeout(550)
