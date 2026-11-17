@@ -118,6 +118,9 @@ EXIT=0
 merge head a39a5e4037 on all_debug job 1320657:
 4 passed in 51.74s
 EXIT=0
+second merge head 4985676229 on all_debug job 1321706:
+4 passed in 51.50s
+EXIT=0
   </pre>
   <h3 id="qwnw-red-file-review-reflex-selects-a-backend-merge">The merge into primary main keeps both arms</h3>
   <p>Promotion met a conflict in <code>reckon/crew/recovery_classification.py</code>
@@ -151,4 +154,34 @@ pre_spawn_waiting = (
   from primary's newer commits rather than introduced by this merge. The id
   <code>test_a_tier_none_run_owes_no_review.py::test_a_tier_none_run_reads_a_promotable_kind_and_a_source_run_stays_missing</code>
   is red at <code>9c9fa0ab0d</code> as well.</p>
+  <h3 id="qwnw-red-file-review-reflex-selects-a-backend-merge2">The second merge hands the manifest precedence to the rule main wrote</h3>
+  <p>Primary main moved again, to <code>62c3e54f01</code>, and the same path
+  conflicted a second time. Main had lifted the manifest precedence this node
+  asked for out of <code>pre_spawn_waiting</code> into a separate reading, and
+  added a recorded death as a third receipt:</p>
+  <pre>
+pre_spawn_waiting = (
+    phase in _PRE_SPAWN_PHASES
+    and alive is not False
+    and not _spawn_evidence(record)
+    and not _stranded_launch(record, now_seconds=moment)
+)
+pre_spawn_reads_as_claim = (
+    pre_spawn_waiting and manifest_status not in TERMINAL_MANIFEST_STATUSES
+)</pre>
+  <p>The resolution takes main's expression rather than duplicating this node's
+  conjunct: <code>pre_spawn_reads_as_claim</code> withholds the claim the moment
+  the manifest carries a terminal status, which is this node's intent stated
+  where main now states it, and an extra <code>not manifest_status</code> here
+  would have suppressed main's non-terminal reading as well. The merged comment
+  names that downstream rule rather than dropping either explanation. Merge
+  commit <code>4985676229</code>, no conflict marker, and the node's file still
+  runs 4 passed; the gate at the merge head reads
+  <code>4 passed in 51.50s</code>, <code>EXIT=0</code> on all_debug job 1321706.</p>
+  <p>The arm pair at these two revisions is an exact match rather than a
+  comparison of counts: primary <code>62c3e54f</code> reports
+  <code>67 failed, 1784 passed, 10 errors</code> and the merge head
+  <code>4985676229</code> reports the same three totals, and the failing id sets
+  are equal element for element — 77 ids each, none added by the merge and none
+  cleared by it (jobs 1321744 and 1321708).</p>
 </section>
