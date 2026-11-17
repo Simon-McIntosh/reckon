@@ -68,7 +68,25 @@ FAILED test_the_crew_tool_reads_the_ledger_and_the_live_pointers
 FAILED test_the_crew_tool_reads_the_worktrees_ledger_not_the_main_one
 FAILED test_a_successful_index_write_follows_the_file_and_is_reported
 FAILED test_a_failed_index_write_keeps_the_rows_already_written</pre>
-<pre id="qwnw-red-file-ledger-promoted-rows-head-run"># revision: 7c0619ebc8aa6cff3fa7ed373349456e32a73f4c (the repair sits on 4aed16d42e)
+<p>Two cases were already green at the node's head and had to be judged again after merging
+<code>main</code> at <code>4aed16d42e</code>, because the merge brought the retirement of every
+tracked run document (<code>60c4622f55</code>) and a store shape the read now refuses until it is
+migrated:</p>
+<ul id="qwnw-red-file-ledger-promoted-rows-merge-list">
+<li><strong>Test wrong</strong> — <code>test_migration_indexes_derived_identity_in_hot_and_archive</code>
+read the store in its pre-migration shape before any open had run the migration, and a read of a
+store that owes its migration is refused by design. The reference is now taken after the open that
+pays it; no assertion changed.</li>
+<li><strong>Test wrong</strong> — <code>test_committed_runs_measure_or_explain_every_duration</code>
+asserted the duration invariant over the repository's own committed run corpus, which the retirement
+emptied — the population was one the repository no longer held, and where the read falls through to
+the machine's store it is state outside the repository under test. The case now holds its own corpus
+of two runs, one with a stream and one without, scored by the same backfill a promotion runs: no row
+is left unmeasured, some row is underivable, each states a reason, and one reason is a missing
+stream. Every assertion is kept.</li>
+</ul>
+<pre id="qwnw-red-file-ledger-promoted-rows-head-run"># revision: d4263fb8ee09e352825e673d098e6ec0faa94ee0 (on the merge 54c887213f)
 # command: pytest -p no:cacheprovider -q tests/test_ledger.py
-# 97 passed in 140.47s (0:02:20)  EXIT=0</pre>
+# 97 passed in 71.44s (0:01:11)  EXIT=0
+# the gate over the six files this node touches: 135 passed in 77.65s (0:01:17)  EXIT=0</pre>
 </section>
