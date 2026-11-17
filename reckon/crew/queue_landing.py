@@ -1943,6 +1943,31 @@ def land_once() -> dict[str, Any]:
             )
     if finished:
         result["interrupted_landings"] = finished
+        named = {row["run_id"] for row in result["obligations"]}
+        for row in finished:
+            if (
+                row.get("status")
+                not in {
+                    "merge-conflict",
+                    "awaiting-merge-repair",
+                    "repair-gate-refused",
+                    "review-refused",
+                }
+                or row["run_id"] in named
+            ):
+                continue
+            result["obligations"].append(
+                {
+                    "run_id": row["run_id"],
+                    "session": str(row.get("session") or ""),
+                    "guard": str(
+                        row.get("guard")
+                        or row.get("error")
+                        or f"merge conflict awaiting repair: {', '.join(row.get('paths') or ())}"
+                    ),
+                }
+            )
+            named.add(row["run_id"])
     return result
 
 

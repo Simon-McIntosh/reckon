@@ -3227,7 +3227,10 @@ def _dispatch_text_review_for_run(
     if standing_report is not None:
         return standing_report
     row = classify_pointer(record)
-    if row["classification"] != "scoring":
+    from reckon.crew.pending_landing import pending_repair_head
+
+    repair_head = pending_repair_head(record)
+    if row["classification"] != "scoring" and not repair_head:
         return {
             "run_id": run_id,
             "dispatched": False,
@@ -3259,7 +3262,9 @@ def _dispatch_text_review_for_run(
     # lightly, scoped to the commits that changed runtime source. Only a run
     # with no review at all (or a move git cannot compare) falls through to the
     # full review below.
-    move = carry_review_forward(record, config=config)
+    # A merge resolution owes a review of the delivered resolution itself;
+    # carrying the parent's review would leave that resolution unread.
+    move = None if repair_head else carry_review_forward(record, config=config)
     if move is not None and move["carried"]:
         reason = (
             "the run gained only commits that change no runtime source, so its "
@@ -3322,7 +3327,9 @@ def _dispatch_figure_review_for_run(
     if not run_id or _is_review_node(record):
         return {"run_id": run_id, "dispatched": False, "reason": "not a scoring run"}
     row = classify_pointer(record)
-    if row["classification"] != "scoring":
+    from reckon.crew.pending_landing import pending_repair_head
+
+    if row["classification"] != "scoring" and not pending_repair_head(record):
         return {
             "run_id": run_id,
             "dispatched": False,
