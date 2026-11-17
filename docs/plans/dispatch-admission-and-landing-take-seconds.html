@@ -25,7 +25,7 @@
   <title>Dispatch, Admission And Landing Take Seconds | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -138,6 +138,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261117T004536561311-review-of-a-plan-write-returns-current-readiness-d8d75400a919" data-who="reckon-build" data-when="2026-11-17T00:52:19Z">
     <div class="r-comment-body"><p>Independent review of c6274b6a0e6698ed29f59c3027552f4e795abc10..d8d75400a919375427a905a0e051933a3c07f7f4 found no defects; all six dimensions score 20/20, with zero added failures derived from completed base/head logs.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261116T234809141134-a-plan-write-returns-current-readiness" data-who="reckon-build" data-when="2026-11-17T00:33:58Z">
+    <div class="r-comment-body"><p>Plan writes now check the existing keyed snapshot before discovery, reuse one cold roadmap composition, invalidate on plan/dependency/branch/live-run/store changes and skip unchanged declarations; base/head armed gates pass 70/79, both negative controls fail (2 base count checks and 1 stale-equality check), the 925-test importer arm adds zero failures, and the three-plan fixture takes 0.397171 s outside its observed landing audit against the 5 s bound.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261117T011208561522-review-of-a-plan-selected-store-read-is-bounded-03617feef883" data-who="reckon-build" data-when="2026-11-17T01:28:00Z">
     <div class="r-comment-body"><p>Independently reviewed c6274b6a0e6698ed29f59c3027552f4e795abc10 through 03617feef883e4ca63307323f5316355ad6c0b93; scores are goal 20, evidence 18, scope 20, durability 20, fit 20 and reuse 20, with no blocking findings and zero added failures from the declared suite pair; the broader importer pair adds two failures under the explicit completion exception.</p></div>
