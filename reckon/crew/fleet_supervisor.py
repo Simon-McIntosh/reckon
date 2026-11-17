@@ -517,15 +517,17 @@ def sample_node_disk(environ: Mapping[str, str] | None = None) -> int:
     return 0
 
 
-def node_disk_obligation(project: str) -> dict[str, Any] | None:
-    """Read the owning fleet's published sample, never the reader's own disk."""
-    environ = dict(os.environ)
-    environ[FLEET_NAME_ENV] = fleet_for_project(project)
+def published_node_disk_sample(
+    environ: Mapping[str, str] | None = None,
+) -> dict[str, Any] | None:
+    """The latest disk reading belonging to the fleet's current job and node."""
     directory = state_directory(environ)
     try:
         sample = json.loads((directory / NODE_DISK_RECORD).read_text())
         fleet = json.loads((directory / RECORD_NAME).read_text())
     except (OSError, ValueError):
+        return None
+    if not isinstance(sample, dict) or not isinstance(fleet, dict):
         return None
     if (
         str(sample.get("job_id") or "") != str(fleet.get("job_id") or "")
@@ -533,7 +535,15 @@ def node_disk_obligation(project: str) -> dict[str, Any] | None:
         != str(fleet.get("node") or "").split(".")[0]
     ):
         return None
-    return node_disk_pressure(sample)
+    return sample
+
+
+def node_disk_obligation(project: str) -> dict[str, Any] | None:
+    """Read the owning fleet's published sample, never the reader's own disk."""
+    environ = dict(os.environ)
+    environ[FLEET_NAME_ENV] = fleet_for_project(project)
+    sample = published_node_disk_sample(environ)
+    return node_disk_pressure(sample) if sample is not None else None
 
 
 def stripped_variables(environ: Mapping[str, str]) -> list[str]:

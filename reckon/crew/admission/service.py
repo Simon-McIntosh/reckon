@@ -170,7 +170,7 @@ def _pause(seconds: float) -> None:
 
 
 def node_disk_admission_hold() -> dict[str, Any] | None:
-    """Hold launches only for the fleet disk on the host running this pass."""
+    """Read the target fleet disk locally or through its published sample."""
     import json
     import socket
 
@@ -183,7 +183,8 @@ def node_disk_admission_hold() -> dict[str, Any] | None:
     except (OSError, ValueError):
         return None
     if str(fleet.get("node") or "").split(".")[0] != socket.gethostname().split(".")[0]:
-        return None
+        sample = supervisor.published_node_disk_sample()
+        return supervisor.node_disk_pressure(sample) if sample is not None else None
     mount = Path(os.environ.get(supervisor.NODE_DISK_ROOT_ENV) or "/tmp")  # noqa: S108 - node-local
     try:
         sample = supervisor.node_disk_snapshot(

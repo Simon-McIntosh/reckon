@@ -285,3 +285,24 @@ def test_direct_and_published_obligations_include_the_same_disk_pressure(
     ]
     assert len(direct_disk) == 1
     assert direct_disk == published_disk
+
+
+def test_remote_admission_uses_the_published_fleet_disk(
+    disk_state, mounts, monkeypatch
+):
+    small = next(iter(mounts))
+    monkeypatch.setenv("FLEET_NODE_TMP_ROOT", str(small))
+    monkeypatch.setattr(supervisor, "node_disk_reserve_bytes", lambda: 100 * 4096)
+    assert supervisor.sample_node_disk() == 0
+    expected = supervisor.node_disk_obligation("fixture")
+    monkeypatch.setattr(socket, "gethostname", lambda: "remote-reader")
+
+    def forbidden_local_sample(*args, **kwargs):
+        pytest.fail("remote admission read the reader's local disk")
+
+    monkeypatch.setattr(supervisor, "node_disk_snapshot", forbidden_local_sample)
+    assert service.node_disk_admission_hold() == expected
+    published = json.loads((disk_state / supervisor.NODE_DISK_RECORD).read_text())
+    published["under_reserve"] = False
+    (disk_state / supervisor.NODE_DISK_RECORD).write_text(json.dumps(published))
+    assert service.node_disk_admission_hold() is None
