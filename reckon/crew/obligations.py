@@ -4409,6 +4409,53 @@ def _node_disk_notice(project: str) -> dict[str, Any] | None:
     return node_disk_obligation(project)
 
 
+def session_scratch_items(
+    project: str, session: str, *, now: datetime
+) -> list[dict[str, Any]]:
+    """Route the latest sampled scratch duties to their owning conversation.
+
+    The fleet records pane-to-conversation bindings in sessions.tsv. A direct
+    session-name match also supports sessions that publish their own identity.
+    Reading the current atomic sample avoids replaying historical excess after
+    cleanup; both the direct view and published payload call this reader.
+    """
+    from reckon.crew import fleet_supervisor
+
+    name = fleet_supervisor.fleet_for_project(project)
+    path = fleet_supervisor.session_scratch_snapshot_path({"FLEET_NAME": name})
+    try:
+        sample = json.loads(path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+    if not isinstance(sample, Mapping):
+        return []
+    names = {session}
+    bindings = sample.get("session_bindings") or {}
+    if session in bindings:
+        names.add(bindings[session])
+    observed = parse_utc(sample.get("utc")) or now
+    items = []
+    for duty in sample.get("obligations", []):
+        if not isinstance(duty, Mapping) or duty.get("session") not in names:
+            continue
+        largest = str(duty.get("largest_directory") or duty.get("path") or "")
+        items.append(
+            {
+                "kind": "session-scratch-over-bound",
+                "run_id": "",
+                "age_seconds": max(0, int((now - observed).total_seconds())),
+                "observed_at": observed.isoformat(),
+                "record": str(path),
+                "reason": str(
+                    duty.get("reason") or "session scratch exceeds its bound"
+                ),
+                "paths": [largest],
+                "next_command": "du -sh -- " + shlex.quote(largest),
+            }
+        )
+    return items
+
+
 @operational_read
 def obligations(
     project: str, session: str, *, fields: Iterable[str] | None = None
@@ -4802,6 +4849,7 @@ def _obligations_view(
     from reckon.crew.promotion_requests import failure_obligations
 
     items.extend(failure_obligations(project, session, now=now))
+    items.extend(session_scratch_items(project, session, now=now))
     # A main checkout's index can stage a path as deleted while HEAD and the
     # working tree both hold the file, and the next plain commit there records
     # the deletion. The condition belongs to the project rather than to a run,

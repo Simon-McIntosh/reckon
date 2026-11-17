@@ -22,6 +22,7 @@ from .shared import (
     os,
     runs,
     sys,
+    threading,
     time,
 )
 
@@ -213,6 +214,149 @@ def node_disk_admission_hold() -> dict[str, Any] | None:
     return supervisor.node_disk_pressure(sample)
 
 
+#: The reads a pass makes while it releases waiters and resolves holds, each
+#: named as the receipt reports it: the module that performs the read, the
+#: callable there, and the label a reader of the receipt recognises. A reader
+#: not named here is not measured, so this table is the receipt's vocabulary
+#: rather than a list of every call the stages make.
+_READ_SOURCES: tuple[tuple[str, str, str], ...] = (
+    ("reckon.crew.runs", "list_live", "live pointers"),
+    ("reckon.crew.runs", "read_pointer", "run pointers"),
+    ("reckon.crew.runs", "_mutate_pointer", "pointer writes"),
+    (
+        "reckon.crew.runs",
+        "_mounted_project_roots_and_failure",
+        "mount registry",
+    ),
+    ("reckon.crew.admission.wait_refs", "derive_wait_refs", "plan wait refs"),
+    ("reckon.crew.admission.readiness", "_readiness_rows", "readiness rows"),
+    ("reckon.crew.plan_review", "section_readiness_rows", "plan readiness"),
+    ("reckon.crew.plan_review", "_readiness_inventory", "plan inventory"),
+    ("reckon.crew.promotion", "discard_recorded", "discard records"),
+    ("reckon.crew.admission.release", "_dead_sections", "live pointer scan"),
+    ("reckon.crew.admission.release", "_live_runs_on", "live runs a wait names"),
+    ("reckon.crew.admission.readiness", "section_hold", "section holds"),
+    ("reckon.crew.admission.holds", "_session_allowance_read", "session allowance"),
+    ("reckon.crew.admission.holds", "_record_pass_hold", "hold records"),
+    ("reckon.crew.admission.launching", "_node_from_pointer", "request definitions"),
+    ("reckon.crew.admission.wait_refs", "section_waits_for", "request waits"),
+    ("reckon.crew.admission.wait_refs", "wait_projects_for", "wait projects"),
+    ("reckon.crew.open_run_index", "review_paths", "review paths"),
+    ("reckon.crew.admission.verdicts", "_record_readiness_verdicts", "readiness scan"),
+    ("reckon.crew.admission.reviews", "_release_plan_review_holds", "review-hold scan"),
+    ("reckon.crew.admission.release", "_rederive_waits", "request wait rewrite"),
+)
+
+
+class _ReadTally:
+    """The reads one stage made, each with how many and how long.
+
+    A stage is measured as a whole, so an entry's seconds are the read's own: a
+    read performed inside another leaves its time to the outer read and adds
+    only its count, and the named times then sum to the time the stage spent
+    reading rather than counting a nested read twice. Only the thread that
+    opened the tally is measured, because the landing thread shares these
+    readers and its reads belong to the landing.
+
+    The readers are replaced on their own modules for the stage's duration and
+    restored afterwards, so a measurement costs nothing outside its stage and a
+    reader missing from the receipt is one the stage never called.
+    """
+
+    def __init__(self) -> None:
+        self._thread = threading.get_ident()
+        self._entries: dict[str, dict[str, Any]] = {}
+        self._children: list[float] = []
+        self._patched: list[tuple[Any, str, Any]] = []
+
+    @contextmanager
+    def reading(self, label: str):
+        """Measure one read of ``label``, or pass through when it is not ours."""
+        if threading.get_ident() != self._thread:
+            yield
+            return
+        started = time.monotonic()
+        self._children.append(0.0)
+        try:
+            yield
+        finally:
+            spent = time.monotonic() - started
+            nested = self._children.pop()
+            if self._children:
+                self._children[-1] += spent
+            entry = self._entries.setdefault(
+                label, {"read": label, "count": 0, "seconds": 0.0}
+            )
+            entry["count"] = int(entry["count"]) + 1
+            entry["seconds"] = float(entry["seconds"]) + max(0.0, spent - nested)
+
+    def entries(self) -> list[dict[str, Any]]:
+        """Each named read, heaviest first, so the largest read is the first row."""
+        return [
+            {
+                "read": str(entry["read"]),
+                "count": int(entry["count"]),
+                "seconds": round(float(entry["seconds"]), 3),
+            }
+            for entry in sorted(
+                self._entries.values(), key=lambda row: -float(row["seconds"])
+            )
+        ]
+
+
+@contextmanager
+def _read_tally():
+    """Measure every named read made inside the block, then restore them.
+
+    A stage wraps its own body in this, so the entries are that stage's reads
+    and no other stage's; the readers are put back however the body ends.
+    """
+    import functools
+    import importlib
+
+    tally = _ReadTally()
+    try:
+        for module_name, attribute, label in _READ_SOURCES:
+            module = importlib.import_module(module_name)
+            original = getattr(module, attribute, None)
+            if not callable(original):
+                continue
+
+            def timed(
+                *arguments: Any,
+                __original: Any = original,
+                __label: str = label,
+                **keywords: Any,
+            ) -> Any:
+                with tally.reading(__label):
+                    return __original(*arguments, **keywords)
+
+            # ``original`` and ``label`` are captured at definition, so each wrapper
+            # measures the reader it names rather than whichever the loop holds last.
+            functools.update_wrapper(timed, original)
+            setattr(module, attribute, timed)
+            tally._patched.append((module, attribute, original))
+        yield tally
+    finally:
+        for module, attribute, original in tally._patched:
+            setattr(module, attribute, original)
+        tally._patched.clear()
+
+
+def _record_stage_reads(result: dict[str, Any], stage: str, tally: _ReadTally) -> None:
+    """Attach one stage's reads to the pass result.
+
+    The receipt reports a stage by its seconds; the entries here say what those
+    seconds were spent reading, so a pass that took 80 s can name the reads that
+    took it rather than only how long it took.
+    """
+    reads = result.get("reads")
+    if not isinstance(reads, dict):
+        reads = {}
+        result["reads"] = reads
+    reads[stage] = tally.entries()
+
+
 def _record_stage_timings(
     result: dict[str, Any],
     *,
@@ -314,9 +458,12 @@ def admit_until_stopped(
         # A manual pass reports the landing it started, so it waits for it; the
         # service loop below does not.
         started_at = _utc_now()
-        started = time.monotonic()
-        release = _release._release_tick()
-        released = time.monotonic()
+        # The tally is opened before the stage's clock starts, so the cost of
+        # measuring the stage is not charged to the stage.
+        with _read_tally() as release_reads:
+            started = time.monotonic()
+            release = _release._release_tick()
+            released = time.monotonic()
         worker.tick()
         promotions.tick()
         landing = worker.settle()
@@ -325,6 +472,7 @@ def admit_until_stopped(
         ended = time.monotonic()
         result["release"] = release
         result["landing"] = landing
+        _record_stage_reads(result, "release", release_reads)
         _record_stage_timings(
             result,
             started_at=started_at,
@@ -373,20 +521,24 @@ def admit_until_stopped(
                     with reload_window.replacement(newest_code):
                         _reexec_into_current_code()
                 started_at = _utc_now()
-                started = time.monotonic()
                 # The landing runs in its own thread under its own lock, so this
                 # pass proceeds whether or not one is in flight, and the landing
                 # holds only the next landing.
                 worker.tick()
                 promotions.tick()
-                release = _release._release_tick()
-                released = time.monotonic()
+                # Opened before the stage's clock starts, so the cost of
+                # measuring the stage is not charged to the stage.
+                with _read_tally() as release_reads:
+                    started = time.monotonic()
+                    release = _release._release_tick()
+                    released = time.monotonic()
                 with runs.resolution_scope():
                     admitted = _selection.admit_once(**admission_options)
                 ended = time.monotonic()
                 landing = worker.last
                 admitted["release"] = release
                 admitted["landing"] = landing
+                _record_stage_reads(admitted, "release", release_reads)
                 _record_stage_timings(
                     admitted,
                     started_at=started_at,

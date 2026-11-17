@@ -192,6 +192,7 @@ _HEALTH_COLUMNS = [
     "scheduler_running",
     "scheduler_event",
     "source",
+    "session_scratch_bytes",
     "node_tmp_total_bytes",
     "node_tmp_used_bytes",
     "node_tmp_free_bytes",

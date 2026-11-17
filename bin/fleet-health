@@ -92,6 +92,7 @@ last_kills=$(awk -F '\t' 'NR > 1 && $18 ~ /^[0-9]+$/ {n=$18} END {print n}' "$ou
 last_snapshot=0
 count=0
 while :; do
+    session_scratch=$(timeout 20 "${RECKON_SHIM_PYTHON:-python3}" -m reckon.crew.fleet_supervisor sample-session-scratch) || session_scratch=unknown
     writable_interpreters=$(timeout 20 "${RECKON_SHIM_PYTHON:-python3}" -m reckon.crew.fleet_supervisor check-interpreters) || writable_interpreters=unknown
     read -r load1 load5 _ < "$procdir/loadavg"
     running=$(awk '/^procs_running/ {print $2}' "$procdir/stat")
@@ -121,9 +122,9 @@ while :; do
     disk=$(timeout 15 "${FLEET_DISK_PYTHON:-${RECKON_SHIM_PYTHON:-python3}}" -m reckon.crew.fleet_supervisor sample-node-disk) || disk="unknown unknown unknown unknown"
     read -r disk_total disk_used disk_free disk_inodes <<<"$disk"
     now=$(date -u +%FT%TZ)
-    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t-\t-\t-\t-\tnode\t%s\t%s\t%s\t%s\n' "$now" \
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t-\t-\t-\t-\tnode\t%s\t%s\t%s\t%s\t%s\n' "$now" \
         "$load1" "$load5" "$running" "$blocked" "$dstate" "$avail" "$swap" \
-        "$jobmem" "$jobmax" "$home" "$slurmd" "${ping:-none}" "$tasks" "$python" "$top" "$writable_interpreters" "$kills" "$SLURM_JOB_ID" "$node" \
+        "$jobmem" "$jobmax" "$home" "$slurmd" "${ping:-none}" "$tasks" "$python" "$top" "$writable_interpreters" "$kills" "$SLURM_JOB_ID" "$node" "$session_scratch" \
         "${disk_total:-unknown}" "${disk_used:-unknown}" "${disk_free:-unknown}" "${disk_inodes:-unknown}" \
         | "$health_python" -m reckon.crew.fleet_node --append-node-row "$out" || exit 1
 

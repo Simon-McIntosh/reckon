@@ -223,6 +223,7 @@ class FlightConfig(ConfiguredBaseModel):
     fences: FenceConfig | None = Field(default=None)
     capability_raise: CapabilityRaise | None = Field(default=None, description="""Rule that raises the capability a node resolves at once its plan section has been attempted at or above a threshold, so a section that keeps costing attempts stops landing on the raise's own lane without anyone deciding it by hand. The raise moves a node upward only: a node already at or above the raised level resolves unchanged.""")
     worktree: WorktreeConfig | None = Field(default=None)
+    session_scratch: SessionScratchConfig | None = Field(default=None, description="""Per-session scratch bound and aggregate share of the local disk.""")
     summary: SummaryConfig | None = Field(default=None)
     ticker: TickerConfig | None = Field(default=None, description="""The follower pane's own memory of what it has rendered. A reader tracking a fleet across re-arms wants the rows it just saw restored rather than an empty pane; these bounds decide how much of the view comes back.""")
     domain: DomainConfig | None = Field(default=None, description="""The repository's own domain rules, declared once so a brief and a review read them rather than rediscovering them. Reckon carries these rules and never supplies one, so a project that declares no block keeps today's behaviour.""")
@@ -744,6 +745,14 @@ class WorktreeConfig(ConfiguredBaseModel):
     scratch_min_free_pct: int | None = Field(default=None, description="""Minimum free percentage on the worker scratch filesystem before a dispatch.""", ge=0, le=100)
 
 
+class SessionScratchConfig(ConfiguredBaseModel):
+    """
+    Sampled bounds on the node-local disk used by interactive sessions.
+    """
+    max_bytes: int | None = Field(default=None, description="""Allocated file bytes above which a session owes scratch cleanup.""", ge=1)
+    disk_share: float | None = Field(default=None, description="""Fraction of the local disk available to all session scratch; new sessions refuse at this share.""", ge=0.001, le=1)
+
+
 class SummaryConfig(ConfiguredBaseModel):
     """
     When and how workers report.
@@ -835,6 +844,7 @@ BudgetConfig.model_rebuild()
 LiftConfig.model_rebuild()
 FenceConfig.model_rebuild()
 WorktreeConfig.model_rebuild()
+SessionScratchConfig.model_rebuild()
 SummaryConfig.model_rebuild()
 TickerConfig.model_rebuild()
 DomainConfig.model_rebuild()

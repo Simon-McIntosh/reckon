@@ -504,6 +504,10 @@ def test_disk_and_scheduler_samples_share_the_locked_series(tmp_path):
     from reckon.crew import fleet_node
 
     box = sandbox(tmp_path, extra_env=BASE)
+    scratch_reader = box.root / "stubbin" / "permission-check"
+    scratch_reader.write_text(
+        '#!/bin/bash\ncase "${!#}" in sample-session-scratch) echo 73 ;; *) echo 0 ;; esac\n'
+    )
     reader = box.root / "stubbin" / "disk-python"
     reader.write_text("#!/bin/bash\necho '100 60 40 200'\n")
     reader.chmod(0o755)
@@ -512,6 +516,7 @@ def test_disk_and_scheduler_samples_share_the_locked_series(tmp_path):
     assert result.returncode == 0, result.stderr
     node_row = sample_rows(box)[0]
     assert node_row["source"] == "node"
+    assert node_row["session_scratch_bytes"] == "73"
     assert node_row["node_tmp_free_bytes"] == "40"
     disk_columns = [
         "node_tmp_total_bytes",

@@ -1105,6 +1105,22 @@ slots:
     range: integer
     minimum_value: 1
 
+  session_scratch:
+    description: Per-session scratch bound and aggregate share of the local disk.
+    range: SessionScratchConfig
+    inlined: true
+
+  max_bytes:
+    description: Allocated file bytes above which a session owes scratch cleanup.
+    range: integer
+    minimum_value: 1
+
+  disk_share:
+    description: Fraction of the local disk available to all session scratch; new sessions refuse at this share.
+    range: float
+    minimum_value: 0.001
+    maximum_value: 1
+
   scratch_min_free_bytes:
     description: Minimum free bytes on the worker scratch filesystem before a dispatch.
     range: integer
@@ -1262,6 +1278,7 @@ classes:
       - fences
       - capability_raise
       - worktree
+      - session_scratch
       - summary
       - ticker
       - domain
@@ -1629,6 +1646,12 @@ classes:
       - node_tmp_sample_max_age_seconds
       - scratch_min_free_bytes
       - scratch_min_free_pct
+
+  SessionScratchConfig:
+    description: Sampled bounds on the node-local disk used by interactive sessions.
+    slots:
+      - max_bytes
+      - disk_share
 
   SummaryConfig:
     description: When and how workers report.
