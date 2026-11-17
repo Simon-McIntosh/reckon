@@ -1,0 +1,201 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_independence": "No added assertion compares a returned echo solely against the same variable supplied to that call. Repository snapshots, git HEAD contents and dispatch visibility are independent observations; fixture and injection assertions are identified separately above. Same-plan concurrent edits are not exercised.",
+  "assertion_review": [
+    {
+      "failure_condition": "Fixture check fails if pending-state setup does not increase the parsed version above zero; this is setup validation, not regression protection.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 120
+    },
+    {
+      "failure_condition": "Fails if the injected profile/store/commit boundary is reached before plan bytes change, preventing a pre-write refusal from masquerading as rollback coverage.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 133
+    },
+    {
+      "failure_condition": "Fails if the injected boundary is reached without the requested comment in the actual file.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 134
+    },
+    {
+      "failure_condition": "Fails if the stop boundary runs before the plan file changes.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 156
+    },
+    {
+      "failure_condition": "Fails if removing/bypassing the decorator leaves any digest, version, mode, index entry, status or HEAD different from the independently captured pre-call repository state; base log confirms failure.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 178
+    },
+    {
+      "failure_condition": "Fails if restored-state confirmation is omitted from the refusal text, including when the decorator is removed.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 179
+    },
+    {
+      "failure_condition": "Fails if the refusal confirmation omits the index it restored.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 180
+    },
+    {
+      "failure_condition": "Fails if failed promotion deletes the run pointer instead of retaining a retryable run.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 181
+    },
+    {
+      "failure_condition": "Fails if rollback replaces the entire index and drops the independently captured unrelated staged file.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 182
+    },
+    {
+      "failure_condition": "Fails when removing the guard leaves the modified plan invisible to dispatch; base negative control records PlanVisibilityError before equality can succeed.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 195
+    },
+    {
+      "failure_condition": "Fails if successful promotion reports no recorded plan comment.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 202
+    },
+    {
+      "failure_condition": "Fails if successful promotion fails to persist the requested narrative into the committed HEAD plan; this observes git data, not a returned input echo.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 203
+    },
+    {
+      "failure_condition": "Fails if successful promotion does not increment the independently read pre-promotion plan version exactly once.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 204
+    },
+    {
+      "failure_condition": "Fails if successful promotion leaves a dirty plan path.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 205
+    },
+    {
+      "failure_condition": "Fails if post-success dispatch refuses or resolves to a revision other than the independently observed repository HEAD.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 206
+    },
+    {
+      "failure_condition": "Fails if rollback indiscriminately restores the pre-promotion plan after a cleanup exception, deleting the committed narrative.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 218
+    },
+    {
+      "failure_condition": "Fails if such post-commit rollback dirties the plan path after cleanup failure.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 219
+    }
+  ],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:complete at line 1397 calls decorated _complete_locked",
+    "reckon/crew/promotion.py:_complete_locked at line 2659 writes the plan comment through promotion_scope._record_landing_comment",
+    "reckon/crew/promotion.py:_complete_locked at line 2809 commits through promotion_scope._commit_landing_writes"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-17T00:27:04Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-a-failed-promotion-restores-its-plan-b8dc50aa168d",
+      "recorded_at": "2026-11-17T02:01:20.643684+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "id": "f1df8404d72",
+      "line": "1950",
+      "severity": "blocking",
+      "text": "blocking: The snapshot-to-restore interval holds no plan-path write lock, so if an editor or another run updates or stages this plan after line 1934 and this promotion then refuses before a commit, restore() unconditionally writes the older bytes at line 1867 and older index entry at line 1886, deleting the other writer's change; the per-run locks at lines 1014 and 700 do not serialize other writers of this plan, and the HEAD-entry check at line 1947 does not detect uncommitted edits. Serialize the transaction with the existing plan-path write mechanism or prove ownership before restoring, and cover an interleaved same-plan edit without losing it."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_failed_promotion_restores_its_plan.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233459980246-a-failed-promotion-restores-its-plan/armed-head.log",
+      "revision": "b8dc50aa168d697d3c8201c5a213282c8d610641"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233459980246-a-failed-promotion-restores-its-plan/armed-base.log",
+      "revision": "891a4e54f19486e82117d68826044be51d2e0a8d"
+    }
+  },
+  "importer_comparison": {
+    "added_failure_ids": [],
+    "after_failure_count": 91,
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233459980246-a-failed-promotion-restores-its-plan/isolated-head-importers.log",
+    "baseline_failure_count": 91,
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233459980246-a-failed-promotion-restores-its-plan/isolated-base-importers.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read the sole commit b8dc50aa168d697d3c8201c5a213282c8d610641 against its base; its 336 additions implement the snapshot decorator and 19 regression cases, with one unprotected same-path concurrency defect at reckon/crew/promotion.py:1950.",
+    "done_when": "The live plan docs/plans/delivered-work-lands-without-a-coordinator.html:143 requires failed-promotion digest/status preservation, subsequent dispatch and successful comments; armed-head.log records 77 passed and negative-control.log records 17 failed, 2 passed at the base.",
+    "goal": "The goal in prompt.txt:38 is to preserve plan and index state on refusal; reckon/crew/promotion.py:1934-1950 does this for isolated failures but can overwrite a concurrent plan edit.",
+    "manifest": "The source manifest.md names the sole commit, complete baseline_suite/after_suite receipts and negative control; their logs confirm 58/77 passed and zero added failure ids, with 91 identical failures in the separate importer comparison.",
+    "write_paths": "The four grants in prompt.txt:94-98 include both changed files, and git diff 891a4e54f19486e82117d68826044be51d2e0a8d..b8dc50aa168d697d3c8201c5a213282c8d610641 changes only reckon/crew/promotion.py and tests/test_a_failed_promotion_restores_its_plan.py."
+  },
+  "justifications": {
+    "durability": "tests/test_a_failed_promotion_restores_its_plan.py:178 compares independently observed repository state before and after promotion and reddens when the decorator is removed, but its fixed pre-promotion peer staging at line 167 does not guard concurrent writes to the plan itself.",
+    "evidence": "tests/test_a_failed_promotion_restores_its_plan.py:161-219 directly exercises the specified failure, dispatch and success conditions, and armed-base.log, armed-head.log and negative-control.log record complete outcomes at the stated revisions.",
+    "fit": "reckon/crew/promotion.py:1846-1963 uses the surrounding dataclass, decorator, CrewError, atomic-write and shared index-lock retry idioms with mechanism-based names.",
+    "goal_fidelity": "reckon/crew/promotion.py:1934-1950 preserves preexisting state in the exercised isolated paths but restores a stale snapshot over edits arriving during promotion.",
+    "reuse": "Capability searches over reckon/crew and reckon/_store.py found HEAD-based rollback in promotion_scope.py:1919 and index repair in merge.py:710, which were opened and cannot restore arbitrary pre-promotion bytes plus split index state; promotion.py:1847 adds that distinct snapshot capability while reusing atomic writes and the existing lock-retry owner.",
+    "scope_discipline": "The sole commit changes only reckon/crew/promotion.py and tests/test_a_failed_promotion_restores_its_plan.py, both explicitly granted by source prompt.txt:95-96."
+  },
+  "negative_control": {
+    "exit_status": 1,
+    "interpretation": "Removing the decorator restores the measured base defect; the snapshot equality and subsequent dispatch assertions fail while success/cleanup controls pass.",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233459980246-a-failed-promotion-restores-its-plan/negative-control.log",
+    "revision": "891a4e54f19486e82117d68826044be51d2e0a8d",
+    "summary": "17 failed, 2 passed in 4.85s"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal in prompt.txt:38 is to preserve plan and index state on refusal; reckon/crew/promotion.py:1934-1950 does this for isolated failures but can overwrite a concurrent plan edit.\nVERDICT done_when: The live plan docs/plans/delivered-work-lands-without-a-coordinator.html:143 requires failed-promotion digest/status preservation, subsequent dispatch and successful comments; armed-head.log records 77 passed and negative-control.log records 17 failed, 2 passed at the base.\nVERDICT write_paths: The four grants in prompt.txt:94-98 include both changed files, and git diff 891a4e54f19486e82117d68826044be51d2e0a8d..b8dc50aa168d697d3c8201c5a213282c8d610641 changes only reckon/crew/promotion.py and tests/test_a_failed_promotion_restores_its_plan.py.\nVERDICT manifest: The source manifest.md names the sole commit, complete baseline_suite/after_suite receipts and negative control; their logs confirm 58/77 passed and zero added failure ids, with 91 identical failures in the separate importer comparison.\nVERDICT diff: Read the sole commit b8dc50aa168d697d3c8201c5a213282c8d610641 against its base; its 336 additions implement the snapshot decorator and 19 regression cases, with one unprotected same-path concurrency defect at reckon/crew/promotion.py:1950.\nCALL_SITES: reckon/crew/promotion.py:complete at line 1397 calls decorated _complete_locked, reckon/crew/promotion.py:_complete_locked at line 2659 writes the plan comment through promotion_scope._record_landing_comment, reckon/crew/promotion.py:_complete_locked at line 2809 commits through promotion_scope._commit_landing_writes\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:1934-1950 preserves preexisting state in the exercised isolated paths but restores a stale snapshot over edits arriving during promotion.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_a_failed_promotion_restores_its_plan.py:161-219 directly exercises the specified failure, dispatch and success conditions, and armed-base.log, armed-head.log and negative-control.log record complete outcomes at the stated revisions.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The sole commit changes only reckon/crew/promotion.py and tests/test_a_failed_promotion_restores_its_plan.py, both explicitly granted by source prompt.txt:95-96.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_failed_promotion_restores_its_plan.py:178 compares independently observed repository state before and after promotion and reddens when the decorator is removed, but its fixed pre-promotion peer staging at line 167 does not guard concurrent writes to the plan itself.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/promotion.py:1846-1963 uses the surrounding dataclass, decorator, CrewError, atomic-write and shared index-lock retry idioms with mechanism-based names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches over reckon/crew and reckon/_store.py found HEAD-based rollback in promotion_scope.py:1919 and index repair in merge.py:710, which were opened and cannot restore arbitrary pre-promotion bytes plus split index state; promotion.py:1847 adds that distinct snapshot capability while reusing atomic writes and the existing lock-retry owner.\nFINDING reckon/crew/promotion.py:1950 blocking: The snapshot-to-restore interval holds no plan-path write lock, so if an editor or another run updates or stages this plan after line 1934 and this promotion then refuses before a commit, restore() unconditionally writes the older bytes at line 1867 and older index entry at line 1886, deleting the other writer's change; the per-run locks at lines 1014 and 700 do not serialize other writers of this plan, and the HEAD-entry check at line 1947 does not detect uncommitted edits. Serialize the transaction with the existing plan-path write mechanism or prove ownership before restoring, and cover an interleaved same-plan edit without losing it.\n",
+  "reuse_search": {
+    "added_definitions": "Snapshot class and its methods add arbitrary pre-promotion state restoration absent from HEAD-based rollback; decorator and guarded closure wrap the existing promotion owner; test helpers compose existing git, plan, pointer and routing owners.",
+    "capabilities": [
+      "plan and file rollback",
+      "snapshot arbitrary bytes/mode and index entries",
+      "index lock retry"
+    ],
+    "opened_owners": [
+      "reckon/crew/promotion_scope.py:_restore_landing_writes",
+      "reckon/crew/promotion_scope.py:_restore_one_landing_write",
+      "reckon/crew/promotion_scope.py:_commit_preserving_plan_text",
+      "reckon/crew/merge.py:index repair"
+    ]
+  },
+  "review_run_id": "r-20261117T002355536252-review-of-a-failed-promotion-restores-its-plan-b8dc50aa168d",
+  "reviewed_base_sha": "891a4e54f19486e82117d68826044be51d2e0a8d",
+  "reviewed_head_sha": "b8dc50aa168d697d3c8201c5a213282c8d610641",
+  "reviewed_run_id": "r-20261116T233459980246-a-failed-promotion-restores-its-plan",
+  "scores": {
+    "durability": 18,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T02:27:21.153331+00:00",
+  "total": 114
+}
