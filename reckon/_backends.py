@@ -3686,15 +3686,6 @@ class _StreamCursor:
     def inode(self) -> tuple[int, int]:
         return (self.dev, self.ino)
 
-    def covers(self, info: object) -> bool:
-        """Whether ``info`` is the file version this cursor was reached at."""
-        return self.identity == (
-            int(info.st_dev),
-            int(info.st_ino),
-            int(info.st_size),
-            int(info.st_mtime_ns),
-        )
-
     def grows_from(self, path: str | Path, info: object) -> bool:
         """Whether the file only gained bytes past this cursor's recorded end."""
         return (
@@ -3715,6 +3706,11 @@ class _ParsedStream:
     events: list[dict[str, Any]]
     malformed: int
     ends_newline: bool
+    # Whether ``events`` starts at the stream's first byte. A read resumed from
+    # a cursor whose records the cache no longer holds answers for the records
+    # gained since then, so an entry published from one is a tail: it answers a
+    # request for what the stream gained and never one for the whole stream.
+    whole: bool = True
     observations: dict[str, Observation] = field(default_factory=dict)
     timestamp_reader: object | None = None
     timestamp_bounds: (
@@ -3770,7 +3766,11 @@ def _cached_stream_entry(path: str | Path, *, whole: bool = False) -> _ParsedStr
     identity = (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns)
     with _PARSED_STREAM_LOCK:
         stored = _PARSED_STREAMS.get(key)
-        if stored is not None and stored.identity == identity:
+        if (
+            stored is not None
+            and stored.identity == identity
+            and (stored.whole or not whole)
+        ):
             _PARSED_STREAMS.move_to_end(key)
             return stored
         cursor = None if whole else _STREAM_CURSORS.get(key)
@@ -3781,6 +3781,7 @@ def _cached_stream_entry(path: str | Path, *, whole: bool = False) -> _ParsedStr
             prior_events is not None
             and cursor is not None
             and stored is not None
+            and stored.whole
             and stored.identity == cursor.identity
         )
     grows = cursor is not None and cursor.grows_from(source, info)
@@ -3810,7 +3811,7 @@ def _cached_stream_entry(path: str | Path, *, whole: bool = False) -> _ParsedStr
     head = stream_head_fingerprint(source, offset=end)
     with _PARSED_STREAM_LOCK:
         live = _PARSED_STREAMS.get(key)
-        if live is not None and live.identity == identity:
+        if live is not None and live.identity == identity and (live.whole or not whole):
             _PARSED_STREAMS.move_to_end(key)
             _remember_cursor(key, live.cursor)
             return live
@@ -3824,6 +3825,7 @@ def _cached_stream_entry(path: str | Path, *, whole: bool = False) -> _ParsedStr
             events=events,
             malformed=malformed,
             ends_newline=prior_ends_newline if grows else data.endswith(b"\n"),
+            whole=(joined or not grows),
             timestamp_reader=stored.timestamp_reader if joined and stored else None,
             timestamp_bounds=stored.timestamp_bounds if joined and stored else None,
             pending_events=pending,
@@ -3981,6 +3983,7 @@ def _publish_summary_records(
                 events=combined,
                 malformed=total,
                 ends_newline=ends_newline,
+                whole=live.whole,
                 timestamp_reader=live.timestamp_reader,
                 timestamp_bounds=live.timestamp_bounds,
                 pending_events=[*(live.pending_events or []), *events],
@@ -4612,6 +4615,7 @@ def _observe_run_stream(
     )
     if (
         cursor is not None
+        and cursor.offset <= info.st_size
         and isinstance(state, Mapping)
         and _stream_head_intact(path, cursor.head)
     ):

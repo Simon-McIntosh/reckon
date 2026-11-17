@@ -190,6 +190,7 @@ def test_concurrent_stream_readers_survive_eviction_and_growth(
 
     def classify(index: int):
         seen: set[Path] = set()
+        appended: dict[Path, list[dict]] = {}
         iterations = 0
         try:
             barrier.wait(timeout=5)
@@ -203,14 +204,18 @@ def test_concurrent_stream_readers_survive_eviction_and_growth(
                 )
                 seen.add(stream)
                 if not common and iterations % 4 == 0:
+                    line = record(iterations + 2)
                     with stream.open("a", encoding="utf-8") as handle:
-                        handle.write(record(iterations + 2))
+                        handle.write(line)
+                    appended.setdefault(stream, []).extend(
+                        _backends.parse_events([line])[0]
+                    )
                 events, malformed = _backends.cached_stream_events(stream)
                 bounds = _backends.cached_stream_timestamp_bounds(
                     stream, promotion._zone_aware_stream_timestamp
                 )
                 lines = stream.read_text(encoding="utf-8").splitlines()
-                whole, _whole_malformed = _backends.parse_events(lines)
+                whole, whole_malformed = _backends.parse_events(lines)
                 stamps = [
                     (parsed, event["timestamp"])
                     for event in whole
@@ -227,17 +232,21 @@ def test_concurrent_stream_readers_survive_eviction_and_growth(
                 )
                 # A stream the cache still holds answers for all of it; one
                 # whose contents it dropped for size answers for the records
-                # read since the cursor it dropped them at, which is a tail of
-                # the stream and never a record the stream does not hold. The
-                # answer is therefore the whole stream or a suffix of it, and
-                # the malformed count is the count among the records answered.
-                assert events == whole[len(whole) - len(events) :], (
-                    "the cache answered with records the stream does not hold",
+                # this worker appended to it, from wherever the read that lost
+                # them stopped. Both are compared exactly against records the
+                # test wrote, so an answer carrying a stale record, a repeat of
+                # a record it did not append, or missing one it did fails.
+                gained = appended.get(stream, [])
+                assert (events, malformed) == (whole, whole_malformed) or any(
+                    (events, malformed) == (gained[start:], 0)
+                    for start in range(len(gained))
+                ), (
+                    "the cache answered for records other than the stream's",
                     stream.name,
                     len(events),
                     len(whole),
+                    len(gained),
                 )
-                assert malformed == 0, (malformed, stream.name)
                 assert bounds == expected_bounds
                 observed = _backends.observe_log(
                     backend_name="cache", backend={"command": "claude"}, log_path=stream

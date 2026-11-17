@@ -191,3 +191,76 @@ def test_a_second_pass_pays_only_for_what_each_stream_gained(
             "a summary extended from the append disagrees with a whole read",
             path.name,
         )
+
+
+def _evict_contents() -> None:
+    """Drop every held stream's records, keeping the cursors that reached them."""
+    with _backends._PARSED_STREAM_LOCK:
+        _backends._PARSED_STREAMS.clear()
+
+
+def test_a_whole_request_is_never_answered_from_a_tail_entry(tmp_path: Path) -> None:
+    """A read that resumed answers for what it gained, never for a whole request."""
+    path = tmp_path / "stream.jsonl"
+    path.write_text(
+        "".join(_record(index) + "\n" for index in range(40)), encoding="utf-8"
+    )
+    assert len(_backends.cached_stream_events(path)[0]) == 40
+
+    # The byte bound drops the records it held and keeps the cursor of the read
+    # that published them, which is the state a resumed read answers from.
+    _evict_contents()
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write("".join(_record(40 + index) + "\n" for index in range(3)))
+    gained, gained_malformed = _backends.cached_stream_events(path)
+    assert (len(gained), gained_malformed) == (3, 0)
+
+    whole, malformed = _backends.cached_stream_events(path, whole=True)
+    assert malformed == 0
+    assert [event["message"]["id"] for event in whole] == [
+        f"msg_{index:06d}" for index in range(43)
+    ], "a whole request was answered from the records one read gained"
+
+
+def test_a_resume_past_the_end_of_a_truncated_stream_reads_it_whole(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A carried offset the stream no longer reaches is not a resume."""
+    path = tmp_path / "stream.jsonl"
+    path.write_text(
+        "".join(_record(index) + "\n" for index in range(60)), encoding="utf-8"
+    )
+    reached = path.stat().st_size
+    head = _backends.stream_head_fingerprint(path, offset=reached)
+    carried_state = _backends.observe_log(
+        backend_name="probe", backend=BACKEND, log_path=path
+    ).stream_state
+    # A stream either cache has seen is answered from that cache, so the
+    # carried resume is only consulted when neither holds the stream.
+    _evict_contents()
+    with _backends._PARSED_STREAM_LOCK:
+        _backends._STREAM_CURSORS.clear()
+
+    # The stream is truncated back to a record boundary inside the sampled
+    # opening, so the opening still holds and only the offset is stale.
+    kept = "".join(_record(index) + "\n" for index in range(20))
+    path.write_text(kept, encoding="utf-8")
+    assert path.stat().st_size < reached
+    assert _backends._stream_head_intact(path, head)
+
+    # The summary answers a stream it has seen before the carried resume can,
+    # so the fallback the resume exists for is the one under test.
+    monkeypatch.setattr(_backends, "_summarised_observation", lambda **_kwargs: None)
+    resumed = _backends.observe_log(
+        backend_name="probe",
+        backend=BACKEND,
+        log_path=path,
+        resume={"offset": reached, "head": head, "state": carried_state},
+    )
+    fresh = _backends.observe_stream(
+        backend_name="probe",
+        backend=BACKEND,
+        lines=kept.splitlines(keepends=True),
+    )
+    assert resumed.as_dict() == fresh.as_dict()
+    assert resumed.stream_state["offset"] == path.stat().st_size
