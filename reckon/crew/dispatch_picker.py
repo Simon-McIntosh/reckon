@@ -43,7 +43,72 @@ from reckon.crew.runs import (
 )
 
 
-PICKER_DISPATCH_TIMEOUT_SECONDS = 5.0
+#: How long a dispatch waits for the router's answer. Sized to a hung picker
+#: rather than to a quick reply: a dispatch already takes minutes, and a pick's
+#: first steps can outlive a few seconds on a loaded fleet node. A pick still
+#: unanswered here is a request the dispatcher queues rather than places.
+PICKER_DISPATCH_TIMEOUT_SECONDS = 120.0
+
+#: The flight key, under ``routing``, that sets the bound above for a host.
+PICKER_DISPATCH_TIMEOUT_KEY = "picker_timeout_seconds"
+
+
+def picker_dispatch_timeout(config: Mapping[str, Any] | None) -> float:
+    """How long a dispatch waits for the router's answer on this host.
+
+    Read from the resolved config's ``routing`` namespace. A bound holds only
+    while it is a positive number, so an unreadable or non-positive value falls
+    back to the shipped figure rather than making every dispatch queue.
+    """
+    routing = (config or {}).get("routing")
+    value = (
+        routing.get(PICKER_DISPATCH_TIMEOUT_KEY, PICKER_DISPATCH_TIMEOUT_SECONDS)
+        if isinstance(routing, Mapping)
+        else PICKER_DISPATCH_TIMEOUT_SECONDS
+    )
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or value <= 0:
+        return PICKER_DISPATCH_TIMEOUT_SECONDS
+    return float(value)
+
+
+def dispatcher_declared_difficulty(
+    *,
+    node: TaskNode,
+    config: Mapping[str, Any],
+    project: str,
+    repo: Path,
+    authority: Mapping[str, Any] | None = None,
+) -> tuple[dict[str, Any], float | None]:
+    """The section capability and effort a dispatch resolves before it asks.
+
+    The pick reads both from the plan itself when it is handed neither, and
+    that read is what a loaded host spends the pick's whole bound on. Resolving
+    them here and handing them in leaves the pick's difficulty step nothing to
+    read. The resolution is the picker's own ``_declared_difficulty`` rather
+    than a second copy of it, so the dispatcher and the pick cannot disagree
+    about which plan a node names, which figure outranks which, or what a failed
+    read leaves behind: an estimate the node itself carries is kept, and a
+    section's declared effort outranks the plan total exactly as it does inside
+    the pick.
+    """
+    if not (node.plan.strip() and node.section.strip()):
+        return {}, None
+    from reckon.crew.picker import PickRequest, _declared_difficulty
+
+    try:
+        capability, hours, _source = _declared_difficulty(
+            PickRequest(project, node), dict(config), repo=repo, authority=authority
+        )
+    except Exception:  # noqa: BLE001 - the pick resolves its own rather than fail
+        return {}, None
+    resolved = dict(capability) if isinstance(capability, Mapping) else {}
+    measured = (
+        hours
+        if isinstance(hours, (int, float)) and not isinstance(hours, bool)
+        else None
+    )
+    return resolved, (float(measured) if measured is not None else None)
+
 
 #: When a routed answer was chosen, recorded on the answer itself. A queued
 #: request stores this selection as its route, so the instant travels with the
@@ -177,6 +242,7 @@ def _picker_fallback(
     authority_error: str | None = None,
     stage_ms: Mapping[str, float | None] | None = None,
     snapshot_candidates: Sequence[Mapping[str, Any]] | None = None,
+    route_defaulted: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """The selection dispatch records when the picker did not decide one.
 
@@ -206,6 +272,7 @@ def _picker_fallback(
         "excluded": [],
         "comment": comment,
         **({"input_errors": dict(input_errors)} if input_errors else {}),
+        **({"route_defaulted": dict(route_defaulted)} if route_defaulted else {}),
         **({"authority_error": authority_error} if authority_error else {}),
         **(
             {"snapshot_candidates": list(snapshot_candidates)}
@@ -424,7 +491,7 @@ def dispatch_picker_selection(
     finished = threading.Event()
     result: dict[str, Any] = {}
     started = time.monotonic()
-    stages: dict[str, float | None] = {name: None for name in PICK_STAGES}
+    stages: dict[str, float | None] = dict.fromkeys(PICK_STAGES)
     if stage_ms:
         stages.update(stage_ms)
     elif (
@@ -448,11 +515,19 @@ def dispatch_picker_selection(
     pick_running: dict[str, str | None] = {"step": None}
 
     def marked(stage: str, build: Callable[[], Any]) -> Any:
-        """Run one timed stage, recording the stage the ask is inside."""
+        """Run one timed stage, recording the stage the ask is inside.
+
+        A stage that raises is recorded as the one the ask failed in before the
+        exception leaves: its mark is cleared on the way out, so a caller would
+        otherwise see only that something failed.
+        """
         running["stage"] = stage
         moment = time.perf_counter()
         try:
             return build()
+        except Exception:
+            result["failed_step"] = str(stage)
+            raise
         finally:
             stages[stage] = round((time.perf_counter() - moment) * 1000, 3)
             running["stage"] = None
@@ -575,6 +650,8 @@ def dispatch_picker_selection(
                 PickRequest(
                     project,
                     node,
+                    capability=request_capability,
+                    estimated_hours=request_hours,
                     comment=comment,
                     session=session,
                     estimated_context=estimated_context,
@@ -588,11 +665,27 @@ def dispatch_picker_selection(
             result["selection"] = selection.as_dict()
         except Exception as exc:  # noqa: BLE001 - shadow routing cannot block dispatch
             result["error"] = f"{type(exc).__name__}: {exc}"
+            # The step the ask had reached, kept by pick's own sink past the
+            # step's own clear, so a failed pick names the work it gave up in
+            # exactly as an expired one does.
+            failed = pick_running.get("last_step") or pick_running.get("step")
+            if failed:
+                result["failed_step"] = f"pick:{failed}"
+            elif running.get("stage"):
+                result["failed_step"] = str(running["stage"])
         finally:
             finished.set()
 
+    # The section's capability and effort are resolved here, on the dispatch
+    # side, so the pick is handed both and its difficulty step reads no plan
+    # while the bound runs. A node whose plan section declares nothing, or a
+    # read that fails, leaves them empty and the pick resolves its own.
+    request_capability, request_hours = dispatcher_declared_difficulty(
+        node=node, config=config, project=project, repo=repo, authority=authority
+    )
+    bound_seconds = picker_dispatch_timeout(config)
     threading.Thread(target=ask, name="dispatch-picker", daemon=True).start()
-    if not finished.wait(PICKER_DISPATCH_TIMEOUT_SECONDS):
+    if not finished.wait(bound_seconds):
         result["error"] = "timeout"
     authority_error = result.get("authority_error")
     if "selection" in result and "error" not in result:
@@ -657,23 +750,50 @@ def dispatch_picker_selection(
         return _stamp_route_pick(_record_lifted_choice(selection))
     error = result.get("error") or "picker returned no selection"
     reason = error
+    # The work the ask ran out in, named in pick()'s vocabulary for a step
+    # inside the call and in the dispatcher's for one of its own stages. Both
+    # boundaries record it before they let the failure go: a marked step keeps
+    # its last start, and a marked stage records itself when its build raises,
+    # so a pick that failed names the step it failed in rather than reporting
+    # the same bare word an unanswered one does.
+    step = ""
     if error == "timeout":
-        # A step pick() marked while it ran is named in pick()'s vocabulary; a
-        # pick that marked none keeps the bare reading, as does one that spent
-        # the budget in a dispatcher stage instead.
         pick_step = pick_running["step"]
         if pick_step:
-            reason = f"timeout in pick:{pick_step}"
+            step = f"pick:{pick_step}"
         elif running["stage"]:
-            reason = f"timeout in {running['stage']}"
-    return _picker_fallback(
+            step = str(running["stage"])
+        if step:
+            reason = f"timeout in {step}"
+    else:
+        step = str(result.get("failed_step") or "")
+        if step:
+            reason = f"{error} in {step}"
+    selection = _picker_fallback(
         reason,
         comment,
         latency_ms=round((time.monotonic() - started) * 1000, 3),
         authority_error=authority_error,
         stage_ms=stages,
         snapshot_candidates=result.get("snapshot_candidates"),
+        route_defaulted=(
+            {"reason": "route-defaulted", "step": step or "pick", "detail": reason}
+            if error != "timeout"
+            else None
+        ),
     )
+    if error == "timeout":
+        # An unanswered pick is a request dispatch has no route for: the
+        # dispatcher stores it and asks again when it launches, rather than
+        # placing it on the configured default from a picture the router never
+        # weighed.
+        selection["awaiting_pick"] = {
+            "reason": "awaiting-pick",
+            "step": step or "pick",
+            "bound_seconds": bound_seconds,
+            "detail": reason,
+        }
+    return selection
 
 
 # The specification levels a route must not be swallowed by at a lane granting
@@ -719,7 +839,9 @@ def _chosen_lane(selection: Mapping[str, Any], config: Mapping[str, Any]) -> str
     backend = str(selection.get("backend") or "")
     if not backend:
         return ""
-    return lane_family(config, backend)
+    chosen = _chosen_offered_row(selection)
+    reservation = (chosen or {}).get("reservation") or {}
+    return str(reservation.get("family") or lane_family(config, backend))
 
 
 def _reserved_lane_reason(answer: Any) -> str:
@@ -934,6 +1056,24 @@ def lane_family(
         return str(backend.get("launch") or name)
 
 
+def reservation_family(
+    config: Mapping[str, Any], name: str, backend: Mapping[str, Any] | None = None
+) -> str:
+    """The policy family, retaining a local wrapper's harness reservation."""
+    from reckon import _backends
+
+    settings = (
+        backend
+        if backend is not None
+        else (config.get("backends") or {}).get(name, {})
+    )
+    try:
+        dialect = _backends.dialect_for(settings)
+    except _backends.BackendError:
+        return lane_family(config, name, backend)
+    return dialect.name if dialect.name == "claude" else lane_family(config, name, backend)
+
+
 def _lane_backend_names(config: Mapping[str, Any], lane: str) -> set[str]:
     """The configured backends belonging to one lane, read as the state reads it.
 
@@ -946,7 +1086,10 @@ def _lane_backend_names(config: Mapping[str, Any], lane: str) -> set[str]:
     for name, backend in (config.get("backends") or {}).items():
         if not isinstance(backend, Mapping):
             continue
-        if lane_family(config, str(name), backend) == lane:
+        if lane in {
+            lane_family(config, str(name), backend),
+            reservation_family(config, str(name), backend),
+        }:
             names.add(str(name))
     return names
 
@@ -1408,6 +1551,18 @@ def launch_route_decision(
     ``keep`` also covers a request carrying no router answer at all, which
     launches the backend it was queued for as it always has.
     """
+    if isinstance(stored, Mapping) and stored.get("awaiting_pick"):
+        # The request was stored because the pick had not answered at its
+        # bound, not because the router placed it. It carries no route, so the
+        # launch asks the router again rather than launching the default.
+        return {
+            "decision": "repick",
+            "reason": "the pick was still running when the request was queued",
+            "previous_route": _route_selection_summary(stored),
+            "picked_at": None,
+            "age_seconds": None,
+            "repick_after_seconds": queue_repick_after_seconds(config),
+        }
     if not isinstance(stored, Mapping) or stored.get("action") != "route":
         return {
             "decision": "keep",

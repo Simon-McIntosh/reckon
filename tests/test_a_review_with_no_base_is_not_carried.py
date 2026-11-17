@@ -60,10 +60,20 @@ def _commit(repository: Path, paths: dict[str, str], message: str) -> str:
 
 @pytest.fixture()
 def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
-    """A repository whose reviewed run delivered a test file, plus a config home."""
+    """A repository whose reviewed run delivered a test file, plus a config home.
+
+    The checkout carries a bare origin holding the integration branch, because
+    the reflex takes a review's delta from the run's own commits: those
+    reachable from the run's head but from neither the reviewed head nor the
+    remote-tracking ref of the integration branch. A checkout with no such ref
+    is read as an uncomparable history, so the move would never reach the rule
+    under test.
+    """
     config_home = tmp_path / "config"
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
+    origin = tmp_path / "origin.git"
+    _git(tmp_path, "init", "-q", "--bare", "-b", "main", str(origin))
     repo = tmp_path / "repo"
     repo.mkdir()
     for arguments in (
@@ -86,6 +96,8 @@ def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
         {"tests/test_deliverable.py": "def test_delivered():\n    assert True\n"},
         "feat: the reviewed deliverable",
     )
+    _git(repo, "remote", "add", "origin", str(origin))
+    _git(repo, "push", "-q", "origin", "main")
     (config_home / "mounts.json").write_text(
         '{"' + PROJECT + '": "' + str(repo / "docs") + '"}'
     )

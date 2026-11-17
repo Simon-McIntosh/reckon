@@ -10,20 +10,25 @@ The allocation is found from the queue by the comment token this module writes
 into it, never by a remembered job id, so a resubmission, a requeue onto another
 node or a cancel-and-hold is picked up by the next reader.
 
-Nothing here runs on its own: ``cx`` holds an allocation through
+``cx`` holds an allocation through
 ``reckon fleet-node hold --submit`` when it finds none running, and the operator
-reads it with ``reckon fleet-node status``.
+reads it with ``reckon fleet-node status``. The hold starts an independent
+scheduler reader through ``fleet-health --scheduler``.
 """
 
 from __future__ import annotations
 
+import csv
 import getpass
 import json
 import os
 import shlex
 import subprocess
+import sys
+import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from textwrap import dedent
 from typing import Any
@@ -36,6 +41,7 @@ from reckon.crew.fleet_supervisor import (
     fleet_state_directory,
     state_directory,
 )
+from reckon.node_exclusive_lock import LockHeld, exclusive_lock
 
 # The size of the allocation, overridable per environment variable. A rigel
 # node has 28 cores and 128,259 MB, the site reserves nothing for the system,
@@ -126,6 +132,243 @@ _SQUEUE_FORMAT = "%i|%j|%T|%M|%R|%b|%k|%L"
 # with.
 _SHAPE_FORMAT = "%P|%C|%m"
 
+# Terminal allocation states, rather than absence from the live queue, close a
+# scheduler series. Accounting may lag the queue and either query may fail.
+_TERMINAL_JOB_STATES = frozenset(
+    {
+        "BOOT_FAIL",
+        "CANCELLED",
+        "COMPLETED",
+        "DEADLINE",
+        "FAILED",
+        "NODE_FAIL",
+        "OUT_OF_MEMORY",
+        "PREEMPTED",
+        "REVOKED",
+        "TIMEOUT",
+    }
+)
+_ACTIVE_JOB_STATES = frozenset(
+    {
+        "CONFIGURING",
+        "COMPLETING",
+        "PENDING",
+        "RUNNING",
+        "RESIZING",
+        "REQUEUED",
+        "REQUEUE_FED",
+        "REQUEUE_HOLD",
+        "RESV_DEL_HOLD",
+        "SIGNALING",
+        "SPECIAL_EXIT",
+        "STAGE_OUT",
+        "STOPPED",
+        "SUSPENDED",
+    }
+)
+_SCHEDULER_COLUMNS = [
+    "job_id",
+    "node",
+    "scheduler_state",
+    "scheduler_reason",
+    "scheduler_running",
+    "scheduler_event",
+    "source",
+]
+_HEALTH_COLUMNS = [
+    "utc",
+    "load1",
+    "load5",
+    "procs_running",
+    "procs_blocked",
+    "dstate",
+    "mem_avail_mb",
+    "swap_free_mb",
+    "job_mem_mb",
+    "job_mem_max_mb",
+    "home_stat_ms",
+    "slurmd_ms",
+    "ctld_ping",
+    "tasks",
+    "python_procs",
+    "top_parent",
+    "writable_interpreters",
+    "job_oom_kill",
+    *_SCHEDULER_COLUMNS,
+    "session_scratch_bytes",
+    "test_trees",
+    "test_rss_bytes",
+    "test_runs",
+    "node_tmp_total_bytes",
+    "node_tmp_used_bytes",
+    "node_tmp_free_bytes",
+    "node_tmp_free_inodes",
+]
+
+
+def scheduler_reading(
+    job_id: str, node: str, *, runner: Callable[..., Any] = subprocess.run
+) -> dict[str, str]:
+    """Read one allocation, falling back to accounting only after queue absence."""
+    row = {
+        "job_id": job_id,
+        "node": node,
+        "scheduler_state": "UNKNOWN",
+        "scheduler_reason": "scheduler unreadable",
+        "scheduler_running": "unknown",
+        "scheduler_event": "unknown",
+        "source": "scheduler",
+    }
+    queries = (
+        ["squeue", "-h", "-j", job_id, "-o", "%i|%N|%T|%r"],
+        [
+            "sacct",
+            "-X",
+            "-n",
+            "-P",
+            "-j",
+            job_id,
+            "--format=JobIDRaw,NodeList,State%80,Reason%200",
+        ],
+    )
+    for argv in queries:
+        try:
+            result = runner(
+                argv, capture_output=True, text=True, check=False, timeout=10
+            )
+        except (OSError, subprocess.SubprocessError) as exc:
+            row["scheduler_reason"] = str(exc)
+            return row
+        if result.returncode:
+            row["scheduler_reason"] = result.stderr.strip() or f"{argv[0]} failed"
+            if argv[0] == "squeue":
+                continue
+            return row
+        if not result.stdout.strip():
+            continue
+        for line in result.stdout.splitlines():
+            fields = line.strip().split("|")
+            if len(fields) < 4 or fields[0].strip() != job_id:
+                continue
+            _, reported_node, state, reason = (field.strip() for field in fields[:4])
+            state_word = state.split()[0].rstrip("+") if state else ""
+            if state_word not in _ACTIVE_JOB_STATES | _TERMINAL_JOB_STATES:
+                return row
+            # Accounting retains the cancelling uid in the state string.
+            terminal = state_word in _TERMINAL_JOB_STATES
+            row.update(
+                node=reported_node
+                if reported_node not in ("", "None", "(null)")
+                else node,
+                scheduler_state=state,
+                scheduler_reason=reason or "None",
+                scheduler_running="true" if state == "RUNNING" else "false",
+                scheduler_event="end" if terminal else "sample",
+            )
+            return row
+        return row
+    row["scheduler_reason"] = "job absent from queue and accounting"
+    return row
+
+
+def append_scheduler_reading(directory: Path, row: Mapping[str, str]) -> bool:
+    """Append to the node's TSV, serialising with its sampler and deduplicating end."""
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / f"{row['job_id']}-{row['node']}.tsv"
+    with (
+        exclusive_lock(Path(f"{path}.lock")),
+        path.open("a+", encoding="utf-8", newline="") as stream,
+    ):
+        stream.seek(0)
+        header = next(csv.reader(stream, delimiter="\t"), [])
+        if not header:
+            header = _HEALTH_COLUMNS
+            csv.writer(stream, delimiter="\t", lineterminator="\n").writerow(header)
+        if not set(_SCHEDULER_COLUMNS).issubset(header):
+            raise FleetNodeError(f"health series lacks scheduler columns: {path}")
+        # Only the tail is read, keeping each tick independent of series age.
+        stream.flush()
+        with path.open("rb") as reader:
+            reader.seek(0, os.SEEK_END)
+            reader.seek(max(0, reader.tell() - 65536))
+            tail = reader.read().decode("utf-8", errors="replace").splitlines()
+        for line in reversed(tail):
+            values = line.split("\t")
+            if len(values) == len(header):
+                prior = dict(zip(header, values, strict=True))
+                if prior.get("source") == "scheduler":
+                    if prior.get("scheduler_event") == "end":
+                        return False
+                    break
+        stream.seek(0, os.SEEK_END)
+        csv.writer(stream, delimiter="\t", lineterminator="\n").writerow(
+            row.get(column, "-")
+            .replace("\t", " ")
+            .replace("\r", " ")
+            .replace("\n", " ")
+            for column in header
+        )
+        stream.flush()
+        os.fsync(stream.fileno())
+    return True
+
+
+def watch_scheduler(
+    job_id: str,
+    node: str,
+    *,
+    directory: Path,
+    interval: float = 60,
+    passes: int = 0,
+    runner: Callable[..., Any] = subprocess.run,
+    sleep: Callable[[float], None] = time.sleep,
+) -> None:
+    """Sample outside the watched allocation until its confirmed terminal row."""
+    if job_id in (os.environ.get("SLURM_JOB_ID"), os.environ.get("SLURM_JOBID")):
+        raise FleetNodeError("scheduler reader must run outside the watched allocation")
+    if (
+        not job_id.isdigit()
+        or not node
+        or any(
+            c not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_."
+            for c in node
+        )
+    ):
+        raise FleetNodeError("scheduler reader needs a numeric job id and a node name")
+    directory.mkdir(parents=True, exist_ok=True)
+    try:
+        with exclusive_lock(directory / f"{job_id}-scheduler.lock", blocking=False):
+            count = 0
+            while True:
+                started = time.monotonic()
+                row = scheduler_reading(job_id, node, runner=runner)
+                row["utc"] = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+                if not append_scheduler_reading(directory, row):
+                    return
+                count += 1
+                if row["scheduler_event"] == "end" or (passes and count >= passes):
+                    return
+                sleep(max(0, interval - (time.monotonic() - started)))
+    except LockHeld:
+        return
+
+
+def _scheduler_reader_launch(account: str) -> str:
+    """A separate, small scheduler job on another node survives the fleet's loss."""
+    return dedent(f"""
+        if [ -x "$HOME/.local/bin/fleet-health" ]; then
+            health_state="${{FLEET_STATE_DIR:-$HOME/.local/state/fleet}}"
+            mkdir -p "$health_state/health"
+            reader_command=$(printf '%q ' "$HOME/.local/bin/fleet-health" --scheduler "$SLURM_JOB_ID" "$(hostname -s)")
+            env -u SLURM_JOB_ID -u SLURM_JOBID sbatch --parsable \\
+                --partition=rigel --account={shlex.quote(account)} --nodes=1 \\
+                --cpus-per-task=1 --mem=512M --time=UNLIMITED \\
+                --exclude="$(hostname -s)" --job-name=fleet-scheduler \\
+                --output="$health_state/health/scheduler-%j.log" \\
+                --wrap="exec $reader_command" || echo "fleet scheduler reader submission failed" >&2
+        fi
+    """).strip()
+
 
 class FleetNodeError(RuntimeError):
     """A scheduler call about the fleet node failed."""
@@ -207,6 +450,48 @@ def batch_log_path(environ: Mapping[str, str] | None = None) -> Path:
     return state_directory(environ) / "fleet-%j.log"
 
 
+def _supervisor_lifetime_script(*, standby: bool) -> str:
+    """Keep the batch shell alive while its replaceable interpreter is down.
+
+    The service policy supplies the delays at submission time, so recovery needs
+    no working Python. Only the reader's explicit retirement marker ends the
+    holder; a clean unrequested exit follows the same backoff as a crash.
+    """
+    from reckon.crew import fleet_supervisor
+
+    backoff_setup, backoff_transition = fleet_supervisor.shell_backoff_transition()
+    arguments = " --standby" if standby else ""
+    return dedent(
+        f'''
+        FLEET_LIFETIME_DIRECTORY=$(mktemp -d "$TMPDIR/fleet-lifetime.XXXXXXXX")
+        export FLEET_LIFETIME_DIRECTORY
+        trap 'rm -fv -- "$FLEET_LIFETIME_DIRECTORY/stop" "$FLEET_LIFETIME_DIRECTORY/active"; rmdir -v -- "$FLEET_LIFETIME_DIRECTORY"' EXIT
+        {backoff_setup}
+        while [ ! -f "$FLEET_LIFETIME_DIRECTORY/stop" ]; do
+            started=$SECONDS
+            echo "[$(date -u +%FT%TZ)] fleet supervisor starting"
+            if (
+                if [ -f "$FLEET_LIFETIME_DIRECTORY/active" ]; then
+                    exec "$HOME/.local/bin/fleet-supervisor"
+                else
+                    exec "$HOME/.local/bin/fleet-supervisor"{arguments}
+                fi
+            ); then
+                result=0
+            else
+                result=$?
+            fi
+            [ ! -f "$FLEET_LIFETIME_DIRECTORY/stop" ] || break
+            ran=$((SECONDS - started))
+            {backoff_transition}
+            echo "[$(date -u +%FT%TZ)] fleet supervisor exited ($result); restart in ${{delay}}s"
+            sleep "$delay"
+        done
+        exit 0
+        '''
+    ).strip()
+
+
 def generate_hold_script(
     size: FleetSize,
     *,
@@ -244,7 +529,6 @@ def generate_hold_script(
         f'export {name}="${{{name}:-{DEFAULT_THREAD_CAP}}}"'
         for name in THREAD_CAP_VARIABLES
     )
-    supervisor_args = " --standby" if standby else ""
     body = (
         dedent(
             """
@@ -253,6 +537,7 @@ def generate_hold_script(
         export TMPDIR=/tmp
         export PATH={hold_path}
         {fleet_exports}
+        {scheduler_reader}
         # Cap each compute-library thread pool at the declared width, keeping a
         # value the submitting environment already set. A heavy process
         # otherwise opens a pool as wide as the node's cores, and the thread
@@ -262,10 +547,10 @@ def generate_hold_script(
 
         # The batch step is the one process tree on the node that outlives every
         # login node: a step ends when its login-side client does. The fleet
-        # supervisor runs here when installed, so the zellij servers holding the
-        # agent sessions are started from it and survive a lost login node.
+        # shell holds the allocation independently of the supervisor's Python.
+        # Sessions retain their process identities while the reader restarts.
         if [ -x "$HOME/.local/bin/fleet-supervisor" ]; then
-            exec "$HOME/.local/bin/fleet-supervisor"{supervisor_args}
+            {supervisor_lifetime}
         fi
 
         echo "[$(date)] Holding $(hostname) for the interactive agent fleet"
@@ -276,7 +561,8 @@ def generate_hold_script(
         .format(
             hold_path=shlex.quote(hold_path(environ)),
             thread_caps=thread_caps,
-            supervisor_args=supervisor_args,
+            supervisor_lifetime=_supervisor_lifetime_script(standby=standby),
+            scheduler_reader=_scheduler_reader_launch(size.account),
             fleet_exports="".join(
                 f"export {name}={value}\n"
                 for name, value in fleet_environ(fleet).items()
@@ -286,10 +572,28 @@ def generate_hold_script(
     return "\n".join([*headers, "", body, ""])
 
 
-def submit(script: str) -> str:
-    """Submit a generated allocation and return its job id."""
-    result = subprocess.run(
-        ["sbatch", "--parsable"],
+def submit(
+    script: str,
+    *,
+    partition: str | None = None,
+    runner: Callable[..., subprocess.CompletedProcess[str]] | None = None,
+) -> str:
+    """Submit a generated allocation and return its job id.
+
+    ``partition`` names the partition on the argv as well as in the script.
+    A submission made from inside an existing allocation is refused as an
+    implicit nested job unless its argv names a partition of its own, so a
+    caller that submits from one states it here rather than relying on the
+    script's own directive. ``runner`` overrides the process call, which is
+    how a caller that already holds a scheduler seam asks this question
+    through it rather than reaching a real client.
+    """
+    argv = ["sbatch", "--parsable"]
+    if partition is not None:
+        argv.append(f"--partition={partition}")
+    run = subprocess.run if runner is None else runner
+    result = run(
+        argv,
         input=script,
         capture_output=True,
         text=True,
@@ -616,3 +920,59 @@ def describe_allocation(
             f"remaining on {node}"
         )
     return lines
+
+
+def append_node_reading(path: Path, values: str = "") -> None:
+    """Share the file-server lock and schema with the outside scheduler reader."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with exclusive_lock(Path(f"{path}.lock")):
+        if path.exists():
+            with path.open() as stream:
+                header = stream.readline().rstrip("\r\n").split("\t")
+            if header != _HEALTH_COLUMNS:
+                archived = path.with_suffix(
+                    "." + datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ") + ".tsv"
+                )
+                path.rename(archived)
+        with path.open("a", encoding="utf-8", newline="") as stream:
+            writer = csv.writer(stream, delimiter="\t", lineterminator="\n")
+            if not stream.tell():
+                writer.writerow(_HEALTH_COLUMNS)
+            if values:
+                row = values.rstrip("\n").split("\t")
+                if len(row) != len(_HEALTH_COLUMNS):
+                    raise FleetNodeError("node health row does not match its schema")
+                writer.writerow(row)
+            stream.flush()
+            os.fsync(stream.fileno())
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Record fleet job health")
+    modes = parser.add_mutually_exclusive_group(required=True)
+    modes.add_argument("--scheduler", metavar="JOB")
+    modes.add_argument("--append-node-row", type=Path, metavar="TSV")
+    modes.add_argument("--initialise-series", type=Path, metavar="TSV")
+    parser.add_argument("node", nargs="?")
+    parser.add_argument("--passes", type=int, default=0)
+    parser.add_argument("--interval", type=float, default=60)
+    args = parser.parse_args()
+    try:
+        if args.append_node_row:
+            append_node_reading(args.append_node_row, sys.stdin.read())
+        elif args.initialise_series:
+            append_node_reading(args.initialise_series)
+        elif args.node:
+            watch_scheduler(
+                args.scheduler,
+                args.node,
+                directory=state_directory() / "health",
+                interval=args.interval,
+                passes=args.passes,
+            )
+        else:
+            parser.error("--scheduler requires a node name")
+    except FleetNodeError as exc:
+        parser.exit(1, f"{exc}\n")

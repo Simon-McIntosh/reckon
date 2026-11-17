@@ -1,0 +1,86 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 5,
+  "added_failure_ids": [
+    "tests/test_a_conflicting_landing_is_repaired.py::test_conflicting_delivery_opens_repair_then_lands[automatic]",
+    "tests/test_a_conflicting_landing_is_repaired.py::test_conflicting_delivery_opens_repair_then_lands[manual]",
+    "tests/test_a_finished_pending_landing_retires_its_run.py::test_a_finished_pending_landing_retires_its_run",
+    "tests/test_a_finished_pending_landing_retires_its_run.py::test_a_newer_attempt_keeps_its_pointer_and_worktree",
+    "tests/test_a_finished_pending_landing_retires_its_run.py::test_a_refused_push_keeps_the_run_and_its_recovery_state"
+  ],
+  "added_failure_source": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T105549385153-a-wave-of-landings-is-one-decision/help-repair-armed-gate.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T105549385153-a-wave-of-landings-is-one-decision/review-baseline-suite.log"
+  },
+  "assertion_review": {
+    "preserved completion assertions": "The same unchanged help test requires repeated-run wording, the linked-record size promise and option.multiple; reverting the option to single-run or dropping either documented promise fails its independent expectations.",
+    "repair help phrase": "The only authored assertion change supplies the independent expected literal in STATE_PHRASES; the test reads the registered Click command help and rendered CLI output, without passing this literal to production. Reinstating the legacy repair docstring or deleting suite-arm wording makes the new expectation fail. No new assertion compares a result to a value supplied as that result."
+  },
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_run_commands.py:crew_repair",
+    "reckon/crew_run_commands.py:crew_complete",
+    "reckon/cli.py:crew_repair",
+    "reckon/crew/obligations.py:_obligations_view",
+    "reckon/crew/obligation_snapshot.py:payload_for"
+  ],
+  "completed_at": "2026-11-17T15:24:33Z",
+  "dispatched_at": "2026-11-17T15:17:02Z",
+  "evidence_limits": "No suite rerun for this read-only incremental review; existing complete all_debug receipts were read. Raw baseline-to-after delta is five IDs, all inherited from the measured merged primary; primary-relative delta is zero. Importer evidence at the earlier reviewed head is not claimed as a fresh importer run here.",
+  "findings": [],
+  "incremental_commits": [
+    "f69ffafd8ff19e67d067dc75fd26253072298d6b",
+    "290d37fb3eee24cdb40c2a306226dd393e46f45f"
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read f69ffafd8ff19e67d067dc75fd26253072298d6b and 290d37fb3eee24cdb40c2a306226dd393e46f45f within the assigned paths against the previously reviewed 8fef2d994c13e7052f5084ff2df4a498d317a7e9; only the help expectation is authored and the existing completion module and decision helpers survive unchanged.",
+    "done_when": "The section requires bounded decisions, repeated completion, help contracts and no added importer failures; help-repair-file.log records 8 passed and help-repair-armed-gate.log records 153 passed with seven failures all present in help-repair-primary-suite-base.log.",
+    "goal": "Read the source manifest and live section s8; the incremental help-contract repair in tests/test_crew_help_names_its_state.py:57 retains repeated completion and linked-record expectations while matching the existing repair capability.",
+    "manifest": "The source manifest.md identifies head 290d37fb3eee24cdb40c2a306226dd393e46f45f, both incremental commits, literal commands, complete baseline/after receipts and the inherited primary failures.",
+    "write_paths": "Read the source manifest's expanded paths; the authored change is confined to tests/test_crew_help_names_its_state.py, and reckon/crew/obligations.py's incremental scratch reader is inherited unchanged from the named primary merge."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_help_names_its_state.py:148 compares an independent literal to registered production help, so restoring the legacy repair description or dropping suite-arm wording fails the assertion; restoring the old expected phrase produces the recorded red reproduction.",
+    "evidence": "help-repair-reproduction.log shows the old phrase failing the literal membership assertion, help-repair-file.log ends with 8 passed and EXIT=0, and the complete armed logs show zero added failures against the merged primary.",
+    "fit": "tests/test_crew_help_names_its_state.py:57 uses the existing STATE_PHRASES table and multiline tuple-key idiom without adding symbols or forbidden names.",
+    "goal_fidelity": "tests/test_crew_help_names_its_state.py:57 now matches the existing repair description at reckon/crew_run_commands.py:1615 and retains the completion contract at tests/test_crew_help_names_its_state.py:178.",
+    "reuse": "No authored definition is added in tests/test_crew_help_names_its_state.py, and capability searches confirmed the inherited session_scratch_items reader extends obligations.py using fleet_supervisor.py:633's existing shared-snapshot owner rather than resampling scratch.",
+    "scope_discipline": "Commit 290d37fb3eee24cdb40c2a306226dd393e46f45f changes only the granted tests/test_crew_help_names_its_state.py expectation, while the obligations.py addition in the primary merge exactly matches its existing owner."
+  },
+  "primary_comparison": {
+    "added_failure_count": 0,
+    "added_failure_ids": [],
+    "inherited_added_failure_ids": [
+      "tests/test_a_conflicting_landing_is_repaired.py::test_conflicting_delivery_opens_repair_then_lands[automatic]",
+      "tests/test_a_conflicting_landing_is_repaired.py::test_conflicting_delivery_opens_repair_then_lands[manual]",
+      "tests/test_a_finished_pending_landing_retires_its_run.py::test_a_finished_pending_landing_retires_its_run",
+      "tests/test_a_finished_pending_landing_retires_its_run.py::test_a_newer_attempt_keeps_its_pointer_and_worktree",
+      "tests/test_a_finished_pending_landing_retires_its_run.py::test_a_refused_push_keeps_the_run_and_its_recovery_state"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T105549385153-a-wave-of-landings-is-one-decision/help-repair-primary-suite-base.log",
+    "revision": "7dfb179485c0b9d83ef9889c4ef2ff8f94096500"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the source manifest and live section s8; the incremental help-contract repair in tests/test_crew_help_names_its_state.py:57 retains repeated completion and linked-record expectations while matching the existing repair capability.\nVERDICT done_when: The section requires bounded decisions, repeated completion, help contracts and no added importer failures; help-repair-file.log records 8 passed and help-repair-armed-gate.log records 153 passed with seven failures all present in help-repair-primary-suite-base.log.\nVERDICT write_paths: Read the source manifest's expanded paths; the authored change is confined to tests/test_crew_help_names_its_state.py, and reckon/crew/obligations.py's incremental scratch reader is inherited unchanged from the named primary merge.\nVERDICT manifest: The source manifest.md identifies head 290d37fb3eee24cdb40c2a306226dd393e46f45f, both incremental commits, literal commands, complete baseline/after receipts and the inherited primary failures.\nVERDICT diff: Read f69ffafd8ff19e67d067dc75fd26253072298d6b and 290d37fb3eee24cdb40c2a306226dd393e46f45f within the assigned paths against the previously reviewed 8fef2d994c13e7052f5084ff2df4a498d317a7e9; only the help expectation is authored and the existing completion module and decision helpers survive unchanged.\nCALL_SITES: reckon/crew_run_commands.py:crew_repair, reckon/crew_run_commands.py:crew_complete, reckon/cli.py:crew_repair, reckon/crew/obligations.py:_obligations_view, reckon/crew/obligation_snapshot.py:payload_for\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_crew_help_names_its_state.py:57 now matches the existing repair description at reckon/crew_run_commands.py:1615 and retains the completion contract at tests/test_crew_help_names_its_state.py:178.\nSCORE evidence: 20\nJUSTIFICATION evidence: help-repair-reproduction.log shows the old phrase failing the literal membership assertion, help-repair-file.log ends with 8 passed and EXIT=0, and the complete armed logs show zero added failures against the merged primary.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Commit 290d37fb3eee24cdb40c2a306226dd393e46f45f changes only the granted tests/test_crew_help_names_its_state.py expectation, while the obligations.py addition in the primary merge exactly matches its existing owner.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_crew_help_names_its_state.py:148 compares an independent literal to registered production help, so restoring the legacy repair description or dropping suite-arm wording fails the assertion; restoring the old expected phrase produces the recorded red reproduction.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_crew_help_names_its_state.py:57 uses the existing STATE_PHRASES table and multiline tuple-key idiom without adding symbols or forbidden names.\nSCORE reuse: 20\nJUSTIFICATION reuse: No authored definition is added in tests/test_crew_help_names_its_state.py, and capability searches confirmed the inherited session_scratch_items reader extends obligations.py using fleet_supervisor.py:633's existing shared-snapshot owner rather than resampling scratch.\n",
+  "reproduction_quote": "help-repair-reproduction.log: assert \"a manifest's status word or a review's status\" in \"Repair a manifest's status word, a suite arm's revision, or a review's fields.\"; 1 failed in 1.65s; EXIT=1.",
+  "review_run_id": "r-20261117T151437066430-review-of-a-wave-of-landings-is-one-decision-290d37fb3eee",
+  "reviewed_base_sha": "8fef2d994c13e7052f5084ff2df4a498d317a7e9",
+  "reviewed_head_sha": "290d37fb3eee24cdb40c2a306226dd393e46f45f",
+  "reviewed_run_id": "r-20261117T105549385153-a-wave-of-landings-is-one-decision",
+  "scope_note": "Incremental review only; primary merge content outside the assigned paths and previously reviewed implementation are not re-reviewed. The completion command file is byte-identical to the prior reviewed head; three decision helper ASTs are identical, and the inherited scratch reader AST exactly matches primary.",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T15:25:52.563755+00:00",
+  "total": 120
+}

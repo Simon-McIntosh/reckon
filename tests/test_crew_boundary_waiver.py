@@ -16,6 +16,13 @@ from tests.helpers.git import git as _git
 
 PROJECT = "sample"
 
+#: The declared path the fixture dirties in the main checkout. The boundary walk
+#: charges a changed path only where a merge cannot reconcile it, so this must be
+#: one of the exclusive artifact classes: an ordinary source file is shared by
+#: default, and a stray edit there is another session's work rather than a
+#: violation this run can be charged with.
+DECLARED_PATH = f"docs/state/{PROJECT}/record.json"
+
 
 def _stamp(*, before_now: timedelta) -> str:
     """Return a UTC stamp the given interval before the current clock."""
@@ -33,12 +40,12 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     (root / "docs" / "state" / PROJECT / "shared-write-paths.json").write_text(
         json.dumps({"shared_roots": []}), encoding="utf-8"
     )
-    (root / "allowed.txt").write_text("seed\n", encoding="utf-8")
+    (root / DECLARED_PATH).write_text("seed\n", encoding="utf-8")
     for arguments in (
         ("init", "-q", "-b", "main"),
         ("config", "user.email", "worker@example.invalid"),
         ("config", "user.name", "Worker"),
-        ("add", "allowed.txt"),
+        ("add", DECLARED_PATH),
         ("commit", "-q", "-m", "chore: seed"),
     ):
         _git(root, *arguments)
@@ -66,7 +73,7 @@ def _pointer(repository: Path, run_id: str, base: str, *, created_at: str = "") 
                 "plan": "fixture",
                 "section": "guard",
                 "time_budget": "25m",
-                "write_paths": ["allowed.txt"],
+                "write_paths": [DECLARED_PATH],
             },
         },
     )
@@ -88,8 +95,8 @@ def _detached_tree(repository: Path, path: Path) -> Path:
 
 
 def _commit_allowed(run_tree: Path) -> str:
-    (run_tree / "allowed.txt").write_text("seed\nallowed\n", encoding="utf-8")
-    _git(run_tree, "add", "allowed.txt")
+    (run_tree / DECLARED_PATH).write_text("seed\nallowed\n", encoding="utf-8")
+    _git(run_tree, "add", DECLARED_PATH)
     _git(run_tree, "commit", "-q", "-m", "test: update declared path")
     return _git(run_tree, "rev-parse", "HEAD")
 
@@ -102,8 +109,8 @@ def test_boundary_refusal_promotes_under_waiver_with_reason_and_paths(
     run_id = "r-main-tree-waived"
     _guarded_pointer(repository, run_tree, run_id, base)
     commit = _commit_allowed(run_tree)
-    (repository / "allowed.txt").write_text("stray\n", encoding="utf-8")
-    expected_violation = f"allowed.txt in main checkout {repository}"
+    (repository / DECLARED_PATH).write_text("stray\n", encoding="utf-8")
+    expected_violation = f"{DECLARED_PATH} in main checkout {repository}"
 
     stored = crew.complete(
         run_id,
@@ -137,8 +144,8 @@ def test_boundary_waiver_past_the_age_bound_names_no_referent(
     )
     _guarded_pointer(repository, run_tree, run_id, base, created_at=stale)
     commit = _commit_allowed(run_tree)
-    (repository / "allowed.txt").write_text("stray\n", encoding="utf-8")
-    expected_violation = f"allowed.txt in main checkout {repository}"
+    (repository / DECLARED_PATH).write_text("stray\n", encoding="utf-8")
+    expected_violation = f"{DECLARED_PATH} in main checkout {repository}"
 
     stored = crew.complete(
         run_id,
@@ -163,13 +170,13 @@ def test_boundary_refusal_without_waiver_is_still_refused(
     run_id = "r-main-tree-unwaived"
     _guarded_pointer(repository, run_tree, run_id, base)
     commit = _commit_allowed(run_tree)
-    (repository / "allowed.txt").write_text("stray\n", encoding="utf-8")
+    (repository / DECLARED_PATH).write_text("stray\n", encoding="utf-8")
 
     with pytest.raises(crew.CrewError) as refusal:
         crew.complete(run_id, gate="passed", commits=[commit], root=repository)
 
     message = str(refusal.value)
-    assert "allowed.txt" in message
+    assert DECLARED_PATH in message
     assert f"main checkout {repository}" in message
     assert ledger.runs(PROJECT, root=repository) == []
     assert pointer_path(run_id).is_file()

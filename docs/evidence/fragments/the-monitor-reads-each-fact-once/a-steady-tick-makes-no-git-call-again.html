@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A steady tick makes no git call again</title>
+</head>
+<body>
+<main class="r-doc">
+<h1 id="a-steady-tick-makes-no-git-call-again-title">A steady tick makes no git call again</h1>
+
+<section data-reckon="finding" id="a-steady-tick-makes-no-git-call-again-finding">
+<h2 id="a-steady-tick-makes-no-git-call-again-the-defect">The defect</h2>
+<p id="a-steady-tick-makes-no-git-call-again-reproduction">At the base revision,
+<code>tests/test_the_station_reads_only_what_changed.py::test_a_steady_tick_recomputes_nothing</code>
+fails on its git count with
+<code>assert 12 == 0</code>: "the second tick ran 12 git subprocesses with nothing moved". A
+stack trace of the second tick puts every one of them in
+<code>git diff --numstat --no-renames &lt;base&gt;..&lt;head&gt;</code>, started from
+<code>recovery_review_subject._reviewed_scope_block</code> through
+<code>_review_brief_text</code>, and the missing memo is the whole of the regression.</p>
+<p id="a-steady-tick-makes-no-git-call-again-cause">The block arrived with the review brief's
+scope section: it lists the reviewed range's changed paths so a review can score scope
+discipline. The brief is composed for every run a station classifies, on every tick, so the
+range's diff was recomputed twice per run per tick — six runs, twelve subprocesses — although
+the range had not moved.</p>
+</section>
+
+<section data-reckon="finding" id="a-steady-tick-makes-no-git-call-again-repair">
+<h2 id="a-steady-tick-makes-no-git-call-again-the-repair">The repair</h2>
+<p id="a-steady-tick-makes-no-git-call-again-memo">The changed paths a range lists are a function
+of two commit ids, which cannot move, so they are kept in a bounded process cache keyed by the
+tree that listed them and both ids. A range that has not changed answers from the memo and
+spawns nothing; a moved head is a new key and is read again. The tree is part of the key because
+a range one repository can list is a question another may answer differently.</p>
+<p id="a-steady-tick-makes-no-git-call-again-absence">An answer git did not give is never
+remembered: an object a repository does not hold yet it may hold later, so a range git could not
+list keeps being asked and — as before — the brief states it as unreadable rather than as
+unchanged.</p>
+<p id="a-steady-tick-makes-no-git-call-again-bound">The cache is bounded by the live fleet: past
+its ceiling it drops the ranges whose tree is gone, then the oldest of what remains. A new case
+committed beside the fix covers the other direction — a moved head must be re-read — and reddens
+when the key drops the head, which the steady-tick case alone would not catch.</p>
+</section>
+
+<section data-reckon="finding" id="a-steady-tick-makes-no-git-call-again-measure">
+<h2 id="a-steady-tick-makes-no-git-call-again-the-measure">The measure</h2>
+<p id="a-steady-tick-makes-no-git-call-again-figure">Base: <code>test_a_steady_tick_recomputes_nothing</code>
+fails with a git count of 12 (<code>EXIT</code> 1). Head: the whole file passes 17 tests on three
+consecutive runs, the steady tick's git count at 0. The scoped gate and the matched suite arms
+run on the <code>all_debug</code> partition, their logs carried in the run record.</p>
+</section>
+</main>
+</body>
+</html>

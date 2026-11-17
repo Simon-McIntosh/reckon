@@ -1,0 +1,87 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T233505655441-review-of-export-leaves-git-s27-eeb52a91e3ef/assertion-audit.md",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/gc.py:retention_sweep (2341)",
+    "reckon/crew/gc.py:main (2553)",
+    "reckon/crew/export_ledger.py:export_project (68)",
+    "reckon/crew/export_ledger.py:export_projects (83)",
+    "reckon/crew/export_ledger.py:main (119-121)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-17T23:36:25Z",
+  "findings": [],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_export_rebuilds_the_store.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T211728338897-export-leaves-git-s27/after-suite-repair-1794949621784649291.log",
+      "measured_by": "worker",
+      "observed_failure_ids": [],
+      "observed_summary": "73 passed in 39.15s",
+      "partition": "all_debug",
+      "reason": "",
+      "revision": "eeb52a91e3ef78aaa0bb7953db42f36e89f498de"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T211728338897-export-leaves-git-s27/baseline_suite-1794948731431167993.log",
+      "measured_by": "worker",
+      "observed_failure_ids": [],
+      "observed_summary": "58 passed in 37.45s",
+      "partition": "all_debug",
+      "reason": "",
+      "revision": "1147391724439468336ce868f944ea28ea7bf963"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read db5f1f458390fd8771096a43800df613b3787c0b and eeb52a91e3ef78aaa0bb7953db42f36e89f498de against 1147391724439468336ce868f944ea28ea7bf963; the four-file change adds export/reconstruction, the store snapshot, sweep integration and 15 test cases, followed by the timing-catalog repair.",
+    "done_when": "Read dispatch-detail.json's measure and live docs/plans/history-persists-as-detail-washes-out.html#s27; tests/test_the_export_rebuilds_the_store.py:97-182 assert nonempty content, capability, velocity and archived-record equality, and the recorded all_debug importer logs retain the same 89 failures.",
+    "goal": "Read dispatch-detail.json's goal to write the ledger export outside git and rebuild the store; reckon/crew/export_ledger.py:65 publishes the snapshot and :91 reconstructs a fresh store.",
+    "manifest": "Read manifest.md and opened its baseline_suite, after_suite, scoped and negative-control logs; their recorded summaries are 58 passed, 73 passed, 79 passed and one intentionally failed path assertion respectively.",
+    "write_paths": "Read the four declared paths in dispatch-detail.json; reckon/crew/gc.py and reckon/run_store.py are additional mergeable paths justified by the plan's scheduling requirement and the existing store ownership boundary, with no unrelated changes."
+  },
+  "justifications": {
+    "durability": "tests/test_the_export_rebuilds_the_store.py:97-297 would fail on in-tree publication, missing runs/detail/revisions, altered rebuilt answers, accepted empty input, overwrite, interrupted-publication loss or missing sweep integration; negative-control.log records an in-tree-path mutation failing :105, while concurrent snapshot consistency is established by reading :896-920 rather than a concurrency test.",
+    "evidence": "tests/test_the_export_rebuilds_the_store.py:97-163 measures canonical removed content and nonempty historical answers, while baseline_suite-1794948731431167993.log and after-suite-repair-1794949621784649291.log record the exact revisions, 58/73 passes and EXIT=0; this is fixture evidence rather than a live migration comparison.",
+    "fit": "reckon/crew/export_ledger.py:65-71 follows the existing atomic JSON publication owner, reckon/run_store.py:886 keeps database reads in their owning module, and reckon/crew/gc.py:2004 declares the added timing phase without introducing plan-labelled source names.",
+    "goal_fidelity": "reckon/crew/export_ledger.py:16-23 places exports under the external crew home and :91-110 rebuilds complete run records, mutable state and revision bindings through RunStore.",
+    "reuse": "Capability searches for ledger export/rebuild, record joins, auxiliary snapshots, atomic publication and history import found owners in reckon/run_store.py:_record_rows/:_encoded_auxiliary_rows/:RunStore.auxiliary/:import_ledger and reckon/_store.py:write_json_atomically; :project_snapshot extends those owners and the exporter wraps them, while the existing import_ledger reads a checkout rather than an external snapshot and cannot perform this reconstruction.",
+    "scope_discipline": "reckon/crew/gc.py:2338-2342 implements the live plan's scheduling point and reckon/run_store.py:886 extends the store owner, although both files are outside the dispatch's explicit path list."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read dispatch-detail.json's goal to write the ledger export outside git and rebuild the store; reckon/crew/export_ledger.py:65 publishes the snapshot and :91 reconstructs a fresh store.\nVERDICT done_when: Read dispatch-detail.json's measure and live docs/plans/history-persists-as-detail-washes-out.html#s27; tests/test_the_export_rebuilds_the_store.py:97-182 assert nonempty content, capability, velocity and archived-record equality, and the recorded all_debug importer logs retain the same 89 failures.\nVERDICT write_paths: Read the four declared paths in dispatch-detail.json; reckon/crew/gc.py and reckon/run_store.py are additional mergeable paths justified by the plan's scheduling requirement and the existing store ownership boundary, with no unrelated changes.\nVERDICT manifest: Read manifest.md and opened its baseline_suite, after_suite, scoped and negative-control logs; their recorded summaries are 58 passed, 73 passed, 79 passed and one intentionally failed path assertion respectively.\nVERDICT diff: Read db5f1f458390fd8771096a43800df613b3787c0b and eeb52a91e3ef78aaa0bb7953db42f36e89f498de against 1147391724439468336ce868f944ea28ea7bf963; the four-file change adds export/reconstruction, the store snapshot, sweep integration and 15 test cases, followed by the timing-catalog repair.\nCALL_SITES: reckon/crew/gc.py:retention_sweep (2341), reckon/crew/gc.py:main (2553), reckon/crew/export_ledger.py:export_project (68), reckon/crew/export_ledger.py:export_projects (83), reckon/crew/export_ledger.py:main (119-121)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/export_ledger.py:16-23 places exports under the external crew home and :91-110 rebuilds complete run records, mutable state and revision bindings through RunStore.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_the_export_rebuilds_the_store.py:97-163 measures canonical removed content and nonempty historical answers, while baseline_suite-1794948731431167993.log and after-suite-repair-1794949621784649291.log record the exact revisions, 58/73 passes and EXIT=0; this is fixture evidence rather than a live migration comparison.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: reckon/crew/gc.py:2338-2342 implements the live plan's scheduling point and reckon/run_store.py:886 extends the store owner, although both files are outside the dispatch's explicit path list.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_export_rebuilds_the_store.py:97-297 would fail on in-tree publication, missing runs/detail/revisions, altered rebuilt answers, accepted empty input, overwrite, interrupted-publication loss or missing sweep integration; negative-control.log records an in-tree-path mutation failing :105, while concurrent snapshot consistency is established by reading :896-920 rather than a concurrency test.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/export_ledger.py:65-71 follows the existing atomic JSON publication owner, reckon/run_store.py:886 keeps database reads in their owning module, and reckon/crew/gc.py:2004 declares the added timing phase without introducing plan-labelled source names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for ledger export/rebuild, record joins, auxiliary snapshots, atomic publication and history import found owners in reckon/run_store.py:_record_rows/:_encoded_auxiliary_rows/:RunStore.auxiliary/:import_ledger and reckon/_store.py:write_json_atomically; :project_snapshot extends those owners and the exporter wraps them, while the existing import_ledger reads a checkout rather than an external snapshot and cannot perform this reconstruction.\n",
+  "review_run_id": "r-20261117T233505655441-review-of-export-leaves-git-s27-eeb52a91e3ef",
+  "reviewed_base_sha": "1147391724439468336ce868f944ea28ea7bf963",
+  "reviewed_commits": [
+    "db5f1f458390fd8771096a43800df613b3787c0b",
+    "eeb52a91e3ef78aaa0bb7953db42f36e89f498de"
+  ],
+  "reviewed_head_sha": "eeb52a91e3ef78aaa0bb7953db42f36e89f498de",
+  "reviewed_run_id": "r-20261115T211728338897-export-leaves-git-s27",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T23:44:11.141279+00:00",
+  "total": 116
+}

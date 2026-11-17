@@ -7,11 +7,10 @@ a fixture, or a hand-edited record in a real crew home — ends the pass, and th
 admit service with it, so no queued request on the lane launches for any
 session until someone removes the pointer by hand.
 
-So the pass leaves that pointer out of the ordering, names it in a verdict
-with the reason it was not placed, and admits every other queued request in the
-order it would otherwise have given them. The refusal stays in the ordering
-itself, which is what the last case here holds: the narrowing lives in the
-pass, so the read surfaces and the ordering keep their own behaviour.
+The pass and the ordering take that split from one helper: the pass names the
+set-aside pointer in a verdict with the reason it was not placed, and the
+ordering ranks every request it can place. Every other queued request keeps the
+order the pass would otherwise have given it.
 """
 
 from __future__ import annotations
@@ -62,6 +61,9 @@ def admit_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     config_home = tmp_path / "config"
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
+    flight = config_home / "flight.yaml"
+    flight.write_text(json.dumps(CONFIG), encoding="utf-8")
+    monkeypatch.setenv("RECKON_FLIGHT_CONFIG", str(flight))
 
     repository = tmp_path / "checkout"
     scripts = repository / "skills" / "reckon-build" / "scripts"
@@ -261,7 +263,12 @@ def test_the_pass_admits_the_placed_requests_and_names_the_unplaceable_one(
     # read from the marker each launched run carries back to the request it was
     # admitted from rather than from the ids themselves.
     admitted_from = [
-        str(runs.read_pointer(run_id).get("admit_request", {}).get("run_id") or "")
+        str(
+            runs.dispatch_field(runs.read_pointer(run_id), "admit_request", {}).get(
+                "run_id"
+            )
+            or ""
+        )
         for run_id in result["launched"]
     ]
     assert admitted_from == [PLACED_OLDER, PLACED_NEWER], admitted_from
@@ -297,9 +304,9 @@ def test_the_unplaceable_verdict_reaches_the_admission_verdict_log(
     assert "queued_at" in rows[UNREADABLE]["detail"]
 
 
-def test_the_admission_ordering_still_refuses_a_pointer_without_its_time() -> None:
-    """The narrowing lives in the pass: the ordering keeps its own refusal."""
-    from reckon.crew.queue_order import admission_order
+def test_the_admission_ordering_sets_aside_a_pointer_without_its_time() -> None:
+    """The ordering splits on the arrival stamp, and ranks what it can place."""
+    from reckon.crew.queue_order import admission_order, partition_placeable
 
     now = datetime.now(UTC)
     queued = [
@@ -311,5 +318,10 @@ def test_the_admission_ordering_still_refuses_a_pointer_without_its_time() -> No
         },
         {"run_id": UNREADABLE, "session": SESSION, "backend": LANE},
     ]
-    with pytest.raises(ValueError, match="no readable queued_at"):
-        admission_order(queued, [], now=now)
+
+    order = admission_order(queued, [], now=now)
+
+    assert [pointer["run_id"] for pointer in order] == [PLACED_OLDER]
+    placeable, unplaceable = partition_placeable(queued)
+    assert [pointer["run_id"] for pointer in placeable] == [PLACED_OLDER]
+    assert [pointer["run_id"] for pointer in unplaceable] == [UNREADABLE]

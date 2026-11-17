@@ -1,0 +1,79 @@
+<section id="wftl-an-oom-kill-loses-no-request-codex" class="evidence-fragment">
+  <h2>An interrupted admission pass retains every request</h2>
+  <p>
+    Admission now retains its handover until the launched pointer carries its
+    admission stamp. Each handover identifies the admitting process by host,
+    pid and kernel start time. A fresh pass recovers a dead local owner's
+    request under the admission and pointer locks: it restores an absent
+    pointer, adopts an existing worker or supervisor, or returns an unspawned
+    request to the queue. A recorded discard or promotion still ends the
+    request. An owner whose death cannot be proved keeps its handover.
+  </p>
+  <p>
+    The supervisor checks the current attempt again immediately before spawn.
+    Spawn and the worker receipt share the pointer lock with recovery, so a
+    replacement pass cannot mistake the interval between them for an
+    unlaunched request. A superseded supervisor refuses before opening the
+    stream and writes no exit over the replacement attempt. Worker receipts
+    also identify the supervisor, allowing recovery to retain the process
+    identity used to stop the whole run.
+  </p>
+  <table>
+    <thead><tr><th>Kill boundary</th><th>Base revision</th><th>Delivered behavior</th></tr></thead>
+    <tbody>
+      <tr><td>Before release</td><td>Preserved</td><td>Preserved</td></tr>
+      <tr><td>After release, before launch</td><td>Preserved</td><td>Preserved</td></tr>
+      <tr><td>During launch</td><td>Stranded starting pointer</td><td>Recovered and launched once</td></tr>
+      <tr><td>Worker started, pointer not recorded</td><td>Worker not adopted</td><td>Existing worker adopted</td></tr>
+      <tr><td>Pointer absent, handover present</td><td>Request absent after restart</td><td>Pointer restored</td></tr>
+      <tr><td>Before admission stamp</td><td>Not measured</td><td>Handover retained and stamp recovered</td></tr>
+    </tbody>
+  </table>
+  <p id="wftl-an-oom-kill-loses-no-request-codex-measure">
+    Tests use temporary crew homes and real SIGKILL signals. Each admission
+    boundary starts with three request identities, checks that the restarted
+    pass retains the same set and launches each once, and checks that a further
+    pass launches none again. Station tests kill ingestion or classification
+    after fourteen of thirty-one requests; the first restarted publication
+    reports thirty-one queued requests, equal to its store. Both station
+    controls already pass at the base, so the station implementation is retained.
+    Additional cases exercise the stale-supervisor refusal, live and foreign
+    owner guards, a recorded discard, and adoption of the supervisor identity.
+  </p>
+  <p>
+    On <code>all_debug</code>, the node-specific gate reports
+    <strong>14 passed, 7 warnings in 17.61s</strong>. The warnings describe
+    intentional fork-based kill probes in the test process. The expanded
+    base arm reports <strong>87 passed in 32.68s</strong>; the related launch
+    gate reports <strong>113 passed in 55.31s</strong>. Ruff adds no findings:
+    its two existing findings in the launch module remain two, and every other
+    changed Python path has zero. All changed Python paths pass the formatter.
+  </p>
+  <p id="wftl-an-oom-kill-loses-no-request-codex-negative-control">
+    Negative control at <code>6eeb63d38f6079ae9b6af53da8e459c02a9dee7e</code>:
+    <strong>3 failed, 4 passed, 6 warnings in 15.96s</strong>. The
+    <code>during-launch</code> and <code>worker-started</code> cases fail with
+    <code>stranded request</code>; the <code>missing-pointer</code> case loses
+    <code>r-interrupted-0</code>. Before-release, after-release and both
+    station queue controls pass, demonstrating that the instrument also sees
+    preserved requests.
+  </p>
+  <p>
+    Implementation: <code>32926ed7a4e7f828f89d4e23b6bccde38244f9d0</code>.
+    Initial reproductions: <code>a2a5ca6511c3400ad183aa38f6aeb04cc2357550</code>.
+    Sources: <code>reckon/crew/admission/interrupted.py</code>,
+    <code>reckon/crew/admission/selection.py</code>,
+    <code>reckon/crew/admission/service.py</code> and
+    <code>reckon/crew/dispatch_launch.py</code>.
+  </p>
+  <p>
+    Durable logs are under
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T103810258664-wftl-an-oom-kill-loses-no-request-codex/</code>:
+    <code>negative.log</code>, <code>baseline.log</code>,
+    <code>node-probe.log</code>, <code>related-focused.log</code> and the
+    final delivered-revision receipt <code>head.log</code>. Each receipt
+    identifies its revision, imported module, working tree and literal command,
+    and ends with its exit status. Coordinator integration and verification of
+    the merged result remain separate.
+  </p>
+</section>

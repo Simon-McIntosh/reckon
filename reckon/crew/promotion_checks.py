@@ -20,7 +20,7 @@ from reckon import (
 from reckon._plan_html import section_record_id
 from reckon._schema import is_implementable_section
 from reckon._timestamps import parse_iso
-from reckon.crew import plan_review, rollout
+from reckon.crew import manifest_faults, plan_review, rollout
 from reckon.crew import review as review_module
 from reckon.crew.dispatch import (
     _backend_settings,
@@ -41,10 +41,10 @@ from reckon.crew.repair import round_node_source
 from reckon.crew.reports import (
     TERMINAL_MANIFEST_STATUSES,
     ManifestParseError,
-    _png_twin_findings_for_base,
     parse_manifest,
 )
 from reckon.crew.routing import (
+    _git,
     _signal_process_group,
     run_directory_of,
 )
@@ -587,6 +587,104 @@ def _require_recognised_manifest_status(run_id: str, record: Mapping[str, Any]) 
         ) from refusal
 
 
+def _require_no_manifest_fault(run_id: str, record: Mapping[str, Any]) -> None:
+    """Refuse a manifest fault the worker's own check already names.
+
+    A fault that is still in the file at promotion is a fault the worker could
+    not repair, so the refusal here repeats the reason the check emits rather
+    than describing the same defect a second way: the rule is asked once and its
+    own text is carried forward, with the run id in front of it. The faults this
+    covers are the ones judged from the manifest alone — an arm revision that is
+    prose or the beginning of an object id, and a gate command naming an
+    absolute path under the temporary directory.
+
+    A manifest that is absent or not fresh has no verdict to judge and is left
+    to the arms that read its absence.
+    """
+    manifest = _fresh_manifest(record)
+    if manifest is None:
+        return
+    reasons = [fault.reason for fault in manifest_faults.manifest_faults(manifest)]
+    if not reasons:
+        return
+    raise CrewError(f"run {run_id!r} cannot be promoted: " + "; ".join(reasons))
+
+
+def _commit_added_paths(tree: Path, commit: str) -> tuple[str, ...]:
+    """The paths one commit adds, read from that commit's own diff.
+
+    A commit's diff names the paths the commit moved, so the read costs the
+    change rather than the tree's whole file list, which is what a base-to-head
+    listing costs on a repository carrying thousands of files.
+    """
+    result = _git(
+        tree,
+        "diff-tree",
+        "--no-commit-id",
+        "--no-renames",
+        "--diff-filter=A",
+        "--name-only",
+        "-r",
+        commit,
+        check=False,
+    )
+    if result.returncode:
+        return ()
+    return tuple(line.strip() for line in result.stdout.splitlines() if line.strip())
+
+
+def _commit_holds_path(tree: Path, commit: str, path: str) -> bool:
+    """Whether ``commit``'s own tree carries ``path``."""
+    return _git(tree, "cat-file", "-e", f"{commit}:{path}", check=False).returncode == 0
+
+
+def _png_twin_findings_in_run_commits(record: Mapping[str, Any]) -> list[str]:
+    """The PNG twins this run's own commits add beside an SVG of the same stem.
+
+    The twin is judged on the commits the run cites rather than on everything
+    that appeared since its base: a peer's commit, or the content a merge
+    brought from the integration branch, is not this run's work, and a
+    base-to-head diff charges all of it, so a run is refused for a copy it
+    never made. Each cited commit is read through its own diff, and the SVG is
+    looked for in that same commit, so neither the tree's whole file list nor
+    any other run's paths are consulted.
+
+    A run that cites no commit adds nothing to a commit, so it carries no twin
+    to find. A record naming no readable tree measures no commit either: the
+    diff belongs to the run's own tree, and the directory the promotion happens
+    to run in cannot supply it.
+    """
+    tree = _record_tree(record)
+    if tree is None:
+        return []
+    declared = [
+        str(entry).strip()
+        for entry in _declared_manifest_commits(record)
+        if str(entry).strip()
+    ]
+    if not declared:
+        return []
+    resolved = _resolve_commits(
+        cwd=tree, revisions=declared, run_id=str(record.get("run_id") or "")
+    )
+    findings: list[str] = []
+    for commit in resolved:
+        pngs = [
+            path for path in _commit_added_paths(tree, commit) if path.endswith(".png")
+        ]
+        for png in sorted(pngs):
+            svg = png[:-4] + ".svg"
+            if not _commit_holds_path(tree, commit, svg):
+                continue
+            findings.append(
+                f"{png} adds a PNG twin of the SVG figure {svg} in the same "
+                "directory; the figure rule keeps one SVG per figure and bans a "
+                "PNG copy beside it, because the page renders the SVG and the copy "
+                f"drifts out of step, so remove {png}"
+            )
+    return findings
+
+
 def _require_no_png_twin_of_an_svg(run_id: str, record: Mapping[str, Any]) -> None:
     """Refuse a promotion whose commits add a PNG twin of an SVG figure.
 
@@ -594,26 +692,12 @@ def _require_no_png_twin_of_an_svg(run_id: str, record: Mapping[str, Any]) -> No
     because the reckon page renders the SVG and the copy drifts out of step. A
     worker that rasterises its SVG to look at it leaves exactly that copy in the
     tree, and the same finding reaches the worker through ``crew check
-    --manifest`` while it can still remove it. The check reads the run's commits
-    from its base to its head rather than the working tree, so a PNG the run
-    rendered and never committed is not a finding; a PNG already present at base
-    is not one either.
-
-    The base is the revision the run was dispatched from, which is the same
-    revision the manifest records at orientation, so the check and the audit
-    judge one diff.
+    --manifest`` while it can still remove it. The check reads the commits the
+    run cites rather than the working tree, so a PNG the run rendered and never
+    committed is not a finding, and a PNG a peer's commit or a merged branch
+    brought in is not charged to this run.
     """
-    base = str(record.get("base_sha") or "").strip()
-    if not base:
-        manifest = _fresh_manifest(record)
-        if manifest is None:
-            return
-        base = str(manifest.get("orientation_base_sha") or "").strip()
-    worktree = Path(str(record["worktree"])) if record.get("worktree") else None
-    repository = Path(str(record["repo"])) if record.get("repo") else worktree
-    findings = _png_twin_findings_for_base(
-        base, worktree=worktree, repository=repository
-    )
+    findings = _png_twin_findings_in_run_commits(record)
     if findings:
         raise CrewError(f"run {run_id!r} cannot be promoted: " + "; ".join(findings))
 
@@ -1156,6 +1240,37 @@ def _review_changed_scope(
     return _manifest_repository_paths(record), None, declares_paths
 
 
+def _with_the_runs_whole_change(
+    record: Mapping[str, Any], commit_list: Sequence[str]
+) -> list[str]:
+    """The cited commits plus every commit the run made from its base to its head.
+
+    The tier decides whether a run owes a review, so it must see everything the
+    run changed, not only the commits a manifest or a coordinator happened to
+    cite. Measured on 15 November: a run whose code commit rewrote runtime
+    source cited only its docs-only evidence commit at one reading, resolved to
+    tier none, and was offered for promotion without a review. Adding the base
+    to head commits can only widen the measured change, so the tier never reads
+    lighter than the run's whole change. A record naming no readable tree or
+    base keeps the cited commits alone, as before.
+    """
+    cited = [str(commit) for commit in commit_list if str(commit).strip()]
+    tree = _record_tree(record)
+    base = str(record.get("base_sha") or "").strip()
+    if tree is None or not base:
+        return cited
+    result = _git(tree, "rev-list", "--no-merges", f"{base}..HEAD", check=False)
+    if result.returncode:
+        return cited
+    seen = set(cited)
+    whole = list(cited)
+    for commit in result.stdout.split():
+        if commit not in seen:
+            seen.add(commit)
+            whole.append(commit)
+    return whole
+
+
 def _run_review_tier(
     run_id: str,
     record: Mapping[str, Any],
@@ -1177,7 +1292,7 @@ def _run_review_tier(
     path list as a run that touched no runtime source.
     """
     changed_paths, changed_lines, measured = _review_changed_scope(
-        run_id, record, commit_list
+        run_id, record, _with_the_runs_whole_change(record, commit_list)
     )
     if not measured:
         return review_tiers.FULL
@@ -1855,10 +1970,17 @@ def _resolve_promotion_outcome(
     if verdict == "passed" or supplied:
         return supplied
     from reckon.crew import recovery
-    from reckon.crew.recovery_review_delivery import review_delivery_refusal
+    from reckon.crew.recovery_review_delivery import (
+        _report_review_delivery,
+        review_delivery_refusal,
+    )
 
     project = str(record.get("project") or "")
     node_id = str((record.get("node") or {}).get("id") or "")
+    if recovery._is_review_run(record):
+        report = _report_review_delivery(record)
+        if report is not None:
+            return report["outcome"]
     prefix = recovery.PLAN_REVIEW_NODE_PREFIX
     plan_slug = _plan_review_plan_slug(node_id, prefix)
     if plan_slug:
@@ -2173,13 +2295,17 @@ def _require_impl_moved(
         return check
     remaining = _plan_remaining_sections(plan_state)
     listed = ", ".join(remaining) if remaining else "(none declared)"
+    from .recovery_classification import _promotion_command
+
+    remedy = _promotion_command(run_id, record, ())
+    if "crew complete" in remedy:
+        remedy += " --no-impl-change REASON"
     raise CrewError(
         f"run {run_id!r} promotes a passing {role} run, but plan {plan!r} impl "
         f"did not move: {recorded_value:g} at dispatch and {current:g} at "
         f"completion. Sections still to land: {listed}. Advance the plan's impl "
-        f"as the work lands, or record why it did not move with "
-        f"`reckon crew complete --run {run_id} --gate passed "
-        f"--no-impl-change REASON` (the reason lands on the ledger row); if the "
+        f"as the work lands. Inspect or complete the run with `{remedy}`; "
+        f"--no-impl-change REASON records why it did not move on the ledger; if the "
         f"plan's impl is not this run's to move, state that reason"
     )
 
@@ -2305,6 +2431,7 @@ def _require_declared_negative_control(
     manifest: Mapping[str, Any] | None,
     manifest_path: str,
     waiver_reason: str = "",
+    measure: bool = True,
 ) -> dict[str, Any]:
     """Refuse a passing gate on a check whose red log shows nothing break.
 
@@ -2334,6 +2461,9 @@ def _require_declared_negative_control(
     evidence that either fact holds. Wording cannot carry either fact, so a
     declaration pasted into a log whose run exited zero is refused, and neither
     can a log whose run merely repeated the failures the compared arm already had.
+    A landing that finds no log admitting the control runs the declared mutation
+    itself; a dry run measures nothing, so it reports ``would-measure`` and names
+    what the landing would do rather than starting that measurement.
     The declaration stays on the node record and on the verdict row beside the
     log path, so a person compares the two — the instrument for *is this the
     right mutation*, which no comparison of text can be. A declaration of
@@ -2444,6 +2574,17 @@ def _require_declared_negative_control(
     # reading itself: the declared mutation is run over the tree the repair is
     # absent from, and its failures are the control the log would have carried.
     measured_observation: Mapping[str, Any] | None = None
+    if not source and not measure:
+        # A dry run evaluates guards and writes nothing; measuring the mutation
+        # would start the same job a real promotion starts, which a dry run
+        # promises not to do. The control is reported as one the landing would
+        # measure rather than as one that failed.
+        check["verdict"] = "would-measure"
+        check["reason"] = (
+            "the run kept no log that admits the control, so the landing would "
+            "run the declared mutation itself; a dry run measures nothing"
+        )
+        return check
     if not source:
         measured = _measured_control(run_id, record, test_paths)
         if measured is not None and measured.get("unreadable"):
@@ -2625,9 +2766,8 @@ def _landing_scope_products(
     from reckon.crew.promotion_evidence import _merge_repair_scope
     from reckon.crew.promotion_scope import _descendant_commit
 
-    cumulative = _merge_repair_scope(
-        record, tree=tree, head=_descendant_commit(tree, commits)
-    )
+    head = _descendant_commit(tree, commits)
+    cumulative = _merge_repair_scope(record, tree=tree, head=head)
     if cumulative is None:
         cumulative = _committed_scope(cwd=tree, commits=commits, run_id=run_id)
     acceptances: list[dict[str, str]] = []
@@ -2656,9 +2796,18 @@ def _landing_scope_products(
                     f"run {run_id!r} records an invalid claim before accepted paths"
                 )
             declared = before_acceptance
-        outside = _outside_declared_scope(
-            cumulative.paths,
-            declared,
+        # The declaration is a hint: only a path whose class a merge cannot
+        # reconcile needs a coordinator's acceptance, so a companion source file
+        # beside the declared one lands on its own.
+        outside = _changed_artifacts_needing_acceptance(
+            _outside_declared_scope(
+                _scope_paths_at_head(
+                    record, tree=tree, head=head, paths=cumulative.paths
+                ),
+                declared,
+                record=record,
+                tree=tree,
+            ),
             record=record,
             tree=tree,
         )
@@ -2695,6 +2844,7 @@ def _landing_preconditions(
     accepted_paths: Mapping[str, str] | None,
     gate_check: Mapping[str, Any] | None,
     require_gate_check: bool,
+    measure: bool = True,
 ) -> dict[str, Any]:
     """Judge every precondition the landing checks, refusing once with all.
 
@@ -2827,6 +2977,7 @@ def _landing_preconditions(
             manifest=manifest,
             manifest_path=manifest_path,
             waiver_reason=waiver_reason,
+            measure=measure,
         )
         if negative_control_waiver is not None and control["verdict"] != "waived":
             raise CrewError(
@@ -2885,6 +3036,18 @@ def _staging_review_record_by_run(
     stored here and returns no payload: a code review names neither a plan nor a
     reviewed run, so it is not committed to the staging-to-committed tree.
     """
+    if record is not None and _code_review_key_for_promoting_run(record):
+        _store_code_review_for_promoting_run(project, record)
+        return None
+    node_id = str(((record or {}).get("node") or {}).get("id") or "")
+    if node_id.startswith(plan_review.PORTFOLIO_NODE_PREFIX):
+        key = node_id.removeprefix(plan_review.PORTFOLIO_NODE_PREFIX)
+        for sidecar in plan_review.delivered_portfolio_reviews(project):
+            if sidecar.get("scope_key") == key:
+                if not sidecar.get("stored"):
+                    plan_review._store_deliveries([sidecar])
+                break
+        return None
     found = review_module.record_for_review_run(project, run_id)
     if found is not None:
         return found[1]
@@ -3409,6 +3572,7 @@ from reckon.crew.promotion_evidence import (
     _presented_commits_without_a_declaration,
     _recorded_exit_status,
     _run_directory_control_log,
+    _scope_paths_at_head,
 )
 from reckon.crew.promotion_records import (
     _read_json_object,
@@ -3420,8 +3584,10 @@ from reckon.crew.promotion_release import (
 )
 from reckon.crew.promotion_scope import (
     _accepted_scope_exceptions,
+    _changed_artifacts_needing_acceptance,
     _changed_paths_declare_no_paths,
     _changed_paths_inside_repository,
+    _declared_manifest_commits,
     _is_shadow,
     _outside_declared_scope,
     _require_committable_checkout,

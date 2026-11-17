@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <title>A night's window meets the landing targets | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1 id="wftl-a-nights-window-meets-the-landing-targets-title">A night's window meets the landing targets</h1>
+
+  <p id="wftl-a-nights-window-meets-the-landing-targets-summary"><strong>One of the gate's four figures is met.</strong>
+  In the four hours from 00:00 to 04:00 UTC on 17 November the lane carried a
+  time-weighted mean of <strong>4.31</strong> working workers against a bound of 12, a completed
+  implement run waited a median of <strong>176.4 minutes</strong> to be promoted against a bound of 20,
+  <strong>one</strong> of the window's 17 admit passes held a request on a claim under the shared crew
+  home, and the claims directory held <strong>1</strong> worker identity file against a bound of 100.
+  Only the identity figure holds. This is a measurement, and the numbers are what the
+  instruments returned.</p>
+
+  <h2 id="wftl-a-nights-window-meets-the-landing-targets-window">The window, and why it is this one</h2>
+
+  <p id="wftl-a-nights-window-meets-the-landing-targets-window-why">§67 asks for a four-hour window that
+  starts after §68, §69 and §70 land. The last of the three to reach <code>main</code> was §68, whose
+  landing merged at <code>92ab0ba2cf</code>, 2026-11-16T23:36:43Z; §69 and §70 are recorded
+  <code>done</code> in the plan revision <code>3e656c526d</code> (2026-11-16T23:33:34Z), before that.
+  The window therefore runs <strong>2026-11-17T00:00:00Z to 2026-11-17T04:00:00Z</strong>: the last
+  four-hour stretch aligned to the hour that had closed before this node was dispatched at 04:37:20Z,
+  which is the same rule §9 used to pick its own window. It starts 23 minutes after the last repair
+  landed and ends 37 minutes before the dispatch. No figure in it is read from a window that reaches
+  back over a repair.</p>
+
+  <h2 id="wftl-a-nights-window-meets-the-landing-targets-figures">The four figures against their targets</h2>
+
+  <table id="wftl-a-nights-window-meets-the-landing-targets-table">
+   <thead>
+    <tr><th>figure</th><th>target</th><th>measured</th><th>population</th><th>verdict</th></tr>
+   </thead>
+   <tbody>
+    <tr><td>time-weighted mean working workers</td><td>&ge; 12</td>
+        <td><strong>4.31</strong> (peak 19)</td>
+        <td>100 worker spans overlapping the window; 79 requests dispatched in it</td>
+        <td>not met</td></tr>
+    <tr><td>median completion to promotion, implement runs</td><td>&le; 20 min</td>
+        <td><strong>176.4 min</strong> (10,581.5 s; p90 213.4 min)</td>
+        <td>cohort of 14 implement runs completed in the window, 14 with a landing record, 0 without</td>
+        <td>not met</td></tr>
+    <tr><td>admit passes holding a request on a claim under a shared root</td><td>none</td>
+        <td><strong>1</strong> of 17 passes (1 claim pointer)</td>
+        <td>17 admit passes in the window; verdict log covered 2026-11-16T21:22:30Z to 04:42:49Z</td>
+        <td>not met as §67 words it; permitted by §69's rule (see below)</td></tr>
+    <tr><td>worker identity files at the window's end</td><td>&lt; 100</td>
+        <td><strong>1</strong></td>
+        <td>claims directory held 175 entries at 04:00:00Z</td>
+        <td>met</td></tr>
+        </tbody>
+  </table>
+
+  <p id="wftl-a-nights-window-meets-the-landing-targets-dispatch-count">The census's own dispatch
+  printed 79 requests dispatched in the window over 69 distinct project nodes, so the mean is measured
+  over a lane that was being fed, not over a quiet one.</p>
+
+  <h2 id="wftl-a-nights-window-meets-the-landing-targets-claims">Every claim that held a request, by path</h2>
+
+  <p id="wftl-a-nights-window-meets-the-landing-targets-claims-intro">§67 asks for the root of every
+  claim that held a request, which §9's census does not print: it counts shared-root holds only. The
+  window's verdict log carries <strong>11</strong> <code>held-on-claim</code> pointers across 10 of the
+  17 passes. Ten name repository paths — nine of them the same evidence fragment,
+  <code>docs/evidence/fragments/sn-definitions-by-construction/equivalent-electron-renames.html</code>,
+  held eleven times running between 01:41 and 02:22 — and one is the crew-home path below. Every path
+  the claims named is in the committed output
+  <code>claim-paths-window.json</code>; none is summarised away.</p>
+
+  <table id="wftl-a-nights-window-meets-the-landing-targets-claims-table">
+   <thead>
+    <tr><th>instant (UTC)</th><th>claimed path</th><th>under crew home</th><th>passes affected</th></tr>
+   </thead>
+   <tbody>
+    <tr><td>2026-11-17T01:41:17Z</td>
+        <td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T001815749369-pulse-categories-and-pulses-in-graph/review-records/r-20261117T001815749369-pulse-categories-and-pulses-in-graph.json</code></td>
+        <td>yes</td><td>1</td></tr>
+    <tr><td>2026-11-17T01:41:17Z &ndash; 02:22:43Z</td>
+        <td><code>docs/evidence/fragments/sn-definitions-by-construction/equivalent-electron-renames.html</code></td>
+        <td>no</td><td>9</td></tr>
+   </tbody>
+  </table>
+
+  <p id="wftl-a-nights-window-meets-the-landing-targets-claims-reading"><strong>Reading the one crew-home
+  hold.</strong> The path is a file inside one run's own directory, claimed by that run while it was
+  live: §69's deliverable permits exactly this — "a claim on a crew-home file one run owns" — because
+  no other run writes there. §67's gate is worded without that carve-out ("no admission pass holding a
+  request on a claim under a shared root"), so the figure is reported unmet, and the reader has the path
+  and the section's rule on the same line. It is not a shared <em>directory</em> hold: no hold in the
+  window named a crew-home directory, which is the case §69 was written to stop.</p>
+
+  <h2 id="wftl-a-nights-window-meets-the-landing-targets-comparison">The same script over other windows</h2>
+
+  <table id="wftl-a-nights-window-meets-the-landing-targets-comparison-table">
+   <thead>
+    <tr><th>window (UTC)</th><th>mean workers</th><th>median promotion</th><th>admit passes / shared holds</th><th>identity files</th></tr>
+   </thead>
+   <tbody>
+    <tr><td>2026-11-17 00:00&ndash;04:00 (this node)</td><td>4.31</td><td>176.4 min</td><td>17 / 1</td><td>1</td></tr>
+    <tr><td>2026-11-16 20:00&ndash;00:00 (the four hours before)</td><td>10.98</td><td>65.2 min</td><td>61 / 0</td><td>1</td></tr>
+    <tr><td>2026-11-14 21:00&ndash;2026-11-15 01:00 (§9's window)</td><td>23.55</td><td>92.5 min</td><td>not readable</td><td>not readable</td></tr>
+    <tr><td>2026-11-07 00:00&ndash;2026-11-12 00:00 (baseline)</td><td>4.34</td><td>58.8 min over 15 of 506</td><td>not readable</td><td>0</td></tr>
+    <tr><td>2026-11-11 13:00&ndash;15:00 (the script's own negative control)</td><td>6.83</td><td>no cohort</td><td>not readable</td><td>0</td></tr>
+   </tbody>
+  </table>
+
+  <p id="wftl-a-nights-window-meets-the-landing-targets-comparison-reading">Two of these rows are checks
+  on the instrument rather than on the lane. Run over §9's window the script returns a mean of
+  <strong>23.55</strong> and a median of <strong>92.5</strong> minutes, which are §9's own recorded
+  figures to the digit: the script sees the population it saw then, so a flat column in this window is a
+  reading, not a broken counter. Run over the script's specified negative-control window it returns a
+  mean of <strong>6.83</strong>, below the bound of 12, which is the control firing.</p>
+
+  <h2 id="wftl-a-nights-window-meets-the-landing-targets-instrument">What the instrument cannot read, stated</h2>
+
+  <ul id="wftl-a-nights-window-meets-the-landing-targets-limits">
+   <li><strong>The mean is a floor, not an estimate, for a window measured while its workers run.</strong>
+   A worker's span is built from its launch and its exit, which the run ledger carries once the run is
+   written. A run dispatched before the window ends and still running now is absent from the ledger
+   entirely, so it contributes nothing. The store held <strong>3</strong> unfinished rows out of 12,124
+   when this was read; counting them adds 27,626 worker-seconds, which moves the mean from 4.31 to
+   <strong>6.23</strong>. Neither figure reaches 12, and the peak of 19 with 79 dispatches bounds the
+   window from above: no re-reading of this window meets the target.</li>
+   <li><strong>§9's window cannot be re-read for two of its three figures.</strong> The claims directory
+   no longer holds the 27,854 identity files §9 counted — the sweep this plan landed has removed them —
+   so a re-run reports 0, which is the directory now, not the directory then; §9's own record carries the
+   27,854. The admission verdict log had rotated past that window before this node ran, so its passes
+   read <code>null</code>/unmeasured rather than zero. The negative control therefore demonstrates the
+   script reporting an unmet median, and cannot demonstrate the identity and admission arms at all: the
+   record says that rather than reporting a control that silently passed.</li>
+   <li><strong>The identity count is a window-end reading of names still present.</strong> It counts
+   <code>exec-*.identity</code> files whose stamp precedes the window's end and which still exist now,
+   so a file removed after the window reads as absent. For this window the sweep was live throughout and
+   the count is 1 — an undercount of nothing, since the target is an upper bound.</li>
+  </ul>
+
+  <h2 id="wftl-a-nights-window-meets-the-landing-targets-artifacts">Artifacts</h2>
+
+  <ul id="wftl-a-nights-window-meets-the-landing-targets-artifacts-list">
+   <li><code>docs/figures/work-flows-to-the-lane/wftl-a-nights-window-meets-the-landing-targets/census-2026-11-17T00_00Z-window.json</code> — the window, the census's whole output (read counts, populations, all four figures).</li>
+   <li><code>.../census-2026-11-16T20_00Z-prior-four-hours.json</code>, <code>.../census-2026-11-14T21_00Z-s9-window.json</code>, <code>.../census-2026-11-07-baseline.json</code>, <code>.../census-2026-11-11T13_00Z-negative-control.json</code> — the comparison rows above.</li>
+   <li><code>.../claim-paths-window.json</code> — total passes, every hold's verdict, every claimed path, and whether it lies under the crew home.</li>
+   <li><code>.../lane_window_claim_paths.py</code> — the reporter that produces it; a reader of the admission log, which writes nothing.</li>
+   <li><code>.../in_flight_workers.py</code> — the in-flight correction behind the 6.23 upper reading.</li>
+  </ul>
+
+  <p id="wftl-a-nights-window-meets-the-landing-targets-command">The command, run from the <code>reckon</code>
+  checkout with <code>RECKON_CREW_HOME=/home/ITER/mcintos/.config/reckon/crew</code> and
+  <code>HOME=/home/ITER/mcintos</code>:</p>
+
+  <pre id="wftl-a-nights-window-meets-the-landing-targets-command-text">RECKON_CREW_HOME=/home/ITER/mcintos/.config/reckon/crew HOME=/home/ITER/mcintos \
+  PYTHONPATH="$PWD" .venv/bin/python scripts/lane_window_census.py \
+  --window 2026-11-17T00:00Z/2026-11-17T04:00Z</pre>
+
+  <p id="wftl-a-nights-window-meets-the-landing-targets-extension">§67's deliverable also asks this node to
+  extend §9's census script to report the total number of admission passes in the window and the path of
+  every claim that held a request. The pass total is in the script's own output
+  (<code>passes</code>: 17, with 0 shared holds in the four hours before it); the paths are reported by
+  <code>lane_window_claim_paths.py</code>, which sits beside this record because
+  <code>scripts/lane_window_census.py</code> itself lies outside this node's write fence. It is a report
+  and not a second implementation of any figure: it reads the same log, names the same
+  <code>held-on-claim</code> verdicts, and its pass total (17) and crew-home hold count (1) reconcile with
+  the census's own row.</p>
+ </main>
+</body>
+</html>

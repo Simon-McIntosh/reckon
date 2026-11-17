@@ -565,7 +565,7 @@ def test_a_successful_store_write_is_reported_written_on_the_command_payload(
     run_id = "r-store-written-payload"
     _write_commit_pointer(repository, run_id, base)
     gate_log = tmp_path / "gate.log"
-    gate_log.write_text("probe check passed\n", encoding="utf-8")
+    gate_log.write_text("probe check passed\nEXIT=0\n", encoding="utf-8")
 
     invoked = _invoke_complete_cli(run_id, gate_log, commit)
 
@@ -581,7 +581,7 @@ def test_a_successful_store_write_is_reported_written_on_the_command_payload(
     assert ledger.index_lag(PROJECT, repository) == 0
 
 
-def test_a_failing_store_write_is_reported_on_the_ordinary_success_payload(
+def test_a_failing_store_write_refuses_the_promotion_and_leaves_no_row(
     repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     from reckon import run_store
@@ -590,7 +590,7 @@ def test_a_failing_store_write_is_reported_on_the_ordinary_success_payload(
     run_id = "r-store-fail-payload"
     _write_commit_pointer(repository, run_id, base)
     gate_log = tmp_path / "gate.log"
-    gate_log.write_text("probe check passed\n", encoding="utf-8")
+    gate_log.write_text("probe check passed\nEXIT=0\n", encoding="utf-8")
     with run_store.RunStore():
         pass
     assert ledger.index_lag(PROJECT, repository) == 0
@@ -606,23 +606,23 @@ def test_a_failing_store_write_is_reported_on_the_ordinary_success_payload(
 
     invoked = _invoke_complete_cli(run_id, gate_log, commit)
 
-    # The committed row survives an index failure, which leaves observable lag.
-    assert invoked.exit_code == 0
-    payload = json.loads(invoked.output)
-    assert payload["ok"] is True
-    assert payload["store"]["status"] == "failed"
-    assert "RuntimeError" in payload["store"]["error"]
-    assert "store_write" not in payload["record"]
-    assert payload["record"]["run_id"] == run_id
+    # The store is the authority: a write it declines refuses the promotion
+    # rather than reporting an index that merely lags, and the refusal names
+    # the store's path and the verb that repairs it.
+    assert invoked.exit_code == 1, invoked.output
+    assert str(run_store.store_path()) in invoked.output
+    assert "scripts/import_runs_into_store.py" in invoked.output
+    assert f"--project {PROJECT}" in invoked.output
     assert attempts == [run_id]
-    run_file = ledger.run_path(PROJECT, run_id, repository)
-    assert run_file.read_text() == ledger.serialize_run(payload["record"])
-    assert ledger.index_lag(PROJECT, repository) == 1
-    assert ledger.index_lag(PROJECT, repository) == 1
-    assert [row["run_id"] for row in ledger.runs(PROJECT, repository)] == [run_id]
-    assert ledger.index_lag(PROJECT, repository) == 1
-    run_store.import_ledger(PROJECT, root=repository)
-    assert ledger.index_lag(PROJECT, repository) == 0
+    # Neither store keeps the row: the run file the append wrote first is taken
+    # back, and the store holds nothing for the run, so the two agree on zero.
+    assert not ledger.run_path(PROJECT, run_id, repository).exists()
+    assert run_store.runs_for_node("commit-resolution", project=PROJECT) == []
+    assert ledger.runs(PROJECT, root=repository) == []
+    comparison = run_store.compare(PROJECT, root=repository)
+    assert comparison["rows_in_file_absent_from_store"] == 0
+    assert comparison["rows_in_store_absent_from_file"] == 0
+    assert comparison["rows_present_in_both_disagreeing"] == 0
 
 
 @pytest.mark.parametrize("commits", [None, "none"])

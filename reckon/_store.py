@@ -66,12 +66,13 @@ import os
 import re
 import secrets
 from collections import Counter
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextlib import ExitStack, contextmanager, suppress
 from contextvars import ContextVar
 from datetime import UTC, date, datetime
 from html.parser import HTMLParser
 from pathlib import Path
+from threading import local
 from typing import IO, Any, TextIO
 
 from reckon._schema import PlanRef, is_section_identity
@@ -392,6 +393,9 @@ def _resolve_html_file(
 # ── JSON-backed helpers (index / project slugs) ────────────────────────────
 
 
+_HELD_PATH_LOCKS = local()
+
+
 @contextmanager
 def _serialized_path_lock(path: Path, namespace: str):
     """Serialise a read-check-replace critical section for one store file.
@@ -400,12 +404,28 @@ def _serialized_path_lock(path: Path, namespace: str):
     produce a lost update whose counter still advances: nothing raises a
     conflict, so nothing can be noticed. Holding this lock makes the check and
     the replacement one step, so the writer that arrives second is decided by
-    the file rather than by scheduling.
+    the file rather than by scheduling. Nested entries by the owning process
+    and thread reuse the hold; a copied context cannot lend it to another owner.
     """
-    identity = hashlib.sha256(str(path.resolve()).encode()).hexdigest()
+    resolved = str(path.resolve())
+    identity = hashlib.sha256(resolved.encode()).hexdigest()
     lock_path = _config_home() / "locks" / namespace / f"{identity}.lock"
-    with exclusive_lock(lock_path):
+    owner = (os.getpid(), str(lock_path.resolve()))
+    held = getattr(_HELD_PATH_LOCKS, "paths", None)
+    if held is None:
+        held = set()
+        _HELD_PATH_LOCKS.paths = held
+    if owner in held:
+        # Keep the outer descriptor open: closing another descriptor would
+        # release this process's record lock before the transaction ends.
         yield
+        return
+    with exclusive_lock(lock_path):
+        held.add(owner)
+        try:
+            yield
+        finally:
+            held.remove(owner)
 
 
 @contextmanager
@@ -1050,6 +1070,19 @@ def _consume_write_effects(kind: str, data: dict[str, Any]) -> list[dict[str, st
         return []
     _WRITE_EFFECTS[kind].set(None)
     return list(pending[1])
+
+
+def _pending_evidence_plans(working: dict[str, Any]) -> set[str]:
+    """Plan slugs this batch's queued evidence appends will reach.
+
+    Effects are collected out of band while the ops run and written after the
+    batch is validated, so a later op's guard that reads the record from disk
+    cannot see them yet. This is how that guard sees its own batch's evidence.
+    """
+    pending = _WRITE_EFFECTS["evidence_appends"].get()
+    if pending is None or pending[0] is not working:
+        return set()
+    return {str(request.get("plan") or "") for request in pending[1]}
 
 
 def _forged_plan_structure(body: str) -> str | None:
@@ -1755,7 +1788,13 @@ def _write_state_locked(
         _require_transition_verdict(new_data, "plan-terminal")
         if requested_status in _LANDED_STATUSES:
             _require_every_section_ticked(new_data, text)
-        _require_terminal_evidence(project, slug, requested_status, root)
+        _require_terminal_evidence(
+            project,
+            slug,
+            requested_status,
+            root,
+            {str(request.get("plan") or "") for request in evidence_appends},
+        )
     if state_type == "plan":
         _validate_decision_transitions(new_data, cur_state)
     new_data.pop("_version", None)  # never allow the old JSON key in the state
@@ -1794,9 +1833,7 @@ def _write_state_locked(
             # The reasons map is a head meta too, rewritten from the mapping
             # already on the page so a write lands its own sections and leaves
             # its siblings' reasons alone.
-            source_text = _apply_descope_reason_edits(
-                source_text, descope_reason_edits
-            )
+            source_text = _apply_descope_reason_edits(source_text, descope_reason_edits)
         if meta_removals:
             source_text = _store_section_ops.apply_meta_removals(
                 source_text, meta_removals
@@ -2437,6 +2474,146 @@ def _refuse_immutable_snapshot(resource) -> None:
         )
 
 
+PLAN_BOOKKEEPING_ATTRIBUTES = frozenset(
+    {"data-effort-hours", "data-attempts", "data-status", "data-links"}
+)
+
+
+def plan_text_projection(document: str) -> tuple[str, list[tuple[int, str]]]:
+    """Separate canonical authored HTML from the store's owned regions.
+
+    Each owned region retains its offset in the authored stream, so a landing
+    can carry the current bookkeeping while leaving pending prose with its
+    editor. Attribute slots preserve bookkeeping on otherwise authored tags.
+    """
+    from bs4 import BeautifulSoup, NavigableString
+
+    soup = BeautifulSoup(document, "html.parser")
+    token = secrets.token_hex(16)
+    while token in document:
+        token = secrets.token_hex(16)
+    owned: dict[str, str] = {}
+
+    def mark(content: str) -> str:
+        marker = f"reckon_{token}_{len(owned)}"
+        owned[marker] = content
+        return marker
+
+    for element in list(soup.find_all(True)):
+        if element.parent is None:
+            continue
+        state_meta = element.name == "meta" and str(
+            element.get("name") or ""
+        ).lower().startswith("plan-")
+        if (
+            state_meta
+            or element.has_attr("data-reckon")
+            or "r-comment" in (element.get("class") or [])
+        ):
+            element.replace_with(NavigableString(mark(str(element))))
+            continue
+        attributes = {
+            key: element.attrs.pop(key)
+            for key in list(element.attrs)
+            if key in PLAN_BOOKKEEPING_ATTRIBUTES or key.startswith("data-capability-")
+        }
+        if attributes:
+            rendered = str(soup.new_tag("span", attrs=attributes))[5:-8]
+            marker = mark(rendered)
+            attribute = f"data-reckon-projection-{token}"
+            element[attribute] = marker
+            owned[f' {attribute}="{marker}"'] = owned.pop(marker)
+    masked = str(soup)
+    if not owned:
+        return masked, []
+    pattern = re.compile("|".join(re.escape(marker) for marker in owned))
+    chunks: list[str] = []
+    slots: list[tuple[int, str]] = []
+    cursor = length = 0
+    for match in pattern.finditer(masked):
+        chunk = masked[cursor : match.start()]
+        chunks.append(chunk)
+        length += len(chunk)
+        slots.append((length, owned[match.group()]))
+        cursor = match.end()
+    chunks.append(masked[cursor:])
+    authored = "".join(chunks)
+    whitespace = list(re.finditer(r"(?<=>)\s+(?=<)", authored))
+    slots = [
+        (
+            offset
+            - sum(
+                min(max(offset - match.start(), 0), match.end() - match.start())
+                for match in whitespace
+            ),
+            content,
+        )
+        for offset, content in slots
+    ]
+    return re.sub(r"(?<=>)\s+(?=<)", "", authored), slots
+
+
+def _plan_text_receipt_path(path: Path) -> Path:
+    key = hashlib.sha256(os.fsencode(path.resolve())).hexdigest()
+    # Workers can write the plan lock namespace while the shared state root
+    # remains sealed. The receipt shares that coordination grant.
+    return _config_home() / "locks" / "plan-text-writes" / f"{key}.json"
+
+
+def _plan_text_receipts(path: Path) -> dict[str, list[str]]:
+    try:
+        data = json.loads(_plan_text_receipt_path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(data, dict) or any(
+        not isinstance(key, str)
+        or not isinstance(values, list)
+        or any(not isinstance(value, str) for value in values)
+        for key, values in data.items()
+    ):
+        return {}
+    return data
+
+
+def _plan_text_digest(document: str) -> str:
+    authored, _slots = plan_text_projection(document)
+    return hashlib.sha256(authored.encode("utf-8")).hexdigest()
+
+
+def _record_plan_text_write(path: Path, before: str, after: str) -> None:
+    """Record a content-bound edge under the plan writer's existing lock."""
+    receipts = _plan_text_receipts(path)
+    source = _plan_text_digest(before)
+    destination = _plan_text_digest(after)
+    targets = receipts.setdefault(source, [])
+    if destination not in targets:
+        targets.append(destination)
+    receipt_path = _plan_text_receipt_path(path)
+    receipt_path.parent.mkdir(parents=True, exist_ok=True)
+    write_json_atomically(receipt_path, receipts)
+
+
+def recorded_plan_text_write(path: Path, before: str, after: str) -> bool:
+    """Whether recorded text writes connect these exact authored contents."""
+    start = _plan_text_digest(before)
+    destination = _plan_text_digest(after)
+    if start == destination:
+        return False
+    receipts = _plan_text_receipts(path)
+    pending = [start]
+    visited = set()
+    while pending:
+        current = pending.pop()
+        if current in visited:
+            continue
+        visited.add(current)
+        for target in receipts.get(current, []):
+            if target == destination:
+                return True
+            pending.append(target)
+    return False
+
+
 def replace_plan_text(
     project: str,
     slug: str,
@@ -2616,6 +2793,13 @@ def _replace_plan_text(
             except OpError as exc:
                 raise ValueError(str(exc)) from exc
         write_atomically(html_file, lambda handle: handle.write(rendered))
+        try:
+            _record_plan_text_write(html_file, text, rendered)
+        except Exception:
+            # A failed receipt must neither license an unwritten edit nor
+            # leave a successful edit without its promotion provenance.
+            write_atomically(html_file, lambda handle: handle.write(text))
+            raise
         return current_version + 1, html_file
 
 
@@ -2884,6 +3068,22 @@ def _gen_id(prefix: str) -> str:
     from datetime import timezone
 
     return f"{prefix}-{_dt.now(tz=timezone.utc):%Y%m%dT%H%M%S%f}"
+
+
+_DEFAULT_FOLLOWUP_AUTHOR = "reckon-edit"
+
+
+def _default_followup_provenance(item: dict) -> None:
+    """Fill a followup's author and date when the caller names neither.
+
+    The append examples carry a title, a body and a prompt and no provenance,
+    so a record built from one is dated today and attributed to the editing
+    surface rather than refused for two fields the caller was never shown.
+    """
+    if not str(item.get("written_by") or "").strip():
+        item["written_by"] = _DEFAULT_FOLLOWUP_AUTHOR
+    if not str(item.get("written_at") or "").strip():
+        item["written_at"] = _dt.now(tz=UTC).date().isoformat()
 
 
 def _validate_new_followup_prompt(value: Any) -> str:
@@ -4122,6 +4322,7 @@ def _apply_append(working: dict, op: dict, is_index: bool, warnings: list[str]) 
             raise OpError("append followups requires an item object")
         required = {"id", "written_by", "written_at", "title", "body", "prompt"}
         fu = dict(item)
+        _default_followup_provenance(fu)
         _refuse_deferred_work_term(str(fu.get("body") or ""), subject="followups body")
         if fu.get("tier") and not fu.get("capability"):
             raise OpError("new followups must use capability instead of legacy tier")
@@ -4300,7 +4501,9 @@ def _apply_accept(working: dict, op: dict, is_index: bool, warnings: list[str]) 
     }
 
 
-def _apply_withdraw(working: dict, op: dict, is_index: bool, warnings: list[str]) -> None:
+def _apply_withdraw(
+    working: dict, op: dict, is_index: bool, warnings: list[str]
+) -> None:
     """Withdraw an unlocked decision, keeping its reason and date in the plan.
 
     A withdrawal takes a decision out of the wait without pretending anyone
@@ -4872,6 +5075,254 @@ def _require_every_section_ticked(
     )
 
 
+#: The instant the landing-account rule landed, 2026-11-15T10:05:58Z, held as
+#: a datetime so no caller parses it. A section whose earliest recorded
+#: activity predates it was already done when the rule arrived and owes no
+#: account; a section recorded at or after it is refused while it holds none,
+#: and one with no recorded activity at all predates the record and is exempt
+#: for the same reason. A fixed instant and not the clock, so the verdict reads
+#: the same on every later day and a fixture's expectation cannot expire.
+LANDING_ACCOUNT_ENFORCED_FROM = datetime(2026, 11, 15, 10, 5, 58, tzinfo=UTC)
+
+
+def _require_every_landed_section_answered(
+    state: dict[str, Any], html_text: str | None = None
+) -> None:
+    """Refuse closure while a landed section holds no account of its landing.
+
+    A section declared ``done`` is one a node landed, and the landing line is
+    the only prose account of that node. Two things supply it: a landing comment
+    on the section, or a committed run record naming the section. A done section
+    with neither closes the plan with nothing on record about the work.
+
+    Only a section that states a done-when is in the rule. A section giving the
+    plan's reasons states no measure, so no node could have landed it and it
+    owes no account.
+
+    The rule applies to a section marked done after it landed. A section
+    already done when the rule landed is exempt, and the exemption is read from
+    the earliest activity the section carries — its first comment, or the
+    completion time of the earliest run whose record names it — compared against
+    :data:`LANDING_ACCOUNT_ENFORCED_FROM`, one fixed instant. The earliest and
+    not the newest, because a section already done stays exempt however its plan
+    is edited, and a comment appended afterwards is not evidence that the work
+    came later. A section the store records nothing about predates the record
+    and is exempt for the same reason. Neither side of that comparison consults
+    the clock, so a plan edited today does not change what
+    the rule owed yesterday.
+
+    The rule reads the plan's run records once per close, through the same
+    section reading the closure overview renders, rather than walking the
+    ledger once per unanswered section: every section is answered from one
+    population, so two sections cannot be judged against two reads that
+    disagree. A plan state that names no project or slug cannot be read at all
+    and is refused naming what is missing, rather than being treated as a plan
+    with no run record.
+
+    The rule needs the plan's document to read that prose, and a caller without
+    one gets no check rather than a refusal: the document is what distinguishes
+    a section that owes an account from one that does not, and refusing every
+    done section in its absence would refuse exactly the sections the rule
+    carves out. The declaration-map shape beside this check degrades the same
+    way, for the same reason.
+    """
+    from reckon import _plan_html
+
+    declarations = state.get("section_declarations") or {}
+    landed = [
+        str(identity)
+        for identity, classification in declarations.items()
+        if str(classification or "").strip() == _plan_html.SECTION_DECLARATION_DONE
+    ]
+    if not landed:
+        return
+    if html_text is None:
+        html_text = _plan_html_text(state)
+    if not html_text:
+        return
+    prose = _section_prose_by_identity(html_text)
+    # A landing comment settles a section without touching the ledger, so the
+    # run records are read only for the sections that still owe an account.
+    owing = [
+        section
+        for section in landed
+        if _states_a_done_when(prose, section)
+        and _plan_html._closing_comment(state, section) is None
+    ]
+    if not owing:
+        return
+    records = _plan_run_records(state)
+    readings = _read_plan_landings(state, html_text, records)
+    unanswered: list[str] = []
+    for section in owing:
+        matched = _landings_for_section(readings, section)
+        if any(landing.landed for landing in matched):
+            continue
+        if _landed_before_the_rule(state, section, matched):
+            continue
+        unanswered.append(section)
+    if not unanswered:
+        return
+    raise OpError(
+        "terminal status refused: "
+        f"{len(unanswered)} landed section(s) with no account of their landing "
+        f"({', '.join(unanswered)}) — each section declared done that states a "
+        "done-when needs a landing comment naming it, or a committed run record "
+        "for it, before the plan can close"
+    )
+
+
+def _section_prose_by_identity(html_text: str) -> dict[str, str]:
+    """Each authored section's prose, joined in document order, keyed by identity."""
+    from reckon import _plan_html
+
+    collected: dict[str, list[str]] = {}
+    for identity, prose in _plan_html.section_prose(html_text):
+        collected.setdefault(str(identity), []).append(prose or "")
+    return {identity: " ".join(parts) for identity, parts in collected.items()}
+
+
+def _states_a_done_when(prose: dict[str, str], section: str) -> bool:
+    """Whether one authored section's prose carries a done-when.
+
+    The locator is the review module's, so a section counts as stating a measure
+    here exactly when the review judge reads one there; a second regex over the
+    same prose is how the two would come to disagree about which sections hold a
+    measure. Imported here rather than at module scope because the review module
+    reads this one.
+    """
+    from reckon._plan_html import section_id_candidates
+    from reckon.crew.plan_review import _done_when_paragraph
+
+    text = " ".join(
+        prose.get(candidate, "") for candidate in sorted(section_id_candidates(section))
+    )
+    return _done_when_paragraph(text) is not None
+
+
+def _plan_run_records(state: dict[str, Any]) -> list[Mapping[str, Any]]:
+    """The plan's committed run records, read once for one close.
+
+    The guard reads the ledger once per close rather than once per unanswered
+    section: the records are the same population for every section, so a
+    per-section read re-walks the store to answer a question the first read
+    already answered.
+
+    The read needs the plan's identity. A state that names no project or no
+    slug cannot be checked at all, and saying so is the difference between a
+    refusal a reader can repair and the silent verdict that such a plan holds
+    no run record.
+    """
+    from reckon import ledger
+
+    project = str(state.get("project") or "").strip()
+    slug = str(state.get("slug") or "").strip()
+    if not (project and slug):
+        missing = "project" if not project else "slug"
+        named = "no project and no slug" if not project and not slug else f"no {missing}"
+        raise OpError(
+            "terminal status refused: cannot read the run ledger to check a "
+            f"landed section's account — this plan state names {named}, so the "
+            "sections that landed cannot be told from those that did not"
+        )
+    try:
+        return list(ledger.runs(project, plan=slug))
+    except ledger.LedgerError as exc:
+        raise OpError(
+            f"cannot read the run ledger for project {project!r}, plan {slug!r}: "
+            f"{exc}"
+        ) from exc
+
+
+def _read_plan_landings(
+    state: dict[str, Any],
+    html_text: str,
+    records: Sequence[Mapping[str, Any]],
+) -> list[Any]:
+    """What each section landed, read through the closure overview's reader.
+
+    The sprint page and the closing plan's overview both state a section's
+    landing, so the close guard asks the same reader they do rather than
+    deciding from a second population of records.
+
+    ``root`` is left unset: the guard asks whether a section landed, and no
+    figure address or stored review bears on that answer, so the read opens no
+    directory it does not need.
+    """
+    from reckon.evidence import read_section_landings
+
+    return read_section_landings(
+        state, html_text, records, str(state.get("project") or "").strip()
+    )
+
+
+def _landings_for_section(readings: Sequence[Any], section: str) -> list[Any]:
+    """The readings whose section id names the same section as ``section``."""
+    from reckon._plan_html import section_id_candidates
+
+    wanted = section_id_candidates(section)
+    return [
+        reading
+        for reading in readings
+        if section_id_candidates(str(getattr(reading, "section", "") or "")) & wanted
+    ]
+
+
+def _landed_before_the_rule(
+    state: dict[str, Any], section: str, readings: Sequence[Any]
+) -> bool:
+    """Whether a section was already done when the landing rule landed.
+
+    Read from the earliest activity the store records for the section and one
+    fixed instant, so the verdict neither expires with the calendar nor depends
+    on what the plan's prose says today, and a comment appended to a section
+    since it was landed cannot take its exemption away. A section the store
+    records nothing about predates the record and is exempt; one whose record
+    begins at or after the instant is not.
+
+    ``readings`` are the section's landing readings, so the run records are the
+    ones the close already read rather than a second ledger walk.
+    """
+    recorded = _section_first_recorded_at(state, section, readings)
+    if recorded is None:
+        return True
+    return recorded < LANDING_ACCOUNT_ENFORCED_FROM
+
+
+def _section_first_recorded_at(
+    state: dict[str, Any], section: str, readings: Sequence[Any] = ()
+) -> datetime | None:
+    """The earliest moment the store records anything about one section, or None.
+
+    Two stores carry a per-section time: the plan's comment log and the run
+    ledger's completion times. Their earliest stamp is the moment the section
+    enters the store's record, and that is what the rule compares against its
+    one fixed instant. The earliest and not the newest, because the rule exempts
+    a section already done when it landed and that section stays exempt however
+    its plan is edited: a comment appended afterwards says the section was
+    discussed later, not that it was done later. A section both stores are
+    silent about yields None, and a record whose stamp cannot be read
+    contributes nothing — an unreadable stamp is not evidence either way.
+    """
+    from reckon._plan_html import section_id_candidates
+    from reckon._timestamps import parse_utc
+
+    wanted = section_id_candidates(section)
+    stamps: list[datetime | None] = [
+        parse_utc((record or {}).get("when"))
+        for identity, records in (state.get("comments") or {}).items()
+        if section_id_candidates(str(identity)) & wanted
+        for record in records or []
+    ]
+    stamps.extend(
+        parse_utc(record.get("completed_at"))
+        for reading in readings
+        for record in getattr(reading, "runs", ()) or ()
+    )
+    readable = [stamp for stamp in stamps if stamp is not None]
+    return min(readable) if readable else None
+
+
 def _plan_html_text(state: dict[str, Any]) -> str | None:
     """The plan's own HTML as it stands on disk, or None if it is not one.
 
@@ -4936,10 +5387,10 @@ def validate_landing_patch(
     without the document still gets the declaration-map check.
 
     This is the one guard list for a terminal transition: the guards below are
-    the section-ticked check, the appended hiding followup, the pending
-    transition gate, the terminal evidence record and the continuation. Both
-    writers route through it, so a guard added here reaches the merge-patch
-    writer and the op writer alike.
+    the appended hiding followup, the section-ticked check, the landed-section
+    account, the pending transition gate, the terminal evidence record and the
+    continuation. Both writers route through it, so a guard added here reaches
+    the merge-patch writer and the op writer alike.
 
     With ``report_all`` the guards are collected rather than raised at the
     first, and the failures come back as a list — the close op's mode, so one
@@ -4967,11 +5418,20 @@ def validate_landing_patch(
     if requested_status in _LANDED_STATUSES and prior_status not in TERMINAL_STATUSES:
         guard(_require_every_section_ticked, state, html_text)
     if requested_status in TERMINAL_STATUSES:
+        if prior_status not in TERMINAL_STATUSES:
+            guard(_require_every_landed_section_answered, state, html_text)
         guard(_require_transition_verdict, state, "plan-terminal")
         project = str(state.get("project") or "")
         slug = str(state.get("slug") or "")
         if project and slug:
-            guard(_require_terminal_evidence, project, slug, requested_status)
+            guard(
+                _require_terminal_evidence,
+                project,
+                slug,
+                requested_status,
+                None,
+                _pending_evidence_plans(state),
+            )
     if (
         requested_status in _LANDED_STATUSES
         and not continuation_present(state)
@@ -4988,10 +5448,18 @@ def _require_terminal_evidence(
     slug: str,
     status: str,
     root: str | Path | None = None,
+    pending_plans: Iterable[str] = (),
 ) -> None:
-    """Refuse closure until a typed evidence resource claims the plan."""
+    """Refuse closure until a typed evidence resource claims the plan.
+
+    ``pending_plans`` names the plans this batch's own queued evidence appends
+    will reach. They are not on disk yet, and a close batched behind them must
+    still see them, so appending the evidence and closing the plan is one write.
+    """
     from reckon import ledger
 
+    if slug in pending_plans:
+        return
     if ledger.evidence_records_for_plan(project, slug, root):
         return
     expected = f"docs/evidence/archive/{slug}-landed.html"

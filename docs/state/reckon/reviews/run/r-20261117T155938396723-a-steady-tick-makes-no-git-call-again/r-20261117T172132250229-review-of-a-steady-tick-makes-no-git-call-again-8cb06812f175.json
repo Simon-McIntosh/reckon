@@ -1,0 +1,91 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery_review_subject.py:1145 write_delivered_run_review_brief",
+    "reckon/crew/recovery_review_subject.py:1199 _review_dispatch_fields",
+    "reckon/crew/recovery_review_dispatch.py:3282",
+    "reckon/crew/dispatch_launch.py:4787",
+    "reckon/crew/obligations.py:1629"
+  ],
+  "completed_at": "2026-11-17T17:23:21.104Z",
+  "dispatched_at": "2026-11-17T17:22:40Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "deferred",
+      "recorded_at": "2026-11-17T17:45:35.661613+00:00",
+      "rule": "landing-defers-non-blocking-findings",
+      "run": "r-20261117T155938396723-a-steady-tick-makes-no-git-call-again"
+    },
+    "1": {
+      "kind": "deferred",
+      "recorded_at": "2026-11-17T17:45:35.661613+00:00",
+      "rule": "landing-defers-non-blocking-findings",
+      "run": "r-20261117T155938396723-a-steady-tick-makes-no-git-call-again"
+    },
+    "2": {
+      "kind": "deferred",
+      "recorded_at": "2026-11-17T17:45:35.661613+00:00",
+      "rule": "landing-defers-non-blocking-findings",
+      "run": "r-20261117T155938396723-a-steady-tick-makes-no-git-call-again"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_subject.py",
+      "line": "698",
+      "severity": "non-blocking",
+      "text": "non-blocking: the new memo remembers a git answer keyed by two immutable object ids in process memory, while reckon/crew/recovery_watch.py:137-240 exists to keep exactly those answers under the crew home; it neither extends nor wraps that store, so a fresh process re-asks a range it cannot change."
+    },
+    {
+      "file": "tests/test_the_station_reads_only_what_changed.py",
+      "line": "342",
+      "severity": "non-blocking",
+      "text": "non-blocking: 'assert again == first' compares two outputs of the call under test, so it passes for any deterministic implementation, including the regressed one, and is not the guard its position suggests; the git count at :343 is."
+    },
+    {
+      "file": "tests/test_the_station_reads_only_what_changed.py",
+      "line": "343",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added zero-count assertion was never observed red \u2014 the base arm collected 74 ids against the head's 75, so this test did not exist there \u2014 leaving the reinstatement of reckon/crew/recovery_review_subject.py:791 unrecorded."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read both commits against base: cced6d5b3a adds _REVIEWED_DIFF_CACHE and its three helpers at reckon/crew/recovery_review_subject.py:698-749, rewires _reviewed_scope_block at :791 and adds one test at tests/test_the_station_reads_only_what_changed.py:329; 8cb06812f1 adds only the evidence fragment.",
+    "done_when": "The done_when names tests/test_the_station_reads_only_what_changed.py::test_a_steady_tick_recomputes_nothing at three head runs and red at base, and that is the gate that ran: logs/gate-head-run{1,2,3}.log each carry 17 passed and EXIT=0, baseline_suite-1794935773110143990.log carries 1 failed, 73 passed with that id and EXIT=1.",
+    "goal": "Plan s87's goal is 'Answer the read that now runs git on an unchanged station tick from an existing memo'; reckon/crew/recovery_review_subject.py:725 answers that read from a new process memo rather than an existing one, and the steady tick's git count falls to 0.",
+    "manifest": "Read in full: status complete, commits cced6d5b3a48e0a4fb97cafbede578170a24b984 and 8cb06812f175b1facc6d66d419d80236ab736206, both suite arms carrying revision, command, exit_status, completed and failure ids, a negative-control log with its note, and summary lines that reconcile with the logs.",
+    "write_paths": "The node declared reckon/crew, tests/test_the_station_reads_only_what_changed.py, the fragment html and a figure directory; the diff b3a277e1a63c181bf0deb2a7127b43e37bbc3718..8cb06812f175b1facc6d66d419d80236ab736206 touches exactly three of them and no file outside."
+  },
+  "justifications": {
+    "durability": "tests/test_the_station_reads_only_what_changed.py:343 reddens if reckon/crew/recovery_review_subject.py:791 is restored to the inline subprocess.run, but no recorded arm shows that reinstatement, and :342's 'again == first' holds under either implementation.",
+    "evidence": "logs/gate-head-run{1,2,3}.log carry 17 passed and EXIT=0 and baseline_suite-1794935773110143990.log carries the named id with EXIT=1, though those three head runs are at cced6d5b3a while the final head 8cb06812f1 is covered only by the after_suite arm's 75 passed.",
+    "fit": "The new helpers at reckon/crew/recovery_review_subject.py:708-722 mirror the bounded-cache idiom of reckon/crew/recovery_watch.py:113-131 and add no name the module's private convention forbids.",
+    "goal_fidelity": "reckon/crew/recovery_review_subject.py:734 answers the unchanged tick's numstat read from a memo, but the goal's 'existing memo' is met by adding _REVIEWED_DIFF_CACHE at :698 rather than by reusing one.",
+    "reuse": "reckon/crew/recovery_review_subject.py:698 keeps an immutable-id git answer in process memory only, while reckon/crew/recovery_watch.py:137-240 owns that capability in a persisted per-tree store that the addition neither extends nor wraps.",
+    "scope_discipline": "Every path in b3a277e1a6..8cb06812f1 lies inside the declared reckon/crew, tests/test_the_station_reads_only_what_changed.py and fragment paths, with no unrelated edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Plan s87's goal is 'Answer the read that now runs git on an unchanged station tick from an existing memo'; reckon/crew/recovery_review_subject.py:725 answers that read from a new process memo rather than an existing one, and the steady tick's git count falls to 0.\nVERDICT done_when: The done_when names tests/test_the_station_reads_only_what_changed.py::test_a_steady_tick_recomputes_nothing at three head runs and red at base, and that is the gate that ran: logs/gate-head-run{1,2,3}.log each carry 17 passed and EXIT=0, baseline_suite-1794935773110143990.log carries 1 failed, 73 passed with that id and EXIT=1.\nVERDICT write_paths: The node declared reckon/crew, tests/test_the_station_reads_only_what_changed.py, the fragment html and a figure directory; the diff b3a277e1a63c181bf0deb2a7127b43e37bbc3718..8cb06812f175b1facc6d66d419d80236ab736206 touches exactly three of them and no file outside.\nVERDICT manifest: Read in full: status complete, commits cced6d5b3a48e0a4fb97cafbede578170a24b984 and 8cb06812f175b1facc6d66d419d80236ab736206, both suite arms carrying revision, command, exit_status, completed and failure ids, a negative-control log with its note, and summary lines that reconcile with the logs.\nVERDICT diff: Read both commits against base: cced6d5b3a adds _REVIEWED_DIFF_CACHE and its three helpers at reckon/crew/recovery_review_subject.py:698-749, rewires _reviewed_scope_block at :791 and adds one test at tests/test_the_station_reads_only_what_changed.py:329; 8cb06812f1 adds only the evidence fragment.\nCALL_SITES: reckon/crew/recovery_review_subject.py:1145 write_delivered_run_review_brief, reckon/crew/recovery_review_subject.py:1199 _review_dispatch_fields, reckon/crew/recovery_review_dispatch.py:3282, reckon/crew/dispatch_launch.py:4787, reckon/crew/obligations.py:1629\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_subject.py:734 answers the unchanged tick's numstat read from a memo, but the goal's 'existing memo' is met by adding _REVIEWED_DIFF_CACHE at :698 rather than by reusing one.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/gate-head-run{1,2,3}.log carry 17 passed and EXIT=0 and baseline_suite-1794935773110143990.log carries the named id with EXIT=1, though those three head runs are at cced6d5b3a while the final head 8cb06812f1 is covered only by the after_suite arm's 75 passed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Every path in b3a277e1a6..8cb06812f1 lies inside the declared reckon/crew, tests/test_the_station_reads_only_what_changed.py and fragment paths, with no unrelated edit.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_the_station_reads_only_what_changed.py:343 reddens if reckon/crew/recovery_review_subject.py:791 is restored to the inline subprocess.run, but no recorded arm shows that reinstatement, and :342's 'again == first' holds under either implementation.\nSCORE fit: 19\nJUSTIFICATION fit: The new helpers at reckon/crew/recovery_review_subject.py:708-722 mirror the bounded-cache idiom of reckon/crew/recovery_watch.py:113-131 and add no name the module's private convention forbids.\nSCORE reuse: 12\nJUSTIFICATION reuse: reckon/crew/recovery_review_subject.py:698 keeps an immutable-id git answer in process memory only, while reckon/crew/recovery_watch.py:137-240 owns that capability in a persisted per-tree store that the addition neither extends nor wraps.\nFINDING reckon/crew/recovery_review_subject.py:698 non-blocking: the new memo remembers a git answer keyed by two immutable object ids in process memory, while reckon/crew/recovery_watch.py:137-240 exists to keep exactly those answers under the crew home; it neither extends nor wraps that store, so a fresh process re-asks a range it cannot change.\nFINDING tests/test_the_station_reads_only_what_changed.py:342 non-blocking: 'assert again == first' compares two outputs of the call under test, so it passes for identical or regressed implementations alike and is not the guard its position suggests; the git count at :343 is.\nFINDING tests/test_the_station_reads_only_what_changed.py:343 non-blocking: the added zero-count assertion was never observed red \u2014 the base arm collected 74 ids against the head's 75, so the test did not exist there \u2014 leaving the reinstatement of reckon/crew/recovery_review_subject.py:791 unrecorded.",
+  "review_run_id": "r-20261117T172132250229-review-of-a-steady-tick-makes-no-git-call-again-8cb06812f175",
+  "reviewed_base_sha": "b3a277e1a63c181bf0deb2a7127b43e37bbc3718",
+  "reviewed_head_sha": "8cb06812f175b1facc6d66d419d80236ab736206",
+  "reviewed_run_id": "r-20261117T155938396723-a-steady-tick-makes-no-git-call-again",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 15,
+    "reuse": 12,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T17:36:45.694248+00:00",
+  "total": 100
+}

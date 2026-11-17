@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Pre-tool-use hook: refuse a harness-native background-agent spawn where the
-crew's committed run ledger already owns worker execution.
+crew's run ledger already owns worker execution.
 
 Self-contained and stdlib-only on purpose: this single file is distributed
 into every crew-managed repository's harness settings, and most of those
@@ -12,8 +12,8 @@ Behavior, in order:
 
 1. Scope test — the repository is found by walking up from the session's
    working directory, so a session in any subdirectory is governed by it. A
-   repository with no crew or flight state under ``docs/state/`` is untouched;
-   the spawn is allowed silently.
+   repository whose ``docs/state`` carries no crew state is untouched; the
+   spawn is allowed silently.
 2. Waiver — a live run pointer for this repository with an in-harness launch
    still awaiting attachment allows the spawn and names the bind command.
 3. Waiver — an explicit environment override allows the spawn.
@@ -49,6 +49,11 @@ OVERRIDE_ENV = "RECKON_ALLOW_NATIVE_AGENT"
 # coordinator, which changes the re-route the refusal teaches.
 RUN_ID_ENV = "RECKON_RUN_ID"
 
+# Crew configuration identifies crew ownership; tracked review history also
+# establishes it when the run ledger is absent. Static build metadata alone
+# does not distinguish a crew project.
+PROJECT_STATE_MARKERS = ("flight.yaml", "crew.json")
+
 # The shape of the re-route a refusal teaches. Angle-bracket placeholders mark
 # what only the plan and the caller's own work list can fill in; the guard
 # has no plan context to resolve them from, only the repository's crew state.
@@ -77,21 +82,25 @@ def _config_home() -> Path:
 def crew_managed_projects(repo_root: Path) -> list[str]:
     """Repository-local project names carrying crew or flight state.
 
-    Reads only ``repo_root/docs/state/<project>/{crew.json,flight.yaml}`` —
-    never the host's mounts file — so detection is correct for a repository
-    nobody has registered on this host yet, and unaffected by what else is
-    mounted here.
+    Review history stays in a checkout without the run ledger. Project
+    metadata written by a static build alone does not establish crew ownership.
+
+    Reads only repository-local state — never the host's mounts file — so
+    detection is correct for a repository nobody has registered on this host
+    yet, and unaffected by what else is mounted here.
     """
     state_root = repo_root / "docs" / "state"
     if not state_root.is_dir():
         return []
-    projects = []
-    for entry in sorted(state_root.iterdir()):
-        if not entry.is_dir():
-            continue
-        if (entry / "crew.json").is_file() or (entry / "flight.yaml").is_file():
-            projects.append(entry.name)
-    return projects
+    return sorted(
+        entry.name
+        for entry in state_root.iterdir()
+        if entry.is_dir()
+        and (
+            (entry / "reviews").is_dir()
+            or any((entry / marker).is_file() for marker in PROJECT_STATE_MARKERS)
+        )
+    )
 
 
 def repository_root(cwd: Path) -> Path:

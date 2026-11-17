@@ -23,7 +23,11 @@ from collections.abc import (
     Mapping as Mapping,
     Sequence as Sequence,
 )
-from contextlib import contextmanager as contextmanager, suppress as suppress
+from contextlib import (
+    ExitStack as ExitStack,
+    contextmanager as contextmanager,
+    suppress as suppress,
+)
 from contextvars import ContextVar as ContextVar
 from dataclasses import dataclass as dataclass, field as field
 from datetime import UTC as UTC, datetime as datetime, timedelta as timedelta
@@ -38,9 +42,17 @@ from reckon._store import (
 )
 from reckon._timestamps import parse_utc as parse_utc
 from reckon.env_duration import read_duration_override
+from reckon.crew.manifest_faults import (
+    SUITE_ARMS as SUITE_ARMS,
+    is_full_revision as is_full_revision,
+)
+from reckon.node_exclusive_lock import LockHeld, exclusive_lock
 from reckon.crew.host_lease import (
     LEASE_RENEW_SECONDS as LEASE_RENEW_SECONDS,
     HostLease as HostLease,
+    LeaseHolder as LeaseHolder,
+    local_host as local_host,
+    process_runs_here as process_runs_here,
 )
 from reckon.crew.node import (
     _TERMINAL_RUN_PHASES as _TERMINAL_RUN_PHASES,
@@ -213,6 +225,35 @@ def _split_dispatch_detail(path: Path, payload: Mapping[str, Any]) -> Mapping[st
     }
     slim["dispatch_detail"] = str(detail_path)
     return slim
+
+
+#: Run-record fields no live pointer carries. The promotion's clone report is
+#: evidence of the run — every function a run added or modified whose normalised
+#: window duplicates one already in the tree — and it belongs on the committed
+#: ledger row, where ``velocity`` and every other history reader take it. A live
+#: pointer is read by every fleet-state derivation on every pass, and none of
+#: them asks for the report: 12 live pointers carried it, 14.2 MB of a 23.5 MB
+#: directory, one of them 10.3 MB on its own.
+POINTER_OMITTED_FIELDS = ("clone_matches",)
+
+
+def _without_pointer_omitted_fields(
+    payload: Mapping[str, Any],
+) -> Mapping[str, Any]:
+    """``payload`` as a live pointer may hold it: no run-record-only field.
+
+    Applied on the write, so a caller that hands the pointer a row-shaped record
+    — a landing that marks an already-promoted run for repair, a promotion that
+    keeps a pointer it could not retire — cannot put a report no pointer reader
+    asks for on the file the whole node lists.
+    """
+    if not any(name in payload for name in POINTER_OMITTED_FIELDS):
+        return payload
+    return {
+        name: value
+        for name, value in payload.items()
+        if name not in POINTER_OMITTED_FIELDS
+    }
 
 
 def read_dispatch_detail(record: Mapping[str, Any]) -> dict[str, Any]:
@@ -455,6 +496,7 @@ def _write_json(path: Path, payload: Mapping[str, Any]) -> None:
     """Write JSON atomically, so a reader never sees a half-written record."""
     payload = _stamp_pointer_launch_host(path, payload)
     if path.parent == live_dir() and path.suffix == ".json":
+        payload = _without_pointer_omitted_fields(payload)
         payload = _split_dispatch_detail(path, payload)
     write_json_atomically(
         path,
@@ -487,17 +529,12 @@ def _pointer_lock(run_id: str, *, blocking: bool = True):
     behind (a promotion) is a refusal rather than a wait.
     """
     path = crew_home() / "locks" / f"{run_id}.lock"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a+b") as handle:
-        flags = fcntl.LOCK_EX if blocking else fcntl.LOCK_EX | fcntl.LOCK_NB
+    with ExitStack() as held:
         try:
-            fcntl.flock(handle.fileno(), flags)
-        except BlockingIOError as exc:
+            held.enter_context(exclusive_lock(path, blocking=blocking))
+        except LockHeld as exc:
             raise PointerLockHeldError(run_id) from exc
-        try:
-            yield
-        finally:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        yield
 
 
 def _mutate_pointer(
@@ -507,7 +544,10 @@ def _mutate_pointer(
     with _pointer_lock(run_id):
         previous = read_pointer(run_id)
         previous_attempt = int(previous.get("attempt") or 1)
+        previous_state = _acknowledgement_run_state(previous)
         record = mutation(previous)
+        if _acknowledgement_run_state(record) != previous_state:
+            record.pop(ACKNOWLEDGEMENT_FIELD, None)
         current_attempt = int(record.get("attempt") or 1)
         if current_attempt > previous_attempt:
             record["attempt_budget_seconds"] = _attempt_budget_seconds(run_id, record)
@@ -880,131 +920,141 @@ def queue_dispatch(
     is otherwise in flight, writes nothing: the existing run is returned with
     its phase and ``None`` for the position, because a run that is not queued is
     ordered nowhere in the admission queue.
+
+    A node's own launch claim is not such a run. A dispatch publishes its claim
+    from the moment it has a run id — before the bound read that sends it here
+    when the lane has no room — so the pointer naming this very run id is the
+    dispatch's own pending launch, and answering it would return the request to
+    itself instead of storing it. That pointer is skipped; every other run of
+    the node still answers as before.
     """
     lock = crew_home() / "locks" / "queued-dispatch.lock"
-    lock.parent.mkdir(parents=True, exist_ok=True)
-    with lock.open("a+b") as handle:
-        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
-        try:
-            project = str(record["project"])
-            identity = _node_identity(record)
-            live = _list_live_records(project=project)
-            existing = next(
+    with ExitStack() as stack:
+        stack.enter_context(exclusive_lock(lock))
+        project = str(record["project"])
+        own_run_id = str(record.get("run_id") or "")
+        identity = _node_identity(record)
+        live = _list_live_records(project=project)
+        existing = next(
+            (
+                pointer
+                for pointer in live
+                if pointer.get("phase") == "queued"
+                and _node_identity(pointer) == identity
+            ),
+            None,
+        )
+        if existing is None:
+            # No queued copy of the request. A run of the same node still in
+            # flight is answered as it is, and the caller's own claim is not
+            # one: this dispatch is the run it names.
+            current = next(
                 (
                     pointer
                     for pointer in live
-                    if pointer.get("phase") == "queued"
-                    and _node_identity(pointer) == identity
+                    if _node_identity(pointer) == identity
+                    and str(pointer.get("phase") or "") not in _TERMINAL_RUN_PHASES
+                    and str(pointer.get("run_id") or "") != own_run_id
                 ),
                 None,
             )
-            if existing is None:
-                # No queued copy of the request. A run of the same node still in
-                # flight is answered as it is, with no second pointer: the
-                # request is already somewhere between the queue and a worker.
-                # The gap where no live pointer names the node — an admission
-                # handing the request to a launch — is covered by the dispatch
-                # path's own check against the handover record, not here: this
-                # primitive is also how the admission pass itself re-queues, and
-                # that write must not be answered by its own handover.
-                current = next(
-                    (
-                        pointer
-                        for pointer in live
-                        if _node_identity(pointer) == identity
-                        and str(pointer.get("phase") or "") not in _TERMINAL_RUN_PHASES
-                    ),
-                    None,
-                )
-                if current is not None:
-                    return dict(current), None
-            existing_run_id = str(existing["run_id"]) if existing is not None else None
-            requeued = False
-            if existing_run_id is not None:
-                with _pointer_lock(existing_run_id):
-                    if pointer_path(existing_run_id).exists():
-                        current = read_pointer(existing_run_id)
-                        if current.get("phase") != "queued":
-                            raise CrewError(
-                                f"queued run {existing_run_id!r} changed phase; "
-                                "retry dispatch"
-                            )
-                        record["run_id"] = existing_run_id
-                        record["queued_at"] = current["queued_at"]
-                        record["created_at"] = current["created_at"]
-                        record = _merged_requeue(current, record)
-                        requeued = True
-                        _write_json(pointer_path(existing_run_id), record)
-                    # A pointer that vanished between the scan and this lock was
-                    # discarded underneath the re-queue: fall through and queue
-                    # afresh rather than reading a pointer that is gone.
-            if not requeued:
-                from reckon.crew.queue_admission import (
-                    QUEUED_PHASE,
-                    WAITING_UPSTREAM_PHASES,
-                )
-                from reckon.crew.recovery_review_delivery import _is_review_run
+            if current is not None:
+                return dict(current), None
+        existing_run_id = str(existing["run_id"]) if existing is not None else None
+        requeued = False
+        if existing_run_id is not None:
+            with _pointer_lock(existing_run_id):
+                if pointer_path(existing_run_id).exists():
+                    current = read_pointer(existing_run_id)
+                    if current.get("phase") != "queued":
+                        raise CrewError(
+                            f"queued run {existing_run_id!r} changed phase; "
+                            "retry dispatch"
+                        )
+                    record["run_id"] = existing_run_id
+                    from reckon.crew.queue_order import readable_queued_at
 
-                if not _is_review_run(record):
-                    bound = (
-                        max_requests
-                        if max_requests is not None
-                        else _resolved_queue_max_requests(record)
+                    record["queued_at"] = readable_queued_at(
+                        current, now=datetime.now(UTC)
                     )
-                    held = sum(
+                    record["created_at"] = current["created_at"]
+                    record = _merged_requeue(current, record)
+                    requeued = True
+                    _write_json(pointer_path(existing_run_id), record)
+                # A pointer that vanished between the scan and this lock was
+                # discarded underneath the re-queue: fall through and queue
+                # afresh rather than reading a pointer that is gone.
+        if not requeued:
+            from reckon.crew.queue_admission import (
+                QUEUED_PHASE,
+                WAITING_UPSTREAM_PHASES,
+            )
+            from reckon.crew.recovery_review_delivery import _is_review_run
+
+            if not _is_review_run(record):
+                bound = (
+                    max_requests
+                    if max_requests is not None
+                    else _resolved_queue_max_requests(record)
+                )
+                held = sum(
+                    1
+                    for pointer in live
+                    if pointer.get("phase") in (QUEUED_PHASE, *WAITING_UPSTREAM_PHASES)
+                    and str(pointer.get("project") or project) == project
+                    and not _is_review_run(pointer)
+                )
+                if held >= bound:
+                    raise QueueFull(
+                        project=project,
+                        session=str(record.get("session") or ""),
+                        held=held,
+                        cap=bound,
+                    )
+                if cap is not None:
+                    session = str(record.get("session") or "")
+                    session_held = sum(
                         1
                         for pointer in live
-                        if pointer.get("phase")
-                        in (QUEUED_PHASE, *WAITING_UPSTREAM_PHASES)
-                        and str(pointer.get("project") or project) == project
+                        if pointer.get("phase") == "queued"
+                        and str(pointer.get("session") or "") == session
                         and not _is_review_run(pointer)
                     )
-                    if held >= bound:
-                        raise QueueFull(
-                            project=project,
-                            session=str(record.get("session") or ""),
-                            held=held,
-                            cap=bound,
-                        )
-                    if cap is not None:
-                        session = str(record.get("session") or "")
-                        session_held = sum(
-                            1
-                            for pointer in live
-                            if pointer.get("phase") == "queued"
-                            and str(pointer.get("session") or "") == session
-                            and not _is_review_run(pointer)
-                        )
-                        if session_held >= cap:
-                            raise QueueFull(session=session, held=session_held, cap=cap)
-                run_id = str(record["run_id"])
-                with _pointer_lock(run_id):
-                    _write_json(pointer_path(run_id), record)
-            # A request is checked for review when it enters the queue: the
-            # digests of the text it was dispatched for are stamped here, from
-            # the plan as this dispatch wrote it, so later admission compares
-            # the plan against this request's own contract rather than against
-            # whatever the plan says at its first pass.
-            from reckon.crew.queue_admission import record_review_contract
+                    if session_held >= cap:
+                        raise QueueFull(session=session, held=session_held, cap=cap)
+            run_id = str(record["run_id"])
+            # The queue is ordered by arrival, so a pointer is never written
+            # without an arrival every reader can parse: a caller that supplies
+            # none has this writer's moment stamped in. One unplaceable pointer
+            # would otherwise stop every ordering pass.
+            from reckon.crew.queue_order import readable_queued_at
 
-            record_review_contract(record)
-            _write_steering(
-                str(record["run_id"]),
-                str(dict(record.get("node") or {}).get("brief") or ""),
-            )
-            from reckon.crew.queue_order import admission_order
+            record["queued_at"] = readable_queued_at(record, now=datetime.now(UTC))
+            with _pointer_lock(run_id):
+                _write_json(pointer_path(run_id), record)
+        # A request is checked for review when it enters the queue: the
+        # digests of the text it was dispatched for are stamped here, from
+        # the plan as this dispatch wrote it, so later admission compares
+        # the plan against this request's own contract rather than against
+        # whatever the plan says at its first pass.
+        from reckon.crew.queue_admission import record_review_contract
 
-            live = _list_live_records(project=str(record["project"]))
-            queued = [pointer for pointer in live if pointer.get("phase") == "queued"]
-            order = admission_order(queued, live, now=datetime.now(UTC))
-            position = next(
-                index
-                for index, pointer in enumerate(order, 1)
-                if pointer["run_id"] == record["run_id"]
-            )
-            return record, position
-        finally:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        record_review_contract(record)
+        _write_steering(
+            str(record["run_id"]),
+            str(dict(record.get("node") or {}).get("brief") or ""),
+        )
+        from reckon.crew.queue_order import admission_order
+
+        live = _list_live_records(project=str(record["project"]))
+        queued = [pointer for pointer in live if pointer.get("phase") == "queued"]
+        order = admission_order(queued, live, now=datetime.now(UTC))
+        position = next(
+            index
+            for index, pointer in enumerate(order, 1)
+            if pointer["run_id"] == record["run_id"]
+        )
+        return record, position
 
 
 _RESUME_BUDGET = re.compile(
@@ -1055,8 +1105,128 @@ _POINTER_TEXT: dict[str, tuple[tuple[int, int, int, int], str]] = {}
 _POINTER_TEXT_LOCK = threading.Lock()
 
 
+_JSON_WHITESPACE = " \t\r\n"
+
+
+def _json_string_end(text: str, start: int) -> int:
+    """The index just past the JSON string literal opening at ``start``."""
+    index = start + 1
+    while index < len(text):
+        char = text[index]
+        if char == "\\":
+            index += 2
+            continue
+        if char == '"':
+            return index + 1
+        index += 1
+    return len(text)
+
+
+def _json_value_end(text: str, start: int) -> int:
+    """The index just past the JSON value beginning at ``start``."""
+    if start >= len(text):
+        return start
+    if text[start] == '"':
+        return _json_string_end(text, start)
+    if text[start] in "{[":
+        depth = 0
+        index = start
+        while index < len(text):
+            char = text[index]
+            if char == '"':
+                index = _json_string_end(text, index)
+                continue
+            if char in "{[":
+                depth += 1
+            elif char in "}]":
+                depth -= 1
+                if depth == 0:
+                    return index + 1
+            index += 1
+        return len(text)
+    index = start
+    while index < len(text) and text[index] not in ",}]":
+        index += 1
+    return index
+
+
+def _pointer_text_without_omitted_members(text: str) -> str:
+    """``text`` with every top-level omitted member cut out of its object.
+
+    A pointer written before this reader existed still holds the field on disk,
+    and every fleet-state derivation re-reads the directory: reading it back to
+    hand it to a decoder that has no reader for it is the whole cost. The bytes
+    are read either way; what this saves is the decode.
+
+    Only the object's own top level is walked, and strings, escapes and nesting
+    are tracked, so a key spelled inside some value is not mistaken for a
+    member. A text this cannot reduce — not one object, a scanner surprise — is
+    returned exactly as it arrived, and the caller parses the reduction before
+    it is offered, so an unexpected shape costs a decode rather than a pointer.
+    """
+    if not any(f'"{name}"' in text for name in POINTER_OMITTED_FIELDS):
+        return text
+    opening = text.find("{")
+    if opening < 0:
+        return text
+    spans: list[tuple[int, int]] = []
+    depth = 1
+    index = opening + 1
+    while index < len(text):
+        char = text[index]
+        if char == '"':
+            end = _json_string_end(text, index)
+            if depth == 1:
+                try:
+                    name = json.loads(text[index:end])
+                except ValueError:
+                    name = None
+                probe = end
+                while probe < len(text) and text[probe] in _JSON_WHITESPACE:
+                    probe += 1
+                if (
+                    name in POINTER_OMITTED_FIELDS
+                    and probe < len(text)
+                    and text[probe] == ":"
+                ):
+                    value = probe + 1
+                    while value < len(text) and text[value] in _JSON_WHITESPACE:
+                        value += 1
+                    spans.append((index, _json_value_end(text, value)))
+            index = end
+            continue
+        if char in "{[":
+            depth += 1
+        elif char in "}]":
+            depth -= 1
+            if depth == 0:
+                break
+        index += 1
+    for begin, end in reversed(spans):
+        after = end
+        while after < len(text) and text[after] in _JSON_WHITESPACE:
+            after += 1
+        before = begin - 1
+        while before >= 0 and text[before] in _JSON_WHITESPACE:
+            before -= 1
+        if after < len(text) and text[after] == ",":
+            cut_from, cut_to = begin, after + 1
+        elif before >= 0 and text[before] == ",":
+            cut_from, cut_to = before, end
+        else:
+            cut_from, cut_to = begin, end
+        text = text[:cut_from] + text[cut_to:]
+    return text
+
+
 def _pointer_text(path: Path) -> str:
     """A pointer's text, re-read only when its stat identity has moved.
+
+    The text is kept without the fields no live pointer reader asks for, so a
+    pointer left on disk by an older writer costs its decoder no more than a
+    current one. The reduction is parsed here before it is kept: a text this
+    reader cannot reduce is parsed as it is, rather than one pointer dropped
+    from every listing by a scanner that misjudged it.
 
     Raises ``FileNotFoundError`` for a pointer that is gone, as a direct read
     would, and forgets whatever was kept for it.
@@ -1074,13 +1244,154 @@ def _pointer_text(path: Path) -> str:
     if kept is not None and kept[0] == identity:
         return kept[1]
     text = path.read_text()
+    reduced = _pointer_text_without_omitted_members(text)
+    if reduced is not text:
+        try:
+            json.loads(reduced)
+        except ValueError:
+            reduced = text
     with _POINTER_TEXT_LOCK:
-        _POINTER_TEXT[key] = (identity, text)
-    return text
+        _POINTER_TEXT[key] = (identity, reduced)
+    return reduced
+
+
+#: The lease this node's station keeps under the node-local runtime root. Its
+#: record is the repository's own lease record, read through the mechanism that
+#: writes it, so there is one reader of that format rather than two.
+_STATION_PID_LOCK = threading.Lock()
+#: The station pid last read, under the lease file's stat identity. The lease is
+#: renewed every few seconds, so an identity change — not a clock — is what
+#: makes this read again.
+_STATION_PID: dict[str, tuple[tuple[Any, ...], int | None]] = {}
+
+
+def station_lease_path() -> Path | None:
+    """The lease file this host's station writes, or None when the node has none."""
+    lease = _station_lease()
+    return None if lease is None else lease.path
+
+
+def _station_lease() -> HostLease | None:
+    """The lease this host's station keeps, named the way the station names it."""
+    from reckon.crew.dispatch_watch import session_host_runtime_root
+    from reckon.crew.station import station_lease as station_lease_of_this_root
+
+    root = session_host_runtime_root()
+    if root is None:
+        return None
+    return station_lease_of_this_root(Path(root))
+
+
+def _no_renewal_age() -> float:
+    """A clock that reads before every recorded lease, so none is aged out.
+
+    ``HostLease.holder`` applies the claim rule, and the rule ages a lease out
+    after ``LEASE_STALE_SECONDS`` so a successor may take it. That is the right
+    question for claiming one and the wrong one for naming a process that is
+    still running, so the record is read through this clock instead.
+    """
+    return 0.0
+
+
+def _station_holder(lease: HostLease) -> LeaseHolder | None:
+    """The station's recorded holder, read whatever its renewal age.
+
+    The holder a lease names is a fact about the file; whether that process is
+    still the one it wrote is a separate question, settled by
+    ``process_runs_here`` beside the caller. Reading the record through a clock
+    that ages nothing keeps the two apart, so a station whose renewal stalled
+    while its interpreter was busy is still named.
+    """
+    reader = HostLease(
+        lease.path.parent.parent,
+        lease.path.stem,
+        local_host(),
+        os.getpid(),
+        "",
+        clock=_no_renewal_age,
+    )
+    return reader.holder()
+
+
+def station_pid_on_this_host() -> int | None:
+    """The pid this host's station recorded for itself, or None.
+
+    The station is the one writer on a station's lease and it names itself
+    there, so its holder is the only record that says which process here is the
+    station. Two questions decide the answer, and both are the lease mechanism's
+    own: whether this host holds the lease at all — a lease another node wrote
+    says nothing about this node's process table — and whether the pid it names
+    is still the process that wrote it, which ``process_runs_here`` settles from
+    the start tick and the process table recorded beside the pid. Renewal age is
+    deliberately not one of them: the lease mechanism ages a lease out after
+    ``LEASE_STALE_SECONDS`` so a successor may claim it, but a busy holder's
+    renewing thread waits on its interpreter — the state the mechanism names
+    beside its own running-holder test — so a station whose renewal stalled is
+    still the station. Reading it as no station would hand its pid to ``crew
+    stop``, which would end every session's fleet.
+    """
+    lease = _station_lease()
+    if lease is None:
+        return None
+    path = lease.path
+    try:
+        info = path.stat()
+    except OSError:
+        return None
+    identity = (info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+    key = str(path)
+    with _STATION_PID_LOCK:
+        kept = _STATION_PID.get(key)
+    if kept is not None and kept[0] == identity:
+        return kept[1]
+    holder = _station_holder(lease)
+    resolved: int | None = None
+    if (
+        holder is not None
+        and holder.host == local_host()
+        and process_runs_here(
+            pid=holder.pid,
+            pid_start=holder.pid_start,
+            pid_namespace=holder.pid_namespace,
+        )
+    ):
+        resolved = holder.pid
+    with _STATION_PID_LOCK:
+        _STATION_PID[key] = (identity, resolved)
+    return resolved
+
+
+def pid_belongs_to_the_station(pid: object) -> bool:
+    """Whether this pid names the station of the host taking the reading.
+
+    The station holds every session's claims and outlives every run. It is also
+    the process a resume or a review pays for a launch without giving up, so a
+    record that names it names the door that started something rather than
+    anything of the run: signalling that pid ends the node's whole fleet of
+    worktrees instead of the run the record belongs to.
+
+    A pid is compared only inside the process table that issued it: the lease
+    records the namespace its holder ran in, and a number read from another
+    table addresses a different process, so no match there is claimed.
+    """
+    if isinstance(pid, bool) or not isinstance(pid, int):
+        return False
+    station = station_pid_on_this_host()
+    return station is not None and station == pid
 
 
 def read_pointer(run_id: str) -> dict[str, Any]:
-    """Read one run's live pointer, or say which run is unknown."""
+    """Read one run's live pointer, or say which run is unknown.
+
+    A record naming this host's station names no process of the run. Every
+    launch made from inside the station's own long-lived process is recorded
+    through a seam that may hand back the launcher, so the pointer can carry the
+    station's pid where the supervisor's belongs; read as written, that pid
+    makes ``crew stop``, ``crew discard`` and every liveness reading aim at the
+    process that holds every session's claims. The pid is therefore dropped from
+    this reading — the one reader every one of those callers takes — and the
+    record is left on disk for whatever watchdog wrote it.
+    """
     path = pointer_path(run_id)
     try:
         text = _pointer_text(path)
@@ -1094,6 +1405,17 @@ def read_pointer(run_id: str) -> dict[str, Any]:
         ) from exc
     if not isinstance(data, dict):
         raise CrewError(f"live pointer for {run_id!r} does not hold an object")
+    if pid_belongs_to_the_station(data.get("pid")):
+        # Read as naming no process of the run: the station is not one, and a
+        # reader that treats it as one signals or refuses on the node's own
+        # station. An attempt record read as naming no process, pointing at
+        # nothing the reading host issued, so the process table probe has no
+        # pid of this host's to answer for.
+        data = {
+            name: value
+            for name, value in data.items()
+            if name not in ("pid", "pid_start_time")
+        }
     return data
 
 
@@ -1277,6 +1599,40 @@ class _LiveScopeClaim:
         return claim
 
 
+# Each path one admission pass resolves, and what it resolved to. Every launch
+# checks its scope against every live pointer's declared paths, and resolving
+# each of them walks the path on shared storage: on 14 November that was about
+# an eighth of each launch. Symlinks under a checkout do not move between two
+# launches of one pass, so inside a pass one path is resolved once; outside a
+# pass nothing is kept and every caller resolves as before.
+_RESOLVED_PATHS: ContextVar[dict[str, Path] | None] = ContextVar(
+    "reckon_resolved_paths", default=None
+)
+
+
+@contextmanager
+def resolution_scope():
+    """Resolve each path once for the length of the block, such as one admission pass."""
+    token = _RESOLVED_PATHS.set({})
+    try:
+        yield
+    finally:
+        _RESOLVED_PATHS.reset(token)
+
+
+def resolved_path(path: Path) -> Path:
+    """``path.resolve()``, kept for the enclosing :func:`resolution_scope` if one is open."""
+    memo = _RESOLVED_PATHS.get()
+    if memo is None:
+        return path.resolve()
+    key = str(path)
+    found = memo.get(key)
+    if found is None:
+        found = path.resolve()
+        memo[key] = found
+    return found
+
+
 def _repository_relative_scope(path: str, repo: Path | None) -> str | None:
     """Normalize an in-repository scope to a repository-relative POSIX path.
 
@@ -1301,7 +1657,7 @@ def _repository_relative_scope(path: str, repo: Path | None) -> str | None:
             return None
         return Path(text).as_posix()
     raw = Path(path).expanduser()
-    resolved = (raw if raw.is_absolute() else repo / raw).resolve()
+    resolved = resolved_path(raw if raw.is_absolute() else repo / raw)
     try:
         relative = resolved.relative_to(repo)
     except ValueError:
@@ -1360,7 +1716,9 @@ def _expanded_scope_paths(
         declared = _repository_relative_scope(str(raw_path), repo)
         if declared is None:
             raw = Path(str(raw_path)).expanduser()
-            absolute = (raw if raw.is_absolute() else repo / raw).resolve().as_posix()
+            absolute = resolved_path(
+                raw if raw.is_absolute() else repo / raw
+            ).as_posix()
             expanded[absolute] = (absolute, None)
             continue
         expanded[declared] = (declared, None)
@@ -1809,10 +2167,17 @@ def _claim_paths_share(shared: frozenset[str], path: str, claim: str) -> bool:
     """
     if not isinstance(shared, _SharedWritePaths):
         return False
-    path = _repository_relative_scope(path, shared.repo)
-    claim = _repository_relative_scope(claim, shared.repo)
-    if path is None or claim is None:
-        return False
+    relative_path = _repository_relative_scope(path, shared.repo)
+    relative_claim = _repository_relative_scope(claim, shared.repo)
+    if relative_path is None or relative_claim is None:
+        # Delivery roots contain every run's records; only their owned files
+        # and subdirectories can fence a peer. Keep this directional: a broad
+        # request still meets a holder's exact file or owned directory claim.
+        claimed = (shared.repo / Path(claim).expanduser()).resolve()
+        requested = (shared.repo / Path(path).expanduser()).resolve()
+        roots = (crew_home().resolve(), *delivery_roots())
+        return claimed in roots and requested.is_relative_to(claimed)
+    path, claim = relative_path, relative_claim
     narrower, broader = (claim, path) if _scope_contains(path, claim) else (path, claim)
     if not _scope_contains(broader, narrower):
         return False
@@ -2074,6 +2439,52 @@ def record_run_disposition(
 ACKNOWLEDGEMENT_FIELD = "acknowledgement"
 
 
+def _acknowledgement_run_state(pointer: Mapping[str, Any]) -> dict[str, Any]:
+    """The lifecycle identity a deferral excuses, excluding observation times."""
+    return {
+        "phase": str(pointer.get("phase") or ""),
+        "attempt": int(pointer.get("attempt") or 1),
+    }
+
+
+def _acknowledgement_condition(value: Any) -> dict[str, Any] | None:
+    """Validate one named file or probe condition using the wait vocabulary."""
+    if value is None:
+        return None
+    from reckon.crew import recovery_wait
+
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except ValueError as exc:
+            raise CrewError(
+                "--until-condition must be a JSON condition object"
+            ) from exc
+    if not isinstance(value, Mapping) or not str(value.get("condition") or "").strip():
+        raise CrewError("--until-condition requires a non-empty condition name")
+    files = recovery_wait._wait_file_paths(value.get("files"))
+    probe = recovery_wait._wait_probe(value.get("probe"))
+    terminal = recovery_wait._wait_terminal_values(value.get("terminal"))
+    if bool(files) == bool(probe):
+        raise CrewError(
+            "--until-condition requires either files or a probe with terminal states"
+        )
+    if files:
+        refusal = recovery_wait._wait_file_shape_refusal(value.get("files"))
+    else:
+        refusal = recovery_wait._wait_probe_shape_refusal(value.get("probe"))
+        if not terminal:
+            refusal = "a condition probe requires terminal states"
+    if refusal:
+        raise CrewError(f"--until-condition: {refusal}")
+    return {
+        "condition": str(value["condition"]).strip(),
+        "files": files,
+        "probe": probe,
+        "terminal": terminal,
+    }
+
+
 def record_run_acknowledgement(
     run_id: str,
     reason: str,
@@ -2081,6 +2492,7 @@ def record_run_acknowledgement(
     *,
     project: str | None = None,
     session: str | None = None,
+    until_condition: Any = None,
 ) -> dict[str, Any]:
     """Record a deliberate deferral of one run's obligations.
 
@@ -2106,6 +2518,10 @@ def record_run_acknowledgement(
         "until": deadline.isoformat(),
         "recorded_at": _utc_now(),
     }
+    condition = _acknowledgement_condition(until_condition)
+    if condition is not None:
+        deferral["until_condition"] = condition
+        deferral["worktree"] = str(Path.cwd().resolve())
     if not pointer_path(run_id).exists():
         return _record_promoted_acknowledgement(run_id, deferral, project=project)
 
@@ -2122,7 +2538,11 @@ def record_run_acknowledgement(
                 f"live run {run_id!r} belongs to session {pointer_session!r}, "
                 f"not {session!r}"
             )
-        pointer[ACKNOWLEDGEMENT_FIELD] = deferral
+        pointer[ACKNOWLEDGEMENT_FIELD] = {
+            **deferral,
+            "run_state": _acknowledgement_run_state(pointer),
+            "worktree": str(pointer.get("worktree") or Path.cwd().resolve()),
+        }
         return pointer
 
     return _mutate_pointer(run_id, record)
@@ -2277,6 +2697,43 @@ def _promoted_record_project(
     return None
 
 
+def _obligation_record_project(run_id: str) -> str:
+    """Name a project whose stored duties still raise a row for this run.
+
+    A run can hold no live pointer, no ledger record and no promotion request
+    and still be raising duties: a row whose evidence is a manifest, a refusal
+    or a retained tree outlives all three. The stored duty documents are then
+    the only place the run's project is written down, and the deferral must
+    name it -- a deferral is read per project, and one naming the wrong project
+    withholds nothing. A document is matched on a row carrying the run's id;
+    one that cannot be parsed is skipped rather than guessed at.
+    """
+    from reckon.crew import obligation_snapshot, station_obligations
+
+    try:
+        paths = sorted(obligation_snapshot.obligations_home().glob("*/*.json"))
+    except OSError:
+        return ""
+    for path in paths:
+        try:
+            stored = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        document = station_obligations.stored_document(stored)
+        if document is None and isinstance(stored, Mapping):
+            document = stored
+        if not isinstance(document, Mapping):
+            continue
+        name = str(document.get("project") or "")
+        if not name:
+            continue
+        for key in ("obligations", "acknowledged"):
+            for row in document.get(key) or ():
+                if isinstance(row, Mapping) and str(row.get("run_id") or "") == run_id:
+                    return name
+    return ""
+
+
 def _record_promoted_acknowledgement(
     run_id: str, deferral: Mapping[str, Any], *, project: str | None
 ) -> dict[str, Any]:
@@ -2296,7 +2753,8 @@ def _record_promoted_acknowledgement(
         # needs no project to be honoured — but the reader is asked per project
         # and a record naming none is never returned, so a project is resolved
         # from the remaining records in order: the caller's own, then the
-        # promotion request the run left behind.
+        # promotion request the run left behind, then the stored duty document
+        # that still raises its rows.
         name = str(project or "").strip()
     if not name:
         from reckon.crew import promotion_requests
@@ -2305,6 +2763,8 @@ def _record_promoted_acknowledgement(
             name = str(promotion_requests.read_promotion(run_id).get("project") or "")
         except (OSError, ValueError, CrewError):
             name = ""
+    if not name:
+        name = _obligation_record_project(run_id)
     if not name:
         looked = (
             ", ".join(sorted(_mounted_project_roots(project))) or "no mounted project"
@@ -2323,10 +2783,35 @@ def _record_promoted_acknowledgement(
 def run_acknowledgement(pointer: Mapping[str, Any]) -> dict[str, Any] | None:
     """Return one pointer's recorded deferral, or None when it has none."""
     recorded = pointer.get(ACKNOWLEDGEMENT_FIELD)
+    if (
+        isinstance(recorded, Mapping)
+        and "run_state" in recorded
+        and recorded["run_state"] != _acknowledgement_run_state(pointer)
+    ):
+        return None
     return dict(recorded) if isinstance(recorded, Mapping) else None
 
 
+def release_run_acknowledgement(
+    run_id: str, expected: Mapping[str, Any], *, promoted: bool = False
+) -> None:
+    """End only the deferral observed by the reader, preserving a concurrent ack."""
+    with _pointer_lock(run_id):
+        path = acknowledgement_path(run_id) if promoted else pointer_path(run_id)
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return
+        if promoted:
+            if payload == expected:
+                path.unlink()
+        elif payload.get(ACKNOWLEDGEMENT_FIELD) == expected:
+            payload.pop(ACKNOWLEDGEMENT_FIELD)
+            _write_json(path, payload)
+
+
 STATUS_REPAIR_RECORD_NAME = "status-repair.json"
+ARM_REPAIR_RECORD_NAME = "arm-repair.json"
 AS_DELIVERED_SUFFIX = ".asdelivered"
 DEFAULT_MANIFEST_NAME = "manifest.md"
 # The statuses a repaired manifest may carry: exactly the terminal vocabulary
@@ -2453,6 +2938,131 @@ def repair_manifest_status(run_id: str, status: str, reason: str) -> dict[str, A
         "repaired_at": _utc_now(),
     }
     _write_json(run_dir(run_id) / STATUS_REPAIR_RECORD_NAME, record)
+    return record
+
+
+def _arm_line_replaced(
+    text: str, arm: str, revision: str, *, command: str = "", log_path: str = ""
+) -> tuple[str | None, str]:
+    """Rewrite the first top-level arm line's revision, or None when absent.
+
+    Only a line starting at column zero counts, so an arm nested under some
+    other field is never the manifest's own. The arm's other fields are carried
+    over as the worker recorded them: re-pointing a ``numstat`` at the revision
+    the command actually ran against says nothing about the exit status, the
+    failure ids or the log that arm reported.
+    """
+    prefix = f"{arm}:"
+    lines = text.splitlines()
+    for index, line in enumerate(lines):
+        if not line.startswith(prefix):
+            continue
+        previous = line.split(":", 1)[1].strip()
+        record = _recorded_arm(previous)
+        record["revision"] = revision
+        if command.strip():
+            record["command"] = command.strip()
+        if log_path.strip():
+            record["log_path"] = log_path.strip()
+        lines[index] = f"{arm}: {json.dumps(record)}"
+        replaced = "\n".join(lines)
+        if text.endswith("\n"):
+            replaced += "\n"
+        return replaced, previous
+    return None, ""
+
+
+def _recorded_arm(value: str) -> dict[str, Any]:
+    """The arm a manifest line records, as a record a repair can amend.
+
+    ``none`` and an empty value both read as an arm that recorded nothing, and
+    the repair then writes a record carrying only what it was told. Anything
+    else is read as the JSON a worker writes and, failing that, as the YAML the
+    reader itself accepts.
+    """
+    import yaml
+
+    try:
+        parsed = json.loads(value)
+    except ValueError:
+        try:
+            parsed = yaml.safe_load(value)
+        except yaml.YAMLError:
+            parsed = None
+    return dict(parsed) if isinstance(parsed, Mapping) else {}
+
+
+def repair_manifest_arm(
+    run_id: str,
+    arm: str,
+    *,
+    revision: str,
+    reason: str,
+    command: str = "",
+    log_path: str = "",
+) -> dict[str, Any]:
+    """Re-point a suite arm at the revision its command ran against.
+
+    A worker that records an arm's revision as prose — the base beside a
+    description of it, or an arm the run had no time to measure — delivers a
+    pair promotion cannot compare with the base it must match, and by the time
+    a coordinator reads it the worker's own turn has ended. The manifest is the
+    worker's file, so a hand edit would lose the delivered text and leave
+    nothing a later reader can compare against. The arm line is rewritten in
+    place, the delivered file is kept beside it under
+    ``manifest.md.asdelivered``, and the reason is recorded in the run
+    directory.
+
+    Only the arm's revision is required, and it must be the commit object id
+    itself: a repair that wrote another spelling would leave the arm at
+    something the gate still cannot compare. The command and the log path are
+    optional, because a re-pointed arm commonly ran at a revision the worker
+    recorded no log for, and re-pointing says nothing about the exit status or
+    the failure ids that arm already carried. A manifest with no top-level line
+    for that arm is refused rather than half-repaired.
+    """
+    name = str(arm).strip()
+    if name not in SUITE_ARMS:
+        raise CrewError(
+            f"an arm repair names one of {', '.join(SUITE_ARMS)}, not {arm!r}"
+        )
+    target = str(revision).strip()
+    if not is_full_revision(target):
+        raise CrewError(
+            "an arm repair names the commit object id the command ran "
+            f"against, not {revision!r}"
+        )
+    recorded_reason = str(reason).strip()
+    if not recorded_reason:
+        raise CrewError("an arm repair requires a non-empty --reason")
+
+    manifest = _manifest_for_repair(run_id)
+    try:
+        original = manifest.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise CrewError(f"the manifest at {manifest} could not be read: {exc}") from exc
+    rewritten, previous = _arm_line_replaced(
+        original, name, target, command=command, log_path=log_path
+    )
+    if rewritten is None:
+        raise CrewError(
+            f"the manifest at {manifest} carries no top-level {name} line to re-point"
+        )
+    as_delivered = manifest.with_name(manifest.name + AS_DELIVERED_SUFFIX)
+    if not as_delivered.exists():
+        as_delivered.write_text(original, encoding="utf-8")
+    write_atomically(manifest, lambda handle: handle.write(rewritten), fsync=False)
+    record = {
+        "run_id": run_id,
+        "arm": name,
+        "revision": target,
+        "reason": recorded_reason,
+        "previous_arm": previous,
+        "previous_manifest": str(as_delivered),
+        "manifest": str(manifest),
+        "repaired_at": _utc_now(),
+    }
+    _write_json(run_dir(run_id) / ARM_REPAIR_RECORD_NAME, record)
     return record
 
 
@@ -2631,7 +3241,7 @@ def _unloaded_sections(
         if not isinstance(node, Mapping):
             node = {}
         return (
-            str(node.get("plan") or record.get("plan") or ""),
+            str(node.get("plan") or "") or ledger.row_plan(record),
             _plan_html.section_record_id(node.get("section") or record.get("section")),
         )
 
@@ -3222,17 +3832,24 @@ def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
     return result
 
 
-def drain_unreconciled_by_session(project: str) -> dict[str, int]:
+def drain_unreconciled_by_session(
+    project: str, *, pointers: Iterable[Mapping[str, Any]] | None = None
+) -> dict[str, int]:
     """The drain's unreconciled count for every session, derived once.
 
     A sweep needs the count for each session it publishes for, and deriving the
     rows once and partitioning them per session keeps that from repeating every
     pointer's classification for each reader. Rows with no recorded owner count
     for every session, exactly as :func:`drain` counts them.
+
+    ``pointers`` is the snapshot the caller's own pass is deriving from, so a
+    reader already holding one population counts over it instead of listing and
+    decoding every pointer again. With none the directory is listed here.
     """
     from reckon.crew.recovery import _partition_session_rows
 
-    rows = _closure_rows(list_live(project=project))
+    population = list_live(project=project) if pointers is None else list(pointers)
+    rows = _closure_rows(population)
     counts: dict[str, int] = {}
     for session in {str(row.get("session") or "") for row in rows} | {""}:
         counted, _peers = _partition_session_rows(rows, session)
@@ -3313,15 +3930,11 @@ def update_watch_registration(project: str, **fields: Any) -> dict[str, Any]:
     path = watch_registration_path(project)
     path.parent.mkdir(parents=True, exist_ok=True)
     lock = watch_registration_lock_path(project)
-    with lock.open("a+b") as guard:
-        fcntl.flock(guard.fileno(), fcntl.LOCK_EX)
-        try:
-            record = read_watch_registration(project)
-            record.setdefault("project", project)
-            record.update(fields)
-            write_json_atomically(path, record)
-        finally:
-            fcntl.flock(guard.fileno(), fcntl.LOCK_UN)
+    with exclusive_lock(lock):
+        record = read_watch_registration(project)
+        record.setdefault("project", project)
+        record.update(fields)
+        write_json_atomically(path, record)
     return record
 
 
@@ -3446,7 +4059,7 @@ def read_stream_events(path: Path, *, offset: int = 0) -> Iterable[dict[str, Any
     """Yield every event a stream holds from one byte offset onward."""
     if not Path(path).is_file():
         return
-    with Path(path).open(encoding="utf-8") as stream:
+    with Path(path).open(encoding="utf-8", errors="replace") as stream:
         stream.seek(offset)
         for line in stream:
             event = parse_stream_line(line)
@@ -4643,6 +5256,8 @@ def _take_watch_seat_fd() -> Any:
 @contextmanager
 def _project_watch_claim(project: str, stall_window: str):
     """Claim the local seat path, then the lease shared between hosts."""
+    from reckon.crew.watch_unit import record_producer_exit, record_producer_start
+
     path = watch_lock_path(project)
     path.parent.mkdir(parents=True, exist_ok=True)
     if project in _WATCH_HOST_LEASES:
@@ -4691,6 +5306,7 @@ def _project_watch_claim(project: str, stall_window: str):
         # is a predecessor whose seat was never erased, and a fresh arming over
         # it would otherwise report the predecessor's start -- reading as a
         # producer that has run for hours when it was armed seconds ago.
+        parent_pid = os.getppid()
         pid_start_time = _process_start_time(os.getpid())
         carried = (
             previous.get("pid"),
@@ -4701,6 +5317,8 @@ def _project_watch_claim(project: str, stall_window: str):
             "project": project,
             "pid": os.getpid(),
             "pid_start_time": pid_start_time,
+            "parent_pid": parent_pid,
+            "parent_start_time": _process_start_time(parent_pid),
             # The host that issued this pid. The seat lives on the shared home
             # every fleet node mounts, so without this a reader on another host
             # probes its own process table for a pid that belongs to someone
@@ -4754,11 +5372,22 @@ def _project_watch_claim(project: str, stall_window: str):
         _WATCH_STREAM_PRODUCERS[project] = producer
         _WATCH_SEAT_HANDLES[project] = handle
         _WATCH_HOST_LEASES[project] = lease
+        error = None
         try:
+            record_producer_start(project, record)
+            record["last_stage"] = "initial-publication"
             _publish_watch_stream(project, _list_live_records(project=project))
+            record["last_stage"] = "registered"
+            _write_watch_record(handle, record)
             yield True, record
+        except BaseException as exc:
+            error = exc
+            raise
         finally:
-            drop_watch_seat(project, handle)
+            try:
+                record_producer_exit(project, record, error)
+            finally:
+                drop_watch_seat(project, handle)
     finally:
         handle.close()
         if lease is not None:

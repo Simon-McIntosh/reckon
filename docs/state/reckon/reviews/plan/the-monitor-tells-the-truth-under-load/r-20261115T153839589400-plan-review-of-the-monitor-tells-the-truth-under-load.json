@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T15:49:04.710Z",
+  "dispatched_at": "2026-11-15T15:48:44Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-tells-the-truth-under-load/r-20261115T153839589400-plan-review-of-the-monitor-tells-the-truth-under-load/plan.html:173",
+      "id": "reasoning-1",
+      "reason": "a worker dispatched on this section would be fenced out of the only file holding the defect, and an auditor cannot reconcile the stated resolver with the landing it cites.",
+      "text": "\u00a718's Why states \"The tier resolver (`recovery_repair_dispatch._sweep_review_tier` through `reckon/review_tiers.py`) measures the change from the commits a run cites\" and its write paths at line 174 name `reckon/crew/recovery_repair_dispatch.py`, `reckon/review_tiers.py` and `reckon/crew/obligations.py`, yet commit `6aa28c43e7` (merged as the cited `ee7fb80c4e`) added `_with_the_runs_whole_change` in `reckon/crew/promotion_checks.py` \u2014 `_sweep_review_tier` only calls `promotion._run_review_tier`, so the section points at the caller and the leaf while the mechanism named is the shared core in a file its write paths exclude",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-tells-the-truth-under-load/r-20261115T153839589400-plan-review-of-the-monitor-tells-the-truth-under-load/plan.html:179",
+      "id": "wiring-1",
+      "reason": "the followup's range is the instruction a coordinator executes, so it must be rewritten to cover the sections the declarations open.",
+      "text": "the single open followup is titled \"Land \u00a72, then build \u00a73 to \u00a711\" while `plan-section-declarations` at line 23 now declares s12\u2013s17 implementable and s18 done, so the plan's own chain stops six buildable sections short and can be resolved with s12\u2013s17 unbuilt",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "c2401b44d1d880582bdbc19e95101dee98c74334",
+  "plan_fingerprint": "3abd670319209b14aee8a04bb87c79c22fcc960955abd083ee30d122a5a4df7d",
+  "plan_slug": "the-monitor-tells-the-truth-under-load",
+  "plan_version": 5,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261115T153839589400-plan-review-of-the-monitor-tells-the-truth-under-load",
+  "reviewed_blob_sha": "7357a7ba896cee8e92cfb8bec7ee8fce7c9b0697",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 commit `ee7fb80c4e` resolves in `/home/ITER/mcintos/Code/reckon` as \"Merge the review tier measured over a run's whole change\" (its fix commit `6aa28c43e7` introduces `_with_the_runs_whole_change`), `reckon/crew/recovery_repair_dispatch.py:2090` defines `_sweep_review_tier`, and the cited run and commits are ids the section states rather than hrefs.",
+    "done_when": "pass for the changed unit \u2014 \u00a718 states each new test fails at the base revision, and re-running `tests/test_a_review_tier_reads_the_runs_whole_change.py` with the whole-change scope replaced by the cited commits alone fails `test_citing_only_the_docs_commit_still_owes_the_change_its_review` (`assert 'none' != 'none'`), so its control fires; the earlier, unanswered done_when findings on \u00a713/\u00a714/\u00a716 belong to unchanged units and are not re-raised.",
+    "evidence_paths": "pass \u2014 \u00a718's evidence is a durable landing comment carrying commit `ee7fb80c4e` and the all_debug arm counts, both openable after the run, and no node-local or scratch path is cited.",
+    "naming": "pass \u2014 \u00a718's heading and comment name the mechanism (\"the whole change, not the commits it cites\") with no plan label, stage name or ticket number.",
+    "reasoning": "a finding \u2014 \u00a718 names the tier resolver and the files it lives in as `recovery_repair_dispatch._sweep_review_tier` through `reckon/review_tiers.py`, but the defect its own landing evidence repaired sat in `reckon/crew/promotion_checks.py`, which \u00a718's write paths do not list.",
+    "single_goal": "pass \u2014 \u00a718's done-when delivers one verdict (the tier resolves from the whole base-to-head change, docs-only change still resolves to none); its third criterion, that no obligation offers `crew complete` for a run owing a review with none stored, is a consequence of the corrected tier rather than a second deliverable, and `reckon/crew/obligations.py:2651` offers that remedy only in the `review_tiers.NONE` branch.",
+    "wiring": "a finding \u2014 the single open followup at line 179 still titles its build range \"\u00a73 to \u00a711\" while `plan-section-declarations` now carries s3\u2013s17 implementable and s18 done, so the chain a coordinator follows ends before seven of the plan's sections."
+  },
+  "section_digests": {
+    "_document": "11c929f2d4c02a39a26472a2c211bcb5a572d782e5d7a7ced9eb19e8bba35b5d",
+    "s1": "7df70e005850ec7773b3db8cdf1384c5422e6cbfac994a1cfc3bdeca2fd47ef2",
+    "s10": "b83b287b25ce35ab03c105da8c02eec999809dbdea6073436eae2dc72bb0055d",
+    "s11": "db2972ed7155bc484ac98ce58f8c119ab201e99f5a53c1af54606eb6564a66e4",
+    "s12": "6d00c3593dc3ac12569804d49312a7a62c8bfe08142ea6fc80fb1fa5f7b46bbf",
+    "s13": "79271d44153e341633146df7233120d46939c41b1ca66de6bac074c2472ea991",
+    "s14": "c0f58bcc6da33e5ff402ec71bef199b31de1619824a04f6db8d415d9669a38d7",
+    "s15": "6d981e1f07643227d97018196c6bcd7047a59090453d1f264330beb768524c2d",
+    "s16": "9c67ebb9a89d3b566da303e2866877a636f868c501bf32f08ff80e2c7a7f26da",
+    "s17": "229d1aee2b054a2680acdd7883f3d6cd8216513f31305ff21ed874c51b1af3a7",
+    "s18": "4a5429fac53529c64918e90d1bc4d47480e08689bea9601336332ce330c82e49",
+    "s2": "a065d657377c24ca69329c265d4a0a821a0104c7df8d1140dec9c3b9d1c6edf2",
+    "s3": "56910cab877eb38336945d14734b277c784a2a9b0a468847c8587cddfae1e108",
+    "s4": "9756c05b7dd601c1ea2c61ee3fef0a89198cd233b165fca686abd3e2e160e136",
+    "s5": "9191c874610bbd54c95eeb8cbd6aac0ffd1efc7a9814aaad3f7416b41879cb38",
+    "s6": "a8a7d00ef50ab0ca240bc59bb917ff62442d6f3567da095cb913cd5860246056",
+    "s7": "8ba34483eab2bbd914de8648f6230b223e01771d2c1796fe5eb299da42edab74",
+    "s8": "30f0e740e2caee5b735cc3bdc83d5eaa23eac7eeaae780899f811d7a1c32956c",
+    "s9": "56c122a4d4057a2e12e9ebbaae0a53fb955938f47dbe9275cdf2dd5566896f78"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T15:53:59.700815+00:00",
+  "total": null
+}

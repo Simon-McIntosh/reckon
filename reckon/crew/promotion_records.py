@@ -283,6 +283,7 @@ def _review_record_evidence(record: Mapping[str, Any]) -> dict[str, Any] | None:
         return None
     findings = body.get("findings")
     return {
+        "run_id": str(record.get("run_id") or "").strip(),
         "path": str(path),
         "status": status,
         "findings": len(findings) if isinstance(findings, list) else 0,
@@ -290,22 +291,44 @@ def _review_record_evidence(record: Mapping[str, Any]) -> dict[str, Any] | None:
     }
 
 
-def _review_record_check(evidence: Mapping[str, Any]) -> dict[str, Any]:
+def _review_record_check(
+    evidence: Mapping[str, Any], *, capture_log: bool = True
+) -> dict[str, Any]:
     """The gate check a stored review record stands as.
 
     A review run changes no code, so there is no suite for the integration
     re-run to execute at the integrated head. What a reader can re-execute is
-    that the record this promotion rests on is still on disk holding its
-    content — that is the review run's whole check. The record is also the log:
-    it carries the status and the record's findings, which is the evidence the
-    verdict was read from.
+    that the record this promotion rests on is present and non-empty — that is
+    the review run's whole check. The record is not the log: it is JSON, and no
+    JSON record carries the terminal ``EXIT=<n>`` line every reader of a cited
+    log reads the command's status from, so citing the record as its own
+    capture states no status at all and the check refuses the derivation that
+    produced it. The check's outcome is captured into the run's own log
+    instead, which the record is named on, and that log is what the check
+    cites.
+
+    ``capture_log`` is false when the promotion already holds a log — the
+    caller's flag, or one the manifest names — because that is the evidence the
+    run re-executed and a log written beside it would be a file nothing points
+    at. The check still reports its own exit status in that case, so a citation
+    that disagrees with the record still refuses.
     """
+    from reckon.crew.promotion_evidence import _derived_review_gate_log
+
     record_path = str(evidence["path"])
-    return {
-        "command": f"test -s {shlex.quote(record_path)}",
-        "exit_status": 0,
-        "log_path": record_path,
-    }
+    command = f"test -s {shlex.quote(record_path)}"
+    check: dict[str, Any] = {"command": command}
+    check.update(
+        _derived_review_gate_log(
+            str(evidence.get("run_id") or ""),
+            Path(record_path),
+            command=command,
+            status=str(evidence.get("status") or ""),
+            findings=int(evidence.get("findings") or 0),
+            capture=capture_log,
+        )
+    )
+    return check
 
 
 def _default_gate_log_from_manifest(
@@ -434,7 +457,15 @@ def _default_gate_evidence_from_manifest(
     if _review_role_run(record):
         review_evidence = _review_record_evidence(record)
     if review_evidence is not None:
-        for key, value in _review_record_check(review_evidence).items():
+        # The check's log is captured only where the promotion will cite it: a
+        # caller's own flag, or a log the manifest already names, is the
+        # evidence that run re-executed, and writing a second log beside it
+        # would leave a file nothing points at.
+        check = _review_record_check(
+            review_evidence,
+            capture_log=not str(resolved_gate.get("log_path") or "").strip(),
+        )
+        for key, value in check.items():
             if key == "exit_status":
                 if resolved_gate.get(key) is None:
                     resolved_gate[key] = value
@@ -470,6 +501,39 @@ def _default_gate_evidence_from_manifest(
         if declared:
             resolved_commits = tuple(declared)
     return resolved_gate, resolved_commits
+
+
+GATE_DECLARATION_KEY = "gate_declaration"
+
+#: The keys a run's gate declaration may carry. A declaration names how the
+#: run's arms were run: the command they ran and the partition they ran on.
+_GATE_DECLARATION_FIELDS = ("command", "partition", "long_partition", "reason")
+
+
+def gate_declaration(record: Mapping[str, Any]) -> dict[str, str]:
+    """The command and partition a run's gate declared, or an empty mapping.
+
+    A run whose arms are only comparable on a partition the project's own
+    declaration does not name — a GPU gate on a project armed with a CPU
+    command — states them on the run instead. The declaration is recorded by
+    a supported verb and read here, so the comparison and the landing's own
+    measurement both use the same declaration the coordinator stated.
+    """
+    raw = record.get(GATE_DECLARATION_KEY)
+    if not isinstance(raw, Mapping):
+        return {}
+    return {key: str(raw.get(key) or "").strip() for key in _GATE_DECLARATION_FIELDS}
+
+
+def _declared_command_text(record: Mapping[str, Any]) -> str:
+    """The command the run's gate runs, declaration first, then the arming.
+
+    A declaration names what the arms actually ran with, so it outranks the
+    project's own arming for this run: only a run whose gate declared a command
+    differing from the project's is a declared arm set.
+    """
+    declared = gate_declaration(record).get("command") or ""
+    return " ".join(str(declared or record.get("suite_command") or "").split())
 
 
 def _normalized_command(value: Any) -> str:
@@ -599,6 +663,21 @@ def _arm_command_matches(
 
 SCOPED_SUITE_PLACEHOLDER = "{node_test_files}"
 
+#: The fields a suite arm's record states, in the flat shape a reader accepts.
+#: An arm carrying none of them declares no measurement rather than a record.
+_ARM_FIELDS = frozenset(
+    {
+        "revision",
+        "command",
+        "exit_status",
+        "completed",
+        "failure_count",
+        "failure_ids",
+        "log_path",
+        "log_digest",
+    }
+)
+
 
 def _scope_tree(record: Mapping[str, Any]) -> Path | None:
     """The tree whose object store answers what a revision holds, or None."""
@@ -650,7 +729,15 @@ def _arm_revision_mismatch(
     neither is named here and the arm's other fields still decide the pair.
 
     A citation that does resolve and differs from the head is the case this
-    check exists for: the arm measured a tree the run no longer delivers.
+    check exists for: the arm measured a tree the run no longer delivers. The
+    one exception is a head that moved through commits the suite cannot see. A
+    documentation or evidence commit leaves every module the suite imports and
+    every test file it collects untouched, so the arm still describes the suite
+    the head runs and re-running it would only repeat the same result. The
+    paths are read as a conservative question rather than a proof: a commit
+    touching any Python file or anything under the tests tree is treated as
+    reaching the suite, because deciding otherwise needs an import graph this
+    check does not carry, and an arm wrongly kept is a regression that lands.
     """
     if arm_name != "after_suite" or not head:
         return []
@@ -664,9 +751,51 @@ def _arm_revision_mismatch(
     if tree is None:
         return []
     resolved = _resolve_commit(tree, recorded, cached=True)
-    if not resolved or resolved == _resolve_commit(tree, head, cached=True):
+    head_resolved = _resolve_commit(tree, head, cached=True)
+    if not resolved or resolved == head_resolved:
         return []
-    return [f"{arm_name}.revision_matches_head"]
+    reaching = _suite_reaching_paths(tree, resolved, head_resolved)
+    if reaching is None or reaching:
+        return [f"{arm_name}.revision_matches_head"]
+    return []
+
+
+def _suite_reaching_paths(tree: Path, earlier: str, later: str) -> list[str] | None:
+    """The paths between two revisions a suite's result can depend on.
+
+    ``None`` means the diff could not be read, and the caller then treats the
+    arm as invalidated rather than measuring nothing and calling it clean. The
+    paths named are the ones a suite can be affected by: every Python file,
+    because an import chain need not run through a test file; anything under
+    the tests tree, because helpers, fixtures, data and configuration there
+    change what pytest collects; and the pytest configuration files at the
+    repository root. Documentation, plan HTML and other evidence paths are
+    absent from the answer, which is what lets a later documentation commit
+    leave an arm about the code untouched.
+    """
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(tree), "diff", "--name-only", f"{earlier}..{later}"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return None
+    if completed.returncode:
+        return None
+    reaching: list[str] = []
+    for line in completed.stdout.splitlines():
+        path = line.strip()
+        if not path:
+            continue
+        if (
+            path.endswith(".py")
+            or path.startswith("tests/")
+            or path in {"pytest.ini", "pyproject.toml", "setup.cfg", "tox.ini"}
+        ):
+            reaching.append(path)
+    return reaching
 
 
 def _paths_present_in_tree(
@@ -785,8 +914,8 @@ def _writes_product_source(record: Mapping[str, Any]) -> bool:
     """Whether any fenced write path names source outside the docs tree.
 
     A census is worth running exactly when the node can change the tree a census
-    reads. A node writing only documents and plans cannot add a staged writer or
-    any other runtime source the census inventories, so running the whole-tree
+    reads. A node writing only documents and plans cannot add a runtime state
+    writer or any other source the census inventories, so running the whole-tree
     census for it would spend its gate budget measuring work it did not touch.
     """
     return any(
@@ -806,7 +935,7 @@ def _scoped_suite_command(
 
     A node writing product source also measures the project's declared census
     tests, because a census is drawn from the whole tree rather than from one
-    node's scope, and a node that adds a staged writer would otherwise never run
+    node's scope, and a node that adds a runtime state writer would otherwise never run
     it. A node writing only documents and plans measures none of them.
 
     ``revision`` names the tree the command will run against, and the files are
@@ -821,7 +950,7 @@ def _scoped_suite_command(
     no census the project declares. Promotion then records no suite observation
     for the pair, which is the same state an unarmed project is in.
     """
-    declared = " ".join(str(record.get("suite_command") or "").split())
+    declared = _declared_command_text(record)
     if not declared:
         return ""
     if SCOPED_SUITE_PLACEHOLDER not in declared:
@@ -902,13 +1031,81 @@ def _arm_measured_nothing(
     held to the opposite reading — a run measuring its own change with no test
     file left is the pair the per-tree rule exists to refuse.
     """
-    declared = " ".join(str(record.get("suite_command") or "").split())
+    declared = _declared_command_text(record)
     if SCOPED_SUITE_PLACEHOLDER not in declared:
         return False
     revision = str(observation.get("revision") or "").strip()
     if not _scoped_suite_command(record, revision=revision or None):
         return True
     return bool(_named_paths_absent_from_tree(record, observation))
+
+
+def _arm_declares_no_measurement(observation: Any) -> bool:
+    """Whether a suite arm states no measurement at all.
+
+    ``baseline_suite: none`` parses to an empty record, and a mapping carrying
+    no arm field is the same declaration. Anything stating a revision, a command
+    or a count is a measurement to be judged on its own terms rather than a
+    declaration that there is none.
+    """
+    if not isinstance(observation, Mapping):
+        return True
+    return not (set(observation) & _ARM_FIELDS)
+
+
+def _base_tree_holds_no_test_file(record: Mapping[str, Any]) -> bool:
+    """Whether the run's base revision holds none of the node's test files.
+
+    Read from the base revision's own tree through the object store rather than
+    from a working directory, which holds the head's content whichever arm is
+    being asked about. An unanswered probe answers False, because an unprobed
+    base is not a licence to accept an absent arm.
+    """
+    files = _node_test_files(record)
+    base = str(record.get("base_sha") or "").strip()
+    if not files or not base:
+        return False
+    present = _paths_present_in_tree(_scope_tree(record), base, files)
+    return present is not None and not present
+
+
+def _base_arm_measured_an_empty_suite(
+    record: Mapping[str, Any], observation: Any
+) -> bool:
+    """Whether an absent base arm is the complete measurement of an empty scope.
+
+    The pair is accepted only when all three hold: the declaration is scoped, so
+    the base command is resolved per tree and can legitimately have named no
+    file; the arm states no measurement of its own; and the base revision holds
+    none of the tests the node is fenced to. A base tree that does hold them has
+    a suite to run, and an arm declaring none there is missing evidence.
+    """
+    declared = " ".join(str(record.get("suite_command") or "").split())
+    if SCOPED_SUITE_PLACEHOLDER not in declared:
+        return False
+    if not _arm_declares_no_measurement(observation):
+        return False
+    return _base_tree_holds_no_test_file(record)
+
+
+def _empty_base_arm(command: str, revision: str) -> dict[str, Any]:
+    """The base arm of a directly scoped suite whose tests the change creates.
+
+    ``exit_status`` is pytest's exit for a collection that found nothing to run,
+    which is what the command would have returned over the base tree: it names
+    the measurement as empty rather than as a pass. There are zero failures
+    because no test existed that could fail, and no log because no test ran.
+    """
+    return {
+        "revision": revision,
+        "command": command,
+        "exit_status": 5,
+        "completed": True,
+        "failure_count": 0,
+        "failure_ids": [],
+        "log_path": None,
+        "log_digest": None,
+    }
 
 
 def _arm_missing_fields(
@@ -937,7 +1134,7 @@ def _arm_missing_fields(
     so ``head`` — read by the caller — is compared with the revision the arm
     records.
     """
-    declared = " ".join(str(record.get("suite_command") or "").split())
+    declared = _declared_command_text(record)
     if SCOPED_SUITE_PLACEHOLDER not in declared:
         # An unscoped declaration has no tree-dependent part: both arms run
         # the one command as written.
@@ -992,7 +1189,13 @@ def _measured_arm_tree(
 
 
 def _measure_missing_arms(
-    run_id: str, record: Mapping[str, Any], head: str, command: str
+    run_id: str,
+    record: Mapping[str, Any],
+    head: str,
+    command: str,
+    *,
+    partition: str = "",
+    long_partition: str = "",
 ) -> dict[str, Any] | None:
     """Run the armed command at both revisions for a run whose arms cannot be used.
 
@@ -1025,9 +1228,74 @@ def _measure_missing_arms(
                 timeout=timeout,
                 project=str(record.get("project") or ""),
                 config=config,
+                partition=partition,
+                long_partition=long_partition,
             )
     except (OSError, ValueError, landing_measure.BaseCheckoutError):
         return None
+
+
+def _waivable_arm_field(field: str) -> bool:
+    """Whether a missing field is one an arm waiver may cover.
+
+    The waiver is for missing or mismatched arms, so it names fields on an arm
+    and nothing else: a missing manifest is not a waiverable arm, and a
+    manifest too old to read is a delivery defect the waiver must not paper
+    over.
+    """
+    return field.startswith(("baseline_suite.", "after_suite."))
+
+
+def _a_held_arm_pair(baseline: Any, after: Any) -> bool:
+    """Whether both arms are present to be held as the waiver's evidence.
+
+    A waiver records the arms actually held and the delta they describe, so
+    there must be a pair to record: two observations carrying a revision, a
+    command and a failure list. Anything less is an absence the waiver cannot
+    represent, and the ordinary refusal stands.
+    """
+    for arm in (baseline, after):
+        if not isinstance(arm, Mapping):
+            return False
+        if not str(arm.get("command") or "").strip():
+            return False
+        if "failure_ids" not in arm:
+            return False
+    return True
+
+
+def _record_arm_waiver(
+    run_id: str,
+    reason: str,
+    waived_fields: Sequence[str],
+    held_arms: Mapping[str, Any],
+    *,
+    dry_run: bool = False,
+) -> None:
+    """Keep the waiver's reason and the arms it held where a reader can open
+    them.
+
+    A waiver that recorded only that it happened would be indistinguishable
+    from a run that measured nothing, which is exactly the state the delta
+    exists to keep apart from a measured pair.
+    """
+    if dry_run:
+        return
+    record = {
+        "reason": reason,
+        "waived_fields": list(waived_fields),
+        "held_arms": {
+            name: dict(arm) if isinstance(arm, Mapping) else None
+            for name, arm in held_arms.items()
+        },
+        "waiver_recorded_at": time.time(),
+    }
+
+    def amend(current: dict[str, Any]) -> dict[str, Any]:
+        current["suite_delta_arm_waiver"] = record
+        return current
+
+    _mutate_pointer(run_id, amend)
 
 
 def _record_measured_arms(run_id: str, head: str, measured: Mapping[str, Any]) -> None:
@@ -1056,11 +1324,176 @@ def _record_measured_arms(run_id: str, head: str, measured: Mapping[str, Any]) -
         _mutate_pointer(run_id, amend)
 
 
+def _failed_measurement_gate(record: Mapping[str, Any], gate_verdict: str) -> bool:
+    """Whether this measurement run's own gate ended in failure.
+
+    Added suite failures are the measured result only when dispatch marked the
+    run for measurement and its completion reports a failed gate. The suite
+    pair alone cannot answer that: a passing gate can coexist with a failing
+    paired suite arm.
+    """
+    marker = record.get("measure_only")
+    measurement_run = isinstance(marker, Mapping) or bool(str(marker or "").strip())
+    return measurement_run and str(gate_verdict).strip().lower() == "failed"
+
+
+def _primary_test_scope(
+    record: Mapping[str, Any], revision: str, command: str
+) -> tuple[str, list[str], dict[str, Any]]:
+    """Exclude named test files absent at the primary revision being measured.
+
+    Keep the scope supplied to the runner consistent with its command: its
+    missing-test support must not transplant head-only tests into primary.
+    Unknown revision contents leave the command intact so the measurement
+    still has to prove it ran, rather than asserting an empty baseline.
+    """
+    tree = _scope_tree(record)
+    words = _command_words(command)
+    named: dict[str, str] = {}
+    for word in words:
+        path = Path(word.partition("::")[0])
+        if not is_collectible_test_path(str(path)):
+            continue
+        if path.is_absolute():
+            if tree is None:
+                continue
+            try:
+                path = path.relative_to(tree)
+            except ValueError:
+                continue
+        named[word] = path.as_posix()
+    candidates = list(dict.fromkeys(named.values()))
+    present = _paths_present_in_tree(tree, revision, candidates)
+    absent = [
+        path for path in candidates if present is not None and path not in present
+    ]
+    resolved = _scoped_suite_command(record, revision=revision)
+    if absent and SCOPED_SUITE_PLACEHOLDER not in _declared_command_text(record):
+        # The measurement runner accepts one argv command with leading
+        # assignments. Rebuilding a shell program would change its meaning.
+        if any(character in command for character in ";&|<>`$\n"):
+            return resolved, [], {**record, "base_sha": revision}
+        retained = []
+        leading = True
+        for word in words:
+            if named.get(word) in absent:
+                continue
+            if leading and _is_environment_assignment(word):
+                name, _, value = word.partition("=")
+                retained.append(f"{name}={shlex.quote(value)}")
+                continue
+            leading = False
+            target = word
+            if word in named:
+                _, separator, selector = word.partition("::")
+                target = named[word] + separator + selector
+            retained.append(shlex.quote(target))
+        resolved = (
+            " ".join(retained) if any(path not in absent for path in candidates) else ""
+        )
+    node = dict(record.get("node") or {})
+    node["write_paths"] = [
+        path for path in _repository_write_paths(record) if path not in absent
+    ]
+    return resolved, absent, {**record, "base_sha": revision, "node": node}
+
+
+def _merged_primary_baseline(
+    run_id: str,
+    record: Mapping[str, Any],
+    *,
+    head: str,
+    command: str,
+    dry_run: bool,
+    waiver_reason: str = "",
+) -> dict[str, Any] | None:
+    """Measure the same suite at the primary revision this run actually merged.
+
+    Keep the dispatch baseline intact. This additional observation explains
+    inherited failures without claiming they failed before the run started.
+    Reuse a receipt only for its immutable revision and command, checking its
+    log before trusting its IDs. An interrupted reading excuses no failure.
+    """
+    import hashlib
+
+    from reckon.crew import promotion_evidence
+
+    primary = promotion_evidence._merged_primary_revision(record, head)
+    if not primary:
+        return None
+    command, absent, primary_record = _primary_test_scope(record, primary, command)
+    if not command:
+        return None
+    key = hashlib.sha256(json.dumps([primary, command]).encode()).hexdigest()
+    receipt = run_dir(run_id) / "landing-measure" / f"primary-{key}.json"
+
+    def usable(arm: Mapping[str, Any]) -> bool:
+        if ledger.suite_observation_missing_fields(arm, name="primary_suite"):
+            return False
+        if arm.get("revision") != primary or arm.get("command") != command:
+            return False
+        try:
+            text = Path(str(arm.get("log_path") or "")).read_text(encoding="utf-8")
+        except OSError:
+            return False
+        described = promotion_evidence._text_the_receipt_describes(text)
+        return (
+            promotion_evidence._log_failure_count(described) is not None
+            and not promotion_evidence._receipt_mismatches(
+                arm, str(arm["log_path"]), text
+            )
+            and _recorded_exit_status(text) == arm["exit_status"]
+        )
+
+    cached = _read_json_object(receipt)
+    if usable(cached):
+        return {**cached, "absent_test_files": absent}
+    if dry_run:
+        return {
+            "status": "would-measure",
+            "revision": primary,
+            "command": command,
+            "absent_test_files": absent,
+        }
+    declaration = gate_declaration(record)
+    measured = _measure_missing_arms(
+        run_id,
+        primary_record,
+        head,
+        command,
+        partition=declaration.get("partition") or "all_debug",
+        long_partition=declaration.get("long_partition") or "rigel",
+    )
+    arm = measured.get("baseline_suite") if isinstance(measured, Mapping) else None
+    if not isinstance(arm, Mapping) or not usable(arm):
+        if waiver_reason.strip():
+            return {
+                "status": "waived",
+                "revision": primary,
+                "command": command,
+                "absent_test_files": absent,
+                "waiver_reason": waiver_reason.strip(),
+                "measurement_refusal": "cannot read completed primary suite evidence",
+            }
+        raise ledger.SuiteDeltaError(
+            f"cannot read completed primary suite evidence at merged revision {primary}",
+            missing_fields=["primary_suite"],
+        )
+    normalized = {
+        **ledger.normalized_suite_observation(arm),
+        "absent_test_files": absent,
+    }
+    receipt.parent.mkdir(parents=True, exist_ok=True)
+    receipt.write_text(json.dumps(normalized, sort_keys=True), encoding="utf-8")
+    return normalized
+
+
 def _evaluate_suite_delta(
     run_id: str,
     record: Mapping[str, Any],
     *,
     waiver_reason: str,
+    gate_verdict: str = "",
     dry_run: bool = False,
 ) -> dict[str, Any] | None:
     """Validate an armed run's paired suite evidence and calculate its delta.
@@ -1083,6 +1516,23 @@ def _evaluate_suite_delta(
     a scope whose tests the change creates has nothing to measure against.
     """
     suite_command = _scoped_suite_command(record)
+    recorded_merge = str(record.get("recorded_merge") or "").strip()
+    if recorded_merge:
+        # The reviewed head is already carried by a merge on the primary
+        # branch, landed by hand on the branch itself, so there is no delivery
+        # left for a suite pair to compare: measuring one would re-run a suite
+        # over a change the branch already carries. The row records the merge
+        # that carried it and names the measurement as one it did not take.
+        return {
+            "status": "not-run",
+            "suite_command": suite_command,
+            "added_failure_ids": [],
+            "recorded_merge": recorded_merge,
+            "reason": (
+                f"the reviewed head is already carried by merge {recorded_merge} "
+                "on the primary branch, so this recording measures no suite delta"
+            ),
+        }
     if not suite_command:
         return None
 
@@ -1116,9 +1566,20 @@ def _evaluate_suite_delta(
         missing.append("manifest")
     elif not fresh:
         missing.append("fresh_manifest")
-    missing.extend(
-        ledger.suite_observation_missing_fields(baseline, name="baseline_suite")
-    )
+    # A scope whose tests the change creates has nothing to measure against: the
+    # base tree holds none of the node's test files, so the base arm measured an
+    # empty suite. That is a complete measurement of nothing rather than an
+    # absent one, and an arm declaring it as ``none`` is accepted once the base
+    # tree confirms it. It is recorded as pytest's own exit for a collection
+    # that found nothing to run, with no log, because no test ran and no result
+    # beyond that is being claimed.
+    base_sha = str(record.get("base_sha") or "").strip()
+    if _base_arm_measured_an_empty_suite(record, baseline):
+        baseline = _empty_base_arm(suite_command, base_sha)
+    else:
+        missing.extend(
+            ledger.suite_observation_missing_fields(baseline, name="baseline_suite")
+        )
     missing.extend(ledger.suite_observation_missing_fields(after, name="after_suite"))
     for arm_name, observation in (
         ("baseline_suite", baseline),
@@ -1129,13 +1590,30 @@ def _evaluate_suite_delta(
         for field in _arm_missing_fields(record, arm_name, observation, head=head):
             if field not in missing:
                 missing.append(field)
-    base_sha = str(record.get("base_sha") or "").strip()
     if (
         isinstance(baseline, Mapping)
         and str(baseline.get("revision") or "").strip()
         and str(baseline["revision"]).strip() != base_sha
     ):
         missing.append("baseline_suite.revision_matches_base_sha")
+    waived_arm_fields: list[str] = []
+    waiver = str(waiver_reason).strip()
+    if missing and waiver and not _run_changed_nothing(record):
+        # A waiver for missing or mismatched arms is read before the
+        # missing-fields refusal: the run holds a pair, it just does not meet
+        # the comparison, and the coordinator has stated why. What it never
+        # waives is an added failure, which is judged from the pair below.
+        waived_arm_fields = [field for field in missing if _waivable_arm_field(field)]
+        uncovered = [field for field in missing if field not in waived_arm_fields]
+        if waived_arm_fields and not uncovered and _a_held_arm_pair(baseline, after):
+            missing = []
+            _record_arm_waiver(
+                run_id,
+                waiver,
+                waived_arm_fields,
+                {"baseline_suite": baseline, "after_suite": after},
+                dry_run=dry_run,
+            )
     if missing:
         if _run_changed_nothing(record):
             # An armed run that changed nothing has nothing for a suite pair to
@@ -1154,7 +1632,43 @@ def _evaluate_suite_delta(
                     "so no baseline and after suite pair is required"
                 ),
             }
-        measured_arms = _measure_missing_arms(run_id, record, head, suite_command)
+        if dry_run:
+            # A dry run promises to write nothing and start nothing, and the
+            # landing's own measurement runs the armed command over two trees
+            # and can submit a scheduler job to do it. A run the landing can
+            # measure is reported as one it would measure, every field still
+            # unmeasured; a record naming no worktree, base or readable
+            # repository keeps the refusal below, because that is what a real
+            # landing falls back to when there is nothing to measure over.
+            if _measured_arm_tree(record) is not None and head:
+                return {
+                    "status": "would-measure",
+                    "suite_command": suite_command,
+                    "missing_fields": missing,
+                    "added_failure_ids": [],
+                    "reason": (
+                        "the run recorded no complete baseline and after suite "
+                        "pair, so the landing would run the armed command over "
+                        "the base and head trees itself; a dry run measures "
+                        "nothing and starts nothing"
+                    ),
+                }
+            measured_arms = None
+        else:
+            # A pair whose commands differ from the one the run was armed with
+            # is measured here like a missing pair: the landing runs the armed
+            # command at the base and at the head itself, so a worker that
+            # gated on its own focused tests does not cost its coordinator a
+            # waiver, and the comparison the gate makes is unchanged.
+            declaration = gate_declaration(record)
+            measured_arms = _measure_missing_arms(
+                run_id,
+                record,
+                head,
+                suite_command,
+                partition=declaration.get("partition", ""),
+                long_partition=declaration.get("long_partition", ""),
+            )
         if measured_arms and not measured_arms.get("unreadable"):
             _record_measured_arms(run_id, head, measured_arms)
             baseline = measured_arms["baseline_suite"]
@@ -1167,11 +1681,24 @@ def _evaluate_suite_delta(
             "suite_command": suite_command,
             "missing_fields": missing,
             "added_failure_ids": [],
+            "held_arms": {
+                "baseline_suite": baseline if isinstance(baseline, Mapping) else None,
+                "after_suite": after if isinstance(after, Mapping) else None,
+            },
         }
         detail = (
             "armed promotion requires complete baseline and after suite evidence; "
             "missing " + ", ".join(missing)
         )
+        if any(field.endswith(".command_matches_suite_command") for field in missing):
+            detail += (
+                ". An arm that ran a different command states that command and "
+                "the partition it ran on with `reckon crew declare-gate --run "
+                f"{run_id} --command '<the command the arms ran>' --partition "
+                "<the partition>`, and re-promote; a pair that cannot be "
+                "re-measured is waived with --waive-suite-delta '<why>', which "
+                "never waives an added failure"
+            )
         if "after_suite.revision_matches_head" in missing and isinstance(
             after, Mapping
         ):
@@ -1197,16 +1724,63 @@ def _evaluate_suite_delta(
         )
     normalized_baseline = ledger.normalized_suite_observation(baseline)
     normalized_after = ledger.normalized_suite_observation(after)
+    # What an arm waiver held, in the normalised shape the row records. The
+    # committed row is the durable copy: promotion deletes the pointer this
+    # waiver was written to.
+    waived_arms = (
+        {
+            "reason": waiver,
+            "waived_fields": list(waived_arm_fields),
+            "baseline_suite": normalized_baseline,
+            "after_suite": normalized_after,
+        }
+        if waived_arm_fields
+        else None
+    )
     # "New" is defined exactly here: the single set-difference lives in
     # ledger.added_failure_ids, so the refusal and the per-failure attribution
     # share one notion of a newly added failure rather than a second expression
     # that could drift from it.
     added = ledger.added_failure_ids(normalized_baseline, normalized_after)
+    primary_suite = None
+    inherited: dict[str, str] = {}
+    effective_baseline = normalized_baseline
+    if added:
+        primary_suite = _merged_primary_baseline(
+            run_id,
+            record,
+            head=head,
+            command=suite_command,
+            dry_run=dry_run,
+            waiver_reason=waiver,
+        )
+        if primary_suite and primary_suite.get("status") == "would-measure":
+            return {
+                "status": "would-measure",
+                "suite_command": suite_command,
+                "baseline_suite": normalized_baseline,
+                "after_suite": normalized_after,
+                "primary_suite": primary_suite,
+                "added_failure_ids": added,
+            }
+        if primary_suite and primary_suite.get("status") != "waived":
+            uncovered = ledger.added_failure_ids(primary_suite, {"failure_ids": added})
+            inherited = {
+                failure_id: primary_suite["revision"]
+                for failure_id in added
+                if failure_id not in uncovered
+            }
+            effective_baseline = {
+                **normalized_baseline,
+                "failure_ids": [*normalized_baseline["failure_ids"], *inherited],
+            }
+            added = ledger.added_failure_ids(effective_baseline, normalized_after)
+    failed_measurement = _failed_measurement_gate(record, gate_verdict)
     # Surface the worker's attribution on the stored record: each added
     # failure id beside the candidate merged commit that introduced it.
     # An entry naming a pre-existing failure is dropped rather than stored.
     attribution = ledger.new_failure_attribution(
-        baseline, after, manifest.get("failure_attribution")
+        effective_baseline, after, manifest.get("failure_attribution")
     )
     if str(record.get("role") or "").strip() == "test":
         unattributed = sorted(set(added) - set(attribution))
@@ -1222,6 +1796,8 @@ def _evaluate_suite_delta(
                 "missing_fields": missing_attribution,
                 "added_failure_ids": added,
                 "failure_attribution": attribution,
+                "inherited_failure_ids": inherited,
+                "primary_suite": primary_suite,
             }
             _record_refusal(refusal)
             raise ledger.SuiteDeltaError(
@@ -1231,7 +1807,13 @@ def _evaluate_suite_delta(
                 added_failure_ids=added,
             )
     waiver = str(waiver_reason).strip()
-    if added and not waiver:
+    # A waiver that covered a missing or mismatched arm says nothing about a
+    # failure the held arms add: it was given for the evidence the run could
+    # not produce, not for a regression the pair reports. Waiving that would be
+    # the one thing an arm waiver promises never to do, so an added failure is
+    # refused even when the arm waiver was accepted. A waiver given for the
+    # failure itself — no arm field covered — keeps its existing meaning.
+    if added and not failed_measurement and (not waiver or waived_arm_fields):
         refusal = {
             "status": "refused",
             "suite_command": suite_command,
@@ -1240,20 +1822,42 @@ def _evaluate_suite_delta(
             "missing_fields": [],
             "added_failure_ids": added,
             "failure_attribution": attribution,
+            "inherited_failure_ids": inherited,
+            "primary_suite": primary_suite,
         }
         _record_refusal(refusal)
-        raise ledger.SuiteDeltaError(
-            "armed promotion added suite failures: " + ", ".join(added),
-            added_failure_ids=added,
+        detail = "armed promotion added suite failures: " + ", ".join(added)
+        if waived_arm_fields:
+            detail += (
+                "; an arm waiver never waives an added failure, so repair the "
+                "failure or record the arm the pair was actually run with"
+            )
+        raise ledger.SuiteDeltaError(detail, added_failure_ids=added)
+    accepted_waiver_reason = waiver
+    if added and failed_measurement and not accepted_waiver_reason:
+        accepted_waiver_reason = (
+            "the failed gate's added suite failures are the measured result "
+            "for this measurement run"
         )
     return {
-        "status": "waived" if added else "clean",
+        # A pair waived for its arms is waived even when the pair adds no
+        # failure: the status names how the evidence was accepted, not only
+        # what it found.
+        "status": "waived" if (added or waived_arm_fields) else "clean",
         "suite_command": suite_command,
         "baseline_suite": normalized_baseline,
         "after_suite": normalized_after,
         "added_failure_ids": added,
         "failure_attribution": attribution,
-        "waiver_reason": waiver or None,
+        "inherited_failure_ids": inherited,
+        "primary_suite": primary_suite,
+        "waiver_reason": accepted_waiver_reason or None,
+        # Which arm fields a waiver covered. Empty for a measured pair, so a
+        # reader can tell an arm set that was waived from one that matched.
+        "waiver_covered_fields": waived_arm_fields,
+        # The waived pair and the reason it was waived, or None for a pair
+        # that needed no waiver.
+        "waived_arms": waived_arms,
         # Whether these arms are the landing's own measurement rather than the
         # ones the run recorded. A reader comparing this pair with the run's
         # manifest needs to know which of the two it is looking at.
@@ -1345,7 +1949,17 @@ def _worktree_audit(
     repo = Path(repo_value).resolve()
     worktree = Path(worktree_value).resolve()
     claims = _live_worktree_claims().get(worktree, ())
-    snapshot = _repository_tree_snapshot(repo, roots=(worktree,))
+    # Both reads below charge a change only to the paths the run declared, so
+    # the status walk stays inside the work it answered for. When the run
+    # declared no root at all nothing can be charged to it, and a bounded read
+    # would report every tree clean — so that one case keeps the whole-tree
+    # read rather than hiding uncommitted work behind an empty root set.
+    from reckon.crew.promotion_evidence import _declared_repository_roots
+
+    declared = _declared_repository_roots(record, tree=worktree) or None
+    snapshot = _repository_tree_snapshot(
+        repo, roots=(worktree,), untracked_roots=declared
+    )
     retained_path = (
         Path(str(retention["worktree"])).resolve() if retention is not None else None
     )
@@ -1364,6 +1978,7 @@ def _worktree_audit(
             "HEAD",
             claims,
             shadow_record,
+            untracked_roots=declared,
         )
         row = {**tree_state, **inspected}
         if retention is not None and path == retained_path:
@@ -1458,11 +2073,8 @@ def _retire_disposable_identity(record: Mapping[str, Any]) -> dict[str, Any]:
     that was considered. A blocked run is kept: it may still be resumed, and its
     identity is part of what a resume finds.
 
-    The removal runs after the release receipt is committed, so no later write
-    amends a run file and leaves the aggregate behind. The roster read is the
-    aggregate's own (:func:`ledger.load_aggregate`), never :func:`ledger.load`'s
-    union: a roster holds no run rows, so the union's run rows could only be
-    copied into the tracked aggregate beside the files that already carry them.
+    The removal runs after the release receipt is committed and changes only
+    the run store's roster, leaving promoted history intact.
     """
     run_id = str(record.get("run_id") or "")
     member_id = str(record.get("member") or "").strip()
@@ -1482,7 +2094,7 @@ def _retire_disposable_identity(record: Mapping[str, Any]) -> dict[str, Any]:
         }
     try:
         for _attempt in range(8):
-            data, version = ledger.load_aggregate(project, root)
+            data, version = ledger.load_auxiliary(project, root)
             if not any(str(entry.get("id")) == member_id for entry in data["members"]):
                 return {
                     "identity_retired": False,
@@ -1493,13 +2105,12 @@ def _retire_disposable_identity(record: Mapping[str, Any]) -> dict[str, Any]:
                 entry for entry in data["members"] if str(entry.get("id")) != member_id
             ]
             try:
-                ledger.write(
+                ledger.write_members(
                     project,
-                    data,
+                    data["members"],
                     version,
                     root=root,
                     allow_member_removal=True,
-                    commit=True,
                 )
             except ledger.LedgerError:
                 continue

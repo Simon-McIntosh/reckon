@@ -27,6 +27,7 @@ from reckon.crew.runs import (
     list_live,
     read_pointer,
 )
+from reckon.crew.resume import station_hold_reason
 
 
 REPAIR_ADVICE_HOLD_SECONDS = 60
@@ -72,10 +73,35 @@ def dispatch_merge_repair(
         runs._write_json(runs.run_dir(run_id) / "merge-repair.json", receipt)
         return receipt
     branch = merge._current_branch(Path(str(record.get("repo") or "")))
+    other_side = merge._run(
+        Path(str(record.get("repo") or "")),
+        "log",
+        "--reverse",
+        "--no-merges",
+        "--format=%H %s",
+        f"{head}..{primary}",
+        "--",
+        *paths,
+    )
+    if other_side.returncode:
+        raise CrewError(
+            "could not identify the commits on the conflicting side: "
+            + (other_side.stderr or other_side.stdout)
+        )
+    peer_commits = []
+    for line in other_side.stdout.splitlines():
+        sha, _, subject = line.partition(" ")
+        if sha:
+            peer_commits.append({"sha": sha, "subject": subject})
+    receipt["peer_commits"] = peer_commits
+    provenance = "".join(
+        f"  {item['sha']} {item['subject']}\n" for item in peer_commits
+    )
     advice = (
         _repair_round_token(round_id) + "\n"
         f"Landing met a merge conflict against primary {branch} at {primary}.\n"
         f"Conflicted paths: {', '.join(paths)}.\n"
+        f"Other-side commits affecting these paths:\n{provenance}"
         f"Merge the current primary {branch} into this run's worktree, resolve "
         "the named paths keeping both changes' intent, and commit the merge. "
         "Do not discard either side or commit conflict markers. Re-run this "
@@ -1116,6 +1142,72 @@ def _promoted_run_ids(project: str) -> set[str]:
         return set()
 
 
+def withdraw_unlaunched_repair_reservations(run_id: str, *, reason: str) -> int:
+    """Drop the reservations this door took for a repair round it is holding.
+
+    A round that has taken an attempt and then declares it is waiting for
+    coordinator advice holds a reservation no worker stands behind. Held
+    rather than released, it refuses every resume that would carry the run on,
+    including the advice it is waiting for, for as long as the door lives and
+    the unreached bound has not passed — the run is stopped by the very thing
+    that was meant to pause a resume for a minute. The door is the one party
+    that knows it has not launched, so it says so here.
+
+    Only this process's own reservations are dropped. Another door's launch
+    may be mid-flight and is not this round's to end.
+    """
+    from reckon.crew import dispatch_launch
+
+    return dispatch_launch.release_unspawned_reservations(
+        runs.run_dir(run_id), reason=reason
+    )
+
+
+def supersede_a_held_repair_round(run_id: str) -> int | None:
+    """Release a repair round that holds an attempt while it waits for advice.
+
+    A coordinator's resume is the advice a held round is waiting for, so the
+    round it would otherwise wait out is superseded: the reservation the round
+    took is released and the round's own record says it was superseded rather
+    than left reading as in flight. The answer is the attempt released, or None
+    when no round is being held.
+
+    Only a recorded advice hold licenses this. Any other held reservation
+    belongs to a launch under way, which a coordinator's advice must not
+    displace.
+    """
+    from reckon.crew import dispatch_launch
+
+    directory = runs.run_dir(run_id)
+    record = _live_pointer_or_absent(run_id) or {}
+    held_round = record.get(REPAIR_DISPATCH_FIELD)
+    if not (
+        isinstance(held_round, Mapping) and held_round.get("status") == "advice-hold"
+    ):
+        return None
+    reservation = dispatch_launch.held_launch_reservation(directory)
+    if not isinstance(reservation, Mapping):
+        return None
+    attempt = reservation.get("attempt")
+    if not dispatch_launch.release_a_withdrawn_reservation(
+        directory,
+        reservation,
+        reason=(
+            "the round was held for coordinator advice, and the coordinator "
+            "resumed the run with advice of its own"
+        ),
+    ):
+        return None
+    _record_repair_dispatch(
+        run_id,
+        status="superseded",
+        reason="a coordinator resume carried the run on before the round launched",
+        round_id=str(held_round.get("round_id") or ""),
+        node_id=str(held_round.get("node_id") or ""),
+    )
+    return attempt if isinstance(attempt, int) else None
+
+
 def _live_pointer_or_absent(run_id: str) -> Mapping[str, Any] | None:
     """The run's live pointer, or ``None`` when it has gone or cannot be read.
 
@@ -1374,6 +1466,20 @@ def dispatch_repair_for_run(
     capacity on it again.
     """
     run_id = str(record.get("run_id") or "")
+    held = station_hold_reason(record)
+    if held:
+        # A coordinator's hold covers every delivery, so the round this pass
+        # would compose belongs to a run the coordinator has taken by hand. A
+        # resume taken here moved a held delivery's head and drew a review
+        # nobody asked for, so the round is reported and left alone: the run
+        # keeps the head, the record and the review it had, and the next pass
+        # after `crew release` is the one that acts.
+        return {
+            "run_id": run_id,
+            "dispatched": False,
+            "held": True,
+            "reason": f"the run is under a delivery hold — {held}",
+        }
     refusal = _repair_source_refusal(record)
     if refusal:
         return {"run_id": run_id, "dispatched": False, "reason": refusal}
@@ -1769,6 +1875,19 @@ def dispatch_repair_for_run(
         from reckon.crew.dispatch import BudgetHold, LanePaused
 
         durable = read_pointer(run_id) or {}
+        # The hold is re-read at the launch, not only at entry: a coordinator
+        # can hold the run during the lane resolution above, and a resume
+        # offered from the entry-time record would launch beside that hold.
+        held_at_launch = station_hold_reason(durable or record)
+        if held_at_launch:
+            return {
+                "run_id": run_id,
+                "dispatched": False,
+                "held": True,
+                "round_id": round_id,
+                "node_id": node_id,
+                "reason": f"the run is under a delivery hold — {held_at_launch}",
+            }
         recorded = durable.get(REPAIR_DISPATCH_FIELD)
         same_round = isinstance(recorded, Mapping) and str(
             recorded.get("round_id") or ""
@@ -1859,6 +1978,13 @@ def dispatch_repair_for_run(
             )
         )
         if pending:
+            withdraw_unlaunched_repair_reservations(
+                run_id,
+                reason=(
+                    "the repair round is held for coordinator advice and has "
+                    "launched no worker"
+                ),
+            )
             recorded_hold = (read_pointer(run_id) or {}).get(REPAIR_DISPATCH_FIELD)
             if not (
                 isinstance(recorded_hold, Mapping)

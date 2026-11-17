@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import shlex
 
@@ -22,7 +23,9 @@ STATE_PHRASES: dict[CommandPath, str] = {
     ): "one budget group's pace, its banked reset, its lifts or backend holds",
     ("check",): "delivered manifest or run review",
     ("census",): "local processes whose recorded owner is dead",
-    ("complete",): "finished run",
+    ("complete",): "durable promotion-requested receipt",
+    ("decision", "record"): "open decision with its owner and the work it holds",
+    ("declare-gate",): "a run's gate arms",
     ("directory",): "live coordinator ownership",
     ("discard",): "non-running live pointer",
     ("dispose",): "one sub-floor review dimension",
@@ -30,6 +33,7 @@ STATE_PHRASES: dict[CommandPath, str] = {
     ("drain",): "session-closure count",
     ("follow",): "one session's live runs",
     ("gate",): "shared crew gate state",
+    ("hold",): "delivered run from automatic promotion and landing",
     ("host",): "one live session's crew followers",
     ("gc",): "integrated state makes them disposable",
     ("member", "add"): "missing roster member",
@@ -39,14 +43,20 @@ STATE_PHRASES: dict[CommandPath, str] = {
     ("path",): "one kind of file",
     ("pick",): "live routing state",
     ("placement",): "one reservation a project places its workers into",
+    ("promotions",): "promotion queue",
     ("queue", "drop"): "queued or awaiting-upstream request",
     ("queue", "edit"): "waiting request's steering text",
     ("queue", "hold"): "Pause one waiting request",
     ("queue", "release"): "Restore one held request",
     ("queue", "reprioritise"): "priority override on a waiting request",
+    ("record-merge",): "a merge already on the primary branch",
+    ("release",): "Release a hold",
+    ("reload",): "one named service's reload schedule",
     ("recover",): "live pointers",
     ("repair-completion",): "historical completion measurements missing",
-    ("repair",): "a manifest's status word or a review's status",
+    (
+        "repair",
+    ): "a manifest's status word, a suite arm's revision, or a review's fields",
     ("resume",): "one stopped run, every ready run",
     ("retention-sweep",): "run directories past their retention window",
     ("review",): "one plan's content, a code neighbourhood or a portfolio",
@@ -149,6 +159,28 @@ def test_the_retired_review_plan_alias_is_not_reachable() -> None:
     assert result.exit_code != 0, result.output
 
 
+def test_gate_help_names_worker_scope_and_paired_arms() -> None:
+    gate = _help_result(("verify-gate",))
+    suite = _help_result(("suite", "run"))
+    assert "live worker's scoped gate" in " ".join(gate.output.split())
+    assert "live run's base and head arms" in " ".join(suite.output.split())
+    for result in (gate, suite):
+        assert "--partition" in result.output
+        assert "--log" not in result.output
+
+
+def test_complete_help_names_repeated_run_confirmation_and_full_records() -> None:
+    result = _help_result(("complete",))
+    text = " ".join(result.output.split())
+    assert result.exit_code == 0, result.output
+    assert "repeat to confirm several runs" in text
+    assert "Replies link the full record and stay below 2 kB" in text
+    option = next(
+        param for param in cli_module.crew_complete.params if param.name == "run_id"
+    )
+    assert option.multiple
+
+
 def test_the_one_word_near_namesake_states_its_distinction() -> None:
     """A one-word verb that reads like another names the other it is not.
 
@@ -179,3 +211,42 @@ def test_every_refusal_remedy_names_a_reachable_state_specific_verb() -> None:
         result = _help_result(path)
         assert result.exit_code == 0, result.output
         assert STATE_PHRASES[path] in _first_help_line(leaves[path])
+
+
+def test_reload_requires_a_named_service_and_reason_and_reports_its_schedule(
+    tmp_path, monkeypatch
+):
+    from reckon.crew.follower_reload import ReloadWindow, service_reload_status
+
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path))
+    monkeypatch.setenv("CODEX_SESSION_ID", "coordinator-fixture")
+    window = ReloadWindow("station", "running", clock=lambda: 0.0)
+    assert not window.due("newest")
+    runner = CliRunner()
+    assert runner.invoke(cli_module.main, ["crew", "reload"]).exit_code == 2
+    refused = runner.invoke(cli_module.main, ["crew", "reload", "station"])
+    assert refused.exit_code == 2
+    assert "requires --reason" in refused.output
+    for reason in ("", " "):
+        assert (
+            runner.invoke(
+                cli_module.main, ["crew", "reload", "station", "--reason", reason]
+            ).exit_code
+            == 2
+        )
+    request = runner.invoke(
+        cli_module.main, ["crew", "reload", "station", "--reason", "urgent correction"]
+    )
+    assert request.exit_code == 0, request.output
+    receipt = json.loads(request.output)
+    assert receipt["reason"] == "urgent correction"
+    assert receipt["requested_by"] == "coordinator-fixture"
+    status = runner.invoke(cli_module.main, ["crew", "reload", "station", "--status"])
+    assert status.exit_code == 0, status.output
+    report = json.loads(status.output)
+    assert (
+        report["running_code"],
+        report["newest_seen"],
+        report["next_reload_at"],
+    ) == ("running", "newest", 1800)
+    assert service_reload_status("station")["request"] == receipt

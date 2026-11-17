@@ -38,10 +38,12 @@ import hashlib
 import json
 import os
 import re
+import socket
 import sys
 import traceback
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -162,6 +164,21 @@ def live_pointer_path(run_id: str) -> Path:
     importing the crew package.
     """
     return crew_home() / "live" / f"{run_id}.json"
+
+
+def cleanup_intent_path(run_id: str) -> Path:
+    """Path of the release the terminal cleanup queue holds for one run.
+
+    Written before a run's pointer is retired and retired only once the release
+    is done, so its presence means the run's workspace has an owner with work
+    already scheduled for it.
+
+    Repeated here rather than read through ``terminal_cleanup.cleanup_path`` for
+    the reason this module repeats the config home: the prompt hook resolves a
+    held answer by loading this file alone, so importing that module would drag
+    the crew package into the hook's interpreter.
+    """
+    return crew_home() / "cleanup" / f"{run_id}.json"
 
 
 def _token(name: str, fallback: str) -> str:
@@ -313,6 +330,7 @@ def station_runtime_candidate(
 
 
 STATION_SNAPSHOT_NAME = "station-snapshot.json"
+STATION_HEARTBEAT_NAME = "station-heartbeat.json"
 
 
 def station_database_name() -> str:
@@ -336,6 +354,7 @@ STATION_STALE_SECONDS = FRESHNESS_WINDOW_SECONDS
 STATION_TICK_STAGE_KEY = "tick_stage"
 STATION_TICK_STARTED_AT_KEY = "tick_started_at"
 STATION_TICK_FINISHED_AT_KEY = "tick_finished_at"
+STATION_LAST_TICK_KEY = "last_tick"
 STATION_TICK_STAGES = (
     "store-tick",
     "classify",
@@ -356,6 +375,59 @@ def station_snapshot_path(project: str, *, home: str | Path | None = None) -> Pa
     """Where a station republishes one project's snapshot for off-node readers."""
     base = Path(home) if home is not None else crew_home()
     return base / "obligations" / _project_token(project) / STATION_SNAPSHOT_NAME
+
+
+def station_reading_path(
+    host: str, job: str, *, home: str | Path | None = None
+) -> Path:
+    """One small health publication per station host and allocation."""
+    base = Path(home) if home is not None else crew_home()
+    identity = hashlib.sha256(json.dumps([host, job]).encode()).hexdigest()
+    return base / "station-readings" / f"{identity}.json"
+
+
+def publish_station_reading(
+    markers: Mapping[str, str], *, home: str | Path | None = None
+) -> Path:
+    """Publish the beat and tick without rewriting any session's obligations."""
+    from reckon._store import write_json_atomically
+
+    host, job = socket.gethostname(), os.environ.get("SLURM_JOB_ID", "")
+    return write_json_atomically(
+        station_reading_path(host, job, home=home),
+        {"host": host, "job": job, "station": dict(markers)},
+        fsync=False,
+    )
+
+
+def _exported_station_markers(
+    station: Mapping[str, Any], *, home: str | Path | None = None
+) -> dict[str, Any]:
+    """Use health from the exporting station only, never an unrelated live one."""
+    markers = dict(station)
+    host, job = station.get("host"), station.get("job")
+    if not isinstance(host, str) or not host or not isinstance(job, str):
+        return markers
+    try:
+        reading = json.loads(station_reading_path(host, job, home=home).read_text())
+    except (OSError, ValueError):
+        return markers
+    if not isinstance(reading, Mapping) or (
+        reading.get("host"),
+        reading.get("job"),
+    ) != (
+        host,
+        job,
+    ):
+        return markers
+    current = reading.get("station")
+    if not isinstance(current, Mapping):
+        return markers
+    beat = _parse_instant(current.get("heartbeat"))
+    carried = _parse_instant(station.get("heartbeat"))
+    if beat is not None and (carried is None or beat >= carried):
+        return dict(current)
+    return markers
 
 
 def station_heartbeat_age(value: Any, *, now: datetime | None = None) -> int | None:
@@ -389,6 +461,106 @@ def station_tick_reading(
     return stage, max(0, int((instant - started).total_seconds()))
 
 
+def _last_tick_reading(markers: Mapping[str, Any]) -> dict[str, Any]:
+    """The completed measurement, retained while the current tick runs."""
+    try:
+        record = json.loads(markers.get(STATION_LAST_TICK_KEY) or "null")
+    except (TypeError, ValueError):
+        return {}
+    return {"last_tick": record} if isinstance(record, dict) else {}
+
+
+def _running_tick_start(markers: Mapping[str, Any], tick_age: int | None) -> str:
+    """The instant the running tick started, and "" when no tick is running.
+
+    A finished tick's start names work already done, so a reader that would
+    report one row per tick is handed nothing to key on once the tick ends.
+    """
+    if tick_age is None:
+        return ""
+    return str(markers.get(STATION_TICK_STARTED_AT_KEY) or "")
+
+
+def station_state(*, heartbeat_age: int | None, tick_age: int | None) -> str:
+    """The one verdict a beat and a running tick's age make.
+
+    ``stopped`` is decided by the beat alone: a station can be quiet because
+    the fleet is quiet, which is not a station that stopped. A fresh beat with
+    a tick that has outlived the window is ``slow`` instead -- alive, working,
+    and not something to cycle. Two surfaces ask this question about the same
+    station, so they ask it here rather than each deciding what "slow" means.
+    """
+    if heartbeat_age is None or heartbeat_age > STATION_STALE_SECONDS:
+        return STATION_STOPPED
+    if tick_age is not None and tick_age > STATION_STALE_SECONDS:
+        return STATION_SLOW
+    return STATION_LIVE
+
+
+def _station_read(database: Path, read: Callable[[Any], Any]) -> tuple[bool, Any]:
+    """Run ``read`` against a station database, read-only first then plainly.
+
+    A read-only handle cannot open a WAL database until its shared-memory file
+    exists, so a station that has just started is read through an ordinary
+    handle; every statement a caller issues through this is a read either way.
+    ``(False, None)`` when neither handle answers, which is a store that
+    cannot be read at all rather than one answering with nothing.
+    """
+    import sqlite3
+
+    for read_only in (True, False):
+        try:
+            connection = (
+                sqlite3.connect(f"{database.as_uri()}?mode=ro", uri=True, timeout=1.0)
+                if read_only
+                else sqlite3.connect(database, timeout=1.0)
+            )
+        except sqlite3.Error:
+            continue
+        try:
+            return True, read(connection)
+        except sqlite3.Error:
+            continue
+        finally:
+            connection.close()
+    return False, None
+
+
+def _station_markers(connection: Any) -> dict[str, str]:
+    """The station's beat and tick, without unrelated maintenance records."""
+    markers = {
+        str(key): str(value)
+        for key, value in connection.execute(
+            "SELECT key, value FROM station WHERE key IN (?, ?, ?, ?, ?, ?)",
+            (
+                "heartbeat",
+                STATION_TICK_STAGE_KEY,
+                STATION_TICK_STARTED_AT_KEY,
+                STATION_TICK_FINISHED_AT_KEY,
+                "store_identity",
+                STATION_LAST_TICK_KEY,
+            ),
+        )
+    }
+    # The beat is independent of SQLite's writer lock. Bind it to this store
+    # so replacing a database cannot borrow the previous store's liveness.
+    database = connection.execute("PRAGMA database_list").fetchone()[2]
+    try:
+        beat = json.loads((Path(database).parent / STATION_HEARTBEAT_NAME).read_text())
+    except (OSError, ValueError):
+        return markers
+    if (
+        isinstance(beat, Mapping)
+        and markers.get("store_identity")
+        and (beat.get("store_identity") == markers["store_identity"])
+    ):
+        stamped = _parse_instant(beat.get("heartbeat"))
+        carried = _parse_instant(markers.get("heartbeat"))
+        if stamped is not None and (carried is None or stamped >= carried):
+            markers["heartbeat"] = str(beat["heartbeat"])
+    return markers
+
+
 def _read_station_document(
     project: str, session: str, *, environ: Mapping[str, str] | None = None
 ) -> tuple[dict[str, Any], dict[str, str]] | None:
@@ -402,8 +574,6 @@ def _read_station_document(
     unreadable database all answer None: a reader falls through to the exported
     snapshot and then to the producer reading it had before the station existed.
     """
-    import sqlite3
-
     root, _source = station_runtime_candidate(
         environ=os.environ if environ is None else environ
     )
@@ -412,42 +582,17 @@ def _read_station_document(
     database = root / station_database_name()
     if not database.is_file():
         return None
-    try:
-        connection = sqlite3.connect(
-            f"{database.as_uri()}?mode=ro", uri=True, timeout=1.0
-        )
-        try:
-            row = connection.execute(
-                "SELECT payload FROM obligations WHERE session = ?", (session,)
-            ).fetchone()
-            markers = {
-                str(key): str(value)
-                for key, value in connection.execute(
-                    "SELECT key, value FROM station"
-                ).fetchall()
-            }
-        finally:
-            connection.close()
-    except sqlite3.Error:
-        # A read-only handle cannot open a WAL database until its shared-memory
-        # file exists, so a station that has just started is read through an
-        # ordinary handle; the statements below are reads either way.
-        try:
-            connection = sqlite3.connect(database, timeout=1.0)
-            try:
-                row = connection.execute(
-                    "SELECT payload FROM obligations WHERE session = ?", (session,)
-                ).fetchone()
-                markers = {
-                    str(key): str(value)
-                    for key, value in connection.execute(
-                        "SELECT key, value FROM station"
-                    ).fetchall()
-                }
-            finally:
-                connection.close()
-        except sqlite3.Error:
-            return None
+
+    def read(connection: Any) -> tuple[Any, dict[str, str]]:
+        row = connection.execute(
+            "SELECT payload FROM obligations WHERE session = ?", (session,)
+        ).fetchone()
+        return row, _station_markers(connection)
+
+    answered, found = _station_read(database, read)
+    if not answered:
+        return None
+    row, markers = found
     if row is None:
         return None
     try:
@@ -461,6 +606,49 @@ def _read_station_document(
     ):
         return None
     return dict(document), markers
+
+
+def read_station_tick(
+    *,
+    now: datetime | None = None,
+    environ: Mapping[str, str] | None = None,
+) -> dict[str, Any] | None:
+    """The station store's own beat and running tick, read without a session.
+
+    This is the local station's answer without a session document:
+    the beat, the stage a running tick has entered, the instant that tick
+    started, and the verdict those two ages make. The started instant identifies
+    the tick, so a reader can report one row per tick rather than one per sample.
+
+    None when the store cannot answer at all -- absent, unreadable, or holding
+    no beat -- which leaves the caller its previous reading rather than a
+    verdict invented from nothing.
+    """
+    root, _source = station_runtime_candidate(
+        environ=os.environ if environ is None else environ
+    )
+    if root is None:
+        return None
+    database = root / station_database_name()
+    if not database.is_file():
+        return None
+    answered, markers = _station_read(database, _station_markers)
+    if not answered:
+        return None
+    instant = _utc_now() if now is None else now
+    age = station_heartbeat_age(markers.get("heartbeat"), now=instant)
+    if age is None:
+        return None
+    stage, tick_age = station_tick_reading(markers, now=instant)
+    return {
+        "state": station_state(heartbeat_age=age, tick_age=tick_age),
+        "heartbeat_age_seconds": age,
+        "tick_stage": stage,
+        "tick_age_seconds": tick_age,
+        "tick_started_at": _running_tick_start(markers, tick_age),
+        "stale": age > STATION_STALE_SECONDS,
+        **_last_tick_reading(markers),
+    }
 
 
 def _read_station_export(
@@ -486,8 +674,11 @@ def _read_station_export(
     exported = dict(document)
     exported.setdefault("project", snapshot.get("project"))
     station = snapshot.get("station")
-    beat = station.get("heartbeat") if isinstance(station, Mapping) else None
-    exported["_station_heartbeat"] = beat
+    exported["_station_markers"] = (
+        _exported_station_markers(station, home=home)
+        if isinstance(station, Mapping)
+        else {}
+    )
     return exported
 
 
@@ -503,15 +694,21 @@ def read_station_answer(
 
     The station on this node is read first, then the snapshot a station exported
     for readers off its node. The answer carries the payload in the shape the
-    derivation returns and three readings of the station itself: the heartbeat's
-    age, the tick's current stage and age, and the ``state`` those two make.
+    derivation returns and the readings of the station itself: the heartbeat's
+    age, the tick's current stage and age, the instant a running tick started,
+    and the ``state`` those two ages make.
 
     ``stopped`` is the only state a restart answers, and only the beat decides
     it: a station can be quiet because the fleet is quiet, which is not a
     station that stopped. A fresh beat with a tick that has outlived the window
     is ``slow`` instead -- alive, working, and not something to cycle. An
-    exported snapshot names no tick stage, so an off-node reading is either
-    ``stopped`` or ``live`` and never claims a progress it cannot see.
+    exported snapshot uses the exporting station's independent health
+    publication when available, so a long derivation does not freeze the beat
+    or hide the running tick from a reader on another node.
+
+    ``stale`` describes that heartbeat. ``answer_stale`` separately identifies
+    retained duties, whose ``payload.stale`` marking carries their current age:
+    an alive station can still be reading a project's replacement answer.
     """
     instant = _utc_now() if now is None else now
     found = _read_station_document(project, session, environ=environ)
@@ -520,27 +717,25 @@ def read_station_answer(
         exported = _read_station_export(project, session, home=home)
         if exported is None:
             return None
-        beat = exported.pop("_station_heartbeat", None)
-        found = (exported, {"heartbeat": "" if beat is None else str(beat)})
+        found = (exported, exported.pop("_station_markers"))
         source = "snapshot"
     document, markers = found
     age = station_heartbeat_age(markers.get("heartbeat"), now=instant)
     stale = age is None or age > STATION_STALE_SECONDS
     stage, tick_age = station_tick_reading(markers, now=instant)
-    if stale:
-        state = STATION_STOPPED
-    elif tick_age is not None and tick_age > STATION_STALE_SECONDS:
-        state = STATION_SLOW
-    else:
-        state = STATION_LIVE
+    state = station_state(heartbeat_age=age, tick_age=tick_age)
+    payload = live_payload(document, now=instant)
     return {
         "source": source,
         "state": state,
-        "payload": live_payload(document),
+        "payload": payload,
         "heartbeat_age_seconds": age,
         "tick_stage": stage,
         "tick_age_seconds": tick_age,
+        "tick_started_at": _running_tick_start(markers, tick_age),
         "stale": stale,
+        "answer_stale": isinstance(payload.get("stale"), Mapping),
+        **_last_tick_reading(markers),
     }
 
 
@@ -1081,16 +1276,35 @@ def _with_unreadable_records(rows: Any, findings: Any) -> list[dict[str, Any]]:
 # recorded the landing — which is what keeps this module free of the ledger
 # read its banner forbids.
 #
-# Every other kind is left alone, whatever its run's pointer state. A
-# ``worktree-held`` row is raised from the project's retained ledger records,
-# and a hold, a refusal or a blocked row names state the run's record still
-# carries after its pointer is gone. A missing pointer says nothing about any
-# of them, and hiding one on a ``stat`` would be a silent omission rather than
-# a settlement. The review duties are the exception, and each is settled on
-# more than the ``stat``: see :data:`REVIEW_DUTY_KINDS`.
+# Every other kind is left alone, whatever its run's pointer state. A hold, a
+# refusal or a blocked row names state the run's record still carries after its
+# pointer is gone. A missing pointer says nothing about any of them, and hiding
+# one on a ``stat`` would be a silent omission rather than a settlement. Two
+# kinds are settled on more than the ``stat``: the review duties (see
+# :data:`REVIEW_DUTY_KINDS`) and ``worktree-held``, whose tree outlives its run
+# and is settled only when the release has an owner (see
+# :data:`HELD_WORKTREE_DUTY_KIND`).
+#
+# ``sweep-failed`` belongs with the pointer kinds because its premise is that
+# the run can be observed: the command its row carries is ``crew observe
+# --run``, and a run whose pointer has gone has landed, been discarded or been
+# reaped, so that command can no longer do anything. The failure record behind
+# the row is durable per session, which is why nothing else retired it.
 LIVE_POINTER_DUTY_KINDS = frozenset(
-    {"landing-refused", "review-ready", "promotable-stale"}
+    {"landing-refused", "review-ready", "promotable-stale", "sweep-failed"}
 )
+
+# The duty kind raised for a retired tree that is still on disk, and the fact
+# that settles it without hiding the tree.
+#
+# A ``worktree-held`` row is the only surface naming a retained tree, so a
+# missing pointer does not settle it: the tree outlives the run, and dropping
+# the row on that ``stat`` alone would strand the bytes with nothing naming
+# them. The row is settled by the release being owned elsewhere. The terminal
+# cleanup queue writes an intent per run before it retires the pointer, and a
+# run whose intent exists has its release already scheduled, so the duty the
+# row names is that queue's work rather than the coordinator's.
+HELD_WORKTREE_DUTY_KIND = "worktree-held"
 
 # The duty kinds that describe a run waiting in the queue, and so are owed only
 # while its pointer still reads ``queued``.
@@ -1122,9 +1336,18 @@ REVIEW_DUTY_KINDS = frozenset({REVIEW_MISSING_DUTY_KIND, REVIEW_QUEUED_DUTY_KIND
 
 # The pointer fields that record a review dispatch, one per rubric: a figure
 # review is recorded beside the text review rather than in its place. Spelled
-# here rather than imported from the dispatch module for the reason above --
+# here rather than imported from the mirrored derivation module for the reason above --
 # this file is loaded by path, so it may reach no derivation.
 REVIEW_DISPATCH_FIELDS = ("review_dispatch", "figure_review_dispatch")
+
+#: The statuses a dispatch entry carries once a review run stands for its head:
+#: ``dispatched`` for one the reflex launched, and ``queued`` for one it put in
+#: the lane's queue — the request the admission pass owns until a lane sells it
+#: a seat. Either status names a review that exists, so a held ``review-missing``
+#: row naming the same head is contradicted and must not be served; every other
+#: status (a refused, skipped or withdrawn attempt, a lane that composed no run)
+#: leaves the review owed and keeps the duty.
+REVIEW_DISPATCH_STARTED_STATUSES = frozenset({"dispatched", "queued"})
 
 # The duties a run's own current pointer answers beyond the phases above, and
 # the state that settles each. A station tick computes these rows from the
@@ -1216,20 +1439,25 @@ def _same_revision(left: Any, right: Any) -> bool:
 def _review_dispatch_for_head(document: Mapping[str, Any], head: Any) -> bool:
     """Whether the run's pointer records a standing review dispatch for ``head``.
 
-    A dispatch entry is written for every attempt, so only the status
-    ``dispatched`` stands for a review that was started: a refusal, a skip or a
-    withdrawal leaves the review still owed, and those are the entries a duty
-    must keep naming. The entry must also name the head the duty names: an
-    entry recording no head cannot be shown to cover this duty's head, and
-    neither can one whose head the duty does not carry, so both keep the duty.
-    Reading a headless entry as covering every head would settle a duty on a
-    dispatch that may have read a different revision entire.
+    A dispatch entry is written for every attempt, so only a status that names
+    a review the fleet holds stands for one: ``dispatched`` for a launch, and
+    ``queued`` for a review run the lane accepted and has not launched yet —
+    the reflex queues one when no producer can launch it, and the admission
+    beside it, so the review exists and the duty naming a dispatch is
+    contradicted either way. A refusal, a skip or a withdrawal leaves the
+    review still owed, and those are the entries a duty must keep naming; so
+    does a lane that composed no review run at all. The entry must also name
+    the head the duty names: an entry recording no head cannot be shown to
+    cover this duty's head, and neither can one whose head the duty does not
+    carry, so both keep the duty. Reading a headless entry as covering every
+    head would settle a duty on a dispatch that may have read a different
+    revision entire.
     """
     for field in REVIEW_DISPATCH_FIELDS:
         entry = document.get(field)
         if not isinstance(entry, Mapping):
             continue
-        if str(entry.get("status") or "") != "dispatched":
+        if str(entry.get("status") or "") not in REVIEW_DISPATCH_STARTED_STATUSES:
             continue
         if not str(entry.get("run_id") or ""):
             continue
@@ -1336,6 +1564,11 @@ def without_departed_run_duties(payload: Mapping[str, Any]) -> dict[str, Any]:
     because the resume carried it onto a new attempt. A pointer carrying no
     phase states no move, so the row stands.
 
+    A ``worktree-held`` duty is settled on two facts read now: the run's live
+    pointer is gone, and the terminal cleanup queue holds an intent for it. The
+    first alone settles nothing, because the tree outlives the run and the row
+    is the only surface naming it; the second is the release having an owner.
+
     A duty of any other kind is kept, whatever its pointer state: its evidence
     is a ledger record or nothing at all -- a hold, a refusal, a blocked run or
     a tree still held -- so a missing pointer says nothing about it. That
@@ -1356,6 +1589,14 @@ def without_departed_run_duties(payload: Mapping[str, Any]) -> dict[str, Any]:
             continue
         run_id = str(row.get("run_id") or "")
         kind = str(row.get("kind") or "")
+        if (
+            run_id
+            and kind == HELD_WORKTREE_DUTY_KIND
+            and not live_pointer_path(run_id).exists()
+            and cleanup_intent_path(run_id).is_file()
+        ):
+            dropped = True
+            continue
         if (
             run_id
             and kind in LIVE_POINTER_DUTY_KINDS
@@ -1421,6 +1662,18 @@ def live_payload(document: Mapping[str, Any], *, now: datetime | None = None) ->
     payload = {
         key: value for key, value in document.items() if key not in _SNAPSHOT_KEYS
     }
+    retained = payload.get("stale")
+    if isinstance(retained, Mapping):
+        retained = dict(retained)
+        try:
+            stored_at = float(retained["stored_at"])
+        except (KeyError, TypeError, ValueError):
+            pass
+        else:
+            retained["age_seconds"] = round(
+                max(0.0, instant.timestamp() - stored_at), 3
+            )
+        payload["stale"] = retained
     for key in ("obligations", "acknowledged"):
         rows = payload.get(key)
         if isinstance(rows, list):
@@ -1597,6 +1850,9 @@ class FleetState:
     held_worktrees: dict[str, list[dict[str, Any]]]
     unreconciled: dict[str, int]
     findings: list[dict[str, str]]
+    merged_sections: dict[str, list[dict[str, Any]]] = dataclass_field(
+        default_factory=dict
+    )
 
 
 def fleet_state(project: str, *, now: datetime | None = None) -> FleetState:
@@ -1645,36 +1901,49 @@ def _derive_fleet_state(project: str, *, now: datetime | None = None) -> FleetSt
     )
     reviews_in_flight: dict[str, set[str]] = {}
     pointers: dict[str, Mapping[str, Any]] = {}
-    for pointer in module.runs.list_live(project=project):
-        session = str(pointer.get("session") or "")
-        run_id = str(pointer.get("run_id") or "")
-        if run_id:
-            pointers[run_id] = pointer
-        if session and run_id and module._current_review_in_flight(pointer):
-            reviews_in_flight.setdefault(session, set()).add(run_id)
-    floors = module.review_dispositions.declared_dimension_floors(config)
-    # Every review read this sweep makes happens inside the region -- the
-    # classified rows, the sub-floor lookup and the held-worktree scan all
-    # reach the review store -- so what could not be read is collected here,
-    # once, and travels with the state every session's slice is built from. A
-    # read outside the region has nobody to name its skips to, so another
-    # reader in this process never reaches this sweep's findings.
-    with module.review_module.collect_read_failures() as skipped_records:
-        state = FleetState(
-            project=project,
-            now=instant,
-            config=config,
-            grace=grace,
-            floors=floors,
-            rows=module._classified_rows(project),
-            pointers=pointers,
-            acknowledged=module._acknowledgements_in_force(project, now=instant),
-            reviews_in_flight=reviews_in_flight,
-            sub_floor=module._sub_floor_items_by_session(project, floors, now=instant),
-            held_worktrees=module._held_worktrees_by_session(project, now=instant),
-            unreconciled=module.runs.drain_unreconciled_by_session(project),
-            findings=[],
-        )
+    # One listing of the project's live directory answers the derivation's own
+    # rows and every reader it reaches, so each pointer file is decoded once
+    # for the whole sweep rather than once per duty kind.
+    with module.live_pointer_snapshot(project) as listing:
+        for pointer in listing:
+            session = str(pointer.get("session") or "")
+            run_id = str(pointer.get("run_id") or "")
+            if run_id:
+                pointers[run_id] = pointer
+            if session and run_id and module._current_review_in_flight(pointer):
+                reviews_in_flight.setdefault(session, set()).add(run_id)
+        floors = module.review_dispositions.declared_dimension_floors(config)
+        from reckon.crew.section_obligations import merged_section_items_by_session
+
+        # Every review read this sweep makes happens inside the region -- the
+        # classified rows, the sub-floor lookup and the held-worktree scan all
+        # reach the review store -- so what could not be read is collected here,
+        # once, and travels with the state every session's slice is built from. A
+        # read outside the region has nobody to name its skips to, so another
+        # reader in this process never reaches this sweep's findings.
+        with module.review_module.collect_read_failures() as skipped_records:
+            state = FleetState(
+                project=project,
+                now=instant,
+                config=config,
+                grace=grace,
+                floors=floors,
+                rows=module._classified_rows(project),
+                pointers=pointers,
+                acknowledged=module._acknowledgements_in_force(project, now=instant),
+                reviews_in_flight=reviews_in_flight,
+                sub_floor=module._sub_floor_items_by_session(
+                    project, floors, now=instant
+                ),
+                held_worktrees=module._held_worktrees_by_session(project, now=instant),
+                unreconciled=module.runs.drain_unreconciled_by_session(
+                    project, pointers=listing
+                ),
+                findings=[],
+                merged_sections=merged_section_items_by_session(
+                    project, list(pointers.values()), now=instant
+                ),
+            )
     state.findings = list(skipped_records)
     return state
 
@@ -1779,6 +2048,9 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
     module = _derivation_module()
     in_flight = state.reviews_in_flight.get(session, set())
     items: list[dict[str, Any]] = []
+    from reckon.crew.fleet_supervisor import fleet_test_obligations
+
+    items.extend(fleet_test_obligations(state.project, session, now=state.now))
     # Read once, for the first queued row this session owns, from the ordering
     # the admission pass admits by; a session with nothing queued never orders
     # anything.
@@ -1878,14 +2150,19 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
             apply_stuck_verdict(item, pointer, passes=passes, now=state.now)
     items.extend(state.sub_floor.get(session, []))
     items.extend(state.held_worktrees.get(session, []))
+    items.extend(state.merged_sections.get(session, []))
     from reckon.crew.promotion_requests import failure_obligations
 
     items.extend(failure_obligations(state.project, session, now=state.now))
+    items.extend(module.session_scratch_items(state.project, session, now=state.now))
     # The project's main checkout is read here exactly as the derivation reads
     # it, through the derivation's own detector rather than a second one, so a
     # session's published payload carries the index-lag notice its stop hook
     # would otherwise never see: the hook reads the snapshot and cannot import
     # the derivation on that path.
+    disk_notice = module._node_disk_notice(state.project)
+    if disk_notice is not None:
+        items.append(disk_notice)
     index_lag = module._index_lag_notice(state.project, now=state.now)
     if index_lag is not None:
         items.append(index_lag)
@@ -1919,6 +2196,8 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
             state.unreconciled.get(session, state.unreconciled.get("", 0))
         ),
     }
+    delivery = module.recovery_classification.delivery_summary(state.rows, session=session)
+    summary.update({key: value for key, value in delivery.items() if key != "remove_pointers"})
     return {
         "project": state.project,
         "session": session,
@@ -1934,6 +2213,7 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
             vocabulary=module.DUTY_ROW_FIELDS,
             sections=sections,
         ),
+        "remove_pointers": delivery["remove_pointers"],
         "summary": summary,
     }
 

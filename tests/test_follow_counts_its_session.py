@@ -34,13 +34,13 @@ from reckon import cli, crew, crew_follow_commands
 from reckon.crew import runs
 
 # The counter block the ticker prints at the end of each transition line:
-# ``<n>w <n>h <n>d <n>q``, each count followed by its bucket's letter with
+# ``<n>w <n>r <n>h <n>d <n>q``, each count followed by its bucket's letter with
 # whitespace between the cells, so a two-digit count is its own token rather
 # than running into the bucket beside it. The pattern requires that whitespace,
 # so a block that abutted two-digit counts would not match it at all. It is
 # matched whole rather than as a prefix, so a bucket added later cannot slip
 # past the prefix of an older count.
-_COUNTERS = re.compile(r"(\d+)w\s+(\d+)h\s+(\d+)d\s+(\d+)q")
+_COUNTERS = re.compile(r"(\d+)w\s+(\d+)r\s+(\d+)h\s+(\d+)d\s+(\d+)q")
 
 _POINTER_RUN_IDS = ("r-own-work", "r-peer-work", "r-peer-block")
 
@@ -120,7 +120,7 @@ def _follow(*args: str) -> str:
     return result.output
 
 
-def _counters(output: str) -> tuple[int, int, int, int]:
+def _counters(output: str) -> tuple[int, int, int, int, int]:
     match = _COUNTERS.search(output)
     assert match is not None, f"no trailing counter block in: {output!r}"
     return tuple(int(group) for group in match.groups())
@@ -147,7 +147,7 @@ def test_a_scoped_follower_counts_only_its_own_session(
 ) -> None:
     _stub_producer(monkeypatch)
     output = _follow("--session", "mine")
-    assert _counters(output) == (1, 0, 0, 0)
+    assert _counters(output) == (1, 0, 0, 0, 0)
 
 
 def test_an_unscoped_follower_over_the_same_fixture_is_unchanged(
@@ -155,7 +155,7 @@ def test_an_unscoped_follower_over_the_same_fixture_is_unchanged(
 ) -> None:
     _stub_producer(monkeypatch)
     output = _follow()
-    assert _counters(output) == (2, 1, 0, 0)
+    assert _counters(output) == (2, 0, 1, 0, 0)
 
 
 @pytest.fixture()
@@ -183,15 +183,15 @@ def test_two_digit_counts_reach_the_line_as_separate_tokens(
     """A two-digit count does not absorb the bucket beside it.
 
     The scoped figures are recomputed from the pointers, so ten working runs and
-    twelve blocked runs print ``10w 12h  0d  0q``: the reader sees four tokens, not
+    twelve blocked runs print ``10w  0r 12h  0d  0q``: the reader sees five tokens, not
     the ``10w12b`` the abutting block rendered. The pattern requires whitespace
     between a count and the next bucket's letter, so the abutting form leaves the
     line with no counter block this reader can find at all.
     """
     _stub_producer(monkeypatch)
     output = _follow("--session", "mine")
-    assert _counters(output) == (10, 12, 0, 0)
-    assert "10w 12h  0d  0q" in output
+    assert _counters(output) == (10, 0, 12, 0, 0)
+    assert "10w  0r 12h  0d  0q" in output
     assert "10w12b" not in output
 
 
@@ -208,8 +208,8 @@ def test_the_scoped_figures_differ_from_the_unscoped_figures(
     scoped = _counters(_follow("--session", "mine"))
     unscoped = _counters(_follow())
     assert scoped != unscoped
-    assert scoped == (1, 0, 0, 0)
-    assert unscoped == (2, 1, 0, 0)
+    assert scoped == (1, 0, 0, 0, 0)
+    assert unscoped == (2, 0, 1, 0, 0)
 
 
 def _real_home_pointer_paths() -> list[Path]:

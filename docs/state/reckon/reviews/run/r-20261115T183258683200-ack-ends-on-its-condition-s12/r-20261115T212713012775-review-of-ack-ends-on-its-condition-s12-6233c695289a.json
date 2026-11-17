@@ -1,0 +1,87 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T212713012775-review-of-ack-ends-on-its-condition-s12-6233c695289a/assertion-review.md",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_run_commands.py:crew_ack:2044",
+    "reckon/crew/runs.py:_mutate_pointer:510",
+    "reckon/crew/obligations.py:4369",
+    "reckon/hooks/coordinator_obligations.py:_inject_list:1283",
+    "reckon/hooks/coordinator_obligations.py:_stop:1820"
+  ],
+  "compatibility_added_failure_ids": [],
+  "completed_at": "2026-11-15T21:35:35Z",
+  "dispatched_at": "2026-11-15T21:29:38Z",
+  "finding_disposition_note": "Non-blocking renewal race requires coordinator disposition as folded into a named node or exempted with a reason; this reviewer does not modify source or plan state.",
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "2483",
+      "severity": "non-blocking",
+      "text": "non-blocking: The new promoted release reads the expected record and unlinks it under _pointer_lock, but _record_promoted_acknowledgement at lines 2452-2455 writes without that lock; a renewal between the read and unlink is therefore deleted, losing the newly requested deliberate deferral, so the writer and release should share the same lock and gain a concurrent-renewal regression test."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read the four commits dbd4d7bccfbdb7d77e409d52bb9323b689511c63, e6b807ee19c5193f06347042c44bad5da424709f, 0f0ba272c18f12d3599e23b0f2d763122f4fbfd8 and 6233c695289a1f4f929cf49af0bcb8bef4e78f62 against the recorded base; their six-file delta adds one option, existing-store release, hook restoration, regression coverage and evidence.",
+    "done_when": "The source dispatch-detail.json node.done_when matches live plan section 12; baseline-suite.log records 58 passed, delivery-suite.log records 73 passed at the reviewed head, base-regressions.log records 9 failed and 6 passed, and both compatibility logs record identical 121 failure IDs.",
+    "goal": "The source dispatch-detail.json node.goal requires condition-based acknowledgement expiry and release on run-state changes; reckon/crew/runs.py:510 and reckon/crew/obligations.py:1693 implement both, with one non-blocking renewal race.",
+    "manifest": "The source manifest.md pins base 90ddb7831b045256bb374702b78d31f37314cffb and head 6233c695289a1f4f929cf49af0bcb8bef4e78f62, and its baseline_suite and after_suite agree with their complete EXIT=0 log receipts.",
+    "write_paths": "The source dispatch-detail.json node.write_paths permits all six changed files, including reckon/crew/runs.py and the evidence fragment; no changed path falls outside that declaration."
+  },
+  "justifications": {
+    "durability": "tests/test_an_acknowledgement_ends_on_its_condition.py:104 fails when state-release guards are removed and :219 fails when snapshot restoration is removed, but the new promoted-release race at reckon/crew/runs.py:2483 has no concurrent-writer regression test.",
+    "evidence": "tests/test_an_acknowledgement_ends_on_its_condition.py:82 is exercised in the 73-pass delivery-suite.log, while base-regressions.log and negative-control.log show 9 and 4 failures respectively and stop-refusal.log records the returned duty blocking a stop.",
+    "fit": "reckon/crew/runs.py:2126 uses the existing wait vocabulary, :2475 uses the existing pointer lock, and the added source definitions and comments use mechanism names consistent with their owners.",
+    "goal_fidelity": "reckon/crew/obligations.py:1665 and reckon/crew/runs.py:510 release conditions and state changes as required, although reckon/crew/runs.py:2483 can remove a concurrently renewed promoted deferral.",
+    "reuse": "Capability searches over reckon/crew and reckon/hooks found existing acknowledgement ownership in reckon/crew/runs.py and condition readers in reckon/crew/recovery_wait.py:237, :268, :372 and :489, which the new validator and condition-ending wrapper extend or call rather than duplicate.",
+    "scope_discipline": "All six files in the base-to-head diff, including reckon/crew/runs.py and docs/evidence/fragments/the-monitor-tells-the-truth-under-load/ack-ends-on-its-condition-s12.html, are declared in the source dispatch-detail.json node.write_paths and support its goal."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source dispatch-detail.json node.goal requires condition-based acknowledgement expiry and release on run-state changes; reckon/crew/runs.py:510 and reckon/crew/obligations.py:1693 implement both, with one non-blocking renewal race.\nVERDICT done_when: The source dispatch-detail.json node.done_when matches live plan section 12; baseline-suite.log records 58 passed, delivery-suite.log records 73 passed at the reviewed head, base-regressions.log records 9 failed and 6 passed, and both compatibility logs record identical 121 failure IDs.\nVERDICT write_paths: The source dispatch-detail.json node.write_paths permits all six changed files, including reckon/crew/runs.py and the evidence fragment; no changed path falls outside that declaration.\nVERDICT manifest: The source manifest.md pins base 90ddb7831b045256bb374702b78d31f37314cffb and head 6233c695289a1f4f929cf49af0bcb8bef4e78f62, and its baseline_suite and after_suite agree with their complete EXIT=0 log receipts.\nVERDICT diff: Read the four commits dbd4d7bccfbdb7d77e409d52bb9323b689511c63, e6b807ee19c5193f06347042c44bad5da424709f, 0f0ba272c18f12d3599e23b0f2d763122f4fbfd8 and 6233c695289a1f4f929cf49af0bcb8bef4e78f62 against the recorded base; their six-file delta adds one option, existing-store release, hook restoration, regression coverage and evidence.\nCALL_SITES: reckon/crew_run_commands.py:crew_ack:2044, reckon/crew/runs.py:_mutate_pointer:510, reckon/crew/obligations.py:4369, reckon/hooks/coordinator_obligations.py:_inject_list:1283, reckon/hooks/coordinator_obligations.py:_stop:1820\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:1665 and reckon/crew/runs.py:510 release conditions and state changes as required, although reckon/crew/runs.py:2483 can remove a concurrently renewed promoted deferral.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_an_acknowledgement_ends_on_its_condition.py:82 is exercised in the 73-pass delivery-suite.log, while base-regressions.log and negative-control.log show 9 and 4 failures respectively and stop-refusal.log records the returned duty blocking a stop.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: All six files in the base-to-head diff, including reckon/crew/runs.py and docs/evidence/fragments/the-monitor-tells-the-truth-under-load/ack-ends-on-its-condition-s12.html, are declared in the source dispatch-detail.json node.write_paths and support its goal.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_an_acknowledgement_ends_on_its_condition.py:104 fails when state-release guards are removed and :219 fails when snapshot restoration is removed, but the new promoted-release race at reckon/crew/runs.py:2483 has no concurrent-writer regression test.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/runs.py:2126 uses the existing wait vocabulary, :2475 uses the existing pointer lock, and the added source definitions and comments use mechanism names consistent with their owners.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches over reckon/crew and reckon/hooks found existing acknowledgement ownership in reckon/crew/runs.py and condition readers in reckon/crew/recovery_wait.py:237, :268, :372 and :489, which the new validator and condition-ending wrapper extend or call rather than duplicate.\nFINDING reckon/crew/runs.py:2483 non-blocking: The new promoted release reads the expected record and unlinks it under _pointer_lock, but _record_promoted_acknowledgement at lines 2452-2455 writes without that lock; a renewal between the read and unlink is therefore deleted, losing the newly requested deliberate deferral, so the writer and release should share the same lock and gain a concurrent-renewal regression test.\n",
+  "review_run_id": "r-20261115T212713012775-review-of-ack-ends-on-its-condition-s12-6233c695289a",
+  "review_scope_note": "Read source commits with git show at the reviewed head; the read-only review worktree itself is at a different coordinator revision.",
+  "reviewed_base_sha": "90ddb7831b045256bb374702b78d31f37314cffb",
+  "reviewed_head_sha": "6233c695289a1f4f929cf49af0bcb8bef4e78f62",
+  "reviewed_run_id": "r-20261115T183258683200-ack-ends-on-its-condition-s12",
+  "scores": {
+    "durability": 18,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_delta_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=/tmp/ack-measure-85c_lr_m /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/ack-measure-85c_lr_m/tests/test_an_acknowledgement_ends_on_its_condition.py /tmp/ack-measure-85c_lr_m/tests/test_staged_write_inventory.py /tmp/ack-measure-85c_lr_m/tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T183258683200-ack-ends-on-its-condition-s12/delivery-suite.log",
+      "measurement_cwd": "/tmp/ack-measure-85c_lr_m",
+      "measurement_module": "/tmp/ack-measure-85c_lr_m/reckon/crew/obligations.py",
+      "revision": "6233c695289a1f4f929cf49af0bcb8bef4e78f62"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=/tmp/ack-measure-5w0t37me /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/ack-measure-5w0t37me/tests/test_staged_write_inventory.py /tmp/ack-measure-5w0t37me/tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T183258683200-ack-ends-on-its-condition-s12/baseline-suite.log",
+      "measurement_cwd": "/tmp/ack-measure-5w0t37me",
+      "measurement_module": "/tmp/ack-measure-5w0t37me/reckon/crew/obligations.py",
+      "revision": "90ddb7831b045256bb374702b78d31f37314cffb"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T22:02:49.650163+00:00",
+  "total": 117
+}

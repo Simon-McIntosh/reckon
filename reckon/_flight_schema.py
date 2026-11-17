@@ -201,6 +201,7 @@ class FlightConfig(ConfiguredBaseModel):
     """
     A complete flight configuration, or one layer of one.
     """
+    service_reload_window_seconds: int | None = Field(default=None, description="""Minimum automatic standing-service reload interval in seconds; 1800 by default.""", ge=1)
     version: int | None = Field(default=None, description="""Schema version of this configuration document.""", ge=1)
     default_backend: str | None = Field(default=None, description="""Name of the backend used when a role does not select one. Must name a key of `backends` once every layer has been merged; a name with no backend behind it is a configuration error rather than an implicit fallback.""")
     local_backend: str | None = Field(default=None, description="""Name of the locally served backend selected by `reckon crew dispatch --local`. Must name a key of `backends` once every layer has been merged. Absent means this host has no declared local worker route.""")
@@ -222,6 +223,7 @@ class FlightConfig(ConfiguredBaseModel):
     fences: FenceConfig | None = Field(default=None)
     capability_raise: CapabilityRaise | None = Field(default=None, description="""Rule that raises the capability a node resolves at once its plan section has been attempted at or above a threshold, so a section that keeps costing attempts stops landing on the raise's own lane without anyone deciding it by hand. The raise moves a node upward only: a node already at or above the raised level resolves unchanged.""")
     worktree: WorktreeConfig | None = Field(default=None)
+    session_scratch: SessionScratchConfig | None = Field(default=None, description="""Per-session scratch bound and aggregate share of the local disk.""")
     summary: SummaryConfig | None = Field(default=None)
     ticker: TickerConfig | None = Field(default=None, description="""The follower pane's own memory of what it has rendered. A reader tracking a fleet across re-arms wants the rows it just saw restored rather than an empty pane; these bounds decide how much of the view comes back.""")
     domain: DomainConfig | None = Field(default=None, description="""The repository's own domain rules, declared once so a brief and a review read them rather than rediscovering them. Reckon carries these rules and never supplies one, so a project that declares no block keeps today's behaviour.""")
@@ -737,8 +739,18 @@ class WorktreeConfig(ConfiguredBaseModel):
     Worktree lifecycle policy.
     """
     cleanup: WorktreeCleanup | None = Field(default=None)
+    node_tmp_reserve_bytes: int | None = Field(default=None, description="""Minimum usable bytes on the fleet node local disk; lower free space holds new launches and raises an obligation. Defaults to 8 GiB.""", ge=0)
+    node_tmp_sample_max_age_seconds: int | None = Field(default=None, description="""Maximum age in seconds of a published fleet local disk reading. Missing, unreadable or older samples hold remote admission and raise a distinct reading obligation. Defaults to 180 seconds, three default one-minute sampling periods.""", ge=1)
     scratch_min_free_bytes: int | None = Field(default=None, description="""Minimum free bytes on the worker scratch filesystem before a dispatch.""", ge=0)
     scratch_min_free_pct: int | None = Field(default=None, description="""Minimum free percentage on the worker scratch filesystem before a dispatch.""", ge=0, le=100)
+
+
+class SessionScratchConfig(ConfiguredBaseModel):
+    """
+    Sampled bounds on the node-local disk used by interactive sessions.
+    """
+    max_bytes: int | None = Field(default=None, description="""Allocated file bytes above which a session owes scratch cleanup.""", ge=1)
+    disk_share: float | None = Field(default=None, description="""Fraction of the local disk available to all session scratch; new sessions refuse at this share.""", ge=0.001, le=1)
 
 
 class SummaryConfig(ConfiguredBaseModel):
@@ -832,6 +844,7 @@ BudgetConfig.model_rebuild()
 LiftConfig.model_rebuild()
 FenceConfig.model_rebuild()
 WorktreeConfig.model_rebuild()
+SessionScratchConfig.model_rebuild()
 SummaryConfig.model_rebuild()
 TickerConfig.model_rebuild()
 DomainConfig.model_rebuild()

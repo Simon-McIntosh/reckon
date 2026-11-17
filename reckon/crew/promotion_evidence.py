@@ -130,6 +130,13 @@ def _merge_repair_scope(
         )
     except merge.MergeError as exc:
         raise CrewError(f"cannot measure merge-repaired run scope: {exc}") from exc
+    if not paths:
+        # A head that delivers nothing relative to primary names no path, and a
+        # repaired scope over no path reads zero. That is the zero the
+        # cited-commit measurement refuses to record, so this path declines and
+        # lets the citations answer: the run's own commits are what it did,
+        # whether the merge kept or discarded their content.
+        return None
     counts = scoped_diff_stat(cwd=tree, base=common_base, head=head, paths=paths)
     if not counts.get("available", True):
         raise CrewError("cannot measure merge-repaired run line counts")
@@ -268,7 +275,30 @@ def _committed_scope_uncached(
     )
 
 
-def _uncommitted_paths(tree: Path) -> list[str]:
+def _scope_paths_at_head(
+    record: Mapping[str, Any], *, tree: Path, head: str, paths: Sequence[str]
+) -> tuple[str, ...]:
+    """Keep cited paths whose change survives between the run's base and head.
+
+    The intersection drops temporary paths and restored content without charging
+    paths imported by a merge. Deletions survive the diff too: testing existence
+    at the head would silently excuse an undeclared removal. A record with no
+    base retains the conservative cited-path union because it cannot establish
+    which changes disappeared.
+    """
+    from reckon.crew import merge
+
+    base = str(record.get("base_sha") or "").strip()
+    if not base or not paths:
+        return tuple(paths)
+    try:
+        surviving = set(merge.landed_paths(tree, base, head))
+    except merge.MergeError as exc:
+        raise CrewError(f"cannot measure scope paths at the run's head: {exc}") from exc
+    return tuple(path for path in paths if path in surviving)
+
+
+def _uncommitted_paths(tree: Path, *, roots: Iterable[Path] | None = None) -> list[str]:
     """Return the tree's own report of the paths it holds uncommitted.
 
     Untracked paths count: a deliverable written but never staged is exactly
@@ -276,9 +306,22 @@ def _uncommitted_paths(tree: Path) -> list[str]:
     working tree holds rather than what the index knows about it. A tree git
     cannot read reports nothing, and the caller treats that as unmeasured
     rather than as clean.
+
+    ``roots`` bounds the read to the repository-relative paths a caller can
+    charge a change to, as literal pathspecs. A shared checkout and a fleet
+    worktree both carry other sessions' uncommitted work, so an unrestricted
+    read walks trees no run declares and then discards what it found; naming
+    the roots keeps the walk inside the paths the run answered for. ``None``
+    keeps the unrestricted read, which a caller reporting a whole tree needs.
     """
+    command = ["git", "status", "--porcelain"]
+    if roots is not None:
+        pathspecs = [f":(literal){Path(root).as_posix()}" for root in roots]
+        if not pathspecs:
+            return []
+        command += ["--", *pathspecs]
     result = subprocess.run(
-        ["git", "status", "--porcelain"],
+        command,
         cwd=tree,
         capture_output=True,
         text=True,
@@ -308,9 +351,23 @@ def _declared_repository_roots(
     deliverable. The node's declared write paths and a fresh manifest's changed
     paths are the two declarations a run makes, and a declaration outside the
     repository contributes no root here.
+
+    The node's definition reaches this reader in two shapes: a live pointer
+    carries it under ``node`` and a promoted ledger row carries the node id
+    there and the definition under ``node_definition``. Both are read, because
+    a release audits a row after the pointer is gone and the row's ``node`` is
+    the id alone. A reader that assumed the pointer's shape raised on every run
+    whose manifest still named changed paths, after the tree had been removed.
     """
+    node = record.get("node")
+    definition = node if isinstance(node, Mapping) else record.get("node_definition")
     declared = [
-        str(path) for path in ((record.get("node") or {}).get("write_paths") or ())
+        str(path)
+        for path in (
+            (definition.get("write_paths") or ())
+            if isinstance(definition, Mapping)
+            else ()
+        )
     ]
     manifest_present, fresh = _manifest_freshness(record)
     if manifest_present and fresh:
@@ -364,8 +421,17 @@ def _require_commits_beyond_base(
     canonical_base = _commit_canonical_id(tree, base)
     if canonical_base is None:
         return
-    for revision in commits:
-        cited = str(revision).strip()
+    from reckon.crew.promotion_scope import _declared_manifest_commits
+    from reckon.crew.queue_landing import _delivered_revision
+
+    canonical_head = _commit_canonical_id(tree, "HEAD")
+    # A history-derived presentation must not hide a foreign manifest citation.
+    # Reachable merge imports are valid citations but not owned commit records.
+    citations = dict.fromkeys(
+        [*commits, *_declared_manifest_commits(record)] if commits else ()
+    )
+    for revision in citations:
+        cited = _delivered_revision([str(revision)]) or str(revision).strip()
         if not cited:
             continue
         canonical = _commit_canonical_id(tree, cited)
@@ -380,21 +446,32 @@ def _require_commits_beyond_base(
                 "run. Cite the commit the run committed on top of the base, or "
                 "pass --no-commit '<why>' when it produced none"
             )
-        if not _revision_is_ancestor(tree, canonical_base, canonical):
+        predates_base = _revision_is_ancestor(tree, canonical, canonical_base)
+        outside_history = canonical_head is not None and not _revision_is_ancestor(
+            tree, canonical, canonical_head
+        )
+        if (
+            predates_base
+            or outside_history
+            or (
+                canonical_head is None
+                and not _revision_is_ancestor(tree, canonical_base, canonical)
+            )
+        ):
             raise CrewError(
                 f"run {run_id!r} cites {canonical}, which is not a commit this "
                 f"run made beyond its base {base}: the run's work is what it "
-                "committed on top of the base, so this citation belongs to "
-                "another branch or predates the run. Cite the run's own commit, "
+                "committed on its own history, so this citation belongs to "
+                "an unmerged branch or predates the run. Cite the run's own commit, "
                 "or pass --no-commit '<why>' when it produced none"
             )
     if commits:
         return
-    uncommitted = _uncommitted_paths(tree)
-    if not uncommitted:
-        return
     roots = _declared_repository_roots(record, tree=tree)
     if not roots:
+        return
+    uncommitted = _uncommitted_paths(tree, roots=roots)
+    if not uncommitted:
         return
     held = [
         path
@@ -783,7 +860,15 @@ def _commits_field_declares_absence(
     ``none under the repository``) all have to be caught.
     """
     raw = _commitless_raw_field(manifest_text, record, "commits")
-    return raw is not None and _opens_with_an_absence_word(raw)
+    if raw is None:
+        return False
+    if _opens_with_an_absence_word(raw):
+        return True
+    # A block or JSON list has no declaration at the raw field's head. Each
+    # parsed item must declare absence, so a real citation beside one is still
+    # resolved and cannot disappear behind the declaration.
+    entries = parse_manifest(manifest_text).get("commits") or []
+    return bool(entries) and all(_opens_with_an_absence_word(item) for item in entries)
 
 
 def _manifest_text(record: Mapping[str, Any]) -> str:
@@ -946,7 +1031,17 @@ def _require_gate_evidence(
     whose worktree is already gone is not refused for a citation no store was
     asked about.
     """
-    if verdict != "passed" or str(no_commit_reason).strip():
+    if verdict != "passed":
+        return None
+    if str(no_commit_reason).strip():
+        # A stated reason says there is no commit to register, and it is the
+        # form a read-only run promotes with. It is not a statement about the
+        # run's worktree: a run that committed and then declares the commits
+        # are not being registered would leave its work in no commit at all,
+        # and the release step takes the worktree with it. The same guard the
+        # unreasoned path applies is applied here, so the declaration form does
+        # not become the way to promote a run whose work nothing points at.
+        _require_worktree_at_its_base(run_id, record)
         return None
 
     # First ask the worker, because it already answered. The manifest's
@@ -1122,16 +1217,40 @@ def _require_gate_evidence(
             "deliberately that they are not being registered"
         )
 
+    _require_worktree_at_its_base(run_id, record)
+    return None
+
+
+def _require_worktree_at_its_base(run_id: str, record: Mapping[str, Any]) -> None:
+    """Refuse a promotion that cites no commit while the run's tree has one.
+
+    A commitless promotion records the run as having produced no commit, and
+    the base revision it was dispatched against is what the record names as its
+    start. A worktree sitting on a commit past that base says the run made one,
+    and nothing on the record says which: the ledger row would report a
+    success pointing at nothing while the commit survives only as long as its
+    worktree. The run's own tree is read rather than the repository's HEAD,
+    the same reading every other guard here makes, because the repository
+    belongs to a checkout this run did not work in. A record naming no base, or
+    no readable worktree, is not measured here: a released worktree has nothing
+    left to ask, and a blank field names nothing rather than the current
+    directory.
+
+    A review run is exempt because its worktree is the reviewed node's tree,
+    checked out at the reviewed head rather than at the base the review was
+    dispatched against: the head is the reviewed work, not a commit the review
+    made, and the pointer carries it by design. The review's deliverable is the
+    stored record, so measuring its tree against the review's base would refuse
+    every review promoted with a passing gate.
+    """
+    from reckon.crew.recovery_review_delivery import _is_review_run
+
+    if _is_review_run(record):
+        return
     base = str(record.get("base_sha") or "").strip()
-    # This one reads the worktree's own state rather than a commit object, so
-    # the fallback above does not apply: the repository's HEAD belongs to a
-    # tree this run did not work in, and reading it for a run whose worktree is
-    # gone would refuse a truthful promotion on another tree's movement. With
-    # no worktree there is nothing to ask, so the guard stays silent: a blank
-    # field names no worktree rather than the current directory.
     worktree = _record_worktree(record)
     if not base or worktree is None:
-        return None
+        return
     head = subprocess.run(
         ["git", "rev-parse", "--verify", "--quiet", "HEAD"],
         cwd=worktree,
@@ -1141,7 +1260,7 @@ def _require_gate_evidence(
     )
     tip = head.stdout.strip()
     if head.returncode or not tip or tip == base:
-        return None
+        return
     raise CrewError(
         f"run {run_id!r} has a passing gate and cites no commit, but its "
         f"worktree is at {tip[:12]} rather than its base {base[:12]}: it "
@@ -1166,8 +1285,28 @@ _RUNNER_FAILURE_SUMMARY = re.compile(r"\b[1-9]\d*\s+(?:failed|errors?)\b")
 
 # A gate command that runs pytest is the one a pytest summary is owed by. The
 # program may be reached through an interpreter, a runner or a wrapper, so the
-# name is matched as a word anywhere in the command.
-_PYTEST_COMMAND = re.compile(r"\bpytest\b")
+# name is matched in any word of the command — but as the word naming the
+# program, never as a fragment of a longer word. A promotion whose cited
+# command is a file test over a path stored under a directory named for the
+# runner (`…/pytest-of-<user>/…`) executes no pytest and reaches no summary,
+# and reading that directory name as the program refused a defensible gate on
+# a fact about where the evidence was kept rather than about what ran.
+_PYTEST_PROGRAM = re.compile(r"pytest(?:[-.]\d[\w.]*)?")
+
+
+def _command_runs_pytest(command: str) -> bool:
+    """Whether a word of ``command`` names pytest as the program it invokes.
+
+    A word names it when the word, read as a path, ends in the program's own
+    name: ``pytest``, ``pytest-3.14``, ``/venv/bin/pytest``. A longer word that
+    merely contains the name — a directory, a log file, an assertion's text —
+    names something other than the program, so a command built out of such a
+    word is not held to a pytest summary.
+    """
+    for word in str(command or "").split():
+        if _PYTEST_PROGRAM.fullmatch(word.strip("'\"").rsplit("/", 1)[-1]):
+            return True
+    return False
 
 
 _UNEXECUTED_EXIT_CODES = frozenset({126, 127})
@@ -1509,6 +1648,81 @@ def _receipt_mismatches(
     return mismatches
 
 
+#: The name a review run's derived gate log is written under, inside that run's
+#: own directory. The check a review promotes on is a statement about the record
+#: the run delivered, so its evidence belongs with the run's other artifacts.
+_REVIEW_GATE_LOG_NAME = "review-gate.log"
+
+
+def _derived_review_gate_log(
+    run_id: str,
+    record_path: Path,
+    *,
+    command: str,
+    status: str,
+    findings: int,
+    capture: bool = True,
+) -> dict[str, Any]:
+    """Capture a review's own gate check into a log, and report where it sits.
+
+    A review run changes no code, so there is no suite for the integration
+    re-run to execute at the integrated head, and the check its promotion cites
+    is that the record it delivered still reads on disk. That check used to
+    cite the record itself as its log, and a record is JSON that carries no
+    terminal ``EXIT=<n>`` line — so a promotion derived its own check and then
+    that check refused the derivation, reading a citation of the file a check
+    opens as though it were the check's own capture.
+
+    The check is performed here: ``test -s <record>`` is evaluated, and its
+    outcome is written in the shape every reader of a cited log takes, ending
+    in the terminal ``EXIT=<n>`` line those readers read the status from. The
+    log lives in the review run's own directory and is rewritten only when its
+    content would change, so a repeated promotion, or a dry run before one,
+    leaves one log stating one outcome. It is written from the same values the
+    promotion reports, so the log and the row that cites it cannot disagree.
+
+    A run naming no id, or a directory that cannot be written, leaves the check
+    with no log path at all: the promotion then meets the ordinary refusal that
+    names the missing field, which is what an evidence path that cannot hold
+    the evidence means. The exit status is always reported, because it is the
+    check's own outcome rather than the log's. ``capture`` is false where the
+    promotion already holds a log — the caller's flag, or one the manifest
+    names — because that is the evidence the run re-executed, and reporting
+    this path there would cite a log nothing points at.
+    """
+    try:
+        passed = record_path.is_file() and record_path.stat().st_size > 0
+    except OSError:
+        passed = False
+    exit_status = 0 if passed else 1
+    result: dict[str, Any] = {"exit_status": exit_status}
+    if not str(run_id).strip():
+        return result
+    text = (
+        f"# command: {command}\n"
+        "# check: that the review record this run delivered still reads on disk\n"
+        f"review record: {record_path}\n"
+        f"status: {status or '(none)'}\n"
+        f"findings: {findings}\n"
+        f"EXIT={exit_status}\n"
+    )
+    if not capture:
+        # The promotion already holds a log the caller or the manifest named,
+        # so that is the evidence cited; reporting this path would put a log
+        # nothing points at on the record. The outcome is still the check's own.
+        return result
+    path = run_dir(run_id) / _REVIEW_GATE_LOG_NAME
+    try:
+        unchanged = path.is_file() and path.read_text(encoding="utf-8") == text
+        if not unchanged:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text, encoding="utf-8")
+    except OSError:
+        return result
+    result["log_path"] = str(path)
+    return result
+
+
 def _require_gate_log_agrees(
     run_id: str,
     gate_check: Mapping[str, Any] | None,
@@ -1640,7 +1854,7 @@ def _require_gate_log_agrees(
             "the log reports, or re-run the gate into its own log"
         )
     command = str(gate_check.get("command") or "").strip()
-    if _PYTEST_COMMAND.search(command):
+    if _command_runs_pytest(gate_check.get("command") or ""):
         last_run = review_module.last_run_text(log_text)
         if review_module.pytest_summary_failure_count(last_run) is None:
             raise CrewError(
@@ -1655,6 +1869,81 @@ def _require_gate_log_agrees(
 
 
 _SUITE_ARM_NAMES = ("baseline_suite", "after_suite")
+
+
+def _merged_primary_revision(record: Mapping[str, Any], head: str = "") -> str:
+    """The newest primary ancestor explicitly merged into the run after dispatch.
+
+    Read merge parents rather than today's primary tip: primary may have moved
+    since the repair, and an unmerged failure there cannot excuse this run.
+    A merge parent must belong to primary and advance the dispatch base.
+    """
+    from reckon.crew.promotion_records import _run_head, _scope_tree
+
+    tree = _scope_tree(record)
+    repo = str(record.get("repo") or "").strip()
+    base = str(record.get("base_sha") or "").strip()
+    if tree is None or not repo or not base:
+        return ""
+    head = head or _run_head(record)
+    primary = _commit_canonical_id(Path(repo), "HEAD")
+    if not head or not primary:
+        return ""
+    history = subprocess.run(
+        [
+            "git",
+            "rev-list",
+            "--first-parent",
+            "--merges",
+            "--parents",
+            f"{base}..{head}",
+        ],
+        cwd=tree,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=10,
+    )
+    if history.returncode:
+        return ""
+    for line in history.stdout.splitlines():
+        for parent in line.split()[2:]:
+            if (
+                parent != base
+                and _revision_is_ancestor(tree, base, parent)
+                and _revision_is_ancestor(tree, parent, primary)
+            ):
+                return parent
+    return ""
+
+
+def _armed_delta_owns_gate(record: Mapping[str, Any], gate: Mapping[str, Any]) -> bool:
+    """Whether the mandatory armed delta will judge this exact gate's failures.
+
+    An imported primary can be newer than the recorded baseline. Its reading
+    belongs to the armed evaluator, which can schedule it or report a dry-run
+    measurement without changing state. Only that evaluator's own gate may
+    defer the verdict check; unrelated commands keep their independent guard.
+    """
+    from reckon.crew.promotion_records import (
+        _arm_command_matches,
+        _scope_tree,
+        _scoped_suite_command,
+    )
+
+    command = _scoped_suite_command(record)
+    manifest = _fresh_manifest(record)
+    after = manifest.get("after_suite") if manifest else None
+    return bool(
+        command
+        and isinstance(after, Mapping)
+        and after.get("completed") is True
+        and _head_arm_cites_gate(after, gate)
+        and _arm_command_matches(
+            str(gate.get("command") or ""), [command], _scope_tree(record)
+        )
+        and _merged_primary_revision(record)
+    )
 
 
 def _gate_cited_log_text(gate_check: Mapping[str, Any] | None) -> str | None:
@@ -1996,6 +2285,8 @@ def _require_verdict_matches_exit_status(
         return
     asserted = gate_check.get("exit_status")
     if isinstance(asserted, bool) or not isinstance(asserted, int) or asserted == 0:
+        return
+    if _armed_delta_owns_gate(record, gate_check):
         return
     uncovered = _red_base_uncovered_ids(record, gate_check)
     if uncovered == set():

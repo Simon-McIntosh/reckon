@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_measured": false,
+  "added_failures_note": "Not a measured suite delta: reviewed source manifest has neither baseline_suite nor after_suite, and its prompt explicitly declares FENCE \u2014 SUITE unarmed; zero denotes no reported added failure IDs for this documentation-only change.",
+  "after_suite": null,
+  "assertion_analysis": "No executable assertions added by any reviewed commit; six named test paths are proposed future measures only, and there is no self-referential assertion to evaluate.",
+  "baseline_suite": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-17T01:23:30Z",
+  "dispatched_at": "2026-11-17T01:16:40Z",
+  "figure_review": "Rendered both SVGs from the exact reviewed commit with ImageMagick, inspected both PNGs; no clipped or overlapping labels observed.",
+  "findings": [
+    {
+      "file": "docs/research/what-fills-the-fleet-nodes-memory.html",
+      "line": "61",
+      "severity": "non-blocking",
+      "text": "non-blocking: 7,224,820 KiB equals 6.89 GiB or 7.40 GB, not the stated 7.22 GiB; the raw count is preserved so this does not invalidate the partial-profile conclusion, but the displayed peak must use a correct conversion."
+    },
+    {
+      "file": "docs/research/what-fills-the-fleet-nodes-memory.html",
+      "line": "102",
+      "severity": "non-blocking",
+      "text": "non-blocking: Thirty-two 256 MiB quotas total 8 GiB, which is 8.59 GB, so subtracting them from 8.8 GB leaves about 0.21 GB rather than 0.8 GB; the page already requires actual headroom validation, but the candidate capacity calculation overstates its remaining space."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "Read the seven source commits individually from 85601aa3d33b4d3229e75357362001c988df5c80 through 29736bf386b2545a9213b11ae21c00bf28ed7ae5; they add one research page and two readable SVGs, with two numerical unit errors in the page.",
+    "done_when": "The source prompt requires a clean audit-doc plus measured cause, coverage, proposed measure and effort for all six items; measurements/audit-doc-final.log records OK and EXIT=0 at 29736bf386, and the six sections contain those fields.",
+    "goal": "The six-item measurement goal in the source brief is addressed by docs/research/what-fills-the-fleet-nodes-memory.html:44-116, with incomplete profiling and unmeasured remedies explicitly separated from successful observations.",
+    "manifest": "The source manifest names seven commits, the audit receipt and failed profiling receipts, accurately discloses the missing paired comparison, and declares no baseline_suite or after_suite because this research node was unarmed.",
+    "write_paths": "The source manifest declares docs/research/what-fills-the-fleet-nodes-memory.html and docs/figures/fleet-node-memory, and the complete base-to-head diff changes exactly those three artifacts."
+  },
+  "justifications": {
+    "durability": "docs/research/what-fills-the-fleet-nodes-memory.html:53-116 proposes six future tests but adds no executable assertions, so audit-doc protects document shape while changed measurements or broken controls would not fail a committed regression test.",
+    "evidence": "measurements/audit-doc-final.log records a successful check at the reviewed head and measurements/limit-probe-1320866.log records MemoryError with a surviving peer versus two unbounded OOM kills, while docs/research/what-fills-the-fleet-nodes-memory.html:61-65 correctly limits the partial profiles.",
+    "fit": "docs/research/what-fills-the-fleet-nodes-memory.html:5-20 follows typed research metadata and shared styles, and both rendered SVGs have readable labels and no clipping, but lines 61 and 102 mix binary and decimal units.",
+    "goal_fidelity": "docs/research/what-fills-the-fleet-nodes-memory.html:46-116 answers all six topics with usable observations and controls, but line 65 records that the required cheapest-change comparison was never completed.",
+    "reuse": "The entire diff adds research HTML and SVG data, with no function, class or runtime module added and thus no capability implementation to duplicate; docs/research/what-fills-the-fleet-nodes-memory.html:119-135 explicitly maps existing owners and plan coverage.",
+    "scope_discipline": "The base-to-head diff contains only docs/research/what-fills-the-fleet-nodes-memory.html and the two SVG files under the declared docs/figures/fleet-node-memory scope."
+  },
+  "next_action": "Coordinator must dispose the two non-blocking unit-conversion findings before promotion; suggested folded repair node: correct-fleet-memory-unit-conversions.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The six-item measurement goal in the source brief is addressed by docs/research/what-fills-the-fleet-nodes-memory.html:44-116, with incomplete profiling and unmeasured remedies explicitly separated from successful observations.\nVERDICT done_when: The source prompt requires a clean audit-doc plus measured cause, coverage, proposed measure and effort for all six items; measurements/audit-doc-final.log records OK and EXIT=0 at 29736bf386, and the six sections contain those fields.\nVERDICT write_paths: The source manifest declares docs/research/what-fills-the-fleet-nodes-memory.html and docs/figures/fleet-node-memory, and the complete base-to-head diff changes exactly those three artifacts.\nVERDICT manifest: The source manifest names seven commits, the audit receipt and failed profiling receipts, accurately discloses the missing paired comparison, and declares no baseline_suite or after_suite because this research node was unarmed.\nVERDICT diff: Read the seven source commits individually from 85601aa3d33b4d3229e75357362001c988df5c80 through 29736bf386b2545a9213b11ae21c00bf28ed7ae5; they add one research page and two readable SVGs, with two numerical unit errors in the page.\nCALL_SITES: none\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: docs/research/what-fills-the-fleet-nodes-memory.html:46-116 answers all six topics with usable observations and controls, but line 65 records that the required cheapest-change comparison was never completed.\nSCORE evidence: 16\nJUSTIFICATION evidence: measurements/audit-doc-final.log records a successful check at the reviewed head and measurements/limit-probe-1320866.log records MemoryError with a surviving peer versus two unbounded OOM kills, while docs/research/what-fills-the-fleet-nodes-memory.html:61-65 correctly limits the partial profiles.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The base-to-head diff contains only docs/research/what-fills-the-fleet-nodes-memory.html and the two SVG files under the declared docs/figures/fleet-node-memory scope.\nSCORE durability: 8\nJUSTIFICATION durability: docs/research/what-fills-the-fleet-nodes-memory.html:53-116 proposes six future tests but adds no executable assertions, so audit-doc protects document shape while changed measurements or broken controls would not fail a committed regression test.\nSCORE fit: 17\nJUSTIFICATION fit: docs/research/what-fills-the-fleet-nodes-memory.html:5-20 follows typed research metadata and shared styles, and both rendered SVGs have readable labels and no clipping, but lines 61 and 102 mix binary and decimal units.\nSCORE reuse: 20\nJUSTIFICATION reuse: The entire diff adds research HTML and SVG data, with no function, class or runtime module added and thus no capability implementation to duplicate; docs/research/what-fills-the-fleet-nodes-memory.html:119-135 explicitly maps existing owners and plan coverage.\nFINDING docs/research/what-fills-the-fleet-nodes-memory.html:61 non-blocking: 7,224,820 KiB equals 6.89 GiB or 7.40 GB, not the stated 7.22 GiB; the raw count is preserved so this does not invalidate the partial-profile conclusion, but the displayed peak must use a correct conversion.\nFINDING docs/research/what-fills-the-fleet-nodes-memory.html:102 non-blocking: Thirty-two 256 MiB quotas total 8 GiB, which is 8.59 GB, so subtracting them from 8.8 GB leaves about 0.21 GB rather than 0.8 GB; the page already requires actual headroom validation, but the candidate capacity calculation overstates its remaining space.\n",
+  "review_run_id": "r-20261117T011121061506-review-of-what-fills-the-fleet-nodes-memory-29736bf386b2",
+  "reviewed_base_sha": "85601aa3d33b4d3229e75357362001c988df5c80",
+  "reviewed_head_sha": "29736bf386b2545a9213b11ae21c00bf28ed7ae5",
+  "reviewed_run_id": "r-20261116T221233563399-what-fills-the-fleet-nodes-memory",
+  "scores": {
+    "durability": 8,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T02:01:53.055326+00:00",
+  "total": 97
+}

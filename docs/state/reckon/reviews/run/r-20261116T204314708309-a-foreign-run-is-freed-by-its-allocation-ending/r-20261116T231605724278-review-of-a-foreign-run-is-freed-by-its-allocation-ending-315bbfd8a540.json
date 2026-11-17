@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-16T23:20:03.867Z",
+  "dispatched_at": "2026-11-16T23:19:45Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the case's independent evidence is the verdict at :174 and the state and peer-job assertions at :179-180; the relied_on echo only names which fact the reading used and carries no verdict",
+      "recorded_at": "2026-11-16T23:49:17.234167+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_foreign_run_is_freed_by_its_allocation_ending.py",
+      "id": "fb9bac6359a",
+      "line": 178,
+      "severity": "non-blocking",
+      "text": "`observed[\"relied_on\"][\"launcher_job_id\"] == \"1319675\"` compares the observation against the same constant the test wrote into the pointer the reading was handed, so the two sides move together: a `_nothing_working_the_run` that echoes `record.get(\"launcher_job_id\")` verbatim satisfies it whatever it relies on, and the independent evidence in this case is the verdict at :174 and the state/peer-job assertions at :179-180."
+    }
+  ],
+  "project": "reckon",
+  "review": {
+    "assertions": [
+      "Reverting reckon/crew/recovery_liveness.py:1479-1488 to the base `return False` for an unnamed launcher job reddens tests/test_a_foreign_run_is_freed_by_its_allocation_ending.py:174, which scripts an answer with no launcher job and asserts True.",
+      "Asserting the `launcher_job_state` of a job the answer does not carry reddens :179, which reads the recorded observation rather than a value the test supplied.",
+      "Restoring dispatch_launch._allocation_job_id (FLEET_JOB_ID first, no cgroup walk) reddens :367, where the environ carries FLEET_JOB_ID 1319168 beside SLURM_JOB_ID 1320600 and the pointer must record 1320600.",
+      "Dropping the SLURM_JOBID alias reddens :384, which supplies only the legacy spelling and requires the field.",
+      "The assertion at :178 echoes the launcher_job_id the test itself wrote and is recorded as a finding rather than counted as coverage."
+    ],
+    "verdicts": {
+      "diff": "Read commit by commit: 14f214713c carries the code and test change (purged-job branch, `_job_from_environment` in reckon/host.py, `_allocation_job_id` deleted, the test rewritten onto fixture placements), cc3d1a13d4 and 315bbfd8a5 touch only the evidence fragment, so the code the gate measured at cc3d1a13d4 is the code at head.",
+      "done_when": "Read at prompt.txt:283; the gained test cases assert the purged-job shape and the record's own placement reading, and tests/test_a_foreign_run_is_freed_by_its_allocation_ending.py:157-180, :205-224 and :295-469 cover (a)-(e) plus the CLI-record assertions the done_when names.",
+      "goal": "The reviewed node's goal is stated at prompt.txt:38 of its dispatch, 'Prove a foreign run gone once the allocation it ran inside has left the queue'; the gained commit 14f214713c rewrites reckon/crew/recovery_liveness.py:1479-1488 so an answered queue that omits the named launcher job reads the run gone, and reconciles that against the failed-query branch above it.",
+      "manifest": "Read; it states the literal gate command with 16 passed at head, 10 failed/6 passed at the base content, the two suite arms at 58 and 74 passed, ruff parity, and the four arm logs; every figure it claims reconciles with the log I opened.",
+      "write_paths": "Declared at prompt.txt:122-127 (two modules, the test file, the fragment, the figures directory); `git diff --name-status a606f0345a..315bbfd8a5` names exactly five paths, and reckon/host.py is outside that fence but is named in the repair instruction recorded at resume-1-advice.txt and declared under outside_scope in the reviewed manifest."
+    }
+  },
+  "review_run_id": "r-20261116T231605724278-review-of-a-foreign-run-is-freed-by-its-allocation-ending-315bbfd8a540",
+  "reviewed_base_sha": "a606f0345a962e260f377c78bcbde83ed55b6a3e",
+  "reviewed_head_sha": "315bbfd8a54044070ebb29669226bd1f5691a874",
+  "reviewed_run_id": "r-20261116T204314708309-a-foreign-run-is-freed-by-its-allocation-ending",
+  "rubric": "run",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T23:39:03.945504+00:00",
+  "total": 112
+}

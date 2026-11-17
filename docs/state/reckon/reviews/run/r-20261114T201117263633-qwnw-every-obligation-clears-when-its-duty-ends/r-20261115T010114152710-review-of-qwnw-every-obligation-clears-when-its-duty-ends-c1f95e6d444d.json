@@ -1,0 +1,72 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: baseline_suite.log at 7b45ca90 records 55 passed EXIT=0 and after_suite.log at c0b40266 records 55 passed EXIT=0, so the set difference is empty",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/station_obligations.py:335 (refresh publishes via _with_sweep_failures)",
+    "reckon/crew/station_obligations.py:565 (publish prunes the durable record)",
+    "reckon/mcp_views.py:4618 (the obligations view calls without_departed_run_duties)",
+    "reckon/hooks/coordinator_obligations.py:1638 (the stop hook calls without_departed_run_duties)",
+    "reckon/crew/runs.py:2346 (record_run_acknowledgement falls back to _obligation_record_project)"
+  ],
+  "completed_at": "2026-11-15T02:15:01.802Z",
+  "dispatched_at": "2026-11-15T01:13:34Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-every-obligation-clears-when-its-duty-ends-c1f95e6d444d",
+      "recorded_at": "2026-11-15T03:39:37.904886+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": "1097",
+      "severity": "blocking",
+      "text": "sweep-failed joins LIVE_POINTER_DUTY_KINDS while worktree-held stays out, and census_after.log reads 22 worktree-held rows whose run has a ledger record and no live pointer. The section's deliverable removes a row when its run is promoted, landed, discarded or resumed; these are those rows, and the change does not clear them"
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-every-obligation-clears-when-its-duty-ends.html",
+      "line": "71",
+      "severity": "non-blocking",
+      "text": "the paragraph cites census_after.log and reports 132 documents, 149 stored rows, 90 served and the instant 22:43:28Z, while the log it names carries 150 stored rows, 91 served and 22:59:03Z, and its per-kind table differs in four rows; the headline 25 agrees, the rest is transcribed from a different run than the one cited"
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "2280",
+      "severity": "non-blocking",
+      "text": "_obligation_record_project globs crew_home()/obligations and parses each document itself, duplicating the walk obligation_snapshot.snapshot_dir and live_worker_census._snapshot_documents already own"
+    },
+    {
+      "file": "tests/test_a_duty_clears_when_its_run_ends.py",
+      "line": "224",
+      "severity": "non-blocking",
+      "text": "assert recorded[\"project\"] == PROJECT compares the constant the same test wrote into the duty document against the value read back, and the fixture mounts one project under that name, so the assertion cannot tell the duty-document fallback from another fixture-derived resolution"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that every obligation clears when its duty ends; reckon/crew/station_obligations.py:117 drops a stored sweep failure once its run holds no live pointer or has a ledger record, and reckon/crew/runs.py:2280 resolves a deferral's project from the stored duty document, so the sweep-failed and acknowledgement halves are delivered and the worktree-held half is untouched\nVERDICT done_when: the done_when names four measures; the negative control is recorded and red on the right four tests, the acknowledgement test is present and green, the four-kind test measure is met for one kind only, and the census measure reads 25 where the done_when states zero\nVERDICT write_paths: the manifest's orientation_write_paths name the evidence fragment, its figures directory, reckon/ and tests/; every path in the diff lies inside that set and the fragment sits at its declared scope path\nVERDICT manifest: the manifest records status complete, four commits, three suite arms at 55 passed exit 0 and a negative control at 4 failed 2 passed exit 1; its tests line names the two-file arm, so no recorded arm runs the change's own test module\nVERDICT diff: read commit by commit against 7b45ca90: 2ff2922c and c0b40266 write the fragment, 2344143258 changes three source files and adds tests/test_a_duty_clears_when_its_run_ends.py, and c1f95e6d rewrites the fragment\nCALL_SITES: reckon/crew/station_obligations.py:335 (refresh publishes via _with_sweep_failures), reckon/crew/station_obligations.py:565 (publish prunes the durable record), reckon/mcp_views.py:4618 (the obligations view calls without_departed_run_duties), reckon/hooks/coordinator_obligations.py:1638 (the stop hook calls without_departed_run_duties), reckon/crew/runs.py:2346 (record_run_acknowledgement falls back to _obligation_record_project)\nSCORE goal_fidelity: 10\nJUSTIFICATION goal_fidelity: reckon/crew/obligation_snapshot.py:1097 adds sweep-failed to LIVE_POINTER_DUTY_KINDS but leaves worktree-held out, so the 22 worktree-held rows in census_after.log whose run has a ledger record and no live pointer still stand although the section names that case\nSCORE evidence: 10\nJUSTIFICATION evidence: census_after.log's EXIT_METRIC records rows_no_live_pointer=25 against a done_when that asks for zero, and the three suite arms each run only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, so no recorded gate runs the change's own module\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in `git diff --stat 7b45ca90 c1f95e6d` is the evidence fragment or a file under reckon/crew/ and tests/, all inside the write paths the manifest declares\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_duty_clears_when_its_run_ends.py:156 and :173 assert the settlement on a pointer the test removes itself, and negative_control.log shows four of the six reddening at the base revision\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/station_obligations.py:117 keeps the filter-before-emit shape the module already uses, with no plan, gate or ticket identifier in any added name or comment\nSCORE reuse: 12\nJUSTIFICATION reuse: reckon/crew/runs.py:2280 re-walks the stored obligation documents that reckon/crew/live_worker_census.py:378 already enumerates, and builds the path directly rather than through obligation_snapshot.snapshot_dir\nFINDING reckon/crew/obligation_snapshot.py:1097 blocking: sweep-failed joins LIVE_POINTER_DUTY_KINDS while worktree-held stays out, and census_after.log reads 22 worktree-held rows whose run has a ledger record and no live pointer. The section's deliverable removes a row when its run is promoted, landed, discarded or resumed; these are those rows, and the change does not clear them\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-every-obligation-clears-when-its-duty-ends.html:71 non-blocking: the paragraph cites census_after.log and reports 132 documents, 149 stored rows, 90 served and the instant 22:43:28Z, while the log it names carries 150 stored rows, 91 served and 22:59:03Z, and its per-kind table differs in four rows; the headline 25 agrees, the rest is transcribed from a different run than the one cited\nFINDING reckon/crew/runs.py:2280 non-blocking: _obligation_record_project globs crew_home()/obligations and parses each document itself, duplicating the walk obligation_snapshot.snapshot_dir and live_worker_census._snapshot_documents already own\nFINDING tests/test_a_duty_clears_when_its_run_ends.py:224 non-blocking: assert recorded[\"project\"] == PROJECT compares the constant the same test wrote into the duty document against the value read back, and the fixture mounts one project under that name, so the assertion cannot tell the duty-document fallback from another fixture-derived resolution\n",
+  "review_node": "review-of-qwnw-every-obligation-clears-when-its-duty-ends-c1f95e6d444d",
+  "review_run_id": "r-20261115T010114152710-review-of-qwnw-every-obligation-clears-when-its-duty-ends-c1f95e6d444d",
+  "reviewed_base_sha": "7b45ca9058dfefe604a27839821e639c5f03ce02",
+  "reviewed_head_sha": "c1f95e6d444d74537d4d8fe474d068e555dffaca",
+  "reviewed_run_id": "r-20261114T201117263633-qwnw-every-obligation-clears-when-its-duty-ends",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T010114152710-review-of-qwnw-every-obligation-clears-when-its-duty-ends-c1f95e6d444d"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 10,
+    "fit": 18,
+    "goal_fidelity": 10,
+    "reuse": 12,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T02:25:07.028303+00:00",
+  "total": 86
+}

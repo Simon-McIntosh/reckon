@@ -1,8 +1,8 @@
 #!/bin/bash
 # fleet-health — sample the fleet node once a minute, onto shared storage.
 #
-# Started by fleet-supervisor inside the allocation's batch step, so it lives
-# exactly as long as the allocation and never outlives it. The samples go to
+# Started by fleet-supervisor inside the allocation's batch step. A separate
+# --scheduler reader appends scheduler rows after that allocation ends. Samples go to
 # GPFS, not the node: when the node is declared failed the node-local state is
 # gone and SSH to it is refused, so the minutes before a failure survive only
 # if they were written somewhere else as they happened.
@@ -14,7 +14,7 @@
 # timed stat of $HOME (a GPFS stall), the time the local slurmd takes to answer
 # (slurmd itself), and a controller ping (the network path).
 #
-# Five triggers mark pressure. The task columns name a spawn leak while it
+# Thresholds mark pressure. The task columns name a spawn leak while it
 # grows: this user's task count (what RLIMIT_NPROC counts), how many of them
 # are Python interpreters, and the process with the most children. A node-wide
 # D-state count and the one-minute load catch a stall that crosses no other
@@ -24,11 +24,21 @@
 # each process's thread count and wait channel, followed by every D-state
 # process on the node whoever owns it, because a stall is often in another
 # user's process or a kernel thread. An alert is raised at most once per ten
-# minutes. A kernel OOM report lists each process's memory but not its parent
+# minutes. A rising cgroup kill count always retains a table and a dated
+# alert, even inside that interval. A kernel OOM report lists each process's memory but not its parent
 # or command line, so without that table a leak can be measured and not named.
 #
 # One file per job and node; a second copy for the same job and node exits.
 set -uo pipefail
+
+self_dir=$(dirname -- "$(readlink -f -- "$0")")
+repo_root=$(dirname -- "$self_dir")
+export PYTHONPATH="$repo_root${PYTHONPATH:+:$PYTHONPATH}"
+health_python="$repo_root/.venv/bin/python"
+
+if [ "${1:-}" = --scheduler ]; then
+    exec "$health_python" -m reckon.crew.fleet_node "$@"
+fi
 
 once=0
 passes=0
@@ -74,15 +84,23 @@ fi
 ms_since() { echo $(( ($(date +%s%N) - $1) / 1000000 )); }
 over_load() { awk -v l="$1" -v t="$2" 'BEGIN { exit !(l > t) }'; }
 
-header=$'utc\tload1\tload5\tprocs_running\tprocs_blocked\tdstate\tmem_avail_mb\tswap_free_mb\tjob_mem_mb\tjob_mem_max_mb\thome_stat_ms\tslurmd_ms\tctld_ping\ttasks\tpython_procs\ttop_parent'
-if [ -s "$out" ] && [ "$(head -1 "$out")" != "$header" ]; then
-    mv -f "$out" "${out%.tsv}.$(date -u +%Y%m%dT%H%M%SZ).tsv"
-fi
-[ -s "$out" ] || printf '%s\n' "$header" > "$out"
+# Both writers take the file server's record lock, which holds across nodes.
+"$health_python" -m reckon.crew.fleet_node --initialise-series "$out" || exit 1
 
+# Resume the last readable count so restarting the sampler does not hide a kill.
+last_kills=$(awk -F '\t' '
+    NR == 1 {for (i=1; i<=NF; i++) if ($i == "job_oom_kill") column=i; next}
+    column && $column ~ /^[0-9]+$/ {n=$column}
+    END {print n}' "$out")
 last_snapshot=0
 count=0
 while :; do
+    session_scratch=$(timeout 20 "${RECKON_SHIM_PYTHON:-python3}" -m reckon.crew.fleet_supervisor sample-session-scratch) || session_scratch=unknown
+    writable_interpreters=$(timeout 20 "${RECKON_SHIM_PYTHON:-python3}" -m reckon.crew.fleet_supervisor check-interpreters) || writable_interpreters=unknown
+    test_sample=$(timeout 20 "${RECKON_SHIM_PYTHON:-python3}" -m reckon.crew.fleet_supervisor sample-test-processes) || test_sample=$'unknown\tunknown\t[]'
+    IFS=$'\t' read -r test_trees test_rss test_runs <<< "$test_sample"
+    test_rss=${test_rss:-unknown}
+    test_runs=${test_runs:-[]}
     read -r load1 load5 _ < "$procdir/loadavg"
     running=$(awk '/^procs_running/ {print $2}' "$procdir/stat")
     blocked=$(awk '/^procs_blocked/ {print $2}' "$procdir/stat")
@@ -91,6 +109,14 @@ while :; do
     swap=$(awk '/^SwapFree:/ {printf "%d", $2/1024}' "$procdir/meminfo")
     jobmem=$(awk '{printf "%d", $1/1048576}' "$cgdir/memory.current" 2>/dev/null || echo -)
     jobmax=$(awk '$1 ~ /^[0-9]+$/ {printf "%d", $1/1048576; next} {print $1}' "$cgdir/memory.max" 2>/dev/null || echo -)
+    kills=$(awk '$1 == "oom_kill" && $2 ~ /^[0-9]+$/ {print $2; found=1; exit}
+        END {if (!found) print "-"}' "$cgdir/memory.events" 2>/dev/null) || kills=-
+    kill_rise=0
+    if [[ "$kills" =~ ^[0-9]+$ ]]; then
+        if [[ "$last_kills" =~ ^[0-9]+$ ]] && [ "$kills" -gt "$last_kills" ]; then
+            kill_rise=$((kills - last_kills))
+        fi
+    fi
     t=$(date +%s%N); timeout 10 stat "$HOME" >/dev/null 2>&1 && home=$(ms_since "$t") || home=timeout
     t=$(date +%s%N); timeout 25 scontrol show slurmd >/dev/null 2>&1 && slurmd=$(ms_since "$t") || slurmd=timeout
     ping=$(timeout 10 scontrol ping 2>/dev/null | grep -oE 'UP|DOWN' | head -1)
@@ -100,31 +126,45 @@ while :; do
     read -r top_n top_pid < <(awk '{print $2}' <<<"$table" | sort | uniq -c | sort -rn | head -1)
     top_args=$(ps -o args= -p "${top_pid:-0}" 2>/dev/null | tr -d '\t\n' | cut -c1-80)
     top="${top_n:-0}:${top_pid:--}:${top_args:--}"
+    disk=$(timeout 15 "${FLEET_DISK_PYTHON:-${RECKON_SHIM_PYTHON:-python3}}" -m reckon.crew.fleet_supervisor sample-node-disk) || disk="unknown unknown unknown unknown"
+    read -r disk_total disk_used disk_free disk_inodes <<<"$disk"
     now=$(date -u +%FT%TZ)
-    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$now" \
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t-\t-\t-\t-\tnode\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$now" \
         "$load1" "$load5" "$running" "$blocked" "$dstate" "$avail" "$swap" \
-        "$jobmem" "$jobmax" "$home" "$slurmd" "${ping:-none}" "$tasks" "$python" "$top" >> "$out"
+        "$jobmem" "$jobmax" "$home" "$slurmd" "${ping:-none}" "$tasks" "$python" "$top" "$writable_interpreters" "$kills" "$SLURM_JOB_ID" "$node" "$session_scratch" "$test_trees" "$test_rss" "$test_runs" \
+        "${disk_total:-unknown}" "${disk_used:-unknown}" "${disk_free:-unknown}" "${disk_inodes:-unknown}" \
+        | "$health_python" -m reckon.crew.fleet_node --append-node-row "$out" || exit 1
 
     reason=""
-    [ "$tasks" -gt "$TASKS_ALERT" ] && reason="$tasks tasks"
+    if [[ "$test_trees" =~ ^[0-9]+$ ]] && [ "$test_trees" -gt 0 ]; then
+        reason="$test_trees test trees ($test_rss resident bytes): $test_runs"
+    fi
+    [ "$tasks" -gt "$TASKS_ALERT" ] && reason="${reason:+$reason, }$tasks tasks"
     [ "$python" -gt "$PYTHON_ALERT" ] && reason="${reason:+$reason, }$python python processes"
     [ "${avail:-0}" -lt "$MEM_AVAIL_ALERT_MB" ] && reason="${reason:+$reason, }${avail} MB available"
     [ "${dstate:-0}" -gt "$DSTATE_ALERT" ] && reason="${reason:+$reason, }$dstate D-state processes"
     over_load "${load1:-0}" "$LOAD_ALERT" && reason="${reason:+$reason, }load $load1"
-    if [ -n "$reason" ] && [ $(( $(date +%s) - last_snapshot )) -ge "$snapshot_interval" ]; then
+    if [ "$kill_rise" -gt 0 ]; then
+        reason="${reason:+$reason, }$kill_rise memory kills ($last_kills -> $kills)"
+    fi
+    if [ "$kill_rise" -gt 0 ] || { [ -n "$reason" ] && [ $(( $(date +%s) - last_snapshot )) -ge "$snapshot_interval" ]; }; then
         last_snapshot=$(date +%s)
-        snap="$dir/${SLURM_JOB_ID}-${node}-$(date -u +%Y%m%dT%H%M%SZ).ps"
+        snap="$dir/${SLURM_JOB_ID}-${node}-$(date -u +%Y%m%dT%H%M%S%NZ).ps"
         {
             printf '%s\n' "# per-process thread count and wait channel, $now"
-            timeout 30 ps -u "$USER" -o pid,ppid,pgid,etimes,rss,nlwp,wchan:32,stat,comm,args
+            timeout 30 ps -u "$USER" --sort=-rss -o pid,ppid,pgid,etimes,rss,nlwp,wchan:32,stat,comm,args
             printf '%s\n' "# node-wide D-state processes, whoever owns them, $now"
             timeout 30 ps -eo pid,ppid,user,etimes,nlwp,wchan:32,stat,comm,args 2>/dev/null \
                 | awk 'NR==1 || $7 ~ /^D/'
         } > "$snap" 2>&1
-        msg="$now fleet node $node under pressure: $reason. Busiest parent $top. Process table: $snap"
+        largest=$(awk '/^# node-wide/ {exit}
+            $1 ~ /^[0-9]+$/ {printf "%s%s KiB %s (pid %s)", sep, $5, $9, $1
+                sep="; "; if (++n == 5) exit}' "$snap")
+        msg="$now fleet job $SLURM_JOB_ID node $node under pressure: $reason. Busiest parent $top. Largest processes: ${largest:-unknown}. Process table: $snap"
         printf '%s\n' "$msg" >> "$state/alerts.log"
         printf '%s\n' "$msg" > "$state/notice"
     fi
+    [[ "$kills" =~ ^[0-9]+$ ]] && last_kills="$kills"
     count=$((count + 1))
     [ "$once" -eq 1 ] && break
     [ "$passes" -gt 0 ] && [ "$count" -ge "$passes" ] && break

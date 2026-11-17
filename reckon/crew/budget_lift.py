@@ -107,6 +107,7 @@ FORMS = (MULTIPLE, DRAIN_BY, UNCAPPED, CREDITS)
 
 GLOBAL = "global"
 SESSION_PREFIX = "session:"
+PROJECT_PREFIX = "project:"
 
 # The four conditions that end a lift, named the way the watch stream reports
 # them. One ladder computes them, in :func:`end_cause`, so the pace path and the
@@ -447,6 +448,7 @@ def clear(
     group: str,
     lift_id: str | None = None,
     session: str | None = None,
+    project: str | None = None,
     cleared_by: str | None = None,
     now: datetime | None = None,
     environ: Mapping[str, str] | None = None,
@@ -454,7 +456,8 @@ def clear(
 ) -> dict[str, Any] | None:
     """Revoke an in-force lift on ``group``, recording who and when.
 
-    The lift revoked is named one of two ways. ``lift_id`` revokes that exact
+    ``project`` names only that project's lift, so repeating a project clear
+    cannot revoke a global fallback. ``lift_id`` revokes that exact
     record, but only when it belongs to ``group``: an id naming a different
     group's lift is refused rather than revoked, because the id path may revoke
     only what the group path could, and the group path never reaches another
@@ -491,9 +494,17 @@ def clear(
             readings=None,
             now=moment,
             session=session,
+            project=project,
             bound=ceilings(config),
         )
     if governing is None:
+        return None
+    if (
+        project is not None
+        and str(governing.get("scope")) != f"{PROJECT_PREFIX}{project}"
+    ):
+        if lift_id is not None:
+            raise LiftRefusedError("--for-project and --id must name the same scope")
         return None
     if not _in_force(governing, readings=None, now=moment, bound=ceilings(config)):
         return None
@@ -646,6 +657,7 @@ def effective_budget(
     readings: Sequence[Mapping[str, Any]] | None,
     now: datetime,
     session: str | None = None,
+    project: str | None = None,
     path: str | Path | None = None,
 ) -> Mapping[str, Any]:
     """Return the budget block in force for ``group`` at ``now``.
@@ -662,10 +674,10 @@ def effective_budget(
     readings may end a reset-anchored lift just as the clock's own reset stamp
     does.
 
-    A session lift applies only to the session it names, a global one to every
-    session, and where both apply the session lift governs its own session. The
-    session is taken only from the argument: a resolver that reached for the
-    environment would answer a different question from the one its caller asked.
+    Session lifts govern their session over project lifts, which govern their
+    project over global lifts. Scope identity comes only from the arguments:
+    a resolver that reached for the environment would answer a different
+    question from the one its caller asked.
 
     The returned block never carries ``pace_multiple`` as ``None``. Only the
     multiple form raises the multiple, so it carries the lifted figure; the
@@ -708,6 +720,7 @@ def effective_budget(
         readings=readings,
         now=moment,
         session=session,
+        project=project,
         bound=ceilings(config),
     )
     if lift is None:
@@ -1128,32 +1141,42 @@ def _governing_lift(
     now: datetime,
     session: str | None,
     bound: LiftCeilings,
+    project: str | None = None,
 ) -> Mapping[str, Any] | None:
     """Return the lift in force for ``group``, or ``None``.
 
-    A session lift is chosen over a global one for the session it names, since
-    that lift governs its own session; otherwise the newest in-force lift of the
-    applicable scope wins.
+    Scope specificity governs before grant time: session, then project, then
+    global. Within the governing scope the newest in-force lift wins.
     """
     moment = _aware(now)
     in_force = [
         lift
         for lift in lifts
-        if _applies(lift, group=group, session=session)
+        if _applies(lift, group=group, session=session, project=project)
         and _in_force(lift, readings=readings, now=moment, bound=bound)
     ]
     if not in_force:
         return None
-    named = [
-        lift
-        for lift in in_force
-        if str(lift.get("scope", "")).startswith(SESSION_PREFIX)
-    ]
-    pool = named or in_force
-    return max(pool, key=lambda lift: str(lift.get("granted_at") or ""))
+
+    def priority(lift: Mapping[str, Any]) -> tuple[int, str]:
+        scope = str(lift.get("scope") or GLOBAL)
+        specificity = (
+            2
+            if scope.startswith(SESSION_PREFIX)
+            else int(scope.startswith(PROJECT_PREFIX))
+        )
+        return specificity, str(lift.get("granted_at") or "")
+
+    return max(in_force, key=priority)
 
 
-def _applies(lift: Mapping[str, Any], *, group: str, session: str | None) -> bool:
+def _applies(
+    lift: Mapping[str, Any],
+    *,
+    group: str,
+    session: str | None,
+    project: str | None = None,
+) -> bool:
     """Whether a lift's group and scope cover this dispatch."""
     if lift.get("group") != group:
         return False
@@ -1162,6 +1185,8 @@ def _applies(lift: Mapping[str, Any], *, group: str, session: str | None) -> boo
         return True
     if scope.startswith(SESSION_PREFIX):
         return session is not None and scope[len(SESSION_PREFIX) :] == str(session)
+    if scope.startswith(PROJECT_PREFIX):
+        return project is not None and scope[len(PROJECT_PREFIX) :] == str(project)
     return False
 
 
@@ -1495,7 +1520,11 @@ def _scope(scope: str, session: str | None) -> str:
         if not value[len(SESSION_PREFIX) :]:
             raise LiftRefusedError("a session-scoped lift names --session <id>")
         return value
-    raise LiftRefusedError(f"unknown lift scope {scope!r} (global or session:<id>)")
+    if value.startswith(PROJECT_PREFIX) and value[len(PROJECT_PREFIX) :].strip():
+        return value
+    raise LiftRefusedError(
+        f"unknown lift scope {scope!r} (global, session:<id> or project:<name>)"
+    )
 
 
 def _new_id(group: str, granted_at: datetime) -> str:

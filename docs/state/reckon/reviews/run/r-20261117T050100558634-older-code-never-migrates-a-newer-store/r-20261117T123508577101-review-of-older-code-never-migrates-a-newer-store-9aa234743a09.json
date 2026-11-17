@@ -1,0 +1,105 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_log_revision": "9aa234743a09414b1a072135e1faa2a555e71dba",
+  "baseline_log_revision": "d5694fa44d63c6b52d9b80e8315d1afa897bc11e",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/run_store.py:579 backfill_revisions",
+    "reckon/run_store.py:1578 _retrying",
+    "reckon/run_store.py:1807 compare",
+    "reckon/budget.py:544 _stamp_refusal",
+    "reckon/budget.py:580 binding_window",
+    "reckon/crew/gc.py:2135 _retire_run_store",
+    "reckon/ledger.py:986 _sync_amended_run",
+    "reckon/ledger.py:3523 _index_append"
+  ],
+  "completed_at": "2026-11-17T12:53:33.357Z",
+  "dispatched_at": "2026-11-17T12:53:16Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the reviewer's own disposition: the independent records() count and the direct SQLite row count carry the durability evidence; this echo assertion does not.",
+      "recorded_at": "2026-11-17T13:10:10.121907+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the archive half of the coverage check guards the archive store the live fleet carries; a follow-up test for the archive table is cheap but does not change whether this landing stops the whole-store re-migration on the main runs table, which the guarded cases prove.",
+      "recorded_at": "2026-11-17T13:10:12.253501+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "the arms and gate were measured on code identical at dcb1bfc356 and 9aa234743a (9aa23474 edits only the evidence fragment); the coordinator's landing cites the gate on the 9aa23474 merged commit (all_debug job 1323050).",
+      "recorded_at": "2026-11-17T13:10:14.307018+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_older_code_never_migrates_a_newer_store.py",
+      "id": "f9f511a11a3",
+      "line": "272",
+      "severity": "non-blocking",
+      "text": "non-blocking: get_run(appended[\"run_id\"])[\"run_id\"] is compared with the run_id the test itself supplied, so an implementation that echoed the argument instead of reading the appended row would still pass; the independent records() count at :273 and the direct SQLite count at :280 carry the evidence, so this assertion does not hold the node."
+    },
+    {
+      "file": "reckon/run_store.py",
+      "id": "f2cce09c49a",
+      "line": "885",
+      "severity": "non-blocking",
+      "text": "non-blocking: the archive half of _lacks_declaration is added code with no test that fails if it regresses, so a store whose archive.runs lacks a declared column or index could stop migrating without any case reddening; every guarded case exercises only the main runs table."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/older-code-never-migrates-a-newer-store.html",
+      "id": "fdd53081c0a",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "non-blocking: evidence-commit still names dcb1bfc356 while the fragment lands at 9aa23474, so a reader comparing the record to the promoted revision cannot tell whether the landed text is the one measured; the arms are unaffected because 9aa23474 only edits the fragment."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "read all seven commits a5e9b92c, 0e0c715c, 19d35d7d, 4e492e9b, f6b4fd03, dcb1bfc3 and 9aa23474 against d5694fa; they add _lacks_declaration and the superset backfill gate in reckon/run_store.py, add the node test, replace the superseded promotion case with two coverage cases, and write then cite the evidence fragment, with no path outside the declared scope.",
+    "done_when": "tests/test_older_code_never_migrates_a_newer_store.py:151-178 counts zero decodes through the _legacy_payload stand-in and asserts the unknown record survives, :206-258 asserts a store missing activity_seconds is given it and 500 rows backfilled, and :261-281 asserts reads and appends; logs/gate.log records 4 passed EXIT=0 and logs/after-arm.log 67 passed EXIT=0.",
+    "goal": "the node's goal is that a store already carrying every declared column is opened without the row backfill; reckon/run_store.py:842-843 returns before _migrate_runs when _lacks_declaration (:877-903) finds every declared column and index present, and the recorded version is left exactly as found.",
+    "manifest": "read; it records status complete, seven commits, the literal gate command with 4 passed, arms of 62 passed at d5694fa and 67 passed at 9aa23474, the 500-row negative control, the two mutation receipts and clean ruff check and format logs, all with EXIT lines.",
+    "write_paths": "the source manifest declares reckon/run_store.py, both test files, the fragment and the figure directory (tests/test_a_promotion_does_not_migrate_the_run_store_every_call.py was added by the run's own reopen grant in reopened.json), and every path in the d5694fa..9aa23474 diff lies inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_older_code_never_migrates_a_newer_store.py:174-178 reddens on the coverage-check mutation and :200-203 on the equality backfill gate, but :272 is input-coupled and the archive arm at reckon/run_store.py:885-905 has no assertion at all.",
+    "evidence": "logs/gate.log (4 passed EXIT=0) and logs/negative-control.log (assert 500 == 0 EXIT=1) measure the done_when's three cases, and I re-ran tests/test_older_code_never_migrates_a_newer_store.py at 9aa23474 for 4 passed.",
+    "fit": "reckon/run_store.py:877 is a private predicate beside _runs_columns at :869, and the declared-index tuple at :99-107 states each index once, matching the module's existing declaration-before-script style.",
+    "goal_fidelity": "reckon/run_store.py:842 returns before _migrate_runs when :877-903 finds all declared columns and indexes, and :939 keeps the row backfill for a store that genuinely lacks one.",
+    "reuse": "a search for sqlite_master, PRAGMA table_info and schema-coverage helpers under reckon/ found the only other schema reader in reckon/crew/station_store.py:544, which owns a different store, so _lacks_declaration extends the existing RunStore owner rather than forking one.",
+    "scope_discipline": "the four paths changed between d5694fa and 9aa23474 are exactly those the source manifest declares, with the extra test file covered by reopened.json's granted_paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a store already carrying every declared column is opened without the row backfill; reckon/run_store.py:842-843 returns before _migrate_runs when _lacks_declaration (:877-903) finds every declared column and index present, and the recorded version is left exactly as found.\nVERDICT done_when: tests/test_older_code_never_migrates_a_newer_store.py:151-178 counts zero decodes through the _legacy_payload stand-in and asserts the unknown record survives, :206-258 asserts a store missing activity_seconds is given it and 500 rows backfilled, and :261-281 asserts reads and appends; logs/gate.log records 4 passed EXIT=0 and logs/after-arm.log 67 passed EXIT=0.\nVERDICT write_paths: the source manifest declares reckon/run_store.py, both test files, the fragment and the figure directory (tests/test_a_promotion_does_not_migrate_the_run_store_every_call.py was added by the run's own reopen grant in reopened.json), and every path in the d5694fa..9aa23474 diff lies inside them.\nVERDICT manifest: read; it records status complete, seven commits, the literal gate command with 4 passed, arms of 62 passed at d5694fa and 67 passed at 9aa23474, the 500-row negative control, the two mutation receipts and clean ruff check and format logs, all with EXIT lines.\nVERDICT diff: read all seven commits a5e9b92c, 0e0c715c, 19d35d7d, 4e492e9b, f6b4fd03, dcb1bfc3 and 9aa23474 against d5694fa; they add _lacks_declaration and the superset backfill gate in reckon/run_store.py, add the node test, replace the superseded promotion case with two coverage cases, and write then cite the evidence fragment, with no path outside the declared scope.\nCALL_SITES: reckon/run_store.py:579 backfill_revisions, reckon/run_store.py:1578 _retrying, reckon/run_store.py:1807 compare, reckon/budget.py:544 _stamp_refusal, reckon/budget.py:580 binding_window, reckon/crew/gc.py:2135 _retire_run_store, reckon/ledger.py:986 _sync_amended_run, reckon/ledger.py:3523 _index_append\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/run_store.py:842 returns before _migrate_runs when :877-903 finds all declared columns and indexes, and :939 keeps the row backfill for a store that genuinely lacks one.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/gate.log (4 passed EXIT=0) and logs/negative-control.log (assert 500 == 0 EXIT=1) measure the done_when's three cases, and I re-ran tests/test_older_code_never_migrates_a_newer_store.py at 9aa23474 for 4 passed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the four paths changed between d5694fa and 9aa23474 are exactly those the source manifest declares, with the extra test file covered by reopened.json's granted_paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_older_code_never_migrates_a_newer_store.py:174-178 reddens on the coverage-check mutation and :200-203 on the equality backfill gate, but :272 is input-coupled and the archive arm at reckon/run_store.py:885-905 has no assertion at all.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/run_store.py:877 is a private predicate beside _runs_columns at :869, and the declared-index tuple at :99-107 states each index once, matching the module's existing declaration-before-script style.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search for sqlite_master, PRAGMA table_info and schema-coverage helpers under reckon/ found the only other schema reader in reckon/crew/station_store.py:544, which owns a different store, so _lacks_declaration extends the existing RunStore owner rather than forking one.\nFINDING tests/test_older_code_never_migrates_a_newer_store.py:272 non-blocking: get_run(appended[\"run_id\"])[\"run_id\"] is compared with the run_id the test itself supplied, so an implementation that echoed the argument instead of reading the appended row would still pass; the independent records() count at :273 and the direct SQLite count at :280 carry the evidence, so this assertion does not hold the node.\nFINDING reckon/run_store.py:885 non-blocking: the archive half of _lacks_declaration is added code with no test that fails if it regresses, so a store whose archive.runs lacks a declared column or index could stop migrating without any case reddening; every guarded case exercises only the main runs table.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/older-code-never-migrates-a-newer-store.html:13 non-blocking: evidence-commit still names dcb1bfc356 while the fragment lands at 9aa23474, so a reader comparing the record to the promoted revision cannot tell whether the landed text is the one measured; the arms are unaffected because 9aa23474 only edits the fragment.",
+  "review_run_id": "r-20261117T123508577101-review-of-older-code-never-migrates-a-newer-store-9aa234743a09",
+  "reviewed_base_sha": "d5694fa44d63c6b52d9b80e8315d1afa897bc11e",
+  "reviewed_commits": [
+    "a5e9b92cc749edac32962d8d1c3dc15ceb63e05e",
+    "0e0c715c8f0ac444ee501ab2e7e36b69c3d26b0b",
+    "19d35d7deff0f0c459dc7cf70facdbe317e31ef7",
+    "4e492e9b17297d76c1431fc404cd4d6436cb78ad",
+    "f6b4fd0358d808a4efdbb229f50f0c868d1e58bb",
+    "dcb1bfc3568251a438fb329b4c82805c3831cb30",
+    "9aa234743a09414b1a072135e1faa2a555e71dba"
+  ],
+  "reviewed_head_sha": "9aa234743a09414b1a072135e1faa2a555e71dba",
+  "reviewed_run_id": "r-20261117T050100558634-older-code-never-migrates-a-newer-store",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T13:07:32.051691+00:00",
+  "total": 114
+}

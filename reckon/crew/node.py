@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import os
 import re
 import subprocess
+import threading
 from collections.abc import Iterable, Mapping, MutableMapping
 from dataclasses import dataclass, field, fields
 from pathlib import Path
@@ -243,7 +245,12 @@ _SUBJECTIVE_PREDICATE = re.compile(
     re.IGNORECASE,
 )
 
-_DURATION = re.compile(r"^(\d+)([smh])$")
+#: A duration is one or more integer-plus-unit runs written together, so a
+#: budget that reads naturally as hours and minutes (``1h30m``) is accepted
+#: wherever a single run (``25m``) is. Each run's unit is a second, a minute or
+#: an hour, summed.
+_DURATION = re.compile(r"^(?:\d+[smh])+$")
+_DURATION_TERM = re.compile(r"(\d+)([smh])")
 _DURATION_SECONDS = {"s": 1, "m": 60, "h": 3600}
 STALL_BUDGET_MULTIPLE = 2
 
@@ -803,6 +810,12 @@ class TaskNode:
     over_fence_note: str = ""
     manifest_path: str = ""
     negative_control: str = ""
+    # The MCP set this node's worker connects to, named by the plan section or
+    # the brief that dispatched it and resolved against the flight's declared
+    # sets. Empty names no set, so the worker gets the flight's default list or
+    # none at all. Carried on the node rather than in the prompt because it is
+    # a fact the launch acts on: it decides which servers the harness starts.
+    mcp_set: str = ""
     estimated_hours: float | None = None
     requires_decisions: list[str] = field(default_factory=list)
     peer_scopes: dict[str, list[str]] = field(default_factory=dict)
@@ -865,11 +878,21 @@ class NodeValidation:
 
 
 def parse_duration(value: str) -> int:
-    """Return a duration in seconds, or raise naming the accepted form."""
-    match = _DURATION.match(str(value).strip())
-    if not match:
-        raise CrewError(f"duration {value!r} must be an integer followed by s, m or h")
-    return int(match.group(1)) * _DURATION_SECONDS[match.group(2)]
+    """Return a duration in seconds, or raise naming the accepted form.
+
+    One or more integer-plus-unit runs may be written together and are summed,
+    so ``1h30m`` is the same ninety minutes as ``90m``.
+    """
+    text = str(value).strip()
+    if not _DURATION.match(text):
+        raise CrewError(
+            f"duration {value!r} must be one or more integers each followed by "
+            "s, m or h, such as 25m or 1h30m"
+        )
+    return sum(
+        int(count) * _DURATION_SECONDS[unit]
+        for count, unit in _DURATION_TERM.findall(text)
+    )
 
 
 # A role that may not write repository source is refused the moment it declares
@@ -1591,13 +1614,21 @@ def validate_node(
 _WORKTREE_REPOSITORY_FIELDS = ("worktree", "repo")
 
 
-def _git_answer(cwd: Path, *args: str) -> str | None:
+def _git_answer(
+    cwd: Path, *args: str, env: Mapping[str, str] | None = None
+) -> str | None:
     """Return stripped git stdout, or None when the command could not answer.
 
     An empty answer and an unanswerable one are kept apart, because they mean
     opposite things about a claim: no output from ``rev-list`` says the work is
     integrated, while a failure says the comparison never happened.
+
+    ``env`` is merged over the process environment for a caller that needs git
+    to leave the repository alone — a reading taken while a peer may hold the
+    index lock passes ``GIT_OPTIONAL_LOCKS=0`` rather than duplicating this
+    answer.
     """
+    environment = {**os.environ, **env} if env else None
     try:
         result = subprocess.run(
             ["git", *args],
@@ -1605,6 +1636,7 @@ def _git_answer(cwd: Path, *args: str) -> str | None:
             capture_output=True,
             text=True,
             check=False,
+            env=environment,
         )
     except OSError:
         return None
@@ -1702,7 +1734,7 @@ _PLAIN_REF = re.compile(r"[A-Za-z0-9._/-]+")
 
 
 def _claim_commit_answer(
-    worktree: Path, integration_ref: str, base_sha: str
+    worktree: Path, integration_ref: str, base_sha: str, *, store: bool = True
 ) -> str | None:
     """Which commits in ``worktree`` neither ``integration_ref`` nor ``base`` reach.
 
@@ -1717,6 +1749,13 @@ def _claim_commit_answer(
     either cannot be read that way — a packed ref, a detached oddity — git is
     asked and nothing is stored, because an answer whose key was not observed
     would be served for a state nobody measured.
+
+    ``store=False`` keeps the answer in this process only. A read that judges a
+    hundred trees at once passes it: the store is one shared file rewritten
+    under a lock, so a per-tree write costs a whole-file rewrite for every tree
+    of a hundred-tree pass, and the derivation is a read path rather than a
+    claim's fate. The memo in this process still answers a tree that has not
+    moved.
     """
     from reckon.crew.recovery_memo import _worktree_head_identity
     from reckon.crew.recovery_watch import (
@@ -1732,28 +1771,38 @@ def _claim_commit_answer(
         cached = _CLAIM_COMMIT_ANSWERS.get(key)
         if cached is not None:
             return cached
-        stored = _stored_unreachable_answer(worktree, head, merged, base_sha)
-        if stored is not None:
-            _remember_claim_commit_answer(key, stored)
-            return stored
+        if store:
+            stored = _stored_unreachable_answer(worktree, head, merged, base_sha)
+            if stored is not None:
+                _remember_claim_commit_answer(key, stored)
+                return stored
     answer = _git_answer(
         worktree, "rev-list", "HEAD", f"^{integration_ref}", f"^{base_sha}"
     )
     if cacheable and answer is not None:
         _remember_claim_commit_answer(key, answer)
-        _remember_unreachable_answer(worktree, head, merged, base_sha, answer)
+        if store:
+            _remember_unreachable_answer(worktree, head, merged, base_sha, answer)
     return answer
+
+
+_CLAIM_ANSWER_LOCK = threading.Lock()
 
 
 def _remember_claim_commit_answer(key: tuple[str, str, str, str], answer: str) -> None:
     """Keep one reachability answer, bounded by the fleet it describes."""
     cache = _CLAIM_COMMIT_ANSWERS
-    if len(cache) >= _CLAIM_ANSWER_CACHE_LIMIT and key not in cache:
-        for stale in [item for item in cache if not Path(item[0]).is_dir()]:
-            cache.pop(stale, None)
-        while len(cache) >= _CLAIM_ANSWER_CACHE_LIMIT:
-            cache.pop(next(iter(cache)), None)
-    cache[key] = answer
+    # Launches set up in parallel share this cache. The prune asks the
+    # filesystem about each key, which lets another launch write between two
+    # keys, so the keys are copied before they are walked and the whole update
+    # is made under one lock.
+    with _CLAIM_ANSWER_LOCK:
+        if len(cache) >= _CLAIM_ANSWER_CACHE_LIMIT and key not in cache:
+            for stale in [item for item in list(cache) if not Path(item[0]).is_dir()]:
+                cache.pop(stale, None)
+            while len(cache) >= _CLAIM_ANSWER_CACHE_LIMIT:
+                cache.pop(next(iter(list(cache))), None)
+        cache[key] = answer
 
 
 def _integration_ref_revision(worktree: Path, integration_ref: str) -> str:

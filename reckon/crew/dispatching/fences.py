@@ -282,8 +282,12 @@ def plan_dispatch(**kwargs: Any) -> DispatchPlan:
     lookup the preview makes, rather than one per resolution it asks.
     """
     from reckon.crew.queue_admission import plan_read_scopes
+    from reckon.serve import discovery_without_git_dates
 
-    with plan_read_scopes():
+    # A preview ranks and places one node; the document ages it reads are
+    # display values there, so it takes no git history query and never waits
+    # on one.
+    with plan_read_scopes(), discovery_without_git_dates():
         return _plan_dispatch_reads(**kwargs)
 
 
@@ -352,14 +356,15 @@ def _recorded_backlog(
     A session's unreconciled runs do not hold new work back: they are owed
     duties, listed by the obligations view, and dispatch records them on the
     run it writes rather than refusing. Only this session's own rows are named;
-    another session's backlog is neither counted nor copied.
+    another session's backlog is neither counted nor copied, and is not read at
+    all: the fence is scoped to the dispatching session so its cost is that
+    session's own rows rather than the fleet's queue.
     """
-    from reckon.crew.recovery import _partition_session_rows, overdue_unreconciled_runs
+    from reckon.crew.recovery import overdue_unreconciled_runs
 
     grace = str((config.get("fences") or {}).get("unreconciled_run_grace") or "")
-    unreconciled, _peer_unreconciled = _partition_session_rows(
-        overdue_unreconciled_runs(project=project, grace=grace),
-        session,
+    unreconciled = overdue_unreconciled_runs(
+        project=project, grace=grace, session=session
     )
     if not unreconciled:
         return None

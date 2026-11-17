@@ -1,0 +1,71 @@
+<section id="qwnw-red-file-the-lander-measures-the-population-landing">
+  <h3>The lander's guards are read at the promotion that now owns them</h3>
+  <p>Four cases were red at revision <code>1edf1b0dba</code>, from two causes, both
+  <strong>test wrong</strong>; no product rule was repaired. Nothing was wrong with the
+  guards themselves: every one of them still refuses, and the repaired cases prove it by
+  driving the promotion to its refusal.</p>
+  <table id="qwnw-red-file-the-lander-measures-the-population-causes">
+    <thead><tr><th>Observed failure</th><th>Verdict</th><th>Rule the code keeps</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>IndexError: list index out of range</code> reading
+        <code>result["obligations"][0]["guard"]</code>, and
+        <code>{'landed': [], 'promotion_requested': ['r-20261024…-accepted-delivery']}</code>
+        where a landing was expected: <code>test_primary_advance_after_measurement_refuses_the_actual_cli_merge</code>,
+        <code>test_the_actual_cli_lands_exactly_the_measured_candidate</code>,
+        <code>test_candidate_handoff_preserves_the_promotion_guard</code>,
+        <code>test_primary_advance_after_promotion_measurement_refuses_publication</code></td>
+        <td>test wrong</td>
+        <td>A landing measures its delivery and requests the promotion; the fleet service
+        drains it. The pass reports <code>promotion_requested</code>, and a guard's refusal,
+        the promoted commits and the merged candidate are written to the promotion's durable
+        receipt (<code>promotion_requests.read_promotion</code>), not to the pass's obligations
+        and not through <code>queue_landing._run_srun</code>.</td>
+      </tr>
+      <tr>
+        <td><code>test_candidate_handoff_preserves_the_promotion_guard</code> removed the log
+        named in the manifest's <code>test_logs</code>, and the delivery then promoted instead
+        of refusing</td>
+        <td>test wrong</td>
+        <td>The promotion reads its gate evidence from the manifest's <code>after_suite</code>
+        arm log when the arm names one, so <code>--gate passed</code> is verified against the
+        evidence the worker delivered. Removing that arm log refuses with
+        <code>a passing gate requires the check that produced it; missing exit_status</code>.</td>
+      </tr>
+    </tbody>
+  </table>
+  <h4 id="qwnw-red-file-the-lander-measures-the-population-arms">Arms</h4>
+  <table id="qwnw-red-file-the-lander-measures-the-population-runs">
+    <thead><tr><th>Arm</th><th>Revision</th><th>Summary</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>head gate, all_debug job 1320810, <code>SLURM_JOB_ID</code> unset</td>
+        <td><code>307ff0778e</code></td>
+        <td><code>24 passed in 6.63s</code>, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>negative control: the same file at the base revision, in a scratch tree</td>
+        <td><code>1edf1b0dba</code></td>
+        <td><code>4 failed, 20 passed in 5.94s</code>, <code>EXIT=1</code></td>
+      </tr>
+    </tbody>
+  </table>
+  <p id="qwnw-red-file-the-lander-measures-the-population-control-ids">The control's failing
+  ids, which the head arm does not carry:
+  <code>test_primary_advance_after_measurement_refuses_the_actual_cli_merge</code>,
+  <code>test_the_actual_cli_lands_exactly_the_measured_candidate</code>,
+  <code>test_candidate_handoff_preserves_the_promotion_guard</code>,
+  <code>test_primary_advance_after_promotion_measurement_refuses_publication</code>.</p>
+  <p id="qwnw-red-file-the-lander-measures-the-population-mutation">A mutation of the after
+  tree — <code>promotion_requests._run</code> recording a raising request as
+  <code>promoted</code> — turns the three refusal cases red
+  (<code>3 failed, 21 passed</code>), so the new assertions are what hold the guards, not a
+  passing run.</p>
+  <p id="qwnw-red-file-the-lander-measures-the-population-sensitivity">No assertion was
+  deleted or weakened. The candidate-identity checks (parents pinned to the measured primary
+  and the reviewed head, the merged tree's content, origin equal to the worktree, the
+  promoted and landed steps) are unchanged; the receipt they read is the promotion's own,
+  the primary-advance and gate claims still assert a refusal and its guard, and the
+  publication refusal still asserts that nothing reached the primary and that the landing is
+  left pending at the reviewed head.</p>
+</section>

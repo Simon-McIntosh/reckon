@@ -1,12 +1,6 @@
 """An admission pass derives a project's readiness once, not once per launch.
 
-Every queued launch judged its own waits by rebuilding the whole project
-roadmap, and the cache that rebuild filled was created inside the batch call it
-ran in — so a pass launching three requests in one project derived the same
-roadmap three times. Admission throughput, not the lane, then caps how full the
-lane gets: passes that should take under two minutes took up to fifteen.
-
-The pass now holds one readiness cache and hands it to every launch's
+The pass holds one readiness cache and hands it to every launch's
 ``dispatch()``, and through that to ``dispatch_waits``,
 ``_validated_batch_waits`` and ``_readiness_rows``. The entry is keyed by the
 project, its docs directory and a fingerprint of the plan tree, so a plan
@@ -19,6 +13,7 @@ from __future__ import annotations
 import importlib
 import json
 import os
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -38,13 +33,20 @@ SECTIONS = ("s1", "s2", "s3")
 def _plan_html(waits: dict[str, list[str]]) -> str:
     """One plan: three ready sections, a done upstream, and a gate on a fourth.
 
+    The upstream is ``s0`` and not one of the three queued sections: a dispatch
+    of a section declared ``done`` is refused unless it is a measurement run, so
+    a queued request whose own section is declared done can never launch. The
+    three sections this measurement queues are therefore all implementable, and
+    ``s0`` exists only to be waited on.
+
     The gate is what makes a launch ask for its own section's verdict. A plan
     carrying no gate and no decision is judged from its authored waits alone,
     and never derives the roadmap this measurement counts.
     """
     quote = '"'
     declarations = {
-        "s1": "done",
+        "s0": "done",
+        "s1": "implementable",
         "s2": "implementable",
         "s3": "implementable",
         "s9": "implementable",
@@ -61,7 +63,8 @@ def _plan_html(waits: dict[str, list[str]]) -> str:
         f"{declared}{quote}>\n"
         f"<meta name={quote}plan-section-depends-on{quote} content={quote}"
         f"{awaited}{quote}>\n"
-        f"<h2 id={quote}s1{quote}>§1</h2>\n<h2 id={quote}s2{quote}>§2</h2>\n"
+        f"<h2 id={quote}s0{quote}>§0</h2>\n<h2 id={quote}s1{quote}>§1</h2>\n"
+        f"<h2 id={quote}s2{quote}>§2</h2>\n"
         f"<h2 id={quote}s3{quote}>§3</h2>\n<h2 id={quote}s9{quote}>§9</h2>\n"
         '<section data-reckon="gates"><div class="r-gate" data-id="ship" '
         'data-status="open" data-verdict="" data-gated-sections="s9">'
@@ -162,12 +165,25 @@ def test_a_plan_touched_between_two_launches_forces_a_rebuild(
     plan = pass_repo / "docs" / "plans" / f"{PLAN}.html"
     recorded: list[str] = []
     plain = fixtures._launcher(recorded)
+    edited = threading.Event()
+    original_launch = queue_admission._launch_queued
+
+    def ordered_launch(pointer: Any, **kwargs: Any) -> Any:
+        # Independent requests launch concurrently. Make the edit precede the
+        # later requests' readiness reads, so this measures invalidation rather
+        # than how the scheduler happens to interleave the launch threads.
+        if pointer["run_id"] != "r-s1":
+            assert edited.wait(10), "the first launch never edited the plan"
+        return original_launch(pointer, **kwargs)
+
+    monkeypatch.setattr(queue_admission, "_launch_queued", ordered_launch)
 
     def launch(
         document: Any, *, log_path: Any, stderr_path: Any, prompt_path: Any
     ) -> int:
         if not recorded:
             _advance_mtime(plan)
+            edited.set()
         return plain(
             document,
             log_path=log_path,
@@ -220,7 +236,7 @@ def test_the_launches_read_the_waits_an_uncached_computation_gives(
 ) -> None:
     """Caching the readiness changes how often it is built, not what it says."""
     repository = _seed(
-        tmp_path, monkeypatch, {"s2": [f"{PLAN}#s1"], "s3": [f"{PLAN}#s1"]}
+        tmp_path, monkeypatch, {"s2": [f"{PLAN}#s0"], "s3": [f"{PLAN}#s0"]}
     )
     _queue(repository)
     original = queue_admission.dispatch_waits

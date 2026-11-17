@@ -1,0 +1,129 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-17T08:26:17.568Z",
+  "dispatched_at": "2026-11-17T08:24:30Z",
+  "findings": [
+    {
+      "anchor": "plan.html:24",
+      "id": "wiring-1",
+      "reason": "a coordinator reading the declarations dispatches \u00a74 and \u00a75 concurrently against one sampler and one flight schema, which is exactly the merge the followup says to sequence.",
+      "text": "the followup at \u00a7Followups fixes an order (\">\u00a72 comes first \u2026 \u00a74, \u00a75, \u00a76, \u00a77 and \u00a710 are independent of one another; \u00a75 follows \u00a74 at the merge, since both extend the health sample\") that the dependency map does not carry: s4, s5 and s6 all extend the same one-minute health row as s2, and s5 names the same flight settings as s4, yet s4/s5/s6 declare no depends-on at all",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:64",
+      "id": "done_when-1",
+      "reason": "the counting boundary decides whether a run is counted, so an unstated bound makes the node's measure whatever its implementer chose.",
+      "text": "\u00a73's done-when and its 24-hour live measure both turn on \"the stated light bound\": a focused run inside the light bound, yet no value or default for that bound appears in \u00a73 or anywhere else in the plan, so the worker setting it also sets the pass criterion",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:94",
+      "id": "done_when-2",
+      "reason": "the per-entry quantity is the deliverable's quantity, and without it the 40-entry run is judged only on a 4 GB absolute that does not test the stated scaling claim.",
+      "text": "\u00a78's deliverable is \"does not grow with the number of entries beyond a stated amount per entry\" and no per-entry amount is stated, and its negative control carries an escape (\"or the section records that it does not and closes on the absolute bound alone\") under which the growth control can silently not fire",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:76",
+      "id": "single_goal-1",
+      "reason": "a gate that measures one of two deliverables cannot close the node on one verdict, and the admission change is the half that touches admission/service.py.",
+      "text": "\u00a75 carries two deliverables: the local disk's total, used, free bytes and free inodes in each sample (with a reserve obligation), and admission holding new launches while free space is under the reserve; its done-when exercises only the sampler, so the admission hold is never made to fail",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:88",
+      "id": "evidence_paths-1",
+      "reason": "a baseline kept only beside the temporary input dies with the run, leaving \u00a78 and \u00a79 without the figures their after-arms are compared against.",
+      "text": "\u00a77 declares its one record per command (peak, traced peak, ten largest sites, bytes and rows per store, with revision and input digest) as \"the baseline for \u00a78 and \u00a79\" but names no durable path, while the same section requires the pass to write nothing outside a copy of the crew home in a temporary directory",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:76",
+      "id": "reasoning-1",
+      "reason": "the section's deliverable and its measure rest on the research document's independent finding that neither series carries /tmp bytes or inode counts, so correcting the sentence does not move what the node builds or how it is judged.",
+      "text": "\u00a75's Why states \"A full local disk drained the previous node's allocation of new work\" as established, while the cited imas-ambix RCA records exactly that inference as \"Plausible, not confirmed: the drain at 04:29 CET is real; the old node's /tmp cannot be read now\"",
+      "type": "reasoning",
+      "would_change": false
+    },
+    {
+      "anchor": "plan.html:82",
+      "id": "reasoning-2",
+      "reason": "\u00a76's mechanism is independently supported by the RCA's last process table at 06:00:58 against a job ending 06:05:16 and by the research document's \"no external writer that continues after the fleet allocation is gone\", so deleting the unsupported clause leaves the section's endpoint unchanged.",
+      "text": "\u00a76 asserts \"a second analysis of the same failure read that as a blind hour\", and no document under docs/ contains that reading (\"blind hour\" occurs only in this plan), so the claim names an analysis a later reader cannot open",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "572450df39ddc118c9379e5da2bb03f2c6d05775",
+  "plan_fingerprint": "69d813131de58e02941f727e5a77dc8c4b55d26a00e40ba9d2cb20e499b7a5ce",
+  "plan_slug": "the-fleet-node-stays-inside-its-memory",
+  "plan_version": 0,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "noted",
+      "by": "plan-review-reflex",
+      "finding": "reasoning-1",
+      "reason": "the section's deliverable and its measure rest on the research document's independent finding that neither series carries /tmp bytes or inode counts, so correcting the sentence does not move what the node builds or how it is judged.",
+      "when": "2026-11-17T08:37:18.416621+00:00"
+    },
+    {
+      "action": "noted",
+      "by": "plan-review-reflex",
+      "finding": "reasoning-2",
+      "reason": "\u00a76's mechanism is independently supported by the RCA's last process table at 06:00:58 against a job ending 06:05:16 and by the research document's \"no external writer that continues after the fleet allocation is gone\", so deleting the unsupported clause leaves the section's endpoint unchanged.",
+      "when": "2026-11-17T08:37:18.776313+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "noted",
+      "by": "plan-review-reflex",
+      "reason": "the section's deliverable and its measure rest on the research document's independent finding that neither series carries /tmp bytes or inode counts, so correcting the sentence does not move what the node builds or how it is judged.",
+      "when": "2026-11-17T08:37:18.416621+00:00"
+    },
+    "reasoning-2": {
+      "action": "noted",
+      "by": "plan-review-reflex",
+      "reason": "\u00a76's mechanism is independently supported by the RCA's last process table at 06:00:58 against a job ending 06:05:16 and by the research document's \"no external writer that continues after the fleet allocation is gone\", so deleting the unsupported clause leaves the section's endpoint unchanged.",
+      "when": "2026-11-17T08:37:18.776313+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-fleet-node-stays-inside-its-memory.v0.json",
+  "review_run_id": "r-20261117T081854402271-plan-review-of-the-fleet-node-stays-inside-its-memory",
+  "reviewed_blob_sha": "ac9c7f4e7dfa8ee0f01a27c1a1de2fd8336ea164",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every citation resolves: docs/research/what-fills-the-fleet-nodes-memory.html, both figures under docs/figures/fleet-node-memory/, the three sibling plans, a-worker-or-its-job-cannot-overwrite-shared-files \u00a77 (implementable, and about the gate-on-a-partition verb \u00a73 waits for), the imas-ambix RCA at Code/imas-ambix/docs/research/a-gate-log-overwrote-the-shared-interpreter.html, and every named module (bin/fleet-health, fleet_supervisor.py, fleet_node.py, dispatch_batch.py, dispatch_plan.py, station.py, admission/service.py, admission/selection.py, _flight_schema.py) exists; the absent names are write paths to create (tests, scripts/profile_control_pass.py).",
+    "done_when": "a finding \u2014 \u00a73 bounds a focused run by \"the stated light bound\" and \u00a78 bounds growth by \"a stated amount per entry\", and neither quantity is stated anywhere in the plan, while \u00a74 (2 GiB / half the disk) and \u00a75 (8 GiB) do state theirs.",
+    "evidence_paths": "a finding \u2014 \u00a77's records are declared the baseline for \u00a78 and \u00a79 yet no durable path is named for them, while \u00a77 requires the pass to write nothing outside a temporary directory.",
+    "naming": "pass \u2014 the sections name mechanisms, quantities and files, no plan labels, stage names, ticket numbers or version tags reach the symbols they describe.",
+    "reasoning": "a finding on two evidence claims \u2014 \u00a75 states an unconfirmed cause as fact, and \u00a76 cites an analysis no document contains; the endpoints themselves are reachable and checkable, and \u00a710's address-space limit is stated as the only boundary available to this account with its child-process limit on the record, which reads as a constraint on the endpoint rather than a step sequence.",
+    "single_goal": "a finding \u2014 \u00a75 carries two deliverables.",
+    "wiring": "a finding \u2014 the followup's ordering (\"\u00a72 comes first\", \"\u00a75 follows \u00a74\") is prose only; plan-section-depends-on (plan.html:24) declares s3\u2192external \u00a77, s8/s9\u2192s7 and s11\u2192s2..s10, so \u00a75 and \u00a74 are dispatched as independent nodes over the same one-minute health row."
+  },
+  "section_digests": {
+    "_document": "72ca8bc42b89b1147ce1b102d404bbab77ef861e5f88972d623538ce64d30ad9",
+    "s1": "bd4e46820d70a6901e2d82e4fd6386ec7b4fa86f0a54637a0bb22960399f70df",
+    "s10": "4a13c11c1e14c10049882930c77d89def15230051f81a97593bb783a653df453",
+    "s11": "2cedcb676942cd7a60f31c28a745cde686b2b3a65e6cbd434cd29a2fd4e8d5b9",
+    "s2": "e099a2cd38a025736e9e56d3728e4dddd0af9c52fc9a6715bbe53227288061de",
+    "s3": "198ecdb48c79a8e9327ee799e8ae423ad669b99caf5958eb17c4847fcaf6e528",
+    "s4": "f42cb9988f1651a81cf2a1997f16268ade2b7f46d203317d149e6e78087c8290",
+    "s5": "67913abf218447de7e81d67433a233675314c3ed29e2230e27f332dd33e09425",
+    "s6": "ad9cca097874b1a2c042499a7c033b9ec7993c818128b94e9b0b3533a9639b17",
+    "s7": "6c2cc89d6c033f4fbe71d654feb65918a822615cf9d78209cb44ce8ea4632243",
+    "s8": "afe6b663cea93b493c8b785d1e3e1c780c53b746cdc78e17515d9ef0f2b3bce7",
+    "s9": "87b1728646dee5714df7f9c7b104c9bc9a01cdbf9f98244f0af5553ab8e7c5a6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T08:37:13.218424+00:00",
+  "total": null
+}

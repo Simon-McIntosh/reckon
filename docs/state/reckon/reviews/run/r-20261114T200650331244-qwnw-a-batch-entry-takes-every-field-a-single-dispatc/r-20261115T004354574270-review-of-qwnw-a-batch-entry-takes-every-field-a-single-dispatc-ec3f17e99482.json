@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1589 _queue_dispatch_batch from the crew dispatch --batch branch",
+    "reckon/crew/dispatch_batch.py:738 queue_batch",
+    "reckon/crew/admission/release.py:555 queue_requests calling reckon/crew/dispatching/requests.py:124",
+    "reckon/crew/admission/launching.py:357 reading dispatch_options.comment at launch",
+    "reckon/crew/runs.py:1018 and reckon/crew/prompts.py:568 calling parse_duration"
+  ],
+  "completed_at": "2026-11-15T02:02:59.885Z",
+  "dispatched_at": "2026-11-15T00:50:27Z",
+  "findings": [
+    {
+      "file": "tests/test_a_batch_entry_takes_every_field_a_single_dispatch_takes.py",
+      "line": "213",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion compares the stored backend against CONFIG[\"local_backend\"], and the fixture sets default_backend to that same name at line 31, so a regression that ignored the entry's local choice and took the default lane leaves the assertion green; setting default_backend to a different backend would make it fail when the local choice is dropped."
+    },
+    {
+      "file": "reckon/crew/dispatching/requests.py",
+      "line": "171",
+      "severity": "non-blocking",
+      "text": "non-blocking: when the entry sets local and the configuration declares no local_backend, the guard skips to the default lane and the entry stores local false, where a single dispatch's --local raises FlightConfigError at reckon/flight.py:2352; a batch entry asking for the local lane is quietly given a different one."
+    },
+    {
+      "file": "reckon/calibration.py",
+      "line": "27",
+      "severity": "non-blocking",
+      "text": "non-blocking: a second duration parser still matches a single integer-and-unit run, so a request storing \"1h30m\" now reaches _declared_budget_verdict at reckon/calibration.py:143 and falls through with budget_seconds None, and a run that overran its compound budget is judged as having none rather than as duration_over_budget."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read all five commits against 1ba716cf: 7de0489345 lands the four per-entry fields, the dry-run preview and the compound duration; 884dc05959, 483f946aca, f121122adf and ec3f17e99 change only the evidence fragment (git diff --stat 483f946a..ec3f17e99 lists the fragment alone), so the green arm at 483f946a covers the code and tests at the reviewed head.",
+    "done_when": "the plan's done-when names five measurements; tests/test_a_batch_entry_takes_every_field_a_single_dispatch_takes.py:187, 219, 251, 281, 328, 355 and 364 exercise all five, and gate-after.log records that same file inside a 15-file run reading \"98 passed in 15.25s\" at EXIT=0, with negative-control.log showing the same file red at the base revision.",
+    "goal": "the node's goal is that a batch entry takes every field a single dispatch takes; reckon/crew/dispatch_batch.py:852-946 resolves over_fence_reason, comment, local and priority per entry and hands them to the same queue writer a single dispatch uses, and the duration reader at reckon/crew/node.py:867 accepts a compound one everywhere it is used.",
+    "manifest": "read; status complete, commits 7de0489345 884dc05959 483f946aca f121122adf ec3f17e994, changed_paths the seven paths above, tests the literal pytest command, test_logs naming gate-baseline.log and gate-after.log, baseline_suite at 1ba716cf with failure_count 0 and after_suite at 483f946aca with failure_count 0, both completed, and negative_control_log naming negative-control.log.",
+    "write_paths": "the fence was reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and skills; git diff --stat 1ba716cf..ec3f17e99 lists exactly reckon/crew/dispatch_batch.py, reckon/crew/dispatching/requests.py, reckon/crew/node.py, reckon/crew_dispatch_commands.py, the two test files and the fragment, every one inside it."
+  },
+  "justifications": {
+    "durability": "tests/test_a_batch_entry_takes_every_field_a_single_dispatch_takes.py:213 asserts the stored backend against CONFIG[\"local_backend\"] in a fixture whose default_backend is the same name, so the lane assertion holds whether or not the local choice is honoured.",
+    "evidence": "gate-baseline.log reads \"90 passed\" at EXIT=0 and gate-after.log \"98 passed\" at EXIT=0 against the done-when's own test file, but the priority bullet is measured through queue_order.admission_order alone and no case exercises the command-level priority default.",
+    "fit": "reckon/crew/dispatch_batch.py:664 _entry_options follows the module's per-entry resolve-then-refuse idiom, and its helpers and the would-queue phase carry mechanism names with no plan or ticket label.",
+    "goal_fidelity": "reckon/crew/dispatch_batch.py:852-946 carries a reason, a comment, a lane and a priority per entry into the single-dispatch writer, but reckon/crew/dispatching/requests.py:171 drops a local choice silently when no local_backend is configured.",
+    "reuse": "reckon/crew/node.py:246 extends the one duration owner, but reckon/calibration.py:27 keeps a second single-run duration parser that the same change now lets disagree with it.",
+    "scope_discipline": "git diff --stat 1ba716cf..ec3f17e99 lists seven files, all inside the declared fence of reckon, tests and the plan's evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a batch entry takes every field a single dispatch takes; reckon/crew/dispatch_batch.py:852-946 resolves over_fence_reason, comment, local and priority per entry and hands them to the same queue writer a single dispatch uses, and the duration reader at reckon/crew/node.py:867 accepts a compound one everywhere it is used.\nVERDICT done_when: the plan's done-when names five measurements; tests/test_a_batch_entry_takes_every_field_a_single_dispatch_takes.py:187, 219, 251, 281, 328, 355 and 364 exercise all five, and gate-after.log records that same file inside a 15-file run reading \"98 passed in 15.25s\" at EXIT=0, with negative-control.log showing the same file red at the base revision.\nVERDICT write_paths: the fence was reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and skills; git diff --stat 1ba716cf..ec3f17e99 lists exactly reckon/crew/dispatch_batch.py, reckon/crew/dispatching/requests.py, reckon/crew/node.py, reckon/crew_dispatch_commands.py, the two test files and the fragment, every one inside it.\nVERDICT manifest: read; status complete, commits 7de0489345 884dc05959 483f946aca f121122adf ec3f17e994, changed_paths the seven paths above, tests the literal pytest command, test_logs naming gate-baseline.log and gate-after.log, baseline_suite at 1ba716cf with failure_count 0 and after_suite at 483f946aca with failure_count 0, both completed, and negative_control_log naming negative-control.log.\nVERDICT diff: read all five commits against 1ba716cf: 7de0489345 lands the four per-entry fields, the dry-run preview and the compound duration; 884dc05959, 483f946aca, f121122adf and ec3f17e99 change only the evidence fragment (git diff --stat 483f946a..ec3f17e99 lists the fragment alone), so the green arm at 483f946a covers the code and tests at the reviewed head.\nCALL_SITES: reckon/crew_dispatch_commands.py:1589 _queue_dispatch_batch from the crew dispatch --batch branch, reckon/crew/dispatch_batch.py:738 queue_batch, reckon/crew/admission/release.py:555 queue_requests calling reckon/crew/dispatching/requests.py:124, reckon/crew/admission/launching.py:357 reading dispatch_options.comment at launch, reckon/crew/runs.py:1018 and reckon/crew/prompts.py:568 calling parse_duration\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_batch.py:852-946 carries a reason, a comment, a lane and a priority per entry into the single-dispatch writer, but reckon/crew/dispatching/requests.py:171 drops a local choice silently when no local_backend is configured.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-baseline.log reads \"90 passed\" at EXIT=0 and gate-after.log \"98 passed\" at EXIT=0 against the done-when's own test file, but the priority bullet is measured through queue_order.admission_order alone and no case exercises the command-level priority default.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 1ba716cf..ec3f17e99 lists seven files, all inside the declared fence of reckon, tests and the plan's evidence fragment.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_batch_entry_takes_every_field_a_single_dispatch_takes.py:213 asserts the stored backend against CONFIG[\"local_backend\"] in a fixture whose default_backend is the same name, so the lane assertion holds whether or not the local choice is honoured.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/dispatch_batch.py:664 _entry_options follows the module's per-entry resolve-then-refuse idiom, and its helpers and the would-queue phase carry mechanism names with no plan or ticket label.\nSCORE reuse: 14\nJUSTIFICATION reuse: reckon/crew/node.py:246 extends the one duration owner, but reckon/calibration.py:27 keeps a second single-run duration parser that the same change now lets disagree with it.\nFINDING tests/test_a_batch_entry_takes_every_field_a_single_dispatch_takes.py:213 non-blocking: the assertion compares the stored backend against CONFIG[\"local_backend\"], and the fixture sets default_backend to that same name at line 31, so a regression that ignored the entry's local choice and took the default lane leaves the assertion green; setting default_backend to a different backend would make it fail when the local choice is dropped.\nFINDING reckon/crew/dispatching/requests.py:171 non-blocking: when the entry sets local and the configuration declares no local_backend, the guard skips to the default lane and the entry stores local false, where a single dispatch's --local raises FlightConfigError at reckon/flight.py:2352; a batch entry asking for the local lane is quietly given a different one.\nFINDING reckon/calibration.py:27 non-blocking: a second duration parser still matches a single integer-and-unit run, so a request storing \"1h30m\" now reaches _declared_budget_verdict at reckon/calibration.py:143 and falls through with budget_seconds None, and a run that overran its compound budget is judged as having none rather than as duration_over_budget.\n",
+  "review_run_id": "r-20261115T004354574270-review-of-qwnw-a-batch-entry-takes-every-field-a-single-dispatc-ec3f17e99482",
+  "reviewed_base_sha": "1ba716cf0aeb500f4cf9bc0192d6927e11f9d6b2",
+  "reviewed_head_sha": "ec3f17e99482da85ac137e939a22de9726e60c76",
+  "reviewed_run_id": "r-20261114T200650331244-qwnw-a-batch-entry-takes-every-field-a-single-dispatc",
+  "reviewer_run_id": "r-20261115T004354574270-review-of-qwnw-a-batch-entry-takes-every-field-a-single-dispatc-ec3f17e99482",
+  "scores": {
+    "durability": 14,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T02:07:53.144142+00:00",
+  "total": 101
+}

@@ -435,7 +435,12 @@ def _release_run_workspace(
     elif worktree is None:
         result["worktree_withheld"] = "no worktree recorded for this run"
     elif not worktree.is_dir():
-        result["worktree_withheld"] = "tree is no longer available"
+        # A tree that is already gone holds nothing to release. Reporting it
+        # withheld named a tree no command could free: the duty it raised
+        # outlived the tree, and its suggested sweep answered that no record
+        # named a worktree for the run.
+        result["worktree_released"] = True
+        result["worktree_absent"] = True
     elif repo is None or not repo.is_dir():
         result["worktree_withheld"] = "repository root is unavailable"
     else:
@@ -526,7 +531,14 @@ def _release_run_workspace(
         if integration_repo is not None
         else record
     )
-    result["worktree_audit"] = _worktree_audit(audit_record, retention)
+    # The audit describes the trees the decision left behind; it does not make
+    # the decision. It runs after the removal, so letting it raise would report
+    # a removed tree as withheld — the release would be undone by its own
+    # receipt — and the failure is kept beside the outcome instead.
+    try:
+        result["worktree_audit"] = _worktree_audit(audit_record, retention)
+    except Exception as exc:  # noqa: BLE001 - the audit never changes the release
+        result["worktree_audit_error"] = str(exc)
     if recoverable and (not release_worktree or retention is not None):
         result["scratch_withheld"] = "run retained for recovery"
         return result

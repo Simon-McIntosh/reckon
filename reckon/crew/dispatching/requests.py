@@ -24,6 +24,7 @@ from ._imports import (
     resolve_dispatch_authority,
     resolve_role_override,
     resolved_time_ceiling,
+    run_dir,
     validate_node,
     watch_arming_suppressed,
     watch_state,
@@ -133,6 +134,10 @@ def queue_requests(
     run_ids: Mapping[str, str] | None = None,
     cap: int | None = None,
     allow_unreviewed_plan: bool = False,
+    local: bool = False,
+    comment: str = "",
+    priority: int | None = None,
+    dry_run: bool = False,
 ) -> dict[str, Any]:
     """Validate a request batch, then use dispatch's queue writer for each.
 
@@ -140,18 +145,36 @@ def queue_requests(
     single dispatch does: it rides the request's ``dispatch_options``, which
     admission reads before it holds the request on the review gate. A caller
     that leaves it unset queues a request the gate judges on its own.
+
+    ``local`` chooses the resolved local backend and records the request on it,
+    ``comment`` is the steering text admission hands the picker, and
+    ``priority`` is the queue ranking override the reprioritise verb records.
+    Each is stored on the request a single dispatch would store it on.
+
+    ``dry_run`` judges every node exactly as a launch would and reports one row
+    per node, writing no pointer and no run directory: the preview answers what
+    would be stored, and the validation is the same one a queued request meets.
     """
     from reckon.crew import plan_review, queue_admission, runs
     from reckon.crew.dispatch_admission import (
+        INPUTS_PROPERTY,
         _require_write_paths_in_authority,
         admission_domain_findings,
         admission_refusals_and_warnings,
     )
 
     nodes = list(nodes)
-    lane = str(backend_name or "").strip() or str(
-        config.get("local_backend") or config.get("default_backend") or ""
+    local_backend = str(config.get("local_backend") or "")
+    lane = (
+        str(backend_name or "").strip()
+        or local_backend
+        or str(config.get("default_backend") or "")
     )
+    if local and local_backend:
+        # Choosing the local lane is the same decision ``--local`` records: the
+        # request runs on the backend the configuration names as local, and the
+        # pointer records that it does.
+        lane = local_backend
     if not lane:
         raise CrewError("queueing a request names no backend to queue it for")
     assigned_ids = {
@@ -159,7 +182,22 @@ def queue_requests(
         for node in nodes
     }
     ceiling = resolved_time_ceiling(config)
+    # The waits are resolved before the node contract is judged, because a
+    # request that waits may name an input its upstream is still to write: that
+    # absence is not a refusal at queue time, and the launch re-checks every
+    # input against the tree the work will actually run in.
+    live = list_live()
+    refs_by_run, projects_by_run = queue_admission._validated_batch_waits(
+        nodes,
+        assigned_ids,
+        project=project,
+        repo_root=repo_root,
+        live=live,
+    )
     for node in nodes:
+        node.manifest_path = node.manifest_path or str(
+            run_dir(assigned_ids[node.id]) / "manifest.md"
+        )
         # The whole node contract is judged here, beside the admission domain,
         # so a batch entry that a single dispatch would refuse is refused while
         # it is still a request rather than surfaced later at its launch, where
@@ -181,6 +219,16 @@ def queue_requests(
         findings = admission_domain_findings(
             node, project=project, repository=repo_root
         )
+        if refs_by_run.get(assigned_ids[node.id]):
+            # A request that waits may name a path its upstream creates, so an
+            # input the repository does not hold is deferred rather than
+            # refused: it is judged at the release, against the tree the launch
+            # reads, and refused there if it genuinely is still absent.
+            findings = [
+                finding
+                for finding in findings
+                if str(finding.get("property") or "") != INPUTS_PROPERTY
+            ]
         refusals, _warnings = admission_refusals_and_warnings(findings)
         verdict = validate_node(
             node,
@@ -194,14 +242,6 @@ def queue_requests(
                 f"node {node.id!r} is refused at queue time: "
                 + "; ".join(str(finding.get("detail") or "") for finding in refusals)
             )
-    live = list_live()
-    refs_by_run, projects_by_run = queue_admission._validated_batch_waits(
-        nodes,
-        assigned_ids,
-        project=project,
-        repo_root=repo_root,
-        live=live,
-    )
     stored: dict[str, Any] = {}
     cache: dict[str, Any] = {}
     # Queuing a request succeeds over its session's backlog exactly as a direct
@@ -230,10 +270,33 @@ def queue_requests(
                 "session": session,
                 "no_watch": True,
                 "allow_unreviewed_plan": allow_unreviewed_plan,
+                **({"comment": comment} if comment else {}),
             },
             queued_at=_utc_now(),
+            local=bool(local) or lane == local_backend,
             backlog=backlog,
         )
+        if priority is not None:
+            # The same three keys the reprioritise verb writes, so the ordering
+            # reads a request queued with a priority exactly as one ranked after
+            # it was queued.
+            record["priority_override"] = int(priority)
+            record["priority_override_set_at"] = _utc_now()
+            record["priority_override_reason"] = "batch entry"
+        if dry_run:
+            # A preview answers what would be stored: the node contract, the
+            # admission domain and the waits are all judged above this point,
+            # so every refusal a real queueing would raise is raised here.
+            # Nothing is written.
+            stored[str(run_id)] = {
+                "node": node.id,
+                "section": node.section,
+                "phase": "would-queue",
+                "waits": list(refs_by_run[run_id]),
+                "position": None,
+                "index": index,
+            }
+            continue
         queued, position, phase = _queue_validated_waits(
             record,
             refs=refs_by_run[run_id],

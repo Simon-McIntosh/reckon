@@ -25,7 +25,8 @@ from __future__ import annotations
 import contextlib
 import json
 import time
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
+from contextvars import ContextVar
 from pathlib import Path
 from typing import Any
 
@@ -51,6 +52,92 @@ UNPROMOTED_RECORD_SECONDS = 2 * 3600
 #: with no live lease holder and no promoted row, names a promotion that
 #: stopped between its record and its ledger row rather than one still running.
 UNFINISHED_PROMOTION_SECONDS = 60.0
+
+# The completion callback still owns publication. A group defers that callback
+# until every member's ordinary promotion has succeeded.
+LANDING_GROUP: ContextVar[dict[str, Any] | None] = ContextVar(
+    "landing_group", default=None
+)
+
+
+def group_path(run_id: str) -> Path:
+    return pending_dir() / "groups" / f"{run_id}.json"
+
+
+def save_group(group: Mapping[str, Any]) -> None:
+    from reckon._store import write_json_atomically
+
+    write_json_atomically(group_path(str(group["run_id"])), dict(group))
+
+
+def refresh_group_repairs(group: dict[str, Any]) -> None:
+    """Accept completed member repairs through the ordinary fresh-gate reader."""
+    from reckon.crew.recovery_repair_dispatch import dispatch_merge_repair
+
+    for run_id, conflict in list((group.get("merge_repairs") or {}).items()):
+        member = group["members"][run_id]
+        try:
+            pointer = runs.read_pointer(run_id)
+        except runs.CrewError:
+            if runs.pointer_path(run_id).exists():
+                raise
+            # The group journal can precede the repair owner's pointer rebuild.
+            pointer = member["pointer"]
+        repaired = _delivered_repair(
+            pointer,
+            str(conflict["head"]),
+            conflict,
+            Path(str(pointer["repo"])),
+        )
+        if not repaired:
+            dispatch_merge_repair(
+                pointer,
+                head=str(conflict["head"]),
+                primary=str(conflict["main_revision"]),
+                paths=conflict["paths"],
+                promoted=bool(member.get("promotion")),
+            )
+            raise runs.CrewError(f"group member {run_id} is awaiting merge repair")
+        if member.get("promotion"):
+            member.setdefault("promoted_head", member["head"])
+        member.update(head=repaired, pointer=pointer)
+        member["options"]["commits"] = list(
+            dict.fromkeys([*(member["options"].get("commits") or ()), repaired])
+        )
+        del group["merge_repairs"][run_id]
+        for field in ("head", "primary", "measurements", "refusal"):
+            group.pop(field, None)
+        save_group(group)
+
+
+def finish_landing_groups(*, only_run: str = "") -> list[dict[str, Any]]:
+    """Resume the same queued group after interruption, including its promotions."""
+    from reckon.crew.promotion_requests import PENDING, read_promotion
+    from reckon.crew_run_commands import _complete_landing_group
+
+    results = []
+    for path in sorted((pending_dir() / "groups").glob("*.json")):
+        group = _read(path)
+        if not group or (only_run and only_run not in group["members"]):
+            continue
+        run_id = str(group["run_id"])
+        if read_promotion(run_id).get("phase") in PENDING:
+            continue
+        try:
+            result = _complete_landing_group(group["request"])
+        except Exception as exc:  # noqa: BLE001 - retain failed groups for recovery
+            results.append(
+                {"run_id": run_id, "status": "group-refused", "error": str(exc)}
+            )
+            continue
+        results.extend(
+            {
+                "run_id": member,
+                "status": "finished" if result.get("ok") else "group-refused",
+            }
+            for member in group["members"]
+        )
+    return results
 
 
 def pending_dir() -> Path:
@@ -164,14 +251,69 @@ def _settled_landing(
     return disposition
 
 
-#: The pointer fields that identify the attempt a landing mark belongs to.
-_ATTEMPT_FIELDS = ("attempt", "phase", "pid", "pid_start_time")
+#: The pointer fields that name one attempt of a run. The phase is not one of
+#: them: a promotion request rewrites it while the attempt it belongs to keeps
+#: running, so an attempt's identity is stable across a station mark.
+ATTEMPT_FIELDS = ("attempt", "attempt_kind", "pid", "pid_start_time")
+
+#: What a landing mark records: the attempt plus the phase it was written
+#: against, so a station rewrite of the phase leaves the mark naming the pointer
+#: state it was made for rather than whichever state is live when it is read.
+#: The shape is the one marks already on disk carry, so it keeps the fields
+#: those records were written with rather than growing with the identity above.
+MARKED_FIELDS = ("attempt", "phase", "pid", "pid_start_time")
+
+#: What a compare-under-lock-and-retire found.
+POINTER_RETIRED = "retired"
+POINTER_ABSENT = "absent"
+POINTER_HELD = "held"
+
+
+def _identity(
+    pointer: Mapping[str, Any] | None, fields: tuple[str, ...]
+) -> dict[str, Any]:
+    pointer = pointer or {}
+    return {field: pointer.get(field) for field in fields}
+
+
+def attempt_identity(pointer: Mapping[str, Any] | None) -> dict[str, Any]:
+    """``pointer``'s attempt identity, ignoring the phase the station rewrites."""
+    return _identity(pointer, ATTEMPT_FIELDS)
+
+
+def marked_identity(pointer: Mapping[str, Any] | None) -> dict[str, Any]:
+    """The identity a landing mark names, including the phase it was made for."""
+    return _identity(pointer, MARKED_FIELDS)
 
 
 def pointer_attempt(pointer: Mapping[str, Any] | None) -> dict[str, Any]:
     """The identity of the attempt a pointer belongs to, as the mark records it."""
-    pointer = pointer or {}
-    return {field: pointer.get(field) for field in _ATTEMPT_FIELDS}
+    return marked_identity(pointer)
+
+
+def retire_pointer_if(run_id: str, matches: Callable[[Mapping[str, Any]], bool]) -> str:
+    """Retire the live pointer under its lock while ``matches`` accepts it.
+
+    One owner for compare-under-lock-and-retire: a promotion retiring the
+    attempt it read, a review retiring a pointer that moved, and the landing
+    pass releasing a review's or a repair's mark all reach the pointer here, so
+    the lock, the absent case and an unlink that fails are decided once.
+    """
+    with runs._pointer_lock(run_id):
+        path = runs.pointer_path(run_id)
+        if not path.exists():
+            return POINTER_ABSENT
+        try:
+            current = runs.read_pointer(run_id)
+        except runs.CrewError:
+            return POINTER_HELD
+        if not matches(current):
+            return POINTER_HELD
+        try:
+            path.unlink(missing_ok=True)
+        except OSError:
+            return POINTER_HELD
+        return POINTER_RETIRED
 
 
 def mark_pending_landing_repair(
@@ -197,15 +339,11 @@ def mark_pending_landing_repair(
 
 def _release_marked_pointer(run_id: str, marked: Mapping[str, Any]) -> bool:
     """Remove a marked pointer only while it is still the attempt the mark names."""
-    with runs._pointer_lock(run_id):
-        try:
-            current = runs.read_pointer(run_id)
-        except runs.CrewError:
-            return False
-        if pointer_attempt(current) != marked.get("pending_landing_repair_attempt"):
-            return False
-        runs.pointer_path(run_id).unlink(missing_ok=True)
-        return True
+    recorded = marked.get("pending_landing_repair_attempt")
+    return (
+        retire_pointer_if(run_id, lambda current: marked_identity(current) == recorded)
+        == POINTER_RETIRED
+    )
 
 
 def _read(path: Path) -> dict[str, Any] | None:
@@ -336,14 +474,122 @@ def _delivered_repair(
         merge._is_ancestor(repository, parent, head) for parent in (original, primary)
     ):
         return ""
-    _require_repair_gate(pointer, head, repository)
+    _require_repair_gate(pointer, head, repository, primary)
     return head
 
 
+def pending_repair_head(pointer: Mapping[str, Any]) -> str:
+    """The completed, gated head a promoted merge repair now owes a review of."""
+    run_id = str(pointer.get("run_id") or "")
+    if not run_id:
+        return ""
+    pending = _read(_record_path(run_id)) or {}
+    conflict = pending.get("merge_conflict") or {}
+    if not conflict:
+        return ""
+    original = str(conflict.get("head") or _cited_head(pending))
+    try:
+        return _delivered_repair(
+            pointer, original, conflict, Path(str(pointer.get("repo") or ""))
+        )
+    except runs.CrewError:
+        return ""
+
+
+def _repair_review_wait(pointer: Mapping[str, Any], head: str) -> dict[str, Any] | None:
+    """Read every review owed at the repair head through the lander's readers."""
+    from reckon.crew import queue_landing
+    from reckon.crew.recovery_review_dispatch import dispatch_review_for_run
+
+    run_id, project = str(pointer["run_id"]), str(pointer["project"])
+    tree = Path(str(pointer.get("worktree") or pointer["repo"]))
+    for tier in queue_landing._owed_review_tiers(pointer):
+        try:
+            review, stale = queue_landing._review_for_tier(
+                project, run_id, head, tree, tier
+            )
+        except (OSError, ValueError) as exc:
+            review, stale, error = None, "", str(exc)
+        else:
+            error = ""
+        added = queue_landing._review_added_failure_guard(review)
+        if (
+            not stale
+            and not added
+            and queue_landing._review_tier_is_complete(tier, review)
+        ):
+            continue
+        report = {}
+        if review is None and not error:
+            report = dispatch_review_for_run(pointer)
+        refused = review is not None or bool(error) or bool(report.get("refused"))
+        reason = error or str(report.get("reason") or "")
+        if review is not None:
+            from reckon.crew import promotion_checks, repair
+
+            findings = promotion_checks._describe_blocking_findings(
+                repair.blocking_findings(review)
+            )
+            reason = (
+                added or findings or f"the stored {tier} review is incomplete at {head}"
+            )
+        guard = f"repair {tier} review: {reason or 'awaiting review of ' + head}"
+        current = runs.read_pointer(run_id)
+        if refused:
+            queue_landing._record_attempt(
+                run_id,
+                head=head,
+                guard=guard,
+                status="refused",
+                code_stamp=queue_landing._landing_code_stamp(),
+                review_stamp=queue_landing._review_stamp(review),
+                previous=current.get("admission_landing"),
+            )
+        else:
+            queue_landing._record_awaiting_review(
+                run_id,
+                current,
+                head=head,
+                code_stamp=queue_landing._landing_code_stamp(),
+                review_stamp=queue_landing._review_stamp(review),
+                tier=tier,
+                stale_head=stale,
+                read_error=error,
+            )
+        return {
+            "run_id": run_id,
+            "session": str(pointer.get("session") or ""),
+            "head": head,
+            "status": "review-refused" if refused else "awaiting-review",
+            "guard": guard,
+        }
+    return None
+
+
 def _require_repair_gate(
-    pointer: Mapping[str, Any], head: str, repository: Path
+    pointer: Mapping[str, Any], head: str, repository: Path, primary: str = ""
 ) -> None:
-    """Require the fresh repair manifest's passing capture for this exact head."""
+    """Require the fresh repair manifest's capture to add no failing test.
+
+    A gate that exited zero passes on its own receipt. A red gate is judged
+    against the same command's own arm at the primary revision the merge
+    conflict named, and refuses only on a failing id the primary does not
+    fail. Absolute green made a repair whose gate files were already red on
+    the primary branch unlandable however clean its own change, which is the
+    opposite of what a repair round exists for: the fault it must clear is
+    the one this run introduced, and the primary's redness is not this run's
+    to fix. The delivery measure already decides a landing this way, and the
+    comparison here reuses its reader rather than restating the rule.
+
+    The primary arm is the fresh manifest's ``baseline_suite``: it is the arm
+    the run records for the revision it measured before its change, and a
+    repair round records it at the primary revision the conflict names. So
+    the two sides are one command at two revisions. A refusal names the added
+    ids and both logs, because the remedy is either the primary arm or the
+    head's new failure, and a message naming neither leaves nothing to
+    compare. ``primary`` is empty only for a caller holding no conflict
+    record, and such a caller has no primary to compare against.
+    """
     from reckon import ledger
     from reckon.crew.promotion_evidence import (
         _commit_canonical_id,
@@ -362,14 +608,10 @@ def _require_repair_gate(
     missing = ledger.gate_check_missing_fields(check)
     if missing:
         raise runs.CrewError("repair gate is missing " + ", ".join(missing))
-    if check["exit_status"] != 0:
-        raise runs.CrewError("repair gate did not pass")
     try:
         text = Path(check["log_path"]).read_text(encoding="utf-8")
     except (KeyError, OSError, UnicodeError) as exc:
         raise runs.CrewError("repair gate requires a readable captured log") from exc
-    if _recorded_exit_status(text) != 0:
-        raise runs.CrewError("repair gate log must end with EXIT=0")
     recorded_command = _command_from_gate_log(text)
     if _normalized_command(recorded_command) != _normalized_command(check["command"]):
         declared_command = _manifest_declared_command(pointer)
@@ -382,6 +624,131 @@ def _require_repair_gate(
     revisions = (match.group(1) for match in _GATE_LOG_REVISION.finditer(first_line))
     if not any(_commit_canonical_id(repository, rev) == head for rev in revisions):
         raise runs.CrewError(f"repair gate log must name repaired revision {head}")
+    recorded_exit = _recorded_exit_status(text)
+    if recorded_exit is None:
+        raise runs.CrewError("repair gate log must end with EXIT=0")
+    if recorded_exit == 0 and check["exit_status"] == 0:
+        return
+    if check["exit_status"] == 0:
+        raise runs.CrewError("repair gate did not pass")
+    _require_no_added_repair_failures(pointer, primary, text, check, repository)
+
+
+def _require_no_added_repair_failures(
+    pointer: Mapping[str, Any],
+    primary: str,
+    head_text: str,
+    check: Mapping[str, Any],
+    repository: Path,
+) -> None:
+    """Refuse a red repair gate only on a failing id the primary does not fail.
+
+    The head's failing ids come from the log the gate read; the primary's from
+    its own recorded arm, read again from that arm's log rather than taken from
+    its ``failure_ids`` summary. Both sides go through the review reader's
+    comparison, which knows that one test is written as a bare name in a
+    summary and as a qualified node id in a ``FAILED`` line.
+    """
+    from reckon.crew import review
+
+    primary_log, primary_ids = _repair_primary_arm(pointer, primary, check, repository)
+    head_ids = review.gate_log_failure_ids(head_text)
+    if head_ids is None:
+        raise runs.CrewError(
+            "repair gate log records no failing test id in a form the gate can "
+            f"read, so the failures it added against primary {primary} are "
+            f"unmeasured; log {check['log_path']!r}"
+        )
+    added = sorted(review.failure_ids_covered(primary_ids, head_ids))
+    if not added:
+        return
+    raise runs.CrewError(
+        f"repair gate adds failures primary {primary} does not fail: "
+        f"{', '.join(added)}; head log {str(check['log_path'])!r}, "
+        f"primary log {str(primary_log)!r}"
+    )
+
+
+def _repair_primary_arm(
+    pointer: Mapping[str, Any],
+    primary: str,
+    check: Mapping[str, Any],
+    repository: Path,
+) -> tuple[Path, set[str]]:
+    """The primary revision's own arm for the gate command, and its failures.
+
+    The arm is read from the fresh manifest's ``baseline_suite``, which must
+    name the conflict's primary revision, run the same command and declare
+    its run complete. Each is refused by name rather than defaulted, because
+    a comparison against an arm taken somewhere else is not the comparison
+    the refusal reports: it would admit a head whose failures the primary
+    never ran, and the log it names would be evidence of the wrong tree.
+    """
+    from reckon.crew import review
+    from reckon.crew.promotion_checks import _fresh_manifest
+    from reckon.crew.promotion_evidence import _commit_canonical_id
+    from reckon.crew.promotion_records import (
+        _command_from_gate_log,
+        _manifest_relative_path,
+        _normalized_command,
+    )
+
+    if not primary:
+        raise runs.CrewError(
+            "repair gate is red and the conflict records no primary revision to "
+            "compare it with, so the failures it added are unmeasured"
+        )
+    manifest = _fresh_manifest(pointer) or {}
+    manifest_path = str(pointer.get("manifest_path") or "")
+    arm = manifest.get("baseline_suite")
+    if not isinstance(arm, Mapping):
+        raise runs.CrewError(
+            "repair gate is red and the manifest records no baseline_suite arm "
+            f"at primary {primary}, so the failures it added are unmeasured"
+        )
+    revision = str(arm.get("revision") or "").strip()
+    named = _commit_canonical_id(repository, revision) if revision else None
+    if named is None or named != _commit_canonical_id(repository, primary):
+        raise runs.CrewError(
+            "repair gate is red and its baseline_suite arm names "
+            f"{revision or 'no revision'}, not primary {primary}, so the "
+            "failures it added are unmeasured"
+        )
+    if arm.get("completed") is not True:
+        raise runs.CrewError(
+            "repair gate is red and its baseline_suite arm does not declare its "
+            f"run complete, so its failures at primary {primary} are unmeasured"
+        )
+    declared_log = str(arm.get("log_path") or "").strip()
+    if not declared_log:
+        raise runs.CrewError(
+            "repair gate is red and its baseline_suite arm names no log, so the "
+            f"failures it added at primary {primary} are unmeasured"
+        )
+    log_path = _manifest_relative_path(declared_log, manifest_path=manifest_path)
+    try:
+        arm_text = log_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        raise runs.CrewError(
+            "repair gate requires a readable primary arm log: "
+            f"{str(log_path)!r} could not be read"
+        ) from exc
+    arm_command = _command_from_gate_log(arm_text) or str(arm.get("command") or "")
+    if _normalized_command(arm_command) != _normalized_command(check["command"]):
+        raise runs.CrewError(
+            "repair gate is red and its primary arm log records "
+            f"{arm_command or 'no command'!r} rather than the gate's "
+            f"{str(check['command'])!r}, so the two arms are not one command"
+        )
+    ids = review.gate_log_failure_ids(arm_text)
+    if ids is None:
+        raise runs.CrewError(
+            "repair gate requires a readable primary arm log: "
+            f"{str(log_path)!r} records no failing test id in a form the gate "
+            f"can read, so the failures it added at primary {primary} are "
+            "unmeasured"
+        )
+    return log_path, ids
 
 
 def _manifest_declared_command(pointer: Mapping[str, Any]) -> str:
@@ -467,6 +834,164 @@ def retire_stuck_review_pointers(*, only_run: str = "") -> list[dict[str, Any]]:
     return retired
 
 
+def landed_workspace_refusal(
+    pointer: Mapping[str, Any], repository: Path, primary: str
+) -> str:
+    """Read the evidence that must survive before a merged run can be retired."""
+    from reckon.crew import merge, routing
+    from reckon.crew.promotion_checks import _fresh_manifest
+    from reckon.crew.promotion_evidence import _commit_canonical_id
+
+    manifest = _fresh_manifest(pointer)
+    if manifest is None:
+        return "the manifest is unreadable or does not belong to this attempt"
+    if manifest.get("status") != "complete":
+        return "the manifest does not declare a completed delivery"
+    for citation in manifest.get("commits") or ():
+        resolved = _commit_canonical_id(repository, str(citation))
+        if not resolved:
+            return f"manifest commit {citation!r} does not resolve"
+        if not merge._is_ancestor(repository, resolved, primary):
+            return f"manifest commit {citation!r} is not on the primary branch"
+    value = str(pointer.get("worktree") or "")
+    if not value or not Path(value).exists():
+        return ""
+    tree = Path(value)
+    claims = [
+        run_id
+        for run_id in routing._live_pointer_worktrees().get(tree.resolve(), ())
+        if run_id != pointer.get("run_id")
+    ]
+    inspected = routing._inspect_workspace(repository, tree, primary, claims)
+    if inspected["dirty"]:
+        return "worktree has uncommitted files: " + "; ".join(inspected["dirty"])
+    if inspected["classification"] != "integrated":
+        return "worktree cannot be released: " + str(inspected["classification"])
+    return ""
+
+
+def release_merged_promotions(*, only_run: str = "") -> list[dict[str, Any]]:
+    """Finish promoted live workspaces after an independently published merge.
+
+    The promotion row proves delivery and the published branch proves integration.
+    Refuse unsafe evidence before touching the workspace. Compare the complete
+    pointer under its lock so a resumed attempt cannot lose its tree or pointer.
+    The release receipt and section declaration precede pointer retirement; a
+    failed write leaves the pointer for the next pass to finish.
+    """
+    from reckon.crew import merge, promotion, promotion_release
+    from reckon.crew.promotion_requests import COMMAND_REPLY, PENDING, read_promotion
+    from reckon.crew.recovery_repair_dispatch import _reviewed_run_is_busy
+    from reckon.crew.review_landing import finish_landing
+
+    results: list[dict[str, Any]] = []
+    for pointer in runs.list_live():
+        run_id = str(pointer.get("run_id") or "")
+        project = str(pointer.get("project") or "")
+        if not run_id or not project or (only_run and run_id != only_run):
+            continue
+        if not pointer.get("worktree") or pointer.get("landing_group"):
+            continue
+        # A journaled landing already has an owner in the pending-record pass.
+        # Its repair mark also keeps a newer attempt outside that owner's reach.
+        if _record_path(run_id).exists():
+            continue
+        marked = pointer.get("pending_landing_repair_attempt")
+        if pointer.get("pending_landing_repair") and marked_identity(pointer) != marked:
+            continue
+        if (
+            COMMAND_REPLY.get() is None
+            and read_promotion(run_id).get("phase") in PENDING
+        ):
+            continue
+        row = _promoted_row(project, run_id)
+        head = _reviewed_head(row) if row else ""
+        if not head or _promotion_lease_held(run_id) or _reviewed_run_is_busy(pointer):
+            continue
+        try:
+            repository = merge.project_repository(project)
+            remote = merge.head_on_remote_branch(repository, head)
+            primary = str(remote["remote_head"] or "")
+            on_branch = remote["on_branch"]
+            if on_branch is None and remote["cause"] == merge.REMOTE_UNCONFIGURED:
+                primary = merge._rev_parse(
+                    repository, merge._current_branch(repository)
+                )
+                on_branch = merge._is_ancestor(repository, head, primary)
+            if on_branch is not True:
+                continue
+            refusal = landed_workspace_refusal(pointer, repository, primary)
+            release = {}
+
+            def finish(
+                current: Mapping[str, Any],
+                *,
+                expected=pointer,
+                repository=repository,
+                primary=primary,
+                row=row,
+                project=project,
+                run_id=run_id,
+            ) -> bool:
+                nonlocal refusal, release
+                if dict(current) != expected:
+                    refusal = "the live pointer changed before workspace release"
+                    return False
+                refusal = landed_workspace_refusal(current, repository, primary)
+                if refusal:
+                    return False
+                release = promotion_release._release_run_workspace(
+                    current,
+                    integration_repo=repository,
+                    integration_commit=primary,
+                    gate=str(row.get("gate") or ""),
+                )
+                release, updated = promotion._record_release_on_ledger(
+                    project=project,
+                    root=repository,
+                    run_id=run_id,
+                    release=release,
+                    checkout=repository,
+                    after_merge=True,
+                )
+                if (
+                    updated is None
+                    or (release.get("landing_check") or {}).get("ok") is False
+                ):
+                    refusal = "the workspace outcome could not be recorded"
+                    return False
+                if not release.get("worktree_released"):
+                    refusal = str(
+                        release.get("worktree_withheld") or "workspace release withheld"
+                    )
+                    return False
+                refusal = finish_landing(current, run_id)
+                return not refusal
+
+            retired = retire_pointer_if(run_id, finish) if not refusal else POINTER_HELD
+            if retired == POINTER_RETIRED:
+                clear_pending(run_id)
+                waiters = promotion._release_waiters_of_the_landed_section(pointer)
+                results.append(
+                    {
+                        "run_id": run_id,
+                        "status": "already-landed",
+                        "head": head,
+                        "release": release,
+                        "waiters": waiters,
+                    }
+                )
+            elif refusal:
+                results.append(
+                    {"run_id": run_id, "status": "release-refused", "error": refusal}
+                )
+        except (runs.CrewError, merge.MergeError, OSError, ValueError) as exc:
+            results.append(
+                {"run_id": run_id, "status": "release-refused", "error": str(exc)}
+            )
+    return results
+
+
 def finish_pending_landings(
     *, now: float | None = None, land=None, live_run_ids=None, only_run: str = ""
 ) -> list[dict[str, Any]]:
@@ -479,7 +1004,11 @@ def finish_pending_landings(
 
     moment = time.time() if now is None else now
     lander = land or merge.land
-    results: list[dict[str, Any]] = retire_stuck_review_pointers(only_run=only_run)
+    results: list[dict[str, Any]] = finish_landing_groups(only_run=only_run)
+    results.extend(retire_stuck_review_pointers(only_run=only_run))
+    released = release_merged_promotions(only_run=only_run)
+    results.extend(released)
+    handled = {row["run_id"] for row in released}
     directory = pending_dir()
     if not directory.is_dir():
         return results
@@ -494,7 +1023,17 @@ def finish_pending_landings(
             continue
         run_id = str(record.get("run_id") or "")
         project = str(record.get("project") or "")
-        if not run_id or not project or (only_run and run_id != only_run):
+        if (
+            run_id in handled
+            or not run_id
+            or not project
+            or (only_run and run_id != only_run)
+        ):
+            continue
+        group_id = str((record.get("pointer") or {}).get("landing_group") or "")
+        if group_id and group_path(group_id).exists():
+            # A subset of a proved group need not pass its combined gate.
+            # Only the group's completion callback may publish this record.
             continue
         from reckon.crew.promotion_requests import (
             COMMAND_REPLY,
@@ -603,7 +1142,12 @@ def finish_pending_landings(
         if conflict:
             try:
                 repaired = (
-                    _delivered_repair(pointer, head, conflict, repository)
+                    _delivered_repair(
+                        pointer,
+                        str(conflict.get("head") or head),
+                        conflict,
+                        repository,
+                    )
                     if pointer
                     else ""
                 )
@@ -629,6 +1173,67 @@ def finish_pending_landings(
                 results.append({"run_id": run_id, "status": "awaiting-merge-repair"})
                 continue
             head = repaired
+            if pointer.get("pending_landing_repair_attempt") != marked_identity(
+                pointer
+            ):
+
+                def mark_delivery(current, delivered=pointer):
+                    if attempt_identity(current) != attempt_identity(delivered):
+                        raise runs.CrewError("the delivered repair attempt moved")
+                    return {
+                        **current,
+                        "pending_landing_repair": True,
+                        "pending_landing_repair_attempt": marked_identity(current),
+                    }
+
+                try:
+                    pointer = runs._mutate_pointer(run_id, mark_delivery)
+                except runs.CrewError as exc:
+                    results.append(
+                        {
+                            "run_id": run_id,
+                            "status": "repair-gate-refused",
+                            "error": str(exc),
+                        }
+                    )
+                    continue
+            if _cited_head(record) != head:
+                record.update(head=head, attempts=0)
+            record["pointer"] = {**(record.get("pointer") or {}), **dict(pointer)}
+            runs._write_json(path, record)
+            from reckon.crew import queue_landing
+
+            conflicts = queue_landing._merge_conflicts(pointer, head)
+            if conflicts:
+                from reckon.crew.recovery_repair_dispatch import dispatch_merge_repair
+
+                primary = queue_landing._primary_revision(pointer)
+                repair = dispatch_merge_repair(
+                    pointer, head=head, primary=primary, paths=conflicts, promoted=True
+                )
+                queue_landing._record_attempt(
+                    run_id,
+                    head=head,
+                    guard="merge conflict: " + ", ".join(conflicts),
+                    status="refused",
+                    remedy=str(repair.get("advice") or ""),
+                    previous=pointer.get("admission_landing"),
+                )
+                results.append(
+                    {
+                        "run_id": run_id,
+                        "status": "merge-conflict",
+                        "head": head,
+                        "paths": conflicts,
+                        "main_revision": primary,
+                        "repair": repair,
+                    }
+                )
+                continue
+            waiting = _repair_review_wait(pointer, head)
+            if waiting:
+                results.append(waiting)
+                continue
 
         replay_pointer = record.get("pointer") or {}
 
@@ -637,11 +1242,15 @@ def finish_pending_landings(
             _base,
             _head,
             revision,
+            objects=None,
             pointer=replay_pointer,
             gate=automatic_gate,
         ):
             from reckon.crew.review_landing import replay_candidate
 
+            merge.import_built_merge(
+                checkout, revision, objects, parents=[_base, _head]
+            )
             checked = replay_candidate(
                 {**pointer, "repo": str(checkout)}, revision, gate
             )

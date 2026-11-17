@@ -1,0 +1,82 @@
+{
+  "added_failure_count": 3,
+  "added_failure_ids": [
+    "tests/test_a_one_plan_ledger_read.py::test_a_one_plan_read_decodes_no_other_plans_documents",
+    "tests/test_a_one_plan_ledger_read.py::test_the_filtered_read_is_the_unfiltered_read_filtered",
+    "tests/test_a_one_plan_ledger_read.py::test_the_unfiltered_read_decodes_every_plan"
+  ],
+  "added_failures_note": "Derived by reckon.crew.review.added_failures_from_gate_logs over the reviewed manifest's own baseline_suite arm (base two-file arm, 53 passed, 2 errors) and after_suite arm (three-file arm at d74954f7, 3 failed, 55 passed) in arms-1317390.log: 3 added. All three are a defect in the new test file that the next commit 8b98c51 repaired with no assertion changed; repair-head.log records 3 passed, EXIT=0 at 8b98c51, and the head ledger arm adds no failure over base (8 against 9). The count is therefore an artefact of the after_suite arm predating the repair rather than evidence that the delivered head is red; see the blocking finding on the manifest.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/evidence.py:731",
+    "reckon/evidence.py:832",
+    "reckon/_store.py:1405",
+    "reckon/roadmap.py:1920"
+  ],
+  "completed_at": "2026-11-15T12:23:12.333Z",
+  "dispatched_at": "2026-11-15T12:03:42Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T085741072175-rorp-s5/manifest.md",
+      "id": "fe02b3d2aff",
+      "line": "23",
+      "severity": "blocking",
+      "text": "blocking: after_suite records revision d74954f74dc9 with exit_status 1 and three failure_ids (the new test file's three cases), while the reviewed head is 0a2d1f8e672b with no suite pair recorded at it. The recorded pair therefore derives added_failure_count 3, and reckon/crew/queue_landing.py:1428 refuses the manifest's own after_suite on its exit status alone; the repair that makes the three pass (repair-head.log, 8b98c51, 3 passed EXIT=0) is recorded beside the arm rather than as the arm. Repair: record the head suite arm at the reviewed head, or record those ids as retired by name in the manifest's own fields."
+    },
+    {
+      "file": "docs/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s5.html",
+      "id": "fcf24e3aa3c",
+      "line": "66",
+      "severity": "non-blocking",
+      "text": "non-blocking: the suite-arm paragraph carries literal \\u2014 escape text at lines 66 and 68 instead of an em dash, so the page renders 'the same 8 of those 9 \\u2014 five in' with the escape visible; the same paragraph's dash at line 59 is a real em dash."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "id": "fb2cf7a9ed6",
+      "line": "3862",
+      "severity": "non-blocking",
+      "text": "non-blocking: read_records now passes headers_only=with_figures and activity_since is None, an optimisation of the figures path that the node goal does not ask for (the goal's read is ledger.runs(..., plan=...), with figures off). No test exercises the changed call, and it is the one line in the diff whose effect the timing gate does not measure."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "id": "f734a797bed",
+      "line": "1670",
+      "severity": "non-blocking",
+      "text": "non-blocking: _row_plan is the third private copy of the same one-line capability, beside _record_plan at reckon/sprint_liveness.py:176 and reckon/crew/dispatch_sessions.py:457, and read_records:3882 still inlines str(record.get(\"plan\") or \"\") instead of calling it, so the consolidation the diff starts is left half done."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit from 19b28c494e to 0a2d1f8e672b (three commits, four paths, +1231/-24): d74954f74d is the index plan column, predicate, version bump and the new test; 8b98c517dc is a four-line unpacking repair in that test; 0a2d1f8e67 is the evidence fragment and the figure, no product source.",
+    "done_when": "The done_when asks for one rigel job logging five timed fresh-process reads at base and head with the head's slowest under five seconds, plus a test over 2,000 runs across 50 plans proving no other plan is decoded and the rows equal the unfiltered read filtered, plus a base-revision negative control; timing-1317391.log (rigel, job 1317391) records base 8.722/14.820/7.576/7.754/7.726 s against head 1.420/0.712/0.606/0.594/0.587 s, tests/test_a_one_plan_ledger_read.py covers both cases, and negative-control-1317494.log shows the decode-count case failing at the base revision with 49 other plans decoded.",
+    "goal": "The node goal is that one plan's run records read in under five seconds and their cost stops growing with other plans' runs; reckon/ledger.py:1780 pushes the plan predicate into the index's own SQL ('plan = ?' on indexed columns of records and aggregate_rows), which is that deliverable, and an independent read at the head returned that plan's 365 rows in 1.53 s on a cold index and 0.45 s warm against 7.95 s at a revision without the change.",
+    "manifest": "Read at .../r-20261115T085741072175-rorp-s5/manifest.md: it records status complete, three commits, the literal gate command, six log paths and both suite arms; its after_suite block is the pre-repair arm and is the subject of the blocking finding.",
+    "write_paths": "The declared paths are reckon/ledger.py, reckon/run_store.py, tests/test_a_one_plan_ledger_read.py, docs/evidence/fragments/a-read-only-run-promotes-as-delivered/rorp-s5.html and docs/figures/a-read-only-run-promotes-as-delivered/rorp-s5; git diff --stat over the three commits names only those, with run_store.py untouched and the figure inside the declared directory."
+  },
+  "justifications": {
+    "durability": "tests/test_a_one_plan_ledger_read.py:96 fails at the base revision and passes at the head, so removing the plan predicate reddens it, but the uncached loader's filter at reckon/ledger.py:2359 is exercised by no test because every case in that file reads a store whose index was built first.",
+    "evidence": "timing-1317391.log and negative-control-1317494.log record a real measurement and a plan's 365 rows still read at 0.45-1.53 s at the head, but the manifest's after_suite at .../manifest.md:23 is the arm at d74954f7 with exit_status 1, so the recorded pair claims three failures the delivered head does not have and the head's own suite result is unrecorded.",
+    "fit": "The helper, the plan column and the predicate follow the idiom the activity bound beside them sets (reckon/ledger.py:1783), the version bump reuses the existing rebuild path at reckon/ledger.py:2034, and no added name carries a plan, sprint or version label.",
+    "goal_fidelity": "reckon/ledger.py:1780 adds the 'plan = ?' predicate to the index's aggregate and document queries, so the plan's 365 rows read in 0.45-1.53 s at the head against 7.95 s at a revision without the change, returning the same 365 rows.",
+    "reuse": "The substantive capability extends the index's single owner of decoding and filtering (reckon/ledger.py:1721 _index_payload) rather than adding a second reader, but the new _row_plan at reckon/ledger.py:1670 re-implements a one-liner two other modules already own privately (reckon/sprint_liveness.py:176, reckon/crew/dispatch_sessions.py:457) and read_records:3882 still writes it inline.",
+    "scope_discipline": "git diff --stat 19b28c494e 0a2d1f8e672b names only reckon/ledger.py, tests/test_a_one_plan_ledger_read.py and the two declared evidence paths, and the only line the goal does not imply is the headers_only change at reckon/ledger.py:3862."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261115T120153259988-review-of-rorp-s5-0a2d1f8e672b",
+  "reviewed_at": "2026-11-15T13:20:00Z",
+  "reviewed_base_sha": "19b28c494ed17c302a6b6be1d99ef7a9cd154805",
+  "reviewed_head_sha": "0a2d1f8e672b95e4b0d558ea2225662c89153309",
+  "reviewed_run_id": "r-20261115T085741072175-rorp-s5",
+  "reviewer_role": "review",
+  "scores": {
+    "durability": 14,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T12:29:02.042151+00:00",
+  "total": 96
+}

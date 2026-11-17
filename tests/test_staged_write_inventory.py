@@ -79,6 +79,12 @@ def test_every_staged_write_reaches_the_owner(trees):
         # flock it writes the seen-lag map to a .tmp sibling of the seen path
         # and os.replace-s it there, beside the append-only lag log.
         ("reckon/crew/obligations.py", "_record_index_lag"),
+        # _write_beat stages its replacement: it writes the host's beat to a
+        # mkstemp sibling under the heartbeat directory, stamps that
+        # temporary's own write time, and os.replace-s it over the keyed
+        # beat, so a reader never sees a half-written record and the beat's
+        # age is its file's mtime.
+        ("reckon/crew/host_heartbeat.py", "_write_beat"),
     }, sorted(observed)
 
 

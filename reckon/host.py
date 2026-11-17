@@ -63,6 +63,12 @@ _SOURCE_CGROUP_WALK = (
     "reckon.crew.summary._user_slice_dir over the process's own cgroup line"
 )
 
+# The variables a job id may arrive in, in the order the placement prefers
+# them. The fleet supervisor publishes the allocation it holds as
+# ``FLEET_JOB_ID`` for everything it starts, so that name outranks a
+# ``SLURM_JOB_ID`` a process inherited from the enclosing allocation.
+_JOB_ID_VARIABLES = ("FLEET_JOB_ID", "SLURM_JOB_ID", "SLURM_JOBID")
+
 # The facts a reader is promised, in the order they are reported.
 FACTS = (
     "in_allocation",
@@ -133,6 +139,28 @@ def _inside_the_job(
     if _cgroup_names_job(components, job_id):
         return True
     return bounded is not None and f"job_{job_id}" in bounded.parts
+
+
+def _job_from_environment(
+    env: Mapping[str, str], components: list[str] | None, bounded: Path | None
+) -> tuple[str | None, str | None]:
+    """The job this process runs inside, and the variable it was read from.
+
+    A variable does not by itself say the process sits inside the job it names:
+    a step of the fleet job inherits the fleet's id, and an sbatch job submitted
+    from inside one inherits an id its own allocation contradicts. So the
+    variable whose job the cgroup actually names wins first, and the declared
+    order — ``FLEET_JOB_ID`` ahead of the ``SLURM_JOB_ID``/``SLURM_JOBID`` pair
+    — decides only where the cgroup names none of them.
+    """
+    named = [(name, str(env.get(name) or "").strip()) for name in _JOB_ID_VARIABLES]
+    present = [(name, value) for name, value in named if value]
+    for name, value in present:
+        if _inside_the_job(components, value, bounded):
+            return value, name
+    if not present:
+        return None, None
+    return present[0][1], present[0][0]
 
 
 def _mount_table(mountinfo_path: str | Path) -> list[tuple[Path, str]] | None:
@@ -225,7 +253,7 @@ def host_facts(
     # so it is only consulted once the line has actually been read.
     bounded = _user_slice_dir(root, text) if text is not None else None
 
-    job_id = env.get("SLURM_JOB_ID") or env.get("SLURM_JOBID") or None
+    job_id, job_variable = _job_from_environment(env, components, bounded)
     node = env.get("SLURMD_NODENAME") or env.get("SLURM_NODELIST") or None
     step_id = env.get("SLURM_STEP_ID") or env.get("SLURM_STEPID") or None
 
@@ -260,7 +288,7 @@ def host_facts(
         reason=reason,
         sources={
             "in_allocation": f"{cgroup_source}; {_SOURCE_CGROUP_WALK}",
-            "job_id": "environment: SLURM_JOB_ID",
+            "job_id": f"environment: {job_variable or 'SLURM_JOB_ID'}",
             "step_id": "environment: SLURM_STEP_ID",
             "node": "environment: SLURMD_NODENAME",
             "tmp_filesystem": mount_source,

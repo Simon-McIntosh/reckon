@@ -92,7 +92,9 @@ def test_queued_section_spelling_keeps_its_upstream_wait(
         goal="build the waiting section",
         plan=PLAN,
         section=section,
-        done_when="the upstream section has landed",
+        # Queueing judges the whole node contract, so the measure has to name
+        # evidence even though this test reads only the stored wait.
+        done_when="pytest -q tests/test_section_waits_read_normalised_keys.py passes",
         write_paths=["result.txt"],
         time_budget="20m",
         spec_level="exact",

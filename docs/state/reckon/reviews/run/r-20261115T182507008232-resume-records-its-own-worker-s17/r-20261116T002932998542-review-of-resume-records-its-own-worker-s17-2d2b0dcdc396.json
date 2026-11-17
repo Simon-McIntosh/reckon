@@ -1,0 +1,97 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Both arms read complete: logs/arm-base-suite.log ends '58 passed in 40.23s' / EXIT=0 at af516b3a and logs/arm-head-suite.log ends '63 passed in 36.51s' / EXIT=0 at 2d2b0dcdc3, neither carrying a FAILED id, so the head arm adds no failing test over the base arm. The +5 in the head count is the five cases of the reviewed test file entering the head selection (the base arm runs only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py), and logs/arm-head-cases.log shows all five passing.",
+  "after_suite": {
+    "command": "env -u SLURM_JOB_ID -u SLURM_JOBID PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/resume-records-its-own-worker-s17 srun --partition=all_debug --time=00:30:00 --cpus-per-task=2 --mem=16G --cpu-bind=none /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/resume-records-its-own-worker-s17/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_resume_in_the_station_records_its_own_worker.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182507008232-resume-records-its-own-worker-s17/logs/arm-head-suite.log",
+    "revision": "2d2b0dcdc396db17717f482c80827601a6e66755",
+    "summary_line": "63 passed in 36.51s"
+  },
+  "baseline_suite": {
+    "command": "env -u SLURM_JOB_ID -u SLURM_JOBID PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/resume-records-its-own-worker-s17 srun --partition=all_debug --time=00:30:00 --cpus-per-task=2 --mem=16G --cpu-bind=none /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/resume-records-its-own-worker-s17/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182507008232-resume-records-its-own-worker-s17/logs/arm-base-suite.log",
+    "revision": "af516b3ac95301b84b0958cad3c7d93db776c98b",
+    "summary_line": "58 passed in 40.23s"
+  },
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/runs.py:1230 read_pointer",
+    "reckon/crew/dispatch_launch.py:2594 pid_belongs_to_the_station",
+    "reckon/crew/dispatch_launch.py:2613 pid_belongs_to_the_station"
+  ],
+  "completed_at": "2026-11-16T00:43:04.259Z",
+  "dispatched_at": "2026-11-16T00:36:22Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the coordinator rebuilt the manifest's tests, test_logs, suite arms and negative_control_log from the run's own committed arm logs at its reviewed head 2d2b0dcdc3; the record check now passes",
+      "recorded_at": "2026-11-16T03:23:21.640400+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182507008232-resume-records-its-own-worker-s17/manifest.md",
+      "line": "5",
+      "severity": "blocking",
+      "text": "blocking: the delivered manifest ends at its checkpoint line and carries no tests:, test_logs, baseline_suite or after_suite key, so the run's record names no gate command a promotion can re-run; the run's own promotion.json records that refusal (\"the run records no passing gate to re-run at the merged head\") and the 8d816b47/2d2b0dc arms exist only under logs/, unreceipted by the record promotion reads."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-tells-the-truth-under-load/resume-records-its-own-worker-s17.html",
+      "line": "74",
+      "severity": "non-blocking",
+      "text": "non-blocking: the after-suite row (line 74), the head-cases row (line 84) and the renewal-age negative-control row (line 87) cite 8d816b47, while the logs those rows rest on name 2d2b0dcdc3 on their own first lines (logs/arm-head-suite.log:1, logs/arm-head-cases.log:1, logs/arm-negative-control.log:1), contradicting the caption at lines 65-66 that every arm is a log whose first line names its revision; the counts match, so this is a citation defect rather than a measurement one."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "1118",
+      "severity": "non-blocking",
+      "text": "non-blocking: _station_holder reads the station's recorded holder by constructing a second HostLease with a fabricated holder identity (local_host(), os.getpid(), empty job) purely to reach HostLease.holder through a frozen clock, while reckon/crew/host_lease.py:115 holder owns that record read (through host_lease.py:96 _read) and already documents this exact stalled-renewal state at host_lease.py:122, where a lapsed-but-running holder keeps its lease: the capability belongs in the owner as a recorded-holder read on HostLease, which the module's own comment at runs.py:1082 (\"one reader of that format rather than two\") argues for."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read 954285ce..2d2b0dc commit by commit; 8d816b47 adds _no_renewal_age and _station_holder (reckon/crew/runs.py:1107-1135) and reads the holder through them at runs.py:1169, tests/test_a_resume_in_the_station_records_its_own_worker.py:356-371 adds the stalled-renewal case with _write_station_lease now returning its path, and 2d2b0dc rewrites the evidence page's prose and arms table.",
+    "done_when": "the done_when requires new tests that each fail at the base revision and adds no failure to the tests importing reckon.crew.dispatch_launch; logs/arm-base-cases.log ends \"5 failed in 1.10s\" / EXIT=1 at af516b3a, logs/arm-head-cases.log ends \"5 passed in 0.98s\" / EXIT=0 at 2d2b0dc, logs/arm-base-suite.log reads \"58 passed in 40.23s\" / EXIT=0 and logs/arm-head-suite.log \"63 passed in 36.51s\" / EXIT=0.",
+    "goal": "the source node's goal is \"Record a station-started resume's own worker pid, never the station's\"; the two commits gained since it was reviewed serve it, 8d816b47 making the station's recorded holder readable whatever its renewal age (reckon/crew/runs.py:1169) so the guard at reckon/crew/runs.py:1230 keeps dropping the station's pid, and 2d2b0dc recording those arms on the evidence page.",
+    "manifest": "read the reviewed run's manifest.md, which carries orientation_worktree, orientation_base_sha, node, status and a checkpoint only, with no tests:, test_logs, baseline_suite or after_suite key, so the record names no gate a promotion can re-run.",
+    "write_paths": "the fence is reckon/crew/dispatch_launch.py, reckon/crew/runs.py, tests/test_a_resume_in_the_station_records_its_own_worker.py and docs/evidence/fragments/the-monitor-tells-the-truth-under-load/resume-records-its-own-worker-s17.html; git diff 954285ce..2d2b0dc touches only runs.py, the test file and that evidence page, and dispatch_launch.py is unchanged since the previous review."
+  },
+  "justifications": {
+    "durability": "tests/test_a_resume_in_the_station_records_its_own_worker.py:371 asserts the read pid is None against a constant rather than against the pid it wrote, and logs/arm-negative-control.log shows that same case reddening when runs.py is reverted to 954285ce while the other four pass.",
+    "evidence": "logs/arm-head-suite.log ends \"63 passed in 36.51s\" and logs/arm-base-suite.log \"58 passed in 40.23s\", both EXIT=0, while the delivered manifest.md at the reviewed head names no gate at all.",
+    "fit": "reckon/crew/runs.py:1107-1135 follows the module's idiom \u2014 a private helper with \": None\" annotations and a docstring naming the rule it departs from \u2014 as runs.py:1099 does.",
+    "goal_fidelity": "reckon/crew/runs.py:1169 reads the station from the lease whatever its renewal age while runs.py:1171-1178 still binds it to this host's process table, closing the renewal-age fail-open the previous review recorded.",
+    "reuse": "reckon/crew/runs.py:1118 wraps reckon/crew/host_lease.py:115 holder by fabricating a holder identity to read a record the lease owner already reads at host_lease.py:96, rather than extending the owner with a recorded-holder read.",
+    "scope_discipline": "the diff 954285ce..2d2b0dc names only reckon/crew/runs.py, tests/test_a_resume_in_the_station_records_its_own_worker.py and the evidence page, each a declared write path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is \"Record a station-started resume's own worker pid, never the station's\"; the two commits gained since it was reviewed serve it, 8d816b47 making the station's recorded holder readable whatever its renewal age (reckon/crew/runs.py:1169) so the guard at reckon/crew/runs.py:1230 keeps dropping the station's pid, and 2d2b0dc recording those arms on the evidence page.\nVERDICT done_when: the done_when requires new tests that each fail at the base revision and adds no failure to the tests importing reckon.crew.dispatch_launch; logs/arm-base-cases.log ends \"5 failed in 1.10s\" / EXIT=1 at af516b3a, logs/arm-head-cases.log ends \"5 passed in 0.98s\" / EXIT=0 at 2d2b0dc, logs/arm-base-suite.log reads \"58 passed in 40.23s\" / EXIT=0 and logs/arm-head-suite.log \"63 passed in 36.51s\" / EXIT=0.\nVERDICT write_paths: the fence is reckon/crew/dispatch_launch.py, reckon/crew/runs.py, tests/test_a_resume_in_the_station_records_its_own_worker.py and docs/evidence/fragments/the-monitor-tells-the-truth-under-load/resume-records-its-own-worker-s17.html; git diff 954285ce..2d2b0dc touches only runs.py, the test file and that evidence page, and dispatch_launch.py is unchanged since the previous review.\nVERDICT manifest: read the reviewed run's manifest.md, which carries orientation_worktree, orientation_base_sha, node, status and a checkpoint only, with no tests:, test_logs, baseline_suite or after_suite key, so the record names no gate a promotion can re-run.\nVERDICT diff: read 954285ce..2d2b0dc commit by commit; 8d816b47 adds _no_renewal_age and _station_holder (reckon/crew/runs.py:1107-1135) and reads the holder through them at runs.py:1169, tests/test_a_resume_in_the_station_records_its_own_worker.py:356-371 adds the stalled-renewal case with _write_station_lease now returning its path, and 2d2b0dc rewrites the evidence page's prose and arms table.\nCALL_SITES: reckon/crew/runs.py:1230 read_pointer, reckon/crew/dispatch_launch.py:2594 pid_belongs_to_the_station, reckon/crew/dispatch_launch.py:2613 pid_belongs_to_the_station\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:1169 reads the station from the lease whatever its renewal age while runs.py:1171-1178 still binds it to this host's process table, closing the renewal-age fail-open the previous review recorded.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/arm-head-suite.log ends \"63 passed in 36.51s\" and logs/arm-base-suite.log \"58 passed in 40.23s\", both EXIT=0, while the delivered manifest.md at the reviewed head names no gate at all.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff 954285ce..2d2b0dc names only reckon/crew/runs.py, tests/test_a_resume_in_the_station_records_its_own_worker.py and the evidence page, each a declared write path.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_resume_in_the_station_records_its_own_worker.py:371 asserts the read pid is None against a constant rather than against the pid it wrote, and logs/arm-negative-control.log shows that same case reddening when runs.py is reverted to 954285ce while the other four pass.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/runs.py:1107-1135 follows the module's idiom \u2014 a private helper with \": None\" annotations and a docstring naming the rule it departs from \u2014 as runs.py:1099 does.\nSCORE reuse: 13\nJUSTIFICATION reuse: reckon/crew/runs.py:1118 wraps reckon/crew/host_lease.py:115 holder by fabricating a holder identity to read a record the lease owner already reads at host_lease.py:96, rather than extending the owner with a recorded-holder read.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182507008232-resume-records-its-own-worker-s17/manifest.md:5 blocking: the delivered manifest ends at its checkpoint line and carries no tests:, test_logs, baseline_suite or after_suite key, so the run's record names no gate command a promotion can re-run; the run's own promotion.json records that refusal (\"the run records no passing gate to re-run at the merged head\") and the 8d816b47/2d2b0dc arms exist only under logs/, unreceipted by the record promotion reads.\nFINDING docs/evidence/fragments/the-monitor-tells-the-truth-under-load/resume-records-its-own-worker-s17.html:74 non-blocking: the after-suite row (line 74), the head-cases row (line 84) and the renewal-age negative-control row (line 87) cite 8d816b47, while the logs those rows rest on name 2d2b0dcdc3 on their own first lines (logs/arm-head-suite.log:1, logs/arm-head-cases.log:1, logs/arm-negative-control.log:1), contradicting the caption at lines 65-66 that every arm is a log whose first line names its revision; the counts match, so this is a citation defect rather than a measurement one.\nFINDING reckon/crew/runs.py:1118 non-blocking: _station_holder reads the station's recorded holder by constructing a second HostLease with a fabricated holder identity (local_host(), os.getpid(), empty job) purely to reach HostLease.holder through a frozen clock, while reckon/crew/host_lease.py:115 holder owns that record read (through host_lease.py:96 _read) and already documents this exact stalled-renewal state at host_lease.py:122, where a lapsed-but-running holder keeps its lease: the capability belongs in the owner as a recorded-holder read on HostLease, which the module's own comment at runs.py:1082 (\"one reader of that format rather than two\") argues for.",
+  "review_run_id": "r-20261116T002932998542-review-of-resume-records-its-own-worker-s17-2d2b0dcdc396",
+  "reviewed_base_sha": "954285ce14916c351e3c40c232d37fc4762baa5c",
+  "reviewed_head_sha": "2d2b0dcdc396db17717f482c80827601a6e66755",
+  "reviewed_run_id": "r-20261115T182507008232-resume-records-its-own-worker-s17",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 13,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T01:24:40.265399+00:00",
+  "total": 99
+}

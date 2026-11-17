@@ -1,0 +1,149 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "digests": {
+        "s31": "5e320fec30580df18f57b6d28c58a517e834ccc7f4632502d8abefcc9dc8a743"
+      },
+      "reason": "the s31 Why and done-when edits are exactly what findings done_when-1 and reasoning-1 of r-20261116T112049598893 asked for, and the s30 declaration is what wiring-1 asked for",
+      "units": [
+        "s31"
+      ],
+      "when": "2026-11-16T11:47:20.096739+00:00"
+    }
+  ],
+  "completed_at": "2026-11-16T11:25:57.754Z",
+  "dispatched_at": "2026-11-16T11:25:40Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/history-persists-as-detail-washes-out/r-20261116T112049598893-plan-review-of-history-persists-as-detail-washes-out/plan.html:28",
+      "id": "wiring-1",
+      "reason": "the declaration is the only thing a dispatcher reads to decide what is still to build, so leaving a landed section queued either re-runs it or collides with s31's edits to the same module.",
+      "text": "`plan-section-declarations` declares s30 `implementable`, while s31's Why (plan.html:416) states \"After \u00a730 landed at f47935d07b\", and the committed commit f47935d07b is an ancestor of the snapshot base; the plan therefore contradicts its own record file, and a dispatch that reads the declarations queues a landed section again on the same source path (`reckon/run_store.py`) s31 also edits",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/history-persists-as-detail-washes-out/r-20261116T112049598893-plan-review-of-history-persists-as-detail-washes-out/plan.html:417",
+      "id": "done_when-1",
+      "reason": "one number in the section makes the comparison arm falsifiable; without it the node can set the threshold to whatever its base run already satisfies.",
+      "text": "the first arm is \"a read of one plan's runs holds the store for no longer than a read of a single run by id, within a stated factor the test fixes\", which names no factor, so the tolerance is the node's to choose; a factor large enough to admit the base behaviour makes the arm hold before the fix too, and the arm then measures nothing while the node still reports a red-at-base pair",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/history-persists-as-detail-washes-out/r-20261116T112049598893-plan-review-of-history-persists-as-detail-washes-out/plan.html:416",
+      "id": "reasoning-1",
+      "reason": "a node that fixes plan-filtered selection can pass every arm of s31 and leave the fleet-wide activity-window scan still holding the lock, which is the observed `database is locked` refusal the section exists to remove.",
+      "text": "the Why says `compose_owed_plan_reviews` \"reads one plan's authoring runs through a plan-scoped `stored_run_rows`, and that query selects by plan\", but that pass reads the store through `plan_authoring_runs` with `ledger.read_records(project, with_figures=False, activity_since=moment - PLAN_REVIEW_BURST_SECONDS)` (reckon/crew/plan_review.py:4035-4039) and passes no plan, so `_record_rows` (reckon/run_store.py:293-300) installs `record_epoch` over four extracted stamps per row, not `record_plan` over `json.loads(payload)`; the per-row Python work inside the one statement is the same defect class, but the selection it names is not the read the station holds, and s31's whole measure is scoped to the plan-filtered read",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "4e5dc5a8e39197b60ec8337d219e384405890f48",
+  "plan_fingerprint": "94c96250f39bd47d55b3f64ef7178d0bf39a7d69e4912186689c3bdc3b7ed6ad",
+  "plan_slug": "history-persists-as-detail-washes-out",
+  "plan_version": 80,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "4e5dc5a8e39197b60ec8337d219e384405890f48",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "s30 is declared done in plan-section-declarations; it landed at f47935d07b",
+      "reason": "",
+      "when": "2026-11-16T11:38:34.682860+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "4e5dc5a8e39197b60ec8337d219e384405890f48",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "the done-when now fixes the bound: on a 20,000-run store a writer from another process completes in under one second during the read, where at base it waits for the whole scan",
+      "reason": "",
+      "when": "2026-11-16T11:38:39.346890+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "4e5dc5a8e39197b60ec8337d219e384405890f48",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "the Why now names the read the station actually makes: an activity-bounded read whose per-row filter parses four timestamps in Python; the done-when covers both activity-bounded and plan-scoped reads",
+      "reason": "",
+      "when": "2026-11-16T11:38:43.197891+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "4e5dc5a8e39197b60ec8337d219e384405890f48",
+      "commit_basis": "edit",
+      "note": "the done-when now fixes the bound: on a 20,000-run store a writer from another process completes in under one second during the read, where at base it waits for the whole scan",
+      "reason": "",
+      "when": "2026-11-16T11:38:39.346890+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "4e5dc5a8e39197b60ec8337d219e384405890f48",
+      "commit_basis": "edit",
+      "note": "the Why now names the read the station actually makes: an activity-bounded read whose per-row filter parses four timestamps in Python; the done-when covers both activity-bounded and plan-scoped reads",
+      "reason": "",
+      "when": "2026-11-16T11:38:43.197891+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "4e5dc5a8e39197b60ec8337d219e384405890f48",
+      "commit_basis": "edit",
+      "note": "s30 is declared done in plan-section-declarations; it landed at f47935d07b",
+      "reason": "",
+      "when": "2026-11-16T11:38:34.682860+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-history-persists-as-detail-washes-out.v80.json",
+  "review_run_id": "r-20261116T112049598893-plan-review-of-history-persists-as-detail-washes-out",
+  "reviewed_blob_sha": "c6dddec24bcfd12db08e62a548e804f8c219e2d9",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `f47935d07b` resolves as a commit and is an ancestor of the snapshot base 62edb51d, `stored_run_rows` resolves at reckon/run_store.py:542, `compose_owed_plan_reviews` at reckon/crew/plan_review.py:4330, and the \u00a730 anchor `id=\"s30\"` exists.",
+    "done_when": "a finding \u2014 s31's done-when (plan.html:417) leaves the tolerance (\"within a stated factor the test fixes\") unstated, so the comparison arm can be fixed by construction while still passing at base.",
+    "evidence_paths": "pass \u2014 s31 declares no evidence or log path; gate logs for this node land under the run's own directory, not a plan-named scratch path.",
+    "naming": "pass \u2014 s31 introduces no new symbol, and the only identifiers it cites are the existing functions and modules of the code it describes.",
+    "reasoning": "a finding \u2014 the Why attributes the station's held read lock to a plan-scoped read, but the sweep's store read is fleet-wide with an `activity_since` bound and passes no plan.",
+    "single_goal": "pass \u2014 s31 names one deliverable, a plan-scoped store read that holds no lock across its scan, and one closed set of write paths.",
+    "wiring": "a finding \u2014 `plan-section-declarations` (plan.html:28) still declares s30 `implementable` although s31's own Why says \u00a730 landed at f47935d07b and two stored review records on s30 name that commit."
+  },
+  "section_digests": {
+    "_document": "ac8d7025f3beb4b1643c1c143c6b8577d9ab73776f244b663be43da9da5923b5",
+    "s1": "16a4b0ff613308f968af13a86453cdda7611fbb4a0b662f0998319199f08c1f2",
+    "s2": "81ea5591beea9f0bfe0621b90127946f5c732b8471e2c5373404a592fa5daefe",
+    "s20": "469126d7a8d70994107c002b967dbf9da3c5237e4a3d05823281a9885c92731d",
+    "s21": "b2ec3716b6dd37a6a203c9b9d7c0be1209c9fa8d48d83ddcdf537eb47428cd4c",
+    "s22": "5b80738fa65b0a373485bf67bf0f2f191c8cf69ad935ef9ae258accc3a43cfc1",
+    "s23": "5f979f2ac2c694c8465c9b3b76743b70a3df967a1496488ebe45e96a41451c59",
+    "s24": "ff4464a256205179d7e9af583afcd456372bf9b4a393a90fe8b93955826be5f8",
+    "s25": "6e50b703cae5c188d1fb24250a943eb5f654fc5c26334335a3a7288120690168",
+    "s26": "37c27b0d54e7bf1a99e322e08776a72ffa748c2b88388aaa51f267a1db5c358a",
+    "s27": "9d55fe84f9ee617248a7eec57379797bd44bc1cb050fc378d20ac1b3da8152b2",
+    "s28": "1b395017f55a124f94b5b856f557b80c1246dd6aa0b94d4c21a412922010b47f",
+    "s29": "08680da58b87d39a60d022d76781f1c03ec98c2eec17478fcee45582b9ef204e",
+    "s3": "3422a7a0a23c318e54716e2fbbaf99599e0142f7bbc74d9eb45f924541cd8ccf",
+    "s30": "73d5c5ce099e375a2b18ae59f31aec4205212d2104108d1b97ce543d20c55270",
+    "s31": "f2f95c8822e9e6883a8f005da79578f6ddf5ff5f1087d0faeeddf30dc89ac706",
+    "s4": "6beff7af8378d0a3be80a490fb73cc8c5e6a8ee94449c98de40a252d2f57fcd5",
+    "s5": "0cd70cc30708f232bf564bff0e7825d783d5f5ab455747bfac40ebe742ea0ed3",
+    "s6": "5181e894e8b3823f366d0b459a48ecc8e236e645ca5b1f02071dfc0fdae47681",
+    "s7": "6173f16d89316af11f74c75b5bec44f90742582abf47efd7e72af7af3bb31b50"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T11:38:32.562804+00:00",
+  "total": null
+}

@@ -87,6 +87,8 @@ from reckon._worker_fence import (  # noqa: F401
     UNPROTECTED_PATHS_KEY,
     WORKER_MCP_SERVERS,
     BackendError,
+    WorkerMcpSetError,
+    WorkerMcpSetsError,
     _await_protected_sources,
     _bind_reckon_hook_commands,
     _copy_tree_without_overwrite,
@@ -110,10 +112,12 @@ from reckon._worker_fence import (  # noqa: F401
     _within_any,
     _write_private_json,
     claude_credential_source,
+    claude_worker_mcp_config,
     codex_auth_source,
     codex_login_record_path,
     codex_login_size,
     codex_login_truncation_detail,
+    codex_worker_mcp_flags,
     create_write_roots,
     declared_protected_paths,
     fence_argv,
@@ -131,6 +135,8 @@ from reckon._worker_fence import (  # noqa: F401
     seed_harness_home,
     seed_write_lock_namespace,
     unmergeable_seals,
+    worker_mcp_selection,
+    worker_scratch_write_roots,
     worktree_git_write_roots,
     write_lock_directory,
 )
@@ -453,6 +459,14 @@ class LaunchPlan:
     # pattern that governs it. Empty for a node that declares write paths: its
     # fence is composed exactly as it was before these were sealed at all.
     unmergeable_seals: dict[str, str] = field(default_factory=dict)
+    # The MCP set this run connected under, and the servers in it. Resolved
+    # once, at composition, from the flight configuration and the node's own
+    # declaration: the launch seeds the harness and the record survives on the
+    # run, so a coordinator reading what a worker could reach reads the same
+    # fact the harness was handed rather than re-deriving it from a config file
+    # that may have moved since. An empty name means the node named no set.
+    mcp_set: str = ""
+    worker_mcp_servers: tuple[str, ...] = ()
 
     def as_dict(self) -> dict[str, Any]:
         """Return the plan as sorted JSON-ready data, prompt text excluded."""
@@ -467,7 +481,9 @@ class LaunchPlan:
             "dialect": self.dialect,
             "final_message_path": self.final_message_path,
             "fence_waiver": self.fence_waiver,
+            "mcp_set": self.mcp_set,
             "resumed_session": self.resumed_session,
+            "worker_mcp_servers": list(self.worker_mcp_servers),
         }
 
 
@@ -1162,6 +1178,10 @@ class Dialect:
     # process inherits an already-closed stdin.
     stdin_prompt = True
 
+    def serving_model(self, backend: Mapping[str, Any]) -> str | None:
+        """The checkpoint identifier an endpoints document publishes."""
+        return backend.get("model")
+
     def argv(
         self,
         *,
@@ -1406,6 +1426,8 @@ class _CodexDialect(Dialect):
         run_directory: str | None = None,
     ) -> list[str]:
         argv = [command, "exec", "--json", "-C", working_directory]
+        # A process override also covers resumes and explicitly unfenced runs.
+        argv += list(backend.get("worker_mcp_flags", ["-c", "mcp_servers={}"]))
         if (
             run_directory
             and Path(run_directory).is_absolute()
@@ -1562,6 +1584,8 @@ class _CodexDialect(Dialect):
             f"{server}.args=[{', '.join(json.dumps(word) for word in words)}]",
             "-c",
             f'{server}.default_tools_approval_mode="approve"',
+            "-c",
+            f"{server}.enabled=true",
         ]
 
     def _sandbox_flags(self, tier: str | None) -> list[str]:
@@ -1910,6 +1934,8 @@ _OMP_THINKING_LEVELS = frozenset({"low", "high", "max"})
 # project server is discovered and traces an error; with it disabled the same
 # server is never discovered and the run's trace log names it zero times.
 OMP_WORKER_OVERLAY = """\
+async:
+  printWake: true
 mcp:
   enableProjectConfig: false
 task:
@@ -2018,6 +2044,11 @@ class _OmpDialect(Dialect):
     # stdin rather than prompt text — see the class docstring.
     stdin_prompt = False
 
+    def serving_model(self, backend: Mapping[str, Any]) -> str | None:
+        """The harness selects provider/model; the endpoint publishes model."""
+        model = super().serving_model(backend)
+        return model.split("/", 1)[-1] if model else model
+
     def argv(
         self,
         *,
@@ -2061,7 +2092,7 @@ class _OmpDialect(Dialect):
         argv.append(f"--tools={OMP_WORKER_TOOLS}")
         # The positional prompt goes last: this harness reads a value beginning
         # with '-' as another flag, so the brief is the final word on the line.
-        argv.append(prompt)
+        argv.append(_omp_positional_prompt(prompt, run_directory))
         return argv
 
     def _sandbox_flags(self, tier: str | None) -> list[str]:
@@ -2262,6 +2293,37 @@ def _omp_usage(usage: Mapping[str, Any]) -> dict[str, int | float]:
     return returned
 
 
+# The kernel caps one argument at MAX_ARG_STRLEN, 32 pages or 128 KiB on Linux,
+# and refuses the whole exec with E2BIG above it. A brief past this many bytes
+# therefore cannot ride on the command line. Measured on 15 November: a plan
+# review of a 464 KB plan composed a 504 KB brief, and its worker never spawned
+# ("Argument list too long"), so no large plan could be reviewed on this lane.
+OMP_ARGV_PROMPT_BYTES = 100_000
+OMP_LONG_BRIEF_NAME = "brief-for-worker.md"
+
+
+def _omp_positional_prompt(prompt: str, run_directory: str | None) -> str:
+    """The brief this harness is handed on its command line.
+
+    A brief that fits in one argument goes as it is. A longer one is written
+    into the run's own directory and the argument names it, because this
+    harness cannot take its prompt on stdin (it blocks reading the pipe) and
+    the kernel refuses an argument that long. A composition with no run of its
+    own has nowhere to keep the file, so it is handed the brief as it is.
+    """
+    if len(prompt.encode("utf-8")) <= OMP_ARGV_PROMPT_BYTES:
+        return prompt
+    if run_directory is None or not Path(run_directory).is_dir():
+        return prompt
+    path = Path(run_directory) / OMP_LONG_BRIEF_NAME
+    path.write_text(prompt, encoding="utf-8")
+    return (
+        f"Your complete brief is in {path}. Read that whole file before doing "
+        "anything else and follow it exactly: it is the full statement of your "
+        "task, and nothing in this message replaces it."
+    )
+
+
 def _omp_prompt_tokens(usage: Mapping[str, Any]) -> int:
     """Return one request's whole prompt size, cached segments included."""
     measured = [
@@ -2328,6 +2390,11 @@ class _ClaudeDialect(Dialect):
     ) -> list[str]:
         self._refuse_images(command, images)
         argv = [command, "-p", "--output-format", "stream-json", "--verbose"]
+        argv += [
+            "--strict-mcp-config",
+            "--mcp-config",
+            str(backend.get("worker_mcp_config", '{"mcpServers": {}}')),
+        ]
         if resume_session:
             argv += ["--resume", resume_session]
         model = backend.get("model")
@@ -2915,6 +2982,26 @@ def _prompt_without_figure_listing(prompt: str) -> str:
     return f"{head.rstrip()}\n\n{remainder}"
 
 
+def _resolve_worker_mcp(
+    fence_config: Mapping[str, Any] | None, worker_mcp_set: str
+) -> tuple[str, list[str] | None]:
+    """Return the MCP set a launch connects under, and the servers in that set.
+
+    ``None`` for the servers means the launch carries no flight declaration at
+    all — a bare composition or a preview — so it seeds no server and writes no
+    record, which an empty list would misreport as a flight that named none.
+    A node naming a set its flight does not declare is refused here, as a
+    backend error, because the launch cannot compose a runnable invocation for
+    work whose servers it cannot resolve.
+    """
+    if fence_config is None and not worker_mcp_set:
+        return "", None
+    try:
+        return worker_mcp_selection(fence_config, worker_mcp_set)
+    except (WorkerMcpSetError, WorkerMcpSetsError) as exc:
+        raise BackendError(str(exc)) from exc
+
+
 def launch_plan(
     *,
     backend_name: str,
@@ -2929,11 +3016,19 @@ def launch_plan(
     fence: bool = True,
     fence_home: str | Path | None = None,
     fence_config: Mapping[str, Any] | None = None,
+    worker_mcp_set: str = "",
     fence_waiver: str | None = None,
     masked_paths: Iterable[str | Path] = (),
     unmergeable_patterns: Iterable[str] = (),
 ) -> LaunchPlan:
     """Translate one backend plus one node's prompt into a runnable invocation.
+
+    ``worker_mcp_set`` is the set the node names. It is resolved here, before
+    anything is written, so a name the flight does not declare refuses the
+    launch rather than seeding a harness home with servers nobody asked for;
+    the resolved set and its servers ride the returned plan, which is where the
+    run's record reads what the worker could reach. A launch handed no flight
+    configuration resolves no set, because there is no declaration to read.
 
     Raises :class:`BackendError` for an in-harness backend: reckon cannot spawn
     the calling harness's own delegation primitive on its behalf, and silently
@@ -2946,6 +3041,9 @@ def launch_plan(
             "backend can be spawned — an in-harness backend is dispatched by "
             "the calling harness against a prepared directive"
         )
+    resolved_mcp_set, resolved_mcp_servers = _resolve_worker_mcp(
+        fence_config, worker_mcp_set
+    )
     from reckon.flight import expand_backend_environment
 
     environment = expand_backend_environment(backend_name, backend)
@@ -2993,17 +3091,34 @@ def launch_plan(
         lock_directory = seed_write_lock_namespace(fence_home)
         if lock_directory is not None:
             write_roots.append(lock_directory)
-        create_write_roots(write_roots)
+        # The run's own scratch directory is handed so the seal can re-bind it
+        # writable, but it is not created here: it belongs to the node that
+        # runs the worker, which is not necessarily the host composing this
+        # argv. A placed worker's step makes it before it execs the fence, and
+        # a worker launched as this process's child is on this host already and
+        # is given it by the launch. Creating it here put a scratch directory
+        # for a compute-node worker on the fleet node instead; see
+        # :func:`reckon._worker_fence.worker_scratch_write_roots`.
+        worker_scratch = worker_scratch_write_roots(write_roots)
+        create_write_roots(
+            [
+                root
+                for root in write_roots
+                if resolved_destination(root) not in worker_scratch
+            ]
+        )
     harness = (
         None
         if run_directory is None or not run_directory.is_dir()
         else harness_home(dialect.name, run_directory)
     )
-    # A run adopts its own harness home only when fenced. An unfenced run keeps
+    # Claude and Codex adopt their own harness home when fenced. Omp keeps its
+    # own home in either mode so MCP discovery cannot escape its agent store.
+    # Other unfenced runs keep
     # the operator's home, where the user hooks, user memory and every session
     # recorded before the run existed already live; a per-run home that carries
     # none of them silently drops the hooks and orphans those sessions.
-    adopts_harness_home = fence
+    adopts_harness_home = fence or dialect.name == "omp"
     anchored_edit = False
     anchored_edit_reason = "disabled"
     if backend.get("anchored_edit") is True:
@@ -3026,7 +3141,9 @@ def launch_plan(
             anchored_edit_reason = "no-harness-home"
         else:
             anchored_edit_reason = "operator-settings"
-    if harness is not None and adopts_harness_home:
+    # Omp reads its MCP deny list from the agent store, including without a
+    # filesystem fence. Keep that store run-local in either mode.
+    if harness is not None and (adopts_harness_home or dialect.name == "omp"):
         from reckon.flight import harness_home_adjacent_files, harness_home_files
 
         seeded_treatment = seed_harness_home(
@@ -3037,9 +3154,7 @@ def launch_plan(
             adjacent_declaration=harness_home_adjacent_files(dialect.name),
             resume_session=resume_session,
             anchored_edit=(
-                backend.get("anchored_edit") is True
-                and dialect.name == "claude"
-                and not resume_session
+                backend.get("anchored_edit") is True and dialect.name == "claude"
             ),
             # The fence grants the worktree separately from delivery roots.
             anchored_edit_roots=fence_writable_roots(
@@ -3048,11 +3163,10 @@ def launch_plan(
             # A resolved flight configuration states which project this run
             # belongs to and so which servers its harness should start; a bare
             # composition carries none, so it names no project and seeds no
-            # MCP record.
+            # MCP record. The node's own set, already resolved above, is what
+            # the run home is seeded with.
             worker_mcp_servers=(
-                _declared_worker_mcp_servers(fence_config)
-                if fence_config is not None
-                else None
+                resolved_mcp_servers if fence_config is not None else None
             ),
         )
         # Only the claude arm's treatment is decided by the seeding step: it
@@ -3061,7 +3175,8 @@ def launch_plan(
         # its recorded fact must not be replaced by the seeder's answer.
         if dialect.name == "claude":
             anchored_edit = seeded_treatment
-        environment[_HARNESS_HOME[dialect.name][0]] = str(harness)
+        if adopts_harness_home:
+            environment[_HARNESS_HOME[dialect.name][0]] = str(harness)
         # A harness that keeps its agent store below its home needs the store
         # variable too: the seed mirrors the operator's files relative to the
         # home the run owns, and a harness resolving its store from the
@@ -3072,7 +3187,7 @@ def launch_plan(
         # commits would carry a name and address nobody configured. Naming the
         # global config explicitly restores it through one environment variable
         # the fence already mounts read-only, so no path is made writable.
-        if _HARNESS_HOME[dialect.name][0] == "HOME":
+        if adopts_harness_home and _HARNESS_HOME[dialect.name][0] == "HOME":
             operator = Path(fence_home) if fence_home is not None else Path.home()
             operator_config = operator / ".gitconfig"
             if operator_config.is_file():
@@ -3112,6 +3227,37 @@ def launch_plan(
     if named_in_prompt:
         prompt = _prompt_naming_images(prompt, attached)
     launch_backend = dict(backend)
+    if dialect.name == "codex":
+        operator = Path(fence_home) if fence_home is not None else Path.home()
+        launch_backend["worker_mcp_flags"] = codex_worker_mcp_flags(
+            harness
+            if harness is not None and adopts_harness_home
+            else operator / ".codex",
+            Path(worktree_path).resolve(),
+            [
+                *(resolved_mcp_servers or ()),
+                *(
+                    [ANCHORED_EDIT_SERVER]
+                    if backend.get("anchored_edit") is True
+                    else []
+                ),
+            ],
+        )
+    if dialect.name == "claude":
+        operator = Path(fence_home) if fence_home is not None else Path.home()
+        mcp_config = claude_worker_mcp_config(
+            harness if harness is not None and adopts_harness_home else operator,
+            Path(worktree_path),
+            resolved_mcp_servers,
+            anchored_edit=backend.get("anchored_edit") is True,
+        )
+        # Server declarations can carry credentials: keep them off process argv.
+        if run_directory is not None and run_directory.is_dir():
+            mcp_path = run_directory / "worker-mcp.json"
+            _write_private_json(mcp_path, json.loads(mcp_config))
+            launch_backend["worker_mcp_config"] = str(mcp_path)
+        else:
+            launch_backend["worker_mcp_config"] = '{"mcpServers": {}}'
     if dialect.name in ("claude", "codex"):
         launch_backend["anchored_edit"] = anchored_edit
     # A launch that seeded the anchored server names its tools in the worker's
@@ -3197,6 +3343,8 @@ def launch_plan(
         anchored_edit=anchored_edit,
         anchored_edit_reason=anchored_edit_reason,
         unmergeable_seals=unmergeable,
+        mcp_set=resolved_mcp_set,
+        worker_mcp_servers=tuple(resolved_mcp_servers or ()),
     )
 
 
@@ -3484,13 +3632,85 @@ def parse_events(lines: Iterable[str]) -> tuple[list[dict[str, Any]], int]:
     return events, malformed
 
 
+@dataclass(frozen=True)
+class _StreamCursor:
+    """Where one reader had read a stream to, and the version it read.
+
+    The one owner of the identity-and-offset encoding every stream reader
+    records: a parsed-stream entry, a per-stream summary and the ``resume`` a
+    caller carries between observations are all this shape, so the rewrite
+    check and the growth test are stated once rather than joined by a fourth
+    ad-hoc tuple.
+    """
+
+    dev: int
+    ino: int
+    size: int
+    mtime_ns: int
+    offset: int
+    head: Mapping[str, Any]
+
+    @classmethod
+    def of(cls, info: object, *, offset: int, head: Mapping[str, Any]) -> _StreamCursor:
+        """The cursor a stat result and a reached offset describe."""
+        return cls(
+            dev=int(info.st_dev),
+            ino=int(info.st_ino),
+            size=int(info.st_size),
+            mtime_ns=int(info.st_mtime_ns),
+            offset=int(offset),
+            head=head,
+        )
+
+    @classmethod
+    def carried(cls, resume: Mapping[str, Any], info: object) -> _StreamCursor | None:
+        """The cursor a caller's carried ``{offset, head}`` resume describes.
+
+        A caller that recorded its own reading passes what it reached; None
+        means the shape does not name one, which reads the stream whole rather
+        than resuming blind.
+        """
+        try:
+            offset = int(resume.get("offset") or 0)
+        except (TypeError, ValueError):
+            return None
+        if offset <= 0:
+            return None
+        return cls.of(info, offset=offset, head=resume.get("head") or {})
+
+    @property
+    def identity(self) -> tuple[int, int, int, int]:
+        return (self.dev, self.ino, self.size, self.mtime_ns)
+
+    @property
+    def inode(self) -> tuple[int, int]:
+        return (self.dev, self.ino)
+
+    def grows_from(self, path: str | Path, info: object) -> bool:
+        """Whether the file only gained bytes past this cursor's recorded end."""
+        return (
+            self.inode == (int(info.st_dev), int(info.st_ino))
+            and int(info.st_size) > self.size
+            and 0 < self.offset <= int(info.st_size)
+            and _stream_head_intact(path, self.head)
+        )
+
+    def as_resume(self) -> dict[str, Any]:
+        """The caller-carried resume shape this cursor answers for."""
+        return {"offset": self.offset, "head": self.head}
+
+
 @dataclass
 class _ParsedStream:
-    identity: tuple[int, int, int, int]
+    cursor: _StreamCursor
     events: list[dict[str, Any]]
     malformed: int
-    head: dict[str, Any]
     ends_newline: bool
+    # Whether ``events`` starts at the stream's first byte. A read resumed from
+    # a cursor whose records the cache no longer holds answers for the records
+    # gained since then, so an entry published from one is a tail: it answers a
+    # request for what the stream gained and never one for the whole stream.
+    whole: bool = True
     observations: dict[str, Observation] = field(default_factory=dict)
     timestamp_reader: object | None = None
     timestamp_bounds: (
@@ -3499,63 +3719,147 @@ class _ParsedStream:
     pending_events: list[dict[str, Any]] | None = None
     timestamp_version: int = 0
 
+    @property
+    def identity(self) -> tuple[int, int, int, int]:
+        return self.cursor.identity
+
+    @property
+    def head(self) -> Mapping[str, Any]:
+        return self.cursor.head
+
 
 _PARSED_STREAMS: OrderedDict[str, _ParsedStream] = OrderedDict()
 _PARSED_STREAM_LOCK = threading.Lock()
 _PARSED_STREAM_LIMIT = 32 * 1024 * 1024
 
 
-def _cached_stream_entry(path: str | Path) -> _ParsedStream:
-    """Find or publish one version of a stream without locking during I/O."""
+def _resume_cursor(key: str) -> _StreamCursor | None:
+    """Where the summary of this path last reached, if it has one.
+
+    The per-stream summary is the process's count-bounded resume store: it
+    already holds a cursor per path it has read, bounded by
+    ``_STREAM_SUMMARY_LIMIT``, so a stream whose records the byte-bounded
+    events cache dropped is still read from where that read reached rather
+    than from its first byte. Read on its own rather than under the events
+    cache's lock, because the two stores are taken in that order by no caller.
+    """
+    with _STREAM_SUMMARY_LOCK:
+        summary = _STREAM_SUMMARIES.get(key)
+        return summary.cursor if summary is not None else None
+
+
+def _remember_summary_cursor(key: str, cursor: _StreamCursor) -> None:
+    """Record where an events read reached, in the process's one resume store.
+
+    A summary already carrying readings owns its own cursor — its folds are at
+    that version, and moving the cursor without folding the bytes would leave
+    them behind it — so only a summary with nothing derived yet, or none at
+    all, takes the cursor an events read reached. The store is the count-bounded
+    one, so no second bound and no second store are introduced.
+    """
+    with _STREAM_SUMMARY_LOCK:
+        summary = _STREAM_SUMMARIES.get(key)
+        if summary is not None and (summary.folds or summary.bounds):
+            return
+        if summary is None:
+            _STREAM_SUMMARIES[key] = _StreamSummary(cursor=cursor)
+        else:
+            summary.cursor = cursor
+        _STREAM_SUMMARIES.move_to_end(key)
+        while len(_STREAM_SUMMARIES) > _STREAM_SUMMARY_LIMIT:
+            _STREAM_SUMMARIES.popitem(last=False)
+
+
+def _cached_stream_entry(path: str | Path, *, whole: bool = False) -> _ParsedStream:
+    """Find or publish one version of a stream without locking during I/O.
+
+    A stream this cache still holds is answered from it, extended from the
+    bytes it gained when it has grown. A stream whose contents it evicted by
+    size is resumed from the cursor that read reached, so only the bytes gained
+    since then are parsed; a request for the whole stream joins those bytes to
+    the entry only when that entry is the whole stream, and reads from the
+    first byte when it is not. A stream whose opening no longer holds is read
+    from its first byte.
+    """
     source = Path(path)
     key = str(source.resolve())
     info = source.stat()
     identity = (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns)
+    reached = _resume_cursor(key)
     with _PARSED_STREAM_LOCK:
         stored = _PARSED_STREAMS.get(key)
-        if stored is not None and stored.identity == identity:
+        if (
+            stored is not None
+            and stored.identity == identity
+            and (stored.whole or not whole)
+        ):
             _PARSED_STREAMS.move_to_end(key)
             return stored
-        prior_identity = stored.identity if stored is not None else None
-        prior_events = stored.events if stored is not None else []
+        # The held entry carries the version the last read reached whether or
+        # not it was asked for the whole stream, so a whole request extends it
+        # from the bytes it gained rather than reading it again from the first.
+        cursor = stored.cursor if stored is not None else reached
+        prior_events = stored.events if stored is not None else None
         prior_malformed = stored.malformed if stored is not None else 0
-        prior_head = stored.head if stored is not None else None
         prior_ends_newline = stored.ends_newline if stored is not None else False
-    grows = (
-        prior_identity is not None
-        and prior_identity[:2] == identity[:2]
-        and info.st_size > prior_identity[2]
-        and prior_ends_newline
-        and stream_head_fingerprint(source, offset=prior_identity[2]) == prior_head
-    )
-    with source.open("rb") as handle:
-        if grows:
-            handle.seek(prior_identity[2])
-        data = handle.read()
-    _count_parsed_bytes(len(data))
-    added, malformed = parse_events(data.decode("utf-8", errors="replace").splitlines())
-    events = added
-    if grows:
-        events = [*prior_events, *added]
-        malformed += prior_malformed
-    head = stream_head_fingerprint(source, offset=info.st_size)
+        joined = (
+            prior_events is not None
+            and cursor is not None
+            and stored is not None
+            and stored.whole
+            and stored.identity == cursor.identity
+        )
+    grows = cursor is not None and cursor.grows_from(source, info)
+    # A whole request may only be answered by joining when the entry it joins
+    # starts at the stream's first byte; the records one earlier read gained
+    # are a tail, and a whole request for them is answered from the file.
+    resume = grows and (joined or not whole)
+    if resume:
+        lines, end = _stream_lines_from(source, cursor.offset)
+        added, malformed = parse_events(lines)
+        if joined:
+            events = [*prior_events, *added]
+            malformed += prior_malformed
+        else:
+            # The stream's earlier records were evicted with its contents, so
+            # the records this read can answer for are the ones it parsed.
+            prior_events = None
+            events = added
+    else:
+        with source.open("rb") as handle:
+            data = handle.read()
+        _count_parsed_bytes(len(data))
+        added, malformed = parse_events(
+            data.decode("utf-8", errors="replace").splitlines()
+        )
+        events = added
+        end = info.st_size
+        prior_events = None
+        joined = False
+        prior_ends_newline = data.endswith(b"\n")
+    head = stream_head_fingerprint(source, offset=end)
     with _PARSED_STREAM_LOCK:
         live = _PARSED_STREAMS.get(key)
-        if live is not None and live.identity == identity:
+        if live is not None and live.identity == identity and (live.whole or not whole):
             _PARSED_STREAMS.move_to_end(key)
             return live
-        pending = [*(stored.pending_events or []), *added] if grows else None
+        pending = (
+            [*((stored.pending_events or ()) if joined and stored else ()), *added]
+            if resume
+            else None
+        )
         current = _ParsedStream(
-            identity=identity,
+            cursor=_StreamCursor.of(info, offset=end, head=head),
             events=events,
             malformed=malformed,
-            head=head,
-            ends_newline=data.endswith(b"\n"),
-            timestamp_reader=stored.timestamp_reader if grows else None,
-            timestamp_bounds=stored.timestamp_bounds if grows else None,
+            ends_newline=prior_ends_newline if resume else data.endswith(b"\n"),
+            whole=(joined or not resume),
+            timestamp_reader=stored.timestamp_reader if joined and stored else None,
+            timestamp_bounds=stored.timestamp_bounds if joined and stored else None,
             pending_events=pending,
         )
         if live is not None and live is not stored:
+            _remember_summary_cursor(key, current.cursor)
             return current
         _PARSED_STREAMS[key] = current
         _PARSED_STREAMS.move_to_end(key)
@@ -3563,21 +3867,324 @@ def _cached_stream_entry(path: str | Path) -> _ParsedStream:
         while size > _PARSED_STREAM_LIMIT and len(_PARSED_STREAMS) > 1:
             _unused, evicted = _PARSED_STREAMS.popitem(last=False)
             size -= evicted.identity[2]
-        return current
+    _remember_summary_cursor(key, current.cursor)
+    return current
 
 
-def cached_stream_events(path: str | Path) -> tuple[list[dict[str, Any]], int]:
-    """Return shared read-only-by-contract events, parsing only appended bytes."""
-    entry = _cached_stream_entry(path)
+def cached_stream_events(
+    path: str | Path, *, whole: bool = False
+) -> tuple[list[dict[str, Any]], int]:
+    """The records this cache can answer for a stream, and their malformed count.
+
+    A stream the cache holds is answered from its contents, parsing only the
+    bytes it gained since the last read; a stream whose contents were evicted
+    by size is resumed from where that read reached, so what comes back is the
+    records gained since then rather than the whole stream parsed again. The
+    malformed count is always the count among the records returned. A caller
+    that needs the whole stream — a scan whose verdict would otherwise miss a
+    record written before the cache's cursor to pick up an attempt's earlier
+    records — passes ``whole``, which reads from the first byte when the cache
+    no longer holds the stream.
+    """
+    entry = _cached_stream_entry(path, whole=whole)
     with _PARSED_STREAM_LOCK:
         return entry.events, entry.malformed
 
 
-def cached_stream_timestamp_bounds(
+# ── The per-stream summary ────────────────────────────────────────────────────
+# What a caller derives from a stream — its observation, and the bounds of the
+# stamps its records state — is kept per stream under the identity of the file
+# it was read from. A stream that has not moved is then answered without
+# touching its bytes at all, and one that has grown is read only from the
+# offset the last read reached. The records themselves are not retained here:
+# the summary holds what the tick asked the stream for, so its size is bounded
+# by the runs the process is watching rather than by the bytes of every stream
+# it has seen, and a stream the events cache has evicted is still answered from
+# its summary until the run falls out of that window. Its cursor is also the
+# resume a read of an evicted stream starts from, which is why the events cache
+# keeps no second store of its own: this one is already per path and
+# count-bounded.
+_STREAM_SUMMARY_LOCK = threading.RLock()
+_STREAM_SUMMARIES: OrderedDict[str, _StreamSummary] = OrderedDict()
+_STREAM_SUMMARY_LIMIT = 2048
+# The stamp readers a summary answers. A stream is folded for every reader
+# already seen when its bytes are in hand, so a reader that arrives after a
+# stream was last read does not send the process back through its records.
+_STREAM_BOUND_READERS: set[Callable[[object], datetime | None]] = set()
+
+
+@dataclass
+class _StreamFold:
+    """One observation's fold over a stream, extended with each read."""
+
+    backend_name: str
+    backend: dict[str, Any]
+    elapsed_seconds: float | None
+    receipt: object | None
+    observation: Observation
+
+
+@dataclass
+class _StreamSummary:
+    """One stream's derived readings for the file version last read."""
+
+    cursor: _StreamCursor
+    folds: dict[str, _StreamFold] = field(default_factory=dict)
+    bounds: dict[Any, tuple] = field(default_factory=dict)
+
+    @property
+    def identity(self) -> tuple[int, int, int, int]:
+        return self.cursor.identity
+
+    @property
+    def offset(self) -> int:
+        return self.cursor.offset
+
+    @property
+    def size(self) -> int:
+        return self.cursor.size
+
+    @property
+    def head(self) -> Mapping[str, Any]:
+        return self.cursor.head
+
+
+def _observation_settings_key(
+    backend_name: str,
+    backend: Mapping[str, Any],
+    elapsed_seconds: float | None,
+    receipt: object | None,
+) -> str:
+    """The identity of everything an observation is a function of besides bytes."""
+    settings = json.dumps(backend, sort_keys=True, default=repr)
+    return repr((backend_name, settings, elapsed_seconds, receipt))
+
+
+def _extend_stamp_bounds(
+    first: tuple[datetime, str] | None,
+    last: tuple[datetime, str] | None,
+    events: Sequence[Mapping[str, Any]],
+    reader: Callable[[object], datetime | None],
+) -> tuple[tuple[datetime, str] | None, tuple[datetime, str] | None]:
+    """Extend one stream's zoned-stamp bounds over the records just read."""
+    for event in events:
+        stamp = event.get("timestamp")
+        if not isinstance(stamp, str):
+            continue
+        parsed = reader(stamp)
+        if parsed is None:
+            continue
+        point = (parsed, stamp)
+        if first is None or parsed < first[0]:
+            first = point
+        if last is None or parsed > last[0]:
+            last = point
+    return first, last
+
+
+def _publish_summary_records(
+    path: Path,
+    cursor: _StreamCursor,
+    events: list[dict[str, Any]],
+    malformed: int,
+    whole: bool,
+    ends_newline: bool,
+) -> None:
+    """Share the records a summary read with the events cache.
+
+    A stream is read once per version whichever reader asks first. A whole read
+    replaces the cache's copy, and a growth read is appended to the copy it
+    extends the summary from; a growth read of a stream whose events the cache
+    has evicted is left unpublished, because the segment alone is not the
+    stream the next events reader would need. Neither cache is then asked for
+    bytes the other has already decoded.
+    """
+    key = str(path.resolve())
+    with _PARSED_STREAM_LOCK:
+        live = _PARSED_STREAMS.get(key)
+        if live is not None and live.identity == cursor.identity:
+            return
+        if not whole:
+            if live is None or live.identity[:2] != cursor.inode:
+                return
+            combined = [*live.events, *events]
+            total = live.malformed + malformed
+            current = _ParsedStream(
+                cursor=cursor,
+                events=combined,
+                malformed=total,
+                ends_newline=ends_newline,
+                whole=live.whole,
+                timestamp_reader=live.timestamp_reader,
+                timestamp_bounds=live.timestamp_bounds,
+                pending_events=[*(live.pending_events or []), *events],
+                timestamp_version=live.timestamp_version,
+            )
+        else:
+            current = _ParsedStream(
+                cursor=cursor,
+                events=list(events),
+                malformed=malformed,
+                ends_newline=ends_newline,
+            )
+        _PARSED_STREAMS[key] = current
+        _PARSED_STREAMS.move_to_end(key)
+        size = sum(entry.identity[2] for entry in _PARSED_STREAMS.values())
+        while size > _PARSED_STREAM_LIMIT and len(_PARSED_STREAMS) > 1:
+            _unused, evicted = _PARSED_STREAMS.popitem(last=False)
+            size -= evicted.identity[2]
+
+
+def _stream_summary(
+    path: Path,
+) -> tuple[_StreamSummary | None, list[dict[str, Any]], int, bool]:
+    """Bring one stream's summary up to the file's current bytes.
+
+    Returns the summary, the records this call read, the malformed count among
+    them, and whether they are the whole stream. A stream that is already at
+    the version the summary holds reads nothing and returns an empty list; a
+    stream that cannot be stat'd has no summary. A stream whose opening is no
+    longer the one the summary recorded — replaced, rewritten in place or
+    truncated — is read again whole, because an offset into a predecessor's
+    stream. The same growth is read once: records read here extend every fold
+    and every stamp bounds the summary already carries, so a later reader of
+    the same version parses none of them again.
+    """
+    try:
+        info = path.stat()
+    except OSError:
+        return None, [], 0, False
+    identity = (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns)
+    key = str(path.resolve())
+    with _STREAM_SUMMARY_LOCK:
+        stored = _STREAM_SUMMARIES.get(key)
+        if stored is not None and stored.identity == identity:
+            _STREAM_SUMMARIES.move_to_end(key)
+            return stored, [], 0, False
+    grows = stored is not None and stored.cursor.grows_from(path, info)
+    if grows:
+        lines, end = _stream_lines_from(path, stored.offset)
+        events, malformed = parse_events(lines)
+        ends_newline = True
+        whole = False
+    else:
+        try:
+            entry = _cached_stream_entry(path, whole=True)
+        except OSError:
+            return None, [], 0, False
+        events = entry.events
+        malformed = entry.malformed
+        ends_newline = entry.ends_newline
+        end = entry.identity[2] if ends_newline else _last_line_boundary(path)
+        identity = entry.identity
+        whole = True
+    head = stream_head_fingerprint(path, offset=end)
+    cursor = _StreamCursor.of(info, offset=end, head=head)
+    with _STREAM_SUMMARY_LOCK:
+        live = _STREAM_SUMMARIES.get(key)
+        if live is not None and live is not stored and live.identity == identity:
+            # Another reader brought this same version in while this one read
+            # the bytes; its summary is the one everybody shares.
+            return live, [], 0, False
+        folds: dict[str, _StreamFold] = dict(stored.folds) if stored else {}
+        bounds = dict(stored.bounds) if stored else {}
+        for fold_key, fold in list(folds.items()):
+            observation = _observe_events(
+                backend_name=fold.backend_name,
+                backend=fold.backend,
+                events=events,
+                malformed=malformed,
+                elapsed_seconds=fold.elapsed_seconds,
+                receipt=fold.receipt,
+                state=None if whole else fold.observation.stream_state,
+            )
+            observation.stream_state["offset"] = end
+            folds[fold_key] = _StreamFold(
+                fold.backend_name,
+                fold.backend,
+                fold.elapsed_seconds,
+                fold.receipt,
+                observation,
+            )
+        if whole:
+            bounds = {
+                reader: _extend_stamp_bounds(None, None, events, reader)
+                for reader in _STREAM_BOUND_READERS
+            }
+        else:
+            bounds = {
+                reader: _extend_stamp_bounds(first, last, events, reader)
+                for reader, (first, last) in bounds.items()
+            }
+        summary = _StreamSummary(cursor=cursor, folds=folds, bounds=bounds)
+        _STREAM_SUMMARIES[key] = summary
+        _STREAM_SUMMARIES.move_to_end(key)
+        while len(_STREAM_SUMMARIES) > _STREAM_SUMMARY_LIMIT:
+            _STREAM_SUMMARIES.popitem(last=False)
+    if not whole:
+        _publish_summary_records(path, cursor, events, malformed, whole, ends_newline)
+    return summary, events, malformed, whole
+
+
+def _summarised_observation(
+    *,
+    backend_name: str,
+    backend: Mapping[str, Any],
+    log_path: str | Path,
+    elapsed_seconds: float | None,
+    receipt: object | None,
+) -> Observation | None:
+    """The observation a stream's summary holds, reading only what grew."""
+    path = Path(log_path)
+    summary, events, malformed, whole = _stream_summary(path)
+    if summary is None:
+        return None
+    settings = _observation_settings_key(
+        backend_name, backend, elapsed_seconds, receipt
+    )
+    with _STREAM_SUMMARY_LOCK:
+        fold = summary.folds.get(settings)
+    if fold is None:
+        if not whole:
+            # A reader this summary has not folded yet is answered over the
+            # whole stream: a fold built from the bytes gained since this
+            # cache's cursor would report totals the stream never had.
+            try:
+                entry = _cached_stream_entry(path, whole=True)
+            except OSError:
+                return None
+            events = entry.events
+            malformed = entry.malformed
+        observation = _observe_events(
+            backend_name=backend_name,
+            backend=backend,
+            events=events,
+            malformed=malformed,
+            elapsed_seconds=elapsed_seconds,
+            receipt=receipt,
+            state=None,
+        )
+        observation.stream_state["offset"] = summary.offset
+        fold = _StreamFold(
+            backend_name,
+            dict(backend),
+            elapsed_seconds,
+            receipt,
+            observation,
+        )
+        with _STREAM_SUMMARY_LOCK:
+            live = _STREAM_SUMMARIES.get(str(path.resolve()))
+            if live is not None:
+                live.folds[settings] = fold
+        return copy.deepcopy(fold.observation)
+    return copy.deepcopy(fold.observation)
+
+
+def _events_timestamp_bounds(
     path: str | Path, reader: Callable[[object], datetime | None]
 ) -> tuple[tuple[datetime, str] | None, tuple[datetime, str] | None]:
-    """Return the earliest and latest zoned stream stamps, scanning only growth."""
-    entry = _cached_stream_entry(path)
+    """The bounds a stream's shared events cache answers only new bytes for."""
+    entry = _cached_stream_entry(path, whole=True)
     with _PARSED_STREAM_LOCK:
         version = entry.timestamp_version
         if entry.timestamp_reader is reader and entry.timestamp_bounds is not None:
@@ -3605,6 +4212,39 @@ def cached_stream_timestamp_bounds(
             entry.pending_events = None
             entry.timestamp_version += 1
     return first, last
+
+
+def cached_stream_timestamp_bounds(
+    path: str | Path, reader: Callable[[object], datetime | None]
+) -> tuple[tuple[datetime, str] | None, tuple[datetime, str] | None]:
+    """Return the earliest and latest zoned stream stamps, reading only growth.
+
+    The bounds are a summary of the whole stream, so they are kept beside the
+    stream's observation under the same file identity rather than recomputed
+    over records the process has already read. A stream whose summary is not
+    yet current is brought up to date by one read of what it gained, which also
+    extends every bounds already recorded for it; a reader the summary has not
+    served yet is answered by the shared events cache, which parses the whole
+    stream once and then only its growth.
+    """
+    source = Path(path)
+    _STREAM_BOUND_READERS.add(reader)
+    summary, events, _malformed, whole = _stream_summary(source)
+    if summary is not None:
+        with _STREAM_SUMMARY_LOCK:
+            stored = summary.bounds.get(reader)
+            if stored is not None:
+                return stored
+        if whole:
+            bounds = _extend_stamp_bounds(None, None, events, reader)
+        else:
+            bounds = _events_timestamp_bounds(path, reader)
+        with _STREAM_SUMMARY_LOCK:
+            live = _STREAM_SUMMARIES.get(str(source.resolve()))
+            if live is not None:
+                live.bounds[reader] = bounds
+        return bounds
+    return _events_timestamp_bounds(path, reader)
 
 
 def _apply_receipt_to_throughput(
@@ -3874,13 +4514,23 @@ def _last_line_boundary(path: Path) -> int:
     return start + cut + 1
 
 
-def _stream_lines_from(path: Path, offset: int) -> tuple[list[str], int]:
+def _stream_lines_from(
+    path: Path, offset: int, *, count: bool = True
+) -> tuple[list[str], int]:
     """The complete records a stream holds from one boundary, and the next one.
 
     Only whole lines are returned, and the offset that comes back sits after
     the last of them. A record still being written is therefore left for the
     read that finds it finished, which is the difference between reading a
     record once and reading it as a fragment followed by its remainder.
+
+    ``count`` is the producer's parsed-byte accounting: the incremental readers
+    that stand in for the producer's own fold of a poll pass it, so the bytes
+    they parse are the ones the registration reports. A reader scanning a
+    stream for its own answer -- one that does not stand in for the poll's fold
+    -- passes ``count=False``, because its bytes are not the fleet traffic the
+    producer reports and counting them twice reports a poll that parsed twice
+    what it owed.
     """
     try:
         with path.open("rb") as handle:
@@ -3892,7 +4542,8 @@ def _stream_lines_from(path: Path, offset: int) -> tuple[list[str], int]:
     if cut < 0:
         return [], offset
     text = data[: cut + 1].decode("utf-8", errors="replace")
-    _count_parsed_bytes(cut + 1)
+    if count:
+        _count_parsed_bytes(cut + 1)
     return text.splitlines(keepends=True), offset + cut + 1
 
 
@@ -3963,33 +4614,49 @@ def _observe_run_stream(
             detail=f"event log not written yet: {path}",
         )
         return obs
+    # The derived reading of this stream is held per file identity, so an
+    # unchanged stream costs no decode and a grown one is folded from the
+    # offset the last read reached. A caller's ``resume`` is the fallback for a
+    # stream the summary could not answer, and when it is used it is resumed
+    # from its own offset whatever the caches hold.
+    summarised = _summarised_observation(
+        backend_name=backend_name,
+        backend=backend,
+        log_path=path,
+        elapsed_seconds=elapsed_seconds,
+        receipt=receipt,
+    )
+    if summarised is not None:
+        return summarised
     carried = resume if isinstance(resume, Mapping) else {}
     state = carried.get("state")
     try:
-        offset = max(0, int(carried.get("offset") or 0))
-    except (TypeError, ValueError):
-        offset = 0
+        info = path.stat()
+    except OSError:
+        info = None
+    # A caller's own cursor is honoured whatever this process holds: the resume
+    # is the fallback for a stream the summary did not answer, and a stream one
+    # cache has seen is not a reason to ignore where the caller reached.
+    cursor = _StreamCursor.carried(carried, info) if info is not None else None
+    if (
+        cursor is not None
+        and cursor.offset <= info.st_size
+        and isinstance(state, Mapping)
+        and _stream_head_intact(path, cursor.head)
+    ):
+        lines, end = _stream_lines_from(path, cursor.offset)
+        obs = observe_stream(
+            backend_name=backend_name,
+            backend=backend,
+            lines=lines,
+            elapsed_seconds=elapsed_seconds,
+            receipt=receipt,
+            state=state,
+        )
+        obs.stream_state["offset"] = end
+        return obs
+    events, malformed = cached_stream_events(path, whole=True)
     key = str(path.resolve())
-    with _PARSED_STREAM_LOCK:
-        cache_present = key in _PARSED_STREAMS
-    if offset > 0 and isinstance(state, Mapping) and not cache_present:
-        try:
-            size = path.stat().st_size
-        except OSError:
-            size = 0
-        if offset <= size and _stream_head_intact(path, carried.get("head")):
-            lines, end = _stream_lines_from(path, offset)
-            obs = observe_stream(
-                backend_name=backend_name,
-                backend=backend,
-                lines=lines,
-                elapsed_seconds=elapsed_seconds,
-                receipt=receipt,
-                state=state,
-            )
-            obs.stream_state["offset"] = end
-            return obs
-    events, malformed = cached_stream_events(path)
     settings = json.dumps(backend, sort_keys=True, default=repr)
     observation_key = repr((backend_name, settings, elapsed_seconds, receipt))
     with _PARSED_STREAM_LOCK:

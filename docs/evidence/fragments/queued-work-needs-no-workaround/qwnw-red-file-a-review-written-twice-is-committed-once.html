@@ -1,0 +1,81 @@
+<section id="qwnw-red-file-a-review-written-twice-is-committed-once-landing">
+<h3>A review written to both granted paths passes in full; the repair that made it pass landed before this node started</h3>
+<p>The named file was red at <code>8d50b0333f</code> (4 failed, none passed). One cause accounts for all four cases, and it is a product rule, not a test rule: the review's own staged record — <code>&lt;crew home&gt;/crew/reviews/&lt;project&gt;/&lt;reviewed subject&gt;.at-&lt;review-of&gt;.json</code> — was resolved as the promotion's cited gate log, so the gate-log reader refused the landing because a review record carries no <code>EXIT=&lt;n&gt;</code> line. <code>c1a5111bc0</code> <em>fix(promotion): capture a review's own gate check into a log it can cite</em> repaired exactly that, and this node measures the result rather than re-repairing it. No assertion was deleted or weakened: no test file and no product module is changed by this node.</p>
+
+<h4 id="qwnw-red-file-a-review-written-twice-is-committed-once-causes">Cause and verdict</h4>
+<table>
+<thead><tr><th>Cause</th><th>Cases</th><th>Verdict</th></tr></thead>
+<tbody>
+<tr>
+<td>The review's own staged record was read as the run's cited gate log, and a record carries no terminal <code>EXIT=&lt;n&gt;</code> line</td>
+<td>4 of 4 — <code>test_one_record_to_both_granted_paths_is_committed_once</code>, <code>test_a_second_staged_round_lands_under_its_legacy_id</code>, <code>test_a_disposition_survives_a_later_promotion</code>, and <code>test_a_disposition_survives_when_the_ledger_root_differs_from_the_run_repo</code>, each <code>reckon.crew.CrewError: … carries no terminal EXIT=&lt;n&gt; line … Found: a cited log with no exit record.</code></td>
+<td><strong>product wrong</strong>, already repaired at <code>c1a5111bc0</code>. The refusing rule, the gate-log reader in <code>reckon/crew/promotion_evidence.py</code>, was right to refuse a log with no status; the defect was that a review record reached it as a log at all. Proven either side below: 4 failed at <code>c1a5111bc0^</code>, 4 passed at <code>c1a5111bc0</code>.</td>
+</tr>
+</tbody>
+</table>
+
+<h4 id="qwnw-red-file-a-review-written-twice-is-committed-once-negative-control">Negative control: the base revision's run</h4>
+<pre>
+# revision: 8d50b0333fe3fbdb17199253225f73730d22207d
+# tree: /tmp/redfile-g5/neg
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_review_written_twice_is_committed_once.py
+# module: /tmp/redfile-g5/neg/reckon/__init__.py
+# cwd: /tmp/redfile-g5/neg
+# slurm_job_id: unset
+FAILED tests/test_a_review_written_twice_is_committed_once.py::test_one_record_to_both_granted_paths_is_committed_once
+FAILED tests/test_a_review_written_twice_is_committed_once.py::test_a_second_staged_round_lands_under_its_legacy_id
+FAILED tests/test_a_review_written_twice_is_committed_once.py::test_a_disposition_survives_a_later_promotion
+FAILED tests/test_a_review_written_twice_is_committed_once.py::test_a_disposition_survives_when_the_ledger_root_differs_from_the_run_repo
+4 failed in 1.56s
+EXIT=1
+</pre>
+<p>Job <code>1319830</code> on <code>all_debug</code>. The full log is <code>logs/negative-control-base.log</code> in the run directory.</p>
+
+<h4 id="qwnw-red-file-a-review-written-twice-is-committed-once-repair">The repair, probed either side</h4>
+<pre>
+# c1a5111bc0^  PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_review_written_twice_is_committed_once.py
+4 failed in 1.44s
+EXIT=1
+
+# c1a5111bc0   PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_review_written_twice_is_committed_once.py
+4 passed in 2.56s
+EXIT=0
+</pre>
+<p>Job <code>1319802</code> on <code>all_debug</code>; logs <code>logs/node-test-parent.log</code> and <code>logs/node-test-repair.log</code>.</p>
+
+<h4 id="qwnw-red-file-a-review-written-twice-is-committed-once-head-gate">Head gate: an all_debug job with SLURM_JOB_ID unset</h4>
+<pre>
+# revision: 26ddbe5d9df1123d2782b062dac4d12194906924
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-review-written-twice-is-committed-once
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_review_written_twice_is_committed_once.py
+# slurm_job_id: unset
+# module: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-review-written-twice-is-committed-once/reckon/__init__.py
+# cwd: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-review-written-twice-is-committed-once
+....                                                                     [100%]
+4 passed in 5.42s
+EXIT=0
+</pre>
+<p>Job <code>1319830</code> on <code>all_debug</code> (<code>98dci4-clu-4075</code>); log <code>logs/head-node-test.log</code>.</p>
+
+<h4 id="qwnw-red-file-a-review-written-twice-is-committed-once-arms">Armed suite arms: no failure added</h4>
+<pre>
+# baseline at ed948d0a2934dcbd8dd50128dfab9d13113aa45c
+# tree: /tmp/redfile-g5/base
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+# module: /tmp/redfile-g5/base/reckon/__init__.py
+# cwd: /tmp/redfile-g5/base
+..........................................................               [100%]
+58 passed in 29.85s
+EXIT=0
+
+# head at e373975e9f3e5fbf7a3cb794b78fc2a4a0836815, in the run's own worktree
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+..........................................................               [100%]
+58 passed in 34.48s
+EXIT=0
+</pre>
+<p>Jobs <code>1319830</code> (baseline, head gate, negative control) and <code>1319843</code> (the after arm at the run's final head) on <code>all_debug</code>, one arm per log: <code>logs/baseline-suite.log</code> and <code>logs/after-suite.log</code>. The arms are the census tests the project declares beside a product node's own scope, so the pair is 58 to 58. An earlier baseline attempt of mine, in a sparse tree without <code>docs/research/data</code>, reported 1 failed on a missing census fixture — my probe's tree, not the code; the arm above is the re-run with the fixture present. This node changes no product module and no test file, so the arm over the files that import what it changed is the same pair.</p>
+
+<h4 id="qwnw-red-file-a-review-written-twice-is-committed-once-origin">The instruction to merge origin/main first</h4>
+<p>The merge carried <code>ed948d0a29</code> forward to <code>52f2055b65</code> by fast-forward; the one commit it brought is a review record under <code>docs/state/reckon/reviews/</code>, so no code changed under this node. The host has no route to <code>github.com</code> (port 22 refused), so no fetch was possible and <code>52f2055b65</code> is the newest <code>origin/main</code> this clone holds. <code>ruff check</code> and <code>ruff format --check</code> report nothing on <code>tests/test_a_review_written_twice_is_committed_once.py</code> or <code>reckon/crew/promotion_evidence.py</code>.</p>
+</section>

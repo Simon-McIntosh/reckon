@@ -6,11 +6,10 @@ list into queued requests: it reads each named plan once, fills every field an
 entry omits from the section itself, and stores each entry on its own so a
 refused entry never stops the rest.
 
-The batch never chooses work and never loads a plan wholesale. What it adds to
-a single dispatch is that the per-plan read — the section's done-when, its
-write paths, its declared waits — is done once for every section the batch
-takes from that plan, and that an entry may wait on another entry of the same
-batch by its node id.
+The plan dispatcher enumerates a plan's declared work for its coordinator and
+hands the eligible entries to the same batch queue. The per-plan read — the
+section's done-when, its write paths, its declared waits — is shared by the
+entries, and an entry may wait on another entry of the batch by its node id.
 """
 
 from __future__ import annotations
@@ -43,8 +42,12 @@ BATCH_ENTRY_FIELDS = frozenset(
         "regenerate_paths",
         "anchor_paths",
         "negative_control",
+        "mcp_set",
         "time_budget",
         "over_fence_reason",
+        "comment",
+        "local",
+        "priority",
         "estimated_hours",
         "manifest",
         "brief",
@@ -224,11 +227,17 @@ def _built_once(
         from reckon.mcp_discovery import _discover_project, _inventory_row
 
         # Ordering names no docs dir and resolves through the project's mount,
-        # while the wait check names the checkout's own; both answer with the
-        # same tree, so the key is the resolved dir rather than the arguments.
+        # while the wait check names the checkout's own. Those two readers can
+        # name different trees — a dispatch made from a worktree names the
+        # worktree's docs while the mount resolves to the main checkout's — and
+        # keying on the resolved dir made that pair pay two whole-project
+        # scans. The batch derives one project once whichever checkout it runs
+        # from, so the key is the project and the build reads the registered
+        # mount, which is the tree the dispatch actually builds against.
         docs_dir = kwargs.get("docs_dir")
-        resolved = Path(docs_dir) if docs_dir else _docs_dir_for_project(project, None)
-        key = (str(project), str(resolved or ""))
+        mounted = _docs_dir_for_project(project, None)
+        resolved = Path(mounted) if mounted else (Path(docs_dir) if docs_dir else None)
+        key = (str(project), "")
         if key not in built:
             # Discovery derives the project's roadmap to attach its ready set,
             # and the scope hands that derivation back, so the batch takes it
@@ -241,7 +250,7 @@ def _built_once(
                 # reads who coordinates a critical-path link, so the build skips
                 # that resolution: it reads every run's ledger document, which
                 # was most of each entry's queue time.
-                with roadmap_build_scope(resolve_coordinators=False) as scope:
+                with roadmap_build_scope(resolve_coordinators=False, audit_landings=False) as scope:
                     discovered = _discover_project(
                         str(project), Path(resolved).parent if resolved else None
                     )
@@ -564,6 +573,7 @@ def _entry_node(
     entry: Mapping[str, Any],
     *,
     plans: _Plans,
+    defaults: Mapping[str, Any] | None = None,
 ) -> tuple[str, TaskNode, dict[str, str]]:
     """Build one entry's node, filling every omitted field from its section.
 
@@ -622,6 +632,12 @@ def _entry_node(
     if estimated_hours is None and "estimated_hours" in derivation:
         estimated_hours, derived["estimated_hours"] = derivation["estimated_hours"]
     spec_level = str(entry.get("spec_level") or "")
+    # A field the entry leaves out falls back to the command-level value, so a
+    # coordinator queuing one batch for many sections states a reason, a
+    # comment or a lane once rather than on every entry.
+    over_fence_reason = str(entry.get("over_fence_reason") or "") or str(
+        (defaults or {}).get("over_fence_reason") or ""
+    )
 
     node = TaskNode(
         id=node_id,
@@ -634,12 +650,13 @@ def _entry_node(
         role=str(entry.get("role") or "implement"),
         spec_level=spec_level,
         negative_control=str(entry.get("negative_control") or ""),
+        mcp_set=str(entry.get("mcp_set") or ""),
         done_when=done_when,
         write_paths=list(write_paths),
         regenerate_paths=_as_list(entry.get("regenerate_paths")),
         anchor_paths=_as_list(entry.get("anchor_paths")),
         time_budget=str(entry.get("time_budget") or ""),
-        over_fence_reason=str(entry.get("over_fence_reason") or ""),
+        over_fence_reason=over_fence_reason,
         estimated_hours=estimated_hours,
         manifest_path=str(entry.get("manifest") or ""),
         requires_decisions=_as_list(entry.get("requires_decisions")),
@@ -649,6 +666,37 @@ def _entry_node(
         compares_with=str(entry.get("compares_with") or ""),
     )
     return project, node, derived
+
+
+def _entry_options(
+    index: int, entry: Mapping[str, Any], defaults: Mapping[str, Any]
+) -> dict[str, Any]:
+    """The steering comment, lane and queue priority one entry carries.
+
+    Each value the entry leaves out is taken from the command-level default, so
+    an option given beside the batch applies to every entry that does not set
+    it. The two switches are read as booleans rather than as non-empty strings,
+    because a batch file spelling one ``"false"`` must not read as set.
+    """
+    comment = str(entry.get("comment") or "") or str(defaults.get("comment") or "")
+
+    raw_local = entry.get("local")
+    if raw_local is None:
+        local = bool(defaults.get("local"))
+    elif isinstance(raw_local, bool):
+        local = raw_local
+    else:
+        raise BatchEntryRefusedError(f"entry {index + 1} local must be true or false")
+
+    raw_priority = entry.get("priority")
+    priority = defaults.get("priority") if raw_priority is None else raw_priority
+    if priority is not None and (
+        isinstance(priority, bool) or not isinstance(priority, int)
+    ):
+        raise BatchEntryRefusedError(
+            f"entry {index + 1} priority must be a whole number"
+        )
+    return {"comment": comment, "local": local, "priority": priority}
 
 
 def _peer_scopes(values: Any) -> dict[str, list[str]]:
@@ -717,6 +765,142 @@ def _batch_order(entries: Sequence[Mapping[str, Any]]) -> Iterator[int]:
             )
 
 
+def queue_plan(
+    project: str,
+    plan: str,
+    *,
+    session: str,
+    config_for,
+    repo_root: str | Path,
+    launch_kind: str = "cli",
+    over_fence_reason: str = "",
+    comment: str = "",
+    local: bool = False,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    """Queue a plan's implementable sections, reporting every authored section.
+
+    Ownership uses the coordinator view's resolver. Existing work is reported
+    before deriving a new contract, so a repeat neither edits queued requests
+    nor forgets delivered work whose pointer has already been promoted. The
+    command-level options are carried to every section this queues, exactly as
+    they are to the entries of a batch file.
+    """
+    from reckon import _plan_html, ledger
+    from reckon.crew import runs
+    from reckon.crew.node import normalize_section
+    from reckon.crew.plan_coordinator import resolve_plan_coordinators
+    from reckon.crew.routing import resolved_time_ceiling
+
+    read = _Plans(Path(repo_root).expanduser().resolve()).read(project, plan)
+    sections = _plan_html.derive_section_todos(read.document, read.state)
+    live = list(runs.list_live(project=project))
+    ownership = resolve_plan_coordinators(project, root=read.repo_root, pointers=live)
+    owner = (ownership.get("plans", {}).get(plan) or {}).get("coordinator")
+    history = ledger.run_rows_from_documents(project, root=read.repo_root)
+    entries: list[dict[str, Any]] = []
+    rows: dict[str, dict[str, Any]] = {}
+    config = None
+    for section in sections:
+        identity = section["id"]
+        node_id = f"{plan}-{identity}"
+        row = {
+            "index": len(rows),
+            "project": project,
+            "plan": plan,
+            "section": identity,
+            "node": node_id,
+            "status": "skipped",
+        }
+        rows[identity] = row
+        if owner and owner != session:
+            row.update(reason=f"plan coordinated by session {owner}", session=owner)
+            continue
+        declaration = section.get("declaration")
+        if declaration != "implementable":
+            row["reason"] = declaration or "undeclared"
+            continue
+        existing = None
+        for candidate in [*live, *history]:
+            node = candidate.get("node")
+            node = node if isinstance(node, Mapping) else {}
+            candidate_plan = node.get("plan") or candidate.get("plan")
+            candidate_section = node.get("section") or candidate.get("section")
+            phase = str(candidate.get("phase") or candidate.get("status") or "")
+            role = node.get("role") or candidate.get("role") or "implement"
+            if (
+                candidate_plan == plan
+                and normalize_section(candidate_section) == normalize_section(identity)
+                and role == "implement"
+                and phase
+                not in {"failed", "stopped", "interrupted", "discarded", "dropped"}
+            ):
+                existing = candidate
+                break
+        if existing is not None:
+            held_session = str(existing.get("session") or "")
+            run_id = str(existing.get("run_id") or "")
+            row.update(
+                reason=f"existing run {run_id} of session {held_session}",
+                run_id=run_id,
+                session=held_session,
+            )
+            continue
+        if config is None:
+            config = config_for(project)
+        entries.append(
+            {
+                "project": project,
+                "plan": plan,
+                "section": identity,
+                "node": node_id,
+                "goal": section["heading"],
+                "spec_level": "guided",
+                "time_budget": resolved_time_ceiling(config),
+            }
+        )
+    result = (
+        queue_batch(
+            entries,
+            session=session,
+            config_for=lambda _: config,
+            repo_root=read.repo_root,
+            launch_kind=launch_kind,
+            over_fence_reason=over_fence_reason,
+            comment=comment,
+            local=local,
+            dry_run=dry_run,
+        )
+        if entries
+        else {"ok": True, "queued": 0, "refused": 0, "results": []}
+    )
+    for queued in result["results"]:
+        row = rows[queued["section"]]
+        index = row["index"]
+        row.update(queued)
+        row["index"] = index
+        if row["status"] == "already-queued":
+            held_session = str(runs.read_pointer(row["run_id"]).get("session") or "")
+            row.update(
+                status="skipped",
+                session=held_session,
+                reason=f"existing run {row['run_id']} of session {held_session}",
+            )
+        else:
+            row.setdefault("reason", row["status"])
+    results = list(rows.values())
+    skipped = sum(row["status"] == "skipped" for row in results)
+    return {
+        "ok": result["ok"],
+        "project": project,
+        "plan": plan,
+        "queued": len(results) - skipped - result["refused"],
+        "skipped": skipped,
+        "refused": result["refused"],
+        "results": results,
+    }
+
+
 def queue_batch(
     entries: Sequence[Mapping[str, Any]],
     *,
@@ -724,6 +908,11 @@ def queue_batch(
     config_for,
     repo_root: str | Path,
     launch_kind: str = "cli",
+    over_fence_reason: str = "",
+    comment: str = "",
+    local: bool = False,
+    priority: int | None = None,
+    dry_run: bool = False,
 ) -> dict[str, Any]:
     """Queue each entry on its own — see :func:`_queue_batch`.
 
@@ -733,14 +922,25 @@ def queue_batch(
     sections chosen.
     """
     from reckon.crew.queue_admission import plan_read_scopes
+    from reckon.serve import discovery_without_git_dates
 
-    with _parsed_once(), _built_once(), plan_read_scopes():
+    with (
+        _parsed_once(),
+        _built_once(),
+        plan_read_scopes(),
+        discovery_without_git_dates(),
+    ):
         return _queue_batch(
             entries,
             session=session,
             config_for=config_for,
             repo_root=repo_root,
             launch_kind=launch_kind,
+            over_fence_reason=over_fence_reason,
+            comment=comment,
+            local=local,
+            priority=priority,
+            dry_run=dry_run,
         )
 
 
@@ -751,6 +951,11 @@ def _queue_batch(
     config_for,
     repo_root: str | Path,
     launch_kind: str = "cli",
+    over_fence_reason: str = "",
+    comment: str = "",
+    local: bool = False,
+    priority: int | None = None,
+    dry_run: bool = False,
 ) -> dict[str, Any]:
     """Queue each entry on its own and report one row per entry.
 
@@ -759,13 +964,17 @@ def _queue_batch(
     ``ok`` field is true only when every entry was stored, while a refused
     entry leaves the rest of the batch stored either way.
     """
-    from reckon.crew import queue_admission
+    from reckon.crew import queue_admission, section_holds
     from reckon.crew.dispatch import queue_requests as queue_one
     from reckon.crew.dispatch_admission import node_context_fit_finding
-    from reckon.crew.runs import new_run_id, read_pointer, run_dir
+    from reckon.crew.runs import list_live, new_run_id, read_pointer, run_dir
 
     root = Path(repo_root).expanduser().resolve()
     plans = _Plans(root)
+    try:
+        live_pointers = list_live()
+    except Exception:  # noqa: BLE001 - an unreadable live set holds nothing
+        live_pointers = []
     results: list[dict[str, Any]] = []
     refused = 0
 
@@ -793,12 +1002,30 @@ def _queue_batch(
         # stored and every member is reported by name.
         for index, entry in enumerate(entries):
             refuse(index, entry, str(exc))
-        return {"ok": False, "queued": 0, "refused": refused, "results": results}
+        cycle: dict[str, Any] = {
+            "ok": False,
+            "queued": 0,
+            "refused": refused,
+            "results": results,
+        }
+        if dry_run:
+            cycle["dry_run"] = True
+            cycle["would_queue"] = 0
+        return cycle
 
+    defaults = {
+        "over_fence_reason": over_fence_reason,
+        "comment": comment,
+        "local": local,
+        "priority": priority,
+    }
     for index in ordered:
         entry = entries[index]
         try:
-            project, node, derived = _entry_node(index, entry, plans=plans)
+            project, node, derived = _entry_node(
+                index, entry, plans=plans, defaults=defaults
+            )
+            options = _entry_options(index, entry, defaults)
             # An entry waits on another entry of this batch by that entry's node
             # id; the stored request is named by its run id, which the earlier
             # entry's row carries.
@@ -827,6 +1054,31 @@ def _queue_batch(
             # before `queue_one` writes a pointer, so the row that comes back
             # names the estimate and the window the entry could not meet.
             work_repository = plans.read(project, node.plan).repo_root
+            # A node a run has already delivered is not new work: queueing it
+            # again is the duplicate a deep queue exists to avoid. The hold is
+            # per node, so the section's other nodes are unaffected, and the
+            # answer names the run that holds this one.
+            held = section_holds.held_node_rows(
+                project,
+                work_repository,
+                live_pointers,
+                plan=node.plan,
+                section=node.section,
+                node=node.id,
+            )
+            if held:
+                results.append(
+                    {
+                        "index": index,
+                        "node": node.id,
+                        "project": project,
+                        "plan": node.plan,
+                        "section": node.section,
+                        "status": "held",
+                        "held_by": [dict(row) for row in held],
+                    }
+                )
+                continue
             fit = node_context_fit_finding(
                 node,
                 project=project,
@@ -852,27 +1104,35 @@ def _queue_batch(
                 launch_kind=launch_kind,
                 run_ids={node.id: run_id},
                 allow_unreviewed_plan=bool(entry.get("allow_unreviewed_plan")),
+                local=options["local"],
+                comment=options["comment"],
+                priority=options["priority"],
+                dry_run=dry_run,
             )
-            for stored_id in stored:
-                pointer = read_pointer(stored_id)
-                if isinstance(pointer, dict):
-                    queue_admission.record_review_contract(pointer)
-                if derived and stored_id == run_id:
-                    # A request already queued keeps the node it was stored
-                    # with, so its marks stay the ones that node was built under.
-                    _stamp_section_derived(stored_id, derived)
+            if not dry_run:
+                for stored_id in stored:
+                    pointer = read_pointer(stored_id)
+                    if isinstance(pointer, dict):
+                        queue_admission.record_review_contract(pointer)
+                    if derived and stored_id == run_id:
+                        # A request already queued keeps the node it was stored
+                        # with, so its marks stay the ones that node was built
+                        # under.
+                        _stamp_section_derived(stored_id, derived)
             _require_stored(stored, project, node)
             actual_id, row = next(iter(stored.items()))
             phase = str(row.get("phase") or "")
             stored_by_node[node.id] = actual_id
             already = actual_id != run_id
-            status = (
-                "already-queued"
-                if already
-                else (
+            if dry_run:
+                # A preview names what the entry resolved to and stores nothing.
+                status = "would-queue"
+            elif already:
+                status = "already-queued"
+            else:
+                status = (
                     "awaiting-upstream" if phase in WAITING_UPSTREAM_PHASES else phase
                 )
-            )
             results.append(
                 {
                     "index": index,
@@ -895,9 +1155,21 @@ def _queue_batch(
             refuse(index, entry, str(exc))
 
     results.sort(key=lambda row: int(row["index"]))
-    return {
+    accepted = len(results) - refused
+    # A held entry stored no request, so it is neither queued nor refused: it is
+    # answered, and the answer is the run that already holds its node.
+    held_count = sum(1 for row in results if row.get("status") == "held")
+    payload: dict[str, Any] = {
         "ok": refused == 0,
-        "queued": len(results) - refused,
+        "queued": accepted - held_count,
+        "held": held_count,
         "refused": refused,
         "results": results,
     }
+    if dry_run:
+        # A preview stores nothing, so it reports what it would have queued
+        # rather than claiming a queue depth it never wrote.
+        payload["dry_run"] = True
+        payload["queued"] = 0
+        payload["would_queue"] = accepted
+    return payload

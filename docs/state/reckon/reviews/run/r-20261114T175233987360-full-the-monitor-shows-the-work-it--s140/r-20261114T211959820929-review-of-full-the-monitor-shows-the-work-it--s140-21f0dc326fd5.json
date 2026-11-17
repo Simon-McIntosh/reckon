@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:1411",
+    "reckon/hooks/coordinator_obligations.py:1422",
+    "reckon/hooks/coordinator_obligations.py:1435",
+    "reckon/hooks/coordinator_obligations.py:1463",
+    "reckon/hooks/coordinator_obligations.py:1699",
+    "reckon/hooks/coordinator_obligations.py:1706"
+  ],
+  "completed_at": "2026-11-14T23:31:52.688Z",
+  "dispatched_at": "2026-11-14T23:15:44Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-14T23:47:10.446313+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/hooks/coordinator_obligations.py",
+      "line": 1552,
+      "severity": "non-blocking",
+      "summary": "the live-pointer half of _failed_step_row_is_stale is not independently guarded: the manifest records that a mutation removing only that clause leaves all four cases green, so the two-fact read the docstring insists on is asserted by no case on its own."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_duty_for_a_gone_run_is_not_shown.py:296-318 builds the ledger record and pointer from fixture files rather than from the code under test, but the manifest's own record that a live-pointer-only mutation stays green shows one half of the predicate is unasserted alone.",
+    "evidence": "the arms in the reviewed run's suite-base.log and suite-after.log carry revision, command and EXIT= lines and the failure id at base matches the case the change repairs.",
+    "fit": "reckon/hooks/coordinator_obligations.py:1445-1450 follows the module's existing frozenset-plus-predicate idiom and names the new symbols by what they read.",
+    "goal_fidelity": "reckon/hooks/coordinator_obligations.py:1547 implements the two-fact settlement the goal names, and the recheck loop at :1590 drops the row rather than reporting it.",
+    "reuse": "_failed_step_row_is_stale at reckon/hooks/coordinator_obligations.py:1559 reuses the existing _run_ledger_record reader at :1513 rather than adding a second ledger path.",
+    "scope_discipline": "every path in git diff bc316766..21f0dc32 is one of the three declared write paths; no plan state, index or peer file is touched."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261114T211959820929-review-of-full-the-monitor-shows-the-work-it--s140-21f0dc326fd5",
+  "reviewed_base_sha": "bc316766333df704e7a671de195467dc836ab4b1",
+  "reviewed_head_sha": "21f0dc326fd5c8acd0b1ad5e44f83c25ca6d6b3b",
+  "reviewed_run_id": "r-20261114T175233987360-full-the-monitor-shows-the-work-it--s140",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-14T23:44:56.084125+00:00",
+  "total": 103,
+  "verdicts": {
+    "call_sites": "the settlement is reached from six production calls to recheck_worktree_held_rows in reckon/hooks/coordinator_obligations.py, which the CLI stop hook and pane reads resolve through.",
+    "diff": "read commit by commit (one commit, 21f0dc326f) against base bc316766; it adds one frozenset, one predicate and one branch to the hook plus the case file and an evidence fragment, with no change outside the goal.",
+    "done_when": "the done_when names tests/test_a_duty_for_a_gone_run_is_not_shown.py and the base arm; the base gate log shows 1 failed / 58 passed with the named case failing and the after log shows 59 passed, EXIT=0.",
+    "goal": "the node's goal is that a failed step's row stops blocking once its run released its pointer and has a ledger record; reckon/hooks/coordinator_obligations.py:1547-1563 adds exactly that predicate and the recheck branch at :1590-1600 applies it.",
+    "manifest": "read; it records commits, changed paths, base and after arms with revisions, commands, exit statuses and failure ids, a declared negative control whose log carries a red arm naming the case, and rubric lines for every self-check dimension.",
+    "write_paths": "the diff touches reckon/hooks/coordinator_obligations.py, tests/test_a_duty_for_a_gone_run_is_not_shown.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/full-the-monitor-shows-the-work-it--s140.html, all inside the manifest's declared orientation_write_paths."
+  }
+}

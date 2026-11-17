@@ -6,6 +6,7 @@ import os
 import shlex
 import socket
 import threading
+import time
 from collections import (
     defaultdict,
 )
@@ -298,36 +299,28 @@ def _refuse_over_concurrency_ceiling(
         reservation_occupancy=reservation_occupancy,
     )
     binding = summary.binding_bound(bounds)
-    if (
-        binding is not None
-        and not binding.admits_one_more
-        and binding.name == "partition-cores"
-    ):
-        # The admitted cores are spent by the workers placed in the reservation,
-        # so the refusal names those workers rather than this backend's whole
-        # population, whose queued and parked requests hold no core. A core
-        # frees when one of those workers ends, so this is a wait for a seat
-        # exactly as the roster cap is, and a caller that can queue does.
-        raise RosterFull(
-            format_refusal(
-                "D09",
-                summary.bound_refusal_text(
-                    binding, backend_name=backend_name, occupying=seat_ids
-                ),
-            ),
-            occupancy=len(seat_ids),
-            limit=int(binding.capacity or 0),
-            occupying=seat_ids,
-        )
     if binding is not None and not binding.admits_one_more:
         run_ids = [str(pointer.get("run_id") or "unknown") for pointer in occupying]
-        raise CrewError(
+        # A bound is a wait for room, not a refusal: the workers inside the
+        # allocation carry on and one of them ending frees what this dispatch
+        # needs. It is raised as the roster's queueable hold so every lane's
+        # dispatch path stores the request instead of losing it, exactly as it
+        # already did at the roster's own cap.
+        capacity = binding.capacity
+        raise RosterFull(
             format_refusal(
                 "D09",
                 summary.bound_refusal_text(
                     binding, backend_name=backend_name, occupying=run_ids
                 ),
-            )
+            ),
+            occupancy=len(occupying),
+            limit=(
+                int(capacity)
+                if isinstance(capacity, (int, float)) and capacity >= 1
+                else len(occupying) + 1
+            ),
+            occupying=run_ids,
         )
     # A placed backend's workers run inside the one shared reservation, and
     # under --overlap the scheduler admits whatever is asked, so the
@@ -564,7 +557,7 @@ def _lane_advisory_costs(
     ]
     later_paths: dict[str, list[tuple[int, tuple[str, ...]]]] = defaultdict(list)
     for index, run in enumerate(usable):
-        plan = str(run.get("plan") or "").strip()
+        plan = ledger.row_plan(run).strip()
         paths = capabilities_module._write_paths(run)
         if plan and paths:
             later_paths[plan].append((index, paths))
@@ -575,7 +568,7 @@ def _lane_advisory_costs(
         if not lane:
             continue
         paths = capabilities_module._write_paths(run)
-        plan = str(run.get("plan") or "").strip()
+        plan = ledger.row_plan(run).strip()
         reworked = bool(paths and plan) and any(
             later > index and capabilities_module._paths_overlap(paths, other)
             for later, other in later_paths.get(plan, ())
@@ -942,15 +935,17 @@ def _dispatch_health_review(
 
     from reckon.crew import plan_review as _plan_review
 
-    def _open_findings() -> int:
+    def _open_findings() -> int | None:
         """The open findings stored against the node's write paths.
 
         The count comes from :func:`reckon.crew.plan_review._open_findings_for`,
-        which reads the findings store by path and keeps the open rows for the
-        named paths, so the block counts nothing a second time. The store's own
-        reader swallows an unreadable findings tree as no rows; the resolved
-        checkout it needs is the dispatch's, or the project's own when the
-        dispatch named none.
+        which reads the findings store by path and keeps the open rows at or
+        beneath the named paths, so the block counts nothing a second time and a
+        named directory carries the findings stored on the files under it. That
+        reader answers ``None`` for a store that exists and could not be read,
+        which is no count at all rather than zero, so the block reports the
+        absence as unmeasured. The resolved checkout it needs is the dispatch's,
+        or the project's own when the dispatch named none.
         """
         try:
             repo_root = (
@@ -958,17 +953,16 @@ def _dispatch_health_review(
                 if root is not None
                 else _plan_review._project_repository(project)
             )
-            return len(
-                _plan_review._open_findings_for(
-                    {
-                        "project": project,
-                        "repo": repo_root,
-                        "named_paths": sorted(product_paths),
-                    }
-                )
+            rows = _plan_review._open_findings_for(
+                {
+                    "project": project,
+                    "repo": repo_root,
+                    "named_paths": sorted(product_paths),
+                }
             )
         except (CrewError, OSError, ValueError):
-            return 0
+            return None
+        return None if rows is None else len(rows)
 
     def _remedy_paths() -> list[str]:
         """The paths the remedy names: the dispatch's own, unless the plan has some.
@@ -994,7 +988,7 @@ def _dispatch_health_review(
             "state": state,
             "review": review,
             "age_days": age_days,
-            "open_findings": 0 if state == "unknown" else _open_findings(),
+            "open_findings": None if state == "unknown" else _open_findings(),
             "compose_command": (
                 None
                 if fresh
@@ -1296,8 +1290,8 @@ class LaneHeld(LanePaused):
 
     The lane is answering and its own arithmetic leaves this coordinator
     session no room, so the node is held rather than refused: no worktree was
-    created and the node is still ready. On the local lane the request is
-    queued instead, and the queued record rides the exception as ``queued``;
+    created and the node is still ready. The request is queued on whichever
+    lane it named, and the queued record rides the exception as ``queued``;
     that pointer launches later from the node's brief, so a caller must keep
     whatever the brief names. The allowance decision that produced the hold
     rides the exception, so every surface reports the figure the router
@@ -1306,13 +1300,15 @@ class LaneHeld(LanePaused):
 
 
 class RosterFull(CrewError):  # noqa: N818 - a held condition named beside the lane holds
-    """A dispatch found the placement reservation's roster at its cap.
+    """A dispatch found the placement reservation at the bound that binds.
 
-    The cap is a queueable resource rather than a refusal: the node is ready,
-    the allocation is simply carrying as many placed workers as it was sized
-    for, and one of them finishing frees the seat this dispatch would take. A
-    caller that can queue writes the request and relaunches it when a seat
-    frees, so the composition of a review is not lost while the fleet is busy.
+    Both bounds the reservation enforces are queueable resources rather than
+    refusals: the roster cap and the admitted partition cores. The node is
+    ready, the allocation is simply carrying as many placed workers as it was
+    sized for, and one of them finishing frees the seat or the cores this
+    dispatch would take. A caller that can queue writes the request and
+    relaunches it when room frees, so the composition of a review is not lost
+    while the fleet is busy.
 
     It stays a :class:`CrewError` so every refusal surface reports it, and it
     carries the occupancy the decision was taken on together with the seats
@@ -1733,14 +1729,27 @@ def _orchestrator_lane_stop_line(stop: Mapping[str, Any]) -> str:
     return f"{stop['detail']}; {stop['discharge']}"
 
 
-def _path_is_tmpfs(path: str | Path) -> bool:
-    """Return whether a path resolves beneath a tmpfs or ramfs mount."""
-    target = Path(path).expanduser().resolve()
-    best: tuple[int, str] | None = None
+# How long one reading of the mount table is reused. Resolving every mount
+# point reaches each mounted filesystem, the shared ones included, and the
+# placement check asked it once per launch, a measurable share of an admission
+# pass. Mounts change rarely, and a minute is shorter than any launch it serves.
+_MOUNT_TABLE_SECONDS = 60.0
+_MOUNT_TABLE: dict[str, Any] = {}
+_MOUNT_TABLE_LOCK = threading.Lock()
+
+
+def _mount_table() -> tuple[tuple[Path, str], ...]:
+    """Each mount point, resolved, with its filesystem type, read at most once a minute."""
+    now = time.monotonic()
+    with _MOUNT_TABLE_LOCK:
+        read_at = _MOUNT_TABLE.get("at")
+        if read_at is not None and now - read_at < _MOUNT_TABLE_SECONDS:
+            return _MOUNT_TABLE["table"]
     try:
         lines = Path("/proc/self/mountinfo").read_text().splitlines()
     except OSError:
-        return False
+        return ()
+    mounts: list[tuple[Path, str]] = []
     for line in lines:
         fields, separator, trailing = line.partition(" - ")
         if not separator:
@@ -1750,11 +1759,32 @@ def _path_is_tmpfs(path: str | Path) -> bool:
         if len(parts) < 5 or not trailing_parts:
             continue
         mount = Path(parts[4].replace("\\040", " ")).resolve()
+        mounts.append((mount, trailing_parts[0]))
+    table = tuple(mounts)
+    with _MOUNT_TABLE_LOCK:
+        _MOUNT_TABLE.update(at=now, table=table)
+    return table
+
+
+def path_filesystem_type(path: str | Path) -> str | None:
+    """The filesystem of the nearest enclosing mount, following path aliases.
+
+    All path classification shares the cached mount table and longest-prefix
+    selection; callers own their policies for the returned filesystem type.
+    """
+    target = Path(path).expanduser().resolve()
+    best: tuple[int, str] | None = None
+    for mount, kind in _mount_table():
         if target == mount or target.is_relative_to(mount):
-            candidate = (len(mount.parts), trailing_parts[0])
+            candidate = (len(mount.parts), kind)
             if best is None or candidate[0] > best[0]:
                 best = candidate
-    return bool(best and best[1] in {"tmpfs", "ramfs"})
+    return best[1] if best else None
+
+
+def _path_is_tmpfs(path: str | Path) -> bool:
+    """Return whether a path resolves beneath a tmpfs or ramfs mount."""
+    return path_filesystem_type(path) in {"tmpfs", "ramfs"}
 
 
 # A declared endpoint is probed before launch, so the probe is bounded: a slow
@@ -2506,6 +2536,22 @@ def _store_brief(directory: Path, source: str, *, block: str = "") -> Path:
         raise CrewError(f"the brief {source!r} could not be stored: {exc}") from exc
 
 
+def readable_brief_source(node: TaskNode) -> str:
+    """The brief a dispatch reads: the run's stored copy if it is there, else the source.
+
+    A queued request carries the stored copy an earlier attempt made under its
+    own run id. When that attempt was refused or released, its run directory
+    went with the copy, and every later launch of the request refused on a brief
+    it could no longer read, while the source the request names was still on
+    disk: on 14 November three review requests were refused this way on every
+    pass. The source is read instead, and the launch stores its own copy.
+    """
+    stored = str(node.brief_path or "").strip()
+    if stored and Path(stored).expanduser().is_file():
+        return stored
+    return node.brief
+
+
 def _brief_record(
     node: TaskNode, project: str = "", *, project_path: str | None = None
 ) -> dict[str, Any] | None:
@@ -2521,7 +2567,7 @@ def _brief_record(
         return None
     record: dict[str, Any] = {
         "sha256": node.brief_sha256,
-        "path": node.brief_path or node.brief,
+        "path": readable_brief_source(node),
         "source_path": node.brief,
     }
     carry = _domain_rules_carry(node, project, project_path=project_path)
@@ -2547,7 +2593,7 @@ def _brief_text(
     """
     if not node.brief.strip():
         return ""
-    source = node.brief_path or node.brief
+    source = readable_brief_source(node)
     try:
         text = Path(source).expanduser().read_text(encoding="utf-8")
     except OSError as exc:

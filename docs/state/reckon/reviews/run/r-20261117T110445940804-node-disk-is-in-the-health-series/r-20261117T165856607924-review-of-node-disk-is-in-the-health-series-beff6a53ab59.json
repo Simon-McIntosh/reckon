@@ -1,0 +1,111 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": {
+    "tautology_check": "No added assertion has two sides that follow the same changed expected variable; the header literal is independent of production _HEALTH_COLUMNS, and the D-state check reads persisted shell output. No durability credit is assigned to the by-name rewrite as protection against arbitrary header reordering, because the independent exact-header assertion deliberately rejects such reordering.",
+    "tests/test_fleet_health.py:223-229": "Deleting or moving any scratch, test-process or disk column in _HEALTH_COLUMNS makes the actual header disagree with the independent literal. Reinstating the previous reviewed header without test fields fails the added literal. This asserts the wire schema, not physical measurement.",
+    "tests/test_fleet_health.py:230": "The fixture supplies 60 D-state entries; the persisted TSV is read by literal field name. Dropping or shifting dstate in the shell emitter fails the expected count. This input-to-output assertion protects transport and is not claimed as an independent physical census; reverting only the assertion to positional indexing may still pass because dstate stays at column six."
+  },
+  "call_site_count": 12,
+  "call_sites": [
+    "bin/fleet-health:88",
+    "bin/fleet-health:100",
+    "bin/fleet-health:129",
+    "bin/fleet-health:136",
+    "reckon/crew/fleet_node.py:274",
+    "reckon/crew/fleet_node.py:966",
+    "reckon/crew/fleet_supervisor.py:4015",
+    "reckon/crew/fleet_supervisor.py:4022",
+    "reckon/crew/obligations.py:4553",
+    "reckon/crew/obligations.py:5004",
+    "reckon/crew/obligation_snapshot.py:2053",
+    "reckon/crew/obligation_snapshot.py:2163"
+  ],
+  "completed_at": "2026-11-17T17:05:27Z",
+  "dispatched_at": "2026-11-17T17:00:45Z",
+  "evidence_limits": "No suite rerun or source mutation during review. Official failure delta is based only on completed source baseline_suite/after_suite receipts. Broader importer additions and live-hour gap remain outside the six-file incremental verdict.",
+  "failure_delta_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_health.py tests/test_fleet_health_records_node_tmp.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "cwd": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/fe0acb0a-56ea-447a-8357-bb11f3bf471c/node-disk-is-in-the-health-series",
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110445940804-node-disk-is-in-the-health-series/final-columns-after.log",
+      "measured_by": "worker",
+      "module": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/fe0acb0a-56ea-447a-8357-bb11f3bf471c/node-disk-is-in-the-health-series/reckon/crew/fleet_node.py",
+      "partition": "all_debug",
+      "revision": "beff6a53ab590e8bccf3ec98d47a5feac73f67c9",
+      "summary": "118 passed in 97.80s (0:01:37)"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_health.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "cwd": "/tmp/scratch-merge-baseline-d_uczvqa/baseline",
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110445940804-node-disk-is-in-the-health-series/final-columns-baseline.log",
+      "measured_by": "worker",
+      "module": "/tmp/scratch-merge-baseline-d_uczvqa/baseline/reckon/crew/fleet_node.py",
+      "partition": "all_debug",
+      "revision": "45967c6c6399a70306ce0cd5cb106e6ed54e0c21",
+      "summary": "73 passed in 58.21s"
+    }
+  },
+  "findings": [],
+  "item_verdicts": {
+    "call_sites": "bin/fleet-health:88, bin/fleet-health:100, bin/fleet-health:129, bin/fleet-health:136, reckon/crew/fleet_node.py:274, reckon/crew/fleet_node.py:966, reckon/crew/fleet_supervisor.py:4015, reckon/crew/fleet_supervisor.py:4022, reckon/crew/obligations.py:4553, reckon/crew/obligations.py:5004, reckon/crew/obligation_snapshot.py:2053, reckon/crew/obligation_snapshot.py:2163",
+    "diff": "Read the one new first-parent merge beff6a53ab590e8bccf3ec98d47a5feac73f67c9 against prior reviewed e9c999bf21a4db0918a05db01f1075faf9cb6bd0 and primary parent 7a34691de4fa9d1a19bffe9642b3323ae98fd7cc; the six-path resolution preserves primary mechanisms and appends disk columns.",
+    "done_when": "Read the source node.done_when and completed all_debug receipts final-columns-baseline.log (73 passed) and final-columns-after.log (118 passed); mount/freshness/schema mutations fail, but importer parity and the plan's live hour remain unmet.",
+    "goal": "Read the source live node.goal and plan section 5; bin/fleet-health:129-136 retains four disk values after primary's test-process fields, with the existing disk obligation paths retained at obligations.py:5004 and obligation_snapshot.py:2163.",
+    "manifest": "Read source manifest.md and its final-columns gate, refusal and importer receipts; the official arms have zero added failing IDs, while the separate importer logs confirm six added IDs in four ungranted files.",
+    "write_paths": "Read live node.write_paths and manifest orientation_write_paths; all six requested paths are granted, and the merge's unrelated primary ancestry is distinguished from node-authored changes rather than counted as scope expansion."
+  },
+  "justifications": {
+    "durability": "tests/test_fleet_health.py:223-229 independently fixes the merged header order and :230 catches a displaced dstate value, though these assertions alone do not establish the measured values of the newly inherited test-process fields.",
+    "evidence": "final-columns-after.log records 118 passes and final-columns-refusals.log records seven actual schema refusals, but source manifest.md and final-columns-importer-delta.json still lack importer parity and the continuous live-hour evidence required by plan section 5.",
+    "fit": "fleet_node.py:197 reuses primary's named scheduler-column constant and bin/fleet-health:136 retains the shared locked writer, while tests/test_fleet_health.py:230 follows the primary by-name reader idiom without forbidden new names.",
+    "goal_fidelity": "bin/fleet-health:132-136 writes the 33 values in fleet_node.py:178-205 order, retaining scratch/test-process data before all four disk metrics and both disk-notice call sites.",
+    "reuse": "Capability searches found and opened fleet_node.py:274 and :924 as the shared health writers and fleet_supervisor.py:389-899 as the disk/test-process owners; the merge preserves the previous disk implementation and primary's test-process implementation byte-for-byte rather than adding another owner.",
+    "scope_discipline": "The merge resolution in bin/fleet-health:132, fleet_node.py:197-205 and tests/test_fleet_health.py:223-230 combines granted mechanisms; supervisor and obligation additions relative to the previous review are inherited from the primary parent."
+  },
+  "outside_scope": {
+    "importer_added_failure_count": 6,
+    "importer_added_failure_ids": [
+      "tests/test_a_sampler_outlives_the_fleet_job.py::test_running_job_and_ended_job_continue_the_same_series",
+      "tests/test_a_slow_station_still_reads_as_alive.py::test_a_blocked_tick_keeps_a_fresh_beat_and_reads_slow",
+      "tests/test_coordinator_obligations_hook.py::test_prompt_mode_injects_the_checklist_for_a_coordinating_session",
+      "tests/test_coordinator_obligations_hook.py::test_stop_mode_blocks_while_obligations_remain_and_your_own_continuation_stops_it",
+      "tests/test_coordinator_obligations_hook.py::test_the_ancestry_walk_resolves_a_session_when_the_harness_exports_no_pid",
+      "tests/test_the_fleet_supervisor_runs_current_code.py::test_a_stamp_refused_once_is_asked_about_again"
+    ],
+    "importer_baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110445940804-node-disk-is-in-the-health-series/importers-final-columns-base.log",
+    "importer_head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110445940804-node-disk-is-in-the-health-series/importers-final-columns-head.log",
+    "live_hour": "Not recorded in source manifest; coordinator must supply continuous fleet observation."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the source live node.goal and plan section 5; bin/fleet-health:129-136 retains four disk values after primary's test-process fields, with the existing disk obligation paths retained at obligations.py:5004 and obligation_snapshot.py:2163.\nVERDICT done_when: Read the source node.done_when and completed all_debug receipts final-columns-baseline.log (73 passed) and final-columns-after.log (118 passed); mount/freshness/schema mutations fail, but importer parity and the plan's live hour remain unmet.\nVERDICT write_paths: Read live node.write_paths and manifest orientation_write_paths; all six requested paths are granted, and the merge's unrelated primary ancestry is distinguished from node-authored changes rather than counted as scope expansion.\nVERDICT manifest: Read source manifest.md and its final-columns gate, refusal and importer receipts; the official arms have zero added failing IDs, while the separate importer logs confirm six added IDs in four ungranted files.\nVERDICT diff: Read the one new first-parent merge beff6a53ab590e8bccf3ec98d47a5feac73f67c9 against prior reviewed e9c999bf21a4db0918a05db01f1075faf9cb6bd0 and primary parent 7a34691de4fa9d1a19bffe9642b3323ae98fd7cc; the six-path resolution preserves primary mechanisms and appends disk columns.\nCALL_SITES: bin/fleet-health:88, bin/fleet-health:100, bin/fleet-health:129, bin/fleet-health:136, reckon/crew/fleet_node.py:274, reckon/crew/fleet_node.py:966, reckon/crew/fleet_supervisor.py:4015, reckon/crew/fleet_supervisor.py:4022, reckon/crew/obligations.py:4553, reckon/crew/obligations.py:5004, reckon/crew/obligation_snapshot.py:2053, reckon/crew/obligation_snapshot.py:2163\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: bin/fleet-health:132-136 writes the 33 values in fleet_node.py:178-205 order, retaining scratch/test-process data before all four disk metrics and both disk-notice call sites.\nSCORE evidence: 10\nJUSTIFICATION evidence: final-columns-after.log records 118 passes and final-columns-refusals.log records seven actual schema refusals, but source manifest.md and final-columns-importer-delta.json still lack importer parity and the continuous live-hour evidence required by plan section 5.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The merge resolution in bin/fleet-health:132, fleet_node.py:197-205 and tests/test_fleet_health.py:223-230 combines granted mechanisms; supervisor and obligation additions relative to the previous review are inherited from the primary parent.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_fleet_health.py:223-229 independently fixes the merged header order and :230 catches a displaced dstate value, though these assertions alone do not establish the measured values of the newly inherited test-process fields.\nSCORE fit: 20\nJUSTIFICATION fit: fleet_node.py:197 reuses primary's named scheduler-column constant and bin/fleet-health:136 retains the shared locked writer, while tests/test_fleet_health.py:230 follows the primary by-name reader idiom without forbidden new names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches found and opened fleet_node.py:274 and :924 as the shared health writers and fleet_supervisor.py:389-899 as the disk/test-process owners; the merge preserves the previous disk implementation and primary's test-process implementation byte-for-byte rather than adding another owner.\n",
+  "reuse_analysis": "No node-authored definition added since prior review: supervisor test-process definitions and obligation duty changes equal primary; disk capability equals previous reviewed head. Shared scheduler constant is inherited from primary. Searched health-row persistence, disk samples and test-process sampling in fleet_node, fleet_supervisor, obligations and dispatch_admission; opened the existing shared owners.",
+  "review_run_id": "r-20261117T165856607924-review-of-node-disk-is-in-the-health-series-beff6a53ab59",
+  "review_scope": "Incremental review of six requested paths only, pinned to reviewed head; primary-parent provenance separates inherited changes from merge resolution.",
+  "reviewed_base_sha": "e9c999bf21a4db0918a05db01f1075faf9cb6bd0",
+  "reviewed_commits": [
+    "beff6a53ab590e8bccf3ec98d47a5feac73f67c9"
+  ],
+  "reviewed_head_sha": "beff6a53ab590e8bccf3ec98d47a5feac73f67c9",
+  "reviewed_run_id": "r-20261117T110445940804-node-disk-is-in-the-health-series",
+  "scores": {
+    "durability": 19,
+    "evidence": 10,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T17:06:12.886342+00:00",
+  "total": 109
+}

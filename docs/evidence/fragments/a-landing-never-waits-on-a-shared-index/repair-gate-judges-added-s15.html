@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A merge repair's gate judges added failures</title>
+<meta name="docs-project" content="reckon">
+</head>
+<body>
+<main class="plan-doc">
+
+<h2 id="repair-gate-judges-added-s15-summary">A red primary no longer blocks a repair</h2>
+
+<p id="repair-gate-judges-added-s15-defect"><code>_require_repair_gate</code> in <code>reckon/crew/pending_landing.py</code> refused a merge repair unless the gate's exit status was <code>0</code> and its log ended <code>EXIT=0</code>. A run whose gate files were already red on the primary branch could therefore never land through its pending landing, however clean its own change: the monitor plan's review-cell run hit exactly this on 15 November, with 26 failure ids at primary <code>e79530ca9f</code> and the same 26 at the primary merged with the repaired head.</p>
+
+<p id="repair-gate-judges-added-s15-reproduce">Reproduced at base <code>3bc474f9263c</code>: a repaired head whose gate log names <code>FAILED tests/test_charged.py::test_charge</code> at that same id on the primary arm is refused with <code>repair gate did not pass</code>, and the refusal names neither the primary nor an id &mdash; the two facts the operator needs to decide whether the redness is theirs. The panel below is that reading.</p>
+
+<h2 id="repair-gate-judges-added-s15-change">The change</h2>
+
+<p id="repair-gate-judges-added-s15-green">A gate that exited zero still passes on its own receipt. Nothing about the green path changed: the log must be readable, record its exit status, record the declared command and name the repaired revision, and then it lands. The monitor plan's case is the red path, and only that path gained a comparison.</p>
+
+<p id="repair-gate-judges-added-s15-compare">A red gate is now judged against the same command's own arm at the primary revision the merge conflict names. The arm is the fresh manifest's <code>baseline_suite</code>, which is the arm a run records for the revision it measured before its change; a repair round records it at the primary revision the conflict record carries, so the two sides are one command at two revisions rather than two spellings of a guess. The arm must name that primary revision, must not declare its run incomplete, must name a readable log, and the command its log records must be the gate's own. Each condition is refused by name rather than defaulted, because an arm measured somewhere else is not the comparison the refusal reports.</p>
+
+<p id="repair-gate-judges-added-s15-ids">The failing ids come from the two logs through <code>review.gate_log_failure_ids</code>, and the difference through <code>review.failure_ids_covered</code> &mdash; the reader that already decides added failures for a delivery, so one test written as a bare summary name on one side and as a qualified node id on the other is not counted as two. The refusal names the added ids and both logs.</p>
+
+<p id="repair-gate-judges-added-s15-wiring"><code>_delivered_repair</code> already resolved the conflict's <code>main_revision</code>; it now passes it to the gate. The gate takes it as an optional argument, so a caller holding no conflict record gets the old absolute reading rather than a comparison against nothing.</p>
+
+<h2 id="repair-gate-judges-added-s15-measure">Measure</h2>
+
+<p id="repair-gate-judges-added-s15-measure-base">At the base revision <code>3bc474f9263c</code>, this node's test file carried into a tree of that revision beside the two importer files reports <strong>3 failed, 60 passed</strong>, exit 1. The two failures the node is measured by are the red-primary repair refused and the added id not named; the third is the arm-at-another-revision case, which cannot be named before the argument exists. The two cases pinning unchanged behaviour &mdash; a gate log naming another revision still refused, and a green gate needing no primary arm &mdash; pass there, which is what makes them pins.</p>
+
+<p id="repair-gate-judges-added-s15-measure-head">At the head the same three files report <strong>63 passed</strong>, exit 0. Both arms run as <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q</code> over the tree under test; the base arm runs in a clone of the base revision because the new test file is carried into it, and its log names the revision, the tree, the imported module path and the working directory on its header lines.</p>
+
+<table id="repair-gate-judges-added-s15-measure-arms"><caption>Gate arms, resolved over each tree</caption>
+<tr><th>arm</th><th>revision</th><th>result</th><th>exit</th></tr>
+<tr><td>base</td><td>3bc474f9263c</td><td>3 failed, 60 passed</td><td>1</td></tr>
+<tr><td>head</td><td>7ddf36675c</td><td>63 passed</td><td>0</td></tr>
+<tr><td>negative control</td><td>7ddf36675c + mutation</td><td>3 failed, 2 passed</td><td>1</td></tr>
+</table>
+
+<h2 id="repair-gate-judges-added-s15-control">Negative control</h2>
+
+<p id="repair-gate-judges-added-s15-control-note">Requiring exit status <code>0</code> again, in a tree of the head with the cases kept, leaves <strong>3 failed, 2 passed</strong>, exit 1: the red-primary repair, the added id and the arm-at-another-revision cases all fall back to <code>repair gate did not pass</code>, and the two pins stay green. The head arm fails none of those three ids, so the control names failures the head does not have.</p>
+
+</main>
+</body>
+</html>

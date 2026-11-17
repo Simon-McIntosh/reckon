@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import re
+from bisect import bisect_left, bisect_right
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 from reckon._timestamps import parse_utc
 from reckon.crew import placement as placement_module
@@ -331,12 +333,18 @@ def cores_bound(
         )
     held = occupancy if reservation_occupancy is None else reservation_occupancy
     demanded = held * share
+    # Reported, never refused. A placed worker spends most of its life waiting
+    # on the serve's router, which holds the requests past its own gate width
+    # in its queue, so the workers launched past the allocation's core count
+    # hold a router slot rather than a core; refusing at the core count kept
+    # ready work out of the router's queue while its cards had room.
     return Bound(
         name="partition-cores",
         capacity=admitted / share,
         utilisation=demanded / admitted,
-        admits_one_more=(demanded + share) <= admitted,
+        admits_one_more=True,
         value=f"{demanded} of {admitted} cores admitted ({share} per worker)",
+        detail="reported only: a worker waiting on the router holds no core",
     )
 
 
@@ -529,6 +537,8 @@ def run_rows(
     project: str,
     *,
     root: str | Path | None = None,
+    records: Iterable[Mapping[str, Any]] | None = None,
+    timestamp_population: Iterable[Mapping[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     """Read the project's committed run rows, each with its two derived figures.
 
@@ -536,6 +546,12 @@ def run_rows(
     figure derived from that row's own ``dispatched_at`` and ``completed_at``,
     and ``width_at_start`` added: the number of runs whose own measured span
     covers the moment this one was dispatched, counted from the same rows.
+
+    ``records`` can supply an already selected population without reading the
+    ledger again. ``timestamp_population`` supplies fleet-wide dispatch and
+    completion stamps independently of that selection; it needs no full run
+    payloads. When omitted, the returned records also supply the timestamps.
+    Empty supplied collections remain empty rather than triggering a read.
 
     Both figures are absent, never zero, when the stamps they need are missing
     or malformed. Width needs the dispatch stamp alone — a run created at a
@@ -548,13 +564,16 @@ def run_rows(
 
     from reckon import ledger
 
-    records = ledger.runs(project, root)
+    records = list(ledger.runs(project, root) if records is None else records)
+    population = records if timestamp_population is None else timestamp_population
     measured: list[tuple[datetime, datetime]] = []
-    for record in records:
+    for record in population:
         started = _row_moment(record, "dispatched_at")
         finished = _row_moment(record, "completed_at")
-        if started is not None and finished is not None:
+        if started is not None and finished is not None and started <= finished:
             measured.append((started, finished))
+    starts = sorted(start for start, _end in measured)
+    ends = sorted(end for _start, end in measured)
     rows: list[dict[str, Any]] = []
     for record in records:
         row = dict(record)
@@ -567,11 +586,7 @@ def run_rows(
         row["width_at_start"] = (
             None
             if started is None
-            else sum(
-                1
-                for span_start, span_end in measured
-                if span_start <= started <= span_end
-            )
+            else bisect_right(starts, started) - bisect_left(ends, started)
         )
         rows.append(row)
     return rows

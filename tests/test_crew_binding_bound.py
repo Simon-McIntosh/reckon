@@ -275,10 +275,10 @@ def test_the_roster_key_never_binds_and_is_reported_retired(
     assert report["binding"] != "roster"
 
 
-def test_the_partition_admitted_cores_refuse_when_they_are_the_binding_bound(
+def test_the_partition_admitted_cores_are_reported_and_never_refuse(
     home, tmp_path, monkeypatch
 ):
-    """A reservation whose cores are spent refuses, naming the cores and the figure."""
+    """Spent admitted cores are reported with their figure and refuse nothing."""
     _fake_slice(tmp_path, monkeypatch, current=8 * GIB, maximum=64 * GIB)
     _publish_reservation(cores=3)
     placement = _placement("--cpus-per-task=1")
@@ -286,13 +286,13 @@ def test_the_partition_admitted_cores_refuse_when_they_are_the_binding_bound(
     for token in ("a", "b", "c"):
         _seed_run("alpha", "working", f"occupying-{token}", placement=placement)
 
-    with pytest.raises(crew.CrewError) as excinfo:
-        _refuse_over_concurrency_ceiling("alpha", config["backends"]["alpha"])
-
-    message = str(excinfo.value)
-    assert "node is not dispatchable" in message
-    assert "partition admitted cores" in message
-    assert "3 of 3 cores admitted (1 per worker)" in message
+    _refuse_over_concurrency_ceiling("alpha", config["backends"]["alpha"])
+    report = summary_module.fleet_bound_report(
+        config["backends"]["alpha"], occupancy=3, reservation_occupancy=3
+    )
+    cores = next(row for row in report["bounds"] if row["name"] == "partition-cores")
+    assert cores["value"] == "3 of 3 cores admitted (1 per worker)"
+    assert cores["admits_one_more"] is True
 
 
 def test_the_login_memory_slice_refuses_when_it_is_the_binding_bound(
@@ -385,13 +385,6 @@ def test_the_report_names_the_binding_bound_with_its_value(home):
     """Each enforced bound in turn is reported as binding, with its figure."""
     _publish_reservation(cores=3)
     cases = [
-        (
-            {"placement": _placement("--cpus-per-task=1")},
-            3,
-            8 * GIB,
-            "partition-cores",
-            "3 of 3 cores admitted (1 per worker)",
-        ),
         (
             {"placement": _placement("--mem=16G")},
             1,

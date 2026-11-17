@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "cd6f85d1db7153433ef395e52746bffc98f64639",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-16T23:08:32.503Z",
+  "dispatched_at": "2026-11-16T23:08:17Z",
+  "findings": [
+    {
+      "file": "tests/test_dispatch_names_its_backend.py",
+      "line": "165",
+      "severity": "non-blocking",
+      "text": "non-blocking: the docstring says the command's JSON document is the first line of stdout on every exit, but `dispatch` carries a --pretty flag at reckon/crew_dispatch_commands.py:1604 and _emit at :299-305 indents the document when it is set, so on a --pretty invocation the first line of stdout is `{` and the stated rule is false."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104848870531-qwnw-red-file-orchestrator-lane-fence/manifest.md",
+      "line": "13",
+      "text": "non-blocking: test_logs names only logs at revisions 02011286ab and cd6f85d1db, so the merge-head arms logs/head-gate-all-debug-merge.log and logs/sibling-after-merge.log exist on disk but are named in no field a promotion opens."
+    }
+  ],
+  "head_log_revision": "8b45eb1445d749d6afc3ed2ec498860f952bb2d0",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none \u2014 `_payload` at tests/test_dispatch_names_its_backend.py:159 is a test helper called only from the eleven cases in the same module at :196-397, so no production runtime code reaches the gained change.",
+    "diff": "read against 02011286ab: the two gained commits are both merges, 7dda31f45f bringing primary main in and 8b45eb1445 resolving the shared _payload helper, whose code line is identical on both sides and whose resolution is the docstring at tests/test_dispatch_names_its_backend.py:160-166.",
+    "done_when": "the done_when requires that file green at head on all_debug with SLURM_JOB_ID unset, no added failure on the arm over the importers, and a logged negative control; logs/head-gate-all-debug-merge.log:1-7 gives all_debug job 1320742 with SLURM_JOB_ID unset and 7 passed EXIT=0 at 8b45eb1445, logs/sibling-after-merge.log:1-6 records 11 passed for tests/test_dispatch_names_its_backend.py at the same revision, logs/base-gate.log:1-6 gives 3 failed EXIT=1 at cd6f85d1db as the control, and logs/base-suite.log plus logs/after-suite-merge.log report 58 passed EXIT=0 each.",
+    "goal": "the node's goal is that tests/test_orchestrator_lane_fence.py passes in full on the primary branch; logs/head-gate-all-debug-merge.log:1-7 records revision 8b45eb1445, partition all_debug, job 1320742, SLURM_JOB_ID unset and 7 passed EXIT=0, and the gained commits change only the docstring of the shared test helper, so the goal's condition holds at the reviewed head.",
+    "manifest": "read in full; status complete, commits 76386c3ed4..8b45eb1445, changed_paths naming the test file and two fragments, `tests: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_orchestrator_lane_fence.py`, baseline_suite at cd6f85d1db with 0 failures and after_suite at 02011286ab with 0 failures, and a checkpoint naming the merge-head gate on all_debug job 1320742.",
+    "write_paths": "the fence was reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, its two fragment files and docs/figures/queued-work-needs-no-workaround; the gained commits change tests/test_dispatch_names_its_backend.py only, its docstring at lines 160-166, and the two fragment files are byte-identical to 02011286ab."
+  },
+  "justifications": {
+    "durability": "no assertion is added by the gained commits, and the docstring rule at tests/test_dispatch_names_its_backend.py:164-166 that the JSON document is the first line of stdout is false under the --pretty option at reckon/crew_dispatch_commands.py:1604, which indents the document so splitlines()[0] at :168 would read `{`.",
+    "evidence": "logs/head-gate-all-debug-merge.log:1-6 names revision 8b45eb1445, partition all_debug, job 1320742 and SLURM_JOB_ID-free env with 7 passed EXIT=0, so the done_when's measure was run and recorded at the reviewed head, but the manifest's test_logs at manifest.md:13 opens only pre-merge logs.",
+    "fit": "tests/test_dispatch_names_its_backend.py:160 keeps the module's own docstring idiom and the Click fact the installed click 8.4.2 corroborates, but asserts a rule the code does not hold for every invocation.",
+    "goal_fidelity": "the gained commits are the merges 7dda31f45f and 8b45eb1445 over 02011286ab, and `git diff 02011286ab 8b45eb1445 -- tests/test_dispatch_names_its_backend.py` shows only the docstring at lines 160-166 rewritten with the read at :168 identical to both parents, while logs/head-gate-all-debug-merge.log:1-7 records tests/test_orchestrator_lane_fence.py at 8b45eb1445 with 7 passed EXIT=0.",
+    "reuse": "no owner exists for reading a CLI invocation's JSON document: tests/conftest.py defines no such helper and 38 modules under tests/ roll their own `_payload`, and the gained commits add no definition.",
+    "scope_discipline": "`git diff --name-only 7dda31f45f 8b45eb1445` lists only tests/test_dispatch_names_its_backend.py and the two fragments under docs/evidence/fragments/queued-work-needs-no-workaround/, every one inside the declared write paths of the reviewed node and the latter two byte-identical to 02011286ab."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_orchestrator_lane_fence.py passes in full on the primary branch; logs/head-gate-all-debug-merge.log:1-7 records revision 8b45eb1445 on all_debug job 1320742 with SLURM_JOB_ID unset and 7 passed EXIT=0, and the gained commits change only the docstring of the shared test helper, so the goal's condition holds at the reviewed head.\nVERDICT done_when: the done_when requires that file green at head on all_debug with SLURM_JOB_ID unset, no added failure on the arm over the importers, and a logged negative control; logs/head-gate-all-debug-merge.log:1-7 gives all_debug job 1320742 with SLURM_JOB_ID unset and 7 passed EXIT=0 at 8b45eb1445, logs/sibling-after-merge.log:1-6 records 11 passed for tests/test_dispatch_names_its_backend.py at the same revision, logs/base-gate.log:1-6 gives 3 failed EXIT=1 at cd6f85d1db as the control, and logs/base-suite.log plus logs/after-suite-merge.log report 58 passed EXIT=0 each.\nVERDICT write_paths: the fence was reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, its two fragment files and docs/figures/queued-work-needs-no-workaround; the gained commits change tests/test_dispatch_names_its_backend.py only, its docstring at lines 160-166, and the two fragment files are byte-identical to 02011286ab.\nVERDICT manifest: read in full; status complete, commits 76386c3ed4..8b45eb1445, changed_paths naming the test file and two fragments, tests naming the pytest invocation of tests/test_orchestrator_lane_fence.py under env -u SLURM_JOB_ID, baseline_suite at cd6f85d1db with 0 failures and after_suite at 02011286ab with 0 failures, and a checkpoint naming the merge-head gate on all_debug job 1320742.\nVERDICT diff: read against 02011286ab: the two gained commits are both merges, 7dda31f45f bringing primary main in and 8b45eb1445 resolving the shared _payload helper at tests/test_dispatch_names_its_backend.py:160-166, whose code line is identical on both sides.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the gained commits are the merges 7dda31f45f and 8b45eb1445 over 02011286ab, and the diff of tests/test_dispatch_names_its_backend.py between them shows only the docstring at lines 160-166 rewritten with the read at :168 identical to both parents, while logs/head-gate-all-debug-merge.log:1-7 records 7 passed EXIT=0 at the reviewed head.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/head-gate-all-debug-merge.log:1-6 names revision 8b45eb1445, partition all_debug, job 1320742 and a run with SLURM_JOB_ID unset with 7 passed EXIT=0, but the manifest's test_logs at manifest.md:13 opens only pre-merge logs.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the merge's own change against 7dda31f45f lists only tests/test_dispatch_names_its_backend.py and the two fragments under docs/evidence/fragments/queued-work-needs-no-workaround/, both inside the two declared write paths and byte-identical to 02011286ab.\nSCORE durability: 16\nJUSTIFICATION durability: no assertion is added by the gained commits, and the docstring rule at tests/test_dispatch_names_its_backend.py:164-166 that the JSON document is the first line of stdout is false under the --pretty flag at reckon/crew_dispatch_commands.py:1604, which indents the document so splitlines()[0] at :168 would read an opening brace.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_dispatch_names_its_backend.py:160 keeps the module's own docstring idiom and a Click fact the installed click 8.4.2 corroborates, while claiming a rule the code does not hold for every invocation.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner exists for reading a CLI invocation's JSON document, since tests/conftest.py defines no such helper and 38 modules under tests/ roll their own _payload, and the gained commits add no definition.\nFINDING tests/test_dispatch_names_its_backend.py:165 non-blocking: the docstring says the JSON document is the first line of stdout on every exit, but dispatch's --pretty flag at reckon/crew_dispatch_commands.py:1604 makes _emit at :299-305 indent it, so on that invocation the first line is an opening brace.\nFINDING manifest.md:13 non-blocking: test_logs names only logs at revisions 02011286ab and cd6f85d1db, so the merge-head arms head-gate-all-debug-merge.log and sibling-after-merge.log are named in no field a promotion opens.",
+  "review_run_id": "r-20261116T224932426706-review-of-qwnw-red-file-orchestrator-lane-fence-8b45eb1445d7",
+  "reviewed_base_sha": "02011286ab27aed3ab1641b64aa313142cb4fcfb",
+  "reviewed_head_sha": "8b45eb1445d749d6afc3ed2ec498860f952bb2d0",
+  "reviewed_run_id": "r-20261116T104848870531-qwnw-red-file-orchestrator-lane-fence",
+  "reviewer_run_id": "r-20261116T224932426706-review-of-qwnw-red-file-orchestrator-lane-fence-8b45eb1445d7",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T23:45:12.834281+00:00",
+  "total": 109
+}

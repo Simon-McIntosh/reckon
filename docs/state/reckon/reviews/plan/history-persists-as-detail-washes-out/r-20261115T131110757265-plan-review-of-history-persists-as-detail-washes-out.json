@@ -1,0 +1,187 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T13:32:59.010Z",
+  "dispatched_at": "2026-11-15T13:32:37Z",
+  "findings": [
+    {
+      "anchor": "plan.html:457",
+      "id": "wiring-1",
+      "reason": "the followup is the plan's next-step carrier, so as written it dispatches a done section and leaves the new one unbuilt.",
+      "text": "`f-hpdw-010` is the only open followup and its prompt `/reckon-build history-persists-as-detail-washes-out \u00a721` names a section now declared done, its body says \"Review and build \u00a721 to \u00a727; \u00a726 waits on \u00a721 to \u00a725\", and the plan's own `plan-section-depends-on` now makes \u00a726 wait on \u00a721\u2013\u00a725 plus \u00a728, so the next dispatch is pointed at landed work and \u00a728 is never invoked",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:402",
+      "id": "done_when-1",
+      "reason": "the node must invent the discriminator, and either invention (content match or a second marker) changes which repositories stay guarded.",
+      "text": "s28 requires that \"a repository holding only the static-site `index.json` that `reckon build` writes ... is not recognised as crew-managed\" and in the same breath that \"\u00a725's test still passes\", but \u00a725's landed `tests/test_guards_hold_without_a_tracked_ledger.py::_project_repo` builds a repository whose only marker is `index.json` containing `{}` and asserts both guards and `cli_entry._crew_state_exists` recognise it, so the two clauses are jointly satisfiable only if the discriminator is the `index.json` content (the baked envelope's `doc`/`data`/`inventory` keys) rather than its presence, which s28 never states",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:402",
+      "id": "reasoning-1",
+      "reason": "the recognition arm names a mechanism the guarded detector deliberately avoided, so a node would either widen the guard's read scope silently or ship an untestable clause.",
+      "text": "s28's other arm, \"A repository with a run store and no tracked `crew.json` is still recognised\", makes a signal the detector cannot hold: the store is `<config-home>/crew/run_store.db`, one shared database across projects (`reckon/run_store.py:182`), and `native_agent_guard.crew_managed_projects` documents and implements repository-local-only detection under `docs/state/*` (both guards' `PROJECT_STATE_MARKERS` and `cli_entry._CREW_STATE_MARKERS` read that directory), with \u00a725's own landed test stating \"The run ledger lives in the crew store outside every repository\" \u2014 so the arm either requires the guard to start reading the shared home store on every spawn or is not constructible as a repository state at all",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:382",
+      "id": "done_when-2",
+      "reason": "a named deliverable with no measure is the one that ships unproven, and the section's stated failure mode is exactly that script reporting zero.",
+      "text": "s24's Why names two readers to restate (velocity and \"the review-cycle figure script\", committed at `docs/figures/plan-review-cycles/measure_review_cycles.py:333`) and its write paths list that script, but its done-when measures velocity alone, so the node can satisfy every clause while the figure script still reports zero after the files leave git",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:382",
+      "id": "done_when-3",
+      "reason": "the equality arm and the empty-store control already pin the required behaviour, so a reader resolves \"or refuses\" to a store that genuinely cannot answer and no node is sent down a wrong path.",
+      "text": "s24's first clause allows velocity to \"answer from the store or refuse naming the store\", while its second clause requires the figures to equal the ledger's over a nonzero population and its control requires an empty store to fail the comparison, so refusal is admitted by one sentence and excluded by the next two",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "",
+  "plan_fingerprint": "2f794e1b69e7f6fd775be2112f7feb6c1ed8750eb1e6b743c9a5770c83a2e6d5",
+  "plan_slug": "history-persists-as-detail-washes-out",
+  "plan_version": 38,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "9d565acb615e6c31a64af84a6009abeb17ee4260",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "f-hpdw-010 is resolved and replaced by a followup naming s24 and s28, the sections still to build",
+      "reason": "",
+      "when": "2026-11-15T16:43:06.164888+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "9d565acb615e6c31a64af84a6009abeb17ee4260",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "s28 no longer has a run-store arm; it names repository-local markers only",
+      "reason": "",
+      "when": "2026-11-15T16:43:13.950689+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "9d565acb615e6c31a64af84a6009abeb17ee4260",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "s28 now names the two measured populations as the endpoint: a hanney-shaped crew repository without crew.json or flight.yaml is recognised, a static-site-only repository is not; the s25 fixture test joins the write paths so its index.json-only fixture can carry a crew marker",
+      "reason": "",
+      "when": "2026-11-15T16:43:20.917244+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "9d565acb615e6c31a64af84a6009abeb17ee4260",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "s24's done-when now measures the review-cycle figure script as well as velocity",
+      "reason": "",
+      "when": "2026-11-15T16:43:27.329297+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "9d565acb615e6c31a64af84a6009abeb17ee4260",
+      "commit_basis": "edit",
+      "finding": "done_when-3",
+      "note": "s24's done-when drops the refusal arm: velocity answers from the store and its figures equal the ledger's",
+      "reason": "",
+      "when": "2026-11-15T16:43:35.699812+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "9d565acb615e6c31a64af84a6009abeb17ee4260",
+      "commit_basis": "edit",
+      "note": "s28 now names the two measured populations as the endpoint: a hanney-shaped crew repository without crew.json or flight.yaml is recognised, a static-site-only repository is not; the s25 fixture test joins the write paths so its index.json-only fixture can carry a crew marker",
+      "reason": "",
+      "when": "2026-11-15T16:43:20.917244+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "9d565acb615e6c31a64af84a6009abeb17ee4260",
+      "commit_basis": "edit",
+      "note": "s24's done-when now measures the review-cycle figure script as well as velocity",
+      "reason": "",
+      "when": "2026-11-15T16:43:27.329297+00:00"
+    },
+    "done_when-3": {
+      "action": "acted",
+      "by": "",
+      "commit": "9d565acb615e6c31a64af84a6009abeb17ee4260",
+      "commit_basis": "edit",
+      "note": "s24's done-when drops the refusal arm: velocity answers from the store and its figures equal the ledger's",
+      "reason": "",
+      "when": "2026-11-15T16:43:35.699812+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "9d565acb615e6c31a64af84a6009abeb17ee4260",
+      "commit_basis": "edit",
+      "note": "s28 no longer has a run-store arm; it names repository-local markers only",
+      "reason": "",
+      "when": "2026-11-15T16:43:13.950689+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "9d565acb615e6c31a64af84a6009abeb17ee4260",
+      "commit_basis": "edit",
+      "note": "f-hpdw-010 is resolved and replaced by a followup naming s24 and s28, the sections still to build",
+      "reason": "",
+      "when": "2026-11-15T16:43:06.164888+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/history-persists-as-detail-washes-out/r-20261115T131110757265-plan-review-of-history-persists-as-detail-washes-out.json",
+  "review_run_id": "r-20261115T131110757265-plan-review-of-history-persists-as-detail-washes-out",
+  "reviewed_blob_sha": "a2f6b404d9899a85dd23b41c54a2ccc0a4bcc706",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/velocity.py`, `reckon/run_store.py`, `reckon/project_maintenance_commands.py`, `docs/figures/plan-review-cycles/measure_review_cycles.py` (crew.json read at :333) and commit `0d421c7f75` all resolve, and the snapshot carries anchors s23, s24 and s28.",
+    "done_when": "findings \u2014 s28's first clause (plan.html:402) forbids recognising a repository whose state directory holds an `index.json`, while \u00a725's landed test builds exactly that repository and must still pass; s24's Why and write paths name the review-cycle figure reader but no clause of its done-when measures it.",
+    "evidence_paths": "pass \u2014 the changed units add no evidence path; the plan's fragments sit under `docs/evidence/fragments/history-persists-as-detail-washes-out/` (the s20, s21 and s25 fragments resolve there) and each section's gate is a named suite or an `all_debug` run that lands under the crew runs directory.",
+    "naming": "pass \u2014 no plan label, stage name or ticket number enters a named symbol or comment; the section numbers appear only in plan prose and in the decisions, where they belong.",
+    "reasoning": "a finding \u2014 s28's second recognition arm makes a shared, non-repository-local run store a signal for a detector documented as reading repository-local state only.",
+    "single_goal": "pass \u2014 \u00a723 (roster and holds written only to the store), \u00a724 (revision-scoped figures answered from the store) and \u00a728 (a docs-only repository is not crew-managed) each name one deliverable and one verdict.",
+    "wiring": "a finding \u2014 the open followup `f-hpdw-010` (plan.html:457) still carries `/reckon-build history-persists-as-detail-washes-out \u00a721` and \"\u00a721 to \u00a727\" after \u00a721 and \u00a725 were declared done and \u00a728 was added as a declared wait of \u00a726."
+  },
+  "section_digests": {
+    "_document": "6a43111590c490cb96fbdbd1efbc232ec22261c8c21397d2d76e96d30f35b73d",
+    "s1": "16a4b0ff613308f968af13a86453cdda7611fbb4a0b662f0998319199f08c1f2",
+    "s2": "81ea5591beea9f0bfe0621b90127946f5c732b8471e2c5373404a592fa5daefe",
+    "s20": "469126d7a8d70994107c002b967dbf9da3c5237e4a3d05823281a9885c92731d",
+    "s21": "b2ec3716b6dd37a6a203c9b9d7c0be1209c9fa8d48d83ddcdf537eb47428cd4c",
+    "s22": "44eee72b2eb1fba73278d19280640ae85ab4fef9d1625113ca2a3cba0ae32c22",
+    "s23": "5f979f2ac2c694c8465c9b3b76743b70a3df967a1496488ebe45e96a41451c59",
+    "s24": "51b59458e8cd81fa0f4ec50949abfbbc28a66011e8947a787340b10893d1248e",
+    "s25": "6e50b703cae5c188d1fb24250a943eb5f654fc5c26334335a3a7288120690168",
+    "s26": "37c27b0d54e7bf1a99e322e08776a72ffa748c2b88388aaa51f267a1db5c358a",
+    "s27": "9d55fe84f9ee617248a7eec57379797bd44bc1cb050fc378d20ac1b3da8152b2",
+    "s28": "6ae02ae01b43f1f7c194f7fe938d7caf58443c655ee63273d4bd0252985569e4",
+    "s3": "3422a7a0a23c318e54716e2fbbaf99599e0142f7bbc74d9eb45f924541cd8ccf",
+    "s4": "6beff7af8378d0a3be80a490fb73cc8c5e6a8ee94449c98de40a252d2f57fcd5",
+    "s5": "0cd70cc30708f232bf564bff0e7825d783d5f5ab455747bfac40ebe742ea0ed3",
+    "s6": "5181e894e8b3823f366d0b459a48ecc8e236e645ca5b1f02071dfc0fdae47681",
+    "s7": "6173f16d89316af11f74c75b5bec44f90742582abf47efd7e72af7af3bb31b50"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T13:42:59.794842+00:00",
+  "total": null
+}

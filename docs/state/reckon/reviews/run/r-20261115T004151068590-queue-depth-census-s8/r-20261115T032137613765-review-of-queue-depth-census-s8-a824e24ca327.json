@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T04:24:59.410Z",
+  "dispatched_at": "2026-11-15T03:26:13Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/queue-depth.html",
+      "line": 181,
+      "severity": "non-blocking",
+      "summary": "The instrument table at line 181 reports 45 working, 1 starting, 4 queued, 19 held, 32 awaiting-upstream and 40 complete \u2014 141 pointers \u2014 while the retained snapshot it sits beside records 140 pointers as working 42, starting 3, queued 5, held 18, awaiting-upstream 33, blocked 2 and complete 37; the table names no snapshot and omits the blocked phase, so the one figure set the five proposals rest on cannot be reconciled against the census JSON."
+    },
+    {
+      "file": "docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/queue-depth.html",
+      "line": 129,
+      "severity": "non-blocking",
+      "summary": "The session table's 'unloaded plans' column sums to 14 (5+3+2+2+1+1) while the note at line 121 states 11 plans, because two plans (a-landing-never-waits-on-a-shared-index and the-monitor-shows-the-work-it-watches) name more than one session; the column counts plan-session pairs under a header that reads as distinct plans."
+    },
+    {
+      "file": "docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/queue-depth.html",
+      "line": 166,
+      "severity": "non-blocking",
+      "summary": "The commit at a824e24ca3 replaced the figure 'review-refused 6 times in the log' on the stated premise that the retained window 'records a single row for that plan'; the retained log carries exactly 6 refused rows for r-20261114T222231293247 before 02:04Z and 25 passes naming it, so the removed figure was correct and the premise is contradicted by the artefact, while the replacement reads singular although two distinct requests were refused on that plan's review."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T004151068590-queue-depth-census-s8/queue-depth-census.py",
+      "line": 68,
+      "severity": "non-blocking",
+      "summary": "queued_pointers at line 68 re-derives the queued predicate that reckon/crew/admission/ordering.py:175 awaits_a_lane_slot already owns, and the plan's Deliverable required the census to read the queue through queued_placements and open_run_index.read_rows 'adding no third reader' \u2014 neither owner is called; the same function carries a dead branch at lines 75-76 ('... and False: pass'). The script is a run artefact rather than landed code, which is why this does not hold the node, but every figure in the fragment comes from it."
+    },
+    {
+      "file": "docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/queue-depth.html",
+      "line": 22,
+      "severity": "non-blocking",
+      "summary": "The census is tables only; no figure was committed under docs/figures/the-escape-lane-and-reviews-keep-pace/, which the run's own orientation_write_paths named as a topic directory, although the per-project table (eight projects, 342 implementable sections, 242 unloaded) is data one bar chart reads faster than a table."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to measure each project's ready sections against its queued requests and name why ready plans are not loaded; docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/queue-depth.html:22 carries the per-project measurement, :65 the refusal classes, and :118 the session attribution that names why.\nVERDICT done_when: the done_when's three parts are all present \u2014 the per-project table at queue-depth.html:22, eight refusal classes each with a pointer-row count, a distinct-request count and an example run id at :65, and five proposed sections each opening its own 'Done when.' paragraph at :225, :247, :270, :295 and :321.\nVERDICT write_paths: the declared path is the single fragment queue-depth.html; the diff writes that file plus queue-depth-census-s8.html, which is exactly the anchor reckon/crew/dispatch_claims.py:1303 _landing_fragment_paths grants a node at docs/evidence/fragments/<plan>/<node-id>.html, so the second file is the machinery's own fragment while the plan's done_when names queue-depth.html literally \u2014 both files are inside the fragment subtree and the second is what the write grant expects.\nVERDICT manifest: read; it records status complete, commits d7543477d5 and a824e24ca3, the census script with its absolute interpreter path, and a gate log at queue-depth-census-gate.log whose first line names revision d7543477d5 and the tree and whose last line is EXIT=0.\nVERDICT diff: read both commits against base a645748b; they add 372 lines of HTML and no product code \u2014 d7543477d5 adds the census fragment and its anchor, a824e24ca3 rewrites two lines of the cause paragraph at queue-depth.html:161-168.\nCALL_SITES: reckon/serve.py:2705, reckon/mcp.py:1344, reckon/doccheck.py:1970, reckon/crew/dispatch_claims.py:1303, reckon/crew/reports.py:2648\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: queue-depth.html:22 measures each project's implementable sections against its queued requests and :158 names the cause for every one of the 93 plans carrying an unloaded section, which is the goal's three parts in one record.\nSCORE evidence: 14\nJUSTIFICATION evidence: every per-project cell at queue-depth.html:35-44, every session row at :133-155, the totals 342/116/37/100/242/5 and the cause split 82/9/1/1 reconcile exactly against queue-depth-census.json's measured_at 2026-11-15T02:03:33Z and queue-depth-unloaded-plans.json, but the gate the manifest names is a later run of the same script (queue-depth-census-gate.log header measured_at 02:20:39Z at revision d7543477d5) that asserts nothing about the fragment's text, and the instrument table at :181 is the one figure set no retained artefact reproduces.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the diff touches only the two files under docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/ \u2014 no product code, no test, no plan file \u2014 and the second file is the anchor dispatch_claims.py:1303 grants this node, though it sits outside the single path the plan's done_when spells out.\nSCORE durability: 10\nJUSTIFICATION durability: the diff adds no test and no assertion, so nothing fails if the fragment's figures drift or the correction at queue-depth.html:166 is reversed; the only guard is queue-depth-census.py plus its retained JSON in the run directory, which the same 1 MB trim that has already cut the verdict log from 55 to 30 passes can remove.\nSCORE fit: 16\nJUSTIFICATION fit: both files follow the shape of the 80 sibling fragments (a top-level <section> with an h2 and path-prefixed ids, queue-depth.html:1-3) and introduce no new naming scheme, but the refusal table labels one row 'other: a lead hold, and a duplicate run id already live' at :95 beside a separate 'duplicate run id already live' row at :99, so two rows claim the same class.\nSCORE reuse: 13\nJUSTIFICATION reuse: the landed diff adds no definition to fork anything, but the apparatus it rests on \u2014 queue-depth-census.py:68 queued_pointers \u2014 re-implements the queued predicate owned by reckon/crew/admission/ordering.py:175 awaits_a_lane_slot and calls neither queued_placements nor open_run_index.read_rows, which the plan's Deliverable names as the owners to read through.\nFINDING docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/queue-depth.html:181 non-blocking: the instrument table's phase counts total 141 pointers and omit the blocked phase where the retained snapshot has 140 and includes it, and it names no snapshot, so the figure the five proposals rest on cannot be reconciled against the census JSON.\nFINDING docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/queue-depth.html:129 non-blocking: the session table's 'unloaded plans' column counts plan-session pairs and sums to 14 under a note that states 11 plans, so a reader adding the column disagrees with the sentence above it.\nFINDING docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/queue-depth.html:166 non-blocking: the correction removed a figure the retained log supports (6 refused rows for that request before 02:04Z, 25 passes naming it) on a premise the log contradicts, and the replacement reads singular although two distinct requests were refused on that plan's review.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T004151068590-queue-depth-census-s8/queue-depth-census.py:68 non-blocking: queued_pointers re-derives the predicate ordering.py:175 awaits_a_lane_slot owns, the plan required reading through queued_placements and open_run_index.read_rows, and the same function carries a dead branch at lines 75-76.\nFINDING docs/evidence/fragments/the-escape-lane-and-reviews-keep-pace/queue-depth.html:22 non-blocking: the census is tables only where the per-project data would read directly as one figure, and no figure was committed under the topic directory the run's orientation named.\n",
+  "review_run_id": "r-20261115T032137613765-review-of-queue-depth-census-s8-a824e24ca327",
+  "reviewed_base_sha": "a645748ba1bd119bb26481d851b0f584c833f05a",
+  "reviewed_head_sha": "a824e24ca3275d737311f64bbf6fde345e355a98",
+  "reviewed_run_id": "r-20261115T004151068590-queue-depth-census-s8",
+  "scores": {
+    "durability": 10,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 13,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T07:50:36.421604+00:00",
+  "total": 89
+}

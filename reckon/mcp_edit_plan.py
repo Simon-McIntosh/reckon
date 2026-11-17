@@ -22,6 +22,7 @@ from reckon._schema import (
 from reckon._store import (
     OpError,
     VersionConflict,
+    _default_followup_provenance,
     _docs_dir_for_project,
     _find_by_id,
     _mounts_path,
@@ -236,14 +237,16 @@ def _append_followup(
 ) -> dict[str, Any]:
     """Append a followup record to data.followups.
 
-    The followup dict must include: id, written_by, written_at, title, body, prompt.
-    The prompt field is one ``/reckon-build`` invocation line; the plan owns all
-    semantic guidance.
+    The followup dict must include: id, title, body, prompt. An omitted
+    written_by and written_at default to the editing surface and today, since
+    the documented append example carries neither. The prompt field is one
+    ``/reckon-build`` invocation line; the plan owns all semantic guidance.
     """
     refusal = _run_scoped_write_guard(project, slug)
     if refusal is not None:
         return refusal
-    required = {"id", "written_by", "written_at", "title", "body", "prompt"}
+    required = {"id", "title", "body", "prompt"}
+    _default_followup_provenance(followup)
     missing = required - set(followup.keys())
     if missing:
         return {
@@ -2325,6 +2328,16 @@ def _edit_plan_tool(
     # The plan's coverage before the write is read here, because the write is
     # what destroys it: ``review_owed`` on the answer is the plan's whole debt,
     # and only the difference against this set is the write's own doing.
+    declaration_write = mode == "state" and _changes_section_declarations(ops)
+    declarations_before = (
+        _with_read_scopes(
+            lambda: read_plan(project, slug, checkout_path, artifact_type=doc_type)[
+                0
+            ].get(DECLARATIONS_PATH_HEAD)
+        )
+        if declaration_write
+        else None
+    )
     uncovered_before = (
         _with_read_scopes(
             lambda: _uncovered_before_write(
@@ -2361,8 +2374,18 @@ def _edit_plan_tool(
             # A write that moves a section declaration can be the one that
             # leaves the plan finished, so that write also answers with the
             # plan's readiness and what still stands before its close.
-            if mode == "state" and _changes_section_declarations(ops):
-                result.update(_plan_readiness_fields(project, slug, checkout_path))
+            if declaration_write:
+                declarations_after = read_plan(
+                    project, slug, checkout_path, artifact_type=doc_type
+                )[0].get(DECLARATIONS_PATH_HEAD)
+                result.update(
+                    _plan_readiness_fields(
+                        project,
+                        slug,
+                        checkout_path,
+                        changed=declarations_before != declarations_after,
+                    )
+                )
 
         _with_read_scopes(_post_write_reads)
     return result

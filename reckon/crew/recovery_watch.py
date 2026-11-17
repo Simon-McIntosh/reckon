@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import fcntl
 import functools
+import hashlib
 import json
 import math
 import os
@@ -14,6 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence
 
+from reckon import file_memo
 from reckon._timestamps import parse_utc
 from reckon.crew import metering, obligation_snapshot, quota_weight, runs
 from reckon.crew.host_lease import LEASE_RENEW_SECONDS
@@ -31,7 +33,6 @@ from reckon.crew.reports import (
 from reckon.crew.routing import _signal_process_group
 from reckon.crew.runs import (
     _mutate_pointer,
-    _process_start_time,
     _project_watch_claim,
     _read_watch_record,
     _utc_now,
@@ -42,7 +43,14 @@ from reckon.crew.runs import (
     watch_lock_path,
     watch_stream_path,
 )
-from reckon.crew.ticker import NEEDS_ACTION, Ticker, _agent_label
+from reckon.crew.ticker import (
+    _HELP_CELL,
+    _WAIT_CELL,
+    NEEDS_ACTION,
+    Ticker,
+    _agent_label,
+    _bucket_of,
+)
 from reckon.crew.watch_unit import (
     release_seat_when_misplaced,
     seat_names_a_live_foreign_producer,
@@ -56,7 +64,25 @@ from reckon.node_exclusive_lock import exclusive_lock
 # fleet counts it here, never in the blocked tally. Its age is the news, and
 # the news is carried by the action marker on its row, so the wait-aged state
 # also sits in the action set while remaining a member of this family.
-WAITING_STATES = frozenset({"waiting", "wait-aged", "paused", "queued"})
+#
+# The family also holds the four states that lift on other work rather than on
+# the coordinator: a request held on an upstream section, one held on a refusal
+# already accepted, one interrupted mid-work and one ready to start. Each moves
+# itself once what it waits for arrives, so the fleet counts it here and the
+# pane draws it ``waiting``; reading either differently would make a counter and
+# a row's word disagree about the same run.
+WAITING_STATES = frozenset(
+    {
+        "waiting",
+        "wait-aged",
+        "paused",
+        "queued",
+        "blocked-upstream",
+        "held",
+        "interrupted",
+        "ready",
+    }
+)
 
 
 # Commits-beyond-base per (worktree, base), keyed against the worktree head it
@@ -107,20 +133,49 @@ def _remember_commits(key: tuple[str, str], head: str, count: int) -> None:
 # count between two revisions never changes, a full revision resolves to the
 # same commit forever, and the reachability of one commit from three others
 # never changes with time, so an entry keyed on those ids cannot go stale.
-_GIT_ANSWER_STORE_FILENAME = "git-object-answers.json"
-_GIT_ANSWER_STORE_VERSION = 1
+#
+# The answers are kept one file per tree rather than in one file for the home.
+# A single file made every new answer rewrite every other tree's answers, and a
+# per-tree cap on its entries made one tree's next answer evict an answer the
+# same tick would need again: each eviction cost a git call, a lock and a
+# rewrite that gave the file a new identity, so every reader in every process
+# parsed the whole store again. An answer keyed by an abbreviation in a tree is
+# immutable while the tree exists, so a tree's file holds them with no
+# per-candidate cap, and a reader holds each tree's file under that file's own
+# stat identity, so a write to one tree leaves every other tree's held copy
+# valid.
+_GIT_ANSWER_STORE_DIRNAME = "git-object-answers"
+_GIT_ANSWER_LEGACY_FILENAME = "git-object-answers.json"
+_GIT_ANSWER_TREE_VERSION = 1
+_GIT_ANSWER_LEGACY_VERSION = 1
 _GIT_ANSWER_STORE_WORKTREES = 256
-_GIT_ANSWER_STORE_CANDIDATES = 512
+_GIT_ANSWER_TREE_KIND = "git_answer_tree"
+# The legacy single-file stores this process has already moved onto the
+# per-tree layout, so the one-time migration costs no read after it has run.
+_LEGACY_GIT_ANSWER_MIGRATED: set[str] = set()
 
 
-def _git_answer_store_path() -> Path:
-    """Where git's answers about immutable object ids are kept between runs."""
-    return runs.crew_home() / _GIT_ANSWER_STORE_FILENAME
+def _git_answer_store_dir() -> Path:
+    """The directory holding one answer file per tree."""
+    return runs.crew_home() / _GIT_ANSWER_STORE_DIRNAME
 
 
-def _empty_git_answer_store() -> dict[str, Any]:
+def _git_answer_tree_path(tree: Path) -> Path:
+    """The answer file for ``tree``, named from a digest of the tree's path."""
+    digest = hashlib.sha256(str(tree).encode("utf-8")).hexdigest()
+    return _git_answer_store_dir() / f"{digest[:32]}.json"
+
+
+def _git_answer_legacy_path() -> Path:
+    """The single-file store an earlier layout kept every tree's answers in."""
+    return runs.crew_home() / _GIT_ANSWER_LEGACY_FILENAME
+
+
+def _empty_git_answer_tree(tree: Path) -> dict[str, Any]:
+    """One tree's answers, empty, in the shape its file carries them in."""
     return {
-        "version": _GIT_ANSWER_STORE_VERSION,
+        "version": _GIT_ANSWER_TREE_VERSION,
+        "tree": str(tree),
         "commits": {},
         "counts": {},
         "unreachable": {},
@@ -153,41 +208,114 @@ def _git_answer_pairs(bucket: str, answers: Mapping[str, Any]) -> dict[str, Any]
     }
 
 
-def _read_git_answer_store() -> dict[str, Any]:
-    """The stored git answers, or an empty store when none can be read.
+def _read_git_answer_tree(tree: Path) -> dict[str, Any]:
+    """One tree's stored git answers, or an empty store when none can be read.
 
     A store that is absent, half-written or corrupt yields no answer at all,
     which costs one git call and rewrites the entry; it can never offer a wrong
     one, because the only answers offered are ones a previous git run gave for
     these exact object ids. Anything the reader does not recognise is treated
     as corrupt rather than guessed at.
+
+    The parsed copy lives in the shared file memo under the file's own identity.
+    One sweep asks this store for nearly every citation it composes, and a fresh
+    read of the file per question is the read the census named: a steady station
+    opened the same file hundreds of times in one tick to learn that no other
+    process had written it. The identity is the stat identity, so a write by
+    another process — which rewrites that tree's file through a rename — misses
+    the held copy on the parsed read that follows, and a write to another tree's
+    file leaves this tree's held copy matching.
     """
+    _migrate_legacy_git_answer_store()
+    path = _git_answer_tree_path(tree)
+    return file_memo.memoized(
+        _GIT_ANSWER_TREE_KIND,
+        path,
+        functools.partial(_parse_git_answer_tree, path, tree),
+    )
+
+
+def _parse_git_answer_tree(path: Path, tree: Path) -> dict[str, Any]:
     try:
-        payload = json.loads(_git_answer_store_path().read_text(encoding="utf-8"))
+        payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError, UnicodeDecodeError):
-        return _empty_git_answer_store()
+        return _empty_git_answer_tree(tree)
     if (
         not isinstance(payload, dict)
-        or payload.get("version") != _GIT_ANSWER_STORE_VERSION
+        or payload.get("version") != _GIT_ANSWER_TREE_VERSION
+        or payload.get("tree") != str(tree)
     ):
-        return _empty_git_answer_store()
-    raw: dict[str, Mapping[str, Any]] = {}
+        return _empty_git_answer_tree(tree)
+    store = _empty_git_answer_tree(tree)
     for bucket in _GIT_ANSWER_BUCKETS:
         answers = payload.get(bucket)
         if not isinstance(answers, dict):
             if bucket in ("commits", "counts"):
-                return _empty_git_answer_store()
+                return _empty_git_answer_tree(tree)
             continue
-        raw[bucket] = answers
-    store = _empty_git_answer_store()
-    for bucket, answers in raw.items():
+        kept = _git_answer_pairs(bucket, answers)
+        if kept:
+            store[bucket] = kept
+    return store
+
+
+def _legacy_git_answer_trees(path: Path) -> dict[str, dict[str, dict[str, Any]]]:
+    """The answers a single-file store holds, grouped by the tree they are about."""
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, UnicodeDecodeError):
+        return {}
+    if (
+        not isinstance(payload, dict)
+        or payload.get("version") != _GIT_ANSWER_LEGACY_VERSION
+    ):
+        return {}
+    trees: dict[str, dict[str, dict[str, Any]]] = {}
+    for bucket in _GIT_ANSWER_BUCKETS:
+        answers = payload.get(bucket)
+        if not isinstance(answers, dict):
+            continue
         for tree, entries in answers.items():
             if not isinstance(tree, str) or not isinstance(entries, dict):
                 continue
             kept = _git_answer_pairs(bucket, entries)
             if kept:
-                store[bucket][tree] = kept
-    return store
+                trees.setdefault(tree, {})[bucket] = kept
+    return trees
+
+
+def _legacy_answer_merge(
+    buckets: Mapping[str, Mapping[str, Any]],
+) -> Callable[[dict[str, Any]], None]:
+    """A change that lays one tree's legacy answers over its per-tree file."""
+
+    def merge(store: dict[str, Any]) -> None:
+        for bucket, entries in buckets.items():
+            store[bucket].update(entries)
+
+    return merge
+
+
+def _migrate_legacy_git_answer_store() -> None:
+    """Move a single-file store's answers onto the per-tree layout, once.
+
+    The single file is read as a migration source and removed: an answer it
+    holds is immutable, so writing it into its own tree's file loses nothing,
+    and leaving the file behind would make every process read 22 MB of answers
+    it has already placed. A migration that cannot write an answer's file is
+    not an error — the answer is one git call away — but the source is kept in
+    that case, so the next process tries again rather than losing the answers.
+    """
+    legacy = _git_answer_legacy_path()
+    if str(legacy) in _LEGACY_GIT_ANSWER_MIGRATED:
+        return
+    if not legacy.is_file():
+        return
+    _LEGACY_GIT_ANSWER_MIGRATED.add(str(legacy))
+    for tree_value, buckets in _legacy_git_answer_trees(legacy).items():
+        _update_git_answer_store(Path(tree_value), _legacy_answer_merge(buckets))
+    with suppress(OSError):
+        legacy.unlink()
 
 
 def _live_pointer_worktrees() -> set[str] | None:
@@ -201,62 +329,112 @@ def _live_pointer_worktrees() -> set[str] | None:
     return named
 
 
-def _bound_git_answer_store(store: dict[str, Any]) -> None:
-    """Keep the store bounded by the fleet it describes.
+def _git_answer_file_tree(path: Path) -> str:
+    """The tree one answer file says it belongs to, or empty if unreadable."""
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, UnicodeDecodeError):
+        return ""
+    if not isinstance(payload, dict):
+        return ""
+    tree = payload.get("tree")
+    return tree if isinstance(tree, str) else ""
 
-    An entry whose worktree is gone can never be read again, so it is dropped
-    first. Past the ceiling, entries whose worktree no live pointer names are
-    dropped, and only then are the oldest trees evicted, so a long-lived
-    producer carries a store bounded by the fleet rather than by every worktree
-    it has ever classified.
+
+def _drop_git_answer_file(path: Path) -> bool:
+    """Remove one answer file; False when it is already gone or unreadable."""
+    try:
+        path.unlink()
+    except OSError:
+        return False
+    return True
+
+
+def _bound_git_answer_store() -> None:
+    """Keep the store bounded by the fleet it describes, removing whole files.
+
+    An answer is never evicted on its own: a tree's file holds every answer
+    about that tree, because an answer keyed by an abbreviation is immutable
+    while the tree exists, and evicting one answer while keeping the rest is
+    what made a steady tick ask git for an answer it had already been given. So
+    the bound removes whole files, in the order that costs the least: a file
+    whose tree is gone can never be read again; then the files of trees no live
+    pointer cites; and only then the oldest files. The sweep runs only past the
+    ceiling, so a fleet under it never pays for the walk.
     """
-    for bucket in _GIT_ANSWER_BUCKETS:
-        for tree in [tree for tree in store[bucket] if not Path(tree).is_dir()]:
-            del store[bucket][tree]
-    largest = max(len(store[bucket]) for bucket in _GIT_ANSWER_BUCKETS)
-    if largest > _GIT_ANSWER_STORE_WORKTREES:
+    try:
+        files = [
+            entry
+            for entry in _git_answer_store_dir().iterdir()
+            if entry.suffix == ".json"
+        ]
+    except OSError:
+        return
+    if len(files) <= _GIT_ANSWER_STORE_WORKTREES:
+        return
+    named: dict[Path, tuple[str, int]] = {}
+    for path in files:
+        try:
+            named[path] = (_git_answer_file_tree(path), path.stat().st_mtime_ns)
+        except OSError:
+            named[path] = ("", 0)
+    for path, (tree, _) in list(named.items()):
+        if len(named) <= _GIT_ANSWER_STORE_WORKTREES:
+            return
+        if (not tree or not Path(tree).is_dir()) and _drop_git_answer_file(path):
+            del named[path]
+    if len(named) > _GIT_ANSWER_STORE_WORKTREES:
         live = _live_pointer_worktrees()
         if live is not None:
-            for bucket in _GIT_ANSWER_BUCKETS:
-                for tree in [tree for tree in store[bucket] if tree not in live]:
-                    del store[bucket][tree]
-    for bucket in _GIT_ANSWER_BUCKETS:
-        entries = store[bucket]
-        while len(entries) > _GIT_ANSWER_STORE_WORKTREES:
-            entries.pop(next(iter(entries)), None)
-        for answers in entries.values():
-            while len(answers) > _GIT_ANSWER_STORE_CANDIDATES:
-                answers.pop(next(iter(answers)), None)
+            for path, (tree, _) in list(named.items()):
+                if len(named) <= _GIT_ANSWER_STORE_WORKTREES:
+                    return
+                if tree not in live and _drop_git_answer_file(path):
+                    del named[path]
+    for path, _ in sorted(named.items(), key=lambda item: item[1][1]):
+        if len(named) <= _GIT_ANSWER_STORE_WORKTREES:
+            return
+        if _drop_git_answer_file(path):
+            del named[path]
 
 
-def _update_git_answer_store(mutate: Callable[[dict[str, Any]], None]) -> None:
-    """Apply one change to the store under an exclusive lock.
+def _update_git_answer_store(
+    tree: Path, mutate: Callable[[dict[str, Any]], None]
+) -> None:
+    """Apply one change to ``tree``'s answer file, under that file's own lock.
 
-    The store is shared by every process reading this crew home, so the read,
-    the change and the write happen under one lock; a lost update would cost a
-    git call, but a torn file would cost one on every read. A home that cannot
-    be written is not an error: the answer is still returned to the caller.
+    One tree's answers live in one file, so a new answer rewrites that tree's
+    file and nothing else, and the lock it takes excludes only a write to the
+    same tree. The read, the change and the write happen under that lock: a
+    lost update would cost a git call, but a torn file would cost one on every
+    read. A home that cannot be written is not an error — the answer is still
+    returned to the caller.
     """
-    path = _git_answer_store_path()
+    path = _git_answer_tree_path(tree)
     lock_path = path.with_name(f"{path.name}.lock")
     try:
         with exclusive_lock(lock_path):
-            store = _read_git_answer_store()
+            # Parsed fresh under the lock: the held copy may predate another
+            # process's write, and a change applied to it would drop that write.
+            store = _parse_git_answer_tree(path, tree)
             mutate(store)
-            _bound_git_answer_store(store)
             payload = json.dumps(store, sort_keys=True)
             temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
             temporary.write_text(payload, encoding="utf-8")
             os.replace(temporary, path)
+            # The write is this process's own, so the copy it just persisted is
+            # the one a later read should hold rather than re-parsing it. A path
+            # that cannot be stat'd after the rename holds nothing to key on, and
+            # is left for the next read to parse.
+            file_memo.memoized(_GIT_ANSWER_TREE_KIND, path, lambda: store)
     except OSError:
         return
+    _bound_git_answer_store()
 
 
 def _stored_commit_answer(tree: Path, candidate: str) -> str:
     """The commit a stored answer resolves ``candidate`` to, or empty."""
-    return str(
-        _read_git_answer_store()["commits"].get(str(tree), {}).get(candidate, "")
-    )
+    return str(_read_git_answer_tree(tree)["commits"].get(candidate, ""))
 
 
 def _remember_commit_answer(tree: Path, candidate: str, sha: str) -> None:
@@ -264,31 +442,48 @@ def _remember_commit_answer(tree: Path, candidate: str, sha: str) -> None:
 
     An unresolved candidate is never stored: an object the repository does not
     hold yet it may hold later, so "names no commit" is not an immutable fact.
+
+    An answer the store already holds is not written again. A tree's file is
+    shared by every process reading this home, and its write is a lock plus a
+    whole-file rewrite, so rewriting it to store the value it already carries
+    costs the lock every tick and hands the file a new identity — which is what
+    stops a reader's held copy from matching. Only a new or different answer
+    changes the file.
     """
     if not sha:
         return
+    if _stored_commit_answer(tree, candidate) == sha:
+        return
 
     def mutate(store: dict[str, Any]) -> None:
-        store["commits"].setdefault(str(tree), {})[candidate] = sha
+        store["commits"][candidate] = sha
 
-    _update_git_answer_store(mutate)
+    _update_git_answer_store(tree, mutate)
 
 
 def _stored_count_answer(tree: Path, head: str, base: str) -> int | None:
     """The stored count for this worktree head and base, or None."""
     key = _count_answer_key(head, base)
-    answer = _read_git_answer_store()["counts"].get(str(tree), {}).get(key)
+    answer = _read_git_answer_tree(tree)["counts"].get(key)
     return answer if isinstance(answer, int) else None
 
 
 def _remember_count_answer(tree: Path, head: str, base: str, count: int) -> None:
-    """Record the commit count for this worktree head and base."""
+    """Record the commit count for this worktree head and base.
+
+    A count already stored for these two object ids is not written again, for
+    the reason ``_remember_commit_answer`` gives: the answer cannot move, so the
+    rewrite would cost the store's lock and a new file identity to change
+    nothing.
+    """
+    if _stored_count_answer(tree, head, base) == count:
+        return
     key = _count_answer_key(head, base)
 
     def mutate(store: dict[str, Any]) -> None:
-        store["counts"].setdefault(str(tree), {})[key] = count
+        store["counts"][key] = count
 
-    _update_git_answer_store(mutate)
+    _update_git_answer_store(tree, mutate)
 
 
 def _count_answer_key(head: str, base: str) -> str:
@@ -306,8 +501,7 @@ def _stored_unreachable_answer(
     cannot reach, and that answer is as reusable as any other.
     """
     key = _unreachable_answer_key(head, merged, base)
-    answers = _read_git_answer_store()["unreachable"].get(str(tree)) or {}
-    answer = answers.get(key)
+    answer = _read_git_answer_tree(tree)["unreachable"].get(key)
     return answer if isinstance(answer, str) else None
 
 
@@ -318,9 +512,9 @@ def _remember_unreachable_answer(
     key = _unreachable_answer_key(head, merged, base)
 
     def mutate(store: dict[str, Any]) -> None:
-        store["unreachable"].setdefault(str(tree), {})[key] = answer
+        store["unreachable"][key] = answer
 
-    _update_git_answer_store(mutate)
+    _update_git_answer_store(tree, mutate)
 
 
 def _unreachable_answer_key(head: str, merged: str, base: str) -> str:
@@ -359,12 +553,12 @@ def _commits_beyond_base(record: Mapping[str, Any]) -> int:
         cached = _COMMITS_BEYOND_BASE_CACHE.get(key)
         if cached is not None and cached[0] == head:
             return cached[1]
-        stored = _stored_count_answer(worktree, head, base)
+        stored = _stored_count_answer(worktree, head, f"first-parent:{base}")
         if stored is not None:
             _remember_commits(key, head, stored)
             return stored
     count = subprocess.run(
-        ["git", "rev-list", "--count", f"{base}..HEAD"],
+        ["git", "rev-list", "--first-parent", "--count", f"{base}..HEAD"],
         cwd=worktree,
         capture_output=True,
         check=False,
@@ -377,7 +571,7 @@ def _commits_beyond_base(record: Mapping[str, Any]) -> int:
         return 0
     if cacheable:
         _remember_commits(key, head, resolved)
-        _remember_count_answer(worktree, head, base, resolved)
+        _remember_count_answer(worktree, head, f"first-parent:{base}", resolved)
     return resolved
 
 
@@ -529,6 +723,7 @@ def overdue_unreconciled_runs(
     project: str,
     grace: str,
     now_seconds: float | None = None,
+    session: str | None = None,
 ) -> list[dict[str, Any]]:
     """Return actionable terminal pointers older than the configured grace.
 
@@ -538,6 +733,15 @@ def overdue_unreconciled_runs(
     refused here (the forgotten-work case) while one the drain counts as
     reconciled is never refused. A scoring run inside its armed reflex's review
     window awaits that reflex rather than coordinator reconciliation.
+
+    ``session`` scopes the answer to one coordinator's own rows. Classification
+    is the costly part — each read opens the run's manifest, stream and stored
+    review — so a pointer another session owns is skipped before it is read.
+    The owner is the ``session`` the pointer was dispatched under.
+
+    Omitting ``session`` keeps the project-wide reading the drain asks for. A
+    pointer with no recorded owner stays in scope either way: absence cannot
+    prove that a live pointer belongs to a peer.
     """
     if not grace:
         return []
@@ -546,6 +750,10 @@ def overdue_unreconciled_runs(
     grace_seconds = parse_duration(grace)
     rows = []
     for pointer in list_live(project=project):
+        if session is not None:
+            owner = str(pointer.get("session") or "")
+            if owner and owner != session:
+                continue
         row = classify_pointer(pointer, now_seconds=now_seconds)
         age = row.get("terminal_age_seconds")
         if (
@@ -609,18 +817,6 @@ def _watch_registration(
     while True:
         with _project_watch_claim(project, stall_window) as (acquired, watcher):
             if acquired:
-                parent_pid = os.getppid()
-                watcher.update(
-                    {
-                        "parent_pid": parent_pid,
-                        "parent_start_time": _process_start_time(parent_pid),
-                    }
-                )
-                # The record is written through the same seat handle the claim
-                # holds, never by reopening the path: an unlink in the moment
-                # between taking the claim and this write would make the reopen
-                # raise FileNotFoundError and end the producer before it polls.
-                _write_watch_record(runs._WATCH_SEAT_HANDLES[project], watcher)
                 yield acquired, watcher
                 return
         # The seat is held. Wait and re-read it only while a live producer on
@@ -952,6 +1148,113 @@ def _stall_reading(
     return "stalled", f"{process_state}, quiet {quiet // 60}m"
 
 
+# ── Whose move a hold is ─────────────────────────────────────────────────────
+#
+# A hold's word says who lifts it, and every surface that draws or counts a held
+# run reads the answer here rather than deciding it again. The pane's word set
+# files `held` under "needs you" because a coordinator's hold is the
+# coordinator's own move, but the fleet's counter counted every held
+# classification as waiting, so five sessions read "needs you" for a request the
+# queue was already going to launch — parked on a live run's claim, on the
+# session's lane allowance, or on a failed attempt's retry back-off — with
+# nothing to do. Two populations share the classifier's one `held` word and they
+# are lifted by different moves:
+#
+#   queue         the admission pass parks the request on a condition it watches
+#                 and releases it when that condition clears, or the lane's own
+#                 window turns over. Nothing a coordinator does lifts it, so the
+#                 row belongs in the waiting pane.
+#   coordinator   `crew hold` parks the request until someone releases it, and
+#                 the automatic plan-review hold lifts only when a review of
+#                 that plan is composed and stored. Both rows are the
+#                 coordinator's move and name the command that makes it.
+#
+# A launched run the classifier reads as held — stopped on a spent window, a
+# refusal or a back-off — was already drawn the word its state earns (a pause is
+# waiting, a stop is needs you). It is lifted by time or by the lane, so it is
+# the queue's move here, and only the counter had to be taught to agree with the
+# word rather than filing all of them under waiting.
+HOLD_LIFTED_BY_QUEUE = "queue"
+HOLD_LIFTED_BY_COORDINATOR = "coordinator"
+
+
+def hold_owner(record: Mapping[str, Any]) -> str:
+    """The move that lifts the hold this record is under.
+
+    Read from the hold's own record. A request the admission pass parked carries
+    ``queue_hold.automatic``, which marks the hold as the pass's to release; a
+    hold written by ``crew hold`` carries no such mark, so only a coordinator
+    releases it. The one automatic hold whose lifting condition is itself a
+    coordinator act is the owed plan review: the pass releases it when the
+    review is stored, and composing that review is work only the coordinator
+    dispatches. A held phase with no readable hold record keeps the
+    coordinator's reading, because the release command is the only thing that
+    moves such a pointer, and offering nothing would strand it.
+
+    Anything else is a launched run whose classifier's block — a spent window, a
+    refusal, a retry back-off — lifts on time or on the lane's next publication,
+    never by a coordinator's act.
+    """
+    from reckon.crew.queue_admission import HELD_PHASE, PLAN_REVIEW_HELD_REASON
+
+    if str(record.get("phase") or "") != HELD_PHASE:
+        return HOLD_LIFTED_BY_QUEUE
+    hold = record.get("queue_hold")
+    written = hold if isinstance(hold, Mapping) else {}
+    if not written.get("automatic"):
+        return HOLD_LIFTED_BY_COORDINATOR
+    if str(written.get("reason") or "") == PLAN_REVIEW_HELD_REASON:
+        return HOLD_LIFTED_BY_COORDINATOR
+    return HOLD_LIFTED_BY_QUEUE
+
+
+def _coordinator_hold_next_action(
+    record: Mapping[str, Any], row: Mapping[str, Any]
+) -> str:
+    """The command that lifts a coordinator's own hold on this request.
+
+    A park for an owed plan review is lifted by composing that review, never by
+    releasing the request: a release launches work over plan text no stored
+    review covers, which is the gate the hold exists to apply. Every other
+    coordinator hold is lifted by ``crew queue release``, which restores the
+    phase the request was parked from. That command is not composed again here:
+    it is the classifier's own ``next_action`` for a held pointer, read off the
+    row, so the pane and the classifier name one command and neither can drift
+    from the other.
+    """
+    from reckon.crew.plan_review import review_invocation
+    from reckon.crew.queue_admission import PLAN_REVIEW_HELD_REASON
+
+    hold = record.get("queue_hold")
+    written = hold if isinstance(hold, Mapping) else {}
+    if str(written.get("reason") or "") == PLAN_REVIEW_HELD_REASON:
+        node = record.get("node")
+        node_fields = node if isinstance(node, Mapping) else {}
+        return review_invocation(
+            str(record.get("project") or ""),
+            str(node_fields.get("plan") or ""),
+            session=str(record.get("session") or ""),
+        )
+    return str(row.get("next_action") or "")
+
+
+def _coordinator_hold_clause(record: Mapping[str, Any], next_action: str) -> str:
+    """What the row says to a reader: what holds it, and the act that lifts it."""
+    from reckon.crew.queue_admission import PLAN_REVIEW_HELD_REASON
+
+    hold = record.get("queue_hold")
+    written = hold if isinstance(hold, Mapping) else {}
+    recorded = str(written.get("detail") or written.get("reason") or "").strip()
+    prefix = f"{recorded}; " if recorded else ""
+    command = f": `{next_action}`" if next_action else ""
+    if str(written.get("reason") or "") == PLAN_REVIEW_HELD_REASON:
+        return (
+            f"{prefix}a plan review of this request's plan must be composed and "
+            f"stored before it launches{command}"
+        )
+    return f"{prefix}a coordinator's hold: lift it with the queue's release{command}"
+
+
 def _watch_verdict(
     pointer: Mapping[str, Any],
     row: Mapping[str, Any],
@@ -974,6 +1277,9 @@ def _watch_verdict(
             "recovery_classification": state,
             "recovery": str(row.get("recovery") or "inspect"),
             "lifting_condition": None,
+            # Every verdict answers the command question, so a caller reads one
+            # key rather than testing membership first.
+            "next_action": row.get("next_action"),
         }
     stored_phase = str(pointer.get("phase") or "")
     # The stored phase is the launcher's label; the row carries the phase the
@@ -994,6 +1300,7 @@ def _watch_verdict(
             "recovery_classification": state,
             "recovery": "",
             "lifting_condition": None,
+            "next_action": row.get("next_action"),
         }
 
     # The working bucket is keyed on a process that is genuinely still alive,
@@ -1026,9 +1333,16 @@ def _watch_verdict(
         state = WAITING_STATUS
     elif classification == INTERRUPTED_RUN_PHASE:
         # The compatibility watch vocabulary does not yet expose interruptions
-        # as their own column. Keep the run in the needs-action bucket while the
-        # row's recovery classification and action retain the precise cause.
+        # as their own column, so the run keeps the blocked word while the row's
+        # recovery classification and action retain the precise cause.
         state = "blocked"
+    elif classification == "cut-off":
+        # A run a worker's own exit ended before a verdict is a state a reader
+        # has to add up: its recovery class is in the vocabulary the four fleet
+        # buckets partition, so it is rendered as that word rather than hidden
+        # inside blocked, where the counter could not tell it from a halt that
+        # needs a decision.
+        state = "cut-off"
     elif classification in {"blocked", "failed"}:
         # A provider refusal blocks even though no manifest reached a verdict:
         # the process is gone, but the stop is triageable and resumable once
@@ -1071,6 +1385,44 @@ def _watch_verdict(
         state = "dispatched" if phase == "starting" else "working"
     else:
         state = classification or phase or "unknown"
+
+    # A held row is drawn by whose move lifts its hold, and the counter reads
+    # the same fact rather than a second reading of the classification. A
+    # request the queue parked sits in the waiting pane; only a coordinator's
+    # hold is drawn "needs you", and its row carries the act that lifts it.
+    held_clause = ""
+    # The command a row hands a reader is the classifier's own, carried through
+    # untouched for every row a coordinator acts on. Only the two held readings
+    # below change it, because only they answer whose move lifts the hold.
+    next_action = row.get("next_action")
+    written_hold = pointer.get("queue_hold")
+    held_row = str(row.get("recovery_classification") or "") == "held"
+    if held_row and isinstance(written_hold, Mapping):
+        if hold_owner(pointer) == HOLD_LIFTED_BY_COORDINATOR:
+            next_action = _coordinator_hold_next_action(pointer, row)
+            held_clause = _coordinator_hold_clause(pointer, next_action)
+            state = "blocked"
+        else:
+            # The queue or the clock lifts it, so nothing in the row is the
+            # coordinator's to do and the row hands no command: the release the
+            # classifier names for a held pointer would launch over the
+            # admission pass's own release path, and the wait ends without it.
+            #
+            # A request parked before launch is back in the lane's queue, which
+            # is the word and the cell a reader already reads a queued request
+            # in; a run the lane's window stopped once it had launched reads as
+            # the wait it is rather than claiming a slot it already held.
+            next_action = None
+            state = "queued" if stored_phase == "held" else WAITING_STATUS
+    elif held_row:
+        # A held phase with no readable hold record keeps the pane's own held
+        # word, which the vocabulary already files as a wait, and hands no
+        # command: the release the classifier names would launch over the
+        # admission pass's release path, and nothing on the row says a
+        # coordinator's move is what ends the wait.
+        next_action = None
+        if stored_phase != "held":
+            state = WAITING_STATUS
 
     # A dead worker is a row on the snapshot that observes the death, never one
     # held behind the stall window. The deferrals above read a non-terminal
@@ -1225,6 +1577,11 @@ def _watch_verdict(
         recovery_classification = "paused"
         recovery_verb = RECOVERY_VERBS["paused"]
         lifting_condition = detail
+    if held_clause:
+        # A coordinator's hold names the act that lifts it, on the row a reader
+        # acts from rather than in a separate command surface.
+        detail = held_clause
+        lifting_condition = held_clause
 
     return {
         "state": state,
@@ -1232,6 +1589,10 @@ def _watch_verdict(
         "recovery_classification": recovery_classification,
         "recovery": recovery_verb,
         "lifting_condition": lifting_condition,
+        # The command this row hands a reader, decided once here: the
+        # classifier's own for every row, the coordinator's act for a hold of
+        # its own, and none for a hold the queue or the clock lifts.
+        "next_action": next_action,
         # The stream-silence inputs, carried so a producer that reuses a
         # snapshot can re-derive the same reading from the stream's stat alone.
         # ``stall_base_state`` is None for a verdict the silence reading never
@@ -1308,6 +1669,10 @@ def _snapshot_reuse_key(record: Mapping[str, Any]) -> str | None:
         parts.append(
             f"promote={_file_identity(promote) if promote is not None else 'absent'}"
         )
+    from .promotion_requests import _receipt_path, _request_path
+
+    parts.append(f"promotion-request={_file_identity(_request_path(run_id))}")
+    parts.append(f"promotion-receipt={_file_identity(_receipt_path(run_id))}")
     return "|".join(parts)
 
 
@@ -1447,6 +1812,17 @@ def _compute_watch_snapshot(
         stale_after_seconds=stall_seconds,
         **({"pointers": pointers} if pointers is not None else {}),
     )
+    from reckon.crew.stage_receipts import observe_review_delivery
+    observe_review_delivery(pointer, pointers=pointers)
+    # Which repair records count as open is the reflex's own question, so it is
+    # asked of the owner of that reading rather than answered here. The import
+    # is deferred because this module is reachable from the reflex's own import
+    # chain, and only the call needs the answer.
+    from reckon.crew import obligations
+
+    repair_round = obligations._repair_round_in_flight(
+        pointer, process_alive=row.get("process_alive")
+    )
     verdict = row["fleet_verdict"]
 
     # The absolute instants the silence is measured between, resolved once
@@ -1503,12 +1879,19 @@ def _compute_watch_snapshot(
         # way — the snapshot carries the raw spelling and the renderer narrows
         # it to fit its column.
         "role": _pointer_role(pointer),
+        # Whether a repair round for this run has a worker answering it, so the
+        # counter can read a run that the review sent back to work as working
+        # while its manifest still carries the verdict it delivered. Which
+        # records count as open is the reflex's own question, so it is asked of
+        # the owner of that reading rather than answered a second time here.
+        "repair_in_flight": repair_round is not None,
         # Whether this run is a shadow of a committed primary. Dispatch decides
         # shadowship at launch and writes the lineage onto the pointer; the
         # renderer dims a shadow row end to end from that fact, so the snapshot
         # carries it under its own name rather than as a flattened display flag.
         "lineage": pointer.get("lineage"),
         "state": verdict["state"],
+        "delivery": row.get("delivery"),
         "classification": row["classification"],
         "process_alive": row["process_alive"],
         "liveness_proven": row["liveness_proven"],
@@ -1531,7 +1914,7 @@ def _compute_watch_snapshot(
         "recovery": verdict["recovery"],
         "lifting_condition": verdict.get("lifting_condition"),
         "resets_at": row.get("resets_at"),
-        "next_action": row.get("next_action"),
+        "next_action": verdict.get("next_action"),
         # The full, untruncated reason. The bounded clause a reader can act on
         # is derived from it at render time, so nothing here is shaped for the
         # grid before it is stored.
@@ -1871,14 +2254,25 @@ def _stuck_count(rows: Iterable[Mapping[str, Any]]) -> int:
 
 def _fleet_counts(
     snapshots: Mapping[str, Mapping[str, Any]], *, session: str | None = None
-) -> dict[str, int]:
-    """Partition the fleet into working, blocked, delivered, and waiting work.
+) -> dict[str, Any]:
+    """Partition the fleet into working, reviewing, blocked, delivered and waiting.
 
-    ``working`` is what a reader means by a live worker. ``blocked`` is
-    everything that has stopped progressing and needs the coordinator, a stall
-    or a failure included. ``unpromoted`` is delivered work waiting on a gate.
-    ``waiting`` is a run whose declared external condition remains outstanding.
-    A run that leaves the fleet is in none of them.
+    ``working`` is what a reader means by a live implementation worker, and
+    ``reviewing`` is the review work running beside it: a run launched to review
+    counts here rather than in ``working``, so a session whose only live run is
+    a review does not read as idle. ``blocked`` is everything that has stopped
+    progressing and needs the coordinator, a stall or a failure included.
+    ``unpromoted`` is delivered work waiting on a gate. ``waiting`` is a run
+    whose declared external condition remains outstanding. A run that leaves the
+    fleet is in none of them.
+
+    A delivered run whose repair round holds a live attempt counts as working,
+    not delivered: the review sent it back to work, and its manifest keeps the
+    verdict it delivered until it delivers again.
+
+    ``reviewing`` joins the result only when some run is reviewing, the same way
+    ``waiting`` does, so a fleet with no review carries no zero for a reader to
+    misinterpret and the figure's presence itself says reviews are running.
 
     ``session`` narrows the counted population to the runs that session owns,
     using the ownership already persisted on each snapshot; omitted, the
@@ -1888,26 +2282,53 @@ def _fleet_counts(
     """
     rows, _peers = _partition_session_rows(snapshots.values(), session)
     states = [str(snapshot.get("state") or "") for snapshot in rows]
-    held = sum(
-        str(snapshot.get("recovery_classification") or "") == "held"
+    reviewing = sum(
+        str(snapshot.get("state") or "") in FLEET_WORKING_STATES
+        and str(snapshot.get("role") or "") == REVIEW_ROLE
         for snapshot in rows
     )
+    # A delivered run under a live repair attempt is at work again. Only an
+    # opening repair record says the round has a worker; the record's own
+    # meaning, including which statuses are openings, belongs to the reflex's
+    # writer and is read from it here rather than restated.
+    repairing = sum(
+        str(snapshot.get("state") or "") in FLEET_UNPROMOTED_STATES
+        and bool(snapshot.get("repair_in_flight"))
+        for snapshot in rows
+    )
+    buckets = [_bucket_of(state) for state in states]
     counts = {
-        "working": sum(state in FLEET_WORKING_STATES for state in states),
-        "blocked": sum(
-            str(snapshot.get("state") or "") in FLEET_BLOCKED_STATES
-            and str(snapshot.get("recovery_classification") or "") != "held"
-            for snapshot in rows
-        ),
-        "unpromoted": sum(state in FLEET_UNPROMOTED_STATES for state in states),
+        "working": sum(state in FLEET_WORKING_STATES for state in states)
+        - reviewing
+        + repairing,
+        # The two cells a reader acts from are the bucket the row is drawn in,
+        # read from the renderer's own partition rather than restated here: the
+        # word and the figure cannot disagree if there is one statement of
+        # which bucket a state belongs to.
+        "blocked": sum(bucket == _HELP_CELL for bucket in buckets),
+        "unpromoted": sum(state in FLEET_UNPROMOTED_STATES for state in states)
+        - repairing,
     }
-    waiting = held
-    for snapshot in rows:
-        if str(snapshot.get("recovery_classification") or "") == "held":
-            continue
-        state = str(snapshot.get("state") or "")
-        if state in FLEET_WAITING_STATES or state in FLEET_PARKED_STATES:
-            waiting += 1
+    if any("delivery" in row and row["delivery"] is not None for row in rows):
+        from .recovery_classification import delivery_summary
+
+        delivery = delivery_summary(rows)
+        counts["unpromoted"] = delivery["delivered"]
+        counts["promotion_queued"] = delivery["promotion_queued"]
+        counts["oldest_promotion_position"] = delivery["oldest_promotion_position"]
+        counts["oldest_promotion_requested_at"] = delivery["oldest_promotion_requested_at"]
+    if reviewing:
+        counts["reviewing"] = reviewing
+    # A row's bucket is the word it is drawn with, read from the state this
+    # module already decided, so the counters and the pane cannot disagree about
+    # a held run. A hold whose lifting move is the coordinator's is drawn in the
+    # pane's help cell and counted there; one the queue or the clock lifts is
+    # drawn waiting and counted here.
+    waiting = sum(
+        1
+        for state, bucket in zip(states, buckets, strict=True)
+        if bucket == _WAIT_CELL or state in FLEET_PARKED_STATES
+    )
     if waiting:
         counts["waiting"] = waiting
     return counts
@@ -2262,16 +2683,24 @@ def fleet_transitions(
             (departed, str(known[run_id]["state"]), _departure_word(run_id, recorded))
         )
     for run_id in (item for item in current if item not in known):
+        # A launched run still opens as a dispatch, so the pane's arrival and
+        # start rows keep the pair they were built around. A request that has
+        # not launched opens in the state its own pointer supports instead:
+        # painting every arrival as dispatched drew held and parked work as a
+        # worker that had started.
+        observed = str(current[run_id].get("state") or "")
+        arrival_state = "dispatched" if observed in FLEET_WORKING_STATES else observed
+        arrival_state = arrival_state or "dispatched"
         changes.append(
             (
                 {
                     **current[run_id],
-                    "state": "dispatched",
+                    "state": arrival_state,
                     "detail": "",
                     "needs_help_complete": None,
                 },
                 None,
-                "dispatched",
+                arrival_state,
             )
         )
     for run_id in (item for item in current if item in known):
@@ -2364,7 +2793,7 @@ def handover_run_ids(project: str) -> set[str]:
 
 def _session_fleet_counts(
     snapshots: Mapping[str, Mapping[str, Any]],
-) -> dict[str, dict[str, int]]:
+) -> dict[str, dict[str, Any]]:
     """The fleet partition per owning session, unowned rows under ``""``.
 
     Each figure is the partition ``_fleet_counts`` takes for that session, so a
@@ -2373,7 +2802,7 @@ def _session_fleet_counts(
     ``""`` entry, which counts only the rows no session owns.
     """
     owners = {str(snapshot.get("session") or "") for snapshot in snapshots.values()}
-    counts: dict[str, dict[str, int]] = {}
+    counts: dict[str, dict[str, Any]] = {}
     for owner in owners | {""}:
         rows, _peers = _partition_session_rows(snapshots.values(), owner)
         counts[owner] = {
@@ -2525,7 +2954,14 @@ def _watch_transition(
         "process_alive": snapshot.get("process_alive"),
         "liveness_proven": snapshot.get("liveness_proven"),
         "working": counts["working"],
+        # Review work running beside the implementation workers. It rides the
+        # event even at zero so every row renders the same five counter cells
+        # and the columns after them never move.
+        "reviewing": counts.get("reviewing", 0),
         "blocked": counts["blocked"],
+        "promotion_queued": counts.get("promotion_queued", 0),
+        "oldest_promotion_position": counts.get("oldest_promotion_position"),
+        "oldest_promotion_requested_at": counts.get("oldest_promotion_requested_at"),
         "unpromoted": counts["unpromoted"],
         # The stuck count sits beside the bucket counters rather than inside
         # them: a stuck request keeps the cell its phase belongs to, so this
@@ -2604,6 +3040,8 @@ def _watch_transition(
             streams_root=streams_root,
         )
     )
+    from reckon.crew.stage_receipts import note_delivery
+    note_delivery(event)
     return event
 
 
@@ -2865,7 +3303,27 @@ def _other_project_producer_is_live(project: str, session: str, stamp: str) -> b
     return reading != obligation_snapshot.NO_PRODUCER
 
 
-def _session_counts_in_other_projects(project: str, session: str) -> dict[str, int]:
+def _oldest_promotion_fields(readings: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
+    """Carry the position of the earliest dated request across project totals."""
+    dated = [
+        (parse_utc(row.get("oldest_promotion_requested_at")), row) for row in readings
+    ]
+    if any(row.get("promotion_queued") and stamp is None for stamp, row in dated):
+        return {
+            "oldest_promotion_requested_at": None,
+            "oldest_promotion_position": None,
+        }
+    dated = [(stamp, row) for stamp, row in dated if stamp is not None]
+    if not dated:
+        return {}
+    _stamp, oldest = min(dated, key=lambda item: item[0])
+    return {
+        "oldest_promotion_requested_at": oldest["oldest_promotion_requested_at"],
+        "oldest_promotion_position": oldest.get("oldest_promotion_position"),
+    }
+
+
+def _session_counts_in_other_projects(project: str, session: str) -> dict[str, Any]:
     """The session's totals in every watched project but this row's own.
 
     A follower scoped to one session relays one project's stream, but the
@@ -2885,7 +3343,15 @@ def _session_counts_in_other_projects(project: str, session: str) -> dict[str, i
     if not project or not session:
         return {}
     own = watch_stream_path(project)
-    total = {"working": 0, "blocked": 0, "unpromoted": 0, "stuck": 0}
+    total = {
+        "working": 0,
+        "reviewing": 0,
+        "blocked": 0,
+        "promotion_queued": 0,
+        "unpromoted": 0,
+        "stuck": 0,
+    }
+    promotion_readings = []
     waiting_seen = False
     waiting = 0
     stamp: str | None = None
@@ -2916,6 +3382,7 @@ def _session_counts_in_other_projects(project: str, session: str) -> dict[str, i
             stamp = _running_code_stamp()
         if not _other_project_producer_is_live(other, session, stamp):
             continue
+        promotion_readings.append(entry)
         for key in total:
             total[key] += int(entry.get(key) or 0)
         if "waiting" in entry:
@@ -2923,10 +3390,11 @@ def _session_counts_in_other_projects(project: str, session: str) -> dict[str, i
             waiting += int(entry.get("waiting") or 0)
     if waiting_seen:
         total["waiting"] = waiting
+    total.update(_oldest_promotion_fields(promotion_readings))
     return total
 
 
-def _live_project_session_counts(project: str, session: str) -> dict[str, int]:
+def _live_project_session_counts(project: str, session: str) -> dict[str, Any]:
     """Re-select one project's live fleet for a session, for a legacy event.
 
     An event written before the per-session figures existed carries none, so the
@@ -2973,10 +3441,10 @@ def _scoped_watch_event(event: Mapping[str, Any], session: str) -> dict[str, Any
     nothing, and neither does a project whose watcher has stopped. A follower
     with no session is one project's pane and keeps that project's counts.
 
-    ``working``/``blocked``/``unpromoted`` (and ``waiting``) carry the
-    session-wide figures the pane renders; the same row's own-project figures
-    travel beside them under ``project_*``, so a consumer of either reading
-    loses nothing.
+    ``working``/``reviewing``/``blocked``/``unpromoted`` (and ``waiting``)
+    carry the session-wide figures the pane renders; the same row's own-project
+    figures travel beside them under ``project_*``, so a consumer of either
+    reading loses nothing.
     """
     sessions = event.get("session_counts")
     if isinstance(sessions, Mapping):
@@ -2991,7 +3459,9 @@ def _scoped_watch_event(event: Mapping[str, Any], session: str) -> dict[str, Any
 
     project_counts = {
         "working": int(own.get("working") or 0),
+        "reviewing": int(own.get("reviewing") or 0),
         "blocked": int(own.get("blocked") or 0),
+        "promotion_queued": int(own.get("promotion_queued") or 0),
         "unpromoted": int(own.get("unpromoted") or 0),
         "stuck": int(own.get("stuck") or 0),
     }
@@ -2999,20 +3469,34 @@ def _scoped_watch_event(event: Mapping[str, Any], session: str) -> dict[str, Any
         project_counts["waiting"] = int(own.get("waiting") or 0)
 
     total = dict(project_counts)
+    oldest_promotion = _oldest_promotion_fields([own])
     if session:
         elsewhere = _session_counts_in_other_projects(
             str(event.get("project") or ""), session
         )
-        for key in ("working", "blocked", "unpromoted", "stuck"):
+        for key in (
+            "working",
+            "reviewing",
+            "blocked",
+            "promotion_queued",
+            "unpromoted",
+            "stuck",
+        ):
             total[key] = total.get(key, 0) + elsewhere.get(key, 0)
+        oldest_promotion = _oldest_promotion_fields([own, elsewhere])
         if "waiting" in elsewhere:
             total["waiting"] = total.get("waiting", 0) + elsewhere["waiting"]
 
     scoped = dict(event)
     scoped["working"] = total.get("working", 0)
+    scoped["reviewing"] = total.get("reviewing", 0)
     scoped["blocked"] = total.get("blocked", 0)
+    scoped["promotion_queued"] = total.get("promotion_queued", 0)
+    scoped["oldest_promotion_position"] = oldest_promotion.get("oldest_promotion_position")
+    scoped["oldest_promotion_requested_at"] = oldest_promotion.get("oldest_promotion_requested_at")
     scoped["unpromoted"] = total.get("unpromoted", 0)
     scoped["project_working"] = project_counts.get("working", 0)
+    scoped["project_reviewing"] = project_counts.get("reviewing", 0)
     scoped["project_blocked"] = project_counts.get("blocked", 0)
     scoped["project_unpromoted"] = project_counts.get("unpromoted", 0)
     # The stuck figure overlaps the buckets rather than joining them, so it is
@@ -3368,6 +3852,7 @@ def watch_ticker(
 
     def _wait(interval: float) -> bool:
         """Sleep, bounded by the lease; report whether the seat has ended."""
+        watch_record["last_stage"] = "waiting"
         if runs.end_lapsed_watch_seat(project):
             return True
         remaining = _lease_remaining()
@@ -3418,6 +3903,9 @@ def watch_ticker(
             }
             return
 
+        # A registration provider may expose an opaque handle; only a mutable
+        # producer record can carry stage annotations back to its exit writer.
+        watch_record = watcher if isinstance(watcher, dict) else {}
         # The state each live run's predecessor last published. Taking the seat
         # runs this producer's first stream sweep, which reads the seed before it
         # appends and keeps it on the producer record; the ticker takes that one
@@ -3476,6 +3964,7 @@ def watch_ticker(
         while True:
             try:
                 with runs._producer_tick(), _classification_input_tick():
+                    watch_record["last_stage"] = "lease-check"
                     if not runs.renew_watch_host_lease(project):
                         return
                     # An unlinked seat record is rewritten before anything else, so a
@@ -3485,16 +3974,20 @@ def watch_ticker(
                         return
                     if runs.end_lapsed_watch_seat(project):
                         return
+                    watch_record["last_stage"] = "polling"
                     # Every stream the tick reads is counted, so the registration
                     # carries what this poll actually parsed. An unchanged fleet
                     # resumes from every cursor and parses nothing, which is the value
                     # a reader uses to see the poll is stat-only rather than re-reading
-                    # the whole of every transcript. The admission check's own reads are
-                    # counted and reset on the same beat, so the two counters describe
-                    # one poll each.
+                    # the whole of every transcript. The stream counter is taken and
+                    # reset by the registration below rather than here, because the
+                    # transition pass that follows it in the same loop reads streams
+                    # too: a reset at the top of the tick would drop those bytes, and a
+                    # poll would report less than it parsed. The admission check's own
+                    # counter is reset here, so each of its reads lands in exactly one
+                    # poll.
                     from reckon import _backends
 
-                    _backends.take_parsed_stream_bytes()
                     take_admission_stream_bytes()
                     # The crew home's fingerprint. The listing, the run-directory
                     # walk and the git sweeps fire only when it moves; between moves the
@@ -3580,6 +4073,7 @@ def watch_ticker(
                             flush=True,
                         )
                     moment = _utc_seconds()
+                    watch_record["last_stage"] = "classifying"
                     if sweep:
                         beat_passes = runs.admission_pass_history()
                         current = {
@@ -3619,6 +4113,7 @@ def watch_ticker(
                         poll_interval_current = poll_interval
                     update_watch_registration(
                         project,
+                        last_stage=watch_record["last_stage"],
                         poll_interval_seconds=poll_interval_current,
                         bytes_parsed_last_poll=_backends.take_parsed_stream_bytes(),
                     )
@@ -3631,6 +4126,7 @@ def watch_ticker(
                         continue
 
                     counts = _transition_counts(current)
+                    watch_record["last_stage"] = "publishing"
                     if not fleet_seen:
                         fleet_seen = True
                         known = {
@@ -3748,16 +4244,20 @@ def watch_follow(
             }
             return
 
+        watch_record = watcher if isinstance(watcher, dict) else {}
         while True:
+            watch_record["last_stage"] = "polling"
             pointers = list_live(project=project)
             if not pointers:
                 if fleet_seen:
                     return
+                watch_record["last_stage"] = "waiting"
                 sleeper(poll_interval)
                 continue
             fleet_seen = True
 
             moment = _utc_seconds()
+            watch_record["last_stage"] = "classifying"
             classified = [
                 (pointer, classify_pointer(pointer, now_seconds=moment))
                 for pointer in pointers
@@ -3798,6 +4298,7 @@ def watch_follow(
                             }
                             break
                 else:
+                    watch_record["last_stage"] = "waiting"
                     sleeper(poll_interval)
 
 
@@ -3807,6 +4308,7 @@ def recover(
     config: Mapping[str, Any] | None = None,
     launcher: Callable[..., Any] | None = None,
     dispatch_reviews: bool = False,
+    any_session: bool = False,
 ) -> dict[str, Any]:
     """Classify live pointers; launch reviews only with --dispatch-reviews and --project.
 
@@ -3821,6 +4323,10 @@ def recover(
     reaches only runs whose dispatching session still has a live follower;
     otherwise the review remains with its coordinator. The sweep prefers the
     local lane unless the reviewed node explicitly declared another backend.
+
+    ``any_session`` drops the live-follower condition. The admit service sweeps
+    with it, because a delivered run whose coordinator has stopped still owes a
+    review before it can land, and nothing else would dispatch it.
     """
     from reckon.crew.dispatch import observe
 
@@ -3869,7 +4375,10 @@ def recover(
     if dispatch_reviews:
         for record in scoring:
             session = str(record.get("session") or "")
-            if not session or not runs.follower_state(project, session).get("live"):
+            if not any_session and (
+                not session
+                or not runs.follower_state(project, session).get("live")
+            ):
                 awaiting_coordinator.append(
                     {
                         "run_id": str(record.get("run_id") or ""),
@@ -3934,6 +4443,7 @@ from .recovery_review_dispatch import (  # noqa: E402
 from .recovery_vocabulary import (  # noqa: E402
     RECOVERY_CLASSES,
     RECOVERY_VERBS,
+    REVIEW_ROLE,
     WAITING_STATUS,
 )
 from .recovery_wait import (  # noqa: E402

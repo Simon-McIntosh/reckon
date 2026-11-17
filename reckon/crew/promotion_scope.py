@@ -2,15 +2,20 @@ from __future__ import annotations
 
 # Imports below the definitions resolve sibling cycles after names are bound.
 # ruff: noqa: E402
+import difflib
+import hashlib
 import html
 import json
 import os
 import re
 import subprocess
 import sys
+import tempfile
+import threading
 import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import UTC
 from pathlib import Path
 from typing import Any
@@ -32,6 +37,7 @@ from reckon.crew.node import (
 from reckon.crew.plan_review import RUN_COMMENT_PREFIX
 from reckon.crew.recovery import _resolve_commit
 from reckon.crew.reports import (
+    _citation_tokens,
     parse_manifest,
     path_within_declared_scope,
 )
@@ -57,6 +63,90 @@ from reckon.crew.runs import (
 )
 
 _ZERO_COUNT = re.compile(r"0+")
+_BRANCH_WRITES: ContextVar[dict | None] = ContextVar("promotion_branch_writes", default=None)
+_BRANCH_WRITER_CHANGED = threading.Condition()
+
+
+@contextmanager
+def _branch_write_scope():
+    """Hold a branch claim only between the first write and its commit."""
+    if _BRANCH_WRITES.get() is not None:
+        yield
+        return
+    token = _BRANCH_WRITES.set({})
+    try:
+        yield
+    finally:
+        _release_branch_write()
+        _BRANCH_WRITES.reset(token)
+
+
+def _branch_write_key(checkout: Path) -> str:
+    from reckon.git_head import _common_git_directory, _git_directory
+
+    directory = _git_directory(checkout)
+    common, branch = checkout.resolve(), "HEAD"
+    if directory is not None:
+        common = directory.resolve()
+        head = directory / "HEAD"
+        if head.is_file():
+            contents = head.read_text().strip()
+            if contents.startswith("ref:"):
+                common = _common_git_directory(directory).resolve()
+                branch = contents
+    return "promotion-branch-" + hashlib.sha256(f"{common}\n{branch}".encode()).hexdigest()[:24]
+
+
+def _acquire_branch_write(checkout: Path | None) -> None:
+    scope = _BRANCH_WRITES.get()
+    if scope is None or checkout is None or scope.get("lease") is not None:
+        return
+    from reckon.crew.promotion import _PromotionLeaseRenewer
+    from reckon.crew.promotion_requests import (
+        PREPARATION_DONE,
+        PROMOTION_STAGE,
+        claim_promotion_lease,
+    )
+
+    release_preparation = PREPARATION_DONE.get()
+    if release_preparation is not None:
+        release_preparation()
+    mark_stage = PROMOTION_STAGE.get()
+    if mark_stage is not None:
+        mark_stage("branch-wait")
+    name = _branch_write_key(checkout)
+    deadline = time.monotonic() + 300
+    with _BRANCH_WRITER_CHANGED:
+        while (lease := claim_promotion_lease(name)) is None:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise CrewError(f"branch-writing lease remained held for {checkout}")
+            _BRANCH_WRITER_CHANGED.wait(min(2.0, remaining))
+    renewer = _PromotionLeaseRenewer(lease)
+    renewer.start()
+    scope.update(lease=lease, renewer=renewer)
+    if mark_stage is not None:
+        mark_stage("branch-write")
+
+
+def _release_branch_write() -> None:
+    scope = _BRANCH_WRITES.get()
+    if not scope or scope.get("lease") is None:
+        return
+    from reckon.crew.promotion_requests import PROMOTION_STAGE, release_promotion_lease
+
+    scope.pop("renewer").stop()
+    with _BRANCH_WRITER_CHANGED:
+        release_promotion_lease(scope.pop("lease"))
+        _BRANCH_WRITER_CHANGED.notify_all()
+    mark_stage = PROMOTION_STAGE.get()
+    if mark_stage is not None:
+        mark_stage("bookkeeping")
+
+
+def _branch_plan_text_edits() -> dict:
+    scope = _BRANCH_WRITES.get()
+    return scope.setdefault("plan_text_edits", {}) if scope is not None else {}
 
 
 def _manifest_cites_a_commit(
@@ -158,12 +248,12 @@ def _changed_paths_inside_repository(
     commit that contains it. Asking the narrower question is what lets a
     finished run that has no commit to give be reconciled.
 
-    A relative path is repository-relative by the manifest's own convention, so
-    a relative path resolves against the repository root; an absolute path
-    resolves as written. A path anywhere else — a store directory, a scratch
-    path under the crew home — is outside and requires no commit here. When the
-    run records no repository to resolve against, every named path is returned,
-    which is the guard's prior behaviour.
+    An absolute path resolves as written. A relative path belongs to the
+    repository unless a commitless run has that file inside its own durable run
+    directory and neither repository nor worktree has a competing path. This
+    reads run-local log names the same way as manifest log citations, without
+    letting a missing file, an escaping symlink or a repository file stand in
+    for an external deliverable. Without a repository root every item is kept.
     """
     items = [str(item).strip() for item in (manifest.get("changed_paths") or ())]
     root = str(record.get("repo") or record.get("worktree") or "").strip()
@@ -173,6 +263,15 @@ def _changed_paths_inside_repository(
         base = Path(root).expanduser().resolve()
     except (OSError, RuntimeError):
         return tuple(items)
+    from reckon.crew.recovery import _pointer_role
+
+    run_id = str(record.get("run_id") or "").strip()
+    directory = (
+        run_dir(run_id).resolve()
+        if run_id and _pointer_role(record) in _COMMITLESS_ROLES
+        else None
+    )
+    worktree = Path(str(record.get("worktree") or base)).expanduser()
     inside: list[str] = []
     for item in items:
         raw = Path(item).expanduser()
@@ -189,6 +288,18 @@ def _changed_paths_inside_repository(
         elif ".." in raw.parts:
             continue
         else:
+            if directory is not None:
+                try:
+                    artifact = (directory / raw).resolve()
+                    if (
+                        artifact.is_relative_to(directory)
+                        and artifact.is_file()
+                        and not (base / raw).exists()
+                        and not (worktree / raw).exists()
+                    ):
+                        continue
+                except (OSError, RuntimeError):
+                    pass
             inside.append(item)
     return tuple(inside)
 
@@ -269,11 +380,25 @@ def _require_commit_for_changed_manifest(
 
 
 def _resolve_commits(*, cwd: Path, revisions: Iterable[str], run_id: str) -> list[str]:
-    """Resolve every recorded revision to its canonical commit object id."""
-    commits = []
+    """Resolve every recorded revision to its canonical commit object id.
+
+    An entry's ids are read as tokens: a revision followed by the subject it was
+    committed under, and several revisions in one entry, both resolve to the
+    commits they name, and the delivery check reads its citations the same way,
+    so a manifest the check accepted is not refused here for spelling its
+    citation as a log line. An entry whose leading revision admission reads by
+    its own rule is read through that rule as a second attempt, so both
+    spellings resolve.
+    """
+    from reckon.crew.queue_landing import _delivered_revision
+
+    commits: list[str] = []
     for revision in revisions:
-        commit = _resolve_commit(cwd, revision)
-        if not commit:
+        resolved = _entry_commits(cwd, revision)
+        if not resolved:
+            candidate = _delivered_revision([revision]) or revision
+            resolved = _entry_commits(cwd, str(candidate))
+        if not resolved:
             # A commit that resolves somewhere else is not a bad sha, it is a
             # node whose write target was not its run repository — dispatched
             # without --repo and pointed at a foreign checkout by prose. Naming
@@ -290,10 +415,25 @@ def _resolve_commits(*, cwd: Path, revisions: Iterable[str], run_id: str) -> lis
             )
             raise CrewError(
                 f"run {run_id!r} commit {revision!r} does not resolve to a "
-                f"commit object in the run repository ({cwd}); {remedy}"
+                f"commit object in the run repository ({cwd}); {remedy}. "
+                "Accepted forms: bare commit ids separated by spaces or commas, "
+                "list or JSON-list entries containing an id optionally followed "
+                "by its subject, or list entries written as 'commit: <id>'"
             )
-        commits.append(commit)
+        for commit in resolved:
+            if commit not in commits:
+                commits.append(commit)
     return commits
+
+
+def _entry_commits(cwd: Path, entry: str) -> list[str]:
+    """The commits one citation entry names, in the order it writes them."""
+    found: list[str] = []
+    for candidate in [entry, *_citation_tokens(str(entry))]:
+        resolved = _resolve_commit(cwd, candidate)
+        if resolved and resolved not in found:
+            found.append(resolved)
+    return found
 
 
 def _promoted_revision(run_tree: Path, commit_list: Sequence[str]) -> str:
@@ -442,6 +582,34 @@ def _scope_worktree(record: Mapping[str, Any], tree: Path) -> Path:
     return Path(str(record.get("worktree") or tree))
 
 
+def _changed_artifacts_needing_acceptance(
+    changed_paths: Iterable[str],
+    *,
+    record: Mapping[str, Any],
+    tree: Path,
+) -> tuple[str, ...]:
+    """Return changed paths whose class a merge cannot reconcile.
+
+    A declared write path is a hint rather than a boundary, so a run that
+    delivers a source file beside the one it declared needs no acceptance: its
+    worktree is its own and the merge reconciles the edit. What still needs one
+    is the class git cannot merge — a plan document, generated state, a
+    cumulative evidence record, a figure topic directory, a dependency lock or a
+    binary receipt — because a second writer of one of those replaces the first
+    with nothing left over: no commit to rebase, no conflict to resolve.
+
+    The classes are read through the module that decides them for a claim and a
+    fence, so the three surfaces cannot disagree about which paths still fence.
+    """
+    from reckon.crew.runs import _shared_write_paths
+
+    repository = Path(str(record.get("repo") or tree))
+    shared = _shared_write_paths(str(record.get("project") or ""), repository)
+    return tuple(
+        str(path) for path in changed_paths if shared.exclusive_pattern(str(path))
+    )
+
+
 def _outside_declared_scope(
     changed_paths: Iterable[str],
     declared_paths: Iterable[str],
@@ -555,6 +723,9 @@ def _accepted_scope_exceptions(
     worktree it edits nothing, so its claim protects nothing until it launches.
     Every admission is written on the acceptance, and the peer's claim and
     pointer are left untouched.
+
+    ``outside`` is the set whose acceptance the landing cannot proceed without.
+    A companion source file needs no acceptance at all, so it never reaches here.
     """
     from reckon.crew.dispatch_claims import stopped_with_terminal_manifest
 
@@ -594,12 +765,6 @@ def _accepted_scope_exceptions(
         raise CrewError(
             f"run {run_id!r} changed paths outside its declared "
             f"write scope: {', '.join(unaccepted)}"
-        )
-    unchanged = sorted(normalized.keys() - outside_set)
-    if unchanged:
-        raise CrewError(
-            "accepted paths must name changed paths outside the declared write "
-            f"scope; these do not: {', '.join(unchanged)}"
         )
 
     shared_files = _shared_write_paths(str(record.get("project") or ""), repository)
@@ -887,13 +1052,17 @@ def _repository_tree_boundary_violations(
         # An uncommitted edit on a declared path the project publishes as
         # shareable admits a concurrent editor, so it says nothing about this
         # run's boundary; only a declared path off that list can violate it.
-        # A path a live peer holds under its own declaration is the peer's work,
-        # not this run's, so it is exempt too; a path the peer does not declare
-        # stays charged here.
+        # The membership test is the declaration's own: a claim on a source path
+        # shares by default, and reading that default here would exempt every
+        # path a merge can reconcile and leave this guard with nothing to
+        # refuse — which is how a stray source edit went unreported, since every
+        # source and test path shares. A path a live peer holds under its own
+        # declaration is the peer's work, not this run's, so it is exempt too; a
+        # path the peer does not declare stays charged here.
         changed_paths = {
             changed
             for _, changed in _snapshot_entries(after) - _snapshot_entries(before)
-            if not _claim_paths_share(shared_files, changed, changed)
+            if changed not in shared_files
             and any(
                 Path(changed) == root or Path(changed).is_relative_to(root)
                 for root in declared_roots
@@ -1296,16 +1465,41 @@ def _shadow_stream_contamination(
 
 
 def _declared_manifest_commits(record: Mapping[str, Any]) -> list[str]:
-    """Commits a run's durable manifest declares, for landing-record detection."""
+    """Commits a run's durable manifest declares, for landing-record detection.
+
+    A commitless role writes what it did into the ``commits`` line as prose —
+    ``none — this node writes a review record outside the repository`` — and
+    the parsed field keeps that sentence where a citation list would be. Every
+    caller resolves what this reader returns against the run's repository, so
+    the sentence arrived as a citation naming no object: a read-only run was
+    refused as an unresolvable commit, and ``--no-commit`` did not reach that
+    check because it is about scope rather than about the ledger's commit list.
+    The declaration parser is the one authority on whether the field declares
+    an absence, and it is asked here, so one reader decides what the line says
+    for the landing record, the figure twin check and the boundary check alike.
+    A role that commits keeps the entry-by-entry reading, which is why the
+    per-entry declaration is asked as well: ``commits: none (repository worktree
+    remained clean)`` is the record stating it has no commit, and it reached the
+    figure twin check as a citation naming no object — refused by its own
+    declaration, which is the one value in this field no store can be asked
+    about. An entry that opens with an absence word and continues with a
+    revision (``none 7892cb69``) is not that declaration, so it stays here and
+    is still refused by value.
+    """
     manifest_path = str(record.get("manifest_path") or "")
     if not manifest_path:
         return []
     try:
-        declared = parse_manifest(Path(manifest_path).read_text(encoding="utf-8"))
+        text = Path(manifest_path).read_text(encoding="utf-8")
+        declared = parse_manifest(text)
     except (OSError, KeyError, ValueError):
         return []
+    if _commits_field_declares_absence(text, record):
+        return []
     return [
-        str(sha).strip() for sha in (declared.get("commits") or []) if str(sha).strip()
+        str(sha).strip()
+        for sha in (declared.get("commits") or [])
+        if str(sha).strip() and not _declares_absent_commits(str(sha))
     ]
 
 
@@ -1362,6 +1556,43 @@ def _worker_authored_landing_record(
     return shown.returncode == 0 and f'data-id="{comment_id}"' in shown.stdout
 
 
+def _landing_comment_update(
+    state: Mapping[str, Any],
+    *,
+    section: str,
+    run_id: str,
+    narrative: str,
+    author: str,
+    when: str,
+) -> tuple[dict[str, Any], str, dict[str, str], dict[str, Any] | None]:
+    """Prepare one idempotent comment append without changing the input state."""
+    anchor = section_anchor(section)
+    comment = {
+        "id": f"{RUN_COMMENT_PREFIX}{re.sub(r'[^A-Za-z0-9._-]+', '-', run_id)}",
+        "who": author,
+        "when": when,
+        "body": f"<p>{html.escape(narrative)}</p>",
+    }
+    comments = {
+        key: list(items) for key, items in (state.get("comments") or {}).items()
+    }
+    items = comments.setdefault(anchor, [])
+    existing = next(
+        (item for item in items if str(item.get("id") or "") == comment["id"]),
+        None,
+    )
+    if existing is None:
+        items.append(comment)
+    elif html.unescape(str(existing.get("body") or "")) != html.unescape(
+        comment["body"]
+    ):
+        items[items.index(existing)] = {**existing, **comment}
+    payload = {**state, "comments": comments}
+    if str(state.get("status") or "").strip().lower() in {"draft", "pending"}:
+        payload["status"] = "in-progress"
+    return payload, anchor, comment, existing
+
+
 def _record_landing_comment(
     *,
     project: str,
@@ -1401,40 +1632,34 @@ def _record_landing_comment(
     body_text = landing or narrative
     if not body_text or not plan:
         return {"recorded": False, "reason": "empty_narrative"}
-    comment_id = f"{RUN_COMMENT_PREFIX}{re.sub(r'[^A-Za-z0-9._-]+', '-', run_id)}"
-    anchor = section_anchor(section)
-    desired_body = f"<p>{html.escape(body_text)}</p>"
-    worker_recorded = bool(
-        not landing
-        and worker_tree
-        and _worker_authored_landing_record(
-            tree=worker_tree,
-            commits=worker_commits,
-            project=project,
-            plan=plan,
-            comment_id=comment_id,
-        )
-    )
-    # A plan's status is set by hand, so nothing moves it when work starts. The
-    # first landing is the moment work has demonstrably begun, and this append
-    # is already a versioned read-modify-write of the plan, so the flip rides in
-    # the same write rather than costing a second one. Only a plan that still
-    # reads ``draft`` or ``pending`` moves; every other status — ``active``,
-    # ``blocked``, the terminal states — is authored and left alone.
-    in_progress_states = frozenset({"draft", "pending"})
+    worker_recorded: bool | None = None
     for _attempt in range(4):
         state, version = _store.read_plan(project, plan, root, artifact_type="plan")
         if not state or state.get("type") != "plan":
             return {"recorded": False, "reason": "plan_unavailable"}
-        started = str(state.get("status") or "").strip().lower() in in_progress_states
-        comments = {
-            key: list(items) for key, items in (state.get("comments") or {}).items()
-        }
-        items = comments.setdefault(anchor, [])
-        existing = next(
-            (item for item in items if str(item.get("id") or "") == comment_id),
-            None,
+        payload, anchor, comment, existing = _landing_comment_update(
+            state,
+            section=section,
+            run_id=run_id,
+            narrative=body_text,
+            author=author,
+            when=when,
         )
+        comment_id = comment["id"]
+        desired_body = comment["body"]
+        started = payload.get("status") != state.get("status")
+        if worker_recorded is None:
+            worker_recorded = bool(
+                not landing
+                and worker_tree
+                and _worker_authored_landing_record(
+                    tree=worker_tree,
+                    commits=worker_commits,
+                    project=project,
+                    plan=plan,
+                    comment_id=comment_id,
+                )
+            )
         if existing is not None:
             if worker_recorded:
                 return {
@@ -1462,14 +1687,37 @@ def _record_landing_comment(
                 # and a later call's narrative that differs from it is reported
                 # beside the receipt rather than raised as a refusal, which
                 # would leave the live pointer and the worktree for a reader to
-                # clear by hand. Before the row exists there is no promotion to
-                # defer to, so a differing narrative stays a refusal.
+                # clear by hand.
+                #
+                # No row means no promotion recorded that text: the attempt
+                # that wrote it wrote the comment before the row, and its row
+                # write was rolled back, so the comment is the only trace of a
+                # landing that never committed. Nothing recorded that narrative
+                # and nothing pins it, so recording it now would defend a
+                # promotion that does not exist. Replace it with the narrative
+                # being promoted, keeping the comment's id so a retry lands
+                # rather than repeating wording its author cannot reconstruct.
                 if not _ledger_holds_row(project, root, run_id, unreadable=False):
-                    raise CrewError(
-                        f"landing comment {comment_id!r} for plan {plan!r} already "
-                        "contains a different narrative; refusing to report the "
-                        "corrected outcome as recorded"
-                    )
+                    superseded = _strip_tags(str(existing.get("body") or ""))
+                    try:
+                        _store.write_plan(
+                            project,
+                            plan,
+                            payload,
+                            version,
+                            root,
+                            artifact_type="plan",
+                        )
+                    except _store.VersionConflict:
+                        continue
+                    return {
+                        "recorded": True,
+                        "comment_id": comment_id,
+                        "section": anchor,
+                        "already_recorded": False,
+                        "superseded_narrative": superseded,
+                        **({"status": "in-progress"} if started else {}),
+                    }
                 # Both sides go to the stripper as they were written: it
                 # unescapes once, so a narrative that names an entity in its
                 # own text keeps it. Feeding it the already-unescaped forms
@@ -1512,25 +1760,17 @@ def _record_landing_comment(
                 "section": anchor,
                 "reason": "worker_authored_landing_record",
             }
-        items.append(
-            {
-                "id": comment_id,
-                "who": author,
-                "when": when,
-                "body": desired_body,
-            }
-        )
-        payload: dict[str, Any] = {**state, "comments": comments}
-        if started:
-            payload["status"] = "in-progress"
         try:
+            _acquire_branch_write(Path(root) if root is not None else None)
+            scope = _BRANCH_WRITES.get()
+            if scope is not None and not scope.get("plan_checked"):
+                _branch_plan_text_edits().update(_refuse_unrelated_plan_edit(
+                    project=project, plan=plan, root=root,
+                    checkout=Path(root) if root is not None else None,
+                ))
+                scope["plan_checked"] = True
             _store.write_plan(
-                project,
-                plan,
-                payload,
-                version,
-                root,
-                artifact_type="plan",
+                project, plan, payload, version, root, artifact_type="plan"
             )
         except _store.VersionConflict:
             continue
@@ -1696,14 +1936,7 @@ def _plan_differs_only_by_the_stores_own_writes(
     return left == right
 
 
-_RECORD_ATTRIBUTES = frozenset(
-    {
-        "data-effort-hours",
-        "data-attempts",
-        "data-status",
-        "data-links",
-    }
-)
+_RECORD_ATTRIBUTES = _store.PLAN_BOOKKEEPING_ATTRIBUTES
 
 
 def _strip_store_owned_content(soup) -> None:
@@ -1734,13 +1967,69 @@ def _collapse_inter_tag(text: str) -> str:
     return re.sub(r"(?<=>)\s+(?=<)", "", text)
 
 
+def _verified_plan_text_projection(checkout: Path, plan_file: Path) -> str | None:
+    """Project verified pending prose out while retaining current bookkeeping."""
+    relative = plan_file.resolve().relative_to(checkout.resolve()).as_posix()
+    head = _git(checkout, "show", f"HEAD:{relative}", check=False)
+    if head.returncode:
+        return None
+    disk = plan_file.read_text(encoding="utf-8")
+    if not _store.recorded_plan_text_write(plan_file, head.stdout, disk):
+        return None
+    authored, slots = _store.plan_text_projection(disk)
+    committed, _head_slots = _store.plan_text_projection(head.stdout)
+    prefix = len(os.path.commonprefix([authored, committed]))
+    suffix = len(
+        os.path.commonprefix([authored[prefix:][::-1], committed[prefix:][::-1]])
+    )
+    source_end, target_end = len(authored) - suffix, len(committed) - suffix
+    changes = difflib.SequenceMatcher(
+        None, authored[prefix:source_end], committed[prefix:target_end], autojunk=False
+    )
+    operations = [("equal", 0, prefix, 0, prefix)]
+    operations.extend(
+        (kind, left + prefix, right + prefix, start + prefix, end + prefix)
+        for kind, left, right, start, end in changes.get_opcodes()
+    )
+    operations.append(("equal", source_end, len(authored), target_end, len(committed)))
+    placements = []
+    for offset, content in slots:
+        mapped = next(
+            (
+                target_start + offset - source_start
+                for kind, source_start, source_end, target_start, _target_end in operations
+                if kind == "equal" and source_start <= offset <= source_end
+            ),
+            None,
+        )
+        if mapped is None:
+            for _kind, source_start, source_end, target_start, target_end in operations:
+                if offset == source_start:
+                    mapped = target_start
+                    break
+                if offset == source_end:
+                    mapped = target_end
+                    break
+        if mapped is None:
+            raise CrewError(
+                f"cannot separate a store-owned region from pending prose in {plan_file}"
+            )
+        placements.append((mapped, content))
+    projected = committed
+    for offset, content in reversed(placements):
+        projected = projected[:offset] + content + projected[offset:]
+    if _store.plan_text_projection(projected)[0] != committed:
+        raise CrewError(f"cannot preserve the authored content of HEAD for {plan_file}")
+    return projected
+
+
 def _refuse_unrelated_plan_edit(
     *,
     project: str,
     plan: str,
     root: str | Path | None,
     checkout: Path,
-) -> None:
+) -> dict[Path, str]:
     """Refuse a landing while the plan file carries an unrelated uncommitted
     change that the landing commit would sweep in.
 
@@ -1750,14 +2039,24 @@ def _refuse_unrelated_plan_edit(
     by the store's own writes, passes untouched.
     """
     if not str(plan):
-        return
+        return {}
     plan_file = _store._resolve_html_file(
         project, str(plan), root, artifact_type="plan"
     )
     if plan_file is None or not _path_differs_from_head(checkout, plan_file):
-        return
+        return {}
     if _plan_differs_only_by_the_stores_own_writes(checkout, plan_file):
-        return
+        return {}
+    if _verified_plan_text_projection(checkout, plan_file) is not None:
+        relative = plan_file.resolve().relative_to(checkout.resolve()).as_posix()
+        staged = _git(
+            checkout, "diff", "--cached", "--quiet", "--", relative, check=False
+        )
+        if staged.returncode:
+            raise CrewError(
+                f"{plan_file} has staged changes; unstage the pending prose before promotion"
+            )
+        return {plan_file: plan_file.read_text(encoding="utf-8")}
     raise CrewError(
         f"the plan file {plan_file} carries an uncommitted change that is not a "
         "plan-state write the store made (an impl or status move, a resolved "
@@ -1806,7 +2105,12 @@ def _plan_comment_store_path(
     return [plan_file]
 
 
-def _restore_landing_writes(checkout: Path, paths: Sequence[Path]) -> dict[str, bool]:
+def _restore_landing_writes(
+    checkout: Path,
+    paths: Sequence[Path],
+    *,
+    on_stale_removed: Callable[[Path, float], None] | None = None,
+) -> dict[str, bool]:
     """Best-effort reversal of a refused landing's uncommitted store writes.
 
     Each path promotion wrote returns to its committed state: tracked paths
@@ -1839,6 +2143,12 @@ def _restore_landing_writes(checkout: Path, paths: Sequence[Path]) -> dict[str, 
     for one whose write survives. A caller reporting a store it wrote reads
     this to tell a row that survived the rollback from one the rollback
     reverted.
+
+    A rollback that cleared a lock proven stale names it, and the age it stood
+    for, through ``on_stale_removed``: the index is shared, so a caller is left
+    no trace of why a lock disappeared unless the clearing is recorded here.
+    The default states it on stderr, which is where a caller with no run record
+    of its own can still read it.
     """
     tracked: list[Path] = []
     created: list[Path] = []
@@ -1902,6 +2212,7 @@ def _restore_landing_writes(checkout: Path, paths: Sequence[Path]) -> dict[str, 
         revert_every_write,
         attempts=_INDEX_LOCK_RETRY_ATTEMPTS,
         retry_seconds=_INDEX_LOCK_RETRY_INTERVAL_SECONDS,
+        on_stale_removed=on_stale_removed or note_stale_index_lock_removal,
     )
     report = dict(unsettled)
     if reverted.returncode == 0:
@@ -2026,19 +2337,6 @@ def _index_lock_retry_bound_seconds(attempts: int, retry_seconds: float) -> floa
     return max(0, attempts - 1) * retry_seconds
 
 
-def _index_lock_age_seconds(checkout: Path) -> float | None:
-    """How long the checkout's ``index.lock`` has existed, or None without one.
-
-    A writer creates the lock as it starts an index write and removes it when
-    it finishes, so the file's age is how long the lock has been held.
-    """
-    try:
-        lock = _git_dir(checkout) / "index.lock"
-        return max(0.0, time.time() - lock.stat().st_mtime)
-    except OSError:
-        return None
-
-
 def _index_lock_outlasted_bound_note(
     checkout: Path, *, attempts: int, retry_seconds: float
 ) -> str:
@@ -2054,7 +2352,7 @@ def _index_lock_outlasted_bound_note(
         return ""
     bound = _index_lock_retry_bound_seconds(attempts, retry_seconds)
     spacing = f"{attempts} attempts {retry_seconds:.2f}s apart"
-    age = _index_lock_age_seconds(checkout)
+    age = _index_lock_age_seconds(_git_dir(checkout) / "index.lock")
     if age is None:
         return (
             f" The checkout's index lock outlasted this landing's {bound:.1f}s "
@@ -2104,6 +2402,32 @@ def _append_landing_record(run_id: str, entry: Mapping[str, Any]) -> str | None:
     except OSError:
         return None
     return str(path)
+
+
+def _landing_record_stale_removal(run_id: str) -> Callable[[Path, float], None]:
+    """A callback naming a cleared index lock, and its age, in the run's record.
+
+    Every wait on the shared index in this module goes through one helper, and
+    the helper clears a lock it has proven stale. The lock sits in a checkout
+    other sessions commit to, so a clearing that leaves no trace is a write
+    nobody can account for; each caller passes this, and the line it appends
+    survives the rollback the clearing may precede, because the record is
+    written outside the checkout the rollback restores.
+    """
+
+    def record(lock: Path, age: float) -> None:
+        _append_landing_record(
+            run_id,
+            {
+                "time": _utc_now(),
+                "step": "stale_index_lock_removed",
+                "lock": str(lock),
+                "age_seconds": round(age, 1),
+                "message": stale_index_lock_removal_line(lock, age),
+            },
+        )
+
+    return record
 
 
 def _record_landing_refusal(
@@ -2477,7 +2801,9 @@ def _stage_landing_writes(
     :func:`reckon.crew.merge._run_waiting_out_a_held_index_lock`: the add is
     retried while the checkout holds its ``index.lock``, for a bounded number of
     attempts, and every retry is appended to the run's landing record so a
-    landing that waited says how often. A failure that left no lock behind, and
+    landing that waited says how often. A lock the wait proves stale is cleared
+    by the same helper, and the clearing is appended to that record too, naming
+    the lock and the age it stood for. A failure that left no lock behind, and
     a lock that outlasts the attempts, return the failing result unchanged for
     the caller to refuse on.
     """
@@ -2501,11 +2827,259 @@ def _stage_landing_writes(
         attempts=_INDEX_LOCK_RETRY_ATTEMPTS,
         retry_seconds=_INDEX_LOCK_RETRY_INTERVAL_SECONDS,
         on_retry=record_retry,
+        on_stale_removed=_landing_record_stale_removal(run_id),
     )
     return staged
 
 
+def _remove_text_landing_comment(path: Path, before: str, run_id: str) -> None:
+    """Restore the captured comments section, retaining concurrent content."""
+    from bs4 import BeautifulSoup
+
+    from reckon import _plan_html
+
+    def section_text(document: str) -> str:
+        record = next(
+            (
+                item
+                for item in _plan_html._structural_spans(document)
+                if item.tag == "section" and item.kind == "comments"
+            ),
+            None,
+        )
+        return document[record.start : record.end] if record is not None else ""
+
+    def canonical(document: str, *, stamps: bool = True) -> str:
+        soup = BeautifulSoup(document, "html.parser")
+        if not stamps:
+            for element in soup.find_all("meta"):
+                if element.get("name") in {"plan-version", "plan-modified"}:
+                    element.decompose()
+        return _collapse_inter_tag(str(soup))
+
+    original = _plan_html.read_state(before)
+    comment_id = f"{RUN_COMMENT_PREFIX}{re.sub(r'[^A-Za-z0-9._-]+', '-', run_id)}"
+    if any(
+        row.get("id") == comment_id
+        for rows in (original.get("comments") or {}).values()
+        for row in rows
+    ):
+        return
+    current = path.read_text(encoding="utf-8")
+    state = _plan_html.read_state(current)
+    expected_comments = {
+        key: list(rows) for key, rows in (original.get("comments") or {}).items()
+    }
+    for key, rows in (state.get("comments") or {}).items():
+        for row in rows:
+            if row.get("id") == comment_id:
+                expected_comments.setdefault(key, []).append(row)
+    if expected_comments == (original.get("comments") or {}):
+        return
+    expected_state = {
+        **original,
+        "comments": expected_comments,
+        "version": state.get("version"),
+        "modified": state.get("modified"),
+    }
+    if original.get("status") in {"draft", "pending"}:
+        expected_state["status"] = "in-progress"
+    expected = _plan_html.write_state(
+        before, expected_state, drop_authored_impl_meta=True
+    )
+    if canonical(current) == canonical(expected):
+        restored = before
+    else:
+        current_section = section_text(current)
+        if canonical(current_section) == canonical(section_text(expected)):
+            replacement = section_text(before)
+        else:
+            section = BeautifulSoup(current_section, "html.parser")
+            for comment in section.select(".r-comment"):
+                if comment.get("data-id") == comment_id:
+                    comment.decompose()
+            replacement = str(section)
+        restored = _plan_html._splice_section(current, "comments", replacement)
+        if canonical(restored, stamps=False) == canonical(before, stamps=False):
+            restored = before
+    _store.write_atomically(path, lambda handle: handle.write(restored))
+
+
+def _commit_preserving_plan_text(
+    *,
+    run_id: str,
+    verdict: str,
+    checkout: Path,
+    targets: Sequence[Path],
+    text_edits: Mapping[Path, str],
+    subject: str | None,
+    body: str | None,
+    store_row_written: bool,
+) -> dict[str, Any]:
+    """Commit a private index projection without writing over the editor's prose."""
+    from contextlib import ExitStack
+
+    from reckon.crew.merge import _commit_tree, _run
+
+    subject = subject or f"promote({run_id}): {verdict}"
+    body = body or (
+        "Record the run and its landing comment while leaving pending authored "
+        "prose uncommitted for its editor."
+    )
+    head = _head_revision(checkout)
+    reversals = _staged_reversals(checkout)
+    blobs = {}
+    retained = {}
+    environment = {}
+
+    def private_git(*arguments: str, input: str | None = None):
+        result = _run(checkout, *arguments, input=input, env=environment)
+        if result.returncode:
+            raise CrewError(result.stderr.strip() or result.stdout.strip())
+        return result.stdout.strip()
+
+    def require_projection(path: Path) -> str:
+        projection = _verified_plan_text_projection(checkout, path)
+        if projection is None:
+            raise CrewError(f"the recorded text write no longer matches {path}")
+        return projection
+
+    with ExitStack() as locks:
+        for path in sorted(text_edits):
+            locks.enter_context(_store._serialized_path_lock(path, "plans"))
+        try:
+            projections = {}
+            for path in text_edits:
+                projections[path] = require_projection(path)
+                retained[path] = _worktree_blob(checkout, path)
+            with tempfile.TemporaryDirectory(prefix="reckon-landing-index-") as scratch:
+                environment = {
+                    **os.environ,
+                    "GIT_INDEX_FILE": str(Path(scratch) / "index"),
+                }
+
+                private_git("read-tree", head)
+                for path in targets:
+                    relative = path.relative_to(checkout).as_posix()
+                    private_git("add", "--", relative)
+                    entry = private_git("ls-files", "-s", "--", relative).split()
+                    mode, blob = entry[:2]
+                    if path in projections:
+                        blob = private_git(
+                            "hash-object", "-w", "--stdin", input=projections[path]
+                        )
+                        private_git(
+                            "update-index",
+                            "--add",
+                            "--cacheinfo",
+                            f"{mode},{blob},{relative}",
+                        )
+                    blobs[relative] = (mode, blob)
+                tree = private_git("write-tree")
+                if tree == private_git("rev-parse", f"{head}^{{tree}}"):
+                    return {
+                        "committed": False,
+                        "reason": "no_change",
+                        "landing_check": {
+                            "ok": True,
+                            "reversals": reversals,
+                            "mismatched": [],
+                            "pending_prose": [str(path) for path in text_edits],
+                        },
+                    }
+                revision = _commit_tree(
+                    checkout, tree, [head], f"{subject}\n\n{body}\n"
+                )
+                _git(checkout, "update-ref", "HEAD", revision, head)
+        except Exception as exc:
+            rollback = _restore_landing_writes(
+                checkout,
+                [path for path in targets if path not in text_edits],
+                on_stale_removed=_landing_record_stale_removal(run_id),
+            )
+            for path, before in text_edits.items():
+                _remove_text_landing_comment(path, before, run_id)
+                rollback[str(path)] = True
+            if store_row_written:
+                _discard_run_store_row(run_id)
+            _record_landing_refusal(
+                run_id,
+                step="text-commit",
+                message=str(exc),
+                checkout=checkout,
+                rollback=rollback,
+            )
+            raise _landing_refusal(
+                f"could not commit the landing while preserving pending prose: {exc}",
+                rollback,
+            ) from exc
+        entries = "".join(
+            f"{mode} {blob}\t{relative}\n" for relative, (mode, blob) in blobs.items()
+        )
+        updated, _retries = _run_waiting_out_a_held_index_lock(
+            checkout,
+            lambda _attempt: _run(
+                checkout, "update-index", "--index-info", input=entries
+            ),
+            attempts=_INDEX_LOCK_RETRY_ATTEMPTS,
+            retry_seconds=_INDEX_LOCK_RETRY_INTERVAL_SECONDS,
+            on_stale_removed=_landing_record_stale_removal(run_id),
+        )
+        mismatched = [
+            row
+            for row in _landing_path_mismatches(checkout, targets)
+            if not (
+                checkout / row["path"] in text_edits
+                and row["head"] == row["index"] == blobs[row["path"]][1]
+                and row["worktree"] == retained[checkout / row["path"]]
+            )
+        ]
+        check = {
+            "ok": updated.returncode == 0 and not mismatched,
+            "reversals": reversals,
+            "mismatched": mismatched,
+            "pending_prose": [str(path) for path in text_edits],
+        }
+        _append_landing_record(
+            run_id,
+            {
+                "time": _utc_now(),
+                "step": "commit",
+                "committed": True,
+                "commit": revision,
+                "head_before": head,
+                "landing_check": check,
+            },
+        )
+        return {
+            "committed": True,
+            "subject": subject,
+            "paths": [str(path) for path in targets],
+            "landing_check": check,
+        }
+
+
 def _commit_landing_writes(
+    *, run_id: str, verdict: str, checkout: Path, paths: Sequence[Path],
+    subject: str | None = None, body: str | None = None,
+    store_row_written: bool = False, plan_text_edits: Mapping[Path, str] | None = None,
+) -> dict[str, Any]:
+    """Commit available landing writes under the lazy branch lease."""
+    if not any(Path(path).is_file() for path in paths):
+        return {"committed": False, "reason": "no_write"}
+    with _branch_write_scope():
+        _acquire_branch_write(checkout)
+        try:
+            return _commit_branch_writes(
+                run_id=run_id, verdict=verdict, checkout=checkout, paths=paths,
+                subject=subject, body=body, store_row_written=store_row_written,
+                plan_text_edits=plan_text_edits,
+            )
+        finally:
+            _release_branch_write()
+
+
+def _commit_branch_writes(
     *,
     run_id: str,
     verdict: str,
@@ -2514,6 +3088,7 @@ def _commit_landing_writes(
     subject: str | None = None,
     body: str | None = None,
     store_row_written: bool = False,
+    plan_text_edits: Mapping[Path, str] | None = None,
 ) -> dict[str, Any]:
     """Commit promotion's own store writes in one landing commit.
 
@@ -2561,6 +3136,20 @@ def _commit_landing_writes(
     )
     if not targets:
         return {"committed": False, "reason": "no_write"}
+    pending_text = {
+        path: text for path, text in (plan_text_edits or {}).items() if path in targets
+    }
+    if pending_text:
+        return _commit_preserving_plan_text(
+            run_id=run_id,
+            verdict=verdict,
+            checkout=checkout,
+            targets=targets,
+            text_edits=pending_text,
+            subject=subject,
+            body=body,
+            store_row_written=store_row_written,
+        )
     reversals = _staged_reversals(checkout)
     staged = _stage_landing_writes(run_id, checkout, targets)
     if staged.returncode != 0:
@@ -2570,7 +3159,11 @@ def _commit_landing_writes(
             retry_seconds=_INDEX_LOCK_RETRY_INTERVAL_SECONDS,
         )
         head = _head_revision(checkout)
-        rollback = _restore_landing_writes(checkout, targets)
+        rollback = _restore_landing_writes(
+            checkout,
+            targets,
+            on_stale_removed=_landing_record_stale_removal(run_id),
+        )
         if store_row_written:
             _discard_run_store_row(run_id)
         _record_landing_refusal(
@@ -2643,6 +3236,7 @@ def _commit_landing_writes(
         attempts=_INDEX_LOCK_RETRY_ATTEMPTS,
         retry_seconds=_INDEX_LOCK_RETRY_INTERVAL_SECONDS,
         on_retry=record_commit_retry,
+        on_stale_removed=_landing_record_stale_removal(run_id),
     )
     if committed.returncode != 0:
         lock_note = _index_lock_outlasted_bound_note(
@@ -2651,7 +3245,11 @@ def _commit_landing_writes(
             retry_seconds=_INDEX_LOCK_RETRY_INTERVAL_SECONDS,
         )
         head = _head_revision(checkout)
-        rollback = _restore_landing_writes(checkout, targets)
+        rollback = _restore_landing_writes(
+            checkout,
+            targets,
+            on_stale_removed=_landing_record_stale_removal(run_id),
+        )
         if store_row_written:
             _discard_run_store_row(run_id)
         _record_landing_refusal(
@@ -2728,10 +3326,13 @@ def _revision_is_ancestor(checkout: Path, revision: str, target: str) -> bool:
 
 from reckon.crew.merge import (
     _git_dir,
+    _index_lock_age_seconds,
     _index_lock_held,
     _run_waiting_out_a_held_index_lock,
     clear_stale_landed_copies,
     landed_paths,
+    note_stale_index_lock_removal,
+    stale_index_lock_removal_line,
 )
 from reckon.crew.promotion_evidence import (
     _COMMITLESS_ROLES,

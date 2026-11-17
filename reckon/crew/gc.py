@@ -35,6 +35,7 @@ from reckon.crew.routing import (
     _pinnable_unique_commits,
     _plan_review_raw_reports,
     _pointer_lock,
+    _project_ledger_paths,
     _registered_worktrees,
     _releasable_roots,
     _release_worktree_whole,
@@ -119,20 +120,41 @@ ARCHIVE_REF_PREFIX = "refs/reckon/archive/"
 
 
 def _sweep_trash_directories(
-    trash_roots: Iterable[Path], *, apply: bool, announce: TextIO | None = None
+    trash_roots: Iterable[Path],
+    *,
+    apply: bool,
+    announce: TextIO | None = None,
+    labels: Sequence[str] | None = None,
+    owned: Iterable[Path] = (),
 ) -> list[dict[str, Any]]:
     """Remove every directory a release left behind in a worktree trash root.
 
     Trash is written only after a release has moved a tree off its registered
     path and deregistered it, so removing it cannot strand a registered tree; a
     pass that runs with ``apply`` deletes each directory and names it.
+
+    ``labels`` confines the sweep to the trash one run left behind. A release
+    names its trash ``<label>-<stamp>``, where the label is the releasing
+    run's id when it had one and the tree's own directory name otherwise, so an
+    entry belongs to a run only when its name carries one of those labels.
+    Without ``labels`` every entry is taken, which is what an unscoped pass
+    means. ``owned`` names directories this same pass moved aside, so a copy
+    whose own deletion failed is still reclaimed by the run that made it.
     """
+    prefixes = tuple(f"{label}-" for label in labels) if labels is not None else None
+    exact_owned = {Path(path) for path in owned}
     rows: list[dict[str, Any]] = []
     for trash_root in trash_roots:
         if not trash_root.is_dir():
             continue
         for entry in sorted(trash_root.iterdir()):
             if not entry.is_dir() or entry.is_symlink():
+                continue
+            if (
+                prefixes is not None
+                and entry not in exact_owned
+                and not any(entry.name.startswith(prefix) for prefix in prefixes)
+            ):
                 continue
             row: dict[str, Any] = {"path": str(entry), "removed": False}
             if apply:
@@ -149,14 +171,40 @@ def _sweep_trash_directories(
     return rows
 
 
+def _trash_scope_labels(
+    run_id: str | None, confined_to: Path | None
+) -> tuple[str, ...] | None:
+    """The trash labels a run-scoped sweep may take, or ``None`` when unscoped.
+
+    A release writes its trash as ``<label>-<stamp>`` with the run's id when it
+    had one and the tree's own directory name otherwise, so a run owns the trash
+    carrying its id and the trash carrying the name of the tree its own records
+    point at. Anything else in a trash root belongs to another run and is left.
+    ``None`` is the whole-root sweep an unscoped pass means.
+    """
+    if not run_id:
+        return None
+    labels = [run_id]
+    if confined_to is not None and confined_to.name not in labels:
+        labels.append(confined_to.name)
+    return tuple(labels)
+
+
 def _sweep_worktree_trash(
-    repo: Path, *, apply: bool, announce: TextIO | None = None
+    repo: Path,
+    *,
+    apply: bool,
+    announce: TextIO | None = None,
+    labels: Sequence[str] | None = None,
+    owned: Iterable[Path] = (),
 ) -> list[dict[str, Any]]:
     """Sweep this checkout's trash roots, named through git."""
     return _sweep_trash_directories(
         (root / WORKTREE_TRASH_DIRNAME for root in _releasable_roots(repo)),
         apply=apply,
         announce=announce,
+        labels=labels,
+        owned=owned,
     )
 
 
@@ -596,18 +644,36 @@ def _ledger_cache_roots() -> list[Path]:
 
 
 def _orphan_ledger_indexes(
-    *, apply: bool, now: datetime | None, report_removals: bool = False
+    *,
+    apply: bool,
+    now: datetime | None,
+    report_removals: bool = False,
+    project: str | None = None,
+    repo: Path | None = None,
 ) -> list[dict[str, Any]]:
     """Offer missing-source ledger caches and aged caches carrying no source.
 
     Every index records its canonical ledger path. A missing source is an
     orphan; an unrecorded index gets the grace window so an unfinished build
     is left alone. Open descriptors and SQLite write locks protect live users.
+
+    With ``project`` named the sweep reclaims only indexes recorded against
+    that project's own ledger, the path its registered mount resolves to. An
+    index belonging to another project, or to none the sweep can name, is
+    reported as kept, naming its project or ``unknown``, and is never removed.
     """
     from reckon import ledger as ledger_module
 
     current = now or datetime.now(tz=UTC)
     stale_before = current - timedelta(days=LEDGER_INDEX_UNRECORDED_MAX_AGE_DAYS)
+    ledger_projects: dict[Path, str] = {}
+    if repo is not None:
+        ledger_projects = _project_ledger_paths(repo)
+    if project is not None and repo is not None:
+        with contextlib.suppress(ledger_module.LedgerError, OSError, ValueError):
+            ledger_projects.setdefault(
+                ledger_module.ledger_path(project, root=repo).resolve(), project
+            )
     entries: list[dict[str, Any]] = []
     for root in _ledger_cache_roots():
         if not root.is_dir():
@@ -628,14 +694,30 @@ def _orphan_ledger_indexes(
                     if datetime.fromtimestamp(stat.st_mtime, tz=UTC) > stale_before:
                         continue
                     reason = "unrecorded-stale"
+                attributed = ""
+                if recorded is not None:
+                    try:
+                        attributed = ledger_projects.get(Path(recorded).resolve(), "")
+                    except OSError:
+                        attributed = ""
                 entry = {
                     "path": str(index),
                     "size": stat.st_size,
                     "recorded_ledger_path": recorded,
+                    "project": attributed or "unknown",
                     "reason": reason,
                     "action": "prune",
                     "removed": False,
                 }
+                if project is not None and attributed != project:
+                    entry["action"] = "keep"
+                    entry["kept"] = (
+                        f"belongs to project {attributed!r}"
+                        if attributed
+                        else "belongs to no project the sweep can name"
+                    ) + f", and this pass reclaims only project {project!r}"
+                    entries.append(entry)
+                    continue
                 if (
                     apply
                     and not holders.get(index.name)
@@ -879,6 +961,10 @@ def garbage_collect(
     withheld: list[dict[str, Any]] = []
     residue_report: list[dict[str, Any]] = []
     trash_rows: list[dict[str, Any]] = []
+    # Trash this pass moved a tree into itself. Its own copy deletion may have
+    # failed, and the run whose tree it is stays the owner of that leftover even
+    # when the run's id is not the label the copy carries.
+    owned_trash: set[Path] = set()
     failed_path = ""
     try:
         roots = _workspace_roots(repo_root)
@@ -1038,6 +1124,8 @@ def garbage_collect(
                             residue_report.append({"worktree": str(path), **saved})
                     else:
                         release = _release_worktree_whole(repo_root, path)
+                    if release is not None and release.get("trash"):
+                        owned_trash.add(Path(str(release["trash"])))
                     if release is not None and not release.get("released", True):
                         # The helper moved nothing: this tree is not one it may
                         # take. A withheld release is reported as withheld with
@@ -1086,8 +1174,17 @@ def garbage_collect(
         # Trash left by a release whose deletion step did not finish is swept
         # here: the trees it holds were moved off their registered paths and
         # deregistered before the copy was written, so removing it can never
-        # strand a registered tree. Each one removed is printed by name.
-        trash_rows = _sweep_worktree_trash(repo_root, apply=apply)
+        # strand a registered tree. Each one removed is printed by name. A
+        # pass scoped to one run takes only the trash that run left behind —
+        # its run label, the label of its own recorded tree, or a copy this
+        # same pass moved aside — because a destructive command named for one
+        # run must never reach a peer's leftovers.
+        trash_rows = _sweep_worktree_trash(
+            repo_root,
+            apply=apply,
+            labels=_trash_scope_labels(run_id, confined_to),
+            owned=owned_trash,
+        )
 
         ledgered_records = {
             str(record.get("run_id") or ""): record
@@ -1218,11 +1315,17 @@ def garbage_collect(
             live_ids=live_ids,
             ledgered=ledgered,
             retention_days=retention_days,
+            project=project,
+            repo=repo_root,
         )
         # The ledger index cache is global, keyed by checkout rather than by
         # run, so a pass confined to one run's artifacts does not reach it.
         ledger_index_reports = (
-            _orphan_ledger_indexes(apply=apply, now=now) if run_id is None else []
+            _orphan_ledger_indexes(
+                apply=apply, now=now, project=project, repo=repo_root
+            )
+            if run_id is None
+            else []
         )
         persisted_memo_reports = (
             _expired_persisted_memos(apply=apply, now=now or datetime.now(tz=UTC))
@@ -1555,9 +1658,10 @@ def _run_directory_records_end(run_directory: Path) -> bool:
 
     A supervisor writes ``exit.json`` beside the attempt's own exit record when
     the worker process ends, and a discarded run leaves its discard marker. Both
-    say the run is over; a directory holding neither belongs to a run that is
-    still working or one whose supervisor died before writing the record, and
-    its scratch is not settled on that reading alone.
+    record an end but can survive a resume, so the caller also checks the
+    current run identity and live pointers. A directory holding neither belongs
+    to a run that is still working or one whose supervisor died before writing
+    the record, and its scratch is not settled on that reading alone.
     """
     if (run_directory / "exit.json").is_file():
         return True
@@ -1584,10 +1688,11 @@ def settle_run_scratch(
 
     The decision is made from the crew home, which every host shares, and never
     from a project ledger: a directory named for a run whose run directory
-    records that the run ended, and that no live pointer names and no process
-    holds, is removed at once with no age wait. The run-directory pass retires a
-    finished run's directory after its grace, so a copy can outlive its record; such a copy is
-    removed under the same ``SCRATCH_GRACE_SECONDS`` rule the orphan sweep
+    records that the run ended, and that neither the current run identity nor a
+    live pointer names and no process holds, is removed at once with no age
+    wait. The run-directory pass retires a finished run's directory after its
+    grace, so a copy can outlive its record; such a copy is removed under the
+    same ``SCRATCH_GRACE_SECONDS`` rule the orphan sweep
     applies, after the same holder check. A directory not named for a run is
     left to :func:`garbage_collect_orphan_scratch`.
 
@@ -1618,6 +1723,7 @@ def settle_run_scratch(
         return {"root": str(scratch), "entries": [], "removed": [], "bytes_freed": 0}
     stamp = time.time() if now is None else now
     live_ids = {str(record.get("run_id") or "") for record in list_live()}
+    current_run_id = os.environ.get("RECKON_RUN_ID", "")
     holders = _scratch_process_holders(scratch)
     home = Path(runs_root) if runs_root is not None else None
     entries: list[dict[str, Any]] = []
@@ -1631,7 +1737,12 @@ def settle_run_scratch(
             continue
         directory = (home / name) if home is not None else run_dir(name)
         age = max(0.0, stamp - _scratch_ctime(child))
-        if name in live_ids:
+        # A resumed step creates its scratch before entering the worker and
+        # can still carry an earlier attempt's exit record while its pointer
+        # is not yet visible. Its own launch identity already proves it live.
+        if name == current_run_id:
+            state, reason = RUN_SCRATCH_LIVE, "current run"
+        elif name in live_ids:
             state, reason = RUN_SCRATCH_LIVE, "live pointer"
         elif holders.get(name):
             state, reason = RUN_SCRATCH_HELD, f"held by process {holders[name]}"
@@ -1710,20 +1821,32 @@ def _scratch_disposition(
     return SCRATCH_UNATTRIBUTED
 
 
-def _processes_holding(path: Path) -> list[dict[str, Any]]:
+def _processes_holding(path: Path) -> list[dict[str, Any]] | None:
     """Name the processes holding ``path`` as their cwd or as an open file.
 
-    Read-only and best-effort: ``/proc`` may be absent or a process may exit
-    mid-scan, and a scan that raised would turn a report into a refusal. A
-    holder is only ever reported, never killed — the survey's whole point is to
-    let a human decide what a tree nobody owns is doing.
+    The one holder scan in the package. It answers two questions that used to
+    have two implementations: what a survey should report about a tree nobody
+    owns, and whether an ``index.lock`` still has a live writer. git writes no
+    owner into that lock, so ``/proc/<pid>/fd`` is the only local evidence that
+    no process holds it, and a second scan with slightly different matching
+    was a second answer to one question.
+
+    Read-only and best-effort: a process may exit mid-scan, and a scan that
+    raised would turn a report into a refusal. A holder is only ever reported,
+    never killed — the survey's whole point is to let a human decide what a
+    tree nobody owns is doing.
+
+    ``None`` is the scan's own failure, not an empty answer: a ``/proc`` that
+    cannot be read proves nothing either way, and a caller judging whether a
+    holder exists must not read that as "nobody holds it".
     """
     holders: list[dict[str, Any]] = []
-    proc = Path("/proc")
-    if not proc.is_dir():
-        return holders
+    try:
+        entries = sorted(Path("/proc").iterdir())
+    except OSError:  # pragma: no cover - an unreadable /proc answers "unknown".
+        return None
     target = path.resolve()
-    for entry in proc.iterdir():
+    for entry in entries:
         if not entry.name.isdigit():
             continue
         pid = int(entry.name)
@@ -1798,7 +1921,10 @@ def garbage_collect_scratch(
         }
         if state == SCRATCH_UNATTRIBUTED:
             report["ctime"] = _iso_ctime(child)
-            report["held_by"] = _processes_holding(child)
+            # A survey reports what it saw; an unreadable scan is an empty
+            # holder list here rather than an unknown, because nothing is
+            # decided from it.
+            report["held_by"] = _processes_holding(child) or []
         if state == SCRATCH_TERMINAL and apply:
             shutil.rmtree(child)
             report["removed"] = True
@@ -1822,7 +1948,7 @@ def garbage_collect_scratch(
                     "path": str(child),
                     "bytes": tree_size_bytes(child, limit=_UNATTRIBUTED_SIZE_LIMIT),
                     "ctime": _iso_ctime(child),
-                    "held_by": _processes_holding(child),
+                    "held_by": _processes_holding(child) or [],
                 }
             )
 
@@ -1867,7 +1993,16 @@ RETENTION_PROGRESS_EVERY = 10
 
 #: The phases a pass times. Each prints one line to stderr as it completes, so a
 #: pass killed under its timeout still leaves a record of how far it got.
-RETENTION_PHASES = ("ledger", "judge", "trash", "scratch", "cache", "store", "log")
+RETENTION_PHASES = (
+    "identities",
+    "ledger",
+    "judge",
+    "trash",
+    "scratch",
+    "cache",
+    "store",
+    "log",
+)
 
 
 def retention_log_path() -> Path:
@@ -2045,6 +2180,12 @@ def retention_sweep(
     the next hour. A removal is written to one log under the crew home, and a
     pass that removed nothing writes nothing.
 
+    It also removes the execution identity files of executions that have gone:
+    ``--sweep-exec-identities`` alone never ran on a schedule, so every
+    maintenance pass makes the same judgment. A file is removed only when the
+    process that published it is no longer that process, which is why a live
+    run's file survives the pass that runs while it is being written.
+
     The pass resumes from the cursor the previous pass persisted, so a long run
     of permanently withheld directories at the head of the sorted list is walked
     over once per cycle rather than re-judged on every pass. Each project's
@@ -2062,6 +2203,10 @@ def retention_sweep(
         raise CrewError("store row and compaction page limits must be positive")
     ended_cleanup = sweep_ended_runs(limit=limit) if apply else []
     phase_seconds: dict[str, float] = {}
+
+    started = time.perf_counter()
+    identities = sweep_exec_identities(apply=apply)
+    _emit_phase("identities", started, phase_seconds)
 
     started = time.perf_counter()
     mounted = flight.mounted_project_docs()
@@ -2165,7 +2310,13 @@ def retention_sweep(
     _emit_phase("scratch", started, phase_seconds)
 
     started = time.perf_counter()
-    indexes = _orphan_ledger_indexes(apply=apply, now=moment, report_removals=True)
+    indexes = _orphan_ledger_indexes(
+        apply=apply,
+        now=moment,
+        report_removals=True,
+        project=project,
+        repo=roots.get(project) if project else None,
+    )
     picker_views = _expired_picker_views(apply=apply, now=moment)
     persisted_memos = _expired_persisted_memos(apply=apply, now=moment)
     caches_removed = [
@@ -2191,6 +2342,7 @@ def retention_sweep(
         or trash_removed
         or caches_removed
         or store_retention["retired"]
+        or identities["removed"]
     ):
         from reckon.crew.watch_unit import _WatchLogStream
 
@@ -2207,6 +2359,8 @@ def retention_sweep(
                 stream.write(f"removed cache {row['path']} ({row['size']} bytes)\n")
             for run_id in store_retention["retired"]:
                 stream.write(f"archived run {run_id} to {store_retention['archive']}\n")
+            for row in identities["removed"]:
+                stream.write(f"removed identity file {row['path']}\n")
         finally:
             stream.close()
         written = str(target)
@@ -2218,6 +2372,10 @@ def retention_sweep(
         "unreachable_projects": unreachable,
         "limit": limit,
         "ended_cleanup": ended_cleanup,
+        "exec_identities": {
+            "removed": len(identities["removed"]),
+            "kept": len(identities["kept"]),
+        },
         "examined": examined,
         "judged": judged,
         "offered": offered,

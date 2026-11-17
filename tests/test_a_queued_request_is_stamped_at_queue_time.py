@@ -26,11 +26,28 @@ from reckon.crew import (
     runs,
 )
 from reckon.crew.node import PlanReviewMissingError, TaskNode
-from tests.test_review_plan_command import CONFIG
 from tests.test_review_plan_command import project as project  # noqa: PLC0414
 
 SECTIONS = ("s2", "s3")
 ENFORCING = {"plan_review_gate": "enforce"}
+# A request names the role it runs as, and both resolvers — the dispatch's own
+# and the one the queue writer uses — refuse a role the config does not
+# configure, so the config declares the role the fixtures queue.
+CONFIG = {
+    "default_backend": "worker",
+    "local_backend": "worker",
+    "backends": {
+        "worker": {
+            "launch": "in-harness",
+            "model": "test-model",
+            "effort": "high",
+            "sandbox": "worktree-full",
+            "time_budget": "20m",
+        }
+    },
+    "roles": {"implement": {}},
+    "fences": {"time_budget": "20m", "needs_help_after_failures": 2},
+}
 
 
 def _report(items) -> str:
@@ -128,8 +145,8 @@ def _node(section: str = "s2") -> TaskNode:
         plan="fixture",
         section=section,
         role="implement",
-        done_when="The section contract check passes.",
-        write_paths=[f"{section}.py"],
+        done_when=f"pytest reports passed for {section}",
+        write_paths=[f"{section}.txt"],
         time_budget="20m",
         spec_level="exact",
         manifest_path=str(runs.run_dir(f"build-{section}") / "manifest.md"),
@@ -144,7 +161,7 @@ def _queue(repo, section: str = "s2") -> dict:
         project="sample",
         session="coordinator",
         repo_root=repo,
-        config={**CONFIG, "roles": {**CONFIG["roles"], "implement": {}}},
+        config=CONFIG,
     )
     run_id = next(iter(stored))
     return runs.read_pointer(run_id)

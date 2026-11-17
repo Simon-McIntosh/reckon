@@ -1,0 +1,70 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T18:33:49.419Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-revision-reads-on-the-store-s24-84165b187d1c",
+      "recorded_at": "2026-11-15T20:27:16.943638+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-15T18:33:20Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-revision-reads-on-the-store-s24-84165b187d1c",
+      "recorded_at": "2026-11-15T20:27:11.495467+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/run_store.py",
+      "line": 286,
+      "severity": "blocking",
+      "text": "reckon/run_store.py:280 blocking: `_row_revision` stamps a row's revision from the record's `promoted_revision`, but reckon/crew/promotion_scope.py:305 defines that field as the tip of the run's own work resolved in the run tree and states that the commit the promotion makes \u2014 the one carrying the ledger row \u2014 is deliberately a different commit; so every promotion-written row carries a sha that is not the commit its record file entered the tree at, contrary to the column's own declaration at reckon/run_store.py:59-66 and to velocity's use of it as a revision to read that file at (reckon/velocity.py:823-834, where read_blobs answers `missing` and the row silently falls back to the durable payload the change was written to supplement). `RunStore.revisionless_rows` (reckon/run_store.py:941) selects only NULL or empty, so `backfill_revisions` never repairs a wrong stamp \u2014 a probe against the head stamped `{'r-1': 'deadbeefcafe'}` from a record carrying that promoted_revision and reported no revisionless rows. Repair by stamping nothing on the promotion path and letting the backfill place the row, or by recording which of the two facts the value holds."
+    },
+    {
+      "file": "reckon/velocity.py",
+      "line": 1904,
+      "severity": "non-blocking",
+      "text": "reckon/velocity.py:1904 non-blocking: `_landed_in_window` accepts the committed `promoted_revision` marker only when `record_source == \"committed_primary_snapshot\"`, and the change introduces the two sources `run_store_record_revision` and `run_store_row` at reckon/velocity.py:1085 for rows it reads partly from that same committed record; those rows therefore never count as landed and `coordinator_cost`'s `landed_nodes` under-counts under the store path the change exists to survive."
+    },
+    {
+      "file": "reckon/run_store.py",
+      "line": 1142,
+      "severity": "non-blocking",
+      "text": "reckon/run_store.py:1142 non-blocking: `_record_file_revisions` duplicates an existing mechanism rather than extending its owner \u2014 reckon/velocity.py:1294 `_record_file_additions` already runs the same first-parent, `--diff-filter=A`, `--name-only`, `%x1e`-delimited log over `docs/state/<project>/runs` and maps a run id to the commit that added its file; the two differ in helper (subprocess here, velocity's `git()` there) and in whether epoch is carried, so the repository now holds two scans for one fact."
+    },
+    {
+      "file": "docs/figures/plan-review-cycles/measure_review_cycles.py",
+      "line": 71,
+      "severity": "non-blocking",
+      "text": "docs/figures/plan-review-cycles/measure_review_cycles.py:71 non-blocking: the commit carries roughly sixty lines of formatter reflow unrelated to the store read \u2014 the INVARIANT_EXEMPT reflow here, the `ax.tick_params` reindent at 1074, the `reviews_baseline_600s` and `lost.extend` reflows further down \u2014 which the repository's rule puts in its own `style(lint):` commit with nothing else in it, so this diff carries work the goal does not imply."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T102555144818-revision-reads-on-the-store-s24/logs/red-at-base.log",
+      "line": 3,
+      "severity": "non-blocking",
+      "text": "logs/red-at-base.log:3 non-blocking: the base arm's extraction sits at `/tmp/reckon-crew-scratch/<run>/base-s24`, a bare `/tmp` path, where the dispatch rule puts a temporary tree under `$TMPDIR` so it dies with the run's scratch and cannot collide with another run's tree."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal at prompt.txt:38 is to answer velocity's revision-scoped figures and the review-cycle script from the run store; reckon/velocity.py:788 `_read_store_records` and docs/figures/plan-review-cycles/measure_review_cycles.py:328 `load_dispatch_times` both read the store, so the figures are answered there, though the revision the velocity read consumes does not mean what the store's own declaration at reckon/run_store.py:59-66 says it means.\nVERDICT done_when: read the done-when at prompt.txt:166; tests/test_revision_reads_restate_against_the_store.py:322 asserts the absent-tree population is nonzero and equal to the ledger's run count at the held head, :327-336 asserts a retirement leaves no tracked path, :339-340 assert the store answers with the same figures, and :371-398 assert both empty-store refusals, so the velocity half is measured as written; the figure half at :350-367 asserts against expectations derived from the fixture's records rather than against the times the script reported while the file was present.\nVERDICT write_paths: read the six declared paths in the reviewed manifest; the diff touches five of them \u2014 reckon/run_store.py, reckon/velocity.py, docs/figures/plan-review-cycles/measure_review_cycles.py, tests/test_revision_reads_restate_against_the_store.py and docs/evidence/fragments/history-persists-as-detail-washes-out/revision-reads-on-the-store-s24.html \u2014 and nothing outside them.\nVERDICT manifest: read; it records commits aea929edc1 and 84165b187d, \"64 passed in 71.64s\" with EXIT=0 in logs/after-suite.log at aea929edc1, \"58 passed\" with EXIT=0 in logs/base-arm.log at 27958ce9c4fa, \"6 failed\" with EXIT=1 in logs/red-at-base.log and \"3 failed, 3 passed\" in logs/negative-control.log, each log named by path.\nVERDICT diff: read both commits against 27958ce9c4fa \u2014 aea929edc1 adds the revision column, its migration and archive repair, `_record_file_revisions`, `backfill_revisions` and `stored_run_revisions` to reckon/run_store.py, `_read_store_records` to reckon/velocity.py, the store read to the figure script and the 396-line test; 84165b187d adds only the evidence fragment, and the diff also carries formatter reflow inside the figure script.\nCALL_SITES: docs/figures/plan-review-cycles/measure_review_cycles.py:344, docs/figures/plan-review-cycles/measure_review_cycles.py:671, reckon/ledger.py:2301, reckon/velocity.py:823, reckon/run_store.py:1427\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: reckon/velocity.py:788 and docs/figures/plan-review-cycles/measure_review_cycles.py:328 do answer from the store, but the revision reckon/velocity.py:823 reads is stamped from `promoted_revision` at reckon/run_store.py:280, which is not the commit that added the record file.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/after-suite.log ends \"64 passed in 71.64s\" with EXIT=0 and logs/base-arm.log \"58 passed\" with EXIT=0, both naming revision, tree and command, though no arm measures the figure script's dispatch times while the file was still present, as the done-when words it.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: every changed path is inside the declared write paths, but docs/figures/plan-review-cycles/measure_review_cycles.py:71 and its neighbours carry about sixty lines of formatter reflow the goal does not imply, and logs/red-at-base.log:3 shows the base extraction under a bare `/tmp` path.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_revision_reads_restate_against_the_store.py:339 reddens if the store read is reverted because the population empties, and :345 reddens if the backfill mis-parses a sha, but :340 compares two outputs of the same code path rather than an independent source and no assertion constructs a record carrying `promoted_revision`, so the stamp at reckon/run_store.py:280 is uncovered.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/run_store.py:404 extends the existing `_runs_columns`/`_migrate_runs` pair by a table argument and reckon/run_store.py:1267 reuses the module's `noqa: S608 - fixed table names` idiom, so the addition reads like the file around it.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/run_store.py:1142 re-implements the additions log that reckon/velocity.py:1294 already owns, so the addition neither extends nor wraps the owner.\nFINDING reckon/run_store.py:280 blocking: `_row_revision` stamps `promoted_revision` as the commit the record file entered the tree at, while reckon/crew/promotion_scope.py:305 defines that field as the run's own work tip and states the promotion's own commit is a different one; every promotion-written row therefore names no record file, `RunStore.revisionless_rows` at reckon/run_store.py:941 never repairs it, and reckon/velocity.py:823-834 silently falls back to the durable row.\nFINDING reckon/velocity.py:1904 non-blocking: the landed-census arm accepts the committed marker only for `committed_primary_snapshot`, so rows the change labels `run_store_record_revision` or `run_store_row` at reckon/velocity.py:1085 never count as landed and `landed_nodes` under-counts under the store path.\nFINDING reckon/run_store.py:1142 non-blocking: `_record_file_revisions` duplicates `_record_file_additions` at reckon/velocity.py:1294 \u2014 the same first-parent additions log over `docs/state/<project>/runs` for one run id to one adding commit.\nFINDING docs/figures/plan-review-cycles/measure_review_cycles.py:71 non-blocking: roughly sixty lines of formatter reflow unrelated to the store read ride inside the feature commit, which the repository's rule puts in its own `style(lint):` commit.\nFINDING logs/red-at-base.log:3 non-blocking: the base arm's extraction is under a bare `/tmp` path rather than `$TMPDIR`.\n",
+  "review_run_id": "r-20261115T183015279464-review-of-revision-reads-on-the-store-s24-84165b187d1c",
+  "reviewed_base_sha": "27958ce9c4fa9ff53b4c5814fcaa962a961b9805",
+  "reviewed_head_sha": "84165b187d1cc7f94ead43c9c0cc854280dfb91c",
+  "reviewed_run_id": "r-20261115T102555144818-revision-reads-on-the-store-s24",
+  "scores": {
+    "durability": 13,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 13,
+    "reuse": 5,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T18:47:02.898114+00:00",
+  "total": 76
+}

@@ -139,6 +139,11 @@ def test_complete_requests_and_returns_before_the_promotion_finishes(
 def test_the_sweep_requests_without_waiting(repository, slow_promotion, monkeypatch):
     run_id = "r-sweep-request"
     pointer = repository.plant(run_id, role="review")
+    monkeypatch.setattr(
+        acceptance,
+        "review_self_state",
+        lambda p: (acceptance.REVIEW_SELF_READY, "", None),
+    )
     monkeypatch.setattr(resumption, "external_wait", lambda *a, **k: None)
     monkeypatch.setattr(resumption, "_stream_refusal_block", lambda *a, **k: None)
     monkeypatch.setattr(
@@ -481,7 +486,9 @@ def test_wait_returns_the_synchronous_outcome(repository, monkeypatch):
     )
     assert result.exit_code == 0, result.output
     assert called == [run_id]
-    assert json.loads(result.output)["record"]["commits"] == [repository.sha]
+    receipt = json.loads(result.output)
+    record = json.loads(Path(receipt["record_path"]).read_text())
+    assert record["record"]["commits"] == [repository.sha]
     assert not requests._request_path(run_id).exists()
 
 

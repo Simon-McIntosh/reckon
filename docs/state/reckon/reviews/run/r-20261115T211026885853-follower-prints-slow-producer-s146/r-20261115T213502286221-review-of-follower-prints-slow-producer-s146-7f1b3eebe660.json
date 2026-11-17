@@ -1,0 +1,118 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "fails_if": "The pane draws the sentence more than once, draws anything else beside it (an unknown-run row), or prints nothing; restoring the removed producer-slow list entry reddens it, as negative-control.log line 60 records.",
+      "path": "tests/test_a_slow_tick_is_not_a_lost_producer.py:361-363"
+    },
+    {
+      "fails_if": "The text branch ignores pane_line and prints the sentence; negative-control.log line 73 records it failing with the unknown-run row.",
+      "path": "tests/test_a_slow_tick_is_not_a_lost_producer.py:373"
+    },
+    {
+      "fails_if": "The follower emits zero or more than one JSON object for the event; this is the JSON case's one independent expectation besides the literal at :387.",
+      "path": "tests/test_a_slow_tick_is_not_a_lost_producer.py:385"
+    },
+    {
+      "fails_if": "The emitted object drops or renames one of the carried keys; it is an echo assertion - the expected side is event[field], the dict the test itself handed in - so it holds for any code that re-emits that dict.",
+      "path": "tests/test_a_slow_tick_is_not_a_lost_producer.py:396"
+    },
+    {
+      "fails_if": "The emitted run_id is not the null the test supplied; same echo shape as :396.",
+      "path": "tests/test_a_slow_tick_is_not_a_lost_producer.py:397"
+    }
+  ],
+  "assertion_independence": "Two added assertions compare a value against the same input the test handed in: :361-363 compares the pane's text against SLOW_SENTENCE, the very string carried as event[\"line\"], and :396-397 compares the emitted fields against event[field]. The first is still a guard for this defect because the exclusivity half (nothing else on the pane) reddens on the mutation, as negative-control.log shows; the second is not, and the log records the JSON case passing under that mutation.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-15T21:54:15.280Z",
+  "dispatched_at": "2026-11-15T21:53:34Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the JSON case guards only a dropped key; the text and pane_line cases carry the regression, and a stronger JSON case is not worth another round",
+      "recorded_at": "2026-11-15T22:21:12.215919+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the follower fix landed from a peer with its own test before this run launched; the duplicated harness is test-only and costs nothing at runtime",
+      "recorded_at": "2026-11-15T22:21:16.376825+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_slow_tick_is_not_a_lost_producer.py",
+      "line": 376,
+      "severity": "non-blocking",
+      "summary": "The JSON case cannot fail on the regression it was added for: negative-control.log records it as the single pass while the text and pane_line cases fail, because an unlisted producer-slow still reaches _emit_crew_result on the fall-through path at reckon/crew_follow_commands.py:3810, and its per-field loop at :396 compares the emitted object against the very dict the test handed in, so the case only detects a dropped key. The JSON arm therefore adds no guard the sibling file does not already carry."
+    },
+    {
+      "file": "tests/test_a_slow_tick_is_not_a_lost_producer.py",
+      "line": 335,
+      "severity": "non-blocking",
+      "summary": "_follow_one re-implements the follower-render harness already written inline at tests/test_a_producer_loss_reaches_the_pane.py:174-180 (patch _follow_watch_lines and _hand_off_from_follower, then CliRunner().invoke(follow.crew, [\"follow\", ...\"--no-color\"] + [\"--json\"])); the three cases also duplicate coverage that file held at the base revision, where :159-186 asserts a producer-slow notice prints its line and draws no unknown row in both text and JSON modes and :266-292 already asserts the pane_line=False silence. A defect in either place can now regress in the other unnoticed."
+    }
+  ],
+  "gate_evidence": {
+    "added_failure_count": 0,
+    "added_failure_ids": [],
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_slow_tick_is_not_a_lost_producer.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T211026885853-follower-prints-slow-producer-s146/arm-after-7f1b3eebe6.log",
+      "revision": "7f1b3eebe66005b67b8436d70611fce072a4ba14"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_slow_tick_is_not_a_lost_producer.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T211026885853-follower-prints-slow-producer-s146/arm-base-5cf298bc.log",
+      "revision": "5cf298bc58c02e13d2c11506a9b36c6d9b0b93d2"
+    },
+    "negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T211026885853-follower-prints-slow-producer-s146/negative-control.log",
+    "note": "Neither arm completed with a failure, so the added-failure delta is zero; the negative control is a separate run and is not counted as an added failure."
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none: the landed change is a test module and an evidence fragment, so no production path can reach it; the renderer the cases exercise is reckon/crew_follow_commands.py:3781-3811, read but not changed.",
+    "diff": "read 0195cca494 and 7f1b3eebe6 against 5cf298bc58c02e13d2c11506a9b36c6d9b0b93d2; the diff is 98 lines of test additions (three cases, SLOW_SENTENCE, _slow_notice, _follow_one) plus a 25-line evidence fragment, with no production file touched.",
+    "done_when": "the done-when at docs/plans/the-monitor-shows-the-work-it-watches.html:940 requires a text case with no run row, a JSON case, a negative control that reddens with producer-slow removed, and arms logged under the run directory; arm-base-5cf298bc.log records 63 passed EXIT=0, arm-after-7f1b3eebe6.log records 66 passed EXIT=0, negative-control.log records 2 failed, 1 passed, EXIT=1.",
+    "goal": "the goal is to deliver section s146 of the-monitor-shows-the-work-it-watches as its done-when states; the diff adds the three cases that done-when names to tests/test_a_slow_tick_is_not_a_lost_producer.py, and reckon/crew_follow_commands.py:3786 already lists producer-slow at base, so no product clause required a source change.",
+    "manifest": "the reviewed run's manifest.md names commits 0195cca494 and 7f1b3eebe6, both suite arms with their EXIT codes, the negative control, the byte-identical source restore and the ruff results; its 63-to-66 pass counts match the two arm logs it cites.",
+    "write_paths": "prompt.txt FENCE-SCOPE grants reckon/crew_follow_commands.py, tests/test_a_slow_tick_is_not_a_lost_producer.py, the section's evidence fragment and its figure directory; both paths in the 5cf298bc..7f1b3eebe6 diff lie inside those grants."
+  },
+  "justifications": {
+    "durability": "negative-control.log reddens test_a_slow_notice_prints_its_sentence_once_and_draws_no_row and test_a_slow_notice_marked_* when producer-slow leaves the list at reckon/crew_follow_commands.py:3781-3787, but the JSON case at tests/test_a_slow_tick_is_not_a_lost_producer.py:376 stands green under that same mutation.",
+    "evidence": "arm-base-5cf298bc.log, arm-after-7f1b3eebe6.log and negative-control.log each open with their revision and literal command and end in a bare EXIT= line under the run directory, but no log line names the all_debug partition the done-when requires and the ruff result appears only in manifest.md.",
+    "fit": "the new cases reuse the file's clock fixture at tests/test_a_slow_tick_is_not_a_lost_producer.py:64 for RECKON_HOME isolation and follow the module's docstring idiom, while _follow_one at :335-337 returns an unannotated CliRunner result unlike the annotated helpers around it.",
+    "goal_fidelity": "the three cases at tests/test_a_slow_tick_is_not_a_lost_producer.py:354,366,376 cover exactly the text, pane_line and JSON observations the section's done-when names, while the deliverable's product clause was already true at the base revision, which lists producer-slow at reckon/crew_follow_commands.py:3786.",
+    "reuse": "the helper _follow_one at tests/test_a_slow_tick_is_not_a_lost_producer.py:335 re-implements the harness tests/test_a_producer_loss_reaches_the_pane.py:174-180 already writes, and the cases duplicate coverage that file holds at the base revision.",
+    "scope_discipline": "only tests/test_a_slow_tick_is_not_a_lost_producer.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/follower-prints-slow-producer-s146.html changed, both inside the dispatch fence at prompt.txt FENCE-SCOPE, though the section's own write-path list names neither the fragment nor a docs path."
+  },
+  "project": "reckon",
+  "reuse_search": "Searched tests for the follower-render harness by capability (patch _follow_watch_lines, invoke follow.crew) and by producer-slow coverage: tests/test_a_producer_loss_reaches_the_pane.py:159-186 owns the same assertion for producer-slow in both text and JSON modes and :266-292 owns the pane_line=False silence, both present at the base revision; tests/test_removed_flag_migration.py:160 and tests/test_follow_counts_its_session.py:111 hold related harnesses. No production definition was added, so no production owner was forked.",
+  "review_run_id": "r-20261115T213502286221-review-of-follower-prints-slow-producer-s146-7f1b3eebe660",
+  "reviewed_base_sha": "5cf298bc58c02e13d2c11506a9b36c6d9b0b93d2",
+  "reviewed_head_sha": "7f1b3eebe66005b67b8436d70611fce072a4ba14",
+  "reviewed_run_id": "r-20261115T211026885853-follower-prints-slow-producer-s146",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T22:17:44.881762+00:00",
+  "total": 89
+}

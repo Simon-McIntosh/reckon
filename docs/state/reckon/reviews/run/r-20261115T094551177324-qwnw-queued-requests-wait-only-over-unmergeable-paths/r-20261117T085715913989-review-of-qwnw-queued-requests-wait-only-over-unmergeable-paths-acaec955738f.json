@@ -1,0 +1,82 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_failure_ids": [],
+  "after_log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T094551177324-qwnw-queued-requests-wait-only-over-unmergeable-paths/logs/head-suite.log",
+  "baseline_failure_ids": [],
+  "baseline_log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T094551177324-qwnw-queued-requests-wait-only-over-unmergeable-paths/logs/final-base-suite.log",
+  "call_sites": [
+    "reckon/crew/admission/selection.py:506",
+    "reckon/crew/dispatching/requests.py:455"
+  ],
+  "call_sites_note": "reckon/crew/admission/selection.py:506 is queue_admission.admit_once's pre-check and reckon/crew/dispatching/requests.py:455 is the dispatch-time yield check, which reaches the same comparison through the shared=None fallback; reckon/crew/queue_admission.py:72 re-exports _earlier_overlapping_request rather than calling it.",
+  "completed_at": "2026-11-17T08:58:50.454Z",
+  "derivation": "added_failure_ids is (after arm FAILED ids) minus (baseline arm FAILED ids) read from the reviewed run's own gate logs: logs/final-base-suite.log reads '58 passed' with EXIT=0 and logs/head-suite.log reads '58 passed' with EXIT=0 at acaec955738f709fd916bd561590350ec62a9f16, so both arms carry zero failing ids and the difference is empty (added_failure_count 0). The node's own arms agree: logs/final-base-gate.log reads '6 failed, 12 passed' with EXIT=1 at 281c035950bf811367c61d92909c7089eaa05bba and logs/head-gate.log reads '21 passed' with EXIT=0 at the head.",
+  "dispatched_at": "2026-11-17T08:58:33Z",
+  "findings": [
+    {
+      "file": "reckon/crew/admission/holds.py",
+      "line": "236",
+      "severity": "non-blocking",
+      "text": "non-blocking: the docstring says an absent declaration answers an empty policy that the sharing rule reads as unmergeable, but runs._shared_write_paths at reckon/crew/runs.py:2032 answers a default-share policy when docs/state/<project>/shared_write_paths.json is missing, so source paths share there; only a request whose project or repo key is blank or a declaration that will not parse reaches the conservative hold the sentence describes."
+    },
+    {
+      "file": "reckon/crew/admission/holds.py",
+      "line": "268",
+      "severity": "non-blocking",
+      "text": "non-blocking: the docstring calls `shared` the pass's policy for ``second`` while both call sites pass the judged request's policy for the first argument (selection.py:512 and the fallback at holds.py:334 both resolve pointer's policy), so the stated direction is inverted; a later reader following it would judge a same-repository pair in two projects with the candidate's declaration rather than the judged request's."
+    },
+    {
+      "file": "reckon/crew/admission/selection.py",
+      "line": "426",
+      "severity": "non-blocking",
+      "text": "non-blocking: the per-(project, repo) exclusive-path cache is now written twice, here inline and again in holds.py:241 _exclusive_shared_paths, so one resolution rule has two copies that must be kept in step; this pass already imports the holds module at line 506 and could call the helper it added."
+    },
+    {
+      "file": "tests/test_a_queued_hold_reads_only_unmergeable_paths.py",
+      "line": "85",
+      "severity": "non-blocking",
+      "text": "non-blocking: `{phase for launched} != {\"queued\"}` passes while one launched pointer still reads queued, so the line does not assert that each request advanced; lines 76-84 carry the guard and this assertion adds no condition of its own."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T094551177324-qwnw-queued-requests-wait-only-over-unmergeable-paths/manifest.md",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "non-blocking: the tests: line names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which exercise neither the admission pre-check nor the cases this node changed, so a promotion that fills its gate receipt from this line receives a command that cannot re-run the measure recorded in logs/head-gate.log."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read 281c035950..acaec955738f commit by commit; the node's own six commits are linear on the base and the rest of the range is merges of primary, which leave the node's rule in holds.py:282 intact and carry primary's tests/test_overlapping_queued_requests_launch_in_turn.py version (EXCLUSIVE = 'pyproject.toml', project-bound refusal case) at the head.",
+    "done_when": "the done_when asks for two temporary-repository cases with a crew home, a base-revision negative control logged to docs/evidence/fragments/queued-work-needs-no-workaround/s23.html, and the tests on all_debug; logs/head-gate.log reads '21 passed' with EXIT=0 at acaec9557, logs/final-base-gate.log reads '6 failed, 12 passed' with EXIT=1 at 281c0359, and logs/final-negative-control.log reads '1 failed, 2 passed' with EXIT=1 for the new file over the base tree.",
+    "goal": "the node's goal is to hold a queued request behind an earlier one only over a path a merge cannot reconcile; reckon/crew/admission/holds.py:282 gates the overlap on runs._claim_paths_share, so a shared source path stops holding and a plan document still holds, and tests/test_a_queued_hold_reads_only_unmergeable_paths.py:45,:90 assert both directions.",
+    "manifest": "read the reviewed run's manifest.md; it records '21 passed' at acaec9557, both suite arms at '58 passed' with EXIT=0, and a red control at '1 failed, 2 passed', but its tests: line at manifest.md:11 names the fence's suite rather than the gate that measures the change.",
+    "write_paths": "the node declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; its six own commits 5750248105, b4bcb3dbc5, 320cca3bfb, 072aa36b5d, 816a91e4d8 and b9e3af6aca touch only reckon/crew/admission/holds.py, reckon/crew/admission/crew selection.py, three tests/ files and the s23 and node fragments under that directory."
+  },
+  "justifications": {
+    "durability": "logs/final-negative-control.log shows tests/test_a_queued_hold_reads_only_unmergeable_paths.py:76 failing at 281c0359 with \"assert ['r-later'] == []\", so the guard fires on exactly the pre-check this node removes, and the plan-document case reddens if the sharing rule is replaced by an unconditional share.",
+    "evidence": "logs/head-gate.log reads '21 passed' with EXIT=0 at acaec9557 and logs/final-baseline arms read '6 failed, 12 passed' and '58 passed', so the done_when's two cases and its control are recorded rather than claimed, though no log header names the all_debug node and manifest.md:11 names a command that cannot measure the change.",
+    "fit": "reckon/crew/admission/holds.py:229 follows the module's private-helper and per-pass-cache idiom that selection.py:426 already uses, and introduces no name the repository forbids.",
+    "goal_fidelity": "reckon/crew/admission/holds.py:282 adds the runs._claim_paths_share term to the overlap and reckon/crew/admission/selection.py:512 hands the pass's policy in, so source directories are admitted while a plan document still holds a later request.",
+    "reuse": "the overlap reads the owner rules._claim_paths_share and runs._shared_write_paths rather than a second class test, though the per-(project, repo) policy cache is now written twice, at selection.py:426 and holds.py:241.",
+    "scope_discipline": "every path the node's own commits touch is inside the declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround scope, and the wide range in the diff is the primary branch merged as the run's checkpoint records."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to hold a queued request behind an earlier one only over a path a merge cannot reconcile; reckon/crew/admission/holds.py:282 gates the overlap on runs._claim_paths_share, so a shared source path stops holding and a plan document still holds.\nVERDICT done_when: the done_when asks for two temporary-repository cases, a base-revision control logged to docs/evidence/fragments/queued-work-needs-no-workaround/s23.html and the run on all_debug; logs/head-gate.log reads '21 passed' with EXIT=0 at acaec955738f709fd916bd561590350ec62a9f16, logs/final-base-gate.log '6 failed, 12 passed' with EXIT=1 at 281c035950, and logs/final-negative-control.log '1 failed, 2 passed' with EXIT=1 for tests/test_a_queued_hold_reads_only_unmergeable_paths.py over the base tree.\nVERDICT write_paths: the node declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; its six own commits touch reckon/crew/admission/holds.py, reckon/crew/admission/selection.py, three tests/ files and the s23 and node fragments, all inside that scope.\nVERDICT manifest: read the reviewed run's manifest.md; it records 21 passed at the head and both suite arms at 58 passed, but its tests: line at manifest.md:11 names the fence's suite rather than the gate that measures the change.\nVERDICT diff: read 281c035950..acaec955738f commit by commit; the node's six commits are linear on the base and the remaining range is primary merges that leave holds.py:282 intact and bring primary's version of tests/test_overlapping_queued_requests_launch_in_turn.py.\nCALL_SITES: reckon/crew/admission/selection.py:506, reckon/crew/dispatching/requests.py:455\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/admission/holds.py:282 adds the runs._claim_paths_share term and selection.py:512 hands the pass's policy in, so source directories are admitted while a plan document still holds, which is the goal's statement.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/head-gate.log reads '21 passed' with EXIT=0 and logs/final-base-gate.log '6 failed, 12 passed' with EXIT=1, so both directions and the control are recorded, but no log header names the all_debug node the done_when requires and manifest.md:11 names a command that cannot measure the change.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path the node's own commits touch sits inside the declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and the wide diff range is the primary branch merged as manifest.md's checkpoint records.\nSCORE durability: 18\nJUSTIFICATION durability: logs/final-negative-control.log shows tests/test_a_queued_hold_reads_only_unmergeable_paths.py:76 failing at 281c035950 with \"assert ['r-later'] == []\", so reinstating the old pre-check reddens the guard, while the phase assertion at line 85 holds whatever one launch does.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/admission/holds.py:229 follows the module's private-helper and per-pass-cache idiom, but its docstring at line 236 and line 268 misstate the declaration default and the policy's direction.\nSCORE reuse: 16\nJUSTIFICATION reuse: the overlap reads the owner rules runs._claim_paths_share and runs._shared_write_paths instead of a second class test, yet the policy cache is now written twice, at selection.py:426 and holds.py:241.\nFINDING reckon/crew/admission/holds.py:236 non-blocking: the docstring says an absent declaration answers an empty policy that the sharing rule reads as unmergeable, but runs._shared_write_paths at reckon/crew/runs.py:2032 answers a default-share policy when docs/state/<project>/shared_write_paths.json is missing, so source paths share there; only a request whose project or repo key is blank or a declaration that will not parse reaches the conservative hold the sentence describes.\nFINDING reckon/crew/admission/holds.py:268 non-blocking: the docstring calls `shared` the pass's policy for ``second`` while both call sites pass the judged request's policy for the first argument (selection.py:512 and the fallback at holds.py:334 both resolve pointer's policy), so the stated direction is inverted; a later reader following it would judge a same-repository pair in two projects with the candidate's declaration rather than the judged request's.\nFINDING reckon/crew/admission/selection.py:426 non-blocking: the per-(project, repo) exclusive-path cache is now written twice, here inline and again in holds.py:241 _exclusive_shared_paths, so one resolution rule has two copies that must be kept in step; this pass already imports the holds module at line 506 and could call the helper it added.\nFINDING tests/test_a_queued_hold_reads_only_unmergeable_paths.py:85 non-blocking: `{phase for launched} != {\"queued\"}` passes while one launched pointer still reads queued, so the line does not assert that each request advanced; lines 76-84 carry the guard and this assertion adds no condition of its own.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T094551177324-qwnw-queued-requests-wait-only-over-unmergeable-paths/manifest.md:11 non-blocking: the tests: line names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which exercise neither the admission pre-check nor the cases this node changed, so a promotion that fills its gate receipt from this line receives a command that cannot re-run the measure recorded in logs/head-gate.log.",
+  "review_limits": "Read: the dispatch detail's goal, done_when and write_paths; the run's manifest.md; the six node commits and the merged range 281c035950..acaec955738f restricted to the node's paths; logs/head-gate.log, final-base-gate.log, final-negative-control.log, final-base-suite.log, head-suite.log; the new test file and the two adjusted ones, and the head's holds.py, selection.py and runs._claim_paths_share. Not re-run: no test was executed by this review; the recorded arms and the red control were read from their logs.",
+  "review_run_id": "r-20261117T085715913989-review-of-qwnw-queued-requests-wait-only-over-unmergeable-paths-acaec955738f",
+  "reviewed_base_sha": "281c035950bf811367c61d92909c7089eaa05bba",
+  "reviewed_head_sha": "acaec955738f709fd916bd561590350ec62a9f16",
+  "reviewed_run_id": "r-20261115T094551177324-qwnw-queued-requests-wait-only-over-unmergeable-paths",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T10:58:32.912379+00:00",
+  "total": 103
+}

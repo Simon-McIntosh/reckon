@@ -175,3 +175,47 @@ def test_the_reach_report_writes_nothing(
     assert report["reached"] == []
     assert report["unreached"] == ["s-stale"]
     assert after == before
+
+
+def _harness_session(directory: Path, session: str, name: str, pid: int) -> None:
+    """One live-session record, as the harness keeps it for a running session."""
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / f"{session}.json").write_text(
+        json.dumps({"sessionId": session, "name": name, "pid": pid}),
+        encoding="utf-8",
+    )
+
+
+def test_a_live_session_with_no_follower_is_named_unreached(
+    isolated_reckon_home, tmp_path, monkeypatch
+) -> None:
+    """A coordinator that never armed a follower is told nothing by the pane.
+
+    It holds no registration, so the registration fold cannot see it. It is
+    named under 'unreached' by its harness name, so the announcer can message
+    it, rather than vanishing from a report that reads as near-total reach.
+    """
+    import os
+
+    from reckon.crew_run_commands import (
+        HARNESS_SESSIONS_DIR_ENV,
+        _budget_reset_reach,
+    )
+
+    _mount(tmp_path, monkeypatch, PROJECT)
+    sessions = tmp_path / "harness-sessions"
+    monkeypatch.setenv(HARNESS_SESSIONS_DIR_ENV, str(sessions))
+    _harness_session(sessions, "s-silent", "nova-8e", os.getpid())
+    _harness_session(sessions, "s-gone", "old-session", DEAD_PID)
+    _harness_session(sessions, "s-live", "reckon-f3", os.getpid())
+
+    with follower_registration.follower_registration(
+        PROJECT, "s-live", delivery="stream"
+    ):
+        reach = _budget_reset_reach()
+
+    assert "s-live" in reach["reached"]
+    assert "s-silent" in reach["unreached"]
+    assert reach["unreached_names"]["s-silent"] == "nova-8e"
+    assert "s-gone" not in reach["unreached"]
+    assert "s-gone" not in reach["reached"]

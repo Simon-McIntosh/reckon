@@ -60,7 +60,7 @@ from reckon import budget as budget_module
 from reckon._backends import _human_age
 from reckon._store import write_atomically, write_json_atomically
 from reckon._timestamps import parse_utc
-from reckon.crew import plan_review, runs
+from reckon.crew import plan_review, recovery_wait, runs
 from reckon.crew.dispatch import (
     _WORKER_DONE_MANIFEST_STATUSES,
     BudgetHold,
@@ -316,6 +316,54 @@ def launch_in_flight(record: Mapping[str, Any]) -> bool:
     return record_process_alive(marker) is True
 
 
+def launch_mark_holds(record: Mapping[str, Any]) -> bool:
+    """Whether a resume mark still stands for a launch that has not delivered.
+
+    The mark's shape says only that a door began a resume: a door that died
+    before its worker started, or one whose attempt has since finished, leaves
+    a mark whose presence means nothing about what is running now. Presence
+    alone therefore must not refuse a review, or one abandoned door withholds
+    a run's review for as long as the pointer holding the mark survives.
+    """
+    if not launch_in_flight(record):
+        return False
+    marker = record.get(RESUME_LAUNCH_IN_FLIGHT)
+    attempt = marker.get("attempt") if isinstance(marker, Mapping) else None
+    if not isinstance(attempt, int):
+        # A mark written before the attempt was named stands for whatever
+        # attempt the pointer holds, which is the launch it began.
+        attempt = record.get("attempt")
+    return not (
+        isinstance(attempt, int) and _attempt_left_an_answer(record, attempt)
+    )
+
+
+def _attempt_left_an_answer(record: Mapping[str, Any], attempt: int) -> bool:
+    """Whether an attempt recorded an answer, so the mark guarding it is spent.
+
+    Two records answer it. The attempt's own exit receipt is its end, and an
+    exit is as final as a solver result for the purpose of refusing a review.
+    Otherwise the marker stands for the attempt the pointer still names — a
+    mark left over from an attempt the run has moved past says nothing about
+    the one running now — and that attempt's stream ending in a result record
+    is the delivery the review is waiting for.
+    """
+    run_id = str(record.get("run_id") or "")
+    if run_id:
+        receipt = run_dir(run_id) / f"attempt-{attempt}-exit.json"
+        if receipt.exists():
+            return True
+    current = record.get("attempt")
+    if current is not None and current != attempt:
+        return False
+    from reckon.crew.recovery_wait import (
+        STREAM_RESULT_RECORD_TYPE,
+        _newest_stream_last_record_type,
+    )
+
+    return _newest_stream_last_record_type(record) == STREAM_RESULT_RECORD_TYPE
+
+
 class PromotionInProgressError(CrewError):
     """A resume met a run that a promotion holds, and refuses rather than waits."""
 
@@ -553,8 +601,6 @@ def lane_probe_cache_path(project: str, backend_name: str) -> Path:
     )
 
 
-
-
 def _read_lane_probe_cache(project: str, backend_name: str) -> dict[str, Any]:
     path = lane_probe_cache_path(project, backend_name)
     try:
@@ -731,7 +777,18 @@ def recovery_log_path(project: str) -> Path:
     return crew_home() / "recovery" / f"{readable or 'project'}.jsonl"
 
 
-def _lifted_holds(project: str) -> set[tuple[str, str]]:
+# What each project's recovery log has already taught the sweep: the offset the
+# last read reached, and the lifted set those lines produced. The log only grows
+# and each sweep re-derived the same answer from all of it, which on a 41 MB
+# record cost a fifth of the sweep thread in ``json.loads`` alone. The read
+# itself — the byte offset, the whole-line clamp and the rejection of a replaced
+# or shortened file — is ``recovery_wait.appended_lines``, which the stream
+# readers share; what is kept here is only the answer those lines gave.
+_LIFTED_HOLDS: dict[str, tuple[int, frozenset[tuple[str, str]]]] = {}
+_LIFTED_HOLDS_LOCK = threading.Lock()
+
+
+def _lifted_holds(project: str) -> frozenset[tuple[str, str]]:
     """The (run id, signature) pairs the recovery log already records as lifted.
 
     The sweep's append-only recovery log is the authority on what it has already
@@ -741,33 +798,52 @@ def _lifted_holds(project: str) -> set[tuple[str, str]]:
     the pointer's own ``auto_resume`` slot cannot promise — a resume's launch
     rewrites the pointer from a snapshot taken before the stamp, so the slot can
     read absent for a lift that happened.
+
+    Only the lines appended since the previous read are decoded, because a sweep
+    already holds the answer for everything before them. A log replaced or
+    shortened since the last read is read from the start: its earlier bytes are
+    no longer the file those lines came from, and the read reports a start
+    offset the recorded answer was not reached from.
     """
-    lifted: set[tuple[str, str]] = set()
-    try:
-        lines = recovery_log_path(project).read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return lifted
-    for line in lines:
-        if not line.strip():
-            continue
-        try:
-            report = json.loads(line)
-        except ValueError:
-            continue
-        if not isinstance(report, Mapping):
-            continue
-        # A dry run appends its own line and lists what it *would* resume, so a
-        # preview is not a lift and must not retire a hold the sweep never took.
-        if report.get("dry_run"):
-            continue
-        for entry in report.get("resumed") or ():
-            if not isinstance(entry, Mapping):
+    path = recovery_log_path(project)
+    key = str(path)
+    # The read advances the offset the next read starts from, so the set that
+    # offset stands for must be published by the same critical section. Split
+    # across two, two overlapping sweeps could read from an advanced offset
+    # while the stored answer still belonged to the older one: the later caller
+    # finds a start it never read from, discards the set, and publishes an
+    # offset past lines nobody counted — after which the sweep resumes a hold it
+    # already lifted.
+    with _LIFTED_HOLDS_LOCK:
+        previous = _LIFTED_HOLDS.get(key)
+        lines, offset, start = recovery_wait.appended_lines(path)
+        lifted = (
+            set(previous[1]) if previous is not None and previous[0] == start else set()
+        )
+        for line in lines:
+            if not line.strip():
                 continue
-            run_id = str(entry.get("run_id") or "")
-            signature = str(entry.get("hold") or "")
-            if run_id and signature:
-                lifted.add((run_id, signature))
-    return lifted
+            try:
+                report = json.loads(line)
+            except ValueError:
+                continue
+            if not isinstance(report, Mapping):
+                continue
+            # A dry run appends its own line and lists what it *would* resume,
+            # so a preview is not a lift and must not retire a hold the sweep
+            # never took.
+            if report.get("dry_run"):
+                continue
+            for entry in report.get("resumed") or ():
+                if not isinstance(entry, Mapping):
+                    continue
+                run_id = str(entry.get("run_id") or "")
+                signature = str(entry.get("hold") or "")
+                if run_id and signature:
+                    lifted.add((run_id, signature))
+        result = frozenset(lifted)
+        _LIFTED_HOLDS[key] = (offset, result)
+    return result
 
 
 def _refusal_observed_at(record: Mapping[str, Any]) -> datetime | None:
@@ -842,6 +918,39 @@ def _pointer_session(record: Mapping[str, Any]) -> str:
     return str(record.get("session_id") or "").strip()
 
 
+def _stream_reading_settings(record: Mapping[str, Any]) -> dict[str, Any] | None:
+    """The settings a run's streams are read with, or None when none can be had.
+
+    The record's own launch command names the dialect first. A run re-queued
+    after a refused launch can carry no command at all, or only the placed
+    argv whose first word is the scheduler shim rather than a harness, yet the
+    streams its earlier attempts wrote still hold the session it was
+    continuing. Its configured lane names the harness, so when the record's own
+    settings name no readable dialect the lane's settings from the project's
+    resolved configuration are used instead, rather than leaving the session
+    unreadable and the run's committed work reachable only by discarding it.
+    """
+    from reckon import _backends, flight
+
+    unreadable = (_backends.BackendError, CrewError, OSError, ValueError)
+    try:
+        settings = _backend_settings(record, None)
+        _backends.dialect_for(settings)
+        return settings
+    except unreadable:
+        pass
+    try:
+        config = flight.resolve(str(record.get("project") or "")).config
+        configured = (config.get("backends") or {}).get(record.get("backend"))
+        if not isinstance(configured, Mapping):
+            return None
+        settings = dict(configured)
+        _backends.dialect_for(settings)
+        return settings
+    except (*unreadable, flight.FlightConfigError):
+        return None
+
+
 def _stream_session(record: Mapping[str, Any]) -> str:
     """The session id the run's newest non-empty stream carries, or empty.
 
@@ -863,9 +972,11 @@ def _stream_session(record: Mapping[str, Any]) -> str:
         if run_id
         else Path(str(record.get("log_path") or ".")).parent
     )
+    backend = _stream_reading_settings(record)
+    if backend is None:
+        return ""
     for log in stream_paths_newest_first(directory, include=(record.get("log_path"),)):
         try:
-            backend = _backend_settings(record, None)
             observation = _backends.observe_log(
                 backend_name=str(record.get("backend") or ""),
                 backend=backend,
@@ -1891,6 +2002,7 @@ def _resume(
     config: Mapping[str, Any] | None,
     launcher: Callable[..., int] | None = None,
     advice: str = CONTINUE_ADVICE,
+    coordinator: bool = False,
 ) -> dict[str, Any]:
     """Launch one resumption exactly the way a hand-typed resume does.
 
@@ -1920,6 +2032,16 @@ def _resume(
             f"{failure['remedy']}) and resume it by hand, or complete it"
         )
     _refuse_a_launch_already_running(run_id)
+    if coordinator:
+        # A repair round that took an attempt and then declared it was waiting
+        # for coordinator advice holds a reservation its own hold will never
+        # use. A coordinator's advice is that wait ending, so it supersedes the
+        # round instead of being refused by it.
+        from reckon.crew.recovery_repair_dispatch import (
+            supersede_a_held_repair_round,
+        )
+
+        supersede_a_held_repair_round(run_id)
     # The attempt number is reserved before anything is built, and reserved
     # with an exclusive create rather than the pointer lock, so a door on
     # another host reading the same current attempt meets this claim where a
@@ -2411,8 +2533,6 @@ def _sweep_writer_entry(
     }
 
 
-
-
 def _write_sweep_status(
     project: str, report: Mapping[str, Any], writer: Any = None
 ) -> None:
@@ -2580,12 +2700,43 @@ def sweep(
         moment = _now(now)
         wait = external_wait(pointer, now_seconds=moment.timestamp())
         refusal = _stream_refusal_block(pointer)
+        cut_off = None
         if wait is None and refusal is None:
+            row = classify_pointer(pointer)
+            if row.get("classification") == "cut-off":
+                cut_off = row
+        if wait is None and refusal is None and cut_off is None:
             continue
         considered += 1
         advice = CONTINUE_ADVICE
         observation: dict[str, Any] = {}
-        if wait is not None:
+        if cut_off is not None:
+            from reckon import flight
+
+            settings = config if config is not None else flight.resolve(project).config
+            limit = int((settings.get("fences") or {}).get("needs_help_after_failures", 2))
+            attempt = int(pointer.get("attempt") or 1)
+            entry = {
+                "run_id": run_id,
+                "backend": pointer.get("backend"),
+                "trigger": "cut-off",
+            }
+            if limit and attempt >= limit:
+                skipped.append({
+                    **entry,
+                    "reason": "cut-off-attempt-limit",
+                    "detail": f"attempt {attempt} reached the flight's failure bound {limit}",
+                })
+                continue
+            end = cut_off.get("exit_record") or {}
+            signature = f"cut-off:{attempt}:{end.get('exited_at') or ''}"
+            advice = (
+                f"{cut_off['detail']}. Continue from the work and manifest already "
+                "on disk; verify the interrupted tool's result before repeating it."
+            )
+            duplicate_reason = "already-resumed-for-this-cut-off"
+            duplicate_detail = "this attempt's cut-off has already been resumed"
+        elif wait is not None:
             entry = {
                 "run_id": run_id,
                 "backend": pointer.get("backend"),

@@ -230,19 +230,24 @@ def test_the_run_s_own_path_outside_its_fence_is_still_refused(
 ) -> None:
     """Counting the run's own commits must keep the fence it exists for.
 
-    The run's last commit writes a path no one declared: the refusal names that
-    path and not the peer's, which reached the tree through the merge alone.
+    The run's last commit writes a merge-unsafe path no one declared: the refusal
+    names that path and not the peer's, which reached the tree through the merge
+    alone. A merge-unsafe class is the one the declaration cannot make safe, so
+    a plan document stands where a source file no longer would.
     """
     run_tree, run_id, cited = run_that_merges_main
-    (run_tree / "outside.txt").write_text("undeclared\n", encoding="utf-8")
-    _git(run_tree, "add", "outside.txt")
+    (run_tree / "docs" / "plans").mkdir(parents=True, exist_ok=True)
+    (run_tree / "docs" / "plans" / "outside.html").write_text(
+        "<h2>outside</h2>\n", encoding="utf-8"
+    )
+    _git(run_tree, "add", "--", "docs/plans/outside.html")
     _git(run_tree, "commit", "-q", "-m", "chore: reach past the fence")
     tip = _git(run_tree, "rev-parse", "HEAD")
 
     with pytest.raises(crew.CrewError) as refusal:
         crew.complete(run_id, gate="passed", commits=[*cited, tip], root=repository)
 
-    assert "outside.txt" in str(refusal.value)
+    assert "docs/plans/outside.html" in str(refusal.value)
     assert "peer.txt" not in str(refusal.value)
     assert ledger.runs(PROJECT, root=repository) == []
     assert pointer_path(run_id).is_file()

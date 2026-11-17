@@ -1,0 +1,86 @@
+{
+  "added_failure_basis": "The reviewed run is unarmed at both revisions of this range: its tests block records that git ls-tree over the node's write paths resolves no test file at c1268f5d or at 5485d5d6, so the manifest carries no baseline_suite and no after_suite gate log from which added failures could be derived. I confirmed the absence for this range with git diff --name-only, which lists three paths and no test file, so zero added failures is the derivation rather than an unmeasured default.",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [],
+  "completed_at": "2026-11-15T07:19:34.509Z",
+  "dispatched_at": "2026-11-15T06:54:28Z",
+  "figure_check": {
+    "labels_measured": "x ticks 6 000/6 500/7 000/7 500, y ticks 0/50/100/150/200, both axis titles, the window annotation and the two direct labels, each crop ink mean 0.90 to 0.99 against a blank control of exactly 1.0",
+    "labels_with_ink": 14,
+    "render": "convert -density 140 on the delivered compaction-drops.svg, 1714x882 from an 881.57x453.54 pt canvas",
+    "rendered": "/tmp/rev-drops-140.png",
+    "rightmost_gap_px": 53,
+    "stems": "seven ink clusters at a mid-plot row: the left spine at 138-139 px and six stems at 226, 550, 1119, 1389, 1537 and 1595 px, which map to stream records 6060, 6469, 7187, 7528, 7715 and 7788 within 2 px, with no right spine and no gridlines"
+  },
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the guard's exit status refuses the run, and the committed figure was re-rendered and inspected; a guard that also deletes the bad file is a hardening for the plotting helper, not this measurement",
+      "recorded_at": "2026-11-15T07:24:03.247241+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the three carried items are style and test-strength refinements to a one-off plotting script; the measurement's figures are verified independently by both reviews",
+      "recorded_at": "2026-11-15T07:24:06.180234+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured/plot_compaction_drops.py",
+      "line": 114,
+      "severity": "non-blocking",
+      "text": "non-blocking: the emission guard runs after fig.savefig has already written the file, so a regression does not prevent the bad artefact from landing. Reinstating svg.fonttype none in a scratch copy returned 3 while leaving a compaction-drops.svg carrying text=14 path=15 at the output path, which on a real run is the committed figure, and the fragment at a-local-worker-compacts-and-continues-measured.html:141 says the script refuses to save a file containing a text element, which it does not: it saves it and refuses to exit 0. The path floor of 40 also sits only four paths below the current 44, so the threshold has little headroom."
+    },
+    {
+      "file": "docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured/check_compaction_evidence.py",
+      "line": 80,
+      "severity": "non-blocking",
+      "text": "non-blocking: three non-blocking findings of the previous round were dispositioned folded into this same node, and the node reports complete at 5485d5d6 without answering them: the turn column the done_when names is still parsed and discarded here, so a future edit to that column reddens nothing; plot_compaction_drops.py:101 still measures clipping against the figure box rather than the axes box; and plot_compaction_drops.py:44 still calls plt.style.use default instead of the repository's data-ink sheet. A fold that closes with the node it names leaves no node carrying the work."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "none",
+    "diff": "Read commit by commit against 2a9c5007b859: the single gained commit 5485d5d635 touches three files, the fragment prose, plot_compaction_drops.py (svg.fonttype back to path plus a post-save emission guard) and compaction-drops.svg (re-emitted as 44 paths and 0 text elements), and no path outside the declared scope appears.",
+    "done_when": "The done_when is the quantitative measure the node was dispatched to satisfy; the gained commit changes none of its figures, and I re-derived the six boundaries independently from the run's own stream.jsonl: records 6060, 6469, 7187, 7528, 7715 and 7788, with pre-token sizes 200 840, 203 860, 200 160, 196 889, 205 512 and 200 181.",
+    "goal": "The node goal is to measure whether a local worker whose task exceeds the lane's context window compacts and continues to a complete manifest; the gained commit moves no measured number and repairs the figure, so docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured.html:137-141 now states the emission mechanism the figure actually uses.",
+    "manifest": "Read: it records head 5485d5d6359b, records the render evidence (1714x882, ink in four label crops, zero in a blank control crop, 52 px between the two rightmost stems) in repair/round4-plot.log and repair/round3-render.log, demonstrates the guard's negative control on the 2a9c5007 SVG, and states both suite arms are empty because no test file lies in the node's write paths.",
+    "write_paths": "The manifest declares docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured.html and the figure directory; the three paths in the gained range are that fragment, the figure directory's compaction-drops.svg and its plot_compaction_drops.py, so nothing lies outside the declared scope."
+  },
+  "justifications": {
+    "durability": "plot_compaction_drops.py:116 catches the shape that produced the previous round's blank render, since a scratch copy with svg.fonttype set back to none writes an SVG carrying 14 text elements and exits 3, so the regression is refused rather than merely asserted away, though the refusal does not prevent the bad file being written.",
+    "evidence": "repair/round4-plot.log records revision 2a9c5007, text=0, path=44 and EXIT=0, and I reproduced it independently: running the committed script over the run directory regenerates an SVG identical to the delivered one but for matplotlib's random clip-path ids, and the raster at 140 dpi carries ink in all fourteen label positions against a blank control reading zero.",
+    "fit": "plot_compaction_drops.py:4 now says the labels are written as paths and matches the rcParams at :51, repairing the earlier contradiction, but :44 still calls plt.style.use('default') where the repository's data-ink sheet is the base style its newer figure scripts load.",
+    "goal_fidelity": "a-local-worker-compacts-and-continues-measured.html:137-141 now states that every label is emitted as glyph outlines, which is what compaction-drops.svg holds (0 text elements and 131 use references into 28 glyph outlines), while the six boundaries and the 24 632-token minimum margin are unchanged from the previously reviewed round.",
+    "reuse": "No owner exists for an SVG-emission or label-geometry guard: a search across the tree for svg.fonttype and for a clip or overlap checker found only three research renderers under docs/research/data/crew-pattern-review that set fonttype none independently, and no shared save helper, so this guard duplicates nothing.",
+    "scope_discipline": "git diff --name-only 2a9c5007b859 5485d5d635 names exactly the fragment, the SVG and the drawing script, every one of which is inside the scope declared at docs/figures/a-review-dies-where-nobody-is-looking/a-local-worker-compacts-and-continues-measured."
+  },
+  "notes": "Read-only review of the one commit the run gained since 2a9c5007, read through git objects rather than from the run's worktree; no file in the repository was modified and nothing was written outside this run's two declared record paths. The three checks I ran were light single-process operations on this node's own scratch tree: regeneration of the SVG from the committed script, rasterisation at 140 dpi with per-label ink measurement, and the committed evidence checker against the run directory.",
+  "project": "reckon",
+  "reproduction": {
+    "evidence_checker": "check_compaction_evidence.py against the committed head fragment and the run directory prints OK 6 boundaries, 8 readings, unused-window margins 24632..33255 tokens and exits 0",
+    "guard_negative_control": "a copy with svg.fonttype none reinstated prints TEXT ELEMENTS in the emitted svg and exits 3; the SVG as committed at 2a9c5007 measures text=14 path=15 against the head's text=0 path=44",
+    "script": "the committed plot_compaction_drops.py run from a scratch copy over the run directory prints OK 6 boundaries, 14 text artists and exits 0",
+    "svg_identity": "identical to the delivered compaction-drops.svg after normalising matplotlib's random clip-path ids and the dc:date; 160 differing characters all inside those ids, 26 649 bytes of normalised text on each side"
+  },
+  "review_run_id": "r-20261115T065315829311-review-of-a-local-worker-compacts-and-continues-measured-5485d5d6359b",
+  "reviewed_base_sha": "2a9c5007b859645b258bab74d3b98fbaa19394e0",
+  "reviewed_commits": [
+    "5485d5d6359b00d23f41f7cf3e441ef6df09aae0"
+  ],
+  "reviewed_head_sha": "5485d5d6359b00d23f41f7cf3e441ef6df09aae0",
+  "reviewed_run_id": "r-20261114T205719669237-a-local-worker-compacts-and-continues-measured",
+  "rubric": "run",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 15,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T08:15:00Z",
+  "total": 107
+}

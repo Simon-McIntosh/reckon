@@ -1,0 +1,16 @@
+<section id="wftl-a-delivered-run-is-promoted-without-a-coordinator-codex-landing">
+  <h3>Station delivery reaches review and published landing</h3>
+  <p>The declared base <code>01e3ef5ac36fd80a527eb2b38d5da0191d15611a</code> already dispatches a delivered run's review in one station tick and lands a cleanly reviewed delivery through the promotion service without a coordinator call. The historical failure did not reproduce: both new integration probes passed on unchanged product code. This delivery adds regression coverage and changes no product source.</p>
+  <table>
+    <thead><tr><th>Measurement on all_debug</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Declared baseline suite</td><td>58 passed in 35.67s; EXIT=0</td></tr>
+      <tr><td>Both station integration probes on base product code</td><td>2 passed in 4.55s; EXIT=0</td></tr>
+      <tr><td>Integration probes plus blocking-review control</td><td>3 passed in 3.96s; EXIT=0</td></tr>
+      <tr><td>Disable the acceptance handoff in a scratch extraction</td><td>1 failed in 0.76s; EXIT=1</td></tr>
+    </tbody>
+  </table>
+  <p>The accepting test reads the durable promotion receipt, the delivered content on primary, the ledger's <code>review-acceptance</code> provenance and the committed section declaration. The blocking control queues a clean delivery, stores a blocking finding before service execution and reads <code>promotion-deferred</code>, unchanged primary content and no ledger promotion.</p>
+  <p>The scratch mutation replaces the promotable-run handoff condition with <code>False</code>. The landing probe then fails with <code>assert [] == ['r-clean-delivery']</code>, demonstrating that it detects an absent automatic handoff. This is a deliberately mutated control, not a claimed failure of the base revision.</p>
+  <p>Gate and control receipts are retained under run <code>r-20261115T121622838079-wftl-a-delivered-run-is-promoted-without-a-coordinator-codex</code>: <code>baseline-suite.log</code>, <code>base-station-probe.log</code>, <code>station-controls.log</code> and <code>negative-control.log</code>. The manifest carries the final committed-head suite receipt. The worker's assigned fragment path supersedes the section's legacy <code>s70.html</code> spelling.</p>
+</section>

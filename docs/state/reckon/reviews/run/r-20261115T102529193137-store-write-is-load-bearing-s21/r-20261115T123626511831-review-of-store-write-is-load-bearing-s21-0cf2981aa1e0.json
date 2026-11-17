@@ -1,0 +1,53 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/promotion.py:2234",
+    "reckon/crew/promotion.py:2279",
+    "reckon/crew/promotion_evidence.py:1647"
+  ],
+  "completed_at": "2026-11-15T12:48:50.283Z",
+  "dispatched_at": "2026-11-15T12:38:38Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/history-persists-as-detail-washes-out/store-write-is-load-bearing-s21.html",
+      "line": 43,
+      "severity": "non-blocking",
+      "summary": "\"the store-write pair named above\" points at a paragraph that names a different test file, so a reader checking the arm against the log cannot resolve which two failures the baseline figure is",
+      "text": "store-write-is-load-bearing-s21.html:43 says the baseline arm's \"two failures are the store-write pair named above\", but the nearest preceding name is line 33's `tests/test_a_failed_store_write_leaves_no_row.py::test_a_refused_store_write_leaves_no_row_in_either_store`, a test that is not in the baseline arm at all; the two baseline failures the log records are `tests/test_crew_promotion.py::test_a_successful_store_write_is_reported_written_on_the_command_payload` and `::test_a_failing_store_write_is_reported_on_the_ordinary_success_payload`. The pair is named only in the paragraph that follows. Prose only, and the log it cites is correct."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit from 58784d7303 to 0cf2981aa1: 21ecff5631 inverts the store-write test to the refusing contract and adds EXIT=0 to both fixture gate logs, 0cf2981aa1 rewrites the fragment's arms paragraph and adds the promotion and scaffolding paragraphs; two files, nothing else.",
+    "done_when": "The done_when asks for the refusal asserted by injection and a healthy promotion writing both stores at 0/0/0; after-suite.log records 110 passed EXIT=0 over the four files at 0cf2981aa1 including tests/test_crew_promotion.py, and baseline-suite.log records 106 passed 2 failed EXIT=1 at 9530fe3d48ea.",
+    "goal": "The source node's goal is that a promotion whose run-store write raises refuses and leaves no row in either store; tests/test_crew_promotion.py:606-625 now drives a full `crew complete` against an injected raising run_store.append and asserts exit 1, the store path, `scripts/import_runs_into_store.py` and `--project proj` in the refusal, the per-run file gone, and run_store.compare 0/0/0.",
+    "manifest": "Read; it records status complete, the four commits, both arms with their commands and log paths, the negative control, the acted-finding line `acted f4d916227d0: 21ecff5631`, and one outside_scope entry for reckon/crew/promotion.py:2277.",
+    "write_paths": "Read the repair round's declared scope (resume-1-advice.txt:15) and the manifest's orientation_write_paths; both paths in the two commits under review (tests/test_crew_promotion.py and the evidence fragment) are inside it."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_promotion.py:613 asserts exit_code == 1 and :622 asserts the per-run file is absent, so restoring the swallowed `{\"status\": \"failed\"}` return in reckon/ledger.py:_index_append reddens both; the assertions compare the command's own result and the filesystem, not a value the test supplied.",
+    "evidence": "baseline-suite.log records 106 passed 2 failed EXIT=1 at 9530fe3d48ea and after-suite.log 110 passed EXIT=0 at 0cf2981aa1, and the fragment's scaffolding claim is confirmed by reckon/crew/promotion_evidence.py:1647 refusing a log with no terminal EXIT=<n> line.",
+    "fit": "tests/test_crew_promotion.py:606 follows the module's own `_repository_with_candidate` / `_invoke_complete_cli` pattern and the renamed test states its contract in mechanism terms with no plan or ticket identifier.",
+    "goal_fidelity": "tests/test_crew_promotion.py:610-625 asserts the refusal, the named repair verb and the absent row on both sides of the two stores, which is the goal's sentence applied at the promotion the goal names.",
+    "reuse": "the two commits add no definition at all \u2014 a rename and assertion rewrites over the file's existing helpers \u2014 so nothing forks a capability the repository already owns.",
+    "scope_discipline": "git show --stat over 58784d7303..0cf2981aa1 names only tests/test_crew_promotion.py and docs/evidence/fragments/history-persists-as-detail-washes-out/store-write-is-load-bearing-s21.html, both inside the declared scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that a promotion whose run-store write raises refuses and leaves no row in either store; tests/test_crew_promotion.py:606-625 now drives a full crew complete against an injected raising run_store.append and asserts exit 1, the refusal naming the store path and the store-import verb, the per-run file gone, and run_store.compare 0/0/0.\nVERDICT done_when: the done_when asks for the refusal asserted by injection and a healthy promotion writing both stores at 0/0/0; after-suite.log records 110 passed EXIT=0 at 0cf2981aa1 and baseline-suite.log records 106 passed 2 failed EXIT=1 at 9530fe3d48ea.\nVERDICT write_paths: read the repair round's declared scope and the manifest's orientation_write_paths; both paths in the two commits under review lie inside it.\nVERDICT manifest: read; it records status complete, the four commits, both arms with commands and log paths, the negative control, the acted-finding line and one outside_scope entry.\nVERDICT diff: read commit by commit from 58784d7303 to 0cf2981aa1; 21ecff5631 inverts the store-write test and adds EXIT=0 to both fixture gate logs, 0cf2981aa1 rewrites the fragment; two files, nothing else.\nCALL_SITES: reckon/crew/promotion.py:2234, reckon/crew/promotion.py:2279, reckon/crew/promotion_evidence.py:1647\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_crew_promotion.py:610-625 asserts the refusal, the named repair verb and the absent row on both sides of the two stores.\nSCORE evidence: 17\nJUSTIFICATION evidence: baseline-suite.log records 106 passed 2 failed EXIT=1 and after-suite.log 110 passed EXIT=0, and the fragment's scaffolding claim is confirmed by reckon/crew/promotion_evidence.py:1647.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat over 58784d7303..0cf2981aa1 names only tests/test_crew_promotion.py and the evidence fragment, both inside the declared scope.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_crew_promotion.py:613 and :622 redden if reckon/ledger.py:_index_append returns the swallowed failure again, and neither compares a value the test supplied.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_crew_promotion.py:606 keeps the module's own _repository_with_candidate and _invoke_complete_cli idiom and names no plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the two commits add no definition at all, so nothing forks a capability the repository already owns.\nFINDING docs/evidence/fragments/history-persists-as-detail-washes-out/store-write-is-load-bearing-s21.html:43 non-blocking: \"the store-write pair named above\" points at line 33, which names a test in a different file that the baseline arm does not run, so the two baseline failures are not actually identified by the prose.",
+  "review_run_id": "r-20261115T123626511831-review-of-store-write-is-load-bearing-s21-0cf2981aa1e0",
+  "reviewed_base_sha": "58784d73031283dd7f4daef13a8666cb44df491a",
+  "reviewed_head_sha": "0cf2981aa1e0fa399a2d4e8698ec5176b26bb1d3",
+  "reviewed_run_id": "r-20261115T102529193137-store-write-is-load-bearing-s21",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T12:53:13.678226+00:00",
+  "total": 114
+}

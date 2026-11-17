@@ -1,0 +1,372 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_independence": "Fixture state.BAD and distinct EXISTING/ADDED IDs establish independent expected outcomes; no self-comparison found. Waiver-reason comparisons verify persisted supplied text: dropping or replacing the reason makes them fail, and separate waived-status/no-inheritance assertions protect the behavior. Cache equality is backed by a call-count assertion, so it is not used alone as regression evidence.",
+  "assertion_reviews": [
+    {
+      "assertion": "assert measured_record[\"base_sha\"] == primary",
+      "failure_condition": "Changing the requested primary revision or partition makes the helper assertion fail before it can return an observation.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 123
+    },
+    {
+      "assertion": "assert options[\"partition\"] == \"all_debug\"",
+      "failure_condition": "Changing the requested primary revision or partition makes the helper assertion fail before it can return an observation.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 124
+    },
+    {
+      "assertion": "assert scenario[\"baseline\"][\"failure_ids\"] == []",
+      "failure_condition": "Restoring the unfiltered command causes the recorded base refusal; dropping absent metadata, inherited attribution, narrowed runner scope or cache reuse makes the corresponding independent fixture expectation fail.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 147
+    },
+    {
+      "assertion": "assert scenario[\"after\"][\"failure_ids\"] == [INHERITED]",
+      "failure_condition": "Restoring the unfiltered command causes the recorded base refusal; dropping absent metadata, inherited attribution, narrowed runner scope or cache reuse makes the corresponding independent fixture expectation fail.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 148
+    },
+    {
+      "assertion": "assert row[\"status\"] == \"clean\"",
+      "failure_condition": "Restoring the unfiltered command causes the recorded base refusal; dropping absent metadata, inherited attribution, narrowed runner scope or cache reuse makes the corresponding independent fixture expectation fail.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 159
+    },
+    {
+      "assertion": "assert row[\"added_failure_ids\"] == []",
+      "failure_condition": "Restoring the unfiltered command causes the recorded base refusal; dropping absent metadata, inherited attribution, narrowed runner scope or cache reuse makes the corresponding independent fixture expectation fail.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 160
+    },
+    {
+      "assertion": "assert row[\"inherited_failure_ids\"] == {INHERITED: scenario[\"primary\"]}",
+      "failure_condition": "Restoring the unfiltered command causes the recorded base refusal; dropping absent metadata, inherited attribution, narrowed runner scope or cache reuse makes the corresponding independent fixture expectation fail.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 161
+    },
+    {
+      "assertion": "assert row[\"primary_suite\"][\"command\"] == f\"{PREFIX} {EXISTING}\"",
+      "failure_condition": "Restoring the unfiltered command causes the recorded base refusal; dropping absent metadata, inherited attribution, narrowed runner scope or cache reuse makes the corresponding independent fixture expectation fail.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 162
+    },
+    {
+      "assertion": "assert row[\"primary_suite\"][\"absent_test_files\"] == [ADDED]",
+      "failure_condition": "Restoring the unfiltered command causes the recorded base refusal; dropping absent metadata, inherited attribution, narrowed runner scope or cache reuse makes the corresponding independent fixture expectation fail.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 163
+    },
+    {
+      "assertion": "assert row[\"primary_suite\"][\"failure_ids\"] == [INHERITED]",
+      "failure_condition": "Restoring the unfiltered command causes the recorded base refusal; dropping absent metadata, inherited attribution, narrowed runner scope or cache reuse makes the corresponding independent fixture expectation fail.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 164
+    },
+    {
+      "assertion": "assert promotion_records._node_test_files(scenario[\"calls\"][0][1]) == [EXISTING]",
+      "failure_condition": "Restoring the unfiltered command causes the recorded base refusal; dropping absent metadata, inherited attribution, narrowed runner scope or cache reuse makes the corresponding independent fixture expectation fail.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 165
+    },
+    {
+      "assertion": "assert _evaluate(scenario)[\"primary_suite\"] == row[\"primary_suite\"]",
+      "failure_condition": "Restoring the unfiltered command causes the recorded base refusal; dropping absent metadata, inherited attribution, narrowed runner scope or cache reuse makes the corresponding independent fixture expectation fail.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 166
+    },
+    {
+      "assertion": "assert len(scenario[\"calls\"]) == 1",
+      "failure_condition": "Restoring the unfiltered command causes the recorded base refusal; dropping absent metadata, inherited attribution, narrowed runner scope or cache reuse makes the corresponding independent fixture expectation fail.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 167
+    },
+    {
+      "assertion": "pytest.raises(ledger.SuiteDeltaError)",
+      "failure_condition": "Treating the head-only failing test as inherited removes INTRODUCED from the refusal; losing primary attribution or absent metadata fails the independent expected ID or path checks.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 174
+    },
+    {
+      "assertion": "assert refusal.value.added_failure_ids == [INTRODUCED]",
+      "failure_condition": "Treating the head-only failing test as inherited removes INTRODUCED from the refusal; losing primary attribution or absent metadata fails the independent expected ID or path checks.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 176
+    },
+    {
+      "assertion": "assert row[\"inherited_failure_ids\"] == {INHERITED: scenario[\"primary\"]}",
+      "failure_condition": "Treating the head-only failing test as inherited removes INTRODUCED from the refusal; losing primary attribution or absent metadata fails the independent expected ID or path checks.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 178
+    },
+    {
+      "assertion": "assert row[\"primary_suite\"][\"absent_test_files\"] == [ADDED]",
+      "failure_condition": "Treating the head-only failing test as inherited removes INTRODUCED from the refusal; losing primary attribution or absent metadata fails the independent expected ID or path checks.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 179
+    },
+    {
+      "assertion": "pytest.raises(ledger.SuiteDeltaError, match='primary suite evidence')",
+      "failure_condition": "Restoring unconditional refusal breaks the waiver branch; ignoring unavailable evidence without a waiver breaks the raises branch; losing reason, revision, absent metadata or inventing inherited IDs breaks the respective persisted-field assertions.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 192
+    },
+    {
+      "assertion": "assert row[\"status\"] == \"waived\"",
+      "failure_condition": "Restoring unconditional refusal breaks the waiver branch; ignoring unavailable evidence without a waiver breaks the raises branch; losing reason, revision, absent metadata or inventing inherited IDs breaks the respective persisted-field assertions.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 196
+    },
+    {
+      "assertion": "assert row[\"waiver_reason\"] == waiver",
+      "failure_condition": "Restoring unconditional refusal breaks the waiver branch; ignoring unavailable evidence without a waiver breaks the raises branch; losing reason, revision, absent metadata or inventing inherited IDs breaks the respective persisted-field assertions.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 197
+    },
+    {
+      "assertion": "assert row[\"primary_suite\"][\"status\"] == \"waived\"",
+      "failure_condition": "Restoring unconditional refusal breaks the waiver branch; ignoring unavailable evidence without a waiver breaks the raises branch; losing reason, revision, absent metadata or inventing inherited IDs breaks the respective persisted-field assertions.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 198
+    },
+    {
+      "assertion": "assert row[\"primary_suite\"][\"waiver_reason\"] == waiver",
+      "failure_condition": "Restoring unconditional refusal breaks the waiver branch; ignoring unavailable evidence without a waiver breaks the raises branch; losing reason, revision, absent metadata or inventing inherited IDs breaks the respective persisted-field assertions.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 199
+    },
+    {
+      "assertion": "assert row[\"primary_suite\"][\"revision\"] == scenario[\"primary\"]",
+      "failure_condition": "Restoring unconditional refusal breaks the waiver branch; ignoring unavailable evidence without a waiver breaks the raises branch; losing reason, revision, absent metadata or inventing inherited IDs breaks the respective persisted-field assertions.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 200
+    },
+    {
+      "assertion": "assert row[\"primary_suite\"][\"absent_test_files\"] == [ADDED]",
+      "failure_condition": "Restoring unconditional refusal breaks the waiver branch; ignoring unavailable evidence without a waiver breaks the raises branch; losing reason, revision, absent metadata or inventing inherited IDs breaks the respective persisted-field assertions.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 201
+    },
+    {
+      "assertion": "assert row[\"inherited_failure_ids\"] == {}",
+      "failure_condition": "Restoring unconditional refusal breaks the waiver branch; ignoring unavailable evidence without a waiver breaks the raises branch; losing reason, revision, absent metadata or inventing inherited IDs breaks the respective persisted-field assertions.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 202
+    },
+    {
+      "assertion": "assert row[\"status\"] == \"would-measure\"",
+      "failure_condition": "Replaying during dry-run populates calls or creates the receipt directory; leaving the command unfiltered or losing absence metadata violates the independent expected command/path.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 207
+    },
+    {
+      "assertion": "assert row[\"primary_suite\"][\"command\"] == f\"{PREFIX} {EXISTING}\"",
+      "failure_condition": "Replaying during dry-run populates calls or creates the receipt directory; leaving the command unfiltered or losing absence metadata violates the independent expected command/path.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 208
+    },
+    {
+      "assertion": "assert row[\"primary_suite\"][\"absent_test_files\"] == [ADDED]",
+      "failure_condition": "Replaying during dry-run populates calls or creates the receipt directory; leaving the command unfiltered or losing absence metadata violates the independent expected command/path.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 209
+    },
+    {
+      "assertion": "assert scenario[\"calls\"] == []",
+      "failure_condition": "Replaying during dry-run populates calls or creates the receipt directory; leaving the command unfiltered or losing absence metadata violates the independent expected command/path.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 210
+    },
+    {
+      "assertion": "assert not (tmp_path / \"run\").exists()",
+      "failure_condition": "Replaying during dry-run populates calls or creates the receipt directory; leaving the command unfiltered or losing absence metadata violates the independent expected command/path.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 211
+    },
+    {
+      "assertion": "assert row[\"status\"] == \"clean\"",
+      "failure_condition": "Returning no absence metadata for placeholder commands, or retaining the head-only runner path, breaks the recorded absence or successful evaluation.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 219
+    },
+    {
+      "assertion": "assert row[\"primary_suite\"][\"absent_test_files\"] == [ADDED]",
+      "failure_condition": "Returning no absence metadata for placeholder commands, or retaining the head-only runner path, breaks the recorded absence or successful evaluation.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 220
+    },
+    {
+      "assertion": "pytest.raises(ledger.SuiteDeltaError)",
+      "failure_condition": "Forgiving the added test failure breaks the raises/INTRODUCED assertions; trying to measure an empty primary scope populates calls.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 232
+    },
+    {
+      "assertion": "assert refusal.value.added_failure_ids == [INTRODUCED]",
+      "failure_condition": "Forgiving the added test failure breaks the raises/INTRODUCED assertions; trying to measure an empty primary scope populates calls.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 234
+    },
+    {
+      "assertion": "assert scenario[\"calls\"] == []",
+      "failure_condition": "Forgiving the added test failure breaks the raises/INTRODUCED assertions; trying to measure an empty primary scope populates calls.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 235
+    },
+    {
+      "assertion": "assert (\n        promotion_records._paths_present_in_tree(\n            scenario[\"worker\"], \"missing-revision\", [EXISTING, ADDED]\n        )\n        is None\n    )",
+      "failure_condition": "Interpreting an unknown revision as an empty tree violates the None check; a present-file probe that sees nothing violates the positive-control EXISTING set.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 239
+    },
+    {
+      "assertion": "assert promotion_records._paths_present_in_tree(\n        scenario[\"worker\"], scenario[\"primary\"], [EXISTING, ADDED]\n    ) == {EXISTING}",
+      "failure_condition": "Interpreting an unknown revision as an empty tree violates the None check; a present-file probe that sees nothing violates the positive-control EXISTING set.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 245
+    },
+    {
+      "assertion": "assert absent == [ADDED]",
+      "failure_condition": "Losing quoted environment values, preserving the absent path, stripping the test selector or retaining the absent runner file violates the exact independently constructed expected argv/path.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 262
+    },
+    {
+      "assertion": "assert shlex.split(selected)[:2] == [\"LABEL=two words\", \"PYTHONPATH=.\"]",
+      "failure_condition": "Losing quoted environment values, preserving the absent path, stripping the test selector or retaining the absent runner file violates the exact independently constructed expected argv/path.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 263
+    },
+    {
+      "assertion": "assert shlex.split(selected)[-1] == (\n        f\"{EXISTING}::test_existing\" if spelling == \"selector\" else EXISTING\n    )",
+      "failure_condition": "Losing quoted environment values, preserving the absent path, stripping the test selector or retaining the absent runner file violates the exact independently constructed expected argv/path.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 264
+    },
+    {
+      "assertion": "assert promotion_records._node_test_files(narrowed) == [EXISTING]",
+      "failure_condition": "Losing quoted environment values, preserving the absent path, stripping the test selector or retaining the absent runner file violates the exact independently constructed expected argv/path.",
+      "file": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py",
+      "line": 267
+    }
+  ],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/promotion.py:complete",
+    "reckon/crew/promotion_records.py:_evaluate_suite_delta",
+    "reckon/crew/promotion_records.py:_merged_primary_baseline",
+    "reckon/crew/promotion_records.py:_measure_missing_arms",
+    "reckon/crew/landing_measure.py:armed_observations"
+  ],
+  "completed_at": "2026-11-17T21:29:56Z",
+  "dispatched_at": "2026-11-17T21:24:03Z",
+  "evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T210245144353-a-merged-primary-is-measured-without-the-runs-new-tests/scoped-gate-1794950106303386818.log",
+      "measured_by": "worker",
+      "partition": "all_debug",
+      "reason": "",
+      "revision": "87dfe84ddcda1eb1f561380d99241ce8aea97f1f"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T210245144353-a-merged-primary-is-measured-without-the-runs-new-tests/baseline_suite-1794949942970765932.log",
+      "measured_by": "worker",
+      "partition": "all_debug",
+      "reason": "",
+      "revision": "0c9f4fc8cd6b0b6ceb3e5463c427beacac7af388"
+    },
+    "execution": "Read recorded worker gates; no suite rerun during this review.",
+    "importer_added_failure_ids": [],
+    "importer_after_failure_ids": [
+      "tests/test_a_landing_judges_the_head_by_its_suite.py::test_a_repeat_carries_the_queued_promotion",
+      "tests/test_a_measurement_run_never_lands.py::test_a_passing_measurement_still_refuses_added_suite_failures",
+      "tests/test_a_measurement_run_never_lands.py::test_an_ordinary_failed_run_still_refuses_added_suite_failures",
+      "tests/test_a_scoped_suite_names_only_present_files.py::test_a_pair_resolved_per_tree_is_accepted_though_no_arm_matches_the_scope",
+      "tests/test_a_scoped_suite_names_only_present_files.py::test_a_scope_whose_tests_the_change_creates_records_an_empty_baseline",
+      "tests/test_a_scoped_suite_names_only_present_files.py::test_an_after_arm_left_naming_no_test_file_is_refused_as_unmeasured",
+      "tests/test_a_scoped_suite_names_only_present_files.py::test_an_arm_that_exited_having_collected_no_test_is_refused",
+      "tests/test_promotion_releases_its_worktree.py::test_promotion_releases_only_the_integrated_clean_case",
+      "tests/test_the_consequence_gate_runs_the_nodes_tests.py::test_a_project_with_no_declaration_records_no_suite_observation",
+      "tests/test_the_consequence_gate_runs_the_nodes_tests.py::test_a_scoped_pair_over_another_nodes_files_is_refused",
+      "tests/test_the_consequence_gate_runs_the_nodes_tests.py::test_a_scoped_pair_over_the_nodes_test_files_promotes",
+      "tests/test_the_consequence_gate_runs_the_nodes_tests.py::test_a_scoped_pair_over_the_whole_suite_is_refused",
+      "tests/test_the_consequence_gate_runs_the_nodes_tests.py::test_the_declared_command_measures_the_nodes_fenced_test_files",
+      "tests/test_the_ledger_writer_refuses_a_fold.py::test_a_hold_check_leaves_the_aggregate_row_count_unchanged",
+      "tests/test_the_ledger_writer_refuses_a_fold.py::test_the_identity_retirement_leaves_the_aggregate_row_count_unchanged",
+      "tests/test_the_ledger_writer_refuses_a_fold.py::test_the_idle_reap_leaves_the_aggregate_row_count_unchanged"
+    ],
+    "importer_baseline_failure_ids": [
+      "tests/test_a_landing_judges_the_head_by_its_suite.py::test_a_repeat_carries_the_queued_promotion",
+      "tests/test_a_measurement_run_never_lands.py::test_a_passing_measurement_still_refuses_added_suite_failures",
+      "tests/test_a_measurement_run_never_lands.py::test_an_ordinary_failed_run_still_refuses_added_suite_failures",
+      "tests/test_a_scoped_suite_names_only_present_files.py::test_a_pair_resolved_per_tree_is_accepted_though_no_arm_matches_the_scope",
+      "tests/test_a_scoped_suite_names_only_present_files.py::test_a_scope_whose_tests_the_change_creates_records_an_empty_baseline",
+      "tests/test_a_scoped_suite_names_only_present_files.py::test_an_after_arm_left_naming_no_test_file_is_refused_as_unmeasured",
+      "tests/test_a_scoped_suite_names_only_present_files.py::test_an_arm_that_exited_having_collected_no_test_is_refused",
+      "tests/test_promotion_releases_its_worktree.py::test_promotion_releases_only_the_integrated_clean_case",
+      "tests/test_the_consequence_gate_runs_the_nodes_tests.py::test_a_project_with_no_declaration_records_no_suite_observation",
+      "tests/test_the_consequence_gate_runs_the_nodes_tests.py::test_a_scoped_pair_over_another_nodes_files_is_refused",
+      "tests/test_the_consequence_gate_runs_the_nodes_tests.py::test_a_scoped_pair_over_the_nodes_test_files_promotes",
+      "tests/test_the_consequence_gate_runs_the_nodes_tests.py::test_a_scoped_pair_over_the_whole_suite_is_refused",
+      "tests/test_the_consequence_gate_runs_the_nodes_tests.py::test_the_declared_command_measures_the_nodes_fenced_test_files",
+      "tests/test_the_ledger_writer_refuses_a_fold.py::test_a_hold_check_leaves_the_aggregate_row_count_unchanged",
+      "tests/test_the_ledger_writer_refuses_a_fold.py::test_the_identity_retirement_leaves_the_aggregate_row_count_unchanged",
+      "tests/test_the_ledger_writer_refuses_a_fold.py::test_the_idle_reap_leaves_the_aggregate_row_count_unchanged"
+    ],
+    "negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T210245144353-a-merged-primary-is-measured-without-the-runs-new-tests/negative-control-final.log",
+    "negative_control_refusal": "SuiteDeltaError: cannot read completed primary suite evidence",
+    "positive_control_failure_ids": [
+      "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py::test_primary_measures_existing_file_and_records_absent_file"
+    ]
+  },
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read 3f9e3da810171abd407154160f5eb20032943c30, 428d57b8c87a72a8e3ce37ca86e085ccbb673e7c and 87dfe84ddcda1eb1f561380d99241ce8aea97f1f against 0c9f4fc8cd6b0b6ceb3e5463c427beacac7af388; the product change narrows primary commands and runner scope, preserves receipt metadata, and threads the existing waiver into primary evidence evaluation.",
+    "done_when": "Read docs/plans/delivered-work-lands-without-a-coordinator.html:167 and the recorded gate logs; the inherited failure, introduced failure, unavailable measurement with and without waiver, and base refusal are all exercised by the added test file.",
+    "goal": "Read live docs/plans/delivered-work-lands-without-a-coordinator.html:166 and the source manifest; promotion_records.py:1340 filters primary-only scope, retains head responsibility, and records unavailable-measurement waivers.",
+    "manifest": "Read the source manifest and opened its baseline, head, negative-control and importer logs; 58 baseline passes, 69 head passes, one expected base-control failure, and the same 16 importer failure IDs are recorded with completed summaries and exit lines.",
+    "write_paths": "Compared all three commits with the declared scope in the source manifest; the only changed paths are reckon/crew/promotion_records.py and tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py, both granted."
+  },
+  "justifications": {
+    "durability": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py:145 fails when missing files remain in primary replay, :175 refuses an introduced head failure, and :196 distinguishes a missing waiver from a persisted waiver without treating the unmeasured failure as inherited.",
+    "evidence": "tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py:145 exercises the live gate guards and evaluator, and negative-control-final.log records the base refusal while the completed head and importer logs show zero added failure IDs.",
+    "fit": "reckon/crew/promotion_records.py:1340 follows the module's private mapping helpers and reuses its command parser, repository path resolver and revision probe, with capability-based source names and isolated test fixtures.",
+    "goal_fidelity": "reckon/crew/promotion_records.py:1424 resolves the actual merged revision's test scope and :1469 records the waiver while :1766 prevents unavailable measurements from inventing inherited failures.",
+    "reuse": "Capability searches found the existing owners in promotion_records.py:_paths_present_in_tree and _scoped_suite_command, landing_measure.py:_carry_missing_tests and tests/helpers/git.py:git; the addition extends the scope owner and reuses these mechanisms rather than forking a runner or revision probe.",
+    "scope_discipline": "The base-to-head diff changes only the two declared source and test paths listed in the source manifest's changed_paths field."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read live docs/plans/delivered-work-lands-without-a-coordinator.html:166 and the source manifest; promotion_records.py:1340 filters primary-only scope, retains head responsibility, and records unavailable-measurement waivers.\nVERDICT done_when: Read docs/plans/delivered-work-lands-without-a-coordinator.html:167 and the recorded gate logs; the inherited failure, introduced failure, unavailable measurement with and without waiver, and base refusal are all exercised by the added test file.\nVERDICT write_paths: Compared all three commits with the declared scope in the source manifest; the only changed paths are reckon/crew/promotion_records.py and tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py, both granted.\nVERDICT manifest: Read the source manifest and opened its baseline, head, negative-control and importer logs; 58 baseline passes, 69 head passes, one expected base-control failure, and the same 16 importer failure IDs are recorded with completed summaries and exit lines.\nVERDICT diff: Read 3f9e3da810171abd407154160f5eb20032943c30, 428d57b8c87a72a8e3ce37ca86e085ccbb673e7c and 87dfe84ddcda1eb1f561380d99241ce8aea97f1f against 0c9f4fc8cd6b0b6ceb3e5463c427beacac7af388; the product change narrows primary commands and runner scope, preserves receipt metadata, and threads the existing waiver into primary evidence evaluation.\nCALL_SITES: reckon/crew/promotion.py:complete, reckon/crew/promotion_records.py:_evaluate_suite_delta, reckon/crew/promotion_records.py:_merged_primary_baseline, reckon/crew/promotion_records.py:_measure_missing_arms, reckon/crew/landing_measure.py:armed_observations\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_records.py:1424 resolves the actual merged revision's test scope and :1469 records the waiver while :1766 prevents unavailable measurements from inventing inherited failures.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py:145 exercises the live gate guards and evaluator, and negative-control-final.log records the base refusal while the completed head and importer logs show zero added failure IDs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The base-to-head diff changes only the two declared source and test paths listed in the source manifest's changed_paths field.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_merged_primary_is_measured_without_the_runs_new_tests.py:145 fails when missing files remain in primary replay, :175 refuses an introduced head failure, and :196 distinguishes a missing waiver from a persisted waiver without treating the unmeasured failure as inherited.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/promotion_records.py:1340 follows the module's private mapping helpers and reuses its command parser, repository path resolver and revision probe, with capability-based source names and isolated test fixtures.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches found the existing owners in promotion_records.py:_paths_present_in_tree and _scoped_suite_command, landing_measure.py:_carry_missing_tests and tests/helpers/git.py:git; the addition extends the scope owner and reuses these mechanisms rather than forking a runner or revision probe.\n",
+  "reuse_search": "Searched revision-presence, scoped commands, missing-test transfer, test observation and fixture commit capabilities. New production helper extends promotion_records scope owner using existing parser/probe; test-only _commit uses tests.helpers.git.git and _observe uses the existing gate-log parser; scenario and _evaluate assemble this regression fixture rather than replacing a runtime owner.",
+  "review_method": "Assigned review checkout is f25bec861da405a8e1a943006f257b219c219e6f; source under review was read from immutable git show blobs at reviewed_head_sha and diffed against reviewed_base_sha, without switching or modifying the checkout.",
+  "review_run_id": "r-20261117T212222566469-review-of-a-merged-primary-is-measured-without-the-runs-new-tests-87dfe84ddcda",
+  "reviewed_base_sha": "0c9f4fc8cd6b0b6ceb3e5463c427beacac7af388",
+  "reviewed_head_sha": "87dfe84ddcda1eb1f561380d99241ce8aea97f1f",
+  "reviewed_run_id": "r-20261117T210245144353-a-merged-primary-is-measured-without-the-runs-new-tests",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T21:31:33.450263+00:00",
+  "total": 120
+}

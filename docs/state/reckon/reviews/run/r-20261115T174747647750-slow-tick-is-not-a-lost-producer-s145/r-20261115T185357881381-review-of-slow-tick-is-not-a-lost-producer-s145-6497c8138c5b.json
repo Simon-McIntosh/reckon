@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T18:56:10.414Z",
+  "dispatched_at": "2026-11-15T18:55:47Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the follower's producer-health list is outside this node's write path; carried as its own section of the-monitor-shows-the-work-it-watches",
+      "recorded_at": "2026-11-15T20:13:35.314815+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": 3782,
+      "severity": "non-blocking",
+      "text": "the follower's producer-health event list omits producer-slow, so a follower prints an unknown run row rather than the slow sentence; the node recorded this as outside_scope because the file was outside its write path."
+    }
+  ],
+  "project": "reckon",
+  "review": {
+    "after_suite_failure_count": 0,
+    "baseline_suite_failure_count": 0,
+    "basis": "added_failure_count and added_failure_ids derived from the reviewed run's own baseline_suite and after_suite gate logs (suite-baseline.log exit 0, 58 passed; suite-after.log exit 0, 63 passed).",
+    "call_sites": [
+      "reckon/crew/watch_unit.py:ProducerSnapshotNotices.poll",
+      "reckon/crew/obligation_snapshot.py:read_station_answer"
+    ],
+    "verdict_diff": "read commit by commit: 83830aa fix(crew) adds station_state/read_station_tick and the pane's store read, 8e6ab54 and ec78cbb add the five cases, f8c5871 and 6497c813 document the record; 4 files, +561/-48.",
+    "verdict_done_when": "the done_when in the run's prompt FENCE EVIDENCE line 161 names tests/test_a_slow_tick_is_not_a_lost_producer.py with five ordered cases; the manifest's tests line runs that file with the two-file suite pair and records exit 0.",
+    "verdict_goal": "the node's goal is section s145 as its done-when states, a slow station tick reading as slow rather than as a lost producer; reckon/crew/obligation_snapshot.py read_station_tick/station_state and reckon/crew/watch_unit.py ProducerSnapshotNotices.poll carry exactly that.",
+    "verdict_manifest": "read at the run directory; it states status complete, five commits ending 6497c8138c, the gate command, both suite arms exit 0, a 5-failed base-red arm and a 3-failed negative control.",
+    "verdict_write_paths": "the diff 0bc2cd98..6497c8138c touches exactly the four declared paths and nothing else."
+  },
+  "review_run_id": "r-20261115T185357881381-review-of-slow-tick-is-not-a-lost-producer-s145-6497c8138c5b",
+  "reviewed_base_sha": "0bc2cd98fff909caba8d570826164ece9a48fd1f",
+  "reviewed_head_sha": "6497c8138c5b833955ebe771359faf16fcc1b7d3",
+  "reviewed_run_id": "r-20261115T174747647750-slow-tick-is-not-a-lost-producer-s145",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T19:03:10.383171+00:00",
+  "total": 104
+}

@@ -4,6 +4,8 @@ from __future__ import annotations
 import hashlib
 import json
 import subprocess
+import threading
+from collections import OrderedDict
 from contextlib import suppress
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
@@ -359,15 +361,21 @@ def _remote_unreadable_reason(
     )
 
 
-def _acceptance_inputs(
+def _acceptance_input_view(
     pointer: Mapping[str, Any],
     head: str,
     tree: Path | None,
     review: Mapping[str, Any] | None,
     gate: Mapping[str, Any] | None,
     commits: Sequence[str],
-) -> str:
-    """Identify the run, review and gate judged, without observing the remote."""
+) -> dict[str, Any]:
+    """The run, review and gate judged, without observing the remote.
+
+    The mapping is kept rather than only its digest because a judgement that
+    finds the inputs moved has to name which of them moved: a reader told a run
+    keeps moving needs to know what to hold still, and two digests differing
+    says nothing about that.
+    """
     from .recovery_memo import _file_identity, _worktree_head_identity
 
     fields = (
@@ -393,21 +401,174 @@ def _acceptance_inputs(
     checkout = str(pointer.get("repo") or "")
     manifest = str(pointer.get("manifest_path") or "")
     gate_log = str((gate or {}).get("log_path") or "")
-    inputs = {
+    return {
         "pointer": {field: pointer.get(field) for field in fields},
         "head": head,
         "tree_head": _worktree_head_identity(tree),
         "checkout_head": _worktree_head_identity(Path(checkout)) if checkout else "",
-        "checkout_exists": Path(checkout).is_dir() if checkout else False,
+        "checkout_exists": _checkout_is_a_directory(checkout) if checkout else False,
         "review": review,
         "gate": gate,
         "commits": list(commits),
         "manifest": _file_identity(manifest) if manifest else "",
         "gate_log": _file_identity(gate_log) if gate_log else "",
     }
+
+
+def _checkout_is_a_directory(checkout: str) -> bool:
+    """Whether the run's checkout is on disk, asked defensively.
+
+    A path a reader cannot stat is not a checkout this judgement can read a
+    merged gate against, so it answers False rather than raising out of the
+    identity a refusal is compared under.
+    """
+    try:
+        return Path(checkout).is_dir()
+    except OSError:
+        return False
+
+
+#: How many judgements one run may spend finding its inputs moved under it.
+#: Three is the count the plan states: a run whose pointer, review or gate moves
+#: once settles on the next sweep, while a run that keeps moving is not judged
+#: forever — it is reported with what moved and left to its coordinator.
+INPUTS_MOVED_ATTEMPTS = 3
+
+#: The words a refusal uses when the judgement, not the run, is what failed: the
+#: inputs moved between the read and the write, so the verdict describes a state
+#: that no longer exists. The sweep reads this sentence to judge the run again
+#: rather than leave it refused, so it states the fact and stands as the refusal
+#: for every attempt inside the budget.
+INPUTS_MOVED_REASON = "the run or its acceptance inputs changed while it was judged"
+
+
+def _moved_inputs(
+    before: Mapping[str, Any], after: Mapping[str, Any], *, limit: int = 6
+) -> list[str]:
+    """Which judged inputs differ between two readings, named for a reader.
+
+    A mapping compared as a whole says only that it moved; a coordinator told a
+    run keeps changing needs the field. The pointer is compared field by field
+    so a run that moved its attempt says so, and everything else is compared as
+    one value because it is a revision, a store record or a file identity.
+    """
+    moves: list[str] = []
+
+    def note(name: str, was: Any, now: Any) -> None:
+        moves.append(f"{name} {_input_value(was)} -> {_input_value(now)}")
+
+    for key in sorted(set(before) | set(after)):
+        was, now = before.get(key), after.get(key)
+        if isinstance(was, Mapping) and isinstance(now, Mapping):
+            for field in sorted(set(was) | set(now)):
+                if was.get(field) != now.get(field):
+                    note(f"{key}.{field}", was.get(field), now.get(field))
+        elif was != now:
+            note(key, was, now)
+    return moves[:limit]
+
+
+def _input_value(value: Any) -> str:
+    """One input's value, short enough to sit inside a refusal sentence."""
+    text = (
+        value
+        if isinstance(value, str)
+        else json.dumps(value, sort_keys=True, default=str)
+    )
+    text = " ".join(text.split())
+    return text if len(text) <= 40 else text[:37] + "..."
+
+
+def _inputs_moved_path(run_id: str) -> Path:
+    return runs.run_dir(run_id) / "acceptance-inputs-moved.json"
+
+
+def _record_inputs_moved(
+    run_id: str, before: Mapping[str, Any], after: Mapping[str, Any]
+) -> tuple[int, list[str]]:
+    """Count this judgement against the run's attempt budget.
+
+    An attempt is spent per judgement that found its own inputs move under it,
+    which is what a run that keeps changing looks like from here: each sweep
+    reads a state, the write lands on another, and the count is the only durable
+    evidence that the run is not settling. The moves are kept beside it so the
+    refusal that gives up names them without re-reading a state that has since
+    moved again.
+    """
+    path = _inputs_moved_path(run_id)
+    try:
+        prior = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        prior = None
+    attempts = int((prior or {}).get("attempts") or 0) + 1
+    moved = _moved_inputs(before, after)
+    with suppress(OSError):
+        runs._write_json(
+            path,
+            {"attempts": attempts, "moved": moved, "at": _utc_now()},
+        )
+    return attempts, moved
+
+
+def _reset_inputs_moved(run_id: str) -> None:
+    """Clear the attempt budget once a judgement's inputs held still.
+
+    The count measures how many judgements a run spends on a state it will not
+    keep, so a judgement that got past the identity check settles the question;
+    a later movement starts a fresh count rather than inheriting one.
+    """
+    with suppress(OSError):
+        _inputs_moved_path(run_id).unlink(missing_ok=True)
+
+
+def _utc_now() -> str:
+    from datetime import UTC, datetime
+
+    return datetime.now(UTC).isoformat()
+
+
+def _inputs_digest(view: Mapping[str, Any]) -> str:
+    """The identity a judgement's inputs are compared under."""
     return hashlib.sha256(
-        json.dumps(inputs, sort_keys=True, default=str).encode()
+        json.dumps(view, sort_keys=True, default=str).encode()
     ).hexdigest()
+
+
+def _judge_again_on_moved_inputs(
+    run_id: str, before: Mapping[str, Any], after: Mapping[str, Any]
+) -> dict[str, Any]:
+    """The outcome of a judgement whose inputs moved under it.
+
+    The refusal is right for the moment it describes and wrong as the run's
+    fate: the state it refused no longer exists, so the verdict has to be taken
+    again against the inputs that replaced it. The run is told to be judged
+    again on the next sweep while it has attempts left, and after
+    :data:`INPUTS_MOVED_ATTEMPTS` of them it is refused for a run that will not
+    hold still, naming what moved.
+    """
+    attempts, moved = _record_inputs_moved(run_id, before, after)
+    if attempts < INPUTS_MOVED_ATTEMPTS:
+        return {
+            "run_id": run_id,
+            "accepted": False,
+            "reason": INPUTS_MOVED_REASON,
+            "retry": True,
+            "attempts": attempts,
+            "attempt_limit": INPUTS_MOVED_ATTEMPTS,
+            "moved": moved,
+        }
+    named = ", ".join(moved) if moved else "inputs this run does not record"
+    return {
+        "run_id": run_id,
+        "accepted": False,
+        "reason": (
+            f"{INPUTS_MOVED_REASON} {attempts} times, so the run is not settling; "
+            f"the last changes were: {named}"
+        ),
+        "attempts": attempts,
+        "attempt_limit": INPUTS_MOVED_ATTEMPTS,
+        "moved": moved,
+    }
 
 
 def _acceptance_remote_inputs(checkout: Path | None, commits: Sequence[str]) -> list:
@@ -461,6 +622,9 @@ def accept_clean_review(
     nothing to add. A dict is returned whenever the run was eligible and an
     outcome was reached, so the sweep records why a refusal did not promote.
     """
+    from reckon.crew.promotion_requests import judging_code_revision
+
+    code_revision = judging_code_revision()
     pointer = {**pointer, **runs.read_dispatch_detail(pointer)}
     run_id = str(pointer.get("run_id") or "")
     project = str(pointer.get("project") or "")
@@ -478,7 +642,10 @@ def accept_clean_review(
     checkout_value = str(pointer.get("repo") or "").strip()
     checkout = Path(checkout_value).expanduser() if checkout_value else None
     gate_check, commits = _recorded_gate_passed(pointer)
-    inputs = _acceptance_inputs(pointer, head, tree, review, gate_check, commits)
+    view_at_read = _acceptance_input_view(
+        pointer, head, tree, review, gate_check, commits
+    )
+    inputs = _inputs_digest(view_at_read)
     from reckon.crew import review_landing
 
     implementation = (
@@ -499,6 +666,7 @@ def accept_clean_review(
         memo = None
     if (
         isinstance(memo, dict)
+        and memo.get("code_revision") == code_revision
         and memo.get("inputs") == refusal_key
         and isinstance(memo.get("refusal"), dict)
         and memo["refusal"].get("accepted") is False
@@ -506,10 +674,14 @@ def accept_clean_review(
         return {**memo["refusal"], "unchanged": True}
 
     def refuse(result: dict[str, Any]) -> dict[str, Any]:
+        result = {**result, "code_revision": code_revision}
         # A cache that cannot be written costs another judgement, not a
         # different acceptance verdict.
         with suppress(OSError):
-            runs._write_json(memo_path, {"inputs": refusal_key, "refusal": result})
+            runs._write_json(
+                memo_path,
+                {"inputs": refusal_key, "refusal": result, "code_revision": code_revision},
+            )
         if implementation and not result.get("held"):
             review_landing.record_refusal(
                 pointer, head, str(result.get("reason") or "landing refused")
@@ -630,19 +802,19 @@ def accept_clean_review(
                     project, run_id, current_head, tree=current_tree
                 )
                 current_gate, current_commits = _recorded_gate_passed(current)
-                if inputs != _acceptance_inputs(
+                current_view = _acceptance_input_view(
                     current,
                     current_head,
                     current_tree,
                     current_review,
                     current_gate,
                     current_commits,
-                ):
-                    return {
-                        "run_id": run_id,
-                        "accepted": False,
-                        "reason": "the run or its acceptance inputs changed while it was judged",
-                    }
+                )
+                if inputs != _inputs_digest(current_view):
+                    return _judge_again_on_moved_inputs(
+                        run_id, view_at_read, current_view
+                    )
+            _reset_inputs_moved(run_id)
             if implementation and review_landing.manual_landing_reason(current):
                 return refuse(
                     {
@@ -777,6 +949,216 @@ _PRE_LAUNCH_PHASES = frozenset({"queued", "awaiting-upstream", "starting", "held
 REVIEW_SELF_REFUSED = "refused"
 
 
+def _identity_signature(path: Path) -> tuple[Any, ...]:
+    """The stat identity of ``path``, or its absence, without raising.
+
+    A record the search looks for is normally absent on the pass that refuses
+    the review, and its absence is as much part of the identity as its content:
+    a file that appears must change the identity, so ``("absent",)`` is a value
+    here rather than a missing one.
+    """
+    from reckon import file_memo
+
+    try:
+        return file_memo.file_signature(path)
+    except OSError:
+        return ("absent",)
+
+
+def _directory_signature(directory: Path) -> tuple[Any, ...]:
+    """The identity of every entry of ``directory``, or its absence.
+
+    A plan review's record is the newest delivered report under a directory
+    named for its run, so the directory's own entries are what the search
+    reads and what a later delivery changes.
+    """
+    try:
+        entries = sorted(directory.iterdir())
+    except OSError:
+        return ("absent",)
+    return tuple((entry.name, _identity_signature(entry)) for entry in entries)
+
+
+def _review_self_signature(
+    pointer: Mapping[str, Any] | None, project: str = ""
+) -> tuple[Any, ...] | None:
+    """The identity of everything a review's delivery search reads.
+
+    A review run that ended without storing its record changes none of the
+    inputs the search reads *from the review run itself*, so the pointer and
+    run directory are part of this identity. They are not enough on their own:
+    the record the search looks for is filed under the run that was reviewed —
+    a head-keyed path in that run's ``review-records`` directory, or a path in
+    the crew review store — and filing it there moves neither the review's
+    pointer nor its run directory. Keyed on those two alone, the answer
+    "no record" was returned forever after the reviewer finally stored one.
+    So every candidate path the search would read is part of the identity too,
+    absent ones included, and a plan review's report directory is read the same
+    way. ``None`` when the run cannot be identified at all, which leaves the
+    caller reading uncached.
+    """
+    if pointer is None:
+        return None
+    run_id = str(pointer.get("run_id") or "")
+    if not run_id:
+        return None
+    project = project or str(pointer.get("project") or "")
+    parts: list[Any] = [
+        run_id,
+        _identity_signature(runs.pointer_path(run_id)),
+        _identity_signature(Path(runs.run_dir(run_id))),
+    ]
+    plan_slug = _plan_review_pointer_slug(pointer)
+    if plan_slug:
+        from reckon.crew import plan_review
+
+        directory = Path(
+            plan_review.review_report_directory(project, plan_slug, run_id)
+        )
+        parts.append(("plan-report", _identity_signature(directory)))
+        parts.append(("plan-report-entries", _directory_signature(directory)))
+    else:
+        from .recovery_review_delivery import _review_store_record_paths
+
+        try:
+            candidates = _review_store_record_paths(pointer, project)
+        except (CrewError, OSError, ValueError):
+            candidates = []
+        parts.extend(
+            (str(candidate), _identity_signature(candidate)) for candidate in candidates
+        )
+    return tuple(parts)
+
+
+def _delivered_once(
+    kind: str,
+    signature: tuple[Any, ...] | None,
+    read: Callable[[], Any],
+) -> Any:
+    """Read a review's delivered record once per identity it was searched at.
+
+    A review that has ended and stored nothing keeps delivering nothing until
+    something the search reads moves, so the search that establishes the
+    absence is shared across the sweeps that read it: the first pass pays for
+    it and every pass at the same identity reads what it found. The identity
+    carries the paths the search itself would read, so a record filed after a
+    pass looked is a new identity and the next pass reads it.
+    """
+    if signature is None:
+        return read()
+    from reckon import file_memo
+
+    return file_memo.memoized_key(f"review_self_delivered_{kind}", signature, read)
+
+
+#: Refusal identities whose line the station has already written. A refusal is
+#: reported from the durable promotion receipt the drain leaves, which every
+#: later sweep reads again, so without this the station logs the same unchanged
+#: refusal on every pass. Sized for the station's own lifetime and bounded so a
+#: long one cannot grow it without limit.
+_REPORTED_REFUSALS: OrderedDict[tuple[Any, ...], None] = OrderedDict()
+_REPORTED_REFUSALS_LOCK = threading.Lock()
+_REPORTED_REFUSALS_LIMIT = 4096
+
+
+def _mark_refusal_reported(signature: tuple[Any, ...]) -> bool:
+    """Whether this pass is the one that reports the refusal at ``signature``.
+
+    True the first time a refusal at an identity is put in a sweep report and
+    False for every later pass over the same pointer and run directory, so the
+    station writes one run-failure line per refusal rather than one per sweep.
+    The claim is per process: a restarted station reports a still refused run
+    once more, which is right, because its log went with it.
+    """
+    with _REPORTED_REFUSALS_LOCK:
+        if signature in _REPORTED_REFUSALS:
+            _REPORTED_REFUSALS.move_to_end(signature)
+            return False
+        _REPORTED_REFUSALS[signature] = None
+        while len(_REPORTED_REFUSALS) > _REPORTED_REFUSALS_LIMIT:
+            _REPORTED_REFUSALS.popitem(last=False)
+        return True
+
+
+def _retire_promoted_pointer(pointer: Mapping[str, Any]) -> str:
+    """Answer what the sweep does with a pointer a promotion recorded.
+
+    A review whose promotion is already on its ledger row has nothing left to
+    promote, so the only work its pointer carries is its own retirement. The
+    promotion marks the pointer when it cannot remove it, either because the
+    worker still runs or because the worker rewrote the pointer under it. The
+    marked pointer is removed here once no process owns it, and no promotion
+    request is filed for a row the ledger already records. A live process keeps
+    its pointer: the mark says the promotion happened, not that the pointer is
+    the sweep's to delete.
+
+    ``retired`` means the pointer is gone, ``waiting`` that a live process still
+    owns it, and ``unmarked`` that the ordinary review path applies.
+    """
+    from reckon.crew.promotion import PROMOTED_POINTER_MARK
+
+    run_id = str(pointer.get("run_id") or "")
+    if not run_id:
+        return "unmarked"
+    with runs._pointer_lock(run_id):
+        try:
+            current = runs.read_pointer(run_id)
+        except (CrewError, OSError, ValueError):
+            return "unmarked"
+        if not current.get(PROMOTED_POINTER_MARK):
+            return "unmarked"
+        if record_process_alive(current) is True:
+            return "waiting"
+        try:
+            runs.pointer_path(run_id).unlink(missing_ok=True)
+        except OSError:
+            return "waiting"
+        return "retired"
+
+
+def _claims_refusal(run_id: str) -> bool:
+    """Whether a refused ``review-self`` receipt is this pass's to report.
+
+    The receipt the drain leaves is read by the review pass and again by the
+    collection that reports the promotions this sweep handed off, so one
+    unchanged refusal would be logged twice. Both claim the same identity
+    through :func:`_mark_refusal_reported`; the first claim reports and the
+    second stays silent. A run whose pointer cannot be read has no identity to
+    claim, so it is reported rather than dropped.
+    """
+    try:
+        pointer = runs.read_pointer(run_id)
+    except (CrewError, OSError, ValueError):
+        return True
+    signature = _review_self_signature(pointer)
+    if signature is None:
+        return True
+    return _mark_refusal_reported(signature)
+
+
+def _settled_self_refusal(run_id: str, reason: str) -> str | None:
+    """The durable refusal this review run's promotion request already carries.
+
+    The drain records a refused ``review-self`` request as a terminal receipt,
+    and the sweep's report is where the station logs it. Reading it here keeps
+    the line tied to the refusal the drain actually made, and returning it only
+    when it names the same reason this pass reads keeps a run that has since
+    moved from being reported under its older refusal.
+    """
+    if not run_id or not reason:
+        return None
+    from reckon.crew import promotion_requests
+
+    try:
+        receipt = promotion_requests.read_promotion(run_id)
+    except (CrewError, OSError, ValueError):
+        return None
+    if receipt.get("phase") != promotion_requests.REFUSED:
+        return None
+    error = str(receipt.get("error") or "")
+    return error if error == reason else None
+
+
 def _plan_review_delivery(
     record: Mapping[str, Any], project: str
 ) -> Mapping[str, Any] | None:
@@ -846,6 +1228,18 @@ def review_self_state(
             ),
             None,
         )
+    from reckon.crew import review_landing
+    from reckon.crew.recovery_review_delivery import _report_review_delivery
+
+    try:
+        manual_reason = review_landing.manual_landing_reason(pointer)
+        if manual_reason:
+            return REVIEW_SELF_REFUSED, manual_reason, None
+        report = _report_review_delivery(pointer)
+    except (CrewError, OSError, ValueError) as refusal:
+        return REVIEW_SELF_REFUSED, str(refusal), None
+    if report is not None:
+        return REVIEW_SELF_READY, "", Path(report["path"])
     # A run review's delivery is identified by the head it was dispatched to
     # read, and a record of an earlier round is not this run's verdict.
     declares = _declared_head_keyed_record(pointer, project)
@@ -859,12 +1253,18 @@ def review_self_state(
             ),
             None,
         )
+    # A review that has ended changes nothing about itself until its pointer or
+    # its run directory moves, so the record search below is shared across the
+    # sweeps that read it at one identity rather than repeated each pass.
+    signature = _review_self_signature(pointer, project)
     plan_slug = _plan_review_pointer_slug(pointer)
     if plan_slug:
         # A plan review's record is the report it wrote under the composed
         # directory its brief named, so it is read through the join the store
         # step uses rather than through a run-review's head-keyed path.
-        delivered = _plan_review_delivery(pointer, project)
+        delivered = _delivered_once(
+            "plan", signature, lambda: _plan_review_delivery(pointer, project)
+        )
         if delivered is None:
             from reckon.crew import plan_review
 
@@ -879,7 +1279,9 @@ def review_self_state(
                 None,
             )
         return REVIEW_SELF_READY, "", Path(str(delivered.get("report_path") or ""))
-    stored = _delivered_review_record(pointer, project)
+    stored = _delivered_once(
+        "run", signature, lambda: _delivered_review_record(pointer, project)
+    )
     if stored is None:
         named = f" for head {declares[1]}" if declares is not None else ""
         return (
@@ -975,6 +1377,84 @@ def promote_review_run_itself(
             ),
         },
     }
+
+
+def _live_repair_attempt(pointer: Mapping[str, Any]) -> str:
+    """The repair run standing for this run's round, or "" when none is live.
+
+    A round is recorded on the run it repairs, and its attempt is the run the
+    composer dispatched. It is live while that run's pointer stands and the
+    attempt has written no exit record: a repair that ended has either committed
+    and moved the reviewed head past the stored review, or given up, and the
+    sweep's repair pass settles either. Nothing here probes the process, because
+    a repair launched but not yet running is exactly the state in which
+    promoting the reviewed head reserves a merge against a change about to
+    arrive.
+    """
+    from .recovery_review_dispatch import (
+        REPAIR_DISPATCH_FIELD,
+        REPAIR_ROUND_OPENING_STATUSES,
+    )
+
+    recorded = pointer.get(REPAIR_DISPATCH_FIELD)
+    if not isinstance(recorded, Mapping):
+        return ""
+    if str(recorded.get("status") or "") not in REPAIR_ROUND_OPENING_STATUSES:
+        return ""
+    repair_run_id = str(recorded.get("run_id") or "")
+    if not repair_run_id:
+        return ""
+    if not runs.pointer_path(repair_run_id).exists():
+        return ""
+    try:
+        repair = runs.read_pointer(repair_run_id)
+    except CrewError:
+        return ""
+    if _run_exit_record(repair) is not None:
+        return ""
+    return repair_run_id
+
+
+def _judge_moved_inputs_again(
+    run_id: str, receipt: Mapping[str, Any], *, config: Mapping[str, Any] | None
+) -> bool:
+    """Re-queue a run refused only because its inputs moved under the judgement.
+
+    The refusal is terminal as the queue records it — a later request for the
+    same run returns that receipt unchanged, so nothing ever judges the run
+    against the inputs that replaced the ones it refused. The run asked to be
+    judged again when it kept attempts in hand, and this is the sweep taking it
+    up: a new request puts the run back in front of the drain, which judges it
+    against the inputs it now has, promoting it if they pass and refusing it on
+    from them if they do not.
+
+    Three things keep this from becoming a retry loop of its own. The receipt
+    says whether an attempt is still in budget, so a run that keeps moving is
+    reported instead. A live repair attempt stands the retry down, because the
+    repair is what moves the head and this promotion would race it. And a
+    pointer that has gone has nothing left to judge.
+    """
+    from reckon.crew.promotion_requests import request_promotion
+
+    result = receipt.get("result")
+    result = result if isinstance(result, Mapping) else {}
+    if not result.get("retry"):
+        return False
+    if not runs.pointer_path(run_id).exists():
+        return False
+    try:
+        pointer = runs.read_pointer(run_id)
+    except CrewError:
+        return False
+    if _live_repair_attempt(pointer):
+        return False
+    try:
+        request_promotion(
+            run_id, kind="acceptance", options={"config": config}, retry=True
+        )
+    except (CrewError, OSError, ValueError):
+        return False
+    return True
 
 
 def dispatch_awaiting_reviews(
@@ -1132,6 +1612,27 @@ def dispatch_awaiting_reviews(
                 # a sweep acts only on the live run it was asked to handle.
                 run_id = str(pointer.get("run_id") or "")
                 runs.read_pointer(run_id)
+                # A review whose promotion is recorded has nothing left to
+                # promote. Its pointer is the promotion's mark or its worker's
+                # own record, and the only question left is whether the sweep
+                # may take it: it may once no process owns it.
+                retirement = _retire_promoted_pointer(pointer)
+                if retirement == "retired":
+                    continue
+                if retirement == "waiting":
+                    review_self_waiting.append(
+                        {
+                            "run_id": run_id,
+                            "promoted": True,
+                            "waiting": True,
+                            "reason": (
+                                "the review's promotion is recorded and its "
+                                "worker is still running, so its pointer is left "
+                                "for the pass after that worker exits"
+                            ),
+                        }
+                    )
+                    continue
                 # A reviewer that is still running is not owed a request:
                 # requesting now is what moved a working pointer to
                 # promotion-requested and then refused it for a record that had
@@ -1144,6 +1645,23 @@ def dispatch_awaiting_reviews(
                 # which moved a queued pointer to promotion-requested, where
                 # admission never launches it.
                 state, reason, _record = review_self_state(pointer)
+                # A refusal the drain has already recorded is not retried: the
+                # record search that produced it is shared across the sweeps at
+                # one pointer and run directory, and the station logs the line
+                # once rather than on every pass. A run whose pointer or run
+                # directory moves reaches a new identity and is read again.
+                settled = (
+                    _settled_self_refusal(run_id, reason)
+                    if state == REVIEW_SELF_REFUSED
+                    else None
+                )
+                signature = (
+                    _review_self_signature(pointer) if settled is not None else None
+                )
+                if settled is not None and signature is not None:
+                    if _mark_refusal_reported(signature):
+                        failed.append({"run_id": run_id, "error": settled})
+                    continue
                 not_launched = str(pointer.get("phase") or "") in _PRE_LAUNCH_PHASES
                 if not_launched or (
                     record_process_alive(pointer) is True
@@ -1246,11 +1764,32 @@ def dispatch_awaiting_reviews(
             # to its coordinator, and an eligible run whose acceptance was refused
             # is reported with its reason rather than silently skipped.
             if scan is not None and scan["classification"] == "promotable":
-                _hand_off(
-                    str(pointer.get("run_id") or ""),
-                    "acceptance",
-                    lambda pointer=pointer: accept_clean_review(pointer, config=config),
-                )
+                # A repair attempt in flight is about to move the head this
+                # promotion would land, so an attempt taken now would find its
+                # own inputs changed under it by the run's own repair. The
+                # attempt is the run's move, and the promotion waits for it.
+                repair_run_id = _live_repair_attempt(pointer)
+                if repair_run_id:
+                    repair_held.append(
+                        {
+                            "run_id": str(pointer.get("run_id") or ""),
+                            "repair_run_id": repair_run_id,
+                            "reason": (
+                                "a repair attempt of this run is live "
+                                f"({repair_run_id}) and will move the head the "
+                                "promotion would land, so the sweep attempts no "
+                                "promotion for it"
+                            ),
+                        }
+                    )
+                else:
+                    _hand_off(
+                        str(pointer.get("run_id") or ""),
+                        "acceptance",
+                        lambda pointer=pointer: accept_clean_review(
+                            pointer, config=config
+                        ),
+                    )
             # The repair pass, keyed on the stored review rather than on the run's
             # classification: a review carrying findings may leave the run reading
             # promotable, so gating this on ``scoring`` alone would leave a
@@ -1306,9 +1845,16 @@ def dispatch_awaiting_reviews(
             if receipt.get("phase") in {"promotion-requested", "promotion-running"}:
                 requested.append(run_id)
             elif receipt.get("phase") in {"promotion-failed", "promotion-refused"}:
-                failed.append(
-                    {"run_id": run_id, "error": str(receipt.get("error") or "")}
-                )
+                if kind == "acceptance" and _judge_moved_inputs_again(
+                    run_id, receipt, config=config
+                ):
+                    # The refusal describes a state that no longer exists, so
+                    # the run is judged again rather than reported as refused.
+                    requested.append(run_id)
+                    continue
+                error = str(receipt.get("error") or "")
+                if kind != "review-self" or _claims_refusal(run_id):
+                    failed.append({"run_id": run_id, "error": error})
     elif promotions is not None and handed:
         for run_id, kind, job in handed:
 

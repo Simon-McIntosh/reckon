@@ -1,0 +1,101 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "042d4a27f832e268397b3fe68bde21964c2327a2",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2308 crew gc -> garbage_collect",
+    "reckon/crew/gc.py:1249 garbage_collect -> _unledgered_run_directories(project=, repo=)",
+    "reckon/crew/gc.py:1262 garbage_collect -> _orphan_ledger_indexes(project=, repo=)",
+    "reckon/crew_run_commands.py:2207 crew retention-sweep --project -> gc.retention_sweep",
+    "reckon/crew/gc.py:2209 retention_sweep -> _orphan_ledger_indexes without project"
+  ],
+  "completed_at": "2026-11-14T23:56:31.261Z",
+  "dispatched_at": "2026-11-14T23:22:20Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "garbage-collection-reclaims-only-its-own-project",
+      "recorded_at": "2026-11-15T02:16:34.666264+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "garbage-collection-reclaims-only-its-own-project",
+      "recorded_at": "2026-11-15T02:16:44.877746+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "garbage-collection-reclaims-only-its-own-project",
+      "recorded_at": "2026-11-15T02:16:55.078989+00:00"
+    },
+    "3": {
+      "kind": "folded",
+      "node": "garbage-collection-reclaims-only-its-own-project",
+      "recorded_at": "2026-11-15T02:17:03.101052+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/gc.py",
+      "line": "2209",
+      "severity": "blocking",
+      "text": "blocking: retention_sweep, reached by 'crew retention-sweep --project P' (reckon/crew_run_commands.py:2207), calls _orphan_ledger_indexes(apply=apply, now=moment, report_removals=True) with no project and no repo, so project=None takes the unscoped branch and every orphan ledger index in the shared crew cache is still pruned whatever project the caller names; the goal and the plan's deliverable name the ledger-index sweep, so the reclaim the section exists to prevent remains reachable on this entry point."
+    },
+    {
+      "file": "tests/test_gc_reaches_every_crew_store.py",
+      "line": "250",
+      "severity": "blocking",
+      "text": "blocking: the landed scoping turns this assertion red at head - gates/sibling-head.log records 'assert 2 == 3' EXIT=1 and 4 failed against 1 at sibling-base - as it does at tests/test_gc_reaches_every_crew_store.py:436 ('assert not True' for the unattributable directory) and tests/test_gc_sweeps_ledger_indexes.py:129, so the plan's done-when clause that importing test files add no failure against the base revision is unmet and the merged suite goes red until these three expectations are updated under a scope extension."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "2131",
+      "severity": "non-blocking",
+      "text": "non-blocking: _manifest_project duplicates the manifest read reckon/crew/reports.py:318 parse_manifest already owns, branching on the same lstrip().startswith('{') test as reports.py:349 and re-implementing the tolerant key: value read, where a try/except around parse_manifest would extend the owner."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T174142934963-garbage-collection-reclaims-only-its-own-project/manifest.md",
+      "line": "18",
+      "severity": "non-blocking",
+      "text": "non-blocking: after_suite declares revision 5414c5de36 while the gate script recorded 'git rev-parse HEAD' at run time and the cited gates/after-suite.log header reads e4f4dbf2c7, so the record names a revision the log was not run at; only the docs fragment differs, but a reader comparing revisions against promotion cannot tell that."
+    }
+  ],
+  "head_log_revision": "e4f4dbf2c7ce8f703d61a06fc6741be6db7f3c9b",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified four production call sites: crew gc via crew_run_commands.py:2308 into garbage_collect, the two sweep invocations at gc.py:1249 and gc.py:1262, and crew retention-sweep via crew_run_commands.py:2207 into gc.py:2209.",
+    "diff": "read both commits against base 042d4a27f: e4f4dbf2c7 adds 120 lines to routing.py (five attribution helpers and the keep branch), 45 to gc.py (project/repo parameters and attribution), and a 184-line test; 5414c5de36 adds a 25-line evidence fragment.",
+    "done_when": "the done-when names tests/test_gc_reclaims_only_its_projects_entries via tests/test_gc_reclaims_only_its_project.py; the gate logs record base red (gates/negative-control.log) and head green (gates/after-suite.log, 56 passed EXIT=0), but the done-when clause that importing test files add no failure against base is not met: gates/sibling-head.log reads 4 failed against 1 at base, three added (test_gc_reaches_every_crew_store.py:250, :436, tests/test_gc_sweeps_ledger_indexes.py:129).",
+    "goal": "the goal is to scope gc's unledgered, ledger-index and run-lock sweeps to the project they run for; routing.py:2270-2317 and gc.py:599-672 now attribute run directories and ledger indexes and keep a peer's entries, the run-lock sweep is already scoped by the project-built ledgered set (routing.py:2049), but the same index sweep is still unscoped on the retention path (gc.py:2209).",
+    "manifest": "read; status complete, commits e4f4dbf2c7 and 5414c5de36, tests and test_logs naming five gate logs, negative_control_log set, baseline_suite and after_suite recorded, outside_scope naming three sibling failures, blockers stated as none while its own text says a done-when clause cannot be met.",
+    "write_paths": "read prompt.txt:80-85: routing.py, gc.py, tests/test_gc_reclaims_only_its_project.py, the evidence fragment and a figures directory; the diff touches the first four and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_gc_reclaims_only_its_project.py:150-158 asserts the peer directory's action stays 'keep' at the base revision, where gates/negative-control.log:56 records 'assert \\'prune\\' == \\'keep\\'', so the assertion reddens on exactly the regression it guards; the retention-path gap at reckon/crew/gc.py:2209 has no test.",
+    "evidence": "gates/negative-control.log (rev 042d4a27f) reads \"1 failed\" EXIT=1 with 'assert \\'prune\\' == \\'keep\\'' and gates/after-suite.log reads \"56 passed\" EXIT=0, while the manifest's after_suite names revision 5414c5de36 against a log header of e4f4dbf2c7 and gates/sibling-head.log reads \"4 failed\" EXIT=1 against \"1 failed\" at sibling-base (gates/sibling-base.log), three added.",
+    "fit": "the added helpers in reckon/crew/routing.py:2095-2190 follow the module's private-helper and docstring idiom and carry no plan, ticket or stage identifier, matching reckon/crew/routing.py:2018-2028.",
+    "goal_fidelity": "reckon/crew/gc.py:1249-1266 passes project and repo into both scoped sweeps, but reckon/crew/gc.py:2209 calls _orphan_ledger_indexes from retention_sweep with no project, so the project-scoped path at reckon/crew_run_commands.py:2207 still reclaims peer projects' ledger indexes.",
+    "reuse": "reckon/crew/routing.py:2131 _manifest_project re-implements the two-format manifest read that reckon/crew/reports.py:318 parse_manifest already owns, including the same 'starts with {' branch at reports.py:349.",
+    "scope_discipline": "git diff --stat e4f4dbf2c7^..5414c5de36 touches only reckon/crew/routing.py, reckon/crew/gc.py, tests/test_gc_reclaims_only_its_project.py and the evidence fragment, every one inside the node's declared write paths from prompt.txt:80-85."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261114T213611373537-review-of-garbage-collection-reclaims-only-its-own-project-5414c5de3637",
+  "reviewed_base_sha": "042d4a27f832e268397b3fe68bde21964c2327a2",
+  "reviewed_head_sha": "5414c5de3637340709d543ba43fa55fad148e829",
+  "reviewed_run_id": "r-20261114T174142934963-garbage-collection-reclaims-only-its-own-project",
+  "reviewer_run_id": "r-20261114T213611373537-review-of-garbage-collection-reclaims-only-its-own-project-5414c5de3637",
+  "scores": {
+    "durability": 18,
+    "evidence": 11,
+    "fit": 18,
+    "goal_fidelity": 14,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T00:15:46.483002+00:00",
+  "total": 85
+}

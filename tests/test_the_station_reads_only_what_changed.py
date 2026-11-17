@@ -16,7 +16,9 @@ the memos cleared.
 
 from __future__ import annotations
 
+import builtins
 import importlib
+import io
 import json
 import os
 import re
@@ -33,10 +35,11 @@ from unittest.mock import patch
 
 import pytest
 
-from reckon import ledger
+from reckon import file_memo, ledger
 from reckon.crew import (
     obligation_snapshot,
     plan_review,
+    recovery_review_subject,
     recovery_watch,
     runs,
     station,
@@ -47,8 +50,10 @@ from tests.helpers.git import git as _git
 
 ledger_module = importlib.import_module("reckon.ledger")
 obligations_module = importlib.import_module("reckon.crew.obligations")
+recovery_memo_module = importlib.import_module("reckon.crew.recovery_memo")
 recovery_module = importlib.import_module("reckon.crew.recovery")
 promotion_checks_module = importlib.import_module("reckon.crew.promotion_checks")
+promotion_module = importlib.import_module("reckon.crew.promotion")
 store_module = importlib.import_module("reckon._store")
 
 PROJECT = "recompute-fixture"
@@ -84,11 +89,17 @@ def fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
         _git(root, *arguments)
 
     # A plan document the review tier reads its declared risk from, so the
-    # tier's plan input is a real file whose stat identity keys the memo.
+    # tier's plan input is a real file whose stat identity keys the memo. The
+    # record sits beside its heading because that adjacency is what the typed
+    # section read requires of a plan document.
     (root / "docs" / "plans" / "fixture-plan.html").write_text(
         '<html><head><meta name="plan-version" content="1"></head><body>'
+        '<h2 id="fixture-section">Fixture section</h2>'
         '<section data-reckon="section" data-id="fixture-section" '
-        'data-capability-risk="light"></section></body></html>',
+        'data-effort-hours="0.25" data-capability-class="general" '
+        'data-capability-reasoning="standard" data-capability-verification="strict" '
+        'data-capability-risk="low" data-status="implementable"></section>'
+        "</body></html>",
         encoding="utf-8",
     )
 
@@ -290,6 +301,130 @@ def test_a_steady_tick_recomputes_nothing(
         f"the second tick rewrote classification memos: {memo_writes.memo_writes()}"
     )
     assert payload["obligations"], "the payload the second tick built is empty"
+
+
+def test_a_steady_promotion_reads_no_git_and_a_moved_head_re_reads(
+    fleet: dict[str, Any],
+) -> None:
+    """The committed range is read once per head, and re-read when the head moves."""
+    run_id = "run-01"
+    record = json.loads(runs.pointer_path(run_id).read_text(encoding="utf-8"))
+    first = promotion_module._promotion_commits(record, [])
+    assert first, "the fixture run names no committed range to promote"
+
+    with _GitCounter() as git_calls:
+        again = promotion_module._promotion_commits(record, [])
+    assert again == first
+    assert git_calls.calls == 0, (
+        f"a steady promotion read ran {git_calls.calls} git processes with no head move"
+    )
+
+    moved = _commit(fleet["worktrees"][run_id], "moved-range.txt", "moved\n")
+    after = promotion_module._promotion_commits(record, [])
+    assert after == [*first, moved], (
+        f"the moved head was not re-read: {after} (expected {[*first, moved]})"
+    )
+
+
+def test_a_steady_review_brief_reads_the_diff_once_and_a_moved_head_re_reads(
+    fleet: dict[str, Any],
+) -> None:
+    """The reviewed diff is read once per range, and re-read when the head moves."""
+    run_id = "run-01"
+    record = json.loads(runs.pointer_path(run_id).read_text(encoding="utf-8"))
+    worktree = fleet["worktrees"][run_id]
+    head = _git(worktree, "rev-parse", "HEAD").strip()
+    first = recovery_review_subject._review_brief_text(record, head)
+    assert recovery_review_subject.REVIEWED_SCOPE_HEADING in first, first
+
+    with _GitCounter() as git_calls:
+        again = recovery_review_subject._review_brief_text(record, head)
+    assert again == first, "the same range composed a different brief"
+    assert git_calls.calls == 0, (
+        f"a steady brief read ran {git_calls.calls} git processes with no head move"
+    )
+
+    moved = _commit(worktree, "moved-scope.txt", "moved\n")
+    after = recovery_review_subject._review_brief_text(record, moved)
+    assert f"Delivered diff {record['base_sha']}..{moved}" in after, after
+    assert "moved-scope.txt" in after, f"the moved head was not re-read: {after}"
+
+
+def test_a_steady_answer_store_read_parses_once_and_a_write_re_reads(
+    fleet: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The shared answer file is read once while unchanged, again after a write."""
+    tree = fleet["worktrees"]["run-00"]
+    file_memo.clear()
+    recovery_watch._remember_commit_answer(tree, "first-candidate", "1" * 40)
+    path = recovery_watch._git_answer_tree_path(tree)
+
+    reads: list[str] = []
+    real_open = io.open
+
+    def counting_open(file: Any, *args: Any, **kwargs: Any) -> Any:
+        if str(file) == str(path):
+            reads.append(str(file))
+        return real_open(file, *args, **kwargs)
+
+    monkeypatch.setattr(io, "open", counting_open)
+    for _ in range(5):
+        assert recovery_watch._stored_commit_answer(tree, "first-candidate") == "1" * 40
+    assert reads == [], (
+        f"five steady reads opened the unchanged answer store {len(reads)} times "
+        "with nothing written between them"
+    )
+
+    # Another process rewrites this tree's file through its own rename, which
+    # changes the identity the held copy was keyed on.
+    payload = json.loads(real_open(path, encoding="utf-8").read())
+    payload["commits"]["second-candidate"] = "2" * 40
+    temporary = path.with_name(f".{path.name}.external.tmp")
+    temporary.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
+    os.replace(temporary, path)
+
+    assert recovery_watch._stored_commit_answer(tree, "second-candidate") == "2" * 40, (
+        "a read after another process wrote the store still served the held copy"
+    )
+    assert len(reads) == 1, (
+        f"the read after the write opened the store {len(reads)} times "
+        "(expected exactly one)"
+    )
+
+
+def test_a_steady_prompt_read_opens_the_rubric_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The rubric text is held while its file is unchanged, and re-read after an edit."""
+    prompt = tmp_path / "rubric.md"
+    prompt.write_text("first\n", encoding="utf-8")
+    monkeypatch.setattr(review_module, "_PROMPT_PATH", prompt)
+
+    reads: list[str] = []
+    real_open = io.open
+
+    def counting_open(file: Any, *args: Any, **kwargs: Any) -> Any:
+        if str(file) == str(prompt):
+            reads.append(str(file))
+        return real_open(file, *args, **kwargs)
+
+    monkeypatch.setattr(io, "open", counting_open)
+    for _ in range(5):
+        assert review_module.load_review_prompt() == "first\n"
+    assert len(reads) == 1, (
+        f"five steady reads opened the unchanged rubric {len(reads)} times "
+        "(expected one, for the first)"
+    )
+
+    prompt.write_text("second\n", encoding="utf-8")
+    reads.clear()  # the edit itself opens the file; count only the reads after it
+    assert review_module.load_review_prompt() == "second\n", (
+        "the edited rubric was served from the held copy"
+    )
+    assert len(reads) == 1, (
+        f"the read after the edit opened the rubric {len(reads)} times "
+        "(expected one: the re-read)"
+    )
 
 
 def test_moving_one_head_recomputes_only_that_run(
@@ -658,3 +793,348 @@ def test_recent_rows_keep_the_unfiltered_promotion_order(home):
     )
     assert [row["run_id"] for row in recent] == ["r-a", "r-z"]
     assert recent == [row for row in whole if row["run_id"] != "r-expired"]
+
+
+# ── the dominant input a 60 s per-path census names: the run streams ─────────
+#
+# A 60 s window of one station over 147 live pointers, counted per path through
+# an open-wrapper census, put every byte the station reads in a few kinds of
+# file: the run streams made up most of it, and the largest single reader of
+# them was the terminal-lane scan, which parsed a whole stream from its first
+# record on every pass because a live worker appends to it continuously. The
+# two tests below hold the station to reading only what a stream appended.
+
+STREAM_RUNS = 5
+STREAM_BYTES_EACH = 2_200_000
+STREAM_MOMENT = datetime(2026, 10, 24, 12, tzinfo=UTC).timestamp()
+
+
+class _PerPathReads:
+    """Count the bytes every opened file hands back, keyed by its path.
+
+    This is the census's own instrument: ``io.open`` is wrapped and the value it
+    returns counts what its reads hand back, so a reader that opens a file and
+    iterates it is counted as surely as one that reads it whole. Bytes are
+    attributed to the path the caller asked for, resolved against the current
+    directory, so a stream is named by the file the station opened.
+    """
+
+    def __init__(self) -> None:
+        self.bytes: dict[str, int] = {}
+
+    def __enter__(self) -> Self:
+        self._real = io.open
+        counter = self
+
+        class _Counted:
+            def __init__(self, handle: Any, path: str) -> None:
+                self._handle = handle
+                self._path = path
+
+            def __getattr__(self, name: str) -> Any:
+                return getattr(self._handle, name)
+
+            def _note(self, data: Any) -> Any:
+                try:
+                    size = len(data)
+                except TypeError:
+                    return data
+                if size:
+                    counter.bytes[self._path] = counter.bytes.get(self._path, 0) + size
+                return data
+
+            def read(self, *args: Any) -> Any:
+                return self._note(self._handle.read(*args))
+
+            def readline(self, *args: Any) -> Any:
+                return self._note(self._handle.readline(*args))
+
+            def readlines(self, *args: Any) -> Any:
+                lines = self._handle.readlines(*args)
+                self._note(b"".join(lines))
+                return lines
+
+            def readinto(self, buffer: Any) -> Any:
+                count = self._handle.readinto(buffer) or 0
+                self._note(b"x" * count)
+                return count
+
+            def __iter__(self) -> Any:
+                return self
+
+            def __next__(self) -> Any:
+                return self._note(next(self._handle))
+
+            def __enter__(self) -> Any:
+                self._handle.__enter__()
+                return self
+
+            def __exit__(self, *exc: object) -> Any:
+                return self._handle.__exit__(*exc)
+
+        def counting_open(file: Any, *args: Any, **kwargs: Any) -> Any:
+            handle = counter._real(file, *args, **kwargs)
+            try:
+                path = os.fspath(file)
+            except TypeError:
+                return handle
+            if isinstance(path, bytes):
+                return handle
+            return _Counted(handle, os.path.abspath(path))
+
+        io.open = counting_open
+        builtins.open = counting_open
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        io.open = self._real
+        builtins.open = self._real
+
+    def total_for(self, paths: Any) -> int:
+        return sum(self.bytes.get(os.path.abspath(str(path)), 0) for path in paths)
+
+
+def _stream_body(index: int) -> str:
+    """One run's stream: whole records that fill it to its declared size."""
+    lines = []
+    size = 0
+    number = 0
+    while size < STREAM_BYTES_EACH:
+        line = json.dumps(
+            {
+                "type": "assistant",
+                "index": number,
+                "run": index,
+                "pad": "charge " * 120,
+            }
+        )
+        lines.append(line + "\n")
+        size += len(line) + 1
+        number += 1
+    lines.append(
+        json.dumps(
+            json.loads(
+                json.dumps(
+                    {
+                        "type": "result",
+                        "is_error": False,
+                        "timestamp": "2026-10-24T11:00:00Z",
+                    }
+                )
+            )
+        )
+        + "\n"
+    )
+    return "".join(lines)
+
+
+@pytest.fixture()
+def stream_fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
+    """Five live runs whose only large input is the run stream beside each."""
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "cache"))
+
+    monkeypatch.delenv("RECKON_MOUNTS_PATH", raising=False)
+    root = tmp_path / "repo"
+    state = root / "docs" / "state" / PROJECT
+    state.mkdir(parents=True)
+    (root / "seed.txt").write_text("seed\n", encoding="utf-8")
+    for arguments in (
+        ("init", "-q", "-b", "main"),
+        ("config", "user.email", "worker@example.invalid"),
+        ("config", "user.name", "Worker"),
+        ("add", "seed.txt"),
+        ("commit", "-q", "-m", "test: seed the stream fixture"),
+    ):
+        _git(root, *arguments)
+    (config_home / "mounts.json").write_text(
+        json.dumps({PROJECT: str(root / "docs")}), encoding="utf-8"
+    )
+    (state / "crew.json").write_text(
+        json.dumps({"data": {"_version": 1, "members": [], "runs": [], "holds": []}}),
+        encoding="utf-8",
+    )
+    streams = []
+    for index in range(STREAM_RUNS):
+        run_id = f"stream-run-{index:02d}"
+        stream = runs.run_dir(run_id) / "stream.jsonl"
+        stream.parent.mkdir(parents=True, exist_ok=True)
+        stream.write_text(_stream_body(index), encoding="utf-8")
+        streams.append(stream)
+        runs._write_json(
+            runs.pointer_path(run_id),
+            {
+                "run_id": run_id,
+                "project": PROJECT,
+                "session": SESSION,
+                "repo": str(root),
+                "worktree": str(root),
+                "base_sha": _git(root, "rev-parse", "HEAD"),
+                "launch": "in-harness",
+                "role": "implement",
+                "phase": "working",
+                # The worker is gone, which is the row whose terminal lane
+                # signal reads the stream: a live run's classification reads
+                # its stream through the observe fold instead.
+                "process_alive": False,
+                "launcher_host": socket.gethostname(),
+                "node": {"id": run_id, "plan": "fixture-plan", "section": "fixture"},
+            },
+        )
+    return {"streams": streams, "runtime": tmp_path / "runtime"}
+
+
+def test_a_moved_stream_is_read_only_where_it_changed(
+    stream_fleet: dict[str, Any],
+) -> None:
+    """A tick after workers appended reads the appended bytes, not the streams."""
+    streams = stream_fleet["streams"]
+    total = sum(stream.stat().st_size for stream in streams)
+    # A precondition of the fixture rather than a guard on the behaviour: the
+    # input has to be big enough that reading all of it and reading only its
+    # appended part are distinguishable at all. Five streams of two megabytes
+    # each is what the fixture promises; this states that promise beside the
+    # measurement instead of trusting the fixture's own declaration.
+    assert total >= 10_000_000, f"the dominant input totals only {total} bytes"
+    with station_store.StationStore(stream_fleet["runtime"]) as store:
+        for stream in streams:
+            store.ingest_pointer(runs.pointer_path(stream.parent.name))
+        store.classify_tick(now_seconds=STREAM_MOMENT)
+        # Every worker writes one more record: the input moves, as a live run's
+        # stream does on every pass, and the station's own answer must not.
+        appended = 0
+        for stream in streams:
+            record = json.dumps(
+                {
+                    "type": "result",
+                    "is_error": False,
+                    "timestamp": "2026-10-24T11:30:00Z",
+                    "detail": "still working",
+                }
+            )
+            with stream.open("a", encoding="utf-8") as handle:
+                handle.write(record + "\n")
+            appended += len(record) + 1
+        with _PerPathReads() as reads:
+            verdicts = store.classify_tick(now_seconds=STREAM_MOMENT)
+        over = reads.total_for(streams)
+        records = [json.loads(row["fields"]) for row in store.pointer_rows()]
+        # The reference classification is computed with the cursor store
+        # cleared, so it answers from the streams themselves rather than from
+        # the cursor the tick under test just advanced. Comparing against a
+        # classification that shared the cursor would agree with it by
+        # construction and prove nothing about the records read.
+        recovery_memo_module._NEWEST_RESULTS.clear()
+        fresh = {
+            record["run_id"]: recovery_watch._watch_snapshot(
+                record,
+                moment=STREAM_MOMENT,
+                stall_seconds=900,
+                cache={},
+                pointers=records,
+            )
+            for record in records
+        }
+        assert verdicts == fresh, (
+            "the tick's verdicts diverge from a fresh classification"
+        )
+    # Another precondition: every run of the fixture reached the tick, so the
+    # comparison above covered all of them rather than the ones that survived.
+    assert len(records) >= STREAM_RUNS, f"only {len(records)} runs were classified"
+    print(
+        f"moved_input_bytes={total} appended_bytes={appended} "
+        f"second_tick_stream_bytes={over}"
+    )
+    assert 0 < over < 1_000_000, (
+        f"the second tick read {over} bytes of the moved streams, whose whole is "
+        f"{total} and whose appended part is {appended}"
+    )
+
+
+def _result_record(*, is_error: bool, detail: str) -> str:
+    """One terminal result record, as a stream line."""
+    return json.dumps(
+        {
+            "type": "result",
+            "is_error": is_error,
+            "timestamp": "2026-10-24T11:00:00Z",
+            "detail": detail,
+        }
+    )
+
+
+def _filling_records(*, target_bytes: int, tag: str) -> list[str]:
+    """Assistant records whose joined length reaches ``target_bytes``."""
+    lines: list[str] = []
+    size = 0
+    number = 0
+    while size < target_bytes:
+        line = json.dumps(
+            {
+                "type": "assistant",
+                "timestamp": "2026-10-24T11:00:00Z",
+                "message": {"content": [{"type": "text", "text": f"{tag}-{number}"}]},
+            }
+        )
+        lines.append(line)
+        size += len(line) + 1
+        number += 1
+    return lines
+
+
+def test_a_stream_rewritten_in_place_is_read_from_its_first_record(
+    tmp_path: Path,
+) -> None:
+    """A stream rewritten to its own length restarts the cursor at record one.
+
+    A replaced stream moves its inode and a truncated one shrinks, and the stat
+    identity catches both. A producer that rewrites its stream in place keeps
+    the inode and lands at the same size or longer, so neither catches it, and
+    the offset the cursor holds then points into bytes its file no longer leads
+    to. The opening fingerprint is what catches it. This case is the one that
+    would pass on inode and size alone: the newest result sits before the held
+    offset, so a resumed read answers with the result the stream no longer ends
+    with, and the bytes read say whether the read started at record one.
+    """
+    stream = tmp_path / "stream.jsonl"
+    held = _result_record(is_error=False, detail="the first turn")
+    stream.write_text(
+        "\n".join([*_filling_records(target_bytes=200_000, tag="a"), held]) + "\n"
+    )
+    original_size = stream.stat().st_size
+
+    assert recovery_memo_module._newest_result_event(stream) == json.loads(held)
+    assert (
+        recovery_memo_module._NEWEST_RESULTS[str(stream)]["offset"] == original_size
+    ), "the cursor must sit at the stream's end"
+
+    # Rewritten in place: same inode, at least as long, and the only result
+    # record now sits before the offset the cursor holds.
+    newer = _result_record(is_error=True, detail="the second turn")
+    rewritten = (
+        "\n".join([newer, *_filling_records(target_bytes=original_size, tag="b")])
+        + "\n"
+    )
+    inode_before = stream.stat().st_ino
+    with stream.open("w", encoding="utf-8") as handle:
+        handle.write(rewritten)
+    after = stream.stat()
+    assert after.st_ino == inode_before, "the case must rewrite in place, not replace"
+    assert after.st_size >= original_size, (
+        f"the rewrite shrank the stream from {original_size} to {after.st_size}"
+    )
+
+    with _PerPathReads() as reads:
+        answer = recovery_memo_module._newest_result_event(stream)
+    read = reads.total_for([stream])
+
+    assert answer == json.loads(newer), (
+        "the cursor resumed into a stream whose opening moved, so it answered "
+        "with a result the stream no longer holds as its newest"
+    )
+    assert read >= after.st_size, (
+        f"the read took {read} bytes of a {after.st_size}-byte stream, so it did "
+        "not start at its first record"
+    )

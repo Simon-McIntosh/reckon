@@ -1,0 +1,31 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T03:34:32.486Z",
+  "dispatched_at": "2026-11-15T02:45:14Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_requests.py",
+      "line": 529,
+      "text": "non-blocking: the deferral writes deferred_at at promotion_requests.py:529 but nothing reads it, and the attempt thread's finally calls self.wake() at promotion_requests.py:844, so a run deferred against a review parked in promotion-waiting is re-attempted on every drain pass with no delay until the reviewer's record lands \u2014 a hot re-attempt loop for the whole time a review is being written, where before this change the run settled as a visible refusal."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a run's review is promoted before the run and a run waiting on its review is not refused; reckon/crew/promotion_requests.py:45 adds QUEUED = PENDING | {WAITING} so reckon/crew/promotion_requests.py:518 defers a run refused only for a review parked in promotion-waiting instead of terminating it.\nVERDICT done_when: the section's done-when asks for a review-first drain test, a no-review-anywhere refusal test, a plain-name-order negative control, and a gate on all_debug logged in the evidence fragment; the first two are tests/test_review_promoted_before_its_run.py:129 and :236, both negative controls are on disk, and the head and base arms are recorded in gate-head-9b3fc61d.log and gate-base-8410843a.log.\nVERDICT write_paths: the node declared reckon, tests, docs/evidence/fragments/work-flows-to-the-lane and skills; every path in the diff \u2014 reckon/crew/promotion_requests.py, tests/test_review_promoted_before_its_run.py and docs/evidence/fragments/work-flows-to-the-lane/wftl-a-run-s-review-is-promoted-before-the-run-and-a.html \u2014 is inside them.\nVERDICT manifest: read; it records the head arm at 9b3fc61d as 3 failed and 51 passed against the base arm at 8410843a as 3 failed and 50 passed with the identical three failing ids, added_failure_count 0, and names both gate logs plus negative-control-base-revision.log on disk.\nVERDICT diff: read commit by commit against base 8410843a; 9b3fc61d widens the queued set and the deferral predicate and adds one test at tests/test_review_promoted_before_its_run.py:184-228, and d12711bf1b adds only the evidence fragment.\nCALL_SITES: reckon/crew/promotion_requests.py:PromotionService._run, reckon/crew/promotion_requests.py:PromotionService._tick_locked, reckon/crew/admission/service.py:admit_until_stopped\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_requests.py:45 and :518 keep a run queued while its review sits in promotion-waiting, so the run follows its review once the record lands rather than being refused.\nSCORE evidence: 18\nJUSTIFICATION evidence: the head and base arms at gate-head-9b3fc61d.log and gate-base-8410843a.log record revision, tree, literal command, imported module and cwd, and end in EXIT=1 with the same three failing ids in both arms, so added_failure_count 0 is measured rather than claimed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all three changed paths fall inside the declared write paths, and the diff adds nothing the goal does not imply.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_review_promoted_before_its_run.py:209 asserts the run reads promotion-requested and :225 asserts the review leads it, both red at the base module per negative-control-base-revision.log, but the test writes the promotion-waiting phase by hand at :184-203 rather than driving _mark_waiting at promotion_requests.py:318, so a regression in that producer would not redden it.\nSCORE fit: 19\nJUSTIFICATION fit: QUEUED is a plain module constant beside PENDING at reckon/crew/promotion_requests.py:45 with a comment stating why the waiting phase counts, matching the surrounding idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing PENDING-set owner at reckon/crew/promotion_requests.py:42 rather than adding a second notion of queued, and no other owner of a drain-eligibility predicate was found.\nFINDING reckon/crew/promotion_requests.py:529 non-blocking: the deferral writes deferred_at at promotion_requests.py:529 but nothing reads it, and the attempt thread's finally calls self.wake() at promotion_requests.py:844, so a run deferred against a review parked in promotion-waiting is re-attempted on every drain pass with no delay until the reviewer's record lands \u2014 a hot re-attempt loop for the whole time a review is being written, where before this change the run settled as a visible refusal.",
+  "review_run_id": "r-20261115T024149320974-review-of-wftl-a-run-s-review-is-promoted-before-the-run-and-a-d12711bf1b77",
+  "reviewed_base_sha": "8410843a23f2c73105ff6d9ba46e6c47287b4e70",
+  "reviewed_head_sha": "d12711bf1b7777046a9152d382e90500c0b41568",
+  "reviewed_run_id": "r-20261114T202656098331-wftl-a-run-s-review-is-promoted-before-the-run-and-a",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T03:35:26.514064+00:00",
+  "total": 112
+}

@@ -187,7 +187,7 @@ def test_ticker_emits_only_changes_and_ends_after_the_last_promotion(home) -> No
         transitions[2], ticker=ticker_module.Ticker(width=208, color=False)
     )
     assert "dependency unavailable" not in rendered
-    assert "new → needs you" in rendered
+    assert "new → help" in rendered
     assert sleeps == 7
 
 
@@ -199,13 +199,13 @@ def test_ticker_line_is_compact_and_carries_no_free_text() -> None:
     # The stamp is stored UTC and rendered in the reader's own zone, because
     # the pane sits beside a harness that timestamps locally.
     assert line.startswith(ticker_module.local_clock(_event()["observed_at"]))
-    assert line.index("ticker-node") < line.index("needs you")
+    assert line.index("ticker-node") < line.index("help")
     # The row carries one transition, centred on its fixed arrow.
-    assert "new → needs you" in line
+    assert "new → help" in line
     assert ticker_module.BASELINE_MARKER not in line
     # The counts are a fixed grid whose digits share a column, each number
     # followed by its state's single letter, one space between the cells.
-    assert " 3w  1n  0d" in line
+    assert " 3w  0r  1h  0d" in line
     # The row carries no free text: neither clause of the reason reaches it,
     # and the fixed cells are the whole line.
     assert "first clause" not in line
@@ -217,8 +217,8 @@ def test_counter_cells_stay_apart_at_every_digit_width() -> None:
     """Two counts never run into each other, whatever their digit width.
 
     Every counter is its count right-aligned to a fixed digit width and followed
-    by the bucket's letter, with one space between cells, so ``10w 12h`` is two
-    tokens at any digit width and the abutting ``10w12b`` is never printed as
+    by the bucket's letter, with one space between cells, so ``10w 12r`` is two
+    tokens at any digit width and the abutting ``10w12r`` is never printed as
     one. The right alignment is what lets that hold together with the block's
     own width: a single-digit count pads inside its own cell rather than
     shifting the letters beside it, so every letter keeps its column and the
@@ -228,18 +228,20 @@ def test_counter_cells_stay_apart_at_every_digit_width() -> None:
     width inside its cells shortens the block and has to fail here.
     """
     escapes = re.compile(r"\x1b\[[0-9;]*m")
-    counters = re.compile(r"(\d+)w\s+(\d+)n\s+(\d+)d\s+(\d+)q\s+(\d+)s")
+    counters = re.compile(r"(\d+)w\s+(\d+)r\s+(\d+)h\s+(\d+)d\s+(\d+)q\s+(\d+)s")
 
     block_ends: set[int] = set()
     row_ends: set[int] = set()
     cases = (
-        (10, 12, 0, 0, 0),
-        (99, 99, 0, 0, 1),
-        (99, 99, 99, 99, 12),
-        (1, 0, 0, 0, 0),
-        (3, 1, 0, 0, 99),
+        (10, 12, 0, 0, 0, 0),
+        (99, 0, 99, 0, 0, 1),
+        (99, 99, 99, 99, 0, 12),
+        (1, 0, 0, 0, 0, 0),
+        (3, 4, 1, 0, 2, 99),
     )
-    for index, (working, blocked, unpromoted, queued, stuck) in enumerate(cases):
+    for index, (working, reviewing, blocked, unpromoted, queued, stuck) in enumerate(
+        cases
+    ):
         # A grid per case: the renderer remembers the last destination state of
         # a run, so reusing one run id would suppress the rows after the first.
         grid = ticker_module.Ticker(width=180, color=False, model_aliases=())
@@ -249,6 +251,7 @@ def test_counter_cells_stay_apart_at_every_digit_width() -> None:
                 _event(
                     run_id=f"r-digits-{index}",
                     working=working,
+                    reviewing=reviewing,
                     blocked=blocked,
                     unpromoted=unpromoted,
                     waiting=queued,
@@ -257,9 +260,17 @@ def test_counter_cells_stay_apart_at_every_digit_width() -> None:
             ),
         )
         match = counters.search(row)
-        assert match is not None, (working, blocked, unpromoted, queued, row)
+        assert match is not None, (
+            working,
+            reviewing,
+            blocked,
+            unpromoted,
+            queued,
+            row,
+        )
         assert match.groups() == (
             str(working),
+            str(reviewing),
             str(blocked),
             str(unpromoted),
             str(queued),
@@ -267,10 +278,11 @@ def test_counter_cells_stay_apart_at_every_digit_width() -> None:
         ), row
         # Each count is its own whitespace-separated token, and no bucket's
         # letter is followed straight away by the next count's digits.
-        assert len(match.group(0).split()) == 5, row
+        assert len(match.group(0).split()) == 6, row
         for left, right, letter in (
-            (working, blocked, "w"),
-            (blocked, unpromoted, "n"),
+            (working, reviewing, "w"),
+            (reviewing, blocked, "r"),
+            (blocked, unpromoted, "h"),
             (unpromoted, queued, "d"),
             (queued, stuck, "q"),
         ):
@@ -296,10 +308,10 @@ def test_a_count_above_the_fixed_width_widens_its_own_row() -> None:
     keeps one block width. A larger count is the case that forces a choice, and
     the renderer widens that one row instead of eliding the figure: a reader
     watching a queue pass a hundred needs the number, not a marker. The extra
-    column lengthens the row by one, and the counts stay four separate tokens.
+    column lengthens the row by one, and the counts stay six tokens.
     """
     escapes = re.compile(r"\x1b\[[0-9;]*m")
-    counters = re.compile(r"(\d+)w\s+(\d+)n\s+(\d+)d\s+(\d+)q\s+(\d+)s")
+    counters = re.compile(r"(\d+)w\s+(\d+)r\s+(\d+)h\s+(\d+)d\s+(\d+)q\s+(\d+)s")
 
     def render(index: int, **counts: int) -> str:
         grid = ticker_module.Ticker(width=180, color=False, model_aliases=())
@@ -308,12 +320,12 @@ def test_a_count_above_the_fixed_width_widens_its_own_row() -> None:
     kept = render(0, working=99, blocked=99, unpromoted=99, waiting=99)
     widened = render(1, working=100, blocked=9, unpromoted=0, waiting=0)
 
-    # The figure survives whole, as four tokens, with the wide count's own cell
+    # The figure survives whole, as five tokens, with the wide count's own cell
     # carrying the third digit.
     assert "100w" in widened, widened
     match = counters.search(widened)
     assert match is not None, widened
-    assert match.groups() == ("100", "9", "0", "0", "0"), widened
+    assert match.groups() == ("100", "0", "9", "0", "0", "0"), widened
 
     # The widening is the wide row's alone: it costs one column, and neither row
     # wraps — each ends within the pane's width.
@@ -350,7 +362,7 @@ def test_cli_follow_prints_compact_transition_lines_by_default(
     # follower stopped is written to stderr and must not be counted as a row.
     assert result.stdout.count("\n") == 1
     assert "ticker-node" in result.stdout
-    assert "new → needs you" in result.stdout
+    assert "new → help" in result.stdout
     assert not result.stdout.startswith("{")
 
 
@@ -384,7 +396,7 @@ def test_follow_renders_at_the_resolved_terminal_width(home, monkeypatch) -> Non
     line = result.output.splitlines()[0]
     assert len(line) <= 207
     # The counters hold their own column inside the resolved-width grid.
-    assert " 3w  1n  0d" in line
+    assert " 3w  0r  1h  0d" in line
 
 
 def test_follow_explicit_width_beats_the_measurement(home, monkeypatch) -> None:
@@ -554,7 +566,7 @@ def test_cli_watch_follows_without_being_asked(home, monkeypatch) -> None:
 
     assert result.exit_code == 0
     assert "ticker-node" in result.output
-    assert "new → needs you" in result.output
+    assert "new → help" in result.output
 
 
 def test_cli_watch_returns_after_one_event_only_when_asked(home, monkeypatch) -> None:
@@ -799,7 +811,7 @@ def test_a_follower_delivers_only_lines_with_a_node_and_a_state_pair(monkeypatch
     assert len(plain_lines) == 2
     for line, node in zip(plain_lines, ("ticker-node", "second-node"), strict=True):
         assert node in line, line
-        assert "new → needs you" in line, line
+        assert "new → help" in line, line
 
     json_lines = CliRunner().invoke(
         cli_module.main, ["crew", "follow", "--project", "proj", "--json"]
@@ -869,7 +881,7 @@ def test_the_retired_baseline_marker_never_renders(
     # the only label a row prints.
     assert not re.search(r"\bnow\b", "\n".join(rows))
     assert ticker_module.BASELINE_MARKER not in "\n".join(rows)
-    assert "working" in baseline and "working → needs you" in transition
+    assert "working" in baseline and "working → help" in transition, transition
     # The first row names its arrival; later rows name the state they left.
     assert "dispatched" not in baseline
     assert "dispatched" not in transition
@@ -908,11 +920,11 @@ def test_a_baseline_row_keeps_the_state_column_of_a_transition(
     # The word is on no row, and the state is not printed twice on one.
     assert not re.search(r"\bnow\b", "\n".join(rows))
     assert baseline.count("working") == 1
-    assert transition.count("needs you") == 1
+    assert transition.count("help") == 1
 
     # The state cell begins at the same screen column on both rows.
     assert _state_cell_start(baseline, "working") == _state_cell_start(
-        transition, "needs you"
+        transition, "help"
     )
 
 
@@ -998,7 +1010,7 @@ def test_every_field_holds_one_column_across_every_row_kind(monkeypatch) -> None
                 _state_cell_start(row, state)
                 for row, state in zip(
                     rows,
-                    ("working", "needs you", "needs you", "needs you"),
+                    ("working", "help", "help", "help"),
                     strict=True,
                 )
             }
@@ -1022,14 +1034,15 @@ def test_every_field_holds_one_column_across_every_row_kind(monkeypatch) -> None
         # start one column early on a two-digit count by absorbing the space
         # that separates the cells from each other.
         found = re.search(
-            r"(?<=\s)([ \d]{2}w) ([ \d]{2}n) ([ \d]{2}d) ([ \d]{2}q)", row
+            r"(?<=\s)([ \d]{2}w) ([ \d]{2}r) ([ \d]{2}h) ([ \d]{2}d) ([ \d]{2}q)",
+            row,
         )
         assert found, row
         # Both edges come off the row: the first cell's own pad is where the
         # block's reserved columns begin whatever the counts, and the queued
         # cell's letter is where they end.
         starts.add(found.start(1))
-        ends.add(found.end(4))
+        ends.add(found.end(5))
     assert len(starts) == 1, starts
     assert len(ends) == 1, ends
     block_end = ends.pop()

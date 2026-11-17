@@ -1,0 +1,101 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-17T21:42:23.809Z",
+  "dispatched_at": "2026-11-17T21:41:08Z",
+  "failure_evidence": "The reviewed run's manifest records baseline_suite: none and after_suite: none, and suite-arm-resolution.log shows both arms resolving to the empty command at 88060e29ad and at 1ac4af3753 because neither revision's write scope holds a collectible test file, so neither arm ran and no added failure can be named. The increment adds an evidence record and a standalone script, no test.",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the overlap verdict compares each treatment interval with the same-arm interval; a shared resample index set pairs the comparisons rather than biasing them. Correcting the method paragraph's per-arm wording is carried to \u00a78, which reads this record",
+      "recorded_at": "2026-11-17T21:57:32.813842+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "no run trips it here (all 9 codex baseline launches read anchored_edit false, all 9 codex-anchored read true), so the figures stand; applying one membership rule to both baselines is carried to \u00a78",
+      "recorded_at": "2026-11-17T21:57:36.338465+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "no run is excluded on membership in this population; checking the launched-after-\u00a710 conjunct is carried to \u00a78's membership rule",
+      "recorded_at": "2026-11-17T21:57:39.249137+00:00"
+    },
+    "3": {
+      "kind": "exempted",
+      "reason": "the record's figures were checked against the harness's stored figure on 50 of 50 runs whose budget detail survives; replacing the producer's duplicate token readers with reckon/crew/rollout.py and metering.py is carried to \u00a78",
+      "recorded_at": "2026-11-17T21:57:41.373590+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired_replay_report.py",
+      "id": "f56fa1a881d",
+      "line": "609",
+      "severity": "non-blocking",
+      "text": "non-blocking: the bootstrap seed is 20261116 + len(pairs), so the same-arm control and all three treatments, each with nine pairs, draw the identical resample indices, while the record's method paragraph at paired-replay-report.html:201 says the draws are seeded per arm; a reader who treats the four intervals as independent draws reads a correlation the code does not have."
+    },
+    {
+      "file": "docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired_replay_report.py",
+      "id": "ff8f2004198",
+      "line": "396",
+      "severity": "non-blocking",
+      "text": "non-blocking: a run dispatched as the codex baseline whose launch record carries anchored_edit true is kept in the codex arm, while the same contamination is excluded on the clive side at :387, so the two baselines are held to different rules; no run here trips it (9 codex baseline launches read false, 9 codex-anchored read true), so the figures stand and the rule does not."
+    },
+    {
+      "file": "docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired_replay_report.py",
+      "id": "fa6b37f350b",
+      "line": "378",
+      "severity": "non-blocking",
+      "text": "non-blocking: arm_membership reads only the server-status conjunct of section 8's Claude rule and never its second, that the run was launched after section 10 landed, so a pre-section-10 run with a connected server would count in the anchored arm; no run is excluded on membership here, so the omission's effect is unmeasured rather than nil."
+    },
+    {
+      "file": "docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired_replay_report.py",
+      "id": "fddc59152a9",
+      "line": "266",
+      "severity": "non-blocking",
+      "text": "non-blocking: codex_rollout_usage re-reads codex-home/sessions/**.jsonl and sums total_token_usage, duplicating reckon/crew/rollout.py:787 read_rollout_receipt and run_home_sessions_root at :182, while :155, :225 and :310 duplicate the stream folds owned by reckon/crew/metering.py:371 and reckon/_backends.py:2143; the record's figures come from a second implementation of the instrument the arms are metered by."
+    }
+  ],
+  "item_aggregate": {
+    "present": 5,
+    "total": 5
+  },
+  "item_verdicts": {
+    "diff": "read commit by commit over 88060e29..1ac4af3753: 1632 added lines and no deletions across three files, the increment past the earlier review being the producer commit and the prose-and-regeneration commit.",
+    "done_when": "read the section's evidence fence against the record at head; 54 run rows each with a 40-hex base revision, nine per arm over six arms, 46 passed and 8 failed, the exclusion with its reason, the seed and draw, the same-arm interval, both positive controls and the instrument control, and one verdict per treatment are all present.",
+    "goal": "the source node's goal is to write the paired replay evidence record from the run store and the replay run directories; docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired-replay-report.html is that record, generated by the producer beside it.",
+    "manifest": "read; it names three commits, the literal generator command, two gate logs, and both suite arms as none because the write scope holds no collectible test file at either revision.",
+    "write_paths": "the node declared five write paths; every path in the diff is inside them and the two declared figure directories are untouched."
+  },
+  "justifications": {
+    "durability": "paired_replay_report.py:668 encodes the not-separated rule but no test or assertion fails if that branch, the exclusion row or the run list regresses.",
+    "evidence": "report.log:1-7 records revision 14f932a47a, the all_debug partition and the literal command with a bare EXIT=0 tail, and re-running that command at head reproduced the committed record byte for byte, but no assertion refuses a record missing a done_when element.",
+    "fit": "paired_replay_report.py:26-46 follows the sibling evidence script's shape, but paired-replay-report.html:201 claims a per-arm seed that :609 of the producer does not use.",
+    "goal_fidelity": "docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired-replay-report.html:22-30 states the draw of ten, the exclusion and nine dispatched sections with 54 runs, and :51 carries a verdict per treatment, so the headline population matches the one measured.",
+    "reuse": "paired_replay_report.py:266 and :155/:225/:310 re-implement the codex rollout and stream folds owned by reckon/crew/rollout.py:787 and reckon/crew/metering.py:371.",
+    "scope_discipline": "the whole diff names only the two evidence HTML files and paired_replay_report.py, each inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to write the paired replay evidence record from the run store and the replay run directories, and docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired-replay-report.html is that record, generated by the producer committed beside it at docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired_replay_report.py and carrying the per-arm tables the goal names.\nVERDICT done_when: read the section's evidence fence against the record at head and counted its parts \u2014 54 run rows each carrying a 40-hex base revision, nine runs in each of the six arms, 46 passed and 8 failed matching the prose at :93, the excluded section with its reason at :120, the seed and the draw at :127, the same-arm interval at :58, the two section-8 positive controls and the instrument control at :160-181, and one verdict per treatment at :51.\nVERDICT write_paths: read the node's declared write paths; all three paths in the diff (docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired-replay-report.html, docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired-replay-report-s14.html, docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired_replay_report.py) fall inside them, and the two declared figure directories carry no file in the diff or in the tree.\nVERDICT manifest: read; it records commits 9f3359a87c, 14f932a47a and 1ac4af3753, the literal generator command, test_logs report.log and suite-arm-resolution.log, and both suite arms as none because the write scope holds no collectible test file at either revision.\nVERDICT diff: read commit by commit over 88060e29ad9d5024ad0ab698dc1157affe7a4ef3..1ac4af375317e6032bdff800dfbdc49d403ca93a \u2014 1632 added lines and no deletions across three files; the increment past the earlier review at 9f3359a87c is 14f932a47a (the 1368-line producer) and 1ac4af3753 (prose and regeneration of both HTML files).\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired-replay-report.html:22-30 now states the draw of ten, the single exclusion and nine dispatched sections with 54 runs, and :51 carries a verdict per treatment, so the headline population matches the one measured.\nSCORE evidence: 16\nJUSTIFICATION evidence: report.log:1-7 records revision 14f932a47a, the all_debug partition and the literal command with a bare EXIT=0 tail, and re-running that command at head reproduced the committed record byte for byte, but the gate only writes the record \u2014 no assertion refuses one that is missing a done_when element.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the whole diff 88060e29..1ac4af3753 names only the two evidence HTML files and paired_replay_report.py, each inside the node's declared write paths, with no product source or test touched.\nSCORE durability: 8\nJUSTIFICATION durability: docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired_replay_report.py:668 analysis() encodes the not-separated rule and :20-24 of the record reports it, but no test and no assertion anywhere fails if that branch, the exclusion row or the run list regresses, so the record can drift with nothing going red.\nSCORE fit: 16\nJUSTIFICATION fit: docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired_replay_report.py:26-46 keeps the constants-then-pure-functions shape of the sibling evidence script docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-review-is-promoted-only-after-it-delivers-and-census.py, but the record's claim at paired-replay-report.html:201 that the draws are \"seeded per arm\" does not match the seed that :609 of the producer actually uses.\nSCORE reuse: 4\nJUSTIFICATION reuse: docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired_replay_report.py:266 recomputes codex rollout totals and :155/:225/:310 re-fold Claude, omp and codex streams, while reckon/crew/rollout.py:787 and reckon/crew/metering.py:371 already own both readings and are not extended or imported.\nFINDING docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired_replay_report.py:609 non-blocking: the bootstrap seed is 20261116 + len(pairs), so the same-arm control and all three treatments, each with nine pairs, draw the identical resample indices, while the record's method paragraph at paired-replay-report.html:201 says the draws are seeded per arm; a reader who treats the four intervals as independent draws of the spread reads a correlation the code does not have.\nFINDING docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired_replay_report.py:396 non-blocking: a run dispatched as the codex baseline whose launch record carries anchored_edit true is kept in the codex arm, while the same contamination is excluded on the clive side at :387, so the two baselines are held to different rules; no run in this population trips it (the 9 codex baseline launches all read anchored_edit false, the 9 codex-anchored launches read true), so this record's figures stand and the rule does not.\nFINDING docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired_replay_report.py:378 non-blocking: arm_membership reads only the server-status conjunct of section 8's Claude rule and never its second, that the run was launched after section 10 landed, so a run launched earlier with a connected server would be counted in the anchored arm; no run here is excluded on membership, so the omission's effect on this record is unmeasured rather than nil.\nFINDING docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired_replay_report.py:266 non-blocking: codex_rollout_usage re-reads codex-home/sessions/**.jsonl and sums total_token_usage, duplicating reckon/crew/rollout.py:787 read_rollout_receipt and its run_home_sessions_root at :182, while :155, :225 and :310 duplicate the Claude, omp and codex stream folds owned by reckon/crew/metering.py:371 and reckon/_backends.py:2143; the record's figures therefore come from a second implementation of the instrument the arms are metered by, free to drift from the one the ledger uses.\n",
+  "review_run_id": "r-20261117T213919846475-review-of-paired-replay-report-s14-1ac4af375317",
+  "review_text": "VERDICT goal: the source node's goal is to write the paired replay evidence record from the run store and the replay run directories, and docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired-replay-report.html is that record, generated by the producer committed beside it at docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired_replay_report.py and carrying the per-arm tables the goal names.\nVERDICT done_when: read the section's evidence fence against the record at head and counted its parts \u2014 54 run rows each carrying a 40-hex base revision, nine runs in each of the six arms, 46 passed and 8 failed matching the prose at :93, the excluded section with its reason at :120, the seed and the draw at :127, the same-arm interval at :58, the two section-8 positive controls and the instrument control at :160-181, and one verdict per treatment at :51.\nVERDICT write_paths: read the node's declared write paths; all three paths in the diff (docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired-replay-report.html, docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired-replay-report-s14.html, docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired_replay_report.py) fall inside them, and the two declared figure directories carry no file in the diff or in the tree.\nVERDICT manifest: read; it records commits 9f3359a87c, 14f932a47a and 1ac4af3753, the literal generator command, test_logs report.log and suite-arm-resolution.log, and both suite arms as none because the write scope holds no collectible test file at either revision.\nVERDICT diff: read commit by commit over 88060e29ad9d5024ad0ab698dc1157affe7a4ef3..1ac4af375317e6032bdff800dfbdc49d403ca93a \u2014 1632 added lines and no deletions across three files; the increment past the earlier review at 9f3359a87c is 14f932a47a (the 1368-line producer) and 1ac4af3753 (prose and regeneration of both HTML files).\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired-replay-report.html:22-30 now states the draw of ten, the single exclusion and nine dispatched sections with 54 runs, and :51 carries a verdict per treatment, so the headline population matches the one measured.\nSCORE evidence: 16\nJUSTIFICATION evidence: report.log:1-7 records revision 14f932a47a, the all_debug partition and the literal command with a bare EXIT=0 tail, and re-running that command at head reproduced the committed record byte for byte, but the gate only writes the record \u2014 no assertion refuses one that is missing a done_when element.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the whole diff 88060e29..1ac4af3753 names only the two evidence HTML files and paired_replay_report.py, each inside the node's declared write paths, with no product source or test touched.\nSCORE durability: 8\nJUSTIFICATION durability: docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired_replay_report.py:668 analysis() encodes the not-separated rule and :20-24 of the record reports it, but no test and no assertion anywhere fails if that branch, the exclusion row or the run list regresses, so the record can drift with nothing going red.\nSCORE fit: 16\nJUSTIFICATION fit: docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired_replay_report.py:26-46 keeps the constants-then-pure-functions shape of the sibling evidence script docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-review-is-promoted-only-after-it-delivers-and-census.py, but the record's claim at paired-replay-report.html:201 that the draws are \"seeded per arm\" does not match the seed that :609 of the producer actually uses.\nSCORE reuse: 4\nJUSTIFICATION reuse: docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired_replay_report.py:266 recomputes codex rollout totals and :155/:225/:310 re-fold Claude, omp and codex streams, while reckon/crew/rollout.py:787 and reckon/crew/metering.py:371 already own both readings and are not extended or imported.\nFINDING docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired_replay_report.py:609 non-blocking: the bootstrap seed is 20261116 + len(pairs), so the same-arm control and all three treatments, each with nine pairs, draw the identical resample indices, while the record's method paragraph at paired-replay-report.html:201 says the draws are seeded per arm; a reader who treats the four intervals as independent draws of the spread reads a correlation the code does not have.\nFINDING docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired_replay_report.py:396 non-blocking: a run dispatched as the codex baseline whose launch record carries anchored_edit true is kept in the codex arm, while the same contamination is excluded on the clive side at :387, so the two baselines are held to different rules; no run in this population trips it (the 9 codex baseline launches all read anchored_edit false, the 9 codex-anchored launches read true), so this record's figures stand and the rule does not.\nFINDING docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired_replay_report.py:378 non-blocking: arm_membership reads only the server-status conjunct of section 8's Claude rule and never its second, that the run was launched after section 10 landed, so a run launched earlier with a connected server would be counted in the anchored arm; no run here is excluded on membership, so the omission's effect on this record is unmeasured rather than nil.\nFINDING docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/paired_replay_report.py:266 non-blocking: codex_rollout_usage re-reads codex-home/sessions/**.jsonl and sums total_token_usage, duplicating reckon/crew/rollout.py:787 read_rollout_receipt and its run_home_sessions_root at :182, while :155, :225 and :310 duplicate the Claude, omp and codex stream folds owned by reckon/crew/metering.py:371 and reckon/_backends.py:2143; the record's figures therefore come from a second implementation of the instrument the arms are metered by, free to drift from the one the ledger uses.\n",
+  "reviewed_base_sha": "88060e29ad9d5024ad0ab698dc1157affe7a4ef3",
+  "reviewed_head_sha": "1ac4af375317e6032bdff800dfbdc49d403ca93a",
+  "reviewed_run_id": "r-20261117T204428036183-paired-replay-report-s14",
+  "scores": {
+    "durability": 8,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 4,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T21:51:08.368927+00:00",
+  "total": 82
+}

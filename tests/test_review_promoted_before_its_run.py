@@ -181,6 +181,48 @@ def test_a_run_refused_for_its_review_and_another_reason_is_refused():
         service.settle(timeout=20)
 
 
+def _park_review_while_its_record_is_written() -> None:
+    """Put the review's request where a live reviewer's absent record leaves it."""
+    path = requests._request_path(REVIEW_ID)
+    queued = requests._read(path)
+    runs._write_json(
+        path,
+        {
+            **queued,
+            "phase": requests.WAITING,
+            "waiting_reason": "the review record is still being written",
+        },
+    )
+
+
+def test_a_run_whose_review_is_parked_while_its_record_is_written_waits():
+    _queue(RUN_ID, "delivery")
+    _queue(REVIEW_ID, f"review-of-{RUN_ID}")
+    _park_review_while_its_record_is_written()
+    promotions = _StubPromotions()
+    service = requests.PromotionService(width=1, execute=promotions)
+
+    service.tick()
+    service.settle(timeout=20)
+
+    receipt = requests.read_promotion(RUN_ID)
+    assert receipt["phase"] == requests.REQUESTED, receipt
+
+    # The reviewer stores its record, so its request leaves the waiting phase
+    # and the queue promotes the review, then the run it licenses.
+    runs._write_json(
+        requests._request_path(REVIEW_ID),
+        {
+            **requests._read(requests._request_path(REVIEW_ID)),
+            "phase": requests.REQUESTED,
+        },
+    )
+    _drain(service)
+
+    assert promotions.promoted == [REVIEW_ID, RUN_ID], promotions.attempts
+    assert requests.read_promotion(RUN_ID)["phase"] == requests.PROMOTED
+
+
 def test_a_run_with_no_review_anywhere_is_refused():
     _queue(RUN_ID, "delivery")
     promotions = _StubPromotions()

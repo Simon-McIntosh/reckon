@@ -1,0 +1,48 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/promotion.py:1452 _refuse_unrelated_plan_edit",
+    "reckon/crew/promotion.py:1505 _commit_landing_writes(plan_text_edits=...)",
+    "reckon/crew/promotion.py:2176 _commit_landing_writes(plan_text_edits=...)",
+    "reckon/crew_run_commands.py:1682 _commit_landing_writes",
+    "reckon/crew_run_commands.py:4070 _commit_landing_writes",
+    "reckon/crew/promotion_release.py:833 _commit_landing_writes",
+    "reckon/crew/promotion_gate.py:1237 _commit_landing_writes"
+  ],
+  "completed_at": "2026-11-15T01:20:02.321Z",
+  "dispatched_at": "2026-11-15T00:55:12Z",
+  "findings": [
+    {
+      "detail": "The 312 added lines gained since the previous review (the verified text-write projection, _commit_preserving_plan_text and _remove_text_landing_comment, from 333f4f70a2/291a4feaee/83307a115b arriving via merge 4279b8eff2) are covered only by tests/test_a_text_mode_plan_edit_counts_as_a_store_write_at_promotion.py, which neither gate arm names: the after arm at 4279b8eff2 runs tests/test_a_lander_clears_a_stale_index_lock.py, tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py only. The added_failure_count of 0 therefore says nothing about this code, and its own suite result for the gained lines is not recorded anywhere in the run.",
+      "file": "reckon/crew/promotion_scope.py",
+      "id": "f9c8b24c536",
+      "line": 1731,
+      "severity": "non-blocking"
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261115T005127257706-review-of-wave4-clive-a-landing-never-waits-on-s10-4279b8eff2f9",
+  "reviewed_base_sha": "0bfb9a483af3c7f15b82adbb22ced91c6d35a980",
+  "reviewed_head_sha": "4279b8eff2f9f64f015bf92dd58301e9a98154cf",
+  "reviewed_run_id": "r-20261114T145817665395-wave4-clive-a-landing-never-waits-on-s10",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T01:25:32.475875+00:00",
+  "total": 106,
+  "verdicts": {
+    "diff": "Read commit by commit from 0bfb9a483af3 to 4279b8eff2f9 in the reviewed path: 312 added lines in reckon/crew/promotion_scope.py -- _verified_plan_text_projection, the _refuse_unrelated_plan_edit return of captured text, _remove_text_landing_comment, _commit_preserving_plan_text and the plan_text_edits parameter on _commit_landing_writes.",
+    "done_when": "The done_when names tests/test_a_lander_clears_a_stale_index_lock.py plus the two shared-lock suites; the manifest records that command and gate_head.log carries it at revision 4279b8eff2f9 with 60 passed and EXIT=0.",
+    "goal": "The node's goal is for a lander to clear an index.lock proven stale past its retries and to keep one reader of the lock's age in the merge module; reckon/crew/promotion_scope.py:3029 still imports the merge module's helpers rather than redefining an age reader, and the only promotion_scope content gained since the previous review is the pending-prose landing path added by 333f4f70a2, 291a4feaee and 83307a115b.",
+    "manifest": "Read; it states status complete, five commits, the three-file gate command, and both arms green (base 55 passed, after 60 passed), with negative controls for the staleness guard and for the reuse commit.",
+    "write_paths": "The node declared reckon/crew/merge.py, reckon/crew/promotion_scope.py, tests/test_a_lander_clears_a_stale_index_lock.py and one evidence fragment; every path gained since the previous review inside promotion_scope.py lies within that declared scope."
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:_blocking_items",
+    "reckon/hooks/coordinator_obligations.py:_row_is_actionable",
+    "reckon/crew/obligations.py:NON_BLOCKING_DUTY_KINDS"
+  ],
+  "completed_at": "2026-11-16T14:49:30.482Z",
+  "dispatched_at": "2026-11-16T14:48:06Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-merge-1046ddfa6bdd",
+      "recorded_at": "2026-11-17T08:14:43.026380+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "repair-of-merge-1046ddfa6bdd",
+      "recorded_at": "2026-11-17T08:14:44.854003+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104423987171-qwnw-red-file-queued-work-shows-where-held-work-shows/manifest.md:23",
+      "line": 23,
+      "severity": "blocking",
+      "text": "after_suite on this line is not valid JSON \u2014 the fragment '\"failure_count: 0' is missing its closing quote \u2014 so parse_manifest returns the value as a plain string and the arm reads revision '', exit_status None, completed None, failure_count None and failure_ids None, leaving the run's head arm unreadable exactly where the contract asks for a readable comparison arm."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104423987171-qwnw-red-file-queued-work-shows-where-held-work-shows/manifest.md:22",
+      "line": 22,
+      "severity": "blocking",
+      "text": "baseline_suite.command names tests/test_eval.py, which neither the cited baseline-suite.log ran (its own '# command:' header resolves two files) nor the node's write scope contains, so _arm_missing_fields reports baseline_suite.command_matches_suite_command on it; line 23 repeats the same command and adds a command_resolved_at key that appears nowhere under reckon/ and is read by nothing."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queued-work-shows-where-held-work-shows.html:21",
+      "line": 21,
+      "severity": "non-blocking",
+      "text": "The added line calls 2f0daec852 the merge head and says 655a2befa9 was merged into it, but the merge commit is a9873730d4 and both figures it states, 5 passed and suite 58 passed, are logged in head-arm-target-file.log and after-suite.log at revision 1046ddfa6b, so the citation names a revision no log on disk measured."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queued-work-shows-where-held-work-shows.html:13",
+      "line": 13,
+      "severity": "non-blocking",
+      "text": "The added merge paragraph quotes a merge-head probe over both kinds with no script and no log path, and the manifest's artifacts block names no probe log for it, so the one figure the landing rests on cannot be re-run by a reader."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "pass \u2014 reckon/hooks/coordinator_obligations.py:_blocking_items reads _NON_BLOCKING_KINDS and is called by the stop path and by the checklist printer; the derivation's own copy is reckon/crew/obligations.py:NON_BLOCKING_DUTY_KINDS.",
+    "diff": "pass \u2014 read commit by commit from f0c753b2d7: a9873730d4 merges primary main into the branch keeping both review-in-flight and route-defaulted in _NON_BLOCKING_KINDS, 2f0daec852 adds the three-line merge evidence paragraph, 1046ddfa6b adds the one-line merge-head run entry.",
+    "done_when": "pass \u2014 it asks the named file green with SLURM_JOB_ID unset, a per-cause verdict, no assertion deleted or weakened, an importer arm adding no failure and a base control; the base arm (4 failed, 1 passed, EXIT=1) and the head arm (5 passed, EXIT=0) are logged, the gained commits touch no test file, and after-suite.log at 1046ddfa6b reaches '58 passed' EXIT=0.",
+    "goal": "pass \u2014 the goal is that tests/test_queued_work_shows_where_held_work_shows.py is green at the head; head-arm-target-file.log records 5 passed EXIT=0 at 1046ddfa6b, and the merge resolution that the gained commits carry keeps both vocabulary kinds at reckon/hooks/coordinator_obligations.py:253-266.",
+    "manifest": "pass \u2014 read at head; it records the base arm 4 failed 1 passed, the head arm 29/29 at d6665d49d3 and again at 1046ddfa6b, both suite arms and the merge probe, but its after_suite line does not parse and both arms' command fields name tests/test_eval.py that their logs did not run.",
+    "write_paths": "pass \u2014 the brief declares reckon, tests and the queued-work-needs-no-workaround fragment; the three gained commits a9873730d4, 2f0daec852 and 1046ddfa6b touch only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queued-work-shows-where-held-work-shows.html and reckon/hooks/coordinator_obligations.py, while docs/state/reckon/runs/r-20261116T115844399417-replay-omp-local-seat-s24.json arrived unchanged from primary main's 655a2befa9 (git diff 655a2befa9 1046ddfa6b on that path is empty)."
+  },
+  "justifications": {
+    "durability": "tests/test_queued_work_shows_where_held_work_shows.py:246-249 asserts the derivation's NON_BLOCKING_DUTY_KINDS is a subset of coordinator_obligations._NON_BLOCKING_KINDS, and that derivation holds review-in-flight at reckon/crew/obligations.py:406, so dropping the merged kind from the hook reddens it.",
+    "evidence": "after-suite.log at 1046ddfa6b reaches 58 passed EXIT=0, but the manifest's own after_suite line at manifest.md:23 does not parse and its fragment line 21 cites 2f0daec852 for runs logged at 1046ddfa6b.",
+    "fit": "the added kinds sit in the frozenset at reckon/hooks/coordinator_obligations.py:253-266 with one clause per kind above it, the prose-plus-set idiom the file already used.",
+    "goal_fidelity": "reckon/hooks/coordinator_obligations.py:253-266 keeps both kinds and head-arm-target-file.log at 1046ddfa6b shows 5 passed EXIT=0, so the deliverable the goal names is green at the landed head.",
+    "reuse": "review-in-flight already has its owner at reckon/crew/obligations.py:264 and the merge keeps the hook's existing mirror copy in step with it rather than adding a second mechanism.",
+    "scope_discipline": "git diff f0c753b2d7 1046ddfa6b over the declared paths is 4 added fragment lines and the 25 hook lines the merge resolved, the 2621-line state file arriving unchanged from primary main 655a2befa9."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that tests/test_queued_work_shows_where_held_work_shows.py is green at the head; head-arm-target-file.log records 5 passed EXIT=0 at 1046ddfa6b and the merge resolution keeps both vocabulary kinds at reckon/hooks/coordinator_obligations.py:253-266.\nVERDICT done_when: it asks the named file green with SLURM_JOB_ID unset, a per-cause verdict, no assertion deleted or weakened, an importer arm adding no failure and a base control; the base arm 4 failed 1 passed EXIT=1 and the head arm 5 passed EXIT=0 are logged, and after-suite.log at 1046ddfa6b reaches 58 passed EXIT=0.\nVERDICT write_paths: the brief declares reckon, tests and the queued-work-needs-no-workaround fragment; the three gained commits touch the fragment and reckon/hooks/coordinator_obligations.py, and docs/state/reckon/runs/r-20261116T115844399417-replay-omp-local-seat-s24.json arrived unchanged from primary main 655a2befa9.\nVERDICT manifest: read; it records the base arm 4 failed 1 passed, the head arm 5 passed at d6665d49d3 and at 1046ddfa6b and both suite arms, but its after_suite line does not parse and both arms name tests/test_eval.py that their logs did not run.\nVERDICT diff: read commit by commit from f0c753b2d7; a9873730d4 merges primary main keeping both review-in-flight and route-defaulted in _NON_BLOCKING_KINDS, 2f0daec852 adds the merge paragraph and 1046ddfa6b the merge-head run entry.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:_blocking_items, reckon/hooks/coordinator_obligations.py:_row_is_actionable, reckon/crew/obligations.py:NON_BLOCKING_DUTY_KINDS\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/hooks/coordinator_obligations.py:253-266 keeps both kinds and head-arm-target-file.log at 1046ddfa6b shows 5 passed EXIT=0, so the deliverable the goal names is green at the landed head.\nSCORE evidence: 12\nJUSTIFICATION evidence: after-suite.log at 1046ddfa6b reaches 58 passed EXIT=0, but the manifest's own after_suite line at manifest.md:23 does not parse and its fragment line 21 cites 2f0daec852 for runs logged at 1046ddfa6b.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff f0c753b2d7 1046ddfa6b over the declared paths is 4 added fragment lines and the 25 hook lines the merge resolved, the 2621-line state file arriving unchanged from primary main 655a2befa9.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_queued_work_shows_where_held_work_shows.py:246-249 asserts the derivation's NON_BLOCKING_DUTY_KINDS is a subset of coordinator_obligations._NON_BLOCKING_KINDS, and that derivation holds review-in-flight at reckon/crew/obligations.py:406, so dropping the merged kind from the hook reddens it.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/hooks/coordinator_obligations.py:239-266 keeps the prose-plus-failure-then-frozenset idiom the file already used, one clause per kind above the set.\nSCORE reuse: 20\nJUSTIFICATION reuse: review-in-flight already has its owner at reckon/crew/obligations.py:264 and the merge keeps the hook's existing mirror copy in step with it rather than adding a second mechanism.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104423987171-qwnw-red-file-queued-work-shows-where-held-work-shows/manifest.md:23 blocking: after_suite is not valid JSON, so the run's head arm reads as unreadable to parse_manifest.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queued-work-shows-where-held-work-shows.html:21 non-blocking: the added merge-head line cites 2f0daec852 for runs logged at 1046ddfa6b.\n",
+  "review_run_id": "r-20261116T144510729021-review-of-qwnw-red-file-queued-work-shows-where-held-work-shows-1046ddfa6bdd",
+  "reviewed_base_sha": "f0c753b2d7fdb72b1f950dd626325d83a9bc72df",
+  "reviewed_head_sha": "1046ddfa6bddb9dbeaecb823056452566c4a367d",
+  "reviewed_run_id": "r-20261116T104423987171-qwnw-red-file-queued-work-shows-where-held-work-shows",
+  "scores": {
+    "durability": 17,
+    "evidence": 12,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T21:13:38.807835+00:00",
+  "total": 105
+}

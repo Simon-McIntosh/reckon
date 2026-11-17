@@ -1,0 +1,112 @@
+<section data-reckon="evidence" data-id="qwnw-red-file-a-queued-request-waits-on-its-dependencies">
+  <h3 id="qwnw-red-file-a-queued-request-waits-on-its-dependencies-heading">A queued request's dependency waits pass in full at head: four red, three causes</h3>
+  <p id="qwnw-red-file-a-queued-request-waits-on-its-dependencies-why">
+    <code>tests/test_a_queued_request_waits_on_its_dependencies.py</code> was red
+    on the primary branch. At revision <code>8d50b0333f</code> the whole-suite log
+    (<code>~/.cache/reckon-suite-at-head/suite-at-8d50b0333f.log</code>) listed
+    five of its cases failing. Merged onto the base revision
+    (<code>6fa76c49f4</code>, which already carries the current
+    <code>origin/main</code>) the file reads four failures, and the four are
+    three causes.
+  </p>
+  <table id="qwnw-red-file-a-queued-request-waits-on-its-dependencies-causes">
+    <thead>
+      <tr><th>cause</th><th>failing case at base</th><th>verdict</th><th>what changed</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>a queued pointer whose stored node is too thin to rebuild raised <code>TypeError: TaskNode.__init__() missing 1 required positional argument: 'goal'</code> out of <code>runs.queue_dispatch</code></td>
+        <td><code>test_a_wait_on_another_request_reads_that_requests_own_record</code>, <code>test_a_json_manifest_upstream_releases_the_wait</code></td>
+        <td>product wrong</td>
+        <td><code>record_review_contract</code> keeps no contract for an unstampable node, the fallback its own commit states (<code>cc08391cb3</code>: "A pointer that cannot be stamped keeps no contract and falls back to the dispatch gate"). The launch path still rebuilds strictly.</td>
+      </tr>
+      <tr>
+        <td>the shared dispatch payload helper parsed <code>Result.output</code>, which interleaves stderr, so a launching dispatch's <code>reckon: created run …</code> notice became the "JSON" first line</td>
+        <td><code>test_a_dispatch_of_a_section_without_waits_launches_on_a_free_lane</code></td>
+        <td>test wrong</td>
+        <td><code>_payload</code> parses <code>result.stdout</code>. The product keeps its JSON on stdout and its notices on stderr deliberately (<code>reckon/crew/dispatching/preparation.py</code>), so the helper now reads what a machine caller reads.</td>
+      </tr>
+      <tr>
+        <td>a request that declares upstream waits defers an absent input to its release instead of refusing it at queue time (<code>reckon/crew/dispatching/requests.py</code>, "A request that waits may name a path its upstream creates")</td>
+        <td><code>test_a_malformed_node_is_refused_at_queue_time</code></td>
+        <td>test wrong</td>
+        <td>the case asserts the rule the code keeps: a node waiting on nothing is refused at queue time and writes no request. A case is added for the rule the code now holds — the same absent input on a waiting node is stored <code>awaiting-upstream</code>, not refused.</td>
+      </tr>
+    </tbody>
+  </table>
+  <table id="qwnw-red-file-a-queued-request-waits-on-its-dependencies-arms">
+    <thead>
+      <tr><th>arm</th><th>revision</th><th>result</th><th>log</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>base, this file (negative control)</td>
+        <td><code>6fa76c49f4</code></td>
+        <td>4 failed, 17 passed, EXIT=1</td>
+        <td><code>logs/base-node-file.log</code></td>
+      </tr>
+      <tr>
+        <td>head, this file</td>
+        <td><code>2ad4ac3956</code></td>
+        <td>22 passed, EXIT=0</td>
+        <td><code>logs/head-node-file.log</code></td>
+      </tr>
+      <tr>
+        <td>base, fence suite</td>
+        <td><code>6fa76c49f4</code></td>
+        <td>58 passed, EXIT=0</td>
+        <td><code>logs/base-suite.log</code></td>
+      </tr>
+      <tr>
+        <td>head, fence suite</td>
+        <td><code>2ad4ac3956</code></td>
+        <td>58 passed, EXIT=0</td>
+        <td><code>logs/after-suite.log</code></td>
+      </tr>
+      <tr>
+        <td>base, the 36 test files importing what changed</td>
+        <td><code>6fa76c49f4</code></td>
+        <td>57 failed, 270 passed, EXIT=1</td>
+        <td><code>logs/base-import-arm.log</code></td>
+      </tr>
+      <tr>
+        <td>head, the same 36 files</td>
+        <td><code>2ad4ac3956</code></td>
+        <td>29 failed, 299 passed, EXIT=1</td>
+        <td><code>logs/head-import-arm.log</code></td>
+      </tr>
+    </tbody>
+  </table>
+  <p id="qwnw-red-file-a-queued-request-waits-on-its-dependencies-import-arm">
+    The importer arm is the union of the test files that read
+    <code>reckon.crew.admission.reviews</code> and of those that use the shared
+    dispatch payload helper, 36 files listed in
+    <code>logs/import-arm-files.txt</code>. Comparing the two runs' failing ids
+    (<code>logs/base-import-ids.txt</code>, <code>logs/head-import-ids.txt</code>)
+    leaves no id that fails at head and passed at base — the arm adds no failure —
+    and 28 base failures are gone, this file's four among them.
+  </p>
+  <p id="qwnw-red-file-a-queued-request-waits-on-its-dependencies-head-note">
+    The head rows read the revision the arms ran at,
+    <code>2ad4ac3956</code>. The commit that adds these revision cells to this
+    paragraph is the only delta after it, and it changes no code and no test.
+  </p>
+  <p id="qwnw-red-file-a-queued-request-waits-on-its-dependencies-control">
+    Negative control: the base run of this file, at
+    <code>6fa76c49f4</code>, reads four failures and the head run reads none:
+    <code>test_a_wait_on_another_request_reads_that_requests_own_record</code>
+    and <code>test_a_json_manifest_upstream_releases_the_wait</code> fail with
+    <code>TypeError: TaskNode.__init__() missing 1 required positional argument:
+    'goal'</code>, <code>test_a_malformed_node_is_refused_at_queue_time</code>
+    with <code>Failed: DID NOT RAISE CrewError</code>, and
+    <code>test_a_dispatch_of_a_section_without_waits_launches_on_a_free_lane</code>
+    with <code>json.decoder.JSONDecodeError</code>.
+  </p>
+  <p id="qwnw-red-file-a-queued-request-waits-on-its-dependencies-lint">
+    <code>ruff check</code> reports nothing on the three changed paths.
+    <code>ruff format --check</code> reports the same single pre-existing
+    finding on <code>tests/test_dispatch_names_its_backend.py</code> that the
+    base tree reports — a lambda the formatter would wrap at line 148, which
+    this node did not touch.
+  </p>
+</section>

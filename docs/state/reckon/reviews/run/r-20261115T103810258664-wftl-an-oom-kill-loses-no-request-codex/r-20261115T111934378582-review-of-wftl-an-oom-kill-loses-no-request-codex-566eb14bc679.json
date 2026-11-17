@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": {
+    "admission_boundary_poll_event_exit": "Fails if the fixture never reaches its selected boundary, signals the wrong event, or the admission process does not die by SIGKILL; these are instrument controls.",
+    "admission_identity_phase_liveness": "Fails if a recovered id is lost or added, a phase is outside the allowed set, or a starting/dispatched pointer names no live process; restoring the base recovery and handover sweep produces the recorded three failures.",
+    "admission_launch_counts_and_second_pass": "Fails if any of the three fixture request ids launches zero or multiple times, or a later pass launches again; reverting adoption of worker.json would launch the first request twice or leave it stranded.",
+    "admission_request_binding": "Fails if the independent pointer row id differs from its archived admit_request id; the test does not feed an expected result back into the implementation.",
+    "delayed_supervisor": "pytest.raises fails if the queued-phase or attempt-timestamp check is removed; stream content and absent worker.json fail if refusal happens only after truncation or spawn.",
+    "discard_guard": "The positive discard receipt check validates the control; the empty result, absent pointer and cleared handover fail if discarded intent is resurrected or left pending.",
+    "module_inventory": "Fails if an admission module is added or removed without updating the independent module inventory; it is structural coverage rather than an interruption guard.",
+    "owner_guards": "Recovery result, surviving handover and absent pointer fail if owner-death checking is removed and either a live-local or foreign owner is recovered.",
+    "self_comparison": "No added regression assertion compares only a supplied value with its echo; fixture ids are compared with observed records, launch counts with independently accumulated launches, and supervisor receipt fields with actual process identity.",
+    "station_barrier_and_exit": "Fails if the station cannot reach the fourteenth persisted write or does not die by SIGKILL.",
+    "station_queued_published_durable": "Fails if any fixture identity is absent from pointer_rows or the persisted fleet, or the first recorded fleet count differs from the store and fixture count 31; changing restart publication to retain only the fourteen processed rows reddens these assertions.",
+    "supervisor_adoption": "worker pid is checked against the actual spawn return, supervisor_pid against os.getpid, and adopted identity against that independently checked receipt; removing supervisor fields or selecting the worker pid fails these assertions; phase and handover assertions fail on incomplete settlement."
+  },
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/admission/service.py:admit_until_stopped",
+    "reckon/crew/admission/selection.py:admit_once",
+    "reckon/crew/dispatch_launch.py:_run_supervisor"
+  ],
+  "completed_at": "2026-11-15T11:27:40Z",
+  "dispatched_at": "2026-11-15T11:21:55Z",
+  "findings": [],
+  "gate_evidence": {
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T103810258664-wftl-an-oom-kill-loses-no-request-codex/head.log",
+    "after_summary": "101 passed, 7 warnings in 52.13s",
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T103810258664-wftl-an-oom-kill-loses-no-request-codex/baseline.log",
+    "baseline_summary": "87 passed in 32.68s",
+    "negative_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T103810258664-wftl-an-oom-kill-loses-no-request-codex/negative.log",
+    "negative_reproduction": "during-launch and worker-started: stranded request, assert None is True; missing-pointer: assert set(rows) == request_ids loses r-interrupted-0",
+    "negative_summary": "3 failed, 4 passed, 6 warnings in 15.96s"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read a2a5ca6511c3400ad183aa38f6aeb04cc2357550, 32926ed7a4e7f828f89d4e23b6bccde38244f9d0 and 566eb14bc67993768f8da33aa64bc4f5ba2095d8 in order; the eight-file delta adds interruption tests, durable recovery and launch serialization, an admission-module inventory update and evidence.",
+    "done_when": "The source node.done_when and live docs/plans/work-flows-to-the-lane.html section s73 require SIGKILL boundary recovery and station counts on all_debug; negative.log records three base failures and head.log records 101 passed with EXIT=0, including six admission boundaries and two station boundaries.",
+    "goal": "The source node.goal in crew/live/r-20261115T103810258664-wftl-an-oom-kill-loses-no-request-codex.json requires retaining requests and the published count; reckon/crew/admission/interrupted.py:31 adds dead-pass recovery and tests/test_station_queue_survives_a_restart.py:55 protects the already-correct count.",
+    "manifest": "The source manifest.md names all three commits, baseline_suite and after_suite receipts, and negative.log; opening baseline.log and head.log confirms their revisions, completed summaries and zero failures.",
+    "write_paths": "The source node.write_paths permits reckon, tests and the named evidence/figure directories; all eight paths in the base-to-head diff are within those grants."
+  },
+  "justifications": {
+    "durability": "tests/test_admission_survives_a_kill.py:138 checks conserved identities, :155 checks independent launch counts and :195 requires stale-supervisor refusal, but its injected launcher leaves the full production supervisor crash interleaving unexercised.",
+    "evidence": "tests/test_admission_survives_a_kill.py:87 and tests/test_station_queue_survives_a_restart.py:55 implement the requested SIGKILL measures, with completed all_debug negative, baseline and head receipts, although the admission crash harness injects its launcher at :54.",
+    "fit": "reckon/crew/admission/interrupted.py:41 reuses the admission package's queued-request and archival owners and reckon/crew/dispatch_launch.py:3953 follows the surrounding private CrewError exception idiom without introducing forbidden names.",
+    "goal_fidelity": "reckon/crew/admission/selection.py:98 recovers handovers before selection and :776 clears successful handovers only after the admission stamp, while reckon/crew/dispatch_launch.py:4038 serializes spawn and receipt with recovery.",
+    "reuse": "Capability searches for handover recovery, stranded requeue, process liveness and launch-attempt ownership found reckon/crew/admission/launching.py:611 and reckon/crew/runs.py:584 as existing owners, which interrupted.recover extends using their helpers; its strict JSON reader and owner-death predicate are local support and the supervisor exception extends dispatch_launch.py's existing attempt checks.",
+    "scope_discipline": "The eight changed paths listed by the three commits all fall under the source node.write_paths and directly implement, test or document interruption recovery."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node.goal in crew/live/r-20261115T103810258664-wftl-an-oom-kill-loses-no-request-codex.json requires retaining requests and the published count; reckon/crew/admission/interrupted.py:31 adds dead-pass recovery and tests/test_station_queue_survives_a_restart.py:55 protects the already-correct count.\nVERDICT done_when: The source node.done_when and live docs/plans/work-flows-to-the-lane.html section s73 require SIGKILL boundary recovery and station counts on all_debug; negative.log records three base failures and head.log records 101 passed with EXIT=0, including six admission boundaries and two station boundaries.\nVERDICT write_paths: The source node.write_paths permits reckon, tests and the named evidence/figure directories; all eight paths in the base-to-head diff are within those grants.\nVERDICT manifest: The source manifest.md names all three commits, baseline_suite and after_suite receipts, and negative.log; opening baseline.log and head.log confirms their revisions, completed summaries and zero failures.\nVERDICT diff: Read a2a5ca6511c3400ad183aa38f6aeb04cc2357550, 32926ed7a4e7f828f89d4e23b6bccde38244f9d0 and 566eb14bc67993768f8da33aa64bc4f5ba2095d8 in order; the eight-file delta adds interruption tests, durable recovery and launch serialization, an admission-module inventory update and evidence.\nCALL_SITES: reckon/crew/admission/service.py:admit_until_stopped, reckon/crew/admission/selection.py:admit_once, reckon/crew/dispatch_launch.py:_run_supervisor\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/admission/selection.py:98 recovers handovers before selection and :776 clears successful handovers only after the admission stamp, while reckon/crew/dispatch_launch.py:4038 serializes spawn and receipt with recovery.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_admission_survives_a_kill.py:87 and tests/test_station_queue_survives_a_restart.py:55 implement the requested SIGKILL measures, with completed all_debug negative, baseline and head receipts, although the admission crash harness injects its launcher at :54.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The eight changed paths listed by the three commits all fall under the source node.write_paths and directly implement, test or document interruption recovery.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_admission_survives_a_kill.py:138 checks conserved identities, :155 checks independent launch counts and :195 requires stale-supervisor refusal, but its injected launcher leaves the full production supervisor crash interleaving unexercised.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/admission/interrupted.py:41 reuses the admission package's queued-request and archival owners and reckon/crew/dispatch_launch.py:3953 follows the surrounding private CrewError exception idiom without introducing forbidden names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for handover recovery, stranded requeue, process liveness and launch-attempt ownership found reckon/crew/admission/launching.py:611 and reckon/crew/runs.py:584 as existing owners, which interrupted.recover extends using their helpers; its strict JSON reader and owner-death predicate are local support and the supervisor exception extends dispatch_launch.py's existing attempt checks.\n",
+  "review_run_id": "r-20261115T111934378582-review-of-wftl-an-oom-kill-loses-no-request-codex-566eb14bc679",
+  "reviewed_base_sha": "6eeb63d38f6079ae9b6af53da8e459c02a9dee7e",
+  "reviewed_head_sha": "566eb14bc67993768f8da33aa64bc4f5ba2095d8",
+  "reviewed_run_id": "r-20261115T103810258664-wftl-an-oom-kill-loses-no-request-codex",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T12:02:10.870017+00:00",
+  "total": 117
+}

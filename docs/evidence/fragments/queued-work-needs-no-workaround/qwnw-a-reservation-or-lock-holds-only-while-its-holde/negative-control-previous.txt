@@ -1,0 +1,51 @@
+revision=e78fbc4df395a985d45e761c57ef94e59144cd74 tree=/home/ITER/mcintos/.cache/reckon-qwnw-gate/previous-tree-e78fbc4d command=PYTHONPATH=/home/ITER/mcintos/.cache/reckon-qwnw-gate/previous-tree-e78fbc4d /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_reservation_holds_only_while_its_holder_works.py
+...........FF                                                            [100%]
+=================================== FAILURES ===================================
+________ test_a_renewer_whose_beat_vanished_lets_the_next_publish_renew ________
+
+home = PosixPath('/tmp/pytest-of-mcintos/pytest-7173/test_a_renewer_whose_beat_vani0/crew-home/crew/runs/r-reservation-holder')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f35664c9980>
+
+    def test_a_renewer_whose_beat_vanished_lets_the_next_publish_renew(
+        home: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A renewal that ended must not leave a key that suppresses renewal."""
+        monkeypatch.setattr(host_heartbeat, "HEARTBEAT_RENEW_SECONDS", 0.05)
+        crew_home = runs_module.crew_home()
+        key = (str(crew_home), "vanishing-host")
+        path = host_heartbeat.publish_host_heartbeat(crew_home, "vanishing-host")
+        path.unlink()
+>       assert _await(
+            lambda: key not in host_heartbeat._RENEWERS,
+            seconds=10.0)
+E       assert False
+E        +  where False = _await(<function test_a_renewer_whose_beat_vanished_lets_the_next_publish_renew.<locals>.<lambda> at 0x7f3566338d50>, seconds=10.0)
+
+tests/test_a_reservation_holds_only_while_its_holder_works.py:419: AssertionError
+____________ test_the_supervisor_publishes_the_beat_it_keeps_fresh _____________
+
+home = PosixPath('/tmp/pytest-of-mcintos/pytest-7173/test_the_supervisor_publishes_0/crew-home/crew/runs/r-reservation-holder')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f356633ca10>
+
+    def test_the_supervisor_publishes_the_beat_it_keeps_fresh(
+        home: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The process that outlives a launch is the one that publishes its beat."""
+        from reckon.crew.dispatch_peer import _supervisor_command
+    
+        crew_home = runs_module.crew_home()
+        missing = home / "no-such-spec.json"
+        assert _supervisor_command(["--spec", str(missing)]) == 0
+>       assert host_heartbeat.host_is_live(crew_home, host_heartbeat.heartbeat_host())
+E       AssertionError: assert False
+E        +  where False = <function host_is_live at 0x7f356720bab0>(PosixPath('/tmp/pytest-of-mcintos/pytest-7173/test_the_supervisor_publishes_0/crew-home/crew'), '98dci4-clu-3141.iter.org')
+E        +    where <function host_is_live at 0x7f356720bab0> = host_heartbeat.host_is_live
+E        +    and   '98dci4-clu-3141.iter.org' = <function heartbeat_host at 0x7f3567209640>()
+E        +      where <function heartbeat_host at 0x7f3567209640> = host_heartbeat.heartbeat_host
+
+tests/test_a_reservation_holds_only_while_its_holder_works.py:440: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_a_reservation_holds_only_while_its_holder_works.py::test_a_renewer_whose_beat_vanished_lets_the_next_publish_renew
+FAILED tests/test_a_reservation_holds_only_while_its_holder_works.py::test_the_supervisor_publishes_the_beat_it_keeps_fresh
+2 failed, 11 passed in 15.45s
+EXIT=1

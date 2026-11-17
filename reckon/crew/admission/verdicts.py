@@ -28,6 +28,88 @@ from .shared import (
     runs,
 )
 
+#: The holds the lane itself writes by granting no worker slot. The reason one of
+#: these carries is the router's reading of a moment — a congestion verdict, a
+#: headroom figure — and the lead's ruling is that a full lane is not a signal:
+#: the queue absorbs it. So no surface repeats that reason, and the duty a request
+#: under one of these holds owes is the wait itself.
+CAPACITY_HOLD_VERDICTS = frozenset({"held-for-allowance"})
+
+#: The words the lane's router uses when it publishes its own reading of a full
+#: gate. A hold reason carrying one of them is the lane's figure rather than the
+#: request's wait, and no surface repeats it.
+CAPACITY_SENTENCE_WORDS = ("router", "congested", "headroom", "no extra worker")
+
+#: The hold a request's own failed attempt puts it under, one word per cause the
+#: surfaces read. A refusal that names the plan review it awaits is the plan
+#: review's own word; every other refusal that names its remedy is a retry.
+PLAN_REVIEW_HOLD_VERDICT = "held-on-plan-review"
+
+REFUSED_ATTEMPT_HOLD_VERDICT = "held-on-retry-backoff"
+
+
+def failure_hold(pointer: Mapping[str, Any]) -> dict[str, Any] | None:
+    """The hold a queued request's last failed attempt puts it under, or ``None``.
+
+    A request an admission attempt refused comes back to the queue carrying that
+    refusal in ``failure``, with the command that clears it quoted in the
+    refusal's own text. The pass's own hold, written before that attempt, then
+    still says whatever held the request then — a router congestion sentence, in
+    the case that motivated this — and a reader of the hold learns a lane figure
+    about a request no lane reading releases.
+
+    So the failure and its remedy outrank that older hold, and the surfaces that
+    read a hold compose it through this one reader: the request's hold, the
+    pass's verdict row for it, and the duty row a coordinator reads. The reason
+    is the refusal's own reading and the instant is the one the refusal was
+    recorded at, so a hold's age is measured from the reason it shows.
+
+    A refusal that names no remedy keeps its hold: there is nothing to publish
+    and no accumulation to report, and the waiting reading is the true one.
+    Imported here rather than at module load because the recovery classifier
+    reads the admission package back inside its own functions.
+    """
+    from reckon.crew import recovery_classification
+
+    refusal = recovery_classification._queued_failure_remedy(pointer)
+    if refusal is None:
+        return None
+    text = str(refusal.get("detail") or "")
+    stamped = recovery_classification._stamped_refusal_class(
+        str(pointer.get("failure") or "")
+    )
+    verdict = (
+        PLAN_REVIEW_HOLD_VERDICT
+        if stamped == "PlanReviewMissingError"
+        else REFUSED_ATTEMPT_HOLD_VERDICT
+    )
+    return {
+        "verdict": verdict,
+        "reason": text,
+        "remedy": str(refusal.get("next_command") or ""),
+        "recorded_at": str(refusal.get("recorded_at") or ""),
+    }
+
+
+def hold_reason(hold: Mapping[str, Any]) -> str:
+    """The reason a hold may show a reader, never the lane's capacity report.
+
+    The lane's router publishes its own reading when it grants no slot — how many
+    extra workers, and the word it decided that on. Repeating it on a row makes a
+    full lane read as a finding to act on, which it is not: the queue absorbs it.
+    So a capacity hold whose stored reason is that router sentence shows the hold
+    and nothing more, while a hold whose reason describes the request's own wait
+    keeps it — a row that said nothing at all would hide a real wait.
+    """
+    verdict = str(hold.get("verdict") or "")
+    reason = str(hold.get("reason") or "")
+    if verdict not in CAPACITY_HOLD_VERDICTS:
+        return reason
+    lowered = reason.lower()
+    if any(word in lowered for word in CAPACITY_SENTENCE_WORDS):
+        return ""
+    return reason
+
 
 def _verdict_row(
     pointer: Mapping[str, Any],
@@ -38,8 +120,32 @@ def _verdict_row(
     detail: str = "",
     retry_at: str = "",
     failure: str = "",
+    launch_seconds: float | None = None,
+    slowest_step: str = "",
+    slowest_step_seconds: float | None = None,
 ) -> dict[str, Any]:
-    """One queued pointer's verdict for a pass, as the log records it."""
+    """One queued pointer's verdict for a pass, as the log records it.
+
+    A launched row carries what the launch cost: its duration and the step of
+    it that took longest, so a pass that ran long says which launch and which
+    of its steps to look at rather than only that it was slow.
+
+    A hold row for a request whose own last attempt failed on a refusal naming
+    its remedy carries that refusal and its command instead of the hold the pass
+    would otherwise record. The pass asks the lane questions in a fixed order,
+    and the first one that holds the request writes the row; a lane with no slot
+    holds it before its retry back-off is ever read, so the lane's congestion
+    sentence would answer for a request the lane cannot release. The refusal is
+    a later fact about the same request, so it answers here, through the reader
+    the hold itself is composed by.
+    """
+    row_remedy = ""
+    if verdict in CAPACITY_HOLD_VERDICTS:
+        named = failure_hold(pointer)
+        if named is not None:
+            verdict = str(named["verdict"])
+            detail = str(named["reason"])
+            row_remedy = str(named.get("remedy") or "")
     row: dict[str, Any] = {
         "run_id": str(pointer.get("run_id") or ""),
         "session": str(pointer.get("session") or ""),
@@ -49,10 +155,18 @@ def _verdict_row(
     }
     if detail:
         row["detail"] = detail
+    if row_remedy:
+        row["remedy"] = row_remedy
     if retry_at:
         row["retry_at"] = retry_at
     if failure:
         row["failure"] = failure
+    if launch_seconds is not None:
+        row["launch_seconds"] = launch_seconds
+    if slowest_step:
+        row["slowest_step"] = slowest_step
+    if slowest_step_seconds is not None:
+        row["slowest_step_seconds"] = slowest_step_seconds
     return row
 
 
@@ -375,11 +489,15 @@ def _pass_verdict_record(
         "release_seconds": result.get("release_seconds"),
         "waits_seconds": result.get("waits_seconds"),
         "launch_seconds": result.get("launch_seconds"),
+        "launch_budget_seconds": result.get("launch_budget_seconds"),
+        "launch_budget_exhausted": bool(result.get("launch_budget_exhausted")),
         "land_seconds": result.get("land_seconds"),
+        "reads": result.get("reads"),
         "lane": lane,
         "code_stamp": code_stamp,
         "gate": result.get("gate"),
         "admissible_age_seconds": result.get("admissible_age_seconds"),
+        "roles": result.get("role_cadence"),
         "stalls": list(result.get("stalls") or ()),
         "pointers": list(verdicts),
         "retired": list(result.get("retired") or ()),

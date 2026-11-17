@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-flows-to-the-lane">
+  <meta name="plan-evidence-for" content="reckon:work-flows-to-the-lane">
+  <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s66">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="passed">
+  <title>A managed repository is kept packed on a schedule | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="wftl-a-managed-repository-is-kept-packed-record"
+  data-node="wftl-a-managed-repository-is-kept-packed" data-reckon="landed" data-when="2026-11-15">
+  <h2>Every managed repository is packed daily, from a compute partition</h2>
+
+  <p><code>reckon/crew/repository_maintenance.py</code> packs one repository with
+  <code>git repack -a --cruft -d</code>: reachable and unreachable objects alike go
+  into packs, and the unreachable ones wait in a cruft pack beside its
+  <code>.mtimes</code> index until git's own expiry removes them. A successful
+  pass clears a stale <code>.git/gc.log</code> — the file git writes when its
+  automatic collection fails, which switches collection off for a day — and
+  records the object and pack counts before and after beside the repository, at
+  <code>&lt;crew home&gt;/repositories/&lt;name&gt;-&lt;digest&gt;/maintenance.json</code>.</p>
+
+  <p>The schedule is the station, which is the fleet's long-running service.
+  <code>MaintenanceSweep</code> is called on the station's tick and submits one
+  pass as a scheduler job for every managed repository whose recorded pass is
+  older than a day, and none for a repository whose pass is younger. A user
+  systemd timer cannot carry this: the cluster refuses lingering, so a timer
+  stops at logout while the station runs as long as the fleet does. The
+  submitted job runs the same <code>crew gc --maintain --repo</code> verb a hand
+  run uses, so the two paths cannot drift.</p>
+
+  <p>The crew view that reports repositories (<code>fleet_index.compute_project_row</code>,
+  read through the <code>fleet</code> view) now carries the repository's loose-object
+  count and the time of its last pass, read from the record. The view does not
+  walk each object store: the count is already written by the pass.</p>
+
+  <h3>One pass over a repository above git's own threshold</h3>
+
+  <p><code>tests/test_a_scheduled_maintenance_pass_keeps_a_repository_packed.py</code>
+  builds a temporary repository whose <code>gc.auto</code> is 100 and writes 150
+  unreachable loose blobs, which is what a discarded run and a landing pass's
+  conflict check leave behind, plus a stale <code>gc.log</code>. The test reads the
+  loose count before the pass as 153, above the threshold; after the pass it is
+  0. The unreachable object is still readable with <code>git cat-file -e</code>
+  and the repository holds a cruft pack, so the objects moved rather than being
+  dropped. The <code>gc.log</code> is gone and the record says it removed it. The
+  recorded counts match the counts read independently from the repository before
+  and after, and the fleet row reports the recorded loose count and pass time.
+  Two further cases cover a second pass leaving a packed store exactly as it
+  found it, and a pass that cannot run (a zero timeout) recording its failure and
+  leaving the <code>gc.log</code> in place, since clearing the file without
+  packing would switch collection back on to fail on the same population.</p>
+
+  <h3>The schedule needs no hand command</h3>
+
+  <p><code>tests/test_the_schedule_needs_no_hand_command.py</code> drives one
+  station tick with two managed repositories: one whose recorded pass is two days
+  old and one whose pass is an hour old. Exactly one script is submitted, naming
+  the stale repository and not the fresh one. The script's
+  <code>#SBATCH --partition=</code> is read back as <code>all_debug</code>, a
+  compute partition, and the submitting argv names the same partition — the
+  station submits from inside the fleet's own allocation, where a launch naming
+  no partition is refused as an implicit nested job. The script's working
+  directory is read back and required to sit outside every managed repository:
+  <code>python -c</code> puts the working directory first on the import path, so a
+  job started in the checkout would run that checkout's reckon rather than the
+  installed one. A third case shows a refused submission reported on the
+  station's stream without stopping the other repository's pass.</p>
+
+  <h3>Negative control</h3>
+
+  <p>At the base revision <code>108d56a4741cacc2b1e889e01f38d3a09cc28380</code>, with
+  both new test files placed in a scratch extraction, the fixture reads
+  <code>gc.auto = 100</code> and <code>count: 153</code>, and no maintenance pass
+  exists at that revision, so the loose population stays at 153, above the
+  threshold. Both arms were run over their own tree; the base arm reports
+  <code>6 failed</code> with <code>EXIT=1</code>, and the head arm reports
+  <code>6 passed</code>. Ruff check and format check pass on every changed path.</p>
+
+  <h3>A live run on the reckon checkout</h3>
+
+  <p>After landing, one pass was submitted for <code>/home/ITER/mcintos/Code/reckon</code>
+  and ran as scheduler job 1316871 on <code>all_debug</code>, exiting 0. Its record
+  reads:</p>
+
+  <p><img src="/reckon/figures/work-flows-to-the-lane/wftl-a-managed-repository-is-kept-packed/maintenance-counts.svg"
+     alt="Loose objects and packs in the reckon checkout before and after the scheduled pass"></p>
+
+  <table>
+    <thead><tr><th>Measurement</th><th>Before</th><th>After</th></tr></thead>
+    <tbody>
+      <tr><td>Loose objects (<code>count</code>)</td><td>6,737</td><td>0</td></tr>
+      <tr><td>Packs (<code>packs</code>)</td><td>4</td><td>2</td></tr>
+      <tr><td>Objects in pack (<code>in-pack</code>)</td><td>396,075</td><td>402,812</td></tr>
+      <tr><td>Loose size (<code>size</code>, KiB)</td><td>227,306</td><td>0</td></tr>
+      <tr><td>Cruft packs</td><td>0</td><td>1</td></tr>
+      <tr><td>Automatic threshold (<code>gc.auto</code>)</td><td colspan="2">6,700</td></tr>
+    </tbody>
+  </table>
+
+  <p>The loose population started at 6,737 — above git's own threshold — and the
+  pass left 0 loose objects and one cruft pack carrying the unreachable ones.
+  Independent reads of the checkout after the job agree: two packs, no
+  <code>.git/gc.log</code>, and <code>count: 17</code> for objects written after
+  the pass by later work. The fleet view reports the repository with
+  <code>loose_objects: 0</code> and
+  <code>maintenance_ran_at: 2026-11-15T06:56:07.736729+00:00</code>. The record's
+  <code>gc_log_removed</code> is empty because the checkout held no
+  <code>gc.log</code> at that moment — an earlier hand repack had cleared it. The
+  removal path is covered by the fixture case, which places the file before the
+  pass and reads it gone afterwards.</p>
+
+  <p>Gate logs, the failing base arm, and the submitted job's script and record
+  are retained under the run directory
+  <code>r-20261115T035238320292-wftl-a-managed-repository-is-kept-packed</code>.</p>
+</article>
+</body>
+</html>

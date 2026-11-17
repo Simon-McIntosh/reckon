@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextvars
+import threading
 
 from . import holds as _holds
 from . import release as _release
@@ -83,7 +84,30 @@ def _plan_tree_fingerprint(docs_dir: str | Path | None) -> tuple[int, int, str]:
     return (newest, count, head)
 
 
+class ReadinessCache(dict):
+    """Share one derivation across concurrent launches in the same pass."""
+
+    def __init__(self):
+        super().__init__()
+        self.lock = threading.RLock()
+
+
 def _readiness_rows(
+    project,
+    docs_dir,
+    cache,
+    plan="",
+    refs=(),
+    *,
+    inventory_only=False,
+):
+    with getattr(cache, "lock", contextlib.nullcontext()):
+        return _readiness_rows_unlocked(
+            project, docs_dir, cache, plan, refs, inventory_only=inventory_only
+        )
+
+
+def _readiness_rows_unlocked(
     project: str,
     docs_dir: str | Path | None,
     cache: dict[str, Any],
@@ -161,7 +185,12 @@ def _readiness_rows(
 
         if not project:
             return {}, {}
-        discovered = _discover_project(project, None)
+        from reckon.roadmap import roadmap_build_scope
+
+        # The waits a pass judges read section verdicts, never findings, so the
+        # project build skips coordinator resolution and the landing audit.
+        with roadmap_build_scope(resolve_coordinators=False, audit_landings=False):
+            discovered = _discover_project(project, None)
         items = [_inventory_row(item) for item in discovered.get("inventory", [])]
         for item in items:
             if item.get("type") != "plan" or not item.get("slug"):
@@ -505,23 +534,31 @@ def _manifest_status(run_id: str, *, issues: list[str] | None = None) -> str:
 
 
 def _ledger_run_rows(
-    project: str, cache: dict[str, Any] | None
+    project: str, plan: str, cache: dict[str, Any] | None
 ) -> list[Mapping[str, Any]] | None:
-    """One project's committed run rows, or ``None`` when they cannot be read.
+    """One plan's committed run rows, or ``None`` when they cannot be read.
 
     The index is keyed on the project's write generation, which every ledger
     write path bumps, so a promotion recorded before this read is in the index
     this read gets back rather than only in the documents behind it. Reading
     through it is therefore both current and cheaper than walking the project's
     run documents on every pass.
+
+    The read names the plan it is asked about. A verdict about one section
+    matches rows by that section's plan and nothing else, so a project-wide
+    read decodes every run the project has ever recorded to reach the handful
+    that can match — a pass pays that decode once per project and keeps the
+    rows for its own length. Bounding here is what keeps a long-lived service's
+    footprint flat: the store selects the plan's rows in SQL and decodes only
+    those.
     """
     from reckon import ledger
 
-    key = (_SECTION_RUNS_CACHE_KEY, project)
+    key = (_SECTION_RUNS_CACHE_KEY, project, plan)
     if cache is not None and key in cache:
         return cache[key]
     try:
-        data, _version = ledger.load(project)
+        data, _version = ledger.load(project, plan=plan)
         rows: list[Mapping[str, Any]] | None = [
             row for row in data.get("runs") or () if isinstance(row, Mapping)
         ]
@@ -561,18 +598,24 @@ def _section_run_unlanded(
     from reckon.crew import runs as runs_module
     from reckon.crew.dispatch_sections import project_mount_repository
     from reckon.crew.promotion_scope import _revision_is_ancestor
+    from reckon.crew.recovery_review_delivery import _is_review_run
 
     wanted = section_record_id(section)
+
+    from reckon import ledger
 
     def identifies(record: Mapping[str, Any]) -> bool:
         node = record.get("node")
         if not isinstance(node, Mapping):
             node = {}
-        plan = str(node.get("plan") or record.get("plan") or "")
+        # A live pointer carries its plan on the node it names; a ledger row
+        # carries it on its own field or on the dispatch detail a brief left,
+        # and the resolver is the one owner of that answer.
+        plan = str(node.get("plan") or "") or ledger.row_plan(record)
         held = section_record_id(node.get("section") or record.get("section") or "")
         return plan == slug and held == wanted
 
-    rows = _ledger_run_rows(project, cache)
+    rows = _ledger_run_rows(project, slug, cache)
     if rows is None:
         # A ledger that cannot be read says nothing about what was promoted, so
         # a landing is unknown rather than absent. Holding is the answer
@@ -605,6 +648,8 @@ def _section_run_unlanded(
         ):
             continue
         if _release._discarded(run_id):
+            continue
+        if _is_review_run(pointer):
             continue
         candidates.append((run_id, str(pointer.get("promoted_revision") or "").strip()))
 
@@ -1232,6 +1277,29 @@ def unmet_waits(
     return dispatch_waits(node, repo_root=repo_root, project=project, live=live)[2]
 
 
+def _whole_plan_wait_satisfied(
+    item: Mapping[str, Any],
+    docs_dir: Path | None,
+    project: str,
+    slug: str,
+) -> bool:
+    """Whether a whole-plan wait is met, by the roadmap's own rule.
+
+    A plan-level dependency clears when the plan is complete, or once every
+    section it declares is done or descoped — the plan's status stays active
+    until it is closed, which is later than its work is spent, so reading the
+    status alone parks dependents on a finished plan. The derivation is the one
+    the roadmap reports its own dependency rows from, so a wait and a ready
+    section edge cannot disagree about the same plan.
+    """
+    from reckon.roadmap import _plan_dependency_satisfied
+
+    try:
+        return bool(_plan_dependency_satisfied(dict(item), docs_dir, project, slug))
+    except Exception:  # noqa: BLE001 - an unreadable plan holds the wait
+        return False
+
+
 def _ref_state(
     ref: str,
     *,
@@ -1270,7 +1338,9 @@ def _ref_state(
         return PENDING
     status = str(item.get("workflow_status") or item.get("status") or "")
     if not section:
-        if status in COMPLETED_STATUSES:
+        if status in COMPLETED_STATUSES or _whole_plan_wait_satisfied(
+            item, docs_dir, target_project, slug
+        ):
             return SATISFIED
         if status in TERMINAL_STATUSES:
             return ABANDONED

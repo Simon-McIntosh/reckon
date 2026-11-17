@@ -1,0 +1,42 @@
+<article class="r-evidence" data-node="qwnw-a-decision-can-hold-only-its-sections-and-a-batc" id="qwnw-a-decision-can-hold-only-its-sections-and-a-batc-record">
+<h3>A close batched behind its evidence lands in one write, and a scoped decision holds only its sections</h3>
+
+<p id="qwnw-a-decision-can-hold-only-its-sections-and-a-batc-batch">The ops of
+one edit batch are applied in order against one working state, but an
+<code>append_evidence</code> op only queues its append: the record is written
+after the batch is validated. The terminal-evidence guard read the record from
+disk, so <code>close</code> batched behind the append that satisfies it was
+refused at the close op's own index. The guard now also counts the plans the
+batch's own queued appends will reach — read from the live effect collection
+while the ops run (<code>_pending_evidence_plans</code>) or from the consumed
+appends on the write path — so the pair lands as one write. The test drives
+<code>[append_evidence, close]</code> through the edit tool against a temporary
+project and reads the plan back: status <code>archived</code>, the open
+followup resolved, and the appended anchor present in the plan's landing
+record.</p>
+
+<p id="qwnw-a-decision-can-hold-only-its-sections-and-a-batc-scope">A decision
+that names the sections it holds was already scoped at the write boundary and
+read back by the roadmap, so this node verifies that path and adds the test
+rather than reimplementing it. The test seeds a plan whose one open decision
+names no sections, reads the roadmap row as blocked on that decision, scopes it
+to <code>s2</code> through the edit tool, and requires the plan's own decision
+element to carry the scope and the roadmap row to report
+<code>blocked_sections == ["s2"]</code> with <code>s1</code> ready. The
+unnamed section is released, which is the fact neither the write-boundary test
+nor the refusal test asserted.</p>
+
+<table id="qwnw-a-decision-can-hold-only-its-sections-and-a-batc-arms">
+  <caption>Each log names its revision, tree, command and the exit status its
+  run reached.</caption>
+  <thead><tr><th>arm</th><th>result</th></tr></thead>
+  <tbody>
+    <tr><td>node tests at the head</td><td>2 passed</td></tr>
+    <tr><td>base revision, the batched close</td><td>1 failed — the refusal
+      names the missing landing record and reports
+      <code>refused_op_index: 1</code></td></tr>
+    <tr><td>suite, base revision</td><td>55 passed, exit 0</td></tr>
+    <tr><td>suite, head</td><td>55 passed, exit 0</td></tr>
+  </tbody>
+</table>
+</article>

@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s72">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-16">
+  <meta name="evidence-commit" content="2a55518cd5">
+  <title>A held run is not resumed | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="a-held-run-is-not-resumed">
+  <h2>A held run is not resumed</h2>
+
+  <p><strong>The defect.</strong> A coordinator's hold lived only in the run's
+  live pointer, and the station's repair pass read a held delivery as free
+  work. On 15 November the coordinator held
+  <code>r-20261115T184907801020-an-answer-the-tick-reads-is-never-evicted</code>
+  at 21:03Z; at 21:52:23Z attempt 4 was reserved as a resume, the resumed
+  worker committed <code>5cdbc394e9</code>, and the station reviewed that new
+  head. The hold's own record did not survive: the promotion that ends a run's
+  life deletes the pointer.</p>
+
+  <p><strong>Which pass reserved the resume.</strong>
+  <code>dispatch_repair_for_run</code>, the repair pass, through
+  <code>resumption._resume</code>. The run directory's
+  <code>resume-2-advice.txt</code> opens
+  <code>Repair round: r-20261115T184907801020-an-answer-the-tick-reads-is-never-evicted@6c0f8e7edb9458e141dde4d477fe8b3d5cc7f310</code>
+  and names the round's blocking finding <code>f0a36b7a321</code>, and
+  <code>attempt-4.reservation</code> records <code>kind: resume</code> taken by
+  the station's pid 1522386. The pass is inside
+  <code>reckon/crew/recovery_repair_dispatch.py</code>, so no module outside the
+  node's scope was changed.</p>
+
+  <p><strong>What landed.</strong> The repair pass asks the lander's own
+  question before it composes a round and asks it again at the launch, so a
+  hold taken during the pass's own lane resolution is met as it is read. A
+  coordinator's hold names no head and covers every delivery; a resume's hold
+  names the head it was issued against and stops covering the run once a new
+  head is delivered &mdash; the same <code>covers_delivery</code> reading the
+  lander and the acceptance sweep already make, so the two doors cannot
+  disagree. Taking and releasing a hold now also writes
+  <code>hold.json</code> into the run directory, carrying the release's reason
+  beside the reason the deferral began, so the delay outlives the pointer.</p>
+
+  <h3 id="a-held-run-is-not-resumed-case">The held run over three station passes</h3>
+
+  <p><code>tests/test_a_held_run_is_not_resumed.py</code> builds a temporary
+  repository, worktree and crew home, holds a delivered run whose newest review
+  carries a blocking finding disposed as folded into the node and a round with
+  an open blocking finding, and runs
+  <code>dispatch_awaiting_reviews</code> &mdash; the station's repair and review
+  passes &mdash; three times: <strong>0 launches</strong>, so no attempt
+  reservation is taken, and <strong>0 reviews</strong> dispatched for the run.
+  The run directory carries <code>hold.json</code> with the hold's reason and no
+  release stamp.</p>
+
+  <p>After <code>crew release</code> the same record carries
+  <code>released_at</code> and the release reason, and the next pass reserves
+  <code>attempt-2.reservation</code> and resumes the run &mdash; the base
+  pass's own action, reached only after the release.</p>
+
+  <p><strong>Negative control.</strong> With the two guards removed the same
+  first case fails and the launcher reports
+  <code>attempt-2.reservation</code>: the base pass reserves a resume for the
+  held run. The log ends <code>EXIT=1</code> and the failing id is
+  <code>test_a_held_run_is_not_resumed_reviewed_or_redispatched</code>.</p>
+
+  <h3 id="a-held-run-is-not-resumed-resume-hold">A resume's hold and a new head</h3>
+
+  <p>The second case holds the run with a resume's head-scoped hold, delivers a
+  new head in the run's worktree, and runs the same passes: the pass reserves
+  <code>attempt-2.reservation</code> and resumes, exactly as it does at base.
+  The hold still names the superseded head in the run directory, and the
+  delivery it named is no longer the one in hand.</p>
+</section>
+</main>
+</body>
+</html>

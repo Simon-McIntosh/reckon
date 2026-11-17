@@ -1,0 +1,58 @@
+<article class="r-evidence" id="follower-outlives-arming-shell-s134-landed">
+  <h2 id="follower-outlives-arming-shell-s134-landed-title">A re-parented follower keeps streaming while a reader holds its pipe</h2>
+
+  <p id="follower-outlives-arming-shell-s134-landed-fix">The consumer check in
+  <code>reckon/crew_follow_commands.py</code> now asks whether the follower's output still has a
+  reader before it treats a dead owner as an ending. <code>_stdout_has_reader(owner_pid)</code>
+  answers for the descriptor's kind: a socket or a terminal carries a reader by construction and
+  answers yes; a regular file answers no, so an orphan writing into one still ends and frees its
+  registration; a pipe first takes the cheap <code>POLLERR</code> probe, the same condition that
+  makes the next write fail with <code>EPIPE</code>, and then follows the read end to the pids
+  holding it through <code>follower_registration._pipe_reader_pids</code>. The follower keeps
+  streaming only when one of those readers is a process other than its current parent, and
+  re-parenting is judged by comparing the parent against the owner recorded by
+  <code>follower_owner()</code>, never by the parent's liveness — under a live subreaper the parent
+  is a running process that never armed the follower. A live parent holding an unread pipe for a
+  dead armed owner is a takeover, and keeps the owner-only ending. The verdict is remembered once
+  won, so the <code>/proc</code> walk runs at most once.</p>
+
+  <p id="follower-outlives-arming-shell-s134-landed-proof">The new test arms two session followers as
+  background jobs of a shell that exits at once, writing into one reader, and asserts that both are
+  alive 2.5 s later with each still holding a registration naming the process the shell started. It
+  then closes the reader and asserts both followers end and both registrations are free. The base
+  revision ends both inside the span; the owner-only check restored as a negative control fails the
+  first case; the two sibling guard files still pass, each arming its follower with a regular-file
+  stdout.</p>
+
+  <table id="follower-outlives-arming-shell-s134-landed-arms">
+    <thead><tr><th>arm</th><th>source</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>both cases, head</td><td><code>2bcfdec2f5</code></td><td>2 passed</td></tr>
+      <tr><td>first case, base</td><td><code>47d4d53612</code></td><td>1 failed — a follower ended inside the span</td></tr>
+      <tr><td>first case, owner-only check restored</td><td>head + negative control</td><td>1 failed — same assertion</td></tr>
+      <tr><td>two sibling guard files + new test, head</td><td><code>2bcfdec2f5</code></td><td>9 passed</td></tr>
+      <tr><td>both cases, final head</td><td><code>c7de78b608</code></td><td>2 passed, <code>test_staged_write_inventory</code> alongside: 53 passed</td></tr>
+      <tr><td>population: every test file importing the follow command, base</td><td><code>47d4d53612</code></td><td>14 failed, 516 passed</td></tr>
+      <tr><td>population: every test file importing the follow command, head</td><td><code>c7de78b608</code></td><td>14 failed, 516 passed</td></tr>
+      <tr><td>device case and descriptor-kind case, previous rule restored</td><td>head before the device repair</td><td>2 failed — a /dev/null follower outlived its owner, and /dev/null answered as a reader</td></tr>
+    </tbody>
+  </table>
+
+  <p id="follower-outlives-arming-shell-s134-landed-population">The two population arms
+  ran one at a time on an <code>all_debug</code> partition job, each over the 69 test files
+  that import <code>reckon/crew_follow_commands.py</code>, at <code>-n 4</code>, with the
+  tree extracted from its own revision inside the population job. Their failure id sets are
+  identical: the same fourteen tests fail at both revisions, so the change adds none and
+  removes none. Those fourteen are subprocess and <code>crew follow</code> launches that
+  exceed a 30 s wait under parallel load in a compute-node sandbox, and they are listed on
+  the logs' <code>FAILED</code> lines.</p>
+
+  <p id="follower-outlives-arming-shell-s134-landed-device">A descriptor kind that is neither a file nor a pipe answered yes to the reader question, so a follower writing into <code>/dev/null</code> outlived its dead owner and held its session's registration, refusing every dispatch from that session <code>watcher-required</code>. The session host launches followers whose stdout is its own, so that shape is ordinary. The rule now asks whether the descriptor takes part in a reader at all: a socket has a peer, a terminal has a screen attached, and a character device that is not a terminal delivers nowhere. A follower armed with <code>/dev/null</code> as its stdout must now end and free its registration, and a direct check asks the question of a regular file, <code>/dev/null</code>, a terminal and a socket.</p>
+
+  <p id="follower-outlives-arming-shell-s134-landed-scope">Files changed:
+  <code>reckon/crew_follow_commands.py</code> and
+  <code>tests/test_a_follower_with_a_reader_outlives_its_arming_shell.py</code>. <code>ruff check</code>
+  reports only SIM103 and SIM115, both present in the base revision; the test is
+  <code>ruff format</code>-clean, and the command module's remaining format differences are
+  pre-existing double blank lines, none inside the block this change adds.</p>
+</article>

@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T11:58:53.694Z",
+  "dispatched_at": "2026-11-15T11:26:37Z",
+  "findings": [
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": "2618",
+      "severity": "non-blocking",
+      "text": "the coordinator argument is exercised by no test: a search of tests/ finds no use of it, and deleting the line leaves the delta's own two test files green at 18 passed, so the coordinator-resume supersede path is unguarded"
+    },
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": "215",
+      "severity": "non-blocking",
+      "text": "the new public retire owner implements the pointer read-modify-write cycle that runs.py already owns beside _mutate_pointer (reckon/crew/runs.py:503) and reaches in through the private runs._pointer_lock (reckon/crew/runs.py:487); the consolidation is right but its home is the pointer-lifecycle owner, not a second cycle in pending_landing"
+    },
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": "221",
+      "severity": "non-blocking",
+      "text": "a pointer removed between path.exists() and read_pointer is reported POINTER_HELD and never POINTER_ABSENT, so a promotion whose pointer was legitimately reclaimed at that instant raises a refusal instead of reporting the absent case the refactor set out to make uniform"
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "opened promotion.py:257, 308 and 340 and pending_landing.py:257, which all reach retire_pointer_if, and resumption.py:1933, the function the added coordinator argument reaches",
+    "diff": "read the gain by commit against 5c0c742e; exactly two files, pending_landing.py with 66 added and 14 removed lines, and crew_run_commands.py with one added line",
+    "done_when": "the source node's done_when asks for an object-set equality over three refused passes plus a landed positive and a logged base-revision negative control; the delta does not touch tests/test_a_merge_check_leaves_no_object.py, which gate-named-files.log records at 7 passed at the merged head 65ca9845",
+    "goal": "the source node's goal is section 65, that a landing pass's merge conflict check leaves no object in the repository it checks (docs/plans/work-flows-to-the-lane.html:320); the gained delta carries nothing about that goal, being two commits from other nodes merged in from origin/main",
+    "manifest": "read at the source run's manifest.md:5-44; status complete, arms recorded as 55 passed at 1b8a0d37 and 58 passed at 65ca9845, and both gate logs close on an exit code of zero with no failing ids",
+    "write_paths": "the delta changes exactly reckon/crew/pending_landing.py and reckon/crew_run_commands.py, both inside the 'reckon' write path declared in the same manifest.md:3"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is section 65, that a landing pass's merge conflict check leaves no object in the repository it checks (docs/plans/work-flows-to-the-lane.html:320); the gained delta carries nothing about that goal, being two commits from other nodes merged in from origin/main\nVERDICT done_when: the source node's done_when asks for an object-set equality over three refused passes plus a landed positive and a logged base-revision negative control; the delta does not touch tests/test_a_merge_check_leaves_no_object.py, which gate-named-files.log records at 7 passed at the merged head 65ca9845\nVERDICT write_paths: the delta changes exactly reckon/crew/pending_landing.py and reckon/crew_run_commands.py, both inside the 'reckon' write path declared in the same manifest.md:3\nVERDICT manifest: read at the source run's manifest.md:5-44; status complete, arms recorded as 55 passed at 1b8a0d37 and 58 passed at 65ca9845, and both gate logs close on an exit code of zero with no failing ids\nVERDICT diff: read the gain by commit against 5c0c742e; exactly two files, pending_landing.py with 66 added and 14 removed lines, and crew_run_commands.py with one added line\nCALL_SITES: reckon/crew/promotion.py:257, reckon/crew/promotion.py:308, reckon/crew/promotion.py:340, reckon/crew/pending_landing.py:257, reckon/crew/resumption.py:1933\nSCORE goal_fidelity: 17\nSCORE evidence: 13\nSCORE scope_discipline: 19\nSCORE durability: 15\nSCORE fit: 17\nSCORE reuse: 14\nJUSTIFICATION goal_fidelity: the delta changes only reckon/crew/pending_landing.py and reckon/crew_run_commands.py, neither of which the deliverable at docs/plans/work-flows-to-the-lane.html:320 concerns\nJUSTIFICATION evidence: the recorded arms named in the source manifest.md:36-37 run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import neither gained module, so added_failure_count 0 is honest but blind to the delta\nJUSTIFICATION scope_discipline: the change at reckon/crew_run_commands.py:2618 is a single added argument and every hunk lies inside the 'reckon' write path\nJUSTIFICATION durability: tests/test_a_raced_promotion_still_lands.py:252 reddens if the phase rejoins the attempt identity, but reckon/crew_run_commands.py:2618 has no assertion and survives its own deletion\nJUSTIFICATION fit: the helpers at reckon/crew/pending_landing.py:192-229 follow the module's constant-and-docstring idiom and name the mechanism\nJUSTIFICATION reuse: reckon/crew/pending_landing.py:207 folds four compare-and-retire copies into one owner, but that owner rests on the private runs._pointer_lock at reckon/crew/runs.py:487 rather than extending the pointer cycle at reckon/crew/runs.py:503\nFINDING reckon/crew_run_commands.py:2618 non-blocking: the coordinator argument is exercised by no test: a search of tests/ finds no use of it, and deleting the line leaves the delta's own two test files green at 18 passed, so the coordinator-resume supersede path is unguarded\nFINDING reckon/crew/pending_landing.py:215 non-blocking: the new public retire owner implements the pointer read-modify-write cycle that runs.py already owns beside _mutate_pointer (reckon/crew/runs.py:503) and reaches in through the private runs._pointer_lock (reckon/crew/runs.py:487); the consolidation is right but its home is the pointer-lifecycle owner, not a second cycle in pending_landing\nFINDING reckon/crew/pending_landing.py:221 non-blocking: a pointer removed between path.exists() and read_pointer is reported POINTER_HELD and never POINTER_ABSENT, so a promotion whose pointer was legitimately reclaimed at that instant raises a refusal instead of reporting the absent case the refactor set out to make uniform",
+  "review_run_id": "r-20261115T112209558632-review-of-wftl-a-managed-repository-s-object-store-stays-packed-65ca98450a4f",
+  "reviewed_base_sha": "5c0c742ef720e1752468c4b82ca983ae67433ffe",
+  "reviewed_head_sha": "65ca98450a4f49a962ef7a5fe7d3bc1a39e589fa",
+  "reviewed_run_id": "r-20261114T203201051313-wftl-a-managed-repository-s-object-store-stays-packed",
+  "scores": {
+    "durability": 15,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T12:28:43.555952+00:00",
+  "total": 95
+}

@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from collections import Counter, defaultdict, deque
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -200,7 +200,9 @@ def _roadmap_priority_keys(
                     else []
                 )
                 with roadmap_build_scope(
-                    resolve_coordinators=False, classify_runs=False
+                    resolve_coordinators=False,
+                    classify_runs=False,
+                    audit_landings=False,
                 ):
                     report = build_roadmap(
                         project,
@@ -244,6 +246,110 @@ def _override(pointer: Mapping[str, Any]) -> int | None:
     )
 
 
+def partition_placeable(
+    queued_pointers: Sequence[Mapping[str, Any]],
+) -> tuple[list[Mapping[str, Any]], list[Mapping[str, Any]]]:
+    """Split queued pointers into those the order can place and those it cannot.
+
+    A request is placed by when it arrived, so one carrying no readable
+    ``queued_at`` has no place in the order. One malformed record must cost its
+    own place and no other request's, so every reader of the queue takes this
+    split from here rather than reading the field again.
+    """
+    placeable: list[Mapping[str, Any]] = []
+    unplaceable: list[Mapping[str, Any]] = []
+    for pointer in queued_pointers:
+        if parse_utc(pointer.get("queued_at")) is None:
+            unplaceable.append(pointer)
+        else:
+            placeable.append(pointer)
+    return placeable, unplaceable
+
+
+def readable_queued_at(record: Mapping[str, Any], *, now: datetime) -> str:
+    """The record's own arrival stamp, or a fresh one when it cannot be read.
+
+    Every queued pointer is ordered by its ``queued_at``, so a pointer written
+    without a readable one has no place until something rewrites it. A writer
+    that carries a stored stamp forward keeps it when it still reads; a re-queue
+    of a record whose stamp is missing or malformed stamps the moment the
+    request re-enters the queue, which is when it did arrive, rather than
+    writing a pointer the ordering cannot place.
+    """
+    stamp = record.get("queued_at")
+    if parse_utc(stamp) is not None:
+        return str(stamp)
+    return now.astimezone(UTC).isoformat()
+
+
+def _starved(queued_at: datetime | None, now: datetime) -> bool:
+    return (
+        queued_at is not None
+        and (now - queued_at).total_seconds() >= STARVATION_AGE_SECONDS
+    )
+
+
+def _precedence(
+    pointer: Mapping[str, Any],
+    *,
+    queued_at: datetime | None,
+    now: datetime,
+    review: bool,
+) -> tuple[tuple[int, int], str]:
+    """The urgency classes shared by admission and promotion."""
+    if review:
+        return (0, 0), "delivered review"
+    if _starved(queued_at, now):
+        return (1, 0), "ageing"
+    if (priority := _override(pointer)) is not None:
+        return (2, -priority), f"priority override {priority}"
+    return (3, 0), "session fair share; oldest request"
+
+
+def fair_queue_order_details(
+    requests: Sequence[Mapping[str, Any]],
+    *,
+    now: datetime,
+    joined_at: Callable[[Mapping[str, Any]], datetime | None],
+    is_review: Callable[[Mapping[str, Any]], bool],
+    served: Mapping[str, int],
+    consumes_turn: Callable[[Mapping[str, Any]], bool],
+) -> list[tuple[Mapping[str, Any], str]]:
+    """Serve urgency classes fairly, charging only requests that take a turn.
+
+    Historical service and in-flight reservations are supplied by the queue's
+    owner. Each urgency class starts from that snapshot, so taking an urgent
+    request does not consume a lower class's session turn.
+    """
+    classes = defaultdict(list)
+    for request in requests:
+        stamp = joined_at(request)
+        rank, reason = _precedence(
+            request, queued_at=stamp, now=now, review=is_review(request)
+        )
+        classes[rank].append((request, stamp, reason))
+
+    ordered = []
+    for rank in sorted(classes):
+        remaining = classes[rank]
+        turns = Counter(served)
+        while remaining:
+            row = min(
+                remaining,
+                key=lambda row: (
+                    turns[str(row[0].get("session") or "")],
+                    row[1] or datetime.max.replace(tzinfo=UTC),
+                    str(row[0].get("run_id") or ""),
+                ),
+            )
+            request, _stamp, reason = row
+            ordered.append((request, reason))
+            remaining.remove(row)
+            if consumes_turn(request):
+                turns[str(request.get("session") or "")] += 1
+    return ordered
+
+
 def _next_to_launch(
     rows: deque[tuple[datetime, int, Mapping[str, Any]]],
     keys: Mapping[int, tuple[Any, ...]],
@@ -261,23 +367,19 @@ def _next_to_launch(
     """
     from reckon.crew.recovery_review_delivery import _is_review_run
 
-    reviews = [row for row in rows if _is_review_run(row[2])]
-    if reviews:
-        return reviews[0]
-    aged = [
-        row
-        for row in rows
-        if (moment - row[0]).total_seconds() >= STARVATION_AGE_SECONDS
-    ]
-    if aged:
-        return aged[0]
-    overridden = [row for row in rows if _override(row[2]) is not None]
-    if overridden:
-        return min(overridden, key=lambda row: (-_override(row[2]), row[0], row[1]))
-    ranked = [row for row in rows if id(row[2]) in keys]
-    if ranked:
-        return min(ranked, key=lambda row: (keys[id(row[2])], row[0], row[1]))
-    return rows[0]
+    def rank(row: tuple[datetime, int, Mapping[str, Any]]) -> tuple[Any, ...]:
+        pointer = row[2]
+        urgency, _reason = _precedence(
+            pointer, queued_at=row[0], now=moment, review=_is_review_run(pointer)
+        )
+        roadmap = (
+            (id(pointer) not in keys, keys.get(id(pointer), ()))
+            if urgency == (3, 0)
+            else ()
+        )
+        return urgency, roadmap, row[0], row[1]
+
+    return min(rows, key=rank)
 
 
 def admission_order_details(
@@ -286,20 +388,34 @@ def admission_order_details(
     *,
     now: datetime,
 ) -> list[tuple[Mapping[str, Any], str]]:
-    """Rank requests and name the signal that placed each one."""
+    """Rank requests and name the signal that placed each one.
+
+    A pointer whose ``queued_at`` cannot be read is set aside rather than
+    ranked: it has no arrival to place it by, and raising here would end every
+    ordering pass, and with it every dispatch and review compose that ranks the
+    queue, until someone rewrites the one record. The set-aside pointers are
+    named by :func:`partition_placeable`, and the next pass orders them again,
+    so repair is a rewritten pointer rather than a stopped queue.
+    """
     from reckon.crew.recovery_review_delivery import _is_review_run
 
     if now.tzinfo is None:
         raise ValueError("now must have a timezone")
     moment = now.astimezone(UTC)
-    keys = _roadmap_priority_keys(queued_pointers)
 
-    joined = []
-    for index, pointer in enumerate(queued_pointers):
-        queued_at = parse_utc(pointer.get("queued_at"))
-        if queued_at is None:
-            raise ValueError("queued pointer has no readable queued_at")
-        joined.append((queued_at, index, pointer))
+    placeable, set_aside = partition_placeable(queued_pointers)
+    joined = [
+        (parse_utc(pointer.get("queued_at")), index, pointer)
+        for index, pointer in enumerate(placeable)
+    ]
+    if set_aside:
+        _LOGGER.warning(
+            "queued pointers with no readable queued_at set aside from ordering: %s",
+            ", ".join(
+                str(pointer.get("run_id") or "<no run id>") for pointer in set_aside
+            ),
+        )
+    keys = _roadmap_priority_keys(placeable)
     joined.sort(key=lambda row: (row[0], row[1]))
 
     waiting = defaultdict(deque)
@@ -320,7 +436,7 @@ def admission_order_details(
         oldest = waiting[group][0]
         launch = _next_to_launch(waiting[group], keys, moment)
         return (
-            moment.timestamp() - oldest[0].timestamp() <= STARVATION_AGE_SECONDS,
+            not _starved(oldest[0], moment),
             occupancy[(str(launch[2].get("backend") or ""), group[1])],
             oldest[0],
             oldest[1],
@@ -329,12 +445,15 @@ def admission_order_details(
     def _project_rank(group: tuple[str, str]) -> tuple[Any, ...]:
         row = _next_to_launch(waiting[group], keys, moment)
         pointer = row[2]
-        age = (moment - waiting[group][0][0]).total_seconds()
+        oldest = waiting[group][0][0]
+        urgency, _reason = _precedence(
+            pointer, queued_at=oldest, now=moment, review=_is_review_run(pointer)
+        )
         override = _override(pointer)
         key = keys.get(id(pointer))
         return (
-            not _is_review_run(pointer),
-            age < STARVATION_AGE_SECONDS,
+            urgency,
+            not _starved(oldest, moment),
             override is None,
             -(override or 0),
             key is None,
@@ -353,13 +472,10 @@ def admission_order_details(
         row = _next_to_launch(waiting[group], keys, moment)
         waiting[group].remove(row)
         pointer = row[2]
-        if _is_review_run(pointer):
-            reason = "delivered review"
-        elif (moment - row[0]).total_seconds() >= STARVATION_AGE_SECONDS:
-            reason = "ageing"
-        elif (override := _override(pointer)) is not None:
-            reason = f"priority override {override}"
-        elif (key := keys.get(id(pointer))) is not None:
+        urgency, reason = _precedence(
+            pointer, queued_at=row[0], now=moment, review=_is_review_run(pointer)
+        )
+        if urgency == (3, 0) and (key := keys.get(id(pointer))) is not None:
             rivals = [
                 keys[id(other[2])]
                 for rows in waiting.values()
@@ -372,7 +488,7 @@ def admission_order_details(
                 if rival is not None and key < rival
                 else "roadmap priority"
             )
-        else:
+        elif urgency == (3, 0):
             reason = "queued at (roadmap priority unavailable)"
         ordered.append((pointer, reason))
         occupancy[(str(pointer.get("backend") or ""), group[1])] += 1

@@ -1,0 +1,116 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": {
+    "test_a_failed_owner_census_is_never_reported_as_empty_usage": "False completeness and incomplete/unavailable text fail if refusal becomes a complete empty census or the caveat is removed.",
+    "test_admission_reads_the_local_disk_and_holds_only_below_reserve": "Low-space kind fails when guard returns None; high-space None fails on unconditional holds; missing local path must return unreadable. Remote-with-no-publication None expectation records the fail-open gap, not protection.",
+    "test_direct_and_published_obligations_include_the_same_disk_pressure": "Exactly one direct notice fails on omission/duplication; equality fails on disagreement between runtime readers, but parity alone does not independently establish pressure correctness.",
+    "test_disk_pressure_prevents_both_named_and_service_admission": "Named and service variants require no launches, held identity and recorded hold. Removing the guard loses held/verdict assertions. Equality to injected pressure/reason tests propagation only; pressure generation is covered separately. The pointer lacks queued_at, so forbidden_launch by itself is not sufficient proof of refusal; held assertions still discriminate guard removal.",
+    "test_each_mount_records_its_own_independent_reading": "Mount identity fails on wrong identity; total/used/free arithmetic and inode equality fail on wrong statvfs fields or units; cross-row inequality fails on shared readings. A one-mount mutation is recorded failing at line 65. Fixtures supply raw block counts, not expected output bytes.",
+    "test_flight_reserve_default_and_override": "8 GiB literal fails on changed default or broken resolution; 123 assertion checks configuration plumbing only and fails if override ignored. ValueError context fails if negative settings accepted.",
+    "test_pressure_names_largest_entries_and_owners_and_clears": "Complete flag, ranked path, >=32768 bytes and uid fail on skipped/truncated/wrongly attributed census. Kind, path and owner substring assertions fail on omitted notice content. Owner is propagated from low largest_entries, so that substring assertion alone does not validate owner lookup; independent uid and real filesystem entry assertions carry attribution coverage. Large-mount and exact-reserve None assertions fail on unconditional pressure or <= threshold.",
+    "test_remote_admission_uses_the_published_fleet_disk": "Original remote-return-None code fails expected low-space obligation equality; forbidden_local_sample fails if remote host samples its own disk; recovery None fails on unconditional hold. Expected derives from the shared obligation reader, so this is parity/plumbing coverage rather than an independent sample-freshness check.",
+    "test_sample_publishes_the_same_four_fields_and_obligation": "Exit code and stdout-to-publication equality fail on publication failure or disagreement; equality against published input checks propagation only, not physical measurement. Changing job id must yield None or identity rejection regressed.",
+    "test_sampler_appends_all_disk_fields": "Return-code and exact four-column assertions fail on sampler failure, missing/misordered values or column removal; recorded base reproduction fails on missing node_tmp_total_bytes.",
+    "test_sampler_failure_keeps_unknown_disk_fields": "Return-code assertion fails if probe failure aborts the sampler; all(...) fails if an existing disk column becomes zero or blank instead of unknown. all(...) alone is vacuous if all columns disappear; the first test separately requires all four columns."
+  },
+  "call_site_count": 6,
+  "call_sites": [
+    "bin/fleet-health:115",
+    "reckon/crew/fleet_supervisor.py:main",
+    "reckon/crew/admission/selection.py:admit_once",
+    "reckon/crew/admission/service.py:admit_until_stopped",
+    "reckon/crew/obligations.py:_obligations_view",
+    "reckon/crew/obligation_snapshot.py:payload_for"
+  ],
+  "completed_at": "2026-11-17T12:26:44Z",
+  "dispatched_at": "2026-11-17T12:19:17Z",
+  "evidence_limits": "Official manifest suite pair adds zero failures; separate importer receipts add four ids, recorded under outside_scope in the review manifest. No live one-hour observation was supplied; no suite rerun by reviewer.",
+  "failure_delta_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_health_records_node_tmp.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110445940804-node-disk-is-in-the-health-series/after_suite-1794916227192849435.log",
+      "measured_by": "worker",
+      "observed_failure_ids": [],
+      "partition": "all_debug",
+      "reason": "",
+      "revision": "23a656b40b8863c6f95cf95a8349e16a688f30ba"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110445940804-node-disk-is-in-the-health-series/baseline_suite-1794916152037585608.log",
+      "measured_by": "worker",
+      "observed_failure_ids": [],
+      "partition": "all_debug",
+      "reason": "",
+      "revision": "45967c6c6399a70306ce0cd5cb106e6ed54e0c21"
+    }
+  },
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "node-disk-is-in-the-health-series",
+      "recorded_at": "2026-11-17T13:08:20.208583+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/admission/service.py",
+      "line": "187",
+      "severity": "blocking",
+      "text": "blocking: Remote admission returns no hold when the published sample is missing or unreadable, and published_node_disk_sample at fleet_supervisor.py:532 checks only job/node identity with no freshness bound; a failed sampler leaves an old healthy sample usable indefinitely, allowing launches below reserve, or an old low-space sample holding launches after recovery. Return an unreadable/stale hold for a known remote fleet until a current reading is available, and test missing, unreadable and expired samples."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Read commits 3e28ef5735d605196b0ad9ef35070b757834b1db and 23a656b40b8863c6f95cf95a8349e16a688f30ba against 45967c6c6399a70306ce0cd5cb106e6ed54e0c21; the first adds sampling, settings and admission/obligation integration and the second adds remote sample consumption, whose unknown and stale cases remain unguarded.",
+    "done_when": "Read the live pointer node.done_when and plan section s5; the recorded 70-pass head gate and failing one-mount control cover the unit cases, but importer-delta-final.json records four added failures and the plan's live one-hour observation is explicitly outstanding.",
+    "goal": "Read the goal in the reviewed run's live pointer node.goal; bin/fleet-health:115 appends all four disk fields and admission/selection.py:161 gates launches, but remote admission can bypass pressure through absent or stale samples.",
+    "manifest": "Read the reviewed run's manifest.md and opened its baseline_suite, after_suite, reproduction-header and negative-control-final logs; the receipts support 58 baseline passes, 70 head passes and the intended control failure, and the manifest candidly records importer failures and the undeployed hour.",
+    "write_paths": "Read the live pointer node.write_paths, including its granted selection and obligation-reader extensions; all eleven changed paths in the base-to-head diff are within that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_fleet_health_records_node_tmp.py:58 has per-mount arithmetic assertions proven red by negative-control-final.log and its admission tests assert actual holds, but its remote test at line 290 omits absent and stale published samples.",
+    "evidence": "The reviewed run's baseline_suite-1794916152037585608.log and after_suite-1794916227192849435.log end EXIT=0 with 58 and 70 passes, but importer-delta-final.json adds four failures and manifest.md explicitly defers the plan s5 one-hour deployment measurement.",
+    "fit": "reckon/crew/fleet_supervisor.py:500 follows the existing sample_interpreter_permissions command seam and atomic state writer, while the schema slot and generated WorktreeConfig field use capability-based names and the established flight schema layout.",
+    "goal_fidelity": "bin/fleet-health:115 and reckon/crew/admission/selection.py:161 implement sampling and holds, but reckon/crew/admission/service.py:187 permits remote launches when the published reading is missing and fleet_supervisor.py:532 accepts arbitrarily old readings.",
+    "reuse": "A capability search for statvfs, disk_usage, scratch_min_free and largest_entries found dispatch_launch.py:909 owning dispatch-time scratch headroom, a distinct lifecycle check; fleet_supervisor.py:448 adds the health sampler's four-field snapshot and service.py:186 plus both obligation readers reuse that owner rather than copying it.",
+    "scope_discipline": "All eleven paths changed by the two commits occur in the reviewed live pointer node.write_paths, and the additions to reckon/crew/obligations.py:4405 and obligation_snapshot.py:2159 carry the goal's pressure notice to its runtime readers."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the goal in the reviewed run's live pointer node.goal; bin/fleet-health:115 appends all four disk fields and admission/selection.py:161 gates launches, but remote admission can bypass pressure through absent or stale samples.\nVERDICT done_when: Read the live pointer node.done_when and plan section s5; the recorded 70-pass head gate and failing one-mount control cover the unit cases, but importer-delta-final.json records four added failures and the plan's live one-hour observation is explicitly outstanding.\nVERDICT write_paths: Read the live pointer node.write_paths, including its granted selection and obligation-reader extensions; all eleven changed paths in the base-to-head diff are within that scope.\nVERDICT manifest: Read the reviewed run's manifest.md and opened its baseline_suite, after_suite, reproduction-header and negative-control-final logs; the receipts support 58 baseline passes, 70 head passes and the intended control failure, and the manifest candidly records importer failures and the undeployed hour.\nVERDICT diff: Read commits 3e28ef5735d605196b0ad9ef35070b757834b1db and 23a656b40b8863c6f95cf95a8349e16a688f30ba against 45967c6c6399a70306ce0cd5cb106e6ed54e0c21; the first adds sampling, settings and admission/obligation integration and the second adds remote sample consumption, whose unknown and stale cases remain unguarded.\nCALL_SITES: bin/fleet-health:115, reckon/crew/fleet_supervisor.py:main, reckon/crew/admission/selection.py:admit_once, reckon/crew/admission/service.py:admit_until_stopped, reckon/crew/obligations.py:_obligations_view, reckon/crew/obligation_snapshot.py:payload_for\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: bin/fleet-health:115 and reckon/crew/admission/selection.py:161 implement sampling and holds, but reckon/crew/admission/service.py:187 permits remote launches when the published reading is missing and fleet_supervisor.py:532 accepts arbitrarily old readings.\nSCORE evidence: 12\nJUSTIFICATION evidence: The reviewed run's baseline_suite-1794916152037585608.log and after_suite-1794916227192849435.log end EXIT=0 with 58 and 70 passes, but importer-delta-final.json adds four failures and manifest.md explicitly defers the plan s5 one-hour deployment measurement.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: All eleven paths changed by the two commits occur in the reviewed live pointer node.write_paths, and the additions to reckon/crew/obligations.py:4405 and obligation_snapshot.py:2159 carry the goal's pressure notice to its runtime readers.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_fleet_health_records_node_tmp.py:58 has per-mount arithmetic assertions proven red by negative-control-final.log and its admission tests assert actual holds, but its remote test at line 290 omits absent and stale published samples.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/fleet_supervisor.py:500 follows the existing sample_interpreter_permissions command seam and atomic state writer, while the schema slot and generated WorktreeConfig field use capability-based names and the established flight schema layout.\nSCORE reuse: 20\nJUSTIFICATION reuse: A capability search for statvfs, disk_usage, scratch_min_free and largest_entries found dispatch_launch.py:909 owning dispatch-time scratch headroom, a distinct lifecycle check; fleet_supervisor.py:448 adds the health sampler's four-field snapshot and service.py:186 plus both obligation readers reuse that owner rather than copying it.\nFINDING reckon/crew/admission/service.py:187 blocking: Remote admission returns no hold when the published sample is missing or unreadable, and published_node_disk_sample at fleet_supervisor.py:532 checks only job/node identity with no freshness bound; a failed sampler leaves an old healthy sample usable indefinitely, allowing launches below reserve, or an old low-space sample holding launches after recovery. Return an unreadable/stale hold for a known remote fleet until a current reading is available, and test missing, unreadable and expired samples.\n",
+  "reproduction": "reproduction-header.log: E KeyError: 'node_tmp_total_bytes'; 1 failed in 4.25s; EXIT=1. negative-control-final.log: assert 2867200 <= 4096 at test_each_mount_records_its_own_independent_reading; 1 failed in 0.91s; EXIT=1.",
+  "review_run_id": "r-20261117T121741631122-review-of-node-disk-is-in-the-health-series-23a656b40b88",
+  "reviewed_base_sha": "45967c6c6399a70306ce0cd5cb106e6ed54e0c21",
+  "reviewed_head_sha": "23a656b40b8863c6f95cf95a8349e16a688f30ba",
+  "reviewed_run_id": "r-20261117T110445940804-node-disk-is-in-the-health-series",
+  "scores": {
+    "durability": 17,
+    "evidence": 12,
+    "fit": 20,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "supplemental_importer_delta": [
+    "tests/test_a_slow_station_still_reads_as_alive.py::test_a_blocked_tick_keeps_a_fresh_beat_and_reads_slow",
+    "tests/test_fleet_health.py::test_dstate_trigger_writes_a_snapshot_with_thread_and_wait_columns",
+    "tests/test_the_fleet_supervisor_runs_current_code.py::test_a_dirty_checkout_costs_one_trust_test_per_moved_stamp",
+    "tests/test_the_fleet_supervisor_runs_current_code.py::test_a_moved_stamp_re_executes_once_on_a_trusted_checkout"
+  ],
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T12:32:55.160631+00:00",
+  "total": 105
+}

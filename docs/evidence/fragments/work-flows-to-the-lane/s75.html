@@ -1,0 +1,50 @@
+<!-- # revision: 30d72f4efc2d6396ae912f70473b7f78f17d1e61 tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-the-picker-offers-claude-only-as-an-exception-codex command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_picker_local_backend.py -->
+<article id="wftl-the-picker-offers-claude-only-as-an-exception-codex-negative-control">
+<h3>Unchanged-source offered-set reproduction</h3>
+<p>Temporary flight and endpoint publication; ordinary guided implementation request. The local wrapper and reserved subscription candidates are offered while the configured local harness is rejected as unavailable.</p>
+<pre># revision: 30d72f4efc2d6396ae912f70473b7f78f17d1e61 tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-the-picker-offers-claude-only-as-an-exception-codex command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_picker_local_backend.py
+# module: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-the-picker-offers-claude-only-as-an-exception-codex/reckon/crew/picker/snapshot.py
+FF.                                                                      [100%]
+=================================== FAILURES ===================================
+_________ test_an_ordinary_node_gets_only_the_configured_local_harness _________
+
+live_facts = PosixPath(&#x27;/tmp/pytest-of-mcintos/pytest-7281/test_an_ordinary_node_gets_onl0&#x27;)
+local_flight = {&#x27;backends&#x27;: {&#x27;claude-opus&#x27;: {&#x27;budget_group&#x27;: &#x27;claude&#x27;, &#x27;command&#x27;: &#x27;claude&#x27;, &#x27;effort&#x27;: &#x27;high&#x27;, &#x27;launch&#x27;: &#x27;cli&#x27;, &#x27;model...version&#x27;: 1, &#x27;worktree&#x27;: {&#x27;cleanup&#x27;: &#x27;conservative&#x27;, &#x27;scratch_min_free_bytes&#x27;: 5368709120, &#x27;scratch_min_free_pct&#x27;: 10}}
+
+    def test_an_ordinary_node_gets_only_the_configured_local_harness(
+        live_facts, local_flight
+    ):
+        options = _options(live_facts, local_flight, _request())
+        offered = {c.backend for c in options if not c.reasons}
+        print(&quot;ordinary offered:&quot;, sorted(offered))
+        print(&quot;excluded:&quot;, {c.backend: c.reasons for c in options if c.reasons})
+&gt;       assert &quot;omp-local&quot; in offered
+E       AssertionError: assert &#x27;omp-local&#x27; in {&#x27;claude-opus&#x27;, &#x27;clive&#x27;, &#x27;clive-anchored&#x27;, &#x27;codex-astra&#x27;}
+
+tests/test_picker_local_backend.py:88: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ordinary offered: [&#x27;claude-opus&#x27;, &#x27;clive&#x27;, &#x27;clive-anchored&#x27;, &#x27;codex-astra&#x27;]
+excluded: {&#x27;native&#x27;: [&#x27;in-harness-backend&#x27;], &#x27;omp-local&#x27;: [&#x27;availability: unavailable&#x27;]}
+__________________ test_a_reserved_tier_gets_the_claude_lane ___________________
+
+live_facts = PosixPath(&#x27;/tmp/pytest-of-mcintos/pytest-7281/test_a_reserved_tier_gets_the_0&#x27;)
+local_flight = {&#x27;backends&#x27;: {&#x27;claude-opus&#x27;: {&#x27;budget_group&#x27;: &#x27;claude&#x27;, &#x27;command&#x27;: &#x27;claude&#x27;, &#x27;effort&#x27;: &#x27;high&#x27;, &#x27;launch&#x27;: &#x27;cli&#x27;, &#x27;model...version&#x27;: 1, &#x27;worktree&#x27;: {&#x27;cleanup&#x27;: &#x27;conservative&#x27;, &#x27;scratch_min_free_bytes&#x27;: 5368709120, &#x27;scratch_min_free_pct&#x27;: 10}}
+
+    def test_a_reserved_tier_gets_the_claude_lane(live_facts, local_flight):
+        options = _options(live_facts, local_flight, _request(capability=HARDEST))
+        offered = {c.backend for c in options if not c.reasons}
+&gt;       assert {&quot;omp-local&quot;, &quot;claude-opus&quot;} &lt;= offered
+E       AssertionError: assert {&#x27;claude-opus&#x27;, &#x27;omp-local&#x27;} &lt;= {&#x27;claude-opus...&#x27;codex-astra&#x27;}
+E         
+E         Extra items in the left set:
+E         &#x27;omp-local&#x27;
+
+tests/test_picker_local_backend.py:98: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_picker_local_backend.py::test_an_ordinary_node_gets_only_the_configured_local_harness
+FAILED tests/test_picker_local_backend.py::test_a_reserved_tier_gets_the_claude_lane
+2 failed, 1 passed in 1.10s
+EXIT=1
+</pre>
+</article>
+EXIT=1

@@ -1,0 +1,58 @@
+<section id="qwnw-red-file-picker-in-dispatch-second-launch-record">
+<h3>A red file on the primary branch passes</h3>
+<p>One cause, one verdict. The dispatch command writes a created-run notice to stderr so a caller interrupted after its claim is published keeps the run identity, while stdout stays the command's single final JSON document. Click's <code>CliRunner</code> fills <code>result.output</code> with both streams, so the test helper's <code>json.loads(result.output.splitlines()[0])</code> decoded the notice instead of the payload. The product rule is the one the command keeps, so the test was wrong: it now parses <code>result.stdout</code>, asserting the stronger rule that all of stdout is the JSON document. No assertion was deleted or weakened. Every run below is an <code>all_debug</code> job with <code>SLURM_JOB_ID</code> unset inside the job.</p>
+<h4 id="qwnw-red-file-picker-in-dispatch-second-launch-base">Base run (negative control), revision 0e0f25b0f941</h4>
+<pre># revision: 0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc
+# tree: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T064918796238-qwnw-red-file-picker-in-dispatch-second-launch/scratch/base
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python3 -m pytest -p no:cacheprovider -q tests/test_picker_in_dispatch.py
+# module: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T064918796238-qwnw-red-file-picker-in-dispatch-second-launch/scratch/base/reckon/crew/dispatch.py
+# cwd: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T064918796238-qwnw-red-file-picker-in-dispatch-second-launch/scratch/base
+FAILED tests/test_picker_in_dispatch.py::test_shadow_records_selection_without_changing_backend - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+FAILED tests/test_picker_in_dispatch.py::test_dispatch_hands_the_picker_its_precomputed_inputs - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+FAILED tests/test_picker_in_dispatch.py::test_dispatch_survives_a_raising_picker - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+FAILED tests/test_picker_in_dispatch.py::test_dispatch_survives_a_picker_past_the_bound - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+FAILED tests/test_picker_in_dispatch.py::test_picker_route_uses_selected_backend - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+FAILED tests/test_picker_in_dispatch.py::test_picker_fallback_uses_default_backend - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+FAILED tests/test_picker_in_dispatch.py::test_picker_refusal_names_exclusions_before_worktree - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+FAILED tests/test_picker_in_dispatch.py::test_null_route_names_exclusions - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+FAILED tests/test_picker_in_dispatch.py::test_comment_reaches_the_picker_verbatim - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+FAILED tests/test_picker_in_dispatch.py::test_routed_dispatch_skips_pace_but_obeys_hard_ceiling - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+10 failed, 3 passed in 5.20s
+EXIT=1</pre>
+<h4 id="qwnw-red-file-picker-in-dispatch-second-launch-head">Head run, revision 675ea296a7</h4>
+<pre># revision: 675ea296a71c228fe7775ec95b3291e167682db7
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-picker-in-dispatch-second-launch
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python3 -m pytest -p no:cacheprovider -q tests/test_picker_in_dispatch.py
+# module: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-picker-in-dispatch-second-launch/reckon/crew/dispatch.py
+# cwd: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-picker-in-dispatch-second-launch
+13 passed in 4.57s
+EXIT=0</pre>
+<h4 id="qwnw-red-file-picker-in-dispatch-second-launch-arm">Arm over the picker importers</h4>
+<p>11 failing at base and 1 failing at head over the same 21 picker test files, so the arm adds no failure. The remaining head failure, <code>tests/test_picker_route_keeps_availability_refusal.py::test_one_pick_per_dispatch_and_the_checked_backend_is_dispatched</code>, fails identically at base and belongs to another node's file.</p>
+<pre># revision: 0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc
+# tree: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T064918796238-qwnw-red-file-picker-in-dispatch-second-launch/scratch/base
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python3 -m pytest -p no:cacheprovider -q tests/test_picker.py tests/test_picker_cached_availability.py tests/test_picker_dispatch_pace.py tests/test_picker_foreign_wait_is_bounded.py tests/test_picker_fresh_process_pick.py tests/test_picker_helpers_have_one_owner.py tests/test_picker_holds.py tests/test_picker_in_dispatch.py tests/test_picker_inputs_never_block_dispatch.py tests/test_picker_joins_codex_by_lane.py tests/test_picker_lanes.py tests/test_picker_latency.py tests/test_picker_local_backend.py tests/test_picker_outcomes.py tests/test_picker_pick_within_bound.py tests/test_picker_prefers_lifted_lane.py tests/test_picker_pressure.py tests/test_picker_refusal_falls_back_to_deterministic.py tests/test_picker_reserved_lanes.py tests/test_picker_return_time.py tests/test_picker_route_keeps_availability_refusal.py
+# module: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T064918796238-qwnw-red-file-picker-in-dispatch-second-launch/scratch/base/reckon/crew/dispatch.py
+# cwd: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T064918796238-qwnw-red-file-picker-in-dispatch-second-launch/scratch/base
+FAILED tests/test_picker_in_dispatch.py::test_shadow_records_selection_without_changing_backend - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+FAILED tests/test_picker_in_dispatch.py::test_dispatch_hands_the_picker_its_precomputed_inputs - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+FAILED tests/test_picker_in_dispatch.py::test_dispatch_survives_a_raising_picker - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+FAILED tests/test_picker_in_dispatch.py::test_dispatch_survives_a_picker_past_the_bound - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+FAILED tests/test_picker_in_dispatch.py::test_picker_route_uses_selected_backend - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+FAILED tests/test_picker_in_dispatch.py::test_picker_fallback_uses_default_backend - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+FAILED tests/test_picker_in_dispatch.py::test_picker_refusal_names_exclusions_before_worktree - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+FAILED tests/test_picker_in_dispatch.py::test_null_route_names_exclusions - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+FAILED tests/test_picker_in_dispatch.py::test_comment_reaches_the_picker_verbatim - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+FAILED tests/test_picker_in_dispatch.py::test_routed_dispatch_skips_pace_but_obeys_hard_ceiling - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+FAILED tests/test_picker_route_keeps_availability_refusal.py::test_one_pick_per_dispatch_and_the_checked_backend_is_dispatched - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+11 failed, 184 passed in 19.39s
+EXIT=1</pre>
+<pre># revision: 675ea296a71c228fe7775ec95b3291e167682db7
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-picker-in-dispatch-second-launch
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python3 -m pytest -p no:cacheprovider -q tests/test_picker.py tests/test_picker_cached_availability.py tests/test_picker_dispatch_pace.py tests/test_picker_foreign_wait_is_bounded.py tests/test_picker_fresh_process_pick.py tests/test_picker_helpers_have_one_owner.py tests/test_picker_holds.py tests/test_picker_in_dispatch.py tests/test_picker_inputs_never_block_dispatch.py tests/test_picker_joins_codex_by_lane.py tests/test_picker_lanes.py tests/test_picker_latency.py tests/test_picker_local_backend.py tests/test_picker_outcomes.py tests/test_picker_pick_within_bound.py tests/test_picker_prefers_lifted_lane.py tests/test_picker_pressure.py tests/test_picker_refusal_falls_back_to_deterministic.py tests/test_picker_reserved_lanes.py tests/test_picker_return_time.py tests/test_picker_route_keeps_availability_refusal.py
+# module: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-picker-in-dispatch-second-launch/reckon/crew/dispatch.py
+# cwd: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-picker-in-dispatch-second-launch
+FAILED tests/test_picker_route_keeps_availability_refusal.py::test_one_pick_per_dispatch_and_the_checked_backend_is_dispatched - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+1 failed, 194 passed in 18.18s
+EXIT=1</pre>
+</section>

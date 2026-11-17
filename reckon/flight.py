@@ -97,6 +97,13 @@ DEFAULT_SPRINT_RECENT_DAYS = 14
 # whether the project's own ``.mcp.json`` servers start at all.
 WORKER_MCP_SERVERS_KEY = "worker_mcp_servers"
 
+# The named MCP sets a flight declares, each a list of servers, keyed by the
+# name a plan section or a brief gives for its node. Reckon-owned in the same
+# sense as the flat list above and stripped from the copy the provider-neutral
+# schema validates, because a set is what a launch reads to decide which
+# servers a worker may start.
+MCP_SETS_KEY = "mcp_sets"
+
 # The per-project report store. A project persists a report item into a root it
 # names itself. Reckon ships no default: a project that has not declared one
 # persists nothing, which is the refusal its own caller reports rather than a
@@ -186,6 +193,16 @@ QUEUE_MAX_REQUESTS_KEY = "max_requests"
 DEFAULT_QUEUE_MAX_REQUESTS = 500
 QUEUE_REPICK_AFTER_SECONDS_KEY = "repick_after_seconds"
 DEFAULT_QUEUE_REPICK_AFTER_SECONDS = 60
+
+# How long one admission pass may spend launching before it ends and leaves the
+# rest of the queue to the next pass. A pass that runs long holds every freed
+# seat until it ends, so its budget is what bounds the wait between a seat
+# freeing and the next request reaching it. Declared under the ``admission``
+# namespace, which is reckon-owned in the same sense as ``queue`` above: a
+# layer may set it, and a resolved config that never did falls back here.
+ADMISSION_KEY = "admission"
+ADMISSION_BUDGET_SECONDS_KEY = "pass_budget_seconds"
+DEFAULT_ADMISSION_PASS_BUDGET_SECONDS = 60.0
 
 # The unit each budget suffix is worth in seconds. A budget is written as an
 # integer followed by one of these letters, and the reader converts it once so
@@ -449,6 +466,7 @@ def _schema_view(data: Mapping[str, Any]) -> dict[str, Any]:
     cleaned.pop(HARNESS_HOME_ADJACENT_FILES, None)
     cleaned.pop(SPRINT_RECENT_DAYS_KEY, None)
     cleaned.pop(WORKER_MCP_SERVERS_KEY, None)
+    cleaned.pop(MCP_SETS_KEY, None)
     cleaned.pop(PICKER_RESERVED_LANES_KEY, None)
     cleaned.pop(REPORTS_KEY, None)
     cleaned.pop("landing", None)
@@ -568,6 +586,15 @@ def mounted_project_docs(mounts_file: Path | None = None) -> dict[str, Path]:
     is resolved through the configuration home in force now; a caller that must
     read a registry regardless of a later home override passes the path it
     captured earlier, which is the path it read then, not the one now in force.
+
+    The registry is fixed for as long as its bytes are: it is parsed and each
+    entry's path resolved once per stat identity through the shared file memo,
+    so a caller that asks for one project's docs root per unit of work — a
+    producer tick asking once per reviewed plan — pays a stat per ask rather
+    than a parse of the whole registry and a ``realpath`` per mount on each. A
+    rewritten registry moves its identity and is read again on the next call,
+    so the memo cannot hand back a project the registry no longer names or a
+    path it now points elsewhere.
     """
     import json
 
@@ -575,35 +602,39 @@ def mounted_project_docs(mounts_file: Path | None = None) -> dict[str, Path]:
 
     if mounts_file is None:
         mounts_file = _mounts_path()
-    if not mounts_file.is_file():
-        return {}
-    try:
-        payload = json.loads(mounts_file.read_text())
-    except (OSError, ValueError) as exc:
-        raise FlightConfigError(
-            mounts_file, "", "must contain a readable JSON object"
-        ) from exc
-    if not isinstance(payload, Mapping):
-        raise FlightConfigError(mounts_file, "", "must contain a JSON object")
-    entries = payload.get("mounts") if "mounts" in payload else payload
-    if not isinstance(entries, Mapping):
-        raise FlightConfigError(
-            mounts_file, "mounts", "must be an object keyed by project"
-        )
 
-    resolved: dict[str, Path] = {}
-    for project, entry in sorted(entries.items(), key=lambda item: str(item[0])):
-        docs_path = entry
-        if isinstance(entry, Mapping):
-            docs_path = entry.get("docs") or entry.get("path")
-        if not isinstance(docs_path, str) or not docs_path.strip():
+    def read() -> dict[str, Path]:
+        if not mounts_file.is_file():
+            return {}
+        try:
+            payload = json.loads(mounts_file.read_text())
+        except (OSError, ValueError) as exc:
             raise FlightConfigError(
-                mounts_file,
-                str(project),
-                "must name a docs directory with a string path",
+                mounts_file, "", "must contain a readable JSON object"
+            ) from exc
+        if not isinstance(payload, Mapping):
+            raise FlightConfigError(mounts_file, "", "must contain a JSON object")
+        entries = payload.get("mounts") if "mounts" in payload else payload
+        if not isinstance(entries, Mapping):
+            raise FlightConfigError(
+                mounts_file, "mounts", "must be an object keyed by project"
             )
-        resolved[str(project)] = Path(docs_path).expanduser().resolve()
-    return resolved
+
+        resolved: dict[str, Path] = {}
+        for project, entry in sorted(entries.items(), key=lambda item: str(item[0])):
+            docs_path = entry
+            if isinstance(entry, Mapping):
+                docs_path = entry.get("docs") or entry.get("path")
+            if not isinstance(docs_path, str) or not docs_path.strip():
+                raise FlightConfigError(
+                    mounts_file,
+                    str(project),
+                    "must name a docs directory with a string path",
+                )
+            resolved[str(project)] = Path(docs_path).expanduser().resolve()
+        return resolved
+
+    return file_memo.memoized("mounts_registry", mounts_file, read)
 
 
 def _project_docs_root(project: str) -> Path:
@@ -890,6 +921,25 @@ def _validate_worker_mcp_servers(data: Mapping[str, Any], source: str | Path) ->
         _declared_worker_mcp_servers(data)
     except WorkerMcpServersError as exc:
         raise FlightConfigError(source, WORKER_MCP_SERVERS_KEY, exc.constraint) from exc
+
+
+def _validate_mcp_sets(data: Mapping[str, Any], source: str | Path) -> None:
+    """Check the reckon-owned MCP set table, which the schema omits.
+
+    Absence is the shipped default: a flight that declares no set has no name
+    for a node to ask for. A present value must be a mapping from set name to a
+    list of server names, checked by the reader the launch uses, so a malformed
+    set is refused at the layer rather than seeding a worker with servers the
+    flight never named.
+    """
+    if MCP_SETS_KEY not in data:
+        return
+    from reckon._worker_fence import WorkerMcpSetsError, _declared_mcp_sets
+
+    try:
+        _declared_mcp_sets(data)
+    except WorkerMcpSetsError as exc:
+        raise FlightConfigError(source, MCP_SETS_KEY, exc.constraint) from exc
 
 
 def _validate_picker_reserved_lanes(
@@ -1281,6 +1331,39 @@ def queue_repick_after_seconds(config: Mapping[str, Any] | None) -> int:
     return int(value)
 
 
+def service_reload_window_seconds(config: Mapping[str, Any] | None) -> int:
+    """Minimum automatic reload interval; a host flight may retune the window."""
+    value = (config or {}).get("service_reload_window_seconds", 1800)
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        return 1800
+    return value
+
+
+def admission_pass_budget_seconds(config: Mapping[str, Any] | None) -> float:
+    """How long one admission pass may spend launching before it ends.
+
+    Read from the resolved config's ``admission`` namespace, so a host or
+    project layer retunes the bound without a code change. A config declaring
+    no such key — a hand-assembled test config, or a resolved config that never
+    set one — falls back to the shipped default rather than failing, and a
+    value that is not a positive finite number falls back the same way.
+    """
+    admission = (config or {}).get(ADMISSION_KEY)
+    value = (
+        admission.get(
+            ADMISSION_BUDGET_SECONDS_KEY, DEFAULT_ADMISSION_PASS_BUDGET_SECONDS
+        )
+        if isinstance(admission, Mapping)
+        else DEFAULT_ADMISSION_PASS_BUDGET_SECONDS
+    )
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return DEFAULT_ADMISSION_PASS_BUDGET_SECONDS
+    seconds = float(value)
+    if not math.isfinite(seconds) or seconds <= 0:
+        return DEFAULT_ADMISSION_PASS_BUDGET_SECONDS
+    return seconds
+
+
 def _review_owned_key_shape_is_valid(shape: str, value: Any) -> bool:
     """Whether ``value`` holds the shape a reckon-owned review key declares."""
     if shape == "non_negative_integer":
@@ -1577,6 +1660,7 @@ def validate_layer(
 
     _validate_sprint_recent_days(data, source)
     _validate_worker_mcp_servers(data, source)
+    _validate_mcp_sets(data, source)
     _validate_picker_reserved_lanes(data, source)
 
     for backend_name, backend in (data.get("backends") or {}).items():
@@ -2600,7 +2684,12 @@ def _probe_serving(backend: Mapping[str, Any]) -> dict[str, Any]:
             "serving": "not-serving",
             "serving_detail": f"endpoints document {str(path)!r} lists no endpoints",
         }
-    configured_model = backend.get("model")
+    from reckon import _backends
+
+    try:
+        configured_model = _backends.dialect_for(backend).serving_model(backend)
+    except _backends.BackendError:
+        configured_model = backend.get("model")
     offered = [
         endpoint.get("model_id") if isinstance(endpoint, Mapping) else None
         for endpoint in endpoints

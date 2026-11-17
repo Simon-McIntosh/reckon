@@ -1,0 +1,74 @@
+{
+  "absent": [
+    "goal_fidelity",
+    "evidence",
+    "scope_discipline",
+    "durability",
+    "fit",
+    "reuse"
+  ],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "claim_summary": {
+    "detail": "The summary bullets match measurements.json on every worker and coordinator figure the table carries, but two defects stand: the share-of-run figure caption says 'One run reaches 0.63 and every other run lies below 0.30' while the table it cites (deliverables/per-run-share.json) carries a second run at 0.3568, so 2 of 154 runs sit at or above 0.30; and three counts the summary quotes (24 failure_classification, 11 lineage, 18 outcome records) are carried nowhere in measurements.json, though recounting the run records reproduces 24, 11 and 18 exactly.",
+    "verdict": "differs"
+  },
+  "claims": [
+    {
+      "detail": "share of the run: re-ran summarise.py from the run directory, both over the reviewed run's per-run.json and over per-run.json freshly re-derived by census.py on rigel (job 1316311). Share median 0.07144 (7.1%), p90 0.18287 (18.3%), population total 0.07872 (7.9%), from 906,969 evidence-write characters of 11,522,034 tool-output characters; token share median 0.06065 (6.1%) on the same 4 runs. Identical results both ways, and identical to the report.",
+      "rank": "1",
+      "verdict": "reproduced"
+    },
+    {
+      "detail": "turns touching evidence: 790 of 14,781 turns (5.3%, population total 0.05345), per-run median 0.05933 (5.9%), p90 0.27273 (27.3%), 149 of 154 runs writing a fragment, 188 file writes over 186 distinct files. Identical to the report.",
+      "rank": "2",
+      "verdict": "reproduced"
+    },
+    {
+      "detail": "later reads: the report states 729 fragment read calls over 489 distinct files across both populations, 530 archive calls over 72 files, 39 research calls over 8 files; the re-run shows 733 over 493, 538 over 72, and 41 over 8. Worker-only reads reproduce exactly (246 fragment calls over 187 files, 2 archive distinct files, 2 research distinct files). The drift is in the coordinator half: the 16 transcripts under ~/.claude/projects/-home-ITER-mcintos-Code-reckon are live files that grew between the census (23:42) and the re-run (~01:25), coordinator turns 48,414 against 47,947 and turns touching evidence 1,208 against 1,190. Every gain is a read; no write was added.",
+      "rank": "3",
+      "verdict": "differs"
+    }
+  ],
+  "claims_rubric_note": "A read-only run scores no landed-node dimension, so scores is empty and the six dimensions are named under absent; the claims and claim_summary keys carry the verdicts.",
+  "completed_at": "2026-11-15T01:09:51.476Z",
+  "dispatched_at": "2026-11-15T00:11:56Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the caption error is in the worker manifest only; the research document redraws the figure from per-run-share.json and makes no upper-tail claim",
+      "recorded_at": "2026-11-15T01:16:20.608572+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the three counts recount correctly from the committed run records and the research document does not quote them",
+      "recorded_at": "2026-11-15T01:16:28.315080+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T205946996208-evidence-writing-cost-census/manifest.md",
+      "line": "58",
+      "severity": "non-blocking",
+      "text": "the share-of-run caption's upper-tail claim is false against its own table: 2 of 154 runs are at or above 0.30 (0.6283 and 0.3568), not one run at 0.63 with every other run below 0.30."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T205946996208-evidence-writing-cost-census/manifest.md",
+      "line": "50",
+      "severity": "non-blocking",
+      "text": "three counts quoted in the rounds finding (24 failure_classification, 11 lineage, 18 outcome records) are absent from deliverables/measurements.json, whose rounds block carries only cause_counts, the retry total, the denominator and five examples; a reader of the deliverable cannot check them, though they recount correctly from docs/state/reckon/runs."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "CLAIM 1: reproduced: re-ran summarise.py over the reviewed run's per-run.json and over per-run.json freshly re-derived by census.py on rigel; share of the run median 0.0714 (7.1%), p90 0.1829 (18.3%), population total 0.0787 (7.9%), 906,969 of 11,522,034 tool-output characters, identical to the report.\nCLAIM 2: reproduced: turns touching evidence 790 of 14,781 (5.3%), median 5.9%, p90 27.3%, 149 of 154 runs writing a fragment, 188 writes over 186 distinct files, identical to the report.\nCLAIM 3: differs: cross-population fragment reads 733 over 493 distinct files against the report's 729 over 489, archive 538/72 against 530/72, research 41/8 against 39/8; worker-only reads reproduce exactly (246 calls over 187 files); the coordinator transcripts are live files that grew between the census and the re-run, coordinator turns 48,414 against 47,947.\nCLAIM_SUMMARY: differs: the summary's figures match measurements.json where the table carries them, but the share-of-run caption's 'every other run lies below 0.30' is contradicted by per-run-share.json, whose second-highest run is 0.3568, and three counts (24/11/18) the summary quotes appear nowhere in measurements.json.\n",
+  "review_run_id": "r-20261114T231208943976-review-of-evidence-writing-cost-census-1ba716cf0aeb",
+  "reviewed_base_sha": "1ba716cf0aeb500f4cf9bc0192d6927e11f9d6b2",
+  "reviewed_head_sha": "1ba716cf0aeb500f4cf9bc0192d6927e11f9d6b2",
+  "reviewed_run_id": "r-20261114T205946996208-evidence-writing-cost-census",
+  "rubric": "claims",
+  "scores": {},
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T01:15:04.914246+00:00",
+  "total": null
+}

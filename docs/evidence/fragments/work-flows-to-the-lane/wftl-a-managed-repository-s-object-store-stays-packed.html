@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="wftl-a-managed-repository-s-object-store-stays-packed">
+  <meta name="plan-title" content="A merge conflict check leaves no object in the repository it checks">
+  <meta name="plan-summary" content="A landing pass builds its merge in a throwaway object store, so a conflict check writes nothing into the repository; the object set after three refused passes equals the set before them plus exactly the objects the fixture itself wrote, and the same test at the base revision leaves six objects behind.">
+  <meta name="plan-evidence-for" content="reckon:work-flows-to-the-lane">
+  <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s65">
+  <meta name="plan-commits" content="b06fca782b1d423fe74cf6e14ea059fa312efee5,b275b82b99f82abbb22e110c1d7f32f4743de536">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="passed">
+  <title>A merge conflict check leaves no object in the repository it checks | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="wftl-a-managed-repository-s-object-store-stays-packed-record" data-node="wftl-a-managed-repository-s-object-store-stays-packed" data-reckon="landed">
+  <h2 id="wftl-a-managed-repository-s-object-store-stays-packed-outcome">A merge conflict check leaves no object in the repository it checks</h2>
+  <p>The defect reproduces before the change and is quoted here rather than described. A temporary
+  repository, a bare origin, and one conflicting candidate: running
+  <code>git merge-tree --write-tree --name-only HEAD &lt;candidate&gt;</code> there writes the merged tree
+  even though the merge conflicts and nothing lands, and
+  <code>git cat-file --batch-all-objects --batch-check=%(objectname)</code> grows by two objects — the
+  conflicted tree and one subtree — on every pass. The measured population on this workstation was
+  7,692 unreachable loose objects in the reckon checkout, about 95% of them trees, accumulated because
+  the check runs on every pass of every candidate and <code>gc</code>'s two-week unreachability window
+  never expires them.</p>
+  <p>Commit <code>b06fca782b1d423fe74cf6e14ea059fa312efee5</code> builds the merge in a throwaway object
+  store: <code>GIT_OBJECT_DIRECTORY</code> points at a directory under the attempt's own temporary
+  root and <code>GIT_ALTERNATE_OBJECT_DIRECTORIES</code> at the repository's objects, so
+  <code>merge-tree</code> and <code>commit-tree</code> read everything they merge and write nothing the
+  repository keeps. A merge that lands copies its delta back — every object reachable from the merge
+  commit and not from either parent — and then reads it back with
+  <code>git cat-file -e &lt;commit&gt;^{commit}</code>, because a pack git accepted is not a promise that
+  the object resolves in the store it was unpacked into. A merge whose parents already hold every blob
+  introduces only trees and its own commit, so the copy is small.</p>
+  <p>Two things were rejected. Deleting the objects afterwards is unsafe: an unreachable object can
+  become reachable, and a peer may reference the same tree concurrently. Re-running the check in the
+  repository after a successful build is unsafe in the other direction: the fast-forward may fail after
+  the build, and the retry loop would then leak once per attempt.</p>
+  <h3 id="wftl-a-managed-repository-s-object-store-stays-packed-measure">The measure reads the store, not the report</h3>
+  <p>The leak is invisible to every return value — a pass that refused the candidate reads exactly like
+  a pass that left the repository untouched — so
+  <code>tests/test_a_merge_check_leaves_no_object.py</code> reads the repository's object set directly.
+  The first test runs three landing passes over one conflicting candidate while the fixture advances
+  the primary revision between passes on an unrelated file, keeping the conflict intact. It wraps
+  <code>merge._merge_tree</code> to count reaches, and asserts that the count equals the number of
+  passes — every pass reached the conflict check — and that the object set afterwards equals the set
+  before the passes unioned with exactly the objects the fixture itself wrote while advancing the
+  primary. The second test lands a clean candidate and requires the merge commit, its tree and a blob
+  named by that tree to resolve in the repository, so the change is not proved by an absence alone.</p>
+  <table>
+    <thead><tr><th>Measurement on all_debug, serial arms</th><th>Recorded result</th></tr></thead>
+    <tbody>
+      <tr><td>Baseline arm: the 14 failure-carrying test files at base <code>1b8a0d372a38dc90952c3fa0bf284ffefca26603</code></td><td>41 failed, 81 passed, 1 error in 188.61s; EXIT=1</td></tr>
+      <tr><td>After arm: the same 14 files at head <code>b275b82b99f82abbb22e110c1d7f32f4743de536</code></td><td>41 failed, 81 passed, 1 error in 185.62s; EXIT=1; failure ids identical to the baseline arm</td></tr>
+      <tr><td>Gate: the 50 test files reaching the changed modules, at <code>b275b82b</code></td><td>41 failed, 364 passed, 1 error in 364.41s; EXIT=1; zero added failure ids</td></tr>
+      <tr><td>Declared negative control: the new test file at base, unchanged code</td><td>1 failed, 1 passed in 1.02s; EXIT=1; six extra object ids</td></tr>
+      <tr><td>The two new tests at <code>b275b82b</code></td><td>2 passed</td></tr>
+    </tbody>
+  </table>
+  <p>The negative control is the population this node removes, shown reversed. The same file at the base
+  revision reports <code>the passes left objects beyond the ones the fixture itself wrote</code> and lists
+  exactly six extra object ids — two per pass over three passes — in
+  <code>negative-control-base-revision.log</code>. At the delivered head that assertion holds and the
+  landed-merge test passes. The gate log <code>gate-all-debug.log</code> carries the broader sweep, and
+  the two arms in the table carry the delta that sweep is judged by.</p>
+  <p>Every failure in both arms is pre-existing and named: they are the same 41 ids, byte for byte, at
+  the base revision and at the head, and most of them are environment failures in this fleet
+  (<code>this test reached a scheduler verb it did not provide</code>, a plan-HTML record that must sit
+  beside its heading, a <code>git cat-file --batch</code> that exits 128). The first gate run at the
+  first head reported 43 failures; the two extra were caused by this change and are described below.</p>
+  <h3 id="wftl-a-managed-repository-s-object-store-stays-packed-regression">A seam that reads the merge with another process</h3>
+  <p>The first delivered head passed a fifth argument through the verification seam so a reader could
+  consult the scratch store, and two callers kept their four-argument signatures: one bound the object
+  environment to a keyword default meant for the run pointer, and both then replayed the gate against a
+  candidate that existed only in the attempt's object directory. The gate caught it —
+  <code>test_a_gate_failure_after_promotion_is_not_bypassed_by_recovery</code> and
+  <code>test_a_clean_review_lands_and_records_the_measured_head</code> failed at that head and pass at
+  the base revision — and the repair is commit
+  <code>b275b82b99f82abbb22e110c1d7f32f4743de536</code>: both seams copy the built merge into the
+  repository through one named operation before they measure it, and the landing step's own copy is
+  then a no-op. The failure and its attribution are recorded in the manifest under
+  <code>retry_failures</code>.</p>
+  <p>Durable logs live under
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T203201051313-wftl-a-managed-repository-s-object-store-stays-packed/</code>:
+  <code>gate-all-debug.log</code>, <code>gate-after-files-all-debug.log</code>,
+  <code>gate-baseline-all-debug.log</code> and <code>negative-control-base-revision.log</code>. Each
+  names the revision it ran at, the tree and working directory, the command a shell was handed, the
+  module path it imported, and ends with a bare exit receipt.</p>
+</article>
+</body>
+</html>

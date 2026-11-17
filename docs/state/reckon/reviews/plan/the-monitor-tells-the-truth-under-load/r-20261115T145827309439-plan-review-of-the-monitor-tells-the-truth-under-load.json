@@ -1,0 +1,97 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T15:12:19.358Z",
+  "dispatched_at": "2026-11-15T15:11:43Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-tells-the-truth-under-load.html:22",
+      "id": "wiring-1",
+      "reason": "the row is the plan's claim about who owns six sub-clusters, and the one owner it names resolves to a plan that nothing links back to this one.",
+      "text": "`plan-informs` names the-monitor-shows-the-work-it-watches, the-monitor-reads-each-fact-once, a-landing-never-waits-on-a-shared-index and the-escape-lane-and-reviews-keep-pace, but omits queued-work-needs-no-workaround, although the \"Already owned elsewhere\" row at line 48 routes the withheld-worktree cluster to \"queued-work \u00a720\" and docs/plans/queued-work-needs-no-workaround.html contains no occurrence of this plan's slug; the earlier review's recorded answer that it \"joins plan-informs\" is not in the file",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-tells-the-truth-under-load.html:174",
+      "id": "wiring-2",
+      "reason": "the followup is the only next-invocation record, and its stated scope omits six implementable sections that no other followup names.",
+      "text": "the single driving followup is titled \"Land \u00a72, then build \u00a73 to \u00a711\" while `plan-section-declarations` declares s12\u2013s17 implementable, so the chain a coordinator follows ends six sections short and those sections can be left unbuilt with the followup resolved",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-tells-the-truth-under-load.html:149",
+      "id": "done_when-1",
+      "reason": "two of the three declared negative controls cannot go red at base, and the done-when is weaker than the section's own endpoint, so a worker can pass while long ticks still stretch the bound.",
+      "text": "two of \u00a713's three criteria hold at the base revision: `StationReloader.poll` (reckon/crew/station.py:831-874) already reloads at the first poll where `_quiet` reports the derivations idle, and already reloads at the first poll after `RELOAD_HOLD_SECONDS` expires, so \"fires at the first poll\" and \"no later than one tick after the bound expires\" are true of unfixed code; criterion 1 also accepts a delay of one whole tick, which is the stretch the Why names as the defect",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-tells-the-truth-under-load.html:154",
+      "id": "done_when-2",
+      "reason": "a done-when whose tolerance the implementer picks measures the implementer's choice, so a ten-minute exit bound would pass the \u00a714 gate while the SIGKILL-after-120 s defect stands.",
+      "text": "\u00a714's tolerance is \"within a stated bound\" and no bound is stated anywhere in the section, though its own Why supplies the tolerance at 120 s; the same shape recurs at line 164, where \u00a716 reports a run \"after a stated number of attempts\" without naming the count",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-tells-the-truth-under-load.html:153",
+      "id": "reasoning-1",
+      "reason": "a node briefed from this cause bounds two waits that are already bounded and leaves the in-flight tick, the actual reason a stopping station needs SIGKILL, untouched.",
+      "text": "\u00a714 blames `dispatch_claims.wait_for_dispatches_in_flight` and the `DUTY_DRAIN_SECONDS` duties drain for a SIGTERM ignored for 120 s, but that wait is bounded by `REEXEC_DISPATCH_WAIT_SECONDS = 60.0` (reckon/crew/dispatch_claims.py:889) and the drain by `DUTY_DRAIN_SECONDS = 10.0` (reckon/crew/station.py:452), while the stop handler only sets a flag (reckon/crew/station.py:1268) and the loop sits inside an uninterruptible `station.tick()` call",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-tells-the-truth-under-load.html:74",
+      "id": "single_goal-1",
+      "reason": "the leftover bullet and the shared write path put \u00a712's deliverable inside \u00a75's scope and gate, which is the duplication the split existed to prevent.",
+      "text": "\u00a75's Why still carries the defect the split into \u00a712 moved out, its done-when list at lines 76-81 has a blank list item where that criterion was, and \u00a75's write paths at line 83 still name `reckon/crew_run_commands.py`, the command surface \u00a712 owns for the hold",
+      "type": "single_goal",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "02d74bdd96db5f6e6836e97e470c94ceb890cc26",
+  "plan_fingerprint": "bba0809f4f36317b2cf756433f20600ad44c3a79c345e8a2d649bf9272ab2be9",
+  "plan_slug": "the-monitor-tells-the-truth-under-load",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261115T145827309439-plan-review-of-the-monitor-tells-the-truth-under-load",
+  "reviewed_blob_sha": "63d1e35b3d43be8dbfef1287177620505cbe54d3",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 all fourteen cited modules and test files exist under /home/ITER/mcintos/Code/reckon; `e8871a04ee` resolves as \"Merge the station's reload decisions into its log\"; `StationReloader`, `RELOAD_HOLD_SECONDS`, `DUTY_DRAIN_SECONDS` and `wait_for_dispatches_in_flight` all exist; both \u00a76 run ids resolve under `crew/archive/runs/` (an archive-aware search was needed before this could be called, and the plain `crew/runs/` listing alone would have misreported them as gone).",
+    "done_when": "a finding \u2014 \u00a713's criteria 1 and 3 already hold at the base revision, and \u00a714's exit tolerance is left as \"a stated bound\" with no number.",
+    "evidence_paths": "pass \u2014 every section sends its tests to all_debug and names no scratch, node-local or session path, and the plan owns no evidence directory of its own, so nothing it asks for dies with a run.",
+    "naming": "pass \u2014 no plan label, stage, ticket id or version tag reaches a symbol or comment in the sections reviewed; `terminal-run`, `promotion-refused` and `claim-published` are existing domain state names, not tracker ids.",
+    "reasoning": "a finding \u2014 \u00a714's stated root cause names two shutdown waits that are already bounded, while the observed 120 s of ignored SIGTERM is the tick in flight.",
+    "single_goal": "a finding \u2014 \u00a75 still carries the hold-on-purpose defect in its Why (line 74) with no matching criterion, a blank list item where that criterion was, and the command file \u00a712 owns in its write paths.",
+    "wiring": "a finding \u2014 the driving followup stops at \u00a711 and `plan-informs` (line 22) still omits queued-work-needs-no-workaround, the owner \u00a71's table routes the withheld-worktree cluster to."
+  },
+  "section_digests": {
+    "_document": "d9394ed12a2ef08046c3ad08f9f40977ca8c39e7eb85830a86e02564c9b13c1e",
+    "s1": "7df70e005850ec7773b3db8cdf1384c5422e6cbfac994a1cfc3bdeca2fd47ef2",
+    "s10": "b83b287b25ce35ab03c105da8c02eec999809dbdea6073436eae2dc72bb0055d",
+    "s11": "db2972ed7155bc484ac98ce58f8c119ab201e99f5a53c1af54606eb6564a66e4",
+    "s12": "6d00c3593dc3ac12569804d49312a7a62c8bfe08142ea6fc80fb1fa5f7b46bbf",
+    "s13": "79271d44153e341633146df7233120d46939c41b1ca66de6bac074c2472ea991",
+    "s14": "c0f58bcc6da33e5ff402ec71bef199b31de1619824a04f6db8d415d9669a38d7",
+    "s15": "6d981e1f07643227d97018196c6bcd7047a59090453d1f264330beb768524c2d",
+    "s16": "9c67ebb9a89d3b566da303e2866877a636f868c501bf32f08ff80e2c7a7f26da",
+    "s17": "229d1aee2b054a2680acdd7883f3d6cd8216513f31305ff21ed874c51b1af3a7",
+    "s2": "a065d657377c24ca69329c265d4a0a821a0104c7df8d1140dec9c3b9d1c6edf2",
+    "s3": "56910cab877eb38336945d14734b277c784a2a9b0a468847c8587cddfae1e108",
+    "s4": "9756c05b7dd601c1ea2c61ee3fef0a89198cd233b165fca686abd3e2e160e136",
+    "s5": "9191c874610bbd54c95eeb8cbd6aac0ffd1efc7a9814aaad3f7416b41879cb38",
+    "s6": "a8a7d00ef50ab0ca240bc59bb917ff62442d6f3567da095cb913cd5860246056",
+    "s7": "8ba34483eab2bbd914de8648f6230b223e01771d2c1796fe5eb299da42edab74",
+    "s8": "30f0e740e2caee5b735cc3bdc83d5eaa23eac7eeaae780899f811d7a1c32956c",
+    "s9": "56c122a4d4057a2e12e9ebbaae0a53fb955938f47dbe9275cdf2dd5566896f78"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T15:22:13.522109+00:00",
+  "total": null
+}

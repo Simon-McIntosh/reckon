@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:_queue_dispatch_batch",
+    "reckon/crew_dispatch_commands.py:crew_dispatch"
+  ],
+  "completed_at": "2026-11-15T00:37:33.698Z",
+  "dispatched_at": "2026-11-14T23:45:30Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/building-a-plan-queues-all-of-it/s2.html",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gate receipt is written as raw plain text inside an .html file with no <pre> or other markup, so the served page collapses the receipt's newlines into one paragraph and the bare EXIT=0 line the fragment cites is not presented as a line a reader can follow."
+    },
+    {
+      "file": "docs/evidence/fragments/building-a-plan-queues-all-of-it/s2.html",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the receipt's header names revision, tree, command, module and cwd but no host or SLURM partition, so the done_when clause \"the gate runs on all_debug\" is asserted only by the manifest and cannot be opened from the artifact."
+    },
+    {
+      "file": "reckon/crew/dispatch_batch.py",
+      "line": "824",
+      "severity": "non-blocking",
+      "text": "non-blocking: the `already-queued` branch calls runs.read_pointer without handling CrewError, so a request promoted between the batch call and this read makes the whole command exit through an exception after its requests were already stored, instead of reporting the row."
+    },
+    {
+      "file": "tests/test_a_plan_dispatch_queues_every_section.py",
+      "line": "117",
+      "severity": "non-blocking",
+      "text": "non-blocking: mutating results[0]'s session to another-session and then resolving the plan's coordinator from the same live pointers means that when s1 is the plan's newest dispatch the whole call is skipped by the plan-owner gate, so the assertions at :127-130 can pass without the per-section another-session skip they are named for ever running."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against c8848a4e \u2014 74fd70f0e7 adds `queue_plan` and the CLI branch plus a 226-line test, 882a7764 fixes `already-queued` rows to name the pointer's session, 98da3bf8 records the two evidence fragments; 416 insertions and 11 deletions across five files, all product, test or evidence.",
+    "done_when": "the done_when's five clauses are each asserted in tests/test_a_plan_dispatch_queues_every_section.py (counts and waits at :75-83, done/deferred reasons at :78-79, second-call skip and run-id preservation at :91-95, refused row at :110-114, another session's run named at :129-130) and the negative control (five-section call against base) is recorded red at negative-control-fixture.log with EXIT=1 against the same test at head green in focused-gate.log 15 passed; the receipt does not carry the host or partition, so the \"gate runs on all_debug\" clause rests on the manifest alone.",
+    "goal": "the node goal is \"one dispatch call queues every implementable section of a plan with its waits\"; reckon/crew_dispatch_commands.py:1616 routes a `--plan` call with no `--section` to `_queue_dispatch_batch`, which at reckon/crew/dispatch_batch.py:719 enumerates `derive_section_todos` and hands eligible entries to `queue_batch`, and the recorded gate prints queued=3 awaiting-upstream=2 for a five-section plan whose two sections wait on a third.",
+    "manifest": "read in full; it records status complete, three commits, the focused gate command and its 15-passed figure, a baseline/after suite pair (55 and after 55, zero failures each), the negative-control log path and a per-failure attribution, and states that only coordinator review and merged-head verification remain.",
+    "write_paths": "the manifest declares docs/evidence/fragments/building-a-plan-queues-all-of-it/bpq-one-call-queues-a-plan.html and the figure directory, and its scope_note records the coordinator widening grants on resume to reckon/, tests/, docs/evidence/fragments/<plan>/ and skills/reckon-build/; every path in the diff lies inside the widened set and none outside it."
+  },
+  "justifications": {
+    "durability": "the added test reddens against base for the whole-plan call (negative-control-fixture.log EXIT=1) and tests/test_a_plan_dispatch_queues_every_section.py:75-95 pins the counts, the wait rows and the second-call deduplication, though the another-session row at :127-130 can also be satisfied by the plan-owner gate.",
+    "evidence": "focused-gate.log records the gate at its revision with a bare EXIT=0 and negative-control-fixture.log records the same test failing at base with EXIT=1, but no line in either log names the host or partition the done_when requires.",
+    "fit": "reckon/crew/dispatch_batch.py:719 follows the module's lazy-import and docstring idiom and introduces no plan, phase or ticket label in any name or comment.",
+    "goal_fidelity": "reckon/crew/dispatch_batch.py:719 builds one batch entry per implementable section with its waits and the CLI path at reckon/crew_dispatch_commands.py:1616 reaches it from a section-less `--plan` call.",
+    "reuse": "`queue_plan` delegates enumeration to `_plan_html.derive_section_todos`, ownership to `resolve_plan_coordinators`, entry contract and waits to `queue_batch` and mount resolution to `project_mount_repository`; a capability search over reckon/ for a whole-plan queue found no earlier owner to extend.",
+    "scope_discipline": "the five changed paths are all inside the grants the manifest's scope_note records the coordinator widening, and no hunk reaches a plan file or shared index."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"one dispatch call queues every implementable section of a plan with its waits\"; reckon/crew_dispatch_commands.py:1616 routes a `--plan` call with no `--section` to `_queue_dispatch_batch`, which at reckon/crew/dispatch_batch.py:719 enumerates `derive_section_todos` and hands eligible entries to `queue_batch`, and the recorded gate prints queued=3 awaiting-upstream=2 for a five-section plan whose two sections wait on a third.\nVERDICT done_when: the done_when's five clauses are each asserted in tests/test_a_plan_dispatch_queues_every_section.py (counts and waits at :75-83, done/deferred reasons at :78-79, second-call skip and run-id preservation at :91-95, refused row at :110-114, another session's run named at :129-130) and the negative control (five-section call against base) is recorded red at negative-control-fixture.log with EXIT=1 against the same test at head green in focused-gate.log 15 passed; the receipt does not carry the host or partition, so the \"gate runs on all_debug\" clause rests on the manifest alone.\nVERDICT write_paths: the manifest declares docs/evidence/fragments/building-a-plan-queues-all-of-it/bpq-one-call-queues-a-plan.html and the figure directory, and its scope_note records the coordinator widening grants on resume to reckon/, tests/, docs/evidence/fragments/<plan>/ and skills/reckon-build/; every path in the diff lies inside the widened set and none outside it.\nVERDICT manifest: read in full; it records status complete, three commits, the focused gate command and its 15-passed figure, a baseline/after suite pair (55 and after 55, zero failures each), the negative-control log path and a per-failure attribution, and states that only coordinator review and merged-head verification remain.\nVERDICT diff: read commit by commit against c8848a4e \u2014 74fd70f0e7 adds `queue_plan` and the CLI branch plus a 226-line test, 882a7764 fixes `already-queued` rows to name the pointer's session, 98da3bf8 records the two evidence fragments; 416 insertions and 11 deletions across five files, all product, test or evidence.\nCALL_SITES: reckon/crew_dispatch_commands.py:_queue_dispatch_batch, reckon/crew_dispatch_commands.py:crew_dispatch\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_batch.py:719 builds one batch entry per implementable section with its waits and the CLI path at reckon/crew_dispatch_commands.py:1616 reaches it from a section-less `--plan` call.\nSCORE evidence: 15\nJUSTIFICATION evidence: focused-gate.log records the gate at its revision with a bare EXIT=0 and negative-control-fixture.log records the same test failing at base with EXIT=1, but no line in either log names the host or partition the done_when requires.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the five changed paths are all inside the grants the manifest's scope_note records the coordinator widening, and no hunk reaches a plan file or shared index.\nSCORE durability: 18\nJUSTIFICATION durability: the added test reddens against base for the whole-plan call (negative-control-fixture.log EXIT=1) and tests/test_a_plan_dispatch_queues_every_section.py:75-95 pins the counts, the wait rows and the second-call deduplication, though the another-session row at :127-130 can also be satisfied by the plan-owner gate.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/dispatch_batch.py:719 follows the module's lazy-import and docstring idiom and introduces no plan, phase or ticket label in any name or comment.\nSCORE reuse: 20\nJUSTIFICATION reuse: `queue_plan` delegates enumeration to `_plan_html.derive_section_todos`, ownership to `resolve_plan_coordinators`, entry contract and waits to `queue_batch` and mount resolution to `project_mount_repository`; a capability search over reckon/ for a whole-plan queue found no earlier owner to extend.\nFINDING docs/evidence/fragments/building-a-plan-queues-all-of-it/s2.html:1 non-blocking: the gate receipt is written as raw plain text inside an .html file with no <pre> or other markup, so the served page collapses the receipt's newlines into one paragraph and the bare EXIT=0 line the fragment cites is not presented as a line a reader can follow.\nFINDING docs/evidence/fragments/building-a-plan-queues-all-of-it/s2.html:1 non-blocking: the receipt's header names revision, tree, command, module and cwd but no host or SLURM partition, so the done_when clause \"the gate runs on all_debug\" is asserted only by the manifest and cannot be opened from the artifact.\nFINDING reckon/crew/dispatch_batch.py:824 non-blocking: the `already-queued` branch calls runs.read_pointer without handling CrewError, so a request promoted between the batch call and this read makes the whole command exit through an exception after its requests were already stored, instead of reporting the row.\nFINDING tests/test_a_plan_dispatch_queues_every_section.py:117 non-blocking: mutating results[0]'s session to another-session and then resolving the plan's coordinator from the same live pointers means that when s1 is the plan's newest dispatch the whole call is skipped by the plan-owner gate, so the assertions at :127-130 can pass without the per-section another-session skip they are named for ever running.",
+  "review_run_id": "r-20261114T233005952152-review-of-bpq-one-call-queues-a-plan-98da3bf8578e",
+  "reviewed_base_sha": "c8848a4efe8725c8ec4f3cc2789efc95d2980bed",
+  "reviewed_head_sha": "98da3bf8578e300fb4f0ebb1d5303dd14feb9de7",
+  "reviewed_run_id": "r-20261114T194410792693-bpq-one-call-queues-a-plan",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T00:53:07.387268+00:00",
+  "total": 108
+}

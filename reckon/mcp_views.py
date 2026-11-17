@@ -1928,8 +1928,23 @@ def section_attempt_count(
 def _section_attempt_count_uncached(
     project: str, plan: str, section: str, wanted: str, root: str | Path | None
 ) -> int:
+    from reckon import run_store
     from reckon.crew import runs
 
+    stored = run_store.stored_run_rows(project, plan=plan)
+    if stored is not None:
+        # The store selects the plan's rows itself, so the count decodes those
+        # rows and the run identities, never the whole history.
+        identities = run_store.stored_run_rows(project, fields=("run_id",)) or []
+        grouped = _group_section_attempts(
+            project,
+            [row for row in stored if row.get("role") in EXECUTABLE_SECTION_ROLES],
+            runs._list_live_records(project=project),
+            only_plan=plan,
+            only_section=section,
+            settled_run_ids={str(row["run_id"]) for row in identities},
+        )
+        return grouped.get(plan, {}).get(wanted, {}).get("attempts", 0)
     headers, _version = ledger.indexed_headers(project, root)
     header_rows = headers.get("runs", [])
     settled = {
@@ -4016,6 +4031,7 @@ CREW_VIEWS: tuple[str, ...] = (
     "review-need",
     "plan-review",
     "findings",
+    "decisions",
 )
 
 
@@ -4459,6 +4475,18 @@ def serve_crew_view(
     from reckon.project_state import ProjectStateError
     from reckon.serve import load_mounts
 
+    if view == "decisions":
+        from reckon.crew.lead_decisions import read_decisions
+
+        try:
+            return read_decisions(project)
+        except (OSError, ValueError, TypeError) as exc:
+            return {
+                "ok": False,
+                "error": "decision_error",
+                "view": view,
+                "detail": str(exc),
+            }
     if view == "fleet":
         try:
             return {

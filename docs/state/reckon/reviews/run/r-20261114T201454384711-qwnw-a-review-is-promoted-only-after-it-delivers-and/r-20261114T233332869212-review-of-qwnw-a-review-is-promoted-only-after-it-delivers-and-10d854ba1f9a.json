@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "call_sites_emission": "none",
+  "completed_at": "2026-11-15T00:39:15.575Z",
+  "dispatched_at": "2026-11-14T23:48:31Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-review-is-promoted-only-after-it-delivers-and.html",
+      "line": "10",
+      "severity": "non-blocking",
+      "text": "the fragment states 'The census script and its full per-id output are logs/census.json and logs/census.json.summary', but census.json holds the per-id rows and the summary and no census script was saved anywhere under the run directory, so the census cannot be re-run for another window or audited end to end."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-review-is-promoted-only-after-it-delivers-and.html",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "the positive-controls sentence names a sampled ledger id but omits that the census's own expected ledger control returned false (positive_control_known_ledger_row: false in logs/census.json.summary), and the substituted id also carries live-pointer and failure-record, so it does not isolate the ledger surface it is offered as a control for."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read both commits against base 191db600fe; b494e66dce adds the 13-line fragment and 10d854ba1f rewrites one sentence to name the five-file gate, adding no code and no test.",
+    "done_when": "the done_when names five behaviours measured by tests plus a census over the last day's admission verdict log and dispatch records; the gate command runs exactly the five named files and the census figures reconcile with logs/census.json.summary.",
+    "goal": "the goal is 'a review is promoted only after it delivers, and no review run vanishes'; the fragment records five passing behaviour files for the promotion half and a 309-id census with zero vanished runs for the second half.",
+    "manifest": "read; status complete, commits b494e66dce and 10d854ba1f, all three gate logs named, and the four widened-run failures reported under outside_scope.",
+    "write_paths": "the declared paths are the evidence fragment and its figure directory; the diff changes only the fragment."
+  },
+  "justifications": {
+    "durability": "The diff at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-review-is-promoted-only-after-it-delivers-and.html:1-14 adds no assertion, test or executable check; the five behaviours rest on pre-existing test files and the census is a frozen measurement no test re-derives.",
+    "evidence": "logs/head-gate-behaviours.log runs exactly the five files the done_when names and closes with '22 passed in 59.41s' and EXIT=0, and the negative control at logs/base-never-launched.log reddens the never-launched case at 03b18d96 with '3 failed in 2.02s', EXIT=1.",
+    "fit": "The fragment follows the sibling idiom used by docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/stale-index-lock-cleared-s10.html and the r-landing wrapper used by 50 fragments, every element id begins with the node id, and both commits are conventional with bodies.",
+    "goal_fidelity": "The fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-review-is-promoted-only-after-it-delivers-and.html:5-11 records both halves of the goal against named test files and a census whose figures reconcile with logs/census.json.summary.",
+    "reuse": "The diff adds no function, class or module, so no capability is forked; the search over reckon/crew/reports.py and reckon/crew/obligations.py for an existing census or evidence-report owner found none this static fragment should extend.",
+    "scope_discipline": "git diff --stat 191db600fe 10d854ba1f lists only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-review-is-promoted-only-after-it-delivers-and.html, one of the two declared write paths, and the figure directory is untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is \"a review is promoted only after it delivers, and no review run vanishes\"; docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-review-is-promoted-only-after-it-delivers-and.html:5-8 records five passing behaviour files for the promotion half and :9-11 records a 309-id census with zero vanished runs for the second half, so both halves are evidenced.\nVERDICT done_when: the done_when names five behaviours measured by tests plus a census over the last day's admission verdict log and dispatch records; the manifest's gate command runs exactly the five named files (22 passed, EXIT=0, logs/head-gate-behaviours.log) and the census figures in the fragment reconcile with logs/census.json.summary (309 named, vanished []).\nVERDICT write_paths: the source node was fenced to docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-review-is-promoted-only-after-it-delivers-and.html and docs/figures/queued-work-needs-no-workaround/qwnw-a-review-is-promoted-only-after-it-delivers-and; git diff --stat 191db600fe 10d854ba1f changes that one fragment, 14 insertions, and writes no figure, so every changed path is inside the grant.\nVERDICT manifest: read; it reads status complete, records commits b494e66dce and 10d854ba1f, names all three gate logs (head-gate-behaviours.log 22 passed EXIT=0, head-gate.log 4 failed 29 passed EXIT=1, base-never-launched.log 3 failed EXIT=1), and reports its four widened-run failures under outside_scope.\nVERDICT diff: read both commits against base 191db600fea89eeceb839c5e8a4f259a0f5ecf54; b494e66dce adds the fragment carrying the behaviours and the census, and 10d854ba1f rewrites one sentence to name the five-file gate as the measured arm, adding no code and no test.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-review-is-promoted-only-after-it-delivers-and.html:5-11 records both halves of the goal, and every figure it quotes reconciles with the census summary it cites.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/head-gate-behaviours.log runs exactly the five files the done_when names and closes with 22 passed in 59.41s and EXIT=0, and the negative control at logs/base-never-launched.log reddens the never-launched case at 03b18d96 with 3 failed in 2.02s and EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 191db600fe 10d854ba1f lists only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-review-is-promoted-only-after-it-delivers-and.html, one of the two declared write paths, and the figure directory is untouched.\nSCORE durability: 10\nJUSTIFICATION durability: the diff at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-review-is-promoted-only-after-it-delivers-and.html:1-14 adds no assertion, test or executable check, so the census it records has no guard that reddens if the measured property regresses.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment follows the sibling idiom of docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/stale-index-lock-cleared-s10.html and the r-landing wrapper used by 50 fragments, with every element id beginning at the node id.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module, so no capability is forked; the search over reckon/crew/reports.py and reckon/crew/obligations.py for an existing census or evidence-report owner found none this static fragment should extend.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-review-is-promoted-only-after-it-delivers-and.html:10 non-blocking: the sentence names logs/census.json as the census script, but that file holds the per-id rows and the summary and no census script was saved, so the census cannot be re-run for another window or audited end to end.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-review-is-promoted-only-after-it-delivers-and.html:11 non-blocking: the paragraph omits that the census's expected ledger control returned false (positive_control_known_ledger_row: false), and the sampled id it substitutes also carries live-pointer and failure-record, so it does not isolate the ledger surface.\n",
+  "review_run_id": "r-20261114T233332869212-review-of-qwnw-a-review-is-promoted-only-after-it-delivers-and-10d854ba1f9a",
+  "reviewed_base_sha": "191db600fea89eeceb839c5e8a4f259a0f5ecf54",
+  "reviewed_head_sha": "10d854ba1f9afc468c6bf8b69833798f7d846ca8",
+  "reviewed_run_id": "r-20261114T201454384711-qwnw-a-review-is-promoted-only-after-it-delivers-and",
+  "scores": {
+    "durability": 10,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T00:59:33.430886+00:00",
+  "total": 104
+}

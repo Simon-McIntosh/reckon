@@ -1,0 +1,85 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "5449f04931c0127ec5fde3fa88d09193c9fc6986",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/_store.py:1405 append_evidence",
+    "reckon/_store.py:5206",
+    "reckon/_store.py:5232",
+    "reckon/mcp_views.py:4931"
+  ],
+  "completed_at": "2026-11-15T21:20:53.251Z",
+  "dispatched_at": "2026-11-15T21:19:20Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "alro-s3f",
+      "recorded_at": "2026-11-15T21:35:50.081638+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "alro-s3f",
+      "recorded_at": "2026-11-15T21:35:55.780894+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": "3990",
+      "severity": "non-blocking",
+      "text": "non-blocking: review_scores filters a plan-selected read on record.get(\"plan\") and is reachable with plan= from reckon/mcp_views.py:4931, so a second plan-selected read still drops every brief-carried row; the landing line's \"one owner\" claim and the manifest's outside_scope inventory, which names :4449 and :4620 but not this site, are both incomplete."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": "1172",
+      "severity": "non-blocking",
+      "text": "non-blocking: the index version bump is the only thing that re-extracts already-stored rows, and no test covers it \u2014 reverting it to the previous value keeps all four new tests green because each reads a cold index over a fresh temporary store, so the \"records already in the store\" half of the goal is guarded by the one-off live pass alone."
+    }
+  ],
+  "head_log_revision": "4dc3b65739dd49261797ccbeb554e9c061318bfe",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against 5449f049; 99a67ce14c moves _RUN_INDEX_VERSION from 6 to 7 and rewrites _row_plan and the read_records filter, d8cf8b73be adds the 59-line landing fragment and 4dc3b65739 corrects its live-pass figures and states the instrument check.",
+    "done_when": "the done_when asks for three temporary-store cases, a reverted-change negative control and a read-only live pass at base and head; head-arm-2-1318558.log records 65 passed EXIT=0, base-arm-2-1318557.log 61 passed EXIT=0, negative-control-1318546.log 4 failed EXIT=1 naming tests/test_a_brief_carried_run_keeps_its_plan.py:139 first, and live-base-2-1318549.log against live-head-2-1318550.log record 0/0 then 15/14 with positive controls 59/69 unchanged in both arms.",
+    "goal": "the node's goal is that a run naming a plan is returned by the plan-selected run read whether or not it carried a brief; reckon/ledger.py:1675 _row_plan now reads the row's own field then its impl move then its node definition, and reckon/ledger.py:3928 filters that read through it, so the live head read returns 15 and 14 rows for the two named plans where the base read returned 0 and 0 over 11,007 stored rows.",
+    "manifest": "read; it records the four-test head arm, the base arm, the negative control and the two live logs, its tests: line names the four files the head arm ran, and its outside_scope names reckon/ledger.py:4449 and :4620 as direct top-level plan fallback-bypass readers.",
+    "write_paths": "the manifest declares six paths and git diff --stat 5449f049 4dc3b65739 changes only reckon/ledger.py, tests/test_a_brief_carried_run_keeps_its_plan.py and docs/evidence/fragments/a-landing-is-recorded-once/alro-s3e.html, all inside them, with reckon/crew/promotion_requests.py and reckon/crew/promotion_checks.py declared and untouched."
+  },
+  "justifications": {
+    "durability": "negative-control-1318546.log reddens all four added assertions at tests/test_a_brief_carried_run_keeps_its_plan.py:139,156,170,186 against an independent store, but descending _RUN_INDEX_VERSION back to 6 leaves every one of them green because each builds a cold index over a fresh temporary store.",
+    "evidence": "the gate names the new test file and its three neighbour suites and head-arm-2-1318558.log records 65 passed EXIT=0, with the base arm and the 4-failed negative control logged separately rather than claimed.",
+    "fit": "the added paragraph and branches at reckon/ledger.py:1675 follow the surrounding docstring-and-early-return idiom, and the added names _row_plan, own, plan carry no project, plan or ticket identifier.",
+    "goal_fidelity": "reckon/ledger.py:1675 and :3928 return brief-carried rows for both new and stored records, but reckon/ledger.py:3990 review_scores still filters record.get(\"plan\"), so a plan-selected read reachable from reckon/mcp_views.py:4931 still drops them.",
+    "reuse": "no definition is added \u2014 _row_plan at reckon/ledger.py:1670 is extended in place and read back by the index extraction at :2136, and a search of reckon for another row-plan resolver found only the pre-existing inline filter at :3990.",
+    "scope_discipline": "git diff --stat 5449f049 4dc3b65739 touches only reckon/ledger.py, tests/test_a_brief_carried_run_keeps_its_plan.py and the node's own fragment, all six declared paths unexceeded."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a run naming a plan is returned by the plan-selected run read whether or not it carried a brief; reckon/ledger.py:1675 _row_plan now reads the row's own field then its impl move then its node definition, and reckon/ledger.py:3928 filters that read through it, so the live head read returns 15 and 14 rows for the two named plans where the base read returned 0 and 0 over 11,007 stored rows.\nVERDICT done_when: the done_when asks for three temporary-store cases, a reverted-change negative control and a read-only live pass at base and head; head-arm-2-1318558.log records 65 passed EXIT=0, base-arm-2-1318557.log 61 passed EXIT=0, negative-control-1318546.log 4 failed EXIT=1 naming tests/test_a_brief_carried_run_keeps_its_plan.py:139 first, and live-base-2-1318549.log against live-head-2-1318550.log record 0/0 then 15/14 with positive controls 59/69 unchanged in both arms.\nVERDICT write_paths: the manifest declares six paths and git diff --stat 5449f049 4dc3b65739 changes only reckon/ledger.py, tests/test_a_brief_carried_run_keeps_its_plan.py and docs/evidence/fragments/a-landing-is-recorded-once/alro-s3e.html, all inside them, with reckon/crew/promotion_requests.py and reckon/crew/promotion_checks.py declared and untouched.\nVERDICT manifest: read; it records the four-test head arm, the base arm, the negative control and the two live logs, its tests: line names the four files the head arm ran, and its outside_scope names reckon/ledger.py:4449 and :4620 as direct top-level plan fallback-bypass readers.\nVERDICT diff: read commit by commit against 5449f049; 99a67ce14c moves _RUN_INDEX_VERSION from 6 to 7 and rewrites _row_plan and the read_records filter, d8cf8b73be adds the 59-line landing fragment and 4dc3b65739 corrects its live-pass figures and states the instrument check.\nCALL_SITES: reckon/_store.py:1405 append_evidence, reckon/_store.py:5206, reckon/_store.py:5232, reckon/mcp_views.py:4931\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/ledger.py:1675 and :3928 return brief-carried rows for both new and stored records, but reckon/ledger.py:3990 review_scores still filters record.get(\"plan\"), so a plan-selected read reachable from reckon/mcp_views.py:4931 still drops them.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate names the new test file and its three neighbour suites and head-arm-2-1318558.log records 65 passed EXIT=0, with the base arm and the 4-failed negative control logged separately rather than claimed.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 5449f049 4dc3b65739 touches only reckon/ledger.py, tests/test_a_brief_carried_run_keeps_its_plan.py and the node's own fragment, all six declared paths unexceeded.\nSCORE durability: 14\nJUSTIFICATION durability: negative-control-1318546.log reddens all four added assertions at tests/test_a_brief_carried_run_keeps_its_plan.py:139,156,170,186 against an independent store, but descending _RUN_INDEX_VERSION back to 6 leaves every one of them green because each builds a cold index over a fresh temporary store.\nSCORE fit: 19\nJUSTIFICATION fit: the added paragraph and branches at reckon/ledger.py:1675 follow the surrounding docstring-and-early-return idiom, and the added names _row_plan, own, plan carry no project, plan or ticket identifier.\nSCORE reuse: 19\nJUSTIFICATION reuse: no definition is added \u2014 _row_plan at reckon/ledger.py:1670 is extended in place and read back by the index extraction at :2136, and a search of reckon for another row-plan resolver found only the pre-existing inline filter at :3990.\nFINDING reckon/ledger.py:3990 non-blocking: review_scores filters a plan-selected read on record.get(\"plan\") and is reachable with plan= from reckon/mcp_views.py:4931, so a second plan-selected read still drops every brief-carried row; the landing line's \"one owner\" claim and the manifest's outside_scope inventory, which names :4449 and :4620 but not this site, are both incomplete.\nFINDING reckon/ledger.py:1172 non-blocking: the index version bump is the only thing that re-extracts already-stored rows, and no test covers it \u2014 reverting it to the previous value keeps all four new tests green because each reads a cold index over a fresh temporary store, so the \"records already in the store\" half of the goal is guarded by the one-off live pass alone.\n",
+  "review_run_id": "r-20261115T211557596589-review-of-alro-s3e-4dc3b65739dd",
+  "reviewed_base_sha": "5449f04931c0127ec5fde3fa88d09193c9fc6986",
+  "reviewed_head_sha": "4dc3b65739dd49261797ccbeb554e9c061318bfe",
+  "reviewed_run_id": "r-20261115T203248877953-alro-s3e",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "unspecified",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T211557596589-review-of-alro-s3e-4dc3b65739dd"
+  },
+  "reviewer_run_id": "r-20261115T211557596589-review-of-alro-s3e-4dc3b65739dd",
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T21:32:12.409341+00:00",
+  "total": 106
+}

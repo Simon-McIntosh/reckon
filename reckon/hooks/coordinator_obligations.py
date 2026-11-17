@@ -237,25 +237,29 @@ def derive_within_budget(
 
 
 # The duty kinds listed but never holding a stop open. A queued review's work
-# is already owned by a reflex that retries, a queued run waits on the lane's
-# own admission pass, a stalled run is one that pass could launch and did not,
-# an unreadable record is a reading of a file caught mid-write rather than a
-# duty the coordinator can act on, an index that stages a path HEAD still
-# holds belongs to the project rather than to any run's work, and a repair
-# round is a worker the reflex resumed and will re-fire when the round ends, so
-# blocking would ask a coordinator to act on a condition no run of this session
-# created.
+# is already owned by a reflex that retries, a review in flight is that same
+# reflex's reviewer running and named by the row's own text as a thing to read
+# rather than to shorten, a queued run waits on the lane's own admission pass, a
+# stalled run is one that pass could launch and did not, an unreadable record is
+# a reading of a file caught mid-write rather than a duty the coordinator can
+# act on, an index that stages a path HEAD still holds belongs to the project
+# rather than to any run's work, a repair round is a worker the reflex resumed
+# and will re-fire when the round ends, and a route the picker defaulted is a
+# notice about a run that is working rather than a debt, so blocking would ask a
+# coordinator to act on a condition no run of this session created.
 # Mirrors the derivation's own vocabulary, which cannot be imported here on the
 # paths that read a fresh snapshot.
 _NON_BLOCKING_KINDS = frozenset(
     {
         "review-queued",
+        "review-in-flight",
         "run-queued",
         "run-stalled",
         "unreadable-review-record",
         "index-lags-head",
         "repair-round",
         "scope-held",
+        "route-defaulted",
     }
 )
 
@@ -909,7 +913,21 @@ def format_checklist(
     summary = payload.get("summary") or {}
     project = str(payload.get("project") or "")
     session = str(payload.get("session") or "")
-    count = summary.get("count", len(items))
+    retained = payload.get("stale")
+    if isinstance(retained, Mapping):
+        age = retained.get("age_seconds")
+        age_note = (
+            f"{_format_age(int(age))} old"
+            if isinstance(age, (int, float)) and age >= 0
+            else "age unavailable"
+        )
+        retained_note = f"retained answer, stale {age_note}"
+        note = f"{note}; {retained_note}" if note else retained_note
+    # The header counts the rows this render is about to print. The payload's
+    # own summary figure is a derivation's count for a list a recheck may have
+    # cut down since, and a figure that disagrees with the rows beneath it
+    # tells a coordinator that work is missing from a list that is complete.
+    count = len(items)
     header = (
         f"reckon obligations for session {session} (project {project}): "
         f"{note + '; ' if note else ''}"
@@ -930,13 +948,33 @@ def format_checklist(
         # than reprinted: what a reader needs from them is the kind and how
         # long each has stood, not the command none of them can run.
         lines.append(_collapsed_line(waiting))
+    for item in payload.get("acknowledged") or ():
+        condition = item.get("until_condition") or {}
+        ending = f" or {condition['condition']}" if condition else ""
+        lines.append(
+            f"- [acknowledged] {item.get('run_id')}: {item.get('reason')}; "
+            f"until {item.get('until')}{ending}"
+        )
     pending = pending_model_notices()
     if pending:
         lines.append(model_notice_line(pending))
     resets = limit_reset_events(session) if limit_resets is None else list(limit_resets)
     lines.extend(limit_reset_line(event) for event in resets)
-    unreconciled = f"unreconciled runs: {summary.get('unreconciled_runs', 0)}"
-    lines.append(unreconciled + "; work the list to empty before ending the turn.")
+    # The trailer is the instruction to work the list, so it is printed only
+    # when the list holds a duty a coordinator can act on, and its figure is
+    # the number of obligations the render lists. A session read "unreconciled
+    # runs: 3; work the list to empty before ending the turn" beside an empty
+    # list because the figure counted runs the closure calls unreconciled --
+    # two in-flight workers and one request awaiting an upstream section --
+    # none of which is a duty: a run in flight is work already moving, and a
+    # request waiting upstream starts by itself when its last ref lands. The
+    # same trailer over a waiting-only list asks for work nobody at this
+    # session can do.
+    if actionable:
+        lines.append(
+            f"unreconciled runs: {count}; work the list to empty "
+            "before ending the turn."
+        )
     lines.append(AUTHORITY_LINE)
     return "\n".join(lines)
 
@@ -1057,6 +1095,76 @@ def producer_seat_holder(project: str) -> tuple[int | None, str]:
         pid if not isinstance(pid, bool) and isinstance(pid, int) and pid > 0 else None
     )
     return named_pid, str(host) if isinstance(host, str) else ""
+
+
+# A pointer in one of these phases records a run that has ended; a pointer in
+# the launch-failed phase records a run that never reached a worker. Neither is
+# work a session still holds, and the fleet's population rule excludes both
+# (``live_work_populations`` in ``reckon/crew/station_subscriber.py``, the one
+# statement of which pointers a pane must be shown). That rule cannot be
+# imported on this path: the module costs about a second and loads 525 modules,
+# ``reckon.ledger`` and ``reckon._plan_html`` among them, which is the
+# derivation cost the prompt hook exists to avoid and what
+# ``tests/test_obligations_hook_reads_the_snapshot.py`` forbids. So the two
+# exclusions are stated here for the one question this hook asks -- does this
+# session hold unsettled work -- and that question is narrower than the pane
+# population: a settled run is not a session's outstanding work, whether or not
+# a pane would still draw its row.
+_ENDED_POINTER_PHASES = frozenset({"complete", "failed", "stopped", "interrupted"})
+_NEVER_LAUNCHED_POINTER_PHASE = "launch-failed"
+
+
+def _pointer_owes_its_session(document: Mapping[str, Any]) -> bool:
+    """Whether an ended pointer still records work nobody has settled.
+
+    The same two facts the population rule reads from a terminal pointer: a
+    completed run carrying its delivery manifest still owes a promotion, and a
+    review dispatch that was not withdrawn still owes a review. A pointer with
+    neither is settled.
+    """
+    if document.get("promoted_revision"):
+        return False
+    if str(document.get("phase") or "") == "complete" and document.get("manifest_path"):
+        return True
+    return any(
+        isinstance(entry, Mapping)
+        and str(entry.get("status") or "") not in ("", "withdrawn")
+        for entry in (
+            document.get("review_dispatch"),
+            document.get("figure_review_dispatch"),
+        )
+    )
+
+
+def session_holds_live_work(project: str, session: str) -> bool:
+    """Whether a pointer records unsettled work this session is answerable for.
+
+    Read from the pointers themselves rather than from a derivation: the cost is
+    one directory walk and one small JSON read per pointer, on the path where no
+    snapshot answers the turn. A pointer whose owner cannot be read is not
+    evidence that the session is idle, so an unreadable or malformed document
+    counts as work and the reading is kept.
+    """
+    directory = snapshot_module().crew_home() / "live"
+    if not directory.is_dir():
+        return False
+    for path in directory.glob("*.json"):
+        try:
+            document = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return True
+        if not isinstance(document, Mapping):
+            return True
+        phase = str(document.get("phase") or "")
+        if phase == _NEVER_LAUNCHED_POINTER_PHASE:
+            continue
+        if phase in _ENDED_POINTER_PHASES and not _pointer_owes_its_session(document):
+            continue
+        if str(document.get("project") or "") != project:
+            continue
+        if str(document.get("session") or "") == session:
+            return True
+    return False
 
 
 def not_fresh_line(
@@ -1273,23 +1381,69 @@ def _inject_list(
     already shown, and the duty that emptied and came back is never spoken
     again.
     """
+    obligations = reapply_acknowledgements(obligations, project=project)
     for item in obligations.get("obligations") or ():
         if isinstance(item, dict):
             item["next_command"] = follow_local_lane(
                 str(item.get("next_command") or ""), project=project
             )
     items = obligations.get("obligations") or ()
+    acknowledged = obligations.get("acknowledged") or ()
+    retained = obligations.get("stale")
+    retained = retained if isinstance(retained, Mapping) else None
     digest_file = digest_path(project, session)
     notices = pending_model_notices()
     resets = limit_reset_events(session)
-    if not items and not reloading and not notices and not resets:
+    if (
+        not items
+        and not acknowledged
+        and not reloading
+        and not notices
+        and not resets
+        and retained is None
+    ):
         _clear_digest(digest_file)
         return
+    reading = (
+        json.dumps(
+            [
+                {
+                    key: item.get(key)
+                    for key in (
+                        "run_id",
+                        "kind",
+                        "reason",
+                        "until",
+                        "until_condition",
+                    )
+                }
+                for item in sorted(
+                    acknowledged,
+                    key=lambda row: (str(row.get("run_id")), str(row.get("kind"))),
+                )
+            ],
+            sort_keys=True,
+        )
+        if acknowledged
+        else ""
+    )
+    if retained is not None:
+        # The answer's identity changes on entering/leaving retention, not as
+        # its age grows between reads of the same still-pending refresh.
+        reading += json.dumps(
+            {
+                "retained": {
+                    key: retained.get(key) for key in ("key", "stored_at", "reason")
+                }
+            },
+            sort_keys=True,
+        )
     digest = duty_digest(
-        items,
+        [*items, *acknowledged],
         reloading=reloading,
         model_notices=notices,
         limit_resets=[str(event.get("id") or "") for event in resets],
+        reading=reading,
     )
     if _read_digest(digest_file) == digest:
         return
@@ -1467,6 +1621,20 @@ def _prompt(payload: dict[str, Any]) -> int:
             note=f"producer reloading, last snapshot {_format_age(age)} old",
         )
         return 0
+    if (
+        state == module.NO_PRODUCER
+        and not session_holds_live_work(project, session)
+        and not limit_reset_events(session)
+    ):
+        # An absent producer publishes nothing for a session that holds no
+        # live work, so the line would ask a coordinator that dispatched
+        # nothing to arm a seat nothing is owed to -- the reading a session
+        # with no runs read on every prompt for days. A limit reset is still
+        # news for such a session, so the reading is kept when one is due. The
+        # record is cleared so work that arrives later is spoken for the first
+        # time rather than read as a repeat of a reading already given.
+        _clear_digest(digest_path(project, session))
+        return 0
     _inject_reading(
         payload,
         project=project,
@@ -1495,6 +1663,14 @@ def _prompt(payload: dict[str, Any]) -> int:
 # has promoted and would cost a hook's whole budget to parse; the tree check
 # costs one stat per row.
 _WORKTREE_HELD_KIND = "worktree-held"
+
+# The duties an automatic step left behind for one run: a promotion that refused
+# and a station sweep that failed. Each publishes a remedy that applies to that
+# run, so each is owed only while the run can still be acted on. Once the run's
+# live pointer has gone and its outcome is written to the ledger, the row names
+# a run that has arrived where the failure left it, and the remedy can only
+# fail.
+_FAILED_STEP_DUTY_KINDS = frozenset({"promotion-failed", "sweep-failed"})
 
 # A run id is a path component when the record is resolved, so only the shape
 # the ledger itself accepts is resolved at all.
@@ -1572,6 +1748,34 @@ def _worktree_row_is_stale(
     return not Path(tree).expanduser().is_dir()
 
 
+def _failed_step_row_is_stale(
+    item: Mapping[str, Any], *, project: str, docs_dir: Path | None
+) -> bool:
+    """Whether a failed step's row names a run that ended and was recorded.
+
+    Both halves are read now, because either alone is not enough. The run must
+    have released its live pointer, so nothing is still being attempted for it;
+    and the ledger must already carry its own record, so an outcome exists that
+    the failure belongs to. A run that never reached the ledger is not settled
+    by this rule -- there the row is the only record the failure has.
+    """
+    run_id = str(item.get("run_id") or "").strip()
+    if not run_id or docs_dir is None:
+        return False
+    if snapshot_module().live_pointer_path(run_id).exists():
+        return False
+    return _run_ledger_record(project, run_id, docs_dir=docs_dir) is not None
+
+
+def _settlement_candidate(item: Any) -> bool:
+    """Whether one row is of a kind this read settles against the fleet."""
+    if not isinstance(item, Mapping):
+        return False
+    return str(item.get("kind") or "") in (
+        {_WORKTREE_HELD_KIND} | _FAILED_STEP_DUTY_KINDS
+    )
+
+
 def recheck_worktree_held_rows(
     payload: dict[str, Any], *, project: str
 ) -> dict[str, Any]:
@@ -1587,7 +1791,9 @@ def recheck_worktree_held_rows(
     * its kind names state the run's current pointer has already answered -- a
       promoted run that no longer reads complete, or a stopped run resumed
       after the manifest the row was built from;
-    * it is a worktree-held row whose tree the fleet has released.
+    * it is a worktree-held row whose tree the fleet has released;
+    * it is a failed step's row whose run has released its live pointer and
+      already has a written ledger record.
 
     A row whose run still holds its tree is left exactly as the snapshot
     carried it; only a row whose record shows the tree released, or whose
@@ -1599,22 +1805,24 @@ def recheck_worktree_held_rows(
     """
     payload = snapshot_module().without_departed_run_duties(payload)
     items = payload.get("obligations") or ()
-    if not any(
-        isinstance(item, Mapping) and str(item.get("kind") or "") == _WORKTREE_HELD_KIND
-        for item in items
-    ):
+    if not any(_settlement_candidate(item) for item in items):
         return payload
     docs_dir = _mounts().get(project)
     kept: list[Any] = []
     dropped = False
     for item in items:
-        if (
-            isinstance(item, Mapping)
-            and str(item.get("kind") or "") == _WORKTREE_HELD_KIND
-            and _worktree_row_is_stale(item, project=project, docs_dir=docs_dir)
-        ):
-            dropped = True
-            continue
+        if isinstance(item, Mapping):
+            kind = str(item.get("kind") or "")
+            if kind == _WORKTREE_HELD_KIND and _worktree_row_is_stale(
+                item, project=project, docs_dir=docs_dir
+            ):
+                dropped = True
+                continue
+            if kind in _FAILED_STEP_DUTY_KINDS and _failed_step_row_is_stale(
+                item, project=project, docs_dir=docs_dir
+            ):
+                dropped = True
+                continue
         kept.append(item)
     if not dropped:
         return payload
@@ -1648,15 +1856,26 @@ def reapply_acknowledgements(
     """
     module = _obligations_module()
     items = list(payload.get("obligations") or ())
+    identities = {(item.get("run_id"), item.get("kind")) for item in items}
+    items.extend(
+        item
+        for item in payload.get("acknowledged") or ()
+        if (item.get("run_id"), item.get("kind")) not in identities
+    )
     in_force = module._acknowledgements_in_force(project, now=datetime.now(tz=UTC))
-    owed, _deferred = module._partition_acknowledged(items, in_force)
+    owed, deferred = module._partition_acknowledged(items, in_force)
     summary = payload.get("summary")
     summary = dict(summary) if isinstance(summary, Mapping) else {}
     summary["count"] = len(owed)
     summary["oldest_age_seconds"] = max(
         (int(item.get("age_seconds") or 0) for item in owed), default=0
     )
-    return {**payload, "obligations": owed, "summary": summary}
+    return {
+        **payload,
+        "obligations": owed,
+        "acknowledged": deferred,
+        "summary": summary,
+    }
 
 
 def _blocking_items(items: Sequence[Any]) -> list[Any]:
@@ -1734,6 +1953,7 @@ def _stop(payload: dict[str, Any]) -> int:
     follow_each_local_lane(resolved, project=project)
     resolved_project = str(resolved.get("project") or project)
     resolved_session = str(resolved.get("session") or session)
+    resolved = reapply_acknowledgements(resolved, project=resolved_project)
     items = resolved.get("obligations") or ()
     digest_file = digest_path(resolved_project, resolved_session)
     stop_digest_file = stop_digest_path(resolved_project, resolved_session)
@@ -1761,7 +1981,6 @@ def _stop(payload: dict[str, Any]) -> int:
     # now. An acknowledgement written since it was published is honoured here
     # rather than at the next republish, so a deferral does not hold the turn
     # open for a duty the coordinator has already excused.
-    resolved = reapply_acknowledgements(resolved, project=resolved_project)
     blocking = _blocking_items(resolved.get("obligations") or ())
     if not blocking:
         # Nothing is held open: either the snapshot listed no actionable duty

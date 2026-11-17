@@ -110,20 +110,20 @@ def test_a_finished_run_is_not_counted_by_its_phase(
     assert placement.occupying_the_reservation([pointer]) == []
 
 
-def test_twenty_five_live_placed_workers_refuse_the_next(
+def test_a_full_roster_of_live_placed_workers_refuses_the_next(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """The cap still holds once every seat is genuinely resident."""
     _isolate(monkeypatch, tmp_path)
     placement.publish_reservation({"job_id": RESERVATION_JOB})
-    live = set(range(3000, 3025))
+    live = set(range(3000, 3000 + placement.RESERVATION_ROSTER_LIMIT))
     pointers = [_placed_pointer(f"r-{pid}", pid=pid) for pid in sorted(live)]
     monkeypatch.setattr(runs, "process_alive", StubProbe(live))
 
     with pytest.raises(runs.CrewError) as refused:
         dispatch_module._refuse_over_reservation_roster(_placed_backend(), pointers)
 
-    assert "25" in str(refused.value)
+    assert str(placement.RESERVATION_ROSTER_LIMIT) in str(refused.value)
     assert "resident memory per worker" in str(refused.value)
 
 

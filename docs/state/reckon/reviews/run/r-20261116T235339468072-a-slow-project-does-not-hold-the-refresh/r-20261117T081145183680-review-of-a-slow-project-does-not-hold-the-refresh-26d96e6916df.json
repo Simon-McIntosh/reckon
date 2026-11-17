@@ -1,0 +1,492 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "previous['obligations']",
+      "fails_if": "Removing the fixture duties or publishing an empty answer fails the required nonempty positive control.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 119
+    },
+    {
+      "assertion": "release.wait(30)",
+      "fails_if": "Failure to release the held input within the fixture bound fails this cleanup control; it is not product coverage.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 131
+    },
+    {
+      "assertion": "entered.wait(5)",
+      "fails_if": "Skipping the actual production input/derivation call fails the entered-event control.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 140
+    },
+    {
+      "assertion": "stage_seconds < 10",
+      "fails_if": "Returning the refresh stage or completing the ready publication at or beyond ten seconds fails this independent monotonic elapsed-time bound.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 143
+    },
+    {
+      "assertion": "_wait_until(lambda: READY not in beat.in_flight(), 10 - stage_seconds)",
+      "fails_if": "Reinstating the global sweep-report lock or serializing project workers leaves READY in flight until the bound expires.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 144
+    },
+    {
+      "assertion": "elapsed < 10",
+      "fails_if": "Returning the refresh stage or completing the ready publication at or beyond ten seconds fails this independent monotonic elapsed-time bound.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 148
+    },
+    {
+      "assertion": "actual == reference",
+      "fails_if": "Publishing a ready payload different from fleet_state plus payload_for derived separately at the same read instant fails independent cold parity.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 152
+    },
+    {
+      "assertion": "actual['obligations']",
+      "fails_if": "Removing the fixture duties or publishing an empty answer fails the required nonempty positive control.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 153
+    },
+    {
+      "assertion": "pending['obligations'] == previous['obligations']",
+      "fails_if": "Dropping or replacing the previous real duty list while a replacement is held fails preservation against the pre-refresh document.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 155
+    },
+    {
+      "assertion": "pending['stale']['age_seconds'] == 180",
+      "fails_if": "Omitting the existing stale marking, resetting its source timestamp, or using the wrong clock fails the independently fixed 180/20-second and original-timestamp expectations.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 156
+    },
+    {
+      "assertion": "pending['stale']['stored_at'] == MOMENT.timestamp()",
+      "fails_if": "Omitting the existing stale marking, resetting its source timestamp, or using the wrong clock fails the independently fixed 180/20-second and original-timestamp expectations.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 157
+    },
+    {
+      "assertion": "pending['stale']['reason']",
+      "fails_if": "A stale marker without an explanation fails the reason-presence check.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 158
+    },
+    {
+      "assertion": "exported['sessions'][_session(SLOW)] == pending",
+      "fails_if": "Failing to export the stored retained answer or exporting different content fails local/export agreement; this is a boundary-consistency check, not the independent derivation oracle.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 162
+    },
+    {
+      "assertion": "beat.in_flight() == {SLOW}",
+      "fails_if": "Allowing the held input to finish early or keeping the ready project pending fails the exact pending-project population.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 163
+    },
+    {
+      "assertion": "not beat.in_flight()",
+      "fails_if": "Leaving a project worker pending after release and drain fails lifecycle cleanup.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 170
+    },
+    {
+      "assertion": "'stale' not in _document(store, SLOW)",
+      "fails_if": "Failing to replace the retained document on completed derivation leaves stale in the stored document.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 172
+    },
+    {
+      "assertion": "release.wait(20)",
+      "fails_if": "Failure to release the held input within the fixture bound fails this cleanup control; it is not product coverage.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 205
+    },
+    {
+      "assertion": "entered.wait(5)",
+      "fails_if": "Skipping the actual production input/derivation call fails the entered-event control.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 214
+    },
+    {
+      "assertion": "pending['obligations'] == previous['obligations']",
+      "fails_if": "Dropping or replacing the previous real duty list while a replacement is held fails preservation against the pre-refresh document.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 218
+    },
+    {
+      "assertion": "pending['stale']['age_seconds'] == 20",
+      "fails_if": "Omitting the existing stale marking, resetting its source timestamp, or using the wrong clock fails the independently fixed 180/20-second and original-timestamp expectations.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 219
+    },
+    {
+      "assertion": "pending['stale']['key'] == station_obligations.stored_identity(store.read_obligation(_session(SLOW)))",
+      "fails_if": "Changing the stale key away from the stored duty identity fails metadata consistency; the expected identity is read from storage, not supplied as the stale key input.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 220
+    },
+    {
+      "assertion": "json.loads(path.read_text())['sessions'][_session(SLOW)] == pending",
+      "fails_if": "Failing to export the stored retained answer or exporting different content fails local/export agreement; this is a boundary-consistency check, not the independent derivation oracle.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 223
+    },
+    {
+      "assertion": "pending is None",
+      "fails_if": "Manufacturing an obligation row before the first derivation completes fails the explicit absence check.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 225
+    },
+    {
+      "assertion": "obligation_snapshot.snapshot_age_seconds(pending, now=later) is None",
+      "fails_if": "Assigning an age to an absent document fails the no-answer age check; it is an existing helper control rather than primary repair coverage.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 226
+    },
+    {
+      "assertion": "not path.exists()",
+      "fails_if": "Exporting a fresh empty snapshot before a first input returns makes the filesystem absence check fail.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 227
+    },
+    {
+      "assertion": "obligation_snapshot.read_station_answer(SLOW, _session(SLOW), now=later, environ=reader, home=home) is None",
+      "fails_if": "Returning a station answer for an unfinished first refresh fails the reader absence guard.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 231
+    },
+    {
+      "assertion": "_wait_until(lambda: READY not in beat.in_flight())",
+      "fails_if": "Reinstating the global sweep-report lock or serializing project workers leaves READY in flight until the bound expires.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 246
+    },
+    {
+      "assertion": "exported.is_file()",
+      "fails_if": "Suppressing independent first export for READY leaves no export file.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 248
+    },
+    {
+      "assertion": "answer is not None and answer['payload']['obligations']",
+      "fails_if": "Exporting an empty or unreadable READY answer fails the independently populated fixture check.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 252
+    },
+    {
+      "assertion": "answer['stale'] is False",
+      "fails_if": "Conflating retained-answer staleness with the independently fresh station heartbeat fails the heartbeat stale=false expectation.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 253
+    },
+    {
+      "assertion": "_document(store, SLOW) is None",
+      "fails_if": "Manufacturing an obligation row before the first derivation completes fails the explicit absence check.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 254
+    },
+    {
+      "assertion": "not path.exists()",
+      "fails_if": "Exporting a fresh empty snapshot before a first input returns makes the filesystem absence check fail.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 255
+    },
+    {
+      "assertion": "not release.is_set()",
+      "fails_if": "Releasing the blocked project to obtain READY publication invalidates the concurrent-input control.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 256
+    },
+    {
+      "assertion": "beat.in_flight() == {SLOW}",
+      "fails_if": "Allowing the held input to finish early or keeping the ready project pending fails the exact pending-project population.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 257
+    },
+    {
+      "assertion": "not beat.in_flight()",
+      "fails_if": "Leaving a project worker pending after release and drain fails lifecycle cleanup.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 264
+    },
+    {
+      "assertion": "completed['obligations']",
+      "fails_if": "Removing the fixture duties or publishing an empty answer fails the required nonempty positive control.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 266
+    },
+    {
+      "assertion": "'stale' not in completed",
+      "fails_if": "Failing to replace the retained document on completed derivation leaves stale in the stored document.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 267
+    },
+    {
+      "assertion": "station_obligations.stored_identity(current_row) == station_obligations.stored_identity(previous_row)",
+      "fails_if": "Changing unchanged duty identity or its changed_at during stale clearing fails comparison with the pre-refresh stored row.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 270
+    },
+    {
+      "assertion": "current_row['changed_at'] == previous_row['changed_at']",
+      "fails_if": "Changing unchanged duty identity or its changed_at during stale clearing fails comparison with the pre-refresh stored row.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 273
+    },
+    {
+      "assertion": "store.read_obligation(_session(SLOW)) == before",
+      "fails_if": "Rewriting the row or export during a no-change refresh below the floor interval changes the independent stored-row or filesystem timestamp snapshot.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 283
+    },
+    {
+      "assertion": "path.stat().st_mtime_ns == export_stamp",
+      "fails_if": "Rewriting the row or export during a no-change refresh below the floor interval changes the independent stored-row or filesystem timestamp snapshot.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 284
+    },
+    {
+      "assertion": "hook._prompt(event) == 0",
+      "fails_if": "Returning a prompt-hook error fails the success check; these are execution controls alongside behavioral output checks.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 358
+    },
+    {
+      "assertion": "release.wait(20)",
+      "fails_if": "Failure to release the held input within the fixture bound fails this cleanup control; it is not product coverage.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 363
+    },
+    {
+      "assertion": "entered.wait(5)",
+      "fails_if": "Skipping the actual production input/derivation call fails the entered-event control.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 377
+    },
+    {
+      "assertion": "answer is not None and answer['source'] == read_from",
+      "fails_if": "Using the wrong local/export source or returning no answer fails the independently parameterized source expectation.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 385
+    },
+    {
+      "assertion": "answer['state'] == obligation_snapshot.STATION_LIVE",
+      "fails_if": "Treating a fresh heartbeat as stopped/slow or aging it with the retained payload fails STATION_LIVE and heartbeat age zero.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 386
+    },
+    {
+      "assertion": "answer['heartbeat_age_seconds'] == 0",
+      "fails_if": "Treating a fresh heartbeat as stopped/slow or aging it with the retained payload fails STATION_LIVE and heartbeat age zero.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 387
+    },
+    {
+      "assertion": "answer['stale'] is False",
+      "fails_if": "Conflating retained-answer staleness with the independently fresh station heartbeat fails the heartbeat stale=false expectation.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 388
+    },
+    {
+      "assertion": "answer['answer_stale'] is True",
+      "fails_if": "Removing answer_stale or returning false for a retained answer fails the explicit true guard.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 389
+    },
+    {
+      "assertion": "_document(store, SLOW)['stale']['age_seconds'] == 180",
+      "fails_if": "Mutating the stored 180-second marker on read or failing to advance the returned marker to 200 seconds fails the two independent clock expectations.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 390
+    },
+    {
+      "assertion": "'stale' in rendered and '3m20s' in rendered",
+      "fails_if": "Removing the retained-answer warning or freezing its age removes stale or 3m20s from the checklist; consumer-revert.log records this regression in all four reader/payload cases.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 392
+    },
+    {
+      "assertion": "answer['payload']['stale']['age_seconds'] == 200",
+      "fails_if": "Mutating the stored 180-second marker on read or failing to advance the returned marker to 200 seconds fails the two independent clock expectations.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 396
+    },
+    {
+      "assertion": "hook._prompt(event) == 0",
+      "fails_if": "Returning a prompt-hook error fails the success check; these are execution controls alongside behavioral output checks.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 397
+    },
+    {
+      "assertion": "injected",
+      "fails_if": "Omitting retention identity from the prompt digest suppresses the transition from the earlier fresh reading.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 399
+    },
+    {
+      "assertion": "'stale' in checklist and '3m20s' in checklist",
+      "fails_if": "Removing the retained-answer warning or freezing its age removes stale or 3m20s from the checklist; consumer-revert.log records this regression in all four reader/payload cases.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 401
+    },
+    {
+      "assertion": "'watch --ensure' not in checklist",
+      "fails_if": "Using the stopped-station remedy for a live station emits watch --ensure and fails the forbidden-restart assertion.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 402
+    },
+    {
+      "assertion": "('0 outstanding' if empty_previous else run_id) in checklist",
+      "fails_if": "Dropping the retained fixture duty or suppressing a stale empty list removes the independently expected run identity or zero-outstanding text.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 403
+    },
+    {
+      "assertion": "hook._prompt(event) == 0",
+      "fails_if": "Returning a prompt-hook error fails the success check; these are execution controls alongside behavioral output checks.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 405
+    },
+    {
+      "assertion": "capsys.readouterr().out == ''",
+      "fails_if": "Including the growing retained age in the digest emits a duplicate prompt one second later and fails the explicit silence check.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 406
+    },
+    {
+      "assertion": "not beat.in_flight()",
+      "fails_if": "Leaving a project worker pending after release and drain fails lifecycle cleanup.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 411
+    },
+    {
+      "assertion": "hook._prompt(event) == 0",
+      "fails_if": "Returning a prompt-hook error fails the success check; these are execution controls alongside behavioral output checks.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 412
+    },
+    {
+      "assertion": "fresh",
+      "fails_if": "Suppressing the nonempty fresh-list transition or retaining the stale warning after completion fails the fresh prompt checks.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 415
+    },
+    {
+      "assertion": "'stale' not in json.loads(fresh)['hookSpecificOutput']['additionalContext']",
+      "fails_if": "Suppressing the nonempty fresh-list transition or retaining the stale warning after completion fails the fresh prompt checks.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 416
+    },
+    {
+      "assertion": "'stale' not in _document(store, SLOW)",
+      "fails_if": "Failing to replace the retained document on completed derivation leaves stale in the stored document.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 420
+    },
+    {
+      "assertion": "obligation_snapshot.read_station_answer(SLOW, session, now=observed)['answer_stale'] is False",
+      "fails_if": "Returning answer_stale as permanently true after refresh completion fails the final false guard.",
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": 421
+    }
+  ],
+  "assertion_independence": "No self-moving input-echo assertion found. Store/export equalities check boundary consistency, the ready payload uses a separate cold derivation, preservation compares pre-refresh state, and age/elapsed checks use independent clocks. Fixture release/success checks are identified as controls rather than claimed behavioral coverage.",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/station.py:Station.tick:1401",
+    "reckon/crew/station.py:DutyBeat._run:695",
+    "reckon/crew/station_obligations.py:publish:574",
+    "reckon/crew/obligation_snapshot.py:read_station_answer:725",
+    "reckon/hooks/coordinator_obligations.py:_prompt:1492",
+    "reckon/hooks/coordinator_obligations.py:_stop:1885",
+    "reckon/hooks/coordinator_obligations.py:_inject_list:1419"
+  ],
+  "completed_at": "2026-11-17T08:20:51Z",
+  "dispatched_at": "2026-11-17T08:13:30Z",
+  "failure_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=/tmp/retained-answer-z7dksvov/tree /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/retained-answer-z7dksvov/tree/tests/test_project_refresh_returns_within_its_budget.py /tmp/retained-answer-z7dksvov/tree/tests/test_staged_write_inventory.py /tmp/retained-answer-z7dksvov/tree/tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T235339468072-a-slow-project-does-not-hold-the-refresh/merge-after.log",
+      "measurement_cwd": "/tmp/retained-answer-z7dksvov/tree",
+      "measurement_module": "/tmp/retained-answer-z7dksvov/tree/reckon/crew/obligation_snapshot.py",
+      "revision": "26d96e6916dfb1bfe1b4def40945d08c81144b40"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=/tmp/project-refresh-resume-7fnqzm2f/tree /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/project-refresh-resume-7fnqzm2f/tree/tests/test_staged_write_inventory.py /tmp/project-refresh-resume-7fnqzm2f/tree/tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T235339468072-a-slow-project-does-not-hold-the-refresh/baseline-exact.log",
+      "measurement_cwd": "/tmp/project-refresh-resume-7fnqzm2f/tree",
+      "measurement_module": "/tmp/project-refresh-resume-7fnqzm2f/tree/reckon/crew/station_obligations.py",
+      "revision": "3c3aefe8aa6d3231b99011f7b14baa23eda9b14f"
+    }
+  },
+  "findings": [],
+  "item_verdicts": {
+    "diff": "Read f42d3f9aba94307b80e49b1f8634db8c21413d0d, 10b77bdcee0b7228f6b9615156b7e87685ade513, e5e928379223b13acafb80aceab14bb8cf350d1e, 7cc44e1210afbb76db85aa8dbf0c2f1e65318a27, b699ccc04e09de52e5154914332fe90ab8d3d8eb and the combined merge diff of 26d96e6916dfb1bfe1b4def40945d08c81144b40; the authored change isolates report locks, publishes retained answers and tests their readers, while the merge preserves answer_stale with incoming tick readings.",
+    "done_when": "The source prompt.txt:260 requires the section cases, the stated base negative control and no added importer failures; merge-after.log records 65 passed and negative.log records the held-input failure at 10.80s, while the importer qualification remains unresolved under outside_scope.",
+    "goal": "The source prompt.txt:38 and live plan section s4 require a bounded refresh retaining stale dated answers; station_obligations.py:574,620 and obligation_snapshot.py:725 implement that behavior through the existing project workers.",
+    "manifest": "The source manifest.md:11,21,22 supplies the six commit identities and complete baseline/head receipts, and manifest.md:26,42 explicitly retains the additional importer failures.",
+    "write_paths": "The source live pointer node.write_paths expands the initial scope to obligation_snapshot.py and coordinator_obligations.py; every path authored by the six listed commits is inside that expanded scope."
+  },
+  "justifications": {
+    "durability": "tests/test_project_refresh_returns_within_its_budget.py:143,152,156,227,392,406 guard latency, independent cold parity, retained age, absent first answers and prompt transitions, with base and repair-reversal failures recorded; the fresh-empty prompt branch lacks an explicit silence assertion.",
+    "evidence": "baseline-exact.log and merge-after.log end EXIT=0 with 58 and 65 passes respectively, and negative.log ends EXIT=1 after the 10-second publication refusal, but source manifest.md:42 preserves three importer additions so the complete original done_when is not yet demonstrated.",
+    "fit": "reckon/crew/station_obligations.py:85,620 extends its existing locking and publication idiom, and reckon/hooks/coordinator_obligations.py:908,1432 uses the established age formatter and digest without prohibited source names.",
+    "goal_fidelity": "reckon/crew/station_obligations.py:85,574,620 isolates project report locks and marks retained answers before external reads, while reckon/crew/obligation_snapshot.py:725 and reckon/hooks/coordinator_obligations.py:904 carry their current age to readers.",
+    "reuse": "Capability searches for stale answer marking and project report serialization identify reckon/roadmap_snapshot.py:604 and reckon/crew/station_obligations.py:85 as owners; _publish_pending wraps roadmap_stale_answer and the lock helper extends the existing report owner, while the remaining added definitions are test fixtures and guards.",
+    "scope_discipline": "The authored diffs touch only reckon/crew/station_obligations.py, reckon/crew/obligation_snapshot.py, reckon/hooks/coordinator_obligations.py and tests/test_project_refresh_returns_within_its_budget.py, all named by the expanded source live pointer node.write_paths."
+  },
+  "negative_control": {
+    "base_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T235339468072-a-slow-project-does-not-hold-the-refresh/negative.log",
+    "base_reproduction": "AssertionError: held input kept the finished project unreported past 10 s; 1 failed in 10.80s; EXIT=1",
+    "repair_reversal_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T235339468072-a-slow-project-does-not-hold-the-refresh/consumer-revert.log",
+    "repair_reversal_result": "4 failed, 3 passed in 1.59s; EXIT=1"
+  },
+  "outside_scope": {
+    "base_receipt": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T235339468072-a-slow-project-does-not-hold-the-refresh/consumer-importers-base-receipt.json",
+    "head_receipt": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T235339468072-a-slow-project-does-not-hold-the-refresh/consumer-importers-after-receipt.json",
+    "importer_added_failure_ids": [
+      "tests/test_a_staleness_verdict_reads_its_rows_source.py::test_a_stale_export_that_is_the_only_source_names_its_file",
+      "tests/test_a_sweep_failure_is_an_obligation.py::test_failed_run_is_published_until_a_successful_sweep[False]",
+      "tests/test_a_sweep_failure_is_an_obligation.py::test_failed_run_is_published_until_a_successful_sweep[True]"
+    ],
+    "qualification": "The original importer no-additions condition remains unmet: broad pair 32 to 35 failures; isolated stale-export pair subsequently passed both tests at both revisions, while the two age-equality cases remain. The dispatch fences these repairs out and directs reporting here; coordinator must resolve the importer qualification before treating the entire original done_when as satisfied."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source prompt.txt:38 and live plan section s4 require a bounded refresh retaining stale dated answers; station_obligations.py:574,620 and obligation_snapshot.py:725 implement that behavior through the existing project workers.\nVERDICT done_when: The source prompt.txt:260 requires the section cases, the stated base negative control and no added importer failures; merge-after.log records 65 passed and negative.log records the held-input failure at 10.80s, while the importer qualification remains unresolved under outside_scope.\nVERDICT write_paths: The source live pointer node.write_paths expands the initial scope to obligation_snapshot.py and coordinator_obligations.py; every path authored by the six listed commits is inside that expanded scope.\nVERDICT manifest: The source manifest.md:11,21,22 supplies the six commit identities and complete baseline/head receipts, and manifest.md:26,42 explicitly retains the additional importer failures.\nVERDICT diff: Read f42d3f9aba94307b80e49b1f8634db8c21413d0d, 10b77bdcee0b7228f6b9615156b7e87685ade513, e5e928379223b13acafb80aceab14bb8cf350d1e, 7cc44e1210afbb76db85aa8dbf0c2f1e65318a27, b699ccc04e09de52e5154914332fe90ab8d3d8eb and the combined merge diff of 26d96e6916dfb1bfe1b4def40945d08c81144b40; the authored change isolates report locks, publishes retained answers and tests their readers, while the merge preserves answer_stale with incoming tick readings.\nCALL_SITES: reckon/crew/station.py:Station.tick:1401, reckon/crew/station.py:DutyBeat._run:695, reckon/crew/station_obligations.py:publish:574, reckon/crew/obligation_snapshot.py:read_station_answer:725, reckon/hooks/coordinator_obligations.py:_prompt:1492, reckon/hooks/coordinator_obligations.py:_stop:1885, reckon/hooks/coordinator_obligations.py:_inject_list:1419\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/station_obligations.py:85,574,620 isolates project report locks and marks retained answers before external reads, while reckon/crew/obligation_snapshot.py:725 and reckon/hooks/coordinator_obligations.py:904 carry their current age to readers.\nSCORE evidence: 17\nJUSTIFICATION evidence: baseline-exact.log and merge-after.log end EXIT=0 with 58 and 65 passes respectively, and negative.log ends EXIT=1 after the 10-second publication refusal, but source manifest.md:42 preserves three importer additions so the complete original done_when is not yet demonstrated.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The authored diffs touch only reckon/crew/station_obligations.py, reckon/crew/obligation_snapshot.py, reckon/hooks/coordinator_obligations.py and tests/test_project_refresh_returns_within_its_budget.py, all named by the expanded source live pointer node.write_paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_project_refresh_returns_within_its_budget.py:143,152,156,227,392,406 guard latency, independent cold parity, retained age, absent first answers and prompt transitions, with base and repair-reversal failures recorded; the fresh-empty prompt branch lacks an explicit silence assertion.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/station_obligations.py:85,620 extends its existing locking and publication idiom, and reckon/hooks/coordinator_obligations.py:908,1432 uses the established age formatter and digest without prohibited source names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for stale answer marking and project report serialization identify reckon/roadmap_snapshot.py:604 and reckon/crew/station_obligations.py:85 as owners; _publish_pending wraps roadmap_stale_answer and the lock helper extends the existing report owner, while the remaining added definitions are test fixtures and guards.\n",
+  "review_run_id": "r-20261117T081145183680-review-of-a-slow-project-does-not-hold-the-refresh-26d96e6916df",
+  "reviewed_base_sha": "3c3aefe8aa6d3231b99011f7b14baa23eda9b14f",
+  "reviewed_commits": [
+    "f42d3f9aba94307b80e49b1f8634db8c21413d0d",
+    "10b77bdcee0b7228f6b9615156b7e87685ade513",
+    "e5e928379223b13acafb80aceab14bb8cf350d1e",
+    "7cc44e1210afbb76db85aa8dbf0c2f1e65318a27",
+    "b699ccc04e09de52e5154914332fe90ab8d3d8eb",
+    "26d96e6916dfb1bfe1b4def40945d08c81144b40"
+  ],
+  "reviewed_head_sha": "26d96e6916dfb1bfe1b4def40945d08c81144b40",
+  "reviewed_run_id": "r-20261116T235339468072-a-slow-project-does-not-hold-the-refresh",
+  "revision_note": "Assigned review worktree HEAD is 1ef87c84f5be956a992cdaec641a545e00ac3719; reviewed source was read with git show at the explicit reviewed_head_sha. Incoming primary changes are excluded from authored scope judgement; the final combined merge diff preserves both answer_stale and _last_tick_reading.",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T08:22:38.783070+00:00",
+  "total": 116
+}

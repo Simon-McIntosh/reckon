@@ -1,0 +1,114 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-17T21:57:19.672Z",
+  "dispatched_at": "2026-11-17T21:56:24Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/history-persists-as-detail-washes-out.html:536",
+      "id": "wiring-1",
+      "reason": "the followup is what a coordinator dispatches from, and as written it directs s36 at the release write path (already fixed) and leaves the eight-row backfill assigned to \u00a726, which depends on s36.",
+      "text": "the open followup f-hpdw-017 still says \"A release writes only the ledger file; \u00a736 records it in the store. \u00a726's merge repair then syncs its eight differing rows and lands\", but the rewritten s36 states that a release has synced to the store since 4f04392824 and that s36 itself is the backfill of the eight rows, so a dispatcher reading the followup is told to expect a change the section no longer makes and to expect \u00a726 to redo the sync s36 delivers",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/history-persists-as-detail-washes-out.html:439",
+      "id": "done_when-1",
+      "reason": "\u00a726's merge repair is measured whole-row (this very delta is its output), so the residual field is carried by the node that removes the files and s36 need not widen to it.",
+      "text": "the done-when backfills only `release` and counts only rows \"whose committed release block the store lacks or differs on\", but the cited delta file records a second change on r-20261115T224810011450-qwnw-red-file-held-worktrees-read-run-files (`integrated_gate_check`, file present and store absent), which \u00a726's file removal would leave surviving only in git history",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "3af5045928e6da61c143632be4de0ad7c610b829",
+  "plan_fingerprint": "69f87f94a4731195b33236258468b1c446398a7eb74f3f7f23b21a4f7095ea83",
+  "plan_slug": "history-persists-as-detail-washes-out",
+  "plan_version": 127,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "commit": "5ee573b8c178c74afac142289f628d141af1e103",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "f-hpdw-017 is resolved and s36 is folded into s26 with s26's wait on s36 removed; f-hpdw-018 now carries s26",
+      "reason": "",
+      "when": "2026-11-17T22:39:11.826627+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "commit": "5ee573b8c178c74afac142289f628d141af1e103",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "s36 is folded into s26, whose merge repair measures whole rows; the live-import approval names the integrated_gate_check addition explicitly",
+      "reason": "",
+      "when": "2026-11-17T22:41:57.343384+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "commit": "5ee573b8c178c74afac142289f628d141af1e103",
+      "commit_basis": "edit",
+      "note": "s36 is folded into s26, whose merge repair measures whole rows; the live-import approval names the integrated_gate_check addition explicitly",
+      "reason": "",
+      "when": "2026-11-17T22:41:57.343384+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "commit": "5ee573b8c178c74afac142289f628d141af1e103",
+      "commit_basis": "edit",
+      "note": "f-hpdw-017 is resolved and s36 is folded into s26 with s26's wait on s36 removed; f-hpdw-018 now carries s26",
+      "reason": "",
+      "when": "2026-11-17T22:39:11.826627+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/history-persists-as-detail-washes-out/r-20261117T215232378205-plan-review-of-history-persists-as-detail-washes-out.json",
+  "review_run_id": "r-20261117T215232378205-plan-review-of-history-persists-as-detail-washes-out",
+  "reviewed_blob_sha": "2556abfd002b5b589c2cec1972f5d784fa8e5904",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 commit 4f04392824 resolves (4f043928246fe5, 2026-11-16 09:49 +0100, ancestor of the reviewed base), both named write paths exist (scripts/import_runs_into_store.py, reckon/run_store.py), and the delta path and \u00a726 anchor resolve.",
+    "done_when": "a finding \u2014 s36's backfill and its \"zero after\" count are scoped to the `release` block alone, while the delta file it cites records a second differing field on the same population.",
+    "evidence_paths": "pass \u2014 the cited artifact ~/.config/reckon/crew/runs/r-20261115T211459261234-untracking-migration-s26/merge-repair-metadata-delta.json exists (24,093 bytes, 8 entries) and the live-store log is declared under the implementing node's run directory, not a scratchpad.",
+    "naming": "pass \u2014 s36 introduces no symbol or comment carrying a plan label, stage name or ticket number; its title and Why state the mechanism.",
+    "reasoning": "pass \u2014 the stated cause is the one the code and the cited artifact show: ledger.write_run_file syncs the amended row into the store since 4f04392824 (reckon/ledger.py:959), the aggregate branch of _record_release_on_ledger writes through _store._write_json_envelope with no store sync (reckon/crew/promotion_release.py:805-820), and the delta's one differing row is the store's pre-merge record against the file's post-merge one (worktree_released False/True), which is the direction the backfill takes; the endpoint is reachable and its measure can fail.",
+    "single_goal": "pass \u2014 s36 delivers one record, the row-level backfill of the release block into the store, measured by one live-store count; no second deliverable.",
+    "wiring": "a finding \u2014 s26 correctly declares depends-on s36 (plan.html:29), but the open followup carrying s36 (f-hpdw-017, plan.html:536) still states s36's pre-rewrite purpose and hands the row sync to \u00a726's merge repair."
+  },
+  "section_digests": {
+    "_document": "99fe6479fe296c5df30d5d5836d593809641c168ddab11a63106f6ff2187468e",
+    "s1": "16a4b0ff613308f968af13a86453cdda7611fbb4a0b662f0998319199f08c1f2",
+    "s2": "81ea5591beea9f0bfe0621b90127946f5c732b8471e2c5373404a592fa5daefe",
+    "s20": "469126d7a8d70994107c002b967dbf9da3c5237e4a3d05823281a9885c92731d",
+    "s21": "b2ec3716b6dd37a6a203c9b9d7c0be1209c9fa8d48d83ddcdf537eb47428cd4c",
+    "s22": "5b80738fa65b0a373485bf67bf0f2f191c8cf69ad935ef9ae258accc3a43cfc1",
+    "s23": "5f979f2ac2c694c8465c9b3b76743b70a3df967a1496488ebe45e96a41451c59",
+    "s24": "ff4464a256205179d7e9af583afcd456372bf9b4a393a90fe8b93955826be5f8",
+    "s25": "6e50b703cae5c188d1fb24250a943eb5f654fc5c26334335a3a7288120690168",
+    "s26": "37c27b0d54e7bf1a99e322e08776a72ffa748c2b88388aaa51f267a1db5c358a",
+    "s27": "9d55fe84f9ee617248a7eec57379797bd44bc1cb050fc378d20ac1b3da8152b2",
+    "s28": "1b395017f55a124f94b5b856f557b80c1246dd6aa0b94d4c21a412922010b47f",
+    "s29": "08680da58b87d39a60d022d76781f1c03ec98c2eec17478fcee45582b9ef204e",
+    "s3": "3422a7a0a23c318e54716e2fbbaf99599e0142f7bbc74d9eb45f924541cd8ccf",
+    "s30": "73d5c5ce099e375a2b18ae59f31aec4205212d2104108d1b97ce543d20c55270",
+    "s31": "5e320fec30580df18f57b6d28c58a517e834ccc7f4632502d8abefcc9dc8a743",
+    "s32": "be917fc2f31d989ce173566c1819ca4f00641eda62fa8b26f1e5a2da43c522a9",
+    "s33": "013d38ead3ef1d626c6065009c19f475efba97993154035da7d5008a84bbe939",
+    "s34": "a7f89214ee3a5a396644615ec12dfa995cb463adfecee133ee1d5ca817bd291d",
+    "s35": "c82b0ed36c972ee0e99d457189f04fa0e5fbb7de92fb5de271aac60382650ad4",
+    "s36": "e307b3ec20924aef9f47ef7285c9fba2cdeb0ce7c78d2f240c7402317bd0aadc",
+    "s4": "6beff7af8378d0a3be80a490fb73cc8c5e6a8ee94449c98de40a252d2f57fcd5",
+    "s5": "0cd70cc30708f232bf564bff0e7825d783d5f5ab455747bfac40ebe742ea0ed3",
+    "s6": "5181e894e8b3823f366d0b459a48ecc8e236e645ca5b1f02071dfc0fdae47681",
+    "s7": "6173f16d89316af11f74c75b5bec44f90742582abf47efd7e72af7af3bb31b50"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T22:33:50.856050+00:00",
+  "total": null
+}

@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery_stream.py:464 _apply_budget_watchdog -> _budget_overrun_cause -> _historical_reference_rate -> _lane_reference_rates",
+    "reckon/crew/recovery_classification.py:2783 -> _budget_overrun_cause -> _historical_reference_rate -> _lane_reference_rates",
+    "reckon/crew/recovery_watch.py:1856 -> recovery_stream._budget_overrun_cause -> _historical_reference_rate -> _lane_reference_rates"
+  ],
+  "completed_at": "2026-11-15T12:36:12.228Z",
+  "dispatched_at": "2026-11-15T12:14:48Z",
+  "findings": [
+    {
+      "file": "tests/test_an_overrun_names_its_cause.py",
+      "line": "97",
+      "severity": "non-blocking",
+      "text": "non-blocking: _activity_seconds duplicates reckon/ledger.py:1656 run_activity_seconds, the owner of the rule that a row's activity is its newest usable stamp. The stub exists to model the index's stored scalar, and this file already imports ledger, so a change to which keys the index counts would leave the stub filtering by a rule the product no longer applies and the test would then assert a bound that is not the index's; the stub should call ledger.run_activity_seconds."
+    },
+    {
+      "file": "tests/test_staged_write_inventory.py",
+      "line": "32",
+      "severity": "non-blocking",
+      "text": "non-blocking: the baseline arm ran in /tmp/repair-arms-AawpKp/base, an extracted tree that is not a git repository, so read_trees(ROOT, 'HEAD') fails at :32 and two tests error on the harness rather than on the code; the manifest records them as failure ids without attributing the cause. It does not change the added-failure count because the head arm is green, but the base arm's red status is partly scaffolding and a reader comparing the two arms is owed that."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified three production call sites of the function's only caller path, all through _budget_overrun_cause, and read the definition of the changed read itself.",
+    "diff": "read all three commits against e278e8f: 3d7ef8be is the whole source change, eight lines added and eight removed inside one function, plus a 177-line test module; d8118146 is the evidence fragment; 74b398e5 rewrites the reference-rate stub to take and honour the bound, with two assertions that prove the stub filters before the median assertions run.",
+    "done_when": "the done_when names a 2,030-row temporary ledger with a warmed on-disk index, a recording count of at most 60 decoded records, rate equality with the unbounded read, a live-ledger measurement log, a negative control at 2,030 and matched suite arms; tests/test_the_lane_rate_read_decodes_only_its_window.py:132-146 asserts the positive control, the bound, the exact in-window row set and the two lanes, :170-177 asserts the medians against an independently collected oracle, and the run's logs record 30 decoded at head against 2,030 at base (EXIT=1) with both suite arms carrying their own EXIT lines.",
+    "goal": "the node's goal is that the lane rate read decodes only the ledger rows inside its seven-day window; reckon/crew/recovery_stream.py:179-181 hands the window's start to ledger.load as activity_since, so the index serves only the rows this function can use instead of every promoted row in the ledger.",
+    "manifest": "read; status complete, commits 3d7ef8be/d8118146/74b398e5, gate 9 passed (gate-repair-head.log EXIT=0), baseline arm 63 passed with 2 errors at e278e8f, after arm 67 passed at 74b398e5, negative_control_log named and readable, and the two suite arms cover tests/test_an_overrun_names_its_cause.py, tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py.",
+    "write_paths": "the fence was reckon/crew/recovery_stream.py, reckon/ledger.py, tests/test_the_lane_rate_read_decodes_only_its_window.py, the evidence fragment and a figures directory; git diff --stat e278e8f..74b398e lists exactly four changed files, three of them fenced, and tests/test_an_overrun_names_its_cause.py is the one the resume advice extended the scope to by name; reckon/ledger.py is unchanged because the bound it needed already existed."
+  },
+  "justifications": {
+    "durability": "restoring the base read at reckon/crew/recovery_stream.py:181 makes tests/test_the_lane_rate_read_decodes_only_its_window.py:136 count 2,030 and fail, which negative-control-base.log records at EXIT=1, and :139 fails if the bound drops an in-window row.",
+    "evidence": "tests/test_the_lane_rate_read_decodes_only_its_window.py:136 asserts the at-most-60 decode bound and :170 asserts rate equality with the unbounded read, and the negative-control-base.log records 30 decoded at head against 2,030 at base at EXIT=1, though the live measurement log's head arm ran at 3d7ef8be rather than the reviewed head and no arm log records the partition it ran on.",
+    "fit": "reckon/crew/recovery_stream.py:164-171 states the superset argument in mechanism terms with no plan, sprint or ticket identifier, though tests/test_the_lane_rate_read_decodes_only_its_window.py:7-9 fixes measured figures (10,770 rows, 5.9 s, 1.61 GB) in a docstring that will drift.",
+    "goal_fidelity": "reckon/crew/recovery_stream.py:181 passes the window's own start to ledger.load as activity_since, so the read asks the index for the rows that can fall in the seven-day window instead of decoding the whole ledger, which is exactly the node's goal.",
+    "reuse": "the production change extends the owner of its capability, asking reckon/ledger.py:2229 load for the activity_since bound it already publishes, but tests/test_an_overrun_names_its_cause.py:97 adds _activity_seconds, a second implementation of the newest-stamp rule ledger.py:1656 run_activity_seconds owns.",
+    "scope_discipline": "git diff e278e8f..74b398e touches four files and three are fenced, the fourth arriving only from the resume advice's explicit 'Your write scope now includes tests/test_an_overrun_names_its_cause.py'."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the lane rate read decodes only the ledger rows inside its seven-day window; reckon/crew/recovery_stream.py:179-181 hands the window's start to ledger.load as activity_since, so the index serves only the rows this function can use instead of every promoted row in the ledger.\nVERDICT done_when: the done_when names a 2,030-row temporary ledger with a warmed on-disk index, a recording count of at most 60 decoded records, rate equality with the unbounded read, a live-ledger measurement log, a negative control at 2,030 and matched suite arms; tests/test_the_lane_rate_read_decodes_only_its_window.py:132-146 asserts the positive control, the bound, the exact in-window row set and the two lanes, :170-177 asserts the medians against an independently collected oracle, and the run's logs record 30 decoded at head against 2,030 at base (EXIT=1) with both suite arms carrying their own EXIT lines.\nVERDICT write_paths: the fence was reckon/crew/recovery_stream.py, reckon/ledger.py, tests/test_the_lane_rate_read_decodes_only_its_window.py, the evidence fragment and a figures directory; git diff --stat e278e8f..74b398e lists exactly four changed files, three of them fenced, and tests/test_an_overrun_names_its_cause.py is the one the resume advice extended the scope to by name; reckon/ledger.py is unchanged because the bound it needed already existed.\nVERDICT manifest: read; status complete, commits 3d7ef8be/d8118146/74b398e5, gate 9 passed (gate-repair-head.log EXIT=0), baseline arm 63 passed with 2 errors at e278e8f, after arm 67 passed at 74b398e5, negative_control_log named and readable, and the two suite arms cover tests/test_an_overrun_names_its_cause.py, tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py.\nVERDICT diff: read all three commits against e278e8f: 3d7ef8be is the whole source change, eight lines added and eight removed inside one function, plus a 177-line test module; d8118146 is the evidence fragment; 74b398e5 rewrites the reference-rate stub to take and honour the bound, with two assertions that prove the stub filters before the median assertions run.\nCALL_SITES: reckon/crew/recovery_stream.py:464 _apply_budget_watchdog -> _budget_overrun_cause -> _historical_reference_rate -> _lane_reference_rates, reckon/crew/recovery_classification.py:2783 -> _budget_overrun_cause -> _historical_reference_rate -> _lane_reference_rates, reckon/crew/recovery_watch.py:1856 -> recovery_stream._budget_overrun_cause -> _historical_reference_rate -> _lane_reference_rates\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_stream.py:181 passes the window's own start to ledger.load as activity_since, so the read asks the index for the rows that can fall in the seven-day window instead of decoding the whole ledger, which is exactly the node's goal.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_the_lane_rate_read_decodes_only_its_window.py:136 asserts the at-most-60 decode bound and :170 asserts rate equality with the unbounded read, and the negative-control-base.log records 30 decoded at head against 2,030 at base at EXIT=1, though the live measurement log's head arm ran at 3d7ef8be rather than the reviewed head and no arm log records the partition it ran on.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff e278e8f..74b398e touches four files and three are fenced, the fourth arriving only from the resume advice's explicit 'Your write scope now includes tests/test_an_overrun_names_its_cause.py'.\nSCORE durability: 20\nJUSTIFICATION durability: restoring the base read at reckon/crew/recovery_stream.py:181 makes tests/test_the_lane_rate_read_decodes_only_its_window.py:136 count 2,030 and fail, which negative-control-base.log records at EXIT=1, and :139 fails if the bound drops an in-window row.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/recovery_stream.py:164-171 states the superset argument in mechanism terms with no plan, sprint or ticket identifier, though tests/test_the_lane_rate_read_decodes_only_its_window.py:7-9 fixes measured figures (10,770 rows, 5.9 s, 1.61 GB) in a docstring that will drift.\nSCORE reuse: 5\nJUSTIFICATION reuse: the production change extends the owner of its capability, asking reckon/ledger.py:2229 load for the activity_since bound it already publishes, but tests/test_an_overrun_names_its_cause.py:97 adds _activity_seconds, a second implementation of the newest-stamp rule ledger.py:1656 run_activity_seconds owns.\nFINDING tests/test_an_overrun_names_its_cause.py:97 non-blocking: _activity_seconds duplicates reckon/ledger.py:1656 run_activity_seconds, the owner of the rule that a row's activity is its newest usable stamp. The stub exists to model the index's stored scalar, and this file already imports ledger, so a change to which keys the index counts would leave the stub filtering by a rule the product no longer applies and the test would then assert a bound that is not the index's; the stub should call ledger.run_activity_seconds.\nFINDING tests/test_staged_write_inventory.py:32 non-blocking: the baseline arm ran in /tmp/repair-arms-AawpKp/base, an extracted tree that is not a git repository, so read_trees(ROOT, 'HEAD') fails at :32 and two tests error on the harness rather than on the code; the manifest records them as failure ids without attributing the cause. It does not change the added-failure count because the head arm is green, but the base arm's red status is partly scaffolding and a reader comparing the two arms is owed that.\n",
+  "review_run_id": "r-20261115T121310354910-review-of-the-lane-rate-read-decodes-only-its-window-74b398e5b74a",
+  "reviewed_base_sha": "e278e8f173fbac67f0900bf6f1f1137d01be694f",
+  "reviewed_head_sha": "74b398e5b74a0732866a142e7c3a00674478cddb",
+  "reviewed_run_id": "r-20261115T101120987840-the-lane-rate-read-decodes-only-its-window",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T121310354910-review-of-the-lane-rate-read-decodes-only-its-window-74b398e5b74a"
+  },
+  "reviewer_run_id": "r-20261115T121310354910-review-of-the-lane-rate-read-decodes-only-its-window-74b398e5b74a",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T12:45:10.247554+00:00",
+  "total": 100
+}

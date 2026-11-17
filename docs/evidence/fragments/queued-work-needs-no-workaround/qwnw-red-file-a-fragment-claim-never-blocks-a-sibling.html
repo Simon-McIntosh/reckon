@@ -1,0 +1,64 @@
+<section id="qwnw-red-file-a-fragment-claim-never-blocks-a-sibling-landing">
+<h2>A fragment claim never blocks a sibling</h2>
+<p>The live-claim check narrowed a plan fragment directory to the owning node's
+own record, then asked the repository's sharing policy about the overlap that
+narrowing had produced. <code>docs/evidence/fragments/</code> is not one of the
+exclusive artifact classes, so a project that shares by default admitted a peer
+naming a fragment file a live run already held. The narrowing was right; the
+exemption contradicted it.</p>
+<p><strong>Verdict: product wrong.</strong> The test asserts the rule the code
+should keep — a fragment directory claim compares as the owning node's concrete
+files, so a sibling fragment file is admitted and the same fragment file is
+refused. No assertion was changed, deleted or weakened; the test file is
+untouched.</p>
+<p>One helper now answers the overlap question for both the dispatch enforcer
+and the conflict report: a comparison naming a fragment record on either side
+never reaches the sharing policy, because one fragment file is one node's
+cumulative document while its siblings under the plan directory are separate
+files that merge. Every other overlap keeps the policy the declaration states.</p>
+</section>
+
+<section id="qwnw-red-file-a-fragment-claim-never-blocks-a-sibling-negative-control">
+<h2>Negative control: the base revision fails the same five cases</h2>
+<p>The named file was run over the base revision before the product change, in
+an extracted snapshot of that revision re-initialised as its own repository
+(<code>logs/base-test-file.log</code>):</p>
+<pre>5 failed, 4 passed in 10.99s
+EXIT=1
+
+FAILED tests/test_a_fragment_claim_never_blocks_a_sibling.py::test_the_same_fragment_file_is_refused[docs/evidence/fragments/plan-a]
+FAILED tests/test_a_fragment_claim_never_blocks_a_sibling.py::test_the_same_fragment_file_is_refused[docs/evidence/fragments/plan-a/owner.html]
+FAILED tests/test_a_fragment_claim_never_blocks_a_sibling.py::test_a_written_fragment_keeps_its_file_claim[False]
+FAILED tests/test_a_fragment_claim_never_blocks_a_sibling.py::test_a_written_fragment_keeps_its_file_claim[True]
+FAILED tests/test_a_fragment_claim_never_blocks_a_sibling.py::test_an_explicit_fragment_keeps_its_file_claim</pre>
+<p>Each failed with <code>DID NOT RAISE ScopeConflict</code>. A tracing run
+shows the narrowed comparison reaching the exemption and the exemption
+admitting it:</p>
+<pre>TRACE share? path='docs/evidence/fragments/plan-a/owner.html' claim='docs/evidence/fragments/plan-a/owner.html' -&gt; True</pre>
+</section>
+
+<section id="qwnw-red-file-a-fragment-claim-never-blocks-a-sibling-head">
+<h2>The head run passes in full</h2>
+<pre># revision: 0e07032c60f464fd172f59de9f20f487766fa0af
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_fragment_claim_never_blocks_a_sibling.py
+.........                                                                [100%]
+9 passed in 9.73s
+EXIT=0</pre>
+<p>The full log is <code>logs/head-test-file.log</code>, beside the base log
+above.</p>
+</section>
+
+<section id="qwnw-red-file-a-fragment-claim-never-blocks-a-sibling-arms">
+<h2>The arm over the tests that import the changed module adds no failure</h2>
+<p>Thirty-one test files that import the changed claim module, or that exercise
+the fragment, sharing and landing claim rules, were run at the base revision and
+the head. The head fails none of the base's failing ids and adds no new one:</p>
+<table>
+<tr><th>arm</th><th>revision</th><th>summary</th></tr>
+<tr><td>base</td><td>6fa76c49</td><td>23 failed, 258 passed in 149.98s</td></tr>
+<tr><td>head</td><td>0e07032c</td><td>17 failed, 264 passed in 151.39s</td></tr>
+</table>
+<p>The six failures the head no longer has are the five this node repairs and
+<code>tests/test_dispatch_launch_is_not_its_own_conflict.py::test_a_second_dispatch_meets_the_claim_of_the_launch_in_flight</code>,
+which the same exemption had let through.</p>
+</section>

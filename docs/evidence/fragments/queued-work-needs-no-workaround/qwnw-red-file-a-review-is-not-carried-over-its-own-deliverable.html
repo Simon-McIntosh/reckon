@@ -1,0 +1,42 @@
+<section id="qwnw-red-file-a-review-is-not-carried-over-its-own-deliverable-landing">
+  <h3>A review carry-forward case measures the move it was written for</h3>
+  <p>All four cases in <code>tests/test_a_review_is_not_carried_over_its_own_deliverable.py</code>
+  failed on the primary branch at revision <code>52f2055b65</code> with
+  <code>assert None is not None</code>, because <code>recovery.carry_review_forward</code>
+  returned nothing. The fixture built a checkout with no remote-tracking
+  integration ref, and the reflex attributes a run's own delta against that ref
+  as well as the reviewed head: without one, <code>clones.own_changed_paths</code>
+  answers <em>uncomparable</em>, <code>review_head_move</code> answers nothing and
+  no move is decided. Verdict for every case: the test was wrong — the fixture
+  was stale, not the product rule, which the sibling case
+  <code>test_a_repository_without_a_remote_reads_the_move_as_uncomparable</code>
+  asserts deliberately.</p>
+  <table>
+    <thead><tr><th>Failing id</th><th>Verdict</th><th>Repair</th></tr></thead>
+    <tbody>
+      <tr><td><code>test_a_move_over_a_test_file_the_reviewed_diff_changed_is_not_carried</code></td><td>test wrong</td><td>fixture gains a bare origin pushed at the reviewed head; the case asserts the delivered path is refused</td></tr>
+      <tr><td><code>test_a_move_over_a_path_a_finding_cites_is_not_carried</code></td><td>test wrong</td><td>same fixture; the case asserts the cited path is refused</td></tr>
+      <tr><td><code>test_a_move_over_an_unrelated_record_is_still_carried</code></td><td>test wrong</td><td>same fixture; the case asserts the record-only move carries with its path listed</td></tr>
+      <tr><td><code>test_a_move_over_runtime_source_still_earns_the_light_rereview</code></td><td>test wrong</td><td>same fixture; the case asserts the source move earns a light re-review scoped to it</td></tr>
+    </tbody>
+  </table>
+  <p>No assertion was deleted or weakened: the fixture's precondition changed and
+  every path assertion is the one that was already written.</p>
+  <h4>Receipts</h4>
+  <table>
+    <thead><tr><th>Arm</th><th>Revision</th><th>Reads</th></tr></thead>
+    <tbody>
+      <tr><td>negative control, <code>tests/test_a_review_is_not_carried_over_its_own_deliverable.py</code></td><td>52f2055b65 (base)</td><td><code>4 failed in 1.46s</code> EXIT=1, the four ids above</td></tr>
+      <tr><td>gate, the same file</td><td>a8fdea6d2c (head)</td><td><code>4 passed in 1.54s</code> EXIT=0</td></tr>
+      <tr><td>armed suite, <code>tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code></td><td>52f2055b65</td><td><code>58 passed in 34.15s</code> EXIT=0</td></tr>
+      <tr><td>armed suite, same selection</td><td>a8fdea6d2c</td><td><code>58 passed in 33.91s</code> EXIT=0 — no added failure</td></tr>
+    </tbody>
+  </table>
+  <p>The negative control and the gate both ran as <code>all_debug</code> batch jobs
+  with <code>SLURM_JOB_ID</code> unset. Ruff on the changed path reports the same
+  two pre-existing findings at base and at head (an unused <code>RUF003</code>
+  <code>noqa</code> and a missing trailing newline) and refuses to format it at
+  both revisions; nothing new is reported.</p>
+  <p><a href="/reckon/crew/runs/r-20261116T104613229366-qwnw-red-file-a-review-is-not-carried-over-its-own-deliverable">Run directory</a>
+  holds both gate logs and the arm logs.</p>
+</section>

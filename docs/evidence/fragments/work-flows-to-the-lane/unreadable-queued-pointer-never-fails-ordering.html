@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-flows-to-the-lane">
+  <meta name="plan-evidence-for" content="reckon:work-flows-to-the-lane">
+  <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s58">
+  <meta name="plan-recorded-at" content="2026-11-14">
+  <meta name="plan-verdict" content="passed">
+  <title>One unreadable queued pointer no longer ends the ordering | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="unreadable-queued-pointer-never-fails-ordering-landing"
+  data-node="unreadable-queued-pointer-never-fails-ordering" data-reckon="landed" data-when="2026-11-14">
+  <h2>A pointer the ordering cannot place is set aside, not raised on</h2>
+  <p>The ordering at <code>reckon/crew/queue_order.py</code> ranked every queued
+  pointer by its <code>queued_at</code> and raised <code>ValueError("queued
+  pointer has no readable queued_at")</code> on the first one it could not read.
+  That refusal reached every caller that ranks the queue, so a single malformed
+  pointer stopped admission ordering, the queue position a dispatch reports and
+  every review compose, across all projects, until someone rewrote the record.</p>
+  <p><code>admission_order_details</code> now leaves out the pointers it cannot
+  place and logs their run ids; <code>partition_placeable()</code> returns that
+  split to every caller that ranks or reports the queue. <code>readable_queued_at()</code> keeps a stamp
+  that parses and replaces one that does not, and the three writers that could
+  store an unusable arrival now stamp through it: <code>runs.queue_dispatch</code>
+  for a caller that supplies none, and the two re-queue paths in
+  <code>reckon/crew/admission/launching.py</code>.</p>
+  <table>
+    <thead><tr><th>Case</th><th>Before</th><th>After</th></tr></thead>
+    <tbody>
+      <tr><td>Three queued pointers, the middle one with no <code>queued_at</code></td>
+        <td>the whole ordering raised</td>
+        <td>the two placeable pointers ranked in arrival order, the third named by run id</td></tr>
+      <tr><td>A plan-review request queued beside such a pointer</td>
+        <td>the dispatch raised before a position was returned</td>
+        <td>the request is stored and reads a position</td></tr>
+      <tr><td>A pointer stored with no arrival stamp</td>
+        <td>the writer stored the record as given</td>
+        <td>the writer stamps the moment the request enters the queue</td></tr>
+    </tbody>
+  </table>
+  <p>The gate ran on <code>all_debug</code> over
+  <code>tests/test_a_dispatch_survives_an_unplaceable_queued_pointer.py</code>,
+  <code>tests/test_a_queued_pointer_without_its_time_reads_no_place.py</code>,
+  <code>tests/test_the_admission_pass_survives_a_pointer_without_its_time.py</code>,
+  <code>tests/test_unreadable_queued_pointer_never_fails_ordering.py</code> and
+  <code>tests/test_staged_write_inventory.py</code>: 66 passed and none failed at
+  this head, against 55 passed and 2 failed at the base revision, so the change
+  adds no failure and the merges with primary clear both. The declared negative
+  control restores the raise and ends 2 failed, with the ordering case and the
+  review-placement case red.</p>
+  <p>The case in
+  <code>tests/test_the_admission_pass_survives_a_pointer_without_its_time.py</code>
+  asserted the refusal this section removes and now reads the placeable pointer
+  ranked and the unreadable one named. The
+  placeable/unplaceable split lives in <code>queue_order.partition_placeable</code>
+  and the admission pass takes it from there, so the order a surface reports and
+  the order the pass ranks by cannot disagree.</p>
+  <p>The case in
+  <code>tests/test_a_queued_pointer_without_its_time_reads_no_place.py</code>
+  held the same refusal and now reads the placeable pointer ranked and the
+  unplaceable one named by the split. The queue-position reader in
+  <code>reckon/crew/admission/ordering.py</code> takes that same split rather
+  than reading the field itself, so every reader of the queue places a pointer
+  the same way.</p>
+  <p>In
+  <code>tests/test_a_dispatch_survives_an_unplaceable_queued_pointer.py</code>,
+  the ordering case asserted that <code>admission_order</code> raises on a
+  pointer with no readable arrival. That assertion is superseded: the case
+  now reads the placeable pointer ranked and the unplaceable one named by the
+  same split, because the section's done-when is that one unreadable pointer
+  never fails the ordering.</p>
+</article>
+</body>
+</html>
