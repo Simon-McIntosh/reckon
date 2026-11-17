@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="400">
+<meta name="plan-version" content="401">
 <meta name="plan-modified" content="2026-11-17">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -452,6 +452,9 @@
 </div>
 <div class="r-comment" data-section="s23" data-id="c-run-r-20261115T094551177324-qwnw-queued-requests-wait-only-over-unmergeable-paths" data-who="reckon-build" data-when="2026-11-15T12:49:17Z">
     <div class="r-comment-body"><p>The admission pre-check held a queued request behind any earlier one over source paths too; it now reads the claim check's own sharing rule and holds only over the class a textual merge cannot reconcile, so two requests declaring `reckon` and `tests` are both admitted on one pass while two over one plan document are still held in rank order. On all_debug the base arm reads 6 failed, 12 passed and the head arm reads 21 passed, and the node's test over the base tree reads 1 failed, 2 passed.</p></div>
+</div>
+<div class="r-comment" data-section="s23" data-id="c-run-r-20261117T085715913989-review-of-qwnw-queued-requests-wait-only-over-unmergeable-paths-acaec955738f" data-who="reckon-build" data-when="2026-11-17T08:58:50.454Z">
+    <div class="r-comment-body"><p>Independent review of r-20261115T094551177324-qwnw-queued-requests-wait-only-over-unmergeable-paths at head acaec955738f709fd916bd561590350ec62a9f16 from base 281c035950bf811367c61d92909c7089eaa05bba: the admission pre-check now reads runs._claim_paths_share at reckon/crew/admission/holds.py:282, the gate&#x27;s two tests and its red base control are recorded, and five non-blocking findings are filed (two docstring claims in holds.py, the duplicated policy cache at selection.py:426, a phase assertion that cannot fail alone at tests/test_a_queued_hold_reads_only_unmergeable_paths.py:85, and manifest.md:11 naming a gate that cannot measure the change).</p></div>
 </div>
 <div class="r-comment" data-section="s25" data-id="c-run-r-20261115T133159620544-review-of-qwnw-a-commits-field-is-read-in-every-form-codex-0d06d1dbb285" data-who="reckon-build" data-when="2026-11-15T13:39:24Z">
     <div class="r-comment-body"><p>Independent review records all six dimensions at 20/20 with no findings; armed logs show zero added failures between the reviewed base and head.</p></div>
@@ -1282,7 +1285,7 @@
     <div class="r-comment-body"><p>independent review of r-20261116T104355176177-qwnw-red-file-review-record-contract over 24bc79d8..17d0b276 stored under review-records/ in the reviewed run's directory; scores goal_fidelity 19, evidence 18, scope_discipline 19, durability 17, fit 17, reuse 5; four non-blocking findings; added failing ids 0</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261117T085432877346-review-of-qwnw-red-file-review-lane-follows-its-run-1f28851dd255" data-who="reckon-build" data-when="2026-11-17T08:55:58.476Z">
-    <div class="r-comment-body"><p>reviewed run r-20261116T104406455270-qwnw-red-file-review-lane-follows-its-run at base 24bc79d8ee and head 1f28851dd2 scores 19/16/20/18/18/20 (goal_fidelity/evidence/scope_discipline/durability/fit/reuse, total 111) with two non-blocking findings: the fragment&#x27;s pre-merge arm figure lost its receipt when logs/after-arm.log was overwritten by the merge-head re-run (53 ids each versus the 29 now in logs/after-arm.ids), and the reviewed head is on no ref while promote 4134da9488 records the run as passed, so primary carries neither the fragment nor the run&#x27;s own predicate edit</p></div>
+    <div class="r-comment-body"><p>reviewed run r-20261116T104406455270-qwnw-red-file-review-lane-follows-its-run at base 24bc79d8ee and head 1f28851dd2 scores 19/16/20/18/18/20 (goal_fidelity/evidence/scope_discipline/durability/fit/reuse, total 111) with two non-blocking findings: the fragment's pre-merge arm figure lost its receipt when logs/after-arm.log was overwritten by the merge-head re-run (53 ids each versus the 29 now in logs/after-arm.ids), and the reviewed head is on no ref while promote 4134da9488 records the run as passed, so primary carries neither the fragment nor the run's own predicate edit</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
