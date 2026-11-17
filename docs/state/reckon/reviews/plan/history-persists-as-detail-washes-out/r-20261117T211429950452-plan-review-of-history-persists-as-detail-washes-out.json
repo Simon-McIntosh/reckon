@@ -1,0 +1,80 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-17T21:19:27.470Z",
+  "dispatched_at": "2026-11-17T21:18:34Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/history-persists-as-detail-washes-out.html:439",
+      "id": "reasoning-1",
+      "reason": "",
+      "text": "\u2014 the Why asserts the release step records the `release` block \"only in the ledger file ... never the run store\", but `reckon/crew/promotion_release.py:803` amends the run file through `ledger.write_run_file`, which calls `_sync_amended_run` (`reckon/ledger.py:959`) and therefore `run_store.sync`; two runs released on 2026-11-17 (`r-20261117T210129316927-plan-review-of-history-persists-as-detail-washes-out`, `r-20261117T211344061865-plan-review-of-delivered-work-lands-without-a-coordinator`) read back through `stored_run_rows` with a `release` block byte-equal to their run files.",
+      "type": "reasoning",
+      "would_change": null
+    },
+    {
+      "anchor": "docs/plans/history-persists-as-detail-washes-out.html:439",
+      "id": "done_when-1",
+      "reason": "",
+      "text": "\u2014 the first arm is declared \"failing at the base revision\", but at the base revision a promoted run that owns a per-run file already answers its `release` block from the store, so that arm is green at base and measures nothing; the only path still red at base is a release written through the aggregate ledger file, which does not sync rows, and the seven store rows measured as lacking release are all releases recorded before `4f04392824` (2026-11-16) added that sync.",
+      "type": "done_when",
+      "would_change": null
+    },
+    {
+      "anchor": "docs/plans/history-persists-as-detail-washes-out.html:528",
+      "id": "wiring-1",
+      "reason": "",
+      "text": "\u2014 f-hpdw-015's resolved outcome ends \"\u00a727 is next\", but s27's only declared upstream is s26 (`plan.html:29`), s26 is still `implementable` (`plan.html:28`), and the open followup f-hpdw-017 (plan.html:536) queues \u00a736 and then \u00a726's merge repair, so the record points a dispatcher at a node whose upstream has not landed.",
+      "type": "wiring",
+      "would_change": null
+    }
+  ],
+  "plan_commit": "477e1703f0fb5db69fc65423742f8d7619330c24",
+  "plan_fingerprint": "5f4241e1ab4d059a43007ec10f61d8667def80da50258f9969b29da47dad6e3a",
+  "plan_slug": "history-persists-as-detail-washes-out",
+  "plan_version": 123,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261117T211429950452-plan-review-of-history-persists-as-detail-washes-out",
+  "reviewed_blob_sha": "65884dfa48c2885b7714c1284e2e23a15b637f66",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/promotion_release.py` and `reckon/run_store.py` exist, `stored_run_rows` resolves at `reckon/run_store.py:828`, the delta JSON opens, and the section anchors \u00a726 and s26 resolve.",
+    "done_when": "a finding \u2014 s36's first red arm (plan.html:439) requires \"after a run is promoted, its release writes the `release` block into that run's store row\" to fail at the primary component revision, but that assertion holds at the base revision for any run that owns a per-run file.",
+    "evidence_paths": "pass \u2014 the merge-repair delta is cited at a durable crew run path (`~/.config/reckon/crew/runs/r-20261115T211459261234-untracking-migration-s26/merge-repair-metadata-delta.json`, 24,093 bytes, 8 rows opened) and gate logs are named under the node's run directory.",
+    "naming": "pass \u2014 the section carries no plan label, stage name or ticket number into a symbol; the title and the `release` field name the mechanism.",
+    "reasoning": "a finding \u2014 the Why's stated cause, that the release step records the block \"only in the ledger file ... never the run store\" (plan.html:439), is contradicted by the code at the base revision, which already syncs a per-run release into the store.",
+    "single_goal": "pass \u2014 s36 delivers one endpoint, a release reaching the run store; its two red arms and two preserved arms are the same record observed through promotion and after committed removal.",
+    "wiring": "a finding \u2014 the resolved followup f-hpdw-015 outcome (plan.html:528) names \u00a727 as next while `plan-section-depends-on` (plan.html:29) makes s27 depend on s26, and s26 is still declared `implementable` (plan.html:28)."
+  },
+  "section_digests": {
+    "_document": "99fe6479fe296c5df30d5d5836d593809641c168ddab11a63106f6ff2187468e",
+    "s1": "16a4b0ff613308f968af13a86453cdda7611fbb4a0b662f0998319199f08c1f2",
+    "s2": "81ea5591beea9f0bfe0621b90127946f5c732b8471e2c5373404a592fa5daefe",
+    "s20": "469126d7a8d70994107c002b967dbf9da3c5237e4a3d05823281a9885c92731d",
+    "s21": "b2ec3716b6dd37a6a203c9b9d7c0be1209c9fa8d48d83ddcdf537eb47428cd4c",
+    "s22": "5b80738fa65b0a373485bf67bf0f2f191c8cf69ad935ef9ae258accc3a43cfc1",
+    "s23": "5f979f2ac2c694c8465c9b3b76743b70a3df967a1496488ebe45e96a41451c59",
+    "s24": "ff4464a256205179d7e9af583afcd456372bf9b4a393a90fe8b93955826be5f8",
+    "s25": "6e50b703cae5c188d1fb24250a943eb5f654fc5c26334335a3a7288120690168",
+    "s26": "37c27b0d54e7bf1a99e322e08776a72ffa748c2b88388aaa51f267a1db5c358a",
+    "s27": "9d55fe84f9ee617248a7eec57379797bd44bc1cb050fc378d20ac1b3da8152b2",
+    "s28": "1b395017f55a124f94b5b856f557b80c1246dd6aa0b94d4c21a412922010b47f",
+    "s29": "08680da58b87d39a60d022d76781f1c03ec98c2eec17478fcee45582b9ef204e",
+    "s3": "3422a7a0a23c318e54716e2fbbaf99599e0142f7bbc74d9eb45f924541cd8ccf",
+    "s30": "73d5c5ce099e375a2b18ae59f31aec4205212d2104108d1b97ce543d20c55270",
+    "s31": "5e320fec30580df18f57b6d28c58a517e834ccc7f4632502d8abefcc9dc8a743",
+    "s32": "be917fc2f31d989ce173566c1819ca4f00641eda62fa8b26f1e5a2da43c522a9",
+    "s33": "013d38ead3ef1d626c6065009c19f475efba97993154035da7d5008a84bbe939",
+    "s34": "a7f89214ee3a5a396644615ec12dfa995cb463adfecee133ee1d5ca817bd291d",
+    "s35": "c82b0ed36c972ee0e99d457189f04fa0e5fbb7de92fb5de271aac60382650ad4",
+    "s36": "bd299a13634395bc23d4084c2ce4a93df9514dec2d3ddffd16f9ab199f995099",
+    "s4": "6beff7af8378d0a3be80a490fb73cc8c5e6a8ee94449c98de40a252d2f57fcd5",
+    "s5": "0cd70cc30708f232bf564bff0e7825d783d5f5ab455747bfac40ebe742ea0ed3",
+    "s6": "5181e894e8b3823f366d0b459a48ecc8e236e645ca5b1f02071dfc0fdae47681",
+    "s7": "6173f16d89316af11f74c75b5bec44f90742582abf47efd7e72af7af3bb31b50"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T21:27:20.192363+00:00",
+  "total": null
+}
