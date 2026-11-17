@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="343">
+<meta name="plan-version" content="344">
 <meta name="plan-modified" content="2026-11-17">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -1120,7 +1120,10 @@
     <div class="r-comment-body"><p>repaired the scoring fixture so a completed run carries the phase a spawned run carries; the named file went from 3 failed / 1 passed at base 7061ebe583 to 4 passed at head adcb862449, on all_debug</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261116T104913322036-qwnw-red-file-lane-killed-run-is-blocked" data-who="reckon-build" data-when="2026-11-16T14:57:32Z">
-    <div class="r-comment-body"><p>A killed run keeps the pre-spawn phase it died in, so classify_pointer&#x27;s pre_spawn_waiting arm read it running and no liveness arm was reached. Two conjuncts now close that, and the landing conflicted with the primary branch at 9ad5e64e87 because primary had repaired the same arm independently with _spawn_evidence; the merge keeps both, so the delivered arm requires the pointer not to be recorded dead, not to carry spawn evidence (pid, worker record, stream, launch log), and not to be a stranded launch past its bound. tests/test_lane_killed_run_is_blocked.py reads 10 passed EXIT=0 at the delivered head; the base revision reads 3 failed, 7 passed EXIT=1.</p></div>
+    <div class="r-comment-body"><p>A killed run keeps the pre-spawn phase it died in, so classify_pointer's pre_spawn_waiting arm read it running and no liveness arm was reached. Two conjuncts now close that, and the landing conflicted with the primary branch at 9ad5e64e87 because primary had repaired the same arm independently with _spawn_evidence; the merge keeps both, so the delivered arm requires the pointer not to be recorded dead, not to carry spawn evidence (pid, worker record, stream, launch log), and not to be a stranded launch past its bound. tests/test_lane_killed_run_is_blocked.py reads 10 passed EXIT=0 at the delivered head; the base revision reads 3 failed, 7 passed EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261116T104921585262-qwnw-red-file-landing-runs-beside-admission" data-who="reckon-build" data-when="2026-11-16T14:57:02.297Z">
+    <div class="r-comment-body"><p>tests/test_landing_runs_beside_admission.py passes 6/6 at 2e3d44ff5b as an all_debug job with SLURM_JOB_ID unset, against 2 failed / 4 passed at base ba3443a9ae; both causes are test-wrong — the two cases asserted the synchronous bounded land step that b4840067ad replaced with a durable promotion request, and are updated to the rule the code keeps (no assertion deleted or weakened), with two in-memory product mutations showing each repaired case fails when the queued form or the impl waiver is removed.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
