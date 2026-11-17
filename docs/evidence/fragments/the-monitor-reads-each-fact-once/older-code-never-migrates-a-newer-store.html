@@ -10,7 +10,7 @@
   <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s84">
   <meta name="evidence-verdict" content="pass">
   <meta name="evidence-date" content="2026-11-17">
-  <meta name="evidence-commit" content="0e0c715c8f">
+  <meta name="evidence-commit" content="f6b4fd0358">
   <title>Older code never migrates a newer store | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -64,9 +64,9 @@ FAILED ...::test_reads_and_appends_on_a_store_written_by_newer_code_still_work -
 
   <table>
     <tr><th>arm</th><th>tree</th><th>result</th></tr>
-    <tr><td>base</td><td><code>d5694fa4</code>, test file overlaid</td><td>2 failed, 1 passed — newer-store case decodes 500 rows, record rewritten</td></tr>
-    <tr><td>head</td><td><code>0e0c715c</code></td><td>3 passed</td></tr>
-    <tr><td>negative control</td><td><code>d5694fa4</code>, newer-store case only</td><td>1 failed — <code>assert 500 == 0</code></td></tr>
+    <tr><td>base</td><td><code>d5694fa4</code>, its own three test files</td><td>62 passed</td></tr>
+    <tr><td>head</td><td><code>f6b4fd03</code>, node test plus those three</td><td>67 passed</td></tr>
+    <tr><td>negative control</td><td><code>d5694fa4</code>, node test overlaid, newer-store case only</td><td>1 failed — <code>assert 500 == 0</code></td></tr>
   </table>
 
   <p>The same recorder reads 500 on a store that really lacks
@@ -76,14 +76,29 @@ FAILED ...::test_reads_and_appends_on_a_store_written_by_newer_code_still_work -
   builds the index on it, and passes at both revisions — the guard fires where
   it should and only there.</p>
 
-  <p><strong>Contradiction found outside this node's write scope.</strong>
-  <code>tests/test_a_promotion_does_not_migrate_the_run_store_every_call.py::test_a_changed_declaration_version_is_not_taken_as_current</code>
-  moves a complete-shaped store's record to an unknown version, opens it, and
-  asserts the record was rewritten to this code's hash. That is the behaviour
-  this node removes, so the test fails with <code>assert 0 == 1</code> on the
-  migration-pass count. Its premise survives if the fixture store is made to
-  lack something this code declares — dropping one declared index is enough —
-  and its remaining assertions then hold unchanged.</p>
+  <p><strong>The contradiction, and its repair.</strong>
+  <code>tests/test_a_promotion_does_not_migrate_the_run_store_every_call.py</code>
+  carried <code>test_a_changed_declaration_version_is_not_taken_as_current</code>,
+  which moved a complete-shaped store's record to an unknown version, opened
+  it, and asserted the record was rewritten to this code's hash — the behaviour
+  this node removes, so the landed change left it red. It is replaced by two
+  cases that ask the question the open asks: a complete store with an unknown
+  record is opened with no migration pass and keeps the record it carried, and
+  a store that really lacks a declared column is migrated whatever its record
+  says and records the declaration the pass reached.</p>
+
+  <p><strong>Two assertions that had to be shown to bite.</strong> Review found
+  one assertion comparing the fixture store against the constant that built it,
+  which holds whatever the code does; it is replaced by a count of migration
+  passes. Removing the coverage check from <code>_create</code> now fails the
+  newer-store case with <code>assert 500 == 0</code> on the row count and
+  <code>assert 1 == 0</code> on the pass count. The second gap was the backfill
+  gate in <code>_migrate_runs</code>, which no case reached because a complete
+  store returns before the migration: a store missing one declared index now
+  takes the pass, gets the index back, keeps this code's record, and still
+  decodes no row, so reverting that gate to column equality fails it with
+  <code>assert 500 == 0</code>. Both mutations were applied and their logs
+  kept beside the arms.</p>
 </section>
 </main>
 </body>
