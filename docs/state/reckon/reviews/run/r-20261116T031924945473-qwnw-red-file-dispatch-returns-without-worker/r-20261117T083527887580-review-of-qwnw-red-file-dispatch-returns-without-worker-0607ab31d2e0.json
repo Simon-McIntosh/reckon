@@ -1,0 +1,86 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_log_revision": "0607ab31d2e098a6f40622a20605323af2f5c379",
+  "after_suite": {
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031924945473-qwnw-red-file-dispatch-returns-without-worker/logs/merge-head-fence-suite.log",
+    "revision": "0607ab31d2e098a6f40622a20605323af2f5c379"
+  },
+  "baseline_log_revision": "0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc",
+  "baseline_suite": {
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031924945473-qwnw-red-file-dispatch-returns-without-worker/logs/base-fence-suite.log",
+    "revision": "0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc"
+  },
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion_scope.py:1000:_require_repository_tree_boundary",
+    "reckon/crew/promotion_checks.py:2904",
+    "reckon/crew/promotion.py:3875"
+  ],
+  "completed_at": "2026-11-17T08:40:26.271Z",
+  "dispatched_at": "2026-11-17T08:40:08Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-returns-without-worker.html",
+      "line": "74",
+      "severity": "non-blocking",
+      "text": "non-blocking: the 7b003650da6a row says TMPDIR and the test base both sat under the node's /tmp, but that commit is the one that creates the base under GATE_BASE_ROOT=/var/tmp (tests/test_dispatch_returns_without_worker.py:189), so the row misdescribes the geometry of the arm that certifies the placement repair."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-returns-without-worker.html",
+      "line": "54",
+      "severity": "non-blocking",
+      "text": "non-blocking: the d3acd1579122 row attributes a 10-passed, SLURM_JOB_ID-unset run on node 98dci4-clu-3142 to that revision, while the receipt naming that geometry (logs/head-gate-dispatch-file.log) reads f53e175079 and the other node-3142 log reads 7ed3ddf0a7 at 6 failed of 10, so the row's revision is unreceipted."
+    },
+    {
+      "file": "tests/test_dispatch_returns_without_worker.py",
+      "line": "189",
+      "severity": "non-blocking",
+      "text": "non-blocking: GATE_BASE_ROOT hardcodes /var/tmp, so the case now depends on an absolute host path existing and being writable and puts its temp tree outside TMPDIR, where an aborted run's tree no longer dies with the run's scratch."
+    },
+    {
+      "file": "tests/test_dispatch_returns_without_worker.py",
+      "line": "552",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base is removed by shutil.rmtree placed after the `assert not leaked` at :545, so the failure that assertion exists to report raises before the removal and leaves the whole reckon-dispatch-gate- tree on the shared node."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/promotion_scope.py:1000:_require_repository_tree_boundary, reckon/crew/promotion_checks.py:2904, reckon/crew/promotion.py:3875",
+    "diff": "read commit by commit, d3acd15791 replaces the boundary exemption with `changed not in shared_files` and gives the fixture repository a sharing declaration, f53e175079 and 7ed3ddf0a7 write the evidence fragment, 7b003650da moves the whole base to GATE_BASE_ROOT=/var/tmp with the marker directory under it, and 0607ab31d2 merges primary main and resolves the one conflict in reckon/crew/promotion_scope.py to a comment sentence.",
+    "done_when": "the done_when asks for the file passing in full as an all_debug job with SLURM_JOB_ID unset, a verdict per cause, an importer arm and a negative control, and logs/merge-head-gate-file.log records 10 passed EXIT=0 on 98dci4-clu-4073 with logs/base-gate-file.log at 5 failed of 10 EXIT=1 and logs/merge-head-importers.log at 48 passed, but merge-gate.sbatch:26 hands pytest no `env -u SLURM_JOB_ID` so the batch job's id is inherited and the unset geometry is receipted only at f53e175079 in logs/head-gate-dispatch-file.log.",
+    "goal": "the node's goal is that tests/test_dispatch_returns_without_worker.py pass in full, and the landed head 0607ab31d2 does read 10 passed EXIT=0 in logs/crew-gate receipts, while the node's own delta against the merge's primary-main parent 96f8a6df6c is only reckon/crew/promotion_scope.py, tests/test_dispatch_returns_without_worker.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-returns-without-worker.html.",
+    "manifest": "read, status complete, commits d3acd15791 f53e175079 7b003650da 7ed3ddf0a7 0607ab31d2 all present in the reviewed tree, the gate file 10 passed EXIT=0 at 0607ab31d2, the base arm 5 failed of 10 at 0e0f25b0f9 in logs/base-gate-file.log, and the fence suite 58 passed on both revisions.",
+    "write_paths": "the declared fence is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, that fragment's own file and its figure directory, and `git diff --stat 96f8a6df6c 0607ab31d2` names exactly reckon/crew/promotion_scope.py, tests/test_dispatch_returns_without_worker.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-returns-without-worker.html, all inside it."
+  },
+  "justifications": {
+    "durability": "reinstating the old `_claim_paths_share(shared_files, changed, changed)` filter at reckon/crew/promotion_scope.py:942-955 would empty the violation list asserted at tests/test_dispatch_returns_without_worker.py:1704-1708, because shares_region at reckon/crew/runs.py:1971-1984 returns True for the stray file whatever the declared roots, so the declaration at :452-462 does not mask the revert.",
+    "evidence": "logs/merge-head-gate-file.log carries the revision, the command, 10 passed and a bare EXIT=0, but merge-gate.sbatch:26 leaves SLURM_JOB_ID set in the batch job, so the done_when's unset-job clause is receipted only at f53e175079 in logs/head-gate-dispatch-file.log rather than at the landed head.",
+    "fit": "tests/test_dispatch_returns_without_worker.py:189 restates the constant-with-rationale idiom of reckon/_worker_fence.py:1495, and each changed fixture carries a docstring at :89-108 and :508-520 naming the fence behaviour it depends on.",
+    "goal_fidelity": "the file reads 10 passed at the landed head in logs/merge-head-gate-file.log, though reckon/crew/promotion_scope.py already carried the functional filter at the merge's primary-main parent 96f8a6df6c, so at head the node's product contribution is the comment at :942-955 and its lasting delivery is the test's placement and declaration.",
+    "reuse": "no owner names a temp root the fence leaves alone, since a search of reckon/ and tests/ for `/var/tmp` finds nothing and reckon/_worker_fence.py:1495 and :1598-1624 name only the overlaid root and its scratch mount, so GATE_BASE_ROOT is the first such definition and the changed fixtures extend the module's own rather than forking one.",
+    "scope_discipline": "`git diff --stat 96f8a6df6c 0607ab31d2` names only reckon/crew/promotion_scope.py, tests/test_dispatch_returns_without_worker.py and the node's own fragment, each inside the declared write paths, and the 1107-file body of the merge is primary main being brought in as the done_when requires."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_dispatch_returns_without_worker.py pass in full, and the landed head 0607ab31d2 does read 10 passed EXIT=0 in logs/crew-gate receipts, while the node's own delta against the merge's primary-main parent 96f8a6df6c is only reckon/crew/promotion_scope.py, tests/test_dispatch_returns_without_worker.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-returns-without-worker.html.\nVERDICT done_when: the done_when asks for the file passing in full as an all_debug job with SLURM_JOB_ID unset, a verdict per cause, an importer arm and a negative control, and logs/merge-head-gate-file.log records 10 passed EXIT=0 on 98dci4-clu-4073 with logs/base-gate-file.log at 5 failed of 10 EXIT=1 and logs/merge-head-importers.log at 48 passed, but merge-gate.sbatch:26 hands pytest no `env -u SLURM_JOB_ID` so the batch job's id is inherited and the unset geometry is receipted only at f53e175079 in logs/head-gate-dispatch-file.log.\nVERDICT write_paths: the declared fence is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, that fragment's own file and its figure directory, and `git diff --stat 96f8a6df6c 0607ab31d2` names exactly reckon/crew/promotion_scope.py, tests/test_dispatch_returns_without_worker.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-returns-without-worker.html, all inside it.\nVERDICT manifest: read, status complete, commits d3acd15791 f53e175079 7b003650da 7ed3ddf0a7 0607ab31d2 all present in the reviewed tree, the gate file 10 passed EXIT=0 at 0607ab31d2, the base arm 5 failed of 10 at 0e0f25b0f9 in logs/base-gate-file.log, and the fence suite 58 passed on both revisions.\nVERDICT diff: read commit by commit, d3acd15791 replaces the boundary exemption with `changed not in shared_files` and gives the fixture repository a sharing declaration, f53e175079 and 7ed3ddf0a7 write the evidence fragment, 7b003650da moves the whole base to GATE_BASE_ROOT=/var/tmp with the marker directory under it, and 0607ab31d2 merges primary main and resolves the one conflict in reckon/crew/promotion_scope.py to a comment sentence.\nCALL_SITES: reckon/crew/promotion_scope.py:1000:_require_repository_tree_boundary, reckon/crew/promotion_checks.py:2904, reckon/crew/promotion.py:3875\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the file reads 10 passed at the landed head in logs/merge-head-gate-file.log, though reckon/crew/promotion_scope.py already carried the functional filter at the merge's primary-main parent 96f8a6df6c, so at head the node's product contribution is the comment at :942-955 and its lasting delivery is the test's placement and declaration.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/merge-head-gate-file.log carries the revision, the command, 10 passed and a bare EXIT=0, but merge-gate.sbatch:26 leaves SLURM_JOB_ID set in the batch job, so the done_when's unset-job clause is receipted only at f53e175079 in logs/head-gate-dispatch-file.log rather than at the landed head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: `git diff --stat 96f8a6df6c 0607ab31d2` names only reckon/crew/promotion_scope.py, tests/test_dispatch_returns_without_worker.py and the node's own fragment, each inside the declared write paths, and the 1107-file body of the merge is primary main being brought in as the done_when requires.\nSCORE durability: 16\nJUSTIFICATION durability: reinstating the old `_claim_paths_share(shared_files, changed, changed)` filter at reckon/crew/promotion_scope.py:942-955 would empty the violation list asserted at tests/test_dispatch_returns_without_worker.py:1704-1708, because shares_region at reckon/crew/runs.py:1971-1984 returns True for the stray file whatever the declared roots, so the declaration at :452-462 does not mask the revert.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_dispatch_returns_without_worker.py:189 restates the constant-with-rationale idiom of reckon/_worker_fence.py:1495, and each changed fixture carries a docstring at :89-108 and :508-520 naming the fence behaviour it depends on.\nSCORE reuse: 19\nJUSTIFICATION reuse: no owner names a temp root the fence leaves alone, since a search of reckon/ and tests/ for `/var/tmp` finds nothing and reckon/_worker_fence.py:1495 and :1598-1624 name only the overlaid root and its scratch mount, so GATE_BASE_ROOT is the first such definition and the changed fixtures extend the module's own rather than forking one.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-returns-without-worker.html:74 non-blocking: the 7b003650da6a row says TMPDIR and the test base both sat under the node's /tmp, but that commit is the one that creates the base under GATE_BASE_ROOT=/var/tmp (tests/test_dispatch_returns_without_worker.py:189), so the row misdescribes the geometry of the arm that certifies the placement repair.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-returns-without-worker.html:54 non-blocking: the d3acd1579122 row attributes a 10-passed, SLURM_JOB_ID-unset run on node 98dci4-clu-3142 to that revision, while the receipt naming that geometry (logs/head-gate-dispatch-file.log) reads f53e175079 and the other node-3142 log reads 7ed3ddf0a7 at 6 failed of 10, so the row's revision is unreceipted.\nFINDING tests/test_dispatch_returns_without_worker.py:189 non-blocking: GATE_BASE_ROOT hardcodes /var/tmp, so the case now depends on an absolute host path existing and being writable and puts its temp tree outside TMPDIR, where an aborted run's tree no longer dies with the run's scratch.\nFINDING tests/test_dispatch_returns_without_worker.py:552 non-blocking: the base is removed by shutil.rmtree placed after the `assert not leaked` at :545, so the failure that assertion exists to report raises before the removal and leaves the whole reckon-dispatch-gate- tree on the shared node.",
+  "review_run_id": "r-20261117T083527887580-review-of-qwnw-red-file-dispatch-returns-without-worker-0607ab31d2e0",
+  "reviewed_base_sha": "7ed3ddf0a735f93a3da6c823ea968bc0d578c8a7",
+  "reviewed_head_sha": "0607ab31d2e098a6f40622a20605323af2f5c379",
+  "reviewed_run_id": "r-20261116T031924945473-qwnw-red-file-dispatch-returns-without-worker",
+  "reviewer_run_id": "r-20261117T083527887580-review-of-qwnw-red-file-dispatch-returns-without-worker-0607ab31d2e0",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T08:59:35.174953+00:00",
+  "total": 104
+}

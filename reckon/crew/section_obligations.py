@@ -40,10 +40,17 @@ def merged_section_items_by_session(
     checkout = project_mount_repository(project)
     if checkout is None:
         return {}
-    history = ledger.session_rows(project, session, checkout)
+    from reckon.crew import obligations as obligations_module
+
+    rows = obligations_module.recorded_run_rows(project, checkout)
+    if rows is None:
+        # The pass has not read this project in this process, so the session's
+        # own slice comes from the writers' projection rather than the whole
+        # ledger. The filter below still applies to it unchanged.
+        rows = ledger.session_rows(project, session, checkout)
     candidates = {
         str(record.get("run_id") or ""): record
-        for record in [*pointers, *history]
+        for record in [*pointers, *rows]
         if record.get("session") and (session is None or record["session"] == session)
     }
     plans: dict[str, tuple[dict, int]] = {}

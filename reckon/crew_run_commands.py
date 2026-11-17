@@ -2125,14 +2125,33 @@ def _suite_project_root(project: str, checkout_path: Path | None) -> Path:
 @crew_suite.command(name="run")
 @click.option("--project", required=True, help="Project whose declared suite to run.")
 @click.option(
+    "--run",
+    "run_id",
+    default=None,
+    help="Live run whose base and head arms to measure.",
+)
+@click.option("--partition", default=None, help="Compute partition for the run's arms.")
+@click.option(
+    "--timeout-seconds",
+    type=click.FloatRange(min=0, min_open=True),
+    default=600,
+    help="Bound for each run arm.",
+)
+@click.option(
     "--checkout-path",
     default=None,
     type=click.Path(path_type=Path),
     help="Repo root whose suite is run (default: the registered mount).",
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_suite_run(project, checkout_path, pretty):
-    """Run the project's declared suite and every declared population.
+def crew_suite_run(project, run_id, partition, timeout_seconds, checkout_path, pretty):
+    """Run the project's declared suite, or one live run's base and head arms.
+
+    With --run, resolve the run's armed command separately at its base and
+    committed HEAD, submit each arm to --partition, and return baseline_suite
+    and after_suite fields ready for the worker's manifest. Every arm creates
+    its own log beside the recorded manifest and keeps its revision, command
+    and exit receipt there.
 
     Each runs under its own declared budget and is recorded as its own row, so a
     slow or browser-driven population keeps its time and its failure ids
@@ -2142,6 +2161,27 @@ def crew_suite_run(project, checkout_path, pretty):
     standing suite's own row is written and reported.
     """
     from reckon.crew import standing_suite
+
+    if run_id:
+        root = _suite_project_root(project, checkout_path)
+        try:
+            pointer = standing_suite.worker_context(run_id, project, root)
+            result = standing_suite.run_node_arms(
+                pointer=pointer,
+                repository=root,
+                run_id=run_id,
+                partition=partition
+                or standing_suite.node_gate_partition(
+                    (pointer.get("node") or {}).get("done_when", "")
+                ),
+                timeout_seconds=timeout_seconds,
+            )
+        except (standing_suite.StandingSuiteError, OSError, ValueError) as exc:
+            raise click.ClickException(str(exc)) from exc
+        _emit_crew_result(result, pretty)
+        return
+    if partition:
+        raise click.UsageError("--partition requires --run")
 
     _, flight_module = _crew_modules()
     root = _suite_project_root(project, checkout_path)
@@ -4648,6 +4688,14 @@ def _reviewed_head_of(record: Mapping[str, Any]) -> str:
 @click.option("--project", required=True, help="Project owning the run ledger.")
 @click.option("--run", "run_id", required=True, help="Run id whose gate is re-run.")
 @click.option(
+    "--worker",
+    is_flag=True,
+    help="Measure the live worker's scoped command without a ledger write.",
+)
+@click.option(
+    "--partition", default=None, help="Compute partition for a live worker gate."
+)
+@click.option(
     "--checkout-path",
     required=True,
     type=click.Path(path_type=Path),
@@ -4681,9 +4729,17 @@ def _reviewed_head_of(record: Mapping[str, Any]) -> str:
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_verify_gate(
-    project, run_id, checkout_path, revision, timeout_seconds, command, pretty
+    project,
+    run_id,
+    worker,
+    partition,
+    checkout_path,
+    revision,
+    timeout_seconds,
+    command,
+    pretty,
 ):
-    """Re-run one run's gate at the integrated revision, recording the report on the run.
+    """Re-run one run's gate at the integrated revision, or its live worker's scoped gate.
 
     Reads the run's stored gate command and base verdict from its committed
     ledger row, re-runs that command against the tree at --checkout-path — the
@@ -4701,7 +4757,40 @@ def crew_verify_gate(
     The re-run's bound is derived from the duration the run's recorded gate
     log carries unless --timeout-seconds names one explicitly; the report
     records which bound applied and its value either way.
+
+    With --worker, measure the live run's committed HEAD on --partition and
+    return tests, test_logs and the gate observation for its manifest. The
+    run's scoped suite supplies the command unless --command names one. The
+    worker bound defaults to 600 seconds, and each call creates its own log
+    beside the run's recorded manifest.
     """
+    if worker:
+        from reckon.crew import promotion_gate, standing_suite
+
+        if revision != "HEAD":
+            raise click.UsageError(
+                "--worker measures the committed HEAD; omit --revision"
+            )
+        root = checkout_path.expanduser().resolve()
+        try:
+            pointer = standing_suite.worker_context(run_id, project, root)
+            result = promotion_gate.run_worker_gate(
+                project=project,
+                run_id=run_id,
+                repository=root,
+                command=command,
+                partition=partition
+                or standing_suite.node_gate_partition(
+                    (pointer.get("node") or {}).get("done_when", "")
+                ),
+                timeout_seconds=timeout_seconds if timeout_seconds is not None else 600,
+            )
+        except (standing_suite.StandingSuiteError, OSError, ValueError) as exc:
+            raise click.ClickException(str(exc)) from exc
+        _emit_crew_result(result, pretty)
+        return
+    if partition:
+        raise click.UsageError("--partition requires --worker")
     _accept_a_matching_project(run_id, project)
     crew_module, _ = _crew_modules()
     record = _gate_opened(

@@ -59,6 +59,45 @@ _PARTITION_RECEIPT = re.compile(r"^EXIT=(-?\d+)\s*$", re.MULTILINE)
 _UNREADABLE_JOB_STATUS = 3
 
 
+def run_worker_gate(
+    *,
+    project: str,
+    run_id: str,
+    repository: Path,
+    command: str | None = None,
+    partition: str,
+    timeout_seconds: float = 600,
+) -> dict[str, Any]:
+    """Run a live worker's scoped gate without requiring a promoted ledger row."""
+    from reckon.crew import standing_suite
+    from reckon.crew.promotion_records import _scoped_suite_command
+
+    pointer = standing_suite.worker_context(run_id, project, repository)
+    revision = standing_suite._revision(repository)
+    resolved = (
+        command
+        if command is not None
+        else _scoped_suite_command(pointer, revision=revision)
+    )
+    observation = standing_suite.run_node_command(
+        repository=repository,
+        run_id=run_id,
+        revision=revision,
+        command=resolved,
+        partition=partition,
+        timeout_seconds=timeout_seconds,
+        label="scoped-gate",
+    )
+    return {
+        "project": project,
+        "run_id": run_id,
+        "tests": resolved,
+        "test_logs": [observation["log_path"]],
+        "gate": observation,
+        "ok": observation["completed"] and observation["exit_status"] == 0,
+    }
+
+
 def _replay_landing(repository: Path) -> Mapping[str, Any]:
     """The landing declaration the replayed repository's flight resolves to."""
     from reckon import flight

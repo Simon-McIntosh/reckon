@@ -1925,7 +1925,15 @@ def classify_pointer(
     # one that pays for recognising a dispatched review, so the pair starts
     # empty and every other row carries it empty.
     in_flight_review: tuple[str, str] = ("", "")
-    if manifest_status in TERMINAL_MANIFEST_STATUSES and not deferred_outcome:
+    # A manifest's terminal word is the run's outcome unless something on disk
+    # still contradicts it (a live process, a superseded body, or a completion
+    # whose process end cannot be proven). Named once because the pre-spawn
+    # reading below is bounded by it as well: a pointer whose phase was last
+    # written at launch must not outrank an outcome the worker wrote after.
+    terminal_verdict = (
+        manifest_status in TERMINAL_MANIFEST_STATUSES and not deferred_outcome
+    )
+    if terminal_verdict:
         terminal_seconds = manifest.stat().st_mtime
         terminal_at = (
             datetime.fromtimestamp(terminal_seconds, tz=UTC)
@@ -1988,10 +1996,18 @@ def classify_pointer(
     # already recorded dead is not waiting to start either, whatever label it
     # still carries: a killed run keeps the phase it held when it died, so
     # honouring the label there would let a pre-spawn word outrank the process.
+    #
+    # A manifest carrying a verdict is the same kind of receipt, written by the
+    # worker itself, and that precedence is applied below rather than here:
+    # ``pre_spawn_reads_as_claim`` withholds the claim as soon as the manifest
+    # reaches a terminal status, so a completed run whose pointer still reads
+    # ``starting`` is read from its manifest, exactly as a queued request that
+    # recorded a launch clock is read from its liveness rather than its label.
     pre_spawn_waiting = (
         phase in _PRE_SPAWN_PHASES
         and alive is not False
         and not _spawn_evidence(record)
+        and not terminal_verdict
         and not _stranded_launch(record, now_seconds=moment)
     )
     # A pre-spawn phase is a reading of a claim, and a claim is all it is: the

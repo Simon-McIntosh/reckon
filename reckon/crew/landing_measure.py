@@ -47,9 +47,11 @@ import shutil
 import statistics
 import subprocess
 import tempfile
+import threading
 import time
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
+from functools import wraps
 from pathlib import Path
 from typing import Any
 
@@ -116,6 +118,71 @@ def measurement_width() -> int:
         return max(1, int(os.environ.get(MEASUREMENT_WIDTH_ENV, "2")))
     except ValueError:
         return DEFAULT_MEASUREMENT_WIDTH
+
+
+_MEASUREMENT_AVAILABLE = threading.Condition()
+
+
+@contextlib.contextmanager
+def _promotion_measurement_slot():
+    """Park remote measurements outside preparation capacity, at bounded width."""
+    from reckon.crew.promotion_requests import (
+        PREPARATION_DONE,
+        PROMOTION_STAGE,
+        claim_promotion_lease,
+        release_promotion_lease,
+    )
+
+    handoff = PREPARATION_DONE.get()
+    if handoff is None:
+        yield
+        return
+    handoff()
+    mark = PROMOTION_STAGE.get()
+    if mark is not None:
+        mark("measurement-wait")
+    with _MEASUREMENT_AVAILABLE:
+        while True:
+            lease = next(
+                (
+                    claimed
+                    for number in range(measurement_width())
+                    if (
+                        claimed := claim_promotion_lease(
+                            f"promotion-measurement-slot-{number}"
+                        )
+                    )
+                    is not None
+                ),
+                None,
+            )
+            if lease is not None:
+                break
+            _MEASUREMENT_AVAILABLE.wait(2.0)
+    from reckon.crew.promotion import _PromotionLeaseRenewer
+
+    renewer = _PromotionLeaseRenewer(lease)
+    renewer.start()
+    if mark is not None:
+        mark("measurement")
+    try:
+        yield
+    finally:
+        renewer.stop()
+        with _MEASUREMENT_AVAILABLE:
+            release_promotion_lease(lease)
+            _MEASUREMENT_AVAILABLE.notify_all()
+        if mark is not None:
+            mark("post-measurement")
+
+
+def _handoff_measurement(function):
+    @wraps(function)
+    def measured(*args, **kwargs):
+        with _promotion_measurement_slot():
+            return function(*args, **kwargs)
+
+    return measured
 
 
 def submit_measurement(
@@ -1217,6 +1284,7 @@ def arm_observation(
     }
 
 
+@_handoff_measurement
 def armed_observations(
     *,
     command: str,

@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-monitor-reads-each-fact-once">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;delivered-work-lands-without-a-coordinator#s2&quot;],&quot;s7&quot;:[&quot;work-flows-to-the-lane#s77&quot;],&quot;s8&quot;:[&quot;delivered-work-lands-without-a-coordinator#s13&quot;],&quot;s10&quot;:[&quot;dispatch-admission-and-landing-take-seconds#s7&quot;],&quot;s9&quot;:[&quot;dispatch-admission-and-landing-take-seconds#s2&quot;,&quot;dispatch-admission-and-landing-take-seconds#s3&quot;,&quot;dispatch-admission-and-landing-take-seconds#s4&quot;,&quot;dispatch-admission-and-landing-take-seconds#s5&quot;,&quot;dispatch-admission-and-landing-take-seconds#s6&quot;,&quot;dispatch-admission-and-landing-take-seconds#s7&quot;,&quot;dispatch-admission-and-landing-take-seconds#s8&quot;,&quot;dispatch-admission-and-landing-take-seconds#s10&quot;]}">
   <title>Dispatch, Admission And Landing Take Seconds | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="12">
+<meta name="plan-version" content="13">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -65,7 +65,7 @@
     <p><strong>Done when.</strong> A test orders 100 queued requests over a temporary population of 300 pointers: 20 reviews naming a source node, reviews naming a complete run id, non-reviews and one ambiguous source. The pass lists the pointers at most once and returns the reference order and identities; a pass with only non-reviews lists none. Negative control: the base makes at least 20 listings for the source-node cohort. On three matched trials against a copy of the store, the read plus ordering takes at most a quarter of the base. This section waits on the order change in <code>delivered-work-lands-without-a-coordinator</code> §2, which rewrites the same function. Runs on <code>all_debug</code>; importers add no failure against the base. Write paths: <code>reckon/crew/promotion_requests.py</code>, <code>reckon/crew/recovery_review_delivery.py</code> and <code>tests/test_promotion_order_reads_one_population.py</code>.</p>
 
     <h2 id="s4">§4 — One slow project does not hold the others' refresh</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s4" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p><strong>Why.</strong> The refresh stage has no time bound, and it is where a four to seven minute tick sits. What each project's refresh reads is owned elsewhere. What is not owned is the schedule: eighteen projects are refreshed in turn, so a slow read in one delays the obligations of all, and a project's index trailed its head by over three hours on 16 November.</p>
     <p><strong>Deliverable.</strong> The refresh stage returns within a stated budget. A project whose refresh has finished is published; a project still reading is answered from its last result, marked stale with its age by the marking the roadmap snapshot already uses, never as a fresh empty answer and never through a new answer state. What an unchanged project reads is owned by <code>the-monitor-reads-each-fact-once</code> and is not part of this section.</p>
     <p><strong>Done when.</strong> A test holds one temporary project's input read open indefinitely while a second project's result is ready. The stage returns within 10 s, publishes the second project's result equal to an independent cold derivation, and answers the first from its last result marked stale with its age. Negative control: at the base the held read keeps the finished project unreported past 10 s. Runs on <code>all_debug</code>; importers add no failure against the base. Write paths: <code>reckon/crew/station.py</code>, <code>reckon/crew/station_obligations.py</code> and <code>tests/test_project_refresh_returns_within_its_budget.py</code>.</p>
@@ -118,6 +118,9 @@
 </section>
 
     <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-11-17T09:01:00Z">
+    <div class="r-comment-body"><p>§4 landed by direct merge (head <code>26d96e6916</code>), on the lead's instruction. The station&#x27;s refresh stage returns within its budget: a project whose refresh has finished is published, and one still reading is answered from its last result marked stale with its age, by the reader and by the prompt hook, never as a fresh empty answer. The head merges the primary branch after the pane-count landing and was reviewed at that merged head. Merged candidate gate: 7 passed in 3.01s.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-11-17T00:58:00Z">
     <div class="r-comment-body"><p>§2 landed by direct merge (head <code>adcc599978</code>), on the lead's instruction. A dispatch preview's scope report reads only the claims the candidate's paths and repositories can meet: 243 git calls fall under 20 in the 240-pointer case, and three live previews took 23, 10 and 7 seconds, a median of 10 s against 86 s before. Review 120 of 120, 41 importer files with no added failure, merged candidate gate 4 of 4.</p></div>
 </div>
@@ -147,6 +150,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261117T043317754541-review-of-a-slow-project-does-not-hold-the-refresh-b699ccc04e09" data-who="reckon-build" data-when="2026-11-17T04:39:43Z">
     <div class="r-comment-body"><p>Incremental review of e5e928379223b13acafb80aceab14bb8cf350d1e through b699ccc04e09de52e5154914332fe90ab8d3d8eb finds the retained-answer repair effective, with all six dimensions scored and no new in-scope findings; armed delta 0, three importer additions preserved under outside_scope.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261117T081145183680-review-of-a-slow-project-does-not-hold-the-refresh-26d96e6916df" data-who="reckon-build" data-when="2026-11-17T08:20:51Z">
+    <div class="r-comment-body"><p>Parsed independent review stored for base 3c3aefe8aa6d3231b99011f7b14baa23eda9b14f and head 26d96e6916dfb1bfe1b4def40945d08c81144b40; scores 20/17/20/19/20/20, no in-scope blocking findings, zero added armed failures, original importer qualification unresolved.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-11-17T01:09:00Z">
     <div class="r-comment-body"><p>§5 landed by direct merge (head <code>d8d75400a9</code>), on the lead's instruction. A plan write's readiness and closure fields are read through the roadmap snapshot in place of composing a roadmap ahead of it; a metadata write and an unchanged declaration build none. Review 120 of 120. Merged candidate gate: 21 passed in 8.37s.</p></div>
