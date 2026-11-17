@@ -286,3 +286,135 @@ def test_a_held_derivation_retains_only_a_real_last_answer(
         release.set()
         beat.drain(timeout=10)
         store.close()
+
+
+@pytest.mark.parametrize("read_from", ["station", "snapshot"])
+@pytest.mark.parametrize("empty_previous", [False, True])
+@pytest.mark.timeout(40)
+def test_retained_answers_are_labelled_stale_by_the_reader_and_prompt(
+    home, tmp_path, monkeypatch, capsys, read_from, empty_previous
+):
+    from reckon.hooks import coordinator_obligations as hook
+
+    scenario = f"{read_from}-{'empty' if empty_previous else 'duties'}"
+    monkeypatch.setenv("RECKON_HOME", str(home / scenario))
+    export_home = obligation_snapshot.crew_home()
+    store = station_store.StationStore(tmp_path / scenario / "station")
+    store.set_station_value(station_store.CREW_HOME_KEY, str(export_home))
+    beat = station.DutyBeat(store.root)
+    entered, release = threading.Event(), threading.Event()
+    moment = MOMENT
+    observed = moment
+    session = _session(SLOW)
+    run_id = f"run-{scenario}"
+    pointer = runs.pointer_path(run_id)
+    pointer.parent.mkdir(parents=True, exist_ok=True)
+    pointer.write_text(
+        json.dumps({"run_id": run_id, "project": SLOW, "session": session})
+    )
+    rows = (
+        []
+        if empty_previous
+        else [
+            {
+                "kind": "blocked",
+                "run_id": run_id,
+                "node": "fixture-input",
+                "age_seconds": 0,
+                "next_command": "inspect the project input",
+            }
+        ]
+    )
+    payload = {
+        "project": SLOW,
+        "session": session,
+        "obligations": rows,
+        "acknowledged": [],
+        "summary": {"count": len(rows), "oldest_age_seconds": 0},
+    }
+    monkeypatch.setattr(
+        station_obligations,
+        "follower_rows",
+        lambda project: [{"session": session, "live": True}],
+    )
+    monkeypatch.setattr(
+        obligation_snapshot, "fleet_state", lambda *a, **k: SimpleNamespace(findings=[])
+    )
+    monkeypatch.setattr(obligation_snapshot, "payload_for", lambda *a, **k: payload)
+    monkeypatch.setattr(obligation_snapshot, "_utc_now", lambda: observed)
+    monkeypatch.setattr(
+        obligation_snapshot,
+        "station_runtime_candidate",
+        lambda **k: (store.root if read_from == "station" else None, "fixture"),
+    )
+    monkeypatch.setattr(hook, "snapshot_module", lambda: obligation_snapshot)
+    monkeypatch.setattr(hook, "locate_session", lambda event: (SLOW, session))
+    event = {"session_id": session, "hook_event_name": "UserPromptSubmit"}
+    try:
+        store.heartbeat(now=moment)
+        station_obligations.publish(
+            store, project=SLOW, home=export_home, changed=True, now=moment
+        )
+        assert hook._prompt(event) == 0
+        capsys.readouterr()
+
+        def held(*args, **kwargs):
+            entered.set()
+            assert release.wait(20), "the case did not release the refresh input"
+            return SimpleNamespace(findings=[])
+
+        monkeypatch.setattr(obligation_snapshot, "fleet_state", held)
+        observed = moment + timedelta(seconds=180)
+        store.heartbeat(now=observed)
+        station_obligations.publish(
+            store,
+            project=SLOW,
+            home=export_home,
+            changed=True,
+            now=observed,
+            submit=beat.request,
+        )
+        assert entered.wait(5), "the held refresh did not reach its input"
+        # The producer is still alive; the age belongs to its retained answer.
+        observed += timedelta(seconds=20)
+        store.heartbeat(now=observed)
+        station_obligations.export_snapshot(
+            store, project=SLOW, home=export_home, now=observed, force=True
+        )
+        answer = obligation_snapshot.read_station_answer(SLOW, session, now=observed)
+        assert answer is not None and answer["source"] == read_from
+        assert answer["state"] == obligation_snapshot.STATION_LIVE
+        assert answer["heartbeat_age_seconds"] == 0
+        rendered = hook.format_checklist(answer["payload"], limit_resets=[])
+        assert "stale" in rendered and "3m20s" in rendered, (
+            "a live heartbeat hid the retained answer's staleness and current age: "
+            + rendered
+        )
+        assert answer["payload"]["stale"]["age_seconds"] == 200
+        assert hook._prompt(event) == 0
+        injected = capsys.readouterr().out
+        assert injected, "the freshness transition was suppressed as unchanged duties"
+        checklist = json.loads(injected)["hookSpecificOutput"]["additionalContext"]
+        assert "stale" in checklist and "3m20s" in checklist
+        assert "watch --ensure" not in checklist
+        assert ("0 outstanding" if empty_previous else run_id) in checklist
+        assert hook._prompt(event) == 0
+        assert capsys.readouterr().out == "", (
+            "an unchanged retained answer was repeated"
+        )
+        release.set()
+        beat.drain(timeout=10)
+        assert not beat.in_flight()
+        assert hook._prompt(event) == 0
+        fresh = capsys.readouterr().out
+        if not empty_previous:
+            assert fresh, "clearing staleness did not restore the fresh list"
+            assert (
+                "stale"
+                not in json.loads(fresh)["hookSpecificOutput"]["additionalContext"]
+            )
+        assert "stale" not in _document(store, SLOW)
+    finally:
+        release.set()
+        beat.drain(timeout=10)
+        store.close()
