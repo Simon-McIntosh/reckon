@@ -7,6 +7,7 @@ import json
 import pytest
 
 from reckon.crew import promotion_requests as requests
+from reckon.crew import recovery_review_acceptance as acceptance
 from reckon.crew.node import CrewError
 
 EARLIER_CODE = "a" * 40
@@ -160,6 +161,43 @@ def test_an_explicit_retry_keeps_its_callers_options(monkeypatch):
     assert retried["phase"] == requests.REQUESTED
     assert retried["kind"] == "command"
     assert retried["options"] == {"verdict": "not-run"}
+
+
+def test_a_code_reload_invalidates_the_acceptance_refusal_memo(monkeypatch, tmp_path):
+    _running(monkeypatch, loaded=EARLIER_CODE, current=EARLIER_CODE)
+    request = _request("r-acceptance-memo")
+    pointer = requests.runs.read_pointer(request["run_id"])
+    pointer["role"] = "review"
+    monkeypatch.setattr(
+        acceptance, "_review_head_and_tree", lambda _: ("head", tmp_path)
+    )
+    monkeypatch.setattr(
+        acceptance, "select_review_for_head", lambda *a, **k: ({}, "head")
+    )
+    monkeypatch.setattr(acceptance, "_review_accepts_promotion", lambda _: True)
+    monkeypatch.setattr(acceptance, "_recorded_gate_passed", lambda _: ({}, ()))
+    monkeypatch.setattr(acceptance, "_acceptance_input_view", lambda *a: {})
+    monkeypatch.setattr(acceptance, "_acceptance_remote_inputs", lambda *a: [])
+    policy = ["earlier policy"]
+    monkeypatch.setattr(acceptance, "delivery_hold_reason", lambda *a: policy[0])
+
+    first = acceptance.accept_clean_review(pointer)
+    assert first["accepted"] is False
+    assert "earlier policy" in first["reason"]
+    assert acceptance.accept_clean_review(pointer)["unchanged"] is True
+    _running(monkeypatch)
+    policy[0] = "current policy"
+    fresh = acceptance.accept_clean_review(pointer)
+    print(f"memo after reload: {fresh}")
+    assert "current policy" in fresh["reason"], fresh
+    assert not fresh.get("unchanged"), fresh
+    assert fresh["code_revision"] == CURRENT_CODE
+    memo = requests._read(
+        requests.runs.run_dir(request["run_id"]) / "acceptance-refusal.json"
+    )
+    assert memo["code_revision"] == CURRENT_CODE
+    assert memo["refusal"]["code_revision"] == CURRENT_CODE
+    assert acceptance.accept_clean_review(pointer)["unchanged"] is True
 
 
 @pytest.mark.parametrize(

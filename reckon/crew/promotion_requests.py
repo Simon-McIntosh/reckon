@@ -129,6 +129,11 @@ def _current_code_revision() -> str:
     return checkout_trust.source_code_identity(Path(__file__).resolve().parent.parent)
 
 
+def judging_code_revision() -> str:
+    """The immutable code identity shared by promotion verdict writers."""
+    return _JUDGING_CODE_REVISION
+
+
 def _refusal_uses_replaced_code(request: Mapping[str, Any]) -> bool:
     """Retry a superseded verdict only once the current image is running.
 
