@@ -10,7 +10,7 @@
   <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s83">
   <meta name="evidence-verdict" content="pass">
   <meta name="evidence-date" content="2026-11-17">
-  <meta name="evidence-commit" content="612f7f2dc3">
+  <meta name="evidence-commit" content="19e566b147">
   <title>Lifted holds are read only where the log grew | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -72,16 +72,36 @@
   the fragment case fails (<code>assert 21 == 20</code>), because the
   half-written record is handed to the decoder and consumed.</p>
 
+  <h3 id="lifted-holds-read-only-where-the-log-grew-race">Two overlapping reads</h3>
+
+  <p>The offset a read advances and the set that offset stands for are one
+  fact, and they were published by two critical sections: the read advanced the
+  shared scan offset first, the accumulated set landed after. A second sweep
+  running between the two took its start from the offset the first had already
+  advanced to, found a start its stored answer was not reached from, dropped
+  every hold the first had counted but not yet published, and recorded an offset
+  past those lines &mdash; after which the sweep resumes a hold it already
+  lifted. Both now advance inside one critical section.</p>
+
+  <p>The test interleaves two reads: it seeds 20 lines and their set, appends
+  three, and holds the first read inside its append read &mdash; offset
+  advanced, set not yet published &mdash; while a second read runs to
+  completion. It asserts the final set holds all <strong>23</strong> pairs and
+  that the three appended lines are decoded exactly once, with no line decoded
+  twice. Run against the code before this repair (<code>39524c0f</code>) the
+  case fails: the final set holds only the three appended pairs, and the 20
+  seeded holds are gone
+  (<code>assert {('r-000020-node', ...)} == {('r-000000-node', 'hold-0'), ...}</code>).</p>
+
   <h3 id="lifted-holds-read-only-where-the-log-grew-arms">Matched arms</h3>
 
   <p>The base arm at <code>73e2f52fa998607d07caffa8dfcc9f9f1c8cce62</code>
   runs the two tests that import the changed modules,
   <code>tests/test_staged_write_inventory.py</code> and
   <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>:
-  <strong>58 passed</strong>, exit 0. The after arm at
-  <code>612f7f2dc32b923da317e653435d45b805c8ae98</code> adds this node's test
-  file and reports <strong>61 passed</strong>, exit 0 &mdash; the same 58 plus
-  the three cases above. <code>ruff check</code> is clean on every staged path, and
+  <strong>58 passed</strong>, exit 0. The after arm adds this node's test file and
+  reports <strong>62 passed</strong>, exit 0 &mdash; the same 58 plus the four
+  cases above. <code>ruff check</code> is clean on every staged path, and
   <code>ruff format --check</code> adds no finding: the three hunks it reports in
   <code>reckon/crew/resumption.py</code> are present in the base blob as well.</p>
 </section>
