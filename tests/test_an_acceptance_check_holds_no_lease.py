@@ -42,9 +42,11 @@ def _local_scheduler(argv, **options):
         return subprocess.run(argv, check=False, **options)
     step = shlex.split(argv[argv.index("--wrap") + 1])
     script = step[step.index("-c") + 1]
-    destination = Path(step[step.index(">") + 1])
+    destination = Path(step[step.index(">>") + 1])
+    assert destination.is_file() and not destination.is_symlink()
     completed = subprocess.run(["bash", "-c", script], check=False, **options)
-    destination.write_text((completed.stdout or "") + (completed.stderr or ""))
+    with destination.open("a", encoding="utf-8") as stream:
+        stream.write((completed.stdout or "") + (completed.stderr or ""))
     return subprocess.CompletedProcess(argv, completed.returncode, "12345\n", "")
 
 
