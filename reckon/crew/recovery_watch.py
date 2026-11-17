@@ -3928,12 +3928,15 @@ def watch_ticker(
                     # carries what this poll actually parsed. An unchanged fleet
                     # resumes from every cursor and parses nothing, which is the value
                     # a reader uses to see the poll is stat-only rather than re-reading
-                    # the whole of every transcript. The admission check's own reads are
-                    # counted and reset on the same beat, so the two counters describe
-                    # one poll each.
+                    # the whole of every transcript. The stream counter is taken and
+                    # reset by the registration below rather than here, because the
+                    # transition pass that follows it in the same loop reads streams
+                    # too: a reset at the top of the tick would drop those bytes, and a
+                    # poll would report less than it parsed. The admission check's own
+                    # counter is reset here, so each of its reads lands in exactly one
+                    # poll.
                     from reckon import _backends
 
-                    _backends.take_parsed_stream_bytes()
                     take_admission_stream_bytes()
                     # The crew home's fingerprint. The listing, the run-directory
                     # walk and the git sweeps fire only when it moves; between moves the
