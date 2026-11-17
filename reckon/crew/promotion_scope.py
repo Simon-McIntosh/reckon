@@ -1521,14 +1521,49 @@ def _record_landing_comment(
                 # and a later call's narrative that differs from it is reported
                 # beside the receipt rather than raised as a refusal, which
                 # would leave the live pointer and the worktree for a reader to
-                # clear by hand. Before the row exists there is no promotion to
-                # defer to, so a differing narrative stays a refusal.
+                # clear by hand.
+                #
+                # No row means no promotion recorded that text: the attempt
+                # that wrote it wrote the comment before the row, and its row
+                # write was rolled back, so the comment is the only trace of a
+                # landing that never committed. Nothing recorded that narrative
+                # and nothing pins it, so recording it now would defend a
+                # promotion that does not exist. Replace it with the narrative
+                # being promoted, keeping the comment's id so a retry lands
+                # rather than repeating wording its author cannot reconstruct.
                 if not _ledger_holds_row(project, root, run_id, unreadable=False):
-                    raise CrewError(
-                        f"landing comment {comment_id!r} for plan {plan!r} already "
-                        "contains a different narrative; refusing to report the "
-                        "corrected outcome as recorded"
-                    )
+                    superseded = _strip_tags(str(existing.get("body") or ""))
+                    for position, item in enumerate(items):
+                        if item is existing:
+                            items[position] = {
+                                **existing,
+                                "who": author,
+                                "when": when,
+                                "body": desired_body,
+                            }
+                            break
+                    payload = {**state, "comments": comments}
+                    if started:
+                        payload["status"] = "in-progress"
+                    try:
+                        _store.write_plan(
+                            project,
+                            plan,
+                            payload,
+                            version,
+                            root,
+                            artifact_type="plan",
+                        )
+                    except _store.VersionConflict:
+                        continue
+                    return {
+                        "recorded": True,
+                        "comment_id": comment_id,
+                        "section": anchor,
+                        "already_recorded": False,
+                        "superseded_narrative": superseded,
+                        **({"status": "in-progress"} if started else {}),
+                    }
                 # Both sides go to the stripper as they were written: it
                 # unescapes once, so a narrative that names an entity in its
                 # own text keeps it. Feeding it the already-unescaped forms
