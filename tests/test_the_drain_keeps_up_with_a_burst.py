@@ -102,54 +102,38 @@ def test_changed_copied_set_is_refused(tmp_path):
         validate_dataset(data)
 
 
-def test_trace_replay_preserves_each_recorded_verdict_and_names_censoring(
-    tmp_path, monkeypatch
-):
-    from reckon.crew import promotion_requests
-
-    monkeypatch.setattr(promotion_requests, "REFILL_POLL_SECONDS", 0.01)
+def test_real_replay_exercises_guards_and_a_positive_control(tmp_path):
     crew = tmp_path / "source-crew"
-    for phase in (
-        "promoted",
-        "promotion-refused",
-        "promotion-failed",
-        "promotion-deferred",
-    ):
-        request = {
-            **_request(phase, START),
-            "phase": phase,
-            "kind": "complete",
-            "started_at": START,
-            "finished_at": START,
-            "priority_override": None,
-        }
-        _write(crew / "promotion-requests" / f"{phase}.json", request)
-    _write(crew / "promotion-requests" / "unknown.json", _request("unknown", START))
+    request = {
+        **_request("r-unavailable", START),
+        "project": "missing",
+        "kind": "complete",
+        "options": {"gate": "passed"},
+        "priority_override": None,
+    }
+    _write(crew / "promotion-requests" / "run.json", request)
     data = collect(crew, START, END)
     before = {
         p.relative_to(crew): p.read_bytes() for p in crew.rglob("*") if p.is_file()
     }
-    result = replay(data)
-    assert result["verdicts_match"] is True
-    assert result["timed_requests"] == 4
-    assert result["unmeasured_requests"] == 1
-    assert result["verdicts"] == {
-        "promoted": 1,
-        "promotion-refused": 1,
-        "promotion-failed": 1,
-        "promotion-deferred": 1,
-    }
-    assert result["successful_promotions_per_hour"] > 0
+    result = replay(
+        data,
+        sources={"projects": {}, "heads": {}, "sha256": "fixture"},
+        assets=tmp_path,
+        scratch_root=tmp_path,
+    )
+    assert result["positive_control"]["phase"] == "promoted"
+    assert result["requests"] == 1
+    assert result["verdicts"] == {"promotion-refused": 1}
+    assert result["successful_promotions_per_hour"] == 0
     assert {
         p.relative_to(crew): p.read_bytes() for p in crew.rglob("*") if p.is_file()
     } == before
 
 
-def test_trace_without_service_receipts_cannot_report_a_rate(tmp_path):
-    crew = tmp_path / "crew"
-    _write(crew / "promotion-requests" / "run.json", _request("run", START))
+def test_empty_real_replay_reports_no_rate(tmp_path):
     with pytest.raises(ValueError, match="no rate"):
-        replay(collect(crew, START, END))
+        replay(collect(tmp_path / "empty", START, END), sources={}, assets=tmp_path)
 
 
 def _queue_for_repository(run_id, repository, *, role="implement"):
