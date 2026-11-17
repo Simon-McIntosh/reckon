@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="429">
+<meta name="plan-version" content="431">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -1653,6 +1653,12 @@ staged paths.</p>
 <div class="r-comment" data-section="s82" data-id="c-20261116T213655040575" data-who="reckon-96" data-when="2026-11-16T21:50:00Z">
     <div class="r-comment-body"><p>s82 is already implemented on main. <code>d6da74c2de</code> ("fix(ledger): name store contention in run refusals", 16 November 13:21 local time) makes <code>ledger._index_append</code> branch on <code>run_store._locked</code>. Its lock refusal says the store was locked past the wait bound and to promote the run again, and names no import script. <code>tests/test_a_locked_store_refusal_names_the_lock.py</code> asserts both arms s82 specified. The section was written from an earlier reading of the module. Its queued run <code>r-20261116T204441080785-a-locked-store-refusal-names-the-retry</code> was dropped, and the section is declared done, answering the design review of revision 404.</p></div>
 </div>
+<div class="r-comment" data-section="s83" data-id="c-run-r-20261117T081527665536-review-of-lifted-holds-read-only-where-the-log-grew-66a9cb034b8a" data-who="reckon-build" data-when="2026-11-17T08:17:10.326Z">
+    <div class="r-comment-body"><p>Independent review of r-20261117T044909932126-lifted-holds-read-only-where-the-log-grew at base 73e2f52fa998607d07caffa8dfcc9f9f1c8cce62 and head 66a9cb034b8a82a3b7c71b5abc1c87c59fdd8314: scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 16, fit 19, reuse 4 (96/120), 0 added suite failures, two non-blocking findings (the whole-line clamp at reckon/crew/resumption.py:838 has no failing case, and the tail read duplicates reckon/crew/recovery_wait.py:157 `_appended_lines`).</p></div>
+</div>
+<div class="r-comment" data-section="s83" data-id="c-run-r-20261117T084857916191-review-of-lifted-holds-read-only-where-the-log-grew-39524c0f3698" data-who="reckon-build" data-when="2026-11-17T09:07:22Z">
+    <div class="r-comment-body"><p>review record will be written at the two declared review-records paths; no plan edit.</p></div>
+</div>
 <div class="r-comment" data-section="s85" data-id="c-20261117T082107016083" data-who="reckon-96" data-when="2026-11-17T08:25:00Z">
     <div class="r-comment-body"><p>s85 is withdrawn. The content review of revision 426 showed its trigger is already covered. Any commit to <code>reckon/run_store.py</code> moves the checkout's code stamp, and the pass-boundary reload window (<code>follower_reload.ReloadWindow.due</code>, fed by <code>admission/service.py</code>) and <code>fleet_supervisor</code> already reload a service whose running stamp differs. The stall it cited, no admission pass from 02:27Z to 04:11Z, was a stuck reload boundary, fixed at <code>658ee9d230</code>. The 3 h 37 min stale admit service outlived that window only because of the same stuck boundary. So s85's queued run <code>r-20261117T050926723517</code> was dropped, and s84 alone removes the harm a stale process can do to the store.</p></div>
 </div>
@@ -1665,8 +1671,8 @@ staged paths.</p>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T042852990093-obligations-read-the-station" data-who="reckon-build" data-when="2026-10-27T13:28:42Z">
     <div class="r-comment-body"><p>The station computes each live session's obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
 </div>
-<div class="r-comment" data-section="s83" data-id="c-run-r-20261117T081527665536-review-of-lifted-holds-read-only-where-the-log-grew-66a9cb034b8a" data-who="reckon-build" data-when="2026-11-17T08:17:10.326Z">
-    <div class="r-comment-body"><p>Independent review of r-20261117T044909932126-lifted-holds-read-only-where-the-log-grew at base 73e2f52fa998607d07caffa8dfcc9f9f1c8cce62 and head 66a9cb034b8a82a3b7c71b5abc1c87c59fdd8314: scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 16, fit 19, reuse 4 (96/120), 0 added suite failures, two non-blocking findings (the whole-line clamp at reckon/crew/resumption.py:838 has no failing case, and the tail read duplicates reckon/crew/recovery_wait.py:157 `_appended_lines`).</p></div>
+<div class="r-comment" data-section="s84" data-id="c-run-r-20261117T085953647948-review-of-older-code-never-migrates-a-newer-store-19d35d7deff0" data-who="reckon-build" data-when="2026-11-17T09:02:12.818Z">
+    <div class="r-comment-body"><p>independent review of run r-20261117T050100558634-older-code-never-migrates-a-newer-store at base d5694fa44d63c6b52d9b80e8315d1afa897bc11e and head 19d35d7deff0f0c459dc7cf70facdbe317e31ef7 — parsed record: 5 item verdicts plus CALL_SITES, 6 scores, 6 justifications.</p></div>
 </div>
 </section>
 </main>
