@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-monitor-reads-each-fact-once">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s8&quot;:[&quot;delivered-work-lands-without-a-coordinator#s6&quot;,&quot;delivered-work-lands-without-a-coordinator#s7&quot;],&quot;s10&quot;:[&quot;delivered-work-lands-without-a-coordinator#s4&quot;,&quot;delivered-work-lands-without-a-coordinator#s5&quot;,&quot;delivered-work-lands-without-a-coordinator#s6&quot;,&quot;delivered-work-lands-without-a-coordinator#s7&quot;,&quot;delivered-work-lands-without-a-coordinator#s8&quot;,&quot;delivered-work-lands-without-a-coordinator#s9&quot;,&quot;delivered-work-lands-without-a-coordinator#s11&quot;,&quot;delivered-work-lands-without-a-coordinator#s12&quot;,&quot;delivered-work-lands-without-a-coordinator#s13&quot;,&quot;delivered-work-lands-without-a-coordinator#s14&quot;,&quot;delivered-work-lands-without-a-coordinator#s15&quot;,&quot;delivered-work-lands-without-a-coordinator#s16&quot;,&quot;delivered-work-lands-without-a-coordinator#s17&quot;]}">
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="32">
+<meta name="plan-version" content="33">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -131,7 +131,7 @@
     <p><strong>Done when.</strong> A test takes a fixture run through delivery, a review, a refused promotion, a retry and a landing, and reads back every instant in order with both attempts and the refusal's reason. A census over ten fixture runs assigns every interval to one stage and leaves none unattributed. Negative control: with one receipt suppressed, its interval is reported as unknown, not zero. The record for a run stays under 16 kB after 50 attempts. Importers add no failure against the base, on <code>all_debug</code>. Write paths: <code>reckon/crew/promotion_requests.py</code>, <code>reckon/crew/recovery_review_dispatch.py</code>, <code>reckon/crew/session_host.py</code>, <code>reckon/crew/stage_receipts.py</code> and <code>tests/test_review_handoff_has_durable_stage_receipts.py</code>.</p>
 
     <h2 id="s14">§14 — The promotion queue and the admission queue share one order</h2>
-<section data-reckon="section" data-id="s14" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s14" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p><strong>Why.</strong> §2 landed its order inside the promotion module to unblock the queue on 16 November. The admission queue already ranks by the same rules and already reports the rule that placed each row. Two definitions of one rule drift, and the next change to fairness would reach one queue and not the other.</p>
     <p><strong>Deliverable.</strong> One definition of the order, used by both queues, with the promotion queue's one addition, the fewest promotions served in the window, expressed as part of it. The served order of §2's cases is unchanged.</p>
     <p><strong>Done when.</strong> <code>git grep</code> at head finds one definition of the precedence rule and both queues calling it; the promotion module is shorter than at the base; §2's six cases pass unchanged and the admission order's own tests pass. A test changes the starvation bound in the one definition and finds both queues' orders change. Negative control: at the base revision the same change moves one queue only. Importers of both modules add no failure against the base, on <code>all_debug</code>. Write paths: <code>reckon/crew/queue_order.py</code>, <code>reckon/crew/promotion_requests.py</code> and <code>tests/test_both_queues_share_one_order.py</code>.</p>
@@ -164,8 +164,23 @@
 </section>
 
     <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s14" data-id="c-close-s14" data-who="reckon-build" data-when="2026-11-17T12:28:00Z">
+    <div class="r-comment-body"><p>§14 landed through the crew's own promotion after its review (landing commit <code>2410997514</code>). The promotion queue and the admission queue call one definition of their precedence rule; reviewed 120 of 120 with no finding.</p></div>
+</div>
 <div class="r-comment" data-section="s15" data-id="c-close-s15" data-who="reckon-build" data-when="2026-11-17T12:21:00Z">
-    <div class="r-comment-body"><p>§15 landed by direct merge (head <code>f3662210f6</code>), on the lead's instruction. A promotion that does not complete leaves the plan document, its version and the index for that path as they were, holding the plan writer lock through snapshot, commit and rollback. The first head landed at 8db4627633; this follow-up head answers its review&#x27;s blocking finding and was reviewed 119 of 120 with no blocking finding. Merged candidate gate: 50 passed in 8.83s.</p></div>
+    <div class="r-comment-body"><p>§15 landed by direct merge (head <code>f3662210f6</code>), on the lead's instruction. A promotion that does not complete leaves the plan document, its version and the index for that path as they were, holding the plan writer lock through snapshot, commit and rollback. The first head landed at 8db4627633; this follow-up head answers its review's blocking finding and was reviewed 119 of 120 with no blocking finding. Merged candidate gate: 50 passed in 8.83s.</p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261117T021343280250-review-of-a-failed-promotion-restores-its-plan-935996ceabfa" data-who="reckon-build" data-when="2026-11-17T02:24:26Z">
+    <div class="r-comment-body"><p>Independent review of b8dc50aa168d697d3c8201c5a213282c8d610641..935996ceabfae1086d0d43cb92f8316f4da61616 stores both parsed records; six dimensions scored 20/20/20/20/20/5, zero added gate failures, prior concurrency blocker answered, one non-blocking duplicated-comment-transformation finding.</p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261116T233459980246-a-failed-promotion-restores-its-plan" data-who="reckon-build" data-when="2026-11-17T02:36:14Z">
+    <div class="r-comment-body"><p>Failed promotions now verify exact plan-write ownership under the existing plan-path lock and atomically verify/restore staging under the git index lock; interleaved state, prose, comment and index edits survive, and commutative peer-comment merges keep their own protected rollback checkpoint. All 95 scoped checks pass (repair base: 77; original armed base: 58), each answering source commit has a failing reversal control (17 and 2 failures), and the final importer comparison adds zero failure ids (91 unchanged failures; passes 1132 to 1150), all on all_debug.</p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261117T002355536252-review-of-a-failed-promotion-restores-its-plan-b8dc50aa168d" data-who="reckon-build" data-when="2026-11-17T00:32:44Z">
+    <div class="r-comment-body"><p>Independent review of 891a4e54f19486e82117d68826044be51d2e0a8d..b8dc50aa168d697d3c8201c5a213282c8d610641 stored in both granted review records; six scores 16/20/20/18/20/20, zero added failure ids, one blocking same-plan concurrent-write rollback defect; both review contract checks pass.</p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261117T120051998024-review-of-a-failed-promotion-restores-its-plan-f3662210f69e" data-who="reckon-build" data-when="2026-11-17T12:08:36Z">
+    <div class="r-comment-body"><p>Independent review of f3662210f69ee18cf7367978f276f4b2428496fb records no blocking or non-blocking findings; all six dimensions scored, zero added failures in the armed pair, and historical importer caveats retained.</p></div>
 </div>
 <div class="r-comment" data-section="s16" data-id="c-s16-s17-added" data-who="reckon-build" data-when="2026-11-17T11:50:00Z">
     <div class="r-comment-body"><p>§16 and §17 added from two cases a peer session measured on its own runs on 17 November: eighteen promoted runs stuck awaiting merge repair after redelivery, and one test red on the primary branch charged as an added failure to every run that merged it. The red test itself is in the peer's own area and is theirs to repair.</p></div>
@@ -214,18 +229,6 @@
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261117T114949307253-review-of-every-stage-of-a-delivered-run-leaves-a-receipt-d5259325b79c" data-who="reckon-build" data-when="2026-11-17T11:56:56Z">
     <div class="r-comment-body"><p>Independently reviewed 732ca20cffc3b2963baf6a0d31221a22e56ef19c..d5259325b79c60164047fc3980af8df890778d69 across the six requested targets; six dimensions 20/20, no findings; historical baseline adds 13 failure ids, authorized current-primary gate and importers add zero; both parsed records pass their checks.</p></div>
-</div>
-<div class="r-comment" data-section="s15" data-id="c-run-r-20261117T021343280250-review-of-a-failed-promotion-restores-its-plan-935996ceabfa" data-who="reckon-build" data-when="2026-11-17T02:24:26Z">
-    <div class="r-comment-body"><p>Independent review of b8dc50aa168d697d3c8201c5a213282c8d610641..935996ceabfae1086d0d43cb92f8316f4da61616 stores both parsed records; six dimensions scored 20/20/20/20/20/5, zero added gate failures, prior concurrency blocker answered, one non-blocking duplicated-comment-transformation finding.</p></div>
-</div>
-<div class="r-comment" data-section="s15" data-id="c-run-r-20261116T233459980246-a-failed-promotion-restores-its-plan" data-who="reckon-build" data-when="2026-11-17T02:36:14Z">
-    <div class="r-comment-body"><p>Failed promotions now verify exact plan-write ownership under the existing plan-path lock and atomically verify/restore staging under the git index lock; interleaved state, prose, comment and index edits survive, and commutative peer-comment merges keep their own protected rollback checkpoint. All 95 scoped checks pass (repair base: 77; original armed base: 58), each answering source commit has a failing reversal control (17 and 2 failures), and the final importer comparison adds zero failure ids (91 unchanged failures; passes 1132 to 1150), all on all_debug.</p></div>
-</div>
-<div class="r-comment" data-section="s15" data-id="c-run-r-20261117T002355536252-review-of-a-failed-promotion-restores-its-plan-b8dc50aa168d" data-who="reckon-build" data-when="2026-11-17T00:32:44Z">
-    <div class="r-comment-body"><p>Independent review of 891a4e54f19486e82117d68826044be51d2e0a8d..b8dc50aa168d697d3c8201c5a213282c8d610641 stored in both granted review records; six scores 16/20/20/18/20/20, zero added failure ids, one blocking same-plan concurrent-write rollback defect; both review contract checks pass.</p></div>
-</div>
-<div class="r-comment" data-section="s15" data-id="c-run-r-20261117T120051998024-review-of-a-failed-promotion-restores-its-plan-f3662210f69e" data-who="reckon-build" data-when="2026-11-17T12:08:36Z">
-    <div class="r-comment-body"><p>Independent review of f3662210f69ee18cf7367978f276f4b2428496fb records no blocking or non-blocking findings; all six dimensions scored, zero added failures in the armed pair, and historical importer caveats retained.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-11-16T23:25:00Z">
     <div class="r-comment-body"><p>§2 landed by direct merge at <code>112bbec4b6</code> (head <code>18f4fdaf71</code>), on the lead's instruction, because its own promotion request waited in the queue it replaces. The first review gave 109 of 120 with two blocking findings: a running or parked request took a simulated turn, and the report's window option ordered differently from the drain. Both were repaired with a test each, and the re-review of the repaired head gave 120 of 120 with no findings. In the 70-request case the later sessions' requests move from positions 68 and 69 to 3 and 4. A merged candidate with §3 passed 34 of 36 focused tests; the two failures are in the base's own failure list.</p></div>
@@ -298,6 +301,9 @@
 </div>
 <div class="r-comment" data-section="s14" data-id="c-run-r-20261117T105905352759-both-queues-share-one-order" data-who="reckon-build" data-when="2026-11-17T11:51:50Z">
     <div class="r-comment-body"><p>Admission and promotion now use one precedence definition, with promotion history and runnable-turn accounting supplied to shared fairness ordering; the promotion module is 25 lines shorter. Changing the shared starvation bound moves both queues; all six unchanged promotion cases and 29 focused cases pass, the base-product control fails 1 case with 4 controls passing, armed base/head pass 58/63 tests, and 41 importer files add 0 failure ids (the same 7 failed and 358 passed in both all_debug arms).</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20261117T120346751402-review-of-both-queues-share-one-order-5aa58e3d56ff" data-who="reckon-build" data-when="2026-11-17T12:11:09Z">
+    <div class="r-comment-body"><p>Independent review of base 2eeb5f61801269b20bf2de7de8981b0c8a2a7f2e to head 5aa58e3d56ff5677a12c8e2b50af9a02b1ac2a6b stored at both granted record paths; parsed, six scores of 20/20, zero findings, and zero added failures from source baseline/head gate logs.</p></div>
 </div>
 </section>
   </main>
