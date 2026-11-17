@@ -770,7 +770,11 @@ def _newest_result_event(path: Path) -> Mapping[str, Any] | None:
     if resumable:
         result = cursor["result"]
         offset = int(cursor["offset"])
-    lines, reached = _backends._stream_lines_from(path, offset)
+    # The scan answers its own question about the stream rather than standing in
+    # for the producer's fold of a poll, so its bytes are not the fleet traffic
+    # the producer's registration reports: counting them would report a poll
+    # that parsed twice the growth it owed.
+    lines, reached = _backends._stream_lines_from(path, offset, count=False)
     result = _fold_result_lines(lines, result)
     entry = {
         "identity": identity,
