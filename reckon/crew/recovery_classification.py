@@ -3378,6 +3378,14 @@ def classify_pointer(
         # The ledger's word also names the lifecycle reading, so a committed
         # completion cannot read as two different outcomes on one row.
         classified["classification"] = settled
+    classified["delivery"] = _delivery_reading(record, classified)
+    if classified["delivery"].get("status") == "promotion-queued":
+        classified["fleet_verdict"] = {
+            **classified["fleet_verdict"],
+            "state": "promotion-queued",
+            "recovery_classification": "promotion-queued",
+            "detail": "promotion has been requested; waiting for the promotion service",
+        }
     # The memo is written from the key the reads were made under, so a reader
     # that finds this file again serves it only while every input still holds
     # the identity it had here. The stream's own state travels whatever the key
@@ -3387,6 +3395,79 @@ def classify_pointer(
     memo["inputs"] = memo_inputs
     _write_classification_memo(record, memo)
     return classified
+
+
+def _delivery_reading(
+    record: Mapping[str, Any], row: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Read the promotion debt only after the live classifier establishes delivery."""
+    classification = str(row.get("classification") or "")
+    if classification in FLEET_SETTLED_STATES:
+        return {"status": "landed"}
+    if classification != "promotable":
+        return {}
+    from .promotion_requests import QUEUED, read_promotion
+
+    request = read_promotion(str(record.get("run_id") or ""))
+    if request.get("phase") in QUEUED:
+        return {
+            "status": "promotion-queued",
+            "requested_at": request.get("requested_at"),
+            "phase": request["phase"],
+        }
+    return {"status": "delivered"}
+
+
+def delivery_summary(
+    rows: Sequence[Mapping[str, Any]], *, session: str | None = None
+) -> dict[str, Any]:
+    """Count one classified population and locate its oldest promotion request."""
+    selected = [
+        row
+        for row in rows
+        if session is None or not row.get("session") or row.get("session") == session
+    ]
+    delivered = [
+        row
+        for row in selected
+        if (row.get("delivery") or {}).get("status") == "delivered"
+    ]
+    queued = [
+        row
+        for row in selected
+        if (row.get("delivery") or {}).get("status") == "promotion-queued"
+    ]
+    landed = sorted(
+        str(row["run_id"])
+        for row in selected
+        if (row.get("delivery") or {}).get("status") == "landed"
+    )
+    position = None
+    requested_at = None
+    if queued:
+        from .promotion_requests import promotion_queue_report
+
+        oldest = min(
+            queued,
+            key=lambda row: (
+                str((row.get("delivery") or {}).get("requested_at") or ""),
+                str(row.get("run_id") or ""),
+            ),
+        )
+        places = {
+            row["run_id"]: row["position"]
+            for row in promotion_queue_report()["requests"]
+        }
+        position = places.get(oldest["run_id"])
+        requested_at = (oldest.get("delivery") or {}).get("requested_at")
+    return {
+        "delivered": len(delivered),
+        "promotion_queued": len(queued),
+        "oldest_promotion_position": position,
+        "oldest_promotion_requested_at": requested_at,
+        "landed_pointers": len(landed),
+        "remove_pointers": landed,
+    }
 
 
 def _promotion_command(
@@ -3401,6 +3482,10 @@ def _promotion_command(
     easy to leave out, the canonicalisation of the citations against the
     run's own tree and the base-citation case below.
 
+    A delivered report needs no passing executable gate. Commitless outcomes
+    come from the manifest, and --wait makes the offered call finish promotion
+    rather than merely enqueue it.
+
     Citations come from the run's history beyond its base, with the manifest
     as the fallback when that range is unreadable or empty. They are
     canonicalised against the run's tree, so a commit the
@@ -3412,24 +3497,36 @@ def _promotion_command(
     """
     from .promotion import _promotion_commits
     from .promotion_checks import _fresh_manifest
+    from .promotion_evidence import _run_changed_nothing
+    from .recovery_review_delivery import _is_review_run
 
     if not completion_offer(record, repair=True):
         return f"reckon crew observe --run {shlex.quote(run_id)}"
+    manifest = _fresh_manifest(record) or {}
+    if _is_review_run(record):
+        return f"reckon crew complete --run {shlex.quote(run_id)} --gate not-run --wait"
     if not manifest_commits:
-        manifest_commits = (_fresh_manifest(record) or {}).get("commits") or ()
+        manifest_commits = manifest.get("commits") or ()
     commits = _canonical_commits(
         _review_tree(record), _promotion_commits(record, manifest_commits)
     )
     base = str(record.get("base_sha") or "").strip()
-    if len(commits) == 1 and base and same_revision(commits[0], base):
+    if (
+        not commits or (len(commits) == 1 and base and same_revision(commits[0], base))
+    ) and _run_changed_nothing(record):
+        outcome = str(
+            manifest.get("landing")
+            or manifest.get("checkpoint")
+            or "Completed the run without repository changes."
+        )
         return (
-            f"reckon crew complete --run {run_id} --gate not-run "
-            "--no-commit '<why the run produced no commit>' "
-            "--outcome '<what the run produced>'"
+            f"reckon crew complete --run {shlex.quote(run_id)} --gate not-run --wait "
+            f"--no-commit {shlex.quote('The run produced no repository commit.')} "
+            f"--outcome {shlex.quote(outcome)}"
         )
     if not completion_offer(record):
         return f"reckon crew observe --run {shlex.quote(run_id)}"
-    action = f"reckon crew complete --run {shlex.quote(run_id)} --gate passed"
+    action = f"reckon crew complete --run {shlex.quote(run_id)} --gate passed --wait"
     for commit in commits:
         action += f" --commit {commit}"
     return action

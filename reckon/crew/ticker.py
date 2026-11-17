@@ -437,7 +437,7 @@ SEAT_MOVED_STATE = "seat-moved"
 # The sole state vocabulary printed by the pane. Recovery distinctions and
 # capacity-lift causes stay in the event's own facts.
 PANE_STATES = {
-    "queued": frozenset({"queued"}),
+    "queued": frozenset({"queued", "promotion-queued"}),
     "working": frozenset(
         {
             "dispatched",
@@ -735,6 +735,7 @@ _HELP_CELL = "help"
 # its shape, and its own letter names it rather than sharing the wait count,
 # so a reader sees the alarm beside the queue it belongs to.
 _STUCK_CELL = "stuck"
+_PROMOTION_CELL = "promotion queue"
 
 # The event still carries the historical count-field keys. The visible buckets
 # use pane words; a waiting count includes queued and externally waiting runs.
@@ -744,6 +745,7 @@ _COUNT_FIELD = {
     "delivered": "unpromoted",
     "waiting": "waiting",
     "stuck": "stuck",
+    "promotion queue": "promotion_queued",
 }
 
 # Each counter is labelled with the lower-case initial of a pane word. The
@@ -760,6 +762,7 @@ STAT_LETTER = {
     "delivered": "d",
     "waiting": "q",
     "stuck": "s",
+    "promotion queue": "p",
 }
 
 # Each counter is its count right-aligned to a fixed digit width followed by the
@@ -777,7 +780,7 @@ STAT_LETTER = {
 # Each label takes one character. The block's width includes the four spaces
 # between its five cells, leaving the reason on the same column on every row.
 STAT_DIGITS = 2
-_MAX_CELLS = (*_CELLS, _WAIT_CELL, _STUCK_CELL)
+_MAX_CELLS = (*_CELLS, _WAIT_CELL, _PROMOTION_CELL, _STUCK_CELL)
 # The stuck cell's hue is the alarm the pane already paints a blocked word
 # in, read from the verdict palette so the two cannot drift apart. A count
 # of zero dims like every other empty counter; a count above zero is
@@ -785,7 +788,7 @@ _MAX_CELLS = (*_CELLS, _WAIT_CELL, _STUCK_CELL)
 STUCK_HUE = {theme: STATE_HUE[theme]["blocked"] for theme in STATE_HUE}
 STATS = sum(STAT_DIGITS + len(STAT_LETTER[label]) for label in _MAX_CELLS) + (
     len(_MAX_CELLS) - 1
-)
+) + 1 + STAT_DIGITS
 
 # The fixed head every row carries: time, stage, job, transition, elapsed and
 # the five counters, each separated by the two-column gutter. A width below this
@@ -3791,12 +3794,23 @@ class Ticker:
             # The request's own word does not move, so the next row's left half
             # reads the word this row left the pane holding.
             self._reported[run_id] = "queued"
+        clause = str(event.get(QUEUED_REFUSED_FIELD) or "")
+        remedy = str(event.get("next_action") or "").strip()
+        if remedy:
+            from reckon.crew.recovery_classification import QUEUED_REFUSAL_PREFIXES
+
+            reason = clause.removesuffix(f" — {remedy}")
+            for prefix in QUEUED_REFUSAL_PREFIXES:
+                reason = reason.removeprefix(prefix)
+            # The stage already names the refusal. Put its command before the
+            # explanation so a narrow clause keeps the action a reader needs.
+            clause = f"{remedy} — {reason}" if reason and reason != remedy else remedy
         return self._clause_line(
             event,
             stage=REFUSAL_STAGE,
             handle=run_id,
             hue_key=str(event.get("node") or run_id),
-            clause=str(event.get(QUEUED_REFUSED_FIELD) or ""),
+            clause=clause,
         )
 
     def _submission_line(self, event: Mapping[str, Any]) -> str:
@@ -3914,9 +3928,13 @@ class Ticker:
                 style: Any = STUCK_HUE[self.theme]
             else:
                 style = None if count else "dim"
+            suffix = ""
+            if label == _PROMOTION_CELL:
+                position = event.get("oldest_promotion_position")
+                suffix = f"@{str(position) if position is not None else DIM_MARKER:>{STAT_DIGITS}}"
             cells.append(
                 (
-                    f"{count:>{STAT_DIGITS}}{STAT_LETTER[label]}",
+                    f"{count:>{STAT_DIGITS}}{STAT_LETTER[label]}{suffix}",
                     style,
                 )
             )
