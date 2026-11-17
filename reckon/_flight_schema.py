@@ -201,6 +201,7 @@ class FlightConfig(ConfiguredBaseModel):
     """
     A complete flight configuration, or one layer of one.
     """
+    service_reload_window_seconds: int | None = Field(default=None, description="""Minimum automatic standing-service reload interval in seconds; 1800 by default.""", ge=1)
     version: int | None = Field(default=None, description="""Schema version of this configuration document.""", ge=1)
     default_backend: str | None = Field(default=None, description="""Name of the backend used when a role does not select one. Must name a key of `backends` once every layer has been merged; a name with no backend behind it is a configuration error rather than an implicit fallback.""")
     local_backend: str | None = Field(default=None, description="""Name of the locally served backend selected by `reckon crew dispatch --local`. Must name a key of `backends` once every layer has been merged. Absent means this host has no declared local worker route.""")

@@ -1,0 +1,65 @@
+<section id="qwnw-red-file-hot-path-reads-only-live-runs-negative-control">
+<h2>Hot-path reads: the red file at base, and the head that passes</h2>
+<p><strong>Base control.</strong> <code>tests/test_hot_path_reads_only_live_runs.py</code> ran over an extraction of <code>aa086f1e29d70f7c3bf63a4bd47d8ddfac35715b</code> (the worktree head as this node was composed, with the current main merged as a fast-forward before the run) and read <code>2 failed, 12 passed</code>. Both failures are the cases this node repairs.</p>
+<pre># revision: aa086f1e29d70f7c3bf63a4bd47d8ddfac35715b (extracted; not a checkout)
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_hot_path_reads_only_live_runs.py
+..FF..........                                                           [100%]
+FAILED tests/test_hot_path_reads_only_live_runs.py::test_history_does_not_change_the_open_population[landing] - ValueError: sections['fixture-section'].id: record must be adjacent to its h2
+FAILED tests/test_hot_path_reads_only_live_runs.py::test_history_does_not_change_the_open_population[obligations] - Failed: operational read requested the complete ledger
+2 failed, 12 passed in 147.34s (0:02:27)
+EXIT=1</pre>
+<p>The obligation case reached the complete-ledger read from the section-declaration duty: <code>reckon/crew/section_obligations.py:43: history, _version = ledger.load(project, checkout)</code>, caught by the file's <code>ledger.load</code> stand-in at <code>tests/test_hot_path_reads_only_live_runs.py:110</code>. The landing case died earlier, parsing the station fixture's plan: <code>reckon/_plan_html.py:1263: ValueError: sections['fixture-section'].id: record must be adjacent to its h2</code>, raised on a document the fixture had authored as a bare record element with no heading beside it.</p>
+</section>
+
+<section id="qwnw-red-file-hot-path-reads-only-live-runs-cause-verdicts">
+<h2>The two causes, and which side each one is on</h2>
+<table>
+<thead><tr><th>Failure</th><th>Verdict</th><th>What changed</th></tr></thead>
+<tbody>
+<tr><td><code>…[obligations]</code></td><td>product wrong</td><td><code>section_obligations</code> reads its candidates through <code>ledger.session_rows</code> instead of <code>ledger.load</code></td></tr>
+<tr><td><code>…[landing]</code></td><td>test wrong</td><td>the station fixture's plan record sits under its own <code>h2</code> and carries the required section fields</td></tr>
+</tbody>
+</table>
+<p><strong>Product wrong — the obligations view read the whole ledger.</strong> The section-declaration duty rebuilt its candidate population from <code>ledger.load</code>, so an operational read of one session's duties read every finished run's document. The runs the duty needs are the promoted rows the writers already index, so the duty now reads them through <code>ledger.session_rows</code> (<code>reckon/ledger.py</code>), which selects by the dispatching session from the live-run projection (<code>reckon/crew/open_run_index.py:dispatched_rows</code>) and never opens a finished run's file. The projection's <code>session</code> column keys the worker harness session, which is a different field from the crew session that dispatched the run, so the filter reads the field the stored record carries. A refused projection keeps the established history reader, as every other lookup in that module does.</p>
+<p><strong>Test wrong — the fixture authored a plan record its heading did not own.</strong> The station fixture in <code>tests/test_the_station_reads_only_what_changed.py</code> predates the typed section read (<code>739dc8c65b</code>) and wrote a bare <code>&lt;section data-reckon="section"&gt;</code> record. The code's rule that a record sits beside its <code>h2</code> is deliberate and separately asserted (<code>tests/test_rollup_isolates_a_project.py</code> expects the refusal), so the fixture was amended to the rule it now asserts: the record sits under its own heading and carries the fields a section record requires — effort, capability class, reasoning, verification, risk and status. No assertion was deleted or weakened; the fixture's own file still passes in full.</p>
+</section>
+
+<section id="qwnw-red-file-hot-path-reads-only-live-runs-head-run">
+<h2>Head run on all_debug</h2>
+<p>The same file at <code>eb23ed9b249b587619274a5ed3304328183a83a4</code> ran as a job on <code>all_debug</code> (batch job <code>1319788</code>) with <code>SLURM_JOB_ID</code> unset: <code>14 passed</code>.</p>
+<pre># revision: eb23ed9b249b587619274a5ed3304328183a83a4
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-hot-path-reads-only-live-runs
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_hot_path_reads_only_live_runs.py
+# slurm: SLURM_JOB_ID unset
+..............                                                           [100%]
+14 passed in 263.49s (0:04:23)
+EXIT=0</pre>
+</section>
+
+<section id="qwnw-red-file-hot-path-reads-only-live-runs-importer-arm">
+<h2>The files that import what changed, at both arms</h2>
+<p>The eight test files importing <code>open_run_index</code> or <code>section_obligations</code> ran at base and at head. Both arms read <code>6 failed, 64 passed</code> with the same six ids, all in <code>tests/test_an_open_operation_refuses_a_promotion_first.py</code>: the checkout guard does not refuse an in-progress merge, rebase, cherry-pick or revert on this host, which is a defect outside this node's scope and unchanged by it.</p>
+<pre>base: 6 failed, 64 passed in 35.50s   (aa086f1e29, extraction)
+head: 6 failed, 64 passed in 38.41s   (eb23ed9b24, worktree)
+ids at both arms:
+FAILED tests/test_an_open_operation_refuses_a_promotion_first.py::test_an_open_operation_refuses_before_any_ledger_read[MERGE_HEAD-merge-merge]
+FAILED tests/test_an_open_operation_refuses_a_promotion_first.py::test_an_open_operation_refuses_before_any_ledger_read[rebase-merge-rebase-dir]
+FAILED tests/test_an_open_operation_refuses_a_promotion_first.py::test_an_open_operation_refuses_before_any_ledger_read[rebase-apply-rebase-dir]
+FAILED tests/test_an_open_operation_refuses_a_promotion_first.py::test_an_open_operation_refuses_before_any_ledger_read[CHERRY_PICK_HEAD-cherry...]
+FAILED tests/test_an_open_operation_refuses_a_promotion_first.py::test_an_open_operation_refuses_before_any_ledger_read[REVERT_HEAD-revert-file]
+FAILED tests/test_an_open_operation_refuses_a_promotion_first.py::test_a_clean_checkout_reaches_the_ledger</pre>
+</section>
+
+<section id="qwnw-red-file-hot-path-reads-only-live-runs-suite-arms">
+<h2>The node's whole test scope, before and after</h2>
+<p>The arm the promotion runs, resolved over each arm's own tree: the two test files this node touches, <code>tests/test_hot_path_reads_only_live_runs.py</code> and <code>tests/test_the_station_reads_only_what_changed.py</code>. At base the arm reads <code>2 failed, 26 passed</code>; at head <code>28 passed</code>.</p>
+<pre># base, aa086f1e29, extracted tree
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_hot_path_reads_only_live_runs.py tests/test_the_station_reads_only_what_changed.py
+2 failed, 26 passed in 160.05s (0:02:40)
+EXIT=1
+
+# head, eb23ed9b24, worktree
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_hot_path_reads_only_live_runs.py tests/test_the_station_reads_only_what_changed.py
+28 passed in 307.38s (0:05:07)
+EXIT=0</pre>
+</section>

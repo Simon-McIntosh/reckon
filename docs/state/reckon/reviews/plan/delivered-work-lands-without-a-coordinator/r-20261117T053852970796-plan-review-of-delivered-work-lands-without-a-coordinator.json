@@ -1,0 +1,71 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-17T05:45:12.089Z",
+  "dispatched_at": "2026-11-17T05:43:03Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/delivered-work-lands-without-a-coordinator/r-20261117T053852970796-plan-review-of-delivered-work-lands-without-a-coordinator/plan.html:75",
+      "id": "done_when-1",
+      "reason": "as written the isolation requirement cannot fail on a harness that simply does not write, so the section would close without showing the real crew home is untouched.",
+      "text": "the unit replaced \"the real crew home's listing is identical before and after\" with \"the replay writes nothing under the real crew home (a write outside the temporary home is refused and fails the run)\", which is a guard whose firing is never shown: the clause is satisfied vacuously when the replay never attempts a write outside the temporary home, and the before/after comparison that would have caught any such write independently is gone",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/delivered-work-lands-without-a-coordinator/r-20261117T053852970796-plan-review-of-delivered-work-lands-without-a-coordinator/plan.html:75",
+      "id": "done_when-2",
+      "reason": "the plan must state the harness's wall-clock limit and rate window, or the worker chooses a bound that the run cannot breach and the completion clause measures nothing.",
+      "text": "\"the replay finishes inside its time limit\" names no limit and no rate window, while the figure it guards is a rate over an hour and the named burst is 87 requests, so at 30 an hour the replay must run about three hours; a worker sets its own limit and any duration satisfies the clause",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/delivered-work-lands-without-a-coordinator/r-20261117T053852970796-plan-review-of-delivered-work-lands-without-a-coordinator/plan.html:74",
+      "id": "done_when-3",
+      "reason": "the report clause is a stated deliverable with nothing measuring it, so the node can close with the queue report unchanged and the bounding stage unattributed.",
+      "text": "the deliverable requires \"The queue report gives successful promotions over the last hour apart from refusals and deferrals, and the stage that bounded the rate\", and no clause of the done-when asserts either: the replay's assertions cover throughput, isolation, completion and verdicts, and the report is never read",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "0669099449f8ac0829d696509f3733c257bcc536",
+  "plan_fingerprint": "da768506356e4fbdb96d1fcf533cd840ba5e1a37ee90452ca4d979945f3a9a42",
+  "plan_slug": "delivered-work-lands-without-a-coordinator",
+  "plan_version": 27,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261117T053852970796-plan-review-of-delivered-work-lands-without-a-coordinator",
+  "reviewed_blob_sha": "c66a11f7977b569097ffa724c5a3ddbc5f060446",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 reckon/crew/promotion_requests.py, reckon/crew/queue_landing.py and reckon/crew/landing_measure.py exist at head (with the ledger/release path the new test names, promotion_requests.py:1-7, 1036-1044), and scripts/replay_promotion_drain.py and tests/test_the_drain_keeps_up_with_a_burst.py are new artifacts this node creates, not pointers to something renamed or deleted.",
+    "done_when": "a finding \u2014 three defects in \u00a74's done-when at plan.html:75: an isolation guard with no control that makes it fire, an unstated time limit that any run satisfies, and a deliverable clause with no assertion behind it.",
+    "evidence_paths": "pass \u2014 the reviewed unit names no session scratchpad or node-local path; the replay's fixture lives in a temporary crew home as the intended input, and its rate, verdict and bounding-stage figures fall in the run's own evidence record on the run's durable path.",
+    "naming": "pass \u2014 the new text carries no plan labels, stage names, ticket numbers or version tags into any symbol or comment, and \"repaired echo\", \"release\" and \"shared ledger\" name mechanisms already present in the code rather than tracker entries.",
+    "reasoning": "pass \u2014 the cited evidence is consistent with the stated cause (38 outcomes an hour against 8.8 promotions means most outcomes are the refusals and deferrals that the section already says must stop spending a slot, so two slot-holding promotions at roughly 13.6 minutes each account for the promotion rate), the throughput and serialisation figures are obtainable from a replay of the named request set, and every clause of the new done-when can fail; the earlier reasoning finding about write paths stands unchanged and is not re-raised.",
+    "single_goal": "pass \u2014 \u00a74's one goal is drain throughput while a burst waits; the serialisation and non-interference rules are constraints on that goal rather than separate deliverables, and the queue-report clause's missing measure is recorded under done_when rather than re-scored here as a second goal.",
+    "wiring": "pass \u2014 within the reviewed unit, \u00a74 declares no depends-on, informs or gates and needs no edge that is missing; the followup's \"\u00a74 follows \u00a72\" ordering is already satisfied because \u00a72 has landed, and the wiring findings recorded against s8 and s9 are unchanged and are not re-raised here."
+  },
+  "section_digests": {
+    "_document": "b11bfced27d76c485bfae9b2f27d8afc67a775b0a0a3a9ad828130fb5c0be73d",
+    "s1": "daca91cb0f9305061dfad149cbb2aa15ab415088f0392d60d2051e0ab5d934b8",
+    "s10": "6aae974dd61c328c9cbcf5ea3d67d675b0ea15787d15c2fd1cd3d2da05e4d3f3",
+    "s11": "bd1c865f0b9313090958a8d94f4c1441a01c4a70aaff341185f4bcbf27ef02f9",
+    "s12": "3a6d4470998d93c84374a7db22abed7b1d777a4aecafd3012ac38cb67cfd8c32",
+    "s13": "4358adc642601277f340b7705d1e70f262f3b5eb7c7d47ffa9e371929c11af78",
+    "s14": "99464c06da0a45ede187b3a4e9cfab402db71d1063e7a97f71c0ea512234ae13",
+    "s15": "a77206eaccee8eded2411facba5b1bfc66a96db96525e858a4232e67006b7eff",
+    "s2": "73fc6aa2a15187d147a01fbde87b1769c00e59eb0d5d6018b4f052da2b90f72a",
+    "s3": "39f518f94544e14da2723c109d5347c3e321e79fd378987dc84506f550b8df04",
+    "s4": "82225453987df5c187c6859b433cb3035bbfe2baa60dc9583015b62a3bb4e2fa",
+    "s5": "38a561b738798306be4693fe79d645bf2736fa62cd052752a8dd43e572f5e5a6",
+    "s6": "b81ab3b2c459d091fd625ecdff51bf0c3c19777120dd4cb28ecb3cf5c1cbb944",
+    "s7": "aad55d4f9b54f8eb5771cab69848ff200c20f490fc3b681db1a4972125eb59d2",
+    "s8": "691e915ecf6805f8840bbda36ce83e2e8e5dcb78f8c24b30de99c290226f6434",
+    "s9": "ce5866195b9466068219eee0bfccd5a241de412f6a4c8cc18b90106fbc857a57"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T05:49:33.198264+00:00",
+  "total": null
+}

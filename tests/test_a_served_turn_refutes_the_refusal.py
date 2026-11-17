@@ -49,6 +49,29 @@ def _write_stream(path: Path, events: list[dict]) -> Path:
     return path
 
 
+def _empty_ledger(
+    _project: str,
+    _root: object = None,
+    *,
+    picker_only: bool = False,
+    use_index: bool = True,
+    headers_only: bool = False,
+    activity_since: float | None = None,
+    plan: str | None = None,
+) -> tuple[dict, int]:
+    """Stand in for :func:`reckon.ledger.load` carrying its whole signature.
+
+    ``budget.preflight`` reaches the ledger through :func:`ledger.runs`, which
+    calls ``load`` with the selection keywords ``headers_only``, ``plan`` and
+    ``activity_since``. A stub that accepts only the two positional arguments
+    intercepts that call and raises ``TypeError`` before any refusal rule runs,
+    so every refusal rule in this file is left unexercised rather than passing
+    or failing on its own behaviour. The answers are unused: the ledger under
+    test is empty.
+    """
+    return {"runs": [], "members": []}, 1
+
+
 def _verdict(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -79,7 +102,7 @@ def _verdict(
     monkeypatch.setattr(
         budget.ledger,
         "load",
-        lambda _project, _root: ({"runs": [], "members": []}, 1),
+        _empty_ledger,
     )
     return budget.preflight(
         "project",

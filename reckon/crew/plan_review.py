@@ -1349,6 +1349,11 @@ def _compute_coverage(
             )
         return reviewed_texts[key]
 
+    # The plan's own path, when the caller named one: an answered edit is read
+    # from the commit its answer cites, which needs the file's history. A
+    # caller that passed the document text instead has no path to walk, so the
+    # history lookup is skipped rather than given the text as a path.
+    plan_hint = plan if isinstance(plan, Path) else None
     for record in _records_oldest_first(records, project):
         evidence = _snapshot_evidence(project, plan_slug, record)
         if evidence is None:
@@ -1381,6 +1386,25 @@ def _compute_coverage(
         # not covered by it and the review is owed again for that unit alone.
         for identity in _accepted_edit_units(record, digests) & outstanding:
             if traced and identity not in traced:
+                continue
+            covered.add(identity)
+            matched = True
+        # An answer this review received names the units its finding blocks and
+        # cites the commit of the edit it answers for. That edit's copy of a
+        # unit still holding it is covered by this review whatever its size, and
+        # a unit that has moved since is not. A section the review's snapshot
+        # never declared implementable was not reviewed, so it cannot be
+        # covered this way.
+        for identity in (
+            _answered_edit_units(record, digests, plan_path=plan_hint) & outstanding
+        ):
+            if traced and identity not in traced:
+                continue
+            if identity == DOCUMENT_UNIT:
+                covered.add(identity)
+                matched = True
+                continue
+            if implemented is not None and identity not in implemented:
                 continue
             covered.add(identity)
             matched = True
@@ -2764,6 +2788,64 @@ def _accepted_edit_units(
             identity = str(unit)
             if identity in digests and recorded.get(identity) == digests[identity]:
                 covered.add(identity)
+    return covered
+
+
+def _answered_edit_units(
+    record: Mapping[str, Any],
+    digests: Mapping[str, str],
+    *,
+    plan_path: str | Path | None = None,
+) -> set[str]:
+    """The units an ``acted`` answer covers, from the edit its answer cites.
+
+    An answer names the units its finding blocks, and an answer given after its
+    edit cites that edit's commit. The plan's copy of each named unit at that
+    commit is the text the answer is evidence of, so a unit whose present digest
+    equals the digest that copy holds is covered by this review; a unit that has
+    moved since is not, because the later edit answers nothing the review
+    raised.
+
+    An answer that cites the plan's newest commit at answer time rather than the
+    edit was given before its fix landed, so it is no evidence of a fix and
+    covers nothing. Neither does a ``declined`` answer, which asks for no edit,
+    nor a ``carried`` or ``noted`` one, which is not an answer about the plan's
+    prose. A history that cannot be read covers nothing rather than guessing,
+    and a unit the review never read is left to the caller's own checks.
+    """
+    covered: set[str] = set()
+    responses = record.get("responses")
+    if not isinstance(responses, Mapping):
+        return covered
+    project = str(record.get("project") or "").strip()
+    plan_slug = str(record.get("plan_slug") or "").strip()
+    if not project or not plan_slug:
+        return covered
+    by_commit: dict[str, dict[str, str | None]] = {}
+    for finding_id, response in responses.items():
+        if not isinstance(response, Mapping):
+            continue
+        if str(response.get("action") or "").strip().lower() != "acted":
+            continue
+        if str(response.get("commit_basis") or "") != EDIT_COMMIT:
+            continue
+        commit = str(response.get("commit") or "").strip()
+        if not commit:
+            continue
+        pending = [
+            unit
+            for unit in finding_units(record, str(finding_id), plan_path=plan_path)
+            if unit in digests and unit not in covered
+        ]
+        if not pending:
+            continue
+        if commit not in by_commit:
+            text = _plan_text_at(project, plan_slug, commit, plan_path=plan_path)
+            by_commit[commit] = {} if text is None else _section_digests(text)
+        answered = by_commit[commit]
+        for unit in pending:
+            if answered.get(unit) == digests[unit]:
+                covered.add(unit)
     return covered
 
 

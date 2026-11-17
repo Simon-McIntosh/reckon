@@ -1256,257 +1256,10 @@ def dispatch(
     if lane_gate.get("state") in _LANE_GATE_WAITING_STATES:
         raise LanePaused(lane_gate)
 
-    # A bound the placement reservation enforces is a wait for room, not a
-    # refusal: a direct dispatch that meets one is stored as a queued request
-    # exactly as a router hold is, so it launches when room frees rather than
-    # being lost after its run id was printed. A request the admission pass is
-    # launching is already queued, and its later bound refusal restores it, so
-    # it is not queued a second time here.
-    if not shadow_lineage and not admission_launch:
-        try:
-            _refuse_over_concurrency_ceiling(
-                backend_name,
-                backend,
-                project,
-                exclude_run_ids=(run_id,),
-                reserve=_local_lane_reserve(is_local, config=config),
-            )
-        except RosterFull as roster:
-            reason = (
-                "the placement reservation's roster is full "
-                f"({roster.occupancy}/{roster.limit}); the request waits for room"
-                + dispatch_options.get("context_fit_shortfall", "")
-            )
-            lane_allowance = {
-                **lane_allowance,
-                "held": True,
-                "reason": reason,
-                "detail": str(roster),
-            }
-
-    # The router's allowance is checked before creating a worktree. A hold on
-    # any lane records the request as queued, so a request naming a lane the
-    # coordinator must run on is stored and launched by admission rather than
-    # refused and retried by hand. The allowance rides the exception so the
-    # caller reports the router's reason.
-    if lane_allowance.get("held"):
-        if not shadow_lineage:
-            # A node whose waits are unmet is held on them above, whatever the
-            # lane state, so what this branch stores is a request the lane had
-            # no room for and it carries no wait.
-            held = _queue_a_held_request(
-                run_id=run_id,
-                project=project,
-                node=node,
-                repo_root=repo_root,
-                session=session,
-                backend_name=backend_name,
-                launch_kind=launch_kind,
-                lane_allowance=lane_allowance,
-                dispatch_options=dispatch_options,
-                config=config,
-                admitted_from=admitted_from,
-                backlog=backlog,
-                is_local=is_local,
-            )
-            if held_selection is not None:
-                # The hold that offered the local lane is kept in the outcome
-                # history, marked queued with the run it became, so a reader of
-                # the holds file reads Jev's answer and where it landed.
-                from reckon.crew.picker.outcomes import record_picker_hold
-
-                record_picker_hold(
-                    project=project,
-                    node=node.id,
-                    plan=node.plan,
-                    selection=held_selection,
-                    reason=_picker_refusal_reasons(held_selection),
-                    run_id=str(held.queued["run_id"]),
-                    queued=True,
-                )
-            _arrange_dispatch_follower(
-                project,
-                session,
-                launch_kind,
-                watch_required=watch_required,
-                watch_override=watch_override,
-            )
-            raise held
-        raise LaneHeld(lane_allowance)
-
-    # A dispatch that found room on its lane yields the slot to its own session's
-    # oldest waiting request for that lane, launching that request through the
-    # admission pass's own path and queueing itself behind it. A session's new
-    # work must not keep taking the slots its oldest queued request needs. A
-    # request the pass would hold is skipped by the selector, so a request that
-    # can never be admitted never stops the session launching; the lane slot an
-    # admission pass is itself spending is left to the pass, which already owns
-    # the ordering.
-    if is_local and not shadow_lineage and not admission_launch:
-        moment = datetime.now(UTC)
-        older_request = _session_older_admissible_request(
-            session=session, backend_name=backend_name, moment=moment
-        )
-        if older_request is not None:
-            launched = _launch_yielded_queued_request(
-                older_request, launcher=launcher, moment=moment
-            )
-            if launched is not None:
-                queued, position = queue_dispatch(
-                    _queued_request_record(
-                        run_id=run_id,
-                        project=project,
-                        node=node,
-                        repo_root=repo_root,
-                        session=session,
-                        backend_name=backend_name,
-                        launch_kind=launch_kind,
-                        lane_allowance=lane_allowance,
-                        dispatch_options=dispatch_options,
-                        queued_at=_utc_now(),
-                        backlog=backlog,
-                    ),
-                    max_requests=flight.queue_max_requests(config),
-                )
-                held = LaneHeld(
-                    {
-                        "detail": (
-                            "yielded this lane slot to queued request "
-                            f"{launched.get('run_id')!r}"
-                        ),
-                        "reason": "yielded to this session's older queued request",
-                    }
-                )
-                from reckon.crew import queue_admission
-
-                # The waits are answered above, whatever the lane state, so a
-                # request queued here waits only on the slot it yielded.
-                held.queued = {
-                    "run_id": str(queued["run_id"]),
-                    "position": position,
-                    "phase": str(queued.get("phase") or queue_admission.QUEUED_PHASE),
-                    "waits": [],
-                    "reason": "waiting behind this session's older queued request",
-                }
-                _arrange_dispatch_follower(
-                    project,
-                    session,
-                    launch_kind,
-                    watch_required=watch_required,
-                    watch_override=watch_override,
-                )
-                raise held
-
-    # A cli worker launches inside the fence, and the fence is bubblewrap over a
-    # user namespace. A host with neither cannot seal a worker's writes, so the
-    # dispatch is refused before any worktree, pointer or run directory exists
-    # rather than launched unfenced: a fence that disappears silently still
-    # reports a protection it does not have. ``--no-fence REASON`` is the one
-    # deliberate way through, and the reason is recorded on the run, its
-    # composed plan and its ledger row.
-    fence_waiver = str(no_fence_reason).strip()
-    compose_fence = launch_kind == "cli" and FENCE_WORKERS
-    if compose_fence and not fence_waiver:
-        capability_problem = _backends.fence_capability_problem()
-        if capability_problem is not None:
-            missing, detail = capability_problem
-            raise CrewError(
-                format_refusal(
-                    "D22",
-                    f"refusing to dispatch run {run_id!r}: {detail} "
-                    f"(missing capability: {missing}). The fence is what keeps "
-                    "a worker out of the operator's home and every other run's "
-                    "worktree, so a dispatch that cannot build one is refused "
-                    "rather than launched unprotected; pass --no-fence REASON to "
-                    "launch unfenced and record why",
-                )
-            )
-    if fence_waiver:
-        compose_fence = False
-
-    # The pace this dispatch is judged against, composed once here — before
-    # anything is created — and reused on the record below, so the bookend
-    # reserve refuses against the very reading the record carries rather than a
-    # second one taken a moment later that could differ from it.
-    from reckon import budget as budget_module
-
-    pace_record = budget_module.pace_row(
-        config,
-        project=project,
-        lane=backend_name,
-        node=node.id,
-        score=resolution.open_endedness,
-        root=ledger_root,
-        hold=None if budget_fallback is None else budget_fallback["hold"],
-    )
-    if check_budget and route != "picker":
-        _refuse_against_the_bookend_reserve(
-            config=config, role=node.role, pace_record=pace_record
-        )
-
     # A run id that already has a live worker is refused here, before this
     # dispatch writes a claim, a run directory or a worktree: every one of those
     # would overwrite or release something the running worker holds.
     _refuse_a_live_worker_before_the_worktree(run_id)
-
-    # The bound is read a second time here, after the gates above that can take
-    # seconds: a seat or a core can be taken between the first read and this
-    # one. It still runs before any claim, run directory or worktree exists, so
-    # a dispatch that meets it has published nothing to take back and the run id
-    # the caller was shown is never one the refusal strands. A request naming
-    # any lane is stored as queued here, exactly as the first read stores it; a
-    # request the admission pass is already launching keeps the waiting pointer
-    # it came with, and the hold is reported so that pass restores it.
-    try:
-        _refuse_over_concurrency_ceiling(
-            backend_name,
-            backend,
-            project,
-            exclude_run_ids=(run_id,),
-            reserve=_local_lane_reserve(is_local, config=config),
-        )
-    except RosterFull as roster:
-        reason = (
-            "the placement reservation's roster is full "
-            f"({roster.occupancy}/{roster.limit}); the request waits for room"
-            + dispatch_options.get("context_fit_shortfall", "")
-        )
-        bound_hold = {
-            **lane_allowance,
-            "held": True,
-            "reason": reason,
-            "detail": str(roster),
-        }
-        if shadow_lineage:
-            # A shadow run exists to be compared against its pair, so it is
-            # refused when the bound binds rather than stored for later: a
-            # queued shadow has no pair to run beside.
-            raise
-        if admission_launch:
-            raise LaneHeld(bound_hold) from roster
-        held = _queue_a_held_request(
-            run_id=run_id,
-            project=project,
-            node=node,
-            repo_root=repo_root,
-            session=session,
-            backend_name=backend_name,
-            launch_kind=launch_kind,
-            lane_allowance=bound_hold,
-            dispatch_options=dispatch_options,
-            config=config,
-            admitted_from=admitted_from,
-            backlog=backlog,
-            is_local=is_local,
-        )
-        _arrange_dispatch_follower(
-            project,
-            session,
-            launch_kind,
-            watch_required=watch_required,
-            watch_override=watch_override,
-        )
-        raise held from roster
 
     directory = run_dir(run_id)
     # A brief is authority text, so its durable copy is taken with the run's id
@@ -1522,12 +1275,15 @@ def dispatch(
         node.brief_path = str(_store_brief(directory, node.brief, block=brief_block))
     brief = _brief_record(node, project=project)
     # The declared paths are this run's from the moment its id exists, so the
-    # claim goes out here, before the refusals, reads and watcher arming below,
-    # any of which can take seconds. A dispatch that published only once the
-    # launch was composed held its paths invisibly for that whole span, so a
-    # second dispatch arriving inside it read no claim and launched a duplicate
-    # worker over the first. The guard opened under this block gives the claim
-    # back if any refusal below is reached. See _publish_launch_claim.
+    # claim goes out here, before the bound read, the holds, the fence gate and
+    # the watcher arming below, any of which can take seconds. A dispatch that
+    # published only once the launch was composed held its paths invisibly for
+    # that whole span, so a second dispatch arriving inside it read no claim and
+    # launched a duplicate worker over the first. The live holder is read above,
+    # so the claim never overwrites a worker this host still sees running. The
+    # guard opened under this block gives the claim back if any refusal below is
+    # reached, and withdraws it while leaving the queued request a hold stored.
+    # See _publish_launch_claim.
     effective_member = member or _disposable_member_id(run_id)
     agent = _stamp_agent_display(
         _agent_configuration(backend_name, launch_kind, backend), backend
@@ -1557,14 +1313,267 @@ def dispatch(
             brief=brief,
             registered_at=claim_registered_at,
         )
-        # Keep the identity visible if the caller exits during launch. Stdout
-        # remains the command's final JSON document, so notices use stderr.
-        print(f"reckon: created run {run_id}", file=sys.stderr, flush=True)
     with (
         _request_claim_restored_on_refusal(run_id, request_pointer)
         if admission_launch
         else _claim_released_on_refusal(run_id, claim_published)
     ):
+        # A bound the placement reservation enforces is a wait for room, not a
+        # refusal: a direct dispatch that meets one is stored as a queued request
+        # exactly as a router hold is, so it launches when room frees rather than
+        # being lost after its run id was printed. A request the admission pass is
+        # launching is already queued, and its later bound refusal restores it, so
+        # it is not queued a second time here.
+        if not shadow_lineage and not admission_launch:
+            try:
+                _refuse_over_concurrency_ceiling(
+                    backend_name,
+                    backend,
+                    project,
+                    exclude_run_ids=(run_id,),
+                    reserve=_local_lane_reserve(is_local, config=config),
+                )
+            except RosterFull as roster:
+                reason = (
+                    "the placement reservation's roster is full "
+                    f"({roster.occupancy}/{roster.limit}); the request waits for room"
+                    + dispatch_options.get("context_fit_shortfall", "")
+                )
+                lane_allowance = {
+                    **lane_allowance,
+                    "held": True,
+                    "reason": reason,
+                    "detail": str(roster),
+                }
+
+        # The router's allowance is checked before creating a worktree. A hold on
+        # any lane records the request as queued, so a request naming a lane the
+        # coordinator must run on is stored and launched by admission rather than
+        # refused and retried by hand. The allowance rides the exception so the
+        # caller reports the router's reason.
+        if lane_allowance.get("held"):
+            if not shadow_lineage:
+                # A node whose waits are unmet is held on them above, whatever the
+                # lane state, so what this branch stores is a request the lane had
+                # no room for and it carries no wait.
+                held = _queue_a_held_request(
+                    run_id=run_id,
+                    project=project,
+                    node=node,
+                    repo_root=repo_root,
+                    session=session,
+                    backend_name=backend_name,
+                    launch_kind=launch_kind,
+                    lane_allowance=lane_allowance,
+                    dispatch_options=dispatch_options,
+                    config=config,
+                    admitted_from=admitted_from,
+                    backlog=backlog,
+                    is_local=is_local,
+                )
+                if held_selection is not None:
+                    # The hold that offered the local lane is kept in the outcome
+                    # history, marked queued with the run it became, so a reader of
+                    # the holds file reads Jev's answer and where it landed.
+                    from reckon.crew.picker.outcomes import record_picker_hold
+
+                    record_picker_hold(
+                        project=project,
+                        node=node.id,
+                        plan=node.plan,
+                        selection=held_selection,
+                        reason=_picker_refusal_reasons(held_selection),
+                        run_id=str(held.queued["run_id"]),
+                        queued=True,
+                    )
+                _arrange_dispatch_follower(
+                    project,
+                    session,
+                    launch_kind,
+                    watch_required=watch_required,
+                    watch_override=watch_override,
+                )
+                raise held
+            raise LaneHeld(lane_allowance)
+
+        # A dispatch that found room on its lane yields the slot to its own session's
+        # oldest waiting request for that lane, launching that request through the
+        # admission pass's own path and queueing itself behind it. A session's new
+        # work must not keep taking the slots its oldest queued request needs. A
+        # request the pass would hold is skipped by the selector, so a request that
+        # can never be admitted never stops the session launching; the lane slot an
+        # admission pass is itself spending is left to the pass, which already owns
+        # the ordering.
+        if is_local and not shadow_lineage and not admission_launch:
+            moment = datetime.now(UTC)
+            older_request = _session_older_admissible_request(
+                session=session, backend_name=backend_name, moment=moment
+            )
+            if older_request is not None:
+                launched = _launch_yielded_queued_request(
+                    older_request, launcher=launcher, moment=moment
+                )
+                if launched is not None:
+                    queued, position = queue_dispatch(
+                        _queued_request_record(
+                            run_id=run_id,
+                            project=project,
+                            node=node,
+                            repo_root=repo_root,
+                            session=session,
+                            backend_name=backend_name,
+                            launch_kind=launch_kind,
+                            lane_allowance=lane_allowance,
+                            dispatch_options=dispatch_options,
+                            queued_at=_utc_now(),
+                            backlog=backlog,
+                        ),
+                        max_requests=flight.queue_max_requests(config),
+                    )
+                    held = LaneHeld(
+                        {
+                            "detail": (
+                                "yielded this lane slot to queued request "
+                                f"{launched.get('run_id')!r}"
+                            ),
+                            "reason": "yielded to this session's older queued request",
+                        }
+                    )
+                    from reckon.crew import queue_admission
+
+                    # The waits are answered above, whatever the lane state, so a
+                    # request queued here waits only on the slot it yielded.
+                    held.queued = {
+                        "run_id": str(queued["run_id"]),
+                        "position": position,
+                        "phase": str(
+                            queued.get("phase") or queue_admission.QUEUED_PHASE
+                        ),
+                        "waits": [],
+                        "reason": "waiting behind this session's older queued request",
+                    }
+                    _arrange_dispatch_follower(
+                        project,
+                        session,
+                        launch_kind,
+                        watch_required=watch_required,
+                        watch_override=watch_override,
+                    )
+                    raise held
+
+        # A cli worker launches inside the fence, and the fence is bubblewrap over a
+        # user namespace. A host with neither cannot seal a worker's writes, so the
+        # dispatch is refused before any worktree is cut rather than launched
+        # unfenced: a fence that disappears silently still
+        # reports a protection it does not have. ``--no-fence REASON`` is the one
+        # deliberate way through, and the reason is recorded on the run, its
+        # composed plan and its ledger row.
+        fence_waiver = str(no_fence_reason).strip()
+        compose_fence = launch_kind == "cli" and FENCE_WORKERS
+        if compose_fence and not fence_waiver:
+            capability_problem = _backends.fence_capability_problem()
+            if capability_problem is not None:
+                missing, detail = capability_problem
+                raise CrewError(
+                    format_refusal(
+                        "D22",
+                        f"refusing to dispatch run {run_id!r}: {detail} "
+                        f"(missing capability: {missing}). The fence is what keeps "
+                        "a worker out of the operator's home and every other run's "
+                        "worktree, so a dispatch that cannot build one is refused "
+                        "rather than launched unprotected; pass --no-fence REASON to "
+                        "launch unfenced and record why",
+                    )
+                )
+        if fence_waiver:
+            compose_fence = False
+
+        # The pace this dispatch is judged against, composed once here — before
+        # anything is created — and reused on the record below, so the bookend
+        # reserve refuses against the very reading the record carries rather than a
+        # second one taken a moment later that could differ from it.
+        from reckon import budget as budget_module
+
+        pace_record = budget_module.pace_row(
+            config,
+            project=project,
+            lane=backend_name,
+            node=node.id,
+            score=resolution.open_endedness,
+            root=ledger_root,
+            hold=None if budget_fallback is None else budget_fallback["hold"],
+        )
+        if check_budget and route != "picker":
+            _refuse_against_the_bookend_reserve(
+                config=config, role=node.role, pace_record=pace_record
+            )
+
+        # The bound is read a second time here, after the gates above that can take
+        # seconds: a seat or a core can be taken between the first read and this
+        # one. The claim published above is not a seat, so it costs this read
+        # nothing, and a refusal here takes the claim back under the guard rather
+        # than stranding the run id the caller was shown. A request naming any lane
+        # is stored as queued here, exactly as the first read stores it; a request
+        # the admission pass is already launching keeps the waiting pointer it came
+        # with, and the hold is reported so that pass restores it.
+        try:
+            _refuse_over_concurrency_ceiling(
+                backend_name,
+                backend,
+                project,
+                exclude_run_ids=(run_id,),
+                reserve=_local_lane_reserve(is_local, config=config),
+            )
+        except RosterFull as roster:
+            reason = (
+                "the placement reservation's roster is full "
+                f"({roster.occupancy}/{roster.limit}); the request waits for room"
+                + dispatch_options.get("context_fit_shortfall", "")
+            )
+            bound_hold = {
+                **lane_allowance,
+                "held": True,
+                "reason": reason,
+                "detail": str(roster),
+            }
+            if shadow_lineage:
+                # A shadow run exists to be compared against its pair, so it is
+                # refused when the bound binds rather than stored for later: a
+                # queued shadow has no pair to run beside.
+                raise
+            if admission_launch:
+                raise LaneHeld(bound_hold) from roster
+            held = _queue_a_held_request(
+                run_id=run_id,
+                project=project,
+                node=node,
+                repo_root=repo_root,
+                session=session,
+                backend_name=backend_name,
+                launch_kind=launch_kind,
+                lane_allowance=bound_hold,
+                dispatch_options=dispatch_options,
+                config=config,
+                admitted_from=admitted_from,
+                backlog=backlog,
+                is_local=is_local,
+            )
+            _arrange_dispatch_follower(
+                project,
+                session,
+                launch_kind,
+                watch_required=watch_required,
+                watch_override=watch_override,
+            )
+            raise held from roster
+
+        # Keep the identity visible if the caller exits during launch. Stdout
+        # remains the command's final JSON document, so notices use stderr, and
+        # the notice goes out once the bound reads above have let this dispatch
+        # launch: a request held, queued or refused above prints none, so its
+        # first line stays the document a caller reads.
+        print(f"reckon: created run {run_id}", file=sys.stderr, flush=True)
+
         explicitly_named_peers = set() if shadow_lineage else set(node.peer_scopes)
         peers = (
             {} if shadow_lineage else _merge_peer_scopes(peer_claims, node.peer_scopes)

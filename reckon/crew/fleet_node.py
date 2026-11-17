@@ -207,6 +207,48 @@ def batch_log_path(environ: Mapping[str, str] | None = None) -> Path:
     return state_directory(environ) / "fleet-%j.log"
 
 
+def _supervisor_lifetime_script(*, standby: bool) -> str:
+    """Keep the batch shell alive while its replaceable interpreter is down.
+
+    The service policy supplies the delays at submission time, so recovery needs
+    no working Python. Only the reader's explicit retirement marker ends the
+    holder; a clean unrequested exit follows the same backoff as a crash.
+    """
+    from reckon.crew import fleet_supervisor
+
+    backoff_setup, backoff_transition = fleet_supervisor.shell_backoff_transition()
+    arguments = " --standby" if standby else ""
+    return dedent(
+        f'''
+        FLEET_LIFETIME_DIRECTORY=$(mktemp -d "$TMPDIR/fleet-lifetime.XXXXXXXX")
+        export FLEET_LIFETIME_DIRECTORY
+        trap 'rm -fv -- "$FLEET_LIFETIME_DIRECTORY/stop" "$FLEET_LIFETIME_DIRECTORY/active"; rmdir -v -- "$FLEET_LIFETIME_DIRECTORY"' EXIT
+        {backoff_setup}
+        while [ ! -f "$FLEET_LIFETIME_DIRECTORY/stop" ]; do
+            started=$SECONDS
+            echo "[$(date -u +%FT%TZ)] fleet supervisor starting"
+            if (
+                if [ -f "$FLEET_LIFETIME_DIRECTORY/active" ]; then
+                    exec "$HOME/.local/bin/fleet-supervisor"
+                else
+                    exec "$HOME/.local/bin/fleet-supervisor"{arguments}
+                fi
+            ); then
+                result=0
+            else
+                result=$?
+            fi
+            [ ! -f "$FLEET_LIFETIME_DIRECTORY/stop" ] || break
+            ran=$((SECONDS - started))
+            {backoff_transition}
+            echo "[$(date -u +%FT%TZ)] fleet supervisor exited ($result); restart in ${{delay}}s"
+            sleep "$delay"
+        done
+        exit 0
+        '''
+    ).strip()
+
+
 def generate_hold_script(
     size: FleetSize,
     *,
@@ -244,7 +286,6 @@ def generate_hold_script(
         f'export {name}="${{{name}:-{DEFAULT_THREAD_CAP}}}"'
         for name in THREAD_CAP_VARIABLES
     )
-    supervisor_args = " --standby" if standby else ""
     body = (
         dedent(
             """
@@ -262,10 +303,10 @@ def generate_hold_script(
 
         # The batch step is the one process tree on the node that outlives every
         # login node: a step ends when its login-side client does. The fleet
-        # supervisor runs here when installed, so the zellij servers holding the
-        # agent sessions are started from it and survive a lost login node.
+        # shell holds the allocation independently of the supervisor's Python.
+        # Sessions retain their process identities while the reader restarts.
         if [ -x "$HOME/.local/bin/fleet-supervisor" ]; then
-            exec "$HOME/.local/bin/fleet-supervisor"{supervisor_args}
+            {supervisor_lifetime}
         fi
 
         echo "[$(date)] Holding $(hostname) for the interactive agent fleet"
@@ -276,7 +317,7 @@ def generate_hold_script(
         .format(
             hold_path=shlex.quote(hold_path(environ)),
             thread_caps=thread_caps,
-            supervisor_args=supervisor_args,
+            supervisor_lifetime=_supervisor_lifetime_script(standby=standby),
             fleet_exports="".join(
                 f"export {name}={value}\n"
                 for name, value in fleet_environ(fleet).items()

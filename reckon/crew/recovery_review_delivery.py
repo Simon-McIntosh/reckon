@@ -128,6 +128,83 @@ def _declared_head_keyed_record(
     return None
 
 
+def _report_review_delivery(record: Mapping[str, Any]) -> dict[str, Any] | None:
+    """Read a code or portfolio report under its composer's identity and grammar.
+
+    These composers key reports by neighbourhood or scope, rather than a run's
+    head. The declaration binds the report to the run, and its write time must
+    follow dispatch so a previous review of the same scope cannot deliver it.
+    ``None`` means this is a different kind of review; malformed deliveries
+    raise with the condition that failed.
+    """
+    from reckon.crew import plan_review
+
+    node = record.get("node") or {}
+    node_id = str(node.get("id") or "")
+    project = str(record.get("project") or "")
+    if node_id.startswith(plan_review.CODE_REVIEW_NODE_PREFIX):
+        key = node_id.removeprefix(plan_review.CODE_REVIEW_NODE_PREFIX)
+        directory = plan_review.code_review_report_directory(project=project, key=key)
+        sidecar_name = plan_review.CODE_REVIEW_SIDECAR_NAME
+        subject = "code"
+        key_field = "neighbourhood_key"
+        parse = plan_review._code_review_record
+    elif node_id.startswith(plan_review.PORTFOLIO_NODE_PREFIX):
+        key = node_id.removeprefix(plan_review.PORTFOLIO_NODE_PREFIX)
+        directory = plan_review.portfolio_review_report_directory(
+            project=project, key=key
+        )
+        sidecar_name = plan_review.PORTFOLIO_SIDECAR_NAME
+        subject = plan_review.PORTFOLIO_SUBJECT
+        key_field = "scope_key"
+        parse = plan_review._portfolio_review_record
+    else:
+        return None
+    path = directory / "report.md"
+    if not any(
+        Path(str(p)) in (directory, path) for p in node.get("write_paths") or ()
+    ):
+        raise CrewError(f"report path {path} is outside this run's declarations")
+
+    def read() -> dict[str, Any]:
+        sidecar = json.loads((directory / sidecar_name).read_text(encoding="utf-8"))
+        if not isinstance(sidecar, Mapping) or (
+            sidecar.get("project") != project
+            or sidecar.get(key_field) != key
+            or str(sidecar.get("subject") or "") != subject
+        ):
+            raise ValueError("report sidecar names a different subject")
+        mtime = path.stat().st_mtime
+        dispatched = _review_dispatch_instant(record, project)
+        if dispatched is None or mtime <= dispatched:
+            raise ValueError("report was not written after this run's dispatch")
+        sidecar = {**sidecar, "report_path": str(path)}
+        body = parse(sidecar)
+        if body.get("absent_items"):
+            raise ValueError(f"report lacks rubric items: {body['absent_items']}")
+        if body.get("subject") == plan_review.PORTFOLIO_SUBJECT:
+            count = len(body.get("dispositions") or ())
+            if not count:
+                raise ValueError("report carries no portfolio dispositions")
+            outcome = f"portfolio review stored with {count} disposition(s)"
+        else:
+            outcome = (
+                f"code review stored with {len(body.get('findings') or ())} finding(s)"
+            )
+        return {
+            "path": str(path),
+            "mtime": mtime,
+            "body": body,
+            "sidecar": sidecar,
+            "outcome": outcome,
+        }
+
+    try:
+        return read()
+    except (OSError, ValueError) as exc:
+        raise CrewError(f"report {path} is not delivered: {exc}") from exc
+
+
 def _review_dispatch_instant(record: Mapping[str, Any], project: str) -> float | None:
     """When this review run was dispatched, as a POSIX instant, or None.
 

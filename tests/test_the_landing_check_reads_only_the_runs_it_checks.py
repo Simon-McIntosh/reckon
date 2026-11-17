@@ -142,35 +142,51 @@ def _heads(repository: Path) -> tuple[str, str]:
 
 
 def _fill_store(repository: Path) -> str:
-    """Write the plan's 2,000 promoted rows, returning the unlanded run's id."""
+    """Seed promoted history and return the id whose head is not landed."""
 
     landed, unlanded = _heads(repository)
     unlanded_run = ""
-    with run_store.RunStore() as store:
-        for index in range(ROWS - DONE_ROWS):
-            section = BULK_SECTIONS[index % len(BULK_SECTIONS)]
-            store.append(
-                PROJECT,
-                _promoted_row(
-                    run_id=f"run-bulk-{index:04d}",
-                    section=section,
-                    node=f"n-bulk-{index:04d}",
-                    head=landed,
+    records = []
+    for index in range(ROWS - DONE_ROWS):
+        section = BULK_SECTIONS[index % len(BULK_SECTIONS)]
+        records.append(
+            _promoted_row(
+                run_id=f"run-bulk-{index:04d}",
+                section=section,
+                node=f"n-bulk-{index:04d}",
+                head=landed,
+            )
+        )
+    for index in range(DONE_ROWS):
+        run_id = f"run-done-{index}"
+        head = unlanded if index == DONE_ROWS - 1 else landed
+        if head == unlanded:
+            unlanded_run = run_id
+        records.append(
+            _promoted_row(
+                run_id=run_id,
+                section=DONE_SECTION,
+                node=f"n-done-{index}",
+                head=head,
+            )
+        )
+    # The subject is the audit's read: seed the same durable/detail rows in
+    # one transaction so per-row filesystem syncs cannot exhaust its timeout.
+    with run_store.RunStore() as store, store._conn:
+        for record in records:
+            identity, durable, detail = run_store._split_durable(PROJECT, record)
+            store._conn.execute(
+                run_store._RUNS_INSERT,
+                (
+                    identity,
+                    *(durable.get(key) for key in run_store.QUERY_KEYS),
+                    None,
+                    json.dumps(durable),
                 ),
             )
-        for index in range(DONE_ROWS):
-            run_id = f"run-done-{index}"
-            head = unlanded if index == DONE_ROWS - 1 else landed
-            if head == unlanded:
-                unlanded_run = run_id
-            store.append(
-                PROJECT,
-                _promoted_row(
-                    run_id=run_id,
-                    section=DONE_SECTION,
-                    node=f"n-done-{index}",
-                    head=head,
-                ),
+            store._conn.execute(
+                "INSERT INTO run_details (run_id, detail) VALUES (?, ?)",
+                (identity, json.dumps(detail)),
             )
     return unlanded_run
 

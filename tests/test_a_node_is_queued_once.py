@@ -82,6 +82,16 @@ def _dispatch(repo: Path, node: str = NODE, *extra: str, paths=("result.json",))
     )
 
 
+def _payload(result) -> dict:
+    """Read the documented JSON response from the stdout it is written to.
+
+    ``Result.output`` interleaves stderr with stdout in write order, and a
+    launch these cases trigger prints its own line there before the dispatch
+    answers, so the answer is read from ``stdout`` rather than the mixture.
+    """
+    return json.loads(result.stdout.splitlines()[0])
+
+
 def _node(node_id: str = NODE, write_paths=("result.json",)) -> crew.TaskNode:
     return crew.TaskNode(
         id=node_id,
@@ -175,7 +185,7 @@ def test_a_dispatch_in_the_handover_writes_no_second_pointer(
     assert runs.list_live(project=PROJECT) == []
 
     result = _dispatch(dispatch_repo)
-    payload = backend_tests._payload(result)
+    payload = _payload(result)
 
     assert result.exit_code == 0, result.output
     assert payload["queued"] is False
@@ -228,7 +238,7 @@ def test_a_dispatch_of_a_working_node_reports_it_and_writes_no_pointer(
     _live("r-working", phase="working", pid=os.getpid())
 
     result = _dispatch(dispatch_repo)
-    payload = backend_tests._payload(result)
+    payload = _payload(result)
 
     assert result.exit_code == 0, result.output
     assert payload["queued"] is False
@@ -254,7 +264,7 @@ def test_a_dispatch_after_a_put_back_updates_that_one_pointer(
     runs.queue_dispatch(_request("r-requeued"))
 
     result = _dispatch(dispatch_repo, NODE, "--comment", "a second attempt")
-    payload = backend_tests._payload(result)
+    payload = _payload(result)
 
     assert result.exit_code == 0, result.output
     assert payload["run_id"] == "r-requeued"
@@ -277,7 +287,7 @@ def test_a_queued_node_is_redispatched_in_place_with_no_scope_conflict(
     runs.queue_dispatch(_request("r-queued"))
 
     result = _dispatch(dispatch_repo, NODE, "--comment", "add the waiver")
-    payload = backend_tests._payload(result)
+    payload = _payload(result)
 
     assert result.exit_code == 0, result.output
     assert payload.get("error") != "scope-conflict"
@@ -301,8 +311,8 @@ def test_a_different_node_still_queues(
 
     assert first.exit_code == 0, first.output
     assert second.exit_code == 0, second.output
-    assert backend_tests._payload(first)["queued"] is True
-    assert backend_tests._payload(second)["queued"] is True
+    assert _payload(first)["queued"] is True
+    assert _payload(second)["queued"] is True
     assert {pointer["node"]["id"] for pointer in runs.list_live(project=PROJECT)} == {
         "node-one",
         "node-two",
@@ -319,7 +329,7 @@ def test_a_different_node_over_a_queued_path_launches_the_older_request(
     _configure(dispatch_repo, monkeypatch, session_slots=0)
     queued = _dispatch(dispatch_repo, "node-one")
     assert queued.exit_code == 0, queued.output
-    queued_id = backend_tests._payload(queued)["run_id"]
+    queued_id = _payload(queued)["run_id"]
     assert runs.read_pointer(queued_id)["phase"] == "queued"
 
     # The lane now has room, so the second node reaches the launch path.
@@ -327,7 +337,7 @@ def test_a_different_node_over_a_queued_path_launches_the_older_request(
     launched = _dispatch(dispatch_repo, "node-three")
 
     assert launched.exit_code == 0, launched.output
-    payload = backend_tests._payload(launched)
+    payload = _payload(launched)
     assert payload.get("error") != "scope-conflict"
     assert payload["ok"] is True
     # The dispatch spends the freed slot on its session's older queued request
@@ -340,15 +350,23 @@ def test_a_different_node_over_a_queued_path_launches_the_older_request(
 def test_a_different_node_over_a_working_run_s_path_is_refused(
     dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # A working run holds its claim, so a second node over result.json is
-    # refused exactly as before — only the queued case stops binding.
+    # A path a merge cannot reconcile is fenced by the working run's claim, so
+    # a second node over it is refused exactly as before — only the queued case
+    # stops binding. A mergeable file is shared instead: the worktrees isolate
+    # the edits and the merge reconciles them.
     _configure(dispatch_repo, monkeypatch, session_slots=4)
-    _live("r-working", phase="working", pid=os.getpid(), repo=dispatch_repo)
+    _live(
+        "r-working",
+        phase="working",
+        pid=os.getpid(),
+        write_paths=("result.png",),
+        repo=dispatch_repo,
+    )
 
-    refused = _dispatch(dispatch_repo, "node-three")
+    refused = _dispatch(dispatch_repo, "node-three", paths=("result.png",))
 
     assert refused.exit_code == 7, refused.output
-    assert backend_tests._payload(refused)["error"] == "scope-conflict"
+    assert _payload(refused)["error"] == "scope-conflict"
     assert {pointer["node"]["id"] for pointer in runs.list_live(project=PROJECT)} == {
         "held-node"
     }

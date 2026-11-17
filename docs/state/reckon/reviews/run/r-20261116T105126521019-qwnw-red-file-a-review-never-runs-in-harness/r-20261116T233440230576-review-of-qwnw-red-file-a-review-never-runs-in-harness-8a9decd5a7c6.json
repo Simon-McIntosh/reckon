@@ -1,0 +1,85 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own suite arms on disk: logs/suite-base-69fab1372f.log records 58 passed in 36.37s with EXIT=0 at 69fab1372f16686ce6acdb6094a357c6f6bfe18d and logs/suite-head-8a9decd5a7.log records 58 passed in 47.30s with EXIT=0 at 8a9decd5a7c60dbf4a16fc4af4c42ccf1ee9d128, both over the paired census modules tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, each with no FAILED or ERROR line, so the head-minus-base id difference over the armed pair is empty (0). The imported-module arm is a third reading and not one of those logs: logs/importing-tests-head-merged.ids carries 75 ids at the merged head against 118 in logs/importing-tests-base.ids, and the two ids head carries that base does not are tests/test_a_classification_read_creates_no_run_directory.py's two tests; the fragment attributes both to the primary branch at 50b1f03078, and I ran that file against the primary branch's own tree, where both fail identically, so neither is counted against this change.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/serve.py:902",
+    "reckon/crew/recovery_watch.py:750",
+    "reckon/crew/recovery_watch.py:4043",
+    "reckon/crew/forgotten_runs.py:94",
+    "reckon/roadmap.py:3224",
+    "reckon/crew/station_subscriber.py:144"
+  ],
+  "completed_at": "2026-11-17T00:20:06.986Z",
+  "dispatched_at": "2026-11-17T00:19:20Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-never-runs-in-harness.html",
+      "line": "42",
+      "severity": "non-blocking",
+      "text": "non-blocking: the imported-module arm still reads \"No id fails at head that does not fail at base\" while the merge round at line 64 reports two ids that do fail at the merged head and pass at the base, so the fragment states both a clean and a two-id delta for the same head and the section was never relabelled to the pre-merge head 94250afbda."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-never-runs-in-harness.html",
+      "line": "66",
+      "severity": "non-blocking",
+      "text": "non-blocking: the attribution \"They fail identically in a scratch tree holding only 50b1f03078\" has no artefact in the run directory, since logs/ holds importing-tests-base.log, importing-tests-head.log and importing-tests-head-merged.log and nothing running a primary-branch tree alone, so excluding the two added ids from this change rests on the worker's word; I corroborated the mechanism by running tests/test_a_classification_read_creates_no_run_directory.py against the primary branch's own tree, where both ids fail identically in 1.37s."
+    },
+    {
+      "file": "logs/gate-head-8a9decd5a7.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the delivered head's gate header names revision, tree, cwd, command and module.__file__ but no job name and no SLURM_JOB_ID state, so the done_when's \"as a job on all_debug with SLURM_JOB_ID unset\" conjunct is not evidenced by the receipt the manifest cites; I supplied that conjunct myself at the delivered revision and the file reads 4 passed with SLURM_JOB_ID unset."
+    },
+    {
+      "file": "manifest.md",
+      "line": "3",
+      "severity": "non-blocking",
+      "text": "non-blocking: orientation_write_paths names docs/evidence/fragments/queued-work-never-runs-in-harness-placeholder, which is not one of the paths the node was fenced to, so the manifest's own record of its scope does not match the fence it worked inside."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call sites of classify_pointer in the reviewed tree",
+    "diff": "read commit by commit from 94250afbda; efdc002727 merges the primary branch at 50b1f03078 and resolves the one conflicting hunk at reckon/crew/recovery_classification.py:1834-1853 by keeping the terminal-manifest clause beside not _spawn_evidence(record), adding that helper's deferred import at :3315, and 8a9decd5 adds 23 lines of merge-round prose to the fragment; the rest of the range is the primary branch's own work arriving through the merge.",
+    "done_when": "the done_when asks the named file pass in full at head as a job on all_debug with SLURM_JOB_ID unset, each cause carry a product-or-test verdict, the imported-module arm add no failure against the base, and the base run's ids be logged; the manifest records the gate at efdc002727 and at 8a9decd5 as 4 passed EXIT=0 (logs/gate-head-efdc002727-merged.log, logs/gate-head-8a9decd5a7.log) and the armed census arms as 58 passed EXIT=0 each, but no new receipt states the job name or the SLURM_JOB_ID condition, and the two ids the merged arm adds are attributed to the primary branch in prose with no log for the main-only tree.",
+    "goal": "the source goal is \"Make tests/test_a_review_never_runs_in_harness.py pass in full on the primary branch\"; the commits gained since the prior review are the merge efdc002727, which folds the primary branch's spawn-evidence reading into reckon/crew/recovery_classification.py:1849-1853 beside this node's terminal-manifest clause, and 8a9decd5, which records that resolution in the node's fragment, and the gate file reads 4 passed at the delivered head in the manifest's log and in my own run.",
+    "manifest": "read at the run directory; it reports status complete, commits 9593a3e401 94250afbda efdc002727 8a9decd5, the gate command, four log paths, measurement_module and measurement_cwd, a checkpoint naming the merge conflict and its resolution, and negative_control_log at logs/gate-base-69fab1372f.log with its note; it carries no baseline_suite, after_suite, artifacts, evidence_inputs or outside_scope line, and its orientation_write_paths line still names the placeholder path.",
+    "write_paths": "the declared scope is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround plus the node's slug file, and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-a-review-never-runs-in-harness; the two paths the node authored, reckon/crew/recovery_classification.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-never-runs-in-harness.html, are both inside that fence."
+  },
+  "justifications": {
+    "durability": "_scoring_pointer at tests/test_a_review_never_runs_in_harness.py:207-226 builds a record with no pid, budget, worker record, stream or stderr_path, so _spawn_evidence at reckon/crew/recovery_liveness.py:744-753 is False and deleting the clause at reckon/crew/recovery_classification.py:1851 makes pre_spawn_waiting true and reddens the three dispatch arms, while the merge's own not _spawn_evidence line is the primary branch's guard and has no arm in this diff.",
+    "evidence": "logs/gate-head-8a9decd5a7.log records 4 passed EXIT=0 and logs/suite-{base-69fab1372f,head-8a9decd5a7}.log each record 58 passed EXIT=0, but no new header states the job or SLURM_JOB_ID condition the done_when names and nothing on disk records the main-only tree the two added ids were attributed to.",
+    "fit": "the added clause sits inside the existing pre_spawn_waiting expression at reckon/crew/recovery_classification.py:1849 with its reasoning in the comment above it, takes its helper through the module's existing deferred import block at :3315, and the new fragment sections carry the node-id prefix every sibling id carries.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:1849-1853 keeps the terminal-manifest clause beside the primary branch's spawn-evidence reading, and I ran tests/test_a_review_never_runs_in_harness.py at 8a9decd5 in a git archive extraction with SLURM_JOB_ID unset for 4 passed in 34.83s.",
+    "reuse": "the diff adds no definition, taking _spawn_evidence from its owner at reckon/crew/recovery_liveness.py:727 through the existing deferred import block rather than restating the pid/worker-record/stream/launch-log/budget test, and the rule the comment cites is read from _observed_phase rather than copied.",
+    "scope_discipline": "the only paths the node authored between 94250afbda and 8a9decd5 are reckon/crew/recovery_classification.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-never-runs-in-harness.html, both inside the fence its dispatch named."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source goal is \"Make tests/test_a_review_never_runs_in_harness.py pass in full on the primary branch\"; the commits gained since the prior review are the merge efdc002727, which folds the primary branch's spawn-evidence reading into reckon/crew/recovery_classification.py:1849-1853 beside this node's terminal-manifest clause, and 8a9decd5, which records that resolution in the node's fragment, and the gate file reads 4 passed at the delivered head in the manifest's log and in my own run.\nVERDICT done_when: the done_when asks the named file pass in full at head as a job on all_debug with SLURM_JOB_ID unset, each cause carry a product-or-test verdict, the imported-module arm add no failure against the base, and the base run's ids be logged; the manifest records the gate at efdc002727 and at 8a9decd5 as 4 passed EXIT=0 (logs/gate-head-efdc002727-merged.log, logs/gate-head-8a9decd5a7.log) and the armed census arms as 58 passed EXIT=0 each, but no new receipt states the job name or the SLURM_JOB_ID condition, and the two ids the merged arm adds are attributed to the primary branch in prose with no log for the main-only tree.\nVERDICT write_paths: the declared scope is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround plus the node's slug file, and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-a-review-never-runs-in-harness; the two paths the node authored, reckon/crew/recovery_classification.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-never-runs-in-harness.html, are both inside that fence.\nVERDICT manifest: read at the run directory; it reports status complete, commits 9593a3e401 94250afbda efdc002727 8a9decd5, the gate command, four log paths, measurement_module and measurement_cwd, a checkpoint naming the merge conflict and its resolution, and negative_control_log at logs/gate-base-69fab1372f.log with its note; it carries no baseline_suite, after_suite, artifacts, evidence_inputs or outside_scope line, and its orientation_write_paths line still names the placeholder path.\nVERDICT diff: read commit by commit from 94250afbda; efdc002727 merges the primary branch at 50b1f03078 and resolves the one conflicting hunk at reckon/crew/recovery_classification.py:1834-1853 by keeping the terminal-manifest clause beside not _spawn_evidence(record), adding that helper's deferred import at :3315, and 8a9decd5 adds 23 lines of merge-round prose to the fragment; the rest of the range is the primary branch's own work arriving through the merge.\nCALL_SITES: reckon/serve.py:902, reckon/crew/recovery_watch.py:750, reckon/crew/recovery_watch.py:4043, reckon/crew/forgotten_runs.py:94, reckon/roadmap.py:3224, reckon/crew/station_subscriber.py:144\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:1849-1853 keeps the terminal-manifest clause beside the primary branch's spawn-evidence reading, and I ran tests/test_a_review_never_runs_in_harness.py at 8a9decd5 in a git archive extraction with SLURM_JOB_ID unset for 4 passed in 34.83s.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/gate-head-8a9decd5a7.log records 4 passed EXIT=0 and logs/suite-{base-69fab1372f,head-8a9decd5a7}.log each record 58 passed EXIT=0, but no new header states the job or SLURM_JOB_ID condition the done_when names and nothing on disk records the main-only tree the two added ids were attributed to.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only paths the node authored between 94250afbda and 8a9decd5 are reckon/crew/recovery_classification.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-never-runs-in-harness.html, both inside the fence its dispatch named.\nSCORE durability: 17\nJUSTIFICATION durability: _scoring_pointer at tests/test_a_review_never_runs_in_harness.py:207-226 builds a record with no pid, budget, worker record, stream or stderr_path, so _spawn_evidence at reckon/crew/recovery_liveness.py:744-753 is False and deleting the clause at reckon/crew/recovery_classification.py:1851 makes pre_spawn_waiting true and reddens the three dispatch arms, while the merge's own not _spawn_evidence line is the primary branch's guard and has no arm in this diff.\nSCORE fit: 19\nJUSTIFICATION fit: the added clause sits inside the existing pre_spawn_waiting expression at reckon/crew/recovery_classification.py:1849 with its reasoning in the comment above it, takes its helper through the module's existing deferred import block at :3315, and the new fragment sections carry the node-id prefix every sibling id carries.\nSCORE reuse: 19\nJUSTIFICATION reuse: the diff adds no definition, taking _spawn_evidence from its owner at reckon/crew/recovery_liveness.py:727 through the existing deferred import block rather than restating the pid/worker-record/stream/launch-log/budget test, and the rule the comment cites is read from _observed_phase rather than copied.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-never-runs-in-harness.html:42 non-blocking: the imported-module arm still reads \"No id fails at head that does not fail at base\" while the merge round at line 64 reports two ids that do fail at the merged head and pass at the base, so the fragment states both a clean and a two-id delta for the same head and the section was never relabelled to the pre-merge head 94250afbda.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-never-runs-in-harness.html:66 non-blocking: the attribution \"They fail identically in a scratch tree holding only 50b1f03078\" has no artefact in the run directory, since logs/ holds importing-tests-base.log, importing-tests-head.log and importing-tests-head-merged.log and nothing running a primary-branch tree alone, so excluding the two added ids from this change rests on the worker's word; I corroborated the mechanism by running tests/test_a_classification_read_creates_no_run_directory.py against the primary branch's own tree, where both ids fail identically in 1.37s.\nFINDING logs/gate-head-8a9decd5a7.log:1 non-blocking: the delivered head's gate header names revision, tree, cwd, command and module.__file__ but no job name and no SLURM_JOB_ID state, so the done_when's \"as a job on all_debug with SLURM_JOB_ID unset\" conjunct is not evidenced by the receipt the manifest cites; I supplied that conjunct myself at the delivered revision and the file reads 4 passed with SLURM_JOB_ID unset.\nFINDING manifest.md:3 non-blocking: orientation_write_paths names docs/evidence/fragments/queued-work-never-runs-in-harness-placeholder, which is not one of the paths the node was fenced to, so the manifest's own record of its scope does not match the fence it worked inside.",
+  "review_node": "review-of-qwnw-red-file-a-review-never-runs-in-harness-8a9decd5a7c6",
+  "review_run_id": "r-20261116T233440230576-review-of-qwnw-red-file-a-review-never-runs-in-harness-8a9decd5a7c6",
+  "reviewed_base_sha": "94250afbda7717280ed70c0badeb717daab5091c",
+  "reviewed_head_sha": "8a9decd5a7c60dbf4a16fc4af4c42ccf1ee9d128",
+  "reviewed_run_id": "r-20261116T105126521019-qwnw-red-file-a-review-never-runs-in-harness",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T233440230576-review-of-qwnw-red-file-a-review-never-runs-in-harness-8a9decd5a7c6"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T00:43:43.606459+00:00",
+  "total": 109
+}

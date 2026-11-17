@@ -1,0 +1,68 @@
+<section id="qwnw-red-file-a-scoped-suite-names-only-present-files-red-file">
+  <h3>The red file: <code>tests/test_a_scoped_suite_names_only_present_files.py</code></h3>
+  <p>Both runs are jobs on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset
+  inside the job. Each arm runs the same literal command over the tree it holds:
+  the base arm over a <code>git archive</code> of the base revision extracted into
+  that job's own <code>$TMPDIR</code>, the head arm over the delivered worktree.</p>
+  <table id="qwnw-red-file-a-scoped-suite-names-only-present-files-red-file-arms">
+    <thead><tr><th>Arm</th><th>Revision</th><th>Summary line</th><th>Exit</th><th>Log</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>base</td>
+        <td><code>8fdf39585f1fb4b05ac8a6e5b707a7c651d42176</code></td>
+        <td><code>4 failed, 1 passed in 1.42s</code></td>
+        <td>1</td>
+        <td><code>logs/negative_control.log</code></td>
+      </tr>
+      <tr>
+        <td>head</td>
+        <td><code>af9ef20d15a9d339205ccb6fdc3147ba990bb54d</code></td>
+        <td><code>5 passed in 3.00s</code></td>
+        <td>0</td>
+        <td><code>logs/gate_all_debug.log</code></td>
+      </tr>
+    </tbody>
+  </table>
+  <p>Both logs live under the run directory
+  <code>~/.config/reckon/crew/runs/r-20261116T104549392140-qwnw-red-file-a-scoped-suite-names-only-present-files/</code>.</p>
+  <p>The base arm's four failing ids, which are the four the file reported at
+  revision <code>8d50b0333f</code> when this node was written:</p>
+  <ul id="qwnw-red-file-a-scoped-suite-names-only-present-files-red-file-ids">
+    <li><code>test_a_pair_resolved_per_tree_is_accepted_though_no_arm_matches_the_scope</code> — the
+    promotion refused before the suite pair was read: <code>has a passing gate and cites no commit,
+    but its worktree is at … rather than its base …</code></li>
+    <li><code>test_an_after_arm_left_naming_no_test_file_is_refused_as_unmeasured</code> —
+    <code>json.decoder.JSONDecodeError</code>, because a different refusal replaced the
+    <code>suite-delta-refused</code> payload the case parses</li>
+    <li><code>test_an_arm_that_exited_having_collected_no_test_is_refused</code> — the same
+    <code>JSONDecodeError</code>, from the same cause</li>
+    <li><code>test_a_scope_whose_tests_the_change_creates_records_an_empty_baseline</code> — the same
+    worktree-cites-no-commit refusal as the first</li>
+  </ul>
+  <p>All four reduce to one defect in the fixture: the manifest it writes cited
+  <code>commits: abc123</code> while the run's worktree held a real commit, and the
+  promotion command declared <code>--no-commit 'report-only fixture'</code>. Two
+  rules the product now keeps were therefore refused instead of the suite delta
+  the file measures: a manifest revision is resolved against the run's repository
+  <em>by value</em> (<code>promotion_scope._declared_manifest_commits</code>, read
+  by the figure-twin check) and a value naming nothing is refused; and a passing
+  gate whose worktree sits past its base is refused even on the declared-reason
+  path (<code>promotion_evidence._require_worktree_at_its_base</code>, introduced
+  by <code>e7e46bfc5f</code>, which records that the stated reason "is not a
+  statement about the run's worktree"). The verdict for every one of the four is
+  <strong>test wrong</strong>; no product rule was repaired and no assertion was
+  deleted or weakened.</p>
+  <p>What the fixture now does instead: cite the repository's own head commit in
+  the manifest and drop the commitless declaration the placeholder exists to
+  excuse, so the run a promotion reads is one that committed, as it did. The five cases then assert
+  what they always asserted — the per-tree command resolution, a clean pair, and
+  the two <code>suite-delta-refused</code> payloads with their
+  <code>missing_fields</code> entries.</p>
+  <p>Arm over the test files importing the modules the changed file exercises
+  (<code>tests/test_a_commitless_manifest_promotes.py</code>,
+  <code>tests/test_promotion_checks_read_only_what_moved.py</code>,
+  <code>tests/test_crew_promotion.py</code>, <code>tests/test_crew_promotion_scope.py</code>):
+  at base <code>7 failed, 81 passed</code> and at head <code>7 failed, 81 passed</code>, with a set
+  difference of zero — the seven ids are the pre-existing failures those files carry at both
+  revisions.</p>
+</section>
