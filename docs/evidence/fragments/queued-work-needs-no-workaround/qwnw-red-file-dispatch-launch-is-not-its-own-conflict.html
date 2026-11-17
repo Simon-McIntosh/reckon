@@ -1,78 +1,113 @@
 <section id="qwnw-red-file-dispatch-launch-is-not-its-own-conflict-landing">
-  <h3>A launch's claim is published before the preflight that had been reading without it</h3>
+  <h3>A launch's claim goes out before the read that decides it, and a hold leaves the queued request it stored</h3>
   <p>The file reported <code>3 failed, 2 passed</code> at base
-  <code>398015d5d5fb31e353d1e29a4d2d78324aac9d88</code> and reads
-  <code>5 passed</code> at head <code>cc32e64be94228009c496ac481da45a40a2954d1</code>.
-  Two causes, with different verdicts, are behind the three failures.</p>
+  <code>398015d5d5fb31e353d1e29a4d2d78324aac9d88</code> and reads <code>5 passed</code> at the
+  delivered head. Four causes sit behind the red runs this node recorded: the three base
+  failures, the five setup errors the coordinator's gate (<code>head-gate.log</code>) reported at
+  <code>9dbddb3c89</code>, and the queue regressions the ordering repair itself introduced, which
+  the wide arm found.</p>
   <table id="qwnw-red-file-dispatch-launch-is-not-its-own-conflict-causes">
     <thead><tr><th>Observed failure</th><th>Verdict</th><th>Rule the code keeps</th></tr></thead>
     <tbody>
-      <tr>
-        <td><code>test_a_second_dispatch_meets_the_claim_of_the_launch_in_flight</code>,
-        <code>test_a_second_dispatch_meets_the_claim_made_before_the_preflight</code>: the refusal
-        names <code>docs/figures/fixture/node-claiming</code>, and the second case also saw no live
-        pointer for the first launch at its first preflight read</td>
-        <td>product wrong (first), test wrong (second)</td>
-        <td>A dispatch publishes its claim once, before the placement-bound read, the lane gate and
-        the fence gate, and the guard that gives it back opens around all of them</td>
+      <tr id="qwnw-red-file-dispatch-launch-is-not-its-own-conflict-cause-claim">
+        <td>the file's three base failures: a second dispatch read no claim from a launch in
+        flight, and a launch's own claim refused itself</td>
+        <td>product wrong</td>
+        <td>the deciding claim is published once, before the bound read that can send the
+        request to the queue</td>
       </tr>
-      <tr>
-        <td><code>test_a_claim_appearing_during_the_launch_is_met_at_the_pointer_write</code>:
-        no <code>ScopeConflict</code> at all, although a peer claim on <code>src/claimed.py</code>
-        was published from inside the worktree seam</td>
+      <tr id="qwnw-red-file-dispatch-launch-is-not-its-own-conflict-cause-share">
+        <td>the third base case named a landing fragment for its peer claim</td>
         <td>test wrong</td>
-        <td>A mergeable file shares between worktrees, so a peer claim on one overlaps nothing; the
-        node's figure topic is an unmergeable artifact class and is the entry two live claims
-        cannot share, so it is what the peer must hold</td>
+        <td>a mergeable HTML fragment shares between worktrees; an unmergeable figure topic is
+        what a refusal between two live claims names</td>
+      </tr>
+      <tr id="qwnw-red-file-dispatch-launch-is-not-its-own-conflict-cause-guard">
+        <td>five errors in the file's autouse guard at the coordinator's gate, in the real
+        login home only</td>
+        <td>test wrong</td>
+        <td>a fixture that judges one run's writes must read the pointer's identity fields, not
+        the bytes of every file in a directory it shares</td>
+      </tr>
+      <tr id="qwnw-red-file-dispatch-launch-is-not-its-own-conflict-cause-queue">
+        <td>a held dispatch answered with its own just-published claim; the created-run notice
+        preceded the JSON document; a held request left a run directory; a requeue was
+        overwritten by the waiting request saved before the claim (21 queue cases in the wide
+        arm)</td>
+        <td>product wrong</td>
+        <td>a dispatch's own claim is not a second run of its node, a held request owns no run
+        directory and keeps the newer hold it stored</td>
       </tr>
     </tbody>
   </table>
-  <p>The product cause: <code>reckon/crew/dispatching/preparation.py</code> published the deciding
-  claim only after <code>_refuse_over_concurrency_ceiling</code>, the lane gate and the first
-  placement-bound read, and published a second time at the pointer write. A sibling dispatch's
-  exclusion depended on that second, private publication, so a launch could be fenced by nothing
-  while it composed, and a dispatch's own claim could refuse itself. The claim is now one
-  publication ahead of the bound read, and the bound read, the second ceiling read, the queued
-  hold, the yield-to-older-request arm and the fence-capability refusal all sit inside the guard
-  those refusals unwind.</p>
-  <p>A hold is not a refusal: it stores the node as a queued request and keeps its pointer, so
-  <code>reckon/crew/dispatch_claims.py</code> gained <code>_withdraw_launch_claim</code> and the
-  guard's <code>LaneHeld</code> arm removes only <code>claim.json</code>, leaving the request
-  waiting exactly as it would have without a launch in front of it. Every other exception still
-  takes <code>_release_launch_claim</code>, which removes the pointer and the run directory.</p>
-  <p>The test cause is the sharing rule, not a weakened assertion. <code>DEFAULT_EXCLUSIVE_PATHS</code>
-  plus <code>_SharedWritePaths(default_share=True)</code> landed in <code>5695689722</code> and
-  <code>471bf98366</code>, after the file's last edit at <code>410d7b48d7</code>: a mergeable
-  <code>.html</code> fragment now shares between worktrees, so the path a refusal between two live
-  claims names is the node's figure topic. The constant is renamed to <code>FIGURE_TOPIC</code>,
-  both assertions still assert that the named path appears in the refusal, and the third case's
-  peer claim now holds the figure topic beside its mergeable source file. No assertion was deleted
-  or weakened.</p>
-  <p>Arms for the file, all with <code>SLURM_JOB_ID</code> unset, both running
-  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_dispatch_launch_is_not_its_own_conflict.py</code>:
-  at base <code>398015d5d5</code> it reads <code>3 failed, 2 passed in 10.23s</code> with
-  <code>EXIT=1</code>, the three ids being
-  <code>test_a_second_dispatch_meets_the_claim_of_the_launch_in_flight</code>,
-  <code>test_a_second_dispatch_meets_the_claim_made_before_the_preflight</code> and
-  <code>test_a_claim_appearing_during_the_launch_is_met_at_the_pointer_write</code>; at head
-  <code>cc32e64be9</code> it reads <code>5 passed in 14.49s</code> with <code>EXIT=0</code>. The
-  suite the brief arms reads <code>58 passed</code> with <code>EXIT=0</code> at both revisions, and
-  the twelve test files that exercise the changed modules read <code>3 failed, 84 passed</code> at
-  both revisions with the same three ids, so the change adds no failure. Those three are
-  <code>launch-failed</code> readings this sandbox produces without a worker, present identically
-  at base. <code>ruff check</code> and <code>ruff format --check</code> report no finding on the
-  three changed paths; the one <code>RUF100</code> in <code>preparation.py</code> is present at base
-  and untouched.</p>
-  <p id="qwnw-red-file-dispatch-launch-is-not-its-own-conflict-mutation">Mutation control for the
-  product change: with both product files reverted, and only the repaired test file in place, the
-  file reads <code>1 failed, 4 passed in 10.14s</code> and the failing case is
-  <code>test_a_second_dispatch_meets_the_claim_made_before_the_preflight</code> asserting
-  <code>observed["held"] == []</code> against the first launch's run id — so the ordering repair,
-  not the renamed expectation, is what the first launch's claim assertion measures.</p>
+  <p>The first cause, repaired in <code>cc32e64be9</code>:
+  <code>reckon/crew/dispatching/preparation.py</code> published the deciding claim only after
+  <code>_refuse_over_concurrency_ceiling</code>, the lane gate and the first placement-bound read,
+  and published privately again at the pointer write. A sibling dispatch's exclusion depended on
+  that second publication, so a launch could be fenced by nothing while it composed, and a
+  dispatch's own claim could refuse itself. The claim is now one publication ahead of the bound
+  read; the bound read, the second ceiling read, the queued hold, the yield-to-older-request arm
+  and the fence-capability refusal all sit inside the guard those refusals unwind.</p>
+  <p>The second cause is the sharing rule, not a weakened assertion.
+  <code>DEFAULT_EXCLUSIVE_PATHS</code> plus <code>_SharedWritePaths(default_share=True)</code>
+  landed in <code>5695689722</code> and <code>471bf98366</code>, after the file's last edit at
+  <code>410d7b48d7</code>: a mergeable <code>.html</code> fragment now shares between worktrees, so
+  a refusal between two live claims names the node's figure topic instead. The constant is
+  renamed <code>FIGURE_TOPIC</code>, both assertions still assert that the named path appears in
+  the refusal, and the third case's peer claim holds the figure topic beside its mergeable source
+  file. No assertion was deleted or weakened.</p>
+  <p>The third cause, repaired in <code>bb9858cd0d</code>, is the guard reading the wrong thing.
+  It searched the bytes of every file under the real crew home, and this run's own live pointer
+  stores the worker's delivery summary, which quotes the fixture's node id and claim text. The
+  guard now reads each pointer's name, <code>project</code>, <code>session</code> and
+  <code>node.id</code>: a leaked pointer names the fixture in its identity, while a peer's prose
+  that merely mentions the identifiers does not trip it. Its strength is unchanged for a leak and
+  no longer extends to another run's prose. Controls beside the case, each a full run of the file
+  with <code>HOME</code> pointed at a scratch home: a pointer naming the fixture's project, node
+  and session reads <code>5 errors in 0.95s</code> (the leak still fails); a peer pointer whose
+  prose mentions those identifiers reads <code>5 passed in 14.03s</code> (the false positive,
+  gone); an empty live directory reads <code>5 passed in 14.39s</code>.</p>
+  <p>The fourth cause was exposed by the wide arm, not by the node's own file, and is repaired in
+  <code>50d9f85f1a</code> and <code>3f0087fc23</code>. Publishing the claim earlier made a held
+  dispatch meet its own claim: <code>queue_dispatch</code> answered any live pointer of the same
+  node as a run already between the queue and a worker, so a request at the project's depth bound
+  was answered instead of refused, and a requeue was stored as a fresh request. The in-flight scan now
+  skips the pointer whose run id is the record's own — this dispatch's pending launch, not a
+  second run of the node — and a queued copy is still found and re-queued. Three follow-on
+  defects went with it: the created-run notice moved behind the bound reads, because a queued or
+  refused dispatch must not put a stderr line ahead of the JSON document a caller parses; a hold
+  now withdraws the claim's run directory with the claim, because a queued request owns no run
+  directory and <code>readable_brief_source</code> already falls back to the source the request
+  names; and the admission guard that restores a waiting request no longer writes over a pointer
+  that already waits, because a dispatch that held its own admitted request stored a newer copy
+  carrying the newer reason, and restoring over it put back a hold the lane had replaced.</p>
+  <p>Arms for the file, all with <code>SLURM_JOB_ID</code> unset and the real login
+  <code>HOME</code>: the file alone reads <code>3 failed, 2 passed</code> with
+  <code>EXIT=1</code> at base and <code>5 passed</code> with <code>EXIT=0</code> at the delivered
+  head. The 116-file arm over the launch and claim tests reads <code>60 failed, 601 passed</code>
+  (<code>EXIT=1</code>) at base and <code>58 failed, 603 passed</code> (<code>EXIT=1</code>) at
+  <code>50d9f85f1a</code>, and every head failure is present at base: the two fewer are the
+  file's own repaired cases, and no head-only failure remains. The queue arm is the arm that found
+  the fourth cause: it read <code>55 failed, 474 passed</code> at base and <code>59 failed, 470
+  passed</code> at <code>50d9f85f1a</code> with four head-only failures, and reads <code>55
+  failed, 474 passed</code> at the delivered head with none of them. The six files carrying those
+  four cases read <code>9 failed, 56 passed</code> at base and <code>6 failed, 59 passed</code> at
+  the delivered head, every head failure present at base.</p>
+  <p>The suite the brief arms reads <code>58 passed</code> with <code>EXIT=0</code> at both the
+  base and the delivered head, so the change neither breaks nor repairs anything beside this
+  node; the pre-existing failures in both wide arms are present at base and untouched.</p>
+  <p id="qwnw-red-file-dispatch-launch-is-not-its-own-conflict-mutation">Controls that could have
+  failed. The negative control is the unchanged base followed by the repaired head test:
+  <code>3 failed, 2 passed</code> with <code>EXIT=1</code>, so the file still measures the defect
+  at the revision it was written against. The mutation control runs the base product under the
+  repaired head test and reads <code>1 failed, 4 passed</code> with <code>EXIT=1</code>; the
+  assertion that fails is the claim-ordering one, so it is the repaired product code, and not the
+  renamed expectation, that the first launch's claim assertion measures.</p>
   <p>The brief's first instruction, to merge the current <code>origin/main</code> before rerunning,
-  reports nothing to do: <code>origin/main</code> resolves to this worktree's head, and
-  <code>git fetch origin main</code> cannot run in this sandbox (<code>Bad owner or permissions on
-  /etc/ssh/ssh_config.d/50-redhat.conf</code>), so no merge was possible or needed.</p>
+  could not be executed: <code>git fetch origin main</code> fails in the sandbox on the host's
+  <code>ssh_config.d</code> permissions (<code>Bad owner or permissions on
+  /etc/ssh/ssh_config.d/50-redhat.conf</code>). <code>origin/main</code> already points at this
+  worktree's head, so no merge was possible or needed.</p>
   <p>The done-when spells this record <code>red-file-dispatch-launch-is-not-its-own-conflict.html</code>;
   the granted fragment path is <code>qwnw-red-file-dispatch-launch-is-not-its-own-conflict.html</code>
   and this record is written there.</p>
