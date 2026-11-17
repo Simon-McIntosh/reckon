@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="312">
+<meta name="plan-version" content="313">
 <meta name="plan-modified" content="2026-11-17">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -1027,7 +1027,10 @@
     <div class="r-comment-body"><p>a delivered run whose pointer still read a pre-spawn phase was classified running, so the review reflex refused composition with 'the run is not awaiting review (running)' and four cases stopped before the lane they measure; classify_pointer now lets a terminal manifest status outrank the stale label, and tests/test_review_lane_follows_its_run.py went from 4 failed and 2 passed at 24bc79d8 to 6 passed at 55e48f3bd8, measured as all_debug job 1319800</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261116T104442890670-qwnw-red-file-orchestrator-assessment-reaches-jev" data-who="reckon-build" data-when="2026-11-16T11:37:43.946Z">
-    <div class="r-comment-body"><p>tests/test_orchestrator_assessment_reaches_jev.py passes in full — 8 passed, EXIT=0 — after merging origin/main; all three causes were the test&#x27;s, not the product&#x27;s: the picker stub fed pick a snapshotter the dispatcher now shadows (scan replaced at snapshot.candidates instead), the payload helper parsed the mixed terminal stream that a stderr time-budget advisory can precede (it reads stdout, which carries exactly one JSON line), and the fixture read the host&#x27;s temp filesystem through the dispatch scratch-headroom guard (worktree.scratch_min_free_bytes/pct pinned in CONFIG); no assertion deleted or weakened; base arm 4 failed, 4 passed EXIT=1, head 8 passed EXIT=0 as all_debug job 1319794 with SLURM_JOB_ID unset</p></div>
+    <div class="r-comment-body"><p>tests/test_orchestrator_assessment_reaches_jev.py passes in full — 8 passed, EXIT=0 — after merging origin/main; all three causes were the test's, not the product's: the picker stub fed pick a snapshotter the dispatcher now shadows (scan replaced at snapshot.candidates instead), the payload helper parsed the mixed terminal stream that a stderr time-budget advisory can precede (it reads stdout, which carries exactly one JSON line), and the fixture read the host's temp filesystem through the dispatch scratch-headroom guard (worktree.scratch_min_free_bytes/pct pinned in CONFIG); no assertion deleted or weakened; base arm 4 failed, 4 passed EXIT=1, head 8 passed EXIT=0 as all_debug job 1319794 with SLURM_JOB_ID unset</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261116T104435052104-qwnw-red-file-promotion-never-amends-its-commit" data-who="reckon-build" data-when="2026-11-16T11:36:58.958Z">
+    <div class="r-comment-body"><p>tests/test_promotion_never_amends_its_commit.py passes 5/5 at head as all_debug job 1319808 with SLURM_JOB_ID unset, against 4 failed and 1 passed at 24bc79d8ee; three test encodings were stale and no product source changed — the case now passes --wait for the synchronous outcome it asserts on, the clean landing check carries the unstaged key the receipt reports, and the release replay returns the recorded release unchanged with no landing_check, asserted by full equality rather than a filtered comparison.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
