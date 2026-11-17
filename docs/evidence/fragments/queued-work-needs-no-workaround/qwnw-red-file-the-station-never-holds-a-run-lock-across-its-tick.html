@@ -1,0 +1,55 @@
+<section id="qwnw-red-file-the-station-never-holds-a-run-lock-across-its-tick-landing">
+  <h2>The station's pointer-lock regression file passes</h2>
+
+  <p><strong>What changed.</strong> The file's three red cases were two stale
+  expectations, in one test file and no product source. A station sweep no
+  longer promotes a delivered review inside its own pass: since
+  <code>b4840067ad</code> it hands the file's promotion to a worker, or files a
+  durable request the fleet service drains. The two station cases hold a
+  promotion at its checks, or during waiter release, and then assert the run's
+  pointer lock can be taken within a second — but with no promotion running they
+  failed on their own precondition, <code>the sweep never reached the promotion
+  barrier</code>. The fixture now gives the sweep the in-process promotion
+  workers, and the acquisition it asserts belongs to the worker the sweep
+  started rather than to the sweep thread. What the cases measure is unchanged:
+  the lock stays available while a promotion is held.</p>
+
+  <p>The third case expects a refusal — <code>run ... changed while promotion
+  ran</code> — when another host rewrites a review run's pointer mid-promotion.
+  A review run has nothing to land, so since <code>692bf59a1b</code> it neither
+  refuses nor retires a newer attempt's pointer: the promotion completes, the
+  pointer is kept, and it is marked <code>promoted</code> so the sweep retires
+  it once nothing owns it. The case now asserts that state — attempt, pid and
+  phase kept, <code>promoted</code> set, no
+  <code>pending_landing_repair</code> mark — instead of the refusal the code
+  stopped raising. No pointer assertion was dropped.</p>
+
+  <h3 id="qwnw-red-file-the-station-never-holds-a-run-lock-across-its-tick-measured">Measured</h3>
+  <table>
+    <thead>
+      <tr><th>arm</th><th>revision</th><th>command</th><th>result</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>base (negative control)</td>
+        <td><code>125628f608</code></td>
+        <td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_station_never_holds_a_run_lock_across_its_tick.py</code></td>
+        <td><code>3 failed, 3 passed in 61.51s</code>, <code>EXIT=1</code></td>
+      </tr>
+      <tr>
+        <td>head gate</td>
+        <td><code>3544df51f2</code></td>
+        <td><code>env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_station_never_holds_a_run_lock_across_its_tick.py</code></td>
+        <td><code>6 passed in 2.52s</code>, <code>EXIT=0</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The head gate ran as batch job <code>1319923</code> on partition
+  <code>all_debug</code>, node <code>98dci4-clu-3142</code>, with
+  <code>SLURM_JOB_ID</code> unset in the test process. The base arm's failing
+  ids are the two parameterised station cases
+  (<code>test_a_station_sweep_leaves_the_pointer_lock_available[checks]</code>,
+  <code>[waiter-release]</code>) and
+  <code>test_a_resumed_pointer_is_not_removed_by_an_earlier_promotion</code>.</p>
+</section>

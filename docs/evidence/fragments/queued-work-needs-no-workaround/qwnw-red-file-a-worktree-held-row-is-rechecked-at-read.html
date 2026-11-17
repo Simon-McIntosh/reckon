@@ -1,0 +1,62 @@
+<section id="qwnw-red-file-a-worktree-held-row-is-rechecked-at-read-landing">
+<h2>Red file: a worktree-held row rechecked at read</h2>
+<p><code>tests/test_a_worktree_held_row_is_rechecked_at_read.py</code> passes in full
+(5 passed) at head <code>3ae78c854b</code> as an <code>all_debug</code> job with
+<code>SLURM_JOB_ID</code> unset. At the base revision
+<code>655a2befa9</code> the same file reported 3 failed and 2 passed.</p>
+
+<h3 id="qwnw-red-file-a-worktree-held-row-is-rechecked-at-read-cause">Cause and verdict</h3>
+<p>The file passed before <code>c778aaa1f6</code>, which made a retained tree a
+duty only while it holds an uncommitted change or a commit its primary branch
+does not reach; a clean tree the branch already reaches holds nothing and
+raises no row. Every fixture tree here was created with
+<code>git worktree add --detach HEAD</code> and nothing else, so it carried no
+work at all: the two cases that assert a row is <em>present</em>
+(<code>test_a_held_tree_is_still_offered</code>,
+<code>test_a_row_without_a_per_run_file_is_kept</code>) found none, and the
+snapshot case (<code>test_a_tree_the_promotion_released_is_not_offered</code>)
+found no row to read. The verdict is <strong>test wrong</strong>: the product
+rule is the deliberate and documented one, and the fixtures still encoded the
+rule it replaced.</p>
+<p>The repair gives every fixture tree the run's own commit, names it from the
+retained record, and drives the released cases from a row that is a true
+reading when it is published: a committed run's record, the tree on disk
+against it, then the landing that takes the commit followed by the promotion
+of the finished record, which releases the tree and writes the release. No
+assertion was deleted or weakened; the assertions are byte-identical to the
+base file's.</p>
+
+<h3 id="qwnw-red-file-a-worktree-held-row-is-rechecked-at-read-base">Base run, red</h3>
+<pre>
+# revision: 655a2befa979af690bab537523cd9ad97dc108c5
+# tree: /tmp/reckon-crew-scratch/&lt;run&gt;/base-655a2be
+# module: /tmp/reckon-crew-scratch/&lt;run&gt;/base-655a2be/reckon/crew/obligations.py
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_worktree_held_row_is_rechecked_at_read.py
+FAILED tests/test_a_worktree_held_row_is_rechecked_at_read.py::test_a_tree_the_promotion_released_is_not_offered - StopIteration
+FAILED tests/test_a_worktree_held_row_is_rechecked_at_read.py::test_a_held_tree_is_still_offered - AssertionError: (at tests/test_a_worktree_held_row_is_rechecked_at_read.py:313: assert '[worktree-held]' in completed.stdout, completed.stdout = '')
+FAILED tests/test_a_worktree_held_row_is_rechecked_at_read.py::test_a_row_without_a_per_run_file_is_kept - assert 'r-20261004T070000000000-recheck-fixture-node' in &quot;reckon obligations for session s22-recheck-fixture (project worktree-row-recheck-fixture): 0 outstanding&quot;
+3 failed, 2 passed
+EXIT=1
+</pre>
+
+<h3 id="qwnw-red-file-a-worktree-held-row-is-rechecked-at-read-head">Head run, green</h3>
+<pre>
+# revision: 3ae78c854beba4e668b4bc9f28f84970b7576197
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/&lt;run&gt;/qwnw-red-file-a-worktree-held-row-is-rechecked-at-read
+# node: 98dci4-clu-3141.iter.org
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_worktree_held_row_is_rechecked_at_read.py
+# SLURM_JOB_ID as the run reads it: 'unset'
+.....                                                                    [100%]
+5 passed in 4.57s
+EXIT=0
+</pre>
+
+<h3 id="qwnw-red-file-a-worktree-held-row-is-rechecked-at-read-falsified">The guard still fires</h3>
+<p>With the hook's <code>recheck_worktree_held_rows</code> disabled (a single
+early <code>return payload</code>), the file reported 3 failed: the released
+row, the vanished row and the recorded-release row were all offered and held
+the turn open, naming
+<code>reckon crew gc --run r-20261004T070000000000-recheck-fixture-node --apply</code>
+for a run with no tree. The three cases that assert a row is dropped therefore
+pass through the hook's recheck and not through an empty snapshot.</p>
+</section>

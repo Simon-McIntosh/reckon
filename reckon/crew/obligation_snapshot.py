@@ -354,6 +354,7 @@ STATION_STALE_SECONDS = FRESHNESS_WINDOW_SECONDS
 STATION_TICK_STAGE_KEY = "tick_stage"
 STATION_TICK_STARTED_AT_KEY = "tick_started_at"
 STATION_TICK_FINISHED_AT_KEY = "tick_finished_at"
+STATION_LAST_TICK_KEY = "last_tick"
 STATION_TICK_STAGES = (
     "store-tick",
     "classify",
@@ -460,6 +461,15 @@ def station_tick_reading(
     return stage, max(0, int((instant - started).total_seconds()))
 
 
+def _last_tick_reading(markers: Mapping[str, Any]) -> dict[str, Any]:
+    """The completed measurement, retained while the current tick runs."""
+    try:
+        record = json.loads(markers.get(STATION_LAST_TICK_KEY) or "null")
+    except (TypeError, ValueError):
+        return {}
+    return {"last_tick": record} if isinstance(record, dict) else {}
+
+
 def _running_tick_start(markers: Mapping[str, Any], tick_age: int | None) -> str:
     """The instant the running tick started, and "" when no tick is running.
 
@@ -521,13 +531,14 @@ def _station_markers(connection: Any) -> dict[str, str]:
     markers = {
         str(key): str(value)
         for key, value in connection.execute(
-            "SELECT key, value FROM station WHERE key IN (?, ?, ?, ?, ?)",
+            "SELECT key, value FROM station WHERE key IN (?, ?, ?, ?, ?, ?)",
             (
                 "heartbeat",
                 STATION_TICK_STAGE_KEY,
                 STATION_TICK_STARTED_AT_KEY,
                 STATION_TICK_FINISHED_AT_KEY,
                 "store_identity",
+                STATION_LAST_TICK_KEY,
             ),
         )
     }
@@ -636,6 +647,7 @@ def read_station_tick(
         "tick_age_seconds": tick_age,
         "tick_started_at": _running_tick_start(markers, tick_age),
         "stale": age > STATION_STALE_SECONDS,
+        **_last_tick_reading(markers),
     }
 
 
@@ -693,6 +705,10 @@ def read_station_answer(
     exported snapshot uses the exporting station's independent health
     publication when available, so a long derivation does not freeze the beat
     or hide the running tick from a reader on another node.
+
+    ``stale`` describes that heartbeat. ``answer_stale`` separately identifies
+    retained duties, whose ``payload.stale`` marking carries their current age:
+    an alive station can still be reading a project's replacement answer.
     """
     instant = _utc_now() if now is None else now
     found = _read_station_document(project, session, environ=environ)
@@ -708,15 +724,18 @@ def read_station_answer(
     stale = age is None or age > STATION_STALE_SECONDS
     stage, tick_age = station_tick_reading(markers, now=instant)
     state = station_state(heartbeat_age=age, tick_age=tick_age)
+    payload = live_payload(document, now=instant)
     return {
         "source": source,
         "state": state,
-        "payload": live_payload(document),
+        "payload": payload,
         "heartbeat_age_seconds": age,
         "tick_stage": stage,
         "tick_age_seconds": tick_age,
         "tick_started_at": _running_tick_start(markers, tick_age),
         "stale": stale,
+        "answer_stale": isinstance(payload.get("stale"), Mapping),
+        **_last_tick_reading(markers),
     }
 
 
@@ -1643,6 +1662,18 @@ def live_payload(document: Mapping[str, Any], *, now: datetime | None = None) ->
     payload = {
         key: value for key, value in document.items() if key not in _SNAPSHOT_KEYS
     }
+    retained = payload.get("stale")
+    if isinstance(retained, Mapping):
+        retained = dict(retained)
+        try:
+            stored_at = float(retained["stored_at"])
+        except (KeyError, TypeError, ValueError):
+            pass
+        else:
+            retained["age_seconds"] = round(
+                max(0.0, instant.timestamp() - stored_at), 3
+            )
+        payload["stale"] = retained
     for key in ("obligations", "acknowledged"):
         rows = payload.get(key)
         if isinstance(rows, list):
@@ -1870,41 +1901,49 @@ def _derive_fleet_state(project: str, *, now: datetime | None = None) -> FleetSt
     )
     reviews_in_flight: dict[str, set[str]] = {}
     pointers: dict[str, Mapping[str, Any]] = {}
-    for pointer in module.runs.list_live(project=project):
-        session = str(pointer.get("session") or "")
-        run_id = str(pointer.get("run_id") or "")
-        if run_id:
-            pointers[run_id] = pointer
-        if session and run_id and module._current_review_in_flight(pointer):
-            reviews_in_flight.setdefault(session, set()).add(run_id)
-    floors = module.review_dispositions.declared_dimension_floors(config)
-    from reckon.crew.section_obligations import merged_section_items_by_session
+    # One listing of the project's live directory answers the derivation's own
+    # rows and every reader it reaches, so each pointer file is decoded once
+    # for the whole sweep rather than once per duty kind.
+    with module.live_pointer_snapshot(project) as listing:
+        for pointer in listing:
+            session = str(pointer.get("session") or "")
+            run_id = str(pointer.get("run_id") or "")
+            if run_id:
+                pointers[run_id] = pointer
+            if session and run_id and module._current_review_in_flight(pointer):
+                reviews_in_flight.setdefault(session, set()).add(run_id)
+        floors = module.review_dispositions.declared_dimension_floors(config)
+        from reckon.crew.section_obligations import merged_section_items_by_session
 
-    # Every review read this sweep makes happens inside the region -- the
-    # classified rows, the sub-floor lookup and the held-worktree scan all
-    # reach the review store -- so what could not be read is collected here,
-    # once, and travels with the state every session's slice is built from. A
-    # read outside the region has nobody to name its skips to, so another
-    # reader in this process never reaches this sweep's findings.
-    with module.review_module.collect_read_failures() as skipped_records:
-        state = FleetState(
-            project=project,
-            now=instant,
-            config=config,
-            grace=grace,
-            floors=floors,
-            rows=module._classified_rows(project),
-            pointers=pointers,
-            acknowledged=module._acknowledgements_in_force(project, now=instant),
-            reviews_in_flight=reviews_in_flight,
-            sub_floor=module._sub_floor_items_by_session(project, floors, now=instant),
-            held_worktrees=module._held_worktrees_by_session(project, now=instant),
-            unreconciled=module.runs.drain_unreconciled_by_session(project),
-            findings=[],
-            merged_sections=merged_section_items_by_session(
-                project, list(pointers.values()), now=instant
-            ),
-        )
+        # Every review read this sweep makes happens inside the region -- the
+        # classified rows, the sub-floor lookup and the held-worktree scan all
+        # reach the review store -- so what could not be read is collected here,
+        # once, and travels with the state every session's slice is built from. A
+        # read outside the region has nobody to name its skips to, so another
+        # reader in this process never reaches this sweep's findings.
+        with module.review_module.collect_read_failures() as skipped_records:
+            state = FleetState(
+                project=project,
+                now=instant,
+                config=config,
+                grace=grace,
+                floors=floors,
+                rows=module._classified_rows(project),
+                pointers=pointers,
+                acknowledged=module._acknowledgements_in_force(project, now=instant),
+                reviews_in_flight=reviews_in_flight,
+                sub_floor=module._sub_floor_items_by_session(
+                    project, floors, now=instant
+                ),
+                held_worktrees=module._held_worktrees_by_session(project, now=instant),
+                unreconciled=module.runs.drain_unreconciled_by_session(
+                    project, pointers=listing
+                ),
+                findings=[],
+                merged_sections=merged_section_items_by_session(
+                    project, list(pointers.values()), now=instant
+                ),
+            )
     state.findings = list(skipped_records)
     return state
 
@@ -2150,6 +2189,8 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
             state.unreconciled.get(session, state.unreconciled.get("", 0))
         ),
     }
+    delivery = module.recovery_classification.delivery_summary(state.rows, session=session)
+    summary.update({key: value for key, value in delivery.items() if key != "remove_pointers"})
     return {
         "project": state.project,
         "session": session,
@@ -2165,6 +2206,7 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
             vocabulary=module.DUTY_ROW_FIELDS,
             sections=sections,
         ),
+        "remove_pointers": delivery["remove_pointers"],
         "summary": summary,
     }
 

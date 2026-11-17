@@ -47,7 +47,7 @@ from reckon._schema import (
     section_depends_on,
 )
 from reckon.capability import CAPABILITY_CLASSES, CAPABILITY_SCHEMA_VERSION
-from reckon.resources import iter_resources
+from reckon.resources import EVIDENCE_FRAGMENTS_SUBTREE, iter_resources
 
 # ── Fixtures / sample plan HTML ──────────────────────────────────────────────
 
@@ -800,6 +800,16 @@ _INFRA_STEMS = {
 _EVIDENCE_FILES: list[tuple[str, Path]] = []
 _ARCHIVE_EVIDENCE_FILES: list[tuple[str, Path]] = []
 
+# A node's landing record is a fragment under
+# evidence/fragments/<plan>/<node>.html, composed into its plan's cumulative
+# record at read time. It is a body include, not a document: the product's
+# resource scan passes over the subtree (resources.EVIDENCE_FRAGMENTS_SUBTREE)
+# and composition appends only a fragment's body bytes, never its wrapper, so a
+# fragment's head scalars and landing citations belong to the composed record.
+# The scan holds the same line; the excluded paths are kept so the exclusion
+# itself is asserted rather than assumed.
+_FRAGMENT_FILES: list[tuple[str, Path]] = []
+
 
 def _mounts_path() -> Path | None:
     """Resolve mounts.json using the environment override and supported homes."""
@@ -826,6 +836,16 @@ def _iter_plan_files(docs_dir: Path):
         yield f, rel
 
 
+def _is_fragment(rel: Path) -> bool:
+    """Whether a docs-relative path is a plan's evidence fragment.
+
+    The product answers this question itself, and the scan reads the same
+    constant rather than a second spelling of the layout, so a change to one cannot
+    leave the other reading a different tree.
+    """
+    return rel.parts[: len(EVIDENCE_FRAGMENTS_SUBTREE)] == EVIDENCE_FRAGMENTS_SUBTREE
+
+
 def _all_plan_files():
     mp = _mounts_path()
     if mp is None:
@@ -840,6 +860,9 @@ def _all_plan_files():
         if not dd.is_dir():
             continue
         for f, rel in _iter_plan_files(dd):
+            if _is_fragment(rel):
+                _FRAGMENT_FILES.append((project, f))
+                continue
             files.append((project, f))
             if rel.parts[0] == "evidence":
                 _EVIDENCE_FILES.append((project, f))
@@ -941,8 +964,12 @@ def _citation_resolution() -> frozenset[str]:
     ids=[f"{p}:{f.stem}" for p, f in (_PLAN_FILES or [])],
 )
 def test_cross_project_conformance(project, html_file):
-    """Every existing plan across all mounts must parse via from_html without
+    """Every document across all mounts must parse via from_html without
     raising.  Keep a failing case visible with an explicit migration reason.
+    A node's evidence fragment is a body include composed into its plan's
+    record, not a document, so the scan passes over that subtree before this
+    case is built (test_evidence_fragments_are_composed_not_read_as_documents
+    holds the line).
     An evidence record additionally cites landing shas in structured positions
     (plan-commits meta, table-row code cells); every citation must resolve as
     a git object in some mounted repository or the record fails the scan."""
@@ -963,6 +990,24 @@ def test_archived_evidence_records_enter_the_scan():
     under docs/evidence/archive are inside the scan; assert the count is
     positive where there was none before."""
     assert len(_ARCHIVE_EVIDENCE_FILES) > 0
+
+
+@pytest.mark.skipif(
+    not _PLAN_FILES, reason="no mounts.json / mount dirs on this workstation"
+)
+def test_evidence_fragments_are_composed_not_read_as_documents():
+    """A fragment is composed into its plan's record, never read as a document.
+
+    The scan holds the same line the product's resource scan holds: a path under
+    ``evidence/fragments`` is a node's landing record written as a body include,
+    so its wrapper is dropped at composition and its own markup is never a
+    document's section records or a table's landing citations.  Two checks keep
+    the exclusion from hiding documents: the subtree must be present in this
+    mount set — an exclusion that matches nothing proves nothing — and no file
+    the exclusion names may also be one the scan reads."""
+    assert _FRAGMENT_FILES, "the mounts carry no evidence/fragments subtree"
+    scanned = {path for _, path in _PLAN_FILES}
+    assert not scanned & {path for _, path in _FRAGMENT_FILES}
 
 
 @pytest.mark.skipif(

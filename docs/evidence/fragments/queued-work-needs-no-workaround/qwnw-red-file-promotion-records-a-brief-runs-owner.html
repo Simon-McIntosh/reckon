@@ -1,0 +1,83 @@
+<section id="qwnw-red-file-promotion-records-a-brief-runs-owner-landing">
+<h3>A promotion records a brief run's owner: the file passes, with both causes decided as the test's</h3>
+<p>The named file was red on the primary branch: 3 failed and 4 passed at <code>f361d2bc</code> before the merge the brief asks for, and the same 3 ids at <code>89a6b4ab</code> after it. Two causes account for all three, and both are the test encoding an invocation the code no longer keeps. The product rules under test — an implement-role brief run refused when it names neither a plan link nor an unplanned reason, the refusal naming both flags, the pointer surviving a refusal, and <code>plan_link</code>/<code>unplanned_reason</code> landing on the ledger row — are correct and unchanged. No assertion was deleted or weakened: the four cases that passed at base still assert the same row fields and the same refusal text.</p>
+
+<h4 id="qwnw-red-file-promotion-records-a-brief-runs-owner-causes">Causes and verdicts</h4>
+<table id="qwnw-red-file-promotion-records-a-brief-runs-owner-cause-table">
+<thead><tr><th>Cause</th><th>Cases</th><th>Verdict</th></tr></thead>
+<tbody>
+<tr>
+<td>Bare <code>crew complete</code> no longer promotes synchronously</td>
+<td>3 of 3: <code>assert 0 != 0</code> on <code>test_the_cli_refuses_an_implement_brief_run_without_an_owner</code>, and <code>StopIteration</code> in <code>_ledger_row</code> for the two cases that read a row</td>
+<td><strong>test wrong</strong> — since <code>1ff2fb47fe</code> completion records a durable promotion request and returns its receipt, and <code>--wait</code> is the documented way to carry the promotion out in the call. The command's own help states it, and the rest of the suite passes <code>--wait</code> whenever a case reads a ledger row from a CLI promotion. This file was never migrated; the helper now passes <code>--wait</code> and its docstring names the rule, so the argv under test is the one a coordinator types for a synchronous promotion.</td>
+</tr>
+<tr>
+<td>A cited gate log is read for its terminal <code>EXIT=&lt;n&gt;</code> line</td>
+<td>2 of 3: the two passing cases, refused with “carries no terminal EXIT=&lt;n&gt; line: the capture convention is what records the command's own status”</td>
+<td><strong>test wrong</strong> — the fixture log carried prose alone, so a promotion otherwise complete was refused for the absent capture rather than for anything the cases assert. The fixture now writes the capture convention the product reads: the probe line followed by <code>EXIT=0</code>.</td>
+</tr>
+</tbody>
+</table>
+
+<h4 id="qwnw-red-file-promotion-records-a-brief-runs-owner-isolation">Each cause isolated against the product</h4>
+<p>With <code>--wait</code> in place and the prose-only log retained, the file read <code>2 failed, 5 passed</code>: the two causes are independent, not one masking the other. Each also reproduces directly, with every other flag a passing promotion needs supplied — the flags the helper now passes — so the receipts below are the product's own refusals rather than a probe of the test.</p>
+<pre>
+# probe a: the same call without --wait, cited log carrying EXIT=0
+exit_code: 0
+--- ledger rows: []
+--- pointer still present: True
+# nothing promoted and nothing refused: exactly the assertion the base run failed
+
+# probe b: the same call with --wait and --plan-link plan-a, cited log carrying prose alone
+exit_code: 1
+output: Error: run 'r-20260930T080500000000-node-a' asserts gate 'passed' but its cited log '.../gate.log'
+  carries no terminal EXIT=&lt;code&gt; line: the capture convention is what records the command's own status,
+  so a log without one states no status at all and the asserted exit status is compared with nothing.
+</pre>
+
+<h4 id="qwnw-red-file-promotion-records-a-brief-runs-owner-negative-control">Negative control: the base run of the named file, with its failing ids</h4>
+<pre>
+# revision 89a6b4abf79a72aaf5b6f7b65b8e90574c003685 (origin/main merged into the base; the same 3 ids fail at f361d2bc)
+# tree /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-promotion-records-a-brief-runs-owner
+# command PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_promotion_records_a_brief_runs_owner.py
+....FFF                                                                  [100%]
+FAILED tests/test_promotion_records_a_brief_runs_owner.py::test_the_cli_refuses_an_implement_brief_run_without_an_owner - assert 0 != 0
+FAILED tests/test_promotion_records_a_brief_runs_owner.py::test_the_cli_plan_link_reaches_the_row - StopIteration
+FAILED tests/test_promotion_records_a_brief_runs_owner.py::test_the_cli_unplanned_reason_reaches_the_row - StopIteration
+3 failed, 4 passed in 2.58s
+EXIT=1
+</pre>
+
+<h4 id="qwnw-red-file-promotion-records-a-brief-runs-owner-head-gate">Head gate: an all_debug job with SLURM_JOB_ID unset</h4>
+<pre>
+# revision 10ff263c4c41892fccabc26e887f398f382c6986 (the test change alone)
+# tree /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-promotion-records-a-brief-runs-owner
+# host 98dci4-clu-3141.iter.org partition all_debug
+# command env -u SLURM_JOB_ID PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_promotion_records_a_brief_runs_owner.py
+# cwd the run's own worktree
+.......                                                                  [100%]
+7 passed in 3.66s
+EXIT=0
+</pre>
+<p>That run is <code>all_debug</code> job <code>1320026</code> (<code>sacct</code>: <code>COMPLETED</code>, exit code <code>0:0</code>), and the file also reads 7 passed with <code>EXIT=0</code> at the fragment's own commit as a second job on the same partition; the fragment commit touches only this evidence file.</p>
+
+<h4 id="qwnw-red-file-promotion-records-a-brief-runs-owner-arms">Armed suite arms: no failure added</h4>
+<pre>
+# baseline at f361d2bcfcedaa2068686dd3588b2907527613f2
+# tree /home/ITER/mcintos/.cache/reckon-node-scratch/r-20261116T104822606677-qwnw-red-file-promotion-records-a-brief-runs-owner/base-git (sparse clone, detached at the base revision)
+# command PYTHONPATH=. PYTHONDONTWRITEBYTECODE=1 /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+..........................................................               [100%]
+58 passed in 39.35s
+EXIT=0
+
+# head at 10ff263c4c41892fccabc26e887f398f382c6986, in the run's own worktree
+# command PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+..........................................................               [100%]
+58 passed in 45.15s
+EXIT=0
+</pre>
+<p>The node's change is confined to <code>tests/test_promotion_records_a_brief_runs_owner.py</code>; no product module is touched. The arm over the files that import what it changed is the file itself, whose 3 failing ids at base become none at head.</p>
+
+<h4 id="qwnw-red-file-promotion-records-a-brief-runs-owner-origin">The instruction to merge origin/main first</h4>
+<p><code>origin/main</code> was <code>89a6b4abf7</code>, twelve commits ahead of the base and a descendant of it; the merge was a fast-forward, and the file still read 3 failed and 4 passed afterwards. A fresh fetch was not possible from this node — <code>ssh</code> refuses <code>/etc/ssh/ssh_config.d/50-redhat.conf</code> for bad ownership — so the merged work is what that ref already carried; the re-run is what shows the red file was not another node's repair.</p>
+</section>

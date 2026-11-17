@@ -1,0 +1,94 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: after_suite at a1ef14c7b379 (force-stopped-after-suite-a1ef14c7b379.log) ends \"68 passed in 40.98s\" and \"EXIT=0\" with no FAILED line, and baseline_suite at 3e113af09b (force-stopped-baseline_suite-653cd972301d.log) ends \"58 passed in 34.20s\" with no FAILED line, so the set difference is empty (0).",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:757 (recovery_watch calls classify_pointer)",
+    "reckon/serve.py:902 (the served plan read calls classify_pointer)",
+    "reckon/crew/promotion_release.py:1169 (promotion_release reads recovery_classification)",
+    "reckon/crew/ticker.py:1695 (stream_carries reads the new stop clause)",
+    "reckon/crew/ticker.py:3635 (Ticker render colours the to_state word)"
+  ],
+  "completed_at": "2026-11-17T04:09:55.779Z",
+  "dispatched_at": "2026-11-17T04:09:28Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "an inline re-implementation of the module's current-attempt check; behaviour matches today, and reusing the helper is a follow-up",
+      "recorded_at": "2026-11-17T04:19:19.758004+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the classifier-detail kind set no longer names the force-stopped duty; a bookkeeping gap, not a behaviour defect",
+      "recorded_at": "2026-11-17T04:19:22.088864+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "a semicolon in a recorded reason truncates the displayed clause; the full reason stays on the record",
+      "recorded_at": "2026-11-17T04:19:23.909986+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "1428",
+      "severity": "non-blocking",
+      "text": "non-blocking: the current-attempt test is written inline as ended_exit.get(\"attempt\") == current_attempt instead of calling the module's own _exit_record_ends_the_current_attempt at reckon/crew/recovery_classification.py:797, which normalises through _int_or_none (reckon/crew/recovery_liveness.py:569); a receipt stamping the attempt as \"2\" therefore reads as a predecessor's and the stop is not drawn, where the owner would have accepted it."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "4398",
+      "severity": "non-blocking",
+      "text": "non-blocking: the force-stopped duty sets item[\"reason\"] inline rather than extending CLASSIFIER_DETAIL_DUTY_KINDS at reckon/crew/obligations.py:127, so the set that exists to name every kind carrying the classifier's own account no longer enumerates them and a later reader of that set will not know this kind carries one."
+    },
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "1589",
+      "severity": "non-blocking",
+      "text": "non-blocking: the clause truncates at the first semicolon via detail.partition(\";\")[0] although the classifier at reckon/crew/recovery_classification.py:1975 writes the prefix directly against the reason and never appends \"; \", so a recorded reason containing a semicolon is drawn cut in the pane while the duty carries it whole."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 5 production call sites",
+    "diff": "read all seven commits from 3e113af09b to a1ef14c7b379; five files, +290/-19, all inside the fence.",
+    "done_when": "the done_when requires the section's measure with the new tests failing at the base revision; force-stopped-delivery_base_defect-6451d8a0c4af.log records tests/test_a_force_stopped_run_is_drawn_stopped.py over base code at 3e113af09b as 4 failed, 6 passed, EXIT=1.",
+    "goal": "the node goal is to draw a supervisor force-stopped run with a stopped word naming its forced-exit reason; reckon/crew/recovery_classification.py:1974 sets classification \"stopped\" with detail \"supervisor force-stopped: <reason>\" and reckon/crew/ticker.py:1571 paints it, so the goal is met.",
+    "manifest": "read; it reports status complete, 68 passed at the head, 58 passed at the base, 0 added related failure ids and a negative control at 4 failed, 6 passed, each confirmed against the named log.",
+    "write_paths": "the fence named three source files, the regression module, the s22 fragment and a figures directory; the diff touches the first five and nothing outside them."
+  },
+  "justifications": {
+    "durability": "force-stopped-delivery_negative_control-6451d8a0c4af.log reddens tests/test_a_force_stopped_run_is_drawn_stopped.py:102, :114 and :177 when the supervisor-stop branch at reckon/crew/recovery_classification.py:1969 is removed.",
+    "evidence": "force-stopped-after-suite-a1ef14c7b379.log ends \"68 passed\" with EXIT=0 at the head and force-stopped-baseline_suite-653cd972301d.log ends \"58 passed\" at the base.",
+    "fit": "the lazy import at reckon/crew/ticker.py:1583 follows the precedent at reckon/crew/ticker.py:636 and the kind name at reckon/crew/obligations.py:4397 matches its siblings.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:1969-1976 draws the run stopped and names the supervisor's recorded cause, which the pane at reckon/crew/ticker.py:3578-3579 carries verbatim.",
+    "reuse": "reckon/crew/recovery_classification.py:1428 restates the predicate owned by reckon/crew/recovery_classification.py:797 and reckon/crew/obligations.py:4398 sets the reason past CLASSIFIER_DETAIL_DUTY_KINDS at reckon/crew/obligations.py:127.",
+    "scope_discipline": "all five paths in the diff are inside the fence declared at the source manifest's orientation_write_paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to draw a supervisor force-stopped run with a stopped word naming its forced-exit reason; reckon/crew/recovery_classification.py:1425-1431 takes forced_exit off the current attempt's ended exit receipt, sets classification \"stopped\" at reckon/crew/recovery_classification.py:1974 with detail \"supervisor force-stopped: <reason>\", and reckon/crew/ticker.py:1571 paints that word and carries the cause after the figures, so the goal is met.\nVERDICT done_when: the done_when requires the section's measure to hold with the new tests failing at the base revision; tests/test_a_force_stopped_run_is_drawn_stopped.py:102 and :177 assert the stopped word with its cause and :114 asserts the repair-then-resume command, and force-stopped-delivery_base_defect-6451d8a0c4af.log records that file over unchanged base code at 3e113af09b as 4 failed, 6 passed, EXIT=1.\nVERDICT write_paths: the node was fenced to reckon/crew/ticker.py, reckon/crew/recovery_classification.py, reckon/crew/obligations.py, tests/test_a_force_stopped_run_is_drawn_stopped.py, the s22 evidence fragment and a figures directory; the diff adds or edits exactly the first five and touches nothing else, leaving the figures directory unused.\nVERDICT manifest: read; it reports status complete with the head arm 68 passed at a1ef14c7b379 ending EXIT=0, the base arm 58 passed at 3e113af09b over its own tree, 0 added related failure ids and the declared negative control at 4 failed, 6 passed, and I confirmed each of those four figures against the named log on disk.\nVERDICT diff: read all seven commits from 3e113af09b to a1ef14c7b379 commit by commit; five files, +290/-19, being the classifier's stopped branch and repair prefix, the pane word, hue guard, stop clause and duty, the 177-line regression module, and the fragment.\nCALL_SITES: reckon/crew/recovery_watch.py:757, reckon/serve.py:902, reckon/crew/promotion_release.py:1169, reckon/crew/ticker.py:1695, reckon/crew/ticker.py:3635\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:1969-1976 draws the run stopped and names the supervisor's recorded cause, which the pane at reckon/crew/ticker.py:3578-3579 carries verbatim.\nSCORE evidence: 19\nJUSTIFICATION evidence: force-stopped-after-suite-a1ef14c7b379.log ends \"68 passed\" with EXIT=0 at the head and force-stopped-baseline_suite-653cd972301d.log ends \"58 passed\" at the base, matching the manifest's recorded arms.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every one of the five paths in the diff is inside the fence declared at the source manifest's orientation_write_paths, and the only unrelated hunk is the reflow of the existing action assignment at reckon/crew/recovery_classification.py:1984.\nSCORE durability: 17\nJUSTIFICATION durability: the negative control at force-stopped-delivery_negative_control-6451d8a0c4af.log reddens tests/test_a_force_stopped_run_is_drawn_stopped.py:102, :114 and :177 when the supervisor-stop branch at reckon/crew/recovery_classification.py:1969 is removed, though the three never-fire guards at :123, :150 and :141 are not exercised by that mutation.\nSCORE fit: 16\nJUSTIFICATION fit: the lazy import at reckon/crew/ticker.py:1583 follows the existing precedent at reckon/crew/ticker.py:636 and the kind name at reckon/crew/obligations.py:4397 matches its kebab-case siblings, but the inline attempt predicate at reckon/crew/recovery_classification.py:1428 sits awkwardly beside the module's own helper.\nSCORE reuse: 14\nJUSTIFICATION reuse: reckon/crew/recovery_classification.py:1428 restates the predicate that reckon/crew/recovery_classification.py:797 (_exit_record_ends_the_current_attempt, backed by reckon/crew/recovery_liveness.py:569) already owns, and reckon/crew/obligations.py:4398 sets the duty reason past the owner set CLASSIFIER_DETAIL_DUTY_KINDS at reckon/crew/obligations.py:127.\nFINDING reckon/crew/recovery_classification.py:1428 non-blocking: the current-attempt test is written inline as ended_exit.get(\"attempt\") == current_attempt instead of calling the module's own _exit_record_ends_the_current_attempt at reckon/crew/recovery_classification.py:797, which normalises through _int_or_none (reckon/crew/recovery_liveness.py:569); a receipt stamping the attempt as \"2\" therefore reads as a predecessor's and the stop is not drawn, where the owner would have accepted it.\nFINDING reckon/crew/obligations.py:4398 non-blocking: the force-stopped duty sets item[\"reason\"] inline rather than extending CLASSIFIER_DETAIL_DUTY_KINDS at reckon/crew/obligations.py:127, so the set that exists to name every kind carrying the classifier's own account no longer enumerates them and a later reader of that set will not know this kind carries one.\nFINDING reckon/crew/ticker.py:1589 non-blocking: the clause truncates at the first semicolon via detail.partition(\";\")[0] although the classifier at reckon/crew/recovery_classification.py:1975 writes the prefix directly against the reason and never appends \"; \", so a recorded reason containing a semicolon is drawn cut in the pane while the duty carries it whole.",
+  "review_node": "review-of-force-stopped-run-drawn-stopped-s22-a1ef14c7b379",
+  "review_run_id": "r-20261117T040449633210-review-of-force-stopped-run-drawn-stopped-s22-a1ef14c7b379",
+  "reviewed_base_sha": "3e113af09bfb8068d1f32feb07681d20f8e6a9b4",
+  "reviewed_head_sha": "a1ef14c7b379a0fceb25bf5ab757d55b3c44cfab",
+  "reviewed_run_id": "r-20261116T104943316851-force-stopped-run-drawn-stopped-s22",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261117T040449633210-review-of-force-stopped-run-drawn-stopped-s22-a1ef14c7b379"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T05:19:12.527016+00:00",
+  "total": 103
+}

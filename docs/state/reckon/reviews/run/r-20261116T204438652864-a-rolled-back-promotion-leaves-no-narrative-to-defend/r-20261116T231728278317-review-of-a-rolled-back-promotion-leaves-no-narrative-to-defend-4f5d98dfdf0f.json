@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "baa6e8307b454f36655ac6d25f42480243619f99",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion_scope.py:1416 _record_landing_comment",
+    "reckon/crew/promotion.py:1965 (_record_landing_comment caller)",
+    "reckon/crew/promotion.py:2542 (_record_landing_comment caller)"
+  ],
+  "completed_at": "2026-11-16T23:31:24.046Z",
+  "dispatched_at": "2026-11-16T23:31:03Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the base revision carries the opposite assertions in the two rewritten cases (the promotion refused with 'different narrative'), and they pass in the coordinator's main-side all_debug arms ~/.cache/reckon-landing/s80-final2/main-0N.log at 112bbec4b6, which is the restored-guard behaviour the new cases reject",
+      "recorded_at": "2026-11-16T23:52:22.738695+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_landing_comment_authorship.py",
+      "id": "fdf94ee4426",
+      "line": "193",
+      "severity": "non-blocking",
+      "text": "non-blocking: the run's declared negative control (logs/negative-control.log, command over tests/test_a_rolled_back_promotion_leaves_no_narrative_to_defend.py alone) never exercises the two cases added here, so no recorded run shows them redden under the restored guard and the durability claim rests on reading rather than on a mutation."
+    }
+  ],
+  "head_log_revision": "e5f973c5f29523b15c13481120261a957d1a3096",
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit by commit from 3814e6beec559289d1eebfdeb9d87b363b788ca3 to 4f5d98dfdf0f060d07d3bb829f27fd92ea38fd81 \u2014 e5f973c5 replaces test_changed_narrative_refuses_to_preserve_stale_text with the two cases at tests/test_landing_comment_authorship.py:193 and :220, and 4f5d98df rewrites only the prose and figures of docs/evidence/fragments/the-monitor-reads-each-fact-once/a-rolled-back-promotion-leaves-no-narrative-to-defend.html; no other file changed.",
+    "done_when": "the done_when names tests/test_a_rolled_back_promotion_leaves_no_narrative_to_defend.py for cases (a) and (b) plus matched all_debug arms; the manifest and logs record 74 passed EXIT=0 at e5f973c5 in logs/gate.log and logs/after-suite.log, 71 passed EXIT=0 at baa6e8307 content in logs/base-suite.log, and \"1 failed, 1 passed in 2.21s\" EXIT=1 in logs/negative-control.log.",
+    "goal": "the node goal is \"Let a promotion with no ledger row replace a landing comment left by a failed attempt\"; the two commits gained since the previous review carry only test and evidence changes, and tests/test_landing_comment_authorship.py:193-217 now asserts the replacement under the same comment id instead of the refusal that file pinned at 3814e6beec.",
+    "manifest": "read; status complete, five commits listed, and its baseline_suite and after_suite entries name baa6e8307b454f36655ac6d25f42480243619f99 and e5f973c5f29523b15c13481120261a957d1a3096 with failure_count 0 and failure_ids [], which logs/base-suite.log:6 and logs/after-suite.log:7 confirm (\"71 passed in 37.21s\", \"74 passed in 38.30s\", no FAILED line in either).",
+    "write_paths": "the declared scope was reckon/crew/promotion_scope.py, tests/test_a_rolled_back_promotion_leaves_no_narrative_to_defend.py, the evidence fragment and a figures directory, with tests/test_landing_comment_authorship.py granted by /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T204438652864-a-rolled-back-promotion-leaves-no-narrative-to-defend/reopened.json:4; the gained diff touches only the grant holder and the fragment."
+  },
+  "justifications": {
+    "durability": "restoring the base guard makes tests/test_landing_comment_authorship.py:193-217 raise CrewError rather than return a result, and the row-present case at :244 compares plan bytes read from disk before the call, so a regression in either branch reddens; the two assertions were not themselves covered by a recorded mutation, which is the finding below.",
+    "evidence": "logs/gate.log reads \"74 passed in 48.38s\" with EXIT=0 at e5f973c5f295, and every figure in docs/evidence/fragments/the-monitor-reads-each-fact-once/a-rolled-back-promotion-leaves-no-narrative-to-defend.html:79-103 now matches the log it cites, repairing the mismatch the 3814e6beec review recorded at that page's line 100.",
+    "fit": "the new cases reuse the module's own _record helper at tests/test_landing_comment_authorship.py:89-109 and keep its docstring-plus-fixture idiom, and the fragment's section and heading ids at :20,:46,:73,:84 keep the node prefix the sibling fragments use.",
+    "goal_fidelity": "tests/test_landing_comment_authorship.py:193-217 asserts the no-row replacement through promotion._record_landing_comment, the very seam whose assertion at the previous head (3814e6beec) expected the removed CrewError.",
+    "reuse": "searched reckon/crew for an existing row-present injection and found it only on the promotion callers (reckon/crew/promotion.py:1960 and :2632 pass a row_present callable), which reckon/crew/promotion_scope.py:1416 does not accept, so the monkeypatch at tests/test_landing_comment_authorship.py:234 forks no capability.",
+    "scope_discipline": "the gained diff is confined to the fragment and to tests/test_landing_comment_authorship.py, the latter inside the reopen grant at reopened.json:4, and carries no production edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"Let a promotion with no ledger row replace a landing comment left by a failed attempt\"; the two commits gained since the previous review carry only test and evidence changes, and tests/test_landing_comment_authorship.py:193-217 now asserts the replacement under the same comment id instead of the refusal that file pinned at 3814e6beec.\nVERDICT done_when: the done_when names tests/test_a_rolled_back_promotion_leaves_no_narrative_to_defend.py for cases (a) and (b) plus matched all_debug arms; the manifest and logs record 74 passed EXIT=0 at e5f973c5 in logs/gate.log and logs/after-suite.log, 71 passed EXIT=0 at baa6e8307 content in logs/base-suite.log, and \"1 failed, 1 passed in 2.21s\" EXIT=1 in logs/negative-control.log.\nVERDICT write_paths: the declared scope was reckon/crew/promotion_scope.py, tests/test_a_rolled_back_promotion_leaves_no_narrative_to_defend.py, the evidence fragment and a figures directory, with tests/test_landing_comment_authorship.py granted by /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T204438652864-a-rolled-back-promotion-leaves-no-narrative-to-defend/reopened.json:4; the gained diff touches only the grant holder and the fragment.\nVERDICT manifest: read; status complete, five commits listed, and its baseline_suite and after_suite entries name baa6e8307b454f36655ac6d25f42480243619f99 and e5f973c5f29523b15c13481120261a957d1a3096 with failure_count 0 and failure_ids [], which logs/base-suite.log:6 and logs/after-suite.log:7 confirm (\"71 passed in 37.21s\", \"74 passed in 38.30s\", no FAILED line in either).\nVERDICT diff: read commit by commit from 3814e6beec559289d1eebfdeb9d87b363b788ca3 to 4f5d98dfdf0f060d07d3bb829f27fd92ea38fd81 \u2014 e5f973c5 replaces test_changed_narrative_refuses_to_preserve_stale_text with the two cases at tests/test_landing_comment_authorship.py:193 and :220, and 4f5d98df rewrites only the prose and figures of docs/evidence/fragments/the-monitor-reads-each-fact-once/a-rolled-back-promotion-leaves-no-narrative-to-defend.html; no other file changed.\nCALL_SITES: reckon/crew/promotion_scope.py:1416 _record_landing_comment, reckon/crew/promotion.py:1965 (_record_landing_comment caller), reckon/crew/promotion.py:2542 (_record_landing_comment caller)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_landing_comment_authorship.py:193-217 asserts the no-row replacement through promotion._record_landing_comment, the very seam whose assertion at the previous head (3814e6beec) expected the removed CrewError.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/gate.log reads \"74 passed in 48.38s\" with EXIT=0 at e5f973c5f295, and every figure in docs/evidence/fragments/the-monitor-reads-each-fact-once/a-rolled-back-promotion-leaves-no-narrative-to-defend.html:79-103 now matches the log it cites, repairing the mismatch the 3814e6beec review recorded at that page's line 100.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the gained diff is confined to the fragment and to tests/test_landing_comment_authorship.py, the latter inside the reopen grant at reopened.json:4, and carries no production edit.\nSCORE durability: 18\nJUSTIFICATION durability: restoring the base guard makes tests/test_landing_comment_authorship.py:193-217 raise CrewError rather than return a result, and the row-present case at :244 compares plan bytes read from disk before the call, so a regression in either branch reddens; the two assertions were not themselves covered by a recorded mutation, which is the finding below.\nSCORE fit: 18\nJUSTIFICATION fit: the new cases reuse the module's own _record helper at tests/test_landing_comment_authorship.py:89-109 and keep its docstring-plus-fixture idiom, and the fragment's section and heading ids at :20,:46,:73,:84 keep the node prefix the sibling fragments use.\nSCORE reuse: 19\nJUSTIFICATION reuse: searched reckon/crew for an existing row-present injection and found it only on the promotion callers (reckon/crew/promotion.py:1960 and :2632 pass a row_present callable), which reckon/crew/promotion_scope.py:1416 does not accept, so the monkeypatch at tests/test_landing_comment_authorship.py:234 forks no capability.\nFINDING tests/test_landing_comment_authorship.py:193 non-blocking: the run's declared negative control (logs/negative-control.log, command over tests/test_a_rolled_back_promotion_leaves_no_narrative_to_defend.py alone) never exercises the two cases added here, so no recorded run shows them redden under the restored guard and the durability claim rests on reading rather than on a mutation.",
+  "review_run_id": "r-20261116T231728278317-review-of-a-rolled-back-promotion-leaves-no-narrative-to-defend-4f5d98dfdf0f",
+  "reviewed_base_sha": "3814e6beec559289d1eebfdeb9d87b363b788ca3",
+  "reviewed_head_sha": "4f5d98dfdf0f060d07d3bb829f27fd92ea38fd81",
+  "reviewed_run_id": "r-20261116T204438652864-a-rolled-back-promotion-leaves-no-narrative-to-defend",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T231728278317-review-of-a-rolled-back-promotion-leaves-no-narrative-to-defend-4f5d98dfdf0f"
+  },
+  "reviewer_run_id": "r-20261116T231728278317-review-of-a-rolled-back-promotion-leaves-no-narrative-to-defend-4f5d98dfdf0f",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T23:46:47.654909+00:00",
+  "total": 109
+}

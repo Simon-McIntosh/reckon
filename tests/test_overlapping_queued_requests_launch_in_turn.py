@@ -232,7 +232,7 @@ def test_overlapping_queued_requests_launch_the_earlier_and_keep_the_later(
             node_id="earlier",
             run_id="r-earlier",
             session=SESSION_A,
-            write_paths=[SHARED],
+            write_paths=[EXCLUSIVE],
             queued_at="2026-10-14T11:58:00+00:00",
         )
     )
@@ -242,7 +242,7 @@ def test_overlapping_queued_requests_launch_the_earlier_and_keep_the_later(
             node_id="later",
             run_id="r-later",
             session=SESSION_B,
-            write_paths=[SHARED],
+            write_paths=[EXCLUSIVE],
             queued_at="2026-10-14T11:59:00+00:00",
         )
     )
@@ -276,7 +276,7 @@ def test_a_later_request_waits_behind_an_earlier_whose_session_has_no_slot(
             node_id="earlier",
             run_id="r-earlier",
             session=SESSION_A,
-            write_paths=[SHARED],
+            write_paths=[EXCLUSIVE],
             queued_at="2026-10-14T11:58:00+00:00",
         )
     )
@@ -286,7 +286,7 @@ def test_a_later_request_waits_behind_an_earlier_whose_session_has_no_slot(
             node_id="later",
             run_id="r-later",
             session=SESSION_B,
-            write_paths=[SHARED],
+            write_paths=[EXCLUSIVE],
             queued_at="2026-10-14T11:59:00+00:00",
         )
     )
@@ -385,7 +385,7 @@ def test_the_pre_check_releases_the_later_request_after_the_starvation_age(
             node_id="earlier",
             run_id="r-earlier",
             session=SESSION_A,
-            write_paths=[SHARED],
+            write_paths=[EXCLUSIVE],
             queued_at="2026-10-14T11:28:00+00:00",
         )
     )
@@ -395,7 +395,7 @@ def test_the_pre_check_releases_the_later_request_after_the_starvation_age(
             node_id="later",
             run_id="r-later",
             session=SESSION_B,
-            write_paths=[SHARED],
+            write_paths=[EXCLUSIVE],
             queued_at="2026-10-14T11:29:30+00:00",
         )
     )
@@ -645,12 +645,12 @@ def test_one_pass_resolves_each_requests_claims_at_most_once(
     lane = _lane_document(tmp_path, slots={SESSION_A: 6})
     config = _config(lane)
     paths = [
-        SHARED,
+        EXCLUSIVE,
         "reckon/crew/second_path.py",
         "reckon/crew/third_path.py",
         "reckon/crew/fourth_path.py",
         "reckon/crew/fifth_path.py",
-        SHARED,
+        EXCLUSIVE,
     ]
     for index, write_path in enumerate(paths, start=1):
         runs.queue_dispatch(

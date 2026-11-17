@@ -1,0 +1,118 @@
+<section id="stale-lock-reuses-owners-s12-landing">
+  <h2>One holder scan, one lock age, and every clearing named</h2>
+
+  <p><strong>What changed.</strong> The stale-lock check that §10 added brought
+  its own copy of two facts the package already owned. It walked
+  <code>/proc/&lt;pid&gt;/fd</code> itself, with matching rules that differed
+  from <code>reckon.crew.gc._processes_holding</code>, and it asked one lock's
+  age through a function the landing module and the promotion module both
+  reached. The check now calls the one holder scan — extended to answer
+  <code>None</code> when <code>/proc</code> cannot be read, so an unreadable
+  process table is never read as proof that nobody holds a lock — and the one
+  lock-age function, <code>reckon.crew.merge._index_lock_age_seconds</code>.
+  <code>git grep</code> at head finds exactly one definition of each, asserted by
+  the new test rather than by inspection.</p>
+
+  <p><strong>Why the scan could not simply be imported.</strong>
+  <code>reckon.crew.gc</code> imports <code>reckon.crew.routing</code>, which
+  re-exports <code>gc</code>'s names at the bottom of its own file, so a
+  module-level import of the scan from the landing module would have gc read
+  half-built. The name is resolved on first use and remembered under the landing
+  module's own name; that also keeps the seam a caller patches when it wants to
+  ask the stale-lock judgement a different question.</p>
+
+  <p><strong>The record.</strong> The wait that clears a lock is shared by six
+  callers, and only the landing passed a callback that names the removal, so a
+  lock in a checkout other sessions commit to could vanish under a promotion, a
+  rollback, or a state write with nothing written down. Every caller now passes
+  one: the landing report keeps <code>stale_index_lock_removed</code>, staging,
+  the landing commit, the plan-text projection and the rollback append a
+  <code>stale_index_lock_removed</code> entry to the run's landing record, and a
+  state write — which has no run record, only its commit — states the same line
+  on stderr. The wording comes from one composer beside the wait,
+  <code>stale_index_lock_removal_line</code>, so a reader looking for the age of
+  a cleared lock has one shape to find wherever it happened.</p>
+
+  <p><strong>Two callers whose files this node may not write.</strong>
+  <code>reckon.crew.promotion</code>'s review-record rollback and two cases in
+  <code>tests/test_rollback_asks_head.py</code> call the rollback without a
+  recorder. Making the callback required broke both, which the importer arm
+  caught: <code>TypeError: _restore_landing_writes() missing 1 required
+  keyword-only argument: 'on_stale_removed'</code>. The callback now defaults to
+  the shared stderr note, so the clearing is still named and no caller has to
+  know the recorder to keep working.</p>
+
+  <h3 id="stale-lock-reuses-owners-s12-measured">Measured</h3>
+
+  <p>Each caller is driven through a proven-stale lock — eleven minutes old,
+  unchanged, unheld — in a temporary repository, and each must leave one line
+  naming the lock and the age it stood for in the record its own caller reads:
+  the landing report, the run's landing record for staging, the landing commit,
+  the plan-text projection and the rollback, and a state write's stderr. Eight
+  cases, all green: <code>8 passed</code>. §10's own cases still pass, unchanged:
+  <code>5 passed</code> in
+  <code>tests/test_a_lander_clears_a_stale_index_lock.py</code>, and the file itself
+  was not edited.</p>
+
+  <table id="stale-lock-reuses-owners-s12-arms">
+    <thead>
+      <tr><th>arm</th><th>head</th><th>command</th><th>reading</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>gate, baseline</td>
+        <td><code>622ef46</code></td>
+        <td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code></td>
+        <td><code>58 passed</code>, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>gate, after</td>
+        <td><code>2ea89051</code></td>
+        <td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_stale_lock_names_its_age_everywhere.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code></td>
+        <td><code>66 passed</code>, <code>EXIT=0</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+<p><strong>The negative control.</strong> Restoring a duplicate
+  <code>def _processes_holding</code> in <code>reckon/crew/merge.py</code> makes
+  the one-definition check fail, naming both findings:
+  <code>one definition of ^def _processes_holding, found</code> both
+  <code>reckon/crew/gc.py:1754</code> and
+  <code>reckon/crew/merge.py:925</code>. The run ends <code>1 failed</code>,
+  <code>EXIT=1</code>, and the mutation is reverted in the delivered tree.</p>
+
+  <h3 id="stale-lock-reuses-owners-s12-importers">The importers of the touched modules</h3>
+
+  <p>One arm at a time on <code>all_debug</code>, at most <code>-n 4</code>, over
+  the test files that import the touched modules — one for
+  <code>reckon/crew/merge.py</code>, <code>reckon/crew/promotion_scope.py</code>,
+  <code>reckon/crew/gc.py</code> and <code>reckon/ledger.py</code>. The base arm
+  runs at <code>622ef46</code> over that revision's own tree (162 files); the
+  head arm at the merged head over this tree's (180 files, the difference being
+  main's own new tests).</p>
+
+  <table id="stale-lock-reuses-owners-s12-importer-arms">
+    <thead>
+      <tr><th>arm</th><th>head</th><th>files</th><th>reading</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>importers, base</td><td><code>622ef46</code></td><td>162</td><td><code>104 failed, 1285 passed, 3 skipped, 9 errors</code>, <code>EXIT=1</code></td></tr>
+      <tr><td>importers, head</td><td><code>2ea89051</code></td><td>180</td><td><code>132 failed, 1408 passed, 3 skipped, 1 error</code>, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>The added ids are not this node's.</strong> Seventy-two ids fail at
+  head and not at the base revision. Fifty-five of them are one file,
+  <code>tests/test_ledger_files_and_index_agree.py</code>, and the same file at
+  the primary revision the merge brought in — <code>a3fa3d3</code> — reads
+  <code>55 failed, 50 passed</code>: the file and the store it exercises both
+  arrived with main's commits, and it is already red there. The other seventeen
+  span twelve files; run serially at head they give 16 failing ids, at
+  <code>a3fa3d3</code> 18, and every head id is among the primary's — none is
+  head-only. So the arms add no failure this node can be charged with, and the
+  two ids the first head arm did add are the ones that are fixed: it read
+  <em>TypeError: _restore_landing_writes() missing 1 required keyword-only
+  argument: 'on_stale_removed'</em> in <code>tests/test_rollback_asks_head.py</code>,
+  which now passes.</p>
+</section>

@@ -1,0 +1,147 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "assertions": "test_a_clean_unrequested_exit_is_restarted: holder alive and eventually two starts",
+      "fails_if": "Restore exec of the reader as batch process, or remove its restart loop."
+    },
+    {
+      "assertions": "test_stop_marks_retirement_but_reload_does_not: reload true, callback invoked, no stop file, stop false and marker file",
+      "fails_if": "Reload becomes a stop, exec is withheld, or stop omits its lifetime marker."
+    },
+    {
+      "assertions": "test_deliberate_retirement_exits_the_holder: exit zero and no restart message",
+      "fails_if": "Ignore the stop marker or restart after explicit retirement."
+    },
+    {
+      "assertions": "test_promoted_standby_stays_active_across_a_crash: exit zero and arguments [--standby, empty]",
+      "fails_if": "Omit active-marker recognition and restart a promoted holder with --standby."
+    },
+    {
+      "assertions": "test_the_holder_uses_the_service_backoff: delay=7, cap 80, steady threshold 120",
+      "fails_if": "Hardcode the current defaults rather than reading owner constants; does not fail on an independent change to next_backoff transition semantics."
+    },
+    {
+      "assertions": "scheduler job numeric and before_queue RUNNING; kill acknowledged",
+      "fails_if": "Submission is malformed, job never reaches RUNNING, or kill handshake is absent."
+    },
+    {
+      "assertions": "thirty_second_queue RUNNING; survivors original PIDs true; explicit step State=RUNNING",
+      "fails_if": "Restore Python-owned batch execution; negative-control-final.log fails on lost allocation."
+    },
+    {
+      "assertions": "at least two starts and restart elapsed below ten seconds",
+      "fails_if": "Remove restart or increase its first delay beyond bound."
+    },
+    {
+      "assertions": "second descendant and step equal first",
+      "fails_if": "Only if fixture stops copying original identity data; these assertions cannot independently detect product identity regression."
+    },
+    {
+      "assertions": "broken retry count 1..3, broken_queue RUNNING, unchanged Python starts",
+      "fails_if": "Tight-loop retries, no retry, holder exits on exec failure, or decoy interpreter substitution never occurs."
+    },
+    {
+      "assertions": "eventual retirement disappears from squeue",
+      "fails_if": "Ignore retirement marker and hold allocation indefinitely."
+    }
+  ],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/project_setup_commands.py:202 fleet_node_hold",
+    "reckon/crew/fleet_migrate.py:1075 migration stand-up",
+    "reckon/crew/fleet_node.py:324 generate_hold_script",
+    "reckon/crew/fleet_supervisor.py:2834 handle_line stop",
+    "reckon/crew/fleet_supervisor.py:2930 serve startup",
+    "reckon/crew/fleet_supervisor.py:2967 promote",
+    "bin/fleet-supervisor:21 interpreter exec"
+  ],
+  "completed_at": "2026-11-17T00:14:56Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-sessions-outlive-the-supervisor-a78f7d02a523",
+      "recorded_at": "2026-11-17T00:52:13.305196+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-17T00:07:38Z",
+  "failure_delta_evidence": {
+    "after_suite": {
+      "exit_receipt": "EXIT=0",
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233659120864-sessions-outlive-the-supervisor/head-suite-final.log",
+      "revision": "a78f7d02a52326b9c7a0cae72a46966666724324"
+    },
+    "baseline_suite": {
+      "exit_receipt": "EXIT=0",
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233659120864-sessions-outlive-the-supervisor/baseline-suite.log",
+      "revision": "f6e2b6b695d4f84aa8e7846e46ba6e469c744865"
+    }
+  },
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-sessions-outlive-the-supervisor-a78f7d02a523",
+      "recorded_at": "2026-11-17T00:47:39.297582+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "repair-of-sessions-outlive-the-supervisor-a78f7d02a523",
+      "recorded_at": "2026-11-17T00:47:41.490545+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/fleet_node.py",
+      "line": "243",
+      "severity": "blocking",
+      "text": "blocking: The generated shell independently implements steady-run reset, doubling and cap application already owned by reckon/crew/fleet_supervisor.py:1036-1045 next_backoff; importing its three constants does not reuse its transition, so a change to the service policy can silently leave supervisor recovery on a different rule; derive the shell transition representation from that owner at submission time while preserving Python-independent execution."
+    },
+    {
+      "file": "tests/test_sessions_outlive_the_supervisor.py",
+      "line": "260",
+      "severity": "non-blocking",
+      "text": "non-blocking: Both PID equality assertions compare ready.json values with current.json values that the fixture copies directly from ready.json at lines 347-350; a session replacement that leaves those recorded IDs unchanged cannot redden them, so they are not independent identity coverage, although the original-PID liveness check at lines 253-257 independently protects survival."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "Read a0d889a581123ec3d512938a790cb0134e22e08e, 267546ba48b1a696507ec4425d9aae2171124a4f and a78f7d02a52326b9c7a0cae72a46966666724324 against f6e2b6b695d4f84aa8e7846e46ba6e469c744865; the diff adds the shell holder, retirement and activation markers, and six tests, with the reuse and assertion defects listed below.",
+    "done_when": "Read live plan section s8 and head-final-receipts/receipt-1321133.json; the all_debug rehearsal records both survivors and RUNNING states at thirty seconds, a 5.44-second restart, two broken-interpreter retries, and COMPLETED 0:0 retirement, while control receipt-1321130.json records death in 6.20 seconds.",
+    "goal": "Read prompt.txt:40-42 and live plan section s8; fleet_node.py:225-251 keeps the allocation shell alive independently of supervisor exit and preserves explicit retirement.",
+    "manifest": "Read source manifest.md and its cited logs; baseline-suite.log records 58 passed and EXIT=0, head-suite-final.log records 64 passed and EXIT=0, and importer logs record zero added failures with eight unchanged failures.",
+    "write_paths": "Read source manifest.md:3 and prompt.txt's scope; all four changed files are declared source or test paths and no plan or evidence file was modified."
+  },
+  "justifications": {
+    "durability": "tests/test_sessions_outlive_the_supervisor.py:252-257 fails when Python again owns the batch lifetime, as negative-control-final.log demonstrates, but lines 260-261 compare fixture-copied identities and the backoff test at lines 130-140 checks constants rather than parity with the existing transition owner.",
+    "evidence": "tests/test_sessions_outlive_the_supervisor.py:252-283 measures scheduler state, original-pid liveness, restart timing and bounded retries with positive and negative receipts, although lines 260-261 independently measure no identity change.",
+    "fit": "reckon/crew/fleet_node.py:210 uses the existing dedent-based batch generator and reckon/crew/fleet_supervisor.py:2772 follows the existing environment injection idiom without introducing forbidden source names.",
+    "goal_fidelity": "reckon/crew/fleet_node.py:225-251 owns the batch lifetime outside Python and reckon/crew/fleet_supervisor.py:2834 distinguishes requested retirement from a crash, satisfying the recorded survival cases.",
+    "reuse": "reckon/crew/fleet_node.py:243-247 duplicates the transition already owned by reckon/crew/fleet_supervisor.py:1036 next_backoff instead of extending that owner; capability searches also found only private test-specific waiting helpers, with no reusable shared fixture or existing Python-independent lifetime holder.",
+    "scope_discipline": "The four paths changed between the recorded revisions match source manifest.md:3 and implement only allocation survival and its tests."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read prompt.txt:40-42 and live plan section s8; fleet_node.py:225-251 keeps the allocation shell alive independently of supervisor exit and preserves explicit retirement.\nVERDICT done_when: Read live plan section s8 and head-final-receipts/receipt-1321133.json; the all_debug rehearsal records both survivors and RUNNING states at thirty seconds, a 5.44-second restart, two broken-interpreter retries, and COMPLETED 0:0 retirement, while control receipt-1321130.json records death in 6.20 seconds.\nVERDICT write_paths: Read source manifest.md:3 and prompt.txt's scope; all four changed files are declared source or test paths and no plan or evidence file was modified.\nVERDICT manifest: Read source manifest.md and its cited logs; baseline-suite.log records 58 passed and EXIT=0, head-suite-final.log records 64 passed and EXIT=0, and importer logs record zero added failures with eight unchanged failures.\nVERDICT diff: Read a0d889a581123ec3d512938a790cb0134e22e08e, 267546ba48b1a696507ec4425d9aae2171124a4f and a78f7d02a52326b9c7a0cae72a46966666724324 against f6e2b6b695d4f84aa8e7846e46ba6e469c744865; the diff adds the shell holder, retirement and activation markers, and six tests, with the reuse and assertion defects listed below.\nCALL_SITES: reckon/project_setup_commands.py:202 fleet_node_hold, reckon/crew/fleet_migrate.py:1075 migration stand-up, reckon/crew/fleet_node.py:324 generate_hold_script, reckon/crew/fleet_supervisor.py:2834 handle_line stop, reckon/crew/fleet_supervisor.py:2930 serve startup, reckon/crew/fleet_supervisor.py:2967 promote, bin/fleet-supervisor:17 interpreter exec\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_node.py:225-251 owns the batch lifetime outside Python and reckon/crew/fleet_supervisor.py:2834 distinguishes requested retirement from a crash, satisfying the recorded survival cases.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_sessions_outlive_the_supervisor.py:252-283 measures scheduler state, original-pid liveness, restart timing and bounded retries with positive and negative receipts, although lines 260-261 independently measure no identity change.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The four paths changed between the recorded revisions match source manifest.md:3 and implement only allocation survival and its tests.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_sessions_outlive_the_supervisor.py:252-257 fails when Python again owns the batch lifetime, as negative-control-final.log demonstrates, but lines 260-261 compare fixture-copied identities and the backoff test at lines 130-140 checks constants rather than parity with the existing transition owner.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/fleet_node.py:210 uses the existing dedent-based batch generator and reckon/crew/fleet_supervisor.py:2772 follows the existing environment injection idiom without introducing forbidden source names.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/fleet_node.py:243-247 duplicates the transition already owned by reckon/crew/fleet_supervisor.py:1036 next_backoff instead of extending that owner; capability searches also found only private test-specific waiting helpers, with no reusable shared fixture or existing Python-independent lifetime holder.\nFINDING reckon/crew/fleet_node.py:243 blocking: The generated shell independently implements steady-run reset, doubling and cap application already owned by reckon/crew/fleet_supervisor.py:1036-1045 next_backoff; importing its three constants does not reuse its transition, so a change to the service policy can silently leave supervisor recovery on a different rule; derive the shell transition representation from that owner at submission time while preserving Python-independent execution.\nFINDING tests/test_sessions_outlive_the_supervisor.py:260 non-blocking: Both PID equality assertions compare ready.json values with current.json values that the fixture copies directly from ready.json at lines 347-350; a session replacement that leaves those recorded IDs unchanged cannot redden them, so they are not independent identity coverage, although the original-PID liveness check at lines 253-257 independently protects survival.\n",
+  "review_run_id": "r-20261117T000417882999-review-of-sessions-outlive-the-supervisor-a78f7d02a523",
+  "review_text": "VERDICT goal: Read prompt.txt:40-42 and live plan section s8; fleet_node.py:225-251 keeps the allocation shell alive independently of supervisor exit and preserves explicit retirement.\nVERDICT done_when: Read live plan section s8 and head-final-receipts/receipt-1321133.json; the all_debug rehearsal records both survivors and RUNNING states at thirty seconds, a 5.44-second restart, two broken-interpreter retries, and COMPLETED 0:0 retirement, while control receipt-1321130.json records death in 6.20 seconds.\nVERDICT write_paths: Read source manifest.md:3 and prompt.txt's scope; all four changed files are declared source or test paths and no plan or evidence file was modified.\nVERDICT manifest: Read source manifest.md and its cited logs; baseline-suite.log records 58 passed and EXIT=0, head-suite-final.log records 64 passed and EXIT=0, and importer logs record zero added failures with eight unchanged failures.\nVERDICT diff: Read a0d889a581123ec3d512938a790cb0134e22e08e, 267546ba48b1a696507ec4425d9aae2171124a4f and a78f7d02a52326b9c7a0cae72a46966666724324 against f6e2b6b695d4f84aa8e7846e46ba6e469c744865; the diff adds the shell holder, retirement and activation markers, and six tests, with the reuse and assertion defects listed below.\nCALL_SITES: reckon/project_setup_commands.py:202 fleet_node_hold, reckon/crew/fleet_migrate.py:1075 migration stand-up, reckon/crew/fleet_node.py:324 generate_hold_script, reckon/crew/fleet_supervisor.py:2834 handle_line stop, reckon/crew/fleet_supervisor.py:2930 serve startup, reckon/crew/fleet_supervisor.py:2967 promote, bin/fleet-supervisor:21 interpreter exec\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_node.py:225-251 owns the batch lifetime outside Python and reckon/crew/fleet_supervisor.py:2834 distinguishes requested retirement from a crash, satisfying the recorded survival cases.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_sessions_outlive_the_supervisor.py:252-283 measures scheduler state, original-pid liveness, restart timing and bounded retries with positive and negative receipts, although lines 260-261 independently measure no identity change.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The four paths changed between the recorded revisions match source manifest.md:3 and implement only allocation survival and its tests.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_sessions_outlive_the_supervisor.py:252-257 fails when Python again owns the batch lifetime, as negative-control-final.log demonstrates, but lines 260-261 compare fixture-copied identities and the backoff test at lines 130-140 checks constants rather than parity with the existing transition owner.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/fleet_node.py:210 uses the existing dedent-based batch generator and reckon/crew/fleet_supervisor.py:2772 follows the existing environment injection idiom without introducing forbidden source names.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/fleet_node.py:243-247 duplicates the transition already owned by reckon/crew/fleet_supervisor.py:1036 next_backoff instead of extending that owner; capability searches also found only private test-specific waiting helpers, with no reusable shared fixture or existing Python-independent lifetime holder.\nFINDING reckon/crew/fleet_node.py:243 blocking: The generated shell independently implements steady-run reset, doubling and cap application already owned by reckon/crew/fleet_supervisor.py:1036-1045 next_backoff; importing its three constants does not reuse its transition, so a change to the service policy can silently leave supervisor recovery on a different rule; derive the shell transition representation from that owner at submission time while preserving Python-independent execution.\nFINDING tests/test_sessions_outlive_the_supervisor.py:260 non-blocking: Both PID equality assertions compare ready.json values with current.json values that the fixture copies directly from ready.json at lines 347-350; a session replacement that leaves those recorded IDs unchanged cannot redden them, so they are not independent identity coverage, although the original-PID liveness check at lines 253-257 independently protects survival.\n",
+  "reviewed_base_sha": "f6e2b6b695d4f84aa8e7846e46ba6e469c744865",
+  "reviewed_head_sha": "a78f7d02a52326b9c7a0cae72a46966666724324",
+  "reviewed_run_id": "r-20261116T233659120864-sessions-outlive-the-supervisor",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T00:55:55.932645+00:00",
+  "total": 101
+}

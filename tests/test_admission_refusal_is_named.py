@@ -91,6 +91,11 @@ def _pointer(home: Path, run_id: str, stream: Path, **kw) -> dict:
         "log_path": str(stream),
         "stderr_path": str(home / "runs" / run_id / "stderr.log"),
         "phase": "starting",
+        # Every pointer a launch writes records the process it started. A pointer
+        # in a pre-spawn phase with none is a request the launcher has claimed
+        # and not yet started: it stays at running, no liveness reading of a
+        # worker is taken, and the rows this file is about are unreachable.
+        "pid": 424242,
         "process_alive": False,
         "session": "s",
         "manifest_path": str(home / "manifests" / f"{run_id}.md"),

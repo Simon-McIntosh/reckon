@@ -1,0 +1,108 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "622ef4617d73a4af8ecf7dc5926996910a4ca29f",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/merge.py:land_merge",
+    "reckon/crew/merge.py:clear_stale_landed_copies",
+    "reckon/crew/promotion_scope.py:_stage_landing_writes",
+    "reckon/crew/promotion_scope.py:_commit_landing_writes",
+    "reckon/crew/promotion_scope.py:_commit_preserving_plan_text",
+    "reckon/crew/promotion_scope.py:_restore_landing_writes",
+    "reckon/ledger.py:_commit_state_write",
+    "reckon/crew/dispatch_sessions.py:terminate"
+  ],
+  "completed_at": "2026-11-17T00:01:31.108Z",
+  "dispatched_at": "2026-11-17T00:00:28Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "an evidence-prose count; the arms' logs are the record",
+      "recorded_at": "2026-11-17T00:33:06.075763+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "a revision label in the evidence table; the cited log's own header is the record",
+      "recorded_at": "2026-11-17T00:33:08.493077+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "a coverage gap on two refusal-path rollbacks, not a behaviour defect",
+      "recorded_at": "2026-11-17T00:33:11.366493+00:00"
+    },
+    "3": {
+      "kind": "exempted",
+      "reason": "a real but contained change: an unreadable /proc now records held_by as null rather than []; its stop-report readers must treat null as unknown, which is noted for a follow-up rather than blocking a reviewed fix",
+      "recorded_at": "2026-11-17T00:33:13.582727+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/stale-lock-reuses-owners-s12.html",
+      "line": "105",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment says seventy-two ids fail at head and not at the base and that the other seventeen span twelve files, while the arms it cites give 68 added ids over test_ledger_files_and_index_agree.py and the other thirteen \u2014 a figure a reader cannot reconcile with logs/importers-base-arm.log and logs/importers-head-arm.log, whose summaries the same table quotes."
+    },
+    {
+      "file": "docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/stale-lock-reuses-owners-s12.html",
+      "line": "70",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gate-after row names head 2ea89051 while the log it cites, logs/after-arm.log, opens with revision 8c1ac9168e, so the table records a revision the cited receipt does not name."
+    },
+    {
+      "file": "reckon/crew/promotion_scope.py",
+      "line": "2956",
+      "severity": "non-blocking",
+      "text": "non-blocking: the two refusal-path rollbacks inside _commit_landing_writes (:2956 and :3042) pass a run recorder, but no case drives a refused stage or commit through them, so dropping the keyword there would fall back to the stderr default at :2026 and leave every assertion in tests/test_a_stale_lock_names_its_age_everywhere.py green."
+    },
+    {
+      "file": "reckon/crew/dispatch_sessions.py",
+      "line": "2236",
+      "severity": "non-blocking",
+      "text": "non-blocking: records the widened scan's new None answer straight into record[\"held_by\"], where an unreadable /proc previously produced [], so a stop report can now carry null and its readers must treat it as unknown rather than as an empty holder list."
+    }
+  ],
+  "head_log_revision": "8c1ac9168e9a49715726ecf7ddaf0ea2ad0efc4e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "eight production call sites examined: merge.py's land_merge and clear_stale_landed_copies, promotion_scope.py's _stage_landing_writes, _commit_landing_writes, _commit_preserving_plan_text and _restore_landing_writes, ledger.py's _commit_state_write, and dispatch_sessions.py's terminate, which reaches the widened gc scan through routing's re-export.",
+    "diff": "read commit by commit against 622ef46: 6e450de deletes merge.py's second /proc scan for a lazy binding to gc's and widens gc's scan to answer None, adds stale_index_lock_removal_line and threads a recorder through the stage, commit, plan-text and rollback waits plus ledger's state write, and adds the 355-line test; e79672d gives the rollback a default stderr note after an importer arm hit TypeError on tests/test_rollback_asks_head.py; 7c6f1b7 and eb5b795 write the fragment.",
+    "done_when": "read; its four clauses are (one definition of each, a test driving each wait-helper caller through a proven-stale lock, \u00a710's four cases, and importer arms adding no failure) \u2014 the first two are asserted by tests/test_a_stale_lock_names_its_age_everywhere.py:139-173 and :176-365, the third only appears as the absence of a FAILED id in logs/importers-head-arm.log, and the fourth is recorded as base 104 failed/1285 passed versus head 132 failed/1408 passed with the added 68 ids attributed at a3fa3d3 in the same log set.",
+    "goal": "the goal is to make the stale-lock check call the one holder scan and the one lock-age function; at head reckon/crew/merge.py:967-983 resolves reckon/crew/gc.py:1816's scan on first use and merge.py:1002-1026 reaches the single _index_lock_age_seconds, with merge's own copy deleted in 6e450de.",
+    "manifest": "read; status complete, six commits, baseline_suite at 622ef46 with 0 failures and completed true, after_suite at 8c1ac91 with 0 failures and completed true, negative_control_log logs/negative-control-duplicate-holder-scan.log, and outside_scope naming the two rollback callers it could not write.",
+    "write_paths": "the fence names eight paths; the six commits 6e450de, e79672d, 7c6f1b7, eb5b795 and 8c1ac91 and the merge 2ea8905 against 622ef46 touch reckon/crew/gc.py, reckon/crew/merge.py, reckon/crew/promotion_scope.py, reckon/ledger.py, tests/test_a_stale_lock_names_its_age_everywhere.py and docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/stale-lock-reuses-owners-s12.html, all inside it and the figures directory untouched."
+  },
+  "justifications": {
+    "durability": "the declared mutation (a second def _processes_holding in reckon/crew/merge.py) reddens tests/test_a_stale_lock_names_its_age_everywhere.py::test_the_package_holds_one_holder_scan_and_one_lock_age_function at logs/negative-control-duplicate-holder-scan.log EXIT=1, but no case drives the two refusal-path rollbacks at reckon/crew/promotion_scope.py:2956 and :3042, so dropping their recorder would pass green.",
+    "evidence": "logs/after-arm.log reads \"66 passed\", EXIT=0 and logs/after-arm.log's peer baseline-arm.log reads \"58 passed\", EXIT=0, covering the one-definition and per-caller-record clauses, while the \u00a710 clause rests only on the complete importer arm's absence of a FAILED id for tests/test_a_lander_clears_a_stale_index_lock.py.",
+    "fit": "the added helpers follow the module's own idiom \u2014 a keyword-only recorder callback and a one-line composer beside the wait at reckon/crew/merge.py:1028 \u2014 with the single exception of the module-level nullable binding at reckon/crew/merge.py:964, which the surrounding code spells as a function-local deferred import at reckon/ledger.py:3352.",
+    "goal_fidelity": "the target head names one definition of the holder scan (reckon/crew/gc.py:1816) and the stale-lock judgement asks it through the lazy binding at reckon/crew/merge.py:967-983, so the check calls the one scan and the one lock-age function at reckon/crew/merge.py:987.",
+    "reuse": "the change removes the duplicate scan rather than adding one and hoists the removal wording into reckon/crew/merge.py:1028, which land_merge and the run's landing record both call; the only other /proc walk, routing._scratch_process_holders at reckon/crew/routing.py:1508, answers a different question (a root-relative holder map) and predates this node.",
+    "scope_discipline": "git diff 622ef4617d..8c1ac9168e over the six recorded commits touches only reckon/crew/gc.py, reckon/crew/merge.py, reckon/crew/promotion_scope.py, reckon/ledger.py, tests/test_a_stale_lock_names_its_age_everywhere.py and the fragment, every path inside the manifest's declared fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the stale-lock check call the one holder scan and the one lock-age function; at head reckon/crew/merge.py:967-983 resolves reckon/crew/gc.py:1816's scan on first use and merge.py:1002-1026 reaches the single _index_lock_age_seconds at merge.py:987, with merge.py's own copy deleted in 6e450de.\nVERDICT done_when: read; the one-definition and per-caller-record clauses are asserted by tests/test_a_stale_lock_names_its_age_everywhere.py:139-173 and :176-365 and the gate at logs/after-arm.log reads \"66 passed\" EXIT=0 against a baseline of \"58 passed\" at logs/baseline-arm.log, while the \u00a710 clause is evidenced only by the absence of a FAILED id for tests/test_a_lander_clears_a_stale_index_lock.py among the 132 in logs/importers-head-arm.log and the importer pair is recorded at 104 failed/1285 passed (base) and 132 failed/1408 passed (head).\nVERDICT write_paths: the fence names eight paths and the six commits plus the 2ea8905 merge against 622ef46 touch only reckon/crew/gc.py, reckon/crew/merge.py, reckon/crew/promotion_scope.py, reckon/ledger.py, tests/test_a_stale_lock_names_its_age_everywhere.py and the evidence fragment, every one inside it.\nVERDICT manifest: read; status complete, six commits, baseline_suite 622ef46 with 0 failures completed true, after_suite 8c1ac91 with 0 failures completed true, and negative_control_log logs/negative-control-duplicate-holder-scan.log.\nVERDICT diff: read commit by commit against 622ef46 \u2014 6e450de deletes merge.py's second /proc scan for a lazy binding to gc's and widens gc's scan to answer None, adds stale_index_lock_removal_line and threads a recorder through the stage, commit, plan-text and rollback waits and ledger's state write, and adds the 355-line test; e79672d adds the default stderr note after an importer arm hit TypeError in tests/test_rollback_asks_head.py; 7c6f1b7, eb5b795 and 8c1ac91 write and correct the fragment.\nCALL_SITES: reckon/crew/merge.py:land_merge, reckon/crew/merge.py:clear_stale_landed_copies, reckon/crew/promotion_scope.py:_stage_landing_writes, reckon/crew/promotion_scope.py:_commit_landing_writes, reckon/crew/promotion_scope.py:_commit_preserving_plan_text, reckon/crew/promotion_scope.py:_restore_landing_writes, reckon/ledger.py:_commit_state_write, reckon/crew/dispatch_sessions.py:terminate\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/merge.py:967-983 asks reckon/crew/gc.py:1816 for the holder scan and merge.py:1002-1026 reaches the one lock-age function at merge.py:987.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/after-arm.log reads \"66 passed\" EXIT=0 and logs/baseline-arm.log \"58 passed\" EXIT=0, but the \u00a710 four-case clause the done_when names is nowhere asserted, only absent from the importer arm's FAILED list.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff 622ef4617d..8c1ac9168e is inside the fence, down to the single test file and commit 8c1ac91's one-line citation fix in docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/stale-lock-reuses-owners-s12.html.\nSCORE durability: 17\nJUSTIFICATION durability: restoring a second def _processes_holding in reckon/crew/merge.py reddens tests/test_a_stale_lock_names_its_age_everywhere.py:139-157 at logs/negative-control-duplicate-holder-scan.log EXIT=1, but the refusal-path rollbacks at reckon/crew/promotion_scope.py:2956 and :3042 are driven by no case.\nSCORE fit: 17\nJUSTIFICATION fit: the recorder keyword and the one-line composer at reckon/crew/merge.py:1028, while the nullable module-level binding at merge.py:964 departs from the function-local deferred import the package spells at reckon/ledger.py:3352.\nSCORE reuse: 20\nJUSTIFICATION reuse: the duplicate scan is deleted in favour of reckon/crew/gc.py:1816 and the removal wording is hoisted to merge.py:1028, and the only other /proc walk, reckon/crew/routing.py:1508 _scratch_process_holders, answers a different question and predates this node.\nFINDING docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/stale-lock-reuses-owners-s12.html:105 non-blocking: it says seventy-two added ids and an other-seventeen, where the arms it cites give 68 and thirteen, so the fragment's figure cannot be reconciled with logs/importers-head-arm.log.\nFINDING docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/stale-lock-reuses-owners-s12.html:70 non-blocking: the gate-after row names 2ea89051 while the receipt it cites, logs/after-arm.log, opens with revision 8c1ac9168e.\nFINDING reckon/crew/promotion_scope.py:2956 non-blocking: the refusal-path rollbacks inside _commit_landing_writes pass a run recorder that no test drives, so dropping the keyword would fall back to the stderr default at :2026 and stay green.\nFINDING reckon/crew/dispatch_sessions.py:2236 non-blocking: record[\"held_by\"] can now be null because the widened scan answers None for an unreadable /proc, where it previously always carried a list.",
+  "review_run_id": "r-20261116T234114614573-review-of-stale-lock-reuses-owners-s12-8c1ac9168e9a",
+  "reviewed_base_sha": "622ef4617d73a4af8ecf7dc5926996910a4ca29f",
+  "reviewed_head_sha": "8c1ac9168e9a49715726ecf7ddaf0ea2ad0efc4e",
+  "reviewed_run_id": "r-20261115T123706643397-stale-lock-reuses-owners-s12",
+  "reviewer": {
+    "backend": "deepseek-v4.1-flash",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T234114614573-review-of-stale-lock-reuses-owners-s12-8c1ac9168e9a"
+  },
+  "reviewer_run_id": "r-20261116T234114614573-review-of-stale-lock-reuses-owners-s12-8c1ac9168e9a",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T01:18:23.645319+00:00",
+  "total": 109
+}
