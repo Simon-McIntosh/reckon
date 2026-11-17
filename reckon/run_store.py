@@ -46,13 +46,26 @@ DETAIL_FIELDS = (
 )
 
 # The query keys a reader routes through. Each is a real indexed column on the
-# runs row, extracted from the payload at insert, so a question about one run
+# runs row, extracted from the record at insert, so a question about one run
 # is answered by an index search rather than by the scan-plus-parse the flat
-# file costs. run_id is the sixth query key and is indexed by the table's
+# file costs. run_id is also a query key and is indexed by the table's
 # primary key alone. The declaration is the only place the key list is
 # spelled out; it drives both the schema and the insert, so the two cannot
 # drift.
-QUERY_KEYS = ("member", "node", "project", "completed_at", "backend")
+QUERY_KEYS = ("member", "node", "project", "completed_at", "backend", "plan")
+
+
+def _query_values(
+    payload: Mapping[str, Any], detail: Mapping[str, Any]
+) -> tuple[Any, ...]:
+    """Index the same identity the reader derives from the complete record."""
+    from reckon.ledger import row_plan
+
+    return tuple(
+        row_plan({**payload, **detail}) if key == "plan" else payload.get(key)
+        for key in QUERY_KEYS
+    )
+
 
 # The commit a run's own record file entered the tree at. Nothing routes a
 # question through it, so it is not a query key and carries no index; it is a
@@ -316,8 +329,9 @@ def _record_rows(
 ) -> Iterator[tuple[Any, ...]]:
     """Read selected records through the single durable/detail join.
 
-    Plan and activity predicates consume a buffered narrow projection after
-    its cursor closes, then only matching identities fetch the requested payload.
+    Plan selection searches its indexed column. Activity predicates consume a
+    buffered narrow projection after its cursor closes, then only matching
+    identities fetch the requested payload.
     Python selection, decoding and consumption therefore hold no read lock.
     Encoded rows are buffered per query; identity batches stay below driver limits.
     """
@@ -327,7 +341,7 @@ def _record_rows(
         if selected is None
         else [selected[index : index + 500] for index in range(0, len(selected), 500)]
     )
-    filtering = bool(plan) or activity_since is not None
+    filtering = activity_since is not None
     if filtering:
         from reckon import ledger
 
@@ -339,14 +353,6 @@ def _record_rows(
             columns = []
             if filtering:
                 pairs = []
-                if plan:
-                    pairs.extend(
-                        (
-                            "'plan', json_extract(r.payload, '$.plan')",
-                            "'impl_move', json_object('plan', json_extract(r.payload, '$.impl_move.plan'))",
-                            "'node_definition', json_object('plan', json_extract(d.detail, '$.node_definition.plan'))",
-                        )
-                    )
                 if activity_since is not None:
                     pairs.extend(
                         f"'{key}', json_extract(r.payload, '$.{key}')"
@@ -393,6 +399,9 @@ def _record_rows(
                 # without visiting any other row's payload.
                 clauses.append("r.node = ?")
                 params.append(node)
+            if plan:
+                clauses.append("r.plan = ?")
+                params.append(plan)
             if clauses:
                 query += " WHERE " + " AND ".join(clauses)
             cursor = connection.execute(query, params)
@@ -404,8 +413,6 @@ def _record_rows(
                 identities = []
                 for identity, payload, _detail in rows:
                     record = json.loads(payload)
-                    if plan and ledger.row_plan(record) != plan:
-                        continue
                     if activity_since is not None:
                         moment = ledger.run_activity_seconds(record)
                         if moment is None or moment < activity_since:
@@ -552,13 +559,10 @@ def _read_attached_tables(connection: sqlite3.Connection, path: Path) -> list[st
     tables = ["main"]
     archive = _archive_path(path)
     if archive.is_file():
-        try:
-            connection.execute(
-                "ATTACH DATABASE ? AS archive",
-                (f"{archive.resolve().as_uri()}?mode=ro",),
-            )
-        except (OSError, sqlite3.Error):
-            return tables
+        connection.execute(
+            "ATTACH DATABASE ? AS archive",
+            (f"{archive.resolve().as_uri()}?mode=ro",),
+        )
         tables.append("archive")
     return tables
 
@@ -747,8 +751,8 @@ class RunStore:
         )
         if self._conn.execute("PRAGMA main.page_count").fetchone()[0] == 0:
             self._conn.execute("PRAGMA main.auto_vacuum = INCREMENTAL")
-        self._create()
         self._archive_attached = False
+        self._create()
 
     def __enter__(self) -> Self:
         return self
@@ -777,6 +781,8 @@ class RunStore:
         if self._recorded_schema_version() == _STORE_SCHEMA_VERSION:
             return
         self._migrate_runs()
+        if self.archive_path.is_file():
+            self._attach_archive(create=True)
         self._record_schema_version()
 
     def _recorded_schema_version(self) -> str | None:
@@ -837,7 +843,11 @@ class RunStore:
             if table == "runs":
                 self._conn.executescript(_RUNS_INDEXES)
             return
-        rows = self._conn.execute(f"SELECT * FROM {table}").fetchall()  # noqa: S608 - a fixed table name
+        details = "run_details" if table == "runs" else "archive.run_details"
+        rows = self._conn.execute(
+            f"SELECT r.*, d.detail FROM {table} r "  # noqa: S608 - fixed table names
+            f"LEFT JOIN {details} d ON r.run_id = d.run_id"
+        ).fetchall()
         update = (
             _RUNS_UPDATE
             if table == "runs"
@@ -850,12 +860,12 @@ class RunStore:
                 if name not in columns:
                     self._conn.execute(f'ALTER TABLE {table} ADD COLUMN "{name}" TEXT')
             for row in rows:
-                record = _legacy_payload(dict(zip(names, row, strict=True)))
+                record = _legacy_payload(dict(zip(names, row[:-1], strict=True)))
                 self._conn.execute(
                     update,
                     (
                         json.dumps(record, sort_keys=True, separators=(",", ":")),
-                        *(record.get(name) for name in QUERY_KEYS),
+                        *_query_values(record, json.loads(row[-1] or "{}")),
                         None,
                         record["run_id"],
                     ),
@@ -890,7 +900,7 @@ class RunStore:
                 _RUNS_INSERT,
                 (
                     run_id,
-                    *(payload.get(name) for name in QUERY_KEYS),
+                    *_query_values(payload, detail),
                     None,
                     json.dumps(payload, sort_keys=True, separators=(",", ":")),
                 ),
@@ -938,7 +948,7 @@ class RunStore:
                     _RUNS_INSERT,
                     (
                         run_id,
-                        *(payload.get(name) for name in QUERY_KEYS),
+                        *_query_values(payload, detail),
                         None,
                         encoded_payload,
                     ),
@@ -954,7 +964,7 @@ class RunStore:
                 _RUNS_UPDATE.replace('"runs"', table),
                 (
                     encoded_payload,
-                    *(payload.get(name) for name in QUERY_KEYS),
+                    *_query_values(payload, detail),
                     None,
                     run_id,
                 ),
@@ -980,16 +990,13 @@ class RunStore:
             )
             if create:
                 self._conn.executescript(_ARCHIVE_RUNS_SCHEMA)
-                # A retirement writes the same declarations the hot table
-                # carries, so an archive written before a column was added owes
-                # the same repair the hot table does.
+                # Both stores are migrated before the schema version is
+                # recorded, so an unchanged open owes neither backfill.
                 self._migrate_runs("archive.runs")
-                self._conn.execute(
-                    "CREATE INDEX IF NOT EXISTS archive.idx_runs_project ON runs(project)"
-                )
-                self._conn.execute(
-                    "CREATE INDEX IF NOT EXISTS archive.idx_runs_node ON runs(node)"
-                )
+                for name in QUERY_KEYS:
+                    self._conn.execute(
+                        f'CREATE INDEX IF NOT EXISTS archive."idx_runs_{name}" ON runs("{name}")'
+                    )
             self._archive_attached = True
         return self._archive_attached
 
@@ -1202,7 +1209,7 @@ class RunStore:
                                     json.dumps(
                                         payload, sort_keys=True, separators=(",", ":")
                                     ),
-                                    *(payload.get(key) for key in QUERY_KEYS),
+                                    *_query_values(payload, detail),
                                     None,
                                     run_id,
                                 ),
@@ -1222,7 +1229,7 @@ class RunStore:
                             _RUNS_INSERT,
                             (
                                 run_id,
-                                *(payload.get(key) for key in QUERY_KEYS),
+                                *_query_values(payload, detail),
                                 None,
                                 json.dumps(
                                     payload, sort_keys=True, separators=(",", ":")
