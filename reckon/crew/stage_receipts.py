@@ -61,7 +61,9 @@ _PREVIOUS = {
     "promotion_settled": "promotion_outcome",
     "landing": "promotion_settled",
 }
-_PAIRED = frozenset({"review_started", "review_record_written", "promotion_outcome"})
+_PAIRED = frozenset(
+    {"review_admitted", "review_started", "review_record_written", "promotion_outcome"}
+)
 _REVIEW_FILE_INSTANT: ContextVar[str | None] = ContextVar(
     "review_file_instant", default=None
 )

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 import itertools
 import json
 import os
@@ -139,7 +140,7 @@ def _lifecycle(run_id, tmp_path, monkeypatch):
     )
     assert not report["dispatched"]
     reviewer = {
-        "run_id": f"r-20260101T000000000000-review-{run_id}",
+        "run_id": receipts.read_receipts(run_id)[-1]["attempt"],
         "reviewed_run_id": run_id,
     }
     receipts.note_review(reviewer, "review_admitted")
@@ -306,7 +307,7 @@ def test_reading_an_absent_run_reports_it_unread():
 def test_late_display_does_not_make_a_complete_history_unknown(clock):
     run_id = "r-late-display"
     receipts.record_stage(run_id, "delivery_recorded")
-    receipts.record_stage(run_id, "review_requested")
+    receipts.record_stage(run_id, "review_requested", attempt="reviewer")
     receipts.record_stage(run_id, "review_admitted", attempt="reviewer")
     receipts.record_stage(run_id, "delivery_shown")
     receipts.record_stage(run_id, "review_started", attempt="reviewer")
@@ -520,16 +521,105 @@ def test_an_incomplete_or_foreign_direct_file_stamps_no_completion(clock, update
     )
 
 
-def test_a_second_review_without_its_request_has_unknown_time(clock):
+@pytest.mark.parametrize("suppress_request", [False, True])
+def test_a_second_review_without_its_request_has_unknown_time(clock, suppress_request):
     run_id = "r-review-rounds"
     receipts.record_stage(run_id, "delivery_recorded")
     receipts.record_stage(run_id, "delivery_shown")
-    receipts.record_stage(run_id, "review_requested", attempt="head-a")
+    receipts.record_stage(run_id, "review_requested", attempt="reviewer-a")
     for stage in ("review_admitted", "review_started", "review_record_written"):
         receipts.record_stage(run_id, stage, attempt="reviewer-a")
-    # The next reviewer has no request receipt of its own.
+    if not suppress_request:
+        receipts.record_stage(run_id, "review_requested", attempt="reviewer-b")
     for stage in ("review_admitted", "review_started", "review_record_written"):
         receipts.record_stage(run_id, stage, attempt="reviewer-b")
     census = receipts.stage_census([run_id])
-    assert census["unknown_seconds"] > 0, census
-    assert census["intervals"][5]["stage"] == "unknown"
+    if suppress_request:
+        assert census["unknown_seconds"] > 0, census
+        assert census["intervals"][5]["stage"] == "unknown"
+    else:
+        assert census["unknown_seconds"] == 0, census
+
+
+@pytest.mark.parametrize("launch_path", ["direct", "roster-full", "producer-gone"])
+def test_the_review_request_identity_reaches_dispatch_and_queued_admission(
+    clock, tmp_path, monkeypatch, launch_path
+):
+    from reckon.crew.dispatch import RosterFull
+    from reckon.crew.node import WatcherRequired
+
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+    config = {"local_backend": "local", "backends": {"local": {"launch": "cli"}}}
+    monkeypatch.setattr(
+        recovery_review_dispatch, "_resolved_review_config", lambda *_: config
+    )
+    monkeypatch.setattr(
+        recovery_review_dispatch, "_list_write_grants_in_brief", lambda *_: None
+    )
+    monkeypatch.setattr(
+        recovery_review_dispatch,
+        "_reroute_held_review",
+        lambda *_, **__: {"backend": "local"},
+    )
+    monkeypatch.setattr(
+        recovery_review_dispatch, "_release_delivered_review_claim", lambda *_, **__: []
+    )
+    monkeypatch.setattr(
+        recovery_review_dispatch, "record_re_review_prediction", lambda *_: None
+    )
+    dispatched = []
+
+    def dispatch(**kwargs):
+        dispatched.append(kwargs["run_id"])
+        if launch_path == "roster-full":
+            raise RosterFull("occupied", occupancy=1, limit=1, occupying=["other"])
+        if launch_path == "producer-gone":
+            raise WatcherRequired(
+                "sample",
+                {"watcher_live": False, "ensure_line": "reckon crew watch"},
+                session="owner",
+            )
+        return {"run_id": kwargs["run_id"]}
+
+    monkeypatch.setattr(dispatch_module, "dispatch", dispatch)
+    source = _pointer("r-dispatch-review-identity")
+    source["repo"] = str(tmp_path)
+    receipts.note_delivery(_delivery(source["run_id"]), shown=True)
+    fields = {
+        "project": "sample",
+        "node_id": "review-identity",
+        "goal": "review",
+        "plan": "",
+        "section": "",
+        "brief": "",
+        "done_when": "review written",
+        "write_paths": [str(tmp_path / "review.json")],
+        "time_budget": "10m",
+        "session": "owner",
+        "head": "a" * 40,
+    }
+    identities = []
+    for _ in range(2):
+        report = recovery_review_dispatch._dispatch_composed_review(
+            source,
+            fields,
+            config=config,
+            launcher=None,
+            allow_unreconciled_runs=True,
+            prefer_local=True,
+        )
+        reviewer_id = report.get("review_run_id") or report["queued"]["run_id"]
+        identities.append(reviewer_id)
+        request = receipts.read_receipts(source["run_id"])[-1]
+        assert request["stage"] == "review_requested"
+        assert request["attempt"] == dispatched[-1] == reviewer_id
+        if launch_path != "direct":
+            reviewer = runs.read_pointer(reviewer_id)
+            assert reviewer["phase"] == "queued"
+            reviewer["phase"] = "complete"
+            runs._write_json(runs.pointer_path(reviewer_id), reviewer)
+        reviewer = {"run_id": reviewer_id, "reviewed_run_id": source["run_id"]}
+        for stage in ("review_admitted", "review_started", "review_record_written"):
+            receipts.note_review(reviewer, stage)
+    assert identities[0] != identities[1]
+    assert receipts.stage_census([source["run_id"]])["unknown_seconds"] == 0

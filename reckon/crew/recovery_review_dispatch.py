@@ -1114,7 +1114,7 @@ def _queue_router_held_review(
         ((config.get("backends") or {}).get(backend) or {}).get("launch") or "cli"
     )
     queued_record = dispatch_module._queued_request_record(
-        run_id=_runs.new_run_id(node.id),
+        run_id=str(fields.get("receipt_run_id") or _runs.new_run_id(node.id)),
         project=str(fields["project"]),
         node=node,
         repo_root=Path(str(record.get("repo") or "")),
@@ -1178,7 +1178,7 @@ def _queue_review_without_producer(
         ),
     }
     queued_record = dispatch_module._queued_request_record(
-        run_id=_runs.new_run_id(node.id),
+        run_id=str(fields.get("receipt_run_id") or _runs.new_run_id(node.id)),
         project=project,
         node=node,
         repo_root=Path(str(record.get("repo") or "")),
@@ -4064,7 +4064,12 @@ def _dispatch_composed_review(
     dispatch_subject = record if record.get("subject") == "plan" else run_id
     if not dry_run and record.get("subject") != "plan":
         from reckon.crew.stage_receipts import record_stage
-        record_stage(run_id, "review_requested", attempt=str(fields.get("head") or ""))
+
+        reviewer_id = runs.new_run_id(
+            str(fields.get("node_id") or f"review-of-{run_id}")
+        )
+        fields = {**fields, "receipt_run_id": reviewer_id}
+        record_stage(run_id, "review_requested", attempt=reviewer_id)
     if record.get("subject") != "plan":
         _list_write_grants_in_brief(record, fields)
     rubric = str(fields.get("rubric") or "")
@@ -4325,6 +4330,7 @@ def _dispatch_composed_review(
         }
     try:
         launched = dispatch_module.dispatch(
+            run_id=str(fields.get("receipt_run_id") or "") or None,
             node=node,
             project=project,
             repo=repo,
