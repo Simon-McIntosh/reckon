@@ -43,6 +43,8 @@ report.write_text(json.dumps({'node': socket.gethostname(),
 
 @pytest.fixture
 def rehearsal(tmp_path, monkeypatch):
+    print("measurement_module: " + nested_launch.__file__)
+    print("measurement_cwd: " + str(Path.cwd().resolve()))
     durable = os.environ.get("RECKON_JOB_FENCE_REHEARSAL_ROOT")
     if durable:
         root = Path(durable)
@@ -203,7 +205,7 @@ def test_scheduler_starts_with_absent_local_grant_and_refuses_redirect(rehearsal
                 "--ntasks=1",
                 "--wait",
                 "--parsable",
-                f"--nodelist={receipt['task']['node']}",
+                f"--nodelist={receipt['task']['node'].split('.')[0]}",
                 f"--chdir={case['run']}",
                 f"--output={case['run'] / 'cleanup.log'}",
                 "--wrap=test ! -e " + shlex.quote(str(case["local"])),
