@@ -1,0 +1,103 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_independence": "No added assertion compares a supplied value with a self-moving oracle that survives the targeted regression; exhaustive reads, known fixture cardinalities, SQL planner output, explicit replacement identity and writer receipts constrain distinct behavior.",
+  "assertion_review": [
+    {
+      "fails_if": "retirement loses a selected row or fixture population differs from 20000; assertions establish the positive control",
+      "path": "tests/test_plan_selected_store_read_is_bounded.py:86-87"
+    },
+    {
+      "fails_if": "an archived or derived-identity match is omitted, a field projection changes, plan selection decodes unrelated history, or timing exceeds half the independent exhaustive read; reinstating base scanning violates the decode bound, as the red log shows",
+      "path": "tests/test_plan_selected_store_read_is_bounded.py:108-121"
+    },
+    {
+      "fails_if": "identity, node, activity or project filters cease composing; expected rows are independently filtered from exhaustive history",
+      "path": "tests/test_plan_selected_store_read_is_bounded.py:124-141"
+    },
+    {
+      "fails_if": "writer indexing ignores canonical whitespace, precedence, numeric or fallback identity; ledger.row_plan selects the query, but expected complete rows independently constrain membership and content",
+      "path": "tests/test_plan_selected_store_read_is_bounded.py:157-169"
+    },
+    {
+      "fails_if": "sync updates payloads without their plan index, retirement drops a row, or a replaced store is cached; before/after identities and the explicit replacement marker prevent empty-result passes",
+      "path": "tests/test_plan_selected_store_read_is_bounded.py:172-203"
+    },
+    {
+      "fails_if": "either old-schema table is not backfilled, node-definition detail is ignored, plan index is absent, or unchanged opens repeat migration; six independently populated fixture rows and EXPLAIN SEARCH constrain the result",
+      "path": "tests/test_plan_selected_store_read_is_bounded.py:206-262"
+    },
+    {
+      "fails_if": "corrupt hot/archive reads silently return, or equality accepts a reference lacking match-01; removing the archive refusal reproduces the recorded red case",
+      "path": "tests/test_plan_selected_store_read_is_bounded.py:265-280"
+    },
+    {
+      "fails_if": "the pause does not observe decoding, the reader finishes before the receipt, the writer cannot commit within one second, or rows differ; the recorded held-transaction control fails the writer-return assertion",
+      "path": "tests/test_a_scanning_store_read_holds_no_lock.py:80-154"
+    }
+  ],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/ledger.py:2437 load",
+    "reckon/mcp_views.py:1934 _section_attempt_count_uncached",
+    "reckon/crew/dispatching/preparation.py:143"
+  ],
+  "completed_at": "2026-11-17T01:28:00Z",
+  "dispatched_at": "2026-11-17T01:19:50Z",
+  "failure_delta_evidence": {
+    "after_failure_ids": [],
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T235109254954-a-plan-selected-store-read-is-bounded/resumed-after.log",
+    "baseline_failure_ids": [
+      "tests/test_a_scanning_store_read_holds_no_lock.py::test_a_record_write_completes_while_selection_is_paused[plan]"
+    ],
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T235109254954-a-plan-selected-store-read-is-bounded/resumed-baseline.log"
+  },
+  "findings": [],
+  "importer_delta_evidence": {
+    "added_failure_count": 2,
+    "added_failure_ids": [
+      "tests/test_every_ledger_question_reads_the_store.py::test_store_selection_uses_the_ledger_plan_owner[False]",
+      "tests/test_every_ledger_question_reads_the_store.py::test_store_selection_uses_the_ledger_plan_owner[True]"
+    ],
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T235109254954-a-plan-selected-store-read-is-bounded/resumed-after-importers.log",
+    "authorization": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T235109254954-a-plan-selected-store-read-is-bounded/resume-1-advice.txt",
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T235109254954-a-plan-selected-store-read-is-bounded/resumed-baseline-importers.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read 9893b14dd59b9889655b024045671932916285ac and 03617feef883e4ca63307323f5316355ad6c0b93 against c6274b6a0e6698ed29f59c3027552f4e795abc10; the first changes the existing store owner and adds regression tests, and the second repairs the granted fixture and preserves its concurrent-writer assertions.",
+    "done_when": "The source prompt.txt:256-257 and live plan section s6 require bounded 20,000-row selection, equality, refusal and importer parity; recorded controls prove the bounds and refusals, while resume-1-advice.txt explicitly permits the remaining out-of-scope importer-test update.",
+    "goal": "The source prompt.txt:38 requires indexed plan selection; reckon/run_store.py:55-70 and :402-404 extend the existing query contract for hot and archived rows.",
+    "manifest": "The source manifest.md records both commits and readable completed base/head logs; the after log's fixture SHA256 equals the file committed at 03617feef883e4ca63307323f5316355ad6c0b93.",
+    "write_paths": "The source prompt.txt:94-98 plus resume-1-advice.txt grant every changed file: reckon/run_store.py and the two store-selection test files."
+  },
+  "justifications": {
+    "durability": "tests/test_plan_selected_store_read_is_bounded.py:108-121 fails when exhaustive plan scanning returns, :243-255 fails if either migration or plan index is omitted, :269-280 rejects silent archive loss, and tests/test_a_scanning_store_read_holds_no_lock.py:135-147 rejects a held read transaction.",
+    "evidence": "tests/test_plan_selected_store_read_is_bounded.py:120-121 enforces the decode and timing bounds and recorded logs prove 20100-to-100 decoding and 110.757-to-0.974 ms full reads, but importer parity remains subject to the explicit exception in resume-1-advice.txt.",
+    "fit": "reckon/run_store.py:55-70 extends QUERY_KEYS and delegates identity semantics to reckon/ledger.py:1732 rather than adding another index declaration or forbidden source names.",
+    "goal_fidelity": "reckon/run_store.py:402-404 routes plan selection through the indexed column populated by the canonical identity helper at :61-70 for every changed writer and migration.",
+    "reuse": "Capability searches for plan identity, indexed selection, reference comparison and retirement found owners in reckon/ledger.py:1732 and reckon/run_store.py:329 and :1025; the only new production helper wraps those declarations, and test helpers wrap existing reads, retirement and ordinary equality.",
+    "scope_discipline": "The three-file diff remains within source prompt.txt:94-98 and the additional test grant in resume-1-advice.txt, with no unrelated implementation or plan edits."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source prompt.txt:38 requires indexed plan selection; reckon/run_store.py:55-70 and :402-404 extend the existing query contract for hot and archived rows.\nVERDICT done_when: The source prompt.txt:256-257 and live plan section s6 require bounded 20,000-row selection, equality, refusal and importer parity; recorded controls prove the bounds and refusals, while resume-1-advice.txt explicitly permits the remaining out-of-scope importer-test update.\nVERDICT write_paths: The source prompt.txt:94-98 plus resume-1-advice.txt grant every changed file: reckon/run_store.py and the two store-selection test files.\nVERDICT manifest: The source manifest.md records both commits and readable completed base/head logs; the after log's fixture SHA256 equals the file committed at 03617feef883e4ca63307323f5316355ad6c0b93.\nVERDICT diff: Read 9893b14dd59b9889655b024045671932916285ac and 03617feef883e4ca63307323f5316355ad6c0b93 against c6274b6a0e6698ed29f59c3027552f4e795abc10; the first changes the existing store owner and adds regression tests, and the second repairs the granted fixture and preserves its concurrent-writer assertions.\nCALL_SITES: reckon/ledger.py:2437 load, reckon/mcp_views.py:1934 _section_attempt_count_uncached, reckon/crew/dispatching/preparation.py:143\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/run_store.py:402-404 routes plan selection through the indexed column populated by the canonical identity helper at :61-70 for every changed writer and migration.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_plan_selected_store_read_is_bounded.py:120-121 enforces the decode and timing bounds and recorded logs prove 20100-to-100 decoding and 110.757-to-0.974 ms full reads, but importer parity remains subject to the explicit exception in resume-1-advice.txt.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The three-file diff remains within source prompt.txt:94-98 and the additional test grant in resume-1-advice.txt, with no unrelated implementation or plan edits.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_plan_selected_store_read_is_bounded.py:108-121 fails when exhaustive plan scanning returns, :243-255 fails if either migration or plan index is omitted, :269-280 rejects silent archive loss, and tests/test_a_scanning_store_read_holds_no_lock.py:135-147 rejects a held read transaction.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/run_store.py:55-70 extends QUERY_KEYS and delegates identity semantics to reckon/ledger.py:1732 rather than adding another index declaration or forbidden source names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for plan identity, indexed selection, reference comparison and retirement found owners in reckon/ledger.py:1732 and reckon/run_store.py:329 and :1025; the only new production helper wraps those declarations, and test helpers wrap existing reads, retirement and ordinary equality.\n",
+  "review_run_id": "r-20261117T011208561522-review-of-a-plan-selected-store-read-is-bounded-03617feef883",
+  "reviewed_base_sha": "c6274b6a0e6698ed29f59c3027552f4e795abc10",
+  "reviewed_head_sha": "03617feef883e4ca63307323f5316355ad6c0b93",
+  "reviewed_run_id": "r-20261116T235109254954-a-plan-selected-store-read-is-bounded",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T02:06:36.522070+00:00",
+  "total": 118
+}

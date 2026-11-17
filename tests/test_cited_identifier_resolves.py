@@ -110,8 +110,15 @@ def _promote(
     declared: str,
     presented: tuple[str, ...] = (),
     no_commit: str = "",
+    base: str = "",
 ):
-    """Promote one run through the CLI, with ``declared`` as its commits line."""
+    """Promote one run through the CLI, with ``declared`` as its commits line.
+
+    ``base`` is the revision the run was dispatched against, and a run that
+    cites no commit must be measured from a worktree that has not moved off it:
+    the commitless guard refuses a worktree holding a commit the record does not
+    name, which is the state these cases must not present.
+    """
     manifest = tmp_path / f"{run_id}.manifest.md"
     # The fixture's runs change no runtime source: the admitted ones cite
     # root-level text files and the report-only ones cite nothing. A scope
@@ -128,7 +135,10 @@ def _promote(
         encoding="utf-8",
     )
     pointer = _pointer(
-        repository, run_id, manifest, base=_git(repository, "rev-parse", "HEAD^")
+        repository,
+        run_id,
+        manifest,
+        base=base or _git(repository, "rev-parse", "HEAD^"),
     )
     arguments = [
         "crew",
@@ -145,6 +155,7 @@ def _promote(
         "0",
         "--gate-log-path",
         "/durable/citation.log",
+        "--wait",
     ]
     arguments += ["--commit", *presented] if presented else []
     if no_commit:
@@ -304,14 +315,13 @@ def test_a_declared_absence_is_not_read_as_a_citation(
     repository: Path, tmp_path: Path
 ) -> None:
     """``commits: none (…)`` is the record stating it has no commit."""
-    _commit_of(repository, "landed")
-
     result, pointer, _ = _promote(
         repository,
         tmp_path,
         run_id="r-none",
         declared="none (repository worktree remained clean)",
         no_commit="report-only node: its deliverable is the manifest, not a commit",
+        base=_git(repository, "rev-parse", "HEAD"),
     )
 
     assert result.exit_code == 0, result.output
@@ -323,13 +333,15 @@ def test_a_declared_absence_is_not_read_as_a_citation(
 def test_a_manifest_with_no_commits_line_is_unaffected(
     repository: Path, tmp_path: Path
 ) -> None:
-    _commit_of(repository, "landed")
     manifest = tmp_path / "r-silent.manifest.md"
     manifest.write_text(
         "node: fixture\nstatus: complete\ntests: done\n", encoding="utf-8"
     )
     pointer = _pointer(
-        repository, "r-silent", manifest, base=_git(repository, "rev-parse", "HEAD^")
+        repository,
+        "r-silent",
+        manifest,
+        base=_git(repository, "rev-parse", "HEAD"),
     )
 
     result = CliRunner().invoke(
@@ -353,6 +365,7 @@ def test_a_manifest_with_no_commits_line_is_unaffected(
             "report-only node: nothing to register",
             "--waive-unreviewed-promotion",
             "the fixture measures the citation check, not the review gate",
+            "--wait",
         ],
     )
 

@@ -1,0 +1,127 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "The fixture has a visible pointer, invalidating the pointer-withheld precondition; this is checked against the independent pointer filesystem path.",
+      "lines": "tests/test_a_resumed_run_keeps_its_scratch.py:30"
+    },
+    {
+      "failure_condition": "Restoring the base settle predicate removes the resumed scratch before worker entry.",
+      "lines": "tests/test_a_resumed_run_keeps_its_scratch.py:86"
+    },
+    {
+      "failure_condition": "The real step wrapper or worker exits nonzero, including the worker's explicit missing-scratch assertion at line 62.",
+      "lines": "tests/test_a_resumed_run_keeps_its_scratch.py:87"
+    },
+    {
+      "failure_condition": "The wrapper never executes the worker to create the independent worker-reached receipt, or the receipt content is wrong.",
+      "lines": "tests/test_a_resumed_run_keeps_its_scratch.py:88"
+    },
+    {
+      "failure_condition": "The actual worker TMPDIR differs from the step-created scratch, or scratch cannot accept the worker's temporary write.",
+      "lines": "tests/test_a_resumed_run_keeps_its_scratch.py:89"
+    },
+    {
+      "failure_condition": "Settling is skipped, swallowed after an error, or incorrectly retains the ended peer; this positive removal control prevents a no-op settle from passing.",
+      "lines": "tests/test_a_resumed_run_keeps_its_scratch.py:90"
+    },
+    {
+      "failure_condition": "The current-run protection is removed or misclassified, yielding settled rather than the independent live-state constant in both dry-run and apply modes.",
+      "lines": "tests/test_a_resumed_run_keeps_its_scratch.py:112"
+    },
+    {
+      "failure_condition": "The report omits or changes the current-run withholding reason; the expected literal is not supplied as input to the function.",
+      "lines": "tests/test_a_resumed_run_keeps_its_scratch.py:113"
+    },
+    {
+      "failure_condition": "A live scratch is classified for removal or unnecessarily sized, returning a byte count rather than None.",
+      "lines": "tests/test_a_resumed_run_keeps_its_scratch.py:114"
+    },
+    {
+      "failure_condition": "Apply mode deletes the resumed run's own directory; the base predicate demonstrably triggers this.",
+      "lines": "tests/test_a_resumed_run_keeps_its_scratch.py:115"
+    },
+    {
+      "failure_condition": "Apply removes no ended peer, or dry-run removes one; the observed independent filesystem state must agree with the requested operation.",
+      "lines": "tests/test_a_resumed_run_keeps_its_scratch.py:116"
+    },
+    {
+      "failure_condition": "The removal receipt omits the removed peer, names a different path, includes the current run, or reports a removal in dry-run; this tests observable removal output against a separately constructed peer path, not an echoed input.",
+      "lines": "tests/test_a_resumed_run_keeps_its_scratch.py:117"
+    }
+  ],
+  "assertion_independence": "No added assertion compares a function's echoed input with itself; expected paths are checked against independent filesystem effects or actual removal receipts, and worker execution writes its own reach and scratch receipts.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:932 ensure_worker_scratch",
+    "reckon/crew/dispatch_launch.py:1385 _STEP_TASK_WRAPPER reached by the placement wrapper at line 1586",
+    "reckon/crew/gc.py:2293 hourly retention scratch phase"
+  ],
+  "completed_at": "2026-11-17T00:20:32Z",
+  "dispatched_at": "2026-11-17T00:15:22Z",
+  "failure_delta_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/resumed-run-keeps-its-scratch-s13 /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/resumed-run-keeps-its-scratch-s13/tests/test_a_resumed_run_keeps_its_scratch.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/resumed-run-keeps-its-scratch-s13/tests/test_staged_write_inventory.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/resumed-run-keeps-its-scratch-s13/tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T235011983046-resumed-run-keeps-its-scratch-s13/head.log",
+      "revision": "baf5f883408f70e78dec2e5c4bbaf619a04c6e87"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/resumed-run-keeps-its-scratch-s13 /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/resumed-run-keeps-its-scratch-s13/tests/test_staged_write_inventory.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/resumed-run-keeps-its-scratch-s13/tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T235011983046-resumed-run-keeps-its-scratch-s13/baseline.log",
+      "revision": "c6274b6a0e6698ed29f59c3027552f4e795abc10"
+    }
+  },
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read d8f33bab314b08136021e2fd473f924311eacc58 and baf5f883408f70e78dec2e5c4bbaf619a04c6e87 separately against base c6274b6a0e6698ed29f59c3027552f4e795abc10; the first adds six regression cases and the second changes only the existing scratch-settling owner and its explanatory docstrings.",
+    "done_when": "Read the live docs/plans/crew-state-stays-bounded.html#s13 and source prompt.txt:256; reproduction.log and negative-control.log each record six failures, head.log records 64 passes, and the all_debug importer logs retain exactly the same two failure IDs.",
+    "goal": "Read prompt.txt:38 of the reviewed run; reckon/crew/gc.py:1743 protects the executing run's scratch before considering an earlier end record, satisfying the stated resumed-step goal.",
+    "manifest": "Read the reviewed run's manifest.md and opened all six named pytest logs; its revision pair, two commits, test counts, negative-control result and two unchanged importer failures reconcile with those receipts.",
+    "write_paths": "Read source prompt.txt:94 and manifest.md:3; the two changed paths, reckon/crew/gc.py and tests/test_a_resumed_run_keeps_its_scratch.py, are both declared and no other files changed."
+  },
+  "justifications": {
+    "durability": "Restoring the base predicate makes tests/test_a_resumed_run_keeps_its_scratch.py:86 lose its scratch directory and line 112 report settled instead of live, while lines 90 and 116 independently catch retention accidentally expanding to ended peers; the recorded negative control confirms all six cases fail.",
+    "evidence": "The source run's baseline.log and head.log record 58 and 64 passes with EXIT=0 at the recorded revisions, its importer logs show identical failure IDs, and negative-control.log records all six new cases failing after restoring only the base settle implementation.",
+    "fit": "reckon/crew/gc.py:1743 extends the existing ordered state classification with the established RUN_SCRATCH_LIVE state, and tests/test_a_resumed_run_keeps_its_scratch.py:19 follows the repository's isolated-root and monkeypatch fixture idiom without introducing forbidden names.",
+    "goal_fidelity": "reckon/crew/gc.py:1743 checks the step's inherited RECKON_RUN_ID before its stale end record, while dispatch_launch.py:1143 supplies that identity and tests/test_a_resumed_run_keeps_its_scratch.py:33 exercises worker entry with both record shapes on two isolated node roots.",
+    "reuse": "Capability searches in reckon/crew and the existing scratch tests locate settle_run_scratch in gc.py:1673 as the production owner and module-local fixture setup in test_a_runs_scratch_is_removed_on_the_host_that_made_it.py:58 and :82; the repair extends that owner and its new tests call the existing runtime-environment builder, step wrapper and run-path APIs rather than adding a second production mechanism.",
+    "scope_discipline": "The complete base-to-head diff contains only reckon/crew/gc.py and tests/test_a_resumed_run_keeps_its_scratch.py, both named in the source prompt.txt:94 fence and directly required by the goal."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read prompt.txt:38 of the reviewed run; reckon/crew/gc.py:1743 protects the executing run's scratch before considering an earlier end record, satisfying the stated resumed-step goal.\nVERDICT done_when: Read the live docs/plans/crew-state-stays-bounded.html#s13 and source prompt.txt:256; reproduction.log and negative-control.log each record six failures, head.log records 64 passes, and the all_debug importer logs retain exactly the same two failure IDs.\nVERDICT write_paths: Read source prompt.txt:94 and manifest.md:3; the two changed paths, reckon/crew/gc.py and tests/test_a_resumed_run_keeps_its_scratch.py, are both declared and no other files changed.\nVERDICT manifest: Read the reviewed run's manifest.md and opened all six named pytest logs; its revision pair, two commits, test counts, negative-control result and two unchanged importer failures reconcile with those receipts.\nVERDICT diff: Read d8f33bab314b08136021e2fd473f924311eacc58 and baf5f883408f70e78dec2e5c4bbaf619a04c6e87 separately against base c6274b6a0e6698ed29f59c3027552f4e795abc10; the first adds six regression cases and the second changes only the existing scratch-settling owner and its explanatory docstrings.\nCALL_SITES: reckon/crew/dispatch_launch.py:932 ensure_worker_scratch, reckon/crew/dispatch_launch.py:1385 _STEP_TASK_WRAPPER reached by the placement wrapper at line 1586, reckon/crew/gc.py:2293 hourly retention scratch phase\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/gc.py:1743 checks the step's inherited RECKON_RUN_ID before its stale end record, while dispatch_launch.py:1143 supplies that identity and tests/test_a_resumed_run_keeps_its_scratch.py:33 exercises worker entry with both record shapes on two isolated node roots.\nSCORE evidence: 20\nJUSTIFICATION evidence: The source run's baseline.log and head.log record 58 and 64 passes with EXIT=0 at the recorded revisions, its importer logs show identical failure IDs, and negative-control.log records all six new cases failing after restoring only the base settle implementation.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The complete base-to-head diff contains only reckon/crew/gc.py and tests/test_a_resumed_run_keeps_its_scratch.py, both named in the source prompt.txt:94 fence and directly required by the goal.\nSCORE durability: 20\nJUSTIFICATION durability: Restoring the base predicate makes tests/test_a_resumed_run_keeps_its_scratch.py:86 lose its scratch directory and line 112 report settled instead of live, while lines 90 and 116 independently catch retention accidentally expanding to ended peers; the recorded negative control confirms all six cases fail.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/gc.py:1743 extends the existing ordered state classification with the established RUN_SCRATCH_LIVE state, and tests/test_a_resumed_run_keeps_its_scratch.py:19 follows the repository's isolated-root and monkeypatch fixture idiom without introducing forbidden names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches in reckon/crew and the existing scratch tests locate settle_run_scratch in gc.py:1673 as the production owner and module-local fixture setup in test_a_runs_scratch_is_removed_on_the_host_that_made_it.py:58 and :82; the repair extends that owner and its new tests call the existing runtime-environment builder, step wrapper and run-path APIs rather than adding a second production mechanism.\n",
+  "reproduction_quote": "reproduction.log: 6 failed in 6.58s; EXIT=1; negative-control.log: AssertionError: resumed scratch removed before worker; 6 failed in 4.43s; EXIT=1",
+  "reuse_search": "Searched scratch settling, scratch-root fixture setup, end-record construction and step-wrapper execution; opened gc.py:1673, dispatch_launch.py:1120 and :1371, existing scratch test fixtures at :58 and :82, its wrapper test at :417, and tests/conftest.py:1570; new test-only setup is module-local fixture assembly, with no shared fixture owner bypassed.",
+  "review_run_id": "r-20261117T001313976739-review-of-resumed-run-keeps-its-scratch-s13-baf5f883408f",
+  "reviewed_base_sha": "c6274b6a0e6698ed29f59c3027552f4e795abc10",
+  "reviewed_commits": [
+    "d8f33bab314b08136021e2fd473f924311eacc58",
+    "baf5f883408f70e78dec2e5c4bbaf619a04c6e87"
+  ],
+  "reviewed_head_sha": "baf5f883408f70e78dec2e5c4bbaf619a04c6e87",
+  "reviewed_run_id": "r-20261116T235011983046-resumed-run-keeps-its-scratch-s13",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T02:38:19.897385+00:00",
+  "total": 120
+}

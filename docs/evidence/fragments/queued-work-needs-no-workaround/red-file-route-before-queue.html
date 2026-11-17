@@ -1,0 +1,34 @@
+<section id="qwnw-red-file-route-before-queue-red-file">
+  <h3>The red file: <code>tests/test_route_before_queue.py</code></h3>
+  <p>Both arms were run with <code>SLURM_JOB_ID</code> unset. The base arm runs
+  the file out of an extracted tree of
+  <code>cb557f9711670ca8a00dd1d6dd22a17b42d3a51e</code>, which is the
+  worktree's head as this record was composed.</p>
+  <table id="qwnw-red-file-route-before-queue-red-file-arms">
+    <thead><tr><th>Arm</th><th>Revision</th><th>Summary line</th><th>Exit</th><th>Log</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>base</td>
+        <td><code>cb557f9711670ca8a00dd1d6dd22a17b42d3a51e</code></td>
+        <td><code>4 failed, 8 passed in 3.54s</code></td>
+        <td>1</td>
+        <td><code>logs/base-arm.log</code></td>
+      </tr>
+      <tr>
+        <td>head</td>
+        <td><code>cb557f9711670ca8a00dd1d6dd22a17b42d3a51e</code> plus this node's change</td>
+        <td><code>12 passed in 5.07s</code></td>
+        <td>0</td>
+        <td><code>logs/head-arm.log</code></td>
+      </tr>
+    </tbody>
+  </table>
+  <p>The base arm's four failing ids, which are the four the whole-suite log at
+  <code>8d50b0333f</code> lists for this file:</p>
+  <ul id="qwnw-red-file-route-before-queue-red-file-ids">
+    <li><code>test_metered_wait_keeps_its_pick_and_launches_after_upstream_lands</code> — <code>KeyError: 'picker_selection'</code></li>
+    <li><code>test_queued_pick_launches_the_selected_nondefault_model</code> — <code>KeyError: 'picker_selection'</code></li>
+    <li><code>test_a_move_launches_on_its_explicit_destination</code> — <code>KeyError: 'picker_selection'</code></li>
+    <li><code>test_pace_hold_falls_back_when_a_picked_request_becomes_ready</code> — <code>AssertionError: assert [] == ['r-…-falling-back']</code></li>
+  </ul>
+</section>

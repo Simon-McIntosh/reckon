@@ -68,6 +68,34 @@ def _stored_field_value(spec: Any, value: Any) -> Any:
     return value
 
 
+#: The empty value of each type ``TaskNode`` may require. A required field has
+#: no dataclass default, so this is what a stored node that predates the field
+#: rebuilds with; the empty values are the ones the node's own well-formedness
+#: check refuses a dispatch for stating.
+_ABSENT_REQUIRED_VALUE: dict[str, Any] = {
+    "str": "",
+    "bool": False,
+    "int": 0,
+    "float": 0.0,
+    "list": [],
+    "dict": {},
+}
+
+
+def _absent_required_value(spec: Any) -> Any:
+    """The value a required field takes when the stored node carries none.
+
+    A pointer written before a field was declared on ``TaskNode`` carries no
+    value for it, and the rebuild cannot ask the dataclass for a default it
+    does not have. The rebuild stays total instead: a caller that reads only the
+    node's plan and section — stamping the review contract at queue time, for
+    one — must not fail with a ``TypeError`` because a stored node names no
+    goal.
+    """
+    declared = str(spec.type).split("|")[0].strip()
+    return copy.deepcopy(_ABSENT_REQUIRED_VALUE.get(declared.split("[")[0].strip(), ""))
+
+
 def _node_from_pointer(pointer: Mapping[str, Any]) -> TaskNode:
     """Rebuild a queued request's node from the pointer it was stored as.
 
@@ -75,7 +103,9 @@ def _node_from_pointer(pointer: Mapping[str, Any]) -> TaskNode:
     field list. The queued launch never carries the built node, so a field this
     rebuild does not name is a field the launched worker never sees, and a list
     written by hand drifts from the dataclass the first time a field is added.
-    A field the stored node lacks takes the dataclass default.
+    A field the stored node lacks takes the dataclass default, and a required
+    field — which has no default — takes its type's empty value, so the rebuild
+    is total over every pointer that was ever written.
 
     Two deliberate rewrites remain: a manifest path or a write path a previous
     dispatch defaulted into the queued run's own directory is dropped, so the
@@ -104,6 +134,12 @@ def _node_from_pointer(pointer: Mapping[str, Any]) -> TaskNode:
             continue
         stored_value = stored.get(spec.name)
         if stored_value is None:
+            # A field the stored node lacks takes the dataclass default, and a
+            # required field has none. A pointer written before the field was
+            # declared rebuilds with the field's empty value rather than
+            # raising out of a caller that reads only the plan and section.
+            if spec.default is MISSING and spec.default_factory is MISSING:
+                values[spec.name] = _absent_required_value(spec)
             continue
         value = _stored_field_value(spec, stored_value)
         # An empty string is a stored field that was never filled, so a field

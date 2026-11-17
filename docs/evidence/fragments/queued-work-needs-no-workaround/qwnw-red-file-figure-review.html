@@ -1,0 +1,93 @@
+<section id="qwnw-red-file-figure-review-landing">
+  <h2>The figure-review file passes in full at head</h2>
+
+  <p><strong>What was red.</strong> At revision
+  <code>398015d5d5</code> the file reported 3 failed and 4 passed, and the three
+  failures carry one cause, not three. The fixture built a run that delivered
+  work — a manifest reading <code>complete</code>, its commits named — and gave
+  the same record the phase <code>starting</code>, the phase a pointer carries
+  between its claim and its worker. <code>classify_pointer</code> reads a
+  pre-spawn phase holding no worker as <code>running</code> and never reaches
+  the arms that decide whether a review is owed, so
+  <code>dispatch_review_for_run</code> answered "the run is not awaiting review
+  (running)" and the figure lane was never composed. The two sibling cases read
+  the same refusal as a plain false and as a report with no
+  <code>awaiting_lane</code> key at all.</p>
+
+  <p><strong>Verdict: the test was wrong, and no product rule was
+  repaired.</strong> The pre-spawn reading is deliberate: it is what
+  <code>recovery_classification</code> answers for a pointer its launcher has
+  claimed and not started; a record whose manifest already carries a verdict
+  while its phase says the worker never started is a record claiming two
+  different things. In the tree, an observing fold writes the manifest's word
+  into the pointer's phase (<code>dispatch_sessions</code>:
+  <code>record["phase"] = manifest_status</code>), so a delivered run's pointer
+  is advanced past every pre-spawn label. The live pointer directory read at
+  this landing's moment agrees: of 316 readable pointers, 182 carried
+  <code>phase: complete</code> and one still <code>starting</code>; of the
+  pointers whose manifest reads <code>complete</code>, none carried a pre-spawn
+  phase. So the fixture's phase contradicted the manifest beside it, and it now
+  carries the phase a delivered run's pointer carries.
+  Each of the three cases asserts the rule it was written for, and no assertion
+  was deleted, narrowed or relaxed: the dispatch case still requires a
+  dispatched figure review on the image lane, one <code>-i</code> argument, a
+  rendered PNG whose bytes begin with the PNG signature, and a review pointer
+  whose node id ends <code>-figure</code>; the source-only case still requires
+  the text review to dispatch with no <code>-i</code> anywhere and no
+  <code>figure_review</code> key; the no-image-lane case still requires
+  <code>dispatched: false</code> with <code>awaiting_lane: true</code>, the word
+  <em>image</em> in the reason, and a stored dispatch field reading
+  <code>awaiting-lane</code>.</p>
+
+  <p><strong>What changed.</strong> One field of one fixture in
+  <code>tests/test_figure_review.py</code>, with the reason stated beside it so
+  the contradiction is not reintroduced. No product module changed.</p>
+
+  <p><strong>Prior art, checked.</strong> The pre-spawn reading has its own
+  guard, <code>tests/test_a_starting_run_is_classified.py</code>, which asserts
+  a pointer in each pre-spawn phase with no manifest reads
+  <code>running</code>; it passes at head with 3 passed and was run as its own
+  arm so that narrowing the fixture could not be mistaken for narrowing the
+  rule.</p>
+
+  <table id="qwnw-red-file-figure-review-arms">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command, whose last line reads <code>EXIT=&lt;code&gt;</code>, and which ran
+    as a job on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>negative-control-base</td>
+        <td><code>398015d5d5</code></td>
+        <td>3 failed, 4 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>gate head</td>
+        <td><code>b090566d88</code></td>
+        <td>7 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the pre-spawn rule's own arm</td>
+        <td><code>b090566d88</code></td>
+        <td>3 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Requested change of current origin/main.</strong> The prescription
+  asks for a merge of current <code>origin/main</code> before the rerun. The
+  worktree's head is the base revision the dispatch names, and
+  <code>git rev-list --count HEAD..origin/main</code> reads 0, so the merge was
+  read as the no-op it is: the worktree already contains the branch. A fetch is
+  refused on this host by the ownership of
+  <code>/etc/ssh/ssh_config.d/50-redhat.conf</code>, so "current" is the last
+  fetched ref, and a newer main is not visible from here.</p>
+
+  <h3 id="qwnw-red-file-figure-review-outside">Outside scope</h3>
+
+  <p>One finding, fenced out of this node and recorded in the run manifest
+  rather than repaired here: <code>tests/test_fragment_ids_are_checked.py</code>
+  and <code>tests/test_composed_record_takes_fragment_bodies.py</code> report 4
+  failed and 5 passed at head, and an extraction of the base revision reports
+  the identical 4 failed and 5 passed, so the failures predate this change. One
+  of the two writes the absolute path <code>/tmp/fragment-ids.log</code> from a
+  test, which the manifest check then refuses as a log outside the run
+  directory.</p>
+
+  <p>This gate measures only this node's own change; verifying the merged result
+  belongs to a separately dispatched test node.</p>
+</section>

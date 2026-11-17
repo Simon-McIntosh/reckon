@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="plan-slug" content="what-fills-the-fleet-nodes-memory">
+  <meta name="plan-title" content="What fills the fleet node's memory">
+  <meta name="plan-summary" content="Measured memory pressure, available bounds, and remaining evidence for the fleet node">
+  <meta name="plan-status" content="reference">
+  <meta name="plan-informs" content="the-fleet-node-stays-inside-its-memory">
+  <meta name="plan-source" content="Saved fleet health and process samples, read-only service profiles, cluster cgroup probes, and reckon source">
+  <meta name="plan-source-quality" content="primary">
+  <meta name="plan-reviewed-at" content="2026-11-17">
+  <meta name="plan-read" content="1">
+  <meta name="plan-tags" content="fleet,memory,measurement,operations">
+  <title>What fills the fleet node's memory | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Research input · fleet operations</p>
+      <h1>What fills the fleet node's memory</h1>
+      <p class="lead">The old 96 GiB allocation reached its limit repeatedly. Health and process samples identify large contributors, but do not time-stamp the 125 OOM kills. Some proposed protections already exist; none of the measurements supports treating every resident-set peak as memory that a change will return.</p>
+    </header>
+
+    <section id="method">
+      <h2>Method and evidence limits</h2>
+      <p>Read the full incident account at <code>/home/ITER/mcintos/Code/imas-ambix/docs/research/a-gate-log-overwrote-the-shared-interpreter.html</code>, then analyzed its saved health and process tables alongside the current fleet job. All live crew-home, fleet-state, and <code>/dev/shm</code> reads were read-only. Service profiles ran once in separate Rigel jobs; none signaled or restarted a fleet service. The job and process plots use SI labels and are embedded below.</p>
+      <p>The historical health file contains 3,806 one-minute samples from 2026-11-13 12:43:42 UTC through 2026-11-16 05:04:59 UTC. Its positive control is <code>job_mem_mb</code>, present and positive in all 3,806 rows. It does not contain OOM event times or <code>/tmp</code> usage. The 116 saved process tables support per-process RSS and age observations, but cannot turn a process's RSS into exact cgroup memory saved by moving or restarting it.</p>
+      <figure>
+        <img src="/reckon/figures/fleet-node-memory/job-memory-against-limit.svg" alt="Job memory in gigabytes against the 96 GiB allocation limit over the saved health series">
+        <figcaption>Job 1313886's 60-second health samples. The 96 GiB limit is 103.1 GB in SI units; 102 samples reached it. The series survived the job's death because it was stored on GPFS.</figcaption>
+      </figure>
+      <figure>
+        <img src="/reckon/figures/fleet-node-memory/service-memory-by-age.svg" alt="Resident size against process age for station, admission, and dispatch processes">
+        <figcaption>Resident size and process age from 116 saved process tables. Each plotted observation is one process, not a sum of its service tree.</figcaption>
+      </figure>
+    </section>
+
+    <section id="service-bound">
+      <h2>1. Bound one declared service</h2>
+      <h3>Measured cause</h3>
+      <p>The 2 GiB rehearsal allocation exposed no delegated memory-control directory to the service UID: the parent cgroup reported memory controllers, but creating a child failed with <code>PermissionError: [Errno 13] Permission denied</code>. The available job cgroup was root-owned. A per-process <code>RLIMIT_AS</code> of 768 MiB caused both allocation attempts to fail with <code>MemoryError</code>; the probe wrapper started a replacement child while its peer PID remained alive. This exercised restart-shaped behavior, not the production fleet supervisor. In the unbounded control, both stand-ins were killed with signal 9 and <code>memory.events</code> increased <code>oom_kill</code> by 2. This proves a process address-space limit and independent job OOM outcomes, not an aggregate service-tree memory limit.</p>
+      <p>A step-level <code>srun --mem</code> probe did not launch because Slurm rejected CPU binding outside the allocation. The <code>systemd-run --user --scope</code> probe stopped at an incompatible <code>--pipe</code> option. Neither result establishes whether those mechanisms can isolate a service on this cluster. Current cgroup delegation is not feasible for the service UID without an allocation or site-side change.</p>
+      <h3>Existing-plan verdict</h3>
+      <p><em>Partly covered.</em> <code>the-fleet-node-stays-in-service</code> bounds a worker step at 24 GB, not each declared service. <code>the-fleet-supervisor-runs-declared-services</code> already restarts children with backoff but does not set a service memory limit. The remaining question is whether the site can delegate a child cgroup or provide a supported step boundary.</p>
+      <h3>Prototype and control</h3>
+      <p>Before: with no service bound, two allocation-heavy siblings both died at the job's 2 GiB limit; the peer was not preserved. After: with 768 MiB <code>RLIMIT_AS</code> on each stand-in, the bounded child failed its allocation on both attempts and the peer PID stayed alive. This is a successful process-level control and an unsuccessful aggregate-service prototype: the probe wrapper, not the production supervisor, restarted the child, and one child can still have descendants outside its address-space limit.</p>
+      <h3>Proposed done-when and effort</h3>
+      <p class="measure">On the declared Rigel rehearsal node, place one service and one peer in the chosen supported boundary; record the service cgroup's <code>memory.current</code>/<code>memory.max</code> or step limit and <code>memory.events</code>; force the service above the bound and show that it restarts while the peer PID remains unchanged, then run the same pair without a bound and show both hit the job OOM; assert the service is capped below 2 GiB and the peer survives in <code>tests/test_fleet_supervisor_service_memory_bound.py</code>. Site-side delegation must first be available; estimated effort is 12 quarter-hours (3 hours) after that dependency.</p>
+    </section>
+
+    <section id="service-memory">
+      <h2>2. Dispatch, admission, and station memory</h2>
+      <h3>Measured cause</h3>
+      <p>Across 116 process tables, the largest observed single-process RSS values were 47.42 GB for dispatch, 35.34 GB for admission, and 15.75 GB for station. The station process with the longest tracked life grew from 3.73 GB at age 15.00 h to 10.17 GB at 17.10 h, or 3.06 GB/h over that interval. The longest tracked admission process grew from 0.07 GB at 0.005 h to 6.13 GB at 1.054 h, or 5.78 GB/h. These are observed process histories, not proof that the same growth continues indefinitely.</p>
+      <p>One read-only <code>crew admit --once</code> profile reached its lease write and exited with <code>EROFS</code>, so it did not complete its pass. Its peak RSS was 7,224,820 KiB (7.22 GiB); tracemalloc peaked at 2,901,912,123 bytes and retained 97,789,190 bytes at exit. The largest traced sites at the peak snapshot were codecs (30.7 MB), importlib (28.6 MB), and BeautifulSoup elements (3.56 MB). Those top sites do not explain the multi-gigabyte RSS peak; most traced peak memory had been released by exit or was outside tracemalloc accounting. A read-only <code>crew station --once</code> profile also failed at its attempt to write <code>~/.config/reckon/crew/station-readings</code>; it retried the refused write and was cancelled after 3m36s at 1,319,412 KiB MaxRSS, with no allocation snapshot. A bounded 8-entry dispatch batch read the 797,155,328-byte store (11,947 run rows, 11,947 details, and 12,879 retired rows); <code>stored_run_rows</code> was called four times and returned 24,212 rows in total. Its traced peak was 1.89 GB and its maximum RSS was 4.27 GB. The top snapshot sites were <code>file_memo.py:351</code> (120.4 MB) and <code>json/decoder.py:361</code> (99.8 MB), consistent with decoded file and stored-record materialization. This is direct evidence of repeated row reads and decoding, not evidence that an unbounded cache is responsible.</p>
+      <h3>Existing-plan verdict</h3>
+      <p><em>Partly covered.</em> <code>the-monitor-reads-each-fact-once</code> has a station retained-memory census and a follow-up to try <code>malloc_trim</code>; its largest retained site was <code>json.decoder.raw_decode</code>. It does not establish dispatch or admission peak allocation sites, nor a before-and-after RSS reduction. <code>the-crew-home-has-a-bound</code> limits stored state size, while <code>crew-state-stays-bounded</code> retires old records; neither bounds the memory of decoding a store. <code>the-monitor-tells-the-truth-under-load</code> measures stage durations rather than allocation.</p>
+      <h3>Prototype and control</h3>
+      <p>The station and admission profiles are partial read-only prototypes, not successful before-and-after comparisons: station retried its forbidden station-readings write until cancellation, and admission reached a forbidden lease write after the read path; neither produced a completed allocation-site comparison. The 8-entry dispatch run completed its read profile in 35m40s, with 4.27 GB maximum RSS and 1.89 GB tracemalloc peak. It returned one temporary request as awaiting-upstream and refused seven because the synthetic entries omitted the required negative-control declaration; the read-only fixture started no worker, but it is not a successful dispatch measurement. Its <code>single-01</code> control ran until the enclosing job reached Slurm <code>TIMEOUT</code> at 59m18s, without a <code>PROFILE_END</code> or a per-invocation RSS receipt. The job-level <code>sacct</code> MaxRSS of 4,115,860 KiB also includes the earlier batch pass, so it cannot stand in for the missing control measurement. No change was applied, so there is no before-and-after reduction. The process-age plot is the positive control that the saved process tables can show service identity and observed growth; the missing completed comparison is not an empty allocation result.</p>
+      <h3>Proposed done-when and effort</h3>
+      <p class="measure">For one named 8-entry dry run, report peak RSS, tracemalloc peak and top allocation sites, store bytes and decoded row counts, then apply the cheapest measured change and rerun the identical input; show the after value is lower while the one-entry runs provide the negative control for per-process versus cumulative batch cost, using <code>tests/test_dispatch_batch_memory_profile.py</code>. For station and admission, the same gate must complete the read-only pass without writing live state and report its exit receipt; estimated effort is 16 quarter-hours (4 hours), including a safe profiling seam for their lease and station-reading paths.</p>
+    </section>
+
+    <section id="admission-pressure">
+      <h2>3. Admit work against memory pressure</h2>
+      <h3>Measured cause</h3>
+      <p>The old job's memory fraction reached 1.0, with 102 exact-limit samples. It spent 37.79 h at or above 80%, 31.45 h at or above 85%, 23.23 h at or above 90%, 13.56 h at or above 95%, and 4.31 h at or above 99%. The 125 kills are recorded by the incident account, but their event timestamps are not present in the health series; therefore no fraction can be claimed as the kill cluster. The process-independent signal already exists in <code>reckon/crew/summary.py</code>: the admission path reads cgroup <code>memory.current</code>, <code>memory.max</code>, and <code>memory.events</code>, and computes whether current use plus a declared worker share fits.</p>
+      <p>In a same-minute check on job 1319168, the health row showed 89,917 MiB of 147,456 MiB (61.0%); the cgroup read showed 95,524,626,432 of 154,618,822,656 bytes (61.8%), with <code>oom_kill=0</code>. The difference is consistent with sampling within the minute, not a calibrated simultaneous pair. For a 24 GB declared worker share, the reserve rule puts the threshold at 72 GiB (75%) under a 96 GiB limit and 120 GiB (83.3%) under the current 144 GiB limit.</p>
+      <h3>Existing-plan verdict</h3>
+      <p><em>Partly covered.</em> <code>the-monitor-reads-each-fact-once</code> includes a one-read cgroup memory probe and dispatch memory bound. The bound reserves declared worker memory but is not a fixed percentage threshold, and it does not isolate resident services, tests, or session scratch. <code>the-monitor-tells-the-truth-under-load</code> samples job memory but has no kill timestamps to correlate with the 125 events.</p>
+      <h3>Prototype and control</h3>
+      <p>The read prototype works: the same-minute health and cgroup samples both report about 61% of the current limit, and the cgroup reports no OOM kill. For the historical positive control, the old health series contains 102 readings at its known 96 GiB limit. Its negative control is the current job, which has no samples at or above 80% and whose cgroup reports zero OOM kills. The history supports a reserve sized to the declared next worker, but not a retrospectively fitted kill threshold.</p>
+      <h3>Proposed done-when and effort</h3>
+      <p class="measure">At every admission pass, read the job cgroup once and record current bytes, limit bytes, and <code>oom_kill</code>; refuse a launch when current plus the configured 24 GB worker reservation would exceed the limit, and show a synthetic over-bound request refused while a below-bound request launches; compare the recorded fields with the one-minute health sample and verify the reader reports zero for an idle cgroup in <code>tests/test_admission_respects_job_memory.py</code>. Preserve the 75% old-job and 83.3% current-job reserve calculations as capacity-specific references, not as a universal percentage; estimated effort is 8 quarter-hours (2 hours).</p>
+    </section>
+
+    <section id="tests">
+      <h2>4. Keep tests off the fleet node</h2>
+      <h3>Measured cause</h3>
+      <p>In the 2026-11-16 00:27:40 UTC process table, an executable-based positive-control matcher found 12 pytest invocations in 13 process-tree members, all worker gates, totaling 12.39 GB RSS. A separate sample's peak was 22 test processes and 13.06 GB RSS, also classified as worker gates. The incident account's broader 00:27 cohort was 163 processes and 23.1 GB; the narrower executable matcher does not reconcile that cohort. It is not evidence that the remaining processes were absent or belonged to other origins. The verified worker gates show that heavy test commands can execute in the worker's fleet allocation when their gate command does not submit elsewhere.</p>
+      <h3>Existing-plan verdict</h3>
+      <p><em>Not covered for placement.</em> <code>test-time-is-not-the-nodes-time</code> measures gate time and deadline behavior; it does not choose an execution partition. The current <code>docs/state/reckon/flight.yaml</code> declares review and gate commands but no measurement partition. The <code>reckon/host_shims/sbatch</code> shim only mediates explicit scheduler calls and refuses an implicit nested launch; direct <code>pytest</code> does not invoke it. There is no command-level placement guard, so the verified worker gates could run in the fleet allocation. The worker gate is the only origin positively classified in the reliable sample; the larger incident cohort remains unclassified here.</p>
+      <h3>Prototype and control</h3>
+      <p>The process-table classifier was checked against visible pytest executable commands and found the expected worker-gate roots. An initial text matcher falsely counted pytest text inside long sandbox arguments; the repaired executable matcher is the accepted result. No gate was moved during this read-only census, so a before/after memory reduction is not measured. Negative control required for the follow-up: include a known non-test service process and require it not to enter the test count; the current saved sample does not provide a separately verified non-test matcher receipt.</p>
+      <h3>Proposed done-when and effort</h3>
+      <p class="measure">For the same focused test command, first declare the project's measurement partition, then capture cgroup memory and process-tree RSS when the command is attempted inside a fleet allocation and when it is submitted to that partition; the fleet attempt must be refused before pytest starts and the partition attempt must complete, with a known non-test service excluded by the sampler; count test-root processes and bytes once per sample and cap fleet test roots at zero in <code>tests/test_tests_are_submitted_to_the_measurement_partition.py</code>. Reconcile the verified cohort against the incident's 163-process table before claiming full origin totals; estimated effort is 12 quarter-hours (3 hours).</p>
+    </section>
+
+    <section id="scratch">
+      <h2>5. Move session scratch off memory-backed storage</h2>
+      <h3>Measured cause</h3>
+      <p>The supervisor's <code>prepare_session_tmp</code> replaces the inherited value with <code>/dev/shm/&lt;uid&gt;-fleet-&lt;job&gt;</code> when available; the fleet-node launcher initially sets <code>TMPDIR=/tmp</code>, then the service supervisor selects session scratch. In current job 1319168, an explicit listing of the 32 session directories under <code>/dev/shm/39486-fleet-1319168/claude-39486</code> preceded size measurements. They held 1,601,015,808 allocated bytes (1.60 GB); the largest session held 1,590,841,344 bytes (1.59 GB), nearly all of it in one session's <code>icm-merge</code> directory. At the same observation, node-local <code>/tmp</code> had 14 GB of 23 GB used and 8.8 GB free.</p>
+      <h3>Existing-plan verdict</h3>
+      <p><em>Partly covered.</em> <code>a-crew-process-ends-with-its-owner</code> and <code>crew-state-stays-bounded</code> put run scratch under <code>/tmp</code> and bound parts of run state. They do not relocate harness session scratch from <code>/dev/shm</code> or cap a session's allocation. <code>the-fleet-supervisor-runs-declared-services</code> currently chooses the memory-backed session path without a per-session bound.</p>
+      <h3>Prototype and control</h3>
+      <p>The census measures the current memory-backed footprint; no relocation was performed. A 256 MiB/session ceiling would be far below the largest current directory and 32 sessions would reserve 8 GiB, leaving only 0.8 GB of the observed 8.8 GB free before other temporary work. That is a candidate budget, not a safe configured limit. No before/after savings are claimed. A relocation rehearsal must compare the same session's listed bytes on <code>/dev/shm</code> and <code>/tmp</code>, with a zero-scratch session as the negative control.</p>
+      <h3>Proposed done-when and effort</h3>
+      <p class="measure">Redirect new session scratch to a quota-enforced node-local <code>/tmp</code> allocation; report per-session allocated and peak bytes for all 32 sessions, demonstrate refusal above a 256 MiB candidate quota, and show a zero-scratch session remains at zero while its peer is capped; assert its byte count is excluded from <code>/dev/shm</code> and present on <code>/tmp</code> in <code>tests/test_session_scratch_uses_bounded_node_tmp.py</code>. Verify headroom on the actual mount before adopting 32 such quotas; estimated effort is 8 quarter-hours (2 hours).</p>
+    </section>
+
+    <section id="tmp-health">
+      <h2>6. Sample node-local <code>/tmp</code></h2>
+      <h3>Measured cause</h3>
+      <p>Neither historical nor current health TSV includes <code>/tmp</code> bytes or inode counts. The missing-field check was validated against <code>job_mem_mb</code>, which is present in all 3,806 historical rows and all 1,080 current rows; this is a schema gap, not a zero reading. The old allocation's health series remains available on GPFS after job death, but the sampler itself runs in the allocation, so it cannot add new samples after that allocation exits. The current one-shot filesystem reading was 14 GB used of 23 GB total (about 61%), with 8.8 GB available.</p>
+      <h3>Existing-plan verdict</h3>
+      <p><em>Partly covered.</em> <code>the-monitor-tells-the-truth-under-load</code> records fleet health and the saved series survived the old job. It lacks node-local <code>/tmp</code> space and inode fields and an external writer that continues after the fleet allocation is gone. No reader currently acts on a missing <code>/tmp</code> signal because the field is not sampled.</p>
+      <h3>Prototype and control</h3>
+      <p>A direct <code>df</code> read provides the current 14/23 GB observation, while the health file's known-present memory field confirms the file and parser were readable. The health schema has no before/after sample because no sampler change was made. The external-writer requirement is not satisfied by the historical files alone: they prove data durability, not continued sampling after job death. The proposed negative control is a second mount with a separately known capacity, so a sampler that repeats one mount's values fails.</p>
+      <h3>Proposed done-when and effort</h3>
+      <p class="measure">Write one GPFS health row per minute containing node, job id, <code>/tmp</code> total/used/available bytes and free inodes from both the in-job and external sampler; compare the row with an independent <code>df --block-size=1</code> reading for <code>/tmp</code>, then stop the fleet job and show the external writer adds another timestamp while a separately sized test mount is reported with its own values; have admission and the monitor reader flag less than 8 GiB free in <code>tests/test_fleet_health_records_node_tmp.py</code>. The 8 GiB trigger is a proposed operational reserve matched to the 32-session candidate budget and needs validation against non-session temporary work; estimated effort is 8 quarter-hours (2 hours).</p>
+    </section>
+
+    <section id="plan-coverage">
+      <h2>Coverage in the existing plans</h2>
+      <p>Each cell is the verdict for that plan and item. “Partly covered” names the missing piece; “not covered” means the plan has no measure for that item.</p>
+      <table>
+        <thead><tr><th>Plan</th><th>Service bound</th><th>Service RSS</th><th>Memory admission</th><th>Test placement</th><th>Session scratch</th><th><code>/tmp</code> health</th></tr></thead>
+        <tbody>
+          <tr><th><code>the-fleet-node-stays-in-service</code></th><td>Partly: 24 GB worker step only.</td><td>Not covered.</td><td>Partly: allocation capacity, no measured service pressure gate.</td><td>Not covered.</td><td>Not covered.</td><td>Not covered.</td></tr>
+          <tr><th><code>the-fleet-supervisor-runs-declared-services</code></th><td>Partly: child restart/backoff, no memory cap.</td><td>Partly: owns process lifecycle, no RSS ceiling or allocation profile.</td><td>Not covered.</td><td>Not covered.</td><td>Partly: sets session scratch in <code>/dev/shm</code>, no quota.</td><td>Not covered.</td></tr>
+          <tr><th><code>a-crew-process-ends-with-its-owner</code></th><td>Not covered.</td><td>Not covered.</td><td>Not covered.</td><td>Not covered.</td><td>Partly: run scratch lifecycle, not harness scratch.</td><td>Not covered.</td></tr>
+          <tr><th><code>crew-state-stays-bounded</code></th><td>Not covered.</td><td>Partly: persisted state is bounded, process decode is not.</td><td>Not covered.</td><td>Not covered.</td><td>Partly: run scratch/state, not per-session storage.</td><td>Not covered.</td></tr>
+          <tr><th><code>the-crew-home-has-a-bound</code></th><td>Not covered.</td><td>Partly: file-size bounds do not bound decoded RSS.</td><td>Not covered.</td><td>Not covered.</td><td>Not covered.</td><td>Not covered.</td></tr>
+          <tr><th><code>the-monitor-tells-the-truth-under-load</code></th><td>Not covered.</td><td>Partly: observes load/stage timing, not allocations.</td><td>Partly: job memory sampled, no kill-time correlation or external continuation.</td><td>Not covered.</td><td>Not covered.</td><td>Partly: health storage exists, but no <code>/tmp</code> fields or post-job writer.</td></tr>
+          <tr><th><code>the-monitor-reads-each-fact-once</code></th><td>Partly: admission reads cgroup pressure but no per-service cgroup.</td><td>Partly: station census exists; dispatch/admit before-after profiles remain.</td><td>Partly: current plus declared worker share is checked; other contributors are outside it.</td><td>Not covered.</td><td>Not covered.</td><td>Not covered.</td></tr>
+          <tr><th><code>test-time-is-not-the-nodes-time</code></th><td>Not covered.</td><td>Not covered.</td><td>Not covered.</td><td>Not covered: the plan addresses gate-time budgets, not execution placement.</td><td>Not covered.</td><td>Not covered.</td></tr>
+        </tbody>
+      </table>
+      <p>Before service profiling, stored review findings were read for <code>reckon/crew/station.py</code>, <code>reckon/crew/dispatch_batch.py</code>, <code>reckon/crew/fleet_supervisor.py</code>, and <code>reckon/crew/fleet_node.py</code>. They do not supply a missing memory limit or a completed dispatch/admit allocation profile; no stored finding is presented here as newly discovered.</p>
+    </section>
+
+    <section id="priority">
+      <h2>Provisional opportunity ranking</h2>
+      <p>This is a ranking of measured memory opportunity, not a promise of reclaimable cgroup bytes. Process RSS can count shared pages more than once. Where the after value was not measured, the ratio is an upper-bound screen only; the responsible plan should replace it with same-input cgroup deltas before implementation.</p>
+      <table>
+        <thead><tr><th>Rank</th><th>Item</th><th>Measured opportunity</th><th>Effort estimate</th><th>Memory per hour</th><th>Read</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Test placement</td><td>12.39 GB process RSS in the verified sample; the broader 23.1 GB incident cohort is unreconciled.</td><td>3 h</td><td>Up to 4.13 GB/h</td><td>Best verified worker-origin target; actual cgroup return still needs a partition comparison.</td></tr>
+          <tr><td>2</td><td>Session scratch</td><td>1.60 GB currently under <code>/dev/shm</code>.</td><td>2 h</td><td>Up to 0.80 GB/h</td><td>Relocation avoids memory-backed storage, subject to a real quota and <code>/tmp</code> capacity.</td></tr>
+          <tr><td>3</td><td>Service memory bounds</td><td>15.75 GB station and 35.34 GB admission observed peak single-process RSS; no service cgroup bound is available.</td><td>3 h plus site change</td><td>Not measurable yet</td><td>Large potential but blocked on supported aggregate containment and a bounded after run.</td></tr>
+          <tr><td>4</td><td>Dispatch/admit/station allocation profile</td><td>47.42 GB dispatch and 35.34 GB admission observed peak RSS; the 8-entry dispatch profile used 4.27 GB RSS and 1.89 GB traced peak; single-entry control timed out without a result; admit profile stopped at read-only lease write.</td><td>4 h</td><td>Not measurable yet</td><td>Largest observed process peaks, but no change has a measured after value.</td></tr>
+          <tr><td>5</td><td>Memory-aware admission</td><td>Prevents a declared worker reservation from exceeding cgroup headroom; direct memory return is 0 GB.</td><td>2 h</td><td>0 GB/h returned</td><td>Protects against future oversubscription; it is already partly implemented and does not catch other origins.</td></tr>
+          <tr><td>6</td><td><code>/tmp</code> health</td><td>14 GB of 23 GB used now; no memory reduction measured.</td><td>2 h</td><td>0 GB/h returned</td><td>Improves disk-pressure visibility and survivability, not immediate memory headroom.</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>

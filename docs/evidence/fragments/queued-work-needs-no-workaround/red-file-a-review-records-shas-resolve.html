@@ -1,0 +1,36 @@
+<section id="qwnw-red-file-a-review-records-shas-resolve-negative-control">
+  <h3>Negative control: the base run and the mutation that reproduces it</h3>
+  <p>Both runs are plain processes with <code>SLURM_JOB_ID</code> unset, in the
+  worktree <code>&hellip;/qwnw-red-file-a-review-records-shas-resolve</code>.</p>
+
+  <h4 id="qwnw-red-file-a-review-records-shas-resolve-negative-control-base">The base run</h4>
+  <p>Revision <code>69fab1372f16686ce6acdb6094a357c6f6bfe18d</code>. Command:
+  <code>PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_review_records_shas_resolve.py</code></p>
+  <p>Result: <code>3 failed, 4 passed in 1.60s</code>, <code>EXIT=1</code>. The
+  failing ids:</p>
+  <pre>FAILED tests/test_a_review_records_shas_resolve.py::test_check_manifest_refuses_a_record_whose_head_names_no_commit - AssertionError: [...]
+assert 2 == 1
+FAILED tests/test_a_review_records_shas_resolve.py::test_check_manifest_refuses_a_record_whose_base_names_no_commit - AssertionError: [...]
+assert 2 == 1
+FAILED tests/test_a_review_records_shas_resolve.py::test_a_record_with_the_true_revision_pair_passes_the_check - AssertionError: [...]
+assert 1 == 0
+3 failed, 4 passed in 1.60s
+EXIT=1</pre>
+  <p>Long finding strings are elided in this excerpt; the run directory's
+  <code>logs/base-gate.log</code> holds the complete text. The finding both
+  <code>assert 2 == 1</code> cases carried was the asserted resolution refusal plus
+  <code>messages_received: no delivery receipt was recorded, so the manifest must
+  say `messages_received: none`</code>; the true-pair case carried only the
+  latter.</p>
+
+  <h4 id="qwnw-red-file-a-review-records-shas-resolve-negative-control-mutation">The mutation</h4>
+  <p>The fixture line the repair added was deleted again after the repair, with
+  the same command and tree:</p>
+  <pre>FAILED tests/test_a_review_records_shas_resolve.py::test_check_manifest_refuses_a_record_whose_head_names_no_commit
+FAILED tests/test_a_review_records_shas_resolve.py::test_check_manifest_refuses_a_record_whose_base_names_no_commit
+FAILED tests/test_a_review_records_shas_resolve.py::test_a_record_with_the_true_revision_pair_passes_the_check
+3 failed, 4 passed in 1.44s
+EXIT=1</pre>
+  <p>Head <code>6b4d42e5b1f0486dddd26f05b21f59ce54d62a9d</code> reports
+  <code>7 passed in 1.46s</code>, <code>EXIT=0</code>.</p>
+</section>

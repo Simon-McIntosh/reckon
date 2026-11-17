@@ -1,0 +1,96 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-16T22:47:20.208Z",
+  "dispatched_at": "2026-11-16T22:47:03Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/queue_order.py:285",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a72 and \u00a74 must state that the order and the non-interference rule are computed once by the admission orderer, or the third and fourth copies of review-first/age/priority drift from the two that already exist.",
+      "text": "\u00a72 proposes a new promotion-request order while `admission_order_details` already ranks queued work by exactly that rule set and already reports the rule that placed each row, so a second orderer forks the owner; \u00a72's only genuinely new element (fewest promotions served in the window) is a change to that key. The census of the same rule already re-implemented once is `reckon/crew/promotion_requests.py:461` (`_pending_requests`), which forks `reckon/crew/queue_order.py:249`'s review-first rule at `reckon/crew/promotion_requests.py:476` and falls back to name order at `reckon/crew/promotion_requests.py:484`, while `reckon/crew/promotion_requests.py:563` (`width: int = 2`) and `reckon/crew/promotion_requests.py:750` (the per-slot host lease) are \u00a74's concurrency mechanism already implemented \u2014 each is how the file's own docstring says the drain \"has always drained\"",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery_review_acceptance.py:599",
+      "id": "duplicate_owner-2",
+      "reason": "\u00a76 should be an extension of the acceptance sweep's eligibility (and its existing switch), so \u00a77 and \u00a79 must not assume a second promotion path exists.",
+      "text": "\u00a76's four promotion conditions are that function's own docstring: a complete stored review with no blocking finding, the run's recorded gate passed, the commits already ancestors of head, the merged-head gate re-run, promotion recorded as `promoted_by: review-acceptance`; \u00a76 therefore restates an existing unattended promoter rather than extending it, and its \"a project can turn the behaviour off\" duplicates the per-plan switch `reckon/crew/review_landing.py:19` (`manual_landing_reason`, read by acceptance at `reckon/crew/recovery_review_acceptance.py:654` and `reckon/crew/recovery_review_acceptance.py:810`) rather than adding a project-level flag; the same switch question already has an owner at `reckon/crew/queue_landing.py:2044`",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch_sessions.py:377",
+      "id": "duplicate_owner-3",
+      "reason": "\u00a75's negative control and census are written against a classifier that does not exist yet, and the base-revision arm must be taken at the function that owns the comparison or the section proves a rewrite of a working guard.",
+      "text": "\u00a75 asks for a classifier of the tool-issued echo while `_apply_orientation_check` already compares worktree, base sha and declared write paths against the pointer, already normalises the write paths by sorting (`reckon/crew/dispatch_sessions.py:399`) and already records `expected`, `reported` and `mismatches` on the run; the second site reading the same evidence is `reckon/crew/recovery_classification.py:1469` (`_carries_orientation_write`), so a third reader becomes the classifier of record. \u00a75's first test case is partly already satisfied: a reordered path list alone matches today, so only the omission and the substance cases are new",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/ticker.py:990",
+      "id": "duplicate_owner-4",
+      "reason": "the section's fix must be placed at the classifier that produces the count, or the pane will be corrected in the publisher and the backend reader will keep its old answer, which is the SPA-derives defect in reverse.",
+      "text": "\u00a79's census of what counts as delivered is classified by the pane's own state mapping at `reckon/crew/ticker.py:990` (`word in FLEET_UNPROMOTED_STATES` \u2192 `delivered`) and counted as a duty at `reckon/crew/obligations.py:157`, while \u00a79's declared write path names `reckon/crew/station_obligations.py:281` (`refresh`), which publishes the station snapshot and holds no classification; so the leftover-pointer and in-queue corrections land on the wrong module unless the brief names the classifiers",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/promotion_requests.py:739",
+      "id": "thin_wrapper-1",
+      "reason": "\u00a73 should require the extension of `_review_self_waits`' predicate and the duplicate-request branch, and its negative control must replay against those two, or the node will build a parallel re-reader beside a guard that already fires.",
+      "text": "\u00a73's re-read already exists: every tick iterates the whole queued set, calls `_review_self_waits` and re-writes the request with a fresh `checked_at` (`reckon/crew/promotion_requests.py:318`, `reckon/crew/promotion_requests.py:331`), so a new re-read layer adds no behaviour; what actually causes the recorded stall is `request_promotion` returning the stored request at `reckon/crew/promotion_requests.py:274` (`return {**existing, \"duplicate\": True}`) for any queued phase, so a repeated `crew complete` never re-evaluates. A second thin layer would also answer only `kind == \"review-self\"`, since `_review_self_waits` returns `False` for every other kind at `reckon/crew/promotion_requests.py:302`",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "<plan>#s6",
+      "id": "interface_budget-1",
+      "reason": "the section must say it reuses the plan-level reservation instead of adding a flight key, or the same off-switch exists twice with the plan's decision losing.",
+      "text": "\u00a76 adds a project-level switch in the flight configuration, a new configured surface in the public_definitions 2875 family, and names nothing it retires or merges: the switch already exists as the plan `landing` decision read at `reckon/crew/review_landing.py:19` (`manual_landing_reason`, `manual` or `coordinator`), so the section states neither what this new key retires nor why that reservation cannot carry it",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "<plan>#s8",
+      "id": "interface_budget-2",
+      "reason": "the section must account for the CLI surface it adds, either by folding it into an existing verb or by naming what it merges.",
+      "text": "\u00a78 adds \"one command\" that accepts several listed runs whose only open condition is the coordinator's confirmation, which is a new option in the cli_options 509 family, and names nothing it retires: no existing verb accepts more than one run per invocation (`reckon/crew_run_commands.py:336` is one `--accept-path` per run, `reckon/crew_dispatch_commands.py:1225` is a dispatch-side `--batch`)",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "00d09d1cdc6a01a05f01504e5dc5818d934030c5",
+  "plan_fingerprint": "1d2f47cdd1111494bd2cb4a318df6175456bcb43c89f13ab568295d72fc08590",
+  "plan_slug": "delivered-work-lands-without-a-coordinator",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261116T222033613133-plan-review-of-delivered-work-lands-without-a-coordinator",
+  "reviewed_blob_sha": "11a74fa4a6e222f671620d15824c01763ea998bd",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a72, \u00a73 and \u00a74 propose three separate surfaces (an order key, a re-read rule, a concurrency rule) over the single drain at `reckon/crew/promotion_requests.py:733` (`_tick_locked`), where one ordering key plus one eligibility predicate would hide the same behaviour behind less interface.",
+    "duplicate_owner": "a finding \u2014 three owners already exist for the mechanisms \u00a72, \u00a75, \u00a76 and \u00a79 propose: `reckon/crew/queue_order.py:285` for ordering, `reckon/crew/dispatch_sessions.py:377` for the echo check, `reckon/crew/recovery_review_acceptance.py:599` for unattended promotion.",
+    "interface_budget": "a finding \u2014 public_definitions 2875, cli_options 509, mcp_views 15, refusal_families 25; \u00a76 adds a flight-config switch and \u00a78 adds a multi-run accepting command, and neither section names what it retires or merges, or states why nothing can be.",
+    "reuse_search": "a finding \u2014 the search found three existing mechanisms already doing what the plan asks for: `reckon/crew/queue_order.py:285` (`admission_order_details`) orders queued work review-first, then by age, then by priority and names the rule that placed each row; `reckon/crew/recovery_review_acceptance.py:599` (`accept_clean_review`) promotes a delivered run with a clean stored review and no coordinator command; `reckon/crew/dispatch_sessions.py:377` (`_apply_orientation_check`) already classifies the tool-issued echo against the pointer.",
+    "thin_wrapper": "a finding \u2014 \u00a73's \"a waiting request is read again\" is already the first thing the drain does at `reckon/crew/promotion_requests.py:739`, so the honest change is one branch in `request_promotion` at `reckon/crew/promotion_requests.py:274`, and the section states no reason that function cannot be extended."
+  },
+  "section_digests": {
+    "_document": "625b0a81bf4824dbf251f132dd03d05807bdbe0955d7f78bd61a54aa3553cbe4",
+    "s1": "f76e447c13fe20c1749870bc38224edc2fea275dee0b75076c34c50d5c615f0f",
+    "s10": "67c05ba6ab7ac40c1b58813eee21c8dfc5914132b0c75d9e492fd33e01c3585a",
+    "s2": "73fc6aa2a15187d147a01fbde87b1769c00e59eb0d5d6018b4f052da2b90f72a",
+    "s3": "39f518f94544e14da2723c109d5347c3e321e79fd378987dc84506f550b8df04",
+    "s4": "3e6be179473b5deef1a3ec3ddccbdda6c37cf557c1eff461de0435d08976f4e3",
+    "s5": "1263837c2739dacd3a6f6444535dc7df9b4d806bc0368858e5fd45e481921336",
+    "s6": "601458c147fd1be9fe784ce83e6eda0dd5eb9c5ebd1254a9f96a1406eb33c754",
+    "s7": "f744dde7bcc015b4b7ecb0582ad218fc624ac4620e667c76aa0770a65badbf1d",
+    "s8": "5082b73b0c84b24ff09d59154c95cc13aa30b48825446e82dc2a8d98cd6eb05f",
+    "s9": "73a2f75dfcdb3e18f286fa49ef617d262091a45a21ba434af9788dcd6da0d7b1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T23:35:34.378399+00:00",
+  "total": null
+}

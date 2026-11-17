@@ -20,12 +20,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-after" content="work-flows-to-the-lane">
   <meta name="plan-section-depends-on" content="{&quot;s2&quot;:[&quot;work-scales-to-eighty-across-nodes#s3&quot;],&quot;s3&quot;:[&quot;work-flows-to-the-lane#s71&quot;],&quot;s6&quot;:[&quot;work-scales-to-eighty-across-nodes#s1&quot;,&quot;work-scales-to-eighty-across-nodes#s2&quot;,&quot;work-scales-to-eighty-across-nodes#s3&quot;,&quot;work-scales-to-eighty-across-nodes#s4&quot;,&quot;work-scales-to-eighty-across-nodes#s5&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <title>Work Scales To Eighty Across Nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="14">
-<meta name="plan-modified" content="2026-11-16">
+<meta name="plan-version" content="15">
+<meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
   <main class="plan-doc">
@@ -59,7 +59,7 @@
     <p><strong>Done when.</strong> Tests with a temporary flight declaring two sets read a node naming the first connected to exactly its servers, a node naming the second connected to exactly its servers, and a node naming none connected to no server, on a Claude, a Codex and an omp launch, with the connected set recorded on each run. Negative control: at the base revision a node naming a set is refused or connected to servers outside it; the failing run is logged to <code>docs/evidence/fragments/work-scales-to-eighty-across-nodes/s3.html</code>.</p>
 
     <h2 id="s4">§4 — Workers run on compute nodes while coordination stays on the fleet node</h2>
-    <section data-reckon="section" data-id="s4" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s4" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> A dispatched worker can run on a compute node rather than the fleet node. It reads and writes run state on GPFS and its scratch on that node's local disk. The fleet node keeps the coordinators, the station, the admit service and their MCP servers. A worker on a compute node delivers, is reviewed and lands exactly as one on the fleet node does.</p>
     <p><strong>Done when.</strong> A rehearsal places 20 workers on a compute node through the scheduler, and each delivers a manifest, passes its review and lands. The rehearsal reads the fleet node's memory before and during the run, and the readings differ by less than 2 GB. A test reads a worker on a compute node writing no file under the fleet node's local scratch. Negative control: at the base revision the rehearsal's workers run on the fleet node, and its memory rises by about 0.4 GB per worker; both are logged to <code>docs/evidence/fragments/work-scales-to-eighty-across-nodes/s4.html</code>.</p>
 
@@ -115,7 +115,7 @@
     <div class="r-comment-body"><p>an independent review of the two commits 285e73a0..f8a5b0d5 is stored beside the reviewed run: six dimensions scored (14/13/20/15/16/16), seven findings - one blocking on the gate-receipt sentence at s5.html:42, six non-blocking - and zero added failures across the run own arms</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261115T200323420839-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs" data-who="reckon-build" data-when="2026-11-15T20:08:05Z">
-    <div class="r-comment-body"><p>A tick over the live fleet no longer re-reads every run&#x27;s stream: the assistant-record and last-tool-call scans answer through the shared file memo while a stream is unchanged, so a quiet tick opened 874 run streams before and 0 after, and the measure&#x27;s worst tick on all_debug fell from 8.997 s to 0.09 GB of resident memory with 20 readings under the 30 s and 2 GiB bounds. The section&#x27;s own time control did not reproduce, so the record declares plan-verdict=qualified and says why.</p></div>
+    <div class="r-comment-body"><p>A tick over the live fleet no longer re-reads every run's stream: the assistant-record and last-tool-call scans answer through the shared file memo while a stream is unchanged, so a quiet tick opened 874 run streams before and 0 after, and the measure's worst tick on all_debug fell from 8.997 s to 0.09 GB of resident memory with 20 readings under the 30 s and 2 GiB bounds. The section's own time control did not reproduce, so the record declares plan-verdict=qualified and says why.</p></div>
 </div>
 </section>
 </main>

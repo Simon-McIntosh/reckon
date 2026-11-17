@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s81</meta>
+  <meta name="plan-recorded-at" content="2026-11-17">
+  <meta name="plan-verdict" content="passed">
+  <title>Fleet state reads the live pointers once</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+
+<article class="r-note" id="fleet-state-reads-the-live-pointers-once-landing" data-node="fleet-state-reads-the-live-pointers-once" data-reckon="landed" data-when="2026-11-17">
+  <h2>One listing, one decode per pointer, per fleet-state derivation</h2>
+
+  <p id="fleet-state-reads-the-live-pointers-once-what"><strong>What landed.</strong> <code>obligations.live_pointer_snapshot</code> is the one entry point that publishes a live-pointer population for the length of a derivation: it lists the directory itself, or takes the population a pass already holds, publishes that listing under <code>obligations._VIEW_LIVE_POINTERS</code> grouped by the project each pointer names, and resets the publication when the block ends. <code>obligations.obligations</code>, <code>station_subscriber.live_work_populations</code> and <code>obligation_snapshot._derive_fleet_state</code> all use it, and none of them keeps its own set/token/reset pair. <code>runs.drain_unreconciled_by_session</code> gained <code>pointers</code>, and <code>_classified_rows</code> passes the published snapshot to <code>recovery.classify_pointer</code>, which was the last per-row listing.</p>
+
+  <p id="fleet-state-reads-the-live-pointers-once-memo"><strong>The memo is keyed on the snapshot, so the snapshot owns it.</strong> <code>_VIEW_REVIEWS_IN_FLIGHT</code> carries the pass's own snapshot to tell one pass from the next. Publishing a snapshot therefore has to drop an answer computed against the previous one: a derivation that published pointers without scoping the memo left the review answer behind, and the next question outside a station's pass read another pass's fleet. <code>tests/test_a_duty_pass_reads_reviews_in_flight_once.py::test_a_question_outside_a_pass_costs_one_search</code> was already written to catch exactly that, and it failed on the ordering <code>test_a_fleet_reading_builds_each_store_view_once.py</code> then this file. The publication now drops the memo as it drops the pointers, which is why both publishing and clearing live in one entry point rather than in each caller.</p>
+
+  <p id="fleet-state-reads-the-live-pointers-once-gate"><strong>Gate.</strong> <code>tests/test_fleet_state_reads_the_live_pointers_once.py</code> builds a temporary crew home with 300 live pointers across three sessions — delivered implement runs with stored reviews, reviews of those runs, held requests and unreconciled runs — and derives the fleet state once with <code>runs._list_live_records</code> and <code>runs.json.loads</code> counted. Inside <code>open_run_index.read_scope()</code>, so the scope's own listing is not counted against the derivation, one derivation lists the project once and decodes 300 pointers. The second case derives the same home through a stand-in that reproduces the per-reader read pattern, checks that stand-in makes more than one listing, and asserts the derived pointers, the unreconciled counts and every session's obligations are non-empty and equal.</p>
+
+  <p id="fleet-state-reads-the-live-pointers-once-control"><strong>Negative control.</strong> The base revision (<code>a908b29cc0</code>) runs the same gate file against its own code: <strong>2 failed</strong>, the first case measuring <strong>427 listings and 128,100 pointer decodes</strong> for one derivation, the second unable to reach <code>obligations.live_pointer_snapshot</code> at all. Both bounds the section names — at least six listings and at least 1,800 decodes — are exceeded by more than an order of magnitude.</p>
+
+  <p id="fleet-state-reads-the-live-pointers-once-arms"><strong>Matched arms.</strong> Base revision <code>a908b29cc0</code> runs <code>tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code> in a clone checked out at that revision: <strong>58 passed</strong>. Head <code>0cfea4bd34</code> adds the gate file as the first file of the same command: <strong>60 passed</strong>. The gate file is the node's own, and the two shared files are the ones whose fixtures read the repository's HEAD.</p>
+</article>
+
+</body>
+</html>

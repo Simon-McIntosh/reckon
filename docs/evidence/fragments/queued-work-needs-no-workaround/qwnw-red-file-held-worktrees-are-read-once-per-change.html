@@ -1,0 +1,416 @@
+<section id="qwnw-red-file-held-worktrees-are-read-once-per-change-repair">
+<h2>Held-tree read-once: the fixture trees were never held</h2>
+<p>Verdict: <strong>the test was wrong; the product rule is right.</strong>
+Since <code>c778aaa1f6</code> the held-tree derivation holds a retained tree only while
+a landing would otherwise lose something: an uncommitted change, or a commit its
+primary branch does not reach. The fixture registered its trees detached at the seed
+commit and committed nothing in them, so every tree was clean and reachable. The
+filter removed all of them before a naming rule ran, the derivation answered an empty
+map, and four cases compared that empty answer against the whole-ledger expectation.</p>
+<p>The rule is stated in <code>reckon/crew/obligations.py</code>, in
+<code>_tree_holds_unmerged_work</code> applied by
+<code>_HeldWorktreeState.refresh_trees</code>, and is owned by the guard in
+<code>tests/test_a_duty_clears_when_its_run_ends.py</code>, so it is not repaired here.
+The repair gives each fixture tree one commit its primary branch does not reach, which
+is the state a dispatched run leaves behind. No assertion was deleted or weakened, and
+the read-once behaviour the file exists to measure is what the four cases still
+measure.</p>
+</section>
+
+<section id="qwnw-red-file-held-worktrees-are-read-once-per-change-probe">
+<h2>The instrument was checked before the zero was read</h2>
+<pre>
+# command: PYTHONPATH=. .venv/bin/python /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104511528268-qwnw-red-file-held-worktrees-are-read-once-per-change/logs/probe_held_filter.py
+registered trees: 2
+clean detached tree: status='' unmerged=False held=False
+tree carrying an unmerged commit: status='' unmerged=True held=True
+EXIT=0
+</pre>
+<p>The probe builds one tree, asks the filter, commits the work it wrote, and asks
+again in the same run. The same instrument answers both ways, so the base run's empty
+answer is the filter rather than a missing registration or an unreadable repository.</p>
+</section>
+
+<section id="qwnw-red-file-held-worktrees-are-read-once-per-change-negative-control">
+<h2>Base run: four failing cases, one cause</h2>
+<pre>
+# revision: 02018821b8d121a7924a6ca7fbaf8742efc9883d
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-held-worktrees-are-read-once-per-change
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_held_worktrees_are_read_once_per_change.py
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+____________ test_an_unchanged_refresh_does_no_held_tree_discovery _____________
+
+fleet = namespace(repo=PosixPath('/tmp/reckon-crew-scratch/r-20261116T104511528268-qwnw-red-file-held-worktrees-are-read-once-... add=&lt;function fleet.&lt;locals&gt;.add_tree at 0x7fe9733f09e0&gt;, refresh=&lt;function fleet.&lt;locals&gt;.refresh at 0x7fe97331c0f0&gt;)
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7fe973582780&gt;
+
+    def test_an_unchanged_refresh_does_no_held_tree_discovery(fleet, monkeypatch):
+        counts = Counts(monkeypatch, fleet.trees)
+        expected = {f"held-run-{index}" for index in range(20)}
+&gt;       assert fleet.refresh() == expected
+E       AssertionError: assert set() == {'held-run-0'...-run-13', ...}
+E         
+E         Extra items in the right set:
+E         'held-run-4'
+E         'held-run-7'
+E         'held-run-12'
+E         'held-run-18'
+E         'held-run-15'
+E         'held-run-13'
+E         'held-run-11'
+E         'held-run-10'
+E         'held-run-9'
+E         'held-run-16'
+E         'held-run-8'
+E         'held-run-19'
+E         'held-run-3'
+E         'held-run-6'
+E         'held-run-1'
+E         'held-run-5'
+E         'held-run-2'
+E         'held-run-0'
+E         'held-run-17'
+E         'held-run-14'
+E         
+E         Full diff:
+E         + set()
+E         - {
+E         -     'held-run-0',
+E         -     'held-run-1',
+E         -     'held-run-10',
+E         -     'held-run-11',
+E         -     'held-run-12',
+E         -     'held-run-13',
+E         -     'held-run-14',
+E         -     'held-run-15',
+E         -     'held-run-16',
+E         -     'held-run-17',
+E         -     'held-run-18',
+E         -     'held-run-19',
+E         -     'held-run-2',
+E         -     'held-run-3',
+E         -     'held-run-4',
+E         -     'held-run-5',
+E         -     'held-run-6',
+E         -     'held-run-7',
+E         -     'held-run-8',
+E         -     'held-run-9',
+E         - }
+
+tests/test_held_worktrees_are_read_once_per_change.py:181: AssertionError
+____________ test_changed_pointer_and_record_invalidate_the_answer _____________
+
+fleet = namespace(repo=PosixPath('/tmp/reckon-crew-scratch/r-20261116T104511528268-qwnw-red-file-held-worktrees-are-read-once-... add=&lt;function fleet.&lt;locals&gt;.add_tree at 0x7fe9733f14e0&gt;, refresh=&lt;function fleet.&lt;locals&gt;.refresh at 0x7fe9733e6f00&gt;)
+
+    def test_changed_pointer_and_record_invalidate_the_answer(fleet):
+        expected = {f"held-run-{index}" for index in range(20)}
+&gt;       assert fleet.refresh() == expected
+E       AssertionError: assert set() == {'held-run-0'...-run-13', ...}
+E         
+E         Extra items in the right set:
+E         'held-run-4'
+E         'held-run-7'
+E         'held-run-12'
+E         'held-run-18'
+E         'held-run-15'
+E         'held-run-13'
+E         'held-run-11'
+E         'held-run-10'
+E         'held-run-9'
+E         'held-run-16'
+E         'held-run-8'
+E         'held-run-19'
+E         'held-run-3'
+E         'held-run-6'
+E         'held-run-1'
+E         'held-run-5'
+E         'held-run-2'
+E         'held-run-0'
+E         'held-run-17'
+E         'held-run-14'
+E         
+E         Full diff:
+E         + set()
+E         - {
+E         -     'held-run-0',
+E         -     'held-run-1',
+E         -     'held-run-10',
+E         -     'held-run-11',
+E         -     'held-run-12',
+E         -     'held-run-13',
+E         -     'held-run-14',
+E         -     'held-run-15',
+E         -     'held-run-16',
+E         -     'held-run-17',
+E         -     'held-run-18',
+E         -     'held-run-19',
+E         -     'held-run-2',
+E         -     'held-run-3',
+E         -     'held-run-4',
+E         -     'held-run-5',
+E         -     'held-run-6',
+E         -     'held-run-7',
+E         -     'held-run-8',
+E         -     'held-run-9',
+E         - }
+
+tests/test_held_worktrees_are_read_once_per_change.py:197: AssertionError
+_______________ test_a_vanished_directory_invalidates_the_answer _______________
+
+fleet = namespace(repo=PosixPath('/tmp/reckon-crew-scratch/r-20261116T104511528268-qwnw-red-file-held-worktrees-are-read-once-... add=&lt;function fleet.&lt;locals&gt;.add_tree at 0x7fe9733f0e00&gt;, refresh=&lt;function fleet.&lt;locals&gt;.refresh at 0x7fe97331c460&gt;)
+
+    def test_a_vanished_directory_invalidates_the_answer(fleet):
+        expected = {f"held-run-{index}" for index in range(20)}
+&gt;       assert fleet.refresh() == expected
+E       AssertionError: assert set() == {'held-run-0'...-run-13', ...}
+E         
+E         Extra items in the right set:
+E         'held-run-4'
+E         'held-run-7'
+E         'held-run-12'
+E         'held-run-18'
+E         'held-run-15'
+E         'held-run-13'
+E         'held-run-11'
+E         'held-run-10'
+E         'held-run-9'
+E         'held-run-16'
+E         'held-run-8'
+E         'held-run-19'
+E         'held-run-3'
+E         'held-run-6'
+E         'held-run-1'
+E         'held-run-5'
+E         'held-run-2'
+E         'held-run-0'
+E         'held-run-17'
+E         'held-run-14'
+E         
+E         Full diff:
+E         + set()
+E         - {
+E         -     'held-run-0',
+E         -     'held-run-1',
+E         -     'held-run-10',
+E         -     'held-run-11',
+E         -     'held-run-12',
+E         -     'held-run-13',
+E         -     'held-run-14',
+E         -     'held-run-15',
+E         -     'held-run-16',
+E         -     'held-run-17',
+E         -     'held-run-18',
+E         -     'held-run-19',
+E         -     'held-run-2',
+E         -     'held-run-3',
+E         -     'held-run-4',
+E         -     'held-run-5',
+E         -     'held-run-6',
+E         -     'held-run-7',
+E         -     'held-run-8',
+E         -     'held-run-9',
+E         - }
+
+tests/test_held_worktrees_are_read_once_per_change.py:214: AssertionError
+__________ test_churn_without_a_registered_claim_reuses_held_records ___________
+
+fleet = namespace(repo=PosixPath('/tmp/reckon-crew-scratch/r-20261116T104511528268-qwnw-red-file-held-worktrees-are-read-once-... add=&lt;function fleet.&lt;locals&gt;.add_tree at 0x7fe9733e7530&gt;, refresh=&lt;function fleet.&lt;locals&gt;.refresh at 0x7fe97330fe20&gt;)
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7fe97321acf0&gt;
+
+    def test_churn_without_a_registered_claim_reuses_held_records(fleet, monkeypatch):
+        counts = Counts(monkeypatch, fleet.trees)
+        expected = fleet.refresh()
+&gt;       assert len(expected) == 20
+E       assert 0 == 20
+E        +  where 0 = len(set())
+
+tests/test_held_worktrees_are_read_once_per_change.py:223: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_held_worktrees_are_read_once_per_change.py::test_an_unchanged_refresh_does_no_held_tree_discovery - AssertionError: assert set() == {'held-run-0'...-run-13', ...}
+  
+  Extra items in the right set:
+  'held-run-4'
+  'held-run-7'
+  'held-run-12'
+  'held-run-18'
+  'held-run-15'
+  'held-run-13'
+  'held-run-11'
+  'held-run-10'
+  'held-run-9'
+  'held-run-16'
+  'held-run-8'
+  'held-run-19'
+  'held-run-3'
+  'held-run-6'
+  'held-run-1'
+  'held-run-5'
+  'held-run-2'
+  'held-run-0'
+  'held-run-17'
+  'held-run-14'
+  
+  Full diff:
+  + set()
+  - {
+  -     'held-run-0',
+  -     'held-run-1',
+  -     'held-run-10',
+  -     'held-run-11',
+  -     'held-run-12',
+  -     'held-run-13',
+  -     'held-run-14',
+  -     'held-run-15',
+  -     'held-run-16',
+  -     'held-run-17',
+  -     'held-run-18',
+  -     'held-run-19',
+  -     'held-run-2',
+  -     'held-run-3',
+  -     'held-run-4',
+  -     'held-run-5',
+  -     'held-run-6',
+  -     'held-run-7',
+  -     'held-run-8',
+  -     'held-run-9',
+  - }
+FAILED tests/test_held_worktrees_are_read_once_per_change.py::test_changed_pointer_and_record_invalidate_the_answer - AssertionError: assert set() == {'held-run-0'...-run-13', ...}
+  
+  Extra items in the right set:
+  'held-run-4'
+  'held-run-7'
+  'held-run-12'
+  'held-run-18'
+  'held-run-15'
+  'held-run-13'
+  'held-run-11'
+  'held-run-10'
+  'held-run-9'
+  'held-run-16'
+  'held-run-8'
+  'held-run-19'
+  'held-run-3'
+  'held-run-6'
+  'held-run-1'
+  'held-run-5'
+  'held-run-2'
+  'held-run-0'
+  'held-run-17'
+  'held-run-14'
+  
+  Full diff:
+  + set()
+  - {
+  -     'held-run-0',
+  -     'held-run-1',
+  -     'held-run-10',
+  -     'held-run-11',
+  -     'held-run-12',
+  -     'held-run-13',
+  -     'held-run-14',
+  -     'held-run-15',
+  -     'held-run-16',
+  -     'held-run-17',
+  -     'held-run-18',
+  -     'held-run-19',
+  -     'held-run-2',
+  -     'held-run-3',
+  -     'held-run-4',
+  -     'held-run-5',
+  -     'held-run-6',
+  -     'held-run-7',
+  -     'held-run-8',
+  -     'held-run-9',
+  - }
+FAILED tests/test_held_worktrees_are_read_once_per_change.py::test_a_vanished_directory_invalidates_the_answer - AssertionError: assert set() == {'held-run-0'...-run-13', ...}
+  
+  Extra items in the right set:
+  'held-run-4'
+  'held-run-7'
+  'held-run-12'
+  'held-run-18'
+  'held-run-15'
+  'held-run-13'
+  'held-run-11'
+  'held-run-10'
+  'held-run-9'
+  'held-run-16'
+  'held-run-8'
+  'held-run-19'
+  'held-run-3'
+  'held-run-6'
+  'held-run-1'
+  'held-run-5'
+  'held-run-2'
+  'held-run-0'
+  'held-run-17'
+  'held-run-14'
+  
+  Full diff:
+  + set()
+  - {
+  -     'held-run-0',
+  -     'held-run-1',
+  -     'held-run-10',
+  -     'held-run-11',
+  -     'held-run-12',
+  -     'held-run-13',
+  -     'held-run-14',
+  -     'held-run-15',
+  -     'held-run-16',
+  -     'held-run-17',
+  -     'held-run-18',
+  -     'held-run-19',
+  -     'held-run-2',
+  -     'held-run-3',
+  -     'held-run-4',
+  -     'held-run-5',
+  -     'held-run-6',
+  -     'held-run-7',
+  -     'held-run-8',
+  -     'held-run-9',
+  - }
+FAILED tests/test_held_worktrees_are_read_once_per_change.py::test_churn_without_a_registered_claim_reuses_held_records - assert 0 == 20
+ +  where 0 = len(set())
+4 failed in 3.45s
+EXIT=1
+</pre>
+</section>
+
+<section id="qwnw-red-file-held-worktrees-are-read-once-per-change-head-run">
+<h2>Head run: the file passes in full on all_debug</h2>
+<pre>
+# revision: 4054db96c634db4c6350a94ce1259eb77ab1fad7
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-held-worktrees-are-read-once-per-change
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_held_worktrees_are_read_once_per_change.py
+# slurm: job 1319739 partition all_debug node 98dci4-clu-3142
+# slurm_job_id_for_pytest: unset
+....                                                                     [100%]
+4 passed in 3.98s
+EXIT=0
+</pre>
+<p>The graded run is the batch job its own header names, submitted to
+<code>all_debug</code> with <code>logs/head-gate-all_debug.sbatch</code>; pytest ran with
+<code>SLURM_JOB_ID</code> unset.</p>
+</section>
+
+<section id="qwnw-red-file-held-worktrees-are-read-once-per-change-arms">
+<h2>Arms and lint</h2>
+<pre>
+# revision: 02018821b8d121a7924a6ca7fbaf8742efc9883d
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+58 passed in 40.92s
+EXIT=0
+# revision: 4054db96c634db4c6350a94ce1259eb77ab1fad7
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+58 passed in 43.17s
+EXIT=0
+# command: ruff check tests/test_held_worktrees_are_read_once_per_change.py
+All checks passed!
+# command: ruff format --check tests/test_held_worktrees_are_read_once_per_change.py
+1 file already formatted
+EXIT=0
+</pre>
+<p>The node changes no product source, so the arm imports nothing the diff touches;
+both arms carry the same 58 passes and no failure.</p>
+</section>

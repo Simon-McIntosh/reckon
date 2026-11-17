@@ -1,4 +1,4 @@
-"""Landing comments distinguish their writer and reject stale narratives."""
+"""Landing comments distinguish their writer and supersede stale narratives."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from reckon import _plan_html, _store, crew
-from reckon.crew import promotion
+from reckon.crew import promotion, promotion_scope
 from reckon.crew.runs import _write_json, pointer_path
 from tests.helpers.git import git as _git
 
@@ -190,15 +190,57 @@ def test_worker_authored_comment_keeps_the_worker_attribution(
     assert coordinator_plan["comments"].get("s2", []) == []
 
 
-def test_changed_narrative_refuses_to_preserve_stale_text(repository: Path) -> None:
+def test_changed_narrative_without_a_row_records_the_new_narrative(
+    repository: Path,
+) -> None:
+    """No row recorded the first narrative, so the retry's narrative replaces it.
+
+    The comment an interrupted promotion left behind carries no promotion: the
+    row was rolled back, and nothing committed pins that wording. The retry
+    records the narrative it is promoting under the same comment id, so the
+    plan keeps one comment and reads the outcome that actually landed.
+    """
+    run_id = RUN_IDS[2]
+    comment_id = f"c-run-{run_id}"
+    _record(repository, run_id, "original narrative")
+
+    result = _record(repository, run_id, "corrected narrative")
+
+    assert result["recorded"] is True
+    assert result["comment_id"] == comment_id
+    assert result["superseded_narrative"] == "original narrative"
+    plan, _version = _store.read_plan(PROJECT, PLAN, repository, artifact_type="plan")
+    assert len(plan["comments"]["s2"]) == 1
+    comment = plan["comments"]["s2"][0]
+    assert comment["id"] == comment_id
+    assert "corrected narrative" in comment["body"]
+    assert "original narrative" not in comment["body"]
+
+
+def test_changed_narrative_with_a_row_keeps_the_recorded_text(
+    repository: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A committed row pins the narrative, so the plan keeps it unchanged.
+
+    The deciding predicate is monkeypatched rather than a row being written:
+    the full promotion that writes a row is covered in
+    ``test_a_second_complete_finishes_cleanup.py``. Here the unit under test is
+    the guard's answer when the row exists.
+    """
     run_id = RUN_IDS[2]
     _record(repository, run_id, "original narrative")
     plan_file = repository / "docs" / "plans" / f"{PLAN}.html"
     original = plan_file.read_bytes()
+    monkeypatch.setattr(
+        promotion_scope, "_ledger_holds_row", lambda *args, **kwargs: True
+    )
 
-    with pytest.raises(promotion.CrewError, match="different narrative"):
-        _record(repository, run_id, "corrected narrative")
+    result = _record(repository, run_id, "corrected narrative")
 
+    assert result["recorded"] is False
+    assert result["reason"] == "different_narrative"
+    assert result["kept_narrative"] == "original narrative"
+    assert result["requested_narrative"] == "corrected narrative"
     assert plan_file.read_bytes() == original
 
 

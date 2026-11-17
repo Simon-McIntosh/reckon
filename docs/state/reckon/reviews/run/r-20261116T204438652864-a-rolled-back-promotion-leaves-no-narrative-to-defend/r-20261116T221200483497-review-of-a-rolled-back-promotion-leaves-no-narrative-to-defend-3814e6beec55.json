@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "baa6e8307b454f36655ac6d25f42480243619f99",
+  "call_site_count": 3,
+  "call_sites": [
+    "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-rolled-back-promotion-leaves-no-narrative-to-defend.html (static evidence page, rendered only)",
+    "reckon/crew/promotion.py:2542 _complete_locked (production path the fragment documents; unchanged by the gained commits)",
+    "reckon/crew/promotion_scope.py _record_landing_comment (production function the fragment documents; unchanged by the gained commits)"
+  ],
+  "completed_at": "2026-11-16T22:22:41.948Z",
+  "dispatched_at": "2026-11-16T22:22:20Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-rolled-back-promotion-leaves-no-narrative-to-defend.html",
+      "line": "100",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment quotes the foreground gate as '68 passed in 48.92s' from logs/gate.log, but that log reads '68 passed in 44.03s' at revision 3814e6beec559289d1eebfdeb9d87b363b788ca3, and line 89 says the after arm ran at head dd047221e4 while logs/after-suite.log records 3814e6beec559289d1eebfdeb9d87b363b788ca3, so the page does not reconcile against the logs it cites."
+    },
+    {
+      "file": "tests/test_landing_comment_authorship.py",
+      "line": "199",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head tree still asserts the refusal this change removes (pytest.raises(promotion.CrewError, match=\"different narrative\") at :193-199), which neither gate arm includes, so the merged suite carries one red test; the reviewed run records it under outside_scope as a delete-not-repin repair and the node was not fenced to make it."
+    }
+  ],
+  "head_log_revision": "3814e6beec559289d1eebfdeb9d87b363b788ca3",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call site reaches the gained commits, which are one test case and a static evidence page; the production paths the fragment documents and that were examined are reckon/crew/promotion.py:2542 _complete_locked and reckon/crew/promotion_scope.py _record_landing_comment, both unchanged by these commits.",
+    "diff": "read commit by commit from 821f240e96 to 3814e6beec559289d1eebfdeb9d87b363b788ca3: dd047221e4 rewrites case 4 of tests/test_a_second_complete_finishes_cleanup.py and 3814e6beec adds the 106-line evidence fragment, nothing else.",
+    "done_when": "tests/test_a_rolled_back_promotion_leaves_no_narrative_to_defend.py is the done_when's named file for cases (a) and (b), with a base-revision negative control and matched all_debug arms; the manifest records 66 passed at baa6e8307b454f36655ac6d25f42480243619f99, 68 passed at 3814e6beec559289d1eebfdeb9d87b363b788ca3, and logs/negative-control.log reads '1 failed, 1 passed' EXIT=1.",
+    "goal": "the node goal is 'Let a promotion with no ledger row replace a landing comment left by a failed attempt'; the gained commits carry it out, and docs/evidence/fragments/the-monitor-reads-each-fact-once/a-rolled-back-promotion-leaves-no-narrative-to-defend.html:33-45 records the supersede branch that 821f240e96 landed.",
+    "manifest": "read; status complete, commits 821f240e96, dd047221e4 and 3814e6beec559289d1eebfdeb9d87b363b788ca3, changed_paths naming the fragment and the repaired test, and test_logs naming the gate, base, after and negative-control logs.",
+    "write_paths": "the declared paths were reckon/crew/promotion_scope.py, tests/test_a_rolled_back_promotion_leaves_no_narrative_to_defend.py and the evidence fragment, with tests/test_a_second_complete_finishes_cleanup.py added by the reopen grant at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T204438652864-a-rolled-back-promotion-leaves-no-narrative-to-defend/reopened.json:4; both files in the gained diff are inside that set."
+  },
+  "justifications": {
+    "durability": "tests/test_a_second_complete_finishes_cleanup.py:166-168 reads the plan back through _landing_comment_bodies and fails on a second comment or a surviving stale body, and restoring the base refusal would error the case at :157.",
+    "evidence": "logs/base-suite.log reads '66 passed' EXIT=0 at baa6e8307b454f36655ac6d25f42480243619f99 and logs/after-suite.log reads '68 passed' EXIT=0 at 3814e6beec559289d1eebfdeb9d87b363b788ca3, but docs/evidence/fragments/the-monitor-reads-each-fact-once/a-rolled-back-promotion-leaves-no-narrative-to-defend.html:100 quotes '68 passed in 48.92s' from logs/gate.log, which reads 44.03s at that revision.",
+    "fit": "tests/test_a_second_complete_finishes_cleanup.py:134 keeps the surrounding case naming and reuses the file's own helpers at :43-50, and the fragment repeats the head block of docs/evidence/fragments/the-monitor-reads-each-fact-once/a-classification-reads-only-new-stream-lines.html:1-20.",
+    "goal_fidelity": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-rolled-back-promotion-leaves-no-narrative-to-defend.html exists at head and tests/test_a_second_complete_finishes_cleanup.py:134 rewrites case 4 to assert the supersede behaviour instead of the removed refusal, which is the whole of what the gained commits were for.",
+    "reuse": "the gained commits add no capability: the rewritten case reuses _landing_comment_bodies at tests/test_a_second_complete_finishes_cleanup.py:47, and the fragment extends the existing docs/evidence/fragments/the-monitor-reads-each-fact-once/ collection whose a-classification-reads-only-new-stream-lines.html:1-20 owns that page shape.",
+    "scope_discipline": "git diff --stat 821f240e96..3814e6beec559289d1eebfdeb9d87b363b788ca3 lists only the evidence fragment and tests/test_a_second_complete_finishes_cleanup.py, and the latter is in the reopen grant at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T204438652864-a-rolled-back-promotion-leaves-no-narrative-to-defend/reopened.json:4."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is 'Let a promotion with no ledger row replace a landing comment left by a failed attempt'; the gained commits carry it out, and docs/evidence/fragments/the-monitor-reads-each-fact-once/a-rolled-back-promotion-leaves-no-narrative-to-defend.html:33-45 records the supersede branch that 821f240e96 landed.\nVERDICT done_when: tests/test_a_rolled_back_promotion_leaves_no_narrative_to_defend.py is the done_when's named file for cases (a) and (b), with a base-revision negative control and matched all_debug arms; the manifest records 66 passed at baa6e8307b454f36655ac6d25f42480243619f99, 68 passed at 3814e6beec559289d1eebfdeb9d87b363b788ca3, and logs/negative-control.log reads '1 failed, 1 passed' EXIT=1.\nVERDICT write_paths: the declared paths were reckon/crew/promotion_scope.py, tests/test_a_rolled_back_promotion_leaves_no_narrative_to_defend.py and the evidence fragment, with tests/test_a_second_complete_finishes_cleanup.py added by the reopen grant at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T204438652864-a-rolled-back-promotion-leaves-no-narrative-to-defend/reopened.json:4; both files in the gained diff are inside that set.\nVERDICT manifest: read; status complete, commits 821f240e96, dd047221e4 and 3814e6beec559289d1eebfdeb9d87b363b788ca3, changed_paths naming the fragment and the repaired test, and test_logs naming the gate, base, after and negative-control logs.\nVERDICT diff: read commit by commit from 821f240e96 to 3814e6beec559289d1eebfdeb9d87b363b788ca3: dd047221e4 rewrites case 4 of tests/test_a_second_complete_finishes_cleanup.py and 3814e6beec adds the 106-line evidence fragment, nothing else.\nCALL_SITES: docs/evidence/fragments/the-monitor-reads-each-fact-once/a-rolled-back-promotion-leaves-no-narrative-to-defend.html (static evidence page), reckon/crew/promotion.py:2542 _complete_locked, reckon/crew/promotion_scope.py _record_landing_comment\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/the-monitor-reads-each-fact-once/a-rolled-back-promotion-leaves-no-narrative-to-defend.html exists at head and tests/test_a_second_complete_finishes_cleanup.py:134 rewrites case 4 to assert the supersede behaviour instead of the removed refusal, which is the whole of what the gained commits were for.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/base-suite.log reads '66 passed' EXIT=0 at baa6e8307b454f36655ac6d25f42480243619f99 and logs/after-suite.log reads '68 passed' EXIT=0 at 3814e6beec559289d1eebfdeb9d87b363b788ca3, but docs/evidence/fragments/the-monitor-reads-each-fact-once/a-rolled-back-promotion-leaves-no-narrative-to-defend.html:100 quotes '68 passed in 48.92s' from logs/gate.log, which reads 44.03s at that revision.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 821f240e96..3814e6beec559289d1eebfdeb9d87b363b788ca3 lists only the evidence fragment and tests/test_a_second_complete_finishes_cleanup.py, and the latter is in the reopen grant at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T204438652864-a-rolled-back-promotion-leaves-no-narrative-to-defend/reopened.json:4.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_second_complete_finishes_cleanup.py:166-168 reads the plan back through _landing_comment_bodies and fails on a second comment or a surviving stale body, and restoring the base refusal would error the case at :157.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_a_second_complete_finishes_cleanup.py:134 keeps the surrounding case naming and reuses the file's own helpers at :43-50, and the fragment repeats the head block of docs/evidence/fragments/the-monitor-reads-each-fact-once/a-classification-reads-only-new-stream-lines.html:1-20.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained commits add no capability: the rewritten case reuses _landing_comment_bodies at tests/test_a_second_complete_finishes_cleanup.py:47, and the fragment extends the existing docs/evidence/fragments/the-monitor-reads-each-fact-once/ collection whose a-classification-reads-only-new-stream-lines.html:1-20 owns that page shape.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/a-rolled-back-promotion-leaves-no-narrative-to-defend.html:100 non-blocking: the fragment quotes the foreground gate as '68 passed in 48.92s' from logs/gate.log, but that log reads '68 passed in 44.03s' at revision 3814e6beec559289d1eebfdeb9d87b363b788ca3, and line 89 says the after arm ran at head dd047221e4 while logs/after-suite.log records 3814e6beec559289d1eebfdeb9d87b363b788ca3, so the page does not reconcile against the logs it cites.\nFINDING tests/test_landing_comment_authorship.py:199 non-blocking: the head tree still asserts the refusal this change removes (pytest.raises(promotion.CrewError, match=\"different narrative\") at :193-199), which neither gate arm includes, so the merged suite carries one red test; the reviewed run records it under outside_scope as a delete-not-repin repair and the node was not fenced to make it.\n",
+  "review_run_id": "r-20261116T221200483497-review-of-a-rolled-back-promotion-leaves-no-narrative-to-defend-3814e6beec55",
+  "reviewed_base_sha": "821f240e9617a91f55e7f12f023ea633fa0f9331",
+  "reviewed_head_sha": "3814e6beec559289d1eebfdeb9d87b363b788ca3",
+  "reviewed_run_id": "r-20261116T204438652864-a-rolled-back-promotion-leaves-no-narrative-to-defend",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T221200483497-review-of-a-rolled-back-promotion-leaves-no-narrative-to-defend-3814e6beec55"
+  },
+  "reviewer_run_id": "r-20261116T221200483497-review-of-a-rolled-back-promotion-leaves-no-narrative-to-defend-3814e6beec55",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T23:14:19.381808+00:00",
+  "total": 110
+}

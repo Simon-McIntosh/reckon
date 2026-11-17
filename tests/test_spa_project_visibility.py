@@ -115,7 +115,7 @@ def test_topbar_keeps_one_ordered_row_with_tools_flush_right(
       const workTabs = header?.querySelector('.r-tabs-work');
       const receipt = header?.querySelector('.r-live-receipt');
       const project = header?.querySelector('.r-project-manage');
-      const tools = header?.querySelector('.top-r');
+      const tools = header?.querySelector('.settings');
       const rect = element => element?.getBoundingClientRect();
       const boxes = [brand, search, artifactTabs, workTabs, receipt, project, tools].map(rect);
       const headerBox = rect(header);
@@ -193,9 +193,14 @@ def test_first_visit_renders_live_runs_from_every_mounted_project(
 ) -> None:
     projects = [
         {
-            "project": f"project-{index}",
+            "project": "reckon" if index == 0 else f"project-{index}",
             "data": {
-                "projects": [{"project": f"project-{index}", "plans_count": 1}],
+                "projects": [
+                    {
+                        "project": "reckon" if index == 0 else f"project-{index}",
+                        "plans_count": 1,
+                    }
+                ],
                 "inventory": [{"slug": "finished", "status": "done"}],
             },
         }
@@ -203,13 +208,13 @@ def test_first_visit_renders_live_runs_from_every_mounted_project(
     ]
     runs = [
         {
-            "project": f"project-{index}",
+            "project": "reckon" if index == 0 else f"project-{index}",
             "run_id": f"run-{index}",
             "plan": "finished",
             "section": "delivery",
             "phase": "working",
         }
-        for index in range(1, 9)
+        for index in range(8)
     ]
     fixture_source = (
         f"const fixtureProjects = {json.dumps({'projects': projects})};"
@@ -234,10 +239,27 @@ def test_first_visit_renders_live_runs_from_every_mounted_project(
         "const fixtureSprints = fixtureIndex.data.sprints;",
         "const fixtureSprints = fixtureIndex.data.sprints;" + fixture_source,
     ).replace(
-        "            const url = String(resource);\n",
-        "            const url = String(resource);\n" + fetch_source,
+        "        const url = String(resource);\n",
+        "        const url = String(resource);\n" + fetch_source,
     )
+    # The crew surface arrives scoped to the served project and reaches the other
+    # mounted projects through its own "All visible" control. The case therefore
+    # reads the arrival count, then clicks the control the surface ships and
+    # reads it again: the first visit's rule is that it shows the served
+    # project's live run and can reach every mounted project from there.
+    scope_script = """(async () => {
+      window.__arrivalCards = document.querySelectorAll('.r-crew-card').length;
+      const toggle = document.querySelector('.r-crew-scope-toggle');
+      if (!toggle) throw new Error('no crew scope toggle');
+      toggle.click();
+      for (let waited = 0; waited < 100; waited += 1) {
+        if (document.querySelectorAll('.r-crew-card').length === __RUNS__) return true;
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      return false;
+    })()""".replace("__RUNS__", str(len(runs)))
     probe = """(() => ({
+      arrivalCards: window.__arrivalCards,
       cards: document.querySelectorAll('.r-crew-card').length,
       summary: document.querySelector('.r-crew-heading span')?.textContent.trim() || '',
     }))()"""
@@ -259,7 +281,7 @@ def test_first_visit_renders_live_runs_from_every_mounted_project(
                         "url": url,
                         "waitSelector": ".r-crew-card",
                         "probe": probe,
-                        "prepareSignal": "undefined",
+                        "prepareSignal": scope_script,
                         "removeSignal": "null",
                         "failPlanHtml": False,
                         "fixtureIndex": INDEX_STATE,
@@ -269,13 +291,14 @@ def test_first_visit_renders_live_runs_from_every_mounted_project(
             cwd=ROOT,
             capture_output=True,
             text=True,
-            timeout=90,
+            timeout=240,
             check=False,
         )
 
     assert result.returncode == 0, result.stderr
     rendered = json.loads(result.stdout)["baseline"]
-    assert rendered["cards"] == len(runs)
+    assert rendered["arrivalCards"] == 1, rendered
+    assert rendered["cards"] == len(runs), rendered
     assert "12 shown / 12 mounted" in rendered["summary"]
 
 

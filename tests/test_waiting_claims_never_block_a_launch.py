@@ -21,10 +21,12 @@ def test_ready_dispatch_launches_across_a_waiting_claim(
 ) -> None:
     queue_cases._configure(dispatch_repo, monkeypatch, session_slots=4)
     queue_cases._live(
-        dispatch_repo, "r-waiting", phase=phase, write_paths=[queue_cases.SHARED]
+        dispatch_repo, "r-waiting", phase=phase, write_paths=[queue_cases.EXCLUSIVE]
     )
 
-    result = queue_cases._dispatch(dispatch_repo, "ready", paths=(queue_cases.SHARED,))
+    result = queue_cases._dispatch(
+        dispatch_repo, "ready", paths=(queue_cases.EXCLUSIVE,)
+    )
 
     assert result.exit_code == 0, result.output
     assert queue_cases._payload(result)["phase"] == "starting"
@@ -48,13 +50,15 @@ def test_working_run_can_widen_across_a_waiting_claim(
         dispatch_repo,
         "r-waiting",
         phase="awaiting-upstream",
-        write_paths=[queue_cases.SHARED],
+        write_paths=[queue_cases.EXCLUSIVE],
     )
     queue_cases._live(
         dispatch_repo, "r-working", phase="working", write_paths=["own.py"]
     )
 
-    refuse_widen_scope_conflicts(runs.read_pointer("r-working"), [queue_cases.SHARED])
+    refuse_widen_scope_conflicts(
+        runs.read_pointer("r-working"), [queue_cases.EXCLUSIVE]
+    )
 
 
 @pytest.mark.parametrize("phase", ["queued", "awaiting-upstream", "held"])
@@ -65,13 +69,13 @@ def test_scope_registry_agrees_with_dispatch_for_waiting_requests(
         dispatch_repo,
         "r-waiting",
         phase=phase,
-        write_paths=[queue_cases.SHARED],
+        write_paths=[queue_cases.EXCLUSIVE],
     )
 
     dispatch_claim = next(
         claim
         for claim in _repository_scope_claims(
-            candidate_paths=[dispatch_repo / queue_cases.SHARED],
+            candidate_paths=[dispatch_repo / queue_cases.EXCLUSIVE],
             candidate_repositories=[dispatch_repo],
         )
         if claim.run_id == "r-waiting"
@@ -92,10 +96,12 @@ def test_working_claim_still_refuses_a_dispatch(
 ) -> None:
     queue_cases._configure(dispatch_repo, monkeypatch, session_slots=4)
     queue_cases._live(
-        dispatch_repo, "r-working", phase="working", write_paths=[queue_cases.SHARED]
+        dispatch_repo, "r-working", phase="working", write_paths=[queue_cases.EXCLUSIVE]
     )
 
-    result = queue_cases._dispatch(dispatch_repo, "ready", paths=(queue_cases.SHARED,))
+    result = queue_cases._dispatch(
+        dispatch_repo, "ready", paths=(queue_cases.EXCLUSIVE,)
+    )
 
     assert result.exit_code == 7, result.output
     assert queue_cases._payload(result)["error"] == "scope-conflict"
@@ -105,7 +111,7 @@ def test_ready_waiter_stays_queued_while_the_launched_claim_holds_its_path(
     chain_repo: Path,
 ) -> None:
     waiting = dependency_cases._node("waiting", "s2")
-    waiting.write_paths = [queue_cases.SHARED]
+    waiting.write_paths = [queue_cases.EXCLUSIVE]
     stored = queue_admission.queue_requests(
         [waiting],
         project=dependency_cases.PROJECT,
@@ -119,7 +125,7 @@ def test_ready_waiter_stays_queued_while_the_launched_claim_holds_its_path(
         chain_repo,
         "r-launched",
         phase="working",
-        write_paths=[queue_cases.SHARED],
+        write_paths=[queue_cases.EXCLUSIVE],
     )
 
     dependency_cases._declare(chain_repo, "s1")
@@ -137,4 +143,4 @@ def test_ready_waiter_stays_queued_while_the_launched_claim_holds_its_path(
     verdict = {row["run_id"]: row for row in result["verdicts"]}["r-waiting"]
     assert verdict["verdict"] == "held-on-claim"
     assert "r-launched" in verdict["detail"]
-    assert queue_cases.SHARED in verdict["detail"]
+    assert queue_cases.EXCLUSIVE in verdict["detail"]

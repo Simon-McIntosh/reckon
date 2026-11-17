@@ -1,0 +1,71 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-17T02:01:15.050Z",
+  "dispatched_at": "2026-11-17T02:00:28Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/delivered-work-lands-without-a-coordinator/r-20261117T002828207437-plan-review-of-delivered-work-lands-without-a-coordinator/plan.html:24",
+      "id": "wiring-1",
+      "reason": "without s9 \u2192 s6 (and s2/s3, whose queue position \u00a79's \"two in the promotion queue\" reads) the gate fails for a reason the plan itself predicts, and the coordinator learns it after a dispatch instead of from the wiring.",
+      "text": "the depends-on table declares nothing for s9, yet \u00a79's done-when (plan.html:104) requires its owed row's command, run verbatim, to promote an implementation run, a read-only run and a review run, and names the base behaviour where \"the review row's command leaves the run delivered\" as its negative control; a review run is promotable only after \u00a76's eligibility change, so the node as wired can be dispatched before the section it cannot pass without",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/delivered-work-lands-without-a-coordinator/r-20261117T002828207437-plan-review-of-delivered-work-lands-without-a-coordinator/plan.html:99",
+      "id": "reasoning-1",
+      "reason": "the deliverable as written tells the worker there is nothing to change while the done-when demands a repeatable run argument; the author must state the endpoint as \"one call names several runs and promotes them all\", otherwise a worker either declines the work or widens a verb the plan said not to touch.",
+      "text": "\u00a78's deliverable states \"The existing completion verb accepts several runs in one call ... no new verb is added\", while its own done-when requires \"one call of the completion verb naming two runs lands both\", its negative control requires \"a second run named on one call is refused\" at the base, and it adds \"the help-contract tests pass with the widened option\"; the verb takes one run id (`reckon/crew_run_commands.py:3289`, `@click.option(\"--run\", \"run_id\", required=True)`, no `nargs` or `multiple` on `crew_complete`), so the premise is false and the section's own measure contradicts its endpoint",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/delivered-work-lands-without-a-coordinator/r-20261117T002828207437-plan-review-of-delivered-work-lands-without-a-coordinator/plan.html:79",
+      "id": "reasoning-2",
+      "reason": "the section claims 1.5 hours of work for a guarantee the base already provides and states a control that cannot fire, so an author either marks \u00a75 done against 08183acae5 or restates an endpoint the tree does not yet meet.",
+      "text": "\u00a75's endpoint is already the behaviour of the tree it will be built on: `reckon/crew/dispatch_sessions.py` at head sorts the reported path list (`sorted(decoded_paths)` and `\"write_paths\": sorted(...)`), classifies substance from the pointer and the commits in `_orientation_substance` (worktree root, `merge-base --is-ancestor` of the base, committed scope via `_outside_declared_scope`), and records `repaired_echo` without blocking when the manifest's copy alone differs (committed at 08183acae5, \"verify orientation against the run history\"); so \u00a75's three cases pass and \u00a75's negative control \"at the base revision the first two classify blocked\" is false against the base a worker would start from",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "388e055481aecdf2cae56b6a529090ad43a467de",
+  "plan_fingerprint": "97c0b38dc54aecbac7186220d2812c2d24d67f04278eba9338d201c512e12926",
+  "plan_slug": "delivered-work-lands-without-a-coordinator",
+  "plan_version": 6,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261117T002828207437-plan-review-of-delivered-work-lands-without-a-coordinator",
+  "reviewed_blob_sha": "0fd1bc469142c83e7cfb72a744faf9edc6483934",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 /reckon/research/why-delivered-work-sits-unlanded.html now resolves to docs/research/why-delivered-work-sits-unlanded.html, every cited module resolves at head (dispatch_sessions.py, recovery_classification.py, queue_landing.py, landing_measure.py, recovery_review_acceptance.py, promotion_checks.py, recovery_review_delivery.py, obligations.py, crew_run_commands.py, ticker.py, session_host.py, queue_order.py, promotion.py, promotion_requests.py, recovery_review_dispatch.py), and the two absent paths are files the sections themselves create.",
+    "done_when": "a finding \u2014 \u00a75's declared control (\"at the base revision the first two classify blocked\") describes a base in which that behaviour already exists, so the control cannot fire (filed under reasoning); every other reviewed unit names a guard that can fail, and \u00a710's \"a census that reads fewer than 100 delivered runs in the measured day fails as unread\" closes the vacuity an earlier review named.",
+    "evidence_paths": "pass \u2014 every reviewed unit names repository-relative write paths (e.g. \u00a74's scripts/replay_promotion_drain.py, \u00a710's docs/evidence/archive/delivered-work-lands-without-a-coordinator-landed.html), the design-review placeholder that an earlier review flagged is gone, and \u00a76's evidence input under ~/.cache/reckon-launch-pool-width/refused-review-manifests/ exists with both manifests it describes.",
+    "naming": "pass \u2014 no plan label, section number or ticket id reaches a declared path or symbol; the test names state the mechanism.",
+    "reasoning": "a finding \u2014 \u00a78 asserts the existing completion verb already accepts several runs, which its own done-when and control contradict and which the code denies, and \u00a75's whole endpoint is already the behaviour at head so its control is false.",
+    "single_goal": "pass \u2014 the reload batching that an earlier review found alongside the landing list is now \u00a711, and each reviewed unit names one endpoint: a settling rate (\u00a74), a classification (\u00a75), an eligibility (\u00a76), one list and one call (\u00a78), one set of counters (\u00a79), one measurement (\u00a710), one receipt record (\u00a713), one order definition (\u00a714), one restore guarantee (\u00a715).",
+    "wiring": "a finding \u2014 the depends-on table (plan.html:24) gives \u00a79 no dependencies, although \u00a79's done-when requires the owed row's command to promote a review run, which only \u00a76 makes possible."
+  },
+  "section_digests": {
+    "_document": "b11bfced27d76c485bfae9b2f27d8afc67a775b0a0a3a9ad828130fb5c0be73d",
+    "s1": "daca91cb0f9305061dfad149cbb2aa15ab415088f0392d60d2051e0ab5d934b8",
+    "s10": "6aae974dd61c328c9cbcf5ea3d67d675b0ea15787d15c2fd1cd3d2da05e4d3f3",
+    "s11": "bd1c865f0b9313090958a8d94f4c1441a01c4a70aaff341185f4bcbf27ef02f9",
+    "s12": "3a6d4470998d93c84374a7db22abed7b1d777a4aecafd3012ac38cb67cfd8c32",
+    "s13": "4358adc642601277f340b7705d1e70f262f3b5eb7c7d47ffa9e371929c11af78",
+    "s14": "99464c06da0a45ede187b3a4e9cfab402db71d1063e7a97f71c0ea512234ae13",
+    "s15": "a77206eaccee8eded2411facba5b1bfc66a96db96525e858a4232e67006b7eff",
+    "s2": "73fc6aa2a15187d147a01fbde87b1769c00e59eb0d5d6018b4f052da2b90f72a",
+    "s3": "39f518f94544e14da2723c109d5347c3e321e79fd378987dc84506f550b8df04",
+    "s4": "04d597c253549efb3a4e4bac1b1872ec9b015e6a21313fcfba7969cdcde323c3",
+    "s5": "38a561b738798306be4693fe79d645bf2736fa62cd052752a8dd43e572f5e5a6",
+    "s6": "b81ab3b2c459d091fd625ecdff51bf0c3c19777120dd4cb28ecb3cf5c1cbb944",
+    "s7": "aad55d4f9b54f8eb5771cab69848ff200c20f490fc3b681db1a4972125eb59d2",
+    "s8": "691e915ecf6805f8840bbda36ce83e2e8e5dcb78f8c24b30de99c290226f6434",
+    "s9": "ce5866195b9466068219eee0bfccd5a241de412f6a4c8cc18b90106fbc857a57"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T03:58:06.578082+00:00",
+  "total": null
+}

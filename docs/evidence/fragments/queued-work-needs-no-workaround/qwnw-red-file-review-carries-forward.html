@@ -1,0 +1,31 @@
+<section id="qwnw-red-file-review-carries-forward">
+  <h3>A red file passes: <code>tests/test_review_carries_forward.py</code></h3>
+  <p>The file carried seven failures the whole-suite log at <code>8d50b0333f</code>
+  also lists. They were reproduced at <code>44f00a3b15</code> before any edit, and
+  one cause accounted for all seven.</p>
+  <table id="qwnw-red-file-review-carries-forward-causes">
+    <thead><tr><th>Cause</th><th>Verdict</th><th>Rule the code keeps</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Every case built its repository with no remote, so
+        <code>clones.own_changed_paths</code> was handed an empty integration ref
+        and answered <code>None</code> — an unshown delta — which
+        <code>review_head_move</code> reads as no move and
+        <code>carry_review_forward</code> as nothing to do.</td>
+        <td>test wrong</td>
+        <td>A review's delta is taken from the run's own commits, excluding the
+        remote-tracking ref of the integration branch, and history git cannot
+        compare is never carried over. The rule is the product's, landed and
+        documented in <code>clones.own_changed_paths</code> and
+        <code>_integration_ref</code>; the fixture predated it.</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>The repair gives the fixture repository a bare origin it pushes the reviewed
+  commit to, so the run's later commits are its own delta. No assertion was
+  deleted, relaxed or reworded: the same nine cases assert the same outcomes, and
+  the fixture gained eight lines.</p>
+  <p id="qwnw-red-file-review-carries-forward-arms">Both arms of the file, and the
+  negative control that shows the repair is what moved it, are in
+  <code>red-file-review-carries-forward.html</code> beside this record.</p>
+</section>

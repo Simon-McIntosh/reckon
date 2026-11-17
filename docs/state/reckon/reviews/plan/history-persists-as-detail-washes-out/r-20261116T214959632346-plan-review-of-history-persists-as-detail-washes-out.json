@@ -1,0 +1,164 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-16T22:22:37.330Z",
+  "dispatched_at": "2026-11-16T22:22:14Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/history-persists-as-detail-washes-out/r-20261116T214959632346-plan-review-of-history-persists-as-detail-washes-out/plan.html:421",
+      "id": "reasoning-1",
+      "reason": "the numbers state what the change must move, and an unmeasurable 8%-of-a-partial-tick figure either promises an improvement the endpoint cannot deliver or is discarded by whoever builds the gate, leaving the node's success undefined.",
+      "text": "the Why opens on a 4-7 minute tick against a 10 s target and then gives the read two incompatible shares: \"half the samples doing reckon work\" (counting only reckon samples) and \"8% of the tick\" from a 60 s profile at 20:30Z, which samples a fraction of a 4-7 minute tick and, per the sibling record at docs/plans/the-monitor-tells-the-truth-under-load.html:227 (\"reckon-96 and reckon-56 each profiled the station that evening and could attribute only the active samples, not the time each stage spent\"), cannot attribute stage time at all \u2014 so the plan claims a tick-time share its instrument does not measure; a worker closing the node cannot tell whether it must move 8% of one stage or the 4-7 minute figure",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/history-persists-as-detail-washes-out/r-20261116T214959632346-plan-review-of-history-persists-as-detail-washes-out/plan.html:422",
+      "id": "reasoning-2",
+      "reason": "a worker will run the row-bound measure against a read shape where the bound is unsatisfiable by the stated endpoint and must either narrow the read and change the fleet-width figure or weaken the assertion so it can no longer fail, which is the defect the section exists to prevent.",
+      "text": "\"an activity-bounded read\" names no read shape, and at base the same parameter bounds nothing on the figures path: reckon/ledger.py:4011-4012 says \"Figures use a narrow timestamp projection across all plans to count width\", and reckon/ledger.py:4053 loads that projection through stored_run_rows over the project's whole history before selection, so the row-count endpoint is unreachable for read_records(activity_since=...) at its default with_figures=True, while the station's own read passes with_figures=False (reckon/crew/plan_review.py:4041)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/history-persists-as-detail-washes-out/r-20261116T214959632346-plan-review-of-history-persists-as-detail-washes-out/plan.html:422",
+      "id": "done_when-1",
+      "reason": "as written the worker must either force a base-equality test to fail (impossible without inventing a fault) or leave \"each\" unmet, so the gate cannot be read as a proof of the failing-first arms.",
+      "text": "the section requires \"New tests, each failing at the base revision\" and then, in the same sentence, requires the read to answer \"the same runs it answers at the base revision\"; an equality arm that compares against base answers passes at base by construction, so it cannot be red there \u2014 the identical defect retired for \u00a729 (done_when-1 of r-20261115T170955003258, where both readers returned identical rows at base), which that answer fixed by scoping the failing-first arms and keeping the equality green",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/history-persists-as-detail-washes-out/r-20261116T214959632346-plan-review-of-history-persists-as-detail-washes-out/plan.html:28",
+      "id": "done_when-2",
+      "reason": "s32 measures its failing-first arms against a base that includes s31's landed change, so a section marked landed with an open blocking finding leaves both the base revision and the no-added-failure clause s32 inherits unsettled.",
+      "text": "plan-section-declarations marks s31 `done` while the plan's own added record for it (plan.html:645) states \"broader no-added-failure evidence remains a blocking finding for coordinator adjudication\", and no later comment or followup records that adjudication; s31's own done-when still requires that its tests \"add no failure against the base on all_debug\", which is exactly the evidence the record says is missing",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "f8c04ef3b3ae8544264428e9eb45f45b232faf37",
+  "plan_fingerprint": "7775158eda941f676459dddc02fa3e3aeccdb8c67d8dca5a5499a290bdfdd6f9",
+  "plan_slug": "history-persists-as-detail-washes-out",
+  "plan_version": 86,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "f8c04ef3b3ae8544264428e9eb45f45b232faf37",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "s32's Why drops the sample share and cites only reckon-96's measured 8% from their 60 s profile",
+      "reason": "",
+      "when": "2026-11-16T22:44:04.950997+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "f8c04ef3b3ae8544264428e9eb45f45b232faf37",
+      "commit_basis": "edit",
+      "finding": "reasoning-2",
+      "note": "s32 now names the read: ledger.read_records(project, with_figures=False, activity_since=...), the shape the plan-review sweep calls",
+      "reason": "",
+      "when": "2026-11-16T22:44:09.419393+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "f8c04ef3b3ae8544264428e9eb45f45b232faf37",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "the same-runs equality moves out of the fails-at-base sentence into a still-holds sentence",
+      "reason": "",
+      "when": "2026-11-16T22:44:13.221621+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "f8c04ef3b3ae8544264428e9eb45f45b232faf37",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "s31's adjudication is recorded as a plan comment: its one blocking finding was the real-crew-home fixture flipping under the live fleet, adjudicated and disposed, and s31 landed with that waiver",
+      "reason": "",
+      "when": "2026-11-16T22:44:16.653595+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "f8c04ef3b3ae8544264428e9eb45f45b232faf37",
+      "commit_basis": "edit",
+      "note": "the same-runs equality moves out of the fails-at-base sentence into a still-holds sentence",
+      "reason": "",
+      "when": "2026-11-16T22:44:13.221621+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "f8c04ef3b3ae8544264428e9eb45f45b232faf37",
+      "commit_basis": "edit",
+      "note": "s31's adjudication is recorded as a plan comment: its one blocking finding was the real-crew-home fixture flipping under the live fleet, adjudicated and disposed, and s31 landed with that waiver",
+      "reason": "",
+      "when": "2026-11-16T22:44:16.653595+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "f8c04ef3b3ae8544264428e9eb45f45b232faf37",
+      "commit_basis": "edit",
+      "note": "s32's Why drops the sample share and cites only reckon-96's measured 8% from their 60 s profile",
+      "reason": "",
+      "when": "2026-11-16T22:44:04.950997+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "f8c04ef3b3ae8544264428e9eb45f45b232faf37",
+      "commit_basis": "edit",
+      "note": "s32 now names the read: ledger.read_records(project, with_figures=False, activity_since=...), the shape the plan-review sweep calls",
+      "reason": "",
+      "when": "2026-11-16T22:44:09.419393+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-history-persists-as-detail-washes-out.v86.json",
+  "review_run_id": "r-20261116T214959632346-plan-review-of-history-persists-as-detail-washes-out",
+  "reviewed_blob_sha": "fd6af428e77c5af1a93fedf4d5e850ead4bf5c02",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the in-snapshot section anchors \u00a722 and \u00a731 resolve, \"reckon-96\" resolves as the session actor that profiled the station (docs/plans/the-monitor-tells-the-truth-under-load.html:227), and s32's forward reference to \u00a731's landing matches the ancestor commit 1ff572c925 that the s31 record names.",
+    "done_when": "findings \u2014 s32's \"each failing at the base revision\" cannot hold for its base-equality arm (plan.html:422), and the plan's own record declares s31 done while the review comment at plan.html:645 calls the no-added-failure evidence a blocking finding still pending adjudication.",
+    "evidence_paths": "pass \u2014 s32 puts every log under the run directory, a durable crew-home path, and its gate is the all_debug suite; no scratchpad path is named.",
+    "naming": "pass \u2014 the section title and prose name a mechanism and a measured quantity, with no ticket, stage or version label; the \u00a7-numbers are in-plan anchors.",
+    "reasoning": "findings \u2014 s32's Why attributes the 4-7 minute tick to a read its own cited profile puts at 8% of a 60 s window (plan.html:421).",
+    "single_goal": "pass \u2014 s32 delivers one thing, an activity-bounded read whose cost tracks the active population, with the preserved-answers arm as its control against over-narrowing.",
+    "wiring": "pass \u2014 s32 sits in no depends-on edge and no open followup names it, which matches the dispatch pattern every prior round settled for s30 and s31 (each dispatched as its own implement node after the review), and no section depends on s32."
+  },
+  "section_digests": {
+    "_document": "32bb50a45f90162b2749fa54131f7062e5c7fd996aad1072e8b3f67430fe4217",
+    "s1": "16a4b0ff613308f968af13a86453cdda7611fbb4a0b662f0998319199f08c1f2",
+    "s2": "81ea5591beea9f0bfe0621b90127946f5c732b8471e2c5373404a592fa5daefe",
+    "s20": "469126d7a8d70994107c002b967dbf9da3c5237e4a3d05823281a9885c92731d",
+    "s21": "b2ec3716b6dd37a6a203c9b9d7c0be1209c9fa8d48d83ddcdf537eb47428cd4c",
+    "s22": "5b80738fa65b0a373485bf67bf0f2f191c8cf69ad935ef9ae258accc3a43cfc1",
+    "s23": "5f979f2ac2c694c8465c9b3b76743b70a3df967a1496488ebe45e96a41451c59",
+    "s24": "ff4464a256205179d7e9af583afcd456372bf9b4a393a90fe8b93955826be5f8",
+    "s25": "6e50b703cae5c188d1fb24250a943eb5f654fc5c26334335a3a7288120690168",
+    "s26": "37c27b0d54e7bf1a99e322e08776a72ffa748c2b88388aaa51f267a1db5c358a",
+    "s27": "9d55fe84f9ee617248a7eec57379797bd44bc1cb050fc378d20ac1b3da8152b2",
+    "s28": "1b395017f55a124f94b5b856f557b80c1246dd6aa0b94d4c21a412922010b47f",
+    "s29": "08680da58b87d39a60d022d76781f1c03ec98c2eec17478fcee45582b9ef204e",
+    "s3": "3422a7a0a23c318e54716e2fbbaf99599e0142f7bbc74d9eb45f924541cd8ccf",
+    "s30": "73d5c5ce099e375a2b18ae59f31aec4205212d2104108d1b97ce543d20c55270",
+    "s31": "5e320fec30580df18f57b6d28c58a517e834ccc7f4632502d8abefcc9dc8a743",
+    "s32": "e872f5b04cb4974a92130cae06b2e921843a81e12e2a9c15802dcd8ac9a24a80",
+    "s4": "6beff7af8378d0a3be80a490fb73cc8c5e6a8ee94449c98de40a252d2f57fcd5",
+    "s5": "0cd70cc30708f232bf564bff0e7825d783d5f5ab455747bfac40ebe742ea0ed3",
+    "s6": "5181e894e8b3823f366d0b459a48ecc8e236e645ca5b1f02071dfc0fdae47681",
+    "s7": "6173f16d89316af11f74c75b5bec44f90742582abf47efd7e72af7af3bb31b50"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T22:44:02.518027+00:00",
+  "total": null
+}

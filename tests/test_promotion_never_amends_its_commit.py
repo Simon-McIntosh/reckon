@@ -147,6 +147,10 @@ def test_complete_preserves_the_promotion_commit_through_release(
                 str(gate_log),
                 "--completed-at",
                 "2026-01-01T00:00:01Z",
+                # Completion is asynchronous by default and answers with the
+                # recorded promotion request; the outcome this case reads is
+                # the one the promotion returns, so it asks for that.
+                "--wait",
                 *(
                     ["--no-commit", "the worker's own file is not registered here"]
                     if dirty_worktree
@@ -211,6 +215,9 @@ def test_complete_preserves_the_promotion_commit_through_release(
             "ok": True,
             "reversals": [],
             "mismatched": [],
+            # A landing reads the index back once its commit lands, so the
+            # check also reports the landed paths it found staged in reverse.
+            "unstaged": [],
         }
         assert run_file.read_text() == ledger.serialize_run(row)
         if peer_commit:
@@ -226,9 +233,11 @@ def test_complete_preserves_the_promotion_commit_through_release(
             path.is_relative_to(config) and path.suffix == ".db" for path in observed
         )
         settled_head = _git(repo, "rev-parse", "HEAD")
-        # A replay re-records the release the row holds. The returned receipt's
-        # landing check describes the commit that already landed, so it is not
-        # part of the recorded release and is not fed back as one.
+        # A replay re-records the release the row holds. The release a record
+        # already carries is history rather than a cache, so a second pass
+        # returns it unchanged and writes nothing: the check describing the
+        # commit that already landed is not part of the recorded release and is
+        # not fed back as one.
         replay_release, replay_row = promotion._record_release_on_ledger(
             project="reckon",
             root=repo,
@@ -236,16 +245,12 @@ def test_complete_preserves_the_promotion_commit_through_release(
             release=row["release"],
             checkout=repo,
         )
-        assert {
-            key: value
-            for key, value in replay_release.items()
-            if key != "landing_check"
-        } == row["release"], "identical release must be a durable no-op"
-        assert replay_release["landing_check"] == {
-            "ok": True,
-            "reversals": [],
-            "mismatched": [],
-        }
+        assert replay_release == row["release"], (
+            "identical release must be a durable no-op"
+        )
+        # Nothing was staged or committed, so there is no landing check to
+        # make and none is reported.
+        assert "landing_check" not in replay_release
         assert replay_row == row
         assert _git(repo, "rev-parse", "HEAD") == settled_head
         assert forbidden == [], f"real config home changed: {forbidden}"

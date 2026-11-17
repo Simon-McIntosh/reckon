@@ -154,6 +154,7 @@ def _complete_plain(
         [
             "crew",
             "complete",
+            "--wait",
             "--run",
             run["run_id"],
             "--gate",
