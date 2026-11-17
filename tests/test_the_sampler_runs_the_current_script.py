@@ -18,8 +18,12 @@ from reckon.crew import fleet_node
 from reckon.crew import fleet_supervisor as supervisor
 from reckon.crew.admission import service
 
+SAMPLE_PERIOD_SECONDS = 2
+HANG_PERIODS = 40
+HANG_SECONDS = SAMPLE_PERIOD_SECONDS * HANG_PERIODS
 
-def _wait(read, *, timeout=10):
+
+def _wait(read, *, timeout=HANG_SECONDS):
     end = time.monotonic() + timeout
     while time.monotonic() < end:
         value = read()
@@ -36,20 +40,70 @@ def _rows(path):
         return list(csv.DictReader(stream, delimiter="\t"))
 
 
+def _sampler_events(path):
+    return [
+        (verb, int(pid), int(slot))
+        for verb, pid, slot in (line.split() for line in path.read_text().splitlines())
+    ]
+
+
+def _handover_counts(rows, events, first, replacement):
+    """Measure delivery against slots emitted by the samplers' shared kernel clock."""
+    before = [row for row in rows if int(row["sampler_pid"]) == first]
+    after = [row for row in rows if int(row["sampler_pid"]) == replacement]
+    assert before and after, "both sampler generations must publish a row"
+    assert rows == before + after, "sampler generations must not interleave"
+    stop_slots = [slot for verb, pid, slot in events if (verb, pid) == ("stop", first)]
+    assert len(stop_slots) == 1, "the previous sampler must emit its stop slot"
+    first_slot = int(after[0]["slot"])
+    elapsed_slots = first_slot - stop_slots[0]
+    assert 0 <= elapsed_slots <= 2, (
+        "first replacement sample exceeds two sampling slots"
+    )
+    occupied = {int(row["slot"]) for row in rows}
+    missing = sorted(set(range(int(before[-1]["slot"]) + 1, first_slot)) - occupied)
+    assert len(missing) <= 2, "handover missed more than two sampling slots"
+    return {
+        "rows_before": len(before),
+        "rows_after": len(after),
+        "elapsed_slots": elapsed_slots,
+        "missed_slots": missing,
+    }
+
+
+def _record_handover(directory, rows, events, first, replacement):
+    record = {"rows": rows, "events": events}
+    path = directory / "handover-measurement.json"
+    path.write_text(json.dumps(record))
+    counts = _handover_counts(rows, events, first, replacement)
+    path.write_text(json.dumps({"counts": counts, **record}))
+    return counts
+
+
 def _script(path, *, added):
-    columns = ["utc", "probe", *(["added"] if added else [])]
-    values = ["now", "sample", *(["present"] if added else [])]
+    columns = ["utc", "probe", "sampler_pid", "slot", *(["added"] if added else [])]
     code = (
         "from pathlib import Path; from reckon.crew import fleet_node as n; "
-        f"import os; n._HEALTH_COLUMNS={columns!r}; "
-        f"n.append_node_reading(Path(os.environ['SERIES']), {chr(9).join(values)!r})"
+        "import os; "
+        "slot=int(float(Path('/proc/uptime').read_text().split()[0])"
+        "/int(os.environ['FLEET_SLEEP_SECONDS'])); "
+        f"n._HEALTH_COLUMNS={columns!r}; "
+        "values=['now','sample',os.environ['SAMPLER_PID'],str(slot)]"
+        f"+{['present'] if added else []!r}; "
+        "n.append_node_reading(Path(os.environ['SERIES']), '\\t'.join(values))"
     )
     path.write_text(
         "#!/bin/bash\n"
         'exec 9>"$XDG_RUNTIME_DIR/fleet-health.lock"\n'
         "flock -n 9 || exit 0\n"
-        'echo "start $$" >> "$EVENTS"\n'
-        'trap \'echo "stop $$" >> "$EVENTS"; exit 0\' TERM\n'
+        "export SAMPLER_PID=$$\n"
+        "event() {\n"
+        "  read -r sample_uptime _ < /proc/uptime\n"
+        '  printf "%s %s %s\\n" "$1" "$$" '
+        '"$(( ${sample_uptime%%.*} / FLEET_SLEEP_SECONDS ))" >> "$EVENTS"\n'
+        "}\n"
+        "event start\n"
+        "trap 'event stop; exit 0' TERM\n"
         "while :; do\n"
         f"  {shlex.quote(sys.executable)} -c {shlex.quote(code)}\n"
         '  sleep "$FLEET_SLEEP_SECONDS" & wait $!\n'
@@ -59,15 +113,16 @@ def _script(path, *, added):
 
 
 @pytest.mark.parametrize("script_changes_path", [False, True])
+@pytest.mark.parametrize("observer_delay", [0, 5])
 def test_reexecution_replaces_the_script_and_keeps_earlier_samples(
-    tmp_path, script_changes_path
+    tmp_path, script_changes_path, observer_delay
 ):
     sampler = tmp_path / "sampler"
     series = tmp_path / "series.tsv"
     events = tmp_path / "events"
     result = tmp_path / "replacement.json"
     advance = tmp_path / "advance"
-    period = 2
+    period = SAMPLE_PERIOD_SECONDS
     env = {
         **os.environ,
         "FLEET_HEALTH_SAMPLER": str(sampler),
@@ -90,50 +145,50 @@ def test_reexecution_replaces_the_script_and_keeps_earlier_samples(
         "    os.environ['FLEET_HEALTH_SAMPLER'] = Path(os.environ['ADVANCE']).read_text()\n"
         "    os.execv(sys.executable, [sys.executable, __file__, 'reexecuted'])\n"
         "Path(os.environ['RESULT']).write_text(json.dumps({'pid': pid}))\n"
-        "time.sleep(30)\n"
+        f"time.sleep({2 * HANG_SECONDS})\n"
     )
     process = subprocess.Popen([sys.executable, str(driver)], env=env)
     try:
         earlier = _wait(lambda: _rows(series))
-        first = int(events.read_text().splitlines()[0].split()[1])
+        first = _sampler_events(events)[0][1]
         replacement_script = (
             tmp_path / "replacement" if script_changes_path else sampler
         )
         _script(replacement_script, added=True)
-        started = time.monotonic()
         advance.write_text(str(replacement_script))
         _wait(result.exists)
         replacement = json.loads(result.read_text())["pid"]
+        assert replacement is not None, "the runtime's sampler was not replaced"
+        time.sleep(observer_delay)
         rows = _wait(
             lambda: (
                 (rows if any(r.get("added") == "present" for r in rows) else [])
                 if (rows := _rows(series))
                 else []
             ),
-            timeout=2 * period,
         )
         assert replacement != first
-        assert time.monotonic() - started <= 2 * period
         assert rows[: len(earlier)] == [dict(row, added="-") for row in earlier]
+        recorded_events = _sampler_events(events)
+        counts = _record_handover(tmp_path, rows, recorded_events, first, replacement)
         active = set()
-        for event in events.read_text().splitlines():
-            verb, pid = event.split()
+        for verb, pid, _ in recorded_events:
             if verb == "start":
                 active.add(pid)
                 assert len(active) == 1, "two samplers ran during the handover"
             else:
                 active.remove(pid)
-        assert active == {str(replacement)}
+        assert active == {replacement}
         print(
             f"handover: one sampler; retained={len(earlier)}; added=present; "
-            f"elapsed={time.monotonic() - started:.3f}s; period={period}s; "
-            f"changed_path={script_changes_path}; missed<=2"
+            f"counts={counts}; period={period}s; "
+            f"changed_path={script_changes_path}; observer_delay={observer_delay}s"
         )
     finally:
         process.terminate()
-        process.wait(timeout=5)
+        process.wait(timeout=HANG_SECONDS)
         # Only the session leaders recorded by this case own these groups.
-        pids = {int(line.split()[1]) for line in events.read_text().splitlines()}
+        pids = {pid for _, pid, _ in _sampler_events(events)}
         for pid in pids:
             with suppress(ProcessLookupError):
                 os.killpg(pid, signal.SIGTERM)
@@ -278,7 +333,7 @@ def test_a_manual_symlink_sampler_in_a_shared_group_is_replaced(tmp_path):
     env = {
         **os.environ,
         "XDG_RUNTIME_DIR": str(tmp_path),
-        "FLEET_SLEEP_SECONDS": "2",
+        "FLEET_SLEEP_SECONDS": str(SAMPLE_PERIOD_SECONDS),
         "SERIES": str(tmp_path / "series.tsv"),
         "EVENTS": str(tmp_path / "events"),
         "CHECKOUT": str(current.parent.parent),
@@ -286,7 +341,9 @@ def test_a_manual_symlink_sampler_in_a_shared_group_is_replaced(tmp_path):
     }
     env.pop("FLEET_HEALTH_SAMPLER", None)
     old = subprocess.Popen([str(installed)], env=env)
-    survivor = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
+    survivor = subprocess.Popen(
+        [sys.executable, "-c", f"import time; time.sleep({2 * HANG_SECONDS})"]
+    )
     replacement = None
     try:
         earlier = _wait(lambda: _rows(tmp_path / "series.tsv"))
@@ -299,7 +356,7 @@ def test_a_manual_symlink_sampler_in_a_shared_group_is_replaced(tmp_path):
             "Path(os.environ['RESULT']).write_text(str(pid))"
         )
         result = subprocess.run(
-            [sys.executable, "-c", code], env=env, timeout=10, check=False
+            [sys.executable, "-c", code], env=env, timeout=HANG_SECONDS, check=False
         )
         assert result.returncode == 0
         recorded = (tmp_path / "replacement.json").read_text()
@@ -311,22 +368,23 @@ def test_a_manual_symlink_sampler_in_a_shared_group_is_replaced(tmp_path):
             ]
         )
         assert rows
-        assert _rows(tmp_path / "series.tsv")[: len(earlier)] == [
-            dict(row, added="-") for row in earlier
-        ]
-        assert old.wait(timeout=3) == 0
+        series_rows = _rows(tmp_path / "series.tsv")
+        assert series_rows[: len(earlier)] == [dict(row, added="-") for row in earlier]
+        events = _sampler_events(tmp_path / "events")
+        counts = _record_handover(tmp_path, series_rows, events, old.pid, replacement)
+        assert old.wait(timeout=HANG_SECONDS) == 0
         assert survivor.poll() is None, (
             "replacement signalled a peer in the same process group"
         )
         assert supervisor.process_cmdline(replacement)[1] == str(current)
-        events = (tmp_path / "events").read_text().splitlines()
-        assert events[:3] == [
-            f"start {old.pid}",
-            f"stop {old.pid}",
-            f"start {replacement}",
+        assert [(verb, pid) for verb, pid, _ in events[:3]] == [
+            ("start", old.pid),
+            ("stop", old.pid),
+            ("start", replacement),
         ]
         print(
-            "manual handover: installed symlink replaced by checkout script; shared-group peer survived"
+            "manual handover: installed symlink replaced by checkout script; "
+            f"shared-group peer survived; counts={counts}"
         )
     finally:
         # Enumerate only fixture descendants; the sampler shares the test's group.
@@ -335,9 +393,9 @@ def test_a_manual_symlink_sampler_in_a_shared_group_is_replaced(tmp_path):
                 for pid in _running_descendants(root):
                     _signal_one(pid, signal.SIGTERM, allow_group=False)
                 _wait(lambda root=root: not supervisor.process_cmdline(root))
-        old.wait(timeout=3)
+        old.wait(timeout=HANG_SECONDS)
         survivor.terminate()
-        survivor.wait(timeout=3)
+        survivor.wait(timeout=HANG_SECONDS)
 
 
 def test_an_open_descriptor_without_the_lock_is_not_sampler_ownership(tmp_path, capsys):
@@ -350,7 +408,7 @@ def test_an_open_descriptor_without_the_lock_is_not_sampler_ownership(tmp_path, 
         "flock -n 8 || exit 1\n"
         f"exec 9>{shlex.quote(str(lock))}\n"
         f"touch {shlex.quote(str(ready))}\n"
-        "sleep 30 & wait $!\n"
+        f"sleep {2 * HANG_SECONDS} & wait $!\n"
     )
     script.chmod(0o755)
     process = subprocess.Popen([str(script)], start_new_session=True)
@@ -362,4 +420,38 @@ def test_an_open_descriptor_without_the_lock_is_not_sampler_ownership(tmp_path, 
         assert "replacement refused" in capsys.readouterr().out
     finally:
         os.killpg(process.pid, signal.SIGTERM)
-        process.wait(timeout=3)
+        process.wait(timeout=HANG_SECONDS)
+
+
+def test_handover_counts_accept_two_slots_and_two_missing_samples():
+    rows = [
+        {"sampler_pid": "11", "slot": "6"},
+        {"sampler_pid": "11", "slot": "7"},
+        {"sampler_pid": "22", "slot": "10"},
+    ]
+    events = [("start", 11, 6), ("stop", 11, 8), ("start", 22, 9)]
+    assert _handover_counts(rows, events, 11, 22) == {
+        "rows_before": 2,
+        "rows_after": 1,
+        "elapsed_slots": 2,
+        "missed_slots": [8, 9],
+    }
+
+
+@pytest.mark.parametrize("violation", ["late_replacement", "missing_samples"])
+def test_handover_counts_refuse_excess_slots(violation):
+    rows = [
+        {"sampler_pid": "11", "slot": "6" if violation == "missing_samples" else "7"},
+        {
+            "sampler_pid": "22",
+            "slot": "11" if violation == "late_replacement" else "10",
+        },
+    ]
+    events = [("start", 11, 6), ("stop", 11, 8), ("start", 22, 9)]
+    message = (
+        "first replacement sample exceeds two sampling slots"
+        if violation == "late_replacement"
+        else "handover missed more than two sampling slots"
+    )
+    with pytest.raises(AssertionError, match=message):
+        _handover_counts(rows, events, 11, 22)
