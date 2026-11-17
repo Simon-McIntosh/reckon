@@ -3405,18 +3405,23 @@ class _RecordedPass:
     again, which is what keeps two derivations of the same tick to one read; a
     caller that needs every tree a row still names takes the same answer instead
     of running a second pass for it.
+
+    ``rows`` is ``None`` when this pass filed nothing because a project with no
+    retained tree owes the hot path no history read at all. A caller that needs
+    the rows then keeps its own narrow read instead of answering with an empty
+    history.
     """
 
     held: dict[Path, Mapping[str, Any]]
     named: dict[Path, Mapping[str, Any]]
-    rows: tuple[Mapping[str, Any], ...]
+    rows: tuple[Mapping[str, Any], ...] | None
 
     def trees(self, *, include_landed: bool = False) -> dict[Path, Mapping[str, Any]]:
         """The trees owed, or every tree a row still names, as a fresh dict."""
         return dict(self.named if include_landed else self.held)
 
 
-_EMPTY_PASS = _RecordedPass({}, {}, ())
+_EMPTY_PASS = _RecordedPass({}, {}, None)
 
 
 def _held_records_pass(project: str) -> _RecordedPass:
@@ -3432,7 +3437,9 @@ def _held_records_pass(project: str) -> _RecordedPass:
     identity. Reader failures retain the unrefused document-reader fallback.
     The read-only region shares parsed document views without copying them.
     One pass answers both views a caller can want, so the trees a landing frees
-    and the history a duty needs cost one read between them.
+    and the history a duty needs cost one read between them. A project that owes
+    no tree duty answers the empty pass instead, whose rows are unknown, so the
+    hot path never reads a history it has no tree to justify.
     """
     docs_dir = _store._docs_dir_for_project(project)
     if docs_dir is None:
@@ -3486,11 +3493,12 @@ def recorded_run_rows(
     validate the answer on every read, so a row handed out is as fresh as the
     held answer derived beside it.
 
-    ``None`` means no pass has answered for this project in this process — its
-    mount is unknown, or the caller names a different repository — so the
-    caller keeps its own read rather than answering with nothing. The rows are
-    the reader's own records in promotion order and are read, never written, by
-    a caller.
+    ``None`` means this process holds no history for the project to hand out: its
+    mount is unknown, the caller names a different repository, or no tree is
+    held and no earlier tick read the ledger, which the hot path must not do for
+    a project that owes no tree duty. The caller keeps its own read in every
+    such case rather than answering with nothing. The rows are the reader's own
+    records in promotion order and are read, never written, by a caller.
     """
     docs_dir = _store._docs_dir_for_project(project)
     if docs_dir is None:
@@ -3498,7 +3506,8 @@ def recorded_run_rows(
     root = docs_dir.parent.resolve()
     if repository is not None and root != repository.resolve():
         return None
-    return list(_held_records_pass(project).rows)
+    rows = _held_records_pass(project).rows
+    return None if rows is None else list(rows)
 
 
 def _held_records_read_uncached(
@@ -3826,9 +3835,13 @@ def _held_worktree_records_read(
     cache_key = (project, str(repository))
     with _HELD_READ_LOCK:
         previous = _HELD_RECORD_READS.get(cache_key) if reusable else None
-        # A project holding no retained tree still owes the history this pass
-        # files: the duty derived from those rows is derived from them here, so
-        # an empty tree set is not a reason to answer without a read.
+        if previous is None and not inspected:
+            # Nothing is held and no answer stands from an earlier tick, so this
+            # read owes no history: a project with no retained tree answers no
+            # tree duty, and the one caller that wants the rows (the section-
+            # accounting duty) is told so by ``rows`` being None and asks the
+            # writers' own session projection instead.
+            return _EMPTY_PASS
         if previous is None or previous[0] != aggregate_stamp:
             fresh = _run_namings(project, repository)
             rows = (
