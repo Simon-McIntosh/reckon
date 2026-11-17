@@ -1369,11 +1369,12 @@ class RunStore:
         Every field not named in the detail declaration is durable and is
         stored in the runs payload; exactly the declared wide fields the
         record carries are stored as the washable detail hanging off the
-        durable half. The query keys are real columns beside the payload,
-        extracted from it at insert, so the indexed answers agree with the
-        durable record row for row. The durable payload never carries
-        ``store_write``: that field is a record of what happened at one
-        promotion, not store content.
+        durable half. The query keys are real columns beside the payload, read
+        from the record at insert so the indexed answers agree with the durable
+        row for row; the routing key is the one exception, and it comes from
+        this call's own ``project`` rather than from the record. The durable
+        payload never carries ``store_write``: that field is a record of what
+        happened at one promotion, not store content.
         """
         run_id, payload, detail = _split_durable(record)
         with self._conn:
