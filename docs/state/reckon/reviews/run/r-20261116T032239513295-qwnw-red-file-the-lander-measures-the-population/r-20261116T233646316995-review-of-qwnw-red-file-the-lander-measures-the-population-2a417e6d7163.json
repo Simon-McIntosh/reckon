@@ -1,0 +1,152 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "fails_if": "land_once still lands the delivery itself instead of returning promotion_requested, which leaves the list unequal to the fixture's run id.",
+      "lines": [
+        309,
+        325,
+        354,
+        382
+      ]
+    },
+    {
+      "fails_if": "the promotion records any phase other than REFUSED for a guard that should refuse; the mutation log shows these three reddening when a raising request is recorded as promoted.",
+      "lines": [
+        314,
+        361,
+        386
+      ]
+    },
+    {
+      "fails_if": "the refusal comes from a different guard than the primary, gate or parents check the case exercises, since the error text is read for the guard's own word.",
+      "lines": [
+        315,
+        362,
+        387
+      ]
+    },
+    {
+      "fails_if": "the refused promotion moves the worktree HEAD past the test's own commit, or publishes anything to the origin's main, both of which the test's fixture shas independently fix.",
+      "lines": [
+        316,
+        317,
+        363,
+        364,
+        388,
+        389,
+        390
+      ]
+    },
+    {
+      "fails_if": "the promotion merges a commit other than the measured candidate or one whose parents are not the record's main_sha and the fixture's head; the expected candidate is read from the measurement record, not from the receipt under test.",
+      "lines": [
+        332,
+        333,
+        343,
+        344
+      ]
+    },
+    {
+      "fails_if": "the landing pass shells out through the run shim again, which would append a receipt the fixture collects.",
+      "lines": [
+        348
+      ]
+    },
+    {
+      "fails_if": "a refused publication leaves no pending landing record at the reviewed head, or records a different head.",
+      "lines": [
+        393
+      ]
+    }
+  ],
+  "assertion_independence": "No tautological assertion found: the receipt's promoted steps are checked against the candidate read from queue_landing._measurement_record rather than against the receipt itself, refusal phases are product-written values compared with the product's declared constants, and every repository state check is against a sha the fixture or _commit produced independently of the promotion. The weakest is line 316, which compares HEAD with the sha _commit returned, but the fact it asserts is the absence of a second move by the lander.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:1875",
+    "reckon/crew/queue_landing.py:836",
+    "reckon/crew/promotion_requests.py:546",
+    "reckon/crew/promotion_requests.py:223",
+    "reckon/crew/pending_landing.py:60",
+    "reckon/crew/runs.py:156"
+  ],
+  "completed_at": "2026-11-17T01:34:27.409Z",
+  "dispatched_at": "2026-11-17T01:32:49Z",
+  "findings": [
+    {
+      "file": "tests/test_the_lander_measures_the_population.py",
+      "line": "164",
+      "severity": "non-blocking",
+      "text": "_after_suite_log duplicates the manifest after_suite observation that reckon/crew/reports.py:318 parse_manifest owns and normalises at :861, so the field is read by a second implementation that will not follow a change to the reader."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032239513295-qwnw-red-file-the-lander-measures-the-population/manifest.md",
+      "line": "23",
+      "severity": "non-blocking",
+      "text": "the done_when's clause \"an arm over the test files that import what you changed adds no failure against the base\" is recorded head-only as \"2 failed, 7 passed\", with no base arm showing those ids also fail at the base revision, so the clause is unmeasured."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "307ff0778e rewrites four cases onto promotion_requests.read_promotion and 2a417e6d71 adds the landing fragment; nothing outside the declared scope changed.",
+    "done_when": "The prompt's evidence fence names an all_debug job with SLURM_JOB_ID unset; head-gate.sh:11 uses `env -u SLURM_JOB_ID` and sacct reads job 1320810 on all_debug COMPLETED 0:0.",
+    "goal": "The source prompt's goal is that tests/test_the_lander_measures_the_population.py passes in full; head-gate-307ff0778e.log reports \"24 passed\" at 307ff0778e with EXIT=0.",
+    "manifest": "manifest.md records baseline 4 failed at 1edf1b0dba and after 0 failed at 2a417e6d71 with log paths, and its outside_scope line:23 reports two head-only tests/test_queue_landing.py failures.",
+    "write_paths": "The prompt declares reckon, tests and the node's fragment and figure paths; both changed paths in the diff lie inside them."
+  },
+  "justifications": {
+    "durability": "mutation-refusal-suppressed.log records tests/test_the_lander_measures_the_population.py:314, :361 and :386 reddening when the product records a raising promotion request as promoted.",
+    "evidence": "base-arm-1edf1b0dba.log carries four FAILED ids and after-arm-2a417e6d71.log none, but manifest.md:23 records the two tests/test_queue_landing.py failures at head alone, leaving the done_when's importer-arm clause without a base arm.",
+    "fit": "the helpers at tests/test_the_lander_measures_the_population.py:150 and :164 follow the file's underscore-prefixed private-helper shape with docstrings.",
+    "goal_fidelity": "head-gate-307ff0778e.log reports \"24 passed in 6.63s\" and EXIT=0 for tests/test_the_lander_measures_the_population.py, though the all_debug job ran at 307ff0778e, one documentation-only commit short of head.",
+    "reuse": "tests/test_the_lander_measures_the_population.py:164 reads the manifest after_suite field by raw line scan instead of reckon/crew/reports.py:318 parse_manifest, whose _normalise_manifest_fields at :861 owns that observation.",
+    "scope_discipline": "the diff of 1edf1b0dba..2a417e6d7163 changes only tests/test_the_lander_measures_the_population.py and the node's fragment under docs/evidence/fragments/queued-work-needs-no-workaround/."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source prompt's goal is that tests/test_the_lander_measures_the_population.py passes in full; head-gate-307ff0778e.log runs that file at 307ff0778e and reports \"24 passed in 6.63s\" with EXIT=0.\nVERDICT done_when: The prompt's evidence fence names an all_debug job with SLURM_JOB_ID unset; head-gate.sh:11 runs under `env -u SLURM_JOB_ID` and sacct reads job 1320810 on all_debug COMPLETED 0:0, and after-arm-2a417e6d71.log repeats \"24 passed\" at the final head.\nVERDICT write_paths: The prompt declares reckon, tests and the node's fragment and figure paths; the diff of 1edf1b0dba..2a417e6d7163 changes only tests/test_the_lander_measures_the_population.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-lander-measures-the-population.html.\nVERDICT manifest: The source manifest.md records baseline 4 failed at 1edf1b0dba in baseline_suite and 0 failed at 2a417e6d71 in after_suite, both with log paths, and its outside_scope line:23 reports two tests/test_queue_landing.py failures at head only.\nVERDICT diff: Read both commits: 307ff0778e rewrites four cases to drive promotion_requests.PromotionService and read read_promotion's receipt instead of the land pass's obligations and _run_srun shim, and 2a417e6d71 adds the 71-line landing fragment; nothing outside the declared scope changed.\nCALL_SITES: reckon/crew/queue_landing.py:1875, reckon/crew/queue_landing.py:836, reckon/crew/promotion_requests.py:546, reckon/crew/promotion_requests.py:223, reckon/crew/pending_landing.py:60, reckon/crew/runs.py:156\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: head-gate-307ff0778e.log:4-5 reports \"24 passed in 6.63s\" and EXIT=0 for the named file, though the all_debug job ran at 307ff0778e, one documentation-only commit short of head.\nSCORE evidence: 14\nJUSTIFICATION evidence: base-arm-1edf1b0dba.log carries four FAILED ids and after-arm-2a417e6d71.log none, but the done_when's importer-arm clause has no base arm \u2014 manifest.md:23 records the two tests/test_queue_landing.py failures at head alone.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the two paths in git diff 1edf1b0dba..2a417e6d7163 are tests/test_the_lander_measures_the_population.py and the node's own fragment under docs/evidence/fragments/queued-work-needs-no-workaround/.\nSCORE durability: 19\nJUSTIFICATION durability: mutation-refusal-suppressed.log records tests/test_the_lander_measures_the_population.py:314, :361 and :386 reddening (\"3 failed, 21 passed\") when promotion_requests._run records a raising request as promoted, and the base arm reddens the four cases this change rewrote.\nSCORE fit: 18\nJUSTIFICATION fit: the helpers at tests/test_the_lander_measures_the_population.py:150 and :164 use the file's existing underscore-prefixed private-helper shape with docstrings, and promotion_requests and pending_landing join the file's existing `from reckon.crew import` block.\nSCORE reuse: 5\nJUSTIFICATION reuse: tests/test_the_lander_measures_the_population.py:164 reads a manifest's after_suite field by a raw line scan rather than reckon/crew/reports.py:318 parse_manifest, whose _normalise_manifest_fields at :861 already owns that observation.\nFINDING tests/test_the_lander_measures_the_population.py:164 non-blocking: _after_suite_log duplicates the manifest after_suite observation that reckon/crew/reports.py:318 parse_manifest owns and normalises at :861, so the field is read by a second implementation that will not follow a change to the reader.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032239513295-qwnw-red-file-the-lander-measures-the-population/manifest.md:23 non-blocking: the done_when's clause \"an arm over the test files that import what you changed adds no failure against the base\" is recorded head-only as \"2 failed, 7 passed\", with no base arm showing those ids also fail at the base revision, so the clause is unmeasured.\n",
+  "review_run_id": "r-20261116T233646316995-review-of-qwnw-red-file-the-lander-measures-the-population-2a417e6d7163",
+  "reviewed_base_sha": "1edf1b0dba79409ef5ac2b8db39965725b53c63c",
+  "reviewed_head_sha": "2a417e6d7163d560bd56d84a8a7784c5c1335d7a",
+  "reviewed_run_id": "r-20261116T032239513295-qwnw-red-file-the-lander-measures-the-population",
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_lander_measures_the_population.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032239513295-qwnw-red-file-the-lander-measures-the-population/after-arm-2a417e6d71.log",
+      "revision": "2a417e6d7163d560bd56d84a8a7784c5c1335d7a"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_lander_measures_the_population.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 4,
+      "failure_ids": [
+        "tests/test_the_lander_measures_the_population.py::test_primary_advance_after_measurement_refuses_the_actual_cli_merge",
+        "tests/test_the_lander_measures_the_population.py::test_the_actual_cli_lands_exactly_the_measured_candidate",
+        "tests/test_the_lander_measures_the_population.py::test_candidate_handoff_preserves_the_promotion_guard",
+        "tests/test_the_lander_measures_the_population.py::test_primary_advance_after_promotion_measurement_refuses_publication"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032239513295-qwnw-red-file-the-lander-measures-the-population/base-arm-1edf1b0dba.log",
+      "revision": "1edf1b0dba79409ef5ac2b8db39965725b53c63c"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T04:03:38.294170+00:00",
+  "total": 93
+}
