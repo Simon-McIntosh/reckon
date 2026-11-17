@@ -290,10 +290,10 @@ def test_a_removed_tree_drops_its_held_record_after_pointer_churn(
     calls = 0
     real_read = obligations_module._held_worktree_records_read
 
-    def read(project: str, repository: Path, *, include_landed: bool = False) -> Any:
+    def read(project: str, repository: Path, *, signature: Any = None) -> Any:
         nonlocal calls
         calls += 1
-        return real_read(project, repository, include_landed=include_landed)
+        return real_read(project, repository, signature=signature)
 
     monkeypatch.setattr(obligations_module, "_held_worktree_records_read", read)
     runs._write_json(

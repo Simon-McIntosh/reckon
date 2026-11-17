@@ -1,0 +1,66 @@
+# the arm over the files that import what this change touched
+# revision: 6098df33c393b32eab7f62fa6510d4c2be9474d4
+# tree: bd4ee9ec01543195ec59ae3ff91a0d18e5d95ff2
+# command: env -u SLURM_JOB_ID PYTHONPATH=. /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-fleet-state-reuses-its-reads-between-ticks/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_batch_entry_fits_its_window_when_queued … (the whole list is in the head arm's own command line)
+# module: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-fleet-state-reuses-its-reads-between-ticks/reckon/crew/obligations.py
+# cwd: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-fleet-state-reuses-its-reads-between-ticks
+
+# base revision: ba3443a9ae6a2bc171c76560016a6ca24e055f02
+# base arm: 90 failed, 1118 passed in 866.49s (0:14:26) / EXIT=1
+# base failing ids: 90
+# primary revision: 0261b9ce655839682e364c4c795c05adfe6f969a
+# primary arm: 60 failed, 1188 passed in 1287.88s (0:21:27) / EXIT=0
+# primary failing ids: 60
+# merged head revision: 6098df33c393b32eab7f62fa6510d4c2be9474d4
+# head arm: 57 failed, 1191 passed in 1370.47s (0:22:50) / EXIT=0
+# head failing ids: 57
+# each arm log's trailing EXIT= line is the helper's grep status, not
+# pytest's; the summary line above each one is authoritative.
+
+# ids that fail at the merged head and not at primary
+tests/test_a_staleness_verdict_reads_its_rows_source.py::test_a_stale_export_that_is_the_only_source_names_its_file
+
+# ids that fail at the merged head and not at base
+tests/test_a_resumed_run_counts_as_working.py::test_a_live_worker_that_predates_its_manifest_keeps_todays_verdict
+tests/test_a_staleness_verdict_reads_its_rows_source.py::test_a_stale_export_that_is_the_only_source_names_its_file
+tests/test_coordinator_obligations_hook.py::test_two_review_ready_items_carry_their_own_run_command
+tests/test_fleet_state_reads_the_live_pointers_once.py::test_one_derivation_lists_the_live_directory_once
+
+# ids that fail at base and not at the merged head
+tests/test_a_sweep_resolves_review_heads_once.py::test_one_derivation_builds_the_index_once
+tests/test_a_worktree_held_row_is_rechecked_at_read.py::test_a_held_tree_is_still_offered
+tests/test_a_worktree_held_row_is_rechecked_at_read.py::test_a_row_without_a_per_run_file_is_kept
+tests/test_a_worktree_held_row_is_rechecked_at_read.py::test_a_tree_the_promotion_released_is_not_offered
+tests/test_boundary_check_reads_only_declared_roots.py::test_a_stray_at_a_declared_path_inside_an_untracked_directory_is_refused
+tests/test_boundary_check_reads_only_declared_roots.py::test_a_tracked_change_at_a_declared_path_is_still_refused
+tests/test_fleet_state_reuses_its_reads_between_ticks.py::test_an_aggregate_rewrite_rebuilds_from_the_current_union
+tests/test_fleet_state_reuses_its_reads_between_ticks.py::test_stream_growth_reuses_both_reads_and_source_changes_invalidate
+tests/test_fleet_state_reuses_its_reads_between_ticks.py::test_unrelated_landing_and_registry_churn_do_only_changed_work
+tests/test_held_worktree_fallback_resolves_each_row_once.py::test_a_refused_namings_reader_keeps_the_same_answer
+tests/test_held_worktree_fallback_resolves_each_row_once.py::test_the_fallback_resolves_each_row_a_bounded_number_of_times
+tests/test_held_worktree_fallback_resolves_each_row_once.py::test_the_held_map_is_the_naming_rule_applied_to_every_row
+tests/test_held_worktree_fallback_resolves_each_row_once.py::test_the_tree_only_a_run_less_row_names_is_held
+tests/test_held_worktree_records_match_each_record_once.py::test_each_record_is_filed_once_not_compared_per_tree
+tests/test_held_worktree_records_match_each_record_once.py::test_the_held_trees_equal_the_whole_ledger_derivation
+tests/test_hot_path_reads_only_live_runs.py::test_history_does_not_change_the_open_population[landing]
+tests/test_hot_path_reads_only_live_runs.py::test_history_does_not_change_the_open_population[obligations]
+tests/test_orchestrator_assessment_reaches_jev.py::test_assessment_renders_beside_the_declared_capability
+tests/test_orchestrator_assessment_reaches_jev.py::test_record_carries_capability_on_the_explicit_route
+tests/test_orchestrator_assessment_reaches_jev.py::test_record_carries_capability_on_the_picker_route
+tests/test_orchestrator_assessment_reaches_jev.py::test_rendered_state_is_build_states_mapping_encoded_once
+tests/test_queued_work_shows_where_held_work_shows.py::test_a_queued_run_never_holds_a_coordinator_stop_open
+tests/test_queued_work_shows_where_held_work_shows.py::test_one_queued_run_reads_as_queued_on_every_surface
+tests/test_queued_work_shows_where_held_work_shows.py::test_the_live_view_names_the_queued_runs_place
+tests/test_queued_work_shows_where_held_work_shows.py::test_two_queued_runs_follow_the_admission_order
+tests/test_review_carries_forward.py::test_a_data_file_relocation_carries_the_review_forward
+tests/test_review_carries_forward.py::test_a_judge_that_cannot_answer_leaves_the_light_review
+tests/test_review_carries_forward.py::test_a_review_that_raised_findings_is_never_judged
+tests/test_review_carries_forward.py::test_a_runtime_source_commit_dispatches_a_light_scoped_review
+tests/test_review_carries_forward.py::test_a_runtime_source_commit_earns_a_light_review_of_that_commit
+tests/test_review_carries_forward.py::test_a_source_move_judged_immaterial_carries_the_clean_review
+tests/test_review_carries_forward.py::test_a_source_move_judged_material_earns_the_light_review
+tests/test_routing_surface.py::test_routing_counts_tool_steps_from_a_durable_stream
+tests/test_the_held_worktree_read_is_bounded.py::test_a_refused_namings_reader_leaves_every_run_a_candidate
+tests/test_the_held_worktree_read_is_bounded.py::test_a_run_retaining_a_tree_after_the_index_is_published_is_read
+tests/test_the_held_worktree_read_is_bounded.py::test_one_derivation_reads_only_the_documents_that_can_change_it
+tests/test_the_held_worktree_read_is_bounded.py::test_the_head_derivation_equals_the_whole_ledger
