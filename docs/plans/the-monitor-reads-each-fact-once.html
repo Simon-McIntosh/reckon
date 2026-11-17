@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="451">
+<meta name="plan-version" content="452">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -1728,6 +1728,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T042852990093-obligations-read-the-station" data-who="reckon-build" data-when="2026-10-27T13:28:42Z">
     <div class="r-comment-body"><p>The station computes each live session's obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
+</div>
+<div class="r-comment" data-section="s87" data-id="c-run-r-20261117T172132250229-review-of-a-steady-tick-makes-no-git-call-again-8cb06812f175" data-who="reckon-build" data-when="2026-11-17T17:23:21.104Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261117T155938396723-a-steady-tick-makes-no-git-call-again at b3a277e1a63c181bf0deb2a7127b43e37bbc3718..8cb06812f175b1facc6d66d419d80236ab736206: goal_fidelity 15, evidence 18, scope_discipline 20, durability 16, fit 19, reuse 12 (total 100), three non-blocking findings, added_failure_count 0 — the change does answer the reviewed range&#x27;s numstat read from a memo and the tick&#x27;s git count falls to 0, but it adds a third bounded-memo copy instead of extending the immutable-id git-answer store.</p></div>
 </div>
 </section>
 </main>
